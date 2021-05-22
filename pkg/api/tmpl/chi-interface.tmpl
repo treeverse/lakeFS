@@ -1,0 +1,11 @@
+// chi-interface.tmpl based on https://github.com/deepmap/oapi-codegen/tree/master/pkg/codegen/templates
+
+// ServerInterface represents all server handlers.
+type ServerInterface interface {
+{{range .}}{{.SummaryAsComment }}{{$opid := .OperationId}}
+// ({{.Method}} {{.Path}}) 
+{{.OperationId}}(w http.ResponseWriter, r *http.Request
+{{- if .HasBody}}{{range .Bodies}}{{if and .Default (eq .NameTag "JSON")}}, body {{$opid}}{{.NameTag}}RequestBody {{end}}{{end}}{{end -}}
+{{genParamArgs .PathParams}}{{if .RequiresParamObject}}, params {{.OperationId}}Params{{end}})
+{{end}}
+}

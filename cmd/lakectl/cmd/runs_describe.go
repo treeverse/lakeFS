@@ -1,28 +1,19 @@
 package cmd
 
 import (
-	"bytes"
 	"context"
+	"net/http"
 
-	"github.com/go-openapi/swag"
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
-	"github.com/treeverse/lakefs/pkg/cmdutils"
-	"github.com/treeverse/lakefs/pkg/uri"
+	"github.com/treeverse/lakefs/pkg/api/helpers"
 )
 
-const actionRunResultTemplate = `
-{{ . | table -}}
-`
+const actionRunResultTemplate = `{{ . | table -}}`
 
-const actionTaskResultTemplate = `{{ $r := . }}
-{{ range $idx, $val := .Hooks }}{{ index $r.HooksTable $idx | table -}}
-{{ printf $val.HookRunID | call $r.HookLog }}
-{{ end }}
-{{ .Pagination | paginate }}
-`
+const actionTaskResultTemplate = `{{ $r := . }}{{ range $idx, $val := .Hooks }}{{ index $r.HooksTable $idx | table -}}{{ printf $val.HookRunId | call $r.HookLog }}{{ end }}{{ if .Pagination }}
+{{ .Pagination | paginate }}{{ end }}`
 
 const runsShowRequiredArgs = 2
 
@@ -31,93 +22,103 @@ var runsDescribeCmd = &cobra.Command{
 	Short:   "Describe run results",
 	Long:    `Show information about the run and all the hooks that were executed as part of the run`,
 	Example: "lakectl actions runs describe lakefs://<repository> <run_id>",
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(runsShowRequiredArgs),
-		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
-	),
+	Args:    cobra.ExactArgs(runsShowRequiredArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		amount, _ := cmd.Flags().GetInt("amount")
-		after, _ := cmd.Flags().GetString("after")
-		u := uri.Must(uri.Parse(args[0]))
+		amount := MustInt(cmd.Flags().GetInt("amount"))
+		after := MustString(cmd.Flags().GetString("after"))
+		u := MustParseRepoURI("repository", args[0])
+		pagination := api.Pagination{HasMore: true}
+
+		Fmt("Repository: %s\n", u.String())
 		runID := args[1]
 
 		client := getClient()
 		ctx := cmd.Context()
 
 		// run result information
-		runResult, err := client.GetRunResult(ctx, u.Repository, runID)
-		if err != nil {
-			DieErr(err)
-		}
-		Write(actionRunResultTemplate, convertRunResultTable(runResult))
+		runsRes, err := client.GetRunWithResponse(ctx, u.Repository, runID)
+		DieOnResponseError(runsRes, err)
 
-		// iterator over hooks - print information and output
-		response, pagination, err := client.ListRunTaskResults(ctx, u.Repository, runID, after, amount)
-		if err != nil {
-			DieErr(err)
-		}
-		data := struct {
-			Hooks      []*models.HookRun
-			HooksTable []*Table
-			HookLog    func(hookRunID string) (string, error)
-			Pagination *Pagination
-		}{
-			Hooks:      response,
-			HooksTable: convertHookResultsTables(response),
-			HookLog:    makeHookLog(ctx, client, u.Repository, runID),
-		}
-		if pagination != nil && swag.BoolValue(pagination.HasMore) {
-			data.Pagination = &Pagination{
-				Amount:  amount,
-				HasNext: true,
-				After:   pagination.NextOffset,
+		runResult := runsRes.JSON200
+		Write(actionRunResultTemplate, convertRunResultTable(runResult))
+		for pagination.HasMore {
+			amountForPagination := amount
+			if amountForPagination <= 0 {
+				amountForPagination = internalPageSize
+			}
+			// iterator over hooks - print information and output
+			runHooksRes, err := client.ListRunHooksWithResponse(ctx, u.Repository, runID, &api.ListRunHooksParams{
+				After:  api.PaginationAfterPtr(after),
+				Amount: api.PaginationAmountPtr(amountForPagination),
+			})
+			DieOnResponseError(runHooksRes, err)
+			pagination = runHooksRes.JSON200.Pagination
+			data := struct {
+				Hooks      []api.HookRun
+				HooksTable []*Table
+				HookLog    func(hookRunID string) (string, error)
+				Pagination *Pagination
+			}{
+				Hooks:      runHooksRes.JSON200.Results,
+				HooksTable: convertHookResultsTables(runHooksRes.JSON200.Results),
+				HookLog:    makeHookLog(ctx, client, u.Repository, runID),
+				Pagination: &Pagination{
+					Amount:  amount,
+					HasNext: pagination.HasMore,
+					After:   pagination.NextOffset,
+				},
+			}
+			Write(actionTaskResultTemplate, data)
+			after = pagination.NextOffset
+			if amount != 0 {
+				// user request only one page
+				break
 			}
 		}
-		Write(actionTaskResultTemplate, data)
 	},
 }
 
-func makeHookLog(ctx context.Context, client api.Client, repositoryID string, runID string) func(hookRunID string) (string, error) {
+func makeHookLog(ctx context.Context, client api.ClientWithResponsesInterface, repositoryID string, runID string) func(hookRunID string) (string, error) {
 	return func(hookRunID string) (string, error) {
-		var buf bytes.Buffer
-		err := client.GetRunHookOutput(ctx, repositoryID, runID, hookRunID, &buf)
+		res, err := client.GetRunHookOutputWithResponse(ctx, repositoryID, runID, hookRunID)
 		if err != nil {
 			return "", err
 		}
-		return buf.String(), nil
+		if res.StatusCode() != http.StatusOK {
+			return "", helpers.ResponseAsError(res)
+		}
+		return string(res.Body), nil
 	}
 }
 
-func convertRunResultTable(r *models.ActionRun) *Table {
-	runID := text.FgYellow.Sprint(swag.StringValue(r.RunID))
-	branch := swag.StringValue(r.Branch)
-	commitID := swag.StringValue(r.CommitID)
+func convertRunResultTable(r *api.ActionRun) *Table {
+	runID := text.FgYellow.Sprint(r.RunId)
 	statusColor := text.FgRed
-	if r.Status == models.ActionRunStatusCompleted {
+	if r.Status == "completed" {
 		statusColor = text.FgGreen
 	}
 	status := statusColor.Sprint(r.Status)
 	return &Table{
 		Headers: []interface{}{"Run ID", "Event", "Branch", "Start Time", "End Time", "Commit ID", "Status"},
 		Rows: [][]interface{}{
-			{runID, r.EventType, branch, r.StartTime, r.EndTime, commitID, status},
+			{runID, r.EventType, r.Branch, r.StartTime, r.EndTime, r.CommitId, status},
 		},
 	}
 }
 
-func convertHookResultsTables(results []*models.HookRun) []*Table {
+func convertHookResultsTables(results []api.HookRun) []*Table {
 	tables := make([]*Table, len(results))
 	for i, r := range results {
-		hookRunID := text.FgYellow.Sprint(swag.StringValue(r.HookRunID))
+		hookRunID := text.FgYellow.Sprint(r.HookRunId)
 		statusColor := text.FgRed
-		if r.Status == models.ActionRunStatusCompleted {
+		if r.Status == "completed" {
 			statusColor = text.FgGreen
 		}
 		status := statusColor.Sprint(r.Status)
 		tables[i] = &Table{
 			Headers: []interface{}{"Hook Run ID", "Hook ID", "Start Time", "End Time", "Action", "Status"},
 			Rows: [][]interface{}{
-				{hookRunID, r.HookID, r.StartTime, r.EndTime, r.Action, status},
+				{hookRunID, r.HookId, r.StartTime, r.EndTime, r.Action, status},
 			},
 		}
 	}
@@ -127,6 +128,6 @@ func convertHookResultsTables(results []*models.HookRun) []*Table {
 //nolint:gochecknoinits
 func init() {
 	actionsRunsCmd.AddCommand(runsDescribeCmd)
-	runsDescribeCmd.Flags().Int("amount", -1, "how many results to return, or '-1' for default (used for pagination)")
+	runsDescribeCmd.Flags().Int("amount", 0, "number of results to return. By default, all results are returned.")
 	runsDescribeCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 }

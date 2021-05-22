@@ -1,0 +1,108 @@
+version: '3.9'
+services:
+  postgres:
+    image: "postgres:11"
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: lakefs
+      POSTGRES_PASSWORD: lakefs
+  lakefs:
+    image: "${REPO}/lakefs:${TAG}"
+    ports:
+      - "8000:8000"
+    networks:
+      default:
+        ipv4_address: 10.5.0.55
+    depends_on:
+      - "postgres"
+    volumes:
+      - ./lakectl-tester.yaml:/home/lakefs/.lakectl.yaml
+      - .:/local
+    environment:
+      - LAKEFS_GATEWAYS_S3_DOMAIN_NAME=s3.docker.lakefs.io
+      - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=some random secret string
+      - LAKEFS_DATABASE_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
+      - LAKEFS_LOGGING_LEVEL=DEBUG
+      - LAKEFS_STATS_ENABLED=false
+      - LAKEFS_BLOCKSTORE_LOCAL_PATH=/home/lakefs
+      - LAKEFS_BLOCKSTORE_TYPE
+      - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID
+      - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY
+      - LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON
+      - LAKEFS_CATALOGER_TYPE
+      - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT
+      - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY
+    env_file:
+        - tester.env
+    entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
+  spark:
+    image: docker.io/bitnami/spark:3
+    environment:
+      - SPARK_MODE=master
+      - SPARK_MASTER_HOST=spark
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    ports:
+      - '18080:8080'
+    extra_hosts:
+      - "s3.docker.lakefs.io:10.5.0.55"
+      - "example.s3.docker.lakefs.io:10.5.0.55"
+      - "gateway-test.s3.docker.lakefs.io:10.5.0.55"
+      - "thick-client-test.s3.docker.lakefs.io:10.5.0.55"
+  spark-worker-1: &spark_worker
+    image: docker.io/bitnami/spark:3
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark:7077
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_WORKER_CORES=1
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_REGION
+    env_file:
+        - tester.env
+    extra_hosts:
+      - "s3.docker.lakefs.io:10.5.0.55"
+      - "example.s3.docker.lakefs.io:10.5.0.55"
+      - "gateway-test.s3.docker.lakefs.io:10.5.0.55"
+      - "thick-client-test.s3.docker.lakefs.io:10.5.0.55"
+  spark-worker-2:
+    <<: *spark_worker
+  spark-submit:
+    image: docker.io/bitnami/spark:3
+    profiles: ["command"]
+    volumes:
+      - ./:/local
+    env_file:
+      - tester.env
+    environment:
+      - input
+      - output
+      - s3input
+      - s3output
+      - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID
+      - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_REGION
+    extra_hosts:
+      - "s3.docker.lakefs.io:10.5.0.55"
+      - "example.s3.docker.lakefs.io:10.5.0.55"
+      - "gateway-test.s3.docker.lakefs.io:10.5.0.55"
+      - "thick-client-test.s3.docker.lakefs.io:10.5.0.55"
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+     config:
+       - subnet: 10.5.0.0/16
+         gateway: 10.5.0.1
+

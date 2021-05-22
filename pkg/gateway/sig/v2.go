@@ -91,7 +91,7 @@ func (a *V2SigAuthenticator) Parse() (SigContext, error) {
 	if len(headerValue) > 0 {
 		match := V2AuthHeaderRegexp.FindStringSubmatch(headerValue)
 		if len(match) == 0 {
-			logging.Default().WithField("header", headerValue).Error("log header does not match v2 structure")
+			logging.Default().WithField("header", v2authHeaderName).Error("log header does not match v2 structure")
 			return ctx, ErrHeaderMalformed
 		}
 		result := make(map[string]string)
@@ -104,7 +104,7 @@ func (a *V2SigAuthenticator) Parse() (SigContext, error) {
 		// parse signature
 		sig, err := base64.StdEncoding.DecodeString(result["Signature"])
 		if err != nil {
-			logging.Default().WithField("header", headerValue).Error("log header does not match v2 structure (isn't proper base64)")
+			logging.Default().WithField("header", v2authHeaderName).Error("log header does not match v2 structure (isn't proper base64)")
 			return ctx, ErrHeaderMalformed
 		}
 		ctx.signature = sig
@@ -248,8 +248,8 @@ func (a *V2SigAuthenticator) Verify(creds *model.Credential, bareDomain string) 
 	patchedPath = strings.ReplaceAll(patchedPath, "*", "%2A")
 	patchedPath = strings.ReplaceAll(patchedPath, "%7E", "~")
 	path := buildPath(a.r.Host, bareDomain, patchedPath)
-	stringToSigh := canonicalString(a.r.Method, a.r.URL.Query(), path, a.r.Header)
-	digest := signCanonicalString(stringToSigh, []byte(creds.AccessSecretKey))
+	stringToSign := canonicalString(a.r.Method, a.r.URL.Query(), path, a.r.Header)
+	digest := signCanonicalString(stringToSign, []byte(creds.SecretAccessKey))
 	if !Equal(digest, a.ctx.signature) {
 		return errors.ErrSignatureDoesNotMatch
 	}

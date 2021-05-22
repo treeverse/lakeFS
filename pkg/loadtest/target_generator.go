@@ -75,13 +75,13 @@ func (t *TargetGenerator) GenerateCommitTarget(repo, branch, msg string) vegeta.
 func (t *TargetGenerator) GenerateBranchTarget(repo, name string) vegeta.Target {
 	return defaultTarget("POST",
 		fmt.Sprintf("%s/repositories/%s/branches", t.ServerAddress, repo),
-		fmt.Sprintf(`{"name":"%s","source":"master"}`, name),
+		fmt.Sprintf(`{"name":"%s","source":"main"}`, name),
 		"createBranch")
 }
 
 func (t *TargetGenerator) GenerateMergeToMasterTarget(repo, branch string) vegeta.Target {
 	return defaultTarget("POST",
-		fmt.Sprintf("%s/repositories/%s/refs/%s/merge/master", t.ServerAddress, repo, branch),
+		fmt.Sprintf("%s/repositories/%s/refs/%s/merge/main", t.ServerAddress, repo, branch),
 		"{}",
 		"merge")
 }

@@ -42,7 +42,7 @@ var (
 )
 
 type handler struct {
-	BareDomain         string
+	BareDomains        []string
 	sc                 *ServerContext
 	ServerErrorHandler http.Handler
 	operationHandlers  map[operations.OperationID]http.Handler
@@ -50,7 +50,7 @@ type handler struct {
 
 type ServerContext struct {
 	region            string
-	bareDomain        string
+	bareDomains       []string
 	catalog           catalog.Interface
 	multipartsTracker multiparts.Tracker
 	blockStore        block.Adapter
@@ -64,7 +64,7 @@ func NewHandler(
 	multipartsTracker multiparts.Tracker,
 	blockStore block.Adapter,
 	authService simulator.GatewayAuthService,
-	bareDomain string,
+	bareDomains []string,
 	stats stats.Collector,
 	fallbackURL *url.URL,
 ) http.Handler {
@@ -72,7 +72,13 @@ func NewHandler(
 	if fallbackURL != nil {
 		fallbackProxy := gohttputil.NewSingleHostReverseProxy(fallbackURL)
 		fallbackHandler = http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-			request.Host = strings.Replace(request.Host, bareDomain, fallbackURL.Host, 1)
+			for _, bareDomain := range bareDomains {
+				fallback := strings.Replace(request.Host, bareDomain, fallbackURL.Host, 1)
+				if fallback != request.Host {
+					request.Host = fallback
+					break
+				}
+			}
 			fallbackProxy.ServeHTTP(writer, request)
 		})
 	}
@@ -80,7 +86,7 @@ func NewHandler(
 		catalog:           catalog,
 		multipartsTracker: multipartsTracker,
 		region:            region,
-		bareDomain:        bareDomain,
+		bareDomains:       bareDomains,
 		blockStore:        blockStore,
 		authService:       authService,
 		stats:             stats,
@@ -89,7 +95,7 @@ func NewHandler(
 	// setup routes
 	var h http.Handler
 	h = &handler{
-		BareDomain:         bareDomain,
+		BareDomains:        bareDomains,
 		sc:                 sc,
 		ServerErrorHandler: nil,
 		operationHandlers: map[operations.OperationID]http.Handler{
@@ -105,18 +111,17 @@ func NewHandler(
 			operations.OperationIDUnsupportedOperation: unsupportedOperationHandler(),
 		},
 	}
-	h = simulator.RegisterRecorder(httputil.LoggingMiddleware(
-		"X-Amz-Request-Id", logging.Fields{"service_name": "s3_gateway"}, h,
-	), authService, region, bareDomain)
+	loggingMiddleware := httputil.LoggingMiddleware("X-Amz-Request-Id", logging.Fields{"service_name": "s3_gateway"})
+	h = simulator.RegisterRecorder(loggingMiddleware(h), authService, region, bareDomains)
 	h = EnrichWithOperation(sc,
 		DurationHandler(
-			AuthenticationHandler(authService, bareDomain,
-				EnrichWithParts(bareDomain,
+			AuthenticationHandler(authService, bareDomains,
+				EnrichWithParts(bareDomains,
 					EnrichWithRepositoryOrFallback(catalog, authService, fallbackHandler,
 						OperationLookupHandler(
 							h))))))
 	logging.Default().WithFields(logging.Fields{
-		"s3_bare_domain": bareDomain,
+		"s3_bare_domain": bareDomains,
 		"s3_region":      region,
 	}).Info("initialized S3 Gateway handler")
 	return h

@@ -8,13 +8,15 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/version"
 )
 
 const (
 	ConfigAccessKeyID       = "credentials.access_key_id"
 	ConfigSecretAccessKey   = "credentials.secret_access_key"
 	ConfigServerEndpointURL = "server.endpoint_url"
+
+	DefaultServerEndpointURL = "http://localhost:8000"
 )
 
 var (
@@ -25,7 +27,7 @@ var (
 var rootCmd = &cobra.Command{
 	Use:     "lakefs-loadtest",
 	Short:   "Run a loadtest on a lakeFS instance.",
-	Version: config.Version,
+	Version: version.Version,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -46,6 +48,8 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
+	viper.SetDefault(ConfigServerEndpointURL, DefaultServerEndpointURL)
+
 	if cfgFile != "" {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)

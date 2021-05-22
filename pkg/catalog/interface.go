@@ -63,7 +63,9 @@ type Interface interface {
 
 	// ListRepositories list repositories information, the bool returned is true when more repositories can be listed.
 	// In this case pass the last repository name as 'after' on the next call to ListRepositories
-	ListRepositories(ctx context.Context, limit int, after string) ([]*Repository, bool, error)
+	ListRepositories(ctx context.Context, limit int, prefix, after string) ([]*Repository, bool, error)
+
+	GetStagingToken(ctx context.Context, repository string, branch string) (*string, error)
 
 	CreateBranch(ctx context.Context, repository, branch string, sourceRef string) (*CommitLog, error)
 	DeleteBranch(ctx context.Context, repository, branch string) error
@@ -80,7 +82,7 @@ type Interface interface {
 	// GetEntry returns the current entry for path in repository branch reference.  Returns
 	// the entry with ExpiredError if it has expired from underlying storage.
 	GetEntry(ctx context.Context, repository, reference string, path string, params GetEntryParams) (*DBEntry, error)
-	CreateEntry(ctx context.Context, repository, branch string, entry DBEntry) error
+	CreateEntry(ctx context.Context, repository, branch string, entry DBEntry, writeConditions ...graveler.WriteConditionOption) error
 	CreateEntries(ctx context.Context, repository, branch string, entries []DBEntry) error
 	DeleteEntry(ctx context.Context, repository, branch string, path string) error
 	ListEntries(ctx context.Context, repository, reference string, prefix, after string, delimiter string, limit int) ([]*DBEntry, bool, error)
@@ -91,8 +93,6 @@ type Interface interface {
 	GetCommit(ctx context.Context, repository, reference string) (*CommitLog, error)
 	ListCommits(ctx context.Context, repository, branch string, fromReference string, limit int) ([]*CommitLog, bool, error)
 
-	// RollbackCommit sets the branch to point at the given commit, losing all later commits.
-	RollbackCommit(ctx context.Context, repository, branch string, reference string) error
 	// Revert creates a reverse patch to the given commit, and applies it as a new commit on the given branch.
 	Revert(ctx context.Context, repository, branch string, params RevertParams) error
 

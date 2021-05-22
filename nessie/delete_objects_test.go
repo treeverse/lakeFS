@@ -18,14 +18,14 @@ func TestDeleteObjects(t *testing.T) {
 	for i := 1; i <= numOfObjects; i++ {
 		file := strconv.Itoa(i) + ".txt"
 		identifiers = append(identifiers, &s3.ObjectIdentifier{
-			Key: aws.String(masterBranch + "/" + file),
+			Key: aws.String(mainBranch + "/" + file),
 		})
-		_, _ = uploadFileRandomData(ctx, t, repo, masterBranch, file)
+		_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, file, false)
 	}
 
 	listOut, err := svc.ListObjects(&s3.ListObjectsInput{
 		Bucket: aws.String(repo),
-		Prefix: aws.String(masterBranch + "/"),
+		Prefix: aws.String(mainBranch + "/"),
 	})
 
 	assert.NoError(t, err)
@@ -43,7 +43,7 @@ func TestDeleteObjects(t *testing.T) {
 
 	listOut, err = svc.ListObjects(&s3.ListObjectsInput{
 		Bucket: aws.String(repo),
-		Prefix: aws.String(masterBranch + "/"),
+		Prefix: aws.String(mainBranch + "/"),
 	})
 
 	assert.NoError(t, err)

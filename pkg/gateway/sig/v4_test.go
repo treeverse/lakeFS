@@ -20,10 +20,12 @@ import (
 	"github.com/treeverse/lakefs/pkg/gateway/errors"
 )
 
+const sigV4NoDomain = ""
+
 var (
 	mockCreds = &model.Credential{
 		AccessKeyID:     "AKIAIOSFODNN7EXAMPLE",
-		AccessSecretKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+		SecretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
 	}
 )
 
@@ -99,7 +101,7 @@ func TestDoesPolicySignatureMatch(t *testing.T) {
 				return
 			}
 
-			err = authenticator.Verify(mockCreds, "")
+			err = authenticator.Verify(mockCreds, sigV4NoDomain)
 			if err != nil {
 				if !tc.ExpectedError {
 					t.Fatal(err)
@@ -169,9 +171,9 @@ func TestSingleChunkPut(t *testing.T) {
 
 			err = authenticator.Verify(&model.Credential{
 				AccessKeyID:     ID,
-				AccessSecretKey: SECRET,
+				SecretAccessKey: SECRET,
 				IssuedDate:      time.Now(),
-			}, "")
+			}, sigV4NoDomain)
 			if err != nil {
 				t.Errorf("expect not no error, got %v", err)
 			}
@@ -231,9 +233,9 @@ func TestStreaming(t *testing.T) {
 
 	err = authenticator.Verify(&model.Credential{
 		AccessKeyID:     ID,
-		AccessSecretKey: SECRET,
+		SecretAccessKey: SECRET,
 		IssuedDate:      time.Now(),
-	}, "")
+	}, sigV4NoDomain)
 	if err != nil {
 		t.Error(err)
 	}
@@ -288,9 +290,9 @@ func TestStreamingLastByteWrong(t *testing.T) {
 
 	err = authenticator.Verify(&model.Credential{
 		AccessKeyID:     ID,
-		AccessSecretKey: SECRET,
+		SecretAccessKey: SECRET,
 		IssuedDate:      time.Now(),
-	}, "")
+	}, sigV4NoDomain)
 	if err != nil {
 		t.Errorf("expect not no error, got %v", err)
 	}
@@ -333,9 +335,9 @@ func TestUnsignedPayload(t *testing.T) {
 
 	err = authenticator.Verify(&model.Credential{
 		AccessKeyID:     testID,
-		AccessSecretKey: testSecret,
+		SecretAccessKey: testSecret,
 		IssuedDate:      time.Now(),
-	}, "")
+	}, sigV4NoDomain)
 	if err != nil {
 		t.Errorf("expect not no error, got %v", err)
 	}

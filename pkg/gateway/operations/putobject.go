@@ -225,7 +225,7 @@ func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	}
 
 	// write metadata
-	err = o.finishUpload(req, blob.Checksum, blob.PhysicalAddress, blob.Size)
+	err = o.finishUpload(req, blob.Checksum, blob.PhysicalAddress, blob.Size, true)
 	if err != nil {
 		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return

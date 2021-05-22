@@ -11,10 +11,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Setup UI (node 10)
+      - name: Setup UI
         uses: actions/setup-node@v1
         with:
-          node-version: '10.x'
+          node-version: '15.x'
 
       - name: Set up Go
         uses: actions/setup-go@v1

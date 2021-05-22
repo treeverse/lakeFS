@@ -3,13 +3,23 @@ DOCKER=$(or $(shell which docker), $(error "Missing dependency - no docker in PA
 GOBINPATH=$(shell $(GOCMD) env GOPATH)/bin
 NPM=$(or $(shell which npm), $(error "Missing dependency - no npm in PATH"))
 
+UID_GID := $(shell id -u):$(shell id -g)
+
 # Protoc is a Docker dependency (since it's a pain to install locally and manage versions of it)
 PROTOC_IMAGE="treeverse/protoc:3.14.0"
 PROTOC=$(DOCKER) run --rm -v $(shell pwd):/mnt $(PROTOC_IMAGE)
 
-# Same for python swagger validation
-SWAGGER_VALIDATOR_IMAGE=treeverse/swagger-spec-validator:latest
-SWAGGER_VALIDATOR=$(DOCKER) run --rm -v $(shell pwd):/mnt $(SWAGGER_VALIDATOR_IMAGE)
+CLIENT_JARS_BUCKET="s3://treeverse-clients-us-east/"
+
+# https://openapi-generator.tech
+OPENAPI_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v5.1.0
+OPENAPI_GENERATOR=$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
+
+ifndef PACKAGE_VERSION
+	PACKAGE_VERSION=0.1.0-SNAPSHOT
+endif
+
+PYTHON_IMAGE=python:3
 
 export PATH:= $(PATH):$(GOBINPATH)
 
@@ -29,8 +39,7 @@ LAKEFS_BINARY_NAME=lakefs
 LAKECTL_BINARY_NAME=lakectl
 
 UI_DIR=webui
-UI_BUILD_DIR=$(UI_DIR)/build
-API_BUILD_DIR=pkg/api/gen
+UI_BUILD_DIR=$(UI_DIR)/dist
 
 DOCKER_IMAGE=lakefs
 DOCKER_TAG=dev
@@ -48,8 +57,16 @@ export REVISION
 all: build
 
 clean:
-	@rm -rf $(API_BUILD_DIR) $(UI_BUILD_DIR) ddl/statik.go statik $(LAKEFS_BINARY_NAME) $(LAKECTL_BINARY_NAME) \
-	    graveler/committed/mock graveler/sstable/mock actions/mock
+	@rm -rf \
+		$(LAKECTL_BINARY_NAME) \
+		$(LAKEFS_BINARY_NAME) \
+		$(UI_BUILD_DIR) \
+		pkg/actions/mock \
+		pkg/api/lakefs.gen.go \
+		pkg/ddl/statik.go \
+		pkg/graveler/sstable/mock \
+		pkg/webui \
+	    pkg/graveler/committed/mock
 
 check-licenses: check-licenses-go-mod check-licenses-npm
 
@@ -81,19 +98,38 @@ go-mod-download: ## Download module dependencies
 	$(GOCMD) mod download
 
 go-install: go-mod-download ## Install dependencies
-	$(GOCMD) install github.com/go-swagger/go-swagger/cmd/swagger
+	$(GOCMD) install github.com/deepmap/oapi-codegen/cmd/oapi-codegen
 	$(GOCMD) install github.com/golang/mock/mockgen
 	$(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint
 	$(GOCMD) install github.com/rakyll/statik
 	$(GOCMD) install google.golang.org/protobuf/cmd/protoc-gen-go
 
 
-gen-api: go-install del-gen-api ## Run the go-swagger code generator
-	$(GOGENERATE) ./pkg/api
+client-python: api/swagger.yml  ## Generate SDK for Python client
+	$(OPENAPI_GENERATOR) generate \
+		-i /mnt/$< \
+		-g python \
+		--package-name lakefs_client \
+		--additional-properties=infoName=Treeverse,infoEmail=services@treeverse.io,packageName=lakefs_client,packageVersion=$(PACKAGE_VERSION),projectName=lakefs-client,packageUrl=https://github.com/treeverse/lakeFS/tree/master/clients/python \
+		-o /mnt/clients/python
 
-del-gen-api:
-	@rm -rf $(API_BUILD_DIR)
-	@mkdir -p $(API_BUILD_DIR)
+client-java: api/swagger.yml  ## Generate SDK for Java (and Scala) client
+	$(OPENAPI_GENERATOR) generate \
+		-i /mnt/$< \
+		-g java \
+		--invoker-package io.lakefs.clients.api \
+		--additional-properties=hideGenerationTimestamp=true,artifactVersion=$(PACKAGE_VERSION),parentArtifactId=lakefs-parent,parentGroupId=io.lakefs,parentVersion=0,groupId=io.lakefs,artifactId='api-client',artifactDescription='lakeFS OpenAPI Java client',artifactUrl=https://github.com/treeverse/lakeFS/tree/master/clients,apiPackage=io.lakefs.clients.api,modelPackage=io.lakefs.clients.api.model,mainPackage=io.lakefs.clients.api,developerEmail=services@treeverse.io,developerName='Treeverse lakeFS dev',developerOrganization='lakefs.io',developerOrganizationUrl='https://lakefs.io',licenseName=apache2,licenseUrl=http://www.apache.org/licenses/,scmConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmDeveloperConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmUrl=https://github.com/treeverse/lakeFS \
+		-o /mnt/clients/java
+
+clients: client-python client-java
+
+package-python: client-python
+	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python $(PYTHON_IMAGE) ./build-package.sh
+
+package: package-python
+
+gen-api: go-install ## Run the swagger code generator
+	$(GOGENERATE) ./pkg/api
 
 .PHONY: gen-mockgen
 gen-mockgen: go-install ## Run the generator for inline commands
@@ -103,14 +139,7 @@ gen-mockgen: go-install ## Run the generator for inline commands
 	$(GOGENERATE) ./pkg/onboard
 	$(GOGENERATE) ./pkg/actions
 
-validate-swagger: go-install ## Validate swagger.yaml
-	$(GOBINPATH)/swagger validate api/swagger.yml
-	# Run python validation as well
-	$(GOBINPATH)/swagger expand --format=json api/swagger.yml > swagger.json
-	$(SWAGGER_VALIDATOR) /mnt/swagger.json
-	@rm swagger.json
-
-LD_FLAGS := "-X github.com/treeverse/lakefs/pkg/config.Version=$(VERSION)-$(REVISION)"
+LD_FLAGS := "-X github.com/treeverse/lakefs/pkg/version.Version=$(VERSION)-$(REVISION)"
 build: gen docs ## Download dependencies and build the default binary
 	$(GOBUILD) -o $(LAKEFS_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKEFS_BINARY_NAME)
 	$(GOBUILD) -o $(LAKECTL_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKECTL_BINARY_NAME)
@@ -157,7 +186,16 @@ validate-proto: proto  ## build proto and check if diff found
 	git diff --quiet -- pkg/graveler/committed/committed.pb.go
 	git diff --quiet -- pkg/graveler/graveler.pb.go
 
-checks-validator: lint validate-fmt validate-swagger validate-proto  ## Run all validation/linting steps
+validate-client-python:
+	git diff --quiet -- clients/python/lakefs_client/api
+	git diff --quiet -- clients/python/lakefs_client/model
+	git diff --quiet -- clients/python/.openapi-generator/FILES
+
+validate-client-java:
+	git diff --quiet -- clients/java
+
+# Run all validation/linting steps
+checks-validator: lint validate-fmt validate-proto validate-client-python validate-client-java
 
 $(UI_DIR)/node_modules:
 	cd $(UI_DIR) && $(NPM) install
@@ -167,7 +205,7 @@ ui-build: $(UI_DIR)/node_modules  ## Build UI app
 	cd $(UI_DIR) && $(NPM) run build
 
 ui-bundle: ui-build go-install ## Bundle static built UI app
-	$(GOBINPATH)/statik -ns webui -p webui -dest pkg -c -f -src=$(UI_BUILD_DIR)
+	$(GOBINPATH)/statik -src=$(UI_BUILD_DIR) -dest=pkg -p=webui -ns=webui -f
 
 gen-ui: ui-bundle
 
@@ -179,8 +217,12 @@ proto: ## Build proto (Protocol Buffers) files
 	$(PROTOC) --proto_path=pkg/graveler/committed --go_out=pkg/graveler/committed --go_opt=paths=source_relative committed.proto
 	$(PROTOC) --proto_path=pkg/graveler --go_out=pkg/graveler --go_opt=paths=source_relative graveler.proto
 
+publish-scala: ## sbt publish spark client jars to nexus and s3 bucket
+	cd clients/spark && sbt assembly && sbt s3Upload && sbt publish
+	aws s3 cp --recursive --acl public-read $(CLIENT_JARS_BUCKET) $(CLIENT_JARS_BUCKET) --metadata-directive REPLACE
+
 help:  ## Show Help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 # helpers
-gen: gen-api gen-ui gen-ddl gen-mockgen
+gen: gen-api gen-ui gen-ddl gen-mockgen clients

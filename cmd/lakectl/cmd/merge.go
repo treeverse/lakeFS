@@ -1,14 +1,10 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
-	"github.com/treeverse/lakefs/pkg/catalog"
-	"github.com/treeverse/lakefs/pkg/cmdutils"
-	"github.com/treeverse/lakefs/pkg/uri"
+	"github.com/treeverse/lakefs/pkg/api"
 )
 
 const (
@@ -33,35 +29,29 @@ var mergeCmd = &cobra.Command{
 	Use:   "merge <source ref> <destination ref>",
 	Short: "merge",
 	Long:  "merge & commit changes from source branch into destination branch",
-	Args: cmdutils.ValidationChain(
-		cobra.RangeArgs(mergeCmdMinArgs, mergeCmdMaxArgs),
-		cmdutils.FuncValidator(0, uri.ValidateRefURI),
-		cmdutils.FuncValidator(1, uri.ValidateRefURI),
-	),
+	Args:  cobra.RangeArgs(mergeCmdMinArgs, mergeCmdMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		sourceRef := uri.Must(uri.Parse(args[0]))
-		destinationRef := uri.Must(uri.Parse(args[1]))
-
+		sourceRef := MustParseRefURI("source ref", args[0])
+		destinationRef := MustParseRefURI("destination ref", args[1])
+		Fmt("Source: %s\nDestination: %s\n", sourceRef.String(), destinationRef)
 		if destinationRef.Repository != sourceRef.Repository {
 			Die("both references must belong to the same repository", 1)
 		}
 
-		result, err := client.Merge(cmd.Context(), destinationRef.Repository, destinationRef.Ref, sourceRef.Ref)
-		if errors.Is(err, catalog.ErrConflictFound) {
-			_, _ = fmt.Printf("Conflicts: %d\n", result.Summary.Conflict)
+		resp, err := client.MergeIntoBranchWithResponse(cmd.Context(), destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, api.MergeIntoBranchJSONRequestBody{})
+		if resp != nil && resp.JSON409 != nil {
+			_, _ = fmt.Printf("Conflicts: %d\n", resp.JSON409.Summary.Conflict)
 			return
 		}
-		if err != nil {
-			DieErr(err)
-		}
+		DieOnResponseError(resp, err)
 
 		Write(mergeCreateTemplate, struct {
 			Merge  FromTo
-			Result *models.MergeResult
+			Result *api.MergeResult
 		}{
-			FromTo{FromRef: sourceRef.Ref, ToRef: destinationRef.Ref},
-			result,
+			Merge:  FromTo{FromRef: sourceRef.Ref, ToRef: destinationRef.Ref},
+			Result: resp.JSON200,
 		})
 	},
 }

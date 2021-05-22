@@ -2,7 +2,14 @@ package logging
 
 import (
 	"context"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"os/signal"
+	"runtime"
+	"strings"
 	"sync"
+	"syscall"
 
 	"github.com/sirupsen/logrus"
 )
@@ -11,18 +18,111 @@ type contextKey string
 
 const (
 	LogFieldsContextKey = contextKey("log_fields")
+
+	ProjectDirectoryName = "lakefs"
+	ModuleName           = "github.com/treeverse/lakefs"
 )
 
 var (
 	formatterInitOnce sync.Once
-	defaultLogger     = logrus.StandardLogger()
+	defaultLogger     = logrus.New()
 )
 
 func Level() string {
-	return logrus.GetLevel().String()
+	return defaultLogger.GetLevel().String()
 }
 
 type Fields map[string]interface{}
+
+// logCallerTrimmer is used to trim the caller paths to be relative to the project root
+func logCallerTrimmer(frame *runtime.Frame) (function string, file string) {
+	indexOfModule := strings.Index(strings.ToLower(frame.File), ProjectDirectoryName)
+	if indexOfModule != -1 {
+		file = frame.File[indexOfModule+len(ProjectDirectoryName):]
+	} else {
+		file = frame.File
+	}
+	file = fmt.Sprintf("%s:%d", strings.TrimPrefix(file, string(os.PathSeparator)), frame.Line)
+	function = strings.TrimPrefix(frame.Function, fmt.Sprintf("%s%s", ModuleName, string(os.PathSeparator)))
+	return
+}
+
+func SetLevel(level string) {
+	switch strings.ToLower(level) {
+	case "trace":
+		defaultLogger.SetLevel(logrus.TraceLevel)
+	case "debug":
+		defaultLogger.SetLevel(logrus.DebugLevel)
+	case "info":
+		defaultLogger.SetLevel(logrus.InfoLevel)
+	case "warn", "warning":
+		defaultLogger.SetLevel(logrus.WarnLevel)
+	case "error":
+		defaultLogger.SetLevel(logrus.ErrorLevel)
+	case "panic":
+		defaultLogger.SetLevel(logrus.PanicLevel)
+	case "null", "none":
+		defaultLogger.SetLevel(logrus.PanicLevel)
+		defaultLogger.SetOutput(ioutil.Discard)
+	}
+}
+
+func SetOutput(output string) {
+	if output == "" {
+		return
+	}
+	if output == "-" {
+		defaultLogger.SetOutput(os.Stdout)
+		return
+	}
+
+	handle, err := os.OpenFile(output, os.O_CREATE|os.O_WRONLY, 0755)
+	if err != nil {
+		panic(fmt.Errorf("could not open log file: %w", err))
+	}
+	defaultLogger.SetOutput(handle)
+	// setup signal handler to reopen logfile on SIGHUP
+	sigChannel := make(chan os.Signal, 1)
+	signal.Notify(sigChannel, syscall.SIGHUP)
+	go func(filename string) {
+		for {
+			<-sigChannel
+			defaultLogger.Info("SIGHUP received, rotating log file")
+			defaultLogger.SetOutput(ioutil.Discard)
+			_ = handle.Close()
+			handle, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0755)
+			if err != nil {
+				panic(fmt.Errorf("could not open log file: %w", err))
+			}
+			defaultLogger.SetOutput(handle)
+			defaultLogger.Info("log file was rotated successfully")
+		}
+	}(output)
+}
+
+func SetOutputFormat(format string) {
+	var formatter logrus.Formatter
+	switch strings.ToLower(format) {
+	case "text":
+		formatter = &logrus.TextFormatter{
+			FullTimestamp:          true,
+			DisableLevelTruncation: true,
+			PadLevelText:           true,
+			QuoteEmptyFields:       true,
+			CallerPrettyfier:       logCallerTrimmer,
+		}
+	case "json":
+		formatter = &logrus.JSONFormatter{
+			CallerPrettyfier: logCallerTrimmer,
+			PrettyPrint:      false,
+		}
+	default:
+		return // no known formatter found
+	}
+
+	// wrap it with our caller formatter
+	defaultLogger.SetFormatter(logrusCallerFormatter{formatter})
+}
 
 type Logger interface {
 	WithContext(ctx context.Context) Logger
@@ -151,6 +251,7 @@ func (lf logrusCallerFormatter) Format(e *logrus.Entry) ([]byte, error) {
 func Default() Logger {
 	// wrap formatter with our own formatter that overrides caller
 	formatterInitOnce.Do(func() {
+		defaultLogger.SetReportCaller(true)
 		defaultLogger.SetNoLock()
 		defaultLogger.Formatter = logrusCallerFormatter{defaultLogger.Formatter}
 	})

@@ -4,11 +4,11 @@ logging:
   level: NONE
   output: "-"
 
-metadata:
-  db:
-    type: badger
-    badger:
-      path: /tmp
+database:
+  connection_string: test:///dev/null
+  max_open_connections: 12
+  max_idle_connections: 13
+  connection_max_lifetime: 2s
 
 blockstore:
   type: local
@@ -17,7 +17,10 @@ blockstore:
 
 gateways:
   s3:
-    domain_name: s3.example.com
+    domain_name:
+      - s3.example.com
+      - gs3.example.com
+      - gcp.example.net
     region: us-east-1
 
 listen_address: "0.0.0.0:8005"

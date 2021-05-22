@@ -2,7 +2,7 @@
 layout: default
 title: Add Data
 description: In this section we will learn how to configure and use AWS CLI to manage data with the lakeFS Server.
-parent: Quick Start
+parent: Quickstart
 nav_order: 30
 has_children: false
 ---
@@ -33,15 +33,15 @@ In this section we'll review how to copy files into lakeFS using the AWS CLI.
    Since S3's API uses [subdomains for bucket addressing](https://aws.amazon.com/blogs/aws/amazon-s3-path-deprecation-plan-the-rest-of-the-story/){: target="_blank"}, simply using `localhost:8000` as an endpoint URL will not work.
    {: .note .note-info }
 
-1. Great, now let's copy some files. We'll write to the master branch. This is done by prefixing our path with the name of the branch we'd like to read/write from:
+1. Great, now let's copy some files. We'll write to the main branch. This is done by prefixing our path with the name of the branch we'd like to read/write from:
 
    ```bash
-   aws --endpoint-url=http://s3.local.lakefs.io:8000 --profile local s3 cp ./foo.txt s3://example/master/
+   aws --endpoint-url=http://s3.local.lakefs.io:8000 --profile local s3 cp ./foo.txt s3://example/main/
    # output:
-   # upload: ./foo.txt to s3://example/master/foo.txt
+   # upload: ./foo.txt to s3://example/main/foo.txt
    ```
 
-1. Back in the lakeFS UI, we should be able to see our file added to the master branch!
+1. Back in the lakeFS UI, we should be able to see our file added to the main branch!
 
    ![Object Added](../assets/img/object_added.png)
    

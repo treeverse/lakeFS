@@ -13,7 +13,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"github.com/go-openapi/swag"
 	gproto "github.com/golang/protobuf/proto" //nolint:staticcheck // orc lib uses old proto
 	"github.com/scritchley/orc/proto"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -71,7 +70,7 @@ func downloadRange(ctx context.Context, svc s3iface.S3API, logger logging.Logger
 	if fromByte > 0 {
 		rng = aws.String(fmt.Sprintf("bytes=%d-", fromByte))
 	}
-	logger.Debugf("start downloading %s[%s] to local file %s", key, swag.StringValue(rng), f.Name())
+	logger.Debugf("start downloading %s[%s] to local file %s", key, aws.StringValue(rng), f.Name())
 	timeoutCtx, cancelFn := context.WithTimeout(ctx, downloadTimeout)
 	defer cancelFn()
 	_, err = downloader.DownloadWithContext(timeoutCtx, f, &s3.GetObjectInput{

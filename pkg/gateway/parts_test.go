@@ -8,7 +8,7 @@ import (
 )
 
 func TestSplitParts(t *testing.T) {
-	bareDomain := "lakefs.example.com"
+	bareDomains := []string{"lakefs.example.com"}
 	cases := []struct {
 		Name           string
 		URLPath        string
@@ -126,7 +126,7 @@ func TestSplitParts(t *testing.T) {
 
 	for _, cas := range cases {
 		t.Run(cas.Name, func(t *testing.T) {
-			gotRepo, gotRef, gotPath := gateway.Parts(cas.Host, cas.URLPath, bareDomain)
+			gotRepo, gotRef, gotPath := gateway.Parts(cas.Host, cas.URLPath, bareDomains)
 			actualResult := []string{gotRepo, gotRef, gotPath}
 			if !reflect.DeepEqual(cas.ExpectedResult, actualResult) {
 				t.Fatalf("expected parts = %+v for split '%s', got %+v", cas.ExpectedResult, cas.URLPath, actualResult)

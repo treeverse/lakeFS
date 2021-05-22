@@ -4,21 +4,18 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
-	"github.com/treeverse/lakefs/pkg/cmdutils"
-	"github.com/treeverse/lakefs/pkg/uri"
+	"github.com/treeverse/lakefs/pkg/api"
 )
 
 // showCmd represents the show command
 var showCmd = &cobra.Command{
 	Use:   "show <repository uri>",
 	Short: "See detailed information about an entity by ID (commit, user, etc)",
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(1),
-		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
-	),
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		u := uri.Must(uri.Parse(args[0]))
+		u := MustParseRepoURI("repository", args[0])
+		Fmt("Repository: %s\n", u.String())
+
 		oneOf := []string{"commit"}
 		var found bool
 		var showType, identifier string
@@ -40,17 +37,17 @@ var showCmd = &cobra.Command{
 		switch showType {
 		case "commit":
 			client := getClient()
-			commit, err := client.GetCommit(cmd.Context(), u.Repository, identifier)
-			if err != nil {
-				DieErr(err)
-			}
+			resp, err := client.GetCommitWithResponse(cmd.Context(), u.Repository, identifier)
+			DieOnResponseError(resp, err)
+
+			commit := resp.JSON200
 			showMetaRangeID, _ := cmd.Flags().GetBool("show-meta-range-id")
 			commits := struct {
-				Commits         []*models.Commit
+				Commits         []*api.Commit
 				Pagination      *Pagination
 				ShowMetaRangeID bool
 			}{
-				Commits:         []*models.Commit{commit},
+				Commits:         []*api.Commit{commit},
 				ShowMetaRangeID: showMetaRangeID,
 			}
 			Write(commitsTemplate, commits)

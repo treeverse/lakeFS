@@ -10,14 +10,15 @@ import (
 	"os"
 	"time"
 
+	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/google/uuid"
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/schollz/progressbar/v3"
-	log "github.com/sirupsen/logrus"
-	"github.com/treeverse/lakefs/pkg/api"
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
-	"github.com/treeverse/lakefs/pkg/auth/model"
 	vegeta "github.com/tsenart/vegeta/v12/lib"
+
+	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/auth/model"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 type Loader struct {
@@ -41,8 +42,10 @@ type Config struct {
 }
 
 var (
-	ErrCreateClient = errors.New("failed to create lakeFS client")
-	ErrTestErrors   = errors.New("got errors during loadtest, see output for details")
+	ErrCreateClient           = errors.New("failed to create lakeFS client")
+	ErrTestErrors             = errors.New("got errors during loadtest, see output for details")
+	ErrRepositoryCreateFailed = errors.New("repository create failed")
+	ErrRepositoryDeleteFailed = errors.New("repository delete failed")
 )
 
 func NewLoader(config Config) *Loader {
@@ -73,16 +76,20 @@ func (t *Loader) Run() error {
 	_ = t.Writer.Close()
 	_ = t.Reader.Close()
 	if t.Config.RepoName == "" && !t.Config.KeepRepo {
-		err = apiClient.DeleteRepository(context.Background(), t.NewRepoName)
+		ctx := context.Background()
+		resp, err := apiClient.DeleteRepositoryWithResponse(ctx, t.NewRepoName)
 		if err != nil {
 			return err
+		}
+		if resp.HTTPResponse.StatusCode != http.StatusNoContent {
+			return fmt.Errorf("%w: %s (%d)", ErrRepositoryDeleteFailed, resp.HTTPResponse.Status, resp.HTTPResponse.StatusCode)
 		}
 	}
 	for err := range errs {
 		if errors.Is(err, io.ErrClosedPipe) {
 			continue
 		}
-		log.Errorf("error during request pipeline: %s", err)
+		logging.Default().WithError(err).Error("error during request pipeline")
 		return err
 	}
 	err = printResults(t.Metrics, t.TotalMetrics)
@@ -95,29 +102,42 @@ func (t *Loader) Run() error {
 	return nil
 }
 
-func (t *Loader) createRepo(apiClient api.Client) (string, error) {
+func (t *Loader) createRepo(apiClient api.ClientWithResponsesInterface) (string, error) {
 	if t.Config.RepoName != "" {
 		// using an existing repo, no need to create one
 		return t.Config.RepoName, nil
 	}
 	t.NewRepoName = uuid.New().String()
-	err := apiClient.CreateRepository(context.Background(), &models.RepositoryCreation{
-		DefaultBranch:    "master",
-		Name:             &t.NewRepoName,
-		StorageNamespace: &t.Config.StorageNamespace,
+	ctx := context.Background()
+	resp, err := apiClient.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
+		DefaultBranch:    api.StringPtr("main"),
+		Name:             t.NewRepoName,
+		StorageNamespace: t.Config.StorageNamespace,
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to create lakeFS repository: %w", err)
+		return "", fmt.Errorf("failed to create lakeFS repository '%s' (%s): %w", t.NewRepoName, t.Config.StorageNamespace, err)
+	}
+	if resp.HTTPResponse.StatusCode != http.StatusCreated {
+		return "", fmt.Errorf("%w: %s (%d)", ErrRepositoryCreateFailed, resp.HTTPResponse.Status, resp.HTTPResponse.StatusCode)
 	}
 	return t.NewRepoName, nil
 }
 
-func (t *Loader) getClient() (apiClient api.Client, err error) {
+func (t *Loader) getClient() (api.ClientWithResponsesInterface, error) {
 	if t.Config.RepoName != "" {
 		// using an existing repo, no need to create a client
 		return nil, nil
 	}
-	apiClient, err = api.NewClient(t.Config.ServerAddress, t.Config.Credentials.AccessKeyID, t.Config.Credentials.AccessSecretKey)
+	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(t.Config.Credentials.AccessKeyID, t.Config.Credentials.SecretAccessKey)
+	if err != nil {
+		return nil, err
+	}
+
+	serverEndpoint := t.Config.ServerAddress + api.BaseURL
+	apiClient, err := api.NewClientWithResponses(
+		serverEndpoint,
+		api.WithRequestEditorFn(basicAuthProvider.Intercept),
+	)
 	if err != nil {
 		return nil, ErrCreateClient
 	}
@@ -134,7 +154,7 @@ func (t *Loader) doAttack() (hasErrors bool) {
 	for res := range attacker.Attack(targeter, rate, t.Config.Duration, "lakeFS loadtest test") {
 		typ := GetRequestType(*res)
 		if len(res.Error) > 0 {
-			log.Debugf("Error in request type %s, error: %s, status: %d", typ, res.Error, res.Code)
+			logging.Default().Debugf("Error in request type %s, error: %s, status: %d", typ, res.Error, res.Code)
 			hasErrors = true
 		}
 		typeMetrics := t.Metrics[typ]
@@ -200,5 +220,5 @@ func (t *Loader) streamRequests(in <-chan vegeta.Target) <-chan error {
 }
 
 func getAuth(credentials *model.Credential) string {
-	return base64.StdEncoding.EncodeToString([]byte(credentials.AccessKeyID + ":" + credentials.AccessSecretKey))
+	return base64.StdEncoding.EncodeToString([]byte(credentials.AccessKeyID + ":" + credentials.SecretAccessKey))
 }

@@ -1,13 +1,12 @@
 package db
 
 import (
-	"github.com/treeverse/lakefs/pkg/logging"
-
 	"time"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgproto3/v2"
 	"github.com/jackc/pgx/v4"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 // LoggedRows is a pgx.Rows that wraps and traces another pgx.Rows.

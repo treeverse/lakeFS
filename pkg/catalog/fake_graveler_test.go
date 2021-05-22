@@ -71,7 +71,7 @@ func (g *FakeGraveler) Get(_ context.Context, repositoryID graveler.RepositoryID
 	return v, nil
 }
 
-func (g *FakeGraveler) Set(_ context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, key graveler.Key, value graveler.Value) error {
+func (g *FakeGraveler) Set(_ context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, key graveler.Key, value graveler.Value, _ ...graveler.WriteConditionOption) error {
 	if g.Err != nil {
 		return g.Err
 	}
@@ -242,6 +242,10 @@ func (g *FakeGraveler) AddCommitNoLock(_ context.Context, _ graveler.RepositoryI
 }
 
 func (g *FakeGraveler) WriteMetaRange(_ context.Context, _ graveler.RepositoryID, _ graveler.ValueIterator) (*graveler.MetaRangeID, error) {
+	panic("implement me")
+}
+
+func (g *FakeGraveler) GetStagingToken(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID) (*graveler.StagingToken, error) {
 	panic("implement me")
 }
 

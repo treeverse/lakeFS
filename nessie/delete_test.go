@@ -1,29 +1,23 @@
 package nessie
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"strings"
+	"net/http"
 	"testing"
 
-	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/commits"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/objects"
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
+	"github.com/treeverse/lakefs/pkg/api"
 )
 
 func found(ctx context.Context, repo, ref, path string) (bool, error) {
-	var b bytes.Buffer
-	res, err := client.Objects.GetObject(objects.NewGetObjectParamsWithContext(ctx).WithRepository(repo).WithRef(masterBranch).WithPath(path), nil, &b)
-
-	if res != nil {
+	res, err := client.GetObjectWithResponse(ctx, repo, ref, &api.GetObjectParams{Path: path})
+	if err == nil && res.HTTPResponse.StatusCode == http.StatusOK {
 		return true, nil
 	}
 	// err is not really an objects.GetObjectNotFound, scan for its message
-	if strings.Contains(err.Error(), "getObjectNotFound") {
+	if res != nil && res.HTTPResponse.StatusCode == http.StatusNotFound {
 		return false, nil
 	}
 	return false, fmt.Errorf("get object to check if found: %w", err)
@@ -33,16 +27,17 @@ func TestDeleteStaging(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	objPath := "1.txt"
 
-	_, _ = uploadFileRandomData(ctx, t, repo, masterBranch, objPath)
+	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, objPath, false)
 
-	f, err := found(ctx, repo, masterBranch, objPath)
+	f, err := found(ctx, repo, mainBranch, objPath)
 	assert.NoError(t, err)
 	assert.True(t, f, "uploaded object found")
 
-	_, err = client.Objects.DeleteObject(objects.NewDeleteObjectParamsWithContext(ctx).WithRepository(repo).WithBranch(masterBranch).WithPath(objPath), nil)
+	resp, err := client.DeleteObjectWithResponse(ctx, repo, mainBranch, &api.DeleteObjectParams{Path: objPath})
 	require.NoError(t, err, "failed to delete object")
+	require.Equal(t, http.StatusNoContent, resp.StatusCode())
 
-	f, err = found(ctx, repo, masterBranch, objPath)
+	f, err = found(ctx, repo, mainBranch, objPath)
 	assert.NoError(t, err)
 	assert.False(t, f, "deleted object found")
 }
@@ -51,21 +46,21 @@ func TestDeleteCommitted(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	objPath := "1.txt"
 
-	_, _ = uploadFileRandomData(ctx, t, repo, masterBranch, objPath)
+	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, objPath, false)
 
-	f, err := found(ctx, repo, masterBranch, objPath)
+	f, err := found(ctx, repo, mainBranch, objPath)
 	assert.NoError(t, err)
 	assert.True(t, f, "uploaded object found")
 
-	_, err = client.Commits.Commit(commits.NewCommitParamsWithContext(ctx).WithRepository(repo).WithBranch(masterBranch).WithCommit(&models.CommitCreation{
-		Message: swag.String("nessie:singleCommit"),
-	}), nil)
+	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, api.CommitJSONRequestBody{Message: "nessie:singleCommit"})
 	require.NoError(t, err, "commit changes")
+	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
 
-	_, err = client.Objects.DeleteObject(objects.NewDeleteObjectParamsWithContext(ctx).WithRepository(repo).WithBranch(masterBranch).WithPath(objPath), nil)
+	getResp, err := client.DeleteObjectWithResponse(ctx, repo, mainBranch, &api.DeleteObjectParams{Path: objPath})
 	require.NoError(t, err, "failed to delete object")
+	require.Equal(t, http.StatusNoContent, getResp.StatusCode())
 
-	f, err = found(ctx, repo, masterBranch, objPath)
+	f, err = found(ctx, repo, mainBranch, objPath)
 	assert.NoError(t, err)
 	assert.False(t, f, "deleted object found")
 }
@@ -74,26 +69,29 @@ func TestCommitDeleteCommitted(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	objPath := "1.txt"
 
-	_, _ = uploadFileRandomData(ctx, t, repo, masterBranch, objPath)
+	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, objPath, false)
 
-	f, err := found(ctx, repo, masterBranch, objPath)
+	f, err := found(ctx, repo, mainBranch, objPath)
 	assert.NoError(t, err)
 	assert.True(t, f, "uploaded object found")
 
-	_, err = client.Commits.Commit(commits.NewCommitParamsWithContext(ctx).WithRepository(repo).WithBranch(masterBranch).WithCommit(&models.CommitCreation{
-		Message: swag.String("nessie:singleCommit"),
-	}), nil)
+	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, api.CommitJSONRequestBody{
+		Message: "nessie:singleCommit",
+	})
 	require.NoError(t, err, "commit new file")
+	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
 
-	_, err = client.Objects.DeleteObject(objects.NewDeleteObjectParamsWithContext(ctx).WithRepository(repo).WithBranch(masterBranch).WithPath(objPath), nil)
+	deleteResp, err := client.DeleteObjectWithResponse(ctx, repo, mainBranch, &api.DeleteObjectParams{Path: objPath})
 	require.NoError(t, err, "failed to delete object")
+	require.Equal(t, http.StatusNoContent, deleteResp.StatusCode())
 
-	_, err = client.Commits.Commit(commits.NewCommitParamsWithContext(ctx).WithRepository(repo).WithBranch(masterBranch).WithCommit(&models.CommitCreation{
-		Message: swag.String("nessie:deleteCommit"),
-	}), nil)
-	require.NoError(t, err, "commit delet file")
+	commitResp, err = client.CommitWithResponse(ctx, repo, mainBranch, api.CommitJSONRequestBody{
+		Message: "nessie:deleteCommit",
+	})
+	require.NoError(t, err, "commit delete file")
+	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
 
-	f, err = found(ctx, repo, masterBranch, objPath)
+	f, err = found(ctx, repo, mainBranch, objPath)
 	assert.NoError(t, err)
 	assert.False(t, f, "deleted object found")
 }

@@ -1,11 +1,8 @@
 package cmd
 
 import (
-	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
-	"github.com/treeverse/lakefs/pkg/cmdutils"
-	"github.com/treeverse/lakefs/pkg/uri"
+	"github.com/treeverse/lakefs/pkg/api"
 )
 
 const actionsRunsListTemplate = `{{.ActionsRunsTable | table -}}
@@ -17,26 +14,19 @@ var runsListCmd = &cobra.Command{
 	Short:   "List runs",
 	Long:    `List all runs on a repository optional filter by branch or commit`,
 	Example: "lakectl actions runs list lakefs://<repository> [--branch <branch>] [--commit <commit_id>]",
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(1),
-		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
-	),
+	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		amount, _ := cmd.Flags().GetInt("amount")
-		after, _ := cmd.Flags().GetString("after")
-		commit, _ := cmd.Flags().GetString("commit")
-		branch, _ := cmd.Flags().GetString("branch")
-
-		u := uri.Must(uri.Parse(args[0]))
+		amount := MustInt(cmd.Flags().GetInt("amount"))
+		after := MustString(cmd.Flags().GetString("after"))
+		commit := MustString(cmd.Flags().GetString("commit"))
+		branch := MustString(cmd.Flags().GetString("branch"))
+		u := MustParseRepoURI("repository", args[0])
 		if commit != "" && branch != "" {
 			Die("Can't specify 'commit' and 'branch'", 1)
 		}
 
 		client := getClient()
 		ctx := cmd.Context()
-		var err error
-		var results []*models.ActionRun
-		var pagination *models.Pagination
 
 		// list runs with optional branch filter
 		var optionalBranch *string
@@ -48,24 +38,29 @@ var runsListCmd = &cobra.Command{
 			optionalCommit = &commit
 		}
 
-		results, pagination, err = client.ListRunResults(ctx, u.Repository, optionalBranch, optionalCommit, after, amount)
-		if err != nil {
-			DieErr(err)
-		}
+		resp, err := client.ListRepositoryRunsWithResponse(ctx, u.Repository, &api.ListRepositoryRunsParams{
+			After:  api.PaginationAfterPtr(after),
+			Amount: api.PaginationAmountPtr(amount),
+			Branch: optionalBranch,
+			Commit: optionalCommit,
+		})
+		DieOnResponseError(resp, err)
 
+		results := resp.JSON200.Results
 		rows := make([][]interface{}, len(results))
 		for i, row := range results {
 			rows[i] = []interface{}{
-				swag.StringValue(row.RunID),
+				row.RunId,
 				row.EventType,
 				row.StartTime,
 				row.EndTime,
-				swag.StringValue(row.Branch),
-				swag.StringValue(row.CommitID),
+				row.Branch,
+				row.CommitId,
 				row.Status,
 			}
 		}
 
+		pagination := resp.JSON200.Pagination
 		data := struct {
 			ActionsRunsTable *Table
 			Pagination       *Pagination
@@ -83,7 +78,7 @@ var runsListCmd = &cobra.Command{
 				Rows: rows,
 			},
 		}
-		if pagination != nil && swag.BoolValue(pagination.HasMore) {
+		if pagination.HasMore {
 			data.Pagination = &Pagination{
 				Amount:  amount,
 				HasNext: true,
@@ -98,7 +93,7 @@ var runsListCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	actionsRunsCmd.AddCommand(runsListCmd)
-	runsListCmd.Flags().Int("amount", -1, "how many results to return, or '-1' for default (used for pagination)")
+	runsListCmd.Flags().Int("amount", defaultAmountArgumentValue, "number of results to return")
 	runsListCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 	runsListCmd.Flags().String("branch", "", "show results for specific branch")
 	runsListCmd.Flags().String("commit", "", "show results for specific commit ID")

@@ -1,79 +1,77 @@
 package cmd
 
 import (
-	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
-	"github.com/treeverse/lakefs/pkg/cmdutils"
-	"github.com/treeverse/lakefs/pkg/uri"
+	"github.com/treeverse/lakefs/pkg/api"
 )
 
-const commitsTemplate = `
-{{ range $val := .Commits }}
-ID:            {{ $val.ID|yellow }}{{if $val.Committer }}
+const commitsTemplate = `{{ range $val := .Commits }}
+ID:            {{ $val.Id|yellow }}{{if $val.Committer }}
 Author:        {{ $val.Committer }}{{end}}
 Date:          {{ $val.CreationDate|date }}
-{{ if $.ShowMetaRangeID }}Meta Range ID: {{ $val.MetaRangeID }}
+{{ if $.ShowMetaRangeID }}Meta Range ID: {{ $val.MetaRangeId }}
 {{ end -}}
 {{ if gt ($val.Parents|len) 1 -}}
 Merge:         {{ $val.Parents|join ", "|bold }}
 {{ end }}
 	{{ $val.Message }}
 	
-	{{ range $key, $value := $val.Metadata }}
+	{{ range $key, $value := $val.Metadata.AdditionalProperties }}
 		{{ $key }} = {{ $value }}
 	{{ end -}}
-{{ end }}
-{{.Pagination | paginate }}
-`
+{{ end }}{{ if .Pagination  }}
+{{.Pagination | paginate }}{{ end }}`
 
 // logCmd represents the log command
 var logCmd = &cobra.Command{
 	Use:   "log <branch uri>",
 	Short: "show log of commits for the given branch",
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(1),
-		cmdutils.FuncValidator(0, uri.ValidateRefURI),
-	),
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		amount, err := cmd.Flags().GetInt("amount")
-		if err != nil {
-			DieErr(err)
-		}
-		after, err := cmd.Flags().GetString("after")
-		if err != nil {
-			DieErr(err)
-		}
+		amount := MustInt(cmd.Flags().GetInt("amount"))
+		after := MustString(cmd.Flags().GetString("after"))
+		pagination := api.Pagination{HasMore: true}
 		showMetaRangeID, _ := cmd.Flags().GetBool("show-meta-range-id")
 		client := getClient()
-		branchURI := uri.Must(uri.Parse(args[0]))
-		commits, pagination, err := client.GetCommitLog(cmd.Context(), branchURI.Repository, branchURI.Ref, after, amount)
-		if err != nil {
-			DieErr(err)
+		branchURI := MustParseRefURI("branch", args[0])
+		amountForPagination := amount
+		if amountForPagination <= 0 {
+			amountForPagination = internalPageSize
 		}
-		ctx := struct {
-			Commits         []*models.Commit
-			Pagination      *Pagination
-			ShowMetaRangeID bool
-		}{
-			Commits:         commits,
-			ShowMetaRangeID: showMetaRangeID,
-		}
-		if pagination != nil && swag.BoolValue(pagination.HasMore) {
-			ctx.Pagination = &Pagination{
-				Amount:  amount,
-				HasNext: true,
-				After:   pagination.NextOffset,
+		for pagination.HasMore {
+			res, err := client.LogCommitsWithResponse(cmd.Context(), branchURI.Repository, branchURI.Ref, &api.LogCommitsParams{
+				After:  api.PaginationAfterPtr(after),
+				Amount: api.PaginationAmountPtr(amountForPagination),
+			})
+			DieOnResponseError(res, err)
+			pagination = res.JSON200.Pagination
+			after = pagination.NextOffset
+			data := struct {
+				Commits         []api.Commit
+				Pagination      *Pagination
+				ShowMetaRangeID bool
+			}{
+				Commits:         res.JSON200.Results,
+				ShowMetaRangeID: showMetaRangeID,
+				Pagination: &Pagination{
+					Amount:  amount,
+					HasNext: pagination.HasMore,
+					After:   pagination.NextOffset,
+				},
+			}
+			Write(commitsTemplate, data)
+			if amount != 0 {
+				// user request only one page
+				break
 			}
 		}
-		Write(commitsTemplate, ctx)
 	},
 }
 
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(logCmd)
-	logCmd.Flags().Int("amount", -1, "how many results to return, or '-1' for default (used for pagination)")
+	logCmd.Flags().Int("amount", 0, "number of results to return. By default, all results are returned.")
 	logCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 	logCmd.Flags().Bool("show-meta-range-id", false, "also show meta range ID")
 }

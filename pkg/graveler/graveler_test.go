@@ -214,7 +214,7 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 	}{
 		{
 			name: "no changes",
-			r: graveler.NewGraveler(branchLocker, &testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}}), Err: graveler.ErrNotFound},
+			r: graveler.NewGraveler(branchLocker, &testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
 				&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{})},
 				&testutil.RefsFake{Branch: &graveler.Branch{CommitID: "c1"}, Commits: map[graveler.CommitID]*graveler.Commit{"c1": {MetaRangeID: "mri1"}}},
 			),
@@ -223,7 +223,7 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 		},
 		{
 			name: "added one",
-			r: graveler.NewGraveler(branchLocker, &testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{}), Err: graveler.ErrNotFound},
+			r: graveler.NewGraveler(branchLocker, &testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{})},
 				&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
 				&testutil.RefsFake{Branch: &graveler.Branch{CommitID: "c1"}, Commits: map[graveler.CommitID]*graveler.Commit{"c1": {MetaRangeID: "mri1"}}},
 			),
@@ -236,15 +236,15 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 		},
 		{
 			name: "changed one",
-			r: graveler.NewGraveler(branchLocker, &testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
-				&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
+			r: graveler.NewGraveler(branchLocker, &testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{Identity: []byte("one")}}}), ValuesByKey: map[string]*graveler.Value{"foo/one": {Identity: []byte("one")}}},
+				&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{Identity: []byte("one_changed")}}})},
 				&testutil.RefsFake{Branch: &graveler.Branch{CommitID: "c1"}, Commits: map[graveler.CommitID]*graveler.Commit{"c1": {MetaRangeID: "mri1"}}},
 			),
 			amount: 10,
 			expectedDiff: testutil.NewDiffIter([]graveler.Diff{{
 				Key:   graveler.Key("foo/one"),
 				Type:  graveler.DiffTypeChanged,
-				Value: &graveler.Value{},
+				Value: &graveler.Value{Identity: []byte("one_changed")},
 			}}),
 		},
 		{
@@ -600,18 +600,25 @@ func TestGraveler_PreMergeHook(t *testing.T) {
 	conn, _ := tu.GetDB(t, databaseURI)
 	branchLocker := ref.NewBranchLocker(conn)
 	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
-	const expectedCommitID = graveler.CommitID("expectedCommitId")
+	const expectedCommitID = graveler.CommitID("expectedCommitID")
+	const destinationCommitID = graveler.CommitID("destinationCommitID")
+	const mergeDestination = graveler.BranchID("destinationID")
 	committedManager := &testutil.CommittedFake{MetaRangeID: expectedRangeID}
 	stagingManager := &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(nil)}
 	refManager := &testutil.RefsFake{
 		CommitID: expectedCommitID,
-		Branch:   &graveler.Branch{CommitID: expectedCommitID},
-		Commits:  map[graveler.CommitID]*graveler.Commit{expectedCommitID: {MetaRangeID: expectedRangeID}},
+		Branch:   &graveler.Branch{CommitID: destinationCommitID},
+		RevParseRes: map[graveler.Ref]graveler.Reference{
+			graveler.Ref(mergeDestination): testutil.NewFakeReference(graveler.ReferenceTypeBranch, mergeDestination, destinationCommitID),
+		},
+		Commits: map[graveler.CommitID]*graveler.Commit{
+			expectedCommitID:    {MetaRangeID: expectedRangeID},
+			destinationCommitID: {MetaRangeID: expectedRangeID},
+		},
 	}
 	// tests
 	errSomethingBad := errors.New("first error")
 	const mergeRepositoryID = "repoID"
-	const mergeDestination = "destinationID"
 	const commitCommitter = "committer"
 	const mergeMessage = "message"
 	mergeMetadata := graveler.Metadata{"key1": "val1"}
@@ -658,6 +665,16 @@ func TestGraveler_PreMergeHook(t *testing.T) {
 			var hookErr *graveler.HookAbortError
 			if err != nil && !errors.As(err, &hookErr) {
 				t.Fatalf("Merge err=%v, pre-merge error expected HookAbortError", err)
+			}
+			if refManager.AddedCommit.MetaRangeID == "" {
+				t.Fatalf("Empty MetaRangeID, commit was successful - %+v", refManager.AddedCommit)
+			}
+			parents := refManager.AddedCommit.Parents
+			if len(parents) != 2 {
+				t.Fatalf("Merge commit should have 2 parents (%v)", parents)
+			}
+			if parents[0] != destinationCommitID || parents[1] != expectedCommitID {
+				t.Fatalf("Wrong CommitParents order, expected: (%s, %s), got: (%s, %s)", destinationCommitID, expectedCommitID, parents[0], parents[1])
 			}
 			// verify that calls made until the first error
 			if tt.hook != h.Called {

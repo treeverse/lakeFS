@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>io.lakefs</groupId>
+    <artifactId>hadoopfs</artifactId>
+    <packaging>jar</packaging>
+    <name>hadoopfs</name>
+    <version>0.1.0</version>
+    <url>https://github.com/treeverse/lakeFS/tree/master/clients/hadoopfs</url>
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.2.4</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>module-info.class</exclude>
+                                        <exclude>META-INF/maven/**</exclude>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+			    <relocations>
+			      <relocation>
+				  <pattern>org.apache.httpcomponents</pattern>
+				  <shadedPattern>io.lakefs.shaded.apache.httpcomponents</shadedPattern>
+			      </relocation>
+			      <relocation>
+				<pattern>okio</pattern>
+				<shadedPattern>io.lakefs.shaded.okio</shadedPattern>
+			      </relocation>
+			      <relocation>
+				<pattern>okhttp3</pattern>
+				<shadedPattern>io.lakefs.shaded.okhttp3</shadedPattern>
+			      </relocation>
+			    </relocations>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.lakefs</groupId>
+            <artifactId>api-client</artifactId>
+            <version>0.40.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-common</artifactId>
+            <version>2.7.7</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-aws</artifactId>
+            <version>2.7.7</version>
+        </dependency>
+
+	<dependency>
+	  <groupId>com.amazonaws</groupId>
+	  <artifactId>aws-java-sdk</artifactId>
+	  <version>1.7.4</version><!-- should match hadoop-aws version(!) -->
+	</dependency>
+	<dependency>		<!-- needed for aws-java-sdk in tests(!) -->
+	  <groupId>org.apache.httpcomponents</groupId>
+	  <artifactId>httpclient</artifactId>
+	  <version>4.2</version>
+	</dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.13.1</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <version>1.10.19</version>
+	    <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

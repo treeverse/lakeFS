@@ -10,7 +10,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
 )
 
-const DefaultBranchID = graveler.BranchID("master")
+const DefaultBranchID = graveler.BranchID("main")
 
 type AppliedData struct {
 	Values      graveler.ValueIterator
@@ -140,7 +140,7 @@ func (s *StagingFake) Get(context.Context, graveler.StagingToken, graveler.Key) 
 	return s.Value, nil
 }
 
-func (s *StagingFake) Set(_ context.Context, _ graveler.StagingToken, key graveler.Key, value *graveler.Value) error {
+func (s *StagingFake) Set(_ context.Context, _ graveler.StagingToken, key graveler.Key, value *graveler.Value, _ bool) error {
 	if s.SetErr != nil {
 		return s.SetErr
 	}
@@ -191,6 +191,7 @@ type AddedCommitData struct {
 type RefsFake struct {
 	ListRepositoriesRes graveler.RepositoryIterator
 	ListBranchesRes     graveler.BranchIterator
+	RevParseRes         map[graveler.Ref]graveler.Reference
 	ListTagsRes         graveler.TagIterator
 	CommitIter          graveler.CommitIterator
 	RefType             graveler.ReferenceType
@@ -211,7 +212,13 @@ func (m *RefsFake) ListCommits(ctx context.Context, repositoryID graveler.Reposi
 	return nil, nil
 }
 
-func (m *RefsFake) RevParse(context.Context, graveler.RepositoryID, graveler.Ref) (graveler.Reference, error) {
+func (m *RefsFake) RevParse(ctx context.Context, repoID graveler.RepositoryID, ref graveler.Ref) (graveler.Reference, error) {
+	if m.RevParseRes != nil {
+		if res, ok := m.RevParseRes[ref]; ok {
+			return res, nil
+		}
+	}
+
 	var branch graveler.BranchID
 	if m.RefType == graveler.ReferenceTypeBranch {
 		branch = DefaultBranchID
@@ -547,5 +554,127 @@ func (i *FakeIterator) Err() error {
 }
 
 func (i *FakeIterator) Close() {
+	i.closed = true
+}
+
+type DRV struct {
+	R *committed.RangeDiff
+	V *graveler.Diff
+}
+
+type FakeDiffIterator struct {
+	DRV          []DRV
+	idx          int
+	rangeIdx     int
+	err          error
+	closed       bool
+	readsByRange []int
+}
+
+func NewFakeDiffIterator() *FakeDiffIterator {
+	// Start with an empty record so the first `Next()` can skip it.
+	return &FakeDiffIterator{DRV: make([]DRV, 1), idx: 0, rangeIdx: -1}
+}
+
+// ReadsByRange returns the number of Next operations performed inside each range
+func (i *FakeDiffIterator) ReadsByRange() []int {
+	return i.readsByRange
+}
+
+func (i *FakeDiffIterator) nextKey() []byte {
+	for j := 1; len(i.DRV) > i.idx+j; j++ {
+		if i.DRV[i.idx+j].V == nil {
+			if i.DRV[i.idx+j].R == nil {
+				continue // in case we added an empty range header
+			}
+			return i.DRV[i.idx+j].R.Range.MinKey
+		}
+		return i.DRV[i.idx+j].V.Key
+	}
+	return nil
+}
+
+func (i *FakeDiffIterator) SetErr(err error) {
+	i.err = err
+}
+
+func (i *FakeDiffIterator) AddRange(p *committed.RangeDiff) *FakeDiffIterator {
+	i.DRV = append(i.DRV, DRV{R: p})
+	i.readsByRange = append(i.readsByRange, 0)
+	return i
+}
+
+func (i *FakeDiffIterator) AddValueRecords(vs ...*graveler.Diff) *FakeDiffIterator {
+	if len(i.DRV) == 0 {
+		panic(fmt.Sprintf("cannot add ValueRecords %+v with no range", vs))
+	}
+	rng := i.DRV[len(i.DRV)-1].R
+	for _, v := range vs {
+		i.DRV = append(i.DRV, DRV{R: rng, V: v})
+	}
+	return i
+}
+
+func (i *FakeDiffIterator) Next() bool {
+	if i.err != nil || i.closed {
+		return false
+	}
+	if len(i.DRV) <= i.idx+1 {
+		return false
+	}
+	i.idx++
+	if i.DRV[i.idx].V == nil {
+		i.rangeIdx++
+		if i.DRV[i.idx].R == nil {
+			return i.Next() // in case we added an empty range header
+		}
+	} else if i.DRV[i.idx].R != nil {
+		i.readsByRange[i.rangeIdx]++
+	}
+	return true
+}
+
+func (i *FakeDiffIterator) NextRange() bool {
+	for {
+		if len(i.DRV) <= i.idx+1 {
+			return false
+		}
+		i.idx++
+		if i.DRV[i.idx].V == nil {
+			i.rangeIdx++
+			if i.DRV[i.idx].R == nil {
+				return i.Next() // in case we added an empty range header
+			}
+			return true
+		}
+	}
+}
+
+func (i *FakeDiffIterator) Value() (*graveler.Diff, *committed.RangeDiff) {
+	if i.closed {
+		return nil, nil
+	}
+	return i.DRV[i.idx].V, i.DRV[i.idx].R
+}
+
+func (i *FakeDiffIterator) SeekGE(id graveler.Key) {
+	i.idx = 0
+	i.rangeIdx = -1
+	for {
+		nextKey := i.nextKey()
+		if nextKey == nil || bytes.Compare(nextKey, id) >= 0 {
+			return
+		}
+		if !i.Next() {
+			return
+		}
+	}
+}
+
+func (i *FakeDiffIterator) Err() error {
+	return i.err
+}
+
+func (i *FakeDiffIterator) Close() {
 	i.closed = true
 }

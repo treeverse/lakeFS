@@ -8,10 +8,10 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
-	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
+	"github.com/treeverse/lakefs/pkg/version"
 )
 
 // setupCmd initial lakeFS system setup - build database, load initial data and create first superuser
@@ -52,7 +52,7 @@ var setupCmd = &cobra.Command{
 			dbPool,
 			crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
 			cfg.GetAuthCacheConfig())
-		metadataManager := auth.NewDBMetadataManager(config.Version, dbPool)
+		metadataManager := auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
 		cloudMetadataProvider := stats.BuildMetadataProvider(logging.Default(), cfg)
 		metadata := stats.NewMetadata(ctx, logging.Default(), cfg.GetBlockstoreType(), metadataManager, cloudMetadataProvider)
 
@@ -69,7 +69,7 @@ var setupCmd = &cobra.Command{
 		stats.CollectEvent("global", "init")
 
 		fmt.Printf("credentials:\n  access_key_id: %s\n  secret_access_key: %s\n",
-			credentials.AccessKeyID, credentials.AccessSecretKey)
+			credentials.AccessKeyID, credentials.SecretAccessKey)
 
 		cancelFn()
 		<-stats.Done()

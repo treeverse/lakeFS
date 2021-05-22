@@ -2,20 +2,13 @@ package nessie
 
 import (
 	"bytes"
-	"errors"
-	"fmt"
-	"strings"
+	"net/http"
 	"testing"
 	"text/template"
 	"time"
 
-	"github.com/go-openapi/runtime"
-	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/branches"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/commits"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/objects"
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
+	"github.com/treeverse/lakefs/pkg/api"
 )
 
 var actionPreCommitTmpl = template.Must(template.New("action-pre-commit").Parse(
@@ -49,14 +42,13 @@ func hookFailToCommit(t *testing.T, path string) {
 	const branch = "feature-1"
 
 	logger.WithField("branch", branch).Info("Create branch")
-	ref, err := client.Branches.CreateBranch(
-		branches.NewCreateBranchParamsWithContext(ctx).
-			WithRepository(repo).
-			WithBranch(&models.BranchCreation{
-				Name:   swag.String(branch),
-				Source: swag.String(masterBranch),
-			}), nil)
+	resp, err := client.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{
+		Name:   branch,
+		Source: mainBranch,
+	})
 	require.NoError(t, err, "failed to create branch")
+	require.Equal(t, http.StatusCreated, resp.StatusCode())
+	ref := string(resp.Body)
 	logger.WithField("branchRef", ref).Info("Branch created")
 	logger.WithField("branch", branch).Info("Upload initial content")
 
@@ -66,7 +58,7 @@ func hookFailToCommit(t *testing.T, path string) {
 		Path    string
 		Timeout string
 	}{
-		URL:     fmt.Sprintf("http://nessie:%d", server.port),
+		URL:     server.BaseURL(),
 		Path:    path,
 		Timeout: hooksTimeout.String(),
 	}
@@ -77,24 +69,15 @@ func hookFailToCommit(t *testing.T, path string) {
 	require.NoError(t, err)
 	preCommitAction := doc.String()
 
-	_, err = client.Objects.UploadObject(
-		objects.NewUploadObjectParamsWithContext(ctx).
-			WithRepository(repo).
-			WithBranch(branch).
-			WithPath("_lakefs_actions/testing_pre_commit").
-			WithContent(runtime.NamedReader("content", strings.NewReader(preCommitAction))), nil)
+	uploadResp, err := uploadContent(ctx, repo, branch, "_lakefs_actions/testing_pre_commit", preCommitAction)
 	require.NoError(t, err)
+	require.Equal(t, http.StatusCreated, uploadResp.StatusCode())
 	logger.WithField("branch", branch).Info("Commit initial content")
 
-	stats, err := client.Commits.Commit(
-		commits.NewCommitParamsWithContext(ctx).
-			WithRepository(repo).
-			WithBranch(branch).
-			WithCommit(&models.CommitCreation{Message: swag.String("Initial content")}),
-		nil)
-	require.Error(t, err, "commit should fail due to webhook")
-	require.Nil(t, stats)
-
-	var preconditionFailed *commits.CommitPreconditionFailed
-	require.True(t, errors.As(err, &preconditionFailed))
+	commitResp, err := client.CommitWithResponse(ctx, repo, branch, api.CommitJSONRequestBody{
+		Message: "Initial content",
+	})
+	require.NoError(t, err)
+	require.Equal(t, http.StatusPreconditionFailed, commitResp.StatusCode())
+	require.Nil(t, commitResp.JSON201)
 }

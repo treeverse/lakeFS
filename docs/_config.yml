@@ -20,7 +20,7 @@ aux_links:
   'Github':
     - 'https://github.com/treeverse/lakeFS'
   'Blog':
-    - 'https://www.lakefs.io/blog'
+    - 'https://lakefs.io/blog/'
 
 buttons:
   'Get Started':
@@ -41,7 +41,7 @@ footer_links:
   'Github':
     - 'https://github.com/treeverse/lakeFS'
   'Blog':
-    - 'https://www.lakefs.io/blog'
+    - 'https://lakefs.io/blog/'
   'Contact':
     - 'https://lakefs.io/contact-us/'
 
@@ -53,7 +53,7 @@ footer_social:
   'twitter':
     - 'https://twitter.com/lakeFS'
   'slack':
-    - 'https://join.slack.com/t/lakefs/shared_invite/zt-g86mkroy-186GzaxR4xOar1i1Us0bzw'
+    - 'https://lakefs.io/slack'
 
 footer_bottom_links:
   'Terms of use':
@@ -66,3 +66,5 @@ image: '/assets/img/shared-image.png'
 plugins:
   - jekyll-redirect-from
   - jekyll-seo-tag
+
+exclude: ["deploy/includes"]

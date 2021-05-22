@@ -99,7 +99,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 	}
 	ch := trimQuotes(*etag)
 	checksum := strings.Split(ch, "-")[0]
-	err = o.finishUpload(req, checksum, objName, size)
+	err = o.finishUpload(req, checksum, objName, size, true)
 	if err != nil {
 		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return

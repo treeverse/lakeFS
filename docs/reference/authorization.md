@@ -3,7 +3,7 @@ layout: default
 title: Authentication & Authorization
 description: This section covers authorization (using AWS IAM) and Authentication of your lakeFS server. 
 parent: Reference
-nav_order: 4
+nav_order: 60
 has_children: false
 ---
 
@@ -25,7 +25,7 @@ Authenticating against the API server is done using a key-pair, passed via [Basi
 All HTTP requests must carry an `Authorization` header with the following structure:
 
 ```text
-Authorization: Basic <base64 encoded access_key_id:access_secret_key>
+Authorization: Basic <base64 encoded access_key_id:secret_access_key>
 ```
 
 For example, assuming my access_key_id is `my_access_key_id` and my secret_access_key is `my_secret_access_key`, we'd send the following header with every request:
@@ -40,7 +40,7 @@ Authorization: Basic bXlfYWNjZXNzX2tleV9pZDpteV9hY2Nlc3Nfc2VjcmV0X2tleQ==
 To provide API compatibility with Amazon S3, authentication with the S3 Gateway supports both [SIGv2](https://docs.aws.amazon.com/general/latest/gr/signature-version-2.html){:target="_blank"} and [SIGv4](https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html){:target="_blank"}.
 Clients such as the AWS SDK that implement these authentication methods should work without modification.
 
-See [this example for authenticating with the AWS CLI](../using/aws_cli.md).
+See [this example for authenticating with the AWS CLI](../integrations/aws_cli.md).
 
 ## Authorization
 

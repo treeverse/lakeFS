@@ -14,10 +14,10 @@ jobs:
       - name: Unshallow
         run: git fetch --prune --unshallow
 
-      - name: Setup UI (node 10)
+      - name: Setup UI
         uses: actions/setup-node@v1
         with:
-          node-version: '10.x'
+          node-version: '15.x'
 
       - name: Setup Go
         uses: actions/setup-go@v2
@@ -33,3 +33,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+

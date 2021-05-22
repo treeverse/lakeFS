@@ -10,10 +10,12 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/go-openapi/swag"
+	"github.com/treeverse/lakefs/pkg/uri"
+
 	"github.com/jedib0t/go-pretty/table"
 	"github.com/jedib0t/go-pretty/text"
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
+	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"golang.org/x/term"
 )
 
@@ -25,6 +27,9 @@ const (
 	LakectlInteractiveDisable = "no"
 	DeathMessage              = "Error executing command: {{.Error|red}}\n"
 )
+
+const internalPageSize = 1000          // when retreiving all records, use this page size under the hood
+const defaultAmountArgumentValue = 100 // when no amount is specified, use this value for the argument
 
 const resourceListTemplate = `{{.Table | table -}}
 {{.Pagination | paginate }}
@@ -83,7 +88,7 @@ func WriteTo(tpl string, data interface{}, w io.Writer) {
 			return string(encoded)
 		},
 		"paginate": func(pag *Pagination) string {
-			if pag != nil && pag.HasNext && isTerminal {
+			if pag != nil && pag.Amount > 0 && pag.HasNext && isTerminal {
 				params := text.FgHiYellow.Sprintf("--amount %d --after \"%s\"", pag.Amount, pag.After)
 				return fmt.Sprintf("for more results run with %s\n", params)
 			}
@@ -151,7 +156,7 @@ func DieFmt(msg string, args ...interface{}) {
 }
 
 type APIError interface {
-	GetPayload() *models.Error
+	GetPayload() *api.Error
 }
 
 func DieErr(err error) {
@@ -167,11 +172,25 @@ func DieErr(err error) {
 	os.Exit(1)
 }
 
+type StatusCoder interface {
+	StatusCode() int
+}
+
+func DieOnResponseError(response interface{}, err error) {
+	if err != nil {
+		DieErr(err)
+	}
+	err = helpers.ResponseAsError(response)
+	if err != nil {
+		DieErr(err)
+	}
+}
+
 func Fmt(msg string, args ...interface{}) {
 	fmt.Printf(msg, args...)
 }
 
-func PrintTable(rows [][]interface{}, headers []interface{}, paginator *models.Pagination, amount int) {
+func PrintTable(rows [][]interface{}, headers []interface{}, paginator *api.Pagination, amount int) {
 	ctx := struct {
 		Table      *Table
 		Pagination *Pagination
@@ -181,7 +200,7 @@ func PrintTable(rows [][]interface{}, headers []interface{}, paginator *models.P
 			Rows:    rows,
 		},
 	}
-	if paginator != nil && swag.BoolValue(paginator.HasMore) {
+	if paginator.HasMore {
 		ctx.Pagination = &Pagination{
 			Amount:  amount,
 			HasNext: true,
@@ -190,4 +209,37 @@ func PrintTable(rows [][]interface{}, headers []interface{}, paginator *models.P
 	}
 
 	Write(resourceListTemplate, ctx)
+}
+
+func MustParseRepoURI(name, s string) *uri.URI {
+	u, err := uri.ParseWithBaseURI(s, baseURI)
+	if err != nil {
+		DieFmt("Invalid '%s': %s", name, err)
+	}
+	if !u.IsRepository() {
+		DieFmt("Invalid '%s': %s", name, uri.ErrInvalidRepoURI)
+	}
+	return u
+}
+
+func MustParseRefURI(name, s string) *uri.URI {
+	u, err := uri.ParseWithBaseURI(s, baseURI)
+	if err != nil {
+		DieFmt("Invalid '%s': %s", name, err)
+	}
+	if !u.IsRef() {
+		DieFmt("Invalid %s: %s", name, uri.ErrInvalidRefURI)
+	}
+	return u
+}
+
+func MustParsePathURI(name, s string) *uri.URI {
+	u, err := uri.ParseWithBaseURI(s, baseURI)
+	if err != nil {
+		DieFmt("Invalid '%s': %s", name, err)
+	}
+	if !u.IsFullyQualified() {
+		DieFmt("Invalid '%s': %s", name, uri.ErrInvalidPathURI)
+	}
+	return u
 }

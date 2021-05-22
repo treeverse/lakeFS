@@ -2,21 +2,15 @@ package uri
 
 import (
 	"errors"
+	"fmt"
+	"net/url"
 	"strings"
 )
 
-type state int
-
 const (
-	ProtocolSeparator = "://"
-	LakeFSProtocol    = "lakefs"
-
-	RefSeparator  = '@'
-	PathSeparator = '/'
-
-	stateInRepo state = iota
-	stateInRef
-	stateInPath
+	LakeFSSchema          = "lakefs"
+	LakeFSSchemaSeparator = "://"
+	PathSeparator         = "/"
 )
 
 var (
@@ -27,8 +21,6 @@ var (
 )
 
 type URI struct {
-	// Protocol must always match "lakefs" to be considered valid
-	Protocol string
 	// Repository is the name of the repository being addressed
 	Repository string
 	// Ref represents the reference in the repository (commit, tag, branch, etc.)
@@ -51,116 +43,79 @@ func (u *URI) IsFullyQualified() bool {
 	return len(u.Repository) > 0 && len(u.Ref) > 0 && u.Path != nil
 }
 
+func (u *URI) GetPath() string {
+	if u.Path == nil {
+		return ""
+	}
+	return *u.Path
+}
+
 func (u *URI) String() string {
 	var buf strings.Builder
-	buf.WriteString(u.Protocol)
-	buf.WriteString(ProtocolSeparator)
+	buf.WriteString(LakeFSSchema)
+	buf.WriteString(LakeFSSchemaSeparator)
 	buf.WriteString(u.Repository)
-
 	if len(u.Ref) == 0 {
 		return buf.String()
 	}
-	buf.WriteRune(RefSeparator)
+	buf.WriteString(PathSeparator)
 	buf.WriteString(u.Ref)
-
 	if u.Path == nil {
 		return buf.String()
 	}
-	buf.WriteRune(PathSeparator)
+	buf.WriteString(PathSeparator)
 	buf.WriteString(*u.Path)
-
 	return buf.String()
 }
 
-func Parse(str string) (*URI, error) {
-	// start with protocol
-	protoParts := strings.Split(str, ProtocolSeparator)
-	const uriParts = 2
-	if len(protoParts) != uriParts {
+// ParseWithBaseURI parse URI uses base URI as prefix when set and input doesn't start with lakeFS protocol
+func ParseWithBaseURI(s string, baseURI string) (*URI, error) {
+	if len(baseURI) > 0 && !strings.HasPrefix(s, LakeFSSchema+LakeFSSchemaSeparator) {
+		s = baseURI + s
+	}
+	u, err := Parse(s)
+	if err != nil {
+		return nil, fmt.Errorf("parsing %s: %w", s, err)
+	}
+	return u, nil
+}
+
+func Parse(s string) (*URI, error) {
+	u, err := url.Parse(s)
+	if err != nil || u.Scheme != LakeFSSchema || u.User != nil {
 		return nil, ErrMalformedURI
 	}
-	if !strings.EqualFold(protoParts[0], LakeFSProtocol) {
+	repository := u.Hostname()
+	if len(repository) == 0 {
 		return nil, ErrMalformedURI
 	}
-
-	var uri URI
-	uri.Protocol = protoParts[0]
-	var path string
-
-	var state = stateInRepo
-	var buf strings.Builder
-	for _, ch := range protoParts[1] {
-		switch {
-		case ch == RefSeparator && state == stateInRepo:
-			uri.Repository = buf.String()
-			state = stateInRef
-			buf.Reset()
-		case ch == PathSeparator && state == stateInRef:
-			uri.Ref = buf.String()
-			state = stateInPath
-			uri.Path = &path
-			buf.Reset()
-		default:
-			buf.WriteRune(ch)
+	var ref string
+	var path *string
+	if len(u.Path) > 0 {
+		if !strings.HasPrefix(u.Path, PathSeparator) {
+			return nil, ErrMalformedURI
+		}
+		const refAndPathParts = 2
+		levels := strings.SplitN(u.Path[1:], PathSeparator, refAndPathParts)
+		if len(levels) == refAndPathParts {
+			ref = levels[0]
+			path = &levels[1]
+		} else if len(levels) == 1 {
+			ref = levels[0]
 		}
 	}
-	if buf.Len() > 0 {
-		switch state {
-		case stateInRepo:
-			uri.Repository = buf.String()
-		case stateInRef:
-			uri.Ref = buf.String()
-		case stateInPath:
-			path = buf.String()
-			uri.Path = &path
-		}
-	}
-	return &uri, nil
+	return &URI{
+		Repository: repository,
+		Ref:        ref,
+		Path:       path,
+	}, nil
 }
 
 func Equals(a, b *URI) bool {
-	// same protocol
-	return strings.EqualFold(a.Protocol, b.Protocol) &&
-		// same repository
-		strings.EqualFold(a.Repository, b.Repository) &&
-		// same ref
-		strings.EqualFold(a.Ref, b.Ref) &&
+	return a.Repository == b.Repository &&
+		a.Ref == b.Ref &&
 		// either both contain no path, or both do, and that path is equal
-		((a.Path == nil && b.Path == nil) ||
-			(a.Path != nil && b.Path != nil && *a.Path == *b.Path))
-}
-
-func ValidateRepoURI(str string) error {
-	u, err := Parse(str)
-	if err != nil {
-		return err
-	}
-	if !u.IsRepository() {
-		return ErrInvalidRepoURI
-	}
-	return nil
-}
-
-func ValidatePathURI(str string) error {
-	u, err := Parse(str)
-	if err != nil {
-		return err
-	}
-	if !u.IsFullyQualified() {
-		return ErrInvalidPathURI
-	}
-	return nil
-}
-
-func ValidateRefURI(str string) error {
-	u, err := Parse(str)
-	if err != nil {
-		return err
-	}
-	if !u.IsRef() {
-		return ErrInvalidRefURI
-	}
-	return nil
+		((a.Path == nil && b.Path == nil) || (a.Path != nil && b.Path != nil && *a.Path == *b.Path))
 }
 
 func IsValid(str string) bool {

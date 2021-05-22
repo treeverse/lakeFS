@@ -2,16 +2,16 @@ package nessie
 
 import (
 	"bytes"
+	"net/http"
 	"sync"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/thanhpk/randstr"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/objects"
+	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -23,7 +23,7 @@ const (
 func TestMultipartUpload(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
 	file := "multipart_file"
-	path := masterBranch + "/" + file
+	path := mainBranch + "/" + file
 	input := &s3.CreateMultipartUploadInput{
 		Bucket: aws.String(repo),
 		Key:    aws.String(path),
@@ -47,14 +47,10 @@ func TestMultipartUpload(t *testing.T) {
 
 	logger.WithField("key", completeResponse.Key).Info("Completed multipart request successfully")
 
-	var b bytes.Buffer
-	_, err = client.Objects.GetObject(
-		objects.NewGetObjectParamsWithContext(ctx).
-			WithRepository(repo).
-			WithRef(masterBranch).
-			WithPath(file), nil, &b)
+	getResp, err := client.GetObjectWithResponse(ctx, repo, mainBranch, &api.GetObjectParams{Path: file})
 	require.NoError(t, err, "failed to get object")
-	require.Equal(t, b.Bytes(), partsConcat, "uploaded object did not match")
+	require.Equal(t, http.StatusOK, getResp.StatusCode())
+	require.Equal(t, getResp.Body, partsConcat, "uploaded object did not match")
 }
 
 func uploadMultipartParts(t *testing.T, logger logging.Logger, resp *s3.CreateMultipartUploadOutput, parts [][]byte) []*s3.CompletedPart {
@@ -76,7 +72,7 @@ func uploadMultipartParts(t *testing.T, logger logging.Logger, resp *s3.CreateMu
 		partNumber := int64(i + 1)
 		assert.NoErrorf(t, err, "error while upload part number %d", partNumber)
 		// verify part number
-		assert.Equal(t, partNumber, swag.Int64Value(completedParts[i].PartNumber), "inconsistent part number")
+		assert.Equal(t, partNumber, *(completedParts[i].PartNumber), "inconsistent part number")
 	}
 	return completedParts
 }

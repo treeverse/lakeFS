@@ -113,9 +113,12 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 		T:          t,
 	}
 
+	conf, err := config.NewConfig()
+	testutil.MustDo(t, "config", err)
+
 	conn, _ := testutil.GetDB(t, databaseURI)
 	c, err := catalog.New(ctx, catalog.Config{
-		Config: config.NewConfig(),
+		Config: conf,
 		DB:     conn,
 	})
 	testutil.MustDo(t, "build c", err)
@@ -133,6 +136,7 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 		storageNamespace = "replay"
 	}
 
+	// keeping the name 'master' and not 'main' below as the recordings point to that
 	_, err = c.CreateRepository(ctx, ReplayRepositoryName, storageNamespace, "master")
 	testutil.Must(t, err)
 
@@ -142,7 +146,7 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 		multipartsTracker,
 		blockAdapter,
 		authService,
-		authService.BareDomain,
+		[]string{authService.BareDomain},
 		&mockCollector{},
 		nil,
 	)
@@ -163,7 +167,7 @@ func newGatewayAuthFromFile(t *testing.T, directory string) *simulator.PlayBackM
 	}
 	err = json.Unmarshal(confStr, m)
 	if err != nil {
-		t.Fatal("Failed to unmarshal configuration\n ")
+		t.Fatalf("Failed to unmarshal configuration: %s", err.Error())
 	}
 	return m
 }

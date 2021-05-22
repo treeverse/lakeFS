@@ -278,7 +278,7 @@ func (c *Catalog) DeleteRepository(ctx context.Context, repository string) error
 
 // ListRepositories list repositories information, the bool returned is true when more repositories can be listed.
 // In this case pass the last repository name as 'after' on the next call to ListRepositories
-func (c *Catalog) ListRepositories(ctx context.Context, limit int, after string) ([]*Repository, bool, error) {
+func (c *Catalog) ListRepositories(ctx context.Context, limit int, prefix, after string) ([]*Repository, bool, error) {
 	// normalize limit
 	if limit < 0 || limit > ListRepositoriesLimitMax {
 		limit = ListRepositoriesLimitMax
@@ -291,13 +291,23 @@ func (c *Catalog) ListRepositories(ctx context.Context, limit int, after string)
 	defer it.Close()
 	// seek for first item
 	afterRepositoryID := graveler.RepositoryID(after)
-	if afterRepositoryID != "" {
-		it.SeekGE(afterRepositoryID)
+	prefixRepositoryID := graveler.RepositoryID(prefix)
+	startPos := prefixRepositoryID
+	if afterRepositoryID > startPos {
+		startPos = afterRepositoryID
+	}
+	if startPos != "" {
+		it.SeekGE(startPos)
 	}
 
 	var repos []*Repository
 	for it.Next() {
 		record := it.Value()
+
+		if !strings.HasPrefix(string(record.RepositoryID), prefix) {
+			break
+		}
+
 		if record.RepositoryID == afterRepositoryID {
 			continue
 		}
@@ -322,6 +332,26 @@ func (c *Catalog) ListRepositories(ctx context.Context, limit int, after string)
 		repos = repos[:limit]
 	}
 	return repos, hasMore, nil
+}
+
+func (c *Catalog) GetStagingToken(ctx context.Context, repository string, branch string) (*string, error) {
+	repositoryID := graveler.RepositoryID(repository)
+	branchID := graveler.BranchID(branch)
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+		{"branchID", branchID, ValidateBranchID},
+	}); err != nil {
+		return nil, err
+	}
+	token, err := c.Store.GetStagingToken(ctx, repositoryID, branchID)
+	if err != nil {
+		return nil, err
+	}
+	tokenString := ""
+	if token != nil {
+		tokenString = string(*token)
+	}
+	return &tokenString, nil
 }
 
 func (c *Catalog) CreateBranch(ctx context.Context, repository string, branch string, sourceBranch string) (*CommitLog, error) {
@@ -590,6 +620,7 @@ func (c *Catalog) GetEntry(ctx context.Context, repository string, reference str
 func EntryFromCatalogEntry(entry DBEntry) *Entry {
 	return &Entry{
 		Address:      entry.PhysicalAddress,
+		AddressType:  addressTypeToProto(entry.AddressType),
 		Metadata:     entry.Metadata,
 		LastModified: timestamppb.New(entry.CreationDate),
 		ETag:         entry.Checksum,
@@ -597,7 +628,33 @@ func EntryFromCatalogEntry(entry DBEntry) *Entry {
 	}
 }
 
-func (c *Catalog) CreateEntry(ctx context.Context, repository string, branch string, entry DBEntry) error {
+func addressTypeToProto(t AddressType) Entry_AddressType {
+	switch t {
+	case AddressTypeByPrefixDeprecated:
+		return Entry_BY_PREFIX_DEPRECATED
+	case AddressTypeRelative:
+		return Entry_RELATIVE
+	case AddressTypeFull:
+		return Entry_FULL
+	default:
+		panic(fmt.Sprintf("unknown address type: %d", t))
+	}
+}
+
+func addressTypeToCatalog(t Entry_AddressType) AddressType {
+	switch t {
+	case Entry_BY_PREFIX_DEPRECATED:
+		return AddressTypeByPrefixDeprecated
+	case Entry_RELATIVE:
+		return AddressTypeRelative
+	case Entry_FULL:
+		return AddressTypeFull
+	default:
+		panic(fmt.Sprintf("unknown address type: %d", t))
+	}
+}
+
+func (c *Catalog) CreateEntry(ctx context.Context, repository string, branch string, entry DBEntry, writeConditions ...graveler.WriteConditionOption) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	ent := EntryFromCatalogEntry(entry)
@@ -614,7 +671,7 @@ func (c *Catalog) CreateEntry(ctx context.Context, repository string, branch str
 	if err != nil {
 		return err
 	}
-	return c.Store.Set(ctx, repositoryID, branchID, key, *value)
+	return c.Store.Set(ctx, repositoryID, branchID, key, *value, writeConditions...)
 }
 
 func (c *Catalog) CreateEntries(ctx context.Context, repository string, branch string, entries []DBEntry) error {
@@ -879,11 +936,6 @@ func (c *Catalog) Revert(ctx context.Context, repository string, branch string, 
 	return err
 }
 
-func (c *Catalog) RollbackCommit(_ context.Context, _ string, _ string, _ string) error {
-	c.log.Debug("rollback to commit is not supported in rocks implementation")
-	return ErrFeatureNotSupported
-}
-
 func (c *Catalog) Diff(ctx context.Context, repository string, leftReference string, rightReference string, params DiffParams) (Differences, bool, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	left := graveler.Ref(leftReference)
@@ -1084,11 +1136,13 @@ func newCatalogEntryFromEntry(commonPrefix bool, path string, ent *Entry) DBEntr
 	}
 	if ent != nil {
 		catEnt.PhysicalAddress = ent.Address
+		catEnt.AddressType = addressTypeToCatalog(ent.AddressType)
 		catEnt.CreationDate = ent.LastModified.AsTime()
 		catEnt.Size = ent.Size
 		catEnt.Checksum = ent.ETag
 		catEnt.Metadata = ent.Metadata
 		catEnt.Expired = false
+		catEnt.AddressType = addressTypeToCatalog(ent.AddressType)
 	}
 	return catEnt
 }

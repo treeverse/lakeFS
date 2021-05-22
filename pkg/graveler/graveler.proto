@@ -23,4 +23,5 @@ message CommitData {
   string meta_range_id = 5;
   map<string,string> metadata = 6;
   repeated string parents = 7;
+  int32 version = 8;
 }

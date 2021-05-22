@@ -26,6 +26,9 @@ const (
 	DefaultStreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
 	DefaultStreamingChunkTimeout = time.Second * 1 // if we haven't read DefaultStreamingChunkSize by this duration, write whatever we have as a chunk
 
+	// Chunks smaller than that are only allowed for the last chunk upload
+	minChunkSize = 8 * 1024
+
 	ExpireObjectS3Tag = "lakefs_expire_object"
 )
 
@@ -35,12 +38,12 @@ var (
 )
 
 func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
-	qualifiedKey, err := block.ResolveNamespace(obj.StorageNamespace, obj.Identifier)
+	qualifiedKey, err := block.ResolveNamespace(obj.StorageNamespace, obj.Identifier, obj.IdentifierType)
 	if err != nil {
 		return qualifiedKey, err
 	}
 	if qualifiedKey.StorageType != block.StorageTypeS3 {
-		return qualifiedKey, block.ErrInvalidNamespace
+		return qualifiedKey, fmt.Errorf("expected storage type s3: %w", block.ErrInvalidNamespace)
 	}
 	return qualifiedKey, nil
 }
@@ -140,6 +143,7 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeB
 	}
 	sdkRequest, _ := a.s3.UploadPartRequest(&uploadPartObject)
 	etag, err := a.streamToS3(ctx, sdkRequest, sizeBytes, reader)
+
 	if err != nil {
 		return "", err
 	}
@@ -243,7 +247,7 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 	}
 	objectOutput, err := a.s3.GetObjectWithContext(ctx, &getObjectInput)
 	if err != nil {
-		log.WithError(err).Error("failed to get S3 object")
+		log.WithError(err).Errorf("failed to get S3 object bucket %s key %s", qualifiedKey.StorageNamespace, qualifiedKey.Key)
 		return nil, err
 	}
 	sizeBytes = *objectOutput.ContentLength

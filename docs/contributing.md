@@ -12,7 +12,7 @@ Thank you for your interest in contributing to our project. Whether it's a bug r
 
 Please read through this document before submitting any issues or pull requests to ensure we have all the necessary information to effectively respond to your bug report or contribution..
 
-If you don't know where to start, please [join our community on Slack](https://join.slack.com/t/lakefs/shared_invite/zt-ks1fwp0w-bgD9PIekW86WF25nE_8_tw) and ask us. We will help you get started! 
+If you don't know where to start, please [join our community on Slack](https://lakefs.io/slack) and ask us. We will help you get started! 
 
 ## Ground Rules
 
