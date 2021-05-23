@@ -130,29 +130,29 @@ public class LakeFSFileSystem extends FileSystem {
 
         ClientConfiguration awsConf = new ClientConfiguration();
         awsConf.setMaxConnections(conf.getInt(org.apache.hadoop.fs.s3a.Constants.MAXIMUM_CONNECTIONS,
-                                              org.apache.hadoop.fs.s3a.Constants.DEFAULT_MAXIMUM_CONNECTIONS));
+                org.apache.hadoop.fs.s3a.Constants.DEFAULT_MAXIMUM_CONNECTIONS));
         boolean secureConnections = conf.getBoolean(org.apache.hadoop.fs.s3a.Constants.SECURE_CONNECTIONS,
-                                                    org.apache.hadoop.fs.s3a.Constants.DEFAULT_SECURE_CONNECTIONS);
-        awsConf.setProtocol(secureConnections ?  Protocol.HTTPS : Protocol.HTTP);
+                org.apache.hadoop.fs.s3a.Constants.DEFAULT_SECURE_CONNECTIONS);
+        awsConf.setProtocol(secureConnections ? Protocol.HTTPS : Protocol.HTTP);
         awsConf.setMaxErrorRetry(conf.getInt(org.apache.hadoop.fs.s3a.Constants.MAX_ERROR_RETRIES,
-          org.apache.hadoop.fs.s3a.Constants.DEFAULT_MAX_ERROR_RETRIES));
+                org.apache.hadoop.fs.s3a.Constants.DEFAULT_MAX_ERROR_RETRIES));
         awsConf.setConnectionTimeout(conf.getInt(org.apache.hadoop.fs.s3a.Constants.ESTABLISH_TIMEOUT,
-            org.apache.hadoop.fs.s3a.Constants.DEFAULT_ESTABLISH_TIMEOUT));
+                org.apache.hadoop.fs.s3a.Constants.DEFAULT_ESTABLISH_TIMEOUT));
         awsConf.setSocketTimeout(conf.getInt(org.apache.hadoop.fs.s3a.Constants.SOCKET_TIMEOUT,
-                        org.apache.hadoop.fs.s3a.Constants.DEFAULT_SOCKET_TIMEOUT));
+                org.apache.hadoop.fs.s3a.Constants.DEFAULT_SOCKET_TIMEOUT));
 
         // TODO(ariels): Also copy proxy configuration?
 
         AmazonS3 s3 = new AmazonS3Client(credentials, awsConf);
-        String endPoint = conf.getTrimmed(org.apache.hadoop.fs.s3a.Constants.ENDPOINT,"");
+        String endPoint = conf.getTrimmed(org.apache.hadoop.fs.s3a.Constants.ENDPOINT, "");
         if (!endPoint.isEmpty()) {
-                try {
-                        s3.setEndpoint(endPoint);
-                } catch (IllegalArgumentException e) {
-                        String msg = "Incorrect endpoint: " + e.getMessage();
-                        LOG.error(msg);
-                        throw new IllegalArgumentException(msg, e);
-                }
+            try {
+                s3.setEndpoint(endPoint);
+            } catch (IllegalArgumentException e) {
+                String msg = "Incorrect endpoint: " + e.getMessage();
+                LOG.error(msg);
+                throw new IllegalArgumentException(msg, e);
+            }
         }
         return s3;
     }
@@ -183,7 +183,7 @@ public class LakeFSFileSystem extends FileSystem {
             ObjectStats stats = objects.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
             return withFileSystemAndTranslatedPhysicalPath(stats.getPhysicalAddress(), (FileSystem fs, Path p) -> fs.open(p, bufSize));
         } catch (ApiException e) {
-            throw new IOException("lakeFS API", e);
+            throw new IOException("open: " + path, e);
         } catch (java.net.URISyntaxException e) {
             throw new IOException("open physical", e);
         }
@@ -378,7 +378,7 @@ public class LakeFSFileSystem extends FileSystem {
         ObjectsApi objectsApi = lfsClient.getObjects();
         try {
             ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
-            return convertObjectStatsToFileStatus(objectStat);
+            return convertObjectStatsToFileStatus(objectLoc.getRepository(), objectLoc.getRef(), objectStat);
         } catch (ApiException e) {
             if (e.getCode() != HttpStatus.SC_NOT_FOUND) {
                 throw new IOException("statObject", e);
@@ -387,14 +387,14 @@ public class LakeFSFileSystem extends FileSystem {
         // not found as a file; check if path is a "directory", i.e. a prefix.
         ListingIterator iterator = new ListingIterator(path, true, 1);
         if (iterator.hasNext()) {
-            Path filePath = path.makeQualified(this.uri, this.workingDirectory);
+            Path filePath = new Path(objectLoc.toString());
             return new FileStatus(0, true, 0, 0, 0, filePath);
         }
         throw new FileNotFoundException(path + " not found");
     }
 
     @Nonnull
-    private FileStatus convertObjectStatsToFileStatus(ObjectStats objectStat) throws IOException {
+    private FileStatus convertObjectStatsToFileStatus(String repository, String ref, ObjectStats objectStat) throws IOException {
         try {
             long length = 0;
             Long sizeBytes = objectStat.getSizeBytes();
@@ -406,8 +406,7 @@ public class LakeFSFileSystem extends FileSystem {
             if (mtime != null) {
                 modificationTime = TimeUnit.SECONDS.toMillis(mtime);
             }
-            Path filePath = new Path(objectStat.getPath()).makeQualified(this.uri, this.workingDirectory);
-
+            Path filePath = new Path(ObjectLocation.formatPath(repository, ref, objectStat.getPath()));
             boolean isdir = objectStat.getPathType() == ObjectStats.PathTypeEnum.COMMON_PREFIX;
             long blockSize = 0;
             if (!isdir) {
@@ -557,8 +556,7 @@ public class LakeFSFileSystem extends FileSystem {
                 throw new NoSuchElementException("No more entries");
             }
             ObjectStats objectStats = chunk.get(pos++);
-            objectStats.setPath(Constants.URI_SCHEME + "://" + objectLocation.getRepository() + "/" + objectLocation.getRef() + Constants.SEPARATOR + objectStats.getPath());
-            FileStatus fileStatus = convertObjectStatsToFileStatus(objectStats);
+            FileStatus fileStatus = convertObjectStatsToFileStatus(objectLocation.getRepository(), objectLocation.getRef(), objectStats);
             // currently do not pass locations of the file blocks - until we understand if it is required in order to work
             return new LocatedFileStatus(fileStatus, null);
         }
