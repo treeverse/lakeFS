@@ -16,8 +16,7 @@ import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 
-import io.lakefs.clients.api.model.ObjectStatsList;
-import io.lakefs.clients.api.model.Pagination;
+import io.lakefs.clients.api.model.*;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
@@ -32,8 +31,6 @@ import org.slf4j.LoggerFactory;
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.ObjectsApi;
 import io.lakefs.clients.api.StagingApi;
-import io.lakefs.clients.api.model.ObjectStats;
-import io.lakefs.clients.api.model.StagingLocation;
 
 import javax.annotation.Nonnull;
 
@@ -243,10 +240,82 @@ public class LakeFSFileSystem extends FileSystem {
         throw new UnsupportedOperationException("Append is not supported by LakeFSFileSystem");
     }
 
+    /**
+     * This method is implemented under the following assumptions:
+     * 1. rename is only supported for uncommitted data on the same branch.
+     * 2. file rename operation is supported, directories rename is unsupported.
+     * 3. the rename dst  path can be an uncommitted file, that will be overridden as a result of the rename operation.
+     * 4. On rename operation a new mtime is generated, therefore we don't preserve the mtime of the src object.
+     *
+     * @throws IOException
+     */
     @Override
-    public boolean rename(Path path, Path path1) throws IOException {
-        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ rename $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ");
-        return false;
+    public boolean rename(Path src, Path dst) throws IOException {
+        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ Rename path {} to {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$", src, dst);
+
+        ObjectLocation srcObjectLoc = pathToObjectLocation(src);
+        ObjectLocation dstObjectLoc = pathToObjectLocation(dst);
+        if (srcObjectLoc.equals(dstObjectLoc)) {
+            LOG.debug("rename: src and dst refer to the same lakefs object location: {}", dst);
+            return true;
+        }
+
+        if (!srcObjectLoc.onSameBranch(dstObjectLoc)) {
+            LOG.error("rename: src {} and dst {} are not on the same branch. rename outside this scope is unsupported "
+                    + "by lakefs.", src, dst);
+            return false;
+        }
+
+        ObjectStats srcStat;
+        ObjectsApi objects = lfsClient.getObjects();
+        try {
+            // Stat src file to get its metadata
+            srcStat = objects.statObject(srcObjectLoc.getRepository(), srcObjectLoc.getRef(),
+                    srcObjectLoc.getPath());
+        } catch (ApiException e) {
+            LOG.error("rename: could not get src object stats. src:{}", src, e);
+            return false;
+        }
+
+        return renameObject(srcStat, srcObjectLoc, dstObjectLoc);
+    }
+
+    /**
+     * Non-atomic rename operation.
+     * @return true if rename succeeded, false otherwise
+     */
+    private boolean renameObject(ObjectStats srcStat, ObjectLocation srcObjectLoc, ObjectLocation dstObjectLoc)
+            throws IOException {
+        ObjectsApi objects = lfsClient.getObjects();
+
+        //TODO (Tals): Can we add metadata? we currently don't have an API to get the metadata of an object.
+        ObjectStageCreation creationReq = new ObjectStageCreation()
+                .checksum(srcStat.getChecksum())
+                .sizeBytes(srcStat.getSizeBytes())
+                .physicalAddress(srcStat.getPhysicalAddress());
+
+        try {
+            objects.stageObject(dstObjectLoc.getRepository(), dstObjectLoc.getRef(), dstObjectLoc.getPath(),
+                    creationReq);
+        } catch (ApiException e) {
+            LOG.error("rename: Could not stage object on dst:{}", dstObjectLoc.getPath(), e);
+            return false;
+        }
+
+        // delete src path
+        try {
+            objects.deleteObject(srcObjectLoc.getRepository(), srcObjectLoc.getRef(), srcObjectLoc.getPath());
+        } catch (ApiException e) {
+            // This condition mimics s3a behaviour in https://github.com/apache/hadoop/blob/2960d83c255a00a549f8809882cd3b73a6266b6d/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L2741
+            if (e.getCode() == HttpStatus.SC_NOT_FOUND) {
+                LOG.error("Could not delete: {}, reason: {}", srcObjectLoc.getPath(), e.getResponseBody());
+                return false;
+            }
+            throw new IOException("deleteObject", e);
+        }
+
+        LOG.debug("rename: successfully renamed {} to {}", srcObjectLoc.getPath(), dstObjectLoc.getPath());
+        return true;
     }
 
     @Override
