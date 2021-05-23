@@ -9,7 +9,7 @@ has_children: false
 # FAQ
 
 ### 1. Is lakeFS open source?
-lakeFS is completely free and open source and licensed under the [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) License. We maintain a public [product roadmap](https://docs.lakefs.io/understand/roadmap.html) and [Slack channel](https://join.slack.com/t/lakefs/shared_invite/zt-ks1fwp0w-bgD9PIekW86WF25nE_8_tw) for open discussions.
+lakeFS is completely free and open source and licensed under the [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) License. We maintain a public [product roadmap](https://docs.lakefs.io/understand/roadmap.html) and [Slack channel](https://lakefs.io/slack) for open discussions.
 
 ### 2. How does lakeFS data versioning work?
 lakeFS uses a copy-on-write mechanism to avoid data duplication. For example, creating a new branch is a metadata-only operation: no objects are actually copied. Only when an object changes does lakeFS create another version of the data in the storage. For more information, see [Data Model](https://docs.lakefs.io/understand/data-model.html).
