@@ -30,7 +30,7 @@ class ObjectLocation {
     }
 
     static String trimLeadingSlash(String s) {
-        if (s.startsWith(Constants.URI_SEPARATOR)) {
+        if (s.startsWith(Constants.SEPARATOR)) {
             return s.substring(1);
         }
         return s;

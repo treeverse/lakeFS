@@ -1,5 +1,26 @@
 package io.lakefs;
 
+import com.amazonaws.ClientConfiguration;
+import com.amazonaws.Protocol;
+import com.amazonaws.auth.AWSCredentialsProviderChain;
+import com.amazonaws.auth.InstanceProfileCredentialsProvider;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Client;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.ObjectsApi;
+import io.lakefs.clients.api.StagingApi;
+import io.lakefs.clients.api.model.*;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.permission.FsPermission;
+import org.apache.hadoop.fs.s3a.AnonymousAWSCredentialsProvider;
+import org.apache.hadoop.fs.s3a.BasicAWSCredentialsProvider;
+import org.apache.hadoop.util.Progressable;
+import org.apache.http.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nonnull;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
@@ -8,31 +29,6 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.Protocol;
-import com.amazonaws.auth.AWSCredentialsProviderChain;
-import com.amazonaws.auth.InstanceProfileCredentialsProvider;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
-
-import io.lakefs.clients.api.model.*;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.*;
-import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.hadoop.fs.s3a.AnonymousAWSCredentialsProvider;
-import org.apache.hadoop.fs.s3a.BasicAWSCredentialsProvider;
-import org.apache.hadoop.util.Progressable;
-
-import org.apache.http.HttpStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.ObjectsApi;
-import io.lakefs.clients.api.StagingApi;
-
-import javax.annotation.Nonnull;
 
 import static io.lakefs.Constants.*;
 
@@ -53,7 +49,7 @@ public class LakeFSFileSystem extends FileSystem {
 
     private Configuration conf;
     private URI uri;
-    private Path workingDirectory = new Path(Constants.URI_SEPARATOR);
+    private Path workingDirectory = new Path(Constants.SEPARATOR);
     private LakeFSClient lfsClient;
     private AmazonS3 s3Client;
     private int listAmount;
@@ -323,17 +319,32 @@ public class LakeFSFileSystem extends FileSystem {
         LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ Delete path {} - recursive {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$",
                 path, recursive);
 
-        ObjectLocation objectLoc = pathToObjectLocation(path);
         ObjectsApi objectsApi = lfsClient.getObjects();
-        try {
-            objectsApi.deleteObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
-        } catch (ApiException e) {
-            // This condition mimics s3a behaviour in https://github.com/apache/hadoop/blob/7f93349ee74da5f35276b7535781714501ab2457/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L2741
-            if (e.getCode() == HttpStatus.SC_NOT_FOUND) {
-                LOG.error("Could not delete: {}, reason: {}", path, e.getResponseBody());
-                return false;
+        if (recursive) {
+            ListingIterator iterator = new ListingIterator(path, recursive, listAmount);
+            while (iterator.hasNext()) {
+                LocatedFileStatus fileStatus = iterator.next();
+                try {
+                    ObjectLocation objectLoc = pathToObjectLocation(fileStatus.getPath());
+                    objectsApi.deleteObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
+                } catch (ApiException e) {
+                    if (e.getCode() != HttpStatus.SC_NOT_FOUND) {
+                        throw new IOException("deleteObject", e);
+                    }
+                }
             }
-            throw new IOException("deleteObject", e);
+        } else {
+            try {
+                ObjectLocation objectLoc = pathToObjectLocation(path);
+                objectsApi.deleteObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
+            } catch (ApiException e) {
+                // This condition mimics s3a behaviour in https://github.com/apache/hadoop/blob/7f93349ee74da5f35276b7535781714501ab2457/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L2741
+                if (e.getCode() == HttpStatus.SC_NOT_FOUND) {
+                    LOG.error("Could not delete: {}, reason: {}", path, e.getResponseBody());
+                    return false;
+                }
+                throw new IOException("deleteObject", e);
+            }
         }
         LOG.debug("Successfully deleted {}", path);
         return true;
@@ -365,32 +376,22 @@ public class LakeFSFileSystem extends FileSystem {
     public FileStatus getFileStatus(Path path) throws IOException {
         LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ getFileStatus, path: {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", path.toString());
         ObjectLocation objectLoc = pathToObjectLocation(path);
+        ObjectsApi objectsApi = lfsClient.getObjects();
         try {
-            ObjectsApi objectsApi = lfsClient.getObjects();
             ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
-            long length = 0;
-
-
-            Long sizeBytes = objectStat.getSizeBytes();
-            if (sizeBytes != null) {
-                length = sizeBytes;
-            }
-            long modificationTime = 0;
-            Long mtime = objectStat.getMtime();
-            if (mtime != null) {
-                modificationTime = TimeUnit.SECONDS.toMillis(mtime);
-            }
-            Path filePath = path.makeQualified(this.uri, this.workingDirectory);
-            long blockSize = withFileSystemAndTranslatedPhysicalPath(objectStat.getPhysicalAddress(), (FileSystem fs, Path p) -> fs.getDefaultBlockSize(p));
-            return new FileStatus(length, false, 0, blockSize, modificationTime, filePath);
+            return convertObjectStatsToFileStatus(objectStat);
         } catch (ApiException e) {
-            if (e.getCode() == HttpStatus.SC_NOT_FOUND) {
-                throw new FileNotFoundException(path + " not found");
+            if (e.getCode() != HttpStatus.SC_NOT_FOUND) {
+                throw new IOException("statObject", e);
             }
-            throw new IOException("statObject", e);
-        } catch (java.net.URISyntaxException e) {
-            throw new IOException("underlying storage uri", e);
         }
+        // check if path is a directory
+        ListingIterator iterator = new ListingIterator(path, true, 1);
+        if (iterator.hasNext()) {
+            Path filePath = path.makeQualified(this.uri, this.workingDirectory);
+            return new FileStatus(0, true, 0, 0, 0, filePath);
+        }
+        throw new FileNotFoundException(path + " not found");
     }
 
     @Nonnull
@@ -408,11 +409,11 @@ public class LakeFSFileSystem extends FileSystem {
             }
             Path filePath = new Path(objectStat.getPath()).makeQualified(this.uri, this.workingDirectory);
 
-            URI physicalUri = translateUri(new URI(objectStat.getPhysicalAddress()));
-            Path physicalPath =new Path(physicalUri.toString());
-            FileSystem physicalFS = physicalPath.getFileSystem(conf);
-            long blockSize = physicalFS.getDefaultBlockSize(physicalPath);
             boolean isdir = objectStat.getPathType() == ObjectStats.PathTypeEnum.COMMON_PREFIX;
+            long blockSize = 0;
+            if (!isdir) {
+                blockSize = withFileSystemAndTranslatedPhysicalPath(objectStat.getPhysicalAddress(), FileSystem::getDefaultBlockSize);
+            }
             return new FileStatus(length, isdir, 0, blockSize, modificationTime, filePath);
         } catch (java.net.URISyntaxException e) {
             throw new IOException("uri", e);
@@ -447,11 +448,13 @@ public class LakeFSFileSystem extends FileSystem {
             objects.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
             return true;
         } catch (ApiException e) {
-            if (e.getCode() == HttpStatus.SC_NOT_FOUND) {
-                return false;
+            if (e.getCode() != HttpStatus.SC_NOT_FOUND) {
+                throw new IOException("statObject", e);
             }
-            throw new IOException("lakefs", e);
         }
+        // use listing to check if directory exists
+        ListingIterator iterator = new ListingIterator(path, true, 1);
+        return iterator.hasNext();
     }
 
     /**
@@ -470,7 +473,7 @@ public class LakeFSFileSystem extends FileSystem {
         loc.setRepository(uri.getHost());
         // extract ref and rest of the path after removing the '/' prefix
         String s = ObjectLocation.trimLeadingSlash(uri.getPath());
-        int i = s.indexOf(Constants.URI_SEPARATOR);
+        int i = s.indexOf(Constants.SEPARATOR);
         if (i == -1) {
             loc.setRef(s);
             loc.setPath("");
@@ -482,7 +485,6 @@ public class LakeFSFileSystem extends FileSystem {
     }
 
     class ListingIterator implements RemoteIterator<LocatedFileStatus> {
-        private final URI uri;
         private final ObjectLocation objectLocation;
         private final String delimiter;
         private final int amount;
@@ -501,15 +503,14 @@ public class LakeFSFileSystem extends FileSystem {
          * @param amount buffer size to fetch listing
          */
         public ListingIterator(Path path, boolean recursive, int amount) {
-            this.uri = path.toUri();
             this.chunk = Collections.emptyList();
             this.objectLocation = pathToObjectLocation(path);
             String locationPath = this.objectLocation.getPath();
             // we assume that 'path' is a directory by default
-            if (!locationPath.isEmpty() && !locationPath.endsWith(URI_SEPARATOR)) {
-                this.objectLocation.setPath(locationPath + URI_SEPARATOR);
+            if (!locationPath.isEmpty() && !locationPath.endsWith(SEPARATOR)) {
+                this.objectLocation.setPath(locationPath + SEPARATOR);
             }
-            this.delimiter = recursive ? "" : URI_SEPARATOR;
+            this.delimiter = recursive ? "" : SEPARATOR;
             this.last = false;
             this.pos = 0;
             this.amount = amount == 0 ? DEFAULT_LIST_AMOUNT : amount;
@@ -546,7 +547,7 @@ public class LakeFSFileSystem extends FileSystem {
                     throw new IOException("listObjects", e);
                 }
                 // filter objects
-                chunk = chunk.stream().filter(stat -> stat.getPathType() == ObjectStats.PathTypeEnum.OBJECT).collect(Collectors.toList());
+                chunk = chunk.stream().filter(stat -> stat.getPathType() != ObjectStats.PathTypeEnum.COMMON_PREFIX).collect(Collectors.toList());
                 // loop until we have something or last chunk
             } while (!chunk.isEmpty() && !last);
         }
@@ -557,9 +558,8 @@ public class LakeFSFileSystem extends FileSystem {
                 throw new NoSuchElementException("No more entries");
             }
             ObjectStats objectStats = chunk.get(pos++);
+            objectStats.setPath(Constants.URI_SCHEME + "://" + objectLocation.getRepository() + "/" + objectLocation.getRef() + Constants.SEPARATOR + objectStats.getPath());
             FileStatus fileStatus = convertObjectStatsToFileStatus(objectStats);
-            // make path absolute
-            fileStatus.setPath(fileStatus.getPath().makeQualified(this.uri, workingDirectory));
             // currently do not pass locations of the file blocks - until we understand if it is required in order to work
             return new LocatedFileStatus(fileStatus, null);
         }
