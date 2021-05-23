@@ -407,7 +407,7 @@ public class LakeFSFileSystem extends FileSystem {
                 modificationTime = TimeUnit.SECONDS.toMillis(mtime);
             }
             Path filePath = new Path(ObjectLocation.formatPath(repository, ref, objectStat.getPath()));
-            boolean isDir = objectStat.getPathType() == ObjectStats.PathTypeEnum.COMMON_PREFIX;
+            boolean isDir = isDirectory(objectStat);
             long blockSize = 0;
             if (!isDir) {
                 blockSize = withFileSystemAndTranslatedPhysicalPath(objectStat.getPhysicalAddress(), FileSystem::getDefaultBlockSize);
@@ -545,7 +545,7 @@ public class LakeFSFileSystem extends FileSystem {
                     throw new IOException("listObjects", e);
                 }
                 // filter objects
-                chunk = chunk.stream().filter(stat -> stat.getPathType() != ObjectStats.PathTypeEnum.COMMON_PREFIX).collect(Collectors.toList());
+                chunk = chunk.stream().filter(LakeFSFileSystem::isDirectory).collect(Collectors.toList());
                 // loop until we have something or last chunk
             } while (!chunk.isEmpty() && !last);
         }
@@ -560,5 +560,9 @@ public class LakeFSFileSystem extends FileSystem {
             // currently do not pass locations of the file blocks - until we understand if it is required in order to work
             return new LocatedFileStatus(fileStatus, null);
         }
+    }
+
+    private static boolean isDirectory(ObjectStats stat) {
+        return stat.getPathType() != ObjectStats.PathTypeEnum.COMMON_PREFIX;
     }
 }
