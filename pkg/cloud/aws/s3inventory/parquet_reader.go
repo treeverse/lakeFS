@@ -36,12 +36,14 @@ func (p *ParquetInventoryFileReader) Close() error {
 }
 
 func (p *ParquetInventoryFileReader) getKeyColumnStatistics(rowGroupIdx int) *parquet.Statistics {
-	for i, c := range p.Footer.RowGroups[rowGroupIdx].Columns {
-		if c.MetaData.PathInSchema[len(c.GetMetaData().GetPathInSchema())-1] == "Key" {
-			return p.Footer.RowGroups[rowGroupIdx].Columns[i].GetMetaData().GetStatistics()
+	columns := p.Footer.RowGroups[rowGroupIdx].Columns
+	for _, c := range columns {
+		metaData := c.GetMetaData()
+		if metaData.GetPathInSchema()[len(metaData.GetPathInSchema())-1] == "Key" {
+			return metaData.GetStatistics()
 		}
 	}
-	return p.Footer.RowGroups[rowGroupIdx].Columns[1].GetMetaData().GetStatistics()
+	return columns[1].GetMetaData().GetStatistics()
 }
 
 func (p *ParquetInventoryFileReader) FirstObjectKey() string {
