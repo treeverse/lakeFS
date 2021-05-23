@@ -73,6 +73,10 @@ public class LakeFSFileSystem extends FileSystem {
 
     @Override
     public void initialize(URI name, Configuration conf) throws IOException {
+        initialize(name, conf, new LakeFSClient(conf));
+    }
+
+    void initialize(URI name, Configuration conf, LakeFSClient lfsClient) throws IOException {
         super.initialize(name, conf);
         this.conf = conf;
         LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ initialize: {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$", name);
@@ -84,9 +88,8 @@ public class LakeFSFileSystem extends FileSystem {
         setConf(conf);
         this.uri = name;
 
-
-        lfsClient = new LakeFSClient(conf);
         s3Client = createS3ClientFromConf(conf);
+        this.lfsClient = lfsClient;
 
         listAmount = conf.getInt(FS_LAKEFS_LIST_AMOUNT_KEY, DEFAULT_LIST_AMOUNT);
 
@@ -446,6 +449,8 @@ public class LakeFSFileSystem extends FileSystem {
         ObjectsApi objects = lfsClient.getObjects();
         ObjectLocation objectLoc = pathToObjectLocation(path);
         try {
+            LOG.debug(
+                    "[DEBUG] loc " + objectLoc.getRepository() + " " + objectLoc.getRef() + " " + objectLoc.getPath());
             objects.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
             return true;
         } catch (ApiException e) {
