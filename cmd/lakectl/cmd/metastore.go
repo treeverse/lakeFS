@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/metastore"
 	"github.com/treeverse/lakefs/pkg/metastore/glue"
 	"github.com/treeverse/lakefs/pkg/metastore/hive"
@@ -44,6 +45,17 @@ var metastoreCopyCmd = &cobra.Command{
 		if len(serde) == 0 {
 			serde = toTable
 		}
+		logging.Default().WithFields(logging.Fields{
+			"form_client_type": fromClientType,
+			"from_schema":      fromDB,
+			"from_table":       fromTable,
+			"to_client_type":   toClientType,
+			"to_schema":        toDB,
+			"to_table":         toTable,
+			"to_branch":        toBranch,
+			"serde":            serde,
+			"partition":        partition,
+		}).Info("Metadata copy or merge table")
 		fmt.Printf("copy %s.%s -> %s.%s\n", fromDB, fromTable, toDB, toTable)
 		err := metastore.CopyOrMerge(cmd.Context(), fromClient, toClient, fromDB, fromTable, toDB, toTable, toBranch, serde, partition)
 		if err != nil {

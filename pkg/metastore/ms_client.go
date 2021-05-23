@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/treeverse/lakefs/pkg/catalog"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 type ReadClient interface {
@@ -43,7 +44,16 @@ func CopyOrMerge(ctx context.Context, fromClient Client, toClient Client, fromDB
 }
 
 func copyOrMergeWithTransformLocation(ctx context.Context, fromClient, toClient Client, fromDB, fromTable, toDB, toTable, serde string, partition []string, transformLocation func(location string) (string, error)) error {
+	log := logging.Default().WithFields(logging.Fields{
+		"from_db":       fromDB,
+		"from_table":    fromTable,
+		"to_db":         toDB,
+		"to_table":      toTable,
+		"serde":         serde,
+		"partition_len": len(partition),
+	})
 	if len(partition) > 0 {
+		log.Debug("CopyPartition")
 		return CopyPartition(ctx, fromClient, toClient, fromDB, fromTable, toDB, toTable, serde, partition, transformLocation)
 	}
 	hasTable, err := toClient.HasTable(ctx, toDB, toTable)
@@ -51,6 +61,7 @@ func copyOrMergeWithTransformLocation(ctx context.Context, fromClient, toClient 
 		return err
 	}
 	if !hasTable {
+		log.Debug("Copy")
 		table, err := fromClient.GetTable(ctx, fromDB, fromTable)
 		if err != nil {
 			return err
@@ -61,6 +72,7 @@ func copyOrMergeWithTransformLocation(ctx context.Context, fromClient, toClient 
 		}
 		return Copy(ctx, table, partitions, toDB, toTable, serde, toClient, transformLocation)
 	}
+	log.Debug("Merge")
 	table, err := fromClient.GetTable(ctx, fromDB, fromTable)
 	if err != nil {
 		return err
