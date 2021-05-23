@@ -86,14 +86,16 @@ Sensors are also available if you want to synchronize a running DAG with externa
    )
    ```
 
-For a DAG example that uses all the above, check out the airflow-provider-lakeFS repository
-[example DAG](https://github.com/treeverse/airflow-provider-lakeFS/blob/main/lakefs_provider/example_dags/lakefs-dag.py).
+For a DAG example that uses all the above, check out the [example DAG](https://github.com/treeverse/airflow-provider-lakeFS/blob/main/lakefs_provider/example_dags/lakefs-dag.py)
+in the airflow-provider-lakeFS repository.
 
-### Performing other operation 
-There are two options to run lakeFS commands with Airflow other than using the operators and sensors.
-Using the SimpleHttpOperator to send [API requests](../reference/api.md) to lakeFS. Or we could use the bashOperator with [lakeCTL](../quickstart/lakefs_cli.md) commands.
 
-For example, deleting a branch using bashOperator:
+### Performing other operations
+To perform other operations that are not yet supported by the package, you can use:
+
+- SimpleHttpOperator to send [API requests](../reference/api.md) to lakeFS. 
+- BashOperator with [lakeCTL](../quickstart/lakefs_cli.md) commands.
+For example, deleting a branch using BashOperator:
 ```bash
 commit_extract = BashOperator(
    task_id='delete_branch',
