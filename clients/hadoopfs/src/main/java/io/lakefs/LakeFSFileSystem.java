@@ -89,7 +89,7 @@ public class LakeFSFileSystem extends FileSystem {
         Path path = new Path(name);
 
         // TODO(ariels): Retrieve base filesystem configuration for URI from new API.  Needed
-        //     when this fs is contructed in order to create a new file, which cannot be Stat'ed
+        //     when this fs is constructed in order to create a new file, which cannot be Stat'ed
         try {
             ObjectsApi objects = lfsClient.getObjects();
             ObjectLocation objectLoc = pathToObjectLocation(path);
@@ -318,35 +318,34 @@ public class LakeFSFileSystem extends FileSystem {
     public boolean delete(Path path, boolean recursive) throws IOException {
         LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ Delete path {} - recursive {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$",
                 path, recursive);
-
-        ObjectsApi objectsApi = lfsClient.getObjects();
         if (recursive) {
             ListingIterator iterator = new ListingIterator(path, true, listAmount);
             while (iterator.hasNext()) {
                 LocatedFileStatus fileStatus = iterator.next();
-                try {
-                    ObjectLocation objectLoc = pathToObjectLocation(fileStatus.getPath());
-                    objectsApi.deleteObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
-                } catch (ApiException e) {
-                    if (e.getCode() != HttpStatus.SC_NOT_FOUND) {
-                        throw new IOException("deleteObject", e);
-                    }
-                }
+                deleteHelper(fileStatus.getPath());
             }
         } else {
-            try {
-                ObjectLocation objectLoc = pathToObjectLocation(path);
-                objectsApi.deleteObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
-            } catch (ApiException e) {
-                // This condition mimics s3a behaviour in https://github.com/apache/hadoop/blob/7f93349ee74da5f35276b7535781714501ab2457/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L2741
-                if (e.getCode() == HttpStatus.SC_NOT_FOUND) {
-                    LOG.error("Could not delete: {}, reason: {}", path, e.getResponseBody());
-                    return false;
-                }
-                throw new IOException("deleteObject", e);
+            if (!deleteHelper(path)) {
+                return false;
             }
         }
         LOG.debug("Successfully deleted {}", path);
+        return true;
+    }
+
+    private boolean deleteHelper(Path path) throws IOException {
+        try {
+            ObjectsApi objectsApi = lfsClient.getObjects();
+            ObjectLocation objectLoc = pathToObjectLocation(path);
+            objectsApi.deleteObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
+        } catch (ApiException e) {
+            // This condition mimics s3a behaviour in https://github.com/apache/hadoop/blob/7f93349ee74da5f35276b7535781714501ab2457/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L2741
+            if (e.getCode() == HttpStatus.SC_NOT_FOUND) {
+                LOG.error("Could not delete: {}, reason: {}", path, e.getResponseBody());
+                return false;
+            }
+            throw new IOException("deleteObject", e);
+        }
         return true;
     }
 
@@ -385,7 +384,7 @@ public class LakeFSFileSystem extends FileSystem {
                 throw new IOException("statObject", e);
             }
         }
-        // check if path is a directory
+        // not found as a file; check if path is a "directory", i.e. a prefix.
         ListingIterator iterator = new ListingIterator(path, true, 1);
         if (iterator.hasNext()) {
             Path filePath = path.makeQualified(this.uri, this.workingDirectory);
