@@ -14,9 +14,6 @@ lakeFS is completely free and open source and licensed under the [Apache 2.0](ht
 ### 2. How does lakeFS data versioning work?
 lakeFS uses a copy-on-write mechanism. An object that did not change will invoke a metadata operation in lakeFS and an object that changed will be copied-on-wrote creating another version of the data and its corresponding metadata. 
 
-### 4. Will versioning data with lakeFS increase my storage cost?
-No. LakeFS stores a single copy of each version of each object. All versions referring to a given version of the the object on all branches are deduped to this same copy.
-
 ### 3. How do I get support for my lakeFS installation?
 We are extremely responsive on our slack channel, and we make sure to prioritize and with the community the issues most urgent for it. For SLA based support, please contact us at [support@treeverse.io](mailto:support@treeverse.io).
 
