@@ -64,4 +64,42 @@ public class LakeFSFileSystemTest {
     public void testAppend() throws IOException {
         fs.append(null, 0, null);
     }
+
+    /*
+    @Test
+    public void testRename() throws URISyntaxException, IOException {
+        Configuration conf = new Configuration(true);
+        conf.set(Constants.FS_LAKEFS_ACCESS_KEY, "<access_key>");
+        conf.set(Constants.FS_LAKEFS_SECRET_KEY, "<secret_key>");
+        conf.set(Constants.FS_LAKEFS_ENDPOINT_KEY, "http://localhost:8000/api/v1");
+        conf.set("fs.lakefs.impl", "io.lakefs.LakeFSFileSystem");
+        conf.set("fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem");
+        // With lakefsFS the user does not need to point to the s3 gateway
+        conf.set("fs.s3a.access.key", "<aws_access_key>");
+        conf.set("fs.s3a.secret.key", "<aws_secret_key>");
+
+        LakeFSFileSystem lfs = (LakeFSFileSystem)FileSystem.get(new URI("lakefs://aws-repo/main/nothere.txt"), conf);
+
+        // Uncommitted -
+        // rename existing src file to non-existing dst
+        Path src = new Path("lakefs://aws-repo/main/peopleLakefs.parquet/_temporary/0/_temporary/attempt_202105191158068718340739981962409_0001_m_000000_1/part-00000-10b8c14f-51c0-4604-b7b5-45bf009bd3b0-c000.snappy.parquet");
+        Path dst = new Path("lakefs://aws-repo/main/peopleLakefs.parquet/new-name.parquet");
+        lfs.rename(src, dst);
+
+        // rename non-existing src file - src not found, return false.
+        Path src = new Path("lakefs://aws-repo/main/peopleLakefs.parquet/_temporary/0/_temporary/attempt_202105161150342255421072959703851_0001_m_000000_1/part-00000-c72e1fa6-9d86-4032-a2b1-f8dd1334e52e-c000.snappy.parquet");
+        Path dst = new Path("lakefs://aws-repo/main/peopleLakefs.parquet/dst2.parquet");
+        lfs.rename(src, dst);
+
+        // rename existing src file to existing dst - no failure, src is rename, dst file is overridden with the renamed file.
+        Path src = new Path("lakefs://aws-repo/main/peopleLakefs.parquet/_SUCCESS");
+        Path dst = new Path("lakefs://aws-repo/main/peopleLakefs.parquet/new-name.parquet");
+        lfs.rename(src, dst);
+
+        // rename dir (a common prefix?), currently not working. for path type = common prefix I can't stat the object.
+        Path src = new Path("lakefs://aws-repo/main/peopleLakefs.parquet/_temporary");
+        Path dst = new Path("lakefs://aws-repo/main/peopleLakefs.parquet");
+        lfs.rename(src, dst);
+    }
+     */
 }

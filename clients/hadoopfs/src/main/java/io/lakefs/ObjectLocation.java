@@ -35,4 +35,28 @@ class ObjectLocation {
         }
         return s;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof ObjectLocation)) {
+            return false;
+        }
+
+        ObjectLocation objLoc = (ObjectLocation) obj;
+        return this.repository.equals(objLoc.getRepository()) &&
+                this.ref.equals(objLoc.getRef()) && this.path.equals(objLoc.getPath());
+    }
+
+    /**
+     * Checks if an ObjectLocation is on the same branch.
+     *
+     * @param otherObjLoc the objectLocation to compare
+     * @return true if the object location is on same branch, false otherwise
+     */
+    public boolean onSameBranch(ObjectLocation otherObjLoc) {
+        return this.repository.equals(otherObjLoc.getRepository()) && this.ref.equals(otherObjLoc.getRef());
+    }
 }
