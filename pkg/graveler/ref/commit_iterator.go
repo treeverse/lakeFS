@@ -14,7 +14,7 @@ type CommitIterator struct {
 	repositoryID graveler.RepositoryID
 	start        graveler.CommitID
 	value        *graveler.CommitRecord
-	queue        *CommitsPriorityQueue
+	queue        commitsPriorityQueue
 	visit        map[graveler.CommitID]struct{}
 	state        commitIteratorState
 	err          error
@@ -28,13 +28,43 @@ const (
 	commitIteratorStateDone
 )
 
+type commitsPriorityQueue []*graveler.CommitRecord
+
+func (c commitsPriorityQueue) Len() int {
+	return len(c)
+}
+
+func (c commitsPriorityQueue) Less(i, j int) bool {
+	if c[i].Commit.CreationDate.Equal(c[j].Commit.CreationDate) {
+		return c[i].CommitID > c[j].CommitID
+	}
+	return c[i].Commit.CreationDate.After(c[j].Commit.CreationDate)
+}
+
+func (c commitsPriorityQueue) Swap(i, j int) {
+	c[i], c[j] = c[j], c[i]
+}
+
+func (c *commitsPriorityQueue) Push(x interface{}) {
+	rec := x.(*graveler.CommitRecord)
+	*c = append(*c, rec)
+}
+
+func (c *commitsPriorityQueue) Pop() interface{} {
+	cc := *c
+	n := len(cc) - 1
+	item := cc[n]
+	*c = cc[:n]
+	return item
+}
+
 func NewCommitIterator(ctx context.Context, db db.Database, repositoryID graveler.RepositoryID, start graveler.CommitID) *CommitIterator {
 	return &CommitIterator{
 		db:           db,
 		ctx:          ctx,
 		repositoryID: repositoryID,
 		start:        start,
-		queue:        NewCommitsPriorityQueue(),
+		queue:        make(commitsPriorityQueue, 0),
 		visit:        make(map[graveler.CommitID]struct{}),
 	}
 }
@@ -78,7 +108,7 @@ func (ci *CommitIterator) Next() bool {
 
 	// as long as we have something in the queue we will
 	// set it as the current value and push the current commit's parents to the queue
-	ci.value = heap.Pop(ci.queue).(*graveler.CommitRecord)
+	ci.value = heap.Pop(&ci.queue).(*graveler.CommitRecord)
 	for _, p := range ci.value.Parents {
 		rec, err := ci.getCommitRecord(p)
 		if err != nil {
@@ -91,7 +121,7 @@ func (ci *CommitIterator) Next() bool {
 			continue
 		}
 		ci.visit[rec.CommitID] = struct{}{}
-		heap.Push(ci.queue, rec)
+		heap.Push(&ci.queue, rec)
 	}
 	return true
 }
@@ -100,7 +130,7 @@ func (ci *CommitIterator) Next() bool {
 //   The list of commit
 func (ci *CommitIterator) SeekGE(id graveler.CommitID) {
 	ci.err = nil
-	ci.queue = NewCommitsPriorityQueue()
+	ci.queue = make(commitsPriorityQueue, 0)
 	ci.visit = make(map[graveler.CommitID]struct{})
 	ci.state = commitIteratorStateInit
 
@@ -116,7 +146,7 @@ func (ci *CommitIterator) SeekGE(id graveler.CommitID) {
 
 	// step back - in order to have Next to read the value we just got,
 	// we push back the current value to our queue and set the current value to nil.
-	heap.Push(ci.queue, ci.value)
+	heap.Push(&ci.queue, ci.value)
 	ci.value = nil
 }
 

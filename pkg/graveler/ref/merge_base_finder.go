@@ -7,43 +7,36 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler"
 )
 
-// taken from history:
-// https://github.com/treeverse/lakeFS/blob/606bf07969c14a569a60efe9c92831f424fa7f36/index/dag/commit_iterator.go
 type CommitGetter interface {
 	GetCommit(ctx context.Context, repositoryID graveler.RepositoryID, commitID graveler.CommitID) (*graveler.Commit, error)
 }
 
-type reachedFlags struct {
-	fromLeft  bool
-	fromRight bool
-}
+type reachedFlags uint8
 
-func (d reachedFlags) or(fromLeft bool, fromRight bool) reachedFlags {
-	d.fromLeft = d.fromLeft || fromLeft
-	d.fromRight = d.fromRight || fromRight
-	return d
-}
+const (
+	fromLeft reachedFlags = 1 << iota
+	fromRight
+)
 
 // FindMergeBase finds the best common ancestor according to its definition it the git-merge-base documentation: https://git-scm.com/docs/git-merge-base
 // One common ancestor is better than another common ancestor if the latter is an ancestor of the former.
 func FindMergeBase(ctx context.Context, getter CommitGetter, repositoryID graveler.RepositoryID, leftID, rightID graveler.CommitID) (*graveler.Commit, error) {
 	var commitRecord *graveler.CommitRecord
-	var commitFlags reachedFlags
 	queue := NewCommitsGenerationPriorityQueue()
 	reached := make(map[graveler.CommitID]reachedFlags)
-	reached[rightID] = reached[rightID].or(false, true)
-	reached[leftID] = reached[leftID].or(true, false)
+	reached[rightID] |= fromRight
+	reached[leftID] |= fromLeft
 	// create an hypothetical commit with given nodes as parents, and insert it to the queue
-	heap.Push(queue, &graveler.CommitRecord{
+	heap.Push(&queue, &graveler.CommitRecord{
 		Commit: &graveler.Commit{Parents: []graveler.CommitID{leftID, rightID}},
 	})
 	for {
 		if queue.Len() == 0 {
 			return nil, nil
 		}
-		commitRecord = heap.Pop(queue).(*graveler.CommitRecord)
-		commitFlags = reached[commitRecord.CommitID]
-		if commitFlags.fromLeft && commitFlags.fromRight {
+		commitRecord = heap.Pop(&queue).(*graveler.CommitRecord)
+		commitFlags := reached[commitRecord.CommitID]
+		if commitFlags&fromLeft != 0 && commitFlags&fromRight != 0 {
 			// commit was reached from both left and right nodes
 			return commitRecord.Commit, nil
 		}
@@ -52,9 +45,9 @@ func FindMergeBase(ctx context.Context, getter CommitGetter, repositoryID gravel
 			if err != nil {
 				return nil, err
 			}
-			heap.Push(queue, &graveler.CommitRecord{CommitID: parent, Commit: parentCommit})
+			heap.Push(&queue, &graveler.CommitRecord{CommitID: parent, Commit: parentCommit})
 			// mark the parent with the flag values from its descendents:
-			reached[parent] = reached[parent].or(commitFlags.fromLeft, commitFlags.fromRight)
+			reached[parent] |= commitFlags
 		}
 	}
 }

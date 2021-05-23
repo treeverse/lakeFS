@@ -52,7 +52,7 @@ func doMergeAndListIteration(t *testing.T, logger logging.Logger, ctx context.Co
 	const addedFiles = 10
 	for i := 0; i < addedFiles; i++ {
 		p := fmt.Sprintf("%d.txt", i)
-		logger.WithField("iteration", iteration).WithField("path", p).Info("Upload content to branch")
+		logger.WithFields(logging.Fields{"iteration": iteration, "path": p}).Info("Upload content to branch")
 		checksum, content := uploadFileRandomData(ctx, t, repo, branch, p, false)
 		checksums[checksum] = content
 	}
@@ -68,8 +68,7 @@ func doMergeAndListIteration(t *testing.T, logger logging.Logger, ctx context.Co
 	mergeRes, err := client.MergeIntoBranchWithResponse(ctx, repo, branch, mainBranch, api.MergeIntoBranchJSONRequestBody{})
 	require.NoError(t, err, "failed to merge branches")
 	require.Equal(t, http.StatusOK, mergeRes.StatusCode())
-	logger.WithField("iteration", iteration).WithField("mergeResult", mergeRes).Info("Merged successfully")
-
+	logger.WithFields(logging.Fields{"iteration": iteration, "mergeResult": mergeRes}).Info("Merged successfully")
 	resp, err := client.ListObjectsWithResponse(ctx, repo, mainBranch, &api.ListObjectsParams{Amount: api.PaginationAmountPtr(100)})
 	require.NoError(t, err, "failed to list objects")
 	require.Equal(t, http.StatusOK, resp.StatusCode())
@@ -79,6 +78,6 @@ func doMergeAndListIteration(t *testing.T, logger logging.Logger, ctx context.Co
 	require.False(t, pagin.HasMore, "pagination shouldn't have more items")
 	require.Len(t, objs, totalFiles)
 	require.Equal(t, totalFiles, pagin.Results)
-	logger.WithField("iteration", iteration).WithField("objs", objs).WithField("pagin", pagin).Info("Listed successfully")
+	logger.WithFields(logging.Fields{"iteration": iteration, "objs": objs, "pagin": pagin}).Info("Listed successfully")
 	return objs
 }

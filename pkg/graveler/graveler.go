@@ -1421,9 +1421,10 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 		commit.Message = commitParams.Message
 		commit.MetaRangeID = metaRangeID
 		commit.Parents = []CommitID{toCommit.CommitID, fromCommit.CommitID}
-		commit.Generation = fromCommit.Generation + 1
 		if toCommit.Generation > fromCommit.Generation {
 			commit.Generation = toCommit.Generation + 1
+		} else {
+			commit.Generation = fromCommit.Generation + 1
 		}
 		commit.Metadata = commitParams.Metadata
 		preRunID = NewRunID()
