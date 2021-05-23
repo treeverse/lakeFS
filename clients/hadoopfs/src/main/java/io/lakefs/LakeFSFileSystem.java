@@ -7,7 +7,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import com.amazonaws.ClientConfiguration;
@@ -17,9 +16,7 @@ import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 
-import io.lakefs.clients.api.model.ObjectStatsList;
-import io.lakefs.clients.api.model.Pagination;
-import org.apache.commons.io.FileUtils;
+import io.lakefs.clients.api.model.*;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
@@ -31,13 +28,9 @@ import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.lakefs.clients.api.ApiClient;
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.ObjectsApi;
 import io.lakefs.clients.api.StagingApi;
-import io.lakefs.clients.api.auth.HttpBasicAuth;
-import io.lakefs.clients.api.model.ObjectStats;
-import io.lakefs.clients.api.model.StagingLocation;
 
 import javax.annotation.Nonnull;
 
@@ -58,15 +51,12 @@ import static io.lakefs.Constants.*;
 public class LakeFSFileSystem extends FileSystem {
     public static final Logger LOG = LoggerFactory.getLogger(LakeFSFileSystem.class);
 
-    private static final String BASIC_AUTH = "basic_auth";
-
     private Configuration conf;
     private URI uri;
     private Path workingDirectory = new Path(Constants.URI_SEPARATOR);
-    private ApiClient apiClient;
+    private LakeFSClient lfsClient;
     private AmazonS3 s3Client;
     private int listAmount;
-
     private FileSystem fsForConfig;
 
     private URI translateUri(URI uri) throws java.net.URISyntaxException {
@@ -94,22 +84,8 @@ public class LakeFSFileSystem extends FileSystem {
         setConf(conf);
         this.uri = name;
 
-        // setup lakeFS api client
-        String endpoint = conf.get(Constants.FS_LAKEFS_ENDPOINT_KEY, "http://localhost:8000/api/v1");
-        String accessKey = conf.get(Constants.FS_LAKEFS_ACCESS_KEY);
-        if (accessKey == null) {
-            throw new IOException("Missing lakeFS access key");
-        }
-        String secretKey = conf.get(Constants.FS_LAKEFS_SECRET_KEY);
-        if (secretKey == null) {
-            throw new IOException("Missing lakeFS secret key");
-        }
-        this.apiClient = io.lakefs.clients.api.Configuration.getDefaultApiClient();
-        this.apiClient.setBasePath(endpoint);
-        HttpBasicAuth basicAuth = (HttpBasicAuth)this.apiClient.getAuthentication(BASIC_AUTH);
-        basicAuth.setUsername(accessKey);
-        basicAuth.setPassword(secretKey);
 
+        lfsClient = new LakeFSClient(conf);
         s3Client = createS3ClientFromConf(conf);
 
         listAmount = conf.getInt(FS_LAKEFS_LIST_AMOUNT_KEY, DEFAULT_LIST_AMOUNT);
@@ -119,7 +95,7 @@ public class LakeFSFileSystem extends FileSystem {
         // TODO(ariels): Retrieve base filesystem configuration for URI from new API.  Needed
         //     when this fs is contructed in order to create a new file, which cannot be Stat'ed
         try {
-            ObjectsApi objects = new ObjectsApi(apiClient);
+            ObjectsApi objects = lfsClient.getObjects();
             ObjectLocation objectLoc = pathToObjectLocation(path);
             ObjectStats stats = objects.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
             URI physicalUri = translateUri(new URI(stats.getPhysicalAddress()));
@@ -206,7 +182,7 @@ public class LakeFSFileSystem extends FileSystem {
         try {
             LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ open(" + path.getName() + ") $$$$$$$$$$$$$$$$$$$$$$$$$$$$");
 
-            ObjectsApi objects = new ObjectsApi(apiClient);
+            ObjectsApi objects = lfsClient.getObjects();
             ObjectLocation objectLoc = pathToObjectLocation(path);
             ObjectStats stats = objects.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
             return withFileSystemAndTranslatedPhysicalPath(stats.getPhysicalAddress(), (FileSystem fs, Path p) -> fs.open(p, bufSize));
@@ -238,7 +214,7 @@ public class LakeFSFileSystem extends FileSystem {
 
             // BUG(ariels): overwrite ignored.
 
-            StagingApi staging = new StagingApi(apiClient);
+            StagingApi staging = lfsClient.getStaging();
             ObjectLocation objectLoc = pathToObjectLocation(path);
             StagingLocation stagingLoc = staging.getPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
             URI physicalUri = translateUri(new URI(stagingLoc.getPhysicalAddress()));
@@ -264,10 +240,82 @@ public class LakeFSFileSystem extends FileSystem {
         throw new UnsupportedOperationException("Append is not supported by LakeFSFileSystem");
     }
 
+    /**
+     * This method is implemented under the following assumptions:
+     * 1. rename is only supported for uncommitted data on the same branch.
+     * 2. file rename operation is supported, directories rename is unsupported.
+     * 3. the rename dst  path can be an uncommitted file, that will be overridden as a result of the rename operation.
+     * 4. On rename operation a new mtime is generated, therefore we don't preserve the mtime of the src object.
+     *
+     * @throws IOException
+     */
     @Override
-    public boolean rename(Path path, Path path1) throws IOException {
-        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ rename $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ");
-        return false;
+    public boolean rename(Path src, Path dst) throws IOException {
+        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ Rename path {} to {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$", src, dst);
+
+        ObjectLocation srcObjectLoc = pathToObjectLocation(src);
+        ObjectLocation dstObjectLoc = pathToObjectLocation(dst);
+        if (srcObjectLoc.equals(dstObjectLoc)) {
+            LOG.debug("rename: src and dst refer to the same lakefs object location: {}", dst);
+            return true;
+        }
+
+        if (!srcObjectLoc.onSameBranch(dstObjectLoc)) {
+            LOG.error("rename: src {} and dst {} are not on the same branch. rename outside this scope is unsupported "
+                    + "by lakefs.", src, dst);
+            return false;
+        }
+
+        ObjectStats srcStat;
+        ObjectsApi objects = lfsClient.getObjects();
+        try {
+            // Stat src file to get its metadata
+            srcStat = objects.statObject(srcObjectLoc.getRepository(), srcObjectLoc.getRef(),
+                    srcObjectLoc.getPath());
+        } catch (ApiException e) {
+            LOG.error("rename: could not get src object stats. src:{}", src, e);
+            return false;
+        }
+
+        return renameObject(srcStat, srcObjectLoc, dstObjectLoc);
+    }
+
+    /**
+     * Non-atomic rename operation.
+     * @return true if rename succeeded, false otherwise
+     */
+    private boolean renameObject(ObjectStats srcStat, ObjectLocation srcObjectLoc, ObjectLocation dstObjectLoc)
+            throws IOException {
+        ObjectsApi objects = lfsClient.getObjects();
+
+        //TODO (Tals): Can we add metadata? we currently don't have an API to get the metadata of an object.
+        ObjectStageCreation creationReq = new ObjectStageCreation()
+                .checksum(srcStat.getChecksum())
+                .sizeBytes(srcStat.getSizeBytes())
+                .physicalAddress(srcStat.getPhysicalAddress());
+
+        try {
+            objects.stageObject(dstObjectLoc.getRepository(), dstObjectLoc.getRef(), dstObjectLoc.getPath(),
+                    creationReq);
+        } catch (ApiException e) {
+            LOG.error("rename: Could not stage object on dst:{}", dstObjectLoc.getPath(), e);
+            return false;
+        }
+
+        // delete src path
+        try {
+            objects.deleteObject(srcObjectLoc.getRepository(), srcObjectLoc.getRef(), srcObjectLoc.getPath());
+        } catch (ApiException e) {
+            // This condition mimics s3a behaviour in https://github.com/apache/hadoop/blob/2960d83c255a00a549f8809882cd3b73a6266b6d/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L2741
+            if (e.getCode() == HttpStatus.SC_NOT_FOUND) {
+                LOG.error("Could not delete: {}, reason: {}", srcObjectLoc.getPath(), e.getResponseBody());
+                return false;
+            }
+            throw new IOException("deleteObject", e);
+        }
+
+        LOG.debug("rename: successfully renamed {} to {}", srcObjectLoc.getPath(), dstObjectLoc.getPath());
+        return true;
     }
 
     @Override
@@ -276,7 +324,7 @@ public class LakeFSFileSystem extends FileSystem {
                 path, recursive);
 
         ObjectLocation objectLoc = pathToObjectLocation(path);
-        ObjectsApi objectsApi = new ObjectsApi(apiClient);
+        ObjectsApi objectsApi = lfsClient.getObjects();
         try {
             objectsApi.deleteObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
         } catch (ApiException e) {
@@ -318,7 +366,7 @@ public class LakeFSFileSystem extends FileSystem {
         LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ getFileStatus, path: {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", path.toString());
         ObjectLocation objectLoc = pathToObjectLocation(path);
         try {
-            ObjectsApi objectsApi = new ObjectsApi(this.apiClient);
+            ObjectsApi objectsApi = lfsClient.getObjects();
             ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
             long length = 0;
 
@@ -393,7 +441,7 @@ public class LakeFSFileSystem extends FileSystem {
 
     @Override
     public boolean exists(Path path) throws IOException {
-        ObjectsApi objects = new ObjectsApi(apiClient);
+        ObjectsApi objects = lfsClient.getObjects();
         ObjectLocation objectLoc = pathToObjectLocation(path);
         try {
             objects.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
@@ -481,7 +529,7 @@ public class LakeFSFileSystem extends FileSystem {
         private void readNextChunk() throws IOException {
             do {
                 try {
-                    ObjectsApi objectsApi = new ObjectsApi(apiClient);
+                    ObjectsApi objectsApi = lfsClient.getObjects();
                     ObjectStatsList resp = objectsApi.listObjects(objectLocation.getRepository(), objectLocation.getRef(), objectLocation.getPath(), nextOffset, amount, delimiter);
                     chunk = resp.getResults();
                     pos = 0;
