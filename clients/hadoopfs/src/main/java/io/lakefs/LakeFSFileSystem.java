@@ -273,7 +273,7 @@ public class LakeFSFileSystem extends FileSystem {
             srcStat = objects.statObject(srcObjectLoc.getRepository(), srcObjectLoc.getRef(),
                     srcObjectLoc.getPath());
         } catch (ApiException e) {
-            LOG.error("rename: Could not get src Object stats. src:{}", src, e);
+            LOG.error("rename: could not get src object stats. src:{}", src, e);
             return false;
         }
 
@@ -286,7 +286,6 @@ public class LakeFSFileSystem extends FileSystem {
      */
     private boolean renameObject(ObjectStats srcStat, ObjectLocation srcObjectLoc, ObjectLocation dstObjectLoc)
             throws IOException {
-
         ObjectsApi objects = lfsClient.getObjects();
 
         //TODO (Tals): Can we add metadata? we currently don't have an API to get the metadata of an object.
