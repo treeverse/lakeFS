@@ -161,13 +161,22 @@ func TestFormatQualifiedKey(t *testing.T) {
 			},
 			Expected: "s3://some-bucket/prefix/path/to/file",
 		},
+		{
+			Name: "dont_eliminate_dots",
+			QualifiedKey: block.QualifiedKey{
+				StorageType:      block.StorageTypeS3,
+				StorageNamespace: "some-bucket/prefix/",
+				Key:              "/path/to/../file",
+			},
+			Expected: "s3://some-bucket/prefix/path/to/../file",
+		},
 	}
 
 	for _, cas := range cases {
 		t.Run(cas.Name, func(t *testing.T) {
 			formatted := cas.QualifiedKey.Format()
 			if formatted != cas.Expected {
-				t.Fatalf("expected %v got %v", cas.Expected, formatted)
+				t.Fatalf("Format() got '%s', expected '%s'", formatted, cas.Expected)
 			}
 		})
 	}
