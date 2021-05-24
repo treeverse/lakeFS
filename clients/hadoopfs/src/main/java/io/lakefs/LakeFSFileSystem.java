@@ -91,9 +91,6 @@ public class LakeFSFileSystem extends FileSystem {
         listAmount = conf.getInt(FS_LAKEFS_LIST_AMOUNT_KEY, DEFAULT_LIST_AMOUNT);
 
         Path path = new Path(name);
-
-        // TODO(ariels): Retrieve base filesystem configuration for URI from new API.  Needed
-        //     when this fs is constructed in order to create a new file, which cannot be Stat'ed
         ObjectLocation objectLoc = pathToObjectLocation(path);
         RepositoriesApi repositoriesApi = lfsClient.getRepositories();
         try {
