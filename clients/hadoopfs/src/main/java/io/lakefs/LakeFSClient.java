@@ -2,6 +2,7 @@ package io.lakefs;
 
 import io.lakefs.clients.api.ApiClient;
 import io.lakefs.clients.api.ObjectsApi;
+import io.lakefs.clients.api.RepositoriesApi;
 import io.lakefs.clients.api.StagingApi;
 import io.lakefs.clients.api.auth.HttpBasicAuth;
 import org.apache.hadoop.conf.Configuration;
@@ -16,6 +17,7 @@ public class LakeFSClient {
     private static final String BASIC_AUTH = "basic_auth";
     private final ObjectsApi objects;
     private final StagingApi staging;
+    private final RepositoriesApi repositories;
 
     public LakeFSClient(Configuration conf) throws IOException {
         String accessKey = conf.get(Constants.FS_LAKEFS_ACCESS_KEY);
@@ -37,6 +39,7 @@ public class LakeFSClient {
 
         this.objects = new ObjectsApi(apiClient);
         this.staging = new StagingApi(apiClient);
+        this.repositories = new RepositoriesApi(apiClient);
     }
 
     public ObjectsApi getObjects() {
@@ -46,4 +49,6 @@ public class LakeFSClient {
     public StagingApi getStaging() {
         return staging;
     }
+
+    public RepositoriesApi getRepositories() { return repositories; }
 }
