@@ -1,14 +1,23 @@
 package io.lakefs;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Collections;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
 import com.amazonaws.auth.AWSCredentialsProviderChain;
 import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.ObjectsApi;
-import io.lakefs.clients.api.StagingApi;
+
 import io.lakefs.clients.api.model.*;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
@@ -19,30 +28,23 @@ import org.apache.hadoop.util.Progressable;
 import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.lakefs.clients.api.*;
 
 import javax.annotation.Nonnull;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.net.URI;
-import java.util.Collections;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import static io.lakefs.Constants.*;
 
 /**
  * A dummy implementation of the core lakeFS Filesystem.
  * This class implements a {@link LakeFSFileSystem} that can be registered to Spark and support limited write and read actions.
- *
+ * <p>
  * Configure Spark to use lakeFS filesystem by property:
- *   spark.hadoop.fs.lakefs.impl=io.lakefs.LakeFSFileSystem.
- *
+ * spark.hadoop.fs.lakefs.impl=io.lakefs.LakeFSFileSystem.
+ * <p>
  * Configure the application or the filesystem application by properties:
- *   fs.lakefs.endpoint=http://localhost:8000/api/v1
- *   fs.lakefs.access.key=AKIAIOSFODNN7EXAMPLE
- *   fs.lakefs.secret.key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+ * fs.lakefs.endpoint=http://localhost:8000/api/v1
+ * fs.lakefs.access.key=AKIAIOSFODNN7EXAMPLE
+ * fs.lakefs.secret.key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
  */
 public class LakeFSFileSystem extends FileSystem {
     public static final Logger LOG = LoggerFactory.getLogger(LakeFSFileSystem.class);
@@ -57,15 +59,17 @@ public class LakeFSFileSystem extends FileSystem {
 
     private URI translateUri(URI uri) throws java.net.URISyntaxException {
         switch (uri.getScheme()) {
-        case "s3":
-            return new URI("s3a", uri.getUserInfo(), uri.getHost(), uri.getPort(), uri.getPath(), uri.getQuery(),
-                           uri.getFragment());
-        default:
-            throw new RuntimeException(String.format("unsupported URI scheme %s", uri.getScheme()));
+            case "s3":
+                return new URI("s3a", uri.getUserInfo(), uri.getHost(), uri.getPort(), uri.getPath(), uri.getQuery(),
+                        uri.getFragment());
+            default:
+                throw new RuntimeException(String.format("unsupported URI scheme %s", uri.getScheme()));
         }
     }
 
-    public URI getUri() { return uri; }
+    public URI getUri() {
+        return uri;
+    }
 
     @Override
     public void initialize(URI name, Configuration conf) throws IOException {
@@ -90,14 +94,15 @@ public class LakeFSFileSystem extends FileSystem {
 
         // TODO(ariels): Retrieve base filesystem configuration for URI from new API.  Needed
         //     when this fs is constructed in order to create a new file, which cannot be Stat'ed
+        ObjectLocation objectLoc = pathToObjectLocation(path);
+        RepositoriesApi repositoriesApi = lfsClient.getRepositories();
         try {
-            ObjectsApi objects = lfsClient.getObjects();
-            ObjectLocation objectLoc = pathToObjectLocation(path);
-            ObjectStats stats = objects.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
-            URI physicalUri = translateUri(new URI(stats.getPhysicalAddress()));
-            Path physicalPath = new Path(physicalUri.toString());
+            Repository repository = repositoriesApi.getRepository(objectLoc.getRepository());
+            String storageNamespace = repository.getStorageNamespace();
+            URI storageURI = URI.create(storageNamespace);
+            Path physicalPath = new Path(translateUri(storageURI));
             fsForConfig = physicalPath.getFileSystem(conf);
-        } catch (Exception e) {
+        } catch (ApiException | URISyntaxException e) {
             LOG.warn("get underlying filesystem for {}: {} (use default values)", path, e);
         }
     }
@@ -110,7 +115,7 @@ public class LakeFSFileSystem extends FileSystem {
     /**
      * @return FileSystem suitable for the translated physical address
      */
-    protected<R> R withFileSystemAndTranslatedPhysicalPath(String physicalAddress, BiFunctionWithIOException<FileSystem, Path, R> f) throws java.net.URISyntaxException, IOException {
+    protected <R> R withFileSystemAndTranslatedPhysicalPath(String physicalAddress, BiFunctionWithIOException<FileSystem, Path, R> f) throws java.net.URISyntaxException, IOException {
         URI uri = translateUri(new URI(physicalAddress));
         Path path = new Path(uri.toString());
         FileSystem fs = path.getFileSystem(conf);
@@ -124,9 +129,9 @@ public class LakeFSFileSystem extends FileSystem {
         String accessKey = conf.get(org.apache.hadoop.fs.s3a.Constants.ACCESS_KEY, null);
         String secretKey = conf.get(org.apache.hadoop.fs.s3a.Constants.SECRET_KEY, null);
         AWSCredentialsProviderChain credentials = new AWSCredentialsProviderChain(
-            new BasicAWSCredentialsProvider(accessKey, secretKey),
-            new InstanceProfileCredentialsProvider(),
-            new AnonymousAWSCredentialsProvider());
+                new BasicAWSCredentialsProvider(accessKey, secretKey),
+                new InstanceProfileCredentialsProvider(),
+                new AnonymousAWSCredentialsProvider());
 
         ClientConfiguration awsConf = new ClientConfiguration();
         awsConf.setMaxConnections(conf.getInt(org.apache.hadoop.fs.s3a.Constants.MAXIMUM_CONNECTIONS,
@@ -198,7 +203,7 @@ public class LakeFSFileSystem extends FileSystem {
     }
 
     /**
-     *{@inheritDoc}
+     * {@inheritDoc}
      * Called on a file write Spark/Hadoop action. This method writes the content of the file in path into stdout.
      */
     @Override
@@ -213,18 +218,18 @@ public class LakeFSFileSystem extends FileSystem {
             StagingApi staging = lfsClient.getStaging();
             ObjectLocation objectLoc = pathToObjectLocation(path);
             StagingLocation stagingLoc = staging.getPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
-            URI physicalUri = translateUri(new URI(stagingLoc.getPhysicalAddress()));
+            URI physicalUri = translateUri(new URI(Objects.requireNonNull(stagingLoc.getPhysicalAddress())));
 
             Path physicalPath = new Path(physicalUri.toString());
             FileSystem physicalFs = physicalPath.getFileSystem(conf);
 
             // TODO(ariels): add fs.FileSystem.Statistics here to keep track.
             return new FSDataOutputStream(new LinkOnCloseOutputStream(s3Client, staging, stagingLoc, objectLoc,
-                                                                      physicalUri,
-                                                                      // FSDataOutputStream is a kind of OutputStream(!)
-                                                                      physicalFs.create(physicalPath, false, bufferSize, replication, blockSize, progress)),
-                                          null);
-        }  catch (io.lakefs.clients.api.ApiException e) {
+                    physicalUri,
+                    // FSDataOutputStream is a kind of OutputStream(!)
+                    physicalFs.create(physicalPath, false, bufferSize, replication, blockSize, progress)),
+                    null);
+        } catch (io.lakefs.clients.api.ApiException e) {
             throw new IOException("staging.getPhysicalAddress: " + e.getResponseBody(), e);
         } catch (java.net.URISyntaxException e) {
             throw new IOException("underlying storage uri", e);
@@ -278,6 +283,7 @@ public class LakeFSFileSystem extends FileSystem {
 
     /**
      * Non-atomic rename operation.
+     *
      * @return true if rename succeeded, false otherwise
      */
     private boolean renameObject(ObjectStats srcStat, ObjectLocation srcObjectLoc, ObjectLocation dstObjectLoc)
@@ -457,6 +463,7 @@ public class LakeFSFileSystem extends FileSystem {
 
     /**
      * Returns Location with repository, ref and path used by lakeFS based on filesystem path.
+     *
      * @param path to extract information from.
      * @return lakeFS Location with repository, ref and path
      */
@@ -477,7 +484,7 @@ public class LakeFSFileSystem extends FileSystem {
             loc.setPath("");
         } else {
             loc.setRef(s.substring(0, i));
-            loc.setPath(s.substring(i+1));
+            loc.setPath(s.substring(i + 1));
         }
         return loc;
     }
@@ -496,9 +503,9 @@ public class LakeFSFileSystem extends FileSystem {
          * When recursive is set, the iterator will list all files under the target path (delimiter is ignored).
          * Parameter amount controls the limit for each request for listing.
          *
-         * @param path the location to list
+         * @param path      the location to list
          * @param recursive boolean for recursive listing
-         * @param amount buffer size to fetch listing
+         * @param amount    buffer size to fetch listing
          */
         public ListingIterator(Path path, boolean recursive, int amount) {
             this.chunk = Collections.emptyList();
