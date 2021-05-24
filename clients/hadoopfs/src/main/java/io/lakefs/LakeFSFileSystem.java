@@ -549,9 +549,9 @@ public class LakeFSFileSystem extends FileSystem {
                     throw new IOException("listObjects", e);
                 }
                 // filter objects
-                chunk = chunk.stream().filter(LakeFSFileSystem::isDirectory).collect(Collectors.toList());
+                chunk = chunk.stream().filter(item -> !isDirectory(item)).collect(Collectors.toList());
                 // loop until we have something or last chunk
-            } while (!chunk.isEmpty() && !last);
+            } while (chunk.isEmpty() && !last);
         }
 
         @Override
@@ -567,6 +567,7 @@ public class LakeFSFileSystem extends FileSystem {
     }
 
     private static boolean isDirectory(ObjectStats stat) {
-        return stat.getPathType() != ObjectStats.PathTypeEnum.COMMON_PREFIX;
+        return stat.getPathType() == ObjectStats.PathTypeEnum.COMMON_PREFIX;
     }
 }
+
