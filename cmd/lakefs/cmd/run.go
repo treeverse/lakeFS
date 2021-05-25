@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -104,7 +105,13 @@ var runCmd = &cobra.Command{
 			cfg.GetAuthCacheConfig())
 		authMetadataManager := auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
-		metadata := stats.NewMetadata(ctx, logger, cfg.GetBlockstoreType(), authMetadataManager, cloudMetadataProvider)
+		blockstoreType := cfg.GetBlockstoreType()
+		if blockstoreType == "local" || blockstoreType == "mem" {
+			printLocalWarning(os.Stderr, blockstoreType)
+			logger.WithField("adapter_type", blockstoreType).
+				Error("Block adapter NOT SUPPORTED for production use")
+		}
+		metadata := stats.NewMetadata(ctx, logger, blockstoreType, authMetadataManager, cloudMetadataProvider)
 		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, blockStore.RuntimeStats, cfg)
 
 		// send metadata
@@ -206,10 +213,26 @@ const runBanner = `
 │
 
 `
-
 func printWelcome(w io.Writer) {
 	_, _ = fmt.Fprint(w, runBanner)
 	_, _ = fmt.Fprintf(w, "Version %s\n\n", version.Version)
+}
+
+var localWarningBanner = strings.Replace(`
+ ██       ██                           ██              	  
+░██      ░██                          ░░                  ░██
+░██   █  ░██  ██████   ██████ ███████  ██ ███████   █████ ░██
+░██  ███ ░██ ░░░░░░██ ░░██░░█░░██░░░██░██░░██░░░██ ██░░░██░██
+░██ ██░██░██  ███████  ░██ ░  ░██  ░██░██ ░██  ░██░██  ░██░██
+░████ ░░████ ██░░░░██  ░██    ░██  ░██░██ ░██  ░██░░██████░░ 
+░██░   ░░░██░░████████░███    ███  ░██░██ ███  ░██ ░░░░░██ ██
+░░       ░░  ░░░░░░░░ ░░░    ░░░   ░░ ░░ ░░░   ░░   █████ ░░ 
+						   ░░░░░  
+Using the "%s" block adapter.  This is suitable only for testing, but not
+for production.
+`, "\\", "`", -1)
+func printLocalWarning(w io.Writer, adapter string) {
+	_, _ = fmt.Fprintf(w, localWarningBanner, adapter)
 }
 
 func registerPrometheusCollector(db sqlstats.StatsGetter) {
