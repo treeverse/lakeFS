@@ -87,3 +87,6 @@ df.write
 ```
 
 The data is now created in lakeFS as new changes in your branch. You can now commit these changes, or revert them.
+
+## Case Study: SimilarWeb
+See how SimilarWeb integrated [lakeFS with DataBricks](https://similarweb.engineering/data-versioning-for-customer-reports-using-databricks-and-lakefs/).

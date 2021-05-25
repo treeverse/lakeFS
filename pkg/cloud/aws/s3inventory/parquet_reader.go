@@ -35,20 +35,31 @@ func (p *ParquetInventoryFileReader) Close() error {
 	return p.PFile.Close()
 }
 
-func (p *ParquetInventoryFileReader) getKeyColumnStatistics() *parquet.Statistics {
-	for i, c := range p.Footer.RowGroups[0].Columns {
-		if c.MetaData.PathInSchema[len(c.GetMetaData().GetPathInSchema())-1] == "Key" {
-			return p.Footer.RowGroups[0].Columns[i].GetMetaData().GetStatistics()
+func (p *ParquetInventoryFileReader) getKeyColumnStatistics(rowGroupIdx int) *parquet.Statistics {
+	columns := p.Footer.RowGroups[rowGroupIdx].Columns
+	for _, c := range columns {
+		metaData := c.GetMetaData()
+		if metaData.GetPathInSchema()[len(metaData.GetPathInSchema())-1] == "Key" {
+			return metaData.GetStatistics()
 		}
 	}
-	return p.Footer.RowGroups[0].Columns[1].GetMetaData().GetStatistics()
+	return columns[1].GetMetaData().GetStatistics()
 }
+
 func (p *ParquetInventoryFileReader) FirstObjectKey() string {
-	return string(p.getKeyColumnStatistics().GetMin())
+	statistics := p.getKeyColumnStatistics(0)
+	if len(statistics.GetMin()) > 0 {
+		return string(statistics.GetMin())
+	}
+	return string(statistics.GetMinValue())
 }
 
 func (p *ParquetInventoryFileReader) LastObjectKey() string {
-	return string(p.getKeyColumnStatistics().GetMax())
+	statistics := p.getKeyColumnStatistics(len(p.Footer.RowGroups) - 1)
+	if len(statistics.GetMax()) > 0 {
+		return string(statistics.GetMax())
+	}
+	return string(statistics.GetMinValue())
 }
 
 func (p *ParquetInventoryFileReader) Read(n int) ([]*InventoryObject, error) {

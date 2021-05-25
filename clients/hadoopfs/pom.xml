@@ -46,20 +46,20 @@
                                     </excludes>
                                 </filter>
                             </filters>
-			    <relocations>
-			      <relocation>
-				  <pattern>org.apache.httpcomponents</pattern>
-				  <shadedPattern>io.lakefs.shaded.apache.httpcomponents</shadedPattern>
-			      </relocation>
-			      <relocation>
-				<pattern>okio</pattern>
-				<shadedPattern>io.lakefs.shaded.okio</shadedPattern>
-			      </relocation>
-			      <relocation>
-				<pattern>okhttp3</pattern>
-				<shadedPattern>io.lakefs.shaded.okhttp3</shadedPattern>
-			      </relocation>
-			    </relocations>
+                            <relocations>
+                                <relocation>
+                                    <pattern>org.apache.httpcomponents</pattern>
+                                    <shadedPattern>io.lakefs.shaded.apache.httpcomponents</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>okio</pattern>
+                                    <shadedPattern>io.lakefs.shaded.okio</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>okhttp3</pattern>
+                                    <shadedPattern>io.lakefs.shaded.okhttp3</shadedPattern>
+                                </relocation>
+                            </relocations>
                         </configuration>
                     </execution>
                 </executions>
@@ -85,16 +85,16 @@
             <version>2.7.7</version>
         </dependency>
 
-	<dependency>
-	  <groupId>com.amazonaws</groupId>
-	  <artifactId>aws-java-sdk</artifactId>
-	  <version>1.7.4</version><!-- should match hadoop-aws version(!) -->
-	</dependency>
-	<dependency>		<!-- needed for aws-java-sdk in tests(!) -->
-	  <groupId>org.apache.httpcomponents</groupId>
-	  <artifactId>httpclient</artifactId>
-	  <version>4.2</version>
-	</dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk</artifactId>
+            <version>1.7.4</version><!-- should match hadoop-aws version(!) -->
+        </dependency>
+        <dependency>        <!-- needed for aws-java-sdk in tests(!) -->
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.3.6</version>
+        </dependency>
 
         <dependency>
             <groupId>junit</groupId>
@@ -104,9 +104,46 @@
         </dependency>
 
         <dependency>
+            <groupId>com.aventrix.jnanoid</groupId>
+            <artifactId>jnanoid</artifactId>
+            <version>2.0.0</version>
+            <scope>test</scope>
+        </dependency>
+
+	<dependency>
+	  <groupId>org.testcontainers</groupId>
+	  <artifactId>testcontainers</artifactId>
+	  <version>1.15.2</version>
+	  <scope>test</scope>
+	</dependency>
+
+	<!--
+	     https://stackoverflow.com/questions/35569092/java-lang-classnotfoundexception-com-fasterxml-jackson-annotation-jsonincludev
+	     says to keep all of these on the same versions -->
+	<dependency>
+	  <groupId>com.fasterxml.jackson.core</groupId>
+	  <artifactId>jackson-databind</artifactId>
+	  <version>2.12.3</version>
+	  <scope>test</scope>
+	</dependency>
+	<dependency>
+	  <groupId>com.fasterxml.jackson.core</groupId>
+	  <artifactId>jackson-core</artifactId>
+	  <version>2.12.3</version>
+	  <scope>test</scope>
+	</dependency>
+	<dependency>
+	  <groupId>com.fasterxml.jackson.core</groupId>
+	  <artifactId>jackson-annotations</artifactId>
+	  <version>2.12.3</version>
+	  <scope>test</scope>
+	</dependency>
+
+        <dependency>
             <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
-            <version>1.10.19</version>
+            <!-- "inline" currently required in order to mock constructor calls. -->
+            <artifactId>mockito-inline</artifactId>
+            <version>3.10.0</version>
 	    <scope>test</scope>
         </dependency>
     </dependencies>

@@ -80,3 +80,7 @@ df.write.partitionBy("example-column").parquet(s"s3a://${repo}/${branch}/output-
 ```
 
 The data is now created in lakeFS as new changes in your branch. You can now commit these changes, or revert them.
+
+## Case Study: SimilarWeb
+
+See how SimilarWeb is using lakeFS with Spark to [manage algorithm changes in data pipelines](https://grdoron.medium.com/a-smarter-way-to-manage-algorithm-changes-in-data-pipelines-with-lakefs-a4e284f8c756).
