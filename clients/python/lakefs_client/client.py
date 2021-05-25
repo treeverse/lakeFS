@@ -1,4 +1,4 @@
-from urllib.parse import urlparse, urlunparse
+from urllib3.util import parse_url, Url
 
 import lakefs_client
 from lakefs_client.apis import ActionsApi, AuthApi, BranchesApi, CommitsApi, ConfigApi, HealthCheckApi, MetadataApi, \
@@ -27,12 +27,14 @@ class LakeFSClient:
     def _ensure_endpoint(configuration):
         if configuration.host:
             try:
-                o = urlparse(configuration.host)
+                if not configuration.host.startswith('http://') and not configuration.host.startswith('https://'):
+                    configuration.host = 'http://' + configuration.host
+                o = parse_url(configuration.host)
                 if not o.path or o.path == '/':
                     settings = configuration.get_host_settings()
                     if settings:
-                        base_path = urlparse(settings[0].get('url')).path
-                        configuration.host = urlunparse((o.scheme, o.netloc, base_path, o.params, o.query, o.fragment))
+                        base_path = parse_url(settings[0].get('url')).path
+                        configuration.host = Url(scheme=o.scheme, auth=o.auth, host=o.host, port=o.port, path=base_path, query=o.query, fragment=o.fragment).url
             except ValueError:
                 pass
         return configuration
