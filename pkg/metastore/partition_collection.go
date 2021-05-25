@@ -47,7 +47,7 @@ func partitionValueEqual(partitionA, partitionB *Partition) bool {
 	if partitionA.Sd == nil || partitionB.Sd == nil {
 		return false
 	}
-	return partitionA.LastAccessTime == partitionB.LastAccessTime && len(partitionA.Sd.Cols) == len(partitionB.Sd.Cols) // TODO(Guys): check I can't get here nil pointer
+	return partitionA.LastAccessTime == partitionB.LastAccessTime && len(partitionA.Sd.Cols) == len(partitionB.Sd.Cols)
 }
 
 func comparePartitions(partitionA, partitionB *Partition) CompareResult {
