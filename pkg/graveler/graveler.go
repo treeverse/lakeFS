@@ -1630,7 +1630,7 @@ func (g *Graveler) LoadCommits(ctx context.Context, repositoryID RepositoryID, m
 		return iter.Err()
 	}
 	if missingGenerations {
-		g.log.Debug("computing the generation field for loaded commits")
+		g.log.WithFields(logging.Fields{"repo": repositoryID, "meta_range_id": metaRangeID}).Debug("computing the generation field for loaded commits")
 		return g.RefManager.FillGenerations(ctx, repositoryID)
 	}
 	return nil
