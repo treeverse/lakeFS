@@ -150,8 +150,13 @@ lint: go-install  ## Lint code
 nessie: ## run nessie (system testing)
 	$(GOTEST) -v ./nessie --args --system-tests
 
-test: gen  ## Run tests for the project
+test: gen test-go test-hadoopfs  ## Run tests for the project
+
+test-go:
 	$(GOTEST) -count=1 -coverprofile=cover.out -race -cover -failfast $(GO_TEST_MODULES)
+
+test-hadoopfs:
+	cd clients/hadoopfs && mvn test
 
 run-test:  ## Run tests without generating anything (faster if already generated)
 	$(GOTEST) -count=1 -coverprofile=cover.out -race -short -cover -failfast $(GO_TEST_MODULES)
