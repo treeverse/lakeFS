@@ -1,5 +1,6 @@
 package io.lakefs;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.http.HttpStatus;
@@ -78,14 +79,11 @@ public class LakeFSFileSystemTest {
     protected static final String S3_ACCESS_KEY_ID = "AKIArootkey";
     protected static final String S3_SECRET_ACCESS_KEY = "secret/minio/key=";
 
-    protected static final Regions REGION = Regions.US_EAST_1;
-
     @Rule
     public final GenericContainer s3 = new GenericContainer(MINIO.toString()).
         withCommand("minio", "server", "/data").
         withEnv("MINIO_ROOT_USER", S3_ACCESS_KEY_ID).
         withEnv("MINIO_ROOT_PASSWORD", S3_SECRET_ACCESS_KEY).
-        //        withEnv("MINIO_REGION_NAME", REGION.getName()).
         withEnv("MINIO_DOMAIN", "s3.local.lakefs.io").
         withExposedPorts(9000);
 
@@ -124,13 +122,8 @@ public class LakeFSFileSystemTest {
         s3Client.setS3ClientOptions(s3ClientOptions);
         s3Client.setEndpoint(s3Endpoint);
 
-        // S3ClientOptions opts = new S3ClientOptions();
-        // opts.setPathStyleAccess(true);
-        // s3Client.setS3ClientOptions(opts);
-
         s3Bucket = makeS3BucketName();
         s3Base = String.format("s3://%s", s3Bucket);
-        LOG.debug(String.format("S3 endpoint \"%s\" bucket \"%s\" base URL \"%s\" region \"%s\"", s3Endpoint, s3Bucket, s3Base, REGION.getName()));
         CreateBucketRequest cbr = new CreateBucketRequest(s3Bucket);
         s3Client.createBucket(cbr);
 
@@ -160,7 +153,7 @@ public class LakeFSFileSystemTest {
         when(repositoriesApi.getRepository("repo")).
             thenReturn(new Repository().storageNamespace(s3Url("/repo-base")));
 
-        fs.initialize(new URI("lakefs://repo/main/file.txt"), conf, lfsClient);
+        fs.initializeWithClient(new URI("lakefs://repo/main/file.txt"), conf, lfsClient);
     }
 
     @Test
@@ -204,16 +197,7 @@ public class LakeFSFileSystemTest {
         // Write succeeded, verify physical file on S3.
         S3Object ret = s3Client.getObject(new GetObjectRequest(s3Bucket, "/repo-base/create"));
         InputStream in = ret.getObjectContent();
-        ByteArrayOutputStream actualBytes = new ByteArrayOutputStream();
-        {
-            int len;
-            byte[] buf = new byte[1024];
-            while ((len = in.read(buf)) > 0) {
-                actualBytes.write(buf, 0, len);
-            }
-        }
-        actualBytes.close();
-        String actual = actualBytes.toString();
+        String actual = IOUtils.toString(in);
 
         Assert.assertEquals(contents, actual);
 
