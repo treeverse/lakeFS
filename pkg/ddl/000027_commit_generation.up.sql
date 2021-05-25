@@ -7,7 +7,7 @@ BEGIN;
                            FROM graveler_commits
                            WHERE parents IS NULL OR array_length(parents,1) = 0
                            UNION ALL
-                           (SELECT c.id, cte.generation+1 AS generation,c.creation_date
+                           (SELECT DISTINCT(c.id), cte.generation+1 AS generation,c.creation_date
                             FROM graveler_commits c  INNER JOIN cte ON cte.id = ANY(c.parents))
                        )
     UPDATE graveler_commits u SET generation = cte.generation FROM cte WHERE u.id = cte.id;
