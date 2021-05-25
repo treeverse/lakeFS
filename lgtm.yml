@@ -1,0 +1,11 @@
+extraction:
+  java:
+    index:
+      build_command:
+        - "(cd clients/hadoopfs/; mvn compile)"
+        - "(cd clients/java/; mvn compile)"
+
+      # Configure to pick up all pom.xml flags to build Java clients.
+      #
+      # See https://lgtm.com/help/lgtm/java-extraction#customizing-index.
+      # xml_mode: "all"
