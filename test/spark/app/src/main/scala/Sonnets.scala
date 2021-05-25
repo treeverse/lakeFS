@@ -16,11 +16,9 @@ object Sonnets {
 
     for (fmt <- Seq("csv", "parquet", "json", "orc")) {
       val fname = "%s.%s".format(output, fmt)
-      println("Write counts to", fname)
       counts.write.format(fmt).save(fname)
     }
 
-    println("Load counts from csv")
     val wc = spark.read.format("csv").load(output + ".csv")
     val life = wc.filter(x => x(1) == "42").map(x => x(0).toString).collect.sorted.mkString(",")
     if (life != "can,or") {
