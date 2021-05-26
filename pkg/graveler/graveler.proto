@@ -24,4 +24,5 @@ message CommitData {
   map<string,string> metadata = 6;
   repeated string parents = 7;
   int32 version = 8;
+  int32 generation = 9;
 }

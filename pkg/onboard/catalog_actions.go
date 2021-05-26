@@ -51,6 +51,7 @@ type EntryCatalog interface {
 	UpdateBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, ref graveler.Ref) (*graveler.Branch, error)
 	GetBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) (*graveler.Branch, error)
 	CreateBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, ref graveler.Ref) (*graveler.Branch, error)
+	GetCommit(ctx context.Context, repositoryID graveler.RepositoryID, commitID graveler.CommitID) (*graveler.Commit, error)
 }
 
 func NewCatalogRepoActions(config *Config, logger logging.Logger) *CatalogRepoActions {
@@ -150,9 +151,13 @@ func (c *CatalogRepoActions) Commit(ctx context.Context, commitMsg string, metad
 	commit.MetaRangeID = *c.createdMetaRangeID
 	commit.Metadata = graveler.Metadata(metadata)
 	if c.previousCommitID != "" {
+		previousCommit, err := c.entryCatalog.GetCommit(ctx, c.repoID, c.previousCommitID)
+		if err != nil {
+			return "", fmt.Errorf("getting previous commit %s: %w", c.previousCommitID, err)
+		}
 		commit.Parents = graveler.CommitParents{c.previousCommitID}
+		commit.Generation = previousCommit.Generation + 1
 	}
-
 	var commitID graveler.CommitID
 	var err error
 	if c.branchID != "" {
