@@ -55,6 +55,7 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 	}
 	if errors.Is(err, catalog.ErrExpired) {
 		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchVersion))
+		return
 	}
 	if err != nil {
 		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
