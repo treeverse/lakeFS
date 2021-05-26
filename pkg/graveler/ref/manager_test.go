@@ -747,7 +747,7 @@ func TestManager_FillGenerations(t *testing.T) {
 		commit, err := r.GetCommit(ctx, "repo1", commitID)
 		testutil.MustDo(t, fmt.Sprintf("get commit c%d", commitIdx), err)
 		if commit.Generation != expectedGenerations[i] {
-			t.Fatalf("wrong gen for c%d. expected=%d, got=%d", commitIdx, expectedGenerations[i], commit.Generation)
+			t.Errorf("wrong gen for c%d. expected=%d, got=%d", commitIdx, expectedGenerations[i], commit.Generation)
 		}
 	}
 }

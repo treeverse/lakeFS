@@ -531,7 +531,7 @@ type RefManager interface {
 	ListCommits(ctx context.Context, repositoryID RepositoryID) (CommitIterator, error)
 
 	// FillGenerations computes and updates the generation field for all commits in a repository.
-	// It should to be used for restoring commits from a commit-dump which was performed before the field was introduced.
+	// It should be used for restoring commits from a commit-dump which was performed before the field was introduced.
 	FillGenerations(ctx context.Context, repositoryID RepositoryID) error
 }
 

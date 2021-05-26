@@ -18,7 +18,7 @@ const (
 	fromRight
 )
 
-// FindMergeBase finds the best common ancestor according to its definition it the git-merge-base documentation: https://git-scm.com/docs/git-merge-base
+// FindMergeBase finds the best common ancestor according to the definition in the git-merge-base documentation: https://git-scm.com/docs/git-merge-base
 // One common ancestor is better than another common ancestor if the latter is an ancestor of the former.
 func FindMergeBase(ctx context.Context, getter CommitGetter, repositoryID graveler.RepositoryID, leftID, rightID graveler.CommitID) (*graveler.Commit, error) {
 	var commitRecord *graveler.CommitRecord
