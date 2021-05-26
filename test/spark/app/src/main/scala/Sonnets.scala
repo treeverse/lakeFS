@@ -20,7 +20,7 @@ object Sonnets {
       .flatMap(line => line.split(" "))
       .map(word => (word, 1))
       .reduceByKey(_ + _)
-      .repartition(10)
+      .repartition(partitions)
       .toDF
 
     for (fmt <- Seq("csv", "parquet", "json", "orc")) {
