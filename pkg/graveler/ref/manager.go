@@ -72,6 +72,7 @@ func createBareRepository(tx db.Tx, repositoryID graveler.RepositoryID, reposito
 func (m *Manager) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository, token graveler.StagingToken) error {
 	firstCommit := graveler.NewCommit()
 	firstCommit.Message = graveler.FirstCommitMsg
+	firstCommit.Generation = 1
 	commitID := m.addressProvider.ContentAddress(firstCommit)
 
 	_, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
@@ -284,7 +285,7 @@ func (m *Manager) GetCommitByPrefix(ctx context.Context, repositoryID graveler.R
 			// LIMIT 2 is used to test if a truncated commit ID resolves to *one* commit.
 			// if we get 2 results that start with the truncated ID, that's enough to determine this prefix is not unique
 			err := tx.Select(&records, `
-					SELECT id, committer, message, creation_date, parents, meta_range_id, metadata, version
+					SELECT id, committer, message, creation_date, parents, meta_range_id, metadata, version, generation
 					FROM graveler_commits
 					WHERE repository_id = $1 AND id LIKE $2 || '%'
 					LIMIT 2`,
@@ -319,7 +320,7 @@ func (m *Manager) GetCommit(ctx context.Context, repositoryID graveler.Repositor
 		return m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			var rec commitRecord
 			err := tx.Get(&rec, `
-					SELECT committer, message, creation_date, parents, meta_range_id, metadata, version
+					SELECT committer, message, creation_date, parents, meta_range_id, metadata, version, generation
 					FROM graveler_commits WHERE repository_id = $1 AND id = $2`,
 				repositoryID, commitID)
 			if err != nil {
@@ -359,11 +360,11 @@ func (m *Manager) addCommit(tx db.Tx, repositoryID graveler.RepositoryID, commit
 	// it will necessarily have the same attributes as the existing one, so no need to overwrite it
 	_, err := tx.Exec(`
 				INSERT INTO graveler_commits 
-				(repository_id, id, committer, message, creation_date, parents, meta_range_id, metadata, version)
-				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+				(repository_id, id, committer, message, creation_date, parents, meta_range_id, metadata, version, generation)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 				ON CONFLICT DO NOTHING`,
 		repositoryID, commitID, commit.Committer, commit.Message,
-		commit.CreationDate.UTC(), parents, commit.MetaRangeID, commit.Metadata, commit.Version)
+		commit.CreationDate.UTC(), parents, commit.MetaRangeID, commit.Metadata, commit.Version, commit.Generation)
 
 	return err
 }
@@ -373,7 +374,7 @@ func (m *Manager) FindMergeBase(ctx context.Context, repositoryID graveler.Repos
 	if len(commitIDs) != allowedCommitsToCompare {
 		return nil, graveler.ErrInvalidMergeBase
 	}
-	return FindLowestCommonAncestor(ctx, m, m.addressProvider, repositoryID, commitIDs[0], commitIDs[1])
+	return FindMergeBase(ctx, m, repositoryID, commitIDs[0], commitIDs[1])
 }
 
 func (m *Manager) Log(ctx context.Context, repositoryID graveler.RepositoryID, from graveler.CommitID) (graveler.CommitIterator, error) {
@@ -390,4 +391,22 @@ func (m *Manager) ListCommits(ctx context.Context, repositoryID graveler.Reposit
 		return nil, err
 	}
 	return NewOrderedCommitIterator(ctx, m.db, repositoryID, IteratorPrefetchSize)
+}
+
+func (m *Manager) FillGenerations(ctx context.Context, repositoryID graveler.RepositoryID) error {
+	_, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
+		return tx.Exec(`WITH RECURSIVE cte AS
+								(
+									SELECT id, 1 AS generation,creation_date
+									FROM graveler_commits
+									WHERE repository_id = $1 AND parents IS NULL OR array_length(parents,1) = 0
+									UNION ALL
+									SELECT DISTINCT(c.id), cte.generation+1 AS generation,c.creation_date
+									FROM graveler_commits c INNER JOIN cte
+									ON cte.id = ANY(c.parents) WHERE repository_id = $1
+								)
+								UPDATE graveler_commits u SET generation = cte.generation FROM cte WHERE u.id = cte.id;`,
+			repositoryID)
+	})
+	return err
 }

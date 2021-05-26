@@ -183,6 +183,7 @@ type Commit struct {
 	CreationDate time.Time     `db:"creation_date"`
 	Parents      CommitParents `db:"parents"`
 	Metadata     Metadata      `db:"metadata"`
+	Generation   int           `db:"generation"`
 }
 
 func NewCommit() Commit {
@@ -528,6 +529,10 @@ type RefManager interface {
 
 	// ListCommits returns an iterator over all known commits, ordered by their commit ID
 	ListCommits(ctx context.Context, repositoryID RepositoryID) (CommitIterator, error)
+
+	// FillGenerations computes and updates the generation field for all commits in a repository.
+	// It should be used for restoring commits from a commit-dump which was performed before the field was introduced.
+	FillGenerations(ctx context.Context, repositoryID RepositoryID) error
 }
 
 // CommittedManager reads and applies committed snapshots
@@ -1048,13 +1053,16 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 		}
 
 		var branchMetaRangeID MetaRangeID
+		var parentGeneration int
 		if branch.CommitID != "" {
 			commit, err := g.RefManager.GetCommit(ctx, repositoryID, branch.CommitID)
 			if err != nil {
 				return "", fmt.Errorf("get commit: %w", err)
 			}
 			branchMetaRangeID = commit.MetaRangeID
+			parentGeneration = commit.Generation
 		}
+		commit.Generation = parentGeneration + 1
 		changes, err := g.StagingManager.List(ctx, branch.StagingToken)
 		if err != nil {
 			return "", fmt.Errorf("staging list: %w", err)
@@ -1354,6 +1362,7 @@ func (g *Graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 		commit.MetaRangeID = metaRangeID
 		commit.Parents = []CommitID{branch.CommitID}
 		commit.Metadata = commitParams.Metadata
+		commit.Generation = branchCommit.Generation + 1
 		commitID, err := g.RefManager.AddCommit(ctx, repositoryID, commit)
 		if err != nil {
 			return "", fmt.Errorf("add commit: %w", err)
@@ -1412,6 +1421,11 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 		commit.Message = commitParams.Message
 		commit.MetaRangeID = metaRangeID
 		commit.Parents = []CommitID{toCommit.CommitID, fromCommit.CommitID}
+		if toCommit.Generation > fromCommit.Generation {
+			commit.Generation = toCommit.Generation + 1
+		} else {
+			commit.Generation = fromCommit.Generation + 1
+		}
 		commit.Metadata = commitParams.Metadata
 		preRunID = NewRunID()
 		err = g.hooks.PreMergeHook(ctx, HookRecord{
@@ -1580,6 +1594,7 @@ func (g *Graveler) LoadCommits(ctx context.Context, repositoryID RepositoryID, m
 		return err
 	}
 	defer iter.Close()
+	missingGenerations := false
 	for iter.Next() {
 		rawValue := iter.Value()
 		commit := &CommitData{}
@@ -1590,6 +1605,9 @@ func (g *Graveler) LoadCommits(ctx context.Context, repositoryID RepositoryID, m
 		parents := make(CommitParents, len(commit.GetParents()))
 		for i, p := range commit.GetParents() {
 			parents[i] = CommitID(p)
+		}
+		if commit.GetGeneration() == 0 {
+			missingGenerations = true
 		}
 		commitID, err := g.RefManager.AddCommit(ctx, repositoryID, Commit{
 			Version:      CommitVersion(commit.Version),
@@ -1610,6 +1628,10 @@ func (g *Graveler) LoadCommits(ctx context.Context, repositoryID RepositoryID, m
 	}
 	if iter.Err() != nil {
 		return iter.Err()
+	}
+	if missingGenerations {
+		g.log.WithFields(logging.Fields{"repo": repositoryID, "meta_range_id": metaRangeID}).Debug("computing the generation field for loaded commits")
+		return g.RefManager.FillGenerations(ctx, repositoryID)
 	}
 	return nil
 }
