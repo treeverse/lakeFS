@@ -1,7 +1,10 @@
 package io.lakefs;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayInputStream;
@@ -34,6 +37,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Answers;
+import org.mockito.ArgumentCaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
@@ -49,6 +53,7 @@ import io.lakefs.clients.api.model.ObjectStats.PathTypeEnum;
 import io.lakefs.clients.api.model.ObjectStatsList;
 import io.lakefs.clients.api.model.Repository;
 import io.lakefs.clients.api.model.StagingLocation;
+import io.lakefs.clients.api.model.StagingMetadata;
 
 public class LakeFSFileSystemTest {
     protected static final Logger LOG = LoggerFactory.getLogger(LakeFSFileSystemTest.class);
@@ -175,13 +180,21 @@ public class LakeFSFileSystemTest {
         String contents = "The quick brown fox jumps over the lazy dog.";
         Path p = new Path("lakefs://repo/main/create.me");
 
+        StagingLocation stagingLocation = new StagingLocation().token("foo").physicalAddress(s3Url("/repo-base/create"));
+
         when(stagingApi.getPhysicalAddress("repo", "main", "create.me")).
-            thenReturn(new StagingLocation().token("foo").physicalAddress(s3Url("/repo-base/create")));
-        // TODO(ariels): Verify call to lakeFS "link" -- or verify that lakeFSFS "open" works.
+            thenReturn(stagingLocation);
 
         OutputStream out = fs.create(p);
         out.write(contents.getBytes());
         out.close();
+
+        ArgumentCaptor<StagingMetadata> metadataCapture = ArgumentCaptor.forClass(StagingMetadata.class);
+        verify(stagingApi).linkPhysicalAddress(eq("repo"), eq("main"), eq("create.me"),
+                                               metadataCapture.capture());
+        StagingMetadata actualMetadata = metadataCapture.getValue();
+        Assert.assertEquals(stagingLocation, actualMetadata.getStaging());
+        Assert.assertEquals(contents.getBytes().length, (long)actualMetadata.getSizeBytes());
 
         // Write succeeded, verify physical file on S3.
         S3Object ret = s3Client.getObject(new GetObjectRequest(s3Bucket, "/repo-base/create"));
