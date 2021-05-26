@@ -1,7 +1,6 @@
 package io.lakefs;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -14,6 +13,8 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentials;
@@ -23,10 +24,13 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.S3ClientOptions;
 import com.amazonaws.services.s3.model.CreateBucketRequest;
 import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.ListObjectsRequest;
+import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
+import com.google.common.collect.ImmutableList;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -150,6 +154,27 @@ public class LakeFSFileSystemTest {
         fs.initializeWithClient(new URI("lakefs://repo/main/file.txt"), conf, lfsClient);
     }
 
+    /**
+     * @return all pathnames under s3Prefix that start with prefix.  (Obvious not scalable!)
+     */
+    protected List<String> getS3FilesByPrefix(String prefix) throws IOException {
+        final int maxKeys = 1500;
+
+        ListObjectsRequest req = new ListObjectsRequest().
+            withBucketName(s3Bucket).
+            withPrefix(prefix)
+            .withMaxKeys(maxKeys);
+        ObjectListing listing = s3Client.listObjects(req);
+        if (listing.isTruncated()) {
+            Assert.fail(String.format("[internal] no support for test that creates >%d S3 objects", maxKeys));
+        }
+
+        return listing.getObjectSummaries().
+            stream().
+            map(summary -> summary.getKey()).
+            collect(Collectors.toList());
+    }
+
     @Test
     public void getUri() throws URISyntaxException, IOException {
         URI u = fs.getUri();
@@ -203,7 +228,8 @@ public class LakeFSFileSystemTest {
 
         Assert.assertEquals(contents, actual);
 
-        // TODO(ariels): Verify no *other* files on the bucket.
+        List<String> actualFiles = getS3FilesByPrefix("/");
+        Assert.assertEquals(ImmutableList.of("repo-base/create"), actualFiles);
     }
 
     @Test
