@@ -300,6 +300,16 @@
   font-size: 0.85rem;
 }
 
+.warning {
+  font-size: +2;
+  font-weight: bolder;
+  color: #c44;
+}
+
+.warnings {
+  list-style-type: symbols(cyclic "&#x26A0;");
+}
+
 .branch-table td {
   font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
 }

@@ -9,10 +9,28 @@ import Table from "react-bootstrap/Table";
 import Row from "react-bootstrap/Row";
 import {DownloadIcon} from "@primer/octicons-react";
 import {useState} from "react";
-import {setup, API_ENDPOINT} from "../../lib/api";
-import {ClipboardButton, Error} from "../../lib/components/controls";
+import {setup, warnings, API_ENDPOINT} from "../../lib/api";
+import {ClipboardButton, Error, Warnings} from "../../lib/components/controls";
+import {useAPI} from "../../lib/hooks/api";
 
-const SetupPage = () => {
+
+const useWarnings = () => {
+    const { response, loading, error } = useAPI(async () => {
+	let ret = await warnings.get();
+	return ret && ret.JSON200 && ret.JSON200.warnings;
+    }, []);
+    return { warnings: response, loading, error }
+};
+
+const SetupWarnings = () => {
+    const { warnings, error } = useWarnings();
+
+    const errorOrWarnings = error ? [`Cannot fetch warnings: ${error}`] : warnings;
+
+    return <Warnings warnings={errorOrWarnings}/>;
+};
+
+const SetupContents = () => {
     const usernameRef = useRef(null);
     const [setupError, setSetupError] = useState(null);
     const [setupData, setSetupData] = useState(null);
@@ -107,5 +125,10 @@ server:
         </Row>
     );
 };
+
+const SetupPage = () => <>
+			    <SetupWarnings/>
+			    <SetupContents/>
+			</>;
 
 export default SetupPage;

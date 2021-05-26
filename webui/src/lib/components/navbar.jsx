@@ -9,7 +9,6 @@ import {auth} from "../api";
 import {useRouter} from "../hooks/router";
 import {Link} from "./nav";
 
-
 const NavUserInfo = () => {
     const router = useRouter();
     const { user, loading, error } = useUser();
@@ -56,18 +55,20 @@ const TopNavLink = ({ href, children }) => {
 
 const TopNav = () => {
     return (
-        <Navbar variant="dark" bg="dark" expand="md">
-            <Link component={Navbar.Brand} href="/">
-                <img src="/logo.png" alt="lakeFS" className="logo"/>
-            </Link>
+	<>
+            <Navbar variant="dark" bg="dark" expand="md">
+		<Link component={Navbar.Brand} href="/">
+                    <img src="/logo.png" alt="lakeFS" className="logo"/>
+		</Link>
+		
+		<Nav className="mr-auto">
+                    <TopNavLink href="/repositories">Repositories</TopNavLink>
+                    <TopNavLink href="/auth">Administration</TopNavLink>
+		</Nav>
 
-            <Nav className="mr-auto">
-                <TopNavLink href="/repositories">Repositories</TopNavLink>
-                <TopNavLink href="/auth">Administration</TopNavLink>
-            </Nav>
-
-            <NavUserInfo/>
-        </Navbar>
+		<NavUserInfo/>
+            </Navbar>
+	</>
     );
 };
 

@@ -334,4 +334,19 @@ export const ToggleSwitch = ({  label, id, defaultChecked, onChange }) => {
             />
         </Form>
     )
-}
+};
+
+export const Warning = (props) =>
+<div className="warning">
+    &#x26A0; { props.children }
+</div>;
+
+export const Warnings = ({ warnings = [] }) => {
+    return <>
+	       {warnings && <ul className="warnings">
+				{warnings.map((warning, i) =>
+				    <Warning key={i}>{warning}</Warning>
+				)}
+			    </ul>}
+	   </>;
+};
