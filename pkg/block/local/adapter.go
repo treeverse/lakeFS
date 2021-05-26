@@ -34,6 +34,7 @@ var (
 	ErrPathNotWritable       = errors.New("path provided is not writable")
 	ErrInventoryNotSupported = errors.New("inventory feature not implemented for local storage adapter")
 	ErrInvalidUploadIDFormat = errors.New("invalid upload id format")
+	ErrBadPath               = errors.New("bad path traversal blocked")
 )
 
 func WithTranslator(t block.UploadIDTranslator) func(a *Adapter) {
@@ -49,6 +50,7 @@ func WithRemoveEmptyDir(b bool) func(a *Adapter) {
 }
 
 func NewAdapter(path string, opts ...func(a *Adapter)) (*Adapter, error) {
+	// Clean() the path so that misconfiguration does not allow path traversal.
 	path = filepath.Clean(path)
 	err := os.MkdirAll(path, 0700)
 	if err != nil {
@@ -79,18 +81,33 @@ func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
 	return qualifiedKey, nil
 }
 
+// verifyPath ensures that p is under the directory controlled by this adapter.  It does not
+// examine the filesystem and can mistakenly error out when symbolic links are involved.
+func (l *Adapter) verifyPath(p string) error {
+	if !strings.HasPrefix(filepath.Clean(p), l.path) {
+		return fmt.Errorf("%s: %w", p, ErrBadPath)
+	}
+	return nil
+}
+
 func (l *Adapter) getPath(identifier block.ObjectPointer) (string, error) {
 	obj, err := resolveNamespace(identifier)
 	if err != nil {
 		return "", err
 	}
 	p := path.Join(l.path, obj.StorageNamespace, obj.Key)
+	if err = l.verifyPath(p); err != nil {
+		return "", err
+	}
 	return p, nil
 }
 
-// maybeMkdir runs f(path), but if f fails due to file-not-found MkdirAll's its dir and then
-// runs it again.
-func maybeMkdir(path string, f func(p string) (*os.File, error)) (*os.File, error) {
+// maybeMkdir verifies path is allowed and runs f(path), but if f fails due to file-not-found
+// MkdirAll's its dir and then runs it again.
+func (l *Adapter) maybeMkdir(path string, f func(p string) (*os.File, error)) (*os.File, error) {
+	if err := l.verifyPath(path); err != nil {
+		return nil, err
+	}
 	ret, err := f(path)
 	if !errors.Is(err, os.ErrNotExist) {
 		return ret, err
@@ -112,7 +129,7 @@ func (l *Adapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reade
 		return err
 	}
 	p = filepath.Clean(p)
-	f, err := maybeMkdir(p, os.Create)
+	f, err := l.maybeMkdir(p, os.Create)
 	if err != nil {
 		return err
 	}
@@ -175,7 +192,7 @@ func (l *Adapter) Copy(_ context.Context, sourceObj, destinationObj block.Object
 	if err != nil {
 		return err
 	}
-	destinationFile, err := maybeMkdir(dest, os.Create)
+	destinationFile, err := l.maybeMkdir(dest, os.Create)
 	if err != nil {
 		return err
 	}
@@ -285,11 +302,11 @@ func (l *Adapter) GetProperties(_ context.Context, obj block.ObjectPointer) (blo
 	return block.Properties{}, nil
 }
 
+// isDirectoryWritable tests that pth, which must not be controllable by user input, is a
+// writable directory.  As there is no simple way to test this in windows, I prefer the "brute
+// force" method of creating s dummy file.  Will work in any OS.  speed is not an issue, as
+// this will be activated very few times during startup.
 func isDirectoryWritable(pth string) bool {
-	// test ability to write to directory.
-	// as there is no simple way to test this in windows, I prefer the "brute force" method
-	// of creating s dummy file. will work in any OS.
-	// speed is not an issue, as this will be activated very few times during startup
 	f, err := ioutil.TempFile(pth, "dummy")
 	if err != nil {
 		return false
@@ -336,7 +353,9 @@ func (l *Adapter) AbortMultiPartUpload(_ context.Context, obj block.ObjectPointe
 	if err != nil {
 		return err
 	}
-	l.removePartFiles(files)
+	if err = l.removePartFiles(files); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -353,7 +372,9 @@ func (l *Adapter) CompleteMultiPartUpload(_ context.Context, obj block.ObjectPoi
 	if err != nil {
 		return nil, -1, fmt.Errorf("multipart upload unite for %s: %w", uploadID, err)
 	}
-	l.removePartFiles(partFiles)
+	if err = l.removePartFiles(partFiles); err != nil {
+		return nil, -1, err
+	}
 	return &etag, size, nil
 }
 
@@ -387,6 +408,9 @@ func (l *Adapter) unitePartFiles(identifier block.ObjectPointer, files []string)
 	}()
 	var readers = []io.Reader{}
 	for _, name := range files {
+		if err := l.verifyPath(name); err != nil {
+			return 0, err
+		}
 		f, err := os.Open(filepath.Clean(name))
 		if err != nil {
 			return 0, fmt.Errorf("open file %s: %w", name, err)
@@ -401,10 +425,18 @@ func (l *Adapter) unitePartFiles(identifier block.ObjectPointer, files []string)
 	return size, err
 }
 
-func (l *Adapter) removePartFiles(files []string) {
+func (l *Adapter) removePartFiles(files []string) error {
+	var firstErr error
 	for _, name := range files {
+		if err := l.verifyPath(name); err != nil {
+			if firstErr == nil {
+				firstErr = err
+			}
+		}
+		// If removal fails prefer to skip the error: "only" wasted space.
 		_ = os.Remove(name)
 	}
+	return firstErr
 }
 
 func (l *Adapter) getPartFiles(uploadID string, obj block.ObjectPointer) ([]string, error) {
