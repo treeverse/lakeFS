@@ -808,6 +808,15 @@ components:
         - checksum
         - size_bytes
 
+    Warnings:
+      type: object
+      description: "\"global\" warnings to show user"
+      properties:
+        warnings:
+          type: array
+          items:
+            type: string
+
 paths:
   /setup_lakefs:
     post:
@@ -2847,3 +2856,20 @@ paths:
                 $ref: "#/components/schemas/StorageConfig"
         401:
           $ref: "#/components/responses/Unauthorized"
+
+  /warnings:
+    get:
+      tags:
+        - warnings
+      operationId: getWarnings
+      description: return all current "global" warnings to show user
+      responses:
+        200:
+          description: current warnings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Warnings"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+

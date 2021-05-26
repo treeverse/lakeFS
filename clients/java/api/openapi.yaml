@@ -3782,6 +3782,26 @@ paths:
       tags:
       - config
       x-accepts: application/json
+  /warnings:
+    get:
+      description: return all current "global" warnings to show user
+      operationId: getWarnings
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Warnings'
+          description: current warnings
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+      tags:
+      - warnings
+      x-accepts: application/json
 components:
   parameters:
     PaginationPrefix:
@@ -4891,6 +4911,18 @@ components:
       - checksum
       - size_bytes
       - staging
+      type: object
+    Warnings:
+      description: '"global" warnings to show user'
+      example:
+        warnings:
+        - warnings
+        - warnings
+      properties:
+        warnings:
+          items:
+            type: string
+          type: array
       type: object
     inline_object:
       properties:

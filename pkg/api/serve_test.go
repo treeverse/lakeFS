@@ -106,6 +106,7 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 	collector := &nullCollector{}
 
 	handler := api.Serve(
+		cfg,
 		c,
 		authService,
 		c.BlockAdapter,

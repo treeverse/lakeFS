@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
@@ -126,6 +125,7 @@ var runCmd = &cobra.Command{
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
 		apiHandler := api.Serve(
+			cfg,
 			c,
 			authService,
 			blockStore,
@@ -213,12 +213,13 @@ const runBanner = `
 │
 
 `
+
 func printWelcome(w io.Writer) {
 	_, _ = fmt.Fprint(w, runBanner)
 	_, _ = fmt.Fprintf(w, "Version %s\n\n", version.Version)
 }
 
-var localWarningBanner = strings.Replace(`
+var localWarningBanner = `
  ██       ██                           ██              	  
 ░██      ░██                          ░░                  ░██
 ░██   █  ░██  ██████   ██████ ███████  ██ ███████   █████ ░██
@@ -230,7 +231,8 @@ var localWarningBanner = strings.Replace(`
 						   ░░░░░  
 Using the "%s" block adapter.  This is suitable only for testing, but not
 for production.
-`, "\\", "`", -1)
+`
+
 func printLocalWarning(w io.Writer, adapter string) {
 	_, _ = fmt.Fprintf(w, localWarningBanner, adapter)
 }

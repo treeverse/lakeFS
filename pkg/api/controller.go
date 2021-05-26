@@ -23,6 +23,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/cloud"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
@@ -55,6 +56,7 @@ type actionsHandler interface {
 }
 
 type Controller struct {
+	Config                *config.Config
 	Catalog               catalog.Interface
 	Auth                  auth.Service
 	BlockAdapter          block.Adapter
@@ -2779,6 +2781,7 @@ func paginationAmount(v *PaginationAmount) int {
 }
 
 func NewController(
+	cfg *config.Config,
 	catalog catalog.Interface,
 	authService auth.Service,
 	blockAdapter block.Adapter,
@@ -2790,6 +2793,7 @@ func NewController(
 	logger logging.Logger,
 ) *Controller {
 	return &Controller{
+		Config:                cfg,
 		Catalog:               catalog,
 		Auth:                  authService,
 		BlockAdapter:          blockAdapter,
@@ -2856,4 +2860,17 @@ func (c *Controller) authorize(w http.ResponseWriter, r *http.Request, perms []p
 		return false
 	}
 	return true
+}
+
+func (c *Controller) GetWarnings(w http.ResponseWriter, r *http.Request) {
+	warnings := make([]string, 0)
+
+	blockstoreType := c.Config.GetBlockstoreType()
+	if blockstoreType == "mem" || blockstoreType == "local" {
+		warnings = append(warnings, fmt.Sprintf("Block adapter \"%s\" not usable in production", blockstoreType))
+	}
+	resp := &GetWarningsResponse{
+		JSON200: &Warnings{Warnings: &warnings},
+	}
+	writeResponse(w, 200, &resp)
 }

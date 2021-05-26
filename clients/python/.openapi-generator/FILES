@@ -62,6 +62,8 @@ docs/UnderlyingObjectProperties.md
 docs/User.md
 docs/UserCreation.md
 docs/UserList.md
+docs/Warnings.md
+docs/WarningsApi.md
 lakefs_client/__init__.py
 lakefs_client/api/__init__.py
 lakefs_client/api/actions_api.py
@@ -76,6 +78,7 @@ lakefs_client/api/refs_api.py
 lakefs_client/api/repositories_api.py
 lakefs_client/api/staging_api.py
 lakefs_client/api/tags_api.py
+lakefs_client/api/warnings_api.py
 lakefs_client/api_client.py
 lakefs_client/apis/__init__.py
 lakefs_client/configuration.py
@@ -130,6 +133,7 @@ lakefs_client/model/underlying_object_properties.py
 lakefs_client/model/user.py
 lakefs_client/model/user_creation.py
 lakefs_client/model/user_list.py
+lakefs_client/model/warnings.py
 lakefs_client/model_utils.py
 lakefs_client/models/__init__.py
 lakefs_client/models/__init__.py

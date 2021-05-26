@@ -184,6 +184,7 @@ Class | Method | HTTP request | Description
 *TagsApi* | [**delete_tag**](docs/TagsApi.md#delete_tag) | **DELETE** /repositories/{repository}/tags/{tag} | delete tag
 *TagsApi* | [**get_tag**](docs/TagsApi.md#get_tag) | **GET** /repositories/{repository}/tags/{tag} | get tag
 *TagsApi* | [**list_tags**](docs/TagsApi.md#list_tags) | **GET** /repositories/{repository}/tags | list tags
+*WarningsApi* | [**get_warnings**](docs/WarningsApi.md#get_warnings) | **GET** /warnings | 
 
 
 ## Documentation For Models
@@ -237,6 +238,7 @@ Class | Method | HTTP request | Description
  - [User](docs/User.md)
  - [UserCreation](docs/UserCreation.md)
  - [UserList](docs/UserList.md)
+ - [Warnings](docs/Warnings.md)
 
 
 ## Documentation For Authorization
