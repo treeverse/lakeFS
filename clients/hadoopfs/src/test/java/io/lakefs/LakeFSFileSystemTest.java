@@ -4,6 +4,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -19,6 +20,8 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.S3ClientOptions;
 import com.amazonaws.services.s3.model.CreateBucketRequest;
 import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
 
@@ -42,6 +45,7 @@ import io.lakefs.clients.api.ObjectsApi;
 import io.lakefs.clients.api.RepositoriesApi;
 import io.lakefs.clients.api.StagingApi;
 import io.lakefs.clients.api.model.ObjectStats;
+import io.lakefs.clients.api.model.ObjectStats.PathTypeEnum;
 import io.lakefs.clients.api.model.ObjectStatsList;
 import io.lakefs.clients.api.model.Repository;
 import io.lakefs.clients.api.model.StagingLocation;
@@ -187,6 +191,35 @@ public class LakeFSFileSystemTest {
         Assert.assertEquals(contents, actual);
 
         // TODO(ariels): Verify no *other* files on the bucket.
+    }
+
+    @Test
+    public void testOpen() throws ApiException, IOException {
+        String contents = "The quick brown fox jumps over the lazy dog.";
+        byte[] contentsBytes = contents.getBytes();
+
+        String key = "/repo-base/open";
+
+        // Write physical file to S3.
+        ObjectMetadata s3Metadata = new ObjectMetadata();
+        s3Metadata.setContentLength(contentsBytes.length);
+        s3Client.putObject(new PutObjectRequest(s3Bucket, key, new ByteArrayInputStream(contentsBytes), s3Metadata));
+
+        Path p = new Path("lakefs://repo/main/read.me");
+        when(objectsApi.statObject("repo", "main", "read.me")).
+            thenReturn(new ObjectStats().
+                       path(p.toString()).
+                       pathType(PathTypeEnum.OBJECT).
+                       physicalAddress(s3Url(key)).
+                       checksum("unused").
+                       mtime(0L).
+                       sizeBytes((long)contentsBytes.length));
+
+        InputStream in = fs.open(p);
+
+        String actual = IOUtils.toString(in);
+
+        Assert.assertEquals(contents, actual);
     }
 
     /*
