@@ -1,6 +1,9 @@
 import org.apache.spark.sql.SparkSession
+import org.apache.log4j.Logger
 
 object Sonnets {
+  val logger = Logger.getLogger(getClass.getName)
+
   def main(args: Array[String]): Unit = {
     val spark = SparkSession
       .builder()
@@ -12,18 +15,38 @@ object Sonnets {
     sc.setLogLevel("INFO")
     import spark.implicits._
     val sonnets = sc.textFile(input)
-    val counts = sonnets.flatMap(line => line.split(" ")).map(word => (word, 1)).reduceByKey(_ + _).toDF
+    val partitions = 7
+    val counts = sonnets
+      .flatMap(line => line.split(" "))
+      .map(word => (word, 1))
+      .reduceByKey(_ + _)
+      .repartition(10)
+      .toDF
 
     for (fmt <- Seq("csv", "parquet", "json", "orc")) {
-      val fname = "%s.%s".format(output, fmt)
-      counts.write.format(fmt).save(fname)
-    }
+      // save data is selected format
+      val outputPath = "%s.%s".format(output, fmt)
+      logger.info(s"Write word count - format:$fmt path:$outputPath")
+      counts.write.format(fmt).save(outputPath)
 
-    val wc = spark.read.format("csv").load(output + ".csv")
-    val life = wc.filter(x => x(1) == "42").map(x => x(0).toString).collect.sorted.mkString(",")
-    if (life != "can,or") {
-      println(s"Words found 42 times doesn't match '$life'")
-      System.exit(1)
+      // read the data we just wrote
+      logger.info(s"Read word count - format:$fmt path:$outputPath")
+      val wc = spark.read.format(fmt).load(outputPath)
+
+      // filter word count for specific 'times' and match result
+      val expected = "can,or"
+      val times = "42"
+      val life = wc
+        .filter(x => x(1).toString == times) // different formats use different types - compare as string
+        .map(x => x(0).toString)
+        .collect
+        .sorted
+        .mkString(",")
+      if (life != expected) {
+        logger.error(s"Word count - format:$fmt times:$times matched:'$life' expected:'$expected'")
+        println(s"Words found $times times, '$life',  doesn't match '$expected' (format:$fmt)")
+        System.exit(1)
+      }
     }
   }
 }
