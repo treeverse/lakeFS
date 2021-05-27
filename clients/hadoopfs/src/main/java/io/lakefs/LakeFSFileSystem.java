@@ -629,7 +629,7 @@ public class LakeFSFileSystem extends FileSystem {
     }
 
     class ListingIterator implements RemoteIterator<LakeFSLocatedFileStatus> {
-        private final boolean recursive;
+        private final boolean removeDirectory;
         private final ObjectLocation objectLocation;
         private final String delimiter;
         private final int amount;
@@ -648,7 +648,7 @@ public class LakeFSFileSystem extends FileSystem {
          * @param amount    buffer size to fetch listing
          */
         public ListingIterator(Path path, boolean recursive, int amount) {
-            this.recursive = recursive;
+            this.removeDirectory = recursive;
             this.chunk = Collections.emptyList();
             this.objectLocation = pathToObjectLocation(path);
             String locationPath = this.objectLocation.getPath();
@@ -693,7 +693,7 @@ public class LakeFSFileSystem extends FileSystem {
                     throw new IOException("listObjects", e);
                 }
                 // filter objects in recursive mode
-                if (recursive) {
+                if (this.removeDirectory) {
                     chunk = chunk.stream().filter(item -> !isDirectory(item)).collect(Collectors.toList());
                 }
                 // loop until we have something or last chunk
