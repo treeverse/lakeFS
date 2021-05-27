@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Glue / Hive metastore
-description: When working with Glue or Hive metastore, each table can point only to one lakeFS branch.
+description: Query data from lakeFS branches in services backed by Glue/Hive Metastore.
 parent: Integrations
 nav_order: 65
 has_children: false
@@ -15,15 +15,15 @@ redirect_from: ../using/glue_hive_metastore.html
 {:toc}
    
 # Glue / Hive Metastore Intro
-This part contains a brief explanation about how Glue/Hive metastore works with lakeFS 
+This part contains a brief explanation about how Glue/Hive metastore work with lakeFS 
 
-Glue/Hive Metastore stores metadata related to Hive and other services (such as Spark and Trino).
-The Metastore contains metadata such as the location of the table, information about columns, partitions and many more.
+Glue and Hive Metastore stores metadata related to Hive and other services (such as Spark and Trino).
+They contain metadata such as the location of the table, information about columns, partitions and many more.
 
 ## Without lakeFS 
 {: .no_toc }
 In order to query the table `my_table`, Spark will: 
-* Request the metadata from Hive Metastore (steps 1,2)
+* Request the metadata from Hive metastore (steps 1,2)
 * Use the location from the metadata to access the data in S3 (steps 3,4).
 ![metastore with S3](../assets/img/metastore-S3.svg)
   
@@ -39,18 +39,18 @@ When using lakeFS, the flow stays exactly the same. Note that the location of th
 
 # Managing Tables With lakeFS Branches
 ## Motivation
-When creating a table in Glue/Hive metastore (using a client such as Spark, Hive, Presto), We specify the table location.
+When creating a table in Glue/Hive metastore (using a client such as Spark, Hive, Presto), we specify the table location.
 Consider the table `my_table` which was created with the location `s3://example/main/path/to/table`.
 
 Assume we created a new branch called `DEV` with `main` as the source branch. 
 The data from `s3://example/main/path/to/table` is now accessible in `s3://example/DEV/path/to/table`.
 The metadata is not managed in lakeFS, meaning we don't have any table pointing to `s3://example/DEV/path/to/table`.
 
-To address this lakeFS introduces `lakectl metastore` commands. The case above could be handled using the copy command: it can create a copy of `my_table` with data located in `s3://example/DEV/path/to/table`.
+To address this, lakeFS introduces `lakectl metastore` commands. The case above could be handled using the copy command: it can create a copy of `my_table` with data located in `s3://example/DEV/path/to/table`. Note that this is a fast, metadata-only operation.
 
 
 ## Configurations
-The Metastore commands could run on Glue or Hive metastore.<br/>
+The `lakectl metastore` commands could run on Glue or Hive metastore.<br/>
 Add the following to the lakectl configuration file (by default `~/.lakectl.yaml`):
 ### Hive
 {: .no_toc }
@@ -82,7 +82,7 @@ For simplicity, we recommend creating a schema for each branch, this way you can
 
 For example:
 after creating branch `example_branch` also create a schema named `example_branch`.
-for a table named `my_table` under the schema `main` we would like to create a new table called `my_table` under the schema `example_branch`
+For a table named `my_table` under the schema `main`, create a new table by the same name under the schema `example_branch`. You now have two `my_table`s, one in the main schema and one, in the branch schema.
 
 
 ## Commands
@@ -114,7 +114,7 @@ CREATE EXTERNAL TABLE `inventory`(
         's3a://my_repo/main/path/to/table';
 ```
 
-We create a new lakeFS branch `example_branch` .
+We create a new lakeFS branch `example_branch`:
 ```shell
 lakectl branch create lakefs://my_repo/example_branch --source lakefs://my_repo/main 
 ```
@@ -152,7 +152,7 @@ Shows added`+` , removed`-` and changed`~` partitions and columns.
 
 Example:
 
-Suppose that we made some changes on the copied table `inventory` on schema `example_branch` and we want to see the changes before merging back to `inventory` on schema `default`. 
+Suppose that we made some changes on the copied table `inventory` on schema `example_branch` and we want to view the changes before merging back to `inventory` on schema `default`. 
 
 Hive:
 ``` bash
@@ -170,21 +170,21 @@ Partitions
 ```
 
 ## Athena with lakeFS branches
-Athena doesn't support configuring the endpoint-uri.
-meaning they can't access lakeFS, and can only use it above S3.
+Athena doesn't support configuring the endpoint-uri. to use S3-compatible services like lakeFS.
+Hence, Athena can't access lakeFS, and can only be used with AWS S3 as the storage.
 
-In order to enable accessing partitioned data we could use create-symlink.
+In order to enable accessing partitioned data we could use the `create-symlink` command.
 create-symlink receives a source table, destination table and the location of the table and does two actions:
 1. Creates partitioned directories with symlink files in the underlying S3 bucket.
-2. Creates a table in glue catalog with symlink format type and location pointing to the created symlinks.
+2. Creates a table in Glue catalog with symlink format type and location pointing to the created symlinks.
 
-**Notice:** create-symlink source table must be located in lakeFS
+**Notice:** create-symlink source table must point to a location in lakeFS.
 {: .note .pb-3 }
 
 
 Example:
 
-Let's assume we have the table `inventory` in glue.
+Let's assume we have the table `inventory` in Glue.
 The table is pointing to repo `example-repo` branch `main` and the data is located at `path/to/table/in/lakeFS`
 
 We want to query the table using Athena.
@@ -193,4 +193,4 @@ To do this, we run the command:
 lakectl metastore create-symlink --address 123456789012 --branch main --from-schema default --from-table branch_inventory --to-schema default --to-table sym_inventory --repo example-repository --path path/to/table/in/lakeFS
 ```
 
-Now we can use  Amazon Athena and query the created table `sym_inventory`
+We can now use Amazon Athena to query the created table `sym_inventory`.
