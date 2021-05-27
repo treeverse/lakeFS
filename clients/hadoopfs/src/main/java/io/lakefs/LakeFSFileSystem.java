@@ -215,8 +215,7 @@ public class LakeFSFileSystem extends FileSystem {
     @Override
     public RemoteIterator<LocatedFileStatus> listFiles(Path f, boolean recursive) throws FileNotFoundException, IOException {
         LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ listFiles path: {}, recursive {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", f.toString(), recursive);
-
-        return new ListingIterator(f, recursive, listAmount);
+        return toLocatedFileStatusIterator(new ListingIterator(f, recursive, listAmount));
     }
 
     /**
@@ -259,11 +258,19 @@ public class LakeFSFileSystem extends FileSystem {
     }
 
     /**
-     * This method is implemented under the following assumptions:
-     * 1. rename is only supported for uncommitted data on the same branch.
-     * 2. file rename operation is supported, directories rename is unsupported.
-     * 3. the rename dst  path can be an uncommitted file, that will be overridden as a result of the rename operation.
-     * 4. On rename operation a new mtime is generated, therefore we don't preserve the mtime of the src object.
+     * Rename, behaving similarly to the POSIX "mv" command, but non-atomically.
+     * 1. Rename is only supported for uncommitted data on the same branch.
+     * 2. The following rename scenarios are supported:
+     * * file -> existing-file-name: rename(src.txt, existing-dst.txt) -> existing-dst.txt, existing-dst.txt is overriden
+     * * file -> existing-directory-name: rename(src.txt, existing-dstdir) -> existing-dstdir/src.txt
+     * * file -> non-existing dst: in case of non-existing rename target, the src file is renamed to a file with the
+     * destination name. rename(src.txt, non-existing-dst) -> non-existing-dst, nonexisting-dst is a file.
+     * * directory -> non-existing directory:
+     * rename(srcDir(containing srcDir/a.txt), non-existing-dstdir) -> non-existing-dstdir/a.txt
+     * * directory -> existing directory:
+     * rename(srcDir(containing srcDir/a.txt), existing-dstdir) -> existing-dstdir/srcDir/a.txt
+     * 3. The rename dst  path can be an uncommitted file, that will be overridden as a result of the rename operation.
+     * 4. The mtime of the src object is not preserved.
      *
      * @throws IOException
      */
@@ -284,18 +291,108 @@ public class LakeFSFileSystem extends FileSystem {
             return false;
         }
 
-        ObjectStats srcStat;
-        ObjectsApi objects = lfsClient.getObjects();
+        LakeFSFileStatus srcStatus;
         try {
-            // Stat src file to get its metadata
-            srcStat = objects.statObject(srcObjectLoc.getRepository(), srcObjectLoc.getRef(),
-                    srcObjectLoc.getPath());
-        } catch (ApiException e) {
-            LOG.error("rename: could not get src object stats. src:{}", src, e);
+            srcStatus = getFileStatus(src);
+        } catch (FileNotFoundException e) {
+            LOG.error("rename: src {} does not exist, rename failed.", src, e);
             return false;
         }
+        if (!srcStatus.isDirectory()) {
+            return renameFile(srcStatus, dst);
+        }
+        return renameDirectory(src, dst);
+    }
 
-        return renameObject(srcStat, srcObjectLoc, dstObjectLoc);
+    /**
+     * Recursively rename objects under src dir.
+     *
+     * @return true if all objects under src renamed successfully, false otherwise.
+     */
+    private boolean renameDirectory(Path src, Path dst) throws IOException {
+        boolean dstExists = false;
+        LakeFSFileStatus dstFileStatus;
+        try {
+            // May be unnecessary with https://github.com/treeverse/lakeFS/issues/1691
+            dstFileStatus = getFileStatus(dst);
+            dstExists = true;
+            if (!dstFileStatus.isDirectory()) {
+                LOG.error("renameDirectory: cannot overwrite non-directory '{}' with directory '{}'", dst, src);
+                return false;
+            }
+        } catch (FileNotFoundException e) {
+            LOG.debug("renameDirectory: dst {} does not exist", dst);
+        }
+
+        ListingIterator iterator = new ListingIterator(src, true, listAmount);
+        while (iterator.hasNext()) {
+            // TODO (Tals): parallelize objects rename process.
+            LakeFSLocatedFileStatus locatedFileStatus = iterator.next();
+            Path objDst = dstExists ? buildObjPathOnExistingDestinationDir(locatedFileStatus.getPath(), dst) :
+                    buildObjPathOnNonExistingDestinationDir(locatedFileStatus.getPath(), src, dst);
+            try {
+                if (!renameObject(locatedFileStatus.toLakeFSFileStatus(), objDst)) {
+                    throw new IOException();
+                }
+            } catch (IOException e) {
+                // Rename dir operation in non-transactional. if one object rename failed we will end up in an
+                // intermediate state.
+                LOG.error("renameDirectory: failed to rename src dir {}", src);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * TODO (Tals): move this description into a component-test
+     * Sample input and output
+     * input:
+     * renamedObj: lakefs://repo/main/dir1/file1.txt
+     * srcDirPath: lakefs://repo/main/dir1
+     * dstDirPath: lakefs://repo/main/dir2
+     * output:
+     * lakefs://repo/main/dir2/file1.txt
+     */
+    private Path buildObjPathOnNonExistingDestinationDir(Path renamedObj, Path srcDir, Path dstDir) {
+        String renamedObjName = renamedObj.toUri().getPath().substring(srcDir.toUri().getPath().length() + 1);
+        String newObjPath = dstDir.toUri() + SEPARATOR + renamedObjName;
+        return new Path(newObjPath);
+    }
+
+    /**
+     * TODO (Tals): move this description into a component-test
+     * Sample input and output
+     * input:
+     * renamedObj: lakefs://repo/main/file1.txt
+     * dstDir: lakefs://repo/main/dir1
+     * output:
+     * lakefs://repo/main/dir1/file1.txt
+     * <p>
+     * input:
+     * renamedObj: lakefs://repo/main/dir1/file1.txt
+     * dstDir: lakefs://repo/main/dir2
+     * output:
+     * lakefs://repo/main/dir2/dir1/file1.txt
+     */
+    private Path buildObjPathOnExistingDestinationDir(Path renamedObj, Path dstDir) {
+        ObjectLocation renamedObjLoc = pathToObjectLocation(renamedObj);
+        return new Path(dstDir + SEPARATOR + renamedObjLoc.getPath());
+    }
+
+    private boolean renameFile(LakeFSFileStatus srcStatus, Path dst) throws IOException {
+        LakeFSFileStatus dstFileStatus;
+        try {
+            dstFileStatus = getFileStatus(dst);
+            LOG.debug("renameFile: dst {} exists and is a {}", dst, dstFileStatus.isDirectory() ? "directory" : "file");
+            if (dstFileStatus.isDirectory()) {
+                dst = buildObjPathOnExistingDestinationDir(srcStatus.getPath(), dst);
+            }
+        } catch (FileNotFoundException e) {
+            LOG.debug("renameFile: dst does not exist, renaming src {} to a file called dst({})",
+                    srcStatus.getPath(), dst);
+        }
+        return renameObject(srcStatus, dst);
     }
 
     /**
@@ -303,21 +400,22 @@ public class LakeFSFileSystem extends FileSystem {
      *
      * @return true if rename succeeded, false otherwise
      */
-    private boolean renameObject(ObjectStats srcStat, ObjectLocation srcObjectLoc, ObjectLocation dstObjectLoc)
-            throws IOException {
-        ObjectsApi objects = lfsClient.getObjects();
+    private boolean renameObject(LakeFSFileStatus srcStatus, Path dst) throws IOException {
+        ObjectLocation srcObjectLoc = pathToObjectLocation(srcStatus.getPath());
+        ObjectLocation dstObjectLoc = pathToObjectLocation(dst);
 
+        ObjectsApi objects = lfsClient.getObjects();
         //TODO (Tals): Can we add metadata? we currently don't have an API to get the metadata of an object.
         ObjectStageCreation creationReq = new ObjectStageCreation()
-                .checksum(srcStat.getChecksum())
-                .sizeBytes(srcStat.getSizeBytes())
-                .physicalAddress(srcStat.getPhysicalAddress());
+                .checksum(srcStatus.getChecksum())
+                .sizeBytes(srcStatus.getLen())
+                .physicalAddress(srcStatus.getPhysicalAddress());
 
         try {
             objects.stageObject(dstObjectLoc.getRepository(), dstObjectLoc.getRef(), dstObjectLoc.getPath(),
                     creationReq);
         } catch (ApiException e) {
-            LOG.error("rename: Could not stage object on dst:{}", dstObjectLoc.getPath(), e);
+            LOG.error("renameObject: Could not stage object on dst:{}", dstObjectLoc.getPath(), e);
             return false;
         }
 
@@ -333,7 +431,7 @@ public class LakeFSFileSystem extends FileSystem {
             throw new IOException("deleteObject", e);
         }
 
-        LOG.debug("rename: successfully renamed {} to {}", srcObjectLoc.getPath(), dstObjectLoc.getPath());
+        LOG.debug("rename: successfully renamed {} to {}", srcStatus.getPath(), dst);
         return true;
     }
 
@@ -394,8 +492,13 @@ public class LakeFSFileSystem extends FileSystem {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @return {@link LakeFSFileStatus}
+     */
     @Override
-    public FileStatus getFileStatus(Path path) throws IOException {
+    public LakeFSFileStatus getFileStatus(Path path) throws IOException {
         LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ getFileStatus, path: {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", path.toString());
         ObjectLocation objectLoc = pathToObjectLocation(path);
         ObjectsApi objectsApi = lfsClient.getObjects();
@@ -411,13 +514,14 @@ public class LakeFSFileSystem extends FileSystem {
         ListingIterator iterator = new ListingIterator(path, true, 1);
         if (iterator.hasNext()) {
             Path filePath = new Path(objectLoc.toString());
-            return new FileStatus(0, true, 0, 0, 0, filePath);
+
+            return new LakeFSFileStatus.Builder(filePath).isdir(true).build();
         }
         throw new FileNotFoundException(path + " not found");
     }
 
     @Nonnull
-    private FileStatus convertObjectStatsToFileStatus(String repository, String ref, ObjectStats objectStat) throws IOException {
+    private LakeFSFileStatus convertObjectStatsToFileStatus(String repository, String ref, ObjectStats objectStat) throws IOException {
         try {
             long length = 0;
             Long sizeBytes = objectStat.getSizeBytes();
@@ -435,7 +539,11 @@ public class LakeFSFileSystem extends FileSystem {
             if (!isDir) {
                 blockSize = withFileSystemAndTranslatedPhysicalPath(objectStat.getPhysicalAddress(), FileSystem::getDefaultBlockSize);
             }
-            return new FileStatus(length, isDir, 0, blockSize, modificationTime, filePath);
+            LakeFSFileStatus.Builder builder =
+                    new LakeFSFileStatus.Builder(filePath).length(length)
+                            .isdir(isDir).blocksize(blockSize).mTime(modificationTime)
+                            .checksum(objectStat.getChecksum()).physicalAddress(objectStat.getPhysicalAddress());
+            return builder.build();
         } catch (java.net.URISyntaxException e) {
             throw new IOException("uri", e);
         }
@@ -506,7 +614,7 @@ public class LakeFSFileSystem extends FileSystem {
         return loc;
     }
 
-    class ListingIterator implements RemoteIterator<LocatedFileStatus> {
+    class ListingIterator implements RemoteIterator<LakeFSLocatedFileStatus> {
         private final ObjectLocation objectLocation;
         private final String delimiter;
         private final int amount;
@@ -575,19 +683,25 @@ public class LakeFSFileSystem extends FileSystem {
         }
 
         @Override
-        public LocatedFileStatus next() throws IOException {
+        public LakeFSLocatedFileStatus next() throws IOException {
             if (!hasNext()) {
                 throw new NoSuchElementException("No more entries");
             }
             ObjectStats objectStats = chunk.get(pos++);
-            FileStatus fileStatus = convertObjectStatsToFileStatus(objectLocation.getRepository(), objectLocation.getRef(), objectStats);
+            LakeFSFileStatus fileStatus = convertObjectStatsToFileStatus(objectLocation.getRepository(),
+                    objectLocation.getRef(), objectStats);
             // currently do not pass locations of the file blocks - until we understand if it is required in order to work
-            return new LocatedFileStatus(fileStatus, null);
+            return new LakeFSLocatedFileStatus(fileStatus, null);
         }
     }
 
     private static boolean isDirectory(ObjectStats stat) {
         return stat.getPathType() == ObjectStats.PathTypeEnum.COMMON_PREFIX;
+    }
+
+    public static RemoteIterator<LocatedFileStatus> toLocatedFileStatusIterator(
+            RemoteIterator<? extends LocatedFileStatus> iterator) {
+        return (RemoteIterator<LocatedFileStatus>) iterator;
     }
 }
 
