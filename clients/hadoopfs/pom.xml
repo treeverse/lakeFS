@@ -59,6 +59,10 @@
                                     <pattern>okhttp3</pattern>
                                     <shadedPattern>io.lakefs.shaded.okhttp3</shadedPattern>
                                 </relocation>
+                                <relocation>
+                                    <pattern>com.google.gson</pattern>
+                                    <shadedPattern>io.lakefs.shaded.gson</shadedPattern>
+                                </relocation>
                             </relocations>
                         </configuration>
                     </execution>
