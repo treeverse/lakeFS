@@ -1,4 +1,4 @@
-name: Go
+name: Test
 on:
   push:
     branches:
@@ -27,8 +27,8 @@ jobs:
       - name: gitLeaks
         uses: zricethezav/gitleaks-action@v1.5.0
 
-  test:
-    name: Run Test Suite
+  test-go:
+    name: Run Go tests
     runs-on: ubuntu-20.04
     steps:
       - name: Check out code into the Go module directory
@@ -80,9 +80,31 @@ jobs:
 
       - name: Run tests
         run: |
-          make test
+          make test-go
       # - name: Publish coverage
       #   uses: codecov/codecov-action@v1
       #   with:
       #     files: ./cover.out,api/cover.out
       #     fail_ci_if_error: false
+
+  test-hadoopfs:
+    name: Run HadoopFS tests
+    runs-on: ubuntu-20.04
+    # HadoopFS code is compiled with *published* client (not latest unpublished).
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Set up JDK 8
+        uses: actions/setup-java@v2
+        with:
+          java-version: '8'
+          distribution: 'adopt'
+      - name: Cache Maven packages
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2      - Cache Maven cache
+      - name: Test with Maven
+        run: cd clients/hadoopfs; mvn --batch-mode --update-snapshots test
