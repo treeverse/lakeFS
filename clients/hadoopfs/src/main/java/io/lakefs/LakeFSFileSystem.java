@@ -8,10 +8,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Collections;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -473,7 +470,24 @@ public class LakeFSFileSystem extends FileSystem {
     @Override
     public FileStatus[] listStatus(Path path) throws FileNotFoundException, IOException {
         LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ List status is called for: {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$", path.toString());
-        return new FileStatus[0];
+        ObjectLocation objectLoc = pathToObjectLocation(path);
+        try {
+            ObjectsApi objectsApi = lfsClient.getObjects();
+            ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
+            LakeFSFileStatus fileStatus = convertObjectStatsToFileStatus(objectLoc.getRepository(), objectLoc.getRef(), objectStat);
+            return new FileStatus[]{fileStatus};
+        } catch (ApiException e) {
+            if (e.getCode() != HttpStatus.SC_NOT_FOUND) {
+                throw new IOException("statObject", e);
+            }
+        }
+        List<FileStatus> fileStatuses = new ArrayList<>();
+        ListingIterator iterator = new ListingIterator(path, false, listAmount);
+        while (iterator.hasNext()) {
+            LocatedFileStatus fileStatus = iterator.next();
+            fileStatuses.add(fileStatus);
+        }
+        return fileStatuses.toArray(new FileStatus[0]);
     }
 
     @Override
@@ -615,6 +629,7 @@ public class LakeFSFileSystem extends FileSystem {
     }
 
     class ListingIterator implements RemoteIterator<LakeFSLocatedFileStatus> {
+        private final boolean recursive;
         private final ObjectLocation objectLocation;
         private final String delimiter;
         private final int amount;
@@ -633,6 +648,7 @@ public class LakeFSFileSystem extends FileSystem {
          * @param amount    buffer size to fetch listing
          */
         public ListingIterator(Path path, boolean recursive, int amount) {
+            this.recursive = recursive;
             this.chunk = Collections.emptyList();
             this.objectLocation = pathToObjectLocation(path);
             String locationPath = this.objectLocation.getPath();
@@ -676,8 +692,10 @@ public class LakeFSFileSystem extends FileSystem {
                 } catch (ApiException e) {
                     throw new IOException("listObjects", e);
                 }
-                // filter objects
-                chunk = chunk.stream().filter(item -> !isDirectory(item)).collect(Collectors.toList());
+                // filter objects in recursive mode
+                if (recursive) {
+                    chunk = chunk.stream().filter(item -> !isDirectory(item)).collect(Collectors.toList());
+                }
                 // loop until we have something or last chunk
             } while (chunk.isEmpty() && !last);
         }
