@@ -90,7 +90,27 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build and push to Amazon ECR
+      - name: Login to GitHub Docker Registry
+        uses: docker/login-action@v1
+        with:
+          registry: docker.pkg.github.com
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Pull last built docker image cache
+        run: |
+          docker pull docker.pkg.github.com/${GITHUB_REPOSITORY,,}/build-cache:${{ steps.version.outputs.tag }} || \
+          docker pull docker.pkg.github.com/${GITHUB_REPOSITORY,,}/build-cache || \
+          true
+      - name: Build Docker image with cache and push
+        run: |
+          set +e
+          docker build . -t docker.pkg.github.com/${GITHUB_REPOSITORY,,}/build-cache:${{ steps.version.outputs.tag }} \
+              --build-arg VERSION=${{ steps.version.outputs.tag }} \
+              --cache-from=docker.pkg.github.com/${GITHUB_REPOSITORY,,}/build-cache
+          docker push docker.pkg.github.com/${GITHUB_REPOSITORY,,}/build-cache:${{ steps.version.outputs.tag }}
+        env:
+          DOCKER_BUILDKIT: '1'
+      - name: Push to Amazon ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY_LAKEFS: lakefs
@@ -101,7 +121,6 @@ jobs:
             echo "Image exists"
           else
             echo "Image doesn't exist"
-            docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }} --build-arg VERSION=${{ steps.version.outputs.tag }} .
             docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}
           fi
 
