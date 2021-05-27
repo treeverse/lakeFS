@@ -546,6 +546,10 @@ func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	return block.DefaultStorageNamespaceInfo(BlockstoreType)
 }
 
+func (a *Adapter) RuntimeStats() map[string]string {
+	return nil
+}
+
 func formatMultipartFilename(uploadID string, partNumber int64) string {
 	// keep natural sort order with zero padding
 	return fmt.Sprintf("%s"+partSuffix+"%05d", uploadID, partNumber)

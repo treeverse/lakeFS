@@ -65,6 +65,7 @@ type Adapter struct {
 	uploadIDTranslator    block.UploadIDTranslator
 	streamingChunkSize    int
 	streamingChunkTimeout time.Duration
+	respServer            string
 }
 
 func WithHTTPClient(c *http.Client) func(a *Adapter) {
@@ -224,6 +225,9 @@ func (a *Adapter) streamToS3(ctx context.Context, sdkRequest *request.Request, s
 			Error("bad S3 PutObject response")
 		return "", err
 	}
+
+	a.extractS3Server(resp)
+
 	etag := resp.Header.Get("Etag")
 	// error in case etag is missing - note that empty header value will cause the same error
 	if len(etag) == 0 {
@@ -623,4 +627,26 @@ func (a *Adapter) BlockstoreType() string {
 
 func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	return block.DefaultStorageNamespaceInfo(BlockstoreType)
+}
+
+func (a *Adapter) RuntimeStats() map[string]string {
+	if a.respServer == "" {
+		return nil
+	}
+	return map[string]string{
+		"resp_server": a.respServer,
+	}
+}
+
+func (a *Adapter) extractS3Server(resp *http.Response) {
+	if resp == nil || resp.Header == nil {
+		return
+	}
+
+	server := resp.Header.Get("Server")
+	if server == "" {
+		return
+	}
+
+	a.respServer = server
 }
