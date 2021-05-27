@@ -142,12 +142,13 @@ func CopyOrMergeAll(ctx context.Context, fromClient, toClient Client, schemaFilt
 }
 
 func Copy(ctx context.Context, fromTable *Table, partitions []*Partition, toDB, toTable, serde string, toClient WriteClient, transformLocation func(location string) (string, error)) error {
-	err := fromTable.Update(toDB, toTable, serde, transformLocation)
+	isSparkSQLTable := fromTable.isSparkSQLTable()
+	err := fromTable.Update(toDB, toTable, serde, transformLocation, isSparkSQLTable)
 	if err != nil {
 		return err
 	}
 	for _, partition := range partitions {
-		err := partition.Update(toDB, toTable, serde, transformLocation)
+		err := partition.Update(toDB, toTable, serde, transformLocation, isSparkSQLTable)
 		if err != nil {
 			return err
 		}
@@ -161,7 +162,8 @@ func Copy(ctx context.Context, fromTable *Table, partitions []*Partition, toDB, 
 }
 
 func Merge(ctx context.Context, table *Table, partitionIter Collection, toDB, toTable, serde string, toClient Client, transformLocation func(location string) (string, error)) error {
-	err := table.Update(toDB, toTable, serde, transformLocation)
+	isSparkSQLTable := table.isSparkSQLTable()
+	err := table.Update(toDB, toTable, serde, transformLocation, isSparkSQLTable)
 	if err != nil {
 		return err
 	}
@@ -176,7 +178,7 @@ func Merge(ctx context.Context, table *Table, partitionIter Collection, toDB, to
 		if !ok {
 			return fmt.Errorf("%w in diffIterable call. expected to get * Partition, but got: %T", ErrExpectedType, value)
 		}
-		err = partition.Update(toDB, toTable, serde, transformLocation)
+		err = partition.Update(toDB, toTable, serde, transformLocation, isSparkSQLTable)
 		if err != nil {
 			return err
 		}
@@ -218,6 +220,10 @@ func Merge(ctx context.Context, table *Table, partitionIter Collection, toDB, to
 }
 
 func CopyPartition(ctx context.Context, fromClient ReadClient, toClient Client, fromDB, fromTable, toDB, toTable, serde string, partition []string, transformLocation func(location string) (string, error)) error {
+	t1, err := fromClient.GetTable(ctx, fromDB, fromTable)
+	if err != nil {
+		return err
+	}
 	p1, err := fromClient.GetPartition(ctx, fromDB, fromTable, partition)
 	if err != nil {
 		return err
@@ -226,7 +232,7 @@ func CopyPartition(ctx context.Context, fromClient ReadClient, toClient Client, 
 	if err != nil {
 		return err
 	}
-	err = p1.Update(toDB, toTable, serde, transformLocation)
+	err = p1.Update(toDB, toTable, serde, transformLocation, t1.isSparkSQLTable())
 	if err != nil {
 		return err
 	}
