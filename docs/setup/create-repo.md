@@ -11,7 +11,12 @@ redirect_from:
 
 # Create a Repository
 
+## Create the first user
+
 Once we have lakeFS configured and running, open `https://<OPENAPI_SERVER_ENDPOINT>/setup` (e.g. [https://lakefs.example.com](https://lakefs.example.com){: target="_blank" }).
+
+Note: If you already have lakeFS credentials, skip to step 2 and login.
+{: .note .pb-3 }
 
 1. Follow the steps to create an initial administrator user. Save the credentials you've received somewhere safe, you won't be able to see them again!
 
@@ -22,7 +27,10 @@ Once we have lakeFS configured and running, open `https://<OPENAPI_SERVER_ENDPOI
    ![Login Screen](../assets/img/login.png)
 
 3. Use the credentials from step #1 to login as an administrator
-4. Click `Create Repository`
+   
+## Create the repository
+
+1. Click `Create Repository`
     
    ![Create Repository](../assets/img/create_repo_s3.png)
 
