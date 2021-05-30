@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -66,6 +67,7 @@ type Adapter struct {
 	streamingChunkSize    int
 	streamingChunkTimeout time.Duration
 	respServer            string
+	respServerLock        sync.Mutex
 }
 
 func WithHTTPClient(c *http.Client) func(a *Adapter) {
@@ -630,6 +632,8 @@ func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 }
 
 func (a *Adapter) RuntimeStats() map[string]string {
+	a.respServerLock.Lock()
+	defer a.respServerLock.Unlock()
 	if a.respServer == "" {
 		return nil
 	}
@@ -643,10 +647,14 @@ func (a *Adapter) extractS3Server(resp *http.Response) {
 		return
 	}
 
+	// Extract the responding server from the response.
+	// Expected values: "S3" from AWS, "MinIO" for MinIO. Others unknown.
 	server := resp.Header.Get("Server")
 	if server == "" {
 		return
 	}
 
+	a.respServerLock.Lock()
+	defer a.respServerLock.Unlock()
 	a.respServer = server
 }

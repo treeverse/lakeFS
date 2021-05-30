@@ -239,19 +239,22 @@ func (s *BufferedCollector) handleRuntimeStats() {
 	if len(currStats) == 0 {
 		return
 	}
-	if len(s.runtimeStats) == 0 {
-		s.runtimeStats = currStats
-		go s.sendRuntimeStats()
-		return
-	}
 
 	anyChange := false
-	for currK, currV := range currStats {
-		if prevV, ok := s.runtimeStats[currK]; !ok || prevV != currV {
-			s.runtimeStats[currK] = currV
-			anyChange = true
+	if len(s.runtimeStats) == 0 {
+		// first time runtime stats are reported
+		anyChange = true
+		s.runtimeStats = currStats
+	} else {
+		for currK, currV := range currStats {
+			if prevV, ok := s.runtimeStats[currK]; !ok || prevV != currV {
+				// some reported metric changed, need to report it
+				s.runtimeStats[currK] = currV
+				anyChange = true
+			}
 		}
 	}
+
 	if anyChange {
 		go s.sendRuntimeStats()
 	}
