@@ -99,9 +99,9 @@ public class LakeFSFileSystemTest {
     @Before
     public void logS3Container() {
         Logger s3Logger = LoggerFactory.getLogger("s3 container");
-        Slf4jLogConsumer logConsumer = new Slf4jLogConsumer(s3Logger).
-            withMdc("container", "s3").
-            withSeparateOutputStreams();
+        Slf4jLogConsumer logConsumer = new Slf4jLogConsumer(s3Logger)
+            .withMdc("container", "s3")
+            .withSeparateOutputStreams();
         s3.followOutput(logConsumer);
     }
 
@@ -148,8 +148,8 @@ public class LakeFSFileSystemTest {
         stagingApi = mock(StagingApi.class, Answers.RETURNS_SMART_NULLS);
         when(lfsClient.getStaging()).thenReturn(stagingApi);
 
-        when(repositoriesApi.getRepository("repo")).
-            thenReturn(new Repository().storageNamespace(s3Url("/repo-base")));
+        when(repositoriesApi.getRepository("repo"))
+            .thenReturn(new Repository().storageNamespace(s3Url("/repo-base")));
 
         fs.initializeWithClient(new URI("lakefs://repo/main/file.txt"), conf, lfsClient);
     }
@@ -160,19 +160,19 @@ public class LakeFSFileSystemTest {
     protected List<String> getS3FilesByPrefix(String prefix) throws IOException {
         final int maxKeys = 1500;
 
-        ListObjectsRequest req = new ListObjectsRequest().
-            withBucketName(s3Bucket).
-            withPrefix(prefix)
+        ListObjectsRequest req = new ListObjectsRequest()
+            .withBucketName(s3Bucket)
+            .withPrefix(prefix)
             .withMaxKeys(maxKeys);
         ObjectListing listing = s3Client.listObjects(req);
         if (listing.isTruncated()) {
             Assert.fail(String.format("[internal] no support for test that creates >%d S3 objects", maxKeys));
         }
 
-        return listing.getObjectSummaries().
-            stream().
-            map(summary -> summary.getKey()).
-            collect(Collectors.toList());
+        return listing.getObjectSummaries()
+            .stream()
+            .map(summary -> summary.getKey())
+            .collect(Collectors.toList());
     }
 
     @Test
@@ -184,18 +184,18 @@ public class LakeFSFileSystemTest {
     @Test
     public void testExists_Exists() throws ApiException, IOException {
         Path p = new Path("lakefs://repo/main/exis.ts");
-        when(objectsApi.statObject("repo", "main", "exis.ts")).
-            thenReturn(new ObjectStats());
+        when(objectsApi.statObject("repo", "main", "exis.ts"))
+            .thenReturn(new ObjectStats());
 
         Assert.assertTrue(fs.exists(p));
     }
     @Test
     public void testExists_NotExists() throws ApiException, IOException {
         Path p = new Path("lakefs://repo/main/doesNotExi.st");
-        when(objectsApi.statObject(any(), any(), any())).
-            thenThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "no such file"));
-        when(objectsApi.listObjects(any(), any(), any(), any(), any(), any())).
-            thenReturn(new ObjectStatsList().results(Collections.emptyList()));
+        when(objectsApi.statObject(any(), any(), any()))
+            .thenThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "no such file"));
+        when(objectsApi.listObjects(any(), any(), any(), any(), any(), any()))
+            .thenReturn(new ObjectStatsList().results(Collections.emptyList()));
 
         Assert.assertFalse(fs.exists(p));
     }
@@ -207,8 +207,8 @@ public class LakeFSFileSystemTest {
 
         StagingLocation stagingLocation = new StagingLocation().token("foo").physicalAddress(s3Url("/repo-base/create"));
 
-        when(stagingApi.getPhysicalAddress("repo", "main", "create.me")).
-            thenReturn(stagingLocation);
+        when(stagingApi.getPhysicalAddress("repo", "main", "create.me"))
+            .thenReturn(stagingLocation);
 
         OutputStream out = fs.create(p);
         out.write(contents.getBytes());
