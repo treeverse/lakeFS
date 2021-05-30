@@ -441,6 +441,10 @@ func (l *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	return block.DefaultStorageNamespaceInfo(BlockstoreType)
 }
 
+func (l *Adapter) RuntimeStats() map[string]string {
+	return nil
+}
+
 func isValidUploadID(uploadID string) error {
 	_, err := hex.DecodeString(uploadID)
 	if err != nil {

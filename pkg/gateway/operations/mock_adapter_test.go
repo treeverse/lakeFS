@@ -104,3 +104,7 @@ func (a *mockAdapter) BlockstoreType() string {
 func (a *mockAdapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	panic("try to get storage namespace info")
 }
+
+func (a *mockAdapter) RuntimeStats() map[string]string {
+	return nil
+}
