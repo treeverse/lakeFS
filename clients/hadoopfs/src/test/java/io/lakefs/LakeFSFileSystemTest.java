@@ -29,8 +29,10 @@ import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -169,10 +171,7 @@ public class LakeFSFileSystemTest {
             Assert.fail(String.format("[internal] no support for test that creates >%d S3 objects", maxKeys));
         }
 
-        return listing.getObjectSummaries()
-            .stream()
-            .map(summary -> summary.getKey())
-            .collect(Collectors.toList());
+        return Lists.transform(listing.getObjectSummaries(), S3ObjectSummary::getKey);
     }
 
     @Test
