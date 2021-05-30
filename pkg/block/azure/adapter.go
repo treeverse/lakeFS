@@ -419,3 +419,7 @@ func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 		Example:       "https://mystorageaccount.blob.core.windows.net/mycontainer/",
 	}
 }
+
+func (a *Adapter) RuntimeStats() map[string]string {
+	return nil
+}

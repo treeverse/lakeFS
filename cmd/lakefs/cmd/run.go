@@ -105,7 +105,7 @@ var runCmd = &cobra.Command{
 		authMetadataManager := auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
 		metadata := stats.NewMetadata(ctx, logger, cfg.GetBlockstoreType(), authMetadataManager, cloudMetadataProvider)
-		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, cfg)
+		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, blockStore.RuntimeStats, cfg)
 
 		// send metadata
 		bufferedCollector.CollectMetadata(metadata)

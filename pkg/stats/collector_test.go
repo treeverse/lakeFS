@@ -2,6 +2,7 @@ package stats_test
 
 import (
 	"context"
+	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 
@@ -9,7 +10,8 @@ import (
 )
 
 type mockSender struct {
-	metrics chan []stats.Metric
+	metrics  chan []stats.Metric
+	metadata chan stats.Metadata
 }
 
 func (s *mockSender) SendEvent(ctx context.Context, installationID, processID string, m []stats.Metric) error {
@@ -18,6 +20,7 @@ func (s *mockSender) SendEvent(ctx context.Context, installationID, processID st
 }
 
 func (s *mockSender) UpdateMetadata(ctx context.Context, m stats.Metadata) error {
+	s.metadata <- m
 	return nil
 }
 
@@ -38,10 +41,13 @@ func (m *mockTicker) Tick() <-chan time.Time {
 }
 
 func TestCallHomeCollector_Collect(t *testing.T) {
-	sender := &mockSender{metrics: make(chan []stats.Metric, 10)}
+	sender := &mockSender{metrics: make(chan []stats.Metric, 10), metadata: make(chan stats.Metadata, 10)}
 	ticker := &mockTicker{tc: make(chan time.Time)}
 	ctx, cancelFn := context.WithCancel(context.Background())
-	collector := stats.NewBufferedCollector("installation_id", nil,
+	collector := stats.NewBufferedCollector("installation_id",
+		func() map[string]string {
+			return map[string]string{"runtime": "stat"}
+		}, nil,
 		stats.WithSender(sender),
 		stats.WithTicker(ticker),
 		stats.WithWriteBufferSize(0))
@@ -91,4 +97,16 @@ func TestCallHomeCollector_Collect(t *testing.T) {
 	cancelFn()
 	<-collector.Done()
 	<-sender.metrics // ensure we get another "payload"
+
+	m := <-sender.metadata
+	require.Equal(t, "installation_id", m.InstallationID)
+	require.Len(t, m.Entries, 1)
+	require.Equal(t, m.Entries[0].Name, "runtime")
+	require.Equal(t, m.Entries[0].Value, "stat")
+
+	select {
+	case <-sender.metadata:
+		require.Fail(t, "should not send the same metadata runtime stats more than once")
+	default:
+	}
 }

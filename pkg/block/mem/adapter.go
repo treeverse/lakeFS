@@ -305,3 +305,7 @@ func (a *Adapter) BlockstoreType() string {
 func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	return block.DefaultStorageNamespaceInfo(BlockstoreType)
 }
+
+func (a *Adapter) RuntimeStats() map[string]string {
+	return nil
+}
