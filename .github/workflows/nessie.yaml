@@ -108,19 +108,21 @@ jobs:
           true
       - name: Build Docker image with cache and push
         run: |
-          set +e
+          set -ex
           ghr=docker.pkg.github.com/${GITHUB_REPOSITORY,,}/build-cache
-          declare -a ghr_tags=(${{ steps.version.outputs.tag }})
-          if [[ -n $GITHUB_REF ]]; then ghr_tags=(${ghr_tags[@]} ${GITHUB_REF##*/}); fi
-          ghr_repo_tags=$(printf "%s " "${ghr_tags[@]/#/-t ${ghr}:}")
+          ghr_build_tag="-t ${ghr}:${{ steps.version.outputs.tag }}"
+          if [[ -n $GITHUB_REF ]]; then
+              ghr_ref_tag="-t ${ghr}:${GITHUB_REF##*/}"
+          else
+              ghr_ref_tag=''
+          fi
+          ecr_tag="-t $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}"
           docker build . \
-              $ghr_repo_tags \
-              -t $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }} \
+              ${ghr_ref_tag} ${ghr_build_tag} ${ecr_tag} \
               --build-arg VERSION=${{ steps.version.outputs.tag }} \
               --cache-from=${ghr}
-          for ghr_tag in ${ghr_tags[0]}; do
-              docker push ${ghr}:${ghr_tag}
-          done
+          docker push ${ghr_build_tag#-t }
+          if [[ -n ${ghr_ref_tag} ]]; then docker push ${ghr_ref_tag#-t }; fi
         env:
           DOCKER_BUILDKIT: '1'
       - name: Push to Amazon ECR
