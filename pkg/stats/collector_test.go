@@ -98,16 +98,15 @@ func TestCallHomeCollector_Collect(t *testing.T) {
 	<-collector.Done()
 	<-sender.metrics // ensure we get another "payload"
 
-	times := 0
-	close(sender.metadata)
-	for m := range sender.metadata {
-		times++
-		require.Equal(t, "installation_id", m.InstallationID)
-		require.Len(t, m.Entries, 1)
-		require.Equal(t, m.Entries[0].Name, "runtime")
-		require.Equal(t, m.Entries[0].Value, "stat")
-	}
+	m := <-sender.metadata
+	require.Equal(t, "installation_id", m.InstallationID)
+	require.Len(t, m.Entries, 1)
+	require.Equal(t, m.Entries[0].Name, "runtime")
+	require.Equal(t, m.Entries[0].Value, "stat")
 
-	// should not send the same metadata runtime stats more than once
-	require.Equal(t, times, 1)
+	select {
+	case <-sender.metadata:
+		require.Fail(t, "should not send the same metadata runtime stats more than once")
+	default:
+	}
 }
