@@ -10,8 +10,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -59,7 +57,7 @@ import io.lakefs.clients.api.model.ObjectStats.PathTypeEnum;
 public class LakeFSFileSystemTest {
     protected static final Logger LOG = LoggerFactory.getLogger(LakeFSFileSystemTest.class);
     private static final Long FILE_SIZE = 1L;
-    private static final Long MTIME = 0L;
+    private static final Long UNUSED_MTIME = 0L;
     private static final String UNUSED_CHECKSUM = "unused";
 
     protected final LakeFSFileSystem fs = new LakeFSFileSystem();
@@ -249,7 +247,7 @@ public class LakeFSFileSystemTest {
                        pathType(PathTypeEnum.OBJECT).
                        physicalAddress(s3Url(key)).
                        checksum(UNUSED_CHECKSUM).
-                       mtime(MTIME).
+                       mtime(UNUSED_MTIME).
                        sizeBytes((long)contentsBytes.length));
 
         InputStream in = fs.open(p);
@@ -291,24 +289,27 @@ public class LakeFSFileSystemTest {
     private void mockNonExistingPath(ObjectLocation objectLoc) throws ApiException {
         when(objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath()))
                 .thenThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "no such file"));
-        when(objectsApi.listObjects(objectLoc.getRepository(), objectLoc.getRef(),
-                objectLoc.getPath() + Constants.SEPARATOR, "", 1, ""))
+
+        when(objectsApi.listObjects(eq(objectLoc.getRepository()), eq(objectLoc.getRef()),
+                eq(objectLoc.getPath() + Constants.SEPARATOR), eq(""), any(), eq("")))
                 .thenReturn(new ObjectStatsList());
     }
 
     private void mockExistingDirPath(ObjectLocation dirObjLoc, ObjectLocation fileInDir) throws ApiException {
+        // io.lakefs.LakeFSFileSystem.getFileStatus tries to get object stats, when it can't find an object if will
+        // fall back to try listing items under this path to discover the objects it contains. if objects are found,
+        // then the path considered a directory.
         when(objectsApi.statObject(dirObjLoc.getRepository(), dirObjLoc.getRef(), dirObjLoc.getPath()))
                 .thenThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "no such file"));
 
+        // Mock the files under this directory
         ObjectStats fileStat = mockExistingFilePath(fileInDir);
+
+        // Mock listing the files under this directory
         ObjectStatsList filesInDir = new ObjectStatsList();
         filesInDir.addResultsItem(fileStat).setPagination(new Pagination().hasMore(false));
-
-        when(objectsApi.listObjects(dirObjLoc.getRepository(), dirObjLoc.getRef(),
-                dirObjLoc.getPath() + Constants.SEPARATOR, "", 1, ""))
-                .thenReturn(filesInDir);
-        when(objectsApi.listObjects(dirObjLoc.getRepository(), dirObjLoc.getRef(),
-                dirObjLoc.getPath() + Constants.SEPARATOR, "", 1000, ""))
+        when(objectsApi.listObjects(eq(dirObjLoc.getRepository()), eq(dirObjLoc.getRef()),
+                eq(dirObjLoc.getPath() + Constants.SEPARATOR), eq(""), any(), eq("")))
                 .thenReturn(filesInDir);
     }
 
@@ -317,7 +318,7 @@ public class LakeFSFileSystemTest {
         ObjectStats srcStats = new ObjectStats()
                 .path(objectLoc.getPath())
                 .sizeBytes(FILE_SIZE)
-                .mtime(MTIME)
+                .mtime(UNUSED_MTIME)
                 .pathType(PathTypeEnum.OBJECT)
                 .physicalAddress(s3Url(key))
                 .checksum(UNUSED_CHECKSUM);
@@ -329,9 +330,8 @@ public class LakeFSFileSystemTest {
         return String.format("/%s/%s/%s",objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
     }
 
-
     private void verifyObjDeletion(ObjectLocation srcObjLoc) throws ApiException {
-        verify(objectsApi).deleteObject(eq(srcObjLoc.getRepository()), eq(srcObjLoc.getRef()), eq(srcObjLoc.getPath()));
+        verify(objectsApi).deleteObject(srcObjLoc.getRepository(), srcObjLoc.getRef(), srcObjLoc.getPath());
     }
 
     private boolean dstPathLinkedToSrcPhysicalAddress(ObjectLocation srcObjLoc, ObjectLocation dstObjLoc) throws ApiException {
