@@ -12,8 +12,8 @@ import org.apache.hadoop.fs.Path;
  */
 public class LakeFSFileStatus extends FileStatus {
 
-    private String checksum;
-    private String physicalAddress;
+    private final String checksum;
+    private final String physicalAddress;
 
     public LakeFSFileStatus(Builder builder) {
         super(builder.length, builder.isdir, builder.blockReplication, builder.blockSize, builder.mTime, builder.path);
@@ -30,7 +30,7 @@ public class LakeFSFileStatus extends FileStatus {
     }
 
     public static class Builder {
-        private Path path;
+        private final Path path;
         private long length;
         private boolean isdir;
         private short blockReplication;

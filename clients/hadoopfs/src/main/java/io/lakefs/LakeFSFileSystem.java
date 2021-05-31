@@ -22,13 +22,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.LocatedFileStatus;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.RemoteIterator;
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.fs.s3a.AnonymousAWSCredentialsProvider;
 import org.apache.hadoop.fs.s3a.BasicAWSCredentialsProvider;
@@ -706,11 +700,25 @@ public class LakeFSFileSystem extends FileSystem {
                 throw new NoSuchElementException("No more entries");
             }
             ObjectStats objectStats = chunk.get(pos++);
-            LakeFSFileStatus fileStatus = convertObjectStatsToFileStatus(objectLocation.getRepository(),
-                    objectLocation.getRef(), objectStats);
-            // currently do not pass locations of the file blocks - until we understand if it is required in order to work
-            return new LakeFSLocatedFileStatus(fileStatus, null);
+            LakeFSFileStatus fileStatus = convertObjectStatsToFileStatus(
+                    objectLocation.getRepository(),
+                    objectLocation.getRef(),
+                    objectStats);
+            return toLakeFSLocatedFileStatus(fileStatus);
         }
+    }
+
+    /**
+     * Build a {@link LakeFSLocatedFileStatus} from a {@link LakeFSFileStatus} instance.
+     * @param status lakeFS file status
+     * @return a located status with block locations
+     * @throws IOException IO Problems.
+     */
+    private LakeFSLocatedFileStatus toLakeFSLocatedFileStatus(LakeFSFileStatus status) throws IOException {
+        BlockLocation[] blockLocations = status.isFile()
+                ? getFileBlockLocations(status, 0, status.getLen())
+                : null;
+        return new LakeFSLocatedFileStatus(status, blockLocations);
     }
 
     private static boolean isDirectory(ObjectStats stat) {
