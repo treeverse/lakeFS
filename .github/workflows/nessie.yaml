@@ -214,14 +214,10 @@ jobs:
         working-directory: test/spark
         run: docker-compose logs --tail=1000 lakefs
 
-  run-system:
-    name: Run latest lakeFS app
+  gen-code:
+    name: Generate code from latest lakeFS app
     needs: deploy-image
     runs-on: ubuntu-20.04
-    env:
-      TAG: ${{ needs.deploy-image.outputs.tag }}
-      # Setting Account_ID as a secret as a way to avoid specifying it here
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
     steps:
       - name: Check-out code
         uses: actions/checkout@v2
@@ -233,6 +229,29 @@ jobs:
       - name: Generate code
         run: |
           make gen
+          tar -cf /tmp/generated.tar.gz .
+      - name: Store generated code
+        uses: actions/upload-artifact@v2
+        with:
+          name: generated-code
+          path: /tmp/generated.tar.gz
+
+  run-system-aws-s3:
+    name: Run latest lakeFS app on AWS S3
+    needs: [gen-code, deploy-image]
+    runs-on: ubuntu-20.04
+    env:
+      TAG: ${{ needs.deploy-image.outputs.tag }}
+      # Setting Account_ID as a secret as a way to avoid specifying it here
+      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+    steps:
+      - name: Retrieve generated code
+        uses: actions/download-artifact@v2
+        with:
+          name: generated-code
+          path: /tmp/
+      - name: Unpack generated code
+        run: tar -xf /tmp/generated.tar.gz
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -287,6 +306,32 @@ jobs:
         run: |
           docker-compose -f nessie/ops/docker-compose.yaml down -v
           docker-compose -f nessie/ops/docker-compose.yaml up --quiet-pull --exit-code-from=nessie
+
+  run-system-gcp-gs:
+    name: Run latest lakeFS app on Google Cloud Platform and Google Cloud Storage
+    needs: [gen-code, deploy-image]
+    runs-on: ubuntu-20.04
+    env:
+      TAG: ${{ needs.deploy-image.outputs.tag }}
+      # Setting Account_ID as a secret as a way to avoid specifying it here
+      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+    steps:
+      - name: Retrieve generated code
+        uses: actions/download-artifact@v2
+        with:
+          name: generated-code
+          path: /tmp/
+      - name: Unpack generated code
+        run: tar -xf /tmp/generated.tar.gz
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
       - name: Run lakeFS GS
         env:
           LAKEFS_STATS_ENABLED: "false"
@@ -304,6 +349,33 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         run: docker-compose -f nessie/ops/docker-compose.yaml logs --tail=1000 lakefs
+
+  run-system-azure-abfs:
+    name: Run latest lakeFS app on Azure with Azure blobstore
+    needs: [gen-code, deploy-image]
+    runs-on: ubuntu-20.04
+    env:
+      TAG: ${{ needs.deploy-image.outputs.tag }}
+      # Setting Account_ID as a secret as a way to avoid specifying it here
+      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+    steps:
+      - name: Retrieve generated code
+        uses: actions/download-artifact@v2
+        with:
+          name: generated-code
+          path: /tmp/
+      - name: Unpack generated code
+        run: tar -xf /tmp/generated.tar.gz
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
       - name: Run lakeFS Azure
         env:
           LAKEFS_STATS_ENABLED: "false"
