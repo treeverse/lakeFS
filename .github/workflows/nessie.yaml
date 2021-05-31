@@ -229,11 +229,12 @@ jobs:
       - name: Generate code
         run: |
           make gen
+          tar -cf /tmp/generated.tar.gz .
       - name: Store generated code
         uses: actions/upload-artifact@v2
         with:
           name: generated-code
-          path: ./
+          path: /tmp/generated.tar.gz
 
   run-system-aws-s3:
     name: Run latest lakeFS app on AWS S3
@@ -248,6 +249,9 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: generated-code
+          path: /tmp/
+      - name: Unpack generated code
+        run: tar -xf /tmp/generated.tar.gz
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -316,6 +320,9 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: generated-code
+          path: /tmp/
+      - name: Unpack generated code
+        run: tar -xf /tmp/generated.tar.gz
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -356,6 +363,9 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: generated-code
+          path: /tmp/
+      - name: Unpack generated code
+        run: tar -xf /tmp/generated.tar.gz
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
