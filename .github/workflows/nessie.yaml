@@ -166,7 +166,6 @@ jobs:
         run: mvn -Djar.finalName=client --batch-mode --update-snapshots package
 
       - name: Test lakeFS S3 with Spark thick client
-        continue-on-error: true # Still working on this client!
         timeout-minutes: 2
         env:
           JARS: clients/hadoopfs/
