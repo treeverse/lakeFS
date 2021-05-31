@@ -475,4 +475,18 @@ public class LakeFSFileSystemTest {
         boolean renamed = fs.rename(src, dst);
         Assert.assertTrue(renamed);
     }
+
+    @Test
+    public void testRename_nonExistingSrcFile() throws ApiException, IOException {
+        Path src = new Path("lakefs://repo/main/non-existing.src");
+        ObjectLocation srcObjLoc = fs.pathToObjectLocation(src);
+        mockNonExistingPath(srcObjLoc);
+
+        Path dst = new Path("lakefs://repo/main/existing.dst");
+        ObjectLocation dstObjLoc = fs.pathToObjectLocation(dst);
+        mockExistingFilePath(dstObjLoc);
+
+        boolean renamed = fs.rename(src, dst);
+        Assert.assertFalse(renamed);
+    }
 }
