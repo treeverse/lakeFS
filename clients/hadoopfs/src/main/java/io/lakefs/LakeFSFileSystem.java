@@ -87,7 +87,6 @@ public class LakeFSFileSystem extends FileSystem {
     void initializeWithClient(URI name, Configuration conf, LakeFSClient lfsClient) throws IOException {
         super.initialize(name, conf);
         this.conf = conf;
-        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ initialize: {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$", name);
 
         String host = name.getHost();
         if (host == null) {
@@ -189,8 +188,6 @@ public class LakeFSFileSystem extends FileSystem {
     @Override
     public FSDataInputStream open(Path path, int bufSize) throws IOException {
         try {
-            LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ open(" + path.getName() + ") $$$$$$$$$$$$$$$$$$$$$$$$$$$$");
-
             ObjectsApi objects = lfsClient.getObjects();
             ObjectLocation objectLoc = pathToObjectLocation(path);
             ObjectStats stats = objects.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
@@ -205,7 +202,6 @@ public class LakeFSFileSystem extends FileSystem {
 
     @Override
     public RemoteIterator<LocatedFileStatus> listFiles(Path f, boolean recursive) throws FileNotFoundException, IOException {
-        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ listFiles path: {}, recursive {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", f.toString(), recursive);
         return toLocatedFileStatusIterator(new ListingIterator(f, recursive, listAmount));
     }
 
@@ -218,9 +214,7 @@ public class LakeFSFileSystem extends FileSystem {
                                      int bufferSize, short replication, long blockSize,
                                      Progressable progress) throws IOException {
         try {
-            LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ create path: {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", path.toString());
-
-            // BUG(ariels): overwrite ignored.
+            // TODO(ariels): overwrite ignored.
 
             StagingApi staging = lfsClient.getStaging();
             ObjectLocation objectLoc = pathToObjectLocation(path);
@@ -267,8 +261,6 @@ public class LakeFSFileSystem extends FileSystem {
      */
     @Override
     public boolean rename(Path src, Path dst) throws IOException {
-        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ Rename path {} to {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$", src, dst);
-
         ObjectLocation srcObjectLoc = pathToObjectLocation(src);
         ObjectLocation dstObjectLoc = pathToObjectLocation(dst);
         if (srcObjectLoc.equals(dstObjectLoc)) {
@@ -380,7 +372,7 @@ public class LakeFSFileSystem extends FileSystem {
                 dst = buildObjPathOnExistingDestinationDir(srcStatus.getPath(), dst);
             }
         } catch (FileNotFoundException e) {
-            LOG.debug("renameFile: dst does not exist, renaming src {} to a file called dst({})",
+            LOG.debug("renameFile: dst does not exist, renaming src {} to a file called dst {}",
                     srcStatus.getPath(), dst);
         }
         return renameObject(srcStatus, dst);
@@ -422,14 +414,11 @@ public class LakeFSFileSystem extends FileSystem {
             throw new IOException("deleteObject", e);
         }
 
-        LOG.debug("rename: successfully renamed {} to {}", srcStatus.getPath(), dst);
         return true;
     }
 
     @Override
     public boolean delete(Path path, boolean recursive) throws IOException {
-        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ Delete path {} - recursive {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$",
-                path, recursive);
         if (recursive) {
             ListingIterator iterator = new ListingIterator(path, true, listAmount);
             while (iterator.hasNext()) {
@@ -441,7 +430,6 @@ public class LakeFSFileSystem extends FileSystem {
                 return false;
             }
         }
-        LOG.debug("Successfully deleted {}", path);
         return true;
     }
 
@@ -463,7 +451,6 @@ public class LakeFSFileSystem extends FileSystem {
 
     @Override
     public FileStatus[] listStatus(Path path) throws FileNotFoundException, IOException {
-        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ List status is called for: {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$", path.toString());
         ObjectLocation objectLoc = pathToObjectLocation(path);
         try {
             ObjectsApi objectsApi = lfsClient.getObjects();
@@ -496,7 +483,6 @@ public class LakeFSFileSystem extends FileSystem {
 
     @Override
     public boolean mkdirs(Path path, FsPermission fsPermission) throws IOException {
-        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ mkdirs, path: {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", path.toString());
         return false;
     }
 
@@ -507,7 +493,6 @@ public class LakeFSFileSystem extends FileSystem {
      */
     @Override
     public LakeFSFileStatus getFileStatus(Path path) throws IOException {
-        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ getFileStatus, path: {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", path.toString());
         ObjectLocation objectLoc = pathToObjectLocation(path);
         ObjectsApi objectsApi = lfsClient.getObjects();
         try {
@@ -569,7 +554,6 @@ public class LakeFSFileSystem extends FileSystem {
 
     @Override
     public FileStatus[] globStatus(Path pathPattern) throws IOException {
-        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ globStatus $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ");
         FileStatus fStatus = new FileStatus(0, false, 1, 20, 1,
                 new Path("tal-test"));
         FileStatus[] res = new FileStatus[1];
