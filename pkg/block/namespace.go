@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"path"
 	"strings"
 )
 
@@ -59,7 +58,7 @@ type QualifiedPrefix struct {
 }
 
 func (qk QualifiedKey) Format() string {
-	return fmt.Sprintf("%s://%s", qk.StorageType, path.Join(qk.StorageNamespace, qk.Key))
+	return qk.StorageType.String() + "://" + formatPathWithNamespace(qk.StorageNamespace, qk.Key)
 }
 
 func GetStorageType(namespaceURL *url.URL) (StorageType, error) {
@@ -81,7 +80,7 @@ func GetStorageType(namespaceURL *url.URL) (StorageType, error) {
 }
 
 func formatPathWithNamespace(namespacePath, keyPath string) string {
-	namespacePath = strings.TrimPrefix(namespacePath, "/")
+	namespacePath = strings.TrimSuffix(namespacePath, "/")
 	keyPath = strings.TrimPrefix(keyPath, "/")
 	if len(namespacePath) == 0 {
 		return keyPath
