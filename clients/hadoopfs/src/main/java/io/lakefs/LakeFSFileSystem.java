@@ -675,12 +675,8 @@ public class LakeFSFileSystem extends FileSystem {
                     chunk = resp.getResults();
                     pos = 0;
                     Pagination pagination = resp.getPagination();
-                    if (pagination != null) {
-                        nextOffset = pagination.getNextOffset();
-                        if (!pagination.getHasMore()) {
-                            last = true;
-                        }
-                    } else if (chunk.isEmpty()) {
+                    nextOffset = pagination.getNextOffset();
+                    if (!pagination.getHasMore()) {
                         last = true;
                     }
                 } catch (ApiException e) {
