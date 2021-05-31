@@ -10,6 +10,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -295,7 +297,7 @@ public class LakeFSFileSystemTest {
                 .thenReturn(new ObjectStatsList());
     }
 
-    private void mockExistingDirPath(ObjectLocation dirObjLoc, ObjectLocation fileInDir) throws ApiException {
+    private void mockExistingDirPath(ObjectLocation dirObjLoc, ArrayList<ObjectLocation> filesInDir) throws ApiException {
         // io.lakefs.LakeFSFileSystem.getFileStatus tries to get object stats, when it can't find an object if will
         // fall back to try listing items under this path to discover the objects it contains. if objects are found,
         // then the path considered a directory.
@@ -303,14 +305,16 @@ public class LakeFSFileSystemTest {
                 .thenThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "no such file"));
 
         // Mock the files under this directory
-        ObjectStats fileStat = mockExistingFilePath(fileInDir);
+        ObjectStatsList stats = new ObjectStatsList();
+        for (ObjectLocation loc : filesInDir) {
+            ObjectStats fileStat = mockExistingFilePath(loc);
+            stats.addResultsItem(fileStat).setPagination(new Pagination().hasMore(false));
+        }
 
         // Mock listing the files under this directory
-        ObjectStatsList filesInDir = new ObjectStatsList();
-        filesInDir.addResultsItem(fileStat).setPagination(new Pagination().hasMore(false));
         when(objectsApi.listObjects(eq(dirObjLoc.getRepository()), eq(dirObjLoc.getRef()),
                 eq(dirObjLoc.getPath() + Constants.SEPARATOR), eq(""), any(), eq("")))
-                .thenReturn(filesInDir);
+                .thenReturn(stats);
     }
 
     private ObjectStats mockExistingFilePath(ObjectLocation objectLoc) throws ApiException {
@@ -394,7 +398,7 @@ public class LakeFSFileSystemTest {
         ObjectLocation fileObjLoc = fs.pathToObjectLocation(fileInDstDir);
         Path dst = new Path("lakefs://repo/main/existing-dir2");
         ObjectLocation dstObjLoc = fs.pathToObjectLocation(dst);
-        mockExistingDirPath(dstObjLoc, fileObjLoc);
+        mockExistingDirPath(dstObjLoc, new ArrayList<ObjectLocation>(Arrays.asList(fileObjLoc)));
 
         boolean renamed = fs.rename(src, dst);
         Assert.assertTrue(renamed);
@@ -412,7 +416,7 @@ public class LakeFSFileSystemTest {
         ObjectLocation fileObjLoc = fs.pathToObjectLocation(fileInSrcDir);
         Path srcDir = new Path("lakefs://repo/main/existing-dir");
         ObjectLocation srcDirObjLoc = fs.pathToObjectLocation(srcDir);
-        mockExistingDirPath(srcDirObjLoc, fileObjLoc);
+        mockExistingDirPath(srcDirObjLoc, new ArrayList<ObjectLocation>(Arrays.asList(fileObjLoc)));
 
         Path dst = new Path("lakefs://repo/main/non-existing-dir");
         ObjectLocation dstObjLoc = fs.pathToObjectLocation(dst);
@@ -430,23 +434,29 @@ public class LakeFSFileSystemTest {
      */
     @Test
     public void testRename_existingDirToExistingDirName() throws ApiException, IOException {
-        Path fileInSrcDir = new Path("lakefs://repo/main/existing-dir1/existing.src");
-        ObjectLocation srcFileObjLoc = fs.pathToObjectLocation(fileInSrcDir);
+        Path firstSrcFile = new Path("lakefs://repo/main/existing-dir1/a.src");
+        ObjectLocation firstObjLoc = fs.pathToObjectLocation(firstSrcFile);
+        Path secSrcFile = new Path("lakefs://repo/main/existing-dir1/b.src");
+        ObjectLocation secObjLoc = fs.pathToObjectLocation(secSrcFile);
+
         Path srcDir = new Path("lakefs://repo/main/existing-dir1");
         ObjectLocation srcDirObjLoc = fs.pathToObjectLocation(srcDir);
-        mockExistingDirPath(srcDirObjLoc, srcFileObjLoc);
+        mockExistingDirPath(srcDirObjLoc, new ArrayList<ObjectLocation>(Arrays.asList(firstObjLoc, secObjLoc)));
 
         Path fileInDstDir = new Path("lakefs://repo/main/existing-dir2/file.dst");
         ObjectLocation dstFileObjLoc = fs.pathToObjectLocation(fileInDstDir);
         Path dstDir = new Path("lakefs://repo/main/existing-dir2");
         ObjectLocation dstDirObjLoc = fs.pathToObjectLocation(dstDir);
-        mockExistingDirPath(dstDirObjLoc, dstFileObjLoc);
+        mockExistingDirPath(dstDirObjLoc, new ArrayList<ObjectLocation>(Arrays.asList(dstFileObjLoc)));
 
         boolean renamed = fs.rename(srcDir, dstDir);
         Assert.assertTrue(renamed);
-        Path expectedDstPath = new Path("lakefs://repo/main/existing-dir2/existing-dir1/existing.src");
-        Assert.assertTrue(dstPathLinkedToSrcPhysicalAddress(srcFileObjLoc, fs.pathToObjectLocation(expectedDstPath)));
-        verifyObjDeletion(srcFileObjLoc);
+        Path firstExpectedDst = new Path("lakefs://repo/main/existing-dir2/existing-dir1/a.src");
+        Path secExpectedDst = new Path("lakefs://repo/main/existing-dir2/existing-dir1/b.src");
+        Assert.assertTrue(dstPathLinkedToSrcPhysicalAddress(firstObjLoc, fs.pathToObjectLocation(firstExpectedDst)));
+        Assert.assertTrue(dstPathLinkedToSrcPhysicalAddress(secObjLoc, fs.pathToObjectLocation(secExpectedDst)));
+        verifyObjDeletion(firstObjLoc);
+        verifyObjDeletion(secObjLoc);
     }
 
     @Test
