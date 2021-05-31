@@ -34,6 +34,7 @@ import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
+import io.lakefs.clients.api.model.*;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -54,12 +55,7 @@ import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.ObjectsApi;
 import io.lakefs.clients.api.RepositoriesApi;
 import io.lakefs.clients.api.StagingApi;
-import io.lakefs.clients.api.model.ObjectStats;
 import io.lakefs.clients.api.model.ObjectStats.PathTypeEnum;
-import io.lakefs.clients.api.model.ObjectStatsList;
-import io.lakefs.clients.api.model.Repository;
-import io.lakefs.clients.api.model.StagingLocation;
-import io.lakefs.clients.api.model.StagingMetadata;
 
 public class LakeFSFileSystemTest {
     protected static final Logger LOG = LoggerFactory.getLogger(LakeFSFileSystemTest.class);
@@ -194,7 +190,7 @@ public class LakeFSFileSystemTest {
         when(objectsApi.statObject(any(), any(), any()))
             .thenThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "no such file"));
         when(objectsApi.listObjects(any(), any(), any(), any(), any(), any()))
-            .thenReturn(new ObjectStatsList().results(Collections.emptyList()));
+            .thenReturn(new ObjectStatsList().results(Collections.emptyList()).pagination(new Pagination().hasMore(false)));
 
         Assert.assertFalse(fs.exists(p));
     }
