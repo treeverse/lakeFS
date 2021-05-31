@@ -237,7 +237,7 @@ jobs:
 
   run-system-aws-s3:
     name: Run latest lakeFS app on AWS S3
-    needs: gen-code
+    needs: [gen-code, deploy-image]
     runs-on: ubuntu-20.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
@@ -305,7 +305,7 @@ jobs:
 
   run-system-gcp-gs:
     name: Run latest lakeFS app on Google Cloud Platform and Google Cloud Storage
-    needs: gen-code
+    needs: [gen-code, deploy-image]
     runs-on: ubuntu-20.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
@@ -345,7 +345,7 @@ jobs:
 
   run-system-azure-abfs:
     name: Run latest lakeFS app on Azure with Azure blobstore
-    needs: gen-code
+    needs: [gen-code, deploy-image]
     runs-on: ubuntu-20.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
