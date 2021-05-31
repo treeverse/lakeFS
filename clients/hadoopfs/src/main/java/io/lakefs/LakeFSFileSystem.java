@@ -483,7 +483,7 @@ public class LakeFSFileSystem extends FileSystem {
 
     @Override
     public boolean mkdirs(Path path, FsPermission fsPermission) throws IOException {
-        return false;
+        return true;
     }
 
     /**
