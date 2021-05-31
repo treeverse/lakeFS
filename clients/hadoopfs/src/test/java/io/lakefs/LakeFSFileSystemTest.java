@@ -2,9 +2,7 @@ package io.lakefs;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -12,9 +10,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentials;
@@ -59,6 +58,10 @@ import io.lakefs.clients.api.model.ObjectStats.PathTypeEnum;
 
 public class LakeFSFileSystemTest {
     protected static final Logger LOG = LoggerFactory.getLogger(LakeFSFileSystemTest.class);
+    private static final Long FILE_SIZE = 1L;
+    private static final Long MTIME = 0L;
+    private static final String UNUSED_CHECKSUM = "unused";
+
     protected final LakeFSFileSystem fs = new LakeFSFileSystem();
 
     protected LakeFSClient lfsClient;
@@ -245,8 +248,8 @@ public class LakeFSFileSystemTest {
                        path(p.toString()).
                        pathType(PathTypeEnum.OBJECT).
                        physicalAddress(s3Url(key)).
-                       checksum("unused").
-                       mtime(0L).
+                       checksum(UNUSED_CHECKSUM).
+                       mtime(MTIME).
                        sizeBytes((long)contentsBytes.length));
 
         InputStream in = fs.open(p);
@@ -285,41 +288,191 @@ public class LakeFSFileSystemTest {
         fs.append(null, 0, null);
     }
 
-    /*
-    @Test
-    public void testRename() throws URISyntaxException, IOException {
-        Configuration conf = new Configuration(true);
-        conf.set(Constants.FS_LAKEFS_ACCESS_KEY, "<access_key>");
-        conf.set(Constants.FS_LAKEFS_SECRET_KEY, "<secret_key>");
-        conf.set(Constants.FS_LAKEFS_ENDPOINT_KEY, "http://localhost:8000/api/v1");
-        conf.set("fs.lakefs.impl", "io.lakefs.LakeFSFileSystem");
-        conf.set("fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem");
-        // With lakefsFS the user does not need to point to the s3 gateway
-        conf.set("fs.s3a.access.key", "<aws_access_key>");
-        conf.set("fs.s3a.secret.key", "<aws_secret_key>");
-
-        LakeFSFileSystem lfs = (LakeFSFileSystem)FileSystem.get(new URI("lakefs://aws-repo/main/nothere.txt"), conf);
-
-        // Uncommitted -
-        // rename existing src file to non-existing dst
-        Path src = new Path("lakefs://aws-repo/main/peopleLakefs.parquet/_temporary/0/_temporary/attempt_202105191158068718340739981962409_0001_m_000000_1/part-00000-10b8c14f-51c0-4604-b7b5-45bf009bd3b0-c000.snappy.parquet");
-        Path dst = new Path("lakefs://aws-repo/main/peopleLakefs.parquet/new-name.parquet");
-        lfs.rename(src, dst);
-
-        // rename non-existing src file - src not found, return false.
-        Path src = new Path("lakefs://aws-repo/main/peopleLakefs.parquet/_temporary/0/_temporary/attempt_202105161150342255421072959703851_0001_m_000000_1/part-00000-c72e1fa6-9d86-4032-a2b1-f8dd1334e52e-c000.snappy.parquet");
-        Path dst = new Path("lakefs://aws-repo/main/peopleLakefs.parquet/dst2.parquet");
-        lfs.rename(src, dst);
-
-        // rename existing src file to existing dst - no failure, src is rename, dst file is overridden with the renamed file.
-        Path src = new Path("lakefs://aws-repo/main/peopleLakefs.parquet/_SUCCESS");
-        Path dst = new Path("lakefs://aws-repo/main/peopleLakefs.parquet/new-name.parquet");
-        lfs.rename(src, dst);
-
-        // rename dir (a common prefix?), currently not working. for path type = common prefix I can't stat the object.
-        Path src = new Path("lakefs://aws-repo/main/peopleLakefs.parquet/_temporary");
-        Path dst = new Path("lakefs://aws-repo/main/peopleLakefs.parquet");
-        lfs.rename(src, dst);
+    private void mockNonExistingPath(ObjectLocation objectLoc) throws ApiException {
+        when(objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath()))
+                .thenThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "no such file"));
+        when(objectsApi.listObjects(objectLoc.getRepository(), objectLoc.getRef(),
+                objectLoc.getPath() + Constants.SEPARATOR, "", 1, ""))
+                .thenReturn(new ObjectStatsList());
     }
+
+    private void mockExistingDirPath(ObjectLocation dirObjLoc, ObjectLocation fileInDir) throws ApiException {
+        when(objectsApi.statObject(dirObjLoc.getRepository(), dirObjLoc.getRef(), dirObjLoc.getPath()))
+                .thenThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "no such file"));
+
+        ObjectStats fileStat = mockExistingFilePath(fileInDir);
+        ObjectStatsList filesInDir = new ObjectStatsList();
+        filesInDir.addResultsItem(fileStat).setPagination(new Pagination().hasMore(false));
+
+        when(objectsApi.listObjects(dirObjLoc.getRepository(), dirObjLoc.getRef(),
+                dirObjLoc.getPath() + Constants.SEPARATOR, "", 1, ""))
+                .thenReturn(filesInDir);
+        when(objectsApi.listObjects(dirObjLoc.getRepository(), dirObjLoc.getRef(),
+                dirObjLoc.getPath() + Constants.SEPARATOR, "", 1000, ""))
+                .thenReturn(filesInDir);
+    }
+
+    private ObjectStats mockExistingFilePath(ObjectLocation objectLoc) throws ApiException {
+        String key = objectLocToS3ObjKey(objectLoc);
+        ObjectStats srcStats = new ObjectStats()
+                .path(objectLoc.getPath())
+                .sizeBytes(FILE_SIZE)
+                .mtime(MTIME)
+                .pathType(PathTypeEnum.OBJECT)
+                .physicalAddress(s3Url(key))
+                .checksum(UNUSED_CHECKSUM);
+        when(objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath())).thenReturn(srcStats);
+        return srcStats;
+    }
+
+    private String objectLocToS3ObjKey(ObjectLocation objectLoc) {
+        return String.format("/%s/%s/%s",objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
+    }
+
+
+    private void verifyObjDeletion(ObjectLocation srcObjLoc) throws ApiException {
+        verify(objectsApi).deleteObject(eq(srcObjLoc.getRepository()), eq(srcObjLoc.getRef()), eq(srcObjLoc.getPath()));
+    }
+
+    private boolean dstPathLinkedToSrcPhysicalAddress(ObjectLocation srcObjLoc, ObjectLocation dstObjLoc) throws ApiException {
+        ArgumentCaptor<ObjectStageCreation> creationReqCapture = ArgumentCaptor.forClass(ObjectStageCreation.class);
+        verify(objectsApi).stageObject(eq(dstObjLoc.getRepository()), eq(dstObjLoc.getRef()), eq(dstObjLoc.getPath()),
+                creationReqCapture.capture());
+        ObjectStageCreation actualCreationReq = creationReqCapture.getValue();
+        // Rename is a metadata operation, therefore the dst name is expected to link to the src physical address.
+        String expectedPhysicalAddress = s3Url(objectLocToS3ObjKey(srcObjLoc));
+        return expectedPhysicalAddress.equals(actualCreationReq.getPhysicalAddress());
+    }
+
+    /**
+     * rename(src.txt, non-existing-dst) -> non-existing-dst, non-existing-dst is a file
      */
+    @Test
+    public void testRename_existingFileToNonExistingDst() throws IOException, ApiException {
+        Path src = new Path("lakefs://repo/main/existing.src");
+        ObjectLocation srcObjLoc = fs.pathToObjectLocation(src);
+        mockExistingFilePath(srcObjLoc);
+
+        Path dst = new Path("lakefs://repo/main/non-existing.dst");
+        ObjectLocation dstObjLoc = fs.pathToObjectLocation(dst);
+        mockNonExistingPath(dstObjLoc);
+
+        boolean renamed = fs.rename(src, dst);
+        Assert.assertTrue(dstPathLinkedToSrcPhysicalAddress(srcObjLoc, dstObjLoc));
+        verifyObjDeletion(srcObjLoc);
+    }
+
+    /**
+     * file -> existing-file-name: rename(src.txt, existing-dst.txt) -> existing-dst.txt, existing-dst.txt is overridden
+     */
+    @Test
+    public void testRename_existingFileToExistingFileName() throws ApiException, IOException {
+        Path src = new Path("lakefs://repo/main/existing.src");
+        ObjectLocation srcObjLoc = fs.pathToObjectLocation(src);
+        mockExistingFilePath(srcObjLoc);
+
+        Path dst = new Path("lakefs://repo/main/existing.dst");
+        ObjectLocation dstObjLoc = fs.pathToObjectLocation(dst);
+        mockExistingFilePath(dstObjLoc);
+
+        boolean renamed = fs.rename(src, dst);
+        Assert.assertTrue(renamed);
+        Assert.assertTrue(dstPathLinkedToSrcPhysicalAddress(srcObjLoc, dstObjLoc));
+        verifyObjDeletion(srcObjLoc);
+    }
+
+    /**
+     * file -> existing-directory-name: rename(src.txt, existing-dstdir) -> existing-dstdir/src.txt
+     */
+    @Test
+    public void testRename_existingFileToExistingDirName() throws ApiException, IOException {
+        Path src = new Path("lakefs://repo/main/existing-dir1/existing.src");
+        ObjectLocation srcObjLoc = fs.pathToObjectLocation(src);
+        mockExistingFilePath(srcObjLoc);
+
+        Path fileInDstDir = new Path("lakefs://repo/main/existing-dir2/existing.src");
+        ObjectLocation fileObjLoc = fs.pathToObjectLocation(fileInDstDir);
+        Path dst = new Path("lakefs://repo/main/existing-dir2");
+        ObjectLocation dstObjLoc = fs.pathToObjectLocation(dst);
+        mockExistingDirPath(dstObjLoc, fileObjLoc);
+
+        boolean renamed = fs.rename(src, dst);
+        Assert.assertTrue(renamed);
+        Path expectedDstPath = new Path("lakefs://repo/main/existing-dir2/existing-dir1/existing.src");
+        Assert.assertTrue(dstPathLinkedToSrcPhysicalAddress(srcObjLoc, fs.pathToObjectLocation(expectedDstPath)));
+        verifyObjDeletion(srcObjLoc);
+    }
+
+    /**
+     * rename(srcDir(containing srcDir/a.txt, srcDir/b.txt), non-existing-dstdir) -> non-existing-dstdir/a.txt, non-existing-dstdir/b.txt
+     */
+    @Test
+    public void testRename_existingDirToNonExistingDirName() throws ApiException, IOException {
+        Path fileInSrcDir = new Path("lakefs://repo/main/existing-dir/existing.src");
+        ObjectLocation fileObjLoc = fs.pathToObjectLocation(fileInSrcDir);
+        Path srcDir = new Path("lakefs://repo/main/existing-dir");
+        ObjectLocation srcDirObjLoc = fs.pathToObjectLocation(srcDir);
+        mockExistingDirPath(srcDirObjLoc, fileObjLoc);
+
+        Path dst = new Path("lakefs://repo/main/non-existing-dir");
+        ObjectLocation dstObjLoc = fs.pathToObjectLocation(dst);
+        mockNonExistingPath(dstObjLoc);
+
+        boolean renamed = fs.rename(srcDir, dst);
+        Assert.assertTrue(renamed);
+        Path expectedDstPath = new Path("lakefs://repo/main/non-existing-dir/existing.src");
+        Assert.assertTrue(dstPathLinkedToSrcPhysicalAddress(fileObjLoc, fs.pathToObjectLocation(expectedDstPath)));
+        verifyObjDeletion(fileObjLoc);
+    }
+
+    /**
+     * rename(srcDir(containing srcDir/a.txt), existing-dstdir) -> existing-dstdir/srcDir/a.txt
+     */
+    @Test
+    public void testRename_existingDirToExistingDirName() throws ApiException, IOException {
+        Path fileInSrcDir = new Path("lakefs://repo/main/existing-dir1/existing.src");
+        ObjectLocation srcFileObjLoc = fs.pathToObjectLocation(fileInSrcDir);
+        Path srcDir = new Path("lakefs://repo/main/existing-dir1");
+        ObjectLocation srcDirObjLoc = fs.pathToObjectLocation(srcDir);
+        mockExistingDirPath(srcDirObjLoc, srcFileObjLoc);
+
+        Path fileInDstDir = new Path("lakefs://repo/main/existing-dir2/file.dst");
+        ObjectLocation dstFileObjLoc = fs.pathToObjectLocation(fileInDstDir);
+        Path dstDir = new Path("lakefs://repo/main/existing-dir2");
+        ObjectLocation dstDirObjLoc = fs.pathToObjectLocation(dstDir);
+        mockExistingDirPath(dstDirObjLoc, dstFileObjLoc);
+
+        boolean renamed = fs.rename(srcDir, dstDir);
+        Assert.assertTrue(renamed);
+        Path expectedDstPath = new Path("lakefs://repo/main/existing-dir2/existing-dir1/existing.src");
+        Assert.assertTrue(dstPathLinkedToSrcPhysicalAddress(srcFileObjLoc, fs.pathToObjectLocation(expectedDstPath)));
+        verifyObjDeletion(srcFileObjLoc);
+    }
+
+    @Test
+    public void testRename_srcAndDstOnDifferentBranch() throws IOException {
+        Path src = new Path("lakefs://repo/branch/existing.src");
+        ObjectLocation srcObjLoc = fs.pathToObjectLocation(src);
+
+        Path dst = new Path("lakefs://repo/another-branch/existing.dst");
+        ObjectLocation dstObjLoc = fs.pathToObjectLocation(dst);
+
+        boolean renamed = fs.rename(src, dst);
+        Assert.assertFalse(renamed);
+    }
+
+    /**
+     * no-op. rename is expected to succeed.
+     */
+    @Test
+    public void testRename_srcEqualsDst() throws IOException {
+        Path src = new Path("lakefs://repo/main/existing.src");
+        ObjectLocation srcObjLoc = fs.pathToObjectLocation(src);
+
+        Path dst = new Path("lakefs://repo/main/existing.src");
+        ObjectLocation dstObjLoc = fs.pathToObjectLocation(dst);
+
+        boolean renamed = fs.rename(src, dst);
+        Assert.assertTrue(renamed);
+    }
 }
