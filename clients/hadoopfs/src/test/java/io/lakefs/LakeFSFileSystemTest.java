@@ -520,11 +520,7 @@ public class LakeFSFileSystemTest {
     @Test
     public void testRename_srcAndDstOnDifferentBranch() throws IOException, ApiException {
         Path src = new Path("lakefs://repo/branch/existing.src");
-        ObjectLocation srcObjLoc = fs.pathToObjectLocation(src);
-
         Path dst = new Path("lakefs://repo/another-branch/existing.dst");
-        ObjectLocation dstObjLoc = fs.pathToObjectLocation(dst);
-
         boolean renamed = fs.rename(src, dst);
         Assert.assertFalse(renamed);
         Mockito.verify(objectsApi, never()).statObject(any(), any(), any());
@@ -538,11 +534,7 @@ public class LakeFSFileSystemTest {
     @Test
     public void testRename_srcEqualsDst() throws IOException, ApiException {
         Path src = new Path("lakefs://repo/main/existing.src");
-        ObjectLocation srcObjLoc = fs.pathToObjectLocation(src);
-
         Path dst = new Path("lakefs://repo/main/existing.src");
-        ObjectLocation dstObjLoc = fs.pathToObjectLocation(dst);
-
         boolean renamed = fs.rename(src, dst);
         Assert.assertTrue(renamed);
         Mockito.verify(objectsApi, never()).statObject(any(), any(), any());
