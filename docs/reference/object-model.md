@@ -30,8 +30,8 @@ An _object store_ links objects to paths.  An _object_ holds:
 
 * Some _contents_, with unlimited size and format.
 * Some _metadata_, including
-  + _size_ (in bytes)
-  + _creation time_
+  + _size_ in bytes
+  + the _creation time_, a timestamp with seconds resolution
   + a _checksum_ string which uniquely identifies the contents
   + some _user metadata_, a small map of strings to strings.
 
@@ -67,11 +67,19 @@ commits with two parents.</span>
 A commit is identified by its _commit ID_, a digest of all contents of the commit.  Commit IDs
 are by nature long, so a unique prefix may be used to abbreviate them (but note that short
 prefixes can become non-unique as the repository grows, so prefer to avoid abbreviating when
-storing commits for the long term).  A commit may also be identified by using a tag or a
-branch.  A repository can be read from any commit.
+storing commits for the long term).  A commit may also be identified by using a textual
+definition, called a _ref_.  Examples of refs include tags, branches, and expressions.  The
+state of the repository at any commit is always readable.
+
+#### Tags
 
 A _tag_ is an immutable pointer to a single commit.  Tags have readable names.  Because tags
-are commits, a repository can be read from any tag.
+are commits, a repository can be read from any tag.  Example tags:
+
+* `v2.3` to mark a release
+* `dev:jane-before-v2.3-merge` to mark Jane's private temporary point.
+
+#### Branches
 
 A _branch_ is a mutable pointer to a commit and its staging area.  Repositories are readable
 from any branch, but they are also **writable** to a branch.  The _staging area_ associated
@@ -79,14 +87,60 @@ with a branch is mutable storage where objects can be created, updated or delete
 objects are readable when reading from the branch.  To **create** a commit from a branch, all
 files from the staging area are merged into the contents of the current branch, creating the
 new set of objects.  The parent of the commit is the previous branch tip, and the new branch
-tip is set to this new commit.
+tip is set to this new commit.  Example branches:
+
+* `main`, the trunk
+* `staging`, maybe ahead of `main`
+* `dev:joe-bugfix-1234` for Joe to fix issue 1234.
+
+#### Ref expressions
+
+lakeFS also supports _expressions_ for creating a ref.  These are similar to [revisions in
+Git](https://git-scm.com/docs/gitrevisions#_specifying_revisions); indeed all `~` and `^`
+examples at the end of that section will work unchanged in lakeFS.
+
+* A branch or a tag are ref expressions.
+* If `<ref>` is a ref expression, then:
+  + `<ref>^` is a ref expression referring to its first parent.
+  + `<ref>^N` is a ref expression referring to its N'th parent; in particular `<ref>^1` is the
+    same as `<ref>^`.
+  + `<ref>~` is a ref expression referring to its first parent; in particular `<ref>~` is the
+    same as `<ref>^` and `<ref>~`.
+  + `<ref>~N` is a ref expression referring to its N'th parent, always traversing to the first
+    parent.  So `<ref>~N` is the same as `<ref>^^...^` with N consecutive carets `^`.
+
+### History
 
 The _history_ of the branch is the list of commits from the branch tip through the first
 parent of each commit.  Histories go back in time.
 
 The other way to create a commit is to merge an existing commit onto a branch.  To _merge_ a
 source commit into a branch, lakeFS finds the closest common ancestor of that source commit
-and the branch tip, called the "base".  Then it performs a 3-way merge.
+and the branch tip, called the "base".  Then it performs a [3-way merge](#three-way-merge).
+
+### Three way merge
+
+To merge a _merge source_ (a commit) into a _merge destination_ (another commit), lakeFS first
+finds the _merge base_, the nearest common parent of the two commits.  It can now perform a
+three-way merge, by examining the presence and identity of files in each commit.  In the table
+below, "A", "B" and "C" are possible file contents, "X" is a missing file, and "conflict"
+(which appears  on
+
+| **In base** | **In source** | **In destination** | **Result** | **Comment** |
+| :---: | :---: | :---: | :---: | :--- |
+| A | A | A | A | Unchanged file |
+| A | B | B | B | Files changed on both sides in same way |
+| A | B | C | conflict | Files changed on both sides differently |
+| A | A | B | B | File changed only on one branch |
+| A | B | A | B | File changed only on one branch |
+| A | X | X | X | Files deleted on both sides |
+| A | B | X | conflict | File changed on one side, deleted on the other |
+| A | X | B | conflict | File changed on one side, deleted on the other |
+| A | A | X | X | File deleted on one side |
+| A | X | A | X | File deleted on one side |
+
+As a format-agnostic system, lakeFS currently merges by complete files.  Format-specific and
+other user-defined merge strategies for handling conflicts are on the roadmap.
 
 ## Concepts unique to lakeFS
 
