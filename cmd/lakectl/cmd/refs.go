@@ -67,7 +67,7 @@ var refsDumpCmd = &cobra.Command{
 
 		Write(metadataDumpTemplate, struct {
 			Response interface{}
-		}{resp})
+		}{resp.JSON201})
 	},
 }
 
