@@ -9,7 +9,9 @@ import java.time.format.DateTimeFormatter
 import java.util.concurrent.{Callable, ExecutorService, Executors}
 import scala.util.Random
 import scala.collection.JavaConverters._
-
+import org.apache.spark._
+import SparkContext._
+import org.rogach.scallop._
 
 class Exporter(spark : SparkSession, apiClient: ApiClient, filter: KeyFilter, repoName: String, dstRoot: String, parallelism: Int) {
   def this(spark : SparkSession, apiClient: ApiClient, repoName: String, dstRoot: String) {
@@ -128,6 +130,46 @@ class Exporter(spark : SparkSession, apiClient: ApiClient, filter: KeyFilter, re
 
 object Exporter{
   final val defaultParallelism = 10
+}
+
+object Main {
+  def main(args: Array[String]) {
+    val conf = new Conf(args)
+    println("repo is: " + conf.repo()+", rootLocation is: " + conf.rootLocation())
+
+    val spark = SparkSession.builder().getOrCreate()
+    val sc = spark.sparkContext
+
+    val endpoint = sc.hadoopConfiguration.get("lakefs.api.url")
+    val accessKey = sc.hadoopConfiguration.get("lakefs.api.access_key")
+    val secretKey = sc.hadoopConfiguration.get("lakefs.api.secret_key")
+
+    val apiClient = new ApiClient(endpoint, accessKey, secretKey)
+    val exporter = new Exporter(spark, apiClient, conf.repo(), conf.rootLocation())
+
+    if (conf.commit_id.isSupplied) {
+      exporter.exportAllFromCommit(conf.commit_id())
+      return
+    }
+
+    if (conf.prev_commit_id.isSupplied) {
+      exporter.exportFrom(conf.branch(), conf.prev_commit_id())
+      return
+    }
+
+    exporter.exportAllFromBranch(conf.branch())
+  }
+}
+
+class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
+  val branch = opt[String](required=false)
+  val commit_id = opt[String](required=false)
+  val prev_commit_id = opt[String](required=false)
+  val repo = trailArg[String](required = true)
+  val rootLocation = trailArg[String](required = true)
+  requireOne(commit_id, branch)
+  conflicts(commit_id, List(prev_commit_id))
+  verify()
 }
 
 class Handler(filter: KeyFilter, round:Int, ns: String, rootDst: String, serializedConf: SerializableWritable[Configuration], row: Row) extends Callable[ExportStatus] with Serializable {
