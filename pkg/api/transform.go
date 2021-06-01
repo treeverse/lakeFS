@@ -10,7 +10,7 @@ func transformDifferenceTypeToString(d catalog.DifferenceType) string {
 		return "added"
 	case catalog.DifferenceTypeRemoved:
 		return "removed"
-	case catalog.DifferenceTypeChanged:
+	case catalog.DifferenceTypeChanged, catalog.DifferenceTypeCommonPrefix:
 		return "changed"
 	case catalog.DifferenceTypeConflict:
 		return "conflict"

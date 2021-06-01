@@ -6,10 +6,9 @@ import (
 	_ "crypto/sha256"
 	"errors"
 	"fmt"
+	"github.com/treeverse/lakefs/pkg/batch"
 	"io"
 	"strings"
-
-	"github.com/treeverse/lakefs/pkg/batch"
 
 	"github.com/cockroachdb/pebble"
 	"github.com/hashicorp/go-multierror"
@@ -953,7 +952,7 @@ func (c *Catalog) Diff(ctx context.Context, repository string, leftReference str
 	}
 	it := NewEntryDiffIterator(iter)
 	defer it.Close()
-	return listDiffHelper(it, params.Limit, params.After)
+	return listDiffHelper(it, params.Prefix, params.Delimiter, params.Limit, params.After)
 }
 
 func (c *Catalog) Compare(ctx context.Context, repository, leftReference string, rightReference string, params DiffParams) (Differences, bool, error) {
@@ -973,10 +972,10 @@ func (c *Catalog) Compare(ctx context.Context, repository, leftReference string,
 	}
 	it := NewEntryDiffIterator(iter)
 	defer it.Close()
-	return listDiffHelper(it, params.Limit, params.After)
+	return listDiffHelper(it, params.Prefix, params.Delimiter, params.Limit, params.After)
 }
 
-func (c *Catalog) DiffUncommitted(ctx context.Context, repository string, branch string, limit int, after string) (Differences, bool, error) {
+func (c *Catalog) DiffUncommitted(ctx context.Context, repository, branch, prefix, delimiter string, limit int, after string) (Differences, bool, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	if err := Validate([]ValidateArg{
@@ -991,23 +990,62 @@ func (c *Catalog) DiffUncommitted(ctx context.Context, repository string, branch
 	}
 	it := NewEntryDiffIterator(iter)
 	defer it.Close()
-	return listDiffHelper(it, limit, after)
+	return listDiffHelper(it, prefix, delimiter, limit, after)
 }
 
-func listDiffHelper(it EntryDiffIterator, limit int, after string) (Differences, bool, error) {
+func listDiffHelper(it EntryDiffIterator, prefix, delimiter string, limit int, after string) (Differences, bool, error) {
 	if limit < 0 || limit > DiffLimitMax {
 		limit = DiffLimitMax
 	}
-	afterPath := Path(after)
-	if afterPath != "" {
-		it.SeekGE(afterPath)
+
+	// navigate to prefix if populated, otherwise to after
+	// avoid redundant calls if any of them are empty
+	if prefix != "" && prefix > after {
+		it.SeekGE(Path(prefix))
+	} else if after != "" {
+		it.SeekGE(Path(after))
 	}
+
 	diffs := make(Differences, 0)
 	for it.Next() {
 		v := it.Value()
-		if v.Path == afterPath {
-			continue
+		path := string(v.Path)
+		if path == after {
+			continue // emulate "greater than" using "greater equals"
 		}
+		if !strings.HasPrefix(path, prefix) {
+			break // we only want things that start with prefix, apparently there are none left
+		}
+
+		if delimiter != "" {
+			// common prefix logic goes here.
+			// for every path, after trimming "prefix", take the string upto-and-including the delimiter
+			// if the received path == the entire remainder, add that object as is
+			// if it's just a part of the name, add it as a "common prefix" entry -
+			//   and skip to next record following all those starting with this prefix
+			pathRelativeToPrefix := strings.TrimPrefix(path, prefix)
+			parts := strings.SplitN(pathRelativeToPrefix, delimiter, 2) // we want the common prefix and the remainder
+			if len(parts) == 2 {
+				// a common prefix exists!
+				commonPrefix := prefix + parts[0] + delimiter
+				diffs = append(diffs, Difference{
+					DBEntry: DBEntry{
+						CommonLevel: true,
+						Path:        commonPrefix,
+					},
+					Type: DifferenceTypeCommonPrefix,
+				})
+				if len(diffs) >= limit+1 {
+					break // got enough results for now
+				}
+
+				// let's keep collecting records. We want the next record that doesn't
+				//   start with this common prefix
+				it.SeekGE(Path(graveler.UpperBoundForPrefix([]byte(commonPrefix))))
+				continue
+			}
+		}
+
 		diff, err := newDifferenceFromEntryDiff(v)
 		if err != nil {
 			return nil, false, fmt.Errorf("[I] %w", err)

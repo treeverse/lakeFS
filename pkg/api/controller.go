@@ -1611,17 +1611,32 @@ func (c *Controller) DiffBranch(w http.ResponseWriter, r *http.Request, reposito
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "diff_workspace")
-	diff, hasMore, err := c.Catalog.DiffUncommitted(ctx, repository, branch, paginationAmount(params.Amount), paginationAfter(params.After))
+
+	// discern between an empty delimiter and no delimiter being passed at all
+	// by default, go-swagger will use the default value ("/") even if we pass
+	// a delimiter param that is explicitly empty. This overrides this (wrong) behavior.
+	var delimiter string
+	if params.Delimiter == nil {
+		delimiter = ""
+	} else {
+		delimiter = *params.Delimiter
+	}
+
+	diff, hasMore, err := c.Catalog.DiffUncommitted(ctx, repository, branch, paginationPrefix(params.Prefix), delimiter, paginationAmount(params.Amount), paginationAfter(params.After))
 	if handleAPIError(w, err) {
 		return
 	}
 
 	results := make([]Diff, 0, len(diff))
 	for _, d := range diff {
+		pathType := "object"
+		if d.Type == catalog.DifferenceTypeCommonPrefix {
+			pathType = "common_prefix"
+		}
 		results = append(results, Diff{
 			Path:     d.Path,
 			Type:     transformDifferenceTypeToString(d.Type),
-			PathType: "object",
+			PathType: pathType,
 		})
 	}
 	response := DiffList{
@@ -2158,19 +2173,37 @@ func (c *Controller) DiffRefs(w http.ResponseWriter, r *http.Request, repository
 	if params.Type != nil && *params.Type == "two_dot" {
 		diffFunc = c.Catalog.Diff
 	}
+
+	// discern between an empty delimiter and no delimiter being passed at all
+	// by default, go-swagger will use the default value ("/") even if we pass
+	// a delimiter param that is explicitly empty. This overrides this (wrong) behavior.
+	var delimiter string
+	if params.Delimiter == nil {
+		delimiter = ""
+	} else {
+		delimiter = *params.Delimiter
+	}
+
 	diff, hasMore, err := diffFunc(ctx, repository, leftRef, rightRef, catalog.DiffParams{
-		Limit: paginationAmount(params.Amount),
-		After: paginationAfter(params.After),
+		Limit:            paginationAmount(params.Amount),
+		After:            paginationAfter(params.After),
+		Prefix:           paginationPrefix(params.Prefix),
+		Delimiter:        delimiter,
+		AdditionalFields: nil,
 	})
 	if handleAPIError(w, err) {
 		return
 	}
 	results := make([]Diff, 0, len(diff))
 	for _, d := range diff {
+		pathType := "object"
+		if d.Type == catalog.DifferenceTypeCommonPrefix {
+			pathType = "common_prefix"
+		}
 		results = append(results, Diff{
 			Path:     d.Path,
 			Type:     transformDifferenceTypeToString(d.Type),
-			PathType: "object",
+			PathType: pathType,
 		})
 	}
 	response := DiffList{

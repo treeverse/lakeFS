@@ -7,6 +7,7 @@ const (
 	DifferenceTypeRemoved
 	DifferenceTypeChanged
 	DifferenceTypeConflict
+	DifferenceTypeCommonPrefix
 	DifferenceTypeNone
 )
 
