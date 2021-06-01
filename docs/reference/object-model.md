@@ -35,12 +35,11 @@ An _object store_ links objects to paths.  An _object_ holds:
   + a _checksum_ string which uniquely identifies the contents
   + some _user metadata_, a small map of strings to strings.
 
-In lakeFS objects are immutable and never rewritten.
+Similarly to many object stores, lakeFS objects are immutable and never rewritten.  They can
+be entirely replaced or deleted, but not modified.
 
 A _path_ is a readable string, typically decoded as UTF-8.  lakeFS maps paths to their objects
-according to specific rules.  Importantly (and unlike many object stores), lakeFS may map
-multiple paths to the same object on backing storage.  lakeFS paths use the `lakefs` protocol,
-described below.
+according to specific rules.  lakeFS paths use the `lakefs` protocol, described below.
 
 ## lakeFS the version control system
 
@@ -115,8 +114,12 @@ The _history_ of the branch is the list of commits from the branch tip through t
 parent of each commit.  Histories go back in time.
 
 The other way to create a commit is to merge an existing commit onto a branch.  To _merge_ a
-source commit into a branch, lakeFS finds the closest common ancestor of that source commit
-and the branch tip, called the "base".  Then it performs a [3-way merge](#three-way-merge).
+source commit into a branch, lakeFS finds the _best_ common ancestor of that source commit and
+the branch tip, called the "base".  Then it performs a [3-way merge](#three-way-merge).  The
+"best" ancestor is exactly that defined in the documentation for
+[git-merge-base](https://git-scm.com/docs/git-merge-base#_description).  The result of a merge
+is a new commit, with the destination at the first parent and the source as the second.  Thus
+the previous tip of the merge destination is part of the history of the merged object.
 
 ### Three way merge
 
@@ -124,7 +127,7 @@ To merge a _merge source_ (a commit) into a _merge destination_ (another commit)
 finds the _merge base_, the nearest common parent of the two commits.  It can now perform a
 three-way merge, by examining the presence and identity of files in each commit.  In the table
 below, "A", "B" and "C" are possible file contents, "X" is a missing file, and "conflict"
-(which appears  on
+(which only appears as a result) is a merge failure.
 
 | **In base** | **In source** | **In destination** | **Result** | **Comment** |
 | :---: | :---: | :---: | :---: | :--- |
@@ -146,10 +149,14 @@ other user-defined merge strategies for handling conflicts are on the roadmap.
 
 _Underlying storage_ is the area on some other object store that lakeFS uses to store object
 contents and some of its metadata.  We sometimes refer to underlying storage as _physical_.
-The path used to store the contents of an object is then termed a _physical path_.
+The path used to store the contents of an object is then termed a _physical path_.  The object
+itself on underlying storage is never modified, except to remove it entirely during some
+cleanups.
 
 A lot of what lakeFS does is to manage how lakeFS paths translate to _physical paths_ on the
-object store.  This mapping is generally **not** straightforward.
+object store.  This mapping is generally **not** straightforward.  Importantly (and unlike
+many object stores), lakeFS may map multiple paths to the same object on backing storage, and
+always does this for objects that are unchanged across versions.
 
 ### `lakefs` protocol URIs
 
