@@ -190,7 +190,7 @@ public class LakeFSFileSystemTest {
     
     @Test
     public void testDelete_FileExists() throws ApiException, IOException {
-        when(objectsApi.statObject(eq("repo"), eq("main"), eq("delete/sample/file.txt")))
+        when(objectsApi.statObject("repo", "main", "delete/sample/file.txt"))
                 .thenReturn(new ObjectStats().
                         path("lakefs://repo/main/delete/sample/file.txt").
                         pathType(PathTypeEnum.OBJECT).
@@ -206,7 +206,7 @@ public class LakeFSFileSystemTest {
     @Test
     public void testDelete_FileNotExists() throws ApiException, IOException {
         doThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "not found"))
-                .when(objectsApi).deleteObject(eq("repo"), eq("main"), eq("no/place/file.txt"));
+                .when(objectsApi).deleteObject("repo", "main", "no/place/file.txt");
         // return false because file not found
         Assert.assertFalse(
                 fs.delete(new Path("lakefs://repo/main/no/place/file.txt"), false));
@@ -215,8 +215,8 @@ public class LakeFSFileSystemTest {
     @Test
     public void testDelete_DirectoryExists() throws ApiException, IOException {
         doThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "not found"))
-                .when(objectsApi).deleteObject(eq("repo"), eq("main"), eq("delete/sample"));
-        when(objectsApi.listObjects(eq("repo"), eq("main"), eq("delete/sample/"), eq(""), any(), eq("")))
+                .when(objectsApi).deleteObject("repo", "main", "delete/sample");
+        when(objectsApi.listObjects("repo", "main", "delete/sample/", "", any(), ""))
                 .thenReturn(new ObjectStatsList().results(Collections.singletonList(new ObjectStats().
                         path("lakefs://repo/main/delete/sample/file.txt").
                         pathType(PathTypeEnum.OBJECT).
@@ -232,8 +232,8 @@ public class LakeFSFileSystemTest {
     @Test
     public void testDelete_NotExistsRecursive() throws ApiException, IOException {
         doThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "not found"))
-                .when(objectsApi).deleteObject(eq("repo"), eq("main"), eq("no/place/file.txt"));
-        when(objectsApi.listObjects(eq("repo"), eq("main"), eq("no/place/file.txt/"), eq(""), any(), eq("")))
+                .when(objectsApi).deleteObject("repo", "main", "no/place/file.txt");
+        when(objectsApi.listObjects("repo", "main", "no/place/file.txt/", "", any(), ""))
                 .thenReturn(new ObjectStatsList().results(Collections.emptyList()).pagination(new Pagination().hasMore(false)));
         // recursive will always end successfully
         Assert.assertTrue(
@@ -242,7 +242,7 @@ public class LakeFSFileSystemTest {
 
     @Test
     public void testDelete_ExistsRecursive() throws ApiException, IOException {
-        when(objectsApi.listObjects(eq("repo"), eq("main"), eq("delete/sample/"), eq(""), any(), eq("")))
+        when(objectsApi.listObjects("repo", "main", "delete/sample/", "", any(), ""))
                 .thenReturn(new ObjectStatsList().results(Collections.singletonList(new ObjectStats().
                         path("lakefs://repo/main/delete/sample/file.txt").
                         pathType(PathTypeEnum.OBJECT).
@@ -270,7 +270,7 @@ public class LakeFSFileSystemTest {
         out.close();
 
         ArgumentCaptor<StagingMetadata> metadataCapture = ArgumentCaptor.forClass(StagingMetadata.class);
-        verify(stagingApi).linkPhysicalAddress(eq("repo"), eq("main"), eq("create.me"),
+        verify(stagingApi).linkPhysicalAddress("repo", "main", "create.me",
                                                metadataCapture.capture());
         StagingMetadata actualMetadata = metadataCapture.getValue();
         Assert.assertEquals(stagingLocation, actualMetadata.getStaging());
