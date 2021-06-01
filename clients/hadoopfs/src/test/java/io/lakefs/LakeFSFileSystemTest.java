@@ -295,7 +295,7 @@ public class LakeFSFileSystemTest {
 
         when(objectsApi.listObjects(eq(objectLoc.getRepository()), eq(objectLoc.getRef()),
                 eq(objectLoc.getPath() + Constants.SEPARATOR), eq(""), any(), eq("")))
-                .thenReturn(new ObjectStatsList());
+                .thenReturn(new ObjectStatsList().pagination(new Pagination().hasMore(false)));
     }
 
     private void mockExistingDirPath(ObjectLocation dirObjLoc, List<ObjectLocation> filesInDir) throws ApiException {
