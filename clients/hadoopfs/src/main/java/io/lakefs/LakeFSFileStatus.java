@@ -15,6 +15,12 @@ public class LakeFSFileStatus extends FileStatus {
     private String checksum;
     private String physicalAddress;
 
+    public LakeFSFileStatus(long length, boolean isdir, int block_replication, long blocksize, long modification_time, Path path, String checksum, String physicalAddress) {
+        super(length, isdir, block_replication, blocksize, modification_time, path);
+        this.checksum = checksum;
+        this.physicalAddress = physicalAddress;
+    }
+
     public LakeFSFileStatus(Builder builder) {
         super(builder.length, builder.isdir, builder.blockReplication, builder.blockSize, builder.mTime, builder.path);
         this.checksum = builder.checksum;
