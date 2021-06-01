@@ -135,7 +135,6 @@ object Exporter{
 object Main {
   def main(args: Array[String]) {
     val conf = new Conf(args)
-    println("repo is: " + conf.repo()+", rootLocation is: " + conf.rootLocation())
 
     val spark = SparkSession.builder().getOrCreate()
     val sc = spark.sparkContext
@@ -161,6 +160,10 @@ object Main {
   }
 }
 
+
+/** Conf options and arguments usage is documented in https://github.com/scallop/scallop/wiki
+ *
+ */
 class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
   val branch = opt[String](required=false)
   val commit_id = opt[String](required=false)
