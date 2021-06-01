@@ -44,6 +44,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
@@ -58,7 +59,7 @@ import io.lakefs.clients.api.model.ObjectStats.PathTypeEnum;
 
 public class LakeFSFileSystemTest {
     protected static final Logger LOG = LoggerFactory.getLogger(LakeFSFileSystemTest.class);
-    private static final Long FILE_SIZE = 1L;
+    private static final Long UNUSED_FILE_SIZE = 1L;
     private static final Long UNUSED_MTIME = 0L;
     private static final String UNUSED_CHECKSUM = "unused";
 
@@ -297,7 +298,7 @@ public class LakeFSFileSystemTest {
                 .thenReturn(new ObjectStatsList());
     }
 
-    private void mockExistingDirPath(ObjectLocation dirObjLoc, ArrayList<ObjectLocation> filesInDir) throws ApiException {
+    private void mockExistingDirPath(ObjectLocation dirObjLoc, List<ObjectLocation> filesInDir) throws ApiException {
         // io.lakefs.LakeFSFileSystem.getFileStatus tries to get object stats, when it can't find an object if will
         // fall back to try listing items under this path to discover the objects it contains. if objects are found,
         // then the path considered a directory.
@@ -321,7 +322,7 @@ public class LakeFSFileSystemTest {
         String key = objectLocToS3ObjKey(objectLoc);
         ObjectStats srcStats = new ObjectStats()
                 .path(objectLoc.getPath())
-                .sizeBytes(FILE_SIZE)
+                .sizeBytes(UNUSED_FILE_SIZE)
                 .mtime(UNUSED_MTIME)
                 .pathType(PathTypeEnum.OBJECT)
                 .physicalAddress(s3Url(key))
@@ -398,7 +399,7 @@ public class LakeFSFileSystemTest {
         ObjectLocation fileObjLoc = fs.pathToObjectLocation(fileInDstDir);
         Path dst = new Path("lakefs://repo/main/existing-dir2");
         ObjectLocation dstObjLoc = fs.pathToObjectLocation(dst);
-        mockExistingDirPath(dstObjLoc, new ArrayList<ObjectLocation>(Arrays.asList(fileObjLoc)));
+        mockExistingDirPath(dstObjLoc, ImmutableList.of(fileObjLoc));
 
         boolean renamed = fs.rename(src, dst);
         Assert.assertTrue(renamed);
@@ -416,7 +417,7 @@ public class LakeFSFileSystemTest {
         ObjectLocation fileObjLoc = fs.pathToObjectLocation(fileInSrcDir);
         Path srcDir = new Path("lakefs://repo/main/existing-dir");
         ObjectLocation srcDirObjLoc = fs.pathToObjectLocation(srcDir);
-        mockExistingDirPath(srcDirObjLoc, new ArrayList<ObjectLocation>(Arrays.asList(fileObjLoc)));
+        mockExistingDirPath(srcDirObjLoc, ImmutableList.of(fileObjLoc));
 
         Path dst = new Path("lakefs://repo/main/non-existing-dir");
         ObjectLocation dstObjLoc = fs.pathToObjectLocation(dst);
@@ -441,13 +442,13 @@ public class LakeFSFileSystemTest {
 
         Path srcDir = new Path("lakefs://repo/main/existing-dir1");
         ObjectLocation srcDirObjLoc = fs.pathToObjectLocation(srcDir);
-        mockExistingDirPath(srcDirObjLoc, new ArrayList<ObjectLocation>(Arrays.asList(firstObjLoc, secObjLoc)));
+        mockExistingDirPath(srcDirObjLoc, ImmutableList.of(firstObjLoc, secObjLoc));
 
         Path fileInDstDir = new Path("lakefs://repo/main/existing-dir2/file.dst");
         ObjectLocation dstFileObjLoc = fs.pathToObjectLocation(fileInDstDir);
         Path dstDir = new Path("lakefs://repo/main/existing-dir2");
         ObjectLocation dstDirObjLoc = fs.pathToObjectLocation(dstDir);
-        mockExistingDirPath(dstDirObjLoc, new ArrayList<ObjectLocation>(Arrays.asList(dstFileObjLoc)));
+        mockExistingDirPath(dstDirObjLoc, ImmutableList.of(dstFileObjLoc));
 
         boolean renamed = fs.rename(srcDir, dstDir);
         Assert.assertTrue(renamed);
@@ -460,7 +461,7 @@ public class LakeFSFileSystemTest {
     }
 
     @Test
-    public void testRename_srcAndDstOnDifferentBranch() throws IOException {
+    public void testRename_srcAndDstOnDifferentBranch() throws IOException, ApiException {
         Path src = new Path("lakefs://repo/branch/existing.src");
         ObjectLocation srcObjLoc = fs.pathToObjectLocation(src);
 
@@ -469,13 +470,16 @@ public class LakeFSFileSystemTest {
 
         boolean renamed = fs.rename(src, dst);
         Assert.assertFalse(renamed);
+        Mockito.verify(objectsApi, never()).statObject(any(), any(), any());
+        Mockito.verify(objectsApi, never()).stageObject(any(), any(), any(), any());
+        Mockito.verify(objectsApi, never()).deleteObject(any(), any(), any());
     }
 
     /**
      * no-op. rename is expected to succeed.
      */
     @Test
-    public void testRename_srcEqualsDst() throws IOException {
+    public void testRename_srcEqualsDst() throws IOException, ApiException {
         Path src = new Path("lakefs://repo/main/existing.src");
         ObjectLocation srcObjLoc = fs.pathToObjectLocation(src);
 
@@ -484,6 +488,9 @@ public class LakeFSFileSystemTest {
 
         boolean renamed = fs.rename(src, dst);
         Assert.assertTrue(renamed);
+        Mockito.verify(objectsApi, never()).statObject(any(), any(), any());
+        Mockito.verify(objectsApi, never()).stageObject(any(), any(), any(), any());
+        Mockito.verify(objectsApi, never()).deleteObject(any(), any(), any());
     }
 
     @Test
