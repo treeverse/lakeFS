@@ -216,7 +216,7 @@ public class LakeFSFileSystemTest {
     public void testDelete_DirectoryExists() throws ApiException, IOException {
         doThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "not found"))
                 .when(objectsApi).deleteObject("repo", "main", "delete/sample");
-        when(objectsApi.listObjects("repo", "main", "delete/sample/", "", any(), ""))
+        when(objectsApi.listObjects(eq("repo"), eq("main"), eq("delete/sample/"), eq(""), any(), eq("")))
                 .thenReturn(new ObjectStatsList().results(Collections.singletonList(new ObjectStats().
                         path("lakefs://repo/main/delete/sample/file.txt").
                         pathType(PathTypeEnum.OBJECT).
@@ -233,7 +233,7 @@ public class LakeFSFileSystemTest {
     public void testDelete_NotExistsRecursive() throws ApiException, IOException {
         doThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "not found"))
                 .when(objectsApi).deleteObject("repo", "main", "no/place/file.txt");
-        when(objectsApi.listObjects("repo", "main", "no/place/file.txt/", "", any(), ""))
+        when(objectsApi.listObjects(eq("repo"), eq("main"), eq("no/place/file.txt/"), eq(""), any(), eq("")))
                 .thenReturn(new ObjectStatsList().results(Collections.emptyList()).pagination(new Pagination().hasMore(false)));
         // recursive will always end successfully
         Assert.assertTrue(
@@ -242,7 +242,7 @@ public class LakeFSFileSystemTest {
 
     @Test
     public void testDelete_ExistsRecursive() throws ApiException, IOException {
-        when(objectsApi.listObjects("repo", "main", "delete/sample/", "", any(), ""))
+        when(objectsApi.listObjects(eq("repo"), eq("main"), eq("delete/sample/"), eq(""), any(), eq("")))
                 .thenReturn(new ObjectStatsList().results(Collections.singletonList(new ObjectStats().
                         path("lakefs://repo/main/delete/sample/file.txt").
                         pathType(PathTypeEnum.OBJECT).
@@ -270,7 +270,7 @@ public class LakeFSFileSystemTest {
         out.close();
 
         ArgumentCaptor<StagingMetadata> metadataCapture = ArgumentCaptor.forClass(StagingMetadata.class);
-        verify(stagingApi).linkPhysicalAddress("repo", "main", "create.me",
+        verify(stagingApi).linkPhysicalAddress(eq("repo"), eq("main"), eq("create.me"),
                                                metadataCapture.capture());
         StagingMetadata actualMetadata = metadataCapture.getValue();
         Assert.assertEquals(stagingLocation, actualMetadata.getStaging());
