@@ -319,6 +319,18 @@ public class LakeFSFileSystemTest {
         Assert.assertEquals(contents, actual);
     }
 
+    @Test
+    public void testOpen_NotExists() throws ApiException {
+        Path p = new Path("lakefs://repo/main/doesNotExi.st");
+        ApiException noSuchFileException = new ApiException(HttpStatus.SC_NOT_FOUND, "no such file");
+        when(objectsApi.statObject(any(), any(), any()))
+            .thenThrow(noSuchFileException);
+        IOException e = Assert.assertThrows(IOException.class, () -> fs.open(p));
+        Assert.assertTrue(e.getCause() instanceof ApiException);
+        ApiException cause = (ApiException)e.getCause();
+        Assert.assertEquals(noSuchFileException, cause);
+    }
+
     /*
     @Test
     public void listFiles() throws IOException, URISyntaxException {
