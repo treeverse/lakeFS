@@ -1,39 +1,21 @@
 package io.lakefs;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.S3ClientOptions;
-import com.amazonaws.services.s3.model.CreateBucketRequest;
-import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.ListObjectsRequest;
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.amazonaws.services.s3.model.*;
 import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.ObjectsApi;
+import io.lakefs.clients.api.RepositoriesApi;
+import io.lakefs.clients.api.StagingApi;
 import io.lakefs.clients.api.model.*;
+import io.lakefs.clients.api.model.ObjectStats.PathTypeEnum;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -51,14 +33,20 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.utility.DockerImageName;
 
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.ObjectsApi;
-import io.lakefs.clients.api.RepositoriesApi;
-import io.lakefs.clients.api.StagingApi;
-import io.lakefs.clients.api.model.ObjectStats.PathTypeEnum;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Collections;
+import java.util.List;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
 public class LakeFSFileSystemTest {
-    protected static final Logger LOG = LoggerFactory.getLogger(LakeFSFileSystemTest.class);
     private static final Long UNUSED_FILE_SIZE = 1L;
     private static final Long UNUSED_MTIME = 0L;
     private static final String UNUSED_CHECKSUM = "unused";
@@ -188,6 +176,7 @@ public class LakeFSFileSystemTest {
 
         Assert.assertTrue(fs.exists(p));
     }
+
     @Test
     public void testExists_NotExists() throws ApiException, IOException {
         Path p = new Path("lakefs://repo/main/doesNotExi.st");
@@ -197,6 +186,73 @@ public class LakeFSFileSystemTest {
             .thenReturn(new ObjectStatsList().results(Collections.emptyList()).pagination(new Pagination().hasMore(false)));
 
         Assert.assertFalse(fs.exists(p));
+    }
+    
+    @Test
+    public void testDelete_FileExists() throws ApiException, IOException {
+        when(objectsApi.statObject(eq("repo"), eq("main"), eq("delete/sample/file.txt")))
+                .thenReturn(new ObjectStats().
+                        path("lakefs://repo/main/delete/sample/file.txt").
+                        pathType(PathTypeEnum.OBJECT).
+                        physicalAddress(s3Url("delete/sample/file.txt")).
+                        checksum(UNUSED_CHECKSUM).
+                        mtime(UNUSED_MTIME).
+                        sizeBytes(UNUSED_FILE_SIZE));
+        // return true because file found
+        Assert.assertTrue(
+                fs.delete(new Path("lakefs://repo/main/no/place/file.txt"), false));
+    }
+
+    @Test
+    public void testDelete_FileNotExists() throws ApiException, IOException {
+        doThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "not found"))
+                .when(objectsApi).deleteObject(eq("repo"), eq("main"), eq("no/place/file.txt"));
+        // return false because file not found
+        Assert.assertFalse(
+                fs.delete(new Path("lakefs://repo/main/no/place/file.txt"), false));
+    }
+
+    @Test
+    public void testDelete_DirectoryExists() throws ApiException, IOException {
+        doThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "not found"))
+                .when(objectsApi).deleteObject(eq("repo"), eq("main"), eq("delete/sample"));
+        when(objectsApi.listObjects(eq("repo"), eq("main"), eq("delete/sample/"), eq(""), any(), eq("")))
+                .thenReturn(new ObjectStatsList().results(Collections.singletonList(new ObjectStats().
+                        path("lakefs://repo/main/delete/sample/file.txt").
+                        pathType(PathTypeEnum.OBJECT).
+                        physicalAddress(s3Url("/repo-base/delete")).
+                        checksum(UNUSED_CHECKSUM).
+                        mtime(UNUSED_MTIME).
+                        sizeBytes(UNUSED_FILE_SIZE))).pagination(new Pagination().hasMore(false)));
+        // return false because we can't delete a directory without recursive
+        Assert.assertFalse(
+                fs.delete(new Path("lakefs://repo/main/delete/sample"), false));
+    }
+
+    @Test
+    public void testDelete_NotExistsRecursive() throws ApiException, IOException {
+        doThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "not found"))
+                .when(objectsApi).deleteObject(eq("repo"), eq("main"), eq("no/place/file.txt"));
+        when(objectsApi.listObjects(eq("repo"), eq("main"), eq("no/place/file.txt/"), eq(""), any(), eq("")))
+                .thenReturn(new ObjectStatsList().results(Collections.emptyList()).pagination(new Pagination().hasMore(false)));
+        // recursive will always end successfully
+        Assert.assertTrue(
+                fs.delete(new Path("lakefs://repo/main/no/place/file.txt"), true));
+    }
+
+    @Test
+    public void testDelete_ExistsRecursive() throws ApiException, IOException {
+        when(objectsApi.listObjects(eq("repo"), eq("main"), eq("delete/sample/"), eq(""), any(), eq("")))
+                .thenReturn(new ObjectStatsList().results(Collections.singletonList(new ObjectStats().
+                        path("lakefs://repo/main/delete/sample/file.txt").
+                        pathType(PathTypeEnum.OBJECT).
+                        physicalAddress(s3Url("/repo-base/delete")).
+                        checksum(UNUSED_CHECKSUM).
+                        mtime(UNUSED_MTIME).
+                        sizeBytes(UNUSED_FILE_SIZE))).pagination(new Pagination().hasMore(false)));
+        // recursive will always end successfully
+        Assert.assertTrue(
+                fs.delete(new Path("lakefs://repo/main/delete/sample"), true));
     }
 
     @Test
@@ -363,6 +419,7 @@ public class LakeFSFileSystemTest {
         mockNonExistingPath(dstObjLoc);
 
         boolean renamed = fs.rename(src, dst);
+        Assert.assertTrue(renamed);
         Assert.assertTrue(dstPathLinkedToSrcPhysicalAddress(srcObjLoc, dstObjLoc));
         verifyObjDeletion(srcObjLoc);
     }
