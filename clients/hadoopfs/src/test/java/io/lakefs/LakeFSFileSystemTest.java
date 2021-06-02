@@ -18,6 +18,7 @@ import io.lakefs.clients.api.model.*;
 import io.lakefs.clients.api.model.ObjectStats.PathTypeEnum;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.http.HttpStatus;
 import org.junit.Assert;
@@ -33,12 +34,10 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.utility.DockerImageName;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -50,6 +49,10 @@ public class LakeFSFileSystemTest {
     private static final Long UNUSED_FILE_SIZE = 1L;
     private static final Long UNUSED_MTIME = 0L;
     private static final String UNUSED_CHECKSUM = "unused";
+
+    private static final Long STATUS_FILE_SIZE = 2L;
+    private static final Long STATUS_MTIME = 0L;
+    private static final String STATUS_CHECKSUM = "status";
 
     protected final LakeFSFileSystem fs = new LakeFSFileSystem();
 
@@ -194,7 +197,7 @@ public class LakeFSFileSystemTest {
                 .thenReturn(new ObjectStats().
                         path("lakefs://repo/main/delete/sample/file.txt").
                         pathType(PathTypeEnum.OBJECT).
-                        physicalAddress(s3Url("delete/sample/file.txt")).
+                        physicalAddress(s3Url("/repo-base/delete")).
                         checksum(UNUSED_CHECKSUM).
                         mtime(UNUSED_MTIME).
                         sizeBytes(UNUSED_FILE_SIZE));
@@ -339,6 +342,82 @@ public class LakeFSFileSystemTest {
         // expected 'l2' to include all the files in bucket - no directory will be listed, with or without recursive
     }
      */
+
+    @Test
+    public void testListStatusFile() throws ApiException, IOException {
+        ObjectStats objectStats = new ObjectStats().
+                path("status/file").
+                pathType(PathTypeEnum.OBJECT).
+                physicalAddress(s3Url("/repo-base/status")).
+                checksum(STATUS_CHECKSUM).
+                mtime(STATUS_MTIME).
+                sizeBytes(STATUS_FILE_SIZE);
+        when(objectsApi.statObject("repo", "main", "status/file"))
+                .thenReturn(objectStats);
+        Path p = new Path("lakefs://repo/main/status/file");
+        FileStatus[] fileStatuses = fs.listStatus(p);
+        LakeFSFileStatus expectedFileStatus = new LakeFSFileStatus.Builder(p)
+                .length(STATUS_FILE_SIZE)
+                .checksum(STATUS_CHECKSUM)
+                .mTime(STATUS_MTIME)
+                .physicalAddress(p.toString())
+                .blocksize(Constants.DEFAULT_BLOCK_SIZE)
+                .build();
+        LakeFSFileStatus[] expectedFileStatuses = new LakeFSFileStatus[]{expectedFileStatus};
+        Assert.assertArrayEquals(expectedFileStatuses, fileStatuses);
+    }
+
+    @Test
+    public void testListStatusNotFound() throws ApiException, IOException {
+        when(objectsApi.statObject("repo", "main", "status/file"))
+                .thenThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "no such file"));
+        when(objectsApi.listObjects(eq("repo"), eq("main"), eq("status/file/"), eq(""),
+                any(), eq("/")))
+                .thenReturn(new ObjectStatsList().results(Collections.emptyList()).pagination(new Pagination().hasMore(false)));
+
+        Path p = new Path("lakefs://repo/main/status/file");
+        FileStatus[] fileStatuses = fs.listStatus(p);
+        // don't expect to find anything - because we don't have the concept of directory
+        // we do not throw FileNotFoundException
+        Assert.assertArrayEquals(new FileStatus[]{}, fileStatuses);
+    }
+
+    @Test
+    public void testListStatusDirectory() throws ApiException, IOException {
+        int totalObjectsCount = 3;
+        ObjectStatsList objects = new ObjectStatsList();
+        for (int i = 0; i < totalObjectsCount; i++) {
+            ObjectStats objectStats = new ObjectStats().
+                    path("status/file" + i).
+                    pathType(PathTypeEnum.OBJECT).
+                    physicalAddress(s3Url("/repo-base/status" + i)).
+                    checksum(STATUS_CHECKSUM).
+                    mtime(STATUS_MTIME).
+                    sizeBytes(STATUS_FILE_SIZE);
+            objects.addResultsItem(objectStats);
+        }
+        when(objectsApi.listObjects(eq("repo"), eq("main"), eq("status/"), eq(""),
+                any(), eq("/")))
+                .thenReturn(objects.pagination(new Pagination().hasMore(false)));
+        when(objectsApi.statObject("repo", "main", "status"))
+                .thenThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "no such file"));
+
+        Path dir = new Path("lakefs://repo/main/status");
+        FileStatus[] fileStatuses = fs.listStatus(dir);
+        FileStatus[] expectedFileStatuses = new LakeFSLocatedFileStatus[totalObjectsCount];
+        for (int i = 0; i < totalObjectsCount; i++) {
+            Path p = new Path(dir + "/file" + i);
+            LakeFSFileStatus fileStatus = new LakeFSFileStatus.Builder(p)
+                    .length(STATUS_FILE_SIZE)
+                    .checksum(STATUS_CHECKSUM)
+                    .mTime(STATUS_MTIME)
+                    .blocksize(Constants.DEFAULT_BLOCK_SIZE)
+                    .physicalAddress(s3Url("/repo-base/status" + i))
+                    .build();
+            expectedFileStatuses[i] = new LakeFSLocatedFileStatus(fileStatus, null);
+        }
+        Assert.assertArrayEquals(expectedFileStatuses, fileStatuses);
+    }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testAppend() throws IOException {
