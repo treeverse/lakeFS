@@ -41,7 +41,6 @@ You can use the export main in 3 different modes:
     .... example-repo s3://example-bucket/prefix/ --branch=example-branch
     ```   
 
-
 1. Export all objects from a commit `c805e49bafb841a0875f49cd555b397340bbd9b8` on `example-repo` repository to s3 location `s3://example-bucket/prefix/`:
    
 ```shell
@@ -62,7 +61,7 @@ spark-submit --conf spark.hadoop.lakefs.api.url=https://<LAKEFS_ENDPOINT>/api/v1
 --conf spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY_ID> \
 --conf spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_ACCESS_KEY> \
 --repositories https://s01.oss.sonatype.org/content/repositories/snapshots/ \
---packages io.treeverse:lakefs-spark-client-301_2.12:0.1.4-SNAPSHOT \
+--packages io.treeverse:lakefs-spark-client-301_2.12:0.1.3-SNAPSHOT \
 --class io.treeverse.clients.Main export-app example-repo s3://example-bucket/prefix \
 --branch=example-branch
 ```
