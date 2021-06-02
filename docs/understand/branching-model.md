@@ -32,7 +32,7 @@ When creating a new branch in lakeFS, we are actually creating a consistent snap
 Another way to think of branches is like a very long-lived database transaction, providing us with [Snapshot Isolation](https://en.wikipedia.org/wiki/Snapshot_isolation){: target="_blank" }.
 
 Once we've made the necessary changes to our data within our isolated branch, we can merge it back to the branch we branched from.  
-This operation is atomic in lakeFS - readers will either see all our committed changes or non at all.
+This operation is atomic in lakeFS - readers will either see all our committed changes or none at all.
 
 Isolation and Atomicity are very powerful tools: it allows us to do things that are otherwise extremely hard to get right: replace data in-place,
 add or update multiple objects and collections as a single piece, run tests and validations before exposing data to others and more.
