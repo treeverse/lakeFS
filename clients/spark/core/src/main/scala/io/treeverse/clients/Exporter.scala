@@ -132,6 +132,16 @@ object Exporter{
   final val defaultParallelism = 10
 }
 
+/** Main exports lakeFS object to an object-store location.
+ *  There are 3 options to run the Export main:
+ *  1. Export all objects from branch 'main' on 'example-repo' repository to s3 location 's3://example-bucket/prefix/':
+ *    submit example-repo s3://example-bucket/prefix/ --branch=main
+ *  2. Export all objects from a commit 'c805e49bafb841a0875f49cd555b397340bbd9b8' on 'example-repo' repository to s3 location 's3://example-bucket/prefix/':
+ *    submit example-repo s3://example-bucket/prefix/ --commit_id=c805e49bafb841a0875f49cd555b397340bbd9b8
+ *  3. Export only the diff between branch 'main' and commit 'c805e49bafb841a0875f49cd555b397340bbd9b8'
+ *     on 'example-repo' repository to s3 location 's3://example-bucket/prefix/':
+ *    submit example-repo s3://example-bucket/prefix/ --branch=main --prev_commit_id=c805e49bafb841a0875f49cd555b397340bbd9b8
+ */
 object Main {
   def main(args: Array[String]) {
     val conf = new Conf(args)
@@ -143,8 +153,11 @@ object Main {
     val accessKey = sc.hadoopConfiguration.get("lakefs.api.access_key")
     val secretKey = sc.hadoopConfiguration.get("lakefs.api.secret_key")
 
+    val rawLocation = conf.rootLocation()
+    val s3Prefix = "s3://"
+    val rootLocation = if (rawLocation.startsWith(s3Prefix)) "s3a://" + rawLocation.substring(s3Prefix.length)  else rawLocation
     val apiClient = new ApiClient(endpoint, accessKey, secretKey)
-    val exporter = new Exporter(spark, apiClient, conf.repo(), conf.rootLocation())
+    val exporter = new Exporter(spark, apiClient, conf.repo(), rootLocation)
 
     if (conf.commit_id.isSupplied) {
       exporter.exportAllFromCommit(conf.commit_id())
