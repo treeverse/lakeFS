@@ -32,6 +32,46 @@ Possible use-cases:
 
 ## How to use
 
+### Using spark-submit
+You can use the export main in 3 different modes:
+
+1. Export all objects from branch `example-branch` on `example-repo` repository to s3 location `s3://example-bucket/prefix/`:
+    
+   ```shell
+    .... example-repo s3://example-bucket/prefix/ --branch=example-branch
+    ```   
+
+
+1. Export all objects from a commit `c805e49bafb841a0875f49cd555b397340bbd9b8` on `example-repo` repository to s3 location `s3://example-bucket/prefix/`:
+   
+```shell
+    .... example-repo s3://example-bucket/prefix/ --commit_id=c805e49bafb841a0875f49cd555b397340bbd9b8
+   ```   
+
+1. Export only the diff between branch `example-branch` and commit `c805e49bafb841a0875f49cd555b397340bbd9b8`
+    on `example-repo` repository to s3 location `s3://example-bucket/prefix/`:
+    
+   ```shell
+    .... example-repo s3://example-bucket/prefix/ --branch=example-branch --prev_commit_id=c805e49bafb841a0875f49cd555b397340bbd9b8
+    ```
+   
+The complete `spark-submit` command would look like:
+
+```shell
+spark-submit --conf spark.hadoop.lakefs.api.url=https://<LAKEFS_ENDPOINT>/api/v1 \
+--conf spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY_ID> \
+--conf spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_ACCESS_KEY> \
+--repositories https://s01.oss.sonatype.org/content/repositories/snapshots/ \
+--packages io.treeverse:lakefs-spark-client-301_2.12:0.1.4-SNAPSHOT \
+--class io.treeverse.clients.Main export-app example-repo s3://example-bucket/prefix \
+--branch=example-branch
+```
+
+The command assumes the spark cluster has permissions to write to `s3://example-bucket/prefix`.
+Otherwise, add `spark.hadoop.fs.s3a.access.key` and `spark.hadoop.fs.s3a.secret.key` with the proper credentials.
+{: .note}
+ 
+### Using custom code (notebook/spark)
 Set up lakeFS Spark metadata client with the endpoint and credentials as instructed in the previous [page](./spark-client.md).
 
 The client exposes the `Exporter` object with 3 export options:

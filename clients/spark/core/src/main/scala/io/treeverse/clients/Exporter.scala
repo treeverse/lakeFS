@@ -9,7 +9,9 @@ import java.time.format.DateTimeFormatter
 import java.util.concurrent.{Callable, ExecutorService, Executors}
 import scala.util.Random
 import scala.collection.JavaConverters._
-
+import org.apache.spark._
+import SparkContext._
+import org.rogach.scallop._
 
 class Exporter(spark : SparkSession, apiClient: ApiClient, filter: KeyFilter, repoName: String, dstRoot: String, parallelism: Int) {
   def this(spark : SparkSession, apiClient: ApiClient, repoName: String, dstRoot: String) {
@@ -128,6 +130,62 @@ class Exporter(spark : SparkSession, apiClient: ApiClient, filter: KeyFilter, re
 
 object Exporter{
   final val defaultParallelism = 10
+}
+
+/** Main exports lakeFS object to an object-store location.
+ *  There are 3 options to run the Export main:
+ *  1. Export all objects from branch 'main' on 'example-repo' repository to s3 location 's3://example-bucket/prefix/':
+ *    submit example-repo s3://example-bucket/prefix/ --branch=main
+ *  2. Export all objects from a commit 'c805e49bafb841a0875f49cd555b397340bbd9b8' on 'example-repo' repository to s3 location 's3://example-bucket/prefix/':
+ *    submit example-repo s3://example-bucket/prefix/ --commit_id=c805e49bafb841a0875f49cd555b397340bbd9b8
+ *  3. Export only the diff between branch 'main' and commit 'c805e49bafb841a0875f49cd555b397340bbd9b8'
+ *     on 'example-repo' repository to s3 location 's3://example-bucket/prefix/':
+ *    submit example-repo s3://example-bucket/prefix/ --branch=main --prev_commit_id=c805e49bafb841a0875f49cd555b397340bbd9b8
+ */
+object Main {
+  def main(args: Array[String]) {
+    val conf = new Conf(args)
+
+    val spark = SparkSession.builder().getOrCreate()
+    val sc = spark.sparkContext
+
+    val endpoint = sc.hadoopConfiguration.get("lakefs.api.url")
+    val accessKey = sc.hadoopConfiguration.get("lakefs.api.access_key")
+    val secretKey = sc.hadoopConfiguration.get("lakefs.api.secret_key")
+
+    val rawLocation = conf.rootLocation()
+    val s3Prefix = "s3://"
+    val rootLocation = if (rawLocation.startsWith(s3Prefix)) "s3a://" + rawLocation.substring(s3Prefix.length)  else rawLocation
+    val apiClient = new ApiClient(endpoint, accessKey, secretKey)
+    val exporter = new Exporter(spark, apiClient, conf.repo(), rootLocation)
+
+    if (conf.commit_id.isSupplied) {
+      exporter.exportAllFromCommit(conf.commit_id())
+      return
+    }
+
+    if (conf.prev_commit_id.isSupplied) {
+      exporter.exportFrom(conf.branch(), conf.prev_commit_id())
+      return
+    }
+
+    exporter.exportAllFromBranch(conf.branch())
+  }
+}
+
+
+/** Conf options and arguments usage is documented in https://github.com/scallop/scallop/wiki
+ *
+ */
+class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
+  val branch = opt[String](required=false)
+  val commit_id = opt[String](required=false)
+  val prev_commit_id = opt[String](required=false)
+  val repo = trailArg[String](required = true)
+  val rootLocation = trailArg[String](required = true)
+  requireOne(commit_id, branch)
+  conflicts(commit_id, List(prev_commit_id))
+  verify()
 }
 
 class Handler(filter: KeyFilter, round:Int, ns: String, rootDst: String, serializedConf: SerializableWritable[Configuration], row: Row) extends Callable[ExportStatus] with Serializable {
