@@ -20,7 +20,11 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.AccessDeniedException;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static io.lakefs.Constants.*;
@@ -99,6 +103,16 @@ public class LakeFSFileSystem extends FileSystem {
     @FunctionalInterface
     private interface BiFunctionWithIOException<U, V, R> {
         R apply(U u, V v) throws IOException;
+    }
+
+    @FunctionalInterface
+    private interface FunctionWithExceptions<U, R> {
+        R apply(U u) throws IOException, ApiException;
+    }
+
+    @FunctionalInterface
+    private interface ConsumerWithExceptions<U> {
+        void apply(U u) throws IOException, ApiException;
     }
 
     /**
@@ -340,6 +354,65 @@ public class LakeFSFileSystem extends FileSystem {
     }
 
     /**
+     * Wrap f to convert an IOException it might through into a CompletionException
+     */
+    private static <T, R> Function<T, R> completion(FunctionWithExceptions<T, R> fn)
+    {
+        return (T t) -> {
+            try {
+                return fn.apply(t);
+            } catch (IOException | ApiException e) {
+                throw new CompletionException(e);
+            }
+        };
+    }
+
+    private static <T> Consumer<T> completion(ConsumerWithExceptions<T> fn) {
+        return (T t) -> {
+            try {
+                fn.apply(t);
+            } catch (IOException | ApiException e) {
+                throw new CompletionException(e);
+            }
+        };
+    }
+
+    /**
+     * @return future of result of renaming src to dst.
+     * @throws ApiException if unable even to start async operations.
+     */
+    private CompletableFuture<Boolean> renameFileAsync(Path src, Path dst) throws ApiException {
+        CompletableFuture<ObjectStats> stats;
+
+        ObjectLocation srcLoc = pathToObjectLocation(src);
+        ObjectLocation dstLoc = pathToObjectLocation(dst);
+
+        ObjectsApi objects = lfsClient.getObjects();
+
+        ApiFuture<ObjectStats> statSource = new ApiFuture<>();
+
+        objects.statObjectAsync(srcLoc.getRepository(), srcLoc.getRef(), srcLoc.getPath(), statSource);
+        ApiFuture<ObjectStats> statCreated = new ApiFuture<>();
+        statSource.thenAccept(completion((ObjectStats srcStatus) -> {
+                    ObjectStageCreation creationReq = new ObjectStageCreation()
+                        .checksum(srcStatus.getChecksum())
+                        .sizeBytes(srcStatus.getSizeBytes())
+                        .physicalAddress(srcStatus.getPhysicalAddress());
+                    objects.stageObjectAsync(dstLoc.getRepository(), dstLoc.getRef(), dstLoc.getPath(), creationReq, statCreated);
+                }));
+        ApiFuture<Void> deletedSrc = new ApiFuture<>();
+        statCreated.thenAccept(completion((ObjectStats created) -> {
+                    LOG.debug("Created {} at {}: size {}, checksum {}",
+                              dst, created.getPhysicalAddress(), created.getSizeBytes(), created.getChecksum());
+                    objects.deleteObjectAsync(srcLoc.getRepository(), srcLoc.getRef(), srcLoc.getPath(), deletedSrc);
+                }));
+        return deletedSrc.thenApply((Void v) -> {
+                return true;
+            });
+    }
+
+    /**
+     * TODO (Tals): move this description into a component-test
      * Sample input and output
      * input:
      * renamedObj: lakefs://repo/main/dir1/file1.txt
