@@ -538,8 +538,8 @@ class Refs {
         return response.json();
     }
 
-    async diff(repoId, leftRef, rightRef, after, amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({after, amount});
+    async diff(repoId, leftRef, rightRef, after, prefix = "", delimiter = "", amount = DEFAULT_LISTING_AMOUNT) {
+        const query = qs({after, amount, delimiter, prefix});
         const response = await apiRequest(`/repositories/${repoId}/refs/${leftRef}/diff/${rightRef}?${query}`);
         if (response.status !== 200) {
             throw new Error(await extractError(response));

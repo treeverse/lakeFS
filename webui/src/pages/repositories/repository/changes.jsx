@@ -241,16 +241,33 @@ const ChangesBrowser = ({ repo, reference, after, prefix, delimiter, onSelectRef
                             <Table borderless size="sm">
                                 <tbody>
                                 {results.map(entry => (
-                                    <ChangeEntryRow key={entry.path} entry={entry} relativeTo={prefix} repo={repo} reference={reference} showActions={true} onRevert={(entry) => {
-                                        branches
-                                            .revert(repo.id, reference.id, {type: entry.path_type, path: entry.path})
-                                            .then(() => {
-                                                setInternalRefresh(!internalRefresh)
-                                            })
-                                            .catch(error => {
-                                                setActionError(error)
-                                            })
-                                    }}/>
+                                    <ChangeEntryRow
+                                        key={entry.path}
+                                        entry={entry}
+                                        relativeTo={prefix}
+                                        showActions={true}
+                                        onRevert={(entry) => {
+                                            branches
+                                                .revert(repo.id, reference.id, {type: entry.path_type, path: entry.path})
+                                                .then(() => {
+                                                    setInternalRefresh(!internalRefresh)
+                                                })
+                                                .catch(error => {
+                                                    setActionError(error)
+                                                })
+                                        }}
+                                        onNavigate={entry => {
+                                            return {
+                                                pathname: '/repositories/:repoId/changes',
+                                                params: {repoId: repo.id},
+                                                query: {
+                                                    delimiter: "/",
+                                                    prefix: entry.path,
+                                                    ref: reference.id
+                                                }
+                                            }
+                                        }}
+                                    />
                                 ))}
                                 </tbody>
                             </Table>

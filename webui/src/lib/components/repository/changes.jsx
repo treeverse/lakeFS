@@ -33,7 +33,7 @@ const ChangeRowActions = ({ entry, onRevert }) => {
     );
 };
 
-export const ChangeEntryRow = ({ repo, reference, entry, showActions, onRevert, relativeTo="" }) => {
+export const ChangeEntryRow = ({ entry, showActions, relativeTo="", onNavigate, onRevert }) => {
     let rowClass = 'tree-row ';
     switch (entry.type) {
         case 'changed':
@@ -116,11 +116,7 @@ export const ChangeEntryRow = ({ repo, reference, entry, showActions, onRevert, 
                 <td className="tree-path">
                     {(entry.path_type === "common_prefix") ? (
                         <span>
-                            <Link href={{
-                                pathname: '/repositories/:repoId/changes',
-                                params: {repoId: repo.id},
-                                query: {ref: reference.id, delimiter: "/", prefix: entry.path}
-                            }}>
+                            <Link href={onNavigate(entry)}>
                                 <FileDirectoryIcon/>
                                 {pathText}
                             </Link>

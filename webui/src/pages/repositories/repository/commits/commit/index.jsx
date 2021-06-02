@@ -18,26 +18,79 @@ import ButtonGroup from "react-bootstrap/ButtonGroup";
 import {BrowserIcon, LinkIcon, PackageIcon, PlayIcon} from "@primer/octicons-react";
 import {Link} from "../../../../../lib/components/nav";
 import {useRouter} from "../../../../../lib/hooks/router";
+import {URINavigator} from "../../../../../lib/components/repository/tree";
+import Form from "react-bootstrap/Form";
 
 
-const ChangeList = ({ repo, commit, after, onPaginate }) => {
+const ChangeList = ({ repo, commit, after, prefix, delimiter, onPaginate }) => {
     const {results, loading, error, nextPage} = useAPIWithPagination(async() => {
         if (!commit.parents || commit.parents.length === 0) return {results: [], pagination: {has_more: false}};
-        return refs.diff(repo.id, commit.id, commit.parents[0], after);
-    }, [repo.id, commit.id, after]);
+        return refs.diff(repo.id, commit.id, commit.parents[0], after, prefix, delimiter);
+    }, [repo.id, commit.id, after, prefix, delimiter]);
 
     if (!!loading) return <Loading/>;
     if (!!error) return <Error error={error}/>;
+
+    const { push } = useRouter();
 
     return (
         <div className="tree-container">
             {(results.length === 0) ? <Alert variant="info">No changes</Alert> : (
                 <Card>
+                    <Card.Header>
+                        <span className="float-left">
+                            {(delimiter !== "") && (
+                                <URINavigator
+                                    path={prefix}
+                                    reference={{type: 'commit', id: commit.id.substr(0, 12)}}
+                                    relativeTo={commit.id.substr(0, 12)}
+                                    repo={repo}
+                                    pathURLBuilder={(params, query) => {
+                                        return {
+                                            pathname: '/repositories/:repoId/commits/:commitId',
+                                            params: {repoId: repo.id, commitId: commit.id},
+                                            query: {delimiter: "/", prefix: query.path}
+                                        }
+                                    }}
+                                />
+                            )}
+                        </span>
+                        <span className="float-right">
+                            <Form>
+                                <Form.Switch
+                                    label="Directory View"
+                                    id="changes-directory-view-toggle"
+                                    defaultChecked={(delimiter !== "")}
+                                    onChange={(e) => {
+                                        push({
+                                            pathname: '/repositories/:repoId/commits/:commitId',
+                                            params: {repoId: repo.id, commitId: commit.id},
+                                            query: {delimiter: (e.target.checked) ? "/" : ""},
+                                        })
+                                    }}
+                                />
+                                </Form>
+                        </span>
+                    </Card.Header>
                     <Card.Body>
                         <Table borderless size="sm">
                             <tbody>
                             {results.map(entry => (
-                                <ChangeEntryRow key={entry.path} entry={entry} showActions={false}/>
+                                <ChangeEntryRow
+                                    repo={repo}
+                                    reference={commit}
+                                    relativeTo={prefix}
+                                    key={entry.path}
+                                    entry={entry}
+                                    showActions={false}
+                                    onNavigate={entry => {
+                                        return {
+                                            pathname: '/repositories/:repoId/commits/:commitId',
+                                            params: {repoId: repo.id, commitId: commit.id},
+                                            query: {delimiter: "/", prefix: entry.path}
+                                        }
+                                    }}
+                                />
                             ))}
                             </tbody>
                         </Table>
@@ -155,7 +208,7 @@ const CommitInfo = ({ repo, commit }) => {
     );
 };
 
-const CommitView = ({ repo, commitId, onPaginate, after }) => {
+const CommitView = ({ repo, commitId, onPaginate, after, prefix, delimiter }) => {
 
     // pull commit itself
     const {response, loading, error} = useAPI(async () => {
@@ -188,7 +241,7 @@ const CommitView = ({ repo, commitId, onPaginate, after }) => {
             </Card>
 
             <div className="mt-4">
-                <ChangeList repo={repo} commit={commit} onPaginate={onPaginate} after={after}/>
+                <ChangeList repo={repo} commit={commit} onPaginate={onPaginate} after={after} prefix={prefix} delimiter={delimiter}/>
             </div>
         </div>
     );
@@ -197,7 +250,7 @@ const CommitView = ({ repo, commitId, onPaginate, after }) => {
 const CommitContainer = () => {
     const router = useRouter();
     const { repo, loading, error } = useRefs();
-    const { after } = router.query;
+    const { after, prefix, delimiter } = router.query;
     const { commitId } = router.params;
 
     if (loading) return <Loading/>;
@@ -207,11 +260,17 @@ const CommitContainer = () => {
         <CommitView
             repo={repo}
             after={(!!after) ? after : ""}
+            prefix={(!!prefix) ? prefix : ""}
+            delimiter={(!!delimiter) ? delimiter : ""}
             commitId={commitId}
             onPaginate={after => router.push({
                 pathname: '/repositories/:repoId/commits/:commitId',
                 params: {repoId: repo.id, commitId},
-                query: {after}
+                query: {
+                    after: (after) ? after : "",
+                    prefix: (prefix) ? prefix : "",
+                    delimiter: (delimiter) ? delimiter : "",
+                }
             })}
         />
     )
