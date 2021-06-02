@@ -32,11 +32,23 @@ Using lakeFS with Delta tables allows supercharging Delta Lake to enable much be
 We need to set the proper credentials and endpoint in the S3 Hadoop configuration,
 like we do with any [Spark](./spark.md#configuration) script.
 
-```
+```scala
  sc.hadoopConfiguration.set("spark.hadoop.fs.s3a.bucket.<repo-name>.access.key", "AKIAIOSFODNN7EXAMPLE")
  sc.hadoopConfiguration.set("spark.hadoop.fs.s3a.bucket.<repo-name>.secret.key", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY")
  sc.hadoopConfiguration.set("spark.hadoop.fs.s3a.bucket.<repo-name>.endpoint", "https://s3.lakefs.example.com")
 ```
+
+You can continue to read/write Delta tables the same way you did without lakeFS,
+while using lakeFS repos and branchs as the path prefixes:
+
+```scala
+data.write.format("delta").save("s3a://<repo-name>/<branch-name>/tmp/delta-table")
+```
+
+## Limitations
+Delta logs are sequential. Writing to the same delta log from multiple lakeFS branches is possible,
+But would result with conflicts when trying to merge those branches.
+It's best to avoid writing to the same Delta log from different branches.
 
 ## Read more
 [Blog post](https://lakefs.io/guarantee-consistency-in-your-delta-lake-tables-with-lakefs/) that shows how to 
