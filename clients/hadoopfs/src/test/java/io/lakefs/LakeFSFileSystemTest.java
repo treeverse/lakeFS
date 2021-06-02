@@ -50,6 +50,10 @@ public class LakeFSFileSystemTest {
     private static final Long UNUSED_MTIME = 0L;
     private static final String UNUSED_CHECKSUM = "unused";
 
+    private static final Long STATUS_FILE_SIZE = 2L;
+    private static final Long STATUS_MTIME = 0L;
+    private static final String STATUS_CHECKSUM = "status";
+
     protected final LakeFSFileSystem fs = new LakeFSFileSystem();
 
     protected LakeFSClient lfsClient;
@@ -345,17 +349,21 @@ public class LakeFSFileSystemTest {
                 path("status/file").
                 pathType(PathTypeEnum.OBJECT).
                 physicalAddress(s3Url("/repo-base/status")).
-                checksum(UNUSED_CHECKSUM).
-                mtime(UNUSED_MTIME).
-                sizeBytes(UNUSED_FILE_SIZE);
+                checksum(STATUS_CHECKSUM).
+                mtime(STATUS_MTIME).
+                sizeBytes(STATUS_FILE_SIZE);
         when(objectsApi.statObject("repo", "main", "status/file"))
                 .thenReturn(objectStats);
         Path p = new Path("lakefs://repo/main/status/file");
         FileStatus[] fileStatuses = fs.listStatus(p);
-        LakeFSFileStatus[] expectedFileStatuses = new LakeFSFileStatus[]{
-                new LakeFSFileStatus(UNUSED_FILE_SIZE, false, 0, Constants.DEFAULT_BLOCK_SIZE, UNUSED_MTIME,
-                        p, UNUSED_CHECKSUM, p.toString())
-        };
+        LakeFSFileStatus expectedFileStatus = new LakeFSFileStatus.Builder(p)
+                .length(STATUS_FILE_SIZE)
+                .checksum(STATUS_CHECKSUM)
+                .mTime(STATUS_MTIME)
+                .physicalAddress(p.toString())
+                .blocksize(Constants.DEFAULT_BLOCK_SIZE)
+                .build();
+        LakeFSFileStatus[] expectedFileStatuses = new LakeFSFileStatus[]{expectedFileStatus};
         Assert.assertArrayEquals(expectedFileStatuses, fileStatuses);
     }
 
@@ -383,9 +391,9 @@ public class LakeFSFileSystemTest {
                     path("status/file" + i).
                     pathType(PathTypeEnum.OBJECT).
                     physicalAddress(s3Url("/repo-base/status" + i)).
-                    checksum(UNUSED_CHECKSUM).
-                    mtime(UNUSED_MTIME).
-                    sizeBytes(UNUSED_FILE_SIZE);
+                    checksum(STATUS_CHECKSUM).
+                    mtime(STATUS_MTIME).
+                    sizeBytes(STATUS_FILE_SIZE);
             objects.addResultsItem(objectStats);
         }
         when(objectsApi.listObjects(eq("repo"), eq("main"), eq("status/"), eq(""),
@@ -399,8 +407,13 @@ public class LakeFSFileSystemTest {
         FileStatus[] expectedFileStatuses = new LakeFSLocatedFileStatus[totalObjectsCount];
         for (int i = 0; i < totalObjectsCount; i++) {
             Path p = new Path(dir + "/file" + i);
-            LakeFSFileStatus fileStatus = new LakeFSFileStatus(UNUSED_FILE_SIZE, false, 0,
-                    Constants.DEFAULT_BLOCK_SIZE, UNUSED_MTIME, p, UNUSED_CHECKSUM, s3Url("/repo-base/status" + i));
+            LakeFSFileStatus fileStatus = new LakeFSFileStatus.Builder(p)
+                    .length(STATUS_FILE_SIZE)
+                    .checksum(STATUS_CHECKSUM)
+                    .mTime(STATUS_MTIME)
+                    .blocksize(Constants.DEFAULT_BLOCK_SIZE)
+                    .physicalAddress(s3Url("/repo-base/status" + i))
+                    .build();
             expectedFileStatuses[i] = new LakeFSLocatedFileStatus(fileStatus, null);
         }
         Assert.assertArrayEquals(expectedFileStatuses, fileStatuses);
