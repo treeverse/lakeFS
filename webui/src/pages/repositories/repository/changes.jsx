@@ -241,9 +241,9 @@ const ChangesBrowser = ({ repo, reference, after, prefix, delimiter, onSelectRef
                             <Table borderless size="sm">
                                 <tbody>
                                 {results.map(entry => (
-                                    <ChangeEntryRow key={entry.path} entry={entry} relativeTo={prefix} repo={repo} reference={reference} showActions={entry.path_type === "object"} onRevert={(entry) => {
+                                    <ChangeEntryRow key={entry.path} entry={entry} relativeTo={prefix} repo={repo} reference={reference} showActions={true} onRevert={(entry) => {
                                         branches
-                                            .revert(repo.id, reference.id, {type: 'object', path: entry.path})
+                                            .revert(repo.id, reference.id, {type: entry.path_type, path: entry.path})
                                             .then(() => {
                                                 setInternalRefresh(!internalRefresh)
                                             })
