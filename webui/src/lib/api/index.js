@@ -529,8 +529,8 @@ class Commits {
 
 class Refs {
 
-    async changes(repoId, branchId, after, amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({after, amount});
+    async changes(repoId, branchId, after, prefix, delimiter, amount = DEFAULT_LISTING_AMOUNT) {
+        const query = qs({after, prefix, delimiter, amount});
         const response = await apiRequest(`/repositories/${repoId}/branches/${branchId}/diff?${query}`);
         if (response.status !== 200) {
             throw new Error(await extractError(response));

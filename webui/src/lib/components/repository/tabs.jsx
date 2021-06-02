@@ -49,7 +49,7 @@ export const RepositoryNavTabs = ({ active }) => {
                 <DatabaseIcon/> Objects
             </Link>
             <Link active={active === 'changes'} href={withBranchContext(`/repositories/${repoId}/changes`)} component={NavItem}>
-                <FileDiffIcon/> Changes
+                <FileDiffIcon/> Uncommitted Changes
             </Link>
             <Link active={active === 'commits'} href={withRefContext(`/repositories/${repoId}/commits`)} component={NavItem}>
                 <GitCommitIcon/> Commits

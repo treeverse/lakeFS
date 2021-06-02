@@ -1,4 +1,4 @@
-import React, {useRef, useState} from "react";
+import React, {useEffect, useRef, useState} from "react";
 
 import {
     GitCommitIcon,
@@ -27,6 +27,7 @@ import {formatAlertText} from "../../../lib/components/repository/errors";
 import {ChangeEntryRow} from "../../../lib/components/repository/changes";
 import {Paginator} from "../../../lib/components/pagination";
 import {useRouter} from "../../../lib/hooks/router";
+import {URINavigator} from "../../../lib/components/repository/tree";
 
 
 const CommitButton = ({ repo, onCommit, enabled = false }) => {
@@ -146,14 +147,16 @@ const RevertButton =({ onRevert, enabled = false }) => {
     );
 }
 
-const ChangesBrowser = ({ repo, reference, after, onSelectRef, onPaginate }) => {
-    const [actionError, setActionError] = useState(null)
-    const [internalRefresh, setInternalRefresh] = useState(true)
+const ChangesBrowser = ({ repo, reference, after, prefix, delimiter, onSelectRef, onPaginate }) => {
+    const [actionError, setActionError] = useState(null);
+    const [internalRefresh, setInternalRefresh] = useState(true);
+    const { push } = useRouter();
+
 
     const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
         if (!repo) return
-        return refs.changes(repo.id, reference.id, after)
-    }, [repo.id, reference.id, internalRefresh, after])
+        return refs.changes(repo.id, reference.id, after, prefix, delimiter)
+    }, [repo.id, reference.id, internalRefresh, after, prefix, delimiter])
 
     const refresh = () => setInternalRefresh(!internalRefresh)
 
@@ -198,14 +201,47 @@ const ChangesBrowser = ({ repo, reference, after, onSelectRef, onPaginate }) => 
             </ActionsBar>
 
             {actionErrorDisplay}
-
             <div className="tree-container">
-                    {(results.length === 0) ? <Alert variant="info">No changes</Alert> : (
-                        <Card>
+                {(results.length === 0) ? <Alert variant="info">No changes</Alert> : (
+                <Card>
+                    <Card.Header>
+                        <span className="float-left">
+                            {(delimiter !== "") && (
+                                <URINavigator path={prefix} reference={reference} repo={repo} relativeTo={`${reference.id} workspace`} pathURLBuilder={(params, query) => {
+                                    return {
+                                        pathname: '/repositories/:repoId/changes',
+                                        params: params,
+                                        query: {delimiter: "/", ref: reference.id},
+                                    }
+                                }}/>
+                            )}
+                        </span>
+                        <span className="float-right">
+                            <Form>
+                                <Form.Switch
+                                    label="Directory View"
+                                    id="changes-directory-view-toggle"
+                                    defaultChecked={(delimiter !== "")}
+                                    onChange={(e) => {
+                                        push({
+                                            pathname: '/repositories/:repoId/changes',
+                                            params: {repoId: repo.id},
+                                            query: {
+                                                ref: reference.id,
+                                                delimiter: (e.target.checked) ? "/" : "",
+                                            }
+                                        })
+                                    }}
+                                />
+                                </Form>
+                        </span>
+                    </Card.Header>
+                    <Card.Body>
+
                             <Table borderless size="sm">
                                 <tbody>
                                 {results.map(entry => (
-                                    <ChangeEntryRow key={entry.path} entry={entry} showActions={true} onRevert={(entry) => {
+                                    <ChangeEntryRow key={entry.path} entry={entry} relativeTo={prefix} repo={repo} reference={reference} showActions={entry.path_type === "object"} onRevert={(entry) => {
                                         branches
                                             .revert(repo.id, reference.id, {type: 'object', path: entry.path})
                                             .then(() => {
@@ -214,15 +250,19 @@ const ChangesBrowser = ({ repo, reference, after, onSelectRef, onPaginate }) => 
                                             .catch(error => {
                                                 setActionError(error)
                                             })
-                                        }}/>
+                                    }}/>
                                 ))}
                                 </tbody>
                             </Table>
-                        </Card>
-                    )}
 
-                <Paginator onPaginate={onPaginate} nextPage={nextPage} after={after}/>
+
+                            <Paginator onPaginate={onPaginate} nextPage={nextPage} after={after}/>
+
+                    </Card.Body>
+                </Card>
+                )}
             </div>
+
         </>
     )
 }
@@ -230,7 +270,7 @@ const ChangesBrowser = ({ repo, reference, after, onSelectRef, onPaginate }) => 
 const ChangesContainer = () => {
     const router = useRouter();
     const { repo, reference, loading, error } = useRefs()
-    const { after } = router.query
+    const { after, prefix, delimiter } = router.query
 
     if (loading) return <Loading/>
     if (!!error) return <Error error={error}/>
@@ -238,17 +278,27 @@ const ChangesContainer = () => {
     return (
         <ChangesBrowser
             after={(!!after) ? after : ""}
+            prefix={(!!prefix) ? prefix : ""}
+            delimiter={(!!delimiter) ? delimiter : ""}
             repo={repo}
             reference={reference}
             onPaginate={after => router.push({
                 pathname: `/repositories/:repoId/changes`,
                 params: {repoId: repo.id},
-                query: {ref: reference.id, after}
+                query: {
+                    ref: reference.id,
+                    after: (!!after) ? after : "",
+                    prefix: (!!prefix) ? prefix : "",
+                    delimiter: (!!delimiter) ? delimiter : "",
+                }
             })}
             onSelectRef={ref => router.push({
                 pathname: `/repositories/:repoId/changes`,
                 params: {repoId: repo.id},
-                query: {ref: ref.id}
+                query: {
+                    ref: ref.id,
+                    delimiter: (delimiter) ? delimiter : "",
+                }
             })}
         />
     )

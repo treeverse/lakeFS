@@ -993,25 +993,55 @@ func (c *Catalog) DiffUncommitted(ctx context.Context, repository, branch, prefi
 	return listDiffHelper(it, prefix, delimiter, limit, after)
 }
 
+func GetStartPos(prefix, after, delimiter string) (seekStart string) {
+	// find the correct place to start iterating from based on delimiter, prefix, after
+	if prefix == "" && after == "" {
+		return
+	}
+	if delimiter != "" && after != "" {
+		seekStart = string(graveler.UpperBoundForPrefix([]byte(after)))
+	} else if after != "" {
+		seekStart = after
+	} else {
+		seekStart = prefix
+	}
+	return
+}
+
 func listDiffHelper(it EntryDiffIterator, prefix, delimiter string, limit int, after string) (Differences, bool, error) {
 	if limit < 0 || limit > DiffLimitMax {
 		limit = DiffLimitMax
 	}
 
-	// navigate to prefix if populated, otherwise to after
-	// avoid redundant calls if any of them are empty
-	if prefix != "" && prefix > after {
-		it.SeekGE(Path(prefix))
-	} else if after != "" {
-		it.SeekGE(Path(after))
-	}
+	// find the correct place to start iterating from based on delimiter, prefix, after
+	//seekStart := ""
+	//if delimiter == "" && prefix == "" && after == "" {
+	//	// do nothing
+	//} else if delimiter == "" && prefix == "" && after != "" {
+	//	seekStart = after
+	//} else if delimiter == "" && prefix != "" && after == "" {
+	//	seekStart = prefix
+	//} else if delimiter == "" && prefix != "" && after != "" {
+	//	seekStart = after
+	//} else if delimiter != "" && prefix == "" && after == "" {
+	//	// do nothing
+	//} else if delimiter != "" && prefix == "" && after != "" {
+	//	seekStart = string(graveler.UpperBoundForPrefix([]byte(after)))
+	//} else if delimiter != "" && prefix != "" && after == "" {
+	//	seekStart = prefix
+	//} else if delimiter != "" && prefix != "" && after != "" {
+	//	seekStart = string(graveler.UpperBoundForPrefix([]byte(after)))
+	//}
+	seekStart := GetStartPos(prefix, after, delimiter)
+	it.SeekGE(Path(seekStart))
 
 	diffs := make(Differences, 0)
 	for it.Next() {
 		v := it.Value()
 		path := string(v.Path)
+
 		if path == after {
-			continue // emulate "greater than" using "greater equals"
+			continue // emulate SeekGT using SeekGE
 		}
 		if !strings.HasPrefix(path, prefix) {
 			break // we only want things that start with prefix, apparently there are none left
@@ -1036,7 +1066,7 @@ func listDiffHelper(it EntryDiffIterator, prefix, delimiter string, limit int, a
 					Type: DifferenceTypeCommonPrefix,
 				})
 				if len(diffs) >= limit+1 {
-					break // got enough results for now
+					break // collected enough results
 				}
 
 				// let's keep collecting records. We want the next record that doesn't
@@ -1046,6 +1076,7 @@ func listDiffHelper(it EntryDiffIterator, prefix, delimiter string, limit int, a
 			}
 		}
 
+		// got a regular entry
 		diff, err := newDifferenceFromEntryDiff(v)
 		if err != nil {
 			return nil, false, fmt.Errorf("[I] %w", err)
