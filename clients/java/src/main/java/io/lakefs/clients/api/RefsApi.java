@@ -66,8 +66,10 @@ public class RefsApi {
      * @param rightRef a reference (could be either a branch or a commit ID) to compare against (required)
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
+     * @param prefix return items prefixed with this value (optional)
      * @param type  (optional)
      * @param diffType  (optional, default to three_dot)
+     * @param delimiter  (optional, default to /)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -80,7 +82,7 @@ public class RefsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call diffRefsCall(String repository, String leftRef, String rightRef, String after, Integer amount, String type, String diffType, final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call diffRefsCall(String repository, String leftRef, String rightRef, String after, Integer amount, String prefix, String type, String diffType, String delimiter, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = null;
 
         // create path and map variables
@@ -103,12 +105,20 @@ public class RefsApi {
             localVarQueryParams.addAll(localVarApiClient.parameterToPair("amount", amount));
         }
 
+        if (prefix != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("prefix", prefix));
+        }
+
         if (type != null) {
             localVarQueryParams.addAll(localVarApiClient.parameterToPair("type", type));
         }
 
         if (diffType != null) {
             localVarQueryParams.addAll(localVarApiClient.parameterToPair("diff_type", diffType));
+        }
+
+        if (delimiter != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("delimiter", delimiter));
         }
 
         final String[] localVarAccepts = {
@@ -130,7 +140,7 @@ public class RefsApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call diffRefsValidateBeforeCall(String repository, String leftRef, String rightRef, String after, Integer amount, String type, String diffType, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call diffRefsValidateBeforeCall(String repository, String leftRef, String rightRef, String after, Integer amount, String prefix, String type, String diffType, String delimiter, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'repository' is set
         if (repository == null) {
@@ -148,7 +158,7 @@ public class RefsApi {
         }
         
 
-        okhttp3.Call localVarCall = diffRefsCall(repository, leftRef, rightRef, after, amount, type, diffType, _callback);
+        okhttp3.Call localVarCall = diffRefsCall(repository, leftRef, rightRef, after, amount, prefix, type, diffType, delimiter, _callback);
         return localVarCall;
 
     }
@@ -161,8 +171,10 @@ public class RefsApi {
      * @param rightRef a reference (could be either a branch or a commit ID) to compare against (required)
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
+     * @param prefix return items prefixed with this value (optional)
      * @param type  (optional)
      * @param diffType  (optional, default to three_dot)
+     * @param delimiter  (optional, default to /)
      * @return DiffList
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -174,8 +186,8 @@ public class RefsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public DiffList diffRefs(String repository, String leftRef, String rightRef, String after, Integer amount, String type, String diffType) throws ApiException {
-        ApiResponse<DiffList> localVarResp = diffRefsWithHttpInfo(repository, leftRef, rightRef, after, amount, type, diffType);
+    public DiffList diffRefs(String repository, String leftRef, String rightRef, String after, Integer amount, String prefix, String type, String diffType, String delimiter) throws ApiException {
+        ApiResponse<DiffList> localVarResp = diffRefsWithHttpInfo(repository, leftRef, rightRef, after, amount, prefix, type, diffType, delimiter);
         return localVarResp.getData();
     }
 
@@ -187,8 +199,10 @@ public class RefsApi {
      * @param rightRef a reference (could be either a branch or a commit ID) to compare against (required)
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
+     * @param prefix return items prefixed with this value (optional)
      * @param type  (optional)
      * @param diffType  (optional, default to three_dot)
+     * @param delimiter  (optional, default to /)
      * @return ApiResponse&lt;DiffList&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -200,8 +214,8 @@ public class RefsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<DiffList> diffRefsWithHttpInfo(String repository, String leftRef, String rightRef, String after, Integer amount, String type, String diffType) throws ApiException {
-        okhttp3.Call localVarCall = diffRefsValidateBeforeCall(repository, leftRef, rightRef, after, amount, type, diffType, null);
+    public ApiResponse<DiffList> diffRefsWithHttpInfo(String repository, String leftRef, String rightRef, String after, Integer amount, String prefix, String type, String diffType, String delimiter) throws ApiException {
+        okhttp3.Call localVarCall = diffRefsValidateBeforeCall(repository, leftRef, rightRef, after, amount, prefix, type, diffType, delimiter, null);
         Type localVarReturnType = new TypeToken<DiffList>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
@@ -214,8 +228,10 @@ public class RefsApi {
      * @param rightRef a reference (could be either a branch or a commit ID) to compare against (required)
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
+     * @param prefix return items prefixed with this value (optional)
      * @param type  (optional)
      * @param diffType  (optional, default to three_dot)
+     * @param delimiter  (optional, default to /)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -228,9 +244,9 @@ public class RefsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call diffRefsAsync(String repository, String leftRef, String rightRef, String after, Integer amount, String type, String diffType, final ApiCallback<DiffList> _callback) throws ApiException {
+    public okhttp3.Call diffRefsAsync(String repository, String leftRef, String rightRef, String after, Integer amount, String prefix, String type, String diffType, String delimiter, final ApiCallback<DiffList> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = diffRefsValidateBeforeCall(repository, leftRef, rightRef, after, amount, type, diffType, _callback);
+        okhttp3.Call localVarCall = diffRefsValidateBeforeCall(repository, leftRef, rightRef, after, amount, prefix, type, diffType, delimiter, _callback);
         Type localVarReturnType = new TypeToken<DiffList>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;

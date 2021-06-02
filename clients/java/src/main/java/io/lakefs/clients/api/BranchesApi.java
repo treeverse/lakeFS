@@ -337,6 +337,8 @@ public class BranchesApi {
      * @param branch  (required)
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
+     * @param prefix return items prefixed with this value (optional)
+     * @param delimiter  (optional, default to /)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -349,7 +351,7 @@ public class BranchesApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call diffBranchCall(String repository, String branch, String after, Integer amount, final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call diffBranchCall(String repository, String branch, String after, Integer amount, String prefix, String delimiter, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = null;
 
         // create path and map variables
@@ -371,6 +373,14 @@ public class BranchesApi {
             localVarQueryParams.addAll(localVarApiClient.parameterToPair("amount", amount));
         }
 
+        if (prefix != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("prefix", prefix));
+        }
+
+        if (delimiter != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("delimiter", delimiter));
+        }
+
         final String[] localVarAccepts = {
             "application/json"
         };
@@ -390,7 +400,7 @@ public class BranchesApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call diffBranchValidateBeforeCall(String repository, String branch, String after, Integer amount, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call diffBranchValidateBeforeCall(String repository, String branch, String after, Integer amount, String prefix, String delimiter, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'repository' is set
         if (repository == null) {
@@ -403,7 +413,7 @@ public class BranchesApi {
         }
         
 
-        okhttp3.Call localVarCall = diffBranchCall(repository, branch, after, amount, _callback);
+        okhttp3.Call localVarCall = diffBranchCall(repository, branch, after, amount, prefix, delimiter, _callback);
         return localVarCall;
 
     }
@@ -415,6 +425,8 @@ public class BranchesApi {
      * @param branch  (required)
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
+     * @param prefix return items prefixed with this value (optional)
+     * @param delimiter  (optional, default to /)
      * @return DiffList
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -426,8 +438,8 @@ public class BranchesApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public DiffList diffBranch(String repository, String branch, String after, Integer amount) throws ApiException {
-        ApiResponse<DiffList> localVarResp = diffBranchWithHttpInfo(repository, branch, after, amount);
+    public DiffList diffBranch(String repository, String branch, String after, Integer amount, String prefix, String delimiter) throws ApiException {
+        ApiResponse<DiffList> localVarResp = diffBranchWithHttpInfo(repository, branch, after, amount, prefix, delimiter);
         return localVarResp.getData();
     }
 
@@ -438,6 +450,8 @@ public class BranchesApi {
      * @param branch  (required)
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
+     * @param prefix return items prefixed with this value (optional)
+     * @param delimiter  (optional, default to /)
      * @return ApiResponse&lt;DiffList&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -449,8 +463,8 @@ public class BranchesApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<DiffList> diffBranchWithHttpInfo(String repository, String branch, String after, Integer amount) throws ApiException {
-        okhttp3.Call localVarCall = diffBranchValidateBeforeCall(repository, branch, after, amount, null);
+    public ApiResponse<DiffList> diffBranchWithHttpInfo(String repository, String branch, String after, Integer amount, String prefix, String delimiter) throws ApiException {
+        okhttp3.Call localVarCall = diffBranchValidateBeforeCall(repository, branch, after, amount, prefix, delimiter, null);
         Type localVarReturnType = new TypeToken<DiffList>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
@@ -462,6 +476,8 @@ public class BranchesApi {
      * @param branch  (required)
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
+     * @param prefix return items prefixed with this value (optional)
+     * @param delimiter  (optional, default to /)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -474,9 +490,9 @@ public class BranchesApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call diffBranchAsync(String repository, String branch, String after, Integer amount, final ApiCallback<DiffList> _callback) throws ApiException {
+    public okhttp3.Call diffBranchAsync(String repository, String branch, String after, Integer amount, String prefix, String delimiter, final ApiCallback<DiffList> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = diffBranchValidateBeforeCall(repository, branch, after, amount, _callback);
+        okhttp3.Call localVarCall = diffBranchValidateBeforeCall(repository, branch, after, amount, prefix, delimiter, _callback);
         Type localVarReturnType = new TypeToken<DiffList>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;

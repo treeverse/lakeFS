@@ -6,12 +6,12 @@ import (
 	_ "crypto/sha256"
 	"errors"
 	"fmt"
-	"github.com/treeverse/lakefs/pkg/batch"
 	"io"
 	"strings"
 
 	"github.com/cockroachdb/pebble"
 	"github.com/hashicorp/go-multierror"
+	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
@@ -993,45 +993,26 @@ func (c *Catalog) DiffUncommitted(ctx context.Context, repository, branch, prefi
 	return listDiffHelper(it, prefix, delimiter, limit, after)
 }
 
-func GetStartPos(prefix, after, delimiter string) (seekStart string) {
+func GetStartPos(prefix, after, delimiter string) string {
 	// find the correct place to start iterating from based on delimiter, prefix, after
-	if prefix == "" && after == "" {
-		return
+	switch {
+	case prefix == "" && after == "":
+		return ""
+	case delimiter != "" && after != "":
+		return string(graveler.UpperBoundForPrefix([]byte(after)))
+	case after != "":
+		return after
+	default:
+		return prefix
 	}
-	if delimiter != "" && after != "" {
-		seekStart = string(graveler.UpperBoundForPrefix([]byte(after)))
-	} else if after != "" {
-		seekStart = after
-	} else {
-		seekStart = prefix
-	}
-	return
 }
+
+const commonPrefixSplitParts = 2
 
 func listDiffHelper(it EntryDiffIterator, prefix, delimiter string, limit int, after string) (Differences, bool, error) {
 	if limit < 0 || limit > DiffLimitMax {
 		limit = DiffLimitMax
 	}
-
-	// find the correct place to start iterating from based on delimiter, prefix, after
-	//seekStart := ""
-	//if delimiter == "" && prefix == "" && after == "" {
-	//	// do nothing
-	//} else if delimiter == "" && prefix == "" && after != "" {
-	//	seekStart = after
-	//} else if delimiter == "" && prefix != "" && after == "" {
-	//	seekStart = prefix
-	//} else if delimiter == "" && prefix != "" && after != "" {
-	//	seekStart = after
-	//} else if delimiter != "" && prefix == "" && after == "" {
-	//	// do nothing
-	//} else if delimiter != "" && prefix == "" && after != "" {
-	//	seekStart = string(graveler.UpperBoundForPrefix([]byte(after)))
-	//} else if delimiter != "" && prefix != "" && after == "" {
-	//	seekStart = prefix
-	//} else if delimiter != "" && prefix != "" && after != "" {
-	//	seekStart = string(graveler.UpperBoundForPrefix([]byte(after)))
-	//}
 	seekStart := GetStartPos(prefix, after, delimiter)
 	it.SeekGE(Path(seekStart))
 
@@ -1054,8 +1035,9 @@ func listDiffHelper(it EntryDiffIterator, prefix, delimiter string, limit int, a
 			// if it's just a part of the name, add it as a "common prefix" entry -
 			//   and skip to next record following all those starting with this prefix
 			pathRelativeToPrefix := strings.TrimPrefix(path, prefix)
-			parts := strings.SplitN(pathRelativeToPrefix, delimiter, 2) // we want the common prefix and the remainder
-			if len(parts) == 2 {
+			// we want the common prefix and the remainder
+			parts := strings.SplitN(pathRelativeToPrefix, delimiter, commonPrefixSplitParts)
+			if len(parts) == commonPrefixSplitParts {
 				// a common prefix exists!
 				commonPrefix := prefix + parts[0] + delimiter
 				diffs = append(diffs, Difference{

@@ -2497,6 +2497,14 @@ paths:
           minimum: -1
           type: integer
         style: form
+      - description: return items prefixed with this value
+        explode: true
+        in: query
+        name: prefix
+        required: false
+        schema:
+          type: string
+        style: form
       - explode: false
         in: path
         name: repository
@@ -2511,6 +2519,14 @@ paths:
         schema:
           type: string
         style: simple
+      - explode: true
+        in: query
+        name: delimiter
+        required: false
+        schema:
+          default: /
+          type: string
+        style: form
       responses:
         "200":
           content:
@@ -2587,6 +2603,14 @@ paths:
           minimum: -1
           type: integer
         style: form
+      - description: return items prefixed with this value
+        explode: true
+        in: query
+        name: prefix
+        required: false
+        schema:
+          type: string
+        style: form
       - explode: true
         in: query
         name: type
@@ -2603,6 +2627,14 @@ paths:
           enum:
           - two_dot
           - three_dot
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: delimiter
+        required: false
+        schema:
+          default: /
           type: string
         style: form
       responses:

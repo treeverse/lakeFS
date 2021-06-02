@@ -42,6 +42,9 @@ const (
 
 	actionStatusCompleted = "completed"
 	actionStatusFailed    = "failed"
+
+	entryTypeObject       = "object"
+	entryTypeCommonPrefix = "common_prefix"
 )
 
 type actionsHandler interface {
@@ -1536,11 +1539,11 @@ func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body Re
 
 	var err error
 	switch body.Type {
-	case "common_prefix":
+	case entryTypeCommonPrefix:
 		err = c.Catalog.ResetEntries(ctx, repository, branch, StringValue(body.Path))
 	case "reset":
 		err = c.Catalog.ResetBranch(ctx, repository, branch)
-	case "object":
+	case entryTypeObject:
 		err = c.Catalog.ResetEntry(ctx, repository, branch, StringValue(body.Path))
 	default:
 		writeError(w, http.StatusNotFound, "reset type not found")
@@ -1629,9 +1632,9 @@ func (c *Controller) DiffBranch(w http.ResponseWriter, r *http.Request, reposito
 
 	results := make([]Diff, 0, len(diff))
 	for _, d := range diff {
-		pathType := "object"
+		pathType := entryTypeObject
 		if d.Type == catalog.DifferenceTypeCommonPrefix {
-			pathType = "common_prefix"
+			pathType = entryTypeCommonPrefix
 		}
 		results = append(results, Diff{
 			Path:     d.Path,
@@ -1767,7 +1770,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		Checksum:        blob.Checksum,
 		Mtime:           writeTime.Unix(),
 		Path:            params.Path,
-		PathType:        "object",
+		PathType:        entryTypeObject,
 		PhysicalAddress: qk.Format(),
 		SizeBytes:       Int64Ptr(blob.Size),
 	}
@@ -1833,7 +1836,7 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body St
 		Checksum:        entry.Checksum,
 		Mtime:           entry.CreationDate.Unix(),
 		Path:            entry.Path,
-		PathType:        "object",
+		PathType:        entryTypeObject,
 		PhysicalAddress: qk.Format(),
 		SizeBytes:       Int64Ptr(entry.Size),
 	}
@@ -2196,9 +2199,9 @@ func (c *Controller) DiffRefs(w http.ResponseWriter, r *http.Request, repository
 	}
 	results := make([]Diff, 0, len(diff))
 	for _, d := range diff {
-		pathType := "object"
+		pathType := entryTypeObject
 		if d.Type == catalog.DifferenceTypeCommonPrefix {
-			pathType = "common_prefix"
+			pathType = entryTypeCommonPrefix
 		}
 		results = append(results, Diff{
 			Path:     d.Path,
@@ -2371,7 +2374,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 		if entry.CommonLevel {
 			objList = append(objList, ObjectStats{
 				Path:     entry.Path,
-				PathType: "common_prefix",
+				PathType: entryTypeCommonPrefix,
 			})
 		} else {
 			var mtime int64
@@ -2383,7 +2386,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 				Mtime:           mtime,
 				Path:            entry.Path,
 				PhysicalAddress: qk.Format(),
-				PathType:        "object",
+				PathType:        entryTypeObject,
 				SizeBytes:       Int64Ptr(entry.Size),
 			})
 		}
@@ -2434,7 +2437,7 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 		Checksum:        entry.Checksum,
 		Mtime:           entry.CreationDate.Unix(),
 		Path:            params.Path,
-		PathType:        "object",
+		PathType:        entryTypeObject,
 		PhysicalAddress: qk.Format(),
 		SizeBytes:       Int64Ptr(entry.Size),
 	}
