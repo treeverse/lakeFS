@@ -32,7 +32,7 @@ const CompareList = ({ repo, reference, compareReference, after, delimiter, pref
 
     const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
         if (compareReference.id !== reference.id)
-            return refs.diff(repo.id, compareReference.id, reference.id, after, prefix, delimiter, 3);
+            return refs.diff(repo.id, compareReference.id, reference.id, after, prefix, delimiter);
         return {pagination: {has_more: false}, results: []}; // nothing to compare here.
     }, [repo.id, reference.id, compareReference.id, internalRefresh, after, prefix, delimiter]);
 
