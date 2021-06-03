@@ -3751,15 +3751,15 @@ paths:
       x-accepts: application/json
   /config:
     get:
-      description: retrieve the lakefs config
-      operationId: getConfig
+      description: retrieve the lakefs storage configuration
+      operationId: getStorageConfig
       responses:
         "200":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Config'
-          description: the lakefs config
+          description: the lakefs storage configuration
         "401":
           content:
             application/json:

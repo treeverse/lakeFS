@@ -40,17 +40,17 @@ class ConfigApi(object):
             api_client = ApiClient()
         self.api_client = api_client
 
-        def __get_config(
+        def __get_storage_config(
             self,
             **kwargs
         ):
-            """get_config  # noqa: E501
+            """get_storage_config  # noqa: E501
 
-            retrieve the lakefs config  # noqa: E501
+            retrieve the lakefs storage configuration  # noqa: E501
             This method makes a synchronous HTTP request by default. To make an
             asynchronous HTTP request, please pass async_req=True
 
-            >>> thread = api.get_config(async_req=True)
+            >>> thread = api.get_storage_config(async_req=True)
             >>> result = thread.get()
 
 
@@ -101,7 +101,7 @@ class ConfigApi(object):
             kwargs['_host_index'] = kwargs.get('_host_index')
             return self.call_with_http_info(**kwargs)
 
-        self.get_config = _Endpoint(
+        self.get_storage_config = _Endpoint(
             settings={
                 'response_type': (Config,),
                 'auth': [
@@ -110,7 +110,7 @@ class ConfigApi(object):
                     'jwt_token'
                 ],
                 'endpoint_path': '/config',
-                'operation_id': 'get_config',
+                'operation_id': 'get_storage_config',
                 'http_method': 'GET',
                 'servers': None,
             },
@@ -146,7 +146,7 @@ class ConfigApi(object):
                 'content_type': [],
             },
             api_client=api_client,
-            callable=__get_config
+            callable=__get_storage_config
         )
 
         def __setup(

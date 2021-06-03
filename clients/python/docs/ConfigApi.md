@@ -4,16 +4,16 @@ All URIs are relative to *http://localhost/api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**get_config**](ConfigApi.md#get_config) | **GET** /config | 
+[**get_storage_config**](ConfigApi.md#get_storage_config) | **GET** /config | 
 [**setup**](ConfigApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
 
 
-# **get_config**
-> Config get_config()
+# **get_storage_config**
+> Config get_storage_config()
 
 
 
-retrieve the lakefs config
+retrieve the lakefs storage configuration
 
 ### Example
 
@@ -62,10 +62,10 @@ with lakefs_client.ApiClient(configuration) as api_client:
 
     # example, this endpoint has no required or optional parameters
     try:
-        api_response = api_instance.get_config()
+        api_response = api_instance.get_storage_config()
         pprint(api_response)
     except lakefs_client.ApiException as e:
-        print("Exception when calling ConfigApi->get_config: %s\n" % e)
+        print("Exception when calling ConfigApi->get_storage_config: %s\n" % e)
 ```
 
 
@@ -89,7 +89,7 @@ This endpoint does not need any parameter.
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**200** | the lakefs config |  -  |
+**200** | the lakefs storage configuration |  -  |
 **401** | Unauthorized |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

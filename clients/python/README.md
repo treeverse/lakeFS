@@ -148,7 +148,7 @@ Class | Method | HTTP request | Description
 *CommitsApi* | [**commit**](docs/CommitsApi.md#commit) | **POST** /repositories/{repository}/branches/{branch}/commits | create commit
 *CommitsApi* | [**get_commit**](docs/CommitsApi.md#get_commit) | **GET** /repositories/{repository}/commits/{commitId} | get commit
 *CommitsApi* | [**log_branch_commits**](docs/CommitsApi.md#log_branch_commits) | **GET** /repositories/{repository}/branches/{branch}/commits | get commit log from branch. Deprecated: replaced by logCommits by passing branch name as ref 
-*ConfigApi* | [**get_config**](docs/ConfigApi.md#get_config) | **GET** /config | 
+*ConfigApi* | [**get_storage_config**](docs/ConfigApi.md#get_storage_config) | **GET** /config | 
 *ConfigApi* | [**setup**](docs/ConfigApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
 *HealthCheckApi* | [**health_check**](docs/HealthCheckApi.md#health_check) | **GET** /healthcheck | 
 *MetadataApi* | [**create_symlink_file**](docs/MetadataApi.md#create_symlink_file) | **POST** /repositories/{repository}/refs/{branch}/symlink | creates symlink files corresponding to the given directory
