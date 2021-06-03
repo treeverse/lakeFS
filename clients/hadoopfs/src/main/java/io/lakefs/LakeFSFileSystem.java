@@ -263,6 +263,15 @@ public class LakeFSFileSystem extends FileSystem {
     public boolean rename(Path src, Path dst) throws IOException {
         ObjectLocation srcObjectLoc = pathToObjectLocation(src);
         ObjectLocation dstObjectLoc = pathToObjectLocation(dst);
+        if (srcObjectLoc.getPath().isEmpty()) {
+            LOG.error("rename: src {} is root directory", src);
+            return false;
+        }
+        if (dstObjectLoc.getPath().isEmpty()) {
+            LOG.error("rename: dst {} is root directory", dst);
+            return false;
+        }
+
         if (srcObjectLoc.equals(dstObjectLoc)) {
             LOG.debug("rename: src and dst refer to the same lakefs object location: {}", dst);
             return true;
@@ -278,6 +287,7 @@ public class LakeFSFileSystem extends FileSystem {
         try {
             srcStatus = getFileStatus(src);
         } catch (FileNotFoundException e) {
+            //TODO: throw FNFE, as s3a does in https://github.com/apache/hadoop/blob/2960d83c255a00a549f8809882cd3b73a6266b6d/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L1505
             LOG.error("rename: src {} does not exist, rename failed.", src, e);
             return false;
         }
@@ -398,6 +408,7 @@ public class LakeFSFileSystem extends FileSystem {
             objects.stageObject(dstObjectLoc.getRepository(), dstObjectLoc.getRef(), dstObjectLoc.getPath(),
                     creationReq);
         } catch (ApiException e) {
+            //TODO: translate exception to FNFE and Forbidden when access denied AccessDeniedException
             LOG.error("renameObject: Could not stage object on dst:{}", dstObjectLoc.getPath(), e);
             return false;
         }
