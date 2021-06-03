@@ -32,6 +32,7 @@ const (
 	DeleteTagAction        = "fs:DeleteTag"
 	ReadTagAction          = "fs:ReadTag"
 	ListTagsAction         = "fs:ListTags"
+	ReadConfigAction       = "fs:ReadConfig"
 
 	ReadUserAction          = "auth:ReadUser"
 	CreateUserAction        = "auth:CreateUser"
@@ -54,7 +55,6 @@ const (
 	CreateCredentialsAction = "auth:CreateCredentials"
 	DeleteCredentialsAction = "auth:DeleteCredentials"
 	ListCredentialsAction   = "auth:ListCredentials"
-	ReadConfigAction        = "auth:ReadConfig"
 
 	ReadActionsAction = "ci:ReadAction"
 )

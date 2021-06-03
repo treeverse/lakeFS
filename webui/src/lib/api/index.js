@@ -67,6 +67,8 @@ const apiRequest = async (uri, requestData = {}, additionalHeaders = {}) => {
         if (errorMessage === authenticationError) {
             cache.delete('user')
             throw new AuthenticationError('Authentication Error');
+        } else {
+            throw new AuthorizationError(errorMessage);
         }
     }
 
@@ -81,6 +83,12 @@ export class NotFoundError extends Error {
     }
 }
 
+export class AuthorizationError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = "AuthorizationError"
+    }
+}
 
 export class AuthenticationError extends Error {
     constructor(message) {

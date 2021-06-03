@@ -2836,11 +2836,11 @@ paths:
     get:
       tags:
         - config
-      operationId: getConfig
-      description: retrieve the lakefs config
+      operationId: getStorageConfig
+      description: retrieve the lakefs storage configuration
       responses:
         200:
-          description: the lakefs config
+          description: the lakefs storage configuration
           content:
             application/json:
               schema:

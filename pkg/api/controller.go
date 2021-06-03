@@ -1004,7 +1004,7 @@ func (c *Controller) AttachPolicyToUser(w http.ResponseWriter, r *http.Request, 
 	writeResponse(w, http.StatusCreated, nil)
 }
 
-func (c *Controller) GetConfig(w http.ResponseWriter, r *http.Request) {
+func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
 			Action:   permissions.ReadConfigAction,
