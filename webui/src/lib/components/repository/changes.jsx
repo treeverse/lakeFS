@@ -53,7 +53,7 @@ export const ChangeEntryRow = ({ entry, showActions, relativeTo="", onNavigate, 
     }
 
     let pathText = entry.path;
-    if (pathText.indexOf(relativeTo) === 0) {
+    if (pathText.startsWith(relativeTo)) {
         pathText = pathText.substr(relativeTo.length, pathText.length);
     }
 

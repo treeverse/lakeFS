@@ -993,16 +993,20 @@ func (c *Catalog) DiffUncommitted(ctx context.Context, repository, branch, prefi
 	return listDiffHelper(it, prefix, delimiter, limit, after)
 }
 
+// GetStartPos finds the correct place to start iterating from based on delimiter, prefix & after
 func GetStartPos(prefix, after, delimiter string) string {
-	// find the correct place to start iterating from based on delimiter, prefix, after
 	switch {
 	case prefix == "" && after == "":
+		// if no prefix given and no after given, start at the beginning
 		return ""
 	case delimiter != "" && after != "":
+		// if we have a delimiter and after is not empty, start at the next common prefix after "after"
 		return string(graveler.UpperBoundForPrefix([]byte(after)))
 	case after != "":
+		// otherwise if after is set and no delimiter, continue from after
 		return after
 	default:
+		// whether we have a delimiter or not, if after is not set, start at prefix
 		return prefix
 	}
 }
