@@ -4,17 +4,29 @@ All URIs are relative to *http://localhost/api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
+<<<<<<< HEAD
 [**getStorageConfig**](ConfigApi.md#getStorageConfig) | **GET** /config/storage | 
+=======
+[**getStorageConfig**](ConfigApi.md#getStorageConfig) | **GET** /config | 
+>>>>>>> 49847532... update swagger clients (breaking!) and fix tests
 [**setup**](ConfigApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
 
 
 <a name="getStorageConfig"></a>
 # **getStorageConfig**
+<<<<<<< HEAD
 > StorageConfig getStorageConfig()
 
 
 
 retrieve lakeFS storage configuration
+=======
+> Config getStorageConfig()
+
+
+
+retrieve the lakefs storage configuration
+>>>>>>> 49847532... update swagger clients (breaking!) and fix tests
 
 ### Example
 ```java
@@ -48,7 +60,11 @@ public class Example {
 
     ConfigApi apiInstance = new ConfigApi(defaultClient);
     try {
+<<<<<<< HEAD
       StorageConfig result = apiInstance.getStorageConfig();
+=======
+      Config result = apiInstance.getStorageConfig();
+>>>>>>> 49847532... update swagger clients (breaking!) and fix tests
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ConfigApi#getStorageConfig");
@@ -80,7 +96,11 @@ This endpoint does not need any parameter.
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
+<<<<<<< HEAD
 **200** | lakeFS storage configuration |  -  |
+=======
+**200** | the lakefs storage configuration |  -  |
+>>>>>>> 49847532... update swagger clients (breaking!) and fix tests
 **401** | Unauthorized |  -  |
 
 <a name="setup"></a>
