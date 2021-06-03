@@ -8,6 +8,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.AccessDeniedException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -306,7 +307,9 @@ public class LakeFSFileSystem extends FileSystem {
             dstFileStatus = getFileStatus(dst);
             dstExists = true;
             if (!dstFileStatus.isDirectory()) {
-                LOG.error("renameDirectory: cannot overwrite non-directory '{}' with directory '{}'", dst, src);
+                //TODO: move all of this to the input validation part of the rename functionality.
+                // Mimics the behaviour in https://github.com/apache/hadoop/blob/2960d83c255a00a549f8809882cd3b73a6266b6d/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L1527
+                LOG.error("renameDirectory: src {} is a directory and dst {} is a file", src, dst);
                 return false;
             }
         } catch (FileNotFoundException e) {
@@ -319,15 +322,14 @@ public class LakeFSFileSystem extends FileSystem {
             LakeFSLocatedFileStatus locatedFileStatus = iterator.next();
             Path objDst = dstExists ? buildObjPathOnExistingDestinationDir(locatedFileStatus.getPath(), dst) :
                     buildObjPathOnNonExistingDestinationDir(locatedFileStatus.getPath(), src, dst);
+
             try {
-                if (!renameObject(locatedFileStatus.toLakeFSFileStatus(), objDst)) {
-                    throw new IOException();
-                }
+                renameObject(locatedFileStatus.toLakeFSFileStatus(), objDst);
             } catch (IOException e) {
                 // Rename dir operation in non-transactional. if one object rename failed we will end up in an
-                // intermediate state.
-                LOG.error("renameDirectory: failed to rename src dir {}", src);
-                return false;
+                // intermediate state. TODO: consider adding a cleanup similar to
+                // https://github.com/apache/hadoop/blob/2960d83c255a00a549f8809882cd3b73a6266b6d/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/impl/RenameOperation.java#L191
+                throw new IOException("renameDirectory: failed to rename src dir " + src, e);
             }
         }
         return true;
@@ -404,24 +406,35 @@ public class LakeFSFileSystem extends FileSystem {
             objects.stageObject(dstObjectLoc.getRepository(), dstObjectLoc.getRef(), dstObjectLoc.getPath(),
                     creationReq);
         } catch (ApiException e) {
-            //TODO: translate exception to FNFE and Forbidden when access denied AccessDeniedException
-            LOG.error("renameObject: Could not stage object on dst:{}", dstObjectLoc.getPath(), e);
-            return false;
+            throw translateException("renameObject: src:" + srcStatus.getPath() +", dst: " + dst + ", failed to stage object", e);
         }
 
         // delete src path
         try {
             objects.deleteObject(srcObjectLoc.getRepository(), srcObjectLoc.getRef(), srcObjectLoc.getPath());
         } catch (ApiException e) {
-            // This condition mimics s3a behaviour in https://github.com/apache/hadoop/blob/2960d83c255a00a549f8809882cd3b73a6266b6d/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L2741
-            if (e.getCode() == HttpStatus.SC_NOT_FOUND) {
-                LOG.error("Could not delete: {}, reason: {}", srcObjectLoc.getPath(), e.getResponseBody());
-                return false;
-            }
-            throw new IOException("deleteObject", e);
+            throw translateException("renameObject: src:" + srcStatus.getPath() +", dst: " + dst +
+                    ", failed to delete src", e);
         }
-
         return true;
+    }
+
+    /**
+     * Translate {@link ApiException} to an {@link IOException}.
+     * @param msg the message describing the exception
+     * @param e the exception to translate
+     * @return an IOException that corresponds to the translated API exception
+     */
+    private IOException translateException(String msg, ApiException e) {
+        int code = e.getCode();
+        switch (code){
+            case HttpStatus.SC_NOT_FOUND:
+                return new FileNotFoundException(msg);
+            case HttpStatus.SC_FORBIDDEN:
+                return new AccessDeniedException(msg);
+            default:
+                return new IOException(msg);
+        }
     }
 
     @Override
