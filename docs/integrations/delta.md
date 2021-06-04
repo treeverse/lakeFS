@@ -40,7 +40,7 @@ To configure a Spark environment to read from and write to a Delta table within 
 Once set, you can now interact with Delta tables using the same commands you would use without lakeFS, except for altering the path prefix to include the lakeFS repo and branch names:
 
 ```scala
-data.write.format("delta").save("s3a://<repo-name>/<branch-name>/tmp/delta-table")
+data.write.format("delta").save("s3a://<repo-name>/<branch-name>/path/to/delta-table")
 ```
 
 Note: If using the Databricks Analytics Platform, see the [integration guide](./databricks.md#configuration) for configuring a Databricks cluster to use lakeFS.
