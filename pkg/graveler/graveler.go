@@ -14,6 +14,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+//go:generate mockgen -source=graveler.go -destination=mock/graveler.go -package=mock
+
 // Basic Types
 
 // DiffType represents the type of the change

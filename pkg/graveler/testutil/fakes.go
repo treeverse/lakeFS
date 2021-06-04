@@ -682,3 +682,44 @@ func (i *FakeDiffIterator) Err() error {
 func (i *FakeDiffIterator) Close() {
 	i.closed = true
 }
+
+type FakeBranchIterator struct {
+	Data  []*graveler.BranchRecord
+	Index int
+}
+
+func NewFakeBranchIterator(data []*graveler.BranchRecord) *FakeBranchIterator {
+	return &FakeBranchIterator{Data: data, Index: -1}
+}
+
+func NewFakeBranchIteratorFactory(data []*graveler.BranchRecord) func() graveler.BranchIterator {
+	return func() graveler.BranchIterator { return NewFakeBranchIterator(data) }
+}
+
+func (m *FakeBranchIterator) Next() bool {
+	if m.Index >= len(m.Data) {
+		return false
+	}
+	m.Index++
+	return m.Index < len(m.Data)
+}
+
+func (m *FakeBranchIterator) SeekGE(id graveler.BranchID) {
+	m.Index = len(m.Data)
+	for i, item := range m.Data {
+		if item.BranchID >= id {
+			m.Index = i - 1
+			return
+		}
+	}
+}
+
+func (m *FakeBranchIterator) Value() *graveler.BranchRecord {
+	return m.Data[m.Index]
+}
+
+func (m *FakeBranchIterator) Err() error {
+	return nil
+}
+
+func (m *FakeBranchIterator) Close() {}
