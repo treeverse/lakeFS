@@ -67,6 +67,8 @@ If you already have a database, take note of the connection string and skip to t
    ```
    **Note:** it is preferable to run the binary as a service using systemd or your operating system's facilities.
 
+*Note: In the event of an AZ failure where the lakeFS EC2 is deployed, to restore availability, [follow the AWS instructions](https://aws.amazon.com/premiumsupport/knowledge-center/move-ec2-instance/) to re-deploy the lakeFS binary on an EC2 instance in another Availability Zone.*
+
 ### On ECS
 To support container-based environments like AWS ECS, lakeFS can be configured using environment variables. Here is a `docker run` 
 command to demonstrate starting lakeFS using Docker:
@@ -88,7 +90,8 @@ See the [reference](../reference/configuration.md#using-environment-variables) f
 ### On EKS
 See [Kubernetes Deployment](./k8s.md).
 
-*Note:Running lakeFS as a service on a multi-AZ ECS or EKS cluster allows for resiliancy in the event of an AZ failure when configured with a Load balancer. Running lakeFS on a single EC2 machine does not provide the same resiliancy guarantees.
+*Note:Running lakeFS as a service on a multi-AZ ECS or EKS cluster allows for resiliancy in the event of an AZ failure when configured with a Load balancer. Running lakeFS on a single EC2 machine does not provide the same resiliancy guarantees.*
+
 
 ## Load balancing
 Depending on how you chose to install lakeFS, you should have a load balancer direct requests to the lakeFS server.  
