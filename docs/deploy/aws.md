@@ -84,8 +84,11 @@ docker run \
 
 See the [reference](../reference/configuration.md#using-environment-variables) for a complete list of environment variables.
 
+
 ### On EKS
 See [Kubernetes Deployment](./k8s.md).
+
+*Note:Running lakeFS as a service on a multi-AZ ECS or EKS cluster allows for resiliancy in the event of an AZ failure when configured with a Load balancer. Running lakeFS on a single EC2 machine does not provide the same resiliancy guarantees.
 
 ## Load balancing
 Depending on how you chose to install lakeFS, you should have a load balancer direct requests to the lakeFS server.  
