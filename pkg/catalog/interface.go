@@ -66,7 +66,7 @@ type Interface interface {
 	ListRepositories(ctx context.Context, limit int, prefix, after string) ([]*Repository, bool, error)
 
 	GetStagingToken(ctx context.Context, repository string, branch string) (*string, error)
-
+	GenerateName() (string, error)
 	CreateBranch(ctx context.Context, repository, branch string, sourceRef string) (*CommitLog, error)
 	DeleteBranch(ctx context.Context, repository, branch string) error
 	ListBranches(ctx context.Context, repository string, prefix string, limit int, after string) ([]*Branch, bool, error)
