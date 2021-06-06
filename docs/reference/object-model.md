@@ -129,18 +129,18 @@ three-way merge, by examining the presence and identity of files in each commit.
 below, "A", "B" and "C" are possible file contents, "X" is a missing file, and "conflict"
 (which only appears as a result) is a merge failure.
 
-| **In base** | **In source** | **In destination** | **Result** | **Comment** |
-| :---: | :---: | :---: | :---: | :--- |
-| A | A | A | A | Unchanged file |
-| A | B | B | B | Files changed on both sides in same way |
-| A | B | C | conflict | Files changed on both sides differently |
-| A | A | B | B | File changed only on one branch |
-| A | B | A | B | File changed only on one branch |
-| A | X | X | X | Files deleted on both sides |
-| A | B | X | conflict | File changed on one side, deleted on the other |
-| A | X | B | conflict | File changed on one side, deleted on the other |
-| A | A | X | X | File deleted on one side |
-| A | X | A | X | File deleted on one side |
+| **In base** | **In source** | **In destination** | **Result** | **Comment**                                    |
+| :---:       | :---:         | :---:              | :---:      | :---                                           |
+| A           | A             | A                  | A          | Unchanged file                                 |
+| A           | B             | B                  | B          | Files changed on both sides in same way        |
+| A           | B             | C                  | conflict   | Files changed on both sides differently        |
+| A           | A             | B                  | B          | File changed only on one branch                |
+| A           | B             | A                  | B          | File changed only on one branch                |
+| A           | X             | X                  | X          | Files deleted on both sides                    |
+| A           | B             | X                  | conflict   | File changed on one side, deleted on the other |
+| A           | X             | B                  | conflict   | File changed on one side, deleted on the other |
+| A           | A             | X                  | X          | File deleted on one side                       |
+| A           | X             | A                  | X          | File deleted on one side                       |
 
 As a format-agnostic system, lakeFS currently merges by complete files.  Format-specific and
 other user-defined merge strategies for handling conflicts are on the roadmap.
