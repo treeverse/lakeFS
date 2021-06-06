@@ -264,10 +264,12 @@ public class LakeFSFileSystem extends FileSystem {
     public boolean rename(Path src, Path dst) throws IOException {
         ObjectLocation srcObjectLoc = pathToObjectLocation(src);
         ObjectLocation dstObjectLoc = pathToObjectLocation(dst);
+        // Same as s3a https://github.com/apache/hadoop/blob/2960d83c255a00a549f8809882cd3b73a6266b6d/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L1498
         if (srcObjectLoc.getPath().isEmpty()) {
             LOG.error("rename: src {} is root directory", src);
             return false;
         }
+        // Same as s3a does in https://github.com/apache/hadoop/blob/2960d83c255a00a549f8809882cd3b73a6266b6d/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L1501
         if (dstObjectLoc.getPath().isEmpty()) {
             LOG.error("rename: dst {} is root directory", dst);
             return false;
@@ -284,9 +286,9 @@ public class LakeFSFileSystem extends FileSystem {
             return false;
         }
 
-        LakeFSFileStatus srcStatus;
         // Throws FileNotFoundException when src does not exist. mimics s3a's behaviour in
         // https://github.com/apache/hadoop/blob/2960d83c255a00a549f8809882cd3b73a6266b6d/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L1505
+        LakeFSFileStatus srcStatus;
         srcStatus = getFileStatus(src);
         if (!srcStatus.isDirectory()) {
             return renameFile(srcStatus, dst);
