@@ -291,7 +291,7 @@ public class LakeFSFileSystemTest {
     }
 
     @Test
-    public void testOpen() throws ApiException, IOException {
+    public void testOpen() throws IOException, ApiException {
         String contents = "The quick brown fox jumps over the lazy dog.";
         byte[] contentsBytes = contents.getBytes();
 
@@ -312,23 +312,21 @@ public class LakeFSFileSystemTest {
                        mtime(UNUSED_MTIME).
                        sizeBytes((long)contentsBytes.length));
 
-        InputStream in = fs.open(p);
+        try (InputStream in = fs.open(p)) {
+            String actual = IOUtils.toString(in);
 
-        String actual = IOUtils.toString(in);
-
-        Assert.assertEquals(contents, actual);
+            Assert.assertEquals(contents, actual);
+        }
     }
 
-    @Test
-    public void testOpen_NotExists() throws ApiException {
+    @Test(expected = FileNotFoundException.class)
+    public void testOpen_NotExists() throws IOException, ApiException {
         Path p = new Path("lakefs://repo/main/doesNotExi.st");
         ApiException noSuchFileException = new ApiException(HttpStatus.SC_NOT_FOUND, "no such file");
         when(objectsApi.statObject(any(), any(), any()))
             .thenThrow(noSuchFileException);
-        IOException e = Assert.assertThrows(IOException.class, () -> fs.open(p));
-        Assert.assertTrue(e.getCause() instanceof ApiException);
-        ApiException cause = (ApiException)e.getCause();
-        Assert.assertEquals(noSuchFileException, cause);
+        try (InputStream in = fs.open(p)) {
+        }
     }
 
     /*
