@@ -55,20 +55,18 @@ const TopNavLink = ({ href, children }) => {
 
 const TopNav = () => {
     return (
-	<>
-            <Navbar variant="dark" bg="dark" expand="md">
-		<Link component={Navbar.Brand} href="/">
-                    <img src="/logo.png" alt="lakeFS" className="logo"/>
-		</Link>
-		
-		<Nav className="mr-auto">
-                    <TopNavLink href="/repositories">Repositories</TopNavLink>
-                    <TopNavLink href="/auth">Administration</TopNavLink>
-		</Nav>
+        <Navbar variant="dark" bg="dark" expand="md">
+            <Link component={Navbar.Brand} href="/">
+                <img src="/logo.png" alt="lakeFS" className="logo"/>
+            </Link>
 
-		<NavUserInfo/>
-            </Navbar>
-	</>
+            <Nav className="mr-auto">
+                <TopNavLink href="/repositories">Repositories</TopNavLink>
+                <TopNavLink href="/auth">Administration</TopNavLink>
+            </Nav>
+
+            <NavUserInfo/>
+        </Navbar>
     );
 };
 
