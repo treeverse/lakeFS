@@ -67,6 +67,12 @@ We see Kubernetes as a first class deployment target for lakeFS. While deploying
 Reduce the operational overhead of managing access control: Currently operators working with both lakeFS and the native object store are required to manage a similar set of access controls for both.
 Moving to a federated access control model using the object store’s native access control facilities (e.g. [IAM](https://aws.amazon.com/iam/)) will help reduce this overhead. This requires more discovery around the different use cases to help design something coherent. If you’re using lakeFS and have strong opinions about access control, please reach out on Slack.
 
+### lakeFS hard delete
+lakeFS delete is a metadata operation, objects referenced from commits will always be available therefore will never be removed from the underlying storage.
+To support hard deletion lakeFS will supply two operations:
+1. Garbage Collection - allow users to specify the period of time objects will be available after deleted, for more information [see this GitHub issue](https://github.com/treeverse/lakeFS/issues/1932) 
+2. Object Lifecycle - allow users to  define a lifecycle configuration on lakeFS paths to allow hard deletion based on path prefixes, for more information [see this GitHub issue](https://github.com/treeverse/lakeFS/issues/1566)
+
 ## Clients
 
 
