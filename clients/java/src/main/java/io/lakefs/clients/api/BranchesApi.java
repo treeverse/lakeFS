@@ -338,7 +338,7 @@ public class BranchesApi {
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
      * @param prefix return items prefixed with this value (optional)
-     * @param delimiter  (optional, default to /)
+     * @param delimiter delimiter used to group common prefixes by (optional)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -426,7 +426,7 @@ public class BranchesApi {
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
      * @param prefix return items prefixed with this value (optional)
-     * @param delimiter  (optional, default to /)
+     * @param delimiter delimiter used to group common prefixes by (optional)
      * @return DiffList
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -451,7 +451,7 @@ public class BranchesApi {
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
      * @param prefix return items prefixed with this value (optional)
-     * @param delimiter  (optional, default to /)
+     * @param delimiter delimiter used to group common prefixes by (optional)
      * @return ApiResponse&lt;DiffList&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -477,7 +477,7 @@ public class BranchesApi {
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
      * @param prefix return items prefixed with this value (optional)
-     * @param delimiter  (optional, default to /)
+     * @param delimiter delimiter used to group common prefixes by (optional)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object

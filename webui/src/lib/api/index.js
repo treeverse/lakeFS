@@ -459,8 +459,8 @@ class Branches {
 
 class Objects {
 
-    async list(repoId, ref, tree, after = "", amount = DEFAULT_LISTING_AMOUNT, readUncommitted = true) {
-        const query = qs({prefix:tree, amount, after, readUncommitted});
+    async list(repoId, ref, tree, after = "", amount = DEFAULT_LISTING_AMOUNT, readUncommitted = true, delimiter = "/") {
+        const query = qs({prefix:tree, amount, after, readUncommitted, delimiter});
         const response = await apiRequest(`/repositories/${repoId}/refs/${ref}/objects/ls?${query}`);
         if (response.status !== 200) {
             throw new Error(await extractError(response));

@@ -2505,6 +2505,14 @@ paths:
         schema:
           type: string
         style: form
+      - description: delimiter used to group common prefixes by
+        explode: true
+        in: query
+        name: delimiter
+        required: false
+        schema:
+          type: string
+        style: form
       - explode: false
         in: path
         name: repository
@@ -2519,14 +2527,6 @@ paths:
         schema:
           type: string
         style: simple
-      - explode: true
-        in: query
-        name: delimiter
-        required: false
-        schema:
-          default: /
-          type: string
-        style: form
       responses:
         "200":
           content:
@@ -2611,6 +2611,14 @@ paths:
         schema:
           type: string
         style: form
+      - description: delimiter used to group common prefixes by
+        explode: true
+        in: query
+        name: delimiter
+        required: false
+        schema:
+          type: string
+        style: form
       - explode: true
         in: query
         name: type
@@ -2627,14 +2635,6 @@ paths:
           enum:
           - two_dot
           - three_dot
-          type: string
-        style: form
-      - explode: true
-        in: query
-        name: delimiter
-        required: false
-        schema:
-          default: /
           type: string
         style: form
       responses:
@@ -3270,13 +3270,6 @@ paths:
         schema:
           type: string
         style: simple
-      - explode: true
-        in: query
-        name: prefix
-        required: false
-        schema:
-          type: string
-        style: form
       - description: return items after this value
         explode: true
         in: query
@@ -3296,12 +3289,20 @@ paths:
           minimum: -1
           type: integer
         style: form
-      - explode: true
+      - description: delimiter used to group common prefixes by
+        explode: true
         in: query
         name: delimiter
         required: false
         schema:
-          default: /
+          type: string
+        style: form
+      - description: return items prefixed with this value
+        explode: true
+        in: query
+        name: prefix
+        required: false
+        schema:
           type: string
         style: form
       responses:
@@ -3800,6 +3801,15 @@ components:
         minimum: -1
         type: integer
       style: form
+    PaginationDelimiter:
+      description: delimiter used to group common prefixes by
+      explode: true
+      in: query
+      name: delimiter
+      required: false
+      schema:
+        type: string
+      style: form
   requestBodies:
     inline_object:
       content:
@@ -4101,6 +4111,7 @@ components:
     Diff:
       example:
         path: path
+        size_bytes: 0
         path_type: common_prefix
         type: added
       properties:
@@ -4118,6 +4129,9 @@ components:
           - common_prefix
           - object
           type: string
+        size_bytes:
+          format: int64
+          type: integer
       required:
       - path
       - path_type
@@ -4132,9 +4146,11 @@ components:
           results: 0
         results:
         - path: path
+          size_bytes: 0
           path_type: common_prefix
           type: added
         - path: path
+          size_bytes: 0
           path_type: common_prefix
           type: added
       properties:

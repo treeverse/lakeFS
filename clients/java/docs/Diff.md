@@ -10,6 +10,7 @@ Name | Type | Description | Notes
 **type** | [**TypeEnum**](#TypeEnum) |  | 
 **path** | **String** |  | 
 **pathType** | [**PathTypeEnum**](#PathTypeEnum) |  | 
+**sizeBytes** | **Long** |  |  [optional]
 
 
 

@@ -327,7 +327,7 @@ class BranchesApi(object):
                 after (str): return items after this value. [optional]
                 amount (int): how many items to return. [optional] if omitted the server will use the default value of 100
                 prefix (str): return items prefixed with this value. [optional]
-                delimiter (str): [optional] if omitted the server will use the default value of "/"
+                delimiter (str): delimiter used to group common prefixes by. [optional]
                 _return_http_data_only (bool): response data without head status
                     code and headers. Default is True.
                 _preload_content (bool): if False, the urllib3.HTTPResponse object

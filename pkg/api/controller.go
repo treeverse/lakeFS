@@ -1615,17 +1615,15 @@ func (c *Controller) DiffBranch(w http.ResponseWriter, r *http.Request, reposito
 	ctx := r.Context()
 	c.LogAction(ctx, "diff_workspace")
 
-	// discern between an empty delimiter and no delimiter being passed at all
-	// by default, go-swagger will use the default value ("/") even if we pass
-	// a delimiter param that is explicitly empty. This overrides this (wrong) behavior.
-	var delimiter string
-	if params.Delimiter == nil {
-		delimiter = ""
-	} else {
-		delimiter = *params.Delimiter
-	}
-
-	diff, hasMore, err := c.Catalog.DiffUncommitted(ctx, repository, branch, paginationPrefix(params.Prefix), delimiter, paginationAmount(params.Amount), paginationAfter(params.After))
+	diff, hasMore, err := c.Catalog.DiffUncommitted(
+		ctx,
+		repository,
+		branch,
+		paginationPrefix(params.Prefix),
+		paginationDelimiter(params.Delimiter),
+		paginationAmount(params.Amount),
+		paginationAfter(params.After),
+	)
 	if handleAPIError(w, err) {
 		return
 	}
@@ -1633,14 +1631,18 @@ func (c *Controller) DiffBranch(w http.ResponseWriter, r *http.Request, reposito
 	results := make([]Diff, 0, len(diff))
 	for _, d := range diff {
 		pathType := entryTypeObject
-		if d.Type == catalog.DifferenceTypeCommonPrefix {
+		if d.CommonLevel {
 			pathType = entryTypeCommonPrefix
 		}
-		results = append(results, Diff{
+		diff := Diff{
 			Path:     d.Path,
 			Type:     transformDifferenceTypeToString(d.Type),
 			PathType: pathType,
-		})
+		}
+		if !d.CommonLevel {
+			diff.SizeBytes = &d.Size
+		}
+		results = append(results, diff)
 	}
 	response := DiffList{
 		Pagination: paginationFor(hasMore, results, "Path"),
@@ -2177,21 +2179,11 @@ func (c *Controller) DiffRefs(w http.ResponseWriter, r *http.Request, repository
 		diffFunc = c.Catalog.Diff
 	}
 
-	// discern between an empty delimiter and no delimiter being passed at all
-	// by default, go-swagger will use the default value ("/") even if we pass
-	// a delimiter param that is explicitly empty. This overrides this (wrong) behavior.
-	var delimiter string
-	if params.Delimiter == nil {
-		delimiter = ""
-	} else {
-		delimiter = *params.Delimiter
-	}
-
 	diff, hasMore, err := diffFunc(ctx, repository, leftRef, rightRef, catalog.DiffParams{
 		Limit:            paginationAmount(params.Amount),
 		After:            paginationAfter(params.After),
 		Prefix:           paginationPrefix(params.Prefix),
-		Delimiter:        delimiter,
+		Delimiter:        paginationDelimiter(params.Delimiter),
 		AdditionalFields: nil,
 	})
 	if handleAPIError(w, err) {
@@ -2200,14 +2192,18 @@ func (c *Controller) DiffRefs(w http.ResponseWriter, r *http.Request, repository
 	results := make([]Diff, 0, len(diff))
 	for _, d := range diff {
 		pathType := entryTypeObject
-		if d.Type == catalog.DifferenceTypeCommonPrefix {
+		if d.CommonLevel {
 			pathType = entryTypeCommonPrefix
 		}
-		results = append(results, Diff{
+		diff := Diff{
 			Path:     d.Path,
 			Type:     transformDifferenceTypeToString(d.Type),
 			PathType: pathType,
-		})
+		}
+		if !d.CommonLevel {
+			diff.SizeBytes = &d.Size
+		}
+		results = append(results, diff)
 	}
 	response := DiffList{
 		Pagination: paginationFor(hasMore, results, "Path"),
@@ -2335,23 +2331,13 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 	ctx := r.Context()
 	c.LogAction(ctx, "list_objects")
 
-	// discern between an empty delimiter and no delimiter being passed at all
-	// by default, go-swagger will use the default value ("/") even if we pass
-	// a delimiter param that is explicitly empty. This overrides this (wrong) behavior.
-	var delimiter string
-	if params.Delimiter == nil {
-		delimiter = "/"
-	} else {
-		delimiter = *params.Delimiter
-	}
-
 	res, hasMore, err := c.Catalog.ListEntries(
 		ctx,
 		repository,
 		ref,
-		StringValue(params.Prefix),
+		paginationPrefix(params.Prefix),
 		paginationAfter(params.After),
-		delimiter,
+		paginationDelimiter(params.Delimiter),
 		paginationAmount(params.Amount),
 	)
 	if handleAPIError(w, err) {
@@ -2765,6 +2751,13 @@ func paginationAfter(v *PaginationAfter) string {
 }
 
 func paginationPrefix(v *PaginationPrefix) string {
+	if v == nil {
+		return ""
+	}
+	return string(*v)
+}
+
+func paginationDelimiter(v *PaginationDelimiter) string {
 	if v == nil {
 		return ""
 	}

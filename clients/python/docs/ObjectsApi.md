@@ -347,10 +347,10 @@ with lakefs_client.ApiClient(configuration) as api_client:
     api_instance = objects_api.ObjectsApi(api_client)
     repository = "repository_example" # str | 
     ref = "ref_example" # str | a reference (could be either a branch or a commit ID)
-    prefix = "prefix_example" # str |  (optional)
     after = "after_example" # str | return items after this value (optional)
     amount = 100 # int | how many items to return (optional) if omitted the server will use the default value of 100
-    delimiter = "/" # str |  (optional) if omitted the server will use the default value of "/"
+    delimiter = "delimiter_example" # str | delimiter used to group common prefixes by (optional)
+    prefix = "prefix_example" # str | return items prefixed with this value (optional)
 
     # example passing only required values which don't have defaults set
     try:
@@ -364,7 +364,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # and optional values
     try:
         # list objects under a given prefix
-        api_response = api_instance.list_objects(repository, ref, prefix=prefix, after=after, amount=amount, delimiter=delimiter)
+        api_response = api_instance.list_objects(repository, ref, after=after, amount=amount, delimiter=delimiter, prefix=prefix)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling ObjectsApi->list_objects: %s\n" % e)
@@ -377,10 +377,10 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
  **ref** | **str**| a reference (could be either a branch or a commit ID) |
- **prefix** | **str**|  | [optional]
  **after** | **str**| return items after this value | [optional]
  **amount** | **int**| how many items to return | [optional] if omitted the server will use the default value of 100
- **delimiter** | **str**|  | [optional] if omitted the server will use the default value of "/"
+ **delimiter** | **str**| delimiter used to group common prefixes by | [optional]
+ **prefix** | **str**| return items prefixed with this value | [optional]
 
 ### Return type
 

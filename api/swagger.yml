@@ -35,12 +35,14 @@ components:
       description: return items prefixed with this value
       schema:
         type: string
+
     PaginationAfter:
       in: query
       name: after
       description: return items after this value
       schema:
         type: string
+
     PaginationAmount:
       in: query
       name: amount
@@ -50,6 +52,13 @@ components:
         minimum: -1
         maximum: 1000
         default: 100
+
+    PaginationDelimiter:
+      in: query
+      name: delimiter
+      description: delimiter used to group common prefixes by
+      schema:
+        type: string
 
   responses:
     Unauthorized:
@@ -296,6 +305,9 @@ components:
         path_type:
           type: string
           enum: [ common_prefix, object ]
+        size_bytes:
+          type: integer
+          format: int64
 
     DiffList:
       type: object
@@ -2095,6 +2107,7 @@ paths:
       - $ref: "#/components/parameters/PaginationAfter"
       - $ref: "#/components/parameters/PaginationAmount"
       - $ref: "#/components/parameters/PaginationPrefix"
+      - $ref: "#/components/parameters/PaginationDelimiter"
       - in: path
         name: repository
         required: true
@@ -2105,11 +2118,7 @@ paths:
         required: true
         schema:
           type: string
-      - in: query
-        name: delimiter
-        schema:
-          type: string
-          default: "/"
+
     get:
       tags:
         - branches
@@ -2151,6 +2160,7 @@ paths:
       - $ref: "#/components/parameters/PaginationAfter"
       - $ref: "#/components/parameters/PaginationAmount"
       - $ref: "#/components/parameters/PaginationPrefix"
+      - $ref: "#/components/parameters/PaginationDelimiter"
       - in: query
         name: type
         schema:
@@ -2161,11 +2171,7 @@ paths:
           type: string
           enum: [two_dot, three_dot]
           default: three_dot
-      - in: query
-        name: delimiter
-        schema:
-          type: string
-          default: "/"
+
     get:
       tags:
         - refs
@@ -2544,18 +2550,11 @@ paths:
         schema:
           type: string
         description: a reference (could be either a branch or a commit ID)
-      - in: query
-        name: prefix
-        required: false
-        schema:
-          type: string
       - $ref: "#/components/parameters/PaginationAfter"
       - $ref: "#/components/parameters/PaginationAmount"
-      - in: query
-        name: delimiter
-        schema:
-          type: string
-          default: "/"
+      - $ref: "#/components/parameters/PaginationDelimiter"
+      - $ref: "#/components/parameters/PaginationPrefix"
+
     get:
       tags:
         - objects

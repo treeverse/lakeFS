@@ -935,8 +935,9 @@ func TestController_ObjectsListObjectsHandler(t *testing.T) {
 	}
 
 	t.Run("get object list", func(t *testing.T) {
+		pfx := api.PaginationPrefix("foo/")
 		resp, err := clt.ListObjectsWithResponse(ctx, "repo1", "main", &api.ListObjectsParams{
-			Prefix: api.StringPtr("foo/"),
+			Prefix: &pfx,
 		})
 		verifyResponseOK(t, resp, err)
 		results := resp.JSON200.Results
@@ -946,8 +947,9 @@ func TestController_ObjectsListObjectsHandler(t *testing.T) {
 	})
 
 	t.Run("get object list paginated", func(t *testing.T) {
+		pfx := api.PaginationPrefix("foo/")
 		resp, err := clt.ListObjectsWithResponse(ctx, "repo1", "main", &api.ListObjectsParams{
-			Prefix: api.StringPtr("foo/"),
+			Prefix: &pfx,
 			Amount: api.PaginationAmountPtr(2),
 		})
 		verifyResponseOK(t, resp, err)
@@ -1539,8 +1541,9 @@ func TestController_MergeDiffWithParent(t *testing.T) {
 
 	diffResp, err := clt.DiffRefsWithResponse(ctx, repoName, "main", "main~1", &api.DiffRefsParams{})
 	verifyResponseOK(t, diffResp, err)
+	var expectedSize = int64(len(content))
 	expectedResults := []api.Diff{
-		{Path: "file1", PathType: "object", Type: "added"},
+		{Path: "file1", PathType: "object", Type: "added", SizeBytes: &expectedSize},
 	}
 	if diff := deep.Equal(diffResp.JSON200.Results, expectedResults); diff != nil {
 		t.Fatal("Diff results not as expected:", diff)

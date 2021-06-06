@@ -66,9 +66,9 @@ class RefsApi(object):
                 after (str): return items after this value. [optional]
                 amount (int): how many items to return. [optional] if omitted the server will use the default value of 100
                 prefix (str): return items prefixed with this value. [optional]
+                delimiter (str): delimiter used to group common prefixes by. [optional]
                 type (str): [optional]
                 diff_type (str): [optional] if omitted the server will use the default value of "three_dot"
-                delimiter (str): [optional] if omitted the server will use the default value of "/"
                 _return_http_data_only (bool): response data without head status
                     code and headers. Default is True.
                 _preload_content (bool): if False, the urllib3.HTTPResponse object
@@ -142,9 +142,9 @@ class RefsApi(object):
                     'after',
                     'amount',
                     'prefix',
+                    'delimiter',
                     'type',
                     'diff_type',
-                    'delimiter',
                 ],
                 'required': [
                     'repository',
@@ -188,11 +188,11 @@ class RefsApi(object):
                         (int,),
                     'prefix':
                         (str,),
+                    'delimiter':
+                        (str,),
                     'type':
                         (str,),
                     'diff_type':
-                        (str,),
-                    'delimiter':
                         (str,),
                 },
                 'attribute_map': {
@@ -202,9 +202,9 @@ class RefsApi(object):
                     'after': 'after',
                     'amount': 'amount',
                     'prefix': 'prefix',
+                    'delimiter': 'delimiter',
                     'type': 'type',
                     'diff_type': 'diff_type',
-                    'delimiter': 'delimiter',
                 },
                 'location_map': {
                     'repository': 'path',
@@ -213,9 +213,9 @@ class RefsApi(object):
                     'after': 'query',
                     'amount': 'query',
                     'prefix': 'query',
+                    'delimiter': 'query',
                     'type': 'query',
                     'diff_type': 'query',
-                    'delimiter': 'query',
                 },
                 'collection_format_map': {
                 }
