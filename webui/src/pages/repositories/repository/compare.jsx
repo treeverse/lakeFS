@@ -38,6 +38,19 @@ const CompareList = ({ repo, reference, compareReference, after, delimiter, pref
 
     let content;
 
+    const relativeTitle = (from, to) => {
+        let fromId = from.id;
+        let toId = to.id;
+        if (from.type === 'commit') {
+            fromId = fromId.substr(0, 12);
+        }
+        if (to.type === 'commit') {
+            toId = toId.substr(0, 12);
+        }
+
+        return `${fromId}...${toId}`
+    }
+
     if (loading) content = <Loading/>
     else if (!!error) content = <Error error={error}/>
     else if (compareReference.id === reference.id) content = (
@@ -56,7 +69,7 @@ const CompareList = ({ repo, reference, compareReference, after, delimiter, pref
                                 <URINavigator
                                     path={prefix}
                                     reference={reference}
-                                    relativeTo={`${reference.id}...${compareReference.id}`}
+                                    relativeTo={relativeTitle(reference, compareReference)}
                                     repo={repo}
                                     pathURLBuilder={(params, query) => {
                                         const q = {

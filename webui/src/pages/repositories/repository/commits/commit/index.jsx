@@ -3,7 +3,7 @@ import {RepositoryPageLayout} from "../../../../../lib/components/repository/lay
 import {
     ClipboardButton,
     Error, LinkButton,
-    Loading
+    Loading, ToggleSwitch
 } from "../../../../../lib/components/controls";
 import {RefContextProvider, useRefs} from "../../../../../lib/hooks/repo";
 import Card from "react-bootstrap/Card";
@@ -49,27 +49,25 @@ const ChangeList = ({ repo, commit, after, prefix, delimiter, onPaginate }) => {
                                         return {
                                             pathname: '/repositories/:repoId/commits/:commitId',
                                             params: {repoId: repo.id, commitId: commit.id},
-                                            query: {delimiter: "/", prefix: query.path}
+                                            query: {delimiter, prefix: query.path}
                                         }
                                     }}
                                 />
                             )}
                         </span>
                         <span className="float-right">
-                            <Form>
-                                <Form.Switch
-                                    label="Directory View"
-                                    id="changes-directory-view-toggle"
-                                    defaultChecked={(delimiter !== "")}
-                                    onChange={(e) => {
-                                        push({
-                                            pathname: '/repositories/:repoId/commits/:commitId',
-                                            params: {repoId: repo.id, commitId: commit.id},
-                                            query: {delimiter: (e.target.checked) ? "/" : ""},
-                                        })
-                                    }}
-                                />
-                                </Form>
+                            <ToggleSwitch
+                                label="Directory View"
+                                id="changes-directory-view-toggle"
+                                defaultChecked={(delimiter !== "")}
+                                onChange={(e) => {
+                                    push({
+                                        pathname: '/repositories/:repoId/commits/:commitId',
+                                        params: {repoId: repo.id, commitId: commit.id},
+                                        query: {delimiter: (e.target.checked) ? "/" : ""},
+                                    })
+                                }}
+                            />
                         </span>
                     </Card.Header>
                     <Card.Body>
