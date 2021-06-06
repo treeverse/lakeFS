@@ -58,4 +58,3 @@ from lakefs_client.model.underlying_object_properties import UnderlyingObjectPro
 from lakefs_client.model.user import User
 from lakefs_client.model.user_creation import UserCreation
 from lakefs_client.model.user_list import UserList
-from lakefs_client.model.warnings import Warnings

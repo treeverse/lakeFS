@@ -3782,26 +3782,6 @@ paths:
       tags:
       - config
       x-accepts: application/json
-  /warnings:
-    get:
-      description: return all current "global" warnings to show user
-      operationId: getWarnings
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Warnings'
-          description: current warnings
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Unauthorized
-      tags:
-      - warnings
-      x-accepts: application/json
 components:
   parameters:
     PaginationPrefix:
@@ -4723,11 +4703,19 @@ components:
       example:
         blockstore_namespace_example: blockstore_namespace_example
         blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
+        warnings:
+        - warnings
+        - warnings
       properties:
         blockstore_namespace_example:
           type: string
         blockstore_namespace_ValidityRegex:
           type: string
+        warnings:
+          description: warnings to show user about this configuration
+          items:
+            type: string
+          type: array
       required:
       - blockstore_namespace_ValidityRegex
       - blockstore_namespace_example
@@ -4911,18 +4899,6 @@ components:
       - checksum
       - size_bytes
       - staging
-      type: object
-    Warnings:
-      description: '"global" warnings to show user'
-      example:
-        warnings:
-        - warnings
-        - warnings
-      properties:
-        warnings:
-          items:
-            type: string
-          type: array
       type: object
     inline_object:
       properties:

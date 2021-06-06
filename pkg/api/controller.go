@@ -2861,16 +2861,3 @@ func (c *Controller) authorize(w http.ResponseWriter, r *http.Request, perms []p
 	}
 	return true
 }
-
-func (c *Controller) GetWarnings(w http.ResponseWriter, r *http.Request) {
-	warnings := make([]string, 0)
-
-	blockstoreType := c.Config.GetBlockstoreType()
-	if blockstoreType == "mem" || blockstoreType == "local" {
-		warnings = append(warnings, fmt.Sprintf("Block adapter \"%s\" not usable in production", blockstoreType))
-	}
-	resp := &GetWarningsResponse{
-		JSON200: &Warnings{Warnings: &warnings},
-	}
-	writeResponse(w, 200, &resp)
-}
