@@ -42,7 +42,7 @@ func newCommitSet(commitIDs []string) CommitSet {
 	return res
 }
 
-func TestBasic(t *testing.T) {
+func TestExpiredCommits(t *testing.T) {
 	tests := map[string]struct {
 		commits            map[string]testCommit
 		headsRetentionDays map[string]int
