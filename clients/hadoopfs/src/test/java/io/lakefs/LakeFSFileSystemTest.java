@@ -621,7 +621,7 @@ public class LakeFSFileSystemTest {
         Mockito.verify(objectsApi, never()).deleteObject(any(), any(), any());
     }
 
-    @Test
+    @Test(expected = FileNotFoundException.class)
     public void testRename_nonExistingSrcFile() throws ApiException, IOException {
         Path src = new Path("lakefs://repo/main/non-existing.src");
         ObjectLocation srcObjLoc = fs.pathToObjectLocation(src);
@@ -632,6 +632,5 @@ public class LakeFSFileSystemTest {
         mockExistingFilePath(dstObjLoc);
 
         boolean renamed = fs.rename(src, dst);
-        Assert.assertFalse(renamed);
     }
 }
