@@ -38,6 +38,9 @@ func TestGetStartPos(t *testing.T) {
 		{"delimiter_and_after", "/", "", "a/b/", string(graveler.UpperBoundForPrefix([]byte("a/b/")))},
 		{"delimiter_and_prefix", "/", "a/", "", "a/"},
 		{"delimiter_prefix_and_after", "/", "a/", "a/b/", string(graveler.UpperBoundForPrefix([]byte("a/b/")))},
+		{"empty_directory", "/", "", "a/b//", string(graveler.UpperBoundForPrefix([]byte("a/b//")))},
+		{"after_before_prefix", "", "c", "a", "c"},
+		{"after_before_prefix_with_delim", "/", "c/", "a", "c/"},
 	}
 
 	for _, cas := range cases {

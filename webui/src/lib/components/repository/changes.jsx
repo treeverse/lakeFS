@@ -123,8 +123,7 @@ export const ChangeEntryRow = ({ entry, showActions, relativeTo="", onNavigate, 
                         </span>
                     ) : (
                         <span>{pathText}</span>
-                    )
-                    }
+                    )}
                 </td>
                 <td className={"tree-row-actions"}>
                     {entryActions}
