@@ -46,14 +46,16 @@ services:
       - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
       - SPARK_SSL_ENABLED=no
     ports:
-      - '18080:8080'
+      - 18080:8080
     extra_hosts:
       - "s3.docker.lakefs.io:10.5.0.55"
       - "example.s3.docker.lakefs.io:10.5.0.55"
       - "gateway-test.s3.docker.lakefs.io:10.5.0.55"
       - "thick-client-test.s3.docker.lakefs.io:10.5.0.55"
-  spark-worker-1: &spark_worker
+  spark-worker:
     image: docker.io/bitnami/spark:3
+    ports:
+      - 8081
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER_URL=spark://spark:7077
@@ -67,14 +69,14 @@ services:
       - AWS_SECRET_ACCESS_KEY
       - AWS_REGION
     env_file:
-        - tester.env
+      - tester.env
+    deploy:
+      replicas: 3
     extra_hosts:
       - "s3.docker.lakefs.io:10.5.0.55"
       - "example.s3.docker.lakefs.io:10.5.0.55"
       - "gateway-test.s3.docker.lakefs.io:10.5.0.55"
       - "thick-client-test.s3.docker.lakefs.io:10.5.0.55"
-  spark-worker-2:
-    <<: *spark_worker
   spark-submit:
     image: docker.io/bitnami/spark:3
     profiles: ["command"]
