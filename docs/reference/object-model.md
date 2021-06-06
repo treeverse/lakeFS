@@ -161,6 +161,6 @@ always does this for objects that are unchanged across versions.
 ### `lakefs` protocol URIs
 
 lakeFS uses a specific format for path URIs.  The URI `lakefs://<REPO>/<REF>/<KEY>` is a path
-to objects in the given repo and ref under key.  This is used both for path prefixes and for
-full paths.  In similar fashion, `lakefs://<REPO>/<REF>` identifies a ref, and
-`lakefs://<REPO>` identifes a repo.
+to objects in the given repo and ref expression under key.  This is used both for path
+prefixes and for full paths.  In similar fashion, `lakefs://<REPO>/<REF>` identifies the
+repository at a ref expression, and `lakefs://<REPO>` identifes a repo.
