@@ -91,10 +91,10 @@ func createRepository(ctx context.Context, t *testing.T, name string, repoStorag
 		"create repository '%s', storage '%s'", name, repoStorage)
 }
 
-func uploadFileRandomDataAndReport(ctx context.Context, repo, branch, objPath string, direct bool) (checksum, content string, err error) {
-	const contentLength = 16
-	objContent := randstr.Hex(contentLength)
+const randomDataContentLength = 16
 
+func uploadFileRandomDataAndReport(ctx context.Context, repo, branch, objPath string, direct bool) (checksum, content string, err error) {
+	objContent := randstr.Hex(randomDataContentLength)
 	checksum, err = uploadFileAndReport(ctx, repo, branch, objPath, objContent, direct)
 	if err != nil {
 		return "", "", err
