@@ -5,6 +5,7 @@ import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
+import {Warnings} from "../../lib/components/controls";
 
 const DEFAULT_BLOCKSTORE_EXAMPLE = "e.g. s3://example-bucket/";
 const DEFAULT_BLOCKSTORE_VALIDITY_REGEX = new RegExp(`^s3://`);
@@ -41,9 +42,9 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
         setFormValid(isBranchValid && storageNamespaceValid && repoValid);
     };
 
-    const storageNamespaceValidityRegexStr = config ? config['blockstore_namespace_ValidityRegex'] : DEFAULT_BLOCKSTORE_VALIDITY_REGEX;
+    const storageNamespaceValidityRegexStr = config ? config.blockstore_namespace_ValidityRegex : DEFAULT_BLOCKSTORE_VALIDITY_REGEX;
     const storageNamespaceValidityRegex = RegExp(storageNamespaceValidityRegexStr);
-    const storageNamespaceExample = config ? config['blockstore_namespace_example'] : DEFAULT_BLOCKSTORE_EXAMPLE;
+    const storageNamespaceExample = config ? config.blockstore_namespace_example : DEFAULT_BLOCKSTORE_EXAMPLE;
     return (
         <Form className={"mt-5"} onSubmit={(e) => {
             e.preventDefault();
@@ -90,6 +91,8 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
                     }
                 </Col>
             </Form.Group>
+
+	    {config.warnings && <Warnings warnings={config.warnings}/>}
 
             {error &&
             <Row>

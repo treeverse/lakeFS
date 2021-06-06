@@ -300,14 +300,9 @@
   font-size: 0.85rem;
 }
 
-.warning {
-  font-size: +2;
-  font-weight: bolder;
-  color: #c44;
-}
-
-.warnings {
-  list-style-type: symbols(cyclic "&#x26A0;");
+.unmarked-list {
+  margin-left: 0;
+  padding-left: 0;
 }
 
 .branch-table td {
@@ -319,7 +314,6 @@
 }
 
 .policy-body {
-
   padding: 30px;
   background-color: #EEEEEE;
 }

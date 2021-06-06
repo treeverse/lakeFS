@@ -11,14 +11,14 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 
 import {Tree} from "../../../lib/components/repository/tree";
-import {Error} from "../../../lib/components/controls";
-import {objects} from "../../../lib/api";
-import {useAPIWithPagination} from "../../../lib/hooks/api";
+import {Error, Warnings} from "../../../lib/components/controls";
+import {config, objects} from "../../../lib/api";
+import {useAPI, useAPIWithPagination} from "../../../lib/hooks/api";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import {useRouter} from "../../../lib/hooks/router";
 
 
-const UploadButton = ({ repo, reference, path, onDone, variant = "success", onClick, onHide, show = false}) => {
+const UploadButton = ({ config, repo, reference, path, onDone, variant = "success", onClick, onHide, show = false}) => {
     const initialState = {
         inProgress: false,
         error: null,
@@ -68,6 +68,10 @@ const UploadButton = ({ repo, reference, path, onDone, variant = "success", onCl
                         upload()
                         e.preventDefault()
                     }}>
+			{config.warnings &&
+			 <Form.Group controlId="warnings">
+			     <Warnings warnings={config.warnings}/>
+			 </Form.Group>}
                         <Form.Group controlId="path">
                             <Row noGutters={true}>
                                 <Col className="col-auto d-flex align-items-center justify-content-start">
@@ -144,7 +148,7 @@ const TreeContainer = ({ repo, reference, path, after, onPaginate, onRefresh, on
     )
 }
 
-const ObjectsBrowser = () => {
+const ObjectsBrowser = ({ config }) => {
     const router = useRouter();
     const { path, after } = router.query;
     const { repo, reference, loading, error } = useRefs();
@@ -176,6 +180,7 @@ const ObjectsBrowser = () => {
                 <ActionGroup orientation="right">
                     <RefreshButton onClick={refresh} />
                     <UploadButton
+			config={config}
                         path={path}
                         repo={repo}
                         reference={reference}
@@ -207,10 +212,13 @@ const ObjectsBrowser = () => {
 };
 
 const RepositoryObjectsPage = () => {
+    const { response, error: err, loading } = useAPI(() => {
+        return config.get()
+    })
     return (
           <RefContextProvider>
               <RepositoryPageLayout activePage={'objects'}>
-                <ObjectsBrowser/>
+                  <ObjectsBrowser config={response}/>
               </RepositoryPageLayout>
           </RefContextProvider>
     );

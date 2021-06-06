@@ -651,18 +651,6 @@ class Config {
     }
 }
 
-class Warnings {
-    async get() {
-	const response = await apiRequest('/warnings', { method: 'GET' });
-	switch (response.status) {
-	case 200:
-	    return await response.json();
-	default:
-	    throw new Error(`could not get warnings run hook output: ${await extractError(response)}`);
-	}
-    }
-}
-
 export const repositories = new Repositories();
 export const branches = new Branches();
 export const objects = new Objects();
@@ -672,4 +660,3 @@ export const setup = new Setup();
 export const auth = new Auth();
 export const actions = new Actions();
 export const config = new Config();
-export const warnings = new Warnings();
