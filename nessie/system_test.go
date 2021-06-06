@@ -94,7 +94,7 @@ func createRepository(ctx context.Context, t *testing.T, name string, repoStorag
 const randomDataContentLength = 16
 
 func uploadFileRandomDataAndReport(ctx context.Context, repo, branch, objPath string, direct bool) (checksum, content string, err error) {
-	objContent := randstr.Hex(randomDataContentLength)
+	objContent := randstr.String(randomDataContentLength)
 	checksum, err = uploadFileAndReport(ctx, repo, branch, objPath, objContent, direct)
 	if err != nil {
 		return "", "", err
