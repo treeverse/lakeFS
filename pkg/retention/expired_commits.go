@@ -23,20 +23,20 @@ type Commits struct {
 	Active  CommitSet
 }
 
-func (a *ExpiredCommitFinder) Find(ctx context.Context, repositoryId graveler.RepositoryID, previouslyExpiredCommits CommitSet) (*Commits, error) {
+func (a *ExpiredCommitFinder) Find(ctx context.Context, repositoryID graveler.RepositoryID, previouslyExpiredCommits CommitSet) (*Commits, error) {
 	processed := make(map[graveler.CommitID]time.Time)
 	res := &Commits{
-		Active:  make(map[graveler.CommitID]bool, 0),
-		Expired: make(map[graveler.CommitID]bool, 0),
+		Active:  make(map[graveler.CommitID]bool),
+		Expired: make(map[graveler.CommitID]bool),
 	}
-	branchIterator, err := a.refManager.ListBranches(ctx, repositoryId)
+	branchIterator, err := a.refManager.ListBranches(ctx, repositoryID)
 	if err != nil {
 		return nil, err
 	}
 	for branchIterator.Next() {
 		branchRecord := branchIterator.Value()
 		commitID := branchRecord.CommitID
-		previousCommit, err := a.refManager.GetCommit(ctx, repositoryId, commitID)
+		previousCommit, err := a.refManager.GetCommit(ctx, repositoryID, commitID)
 		if err != nil {
 			return nil, err
 		}
@@ -68,7 +68,7 @@ func (a *ExpiredCommitFinder) Find(ctx context.Context, repositoryId graveler.Re
 			} else if active, ok := res.Active[commitID]; !ok || !active {
 				res.Expired[commitID] = true
 			}
-			previousCommit, err = a.refManager.GetCommit(ctx, repositoryId, commitID)
+			previousCommit, err = a.refManager.GetCommit(ctx, repositoryID, commitID)
 			if err != nil {
 				return nil, err
 			}
