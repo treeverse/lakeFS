@@ -46,6 +46,7 @@ def generateCoreProject(buildType: BuildType) =
         "org.json4s" %% "json4s-native" % "3.7.0-M8",
         "com.google.guava" % "guava" % "16.0.1",
         "com.google.guava" % "failureaccess" % "1.0.1",
+        "org.rogach" %% "scallop" % "4.0.3",
       ),
       target := file(s"target/core-${buildType.name}/")
     ).enablePlugins(S3Plugin)
