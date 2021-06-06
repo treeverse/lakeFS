@@ -11,7 +11,6 @@ import {DownloadIcon} from "@primer/octicons-react";
 import {useState} from "react";
 import {setup, API_ENDPOINT} from "../../lib/api";
 import {ClipboardButton, Error} from "../../lib/components/controls";
-import {useAPI} from "../../lib/hooks/api";
 
 
 const SetupContents = () => {

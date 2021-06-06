@@ -148,7 +148,7 @@ const TreeContainer = ({ repo, reference, path, after, onPaginate, onRefresh, on
     )
 }
 
-const ObjectsBrowser = ({ config }) => {
+const ObjectsBrowser = ({ config, configError }) => {
     const router = useRouter();
     const { path, after } = router.query;
     const { repo, reference, loading, error } = useRefs();
@@ -157,7 +157,7 @@ const ObjectsBrowser = ({ config }) => {
     const refresh = () => setRefreshToken(!refreshToken);
 
     if (loading) return <Loading/>;
-    if (!!error) return <Error error={error}/>;
+    if (!!error || configError) return <Error error={error || configError}/>;
 
     return (
         <>
@@ -213,12 +213,13 @@ const ObjectsBrowser = ({ config }) => {
 
 const RepositoryObjectsPage = () => {
     const { response, error: err, loading } = useAPI(() => {
-        return config.get()
+        return config.get();
     })
     return (
           <RefContextProvider>
               <RepositoryPageLayout activePage={'objects'}>
-                  <ObjectsBrowser config={response}/>
+		  {loading && <Loading/>}
+                  <ObjectsBrowser config={response} configError={err}/>
               </RepositoryPageLayout>
           </RefContextProvider>
     );
