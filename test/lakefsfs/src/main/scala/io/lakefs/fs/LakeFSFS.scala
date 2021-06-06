@@ -65,7 +65,7 @@ object LakeFSFS {
     lfsPds.createOrReplaceTempView("lfs_pds")
     val topTen = spark.sql("SELECT product_id, product_title, num_reviews " +
       "FROM lfs_pds where year=2015 " +
-      "ORDER BY num_reviews " +
+      "ORDER BY num_reviews DESC " +
       "LIMIT 10")
     topTen.show()
 
