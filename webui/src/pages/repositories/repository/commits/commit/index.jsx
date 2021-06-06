@@ -19,7 +19,6 @@ import {BrowserIcon, LinkIcon, PackageIcon, PlayIcon} from "@primer/octicons-rea
 import {Link} from "../../../../../lib/components/nav";
 import {useRouter} from "../../../../../lib/hooks/router";
 import {URINavigator} from "../../../../../lib/components/repository/tree";
-import Form from "react-bootstrap/Form";
 
 
 const ChangeList = ({ repo, commit, after, prefix, delimiter, onPaginate }) => {

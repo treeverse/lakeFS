@@ -58,7 +58,7 @@ export const AttachModal = ({ show, searchFn, onAttach, onHide, addText = "Add",
                     }
                 </div>
             </>
-        )
+        );
 
     return (
         <Modal show={show} onHide={onHide}>

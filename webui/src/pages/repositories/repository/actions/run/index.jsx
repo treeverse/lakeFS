@@ -125,7 +125,7 @@ const HookLog = ({ repo, run, execution }) => {
                     {content}
                 </div>
             </div>
-    )
+    );
 }
 
 const ExecutionsExplorer = ({ repo, run, executions }) => {
