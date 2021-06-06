@@ -118,7 +118,7 @@ source commit into a branch, lakeFS finds the _best_ common ancestor of that sou
 the branch tip, called the "base".  Then it performs a [3-way merge](#three-way-merge).  The
 "best" ancestor is exactly that defined in the documentation for
 [git-merge-base](https://git-scm.com/docs/git-merge-base#_description).  The result of a merge
-is a new commit, with the destination at the first parent and the source as the second.  Thus
+is a new commit, with the destination as the first parent and the source as the second.  Thus
 the previous tip of the merge destination is part of the history of the merged object.
 
 ### Three way merge
