@@ -31,7 +31,7 @@ const GroupPoliciesList = ({ groupId, after, onPaginate }) => {
         return auth.listGroupPolicies(groupId, after);
     }, [groupId, after, refresh]);
 
-    useEffect(() => { setAttachError(null); }, [refresh, after])
+    useEffect(() => { setAttachError(null); }, [refresh, after]);
 
     let content;
     if (loading) content = <Loading/>;
