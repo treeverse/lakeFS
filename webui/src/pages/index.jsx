@@ -10,20 +10,20 @@ import Setup from './setup';
 export const IndexPage = () => {
     return (
         <Router>
-	    <Switch>
+            <Switch>
                 <Route exact path="/">
-		    <Redirect to="/repositories"/>
+                    <Redirect to="/repositories"/>
                 </Route>
                 <Route path="/repositories">
-		    <Repositories/>
+                    <Repositories/>
                 </Route>
                 <Route path="/auth">
-		    <Auth/>
+                    <Auth/>
                 </Route>
                 <Route path="/setup">
-		    <Setup/>
+                    <Setup/>
                 </Route>
-	    </Switch>
+            </Switch>
         </Router>
     );
 };

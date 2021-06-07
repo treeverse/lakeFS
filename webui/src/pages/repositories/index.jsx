@@ -34,11 +34,9 @@ import RepositoryPage from './repository';
 
 const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
 
-    const { response, error: err, loading } = useAPI(() => {
-        return config.getStorageConfig()
-    })
+    const { response, error: err, loading } = useAPI(() => config.getStorageConfig());
 
-    const showError = (!!error) ? error : err
+    const showError = (!!error) ? error : err;
     if (loading)
         return (
             <Modal show={show} onHide={onCancel} size="lg">
@@ -49,7 +47,7 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
                     <Loading/>
                 </Modal.Body>
             </Modal>
-        )
+        );
 
     return (
         <Modal show={show} onHide={onCancel} size="lg">

@@ -65,10 +65,10 @@ const UploadButton = ({ config, repo, reference, path, onDone, variant = "succes
                 <Modal.Body>
                     <Form onSubmit={(e) => {
                         if (uploadState.inProgress) return;
-                        upload()
-                        e.preventDefault()
+                        upload();
+                        e.preventDefault();
                     }}>
-			{config.warnings &&
+			{config?.warnings &&
 			 <Form.Group controlId="warnings">
 			     <Warnings warnings={config.warnings}/>
 			 </Form.Group>}
@@ -122,13 +122,13 @@ const UploadButton = ({ config, repo, reference, path, onDone, variant = "succes
 const TreeContainer = ({ repo, reference, path, after, onPaginate, onRefresh, onUpload, refreshToken }) => {
     const { results, error, loading, nextPage } = useAPIWithPagination( () => {
         return objects.list(repo.id, reference.id, path, after)
-    },[repo.id, reference.id, path, after, refreshToken])
+    },[repo.id, reference.id, path, after, refreshToken]);
 
-    if (loading) return <Loading/>
-    if (!!error) return <Error error={error}/>
+    if (loading) return <Loading/>;
+    if (!!error) return <Error error={error}/>;
 
     return (
-        <Tree
+	<Tree
             repo={repo}
             reference={reference}
             path={(!!path) ? path : ""}
@@ -145,7 +145,7 @@ const TreeContainer = ({ repo, reference, path, after, onPaginate, onRefresh, on
                     .then(onRefresh)
             }}
         />
-    )
+    );
 }
 
 const ObjectsBrowser = ({ config, configError }) => {
