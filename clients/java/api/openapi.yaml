@@ -3749,7 +3749,7 @@ paths:
       tags:
       - healthCheck
       x-accepts: application/json
-  /config:
+  /config/storage:
     get:
       description: retrieve the lakefs storage configuration
       operationId: getStorageConfig
@@ -3758,7 +3758,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Config'
+                $ref: '#/components/schemas/StorageConfig'
           description: the lakefs storage configuration
         "401":
           content:
@@ -4686,7 +4686,7 @@ components:
       - pagination
       - results
       type: object
-    Config:
+    StorageConfig:
       example:
         blockstore_namespace_example: blockstore_namespace_example
         blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex

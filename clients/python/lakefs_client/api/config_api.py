@@ -22,10 +22,10 @@ from lakefs_client.model_utils import (  # noqa: F401
     none_type,
     validate_and_convert_types
 )
-from lakefs_client.model.config import Config
 from lakefs_client.model.credentials_with_secret import CredentialsWithSecret
 from lakefs_client.model.error import Error
 from lakefs_client.model.setup import Setup
+from lakefs_client.model.storage_config import StorageConfig
 
 
 class ConfigApi(object):
@@ -76,7 +76,7 @@ class ConfigApi(object):
                 async_req (bool): execute request asynchronously
 
             Returns:
-                Config
+                StorageConfig
                     If the method is called asynchronously, returns the request
                     thread.
             """
@@ -103,13 +103,13 @@ class ConfigApi(object):
 
         self.get_storage_config = _Endpoint(
             settings={
-                'response_type': (Config,),
+                'response_type': (StorageConfig,),
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
                     'jwt_token'
                 ],
-                'endpoint_path': '/config',
+                'endpoint_path': '/config/storage',
                 'operation_id': 'get_storage_config',
                 'http_method': 'GET',
                 'servers': None,

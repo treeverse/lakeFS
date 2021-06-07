@@ -4,12 +4,12 @@ All URIs are relative to *http://localhost/api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**get_storage_config**](ConfigApi.md#get_storage_config) | **GET** /config | 
+[**get_storage_config**](ConfigApi.md#get_storage_config) | **GET** /config/storage | 
 [**setup**](ConfigApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
 
 
 # **get_storage_config**
-> Config get_storage_config()
+> StorageConfig get_storage_config()
 
 
 
@@ -24,8 +24,8 @@ retrieve the lakefs storage configuration
 import time
 import lakefs_client
 from lakefs_client.api import config_api
-from lakefs_client.model.config import Config
 from lakefs_client.model.error import Error
+from lakefs_client.model.storage_config import StorageConfig
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
@@ -74,7 +74,7 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-[**Config**](Config.md)
+[**StorageConfig**](StorageConfig.md)
 
 ### Authorization
 

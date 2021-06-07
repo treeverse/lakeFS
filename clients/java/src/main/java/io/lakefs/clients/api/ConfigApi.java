@@ -27,10 +27,10 @@ import com.google.gson.reflect.TypeToken;
 import java.io.IOException;
 
 
-import io.lakefs.clients.api.model.Config;
 import io.lakefs.clients.api.model.CredentialsWithSecret;
 import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.Setup;
+import io.lakefs.clients.api.model.StorageConfig;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -73,7 +73,7 @@ public class ConfigApi {
         Object localVarPostBody = null;
 
         // create path and map variables
-        String localVarPath = "/config";
+        String localVarPath = "/config/storage";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -111,7 +111,7 @@ public class ConfigApi {
     /**
      * 
      * retrieve the lakefs storage configuration
-     * @return Config
+     * @return StorageConfig
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
@@ -120,15 +120,15 @@ public class ConfigApi {
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
      </table>
      */
-    public Config getStorageConfig() throws ApiException {
-        ApiResponse<Config> localVarResp = getStorageConfigWithHttpInfo();
+    public StorageConfig getStorageConfig() throws ApiException {
+        ApiResponse<StorageConfig> localVarResp = getStorageConfigWithHttpInfo();
         return localVarResp.getData();
     }
 
     /**
      * 
      * retrieve the lakefs storage configuration
-     * @return ApiResponse&lt;Config&gt;
+     * @return ApiResponse&lt;StorageConfig&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
@@ -137,9 +137,9 @@ public class ConfigApi {
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<Config> getStorageConfigWithHttpInfo() throws ApiException {
+    public ApiResponse<StorageConfig> getStorageConfigWithHttpInfo() throws ApiException {
         okhttp3.Call localVarCall = getStorageConfigValidateBeforeCall(null);
-        Type localVarReturnType = new TypeToken<Config>(){}.getType();
+        Type localVarReturnType = new TypeToken<StorageConfig>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
@@ -156,10 +156,10 @@ public class ConfigApi {
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call getStorageConfigAsync(final ApiCallback<Config> _callback) throws ApiException {
+    public okhttp3.Call getStorageConfigAsync(final ApiCallback<StorageConfig> _callback) throws ApiException {
 
         okhttp3.Call localVarCall = getStorageConfigValidateBeforeCall(_callback);
-        Type localVarReturnType = new TypeToken<Config>(){}.getType();
+        Type localVarReturnType = new TypeToken<StorageConfig>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
     }

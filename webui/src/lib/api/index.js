@@ -636,8 +636,8 @@ class Setup {
 }
 
 class Config {
-    async get() {
-        const response = await apiRequest('/config', {
+    async getStorageConfig() {
+        const response = await apiRequest('/config/storage', {
             method: 'GET',
         });
         switch (response.status) {

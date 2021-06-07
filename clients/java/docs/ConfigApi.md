@@ -4,13 +4,13 @@ All URIs are relative to *http://localhost/api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**getStorageConfig**](ConfigApi.md#getStorageConfig) | **GET** /config | 
+[**getStorageConfig**](ConfigApi.md#getStorageConfig) | **GET** /config/storage | 
 [**setup**](ConfigApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
 
 
 <a name="getStorageConfig"></a>
 # **getStorageConfig**
-> Config getStorageConfig()
+> StorageConfig getStorageConfig()
 
 
 
@@ -48,7 +48,7 @@ public class Example {
 
     ConfigApi apiInstance = new ConfigApi(defaultClient);
     try {
-      Config result = apiInstance.getStorageConfig();
+      StorageConfig result = apiInstance.getStorageConfig();
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ConfigApi#getStorageConfig");
@@ -66,7 +66,7 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-[**Config**](Config.md)
+[**StorageConfig**](StorageConfig.md)
 
 ### Authorization
 

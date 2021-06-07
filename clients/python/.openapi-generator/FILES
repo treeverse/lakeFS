@@ -13,7 +13,6 @@ docs/Commit.md
 docs/CommitCreation.md
 docs/CommitList.md
 docs/CommitsApi.md
-docs/Config.md
 docs/ConfigApi.md
 docs/Credentials.md
 docs/CredentialsList.md
@@ -55,6 +54,7 @@ docs/StagingApi.md
 docs/StagingLocation.md
 docs/StagingMetadata.md
 docs/Statement.md
+docs/StorageConfig.md
 docs/StorageURI.md
 docs/TagCreation.md
 docs/TagsApi.md
@@ -89,7 +89,6 @@ lakefs_client/model/branch_creation.py
 lakefs_client/model/commit.py
 lakefs_client/model/commit_creation.py
 lakefs_client/model/commit_list.py
-lakefs_client/model/config.py
 lakefs_client/model/credentials.py
 lakefs_client/model/credentials_list.py
 lakefs_client/model/credentials_with_secret.py
@@ -124,6 +123,7 @@ lakefs_client/model/setup.py
 lakefs_client/model/staging_location.py
 lakefs_client/model/staging_metadata.py
 lakefs_client/model/statement.py
+lakefs_client/model/storage_config.py
 lakefs_client/model/storage_uri.py
 lakefs_client/model/tag_creation.py
 lakefs_client/model/underlying_object_properties.py
@@ -139,4 +139,5 @@ setup.cfg
 setup.py
 test-requirements.txt
 test/__init__.py
+test/test_storage_config.py
 tox.ini
