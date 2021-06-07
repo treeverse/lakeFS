@@ -17,7 +17,7 @@ remote_theme: pmarsceill/just-the-docs
 aux_links:
   'Docs':
     - 'https://docs.lakefs.io/'
-  'Github':
+  'GitHub':
     - 'https://github.com/treeverse/lakeFS'
   'Blog':
     - 'https://lakefs.io/blog/'
@@ -38,7 +38,7 @@ footer:
 footer_links:
   'Docs':
     - 'https://docs.lakefs.io/'
-  'Github':
+  'GitHub':
     - 'https://github.com/treeverse/lakeFS'
   'Blog':
     - 'https://lakefs.io/blog/'
