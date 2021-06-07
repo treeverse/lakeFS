@@ -213,8 +213,8 @@ const ObjectsBrowser = ({ config, configError }) => {
 
 const RepositoryObjectsPage = () => {
     const { response, error: err, loading } = useAPI(() => {
-        return config.get();
-    })
+        return config.getStorageConfig();
+    });
     return (
           <RefContextProvider>
               <RepositoryPageLayout activePage={'objects'}>
