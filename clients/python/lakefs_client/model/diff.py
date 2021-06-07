@@ -152,7 +152,7 @@ class Diff(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            size_bytes (int): [optional]  # noqa: E501
+            size_bytes (int): represents the size of the added/changed/deleted entry. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

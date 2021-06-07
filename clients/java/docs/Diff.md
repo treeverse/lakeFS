@@ -10,7 +10,7 @@ Name | Type | Description | Notes
 **type** | [**TypeEnum**](#TypeEnum) |  | 
 **path** | **String** |  | 
 **pathType** | [**PathTypeEnum**](#PathTypeEnum) |  | 
-**sizeBytes** | **Long** |  |  [optional]
+**sizeBytes** | **Long** | represents the size of the added/changed/deleted entry |  [optional]
 
 
 

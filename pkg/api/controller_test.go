@@ -935,9 +935,9 @@ func TestController_ObjectsListObjectsHandler(t *testing.T) {
 	}
 
 	t.Run("get object list", func(t *testing.T) {
-		pfx := api.PaginationPrefix("foo/")
+		prefix := api.PaginationPrefix("foo/")
 		resp, err := clt.ListObjectsWithResponse(ctx, "repo1", "main", &api.ListObjectsParams{
-			Prefix: &pfx,
+			Prefix: &prefix,
 		})
 		verifyResponseOK(t, resp, err)
 		results := resp.JSON200.Results
@@ -947,9 +947,9 @@ func TestController_ObjectsListObjectsHandler(t *testing.T) {
 	})
 
 	t.Run("get object list paginated", func(t *testing.T) {
-		pfx := api.PaginationPrefix("foo/")
+		prefix := api.PaginationPrefix("foo/")
 		resp, err := clt.ListObjectsWithResponse(ctx, "repo1", "main", &api.ListObjectsParams{
-			Prefix: &pfx,
+			Prefix: &prefix,
 			Amount: api.PaginationAmountPtr(2),
 		})
 		verifyResponseOK(t, resp, err)

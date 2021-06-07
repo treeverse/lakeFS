@@ -4130,6 +4130,7 @@ components:
           - object
           type: string
         size_bytes:
+          description: represents the size of the added/changed/deleted entry
           format: int64
           type: integer
       required:

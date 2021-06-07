@@ -307,6 +307,7 @@ components:
           enum: [ common_prefix, object ]
         size_bytes:
           type: integer
+          description: represents the size of the added/changed/deleted entry
           format: int64
 
     DiffList:

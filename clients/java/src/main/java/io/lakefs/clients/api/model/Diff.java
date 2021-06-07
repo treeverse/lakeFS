@@ -217,11 +217,11 @@ public class Diff {
   }
 
    /**
-   * Get sizeBytes
+   * represents the size of the added/changed/deleted entry
    * @return sizeBytes
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
+  @ApiModelProperty(value = "represents the size of the added/changed/deleted entry")
 
   public Long getSizeBytes() {
     return sizeBytes;
