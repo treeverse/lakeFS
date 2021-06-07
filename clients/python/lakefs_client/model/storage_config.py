@@ -73,6 +73,7 @@ class StorageConfig(ModelNormal):
                 and the value is attribute type.
         """
         return {
+            'blockstore_type': (str,),  # noqa: E501
             'blockstore_namespace_example': (str,),  # noqa: E501
             'blockstore_namespace_validity_regex': (str,),  # noqa: E501
         }
@@ -83,6 +84,7 @@ class StorageConfig(ModelNormal):
 
 
     attribute_map = {
+        'blockstore_type': 'blockstore_type',  # noqa: E501
         'blockstore_namespace_example': 'blockstore_namespace_example',  # noqa: E501
         'blockstore_namespace_validity_regex': 'blockstore_namespace_ValidityRegex',  # noqa: E501
     }
@@ -99,10 +101,11 @@ class StorageConfig(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, blockstore_namespace_example, blockstore_namespace_validity_regex, *args, **kwargs):  # noqa: E501
+    def __init__(self, blockstore_type, blockstore_namespace_example, blockstore_namespace_validity_regex, *args, **kwargs):  # noqa: E501
         """StorageConfig - a model defined in OpenAPI
 
         Args:
+            blockstore_type (str):
             blockstore_namespace_example (str):
             blockstore_namespace_validity_regex (str):
 
@@ -162,6 +165,7 @@ class StorageConfig(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
+        self.blockstore_type = blockstore_type
         self.blockstore_namespace_example = blockstore_namespace_example
         self.blockstore_namespace_validity_regex = blockstore_namespace_validity_regex
         for var_name, var_value in kwargs.items():

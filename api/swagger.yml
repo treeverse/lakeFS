@@ -687,18 +687,16 @@ components:
     StorageConfig:
       type: object
       required:
+        - blockstore_type
         - blockstore_namespace_example
         - blockstore_namespace_ValidityRegex
       properties:
+        blockstore_type:
+          type: string
         blockstore_namespace_example:
           type: string
         blockstore_namespace_ValidityRegex:
           type: string
-        warnings:
-          description: "warnings to show user about this configuration"
-          type: array
-          items:
-            type: string
 
     ActionRun:
       type: object

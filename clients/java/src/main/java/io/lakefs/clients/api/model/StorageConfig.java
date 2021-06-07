@@ -29,6 +29,10 @@ import java.io.IOException;
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StorageConfig {
+  public static final String SERIALIZED_NAME_BLOCKSTORE_TYPE = "blockstore_type";
+  @SerializedName(SERIALIZED_NAME_BLOCKSTORE_TYPE)
+  private String blockstoreType;
+
   public static final String SERIALIZED_NAME_BLOCKSTORE_NAMESPACE_EXAMPLE = "blockstore_namespace_example";
   @SerializedName(SERIALIZED_NAME_BLOCKSTORE_NAMESPACE_EXAMPLE)
   private String blockstoreNamespaceExample;
@@ -36,6 +40,28 @@ public class StorageConfig {
   public static final String SERIALIZED_NAME_BLOCKSTORE_NAMESPACE_VALIDITY_REGEX = "blockstore_namespace_ValidityRegex";
   @SerializedName(SERIALIZED_NAME_BLOCKSTORE_NAMESPACE_VALIDITY_REGEX)
   private String blockstoreNamespaceValidityRegex;
+
+
+  public StorageConfig blockstoreType(String blockstoreType) {
+    
+    this.blockstoreType = blockstoreType;
+    return this;
+  }
+
+   /**
+   * Get blockstoreType
+   * @return blockstoreType
+  **/
+  @ApiModelProperty(required = true, value = "")
+
+  public String getBlockstoreType() {
+    return blockstoreType;
+  }
+
+
+  public void setBlockstoreType(String blockstoreType) {
+    this.blockstoreType = blockstoreType;
+  }
 
 
   public StorageConfig blockstoreNamespaceExample(String blockstoreNamespaceExample) {
@@ -91,19 +117,21 @@ public class StorageConfig {
       return false;
     }
     StorageConfig storageConfig = (StorageConfig) o;
-    return Objects.equals(this.blockstoreNamespaceExample, storageConfig.blockstoreNamespaceExample) &&
+    return Objects.equals(this.blockstoreType, storageConfig.blockstoreType) &&
+        Objects.equals(this.blockstoreNamespaceExample, storageConfig.blockstoreNamespaceExample) &&
         Objects.equals(this.blockstoreNamespaceValidityRegex, storageConfig.blockstoreNamespaceValidityRegex);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(blockstoreNamespaceExample, blockstoreNamespaceValidityRegex);
+    return Objects.hash(blockstoreType, blockstoreNamespaceExample, blockstoreNamespaceValidityRegex);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class StorageConfig {\n");
+    sb.append("    blockstoreType: ").append(toIndentedString(blockstoreType)).append("\n");
     sb.append("    blockstoreNamespaceExample: ").append(toIndentedString(blockstoreNamespaceExample)).append("\n");
     sb.append("    blockstoreNamespaceValidityRegex: ").append(toIndentedString(blockstoreNamespaceValidityRegex)).append("\n");
     sb.append("}");

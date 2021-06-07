@@ -4703,22 +4703,18 @@ components:
       example:
         blockstore_namespace_example: blockstore_namespace_example
         blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
-        warnings:
-        - warnings
-        - warnings
+        blockstore_type: blockstore_type
       properties:
+        blockstore_type:
+          type: string
         blockstore_namespace_example:
           type: string
         blockstore_namespace_ValidityRegex:
           type: string
-        warnings:
-          description: warnings to show user about this configuration
-          items:
-            type: string
-          type: array
       required:
       - blockstore_namespace_ValidityRegex
       - blockstore_namespace_example
+      - blockstore_type
       type: object
     ActionRun:
       example:

@@ -4,6 +4,7 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**blockstore_type** | **str** |  | 
 **blockstore_namespace_example** | **str** |  | 
 **blockstore_namespace_validity_regex** | **str** |  | 
 
