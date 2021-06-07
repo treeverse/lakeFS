@@ -194,7 +194,7 @@ public class LakeFSFileSystem extends FileSystem {
             ObjectStats stats = objects.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
             return withFileSystemAndTranslatedPhysicalPath(stats.getPhysicalAddress(), (FileSystem fs, Path p) -> fs.open(p, bufSize));
         } catch (ApiException e) {
-            throw new IOException("open: " + path, e);
+            throw translateException("open: " + path, e);
         } catch (java.net.URISyntaxException e) {
             throw new IOException("open physical", e);
         }
@@ -429,13 +429,13 @@ public class LakeFSFileSystem extends FileSystem {
      */
     private IOException translateException(String msg, ApiException e) {
         int code = e.getCode();
-        switch (code){
+        switch (code) {
             case HttpStatus.SC_NOT_FOUND:
-                return new FileNotFoundException(msg);
+                return (IOException)new FileNotFoundException(msg).initCause(e);
             case HttpStatus.SC_FORBIDDEN:
-                return new AccessDeniedException(msg);
+                return (IOException)new AccessDeniedException(msg).initCause(e);
             default:
-                return new IOException(msg);
+                return new IOException(msg, e);
         }
     }
 
