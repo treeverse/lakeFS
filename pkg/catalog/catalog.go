@@ -9,10 +9,9 @@ import (
 	"io"
 	"strings"
 
-	"github.com/treeverse/lakefs/pkg/batch"
-
 	"github.com/cockroachdb/pebble"
 	"github.com/hashicorp/go-multierror"
+	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
@@ -953,7 +952,7 @@ func (c *Catalog) Diff(ctx context.Context, repository string, leftReference str
 	}
 	it := NewEntryDiffIterator(iter)
 	defer it.Close()
-	return listDiffHelper(it, params.Limit, params.After)
+	return listDiffHelper(it, params.Prefix, params.Delimiter, params.Limit, params.After)
 }
 
 func (c *Catalog) Compare(ctx context.Context, repository, leftReference string, rightReference string, params DiffParams) (Differences, bool, error) {
@@ -973,10 +972,10 @@ func (c *Catalog) Compare(ctx context.Context, repository, leftReference string,
 	}
 	it := NewEntryDiffIterator(iter)
 	defer it.Close()
-	return listDiffHelper(it, params.Limit, params.After)
+	return listDiffHelper(it, params.Prefix, params.Delimiter, params.Limit, params.After)
 }
 
-func (c *Catalog) DiffUncommitted(ctx context.Context, repository string, branch string, limit int, after string) (Differences, bool, error) {
+func (c *Catalog) DiffUncommitted(ctx context.Context, repository, branch, prefix, delimiter string, limit int, after string) (Differences, bool, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	if err := Validate([]ValidateArg{
@@ -991,23 +990,81 @@ func (c *Catalog) DiffUncommitted(ctx context.Context, repository string, branch
 	}
 	it := NewEntryDiffIterator(iter)
 	defer it.Close()
-	return listDiffHelper(it, limit, after)
+	return listDiffHelper(it, prefix, delimiter, limit, after)
 }
 
-func listDiffHelper(it EntryDiffIterator, limit int, after string) (Differences, bool, error) {
+// GetStartPos returns a key that SeekGE will transform to a place start iterating on all elements in
+//    the keys that start with `prefix' after `after' and taking `delimiter' into account
+func GetStartPos(prefix, after, delimiter string) string {
+	if after == "" {
+		// whether we have a delimiter or not, if after is not set, start at prefix
+		return prefix
+	}
+	if after < prefix {
+		// if after is before prefix, no point in starting there, start with prefix instead
+		return prefix
+	}
+	if delimiter == "" {
+		// no delimiter, continue from after
+		return after
+	}
+	// there is a delimiter and after is not empty, start at the next common prefix after "after"
+	return string(graveler.UpperBoundForPrefix([]byte(after)))
+}
+
+const commonPrefixSplitParts = 2
+
+func listDiffHelper(it EntryDiffIterator, prefix, delimiter string, limit int, after string) (Differences, bool, error) {
 	if limit < 0 || limit > DiffLimitMax {
 		limit = DiffLimitMax
 	}
-	afterPath := Path(after)
-	if afterPath != "" {
-		it.SeekGE(afterPath)
-	}
+	seekStart := GetStartPos(prefix, after, delimiter)
+	it.SeekGE(Path(seekStart))
+
 	diffs := make(Differences, 0)
 	for it.Next() {
 		v := it.Value()
-		if v.Path == afterPath {
-			continue
+		path := string(v.Path)
+
+		if path == after {
+			continue // emulate SeekGT using SeekGE
 		}
+		if !strings.HasPrefix(path, prefix) {
+			break // we only want things that start with prefix, apparently there are none left
+		}
+
+		if delimiter != "" {
+			// common prefix logic goes here.
+			// for every path, after trimming "prefix", take the string upto-and-including the delimiter
+			// if the received path == the entire remainder, add that object as is
+			// if it's just a part of the name, add it as a "common prefix" entry -
+			//   and skip to next record following all those starting with this prefix
+			pathRelativeToPrefix := strings.TrimPrefix(path, prefix)
+			// we want the common prefix and the remainder
+			parts := strings.SplitN(pathRelativeToPrefix, delimiter, commonPrefixSplitParts)
+			if len(parts) == commonPrefixSplitParts {
+				// a common prefix exists!
+				commonPrefix := prefix + parts[0] + delimiter
+				diffs = append(diffs, Difference{
+					DBEntry: DBEntry{
+						CommonLevel: true,
+						Path:        commonPrefix,
+					},
+					// We always return "changed" for common prefixes. Seeing if a common prefix is e.g. deleted is O(N)
+					Type: DifferenceTypeChanged,
+				})
+				if len(diffs) >= limit+1 {
+					break // collected enough results
+				}
+
+				// let's keep collecting records. We want the next record that doesn't
+				//   start with this common prefix
+				it.SeekGE(Path(graveler.UpperBoundForPrefix([]byte(commonPrefix))))
+				continue
+			}
+		}
+
+		// got a regular entry
 		diff, err := newDifferenceFromEntryDiff(v)
 		if err != nil {
 			return nil, false, fmt.Errorf("[I] %w", err)

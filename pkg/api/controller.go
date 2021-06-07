@@ -42,6 +42,9 @@ const (
 
 	actionStatusCompleted = "completed"
 	actionStatusFailed    = "failed"
+
+	entryTypeObject       = "object"
+	entryTypeCommonPrefix = "common_prefix"
 )
 
 type actionsHandler interface {
@@ -1536,11 +1539,11 @@ func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body Re
 
 	var err error
 	switch body.Type {
-	case "common_prefix":
+	case entryTypeCommonPrefix:
 		err = c.Catalog.ResetEntries(ctx, repository, branch, StringValue(body.Path))
 	case "reset":
 		err = c.Catalog.ResetBranch(ctx, repository, branch)
-	case "object":
+	case entryTypeObject:
 		err = c.Catalog.ResetEntry(ctx, repository, branch, StringValue(body.Path))
 	default:
 		writeError(w, http.StatusNotFound, "reset type not found")
@@ -1611,18 +1614,35 @@ func (c *Controller) DiffBranch(w http.ResponseWriter, r *http.Request, reposito
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "diff_workspace")
-	diff, hasMore, err := c.Catalog.DiffUncommitted(ctx, repository, branch, paginationAmount(params.Amount), paginationAfter(params.After))
+
+	diff, hasMore, err := c.Catalog.DiffUncommitted(
+		ctx,
+		repository,
+		branch,
+		paginationPrefix(params.Prefix),
+		paginationDelimiter(params.Delimiter),
+		paginationAmount(params.Amount),
+		paginationAfter(params.After),
+	)
 	if handleAPIError(w, err) {
 		return
 	}
 
 	results := make([]Diff, 0, len(diff))
 	for _, d := range diff {
-		results = append(results, Diff{
+		pathType := entryTypeObject
+		if d.CommonLevel {
+			pathType = entryTypeCommonPrefix
+		}
+		diff := Diff{
 			Path:     d.Path,
 			Type:     transformDifferenceTypeToString(d.Type),
-			PathType: "object",
-		})
+			PathType: pathType,
+		}
+		if !d.CommonLevel {
+			diff.SizeBytes = &d.Size
+		}
+		results = append(results, diff)
 	}
 	response := DiffList{
 		Pagination: paginationFor(hasMore, results, "Path"),
@@ -1752,7 +1772,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		Checksum:        blob.Checksum,
 		Mtime:           writeTime.Unix(),
 		Path:            params.Path,
-		PathType:        "object",
+		PathType:        entryTypeObject,
 		PhysicalAddress: qk.Format(),
 		SizeBytes:       Int64Ptr(blob.Size),
 	}
@@ -1818,7 +1838,7 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body St
 		Checksum:        entry.Checksum,
 		Mtime:           entry.CreationDate.Unix(),
 		Path:            entry.Path,
-		PathType:        "object",
+		PathType:        entryTypeObject,
 		PhysicalAddress: qk.Format(),
 		SizeBytes:       Int64Ptr(entry.Size),
 	}
@@ -2158,20 +2178,32 @@ func (c *Controller) DiffRefs(w http.ResponseWriter, r *http.Request, repository
 	if params.Type != nil && *params.Type == "two_dot" {
 		diffFunc = c.Catalog.Diff
 	}
+
 	diff, hasMore, err := diffFunc(ctx, repository, leftRef, rightRef, catalog.DiffParams{
-		Limit: paginationAmount(params.Amount),
-		After: paginationAfter(params.After),
+		Limit:            paginationAmount(params.Amount),
+		After:            paginationAfter(params.After),
+		Prefix:           paginationPrefix(params.Prefix),
+		Delimiter:        paginationDelimiter(params.Delimiter),
+		AdditionalFields: nil,
 	})
 	if handleAPIError(w, err) {
 		return
 	}
 	results := make([]Diff, 0, len(diff))
 	for _, d := range diff {
-		results = append(results, Diff{
+		pathType := entryTypeObject
+		if d.CommonLevel {
+			pathType = entryTypeCommonPrefix
+		}
+		diff := Diff{
 			Path:     d.Path,
 			Type:     transformDifferenceTypeToString(d.Type),
-			PathType: "object",
-		})
+			PathType: pathType,
+		}
+		if !d.CommonLevel {
+			diff.SizeBytes = &d.Size
+		}
+		results = append(results, diff)
 	}
 	response := DiffList{
 		Pagination: paginationFor(hasMore, results, "Path"),
@@ -2299,23 +2331,13 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 	ctx := r.Context()
 	c.LogAction(ctx, "list_objects")
 
-	// discern between an empty delimiter and no delimiter being passed at all
-	// by default, go-swagger will use the default value ("/") even if we pass
-	// a delimiter param that is explicitly empty. This overrides this (wrong) behavior.
-	var delimiter string
-	if params.Delimiter == nil {
-		delimiter = "/"
-	} else {
-		delimiter = *params.Delimiter
-	}
-
 	res, hasMore, err := c.Catalog.ListEntries(
 		ctx,
 		repository,
 		ref,
-		StringValue(params.Prefix),
+		paginationPrefix(params.Prefix),
 		paginationAfter(params.After),
-		delimiter,
+		paginationDelimiter(params.Delimiter),
 		paginationAmount(params.Amount),
 	)
 	if handleAPIError(w, err) {
@@ -2338,7 +2360,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 		if entry.CommonLevel {
 			objList = append(objList, ObjectStats{
 				Path:     entry.Path,
-				PathType: "common_prefix",
+				PathType: entryTypeCommonPrefix,
 			})
 		} else {
 			var mtime int64
@@ -2350,7 +2372,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 				Mtime:           mtime,
 				Path:            entry.Path,
 				PhysicalAddress: qk.Format(),
-				PathType:        "object",
+				PathType:        entryTypeObject,
 				SizeBytes:       Int64Ptr(entry.Size),
 			})
 		}
@@ -2401,7 +2423,7 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 		Checksum:        entry.Checksum,
 		Mtime:           entry.CreationDate.Unix(),
 		Path:            params.Path,
-		PathType:        "object",
+		PathType:        entryTypeObject,
 		PhysicalAddress: qk.Format(),
 		SizeBytes:       Int64Ptr(entry.Size),
 	}
@@ -2729,6 +2751,13 @@ func paginationAfter(v *PaginationAfter) string {
 }
 
 func paginationPrefix(v *PaginationPrefix) string {
+	if v == nil {
+		return ""
+	}
+	return string(*v)
+}
+
+func paginationDelimiter(v *PaginationDelimiter) string {
 	if v == nil {
 		return ""
 	}

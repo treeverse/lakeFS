@@ -70,18 +70,19 @@ var fsListCmd = &cobra.Command{
 			trimPrefix = prefix[:idx+1]
 		}
 		// delimiter used for listing
-		var paramsDelimiter *string
+		var paramsDelimiter api.PaginationDelimiter
 		if recursive {
-			paramsDelimiter = api.StringPtr("")
+			paramsDelimiter = ""
 		} else {
-			paramsDelimiter = api.StringPtr(delimiter)
+			paramsDelimiter = delimiter
 		}
 		var from string
 		for {
+			pfx := api.PaginationPrefix(prefix)
 			params := &api.ListObjectsParams{
-				Prefix:    &prefix,
+				Prefix:    &pfx,
 				After:     api.PaginationAfterPtr(from),
-				Delimiter: paramsDelimiter,
+				Delimiter: &paramsDelimiter,
 			}
 			resp, err := client.ListObjectsWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, params)
 			DieOnResponseError(resp, err)

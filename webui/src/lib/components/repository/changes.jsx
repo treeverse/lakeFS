@@ -3,9 +3,10 @@ import React, {useState} from "react";
 import {OverlayTrigger} from "react-bootstrap";
 import Tooltip from "react-bootstrap/Tooltip";
 import Button from "react-bootstrap/Button";
-import {CircleSlashIcon, HistoryIcon, PencilIcon, PlusIcon, TrashIcon} from "@primer/octicons-react";
+import {CircleSlashIcon, FileDirectoryIcon, HistoryIcon, PencilIcon, PlusIcon, TrashIcon} from "@primer/octicons-react";
 
 import {ConfirmationModal} from "../modals";
+import {Link} from "../nav";
 
 
 const ChangeRowActions = ({ entry, onRevert }) => {
@@ -26,12 +27,13 @@ const ChangeRowActions = ({ entry, onRevert }) => {
                     <HistoryIcon/>
                 </Button>
             </OverlayTrigger>
+
             <ConfirmationModal show={show} onHide={() => setShow(false)} msg={revertConfirmMsg} onConfirm={onSubmit}/>
         </>
     );
 };
 
-export const ChangeEntryRow = ({ entry, showActions, onRevert }) => {
+export const ChangeEntryRow = ({ entry, showActions, relativeTo="", onNavigate, onRevert }) => {
     let rowClass = 'tree-row ';
     switch (entry.type) {
         case 'changed':
@@ -50,7 +52,10 @@ export const ChangeEntryRow = ({ entry, showActions, onRevert }) => {
             break;
     }
 
-    const pathText = entry.path;
+    let pathText = entry.path;
+    if (pathText.startsWith(relativeTo)) {
+        pathText = pathText.substr(relativeTo.length, pathText.length);
+    }
 
     let diffIndicator;
     switch (entry.type) {
@@ -109,7 +114,16 @@ export const ChangeEntryRow = ({ entry, showActions, onRevert }) => {
                     {diffIndicator}
                 </td>
                 <td className="tree-path">
-                    <span>{pathText}</span>
+                    {(entry.path_type === "common_prefix") ? (
+                        <span>
+                            <Link href={onNavigate(entry)}>
+                                <FileDirectoryIcon/>
+                                {pathText}
+                            </Link>
+                        </span>
+                    ) : (
+                        <span>{pathText}</span>
+                    )}
                 </td>
                 <td className={"tree-row-actions"}>
                     {entryActions}

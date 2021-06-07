@@ -459,8 +459,8 @@ class Branches {
 
 class Objects {
 
-    async list(repoId, ref, tree, after = "", amount = DEFAULT_LISTING_AMOUNT, readUncommitted = true) {
-        const query = qs({prefix:tree, amount, after, readUncommitted});
+    async list(repoId, ref, tree, after = "", amount = DEFAULT_LISTING_AMOUNT, readUncommitted = true, delimiter = "/") {
+        const query = qs({prefix:tree, amount, after, readUncommitted, delimiter});
         const response = await apiRequest(`/repositories/${repoId}/refs/${ref}/objects/ls?${query}`);
         if (response.status !== 200) {
             throw new Error(await extractError(response));
@@ -529,8 +529,8 @@ class Commits {
 
 class Refs {
 
-    async changes(repoId, branchId, after, amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({after, amount});
+    async changes(repoId, branchId, after, prefix, delimiter, amount = DEFAULT_LISTING_AMOUNT) {
+        const query = qs({after, prefix, delimiter, amount});
         const response = await apiRequest(`/repositories/${repoId}/branches/${branchId}/diff?${query}`);
         if (response.status !== 200) {
             throw new Error(await extractError(response));
@@ -538,8 +538,8 @@ class Refs {
         return response.json();
     }
 
-    async diff(repoId, leftRef, rightRef, after, amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({after, amount});
+    async diff(repoId, leftRef, rightRef, after, prefix = "", delimiter = "", amount = DEFAULT_LISTING_AMOUNT) {
+        const query = qs({after, amount, delimiter, prefix});
         const response = await apiRequest(`/repositories/${repoId}/refs/${leftRef}/diff/${rightRef}?${query}`);
         if (response.status !== 200) {
             throw new Error(await extractError(response));

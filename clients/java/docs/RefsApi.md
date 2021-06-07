@@ -13,7 +13,7 @@ Method | HTTP request | Description
 
 <a name="diffRefs"></a>
 # **diffRefs**
-> DiffList diffRefs(repository, leftRef, rightRef, after, amount, type, diffType)
+> DiffList diffRefs(repository, leftRef, rightRef, after, amount, prefix, delimiter, type, diffType)
 
 diff references
 
@@ -53,10 +53,12 @@ public class Example {
     String rightRef = "rightRef_example"; // String | a reference (could be either a branch or a commit ID) to compare against
     String after = "after_example"; // String | return items after this value
     Integer amount = 100; // Integer | how many items to return
+    String prefix = "prefix_example"; // String | return items prefixed with this value
+    String delimiter = "delimiter_example"; // String | delimiter used to group common prefixes by
     String type = "type_example"; // String | 
     String diffType = "three_dot"; // String | 
     try {
-      DiffList result = apiInstance.diffRefs(repository, leftRef, rightRef, after, amount, type, diffType);
+      DiffList result = apiInstance.diffRefs(repository, leftRef, rightRef, after, amount, prefix, delimiter, type, diffType);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling RefsApi#diffRefs");
@@ -78,6 +80,8 @@ Name | Type | Description  | Notes
  **rightRef** | **String**| a reference (could be either a branch or a commit ID) to compare against |
  **after** | **String**| return items after this value | [optional]
  **amount** | **Integer**| how many items to return | [optional] [default to 100]
+ **prefix** | **String**| return items prefixed with this value | [optional]
+ **delimiter** | **String**| delimiter used to group common prefixes by | [optional]
  **type** | **String**|  | [optional]
  **diffType** | **String**|  | [optional] [default to three_dot] [enum: two_dot, three_dot]
 

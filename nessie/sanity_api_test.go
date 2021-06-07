@@ -125,10 +125,11 @@ func TestSanityAPI(t *testing.T) {
 	})
 	require.NoError(t, err, "diff between branch1 and main")
 	require.Equal(t, http.StatusOK, diffResp.StatusCode())
+	size := int64(randomDataContentLength)
 	require.ElementsMatch(t, diffResp.JSON200.Results, []api.Diff{
-		{Path: "file0", PathType: "object", Type: "changed"},
-		{Path: "file1", PathType: "object", Type: "removed"},
-		{Path: "fileX", PathType: "object", Type: "added"},
+		{Path: "file0", PathType: "object", Type: "changed", SizeBytes: &size},
+		{Path: "file1", PathType: "object", Type: "removed", SizeBytes: &size},
+		{Path: "fileX", PathType: "object", Type: "added", SizeBytes: &size},
 	})
 
 	log.Debug("branch1 - merge changes to main")

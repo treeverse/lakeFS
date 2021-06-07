@@ -322,3 +322,16 @@ export const Checkbox = ({ name, onAdd, onRemove, disabled = false, defaultCheck
         </Form.Group>
     );
 };
+
+export const ToggleSwitch = ({  label, id, defaultChecked, onChange }) => {
+    return (
+        <Form>
+            <Form.Switch
+                label={label}
+                id={id}
+                defaultChecked={defaultChecked}
+                onChange={onChange}
+            />
+        </Form>
+    )
+}
