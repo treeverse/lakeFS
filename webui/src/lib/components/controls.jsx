@@ -344,7 +344,7 @@ export const Warning = (props) =>
 </>;
 
 export const Warnings = ({ warnings = [] }) => {
-    return <ul className="unmarked-list warnings">
+    return <ul className="pl-0 ml-0 warnings">
 	       {warnings.map((warning, i) =>
 		   <Warning key={i}>{warning}</Warning>
 	       )}

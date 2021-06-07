@@ -300,11 +300,6 @@
   font-size: 0.85rem;
 }
 
-.unmarked-list {
-  margin-left: 0;
-  padding-left: 0;
-}
-
 .branch-table td {
   font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
 }
