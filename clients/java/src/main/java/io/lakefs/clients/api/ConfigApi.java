@@ -119,8 +119,12 @@ public class ConfigApi {
      * @return StorageConfig
 =======
      * retrieve the lakefs storage configuration
+<<<<<<< HEAD
      * @return Config
 >>>>>>> 49847532... update swagger clients (breaking!) and fix tests
+=======
+     * @return StorageConfig
+>>>>>>> e6a495e7... rename /config to /config/storage, align permission name
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
@@ -137,9 +141,14 @@ public class ConfigApi {
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
      </table>
      */
+<<<<<<< HEAD
     public Config getStorageConfig() throws ApiException {
         ApiResponse<Config> localVarResp = getStorageConfigWithHttpInfo();
 >>>>>>> 49847532... update swagger clients (breaking!) and fix tests
+=======
+    public StorageConfig getStorageConfig() throws ApiException {
+        ApiResponse<StorageConfig> localVarResp = getStorageConfigWithHttpInfo();
+>>>>>>> e6a495e7... rename /config to /config/storage, align permission name
         return localVarResp.getData();
     }
 
@@ -150,8 +159,12 @@ public class ConfigApi {
      * @return ApiResponse&lt;StorageConfig&gt;
 =======
      * retrieve the lakefs storage configuration
+<<<<<<< HEAD
      * @return ApiResponse&lt;Config&gt;
 >>>>>>> 49847532... update swagger clients (breaking!) and fix tests
+=======
+     * @return ApiResponse&lt;StorageConfig&gt;
+>>>>>>> e6a495e7... rename /config to /config/storage, align permission name
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
@@ -169,10 +182,14 @@ public class ConfigApi {
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<Config> getStorageConfigWithHttpInfo() throws ApiException {
+    public ApiResponse<StorageConfig> getStorageConfigWithHttpInfo() throws ApiException {
         okhttp3.Call localVarCall = getStorageConfigValidateBeforeCall(null);
+<<<<<<< HEAD
         Type localVarReturnType = new TypeToken<Config>(){}.getType();
 >>>>>>> 49847532... update swagger clients (breaking!) and fix tests
+=======
+        Type localVarReturnType = new TypeToken<StorageConfig>(){}.getType();
+>>>>>>> e6a495e7... rename /config to /config/storage, align permission name
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
@@ -203,11 +220,15 @@ public class ConfigApi {
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call getStorageConfigAsync(final ApiCallback<Config> _callback) throws ApiException {
+    public okhttp3.Call getStorageConfigAsync(final ApiCallback<StorageConfig> _callback) throws ApiException {
 
         okhttp3.Call localVarCall = getStorageConfigValidateBeforeCall(_callback);
+<<<<<<< HEAD
         Type localVarReturnType = new TypeToken<Config>(){}.getType();
 >>>>>>> 49847532... update swagger clients (breaking!) and fix tests
+=======
+        Type localVarReturnType = new TypeToken<StorageConfig>(){}.getType();
+>>>>>>> e6a495e7... rename /config to /config/storage, align permission name
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
     }

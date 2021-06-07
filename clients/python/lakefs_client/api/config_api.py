@@ -114,10 +114,14 @@ class ConfigApi(object):
                     'jwt_token'
                 ],
 <<<<<<< HEAD
+<<<<<<< HEAD
                 'endpoint_path': '/config/storage',
 =======
                 'endpoint_path': '/config',
 >>>>>>> 49847532... update swagger clients (breaking!) and fix tests
+=======
+                'endpoint_path': '/config/storage',
+>>>>>>> e6a495e7... rename /config to /config/storage, align permission name
                 'operation_id': 'get_storage_config',
                 'http_method': 'GET',
                 'servers': None,

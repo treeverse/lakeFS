@@ -5,15 +5,20 @@ All URIs are relative to *http://localhost/api/v1*
 Method | HTTP request | Description
 ------------- | ------------- | -------------
 <<<<<<< HEAD
+<<<<<<< HEAD
 [**getStorageConfig**](ConfigApi.md#getStorageConfig) | **GET** /config/storage | 
 =======
 [**getStorageConfig**](ConfigApi.md#getStorageConfig) | **GET** /config | 
 >>>>>>> 49847532... update swagger clients (breaking!) and fix tests
+=======
+[**getStorageConfig**](ConfigApi.md#getStorageConfig) | **GET** /config/storage | 
+>>>>>>> e6a495e7... rename /config to /config/storage, align permission name
 [**setup**](ConfigApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
 
 
 <a name="getStorageConfig"></a>
 # **getStorageConfig**
+<<<<<<< HEAD
 <<<<<<< HEAD
 > StorageConfig getStorageConfig()
 
@@ -22,6 +27,9 @@ Method | HTTP request | Description
 retrieve lakeFS storage configuration
 =======
 > Config getStorageConfig()
+=======
+> StorageConfig getStorageConfig()
+>>>>>>> e6a495e7... rename /config to /config/storage, align permission name
 
 
 
@@ -61,10 +69,14 @@ public class Example {
     ConfigApi apiInstance = new ConfigApi(defaultClient);
     try {
 <<<<<<< HEAD
+<<<<<<< HEAD
       StorageConfig result = apiInstance.getStorageConfig();
 =======
       Config result = apiInstance.getStorageConfig();
 >>>>>>> 49847532... update swagger clients (breaking!) and fix tests
+=======
+      StorageConfig result = apiInstance.getStorageConfig();
+>>>>>>> e6a495e7... rename /config to /config/storage, align permission name
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ConfigApi#getStorageConfig");
