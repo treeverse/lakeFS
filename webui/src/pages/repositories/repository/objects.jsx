@@ -54,7 +54,7 @@ const UploadButton = ({ config, repo, reference, path, onDone, variant = "succes
 
     const basePath = `${repo.id}/${reference.id}/\u00A0`;
 
-    const pathStyle = {'min-width' : '25%'};
+    const pathStyle = {'minWidth' : '25%'};
 
     return (
         <>
