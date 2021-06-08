@@ -12,15 +12,6 @@ redirect_from: ../using/spark.html
 {: .no_toc }
 [Apache Spark](https://spark.apache.org/) is a unified analytics engine for big data processing, with built-in modules for streaming, SQL, machine learning and graph processing.
 
-lakeFS support in Spark has two tiers:
-
-* Access lakeFS using the S3A gateway.
-* Access lakeFS using the lakeFS-specific Hadoop FileSystem.
-
-Using the S3A gateway is easier to configure and may be more suitable for legacy or
-small-scale applications.  Using the lakeFS FileSystem requires somewhat more complex
-configuration, but offers greatly increased performance.
-
 {: .pb-5 }
 
 ## Table of contents
@@ -36,6 +27,19 @@ S3](https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.htm
 Similarly, properties defining lakeFS credentials should be configured in secure site files,
 not on the command line or inlined in code where they might be exposed.
 {: .note}
+
+## Two-tiered Spark support
+
+lakeFS support in Spark has two tiers:
+
+* Access lakeFS using the S3A gateway.
+* Access lakeFS using the lakeFS-specific Hadoop FileSystem.
+
+Using the S3A gateway is easier to configure and may be more suitable for legacy or
+small-scale applications.  Using the lakeFS FileSystem requires somewhat more complex
+configuration, but offers greatly increased performance.
+
+
 
 ## Access lakeFS using the S3A gateway
 
