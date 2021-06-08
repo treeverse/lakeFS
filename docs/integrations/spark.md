@@ -132,15 +132,15 @@ Add these into a configuration file, e.g. `$SPARK_HOME/conf/hdfs-site.xml`:
 <?xml version="1.0"?>
 <configuration>
     <property>
-        <name>fs.s3a.example-repo.access.key</name>
+        <name>fs.s3a.bucket.example-repo.access.key</name>
         <value>AKIAlakefs12345EXAMPLE</value>
     </property>
     <property>
-        <name>fs.s3a.example-repo.secret.key</name>
+        <name>fs.s3a.bucket.example-repo.secret.key</name>
         <value>abc/lakefs/1234567bPxRfiCYEXAMPLEKEY</value>
     </property>
     <property>
-        <name>fs.s3a.example-repo.endpoint</name>
+        <name>fs.s3a.bucket.example-repo.endpoint</name>
         <value>https://s3.lakefs.example.com</value>
     </property>
 </configuration>
@@ -198,8 +198,9 @@ changes we need to perform are:
 
 ### Configuration
 
-In order to configure Spark to work with lakeFS, you will need to load the filesystem JARs and
-then set configure Hadoop FileSystems.
+In order to configure Spark to work using the lakeFS Hadoop FileSystems, you will need to load
+the filesystem JARs and then configure both that FileSystem and the underlying data access
+FileSystem.
 
 #### Load the FileSystem JARs
 
@@ -212,23 +213,25 @@ Add Hadoop configuration to the underlying storage and additionally to lakeFS cr
 When using this mode, do **not** set the S3A endpoint URL to point at lakeFS -- it should
 point at the underlying storage.
 
-| Hadoop Configuration   | Value                        |
-|------------------------|------------------------------|
-| `fs.s3a.access.key`    | Set to the S3 access key     |
-| `fs.s3a.secret.key`    | Set to the S3 secret key     |
-| `fs.s3a.endpoint`      | Set to the S3 endpoint       |
-| `fs.lakefs.impl`       | `io.lakefs.LakeFSFileSystem` |
-| `fs.lakefs.access.key` | Set to the lakeFS access key |
-| `fs.lakefs.secret.key` | Set to the lakeFS secret key |
-| `fs.lakefs.endpoint`   | Set to the lakeFS API URL    |
+| Hadoop Configuration   | Value                                 |
+|------------------------|---------------------------------------|
+| `fs.s3a.access.key`    | Set to the AWS S3 access key          |
+| `fs.s3a.secret.key`    | Set to the AWS S3 secret key          |
+| `fs.s3a.endpoint`      | Set to the AWS S3-compatible endpoint |
+| `fs.lakefs.impl`       | `io.lakefs.LakeFSFileSystem`          |
+| `fs.lakefs.access.key` | Set to the lakeFS access key          |
+| `fs.lakefs.secret.key` | Set to the lakeFS secret key          |
+| `fs.lakefs.endpoint`   | Set to the lakeFS API URL             |
 
 When using AWS S3 itself, the default configuration works with us-east-1, so you may still
 need to configure `fs.s3a.endpoint`.  Amazon provides these [S3
 endpoints](https://docs.aws.amazon.com/general/latest/gr/s3.html) you can use.
 
-**Note:** All configuration properties are required!  Unlike when using the S3 gateway, when
-using the lakeFS-specific Hadoop FileSystem you configure `s3a` to access the S3 underlying
-object storage, and `lakefs` to access the lakeFS server.
+**Note:** If not running on AWS, all s3a configuration properties are required!  Unlike when
+using the S3 gateway, when using the lakeFS-specific Hadoop FileSystem you configure `s3a` to
+access the S3 underlying object storage, and `lakefs` to access the lakeFS server.  When
+running on AWS you do not need to configure credentials if the instance profile has sufficient
+permissions.
 
 Here is how to do it:
 <div class="tabs">
