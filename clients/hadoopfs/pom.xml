@@ -4,9 +4,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.lakefs</groupId>
-    <artifactId>hadoopfs</artifactId>
+    <artifactId>hadoop-lakefs</artifactId>
     <packaging>jar</packaging>
-    <name>hadoopfs</name>
+    <name>hadoop-lakefs</name>
     <version>0.1.0</version>
     <url>https://github.com/treeverse/lakeFS/tree/master/clients/hadoopfs</url>
     <properties>
