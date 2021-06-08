@@ -32,8 +32,9 @@ not on the command line or inlined in code where they might be exposed.
 
 lakeFS support in Spark has two tiers:
 
-* Access lakeFS using the S3A gateway.
-* Access lakeFS using the lakeFS-specific Hadoop FileSystem.
+* Access lakeFS using the [S3A gateway](#access-lakefs-using-the-s3a-gateway).
+* Access lakeFS using the [lakeFS-specific Hadoop
+  FileSystem](#access-lakefs-using-the-lakefs-specific-hadoop-filesystem).
 
 Using the S3A gateway is easier to configure and may be more suitable for legacy or
 small-scale applications.  Using the lakeFS FileSystem requires somewhat more complex
@@ -195,14 +196,14 @@ reducing the load on the lakeFS server.
 
 Accessing data in lakeFS from Spark is the same as accessing S3 data from Spark.  The only
 changes we need to perform are:
-1. Configure to access lakeFS for metadata and S3 or a compatible underlying object store to
-   access data.
+1. Configure Spark to access lakeFS for metadata and S3 or a compatible underlying object
+   store to access data.
 1. Use `lakefs://repo/ref/path/to/data` URIs to read and write data on lakeFS, rather than
    `s3a://...` URIs.
 
 ### Configuration
 
-In order to configure Spark to work using the lakeFS Hadoop FileSystems, you will need to load
+In order to configure Spark to work using the lakeFS Hadoop FileSystem, you will need to load
 the filesystem JARs and then configure both that FileSystem and the underlying data access
 FileSystem.
 
@@ -318,16 +319,17 @@ and then add these into a configuration file, e.g. `$SPARK_HOME/conf/hdfs-site.x
 As above, S3 allows for per-bucket configuration.  You can use this if:
 
 1. You need to use S3A directly to access data in an S3 outside of lakeFS, _and_
-2. different credentials are required to access data inside that bucket.
+1. different credentials are required to access data inside that bucket.
 
 Refer to the Hadoop AWS guide on [Configuring different S3 buckets with Per-Bucket
 Configuration](https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html#Configuring_different_S3_buckets_with_Per-Bucket_Configuration).
 
-Currently the lakeFS FileSystem has no support for per-repo configurations.  If you must
-access repositories that are on *multiple* lakeFS servers, configure multiple prefixes.  For
-instance, you might configure both `fs.lakefs.impl` and `fs.lakefs2.impl` to be
-`io.lakefs.LakeFSFileSystem`, place separate endpoints and credentials under `fs.lakefs.*` and
-`fs.lakefs2.*`, and access the two servers using `lakefs://...` and `lakefs2://...` URLs.
+There is no need for per-repo configurations in lakeFS when all repositories are on the same
+lakeFS server.  If you need to access repositories that are on *multiple* lakeFS servers,
+configure multiple prefixes.  For instance, you might configure both `fs.lakefs.impl` and
+`fs.lakefs2.impl` to be `io.lakefs.LakeFSFileSystem`, place separate endpoints and credentials
+under `fs.lakefs.*` and `fs.lakefs2.*`, and access the two servers using `lakefs://...` and
+`lakefs2://...` URLs.
 
 ### Reading Data
 In order for us to access objects in lakeFS we will need to use the lakeFS path conventions:
