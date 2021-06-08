@@ -46,7 +46,7 @@ data.write.format("delta").save("s3a://<repo-name>/<branch-name>/path/to/delta-t
 Note: If using the Databricks Analytics Platform, see the [integration guide](./databricks.md#configuration) for configuring a Databricks cluster to use lakeFS.
 
 ## Limitations
-The [Delta log](https://databricks.com/blog/2019/08/21/diving-into-delta-lake-unpacking-the-transaction-log.html) is an auto-generated text file used to keep track of transactions on a Delta table sequentially. Writing to one Delta table from multiple lakeFS branches is possible, but note that it will result in conflicts if later attempting to merge one branches into the other.
+The [Delta log](https://databricks.com/blog/2019/08/21/diving-into-delta-lake-unpacking-the-transaction-log.html) is an auto-generated sequence of text files used to keep track of transactions on a Delta table sequentially. Writing to one Delta table from multiple lakeFS branches is possible, but note that it will result in conflicts if later attempting to merge one branch into the other. For that reason, production workflows should ideally write to a single lakeFS branch that could then be safely merged into `main`. 
 
 
 ## Read more
