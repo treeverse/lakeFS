@@ -684,7 +684,7 @@ components:
           items:
             $ref: "#/components/schemas/Policy"
 
-    Config:
+    StorageConfig:
       type: object
       required:
         - blockstore_namespace_example
@@ -2832,18 +2832,18 @@ paths:
         204:
           description: NoContent
 
-  /config:
+  /config/storage:
     get:
       tags:
         - config
-      operationId: getConfig
-      description: retrieve the lakefs config
+      operationId: getStorageConfig
+      description: retrieve lakeFS storage configuration
       responses:
         200:
-          description: the lakefs config
+          description: lakeFS storage configuration
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Config"
+                $ref: "#/components/schemas/StorageConfig"
         401:
           $ref: "#/components/responses/Unauthorized"

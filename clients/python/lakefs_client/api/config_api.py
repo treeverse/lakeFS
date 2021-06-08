@@ -22,10 +22,10 @@ from lakefs_client.model_utils import (  # noqa: F401
     none_type,
     validate_and_convert_types
 )
-from lakefs_client.model.config import Config
 from lakefs_client.model.credentials_with_secret import CredentialsWithSecret
 from lakefs_client.model.error import Error
 from lakefs_client.model.setup import Setup
+from lakefs_client.model.storage_config import StorageConfig
 
 
 class ConfigApi(object):
@@ -40,17 +40,17 @@ class ConfigApi(object):
             api_client = ApiClient()
         self.api_client = api_client
 
-        def __get_config(
+        def __get_storage_config(
             self,
             **kwargs
         ):
-            """get_config  # noqa: E501
+            """get_storage_config  # noqa: E501
 
-            retrieve the lakefs config  # noqa: E501
+            retrieve lakeFS storage configuration  # noqa: E501
             This method makes a synchronous HTTP request by default. To make an
             asynchronous HTTP request, please pass async_req=True
 
-            >>> thread = api.get_config(async_req=True)
+            >>> thread = api.get_storage_config(async_req=True)
             >>> result = thread.get()
 
 
@@ -76,7 +76,7 @@ class ConfigApi(object):
                 async_req (bool): execute request asynchronously
 
             Returns:
-                Config
+                StorageConfig
                     If the method is called asynchronously, returns the request
                     thread.
             """
@@ -101,16 +101,16 @@ class ConfigApi(object):
             kwargs['_host_index'] = kwargs.get('_host_index')
             return self.call_with_http_info(**kwargs)
 
-        self.get_config = _Endpoint(
+        self.get_storage_config = _Endpoint(
             settings={
-                'response_type': (Config,),
+                'response_type': (StorageConfig,),
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
                     'jwt_token'
                 ],
-                'endpoint_path': '/config',
-                'operation_id': 'get_config',
+                'endpoint_path': '/config/storage',
+                'operation_id': 'get_storage_config',
                 'http_method': 'GET',
                 'servers': None,
             },
@@ -146,7 +146,7 @@ class ConfigApi(object):
                 'content_type': [],
             },
             api_client=api_client,
-            callable=__get_config
+            callable=__get_storage_config
         )
 
         def __setup(

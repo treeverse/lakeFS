@@ -1284,8 +1284,8 @@ func TestController_ConfigHandlers(t *testing.T) {
 
 	var ExpectedExample = onBlock(deps, "example-bucket/")
 
-	t.Run("Get config (currently only block store type)", func(t *testing.T) {
-		resp, err := clt.GetConfigWithResponse(ctx)
+	t.Run("Get storage config", func(t *testing.T) {
+		resp, err := clt.GetStorageConfigWithResponse(ctx)
 		verifyResponseOK(t, resp, err)
 
 		example := resp.JSON200.BlockstoreNamespaceExample

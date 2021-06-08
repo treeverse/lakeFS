@@ -53,10 +53,13 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
 #### Options
 
 ```
-      --base-uri string   base URI used for lakeFS address parse
-  -c, --config string     config file (default is $HOME/.lakectl.yaml)
-  -h, --help              help for lakectl
-      --no-color          don't use fancy output colors (default when not attached to an interactive terminal)
+      --base-uri string     base URI used for lakeFS address parse
+  -c, --config string       config file (default is $HOME/.lakectl.yaml)
+  -h, --help                help for lakectl
+      --log-format string   set logging output format
+      --log-level string    set logging level (default "none")
+      --log-output string   set logging output file
+      --no-color            don't use fancy output colors (default when not attached to an interactive terminal)
 ```
 
 
@@ -1121,10 +1124,9 @@ reset changes to specified commit, or reset uncommitted changes - all changes, o
 #### Synopsis
 
 reset changes.  There are four different ways to reset changes:
-  1. reset to previous commit, set HEAD of branch to given commit - reset lakefs://myrepo/main --commit commitId
-  2. reset all uncommitted changes - reset lakefs://myrepo/main 
-  3. reset uncommitted changes under specific path -	reset lakefs://myrepo/main --prefix path
-  4. reset uncommitted changes for specific object - reset lakefs://myrepo/main --object path
+  1. reset all uncommitted changes - reset lakefs://myrepo/main 
+  2. reset uncommitted changes under specific path -	reset lakefs://myrepo/main --prefix path
+  3. reset uncommitted changes for specific object - reset lakefs://myrepo/main --object path
 
 ```
 lakectl branch reset <branch uri> [flags]
@@ -1133,7 +1135,6 @@ lakectl branch reset <branch uri> [flags]
 #### Options
 
 ```
-      --commit string   commit ID to reset branch to
   -h, --help            help for reset
       --object string   path to object to be reset
       --prefix string   prefix of the objects to be reset
@@ -1541,11 +1542,12 @@ lakectl ingest --from <object store URI> --to <lakeFS path URI> [--dry-run] [fla
 #### Options
 
 ```
-      --dry-run       only print the paths to be ingested
-      --from string   prefix to read from (e.g. "s3://bucket/sub/path/")
-  -h, --help          help for ingest
-      --to string     lakeFS path to load objects into (e.g. "lakefs://repo/branch/sub/path/")
-  -v, --verbose       print stats for each individual object staged
+  -C, --concurrency int   max concurrent API calls to make to the lakeFS server (default 64)
+      --dry-run           only print the paths to be ingested
+      --from string       prefix to read from (e.g. "s3://bucket/sub/path/")
+  -h, --help              help for ingest
+      --to string         lakeFS path to load objects into (e.g. "lakefs://repo/branch/sub/path/")
+  -v, --verbose           print stats for each individual object staged
 ```
 
 
