@@ -50,5 +50,5 @@ The [Delta log](https://databricks.com/blog/2019/08/21/diving-into-delta-lake-un
 
 
 ## Read more
-[Blog post](https://lakefs.io/guarantee-consistency-in-your-delta-lake-tables-with-lakefs/) that shows how to 
+See [this post on the lakeFS blog](https://lakefs.io/guarantee-consistency-in-your-delta-lake-tables-with-lakefs/) that shows how to 
 guarantee data quality in a Delta table by utilizing lakeFS branches.
