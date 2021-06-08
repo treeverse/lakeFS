@@ -16,7 +16,7 @@ lakeFS is format-agnostic, so you can save data in Delta format within a lakeFS 
 
 1. ACID operations can now span across many Delta tables.
 1. [CI/CD hooks](../setup/hooks.md) can validate Delta table contents, schema, or even referential integrity.
-1. lakeFS branches can zero-copy Delta tables for quick experimentation.
+1. lakeFS supports zero-copy branching for quick experimentation with full isolation.
 
 ## Table of contents
 {: .no_toc .text-delta }
