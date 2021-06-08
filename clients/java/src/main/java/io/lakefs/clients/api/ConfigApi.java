@@ -65,11 +65,7 @@ public class ConfigApi {
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-<<<<<<< HEAD
         <tr><td> 200 </td><td> lakeFS storage configuration </td><td>  -  </td></tr>
-=======
-        <tr><td> 200 </td><td> the lakefs storage configuration </td><td>  -  </td></tr>
->>>>>>> 49847532... update swagger clients (breaking!) and fix tests
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
      </table>
      */
@@ -114,62 +110,29 @@ public class ConfigApi {
 
     /**
      * 
-<<<<<<< HEAD
      * retrieve lakeFS storage configuration
      * @return StorageConfig
-=======
-     * retrieve the lakefs storage configuration
-<<<<<<< HEAD
-     * @return Config
->>>>>>> 49847532... update swagger clients (breaking!) and fix tests
-=======
-     * @return StorageConfig
->>>>>>> e6a495e7... rename /config to /config/storage, align permission name
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-<<<<<<< HEAD
         <tr><td> 200 </td><td> lakeFS storage configuration </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
      </table>
      */
     public StorageConfig getStorageConfig() throws ApiException {
         ApiResponse<StorageConfig> localVarResp = getStorageConfigWithHttpInfo();
-=======
-        <tr><td> 200 </td><td> the lakefs storage configuration </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-     </table>
-     */
-<<<<<<< HEAD
-    public Config getStorageConfig() throws ApiException {
-        ApiResponse<Config> localVarResp = getStorageConfigWithHttpInfo();
->>>>>>> 49847532... update swagger clients (breaking!) and fix tests
-=======
-    public StorageConfig getStorageConfig() throws ApiException {
-        ApiResponse<StorageConfig> localVarResp = getStorageConfigWithHttpInfo();
->>>>>>> e6a495e7... rename /config to /config/storage, align permission name
         return localVarResp.getData();
     }
 
     /**
      * 
-<<<<<<< HEAD
      * retrieve lakeFS storage configuration
      * @return ApiResponse&lt;StorageConfig&gt;
-=======
-     * retrieve the lakefs storage configuration
-<<<<<<< HEAD
-     * @return ApiResponse&lt;Config&gt;
->>>>>>> 49847532... update swagger clients (breaking!) and fix tests
-=======
-     * @return ApiResponse&lt;StorageConfig&gt;
->>>>>>> e6a495e7... rename /config to /config/storage, align permission name
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-<<<<<<< HEAD
         <tr><td> 200 </td><td> lakeFS storage configuration </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
      </table>
@@ -177,36 +140,18 @@ public class ConfigApi {
     public ApiResponse<StorageConfig> getStorageConfigWithHttpInfo() throws ApiException {
         okhttp3.Call localVarCall = getStorageConfigValidateBeforeCall(null);
         Type localVarReturnType = new TypeToken<StorageConfig>(){}.getType();
-=======
-        <tr><td> 200 </td><td> the lakefs storage configuration </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-     </table>
-     */
-    public ApiResponse<StorageConfig> getStorageConfigWithHttpInfo() throws ApiException {
-        okhttp3.Call localVarCall = getStorageConfigValidateBeforeCall(null);
-<<<<<<< HEAD
-        Type localVarReturnType = new TypeToken<Config>(){}.getType();
->>>>>>> 49847532... update swagger clients (breaking!) and fix tests
-=======
-        Type localVarReturnType = new TypeToken<StorageConfig>(){}.getType();
->>>>>>> e6a495e7... rename /config to /config/storage, align permission name
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
     /**
      *  (asynchronously)
-<<<<<<< HEAD
      * retrieve lakeFS storage configuration
-=======
-     * retrieve the lakefs storage configuration
->>>>>>> 49847532... update swagger clients (breaking!) and fix tests
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-<<<<<<< HEAD
         <tr><td> 200 </td><td> lakeFS storage configuration </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
      </table>
@@ -215,20 +160,6 @@ public class ConfigApi {
 
         okhttp3.Call localVarCall = getStorageConfigValidateBeforeCall(_callback);
         Type localVarReturnType = new TypeToken<StorageConfig>(){}.getType();
-=======
-        <tr><td> 200 </td><td> the lakefs storage configuration </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-     </table>
-     */
-    public okhttp3.Call getStorageConfigAsync(final ApiCallback<StorageConfig> _callback) throws ApiException {
-
-        okhttp3.Call localVarCall = getStorageConfigValidateBeforeCall(_callback);
-<<<<<<< HEAD
-        Type localVarReturnType = new TypeToken<Config>(){}.getType();
->>>>>>> 49847532... update swagger clients (breaking!) and fix tests
-=======
-        Type localVarReturnType = new TypeToken<StorageConfig>(){}.getType();
->>>>>>> e6a495e7... rename /config to /config/storage, align permission name
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
     }

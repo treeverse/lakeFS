@@ -3751,28 +3751,15 @@ paths:
       x-accepts: application/json
   /config/storage:
     get:
-<<<<<<< HEAD
       description: retrieve lakeFS storage configuration
-=======
-      description: retrieve the lakefs storage configuration
->>>>>>> 49847532... update swagger clients (breaking!) and fix tests
       operationId: getStorageConfig
       responses:
         "200":
           content:
             application/json:
               schema:
-<<<<<<< HEAD
-<<<<<<< HEAD
                 $ref: '#/components/schemas/StorageConfig'
           description: lakeFS storage configuration
-=======
-                $ref: '#/components/schemas/Config'
-=======
-                $ref: '#/components/schemas/StorageConfig'
->>>>>>> e6a495e7... rename /config to /config/storage, align permission name
-          description: the lakefs storage configuration
->>>>>>> 49847532... update swagger clients (breaking!) and fix tests
         "401":
           content:
             application/json:

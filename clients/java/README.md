@@ -167,15 +167,7 @@ Class | Method | HTTP request | Description
 *CommitsApi* | [**commit**](docs/CommitsApi.md#commit) | **POST** /repositories/{repository}/branches/{branch}/commits | create commit
 *CommitsApi* | [**getCommit**](docs/CommitsApi.md#getCommit) | **GET** /repositories/{repository}/commits/{commitId} | get commit
 *CommitsApi* | [**logBranchCommits**](docs/CommitsApi.md#logBranchCommits) | **GET** /repositories/{repository}/branches/{branch}/commits | get commit log from branch. Deprecated: replaced by logCommits by passing branch name as ref 
-<<<<<<< HEAD
-<<<<<<< HEAD
 *ConfigApi* | [**getStorageConfig**](docs/ConfigApi.md#getStorageConfig) | **GET** /config/storage | 
-=======
-*ConfigApi* | [**getStorageConfig**](docs/ConfigApi.md#getStorageConfig) | **GET** /config | 
->>>>>>> 49847532... update swagger clients (breaking!) and fix tests
-=======
-*ConfigApi* | [**getStorageConfig**](docs/ConfigApi.md#getStorageConfig) | **GET** /config/storage | 
->>>>>>> e6a495e7... rename /config to /config/storage, align permission name
 *ConfigApi* | [**setup**](docs/ConfigApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
 *HealthCheckApi* | [**healthCheck**](docs/HealthCheckApi.md#healthCheck) | **GET** /healthcheck | 
 *MetadataApi* | [**createSymlinkFile**](docs/MetadataApi.md#createSymlinkFile) | **POST** /repositories/{repository}/refs/{branch}/symlink | creates symlink files corresponding to the given directory

@@ -2840,10 +2840,10 @@ paths:
       tags:
         - config
       operationId: getStorageConfig
-      description: retrieve the lakefs storage configuration
+      description: retrieve lakeFS storage configuration
       responses:
         200:
-          description: the lakefs storage configuration
+          description: lakeFS storage configuration
           content:
             application/json:
               schema:

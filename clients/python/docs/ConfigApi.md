@@ -4,36 +4,16 @@ All URIs are relative to *http://localhost/api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-<<<<<<< HEAD
-<<<<<<< HEAD
 [**get_storage_config**](ConfigApi.md#get_storage_config) | **GET** /config/storage | 
-=======
-[**get_storage_config**](ConfigApi.md#get_storage_config) | **GET** /config | 
->>>>>>> 49847532... update swagger clients (breaking!) and fix tests
-=======
-[**get_storage_config**](ConfigApi.md#get_storage_config) | **GET** /config/storage | 
->>>>>>> e6a495e7... rename /config to /config/storage, align permission name
 [**setup**](ConfigApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
 
 
 # **get_storage_config**
-<<<<<<< HEAD
-<<<<<<< HEAD
 > StorageConfig get_storage_config()
 
 
 
 retrieve lakeFS storage configuration
-=======
-> Config get_storage_config()
-=======
-> StorageConfig get_storage_config()
->>>>>>> e6a495e7... rename /config to /config/storage, align permission name
-
-
-
-retrieve the lakefs storage configuration
->>>>>>> 49847532... update swagger clients (breaking!) and fix tests
 
 ### Example
 
@@ -109,11 +89,7 @@ This endpoint does not need any parameter.
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-<<<<<<< HEAD
 **200** | lakeFS storage configuration |  -  |
-=======
-**200** | the lakefs storage configuration |  -  |
->>>>>>> 49847532... update swagger clients (breaking!) and fix tests
 **401** | Unauthorized |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
