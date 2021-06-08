@@ -17,7 +17,6 @@ from lakefs_client.model.branch_creation import BranchCreation
 from lakefs_client.model.commit import Commit
 from lakefs_client.model.commit_creation import CommitCreation
 from lakefs_client.model.commit_list import CommitList
-from lakefs_client.model.config import Config
 from lakefs_client.model.credentials import Credentials
 from lakefs_client.model.credentials_list import CredentialsList
 from lakefs_client.model.credentials_with_secret import CredentialsWithSecret
@@ -52,6 +51,7 @@ from lakefs_client.model.setup import Setup
 from lakefs_client.model.staging_location import StagingLocation
 from lakefs_client.model.staging_metadata import StagingMetadata
 from lakefs_client.model.statement import Statement
+from lakefs_client.model.storage_config import StorageConfig
 from lakefs_client.model.storage_uri import StorageURI
 from lakefs_client.model.tag_creation import TagCreation
 from lakefs_client.model.underlying_object_properties import UnderlyingObjectProperties

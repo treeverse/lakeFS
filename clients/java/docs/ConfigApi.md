@@ -4,17 +4,17 @@ All URIs are relative to *http://localhost/api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**getConfig**](ConfigApi.md#getConfig) | **GET** /config | 
+[**getStorageConfig**](ConfigApi.md#getStorageConfig) | **GET** /config/storage | 
 [**setup**](ConfigApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
 
 
-<a name="getConfig"></a>
-# **getConfig**
-> Config getConfig()
+<a name="getStorageConfig"></a>
+# **getStorageConfig**
+> StorageConfig getStorageConfig()
 
 
 
-retrieve the lakefs config
+retrieve lakeFS storage configuration
 
 ### Example
 ```java
@@ -48,10 +48,10 @@ public class Example {
 
     ConfigApi apiInstance = new ConfigApi(defaultClient);
     try {
-      Config result = apiInstance.getConfig();
+      StorageConfig result = apiInstance.getStorageConfig();
       System.out.println(result);
     } catch (ApiException e) {
-      System.err.println("Exception when calling ConfigApi#getConfig");
+      System.err.println("Exception when calling ConfigApi#getStorageConfig");
       System.err.println("Status code: " + e.getCode());
       System.err.println("Reason: " + e.getResponseBody());
       System.err.println("Response headers: " + e.getResponseHeaders());
@@ -66,7 +66,7 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-[**Config**](Config.md)
+[**StorageConfig**](StorageConfig.md)
 
 ### Authorization
 
@@ -80,7 +80,7 @@ This endpoint does not need any parameter.
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**200** | the lakefs config |  -  |
+**200** | lakeFS storage configuration |  -  |
 **401** | Unauthorized |  -  |
 
 <a name="setup"></a>

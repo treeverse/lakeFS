@@ -35,12 +35,14 @@ components:
       description: return items prefixed with this value
       schema:
         type: string
+
     PaginationAfter:
       in: query
       name: after
       description: return items after this value
       schema:
         type: string
+
     PaginationAmount:
       in: query
       name: amount
@@ -50,6 +52,13 @@ components:
         minimum: -1
         maximum: 1000
         default: 100
+
+    PaginationDelimiter:
+      in: query
+      name: delimiter
+      description: delimiter used to group common prefixes by
+      schema:
+        type: string
 
   responses:
     Unauthorized:
@@ -66,6 +75,12 @@ components:
             $ref: "#/components/schemas/Error"
     NotFound:
       description: Resource Not Found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Conflict:
+      description: Resource Conflicts With Target
       content:
         application/json:
           schema:
@@ -236,6 +251,10 @@ components:
         size_bytes:
           type: integer
           format: int64
+        mtime:
+          type: integer
+          format: int64
+          description: Unix Epoch in seconds
         metadata:
           type: object
           additionalProperties:
@@ -286,6 +305,10 @@ components:
         path_type:
           type: string
           enum: [ common_prefix, object ]
+        size_bytes:
+          type: integer
+          description: represents the size of the added/changed/deleted entry
+          format: int64
 
     DiffList:
       type: object
@@ -307,9 +330,7 @@ components:
       properties:
         type:
           type: string
-          enum: [ object, common_prefix, commit, reset ]
-        commit:
-          type: string
+          enum: [ object, common_prefix, reset ]
         path:
           type: string
 
@@ -663,7 +684,7 @@ components:
           items:
             $ref: "#/components/schemas/Policy"
 
-    Config:
+    StorageConfig:
       type: object
       required:
         - blockstore_namespace_example
@@ -1560,6 +1581,8 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        409:
+          $ref: "#/components/responses/Conflict"
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -1714,6 +1737,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        409:
+          $ref: "#/components/responses/Conflict"
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -1815,6 +1840,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        409:
+          $ref: "#/components/responses/Conflict"
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2080,6 +2107,8 @@ paths:
     parameters:
       - $ref: "#/components/parameters/PaginationAfter"
       - $ref: "#/components/parameters/PaginationAmount"
+      - $ref: "#/components/parameters/PaginationPrefix"
+      - $ref: "#/components/parameters/PaginationDelimiter"
       - in: path
         name: repository
         required: true
@@ -2090,6 +2119,7 @@ paths:
         required: true
         schema:
           type: string
+
     get:
       tags:
         - branches
@@ -2130,6 +2160,8 @@ paths:
         description: a reference (could be either a branch or a commit ID) to compare against
       - $ref: "#/components/parameters/PaginationAfter"
       - $ref: "#/components/parameters/PaginationAmount"
+      - $ref: "#/components/parameters/PaginationPrefix"
+      - $ref: "#/components/parameters/PaginationDelimiter"
       - in: query
         name: type
         schema:
@@ -2140,6 +2172,7 @@ paths:
           type: string
           enum: [two_dot, three_dot]
           default: three_dot
+
     get:
       tags:
         - refs
@@ -2518,18 +2551,11 @@ paths:
         schema:
           type: string
         description: a reference (could be either a branch or a commit ID)
-      - in: query
-        name: prefix
-        required: false
-        schema:
-          type: string
       - $ref: "#/components/parameters/PaginationAfter"
       - $ref: "#/components/parameters/PaginationAmount"
-      - in: query
-        name: delimiter
-        schema:
-          type: string
-          default: "/"
+      - $ref: "#/components/parameters/PaginationDelimiter"
+      - $ref: "#/components/parameters/PaginationPrefix"
+
     get:
       tags:
         - objects
@@ -2806,18 +2832,18 @@ paths:
         204:
           description: NoContent
 
-  /config:
+  /config/storage:
     get:
       tags:
         - config
-      operationId: getConfig
-      description: retrieve the lakefs config
+      operationId: getStorageConfig
+      description: retrieve the lakefs storage configuration
       responses:
         200:
-          description: the lakefs config
+          description: the lakefs storage configuration
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Config"
+                $ref: "#/components/schemas/StorageConfig"
         401:
           $ref: "#/components/responses/Unauthorized"

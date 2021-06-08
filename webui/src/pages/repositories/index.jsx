@@ -35,7 +35,7 @@ import RepositoryPage from './repository';
 const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
 
     const { response, error: err, loading } = useAPI(() => {
-        return config.get()
+        return config.getStorageConfig()
     })
 
     const showError = (!!error) ? error : err
