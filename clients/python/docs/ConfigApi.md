@@ -13,7 +13,7 @@ Method | HTTP request | Description
 
 
 
-retrieve the lakefs storage configuration
+retrieve lakeFS storage configuration
 
 ### Example
 
@@ -89,7 +89,7 @@ This endpoint does not need any parameter.
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**200** | the lakefs storage configuration |  -  |
+**200** | lakeFS storage configuration |  -  |
 **401** | Unauthorized |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

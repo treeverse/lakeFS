@@ -46,7 +46,7 @@ class ConfigApi(object):
         ):
             """get_storage_config  # noqa: E501
 
-            retrieve the lakefs storage configuration  # noqa: E501
+            retrieve lakeFS storage configuration  # noqa: E501
             This method makes a synchronous HTTP request by default. To make an
             asynchronous HTTP request, please pass async_req=True
 

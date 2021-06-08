@@ -3751,7 +3751,7 @@ paths:
       x-accepts: application/json
   /config/storage:
     get:
-      description: retrieve the lakefs storage configuration
+      description: retrieve lakeFS storage configuration
       operationId: getStorageConfig
       responses:
         "200":
@@ -3759,7 +3759,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StorageConfig'
-          description: the lakefs storage configuration
+          description: lakeFS storage configuration
         "401":
           content:
             application/json:

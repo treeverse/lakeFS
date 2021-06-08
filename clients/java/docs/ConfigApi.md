@@ -14,7 +14,7 @@ Method | HTTP request | Description
 
 
 
-retrieve the lakefs storage configuration
+retrieve lakeFS storage configuration
 
 ### Example
 ```java
@@ -80,7 +80,7 @@ This endpoint does not need any parameter.
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**200** | the lakefs storage configuration |  -  |
+**200** | lakeFS storage configuration |  -  |
 **401** | Unauthorized |  -  |
 
 <a name="setup"></a>
