@@ -49,14 +49,6 @@ public class ResetCreationTest {
     }
 
     /**
-     * Test the property 'commit'
-     */
-    @Test
-    public void commitTest() {
-        // TODO: test commit
-    }
-
-    /**
      * Test the property 'path'
      */
     @Test

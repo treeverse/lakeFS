@@ -103,11 +103,11 @@ public class ObjectsApiTest {
     public void listObjectsTest() throws ApiException {
         String repository = null;
         String ref = null;
-        String prefix = null;
         String after = null;
         Integer amount = null;
         String delimiter = null;
-        ObjectStatsList response = api.listObjects(repository, ref, prefix, after, amount, delimiter);
+        String prefix = null;
+        ObjectStatsList response = api.listObjects(repository, ref, after, amount, delimiter, prefix);
 
         // TODO: test validations
     }
