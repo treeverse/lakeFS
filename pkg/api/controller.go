@@ -1888,6 +1888,18 @@ func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repositor
 	writeResponse(w, http.StatusOK, response)
 }
 
+func (c *Controller) PrepareRetentionCommits(w http.ResponseWriter, r *http.Request, repository string) {
+	if !c.authorize(w, r, []permissions.Permission{
+		{
+			Action:   permissions.ListObjectsAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+
+}
+
 func (c *Controller) GetMetaRange(w http.ResponseWriter, r *http.Request, repository string, metaRange string) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{

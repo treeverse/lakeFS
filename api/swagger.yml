@@ -2808,7 +2808,36 @@ paths:
           $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
-
+  /repositories/{repository}/gc/prepare:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - retention
+      operationId: prepareRetentionCommits
+      summary: save lists of active and expired commits for garbage collection
+      responses:
+        201:
+          description: paths to commit sets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  path_to_expired:
+                    type: string
+                  path_to_active:
+                    type: string
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
   /healthcheck:
     get:
       operationId: healthCheck

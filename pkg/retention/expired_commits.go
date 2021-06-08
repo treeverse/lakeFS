@@ -16,6 +16,10 @@ type ExpiredCommitFinder struct {
 	expirationDateGetter ExpirationDateGetter
 }
 
+func NewExpiredCommitFinder(refManager graveler.RefManager) *ExpiredCommitFinder {
+	return &ExpiredCommitFinder{refManager: refManager}
+}
+
 type CommitSet map[graveler.CommitID]bool
 
 type Commits struct {
