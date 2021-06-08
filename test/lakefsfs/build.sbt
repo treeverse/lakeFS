@@ -53,6 +53,8 @@ lazy val root = (project in file("."))
 lazy val assemblySettings = Seq(
   assembly / assemblyMergeStrategy := (_ => MergeStrategy.first),
   assembly / assemblyShadeRules := Seq(
+    ShadeRule.rename("okio.**" -> "okio.shaded.@0").inAll,
+    ShadeRule.rename("okhttp3.**" -> "okhttp3.shaded.@0").inAll,
     ShadeRule.rename("scala.collection.compat.**" -> "shadecompat.@1").inAll,
   ),
 )
