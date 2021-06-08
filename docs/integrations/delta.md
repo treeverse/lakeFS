@@ -27,7 +27,7 @@ lakeFS is format-agnostic, so you can save data in Delta format within a lakeFS 
 
 ## Configuration
 
-Most commonly Delta tables are interacted with in a Spark environment given the native integration between Delta and Spark.
+Most commonly Delta tables are interacted with in a Spark environment given the native integration between Delta Lake and Spark.
 
 To configure a Spark environment to read from and write to a Delta table within a lakeFS repository, we need to set the proper credentials and endpoint in the S3 Hadoop configuration, like we do with any [Spark](./spark.md#configuration) script.
 
