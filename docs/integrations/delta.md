@@ -37,7 +37,7 @@ To configure a Spark environment to read from and write to a Delta table within 
  sc.hadoopConfiguration.set("spark.hadoop.fs.s3a.bucket.<repo-name>.endpoint", "https://s3.lakefs.example.com")
 ```
 
-Once set, you can now interact with Delta tables using the same commands you would use without lakeFS, except for altering the path prefix to include the lakeFS repo and branch names:
+Once set, you can now interact with Delta tables using regular Spark path URIs. Make sure you include the lakeFS repository and branch name:
 
 ```scala
 data.write.format("delta").save("s3a://<repo-name>/<branch-name>/path/to/delta-table")
