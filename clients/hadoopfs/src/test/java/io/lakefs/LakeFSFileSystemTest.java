@@ -66,7 +66,7 @@ public class LakeFSFileSystemTest {
     protected String s3Base;
     protected String s3Bucket;
 
-    private static final DockerImageName MINIO = DockerImageName.parse("minio/minio:RELEASE.2021-05-16T05-32-34Z");
+    private static final DockerImageName MINIO = DockerImageName.parse("minio/minio:RELEASE.2021-06-07T21-40-51Z");
     protected static final String S3_ACCESS_KEY_ID = "AKIArootkey";
     protected static final String S3_SECRET_ACCESS_KEY = "secret/minio/key=";
 
