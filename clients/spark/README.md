@@ -42,3 +42,35 @@ Otherwise, the client can be included using Maven coordinates.
    ```bash
    make publish-scala
    ```
+   
+## Usage Examples
+### Export using spark-submit
+```
+CLIENT_VERSION=0.1.4-SNAPSHOT
+SPARK_VERSION=301 # or 247
+SCALA_VERSION=2.12 # or 2.11
+spark-submit --conf spark.hadoop.lakefs.api.url=https://lakefs.example.com/api/v1/ \
+--conf spark.hadoop.fs.s3a.access.key=<S3_ACCESS_KEY> \
+--conf spark.hadoop.fs.s3a.secret.key=<S3_SECRET_KEY> \
+--conf spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY> \
+--conf spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
+--repositories https://s01.oss.sonatype.org/content/repositories/snapshots/ \
+--packages io.treeverse:lakefs-spark-client-${SPARK_VERSION}_${SCALA_VERSION}:${CLIENT_VERSION} \
+--class io.treeverse.clients.Main export-app example-repo s3://example-bucket/exported-data/ \
+--branch=main
+```
+
+### Export using spark-submit (uber-jar)
+```
+CLIENT_VERSION=0.1.4-SNAPSHOT
+SPARK_VERSION=301 # or 247
+
+spark-submit --conf spark.hadoop.lakefs.api.url=https://lakefs.example.com/api/v1/ \
+--conf spark.hadoop.fs.s3a.access.key=<S3_ACCESS_KEY> \
+--conf spark.hadoop.fs.s3a.secret.key=<S3_SECRET_KEY> \
+--conf spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY> \
+--conf spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
+--jars http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-${SPARK_VERSION}/${CLIENT_VERSION}/lakefs-spark-client-${SPARK_VERSION}-assembly-${CLIENT_VERSION}.jar \
+--class io.treeverse.clients.Main export-app example-repo s3://example-bucket/exported-data/ \
+--branch=main
+```
