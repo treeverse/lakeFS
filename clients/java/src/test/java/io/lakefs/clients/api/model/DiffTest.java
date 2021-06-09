@@ -64,4 +64,12 @@ public class DiffTest {
         // TODO: test pathType
     }
 
+    /**
+     * Test the property 'sizeBytes'
+     */
+    @Test
+    public void sizeBytesTest() {
+        // TODO: test sizeBytes
+    }
+
 }
