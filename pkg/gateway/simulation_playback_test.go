@@ -44,7 +44,7 @@ type PlaybackParams struct {
 func makePlaybackParams(testDir string) *PlaybackParams {
 	return &PlaybackParams{
 		RecordingDir: filepath.Join(os.TempDir(), "lakeFS", "sourceRecordings", testDir),
-		PlaybackDir: filepath.Join(os.TempDir(), "lakeFS", "gatewayRecordings", time.Now().Format("01-02-15-04-05.000")),
+		PlaybackDir:  filepath.Join(os.TempDir(), "lakeFS", "gatewayRecordings", time.Now().Format("01-02-15-04-05.000")),
 	}
 }
 
