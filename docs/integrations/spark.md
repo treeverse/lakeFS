@@ -28,6 +28,12 @@ Similarly, properties defining lakeFS credentials should be configured in secure
 not on the command line or inlined in code where they might be exposed.
 {: .note}
 
+## :warning: Pre-release :warning:
+
+The [lakeFS-specific Hadoop
+  FileSystem](#access-lakefs-using-the-lakefs-specific-hadoop-filesystem) is a pre-release.
+  Please do check it out, however it may not yet be suitable for production use.
+
 ## Two-tiered Spark support
 
 lakeFS support in Spark has two tiers:
@@ -209,8 +215,14 @@ FileSystem.
 
 #### Load the FileSystem JARs
 
-Add the package `io.lakefs:hadoop-lakefs:<VERSION>` to your Spark job.  For instance, add
-`--packages io.lakefs:hadoop-lakefs:0.10.0`.
+Add the package `io.lakefs:hadoop-lakefs-assembly:<VERSION>` to your Spark job.  Right now
+this is a snapshot, so you add
+
+```
+--repositories https://s01.oss.sonatype.org/content/repositories/snapshots/  --packages io.lakefs:hadoop-lakefs-assembly:0.1.0-RC.0-SNAPSHOT
+```
+
+to your Spark commandlines.
 
 #### Configure the lakeFS FileSystem and the underlying S3A FileSystem
 
