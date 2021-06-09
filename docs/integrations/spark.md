@@ -57,11 +57,11 @@ changes we need to consider are:
 
 In order to configure Spark to work with lakeFS, we set S3 Hadoop configuration to the lakeFS endpoint and credentials:
 
-| Hadoop Configuration | Value                        |
-|----------------------|------------------------------|
-| `fs.s3a.access.key`  | Set to the lakeFS access key |
-| `fs.s3a.secret.key`  | Set to the lakeFS secret key |
-| `fs.s3a.endpoint`    | Set to the lakeFS endpoint   |
+| Hadoop Configuration | Value                                        |
+|----------------------|----------------------------------------------|
+| `fs.s3a.access.key`  | Set to the lakeFS access key                 |
+| `fs.s3a.secret.key`  | Set to the lakeFS secret key                 |
+| `fs.s3a.endpoint`    | Set to the lakeFS S3-compatible API endpoint |
 
 Here is how to do it:
 <div class="tabs">
