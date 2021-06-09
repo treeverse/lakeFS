@@ -3749,6 +3749,26 @@ paths:
       tags:
       - healthCheck
       x-accepts: application/json
+  /config/version:
+    get:
+      description: get version of lakeFS server
+      operationId: getLakeFSVersion
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: string
+          description: lakeFS storage configuration
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+      tags:
+      - config
+      x-accepts: application/json
   /config/storage:
     get:
       description: retrieve lakeFS storage configuration

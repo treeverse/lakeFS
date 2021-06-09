@@ -2831,7 +2831,21 @@ paths:
       responses:
         204:
           description: NoContent
-
+  /config/version:
+    get:
+      tags:
+        - config
+      operationId: getLakeFSVersion
+      description: get version of lakeFS server
+      responses:
+        200:
+          description: lakeFS storage configuration
+          content:
+            application/json:
+              schema:
+                type: string
+        401:
+          $ref: "#/components/responses/Unauthorized"
   /config/storage:
     get:
       tags:
