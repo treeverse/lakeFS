@@ -12,7 +12,8 @@ import {useState} from "react";
 import {setup, API_ENDPOINT} from "../../lib/api";
 import {ClipboardButton, Error} from "../../lib/components/controls";
 
-const SetupPage = () => {
+
+const SetupContents = () => {
     const usernameRef = useRef(null);
     const [setupError, setSetupError] = useState(null);
     const [setupData, setSetupData] = useState(null);
@@ -107,5 +108,8 @@ server:
         </Row>
     );
 };
+
+
+const SetupPage = () => <SetupContents/>;
 
 export default SetupPage;

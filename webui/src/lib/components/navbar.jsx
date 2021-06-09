@@ -9,7 +9,6 @@ import {auth} from "../api";
 import {useRouter} from "../hooks/router";
 import {Link} from "./nav";
 
-
 const NavUserInfo = () => {
     const router = useRouter();
     const { user, loading, error } = useUser();
