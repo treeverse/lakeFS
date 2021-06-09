@@ -209,8 +209,8 @@ FileSystem.
 
 #### Load the FileSystem JARs
 
-Add the package `io.lakefs:lakefsfs:<VERSION>` to your Spark job.  For instance, add
-`--packages io.lakefs:lakefsfs:0.45.56` (**TODO(nopcoder):** insert some correct coordinates, also in the CLI examples below!).
+Add the package `io.lakefs:hadoop-lakefs:<VERSION>` to your Spark job.  For instance, add
+`--packages io.lakefs:hadoop-lakefs:0.10.0`.
 
 #### Configure the lakeFS FileSystem and the underlying S3A FileSystem
 
