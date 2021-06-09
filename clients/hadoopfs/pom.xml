@@ -4,13 +4,100 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.lakefs</groupId>
-    <artifactId>hadoopfs</artifactId>
+    <artifactId>hadoop-lakefs${name-suffix}</artifactId>
     <packaging>jar</packaging>
-    <name>hadoopfs</name>
-    <version>0.1.0</version>
+    <name>hadoop-lakefs${name-suffix}</name>
+    <version>0.1.0-RC.0-SNAPSHOT</version>
     <url>https://github.com/treeverse/lakeFS/tree/master/clients/hadoopfs</url>
+    <scm>
+        <connection>scm:git:git@github.com:treeverse/lakeFS.git</connection>
+        <developerConnection>scm:git:git@github.com:treeverse/lakeFS.git</developerConnection>
+        <url>https://github.com/treeverse/lakeFS</url>
+    </scm>
+    <parent>
+        <groupId>io.lakefs</groupId>
+        <artifactId>lakefs-parent</artifactId>
+        <version>0</version>
+    </parent>
+
+    <licenses>
+        <license>
+            <name>apache2</name>
+            <url>http://www.apache.org/licenses/</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Treeverse lakeFS dev</name>
+            <email>services@treeverse.io</email>
+            <organization>lakefs.io</organization>
+            <organizationUrl>https://lakefs.io</organizationUrl>
+        </developer>
+    </developers>
+
+    <profiles>
+        <profile>
+            <id>assembly</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-shade-plugin</artifactId>
+                        <version>3.2.4</version>
+                        <executions>
+                            <execution>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>shade</goal>
+                                </goals>
+                                <configuration>
+                                    <filters>
+                                        <filter>
+                                            <artifact>*:*</artifact>
+                                            <excludes>
+                                                <exclude>module-info.class</exclude>
+                                                <exclude>META-INF/maven/**</exclude>
+                                                <exclude>META-INF/*.SF</exclude>
+                                                <exclude>META-INF/*.DSA</exclude>
+                                                <exclude>META-INF/*.RSA</exclude>
+                                            </excludes>
+                                        </filter>
+                                    </filters>
+                                    <relocations>
+                                        <relocation>
+                                            <pattern>org.apache.httpcomponents</pattern>
+                                            <shadedPattern>io.lakefs.shaded.apache.httpcomponents</shadedPattern>
+                                        </relocation>
+                                        <relocation>
+                                            <pattern>okio</pattern>
+                                            <shadedPattern>io.lakefs.shaded.okio</shadedPattern>
+                                        </relocation>
+                                        <relocation>
+                                            <pattern>okhttp3</pattern>
+                                            <shadedPattern>io.lakefs.shaded.okhttp3</shadedPattern>
+                                        </relocation>
+                                        <relocation>
+                                            <pattern>com.google.gson</pattern>
+                                            <shadedPattern>io.lakefs.shaded.gson</shadedPattern>
+                                        </relocation>
+                                    </relocations>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+            <properties>
+                <name-suffix>-assembly</name-suffix>
+            </properties>
+        </profile>
+    </profiles>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <name-suffix/>          <!-- Set via profile to rename JAR -->
     </properties>
     <build>
         <plugins>
@@ -22,51 +109,6 @@
                     <source>1.8</source>
                     <target>1.8</target>
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.2.4</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>module-info.class</exclude>
-                                        <exclude>META-INF/maven/**</exclude>
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                            <relocations>
-                                <relocation>
-                                    <pattern>org.apache.httpcomponents</pattern>
-                                    <shadedPattern>io.lakefs.shaded.apache.httpcomponents</shadedPattern>
-                                </relocation>
-                                <relocation>
-                                    <pattern>okio</pattern>
-                                    <shadedPattern>io.lakefs.shaded.okio</shadedPattern>
-                                </relocation>
-                                <relocation>
-                                    <pattern>okhttp3</pattern>
-                                    <shadedPattern>io.lakefs.shaded.okhttp3</shadedPattern>
-                                </relocation>
-                                <relocation>
-                                    <pattern>com.google.gson</pattern>
-                                    <shadedPattern>io.lakefs.shaded.gson</shadedPattern>
-                                </relocation>
-                            </relocations>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>
