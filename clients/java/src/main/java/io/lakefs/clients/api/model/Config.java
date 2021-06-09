@@ -23,16 +23,14 @@ import com.google.gson.stream.JsonWriter;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * StorageConfig
+ * Config
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class StorageConfig {
-  public static final String SERIALIZED_NAME_BLOCKSTORE_TYPE = "blockstore_type";
-  @SerializedName(SERIALIZED_NAME_BLOCKSTORE_TYPE)
-  private String blockstoreType;
-
+public class Config {
   public static final String SERIALIZED_NAME_BLOCKSTORE_NAMESPACE_EXAMPLE = "blockstore_namespace_example";
   @SerializedName(SERIALIZED_NAME_BLOCKSTORE_NAMESPACE_EXAMPLE)
   private String blockstoreNamespaceExample;
@@ -41,30 +39,12 @@ public class StorageConfig {
   @SerializedName(SERIALIZED_NAME_BLOCKSTORE_NAMESPACE_VALIDITY_REGEX)
   private String blockstoreNamespaceValidityRegex;
 
-
-  public StorageConfig blockstoreType(String blockstoreType) {
-    
-    this.blockstoreType = blockstoreType;
-    return this;
-  }
-
-   /**
-   * Get blockstoreType
-   * @return blockstoreType
-  **/
-  @ApiModelProperty(required = true, value = "")
-
-  public String getBlockstoreType() {
-    return blockstoreType;
-  }
+  public static final String SERIALIZED_NAME_WARNINGS = "warnings";
+  @SerializedName(SERIALIZED_NAME_WARNINGS)
+  private List<String> warnings = null;
 
 
-  public void setBlockstoreType(String blockstoreType) {
-    this.blockstoreType = blockstoreType;
-  }
-
-
-  public StorageConfig blockstoreNamespaceExample(String blockstoreNamespaceExample) {
+  public Config blockstoreNamespaceExample(String blockstoreNamespaceExample) {
     
     this.blockstoreNamespaceExample = blockstoreNamespaceExample;
     return this;
@@ -86,7 +66,7 @@ public class StorageConfig {
   }
 
 
-  public StorageConfig blockstoreNamespaceValidityRegex(String blockstoreNamespaceValidityRegex) {
+  public Config blockstoreNamespaceValidityRegex(String blockstoreNamespaceValidityRegex) {
     
     this.blockstoreNamespaceValidityRegex = blockstoreNamespaceValidityRegex;
     return this;
@@ -108,6 +88,37 @@ public class StorageConfig {
   }
 
 
+  public Config warnings(List<String> warnings) {
+    
+    this.warnings = warnings;
+    return this;
+  }
+
+  public Config addWarningsItem(String warningsItem) {
+    if (this.warnings == null) {
+      this.warnings = new ArrayList<String>();
+    }
+    this.warnings.add(warningsItem);
+    return this;
+  }
+
+   /**
+   * warnings to show user about this configuration
+   * @return warnings
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "warnings to show user about this configuration")
+
+  public List<String> getWarnings() {
+    return warnings;
+  }
+
+
+  public void setWarnings(List<String> warnings) {
+    this.warnings = warnings;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -116,24 +127,24 @@ public class StorageConfig {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    StorageConfig storageConfig = (StorageConfig) o;
-    return Objects.equals(this.blockstoreType, storageConfig.blockstoreType) &&
-        Objects.equals(this.blockstoreNamespaceExample, storageConfig.blockstoreNamespaceExample) &&
-        Objects.equals(this.blockstoreNamespaceValidityRegex, storageConfig.blockstoreNamespaceValidityRegex);
+    Config config = (Config) o;
+    return Objects.equals(this.blockstoreNamespaceExample, config.blockstoreNamespaceExample) &&
+        Objects.equals(this.blockstoreNamespaceValidityRegex, config.blockstoreNamespaceValidityRegex) &&
+        Objects.equals(this.warnings, config.warnings);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(blockstoreType, blockstoreNamespaceExample, blockstoreNamespaceValidityRegex);
+    return Objects.hash(blockstoreNamespaceExample, blockstoreNamespaceValidityRegex, warnings);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class StorageConfig {\n");
-    sb.append("    blockstoreType: ").append(toIndentedString(blockstoreType)).append("\n");
+    sb.append("class Config {\n");
     sb.append("    blockstoreNamespaceExample: ").append(toIndentedString(blockstoreNamespaceExample)).append("\n");
     sb.append("    blockstoreNamespaceValidityRegex: ").append(toIndentedString(blockstoreNamespaceValidityRegex)).append("\n");
+    sb.append("    warnings: ").append(toIndentedString(warnings)).append("\n");
     sb.append("}");
     return sb.toString();
   }

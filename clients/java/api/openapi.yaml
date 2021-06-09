@@ -4690,7 +4690,10 @@ components:
       example:
         blockstore_namespace_example: blockstore_namespace_example
         blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
+        blockstore_type: blockstore_type
       properties:
+        blockstore_type:
+          type: string
         blockstore_namespace_example:
           type: string
         blockstore_namespace_ValidityRegex:
@@ -4698,6 +4701,7 @@ components:
       required:
       - blockstore_namespace_ValidityRegex
       - blockstore_namespace_example
+      - blockstore_type
       type: object
     ActionRun:
       example:

@@ -642,7 +642,12 @@ class Config {
         });
         switch (response.status) {
             case 200:
-                return await response.json();
+                const cfg = await response.json();
+                cfg.warnings = []
+                if (cfg.blockstore_type === 'local' || cfg.blockstore_type === 'mem') {
+                    cfg.warnings.push(`Block adapter ${cfg.blockstore_type} not usable in production`)
+                }
+                return cfg;
             case 409:
                 throw new Error('Conflict');
             default:
@@ -650,7 +655,6 @@ class Config {
         }
     }
 }
-
 
 export const repositories = new Repositories();
 export const branches = new Branches();

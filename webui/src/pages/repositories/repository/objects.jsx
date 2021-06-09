@@ -11,14 +11,14 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 
 import {Tree} from "../../../lib/components/repository/tree";
-import {Error} from "../../../lib/components/controls";
-import {objects} from "../../../lib/api";
-import {useAPIWithPagination} from "../../../lib/hooks/api";
+import {Error, Warnings} from "../../../lib/components/controls";
+import {config, objects} from "../../../lib/api";
+import {useAPI, useAPIWithPagination} from "../../../lib/hooks/api";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import {useRouter} from "../../../lib/hooks/router";
 
 
-const UploadButton = ({ repo, reference, path, onDone, variant = "success", onClick, onHide, show = false}) => {
+const UploadButton = ({ config, repo, reference, path, onDone, variant = "success", onClick, onHide, show = false}) => {
     const initialState = {
         inProgress: false,
         error: null,
@@ -54,7 +54,7 @@ const UploadButton = ({ repo, reference, path, onDone, variant = "success", onCl
 
     const basePath = `${repo.id}/${reference.id}/\u00A0`;
 
-    const pathStyle = {'min-width' : '25%'};
+    const pathStyle = {'minWidth' : '25%'};
 
     return (
         <>
@@ -65,9 +65,13 @@ const UploadButton = ({ repo, reference, path, onDone, variant = "success", onCl
                 <Modal.Body>
                     <Form onSubmit={(e) => {
                         if (uploadState.inProgress) return;
-                        upload()
-                        e.preventDefault()
+                        upload();
+                        e.preventDefault();
                     }}>
+			{config?.warnings &&
+			 <Form.Group controlId="warnings">
+			     <Warnings warnings={config.warnings}/>
+			 </Form.Group>}
                         <Form.Group controlId="path">
                             <Row noGutters={true}>
                                 <Col className="col-auto d-flex align-items-center justify-content-start">
@@ -118,13 +122,13 @@ const UploadButton = ({ repo, reference, path, onDone, variant = "success", onCl
 const TreeContainer = ({ repo, reference, path, after, onPaginate, onRefresh, onUpload, refreshToken }) => {
     const { results, error, loading, nextPage } = useAPIWithPagination( () => {
         return objects.list(repo.id, reference.id, path, after)
-    },[repo.id, reference.id, path, after, refreshToken])
+    },[repo.id, reference.id, path, after, refreshToken]);
 
-    if (loading) return <Loading/>
-    if (!!error) return <Error error={error}/>
+    if (loading) return <Loading/>;
+    if (!!error) return <Error error={error}/>;
 
     return (
-        <Tree
+	<Tree
             repo={repo}
             reference={reference}
             path={(!!path) ? path : ""}
@@ -141,10 +145,10 @@ const TreeContainer = ({ repo, reference, path, after, onPaginate, onRefresh, on
                     .then(onRefresh)
             }}
         />
-    )
+    );
 }
 
-const ObjectsBrowser = () => {
+const ObjectsBrowser = ({ config, configError }) => {
     const router = useRouter();
     const { path, after } = router.query;
     const { repo, reference, loading, error } = useRefs();
@@ -153,7 +157,7 @@ const ObjectsBrowser = () => {
     const refresh = () => setRefreshToken(!refreshToken);
 
     if (loading) return <Loading/>;
-    if (!!error) return <Error error={error}/>;
+    if (!!error || configError) return <Error error={error || configError}/>;
 
     return (
         <>
@@ -176,6 +180,7 @@ const ObjectsBrowser = () => {
                 <ActionGroup orientation="right">
                     <RefreshButton onClick={refresh} />
                     <UploadButton
+			config={config}
                         path={path}
                         repo={repo}
                         reference={reference}
@@ -207,10 +212,14 @@ const ObjectsBrowser = () => {
 };
 
 const RepositoryObjectsPage = () => {
+    const { response, error: err, loading } = useAPI(() => {
+        return config.getStorageConfig();
+    });
     return (
           <RefContextProvider>
               <RepositoryPageLayout activePage={'objects'}>
-                <ObjectsBrowser/>
+		  {loading && <Loading/>}
+                  <ObjectsBrowser config={response} configError={err}/>
               </RepositoryPageLayout>
           </RefContextProvider>
     );

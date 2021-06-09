@@ -87,6 +87,7 @@ func TestLocalLoad(t *testing.T) {
 	})
 
 	handler := api.Serve(
+		conf,
 		c,
 		authService,
 		blockAdapter,
