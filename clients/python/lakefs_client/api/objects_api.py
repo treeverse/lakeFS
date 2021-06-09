@@ -481,10 +481,10 @@ class ObjectsApi(object):
                 ref (str): a reference (could be either a branch or a commit ID)
 
             Keyword Args:
-                prefix (str): [optional]
                 after (str): return items after this value. [optional]
                 amount (int): how many items to return. [optional] if omitted the server will use the default value of 100
-                delimiter (str): [optional] if omitted the server will use the default value of "/"
+                delimiter (str): delimiter used to group common prefixes by. [optional]
+                prefix (str): return items prefixed with this value. [optional]
                 _return_http_data_only (bool): response data without head status
                     code and headers. Default is True.
                 _preload_content (bool): if False, the urllib3.HTTPResponse object
@@ -552,10 +552,10 @@ class ObjectsApi(object):
                 'all': [
                     'repository',
                     'ref',
-                    'prefix',
                     'after',
                     'amount',
                     'delimiter',
+                    'prefix',
                 ],
                 'required': [
                     'repository',
@@ -584,30 +584,30 @@ class ObjectsApi(object):
                         (str,),
                     'ref':
                         (str,),
-                    'prefix':
-                        (str,),
                     'after':
                         (str,),
                     'amount':
                         (int,),
                     'delimiter':
                         (str,),
+                    'prefix':
+                        (str,),
                 },
                 'attribute_map': {
                     'repository': 'repository',
                     'ref': 'ref',
-                    'prefix': 'prefix',
                     'after': 'after',
                     'amount': 'amount',
                     'delimiter': 'delimiter',
+                    'prefix': 'prefix',
                 },
                 'location_map': {
                     'repository': 'path',
                     'ref': 'path',
-                    'prefix': 'query',
                     'after': 'query',
                     'amount': 'query',
                     'delimiter': 'query',
+                    'prefix': 'query',
                 },
                 'collection_format_map': {
                 }

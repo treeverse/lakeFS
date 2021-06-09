@@ -2497,6 +2497,22 @@ paths:
           minimum: -1
           type: integer
         style: form
+      - description: return items prefixed with this value
+        explode: true
+        in: query
+        name: prefix
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: delimiter used to group common prefixes by
+        explode: true
+        in: query
+        name: delimiter
+        required: false
+        schema:
+          type: string
+        style: form
       - explode: false
         in: path
         name: repository
@@ -2586,6 +2602,22 @@ paths:
           maximum: 1000
           minimum: -1
           type: integer
+        style: form
+      - description: return items prefixed with this value
+        explode: true
+        in: query
+        name: prefix
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: delimiter used to group common prefixes by
+        explode: true
+        in: query
+        name: delimiter
+        required: false
+        schema:
+          type: string
         style: form
       - explode: true
         in: query
@@ -3238,13 +3270,6 @@ paths:
         schema:
           type: string
         style: simple
-      - explode: true
-        in: query
-        name: prefix
-        required: false
-        schema:
-          type: string
-        style: form
       - description: return items after this value
         explode: true
         in: query
@@ -3264,12 +3289,20 @@ paths:
           minimum: -1
           type: integer
         style: form
-      - explode: true
+      - description: delimiter used to group common prefixes by
+        explode: true
         in: query
         name: delimiter
         required: false
         schema:
-          default: /
+          type: string
+        style: form
+      - description: return items prefixed with this value
+        explode: true
+        in: query
+        name: prefix
+        required: false
+        schema:
           type: string
         style: form
       responses:
@@ -3716,17 +3749,17 @@ paths:
       tags:
       - healthCheck
       x-accepts: application/json
-  /config:
+  /config/storage:
     get:
-      description: retrieve the lakefs config
-      operationId: getConfig
+      description: retrieve lakeFS storage configuration
+      operationId: getStorageConfig
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Config'
-          description: the lakefs config
+                $ref: '#/components/schemas/StorageConfig'
+          description: lakeFS storage configuration
         "401":
           content:
             application/json:
@@ -3767,6 +3800,15 @@ components:
         maximum: 1000
         minimum: -1
         type: integer
+      style: form
+    PaginationDelimiter:
+      description: delimiter used to group common prefixes by
+      explode: true
+      in: query
+      name: delimiter
+      required: false
+      schema:
+        type: string
       style: form
   requestBodies:
     inline_object:
@@ -4069,6 +4111,7 @@ components:
     Diff:
       example:
         path: path
+        size_bytes: 0
         path_type: common_prefix
         type: added
       properties:
@@ -4086,6 +4129,10 @@ components:
           - common_prefix
           - object
           type: string
+        size_bytes:
+          description: represents the size of the added/changed/deleted entry
+          format: int64
+          type: integer
       required:
       - path
       - path_type
@@ -4100,9 +4147,11 @@ components:
           results: 0
         results:
         - path: path
+          size_bytes: 0
           path_type: common_prefix
           type: added
         - path: path
+          size_bytes: 0
           path_type: common_prefix
           type: added
       properties:
@@ -4637,11 +4686,14 @@ components:
       - pagination
       - results
       type: object
-    Config:
+    StorageConfig:
       example:
         blockstore_namespace_example: blockstore_namespace_example
         blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
+        blockstore_type: blockstore_type
       properties:
+        blockstore_type:
+          type: string
         blockstore_namespace_example:
           type: string
         blockstore_namespace_ValidityRegex:
@@ -4649,6 +4701,7 @@ components:
       required:
       - blockstore_namespace_ValidityRegex
       - blockstore_namespace_example
+      - blockstore_type
       type: object
     ActionRun:
       example:

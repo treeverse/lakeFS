@@ -66,18 +66,20 @@ func TestGatewayRecording(t *testing.T) {
 		filename := filepath.Join(RecordingsDir, basename)
 		testName := strings.TrimSuffix(basename, filepath.Ext(basename))
 		t.Run(testName, func(t *testing.T) {
+			t.Parallel()
+
 			// download record
 			err := downloader.DownloadRecording(s3Url.Host, basename, filename)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			setGlobalPlaybackParams(basename)
-			_ = os.RemoveAll(simulator.PlaybackParams.RecordingDir)
-			_ = os.MkdirAll(simulator.PlaybackParams.RecordingDir, 0755)
-			deCompressRecordings(filename, simulator.PlaybackParams.RecordingDir)
-			handler, _ := getBasicHandlerPlayback(t)
-			DoTestRun(handler, false, 1.0, t)
+			params := makePlaybackParams(basename)
+			_ = os.RemoveAll(params.RecordingDir)
+			_ = os.MkdirAll(params.RecordingDir, 0755)
+			deCompressRecordings(filename, params.RecordingDir, params)
+			handler, _ := getBasicHandlerPlayback(t, params)
+			DoTestRun(handler, false, 1.0, t, params)
 		})
 	}
 }
@@ -101,8 +103,8 @@ func (m *mockCollector) CollectEvent(string, string) {}
 
 func (m *mockCollector) SetInstallationID(string) {}
 
-func getBasicHandlerPlayback(t *testing.T) (http.Handler, *dependencies) {
-	authService := newGatewayAuthFromFile(t, simulator.PlaybackParams.RecordingDir)
+func getBasicHandlerPlayback(t *testing.T, params *PlaybackParams) (http.Handler, *dependencies) {
+	authService := newGatewayAuthFromFile(t, params.RecordingDir)
 	return getBasicHandler(t, authService)
 }
 
@@ -172,7 +174,7 @@ func newGatewayAuthFromFile(t *testing.T, directory string) *simulator.PlayBackM
 	return m
 }
 
-func deCompressRecordings(archive, dir string) {
+func deCompressRecordings(archive, dir string, params *PlaybackParams) {
 	// Open a zip archive for reading.
 	r, err := zip.OpenReader(archive)
 	if err != nil {
@@ -189,11 +191,11 @@ func deCompressRecordings(archive, dir string) {
 		if f.FileInfo().IsDir() {
 			continue
 		}
-		decompressRecordingsFile(f)
+		decompressRecordingsFile(f, params)
 	}
 }
 
-func decompressRecordingsFile(f *zip.File) {
+func decompressRecordingsFile(f *zip.File, params *PlaybackParams) {
 	compressedFile, err := f.Open()
 	if err != nil {
 		logging.Default().WithError(err).Fatal("Couldn't read from archive file " + f.Name)
@@ -201,7 +203,7 @@ func decompressRecordingsFile(f *zip.File) {
 	defer func() {
 		_ = compressedFile.Close()
 	}()
-	fileName := filepath.Join(simulator.PlaybackParams.RecordingDir, filepath.Base(f.Name))
+	fileName := filepath.Join(params.RecordingDir, filepath.Base(f.Name))
 	decompressedFile, err := os.Create(fileName)
 	if err != nil {
 		logging.Default().WithError(err).Fatal("failed creating file " + f.Name)

@@ -27,17 +27,17 @@ import org.junit.Test;
 
 
 /**
- * Model tests for Config
+ * Model tests for StorageConfig
  */
-public class ConfigTest {
-    private final Config model = new Config();
+public class StorageConfigTest {
+    private final StorageConfig model = new StorageConfig();
 
     /**
-     * Model tests for Config
+     * Model tests for StorageConfig
      */
     @Test
-    public void testConfig() {
-        // TODO: test Config
+    public void testStorageConfig() {
+        // TODO: test StorageConfig
     }
 
     /**

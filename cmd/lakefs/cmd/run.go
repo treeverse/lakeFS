@@ -104,7 +104,13 @@ var runCmd = &cobra.Command{
 			cfg.GetAuthCacheConfig())
 		authMetadataManager := auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
-		metadata := stats.NewMetadata(ctx, logger, cfg.GetBlockstoreType(), authMetadataManager, cloudMetadataProvider)
+		blockstoreType := cfg.GetBlockstoreType()
+		if blockstoreType == "local" || blockstoreType == "mem" {
+			printLocalWarning(os.Stderr, blockstoreType)
+			logger.WithField("adapter_type", blockstoreType).
+				Error("Block adapter NOT SUPPORTED for production use")
+		}
+		metadata := stats.NewMetadata(ctx, logger, blockstoreType, authMetadataManager, cloudMetadataProvider)
 		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, blockStore.RuntimeStats, cfg)
 
 		// send metadata
@@ -119,6 +125,7 @@ var runCmd = &cobra.Command{
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
 		apiHandler := api.Serve(
+			cfg,
 			c,
 			authService,
 			blockStore,
@@ -210,6 +217,17 @@ const runBanner = `
 func printWelcome(w io.Writer) {
 	_, _ = fmt.Fprint(w, runBanner)
 	_, _ = fmt.Fprintf(w, "Version %s\n\n", version.Version)
+}
+
+var localWarningBanner = `
+WARNING!
+
+Using the "%s" block adapter.  This is suitable only for testing, but not
+for production.
+`
+
+func printLocalWarning(w io.Writer, adapter string) {
+	_, _ = fmt.Fprintf(w, localWarningBanner, adapter)
 }
 
 func registerPrometheusCollector(db sqlstats.StatsGetter) {

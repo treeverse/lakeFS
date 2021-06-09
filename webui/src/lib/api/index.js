@@ -67,6 +67,8 @@ const apiRequest = async (uri, requestData = {}, additionalHeaders = {}) => {
         if (errorMessage === authenticationError) {
             cache.delete('user')
             throw new AuthenticationError('Authentication Error');
+        } else {
+            throw new AuthorizationError(errorMessage);
         }
     }
 
@@ -81,6 +83,12 @@ export class NotFoundError extends Error {
     }
 }
 
+export class AuthorizationError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = "AuthorizationError"
+    }
+}
 
 export class AuthenticationError extends Error {
     constructor(message) {
@@ -459,8 +467,8 @@ class Branches {
 
 class Objects {
 
-    async list(repoId, ref, tree, after = "", amount = DEFAULT_LISTING_AMOUNT, readUncommitted = true) {
-        const query = qs({prefix:tree, amount, after, readUncommitted});
+    async list(repoId, ref, tree, after = "", amount = DEFAULT_LISTING_AMOUNT, readUncommitted = true, delimiter = "/") {
+        const query = qs({prefix:tree, amount, after, readUncommitted, delimiter});
         const response = await apiRequest(`/repositories/${repoId}/refs/${ref}/objects/ls?${query}`);
         if (response.status !== 200) {
             throw new Error(await extractError(response));
@@ -529,8 +537,8 @@ class Commits {
 
 class Refs {
 
-    async changes(repoId, branchId, after, amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({after, amount});
+    async changes(repoId, branchId, after, prefix, delimiter, amount = DEFAULT_LISTING_AMOUNT) {
+        const query = qs({after, prefix, delimiter, amount});
         const response = await apiRequest(`/repositories/${repoId}/branches/${branchId}/diff?${query}`);
         if (response.status !== 200) {
             throw new Error(await extractError(response));
@@ -538,8 +546,8 @@ class Refs {
         return response.json();
     }
 
-    async diff(repoId, leftRef, rightRef, after, amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({after, amount});
+    async diff(repoId, leftRef, rightRef, after, prefix = "", delimiter = "", amount = DEFAULT_LISTING_AMOUNT) {
+        const query = qs({after, amount, delimiter, prefix});
         const response = await apiRequest(`/repositories/${repoId}/refs/${leftRef}/diff/${rightRef}?${query}`);
         if (response.status !== 200) {
             throw new Error(await extractError(response));
@@ -628,13 +636,18 @@ class Setup {
 }
 
 class Config {
-    async get() {
-        const response = await apiRequest('/config', {
+    async getStorageConfig() {
+        const response = await apiRequest('/config/storage', {
             method: 'GET',
         });
         switch (response.status) {
             case 200:
-                return await response.json();
+                const cfg = await response.json();
+                cfg.warnings = []
+                if (cfg.blockstore_type === 'local' || cfg.blockstore_type === 'mem') {
+                    cfg.warnings.push(`Block adapter ${cfg.blockstore_type} not usable in production`)
+                }
+                return cfg;
             case 409:
                 throw new Error('Conflict');
             default:
@@ -642,7 +655,6 @@ class Config {
         }
     }
 }
-
 
 export const repositories = new Repositories();
 export const branches = new Branches();

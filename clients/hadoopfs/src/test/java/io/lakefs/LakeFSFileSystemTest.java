@@ -66,7 +66,7 @@ public class LakeFSFileSystemTest {
     protected String s3Base;
     protected String s3Bucket;
 
-    private static final DockerImageName MINIO = DockerImageName.parse("minio/minio:RELEASE.2021-05-16T05-32-34Z");
+    private static final DockerImageName MINIO = DockerImageName.parse("minio/minio:RELEASE.2021-06-07T21-40-51Z");
     protected static final String S3_ACCESS_KEY_ID = "AKIArootkey";
     protected static final String S3_SECRET_ACCESS_KEY = "secret/minio/key=";
 
@@ -291,7 +291,7 @@ public class LakeFSFileSystemTest {
     }
 
     @Test
-    public void testOpen() throws ApiException, IOException {
+    public void testOpen() throws IOException, ApiException {
         String contents = "The quick brown fox jumps over the lazy dog.";
         byte[] contentsBytes = contents.getBytes();
 
@@ -312,11 +312,21 @@ public class LakeFSFileSystemTest {
                        mtime(UNUSED_MTIME).
                        sizeBytes((long)contentsBytes.length));
 
-        InputStream in = fs.open(p);
+        try (InputStream in = fs.open(p)) {
+            String actual = IOUtils.toString(in);
 
-        String actual = IOUtils.toString(in);
+            Assert.assertEquals(contents, actual);
+        }
+    }
 
-        Assert.assertEquals(contents, actual);
+    @Test(expected = FileNotFoundException.class)
+    public void testOpen_NotExists() throws IOException, ApiException {
+        Path p = new Path("lakefs://repo/main/doesNotExi.st");
+        ApiException noSuchFileException = new ApiException(HttpStatus.SC_NOT_FOUND, "no such file");
+        when(objectsApi.statObject(any(), any(), any()))
+            .thenThrow(noSuchFileException);
+        try (InputStream in = fs.open(p)) {
+        }
     }
 
     /*
@@ -621,7 +631,7 @@ public class LakeFSFileSystemTest {
         Mockito.verify(objectsApi, never()).deleteObject(any(), any(), any());
     }
 
-    @Test
+    @Test(expected = FileNotFoundException.class)
     public void testRename_nonExistingSrcFile() throws ApiException, IOException {
         Path src = new Path("lakefs://repo/main/non-existing.src");
         ObjectLocation srcObjLoc = fs.pathToObjectLocation(src);
@@ -632,6 +642,5 @@ public class LakeFSFileSystemTest {
         mockExistingFilePath(dstObjLoc);
 
         boolean renamed = fs.rename(src, dst);
-        Assert.assertFalse(renamed);
     }
 }

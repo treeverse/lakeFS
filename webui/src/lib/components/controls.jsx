@@ -322,3 +322,31 @@ export const Checkbox = ({ name, onAdd, onRemove, disabled = false, defaultCheck
         </Form.Group>
     );
 };
+
+export const ToggleSwitch = ({  label, id, defaultChecked, onChange }) => {
+    return (
+        <Form>
+            <Form.Switch
+                label={label}
+                id={id}
+                defaultChecked={defaultChecked}
+                onChange={onChange}
+            />
+        </Form>
+    )
+};
+
+export const Warning = (props) =>
+<>
+    <Alert variant="warning">
+	&#x26A0; { props.children }
+    </Alert>
+</>;
+
+export const Warnings = ({ warnings = [] }) => {
+    return <ul className="pl-0 ml-0 warnings">
+	       {warnings.map((warning, i) =>
+		   <Warning key={i}>{warning}</Warning>
+	       )}
+	   </ul>;
+};

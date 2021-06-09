@@ -33,7 +33,7 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
 
     useEffect(() => {
         setAttachError(null);
-    }, [refresh])
+    }, [refresh]);
 
     let content;
     if (loading) content = <Loading/>;

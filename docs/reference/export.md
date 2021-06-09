@@ -3,7 +3,7 @@ layout: default
 title: Exporting data
 description: Use lakeFS Spark client to export lakeFS commit to the object store. 
 parent: Reference
-nav_exclude: true
+nav_order: 5
 has_children: false
 ---
 

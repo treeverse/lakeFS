@@ -139,6 +139,10 @@ public class Diff {
   @SerializedName(SERIALIZED_NAME_PATH_TYPE)
   private PathTypeEnum pathType;
 
+  public static final String SERIALIZED_NAME_SIZE_BYTES = "size_bytes";
+  @SerializedName(SERIALIZED_NAME_SIZE_BYTES)
+  private Long sizeBytes;
+
 
   public Diff type(TypeEnum type) {
     
@@ -206,6 +210,29 @@ public class Diff {
   }
 
 
+  public Diff sizeBytes(Long sizeBytes) {
+    
+    this.sizeBytes = sizeBytes;
+    return this;
+  }
+
+   /**
+   * represents the size of the added/changed/deleted entry
+   * @return sizeBytes
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "represents the size of the added/changed/deleted entry")
+
+  public Long getSizeBytes() {
+    return sizeBytes;
+  }
+
+
+  public void setSizeBytes(Long sizeBytes) {
+    this.sizeBytes = sizeBytes;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -217,12 +244,13 @@ public class Diff {
     Diff diff = (Diff) o;
     return Objects.equals(this.type, diff.type) &&
         Objects.equals(this.path, diff.path) &&
-        Objects.equals(this.pathType, diff.pathType);
+        Objects.equals(this.pathType, diff.pathType) &&
+        Objects.equals(this.sizeBytes, diff.sizeBytes);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type, path, pathType);
+    return Objects.hash(type, path, pathType, sizeBytes);
   }
 
   @Override
@@ -232,6 +260,7 @@ public class Diff {
     sb.append("    type: ").append(toIndentedString(type)).append("\n");
     sb.append("    path: ").append(toIndentedString(path)).append("\n");
     sb.append("    pathType: ").append(toIndentedString(pathType)).append("\n");
+    sb.append("    sizeBytes: ").append(toIndentedString(sizeBytes)).append("\n");
     sb.append("}");
     return sb.toString();
   }

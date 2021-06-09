@@ -33,6 +33,8 @@ GOTESTRACE=$(GOTEST) -race
 GOGET=$(GOCMD) get
 GOFMT=$(GOCMD)fmt
 
+GOTEST_PARALLELISM=4
+
 GO_TEST_MODULES=$(shell $(GOCMD) list ./... | grep -v 'lakefs/pkg/api/gen/')
 
 LAKEFS_BINARY_NAME=lakefs
@@ -154,8 +156,8 @@ nessie: ## run nessie (system testing)
 
 test: test-go test-hadoopfs  ## Run tests for the project
 
-test-go: gen
-	$(GOTEST) -count=1 -coverprofile=cover.out -race -cover -failfast $(GO_TEST_MODULES)
+test-go: gen			# Run parallelism > num_cores: most of our slow tests are *not* CPU-bound.
+	$(GOTEST) -count=1 -coverprofile=cover.out -race -cover -failfast --parallel="$(GOTEST_PARALLELISM)" $(GO_TEST_MODULES)
 
 test-hadoopfs:
 	cd clients/hadoopfs && mvn test

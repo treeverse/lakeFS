@@ -14,14 +14,16 @@ import {ChangeEntryRow} from "../../../lib/components/repository/changes";
 import {Paginator} from "../../../lib/components/pagination";
 import {ConfirmationButton} from "../../../lib/components/modals";
 import {useRouter} from "../../../lib/hooks/router";
+import {URINavigator} from "../../../lib/components/repository/tree";
+import Form from "react-bootstrap/Form";
 
 
-const CompareList = ({ repo, reference, compareReference, after, onSelectRef, onSelectCompare, onPaginate }) => {
+const CompareList = ({ repo, reference, compareReference, after, delimiter, prefix, onSelectRef, onSelectCompare, onPaginate }) => {
     if (compareReference === null) compareReference = reference
-
-    const [internalRefresh, setInternalRefresh] = useState(true)
-    const [mergeError, setMergeError] = useState(null)
-    const [merging, setMerging] = useState(false)
+    const [internalRefresh, setInternalRefresh] = useState(true);
+    const [mergeError, setMergeError] = useState(null);
+    const [merging, setMerging] = useState(false);
+    const { push } = useRouter();
 
     const refresh = () => {
         setInternalRefresh(!internalRefresh)
@@ -30,11 +32,25 @@ const CompareList = ({ repo, reference, compareReference, after, onSelectRef, on
 
     const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
         if (compareReference.id !== reference.id)
-            return refs.diff(repo.id, compareReference.id, reference.id, after)
-        return {pagination: {has_more: false}, results: []} // nothing to compare here.
-    }, [repo.id, reference.id, compareReference.id, internalRefresh, after])
+            return refs.diff(repo.id, compareReference.id, reference.id, after, prefix, delimiter);
+        return {pagination: {has_more: false}, results: []}; // nothing to compare here.
+    }, [repo.id, reference.id, compareReference.id, internalRefresh, after, prefix, delimiter]);
 
     let content;
+
+    const relativeTitle = (from, to) => {
+        let fromId = from.id;
+        let toId = to.id;
+        if (from.type === 'commit') {
+            fromId = fromId.substr(0, 12);
+        }
+        if (to.type === 'commit') {
+            toId = toId.substr(0, 12);
+        }
+
+        return `${fromId}...${toId}`
+    }
+
     if (loading) content = <Loading/>
     else if (!!error) content = <Error error={error}/>
     else if (compareReference.id === reference.id) content = (
@@ -47,13 +63,80 @@ const CompareList = ({ repo, reference, compareReference, after, onSelectRef, on
             <div className="tree-container">
                 {(results.length === 0) ? <Alert variant="info">No changes</Alert> : (
                     <Card>
-                        <Table borderless size="sm">
-                            <tbody>
-                            {results.map(entry => (
-                                <ChangeEntryRow key={entry.path} entry={entry} showActions={false}/>
-                            ))}
-                            </tbody>
-                        </Table>
+                        <Card.Header>
+                        <span className="float-left">
+                            {(delimiter !== "") && (
+                                <URINavigator
+                                    path={prefix}
+                                    reference={reference}
+                                    relativeTo={relativeTitle(reference, compareReference)}
+                                    repo={repo}
+                                    pathURLBuilder={(params, query) => {
+                                        const q = {
+                                            delimiter: "/",
+                                            prefix: query.path,
+                                        };
+                                        if (compareReference) q.compare = compareReference.id;
+                                        if (reference) q.ref = reference.id;
+                                        return {
+                                            pathname: '/repositories/:repoId/compare',
+                                            params: {repoId: repo.id},
+                                            query: q
+                                        }
+                                    }}
+                                />
+                            )}
+                        </span>
+                            <span className="float-right">
+                            <Form>
+                                <Form.Switch
+                                    label="Directory View"
+                                    id="changes-directory-view-toggle"
+                                    defaultChecked={(delimiter !== "")}
+                                    onChange={(e) => {
+                                        const query = {
+                                            delimiter: (e.target.checked) ? "/" : ""
+                                        };
+                                        if (compareReference) query.compare = compareReference.id;
+                                        if (reference) query.ref = reference.id;
+                                        push({
+                                            pathname: '/repositories/:repoId/compare',
+                                            params: {repoId: repo.id},
+                                            query,
+                                        });
+                                    }}
+                                />
+                                </Form>
+                        </span>
+                        </Card.Header>
+                        <Card.Body>
+                            <Table borderless size="sm">
+                                <tbody>
+                                {results.map(entry => (
+                                    <ChangeEntryRow
+                                        key={entry.path}
+                                        entry={entry}
+                                        showActions={false}
+                                        relativeTo={prefix}
+                                        onNavigate={entry => {
+                                            const query = {
+                                                prefix: entry.path,
+                                                delimiter: (delimiter) ? delimiter : "",
+
+                                            };
+                                            if (compareReference) query.compare = compareReference.id;
+                                            if (reference) query.ref = reference.id;
+                                            return {
+                                                pathname: '/repositories/:repoId/compare',
+                                                params: {repoId: repo.id},
+                                                query,
+                                            }
+                                        }}
+                                    />
+                                ))}
+                                </tbody>
+                            </Table>
+                        </Card.Body>
                     </Card>
                 )}
 
@@ -128,23 +211,32 @@ const CompareContainer = () => {
     const router = useRouter();
     const { loading, error, repo, reference, compare } = useRefs();
 
-    const { after } = router.query;
+    const { after, prefix, delimiter } = router.query;
 
     if (loading) return <Loading/>;
     if (!!error) return <Error error={error}/>;
 
-    const route = query => router.push({pathname: `/repositories/:repoId/compare`, params: {repoId: repo.id}, query});
+    const route = query => router.push({pathname: `/repositories/:repoId/compare`, params: {repoId: repo.id}, query: {
+        ...query,
+        delimiter: (delimiter) ? delimiter : "",
+    }});
 
     return (
         <CompareList
             repo={repo}
             after={(!!after) ? after : ""}
+            delimiter={(!!delimiter) ? delimiter : ""}
+            prefix={(!!prefix) ? prefix : ""}
             reference={reference}
             onSelectRef={reference => route(compare ? {ref: reference.id, compare: compare.id} : {ref: reference.id})}
             compareReference={compare}
             onSelectCompare={compare => route(reference ? {ref: reference.id, compare: compare.id} : {compare: compare.id})}
             onPaginate={after => {
-                const query = {after};
+                const query = {
+                    after: (after) ? after : "",
+                    prefix: (prefix) ? prefix : "",
+                    delimiter: (delimiter) ? delimiter : ""
+                };
                 if (compare) query.compare = compare.id;
                 if (reference) query.ref = reference.id;
                 route(query);

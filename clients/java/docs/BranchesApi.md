@@ -178,7 +178,7 @@ null (empty response body)
 
 <a name="diffBranch"></a>
 # **diffBranch**
-> DiffList diffBranch(repository, branch, after, amount)
+> DiffList diffBranch(repository, branch, after, amount, prefix, delimiter)
 
 diff branch
 
@@ -217,8 +217,10 @@ public class Example {
     String branch = "branch_example"; // String | 
     String after = "after_example"; // String | return items after this value
     Integer amount = 100; // Integer | how many items to return
+    String prefix = "prefix_example"; // String | return items prefixed with this value
+    String delimiter = "delimiter_example"; // String | delimiter used to group common prefixes by
     try {
-      DiffList result = apiInstance.diffBranch(repository, branch, after, amount);
+      DiffList result = apiInstance.diffBranch(repository, branch, after, amount, prefix, delimiter);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling BranchesApi#diffBranch");
@@ -239,6 +241,8 @@ Name | Type | Description  | Notes
  **branch** | **String**|  |
  **after** | **String**| return items after this value | [optional]
  **amount** | **Integer**| how many items to return | [optional] [default to 100]
+ **prefix** | **String**| return items prefixed with this value | [optional]
+ **delimiter** | **String**| delimiter used to group common prefixes by | [optional]
 
 ### Return type
 

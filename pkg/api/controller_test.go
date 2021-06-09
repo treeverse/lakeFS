@@ -935,8 +935,9 @@ func TestController_ObjectsListObjectsHandler(t *testing.T) {
 	}
 
 	t.Run("get object list", func(t *testing.T) {
+		prefix := api.PaginationPrefix("foo/")
 		resp, err := clt.ListObjectsWithResponse(ctx, "repo1", "main", &api.ListObjectsParams{
-			Prefix: api.StringPtr("foo/"),
+			Prefix: &prefix,
 		})
 		verifyResponseOK(t, resp, err)
 		results := resp.JSON200.Results
@@ -946,8 +947,9 @@ func TestController_ObjectsListObjectsHandler(t *testing.T) {
 	})
 
 	t.Run("get object list paginated", func(t *testing.T) {
+		prefix := api.PaginationPrefix("foo/")
 		resp, err := clt.ListObjectsWithResponse(ctx, "repo1", "main", &api.ListObjectsParams{
-			Prefix: api.StringPtr("foo/"),
+			Prefix: &prefix,
 			Amount: api.PaginationAmountPtr(2),
 		})
 		verifyResponseOK(t, resp, err)
@@ -1282,8 +1284,8 @@ func TestController_ConfigHandlers(t *testing.T) {
 
 	var ExpectedExample = onBlock(deps, "example-bucket/")
 
-	t.Run("Get config (currently only block store type)", func(t *testing.T) {
-		resp, err := clt.GetConfigWithResponse(ctx)
+	t.Run("Get storage config", func(t *testing.T) {
+		resp, err := clt.GetStorageConfigWithResponse(ctx)
 		verifyResponseOK(t, resp, err)
 
 		example := resp.JSON200.BlockstoreNamespaceExample
@@ -1539,8 +1541,9 @@ func TestController_MergeDiffWithParent(t *testing.T) {
 
 	diffResp, err := clt.DiffRefsWithResponse(ctx, repoName, "main", "main~1", &api.DiffRefsParams{})
 	verifyResponseOK(t, diffResp, err)
+	var expectedSize = int64(len(content))
 	expectedResults := []api.Diff{
-		{Path: "file1", PathType: "object", Type: "added"},
+		{Path: "file1", PathType: "object", Type: "added", SizeBytes: &expectedSize},
 	}
 	if diff := deep.Equal(diffResp.JSON200.Results, expectedResults); diff != nil {
 		t.Fatal("Diff results not as expected:", diff)
