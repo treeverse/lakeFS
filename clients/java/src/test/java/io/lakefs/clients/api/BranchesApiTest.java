@@ -86,7 +86,9 @@ public class BranchesApiTest {
         String branch = null;
         String after = null;
         Integer amount = null;
-        DiffList response = api.diffBranch(repository, branch, after, amount);
+        String prefix = null;
+        String delimiter = null;
+        DiffList response = api.diffBranch(repository, branch, after, amount, prefix, delimiter);
 
         // TODO: test validations
     }
