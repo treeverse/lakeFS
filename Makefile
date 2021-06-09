@@ -152,8 +152,8 @@ nessie: ## run nessie (system testing)
 
 test: test-go test-hadoopfs  ## Run tests for the project
 
-test-go: gen
-	$(GOTEST) -count=1 -coverprofile=cover.out -race -cover -failfast $(GO_TEST_MODULES)
+test-go: gen			# Run parallism 4: most of our slow tests are *not* CPU-bound.
+	$(GOTEST) -count=1 -coverprofile=cover.out -race -cover -failfast --parallel 4 $(GO_TEST_MODULES)
 
 test-hadoopfs:
 	cd clients/hadoopfs && mvn test
