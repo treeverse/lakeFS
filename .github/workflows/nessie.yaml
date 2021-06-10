@@ -246,7 +246,7 @@ jobs:
         run: docker-compose logs --tail=1000 lakefs
 
   spark3:
-    name: Test lakeFS with Spark
+    name: Test lakeFS with Spark 3.x
     needs: deploy-image
     runs-on: ubuntu-20.04
     env:
