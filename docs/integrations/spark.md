@@ -28,7 +28,7 @@ Similarly, properties defining lakeFS credentials should be configured in secure
 not on the command line or inlined in code where they might be exposed.
 {: .note}
 
-## :warning: Pre-release :warning:
+##  &#x26A0; Pre-release &#x26A0;
 
 The [lakeFS-specific Hadoop
   FileSystem](#access-lakefs-using-the-lakefs-specific-hadoop-filesystem) is a pre-release.
