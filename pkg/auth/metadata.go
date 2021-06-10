@@ -2,16 +2,20 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"runtime"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v4"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 type MetadataManager interface {
-	SetupTimestamp(context.Context) (time.Time, error)
+	IsInitialized(ctx context.Context) (bool, error)
 	UpdateSetupTimestamp(context.Context, time.Time) error
 	Write(context.Context) (map[string]string, error)
 }
@@ -97,14 +101,21 @@ func (d *DBMetadataManager) UpdateSetupTimestamp(ctx context.Context, ts time.Ti
 	return err
 }
 
-func (d *DBMetadataManager) SetupTimestamp(ctx context.Context) (time.Time, error) {
+func (d *DBMetadataManager) IsInitialized(ctx context.Context) (bool, error) {
 	setupTimestamp, err := d.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		return getSetupTimestamp(tx)
 	}, db.WithLogger(logging.Dummy()), db.ReadOnly())
 	if err != nil {
-		return time.Time{}, err
+		var pgErr *pgconn.PgError
+		if errors.Is(err, pgx.ErrNoRows) ||
+			(errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UndefinedTable) {
+			return false, nil
+		}
+
+		return false, err
 	}
-	return setupTimestamp.(time.Time), nil
+
+	return !setupTimestamp.(time.Time).IsZero(), nil
 }
 
 func (d *DBMetadataManager) Write(ctx context.Context) (map[string]string, error) {

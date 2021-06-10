@@ -2641,13 +2641,18 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 
 	// check if previous setup completed
 	ctx := r.Context()
-	if ts, _ := c.MetadataManager.SetupTimestamp(ctx); !ts.IsZero() {
+	initialized, err := c.MetadataManager.IsInitialized(ctx)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	if initialized {
 		writeError(w, http.StatusConflict, "lakeFS already initialized")
 		return
 	}
 
 	// migrate the database if needed
-	err := c.Migrator.Migrate(ctx)
+	err = c.Migrator.Migrate(ctx)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
