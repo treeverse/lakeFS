@@ -2,7 +2,7 @@ import build.BuildType
 
 lazy val baseName = "lakefs-spark"
 
-lazy val projectVersion = "0.1.0-SNAPSHOT"
+lazy val projectVersion = "0.1.4-SNAPSHOT"
 ThisBuild / isSnapshot := true
 
 // Spark versions 2.4.7 and 3.0.1 use different Scala versions.  Changing this is a deep
@@ -86,6 +86,8 @@ lazy val assemblySettings = Seq(
       .inLibrary("com.google.guava" % "guava" % "30.1-jre", "com.google.guava" % "failureaccess" % "1.0.1")
       .inProject,
     ShadeRule.rename("scala.collection.compat.**" -> "shadecompat.@1").inAll,
+    ShadeRule.rename("okio.**" -> "okio.shaded.@0").inAll,
+    ShadeRule.rename("okhttp3.**" -> "okhttp3.shaded.@0").inAll,
   ),
 )
 
