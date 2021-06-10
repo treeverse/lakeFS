@@ -18,6 +18,7 @@ import io.lakefs.clients.api.model.*;
 import io.lakefs.clients.api.model.ObjectStats.PathTypeEnum;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileAlreadyExistsException;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.http.HttpStatus;
@@ -512,11 +513,8 @@ public class LakeFSFileSystemTest {
         Assert.assertTrue(dstPathLinkedToSrcPhysicalAddress(srcObjLoc, dstObjLoc));
         verifyObjDeletion(srcObjLoc);
     }
-
-    /**
-     * file -> existing-file-name: rename(src.txt, existing-dst.txt) -> existing-dst.txt, existing-dst.txt is overridden
-     */
-    @Test
+    
+    @Test(expected = FileAlreadyExistsException.class)
     public void testRename_existingFileToExistingFileName() throws ApiException, IOException {
         Path src = new Path("lakefs://repo/main/existing.src");
         ObjectLocation srcObjLoc = fs.pathToObjectLocation(src);
@@ -526,10 +524,7 @@ public class LakeFSFileSystemTest {
         ObjectLocation dstObjLoc = fs.pathToObjectLocation(dst);
         mockExistingFilePath(dstObjLoc);
 
-        boolean renamed = fs.rename(src, dst);
-        Assert.assertTrue(renamed);
-        Assert.assertTrue(dstPathLinkedToSrcPhysicalAddress(srcObjLoc, dstObjLoc));
-        verifyObjDeletion(srcObjLoc);
+        fs.rename(src, dst);
     }
 
     /**
@@ -641,6 +636,6 @@ public class LakeFSFileSystemTest {
         ObjectLocation dstObjLoc = fs.pathToObjectLocation(dst);
         mockExistingFilePath(dstObjLoc);
 
-        boolean renamed = fs.rename(src, dst);
+        fs.rename(src, dst);
     }
 }

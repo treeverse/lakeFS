@@ -380,6 +380,10 @@ public class LakeFSFileSystem extends FileSystem {
             LOG.debug("renameFile: dst {} exists and is a {}", dst, dstFileStatus.isDirectory() ? "directory" : "file");
             if (dstFileStatus.isDirectory()) {
                 dst = buildObjPathOnExistingDestinationDir(srcStatus.getPath(), dst);
+            } else {
+                // Same as https://github.com/apache/hadoop/blob/2960d83c255a00a549f8809882cd3b73a6266b6d/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L1539
+                throw new FileAlreadyExistsException("Failed rename " + srcStatus.getPath() + " to " + dst
+                        + ". destination file already exists.");
             }
         } catch (FileNotFoundException e) {
             LOG.debug("renameFile: dst does not exist, renaming src {} to a file called dst {}",
