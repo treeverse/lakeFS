@@ -3,12 +3,10 @@ package retention
 import (
 	"context"
 	"encoding/csv"
-	"io"
+	"strconv"
 	"strings"
 
 	"github.com/treeverse/lakefs/pkg/block"
-
-	"github.com/treeverse/lakefs/pkg/graveler"
 )
 
 type CommitSetWriter struct {
@@ -20,30 +18,21 @@ func NewCommitSetWriter(block block.Adapter) *CommitSetWriter {
 	return &CommitSetWriter{block: block}
 }
 
-func write(commitIDs map[graveler.CommitID]bool, writer *io.PipeWriter, isExpired bool) error {
-	csvExpiredWriter := csv.NewWriter(writer)
-	for commitID := range commitIDs {
-		err := csvExpiredWriter.Write([]string{string(commitID), isExpired})
+func (c *CommitSetWriter) Write(commits *Commits, pointer *block.ObjectPointer) error {
+	b := &strings.Builder{}
+	csvWriter := csv.NewWriter(b)
+	for commitID := range commits.Expired {
+		err := csvWriter.Write([]string{string(commitID), strconv.FormatBool(true)})
 		if err != nil {
 			return err
 		}
 	}
-	csvExpiredWriter.Flush()
-	return writer.Close()
-}
-
-func (c *CommitSetWriter) Write(commits *Commits) error {
-	b := &strings.Builder{}
-	csv.NewWriter(b)
-
-	c.block.UploadPart().Put(c.ctx, &block.ObjectPointer{
-		StorageNamespace: "",
-		Identifier:       "",
-		IdentifierType:   block.IdentifierTypeFull,
-	})
-	err := write(commits.Expired, c.expiredWriter)
-	if err != nil {
-		return err
+	for commitID := range commits.Active {
+		err := csvWriter.Write([]string{string(commitID), strconv.FormatBool(false)})
+		if err != nil {
+			return err
+		}
 	}
-	return write(commits.Active, c.activeWriter)
+	commitsStr := b.String()
+	return c.block.Put(c.ctx, *pointer, int64(len(commitsStr)), strings.NewReader(commitsStr), block.PutOpts{})
 }

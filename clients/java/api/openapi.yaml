@@ -3738,6 +3738,46 @@ paths:
       tags:
       - metadata
       x-accepts: application/json
+  /repositories/{repository}/gc/prepare:
+    post:
+      operationId: prepareRetentionCommits
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_201'
+          description: paths to commit sets
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: save lists of active and expired commits for garbage collection
+      tags:
+      - retention
+      x-accepts: application/json
   /healthcheck:
     get:
       description: check that the API server is up and running
@@ -4888,6 +4928,16 @@ components:
         content:
           description: Object content to upload
           format: binary
+          type: string
+      type: object
+    inline_response_201:
+      example:
+        path_to_expired: path_to_expired
+        path_to_active: path_to_active
+      properties:
+        path_to_expired:
+          type: string
+        path_to_active:
           type: string
       type: object
     MergeResult_summary:

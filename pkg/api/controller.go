@@ -1920,7 +1920,7 @@ func (c *Controller) PrepareRetentionCommits(w http.ResponseWriter, r *http.Requ
 	}) {
 		return
 	}
-
+	c.Logger
 }
 
 func (c *Controller) GetMetaRange(w http.ResponseWriter, r *http.Request, repository string, metaRange string) {
