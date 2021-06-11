@@ -5,12 +5,14 @@
 # uses the following environment variables:
 #   REPOSITORY - name of repository to create and use in test
 #   STORAGE_NAMESPACE - storage namespace used for repository creation
+#   SCALA_VERSION - scala version used to deployed in the spark cluster
 #   USE_DIRECT_ACCESS - if set (to *anything*), use the direct thick Spark client
 # 
 # NOTE that this script should be run from the root project in order for docker compose to volume mount the project
 
 STORAGE_NAMESPACE=${STORAGE_NAMESPACE:-local://}
 REPOSITORY=${REPOSITORY:-example}
+SCALA_VERSION=${SCALA_VERSION:-2.12}
 
 export input="lakefs://${REPOSITORY}/main/sonnets.txt"
 export output="lakefs://${REPOSITORY}/main/sonnets-wordcount"

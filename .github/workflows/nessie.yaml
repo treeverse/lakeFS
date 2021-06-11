@@ -214,6 +214,7 @@ jobs:
         env:
           STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-spark
           REPOSITORY: gateway-test
+          SCALA_VERSION: 2.11
         working-directory: test/spark
         run: ./run-test.sh
 
@@ -236,6 +237,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
           USE_DIRECT_ACCESS: "true"
           REPOSITORY: thick-client-test
+          SCALA_VERSION: 2.11
         working-directory: test/spark
         run: ./run-test.sh
 
@@ -293,6 +295,7 @@ jobs:
         env:
           STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-spark
           REPOSITORY: gateway-test
+          SCALA_VERSION: 2.12
         working-directory: test/spark
         run: ./run-test.sh
 
@@ -315,6 +318,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
           USE_DIRECT_ACCESS: "true"
           REPOSITORY: thick-client-test
+          SCALA_VERSION: 2.12
         working-directory: test/spark
         run: ./run-test.sh
 
