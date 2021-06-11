@@ -29,6 +29,11 @@ def generateProject(buildType: BuildType) =
       settingsToCompileIn(),
       scalaVersion := buildType.scalaVersion,
       libraryDependencies ++= Seq(
+        // We link directly with our hadoop-lakefs in order to have access to our version of the api-client
+        // the same version bundled into our filesystem, this version already shade all the right dependencies like the gson
+        // package.
+        // In case of using the lakefs client library, we will need to shade the required libraries by the client api as
+        // the hadoop-lakefs doesn't shade the client and also use it.
         "io.lakefs" % "hadoop-lakefs-assembly" % "0.1.0-RC.0-SNAPSHOT",
         "org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
         "org.apache.hadoop" % "hadoop-aws" % buildType.hadoopVersion,
