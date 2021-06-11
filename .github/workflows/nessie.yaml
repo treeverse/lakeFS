@@ -232,7 +232,7 @@ jobs:
         timeout-minutes: 2
         env:
           JARS: clients/hadoopfs/
-          STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-spark-client
+          STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-spark2-client
           AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
           USE_DIRECT_ACCESS: "true"
@@ -313,7 +313,7 @@ jobs:
         timeout-minutes: 2
         env:
           JARS: clients/hadoopfs/
-          STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-spark-client
+          STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-spark3-client
           AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
           USE_DIRECT_ACCESS: "true"
