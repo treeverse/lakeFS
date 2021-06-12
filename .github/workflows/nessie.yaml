@@ -183,7 +183,7 @@ jobs:
 
       - name: Package Spark App
         working-directory: test/spark/app
-        run: sbt + package
+        run: sbt ++2.11.12 package
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -264,7 +264,7 @@ jobs:
 
       - name: Package Spark App
         working-directory: test/spark/app
-        run: sbt + package
+        run: sbt ++2.12.13 package
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
