@@ -9,7 +9,7 @@ import ButtonToolbar from "react-bootstrap/ButtonToolbar";
 import Button from "react-bootstrap/Button";
 import Modal from "react-bootstrap/Modal";
 
-import {RepoIcon, SearchIcon} from "@primer/octicons-react";
+import {DotIcon, RepoIcon, SearchIcon} from "@primer/octicons-react";
 import {useState} from "react";
 import moment from "moment";
 
@@ -62,8 +62,24 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
 };
 
 
+const GetStarted = ({onCreateRepo}) => {
+    return (
+        <Container className="m-4 mb-5">
+            <h2 className="mt-2">To get started create a new repository</h2>
 
-const RepositoryList = ({ onPaginate, prefix, after, refresh }) => {
+            <Row className="pt-2 ml-2">
+                <DotIcon className="mr-1 mt-1"/>
+                <Button variant="link" onClick={onCreateRepo}>Create</Button>&nbsp;a new repository.
+            </Row>
+            <Row className="pt-2 ml-2">
+                <DotIcon className="mr-1 mt-1"/>
+                See the &nbsp;<a href="https://docs.lakefs.io/setup/create-repo.html#create-the-repository" target="_blank" rel="noopener noreferrer">docs</a>&nbsp; for more information.
+            </Row>
+        </Container>
+    );
+};
+
+const RepositoryList = ({ onPaginate, prefix, after, refresh, onCreateRepo }) => {
 
     const {results, loading, error, nextPage} = useAPIWithPagination(() => {
         return repositories.list(prefix, after)
@@ -71,6 +87,9 @@ const RepositoryList = ({ onPaginate, prefix, after, refresh }) => {
 
     if (loading) return <Loading/>;
     if (!!error) return <Error error={error}/>
+    if (!after && !prefix && results.length === 0) {
+        return <GetStarted onCreateRepo={onCreateRepo}/>;
+    }
 
     return (
         <div>
@@ -172,6 +191,7 @@ const RepositoriesPage = () => {
                         if (!!router.query.prefix) query.prefix = router.query.prefix;
                         router.push({pathname: `/repositories`, query});
                     }}
+                    onCreateRepo={() => setShowCreateModal(true)}
                     />
 
                 <CreateRepositoryModal
