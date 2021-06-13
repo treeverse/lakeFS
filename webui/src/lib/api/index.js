@@ -654,6 +654,17 @@ class Config {
                 throw new Error('Unknown');
         }
     }
+    async getLakeFSVersion() {
+        const response = await apiRequest('/config/version', {
+            method: 'GET',
+        });
+        switch (response.status) {
+            case 200:
+                return await response.json();
+            default:
+                throw new Error('Unknown');
+        }
+    }
 }
 
 export const repositories = new Repositories();
