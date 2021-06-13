@@ -204,7 +204,7 @@ public class LakeFSFileSystem extends FileSystem {
 
     @Override
     public RemoteIterator<LocatedFileStatus> listFiles(Path f, boolean recursive) throws FileNotFoundException, IOException {
-        LOG.trace("list_files_op: {}, recursive=", f, recursive);
+        LOG.trace("list_files_op: {}, recursive={}", f, recursive);
         return toLocatedFileStatusIterator(new ListingIterator(f, recursive, listAmount));
     }
 
