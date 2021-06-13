@@ -57,6 +57,7 @@ import io.lakefs.clients.api.model.StagingLocation;
  */
 public class LakeFSFileSystem extends FileSystem {
     public static final Logger LOG = LoggerFactory.getLogger(LakeFSFileSystem.class);
+    public static final Logger OPERATIONS_LOG = LoggerFactory.getLogger(LakeFSFileSystem.class + "[OPERATION]");
 
     private Configuration conf;
     private URI uri;
@@ -188,6 +189,7 @@ public class LakeFSFileSystem extends FileSystem {
 
     @Override
     public FSDataInputStream open(Path path, int bufSize) throws IOException {
+        OPERATIONS_LOG.trace("open({})", path);
         try {
             ObjectsApi objects = lfsClient.getObjects();
             ObjectLocation objectLoc = pathToObjectLocation(path);
@@ -203,6 +205,7 @@ public class LakeFSFileSystem extends FileSystem {
 
     @Override
     public RemoteIterator<LocatedFileStatus> listFiles(Path f, boolean recursive) throws FileNotFoundException, IOException {
+        OPERATIONS_LOG.trace("list_files({}), recursive={}", f, recursive);
         return toLocatedFileStatusIterator(new ListingIterator(f, recursive, listAmount));
     }
 
@@ -214,6 +217,7 @@ public class LakeFSFileSystem extends FileSystem {
     public FSDataOutputStream create(Path path, FsPermission permission, boolean overwrite,
                                      int bufferSize, short replication, long blockSize,
                                      Progressable progress) throws IOException {
+        OPERATIONS_LOG.trace("create({})", path);
         try {
             // TODO(ariels): overwrite ignored.
 
@@ -262,6 +266,7 @@ public class LakeFSFileSystem extends FileSystem {
      */
     @Override
     public boolean rename(Path src, Path dst) throws IOException {
+        OPERATIONS_LOG.trace("rename {} to {}", src, dst);
         ObjectLocation srcObjectLoc = pathToObjectLocation(src);
         ObjectLocation dstObjectLoc = pathToObjectLocation(dst);
         // Same as s3a https://github.com/apache/hadoop/blob/2960d83c255a00a549f8809882cd3b73a6266b6d/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L1498
@@ -311,11 +316,11 @@ public class LakeFSFileSystem extends FileSystem {
             if (!dstFileStatus.isDirectory()) {
                 // Same as https://github.com/apache/hadoop/blob/2960d83c255a00a549f8809882cd3b73a6266b6d/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L1527
                 throw new FileAlreadyExistsException("Failed rename " + src + " to " + dst
-                        + "; source is a directory and dest is a files");
+                        + "; source is a directory and dest is a file");
             }
             // lakefsFs only has non-empty directories. Therefore, if the destination is an existing directory we consider
             // it to be non-empty. The behaviour is same as https://github.com/apache/hadoop/blob/2960d83c255a00a549f8809882cd3b73a6266b6d/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L1530
-            LOG.error("renameDirectory: failed to rename src {} to dst {}. dst is a non-empty directory.", src, dst);
+            LOG.error("renameDirectory: rename src {} to dst {}: dst is a non-empty directory.", src, dst);
             return false;
         } catch (FileNotFoundException e) {
             LOG.debug("renameDirectory: dst {} does not exist", dst);
@@ -446,6 +451,7 @@ public class LakeFSFileSystem extends FileSystem {
 
     @Override
     public boolean delete(Path path, boolean recursive) throws IOException {
+        OPERATIONS_LOG.trace("delete({}), recursive={}", path, recursive);
         if (recursive) {
             ListingIterator iterator = new ListingIterator(path, true, listAmount);
             while (iterator.hasNext()) {
@@ -478,6 +484,7 @@ public class LakeFSFileSystem extends FileSystem {
 
     @Override
     public FileStatus[] listStatus(Path path) throws FileNotFoundException, IOException {
+        OPERATIONS_LOG.trace("list_status({})", path);
         ObjectLocation objectLoc = pathToObjectLocation(path);
         try {
             ObjectsApi objectsApi = lfsClient.getObjects();
@@ -520,6 +527,7 @@ public class LakeFSFileSystem extends FileSystem {
      */
     @Override
     public LakeFSFileStatus getFileStatus(Path path) throws IOException {
+        OPERATIONS_LOG.trace("get_file_status({})", path);
         ObjectLocation objectLoc = pathToObjectLocation(path);
         ObjectsApi objectsApi = lfsClient.getObjects();
         try {
@@ -590,6 +598,7 @@ public class LakeFSFileSystem extends FileSystem {
 
     @Override
     public boolean exists(Path path) throws IOException {
+        OPERATIONS_LOG.trace("exists({})", path);
         ObjectsApi objects = lfsClient.getObjects();
         ObjectLocation objectLoc = pathToObjectLocation(path);
         try {
