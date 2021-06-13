@@ -214,7 +214,7 @@ jobs:
         env:
           STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-spark
           REPOSITORY: gateway-test
-          SCALA_VERSION: 2.11
+          SONNET_JAR: sonnets-246/target/sonnets-246/scala-2.11/sonnets-246_2.11-0.1.0.jar
         working-directory: test/spark
         run: ./run-test.sh
 
@@ -237,7 +237,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
           USE_DIRECT_ACCESS: "true"
           REPOSITORY: thick-client-test
-          SCALA_VERSION: 2.11
+          SONNET_JAR: sonnets-246/target/sonnets-246/scala-2.11/sonnets-246_2.11-0.1.0.jar
         working-directory: test/spark
         run: ./run-test.sh
 
@@ -295,7 +295,7 @@ jobs:
         env:
           STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-spark
           REPOSITORY: gateway-test
-          SCALA_VERSION: 2.12
+          SONNET_JAR: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
         working-directory: test/spark
         run: ./run-test.sh
 
@@ -318,7 +318,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
           USE_DIRECT_ACCESS: "true"
           REPOSITORY: thick-client-test
-          SCALA_VERSION: 2.12
+          SONNET_JAR: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
         working-directory: test/spark
         run: ./run-test.sh
 
