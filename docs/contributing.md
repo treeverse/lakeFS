@@ -34,7 +34,7 @@ Working on your first Pull Request? You can learn how from this free series, [Ho
 *This section was tested on macOS and Linux (Fedora 32, Ubuntu 20.04) - Your mileage may vary*
 
    
-Our [Go release workflow](https://github.com/treeverse/lakeFS/blob/master/.github/workflows/goreleaser.yaml) holds the Go and Node.js versions we currently use under _go-version_ and _node-version_ compatibly.
+Our [Go release workflow](https://github.com/treeverse/lakeFS/blob/master/.github/workflows/goreleaser.yaml) holds the Go and Node.js versions we currently use under _go-version_ and _node-version_ compatibly.  The Java workflows use [Maven 3.8.1](https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu2004-README.md) (but any recent version of Maven should work).
 
 1. Install the required dependencies for your OS:
     1. [Git](https://git-scm.com/downloads)
@@ -42,7 +42,8 @@ Our [Go release workflow](https://github.com/treeverse/lakeFS/blob/master/.githu
     1. [Docker](https://docs.docker.com/get-docker/)
     1. [Go](https://golang.org/doc/install)
     1. [Node.js & npm](https://www.npmjs.com/get-npm)
-    1. *Optional* - [PostgreSQL 11](https://www.postgresql.org/docs/11/tutorial-install.html) (useful for running and debugging locally)
+    2. [Maven](https://maven.apache.org/) to build and test Spark client codes.
+    3. *Optional* - [PostgreSQL 11](https://www.postgresql.org/docs/11/tutorial-install.html) (useful for running and debugging locally)
 1. Install statik:
    
    ```shell
