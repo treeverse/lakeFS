@@ -1,4 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+Can build a JAR and an assembled JAR.  The first is useful for programming a larger
+component, and will most likely require assembly and shading to use.  The second is
+useful for inserting directly into Spark.
+
+To publish to Maven Central:
+    mvn deploy
+    mvn -Passembly deploy
+
+To export to S3:
+    mvn package s3-storage-wagon:s3-upload@upload-jar
+    mvn -Passembly package s3-storage-wagon:s3-upload@upload-jar
+-->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -109,6 +122,26 @@
                     <source>1.8</source>
                     <target>1.8</target>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>com.gkatzioura.maven.cloud</groupId>
+                <artifactId>s3-storage-wagon</artifactId>
+                <version>2.3</version>
+                <executions>
+                    <execution>
+                        <id>upload-jar</id>
+                        <goals>
+                            <goal>s3-upload</goal>
+                        </goals>
+                        <configuration>
+                            <path>target/${project.artifactId}-${project.version}.jar</path>
+                            <bucket>treeverse-clients-us-east</bucket>
+                            <region>us-east-1</region>
+                            <key>hadoop/${project.artifactId}-${project.version}.jar</key>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
