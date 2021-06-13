@@ -2845,7 +2845,7 @@ paths:
       description: get version of lakeFS server
       responses:
         200:
-          description: lakeFS storage configuration
+          description: lakeFS version
           content:
             application/json:
               schema:
