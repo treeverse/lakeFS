@@ -66,7 +66,7 @@ public class ConfigApi {
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> lakeFS storage configuration </td><td>  -  </td></tr>
+        <tr><td> 200 </td><td> lakeFS version </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
      </table>
      */
@@ -117,7 +117,7 @@ public class ConfigApi {
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> lakeFS storage configuration </td><td>  -  </td></tr>
+        <tr><td> 200 </td><td> lakeFS version </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
      </table>
      */
@@ -134,7 +134,7 @@ public class ConfigApi {
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> lakeFS storage configuration </td><td>  -  </td></tr>
+        <tr><td> 200 </td><td> lakeFS version </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
      </table>
      */
@@ -153,7 +153,7 @@ public class ConfigApi {
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> lakeFS storage configuration </td><td>  -  </td></tr>
+        <tr><td> 200 </td><td> lakeFS version </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
      </table>
      */

@@ -81,7 +81,7 @@ This endpoint does not need any parameter.
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**200** | lakeFS storage configuration |  -  |
+**200** | lakeFS version |  -  |
 **401** | Unauthorized |  -  |
 
 <a name="getStorageConfig"></a>

@@ -3759,7 +3759,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VersionConfig'
-          description: lakeFS storage configuration
+          description: lakeFS version
         "401":
           content:
             application/json:
