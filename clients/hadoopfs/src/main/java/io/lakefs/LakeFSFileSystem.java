@@ -341,7 +341,6 @@ public class LakeFSFileSystem extends FileSystem {
     }
 
     /**
-     * TODO (Tals): move this description into a component-test
      * Sample input and output
      * input:
      * renamedObj: lakefs://repo/main/dir1/file1.txt
@@ -357,7 +356,6 @@ public class LakeFSFileSystem extends FileSystem {
     }
 
     /**
-     * TODO (Tals): move this description into a component-test
      * Sample input and output
      * input:
      * renamedObj: lakefs://repo/main/file1.txt
