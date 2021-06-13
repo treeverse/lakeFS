@@ -12,10 +12,11 @@ import {RefContextProvider, useRefs} from "../../../../lib/hooks/repo";
 import {useAPIWithPagination} from "../../../../lib/hooks/api";
 import {actions} from "../../../../lib/api";
 import {
+    DotIcon,
     FilterIcon,
     XIcon
 } from "@primer/octicons-react";
-import Table from "react-bootstrap/Table";
+import {Container, Row, Table} from "react-bootstrap";
 import {Paginator} from "../../../../lib/components/pagination";
 import {ActionStatusIcon} from "../../../../lib/components/repository/actions";
 import {Route, Switch} from "react-router-dom";
@@ -111,6 +112,23 @@ const RunTable = ({ repo, runs, nextPage, after, onPaginate, onFilterBranch, onF
     )
 }
 
+const GetStarted = ({onCreateRepo}) => {
+            //<Row className="pt-2 ml-2">
+                //<DotIcon className="mr-1 mt-1"/>
+                //<Button variant="link" onClick={onCreateRepo}>Create</Button>&nbsp;a new repository.
+            //</Row>
+    return (
+        <Container className="m-4 mb-5">
+            <h2 className="mt-2">To get started with Actions</h2>
+
+            <Row className="pt-2 ml-2">
+                <DotIcon className="mr-1 mt-1"/>
+                See the &nbsp;<a href="https://docs.lakefs.io/setup/hooks.html" target="_blank" rel="noopener noreferrer">docs</a>&nbsp; for setup new Actions
+            </Row>
+        </Container>
+    );
+};
+
 const ActionsList = ({ repo, after, onPaginate, branch, commit, onFilterBranch, onFilterCommit }) => {
 
     const [refresh, setRefresh] = useState(false)
@@ -122,7 +140,9 @@ const ActionsList = ({ repo, after, onPaginate, branch, commit, onFilterBranch, 
 
     let content;
     if (!!error) content = <Error error={error}/>
+
     else if (loading) content = <Loading/>
+    else if (results.length === 0 && !nextPage) content = <GetStarted />
     else content = (
             <RunTable
                 repo={repo}
