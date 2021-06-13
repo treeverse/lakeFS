@@ -309,10 +309,9 @@ public class LakeFSFileSystem extends FileSystem {
             dstFileStatus = getFileStatus(dst);
             dstExists = true;
             if (!dstFileStatus.isDirectory()) {
-                //TODO (Tals): move all of this to the input validation part of the rename functionality with https://github.com/treeverse/lakeFS/issues/2061
-                // Mimics the behaviour in https://github.com/apache/hadoop/blob/2960d83c255a00a549f8809882cd3b73a6266b6d/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L1527
-                LOG.error("renameDirectory: src {} is a directory and dst {} is a file", src, dst);
-                return false;
+                // Same as https://github.com/apache/hadoop/blob/2960d83c255a00a549f8809882cd3b73a6266b6d/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L1527
+                throw new FileAlreadyExistsException("Failed rename " + src + " to " + dst
+                        + ". destination file already exists.");
             }
         } catch (FileNotFoundException e) {
             LOG.debug("renameDirectory: dst {} does not exist", dst);

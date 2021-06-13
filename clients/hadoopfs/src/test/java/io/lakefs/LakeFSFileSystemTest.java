@@ -513,7 +513,7 @@ public class LakeFSFileSystemTest {
         Assert.assertTrue(dstPathLinkedToSrcPhysicalAddress(srcObjLoc, dstObjLoc));
         verifyObjDeletion(srcObjLoc);
     }
-    
+
     @Test(expected = FileAlreadyExistsException.class)
     public void testRename_existingFileToExistingFileName() throws ApiException, IOException {
         Path src = new Path("lakefs://repo/main/existing.src");
@@ -525,6 +525,21 @@ public class LakeFSFileSystemTest {
         mockExistingFilePath(dstObjLoc);
 
         fs.rename(src, dst);
+    }
+
+    @Test(expected = FileAlreadyExistsException.class)
+    public void testRename_existingDirToExistingFileName() throws ApiException, IOException {
+        Path fileInSrcDir = new Path("lakefs://repo/main/existing-dir/existing.src");
+        ObjectLocation fileObjLoc = fs.pathToObjectLocation(fileInSrcDir);
+        Path srcDir = new Path("lakefs://repo/main/existing-dir");
+        ObjectLocation srcDirObjLoc = fs.pathToObjectLocation(srcDir);
+        mockExistingDirPath(srcDirObjLoc, ImmutableList.of(fileObjLoc));
+
+        Path dst = new Path("lakefs://repo/main/existingdst.file");
+        ObjectLocation dstObjLoc = fs.pathToObjectLocation(dst);
+        mockExistingFilePath(dstObjLoc);
+
+        fs.rename(srcDir, dst);
     }
 
     /**
