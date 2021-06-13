@@ -694,11 +694,13 @@ components:
           type: string
         blockstore_namespace_ValidityRegex:
           type: string
+
     VersionConfig:
       type: object
       properties:
         version:
           type: string
+
     ActionRun:
       type: object
       required:
