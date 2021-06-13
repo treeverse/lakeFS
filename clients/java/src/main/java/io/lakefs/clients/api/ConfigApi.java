@@ -31,6 +31,7 @@ import io.lakefs.clients.api.model.CredentialsWithSecret;
 import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.Setup;
 import io.lakefs.clients.api.model.StorageConfig;
+import io.lakefs.clients.api.model.VersionConfig;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -57,6 +58,112 @@ public class ConfigApi {
         this.localVarApiClient = apiClient;
     }
 
+    /**
+     * Build call for getLakeFSVersion
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> lakeFS version </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call getLakeFSVersionCall(final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/config/version";
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        localVarHeaderParams.put("Content-Type", localVarContentType);
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token" };
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call getLakeFSVersionValidateBeforeCall(final ApiCallback _callback) throws ApiException {
+        
+
+        okhttp3.Call localVarCall = getLakeFSVersionCall(_callback);
+        return localVarCall;
+
+    }
+
+    /**
+     * 
+     * get version of lakeFS server
+     * @return VersionConfig
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> lakeFS version </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+     </table>
+     */
+    public VersionConfig getLakeFSVersion() throws ApiException {
+        ApiResponse<VersionConfig> localVarResp = getLakeFSVersionWithHttpInfo();
+        return localVarResp.getData();
+    }
+
+    /**
+     * 
+     * get version of lakeFS server
+     * @return ApiResponse&lt;VersionConfig&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> lakeFS version </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<VersionConfig> getLakeFSVersionWithHttpInfo() throws ApiException {
+        okhttp3.Call localVarCall = getLakeFSVersionValidateBeforeCall(null);
+        Type localVarReturnType = new TypeToken<VersionConfig>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     *  (asynchronously)
+     * get version of lakeFS server
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> lakeFS version </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call getLakeFSVersionAsync(final ApiCallback<VersionConfig> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = getLakeFSVersionValidateBeforeCall(_callback);
+        Type localVarReturnType = new TypeToken<VersionConfig>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
     /**
      * Build call for getStorageConfig
      * @param _callback Callback for upload/download progress
