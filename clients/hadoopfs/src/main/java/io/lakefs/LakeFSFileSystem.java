@@ -204,7 +204,7 @@ public class LakeFSFileSystem extends FileSystem {
 
     @Override
     public RemoteIterator<LocatedFileStatus> listFiles(Path f, boolean recursive) throws FileNotFoundException, IOException {
-        LOG.trace("list_files_op: {}", f);
+        LOG.trace("list_files_op: {}, recursive=", f, recursive);
         return toLocatedFileStatusIterator(new ListingIterator(f, recursive, listAmount));
     }
 
@@ -216,7 +216,7 @@ public class LakeFSFileSystem extends FileSystem {
     public FSDataOutputStream create(Path path, FsPermission permission, boolean overwrite,
                                      int bufferSize, short replication, long blockSize,
                                      Progressable progress) throws IOException {
-        LOG.trace("creat_op: {}", path);
+        LOG.trace("create_op: {}", path);
         try {
             // TODO(ariels): overwrite ignored.
 
