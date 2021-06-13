@@ -311,9 +311,9 @@ public class LakeFSFileSystem extends FileSystem {
             if (!dstFileStatus.isDirectory()) {
                 // Same as https://github.com/apache/hadoop/blob/2960d83c255a00a549f8809882cd3b73a6266b6d/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L1527
                 throw new FileAlreadyExistsException("Failed rename " + src + " to " + dst
-                        + ". destination file already exists.");
+                        + "; source is a directory and dest is a files");
             }
-            // lakefsFs only has non-empty directories. therefore, is the destination is an existing directory we consider
+            // lakefsFs only has non-empty directories. Therefore, if the destination is an existing directory we consider
             // it to be non-empty. The behaviour is same as https://github.com/apache/hadoop/blob/2960d83c255a00a549f8809882cd3b73a6266b6d/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L1530
             LOG.error("renameDirectory: failed to rename src {} to dst {}. dst is a non-empty directory.", src, dst);
             return false;
@@ -386,7 +386,7 @@ public class LakeFSFileSystem extends FileSystem {
             } else {
                 // Same as https://github.com/apache/hadoop/blob/2960d83c255a00a549f8809882cd3b73a6266b6d/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L1539
                 throw new FileAlreadyExistsException("Failed rename " + srcStatus.getPath() + " to " + dst
-                        + ". destination file already exists.");
+                        + "; destination file already exists.");
             }
         } catch (FileNotFoundException e) {
             LOG.debug("renameFile: dst does not exist, renaming src {} to a file called dst {}",
