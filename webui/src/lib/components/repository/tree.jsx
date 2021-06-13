@@ -263,7 +263,7 @@ export const URINavigator = ({ repo, reference, path, relativeTo = "", pathURLBu
 const GetStarted = ({ onUpload }) => {
     return (
         <Container className="m-4 mb-5">
-            <h2 className="mt-2">To get started with this repository, you can:</h2>
+            <h2 className="mt-2">To get started with this repository:</h2>
 
             <Row className="pt-2 ml-2">
                 <DotIcon className="mr-1 mt-1"/>
@@ -272,7 +272,13 @@ const GetStarted = ({ onUpload }) => {
 
             <Row className="pt-2 ml-2">
                 <DotIcon className="mr-1 mt-1"/>
-                See the &nbsp;<a href="https://docs.lakefs.io/using/" target="_blank" rel="noopener noreferrer">docs</a>&nbsp;for other ways to import data to your repository.
+                Use&nbsp;<a href="https://docs.lakefs.io/integrations/distcp.html" target="_blank" rel="noopener noreferrer">DistCp</a>&nbsp;or&nbsp;
+                <a href="https://docs.lakefs.io/integrations/rclone.html" target="_blank" rel="noopener noreferrer">Rclone</a>&nbsp;to copy data into your repository.
+            </Row>
+
+            <Row className="pt-2 ml-2">
+                <DotIcon className="mr-1 mt-1"/>
+                See the&nbsp;<a href="https://docs.lakefs.io/setup/import.html" target="_blank" rel="noopener noreferrer">docs</a>&nbsp;for other ways to import data to your repository.
             </Row>
         </Container>
     );

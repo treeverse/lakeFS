@@ -687,9 +687,12 @@ components:
     StorageConfig:
       type: object
       required:
+        - blockstore_type
         - blockstore_namespace_example
         - blockstore_namespace_ValidityRegex
       properties:
+        blockstore_type:
+          type: string
         blockstore_namespace_example:
           type: string
         blockstore_namespace_ValidityRegex:

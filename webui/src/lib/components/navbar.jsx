@@ -10,7 +10,6 @@ import {useRouter} from "../hooks/router";
 import {Link} from "./nav";
 import {useAPI} from "../hooks/api";
 
-
 const NavUserInfo = () => {
     const router = useRouter();
     const { user, loading, error } = useUser();

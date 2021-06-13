@@ -687,9 +687,12 @@ components:
     StorageConfig:
       type: object
       required:
+        - blockstore_type
         - blockstore_namespace_example
         - blockstore_namespace_ValidityRegex
       properties:
+        blockstore_type:
+          type: string
         blockstore_namespace_example:
           type: string
         blockstore_namespace_ValidityRegex:
@@ -2837,10 +2840,10 @@ paths:
       tags:
         - config
       operationId: getStorageConfig
-      description: retrieve the lakefs storage configuration
+      description: retrieve lakeFS storage configuration
       responses:
         200:
-          description: the lakefs storage configuration
+          description: lakeFS storage configuration
           content:
             application/json:
               schema:

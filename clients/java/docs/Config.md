@@ -1,15 +1,15 @@
 
 
-# StorageConfig
+# Config
 
 
 ## Properties
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**blockstoreType** | **String** |  | 
 **blockstoreNamespaceExample** | **String** |  | 
 **blockstoreNamespaceValidityRegex** | **String** |  | 
+**warnings** | **List&lt;String&gt;** | warnings to show user about this configuration |  [optional]
 
 
 

@@ -4,6 +4,9 @@ val baseName = "lakefsfs"
 
 val projectVersion = "0.1.0"
 
+ThisBuild / resolvers +=
+  "Sonatype OSS Snapshots" at "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+
 // Spark versions 2.4.7 and 3.0.1 use different Scala versions.  Changing this is a deep
 // change, so key the Spark distinction by the Scala distinction.  sbt doesn't appear to
 // support other ways of changing emitted Scala binary versions using the same compiler.
@@ -26,11 +29,15 @@ def generateProject(buildType: BuildType) =
       settingsToCompileIn(),
       scalaVersion := buildType.scalaVersion,
       libraryDependencies ++= Seq(
-        "io.lakefs" % "api-client" % "0.40.3",
+        // We link directly with our hadoop-lakefs in order to have access to our version of the api-client
+        // the same version bundled into our filesystem, this version already shade all the right dependencies like the gson
+        // package.
+        // In case of using the lakefs client library, we will need to shade the required libraries by the client api as
+        // the hadoop-lakefs doesn't shade the client and also use it.
+        "io.lakefs" % "hadoop-lakefs-assembly" % "0.1.0-RC.0-SNAPSHOT",
         "org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
         "org.apache.hadoop" % "hadoop-aws" % buildType.hadoopVersion,
         "org.apache.hadoop" % "hadoop-common" % buildType.hadoopVersion,
-        //"com.amazonaws" % "aws-java-sdk-bundle" % "1.11.375" % "provided",
       ),
       target := { baseDirectory.value / "target" / s"${baseName}-${buildType.name}" }
     )

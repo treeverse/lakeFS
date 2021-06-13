@@ -25,6 +25,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/cloud"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
@@ -58,6 +59,7 @@ type actionsHandler interface {
 }
 
 type Controller struct {
+	Config                *config.Config
 	Catalog               catalog.Interface
 	Auth                  auth.Service
 	BlockAdapter          block.Adapter
@@ -1018,6 +1020,7 @@ func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 	}
 	info := c.BlockAdapter.GetStorageNamespaceInfo()
 	response := StorageConfig{
+		BlockstoreType:                   c.Config.GetBlockstoreType(),
 		BlockstoreNamespaceValidityRegex: info.ValidityRegex,
 		BlockstoreNamespaceExample:       info.Example,
 	}
@@ -2641,13 +2644,18 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 
 	// check if previous setup completed
 	ctx := r.Context()
-	if ts, _ := c.MetadataManager.SetupTimestamp(ctx); !ts.IsZero() {
+	initialized, err := c.MetadataManager.IsInitialized(ctx)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	if initialized {
 		writeError(w, http.StatusConflict, "lakeFS already initialized")
 		return
 	}
 
 	// migrate the database if needed
-	err := c.Migrator.Migrate(ctx)
+	err = c.Migrator.Migrate(ctx)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
@@ -2792,6 +2800,7 @@ func paginationAmount(v *PaginationAmount) int {
 }
 
 func NewController(
+	cfg *config.Config,
 	catalog catalog.Interface,
 	authService auth.Service,
 	blockAdapter block.Adapter,
@@ -2803,6 +2812,7 @@ func NewController(
 	logger logging.Logger,
 ) *Controller {
 	return &Controller{
+		Config:                cfg,
 		Catalog:               catalog,
 		Auth:                  authService,
 		BlockAdapter:          blockAdapter,

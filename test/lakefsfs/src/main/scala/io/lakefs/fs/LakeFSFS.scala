@@ -3,6 +3,7 @@ package io.lakefs.fs
 import io.lakefs.clients.api.RepositoriesApi
 import io.lakefs.clients.api.auth.HttpBasicAuth
 import io.lakefs.clients.api.model.RepositoryCreation
+import io.lakefs.clients.api.ApiException
 import org.apache.commons.cli.{BasicParser, Options}
 import org.apache.spark.sql.{RuntimeConfig, SparkSession}
 import org.slf4j.LoggerFactory
@@ -36,11 +37,16 @@ object LakeFSFS {
 
     LOG.info("Create repository={}, branch={}, storageNamespace={}", repository, branch, storageNamespace)
     val repositoriesApi = new RepositoriesApi(apiClient)
-    val repositoryCreation = new RepositoryCreation()
-      .name(repository)
-      .defaultBranch(branch)
-      .storageNamespace(storageNamespace)
-    repositoriesApi.createRepository(repositoryCreation, false)
+    try {
+      val repositoryCreation = new RepositoryCreation()
+        .name(repository)
+        .defaultBranch(branch)
+        .storageNamespace(storageNamespace)
+      repositoriesApi.createRepository(repositoryCreation, false)
+      LOG.info("Repository created repository={}, branch={}, storageNamespace={}", repository, branch, storageNamespace)
+    } catch {
+      case e: ApiException => LOG.error("Create repository failed (code " + e.getCode() + ")", e)
+    }
 
     LOG.info("Read data from {}", sourcePath)
     val pds = spark.read
@@ -67,7 +73,9 @@ object LakeFSFS {
       "FROM lfs_pds where year=2015 " +
       "ORDER BY num_reviews DESC " +
       "LIMIT 10")
-    topTen.show()
+    topTen.collect.foreach(entry => {
+      LOG.info("PRODUCT {}", entry)
+    })
 
     spark.stop()
   }
