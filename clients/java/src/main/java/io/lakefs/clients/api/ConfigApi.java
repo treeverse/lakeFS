@@ -29,9 +29,9 @@ import java.io.IOException;
 
 import io.lakefs.clients.api.model.CredentialsWithSecret;
 import io.lakefs.clients.api.model.Error;
-import io.lakefs.clients.api.model.InlineResponse200;
 import io.lakefs.clients.api.model.Setup;
 import io.lakefs.clients.api.model.StorageConfig;
+import io.lakefs.clients.api.model.VersionConfig;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -112,7 +112,7 @@ public class ConfigApi {
     /**
      * 
      * get version of lakeFS server
-     * @return InlineResponse200
+     * @return VersionConfig
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
@@ -121,15 +121,15 @@ public class ConfigApi {
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
      </table>
      */
-    public InlineResponse200 getLakeFSVersion() throws ApiException {
-        ApiResponse<InlineResponse200> localVarResp = getLakeFSVersionWithHttpInfo();
+    public VersionConfig getLakeFSVersion() throws ApiException {
+        ApiResponse<VersionConfig> localVarResp = getLakeFSVersionWithHttpInfo();
         return localVarResp.getData();
     }
 
     /**
      * 
      * get version of lakeFS server
-     * @return ApiResponse&lt;InlineResponse200&gt;
+     * @return ApiResponse&lt;VersionConfig&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
@@ -138,9 +138,9 @@ public class ConfigApi {
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<InlineResponse200> getLakeFSVersionWithHttpInfo() throws ApiException {
+    public ApiResponse<VersionConfig> getLakeFSVersionWithHttpInfo() throws ApiException {
         okhttp3.Call localVarCall = getLakeFSVersionValidateBeforeCall(null);
-        Type localVarReturnType = new TypeToken<InlineResponse200>(){}.getType();
+        Type localVarReturnType = new TypeToken<VersionConfig>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
@@ -157,10 +157,10 @@ public class ConfigApi {
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call getLakeFSVersionAsync(final ApiCallback<InlineResponse200> _callback) throws ApiException {
+    public okhttp3.Call getLakeFSVersionAsync(final ApiCallback<VersionConfig> _callback) throws ApiException {
 
         okhttp3.Call localVarCall = getLakeFSVersionValidateBeforeCall(_callback);
-        Type localVarReturnType = new TypeToken<InlineResponse200>(){}.getType();
+        Type localVarReturnType = new TypeToken<VersionConfig>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
     }

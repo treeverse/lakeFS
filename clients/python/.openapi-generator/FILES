@@ -27,7 +27,6 @@ docs/GroupList.md
 docs/HealthCheckApi.md
 docs/HookRun.md
 docs/HookRunList.md
-docs/InlineResponse200.md
 docs/LoginInformation.md
 docs/Merge.md
 docs/MergeResult.md
@@ -63,6 +62,7 @@ docs/UnderlyingObjectProperties.md
 docs/User.md
 docs/UserCreation.md
 docs/UserList.md
+docs/VersionConfig.md
 lakefs_client/__init__.py
 lakefs_client/api/__init__.py
 lakefs_client/api/actions_api.py
@@ -102,7 +102,6 @@ lakefs_client/model/group_creation.py
 lakefs_client/model/group_list.py
 lakefs_client/model/hook_run.py
 lakefs_client/model/hook_run_list.py
-lakefs_client/model/inline_response200.py
 lakefs_client/model/login_information.py
 lakefs_client/model/merge.py
 lakefs_client/model/merge_result.py
@@ -132,6 +131,7 @@ lakefs_client/model/underlying_object_properties.py
 lakefs_client/model/user.py
 lakefs_client/model/user_creation.py
 lakefs_client/model/user_list.py
+lakefs_client/model/version_config.py
 lakefs_client/model_utils.py
 lakefs_client/models/__init__.py
 lakefs_client/models/__init__.py
@@ -141,5 +141,5 @@ setup.cfg
 setup.py
 test-requirements.txt
 test/__init__.py
-test/test_inline_response200.py
+test/test_version_config.py
 tox.ini

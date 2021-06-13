@@ -10,7 +10,7 @@ Method | HTTP request | Description
 
 
 # **get_lake_fs_version**
-> InlineResponse200 get_lake_fs_version()
+> VersionConfig get_lake_fs_version()
 
 
 
@@ -25,7 +25,7 @@ get version of lakeFS server
 import time
 import lakefs_client
 from lakefs_client.api import config_api
-from lakefs_client.model.inline_response200 import InlineResponse200
+from lakefs_client.model.version_config import VersionConfig
 from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
@@ -75,7 +75,7 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-[**InlineResponse200**](InlineResponse200.md)
+[**VersionConfig**](VersionConfig.md)
 
 ### Authorization
 

@@ -3758,7 +3758,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200'
+                $ref: '#/components/schemas/VersionConfig'
           description: lakeFS storage configuration
         "401":
           content:
@@ -4719,6 +4719,13 @@ components:
       - blockstore_namespace_ValidityRegex
       - blockstore_namespace_example
       type: object
+    VersionConfig:
+      example:
+        version: version
+      properties:
+        version:
+          type: string
+      type: object
     ActionRun:
       example:
         start_time: 2000-01-23T04:56:07.000+00:00
@@ -4904,13 +4911,6 @@ components:
         content:
           description: Object content to upload
           format: binary
-          type: string
-      type: object
-    inline_response_200:
-      example:
-        version: version
-      properties:
-        version:
           type: string
       type: object
     MergeResult_summary:
