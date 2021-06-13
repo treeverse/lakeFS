@@ -27,6 +27,7 @@ docs/GroupList.md
 docs/HealthCheckApi.md
 docs/HookRun.md
 docs/HookRunList.md
+docs/InlineResponse200.md
 docs/LoginInformation.md
 docs/Merge.md
 docs/MergeResult.md
@@ -101,6 +102,7 @@ lakefs_client/model/group_creation.py
 lakefs_client/model/group_list.py
 lakefs_client/model/hook_run.py
 lakefs_client/model/hook_run_list.py
+lakefs_client/model/inline_response200.py
 lakefs_client/model/login_information.py
 lakefs_client/model/merge.py
 lakefs_client/model/merge_result.py
@@ -139,4 +141,5 @@ setup.cfg
 setup.py
 test-requirements.txt
 test/__init__.py
+test/test_inline_response200.py
 tox.ini

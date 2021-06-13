@@ -15,6 +15,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-openapi/swag"
+
 	"github.com/aws/aws-sdk-go/aws"
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/treeverse/lakefs/pkg/actions"
@@ -2695,7 +2697,7 @@ func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnauthorized, ErrAuthenticationFailed)
 		return
 	}
-	writeResponse(w, http.StatusOK, version.Version)
+	writeResponse(w, http.StatusOK, VersionConfig{Version: swag.String(version.Version)})
 }
 
 func IsStatusCodeOK(statusCode int) bool {

@@ -44,7 +44,7 @@ const NavUserInfo = () => {
                 </NavDropdown.Item>
                 {!versionLoading && !versionError && <><NavDropdown.Divider/>
                 <NavDropdown.Item disabled={true}>
-                    <small>lakeFS {versionResponse}</small>
+                    <small>lakeFS {versionResponse.version}</small>
                 </NavDropdown.Item></>}
             </NavDropdown>
         </Navbar.Collapse>

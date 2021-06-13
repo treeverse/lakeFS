@@ -694,7 +694,11 @@ components:
           type: string
         blockstore_namespace_ValidityRegex:
           type: string
-
+    VersionConfig:
+      type: object
+      properties:
+        version:
+          type: string
     ActionRun:
       type: object
       required:
@@ -2843,7 +2847,7 @@ paths:
           content:
             application/json:
               schema:
-                type: string
+                $ref: "#/components/schemas/VersionConfig"
         401:
           $ref: "#/components/responses/Unauthorized"
   /config/storage:

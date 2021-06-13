@@ -3758,7 +3758,7 @@ paths:
           content:
             application/json:
               schema:
-                type: string
+                $ref: '#/components/schemas/inline_response_200'
           description: lakeFS storage configuration
         "401":
           content:
@@ -4904,6 +4904,13 @@ components:
         content:
           description: Object content to upload
           format: binary
+          type: string
+      type: object
+    inline_response_200:
+      example:
+        version: version
+      properties:
+        version:
           type: string
       type: object
     MergeResult_summary:

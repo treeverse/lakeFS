@@ -24,6 +24,7 @@ from lakefs_client.model_utils import (  # noqa: F401
 )
 from lakefs_client.model.credentials_with_secret import CredentialsWithSecret
 from lakefs_client.model.error import Error
+from lakefs_client.model.inline_response200 import InlineResponse200
 from lakefs_client.model.setup import Setup
 from lakefs_client.model.storage_config import StorageConfig
 
@@ -76,7 +77,7 @@ class ConfigApi(object):
                 async_req (bool): execute request asynchronously
 
             Returns:
-                str
+                InlineResponse200
                     If the method is called asynchronously, returns the request
                     thread.
             """
@@ -103,7 +104,7 @@ class ConfigApi(object):
 
         self.get_lake_fs_version = _Endpoint(
             settings={
-                'response_type': (str,),
+                'response_type': (InlineResponse200,),
                 'auth': [
                     'basic_auth',
                     'cookie_auth',

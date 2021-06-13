@@ -11,7 +11,7 @@ Method | HTTP request | Description
 
 <a name="getLakeFSVersion"></a>
 # **getLakeFSVersion**
-> String getLakeFSVersion()
+> InlineResponse200 getLakeFSVersion()
 
 
 
@@ -49,7 +49,7 @@ public class Example {
 
     ConfigApi apiInstance = new ConfigApi(defaultClient);
     try {
-      String result = apiInstance.getLakeFSVersion();
+      InlineResponse200 result = apiInstance.getLakeFSVersion();
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ConfigApi#getLakeFSVersion");
@@ -67,7 +67,7 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-**String**
+[**InlineResponse200**](InlineResponse200.md)
 
 ### Authorization
 
