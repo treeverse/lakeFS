@@ -40,17 +40,9 @@ lazy val root = (project in file("."))
   .aggregate(proj24, proj31)
   .settings(
       compile / skip := true,
-      assembly / skip := true,
       publish / skip := true,
   )
 
-
-lazy val assemblySettings = Seq(
-  assembly / assemblyMergeStrategy := (_ => MergeStrategy.first),
-  assembly / assemblyShadeRules := Seq(
-    ShadeRule.rename("scala.collection.compat.**" -> "shadecompat.@1").inAll,
-  ),
-)
 
 lazy val commonSettings = Seq(
   version := projectVersion,
@@ -59,7 +51,7 @@ lazy val commonSettings = Seq(
   scalacOptions += "-target:jvm-1.8"
 )
 
-lazy val sharedSettings = commonSettings ++ assemblySettings
+lazy val sharedSettings = commonSettings
 
 ThisBuild / organization := "io.lakefs"
 ThisBuild / organizationName := "Treeverse Labs"
