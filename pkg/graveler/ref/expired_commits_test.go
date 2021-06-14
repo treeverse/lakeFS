@@ -147,7 +147,6 @@ func TestExpiredCommits(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			now := time.Now()
 			branchRecords := make([]*graveler.BranchRecord, 0, len(tst.headsRetentionDays))
-			expirationDates := make(map[string]time.Time)
 			ctrl := gomock.NewController(t)
 			refManagerMock := mock.NewMockRefManager(ctrl)
 			ctx := context.Background()
@@ -160,7 +159,8 @@ func TestExpiredCommits(t *testing.T) {
 				retentionRules.BranchRetentionDays[graveler.BranchID(head)] = retentionDays
 			}
 			sort.Slice(branchRecords, func(i, j int) bool {
-				return expirationDates[string(branchRecords[i].CommitID)].Before(expirationDates[string(branchRecords[j].CommitID)])
+				// start with the branch with the strictest retention rules
+				return retentionRules.BranchRetentionDays[branchRecords[i].BranchID] > retentionRules.BranchRetentionDays[branchRecords[j].BranchID]
 			})
 			branchIterator := gtestutil.NewFakeBranchIterator(branchRecords)
 			refManagerMock.EXPECT().ListBranches(ctx, graveler.RepositoryID("test")).Return(branchIterator, nil)
@@ -170,7 +170,7 @@ func TestExpiredCommits(t *testing.T) {
 				id := graveler.CommitID(commitID)
 				commitMap[id] = &graveler.Commit{Message: commitID, Parents: testCommit.parents, CreationDate: now.AddDate(0, 0, -testCommit.daysPassed)}
 				if !previouslyExpired[id] {
-					refManagerMock.EXPECT().GetCommit(ctx, graveler.RepositoryID("test"), id).Return(commitMap[id], nil)
+					refManagerMock.EXPECT().GetCommit(ctx, graveler.RepositoryID("test"), id).Return(commitMap[id], nil).Times(1)
 				}
 			}
 			finder := ExpiredCommitsFinder{
