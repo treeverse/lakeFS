@@ -24,7 +24,7 @@ from lakefs_client.model.current_user import CurrentUser
 from lakefs_client.model.diff import Diff
 from lakefs_client.model.diff_list import DiffList
 from lakefs_client.model.error import Error
- from lakefs_client.model.garbage_collection_commits import GarbageCollectionCommits
+from lakefs_client.model.garbage_collection_commits import GarbageCollectionCommits
 from lakefs_client.model.group import Group
 from lakefs_client.model.group_creation import GroupCreation
 from lakefs_client.model.group_list import GroupList

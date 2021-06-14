@@ -550,7 +550,7 @@ type RefManager interface {
 
 	// GetExpiredCommits returns the sets of active and expired commits, according to the branch rules for garbage collection.
 	// The commits in the given set previouslyExpiredCommits will not be scanned.
-	GetExpiredCommits(ctx context.Context, repositoryID RepositoryID, previouslyExpiredCommits []CommitID) (expired []CommitID, active []CommitID, err error)
+	GetExpiredCommits(ctx context.Context, repositoryID RepositoryID, previouslyExpiredCommits []CommitID, rules *RetentionRules) (expired []CommitID, active []CommitID, err error)
 }
 
 // CommittedManager reads and applies committed snapshots
@@ -664,22 +664,24 @@ func (id TagID) String() string {
 }
 
 type Graveler struct {
-	CommittedManager CommittedManager
-	StagingManager   StagingManager
-	RefManager       RefManager
-	branchLocker     BranchLocker
-	hooks            HooksHandler
-	log              logging.Logger
+	CommittedManager     CommittedManager
+	StagingManager       StagingManager
+	RefManager           RefManager
+	branchLocker         BranchLocker
+	hooks                HooksHandler
+	retentionRuleManager RetentionRuleManager
+	log                  logging.Logger
 }
 
-func NewGraveler(branchLocker BranchLocker, committedManager CommittedManager, stagingManager StagingManager, refManager RefManager) *Graveler {
+func NewGraveler(branchLocker BranchLocker, committedManager CommittedManager, stagingManager StagingManager, refManager RefManager, retentionRuleManager RetentionRuleManager) *Graveler {
 	return &Graveler{
-		CommittedManager: committedManager,
-		StagingManager:   stagingManager,
-		RefManager:       refManager,
-		branchLocker:     branchLocker,
-		hooks:            &HooksNoOp{},
-		log:              logging.Default().WithField("service_name", "graveler_graveler"),
+		CommittedManager:     committedManager,
+		StagingManager:       stagingManager,
+		RefManager:           refManager,
+		branchLocker:         branchLocker,
+		hooks:                &HooksNoOp{},
+		retentionRuleManager: retentionRuleManager,
+		log:                  logging.Default().WithField("service_name", "graveler_graveler"),
 	}
 }
 
@@ -874,7 +876,16 @@ func (g *Graveler) GetStagingToken(ctx context.Context, repositoryID RepositoryI
 }
 
 func (g *Graveler) GetExpiredCommits(ctx context.Context, repositoryID RepositoryID, previouslyExpiredCommits []CommitID) (expired []CommitID, active []CommitID, err error) {
-	panic("implement me")
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, nil, err
+	}
+	// TODO use "_lakefs" from configuration
+	rules, err := g.retentionRuleManager.GetRules(ctx, fmt.Sprintf("%s/_lakefs/retention/rules/config.json", repo.StorageNamespace))
+	if err != nil {
+		return nil, nil, fmt.Errorf("get retention rules: %v", err)
+	}
+	return g.RefManager.GetExpiredCommits(ctx, repositoryID, previouslyExpiredCommits, rules)
 }
 
 func (g *Graveler) Get(ctx context.Context, repositoryID RepositoryID, ref Ref, key Key) (*Value, error) {
@@ -1999,4 +2010,13 @@ func (c *commitValueIterator) Err() error {
 
 func (c *commitValueIterator) Close() {
 	c.src.Close()
+}
+
+type RetentionRuleManager interface {
+	GetRules(ctx context.Context, rulesConfigurationPath string) (*RetentionRules, error)
+}
+
+type RetentionRules struct {
+	DefaultRetentionDays int              `json:"default"`
+	BranchRetentionDays  map[BranchID]int `json:"branches"`
 }

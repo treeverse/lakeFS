@@ -411,6 +411,7 @@ func (m *Manager) FillGenerations(ctx context.Context, repositoryID graveler.Rep
 	return err
 }
 
-func (m *Manager) GetExpiredCommits(ctx context.Context, repositoryID graveler.RepositoryID, previouslyExpiredCommits []graveler.CommitID) (expired []graveler.CommitID, active []graveler.CommitID, err error) {
-	panic("implement me")
+func (m *Manager) GetExpiredCommits(ctx context.Context, repositoryID graveler.RepositoryID, previouslyExpiredCommits []graveler.CommitID, rules *graveler.RetentionRules) (expired []graveler.CommitID, active []graveler.CommitID, err error) {
+	finder := NewExpiredCommitsFinder(m, m, rules)
+	return finder.GetExpiredCommits(ctx, repositoryID, previouslyExpiredCommits)
 }

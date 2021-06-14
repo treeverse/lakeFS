@@ -12,13 +12,19 @@ type ExpirationDateGetter interface {
 }
 
 type ExpiredCommitsFinder struct {
-	branchLister         graveler.BranchLister
-	commitGetter         graveler.CommitGetter
-	expirationDateGetter ExpirationDateGetter
+	branchLister graveler.BranchLister
+	commitGetter graveler.CommitGetter
+	rules        *graveler.RetentionRules
+}
+
+func NewExpiredCommitsFinder(branchLister graveler.BranchLister, commitGetter graveler.CommitGetter, rules *graveler.RetentionRules) *ExpiredCommitsFinder {
+	return &ExpiredCommitsFinder{branchLister: branchLister, commitGetter: commitGetter, rules: rules}
 }
 
 func (e *ExpiredCommitsFinder) GetExpiredCommits(ctx context.Context, repositoryID graveler.RepositoryID, previouslyExpiredCommits []graveler.CommitID) (expired []graveler.CommitID, active []graveler.CommitID, err error) {
+	now := time.Now()
 	processed := make(map[graveler.CommitID]time.Time)
+
 	branchIterator, err := e.branchLister.ListBranches(ctx, repositoryID)
 	if err != nil {
 		return nil, nil, err
@@ -31,16 +37,14 @@ func (e *ExpiredCommitsFinder) GetExpiredCommits(ctx context.Context, repository
 	expiredMap := make(map[graveler.CommitID]bool)
 	for branchIterator.Next() {
 		branchRecord := branchIterator.Value()
+		branchExpirationThreshold := now.AddDate(0, 0, -e.rules.DefaultRetentionDays)
+		if branchExpirationPeriod, ok := e.rules.BranchRetentionDays[branchRecord.BranchID]; ok {
+			branchExpirationThreshold = now.AddDate(0, 0, -branchExpirationPeriod)
+		}
 		commitID := branchRecord.CommitID
 		previousCommit, err := e.commitGetter.GetCommit(ctx, repositoryID, commitID)
 		if err != nil {
 			return nil, nil, err
-		}
-		var branchExpirationThreshold time.Time
-		if e.expirationDateGetter == nil {
-			//branchExpirationThreshold = getExpirationThresholdForCommit(previousCommit)
-		} else {
-			branchExpirationThreshold = e.expirationDateGetter.Get(&graveler.CommitRecord{CommitID: commitID, Commit: previousCommit})
 		}
 		if previousThreshold, ok := processed[commitID]; ok && !previousThreshold.After(branchExpirationThreshold) {
 			// was already here with earlier expiration date

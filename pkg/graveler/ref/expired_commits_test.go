@@ -13,14 +13,6 @@ import (
 	gtestutil "github.com/treeverse/lakefs/pkg/graveler/testutil"
 )
 
-type testExpirationDateGetter struct {
-	expirationDates map[string]time.Time
-}
-
-func (t *testExpirationDateGetter) Get(c *graveler.CommitRecord) time.Time {
-	return t.expirationDates[string(c.CommitID)]
-}
-
 type testCommit struct {
 	daysPassed int
 	parents    []graveler.CommitID
@@ -151,19 +143,21 @@ func TestExpiredCommits(t *testing.T) {
 			expectedExpiredIDs: []string{"e", "d"},
 		},
 	}
-	now := time.Now()
 	for name, tst := range tests {
 		t.Run(name, func(t *testing.T) {
+			now := time.Now()
 			branchRecords := make([]*graveler.BranchRecord, 0, len(tst.headsRetentionDays))
 			expirationDates := make(map[string]time.Time)
 			ctrl := gomock.NewController(t)
 			refManagerMock := mock.NewMockRefManager(ctrl)
 			ctx := context.Background()
+			retentionRules := &graveler.RetentionRules{DefaultRetentionDays: 0, BranchRetentionDays: make(map[graveler.BranchID]int)}
 			for head, retentionDays := range tst.headsRetentionDays {
 				branchRecords = append(branchRecords, &graveler.BranchRecord{
-					Branch: &graveler.Branch{CommitID: graveler.CommitID(head)},
+					BranchID: graveler.BranchID(head),
+					Branch:   &graveler.Branch{CommitID: graveler.CommitID(head)},
 				})
-				expirationDates[head] = now.AddDate(0, 0, -retentionDays)
+				retentionRules.BranchRetentionDays[graveler.BranchID(head)] = retentionDays
 			}
 			sort.Slice(branchRecords, func(i, j int) bool {
 				return expirationDates[string(branchRecords[i].CommitID)].Before(expirationDates[string(branchRecords[j].CommitID)])
@@ -182,9 +176,7 @@ func TestExpiredCommits(t *testing.T) {
 			finder := ExpiredCommitsFinder{
 				commitGetter: refManagerMock,
 				branchLister: refManagerMock,
-				expirationDateGetter: &testExpirationDateGetter{
-					expirationDates: expirationDates,
-				},
+				rules:        retentionRules,
 			}
 			previouslyExpiredCommitIDs := make([]graveler.CommitID, len(tst.previouslyExpired))
 			for i := range tst.previouslyExpired {
