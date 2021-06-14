@@ -1193,7 +1193,7 @@ func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repository string, 
 	}
 	previousRunReader, err := c.BlockAdapter.Get(ctx, block.ObjectPointer{
 		StorageNamespace: string(repo.StorageNamespace),
-		Identifier:       fmt.Sprintf(previousResultPath),
+		Identifier:       previousResultPath,
 		IdentifierType:   block.IdentifierTypeRelative,
 	}, -1)
 	if err != nil {
@@ -1212,7 +1212,7 @@ func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repository string, 
 	}
 	activeCommits, expiredCommits, err := c.Store.GetExpiredCommits(ctx, repositoryID, previouslyExpiredCommits)
 	if err != nil {
-		return "", fmt.Errorf("preparing expired commits: %v", err)
+		return "", fmt.Errorf("preparing expired commits: %w", err)
 	}
 	b := &strings.Builder{}
 	csvWriter := csv.NewWriter(b)
@@ -1229,8 +1229,8 @@ func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repository string, 
 		}
 	}
 	commitsStr := b.String()
-	runId := uuid.New().String()
-	path := fmt.Sprintf("_lakefs/retention/commits/run_id=%s/commits.csv", runId)
+	runID := uuid.New().String()
+	path := fmt.Sprintf("_lakefs/retention/commits/run_id=%s/commits.csv", runID)
 	err = c.BlockAdapter.Put(ctx, block.ObjectPointer{
 		StorageNamespace: string(repo.StorageNamespace),
 		Identifier:       path,

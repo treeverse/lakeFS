@@ -94,7 +94,7 @@ type Interface interface {
 	Commit(ctx context.Context, repository, branch string, message string, committer string, metadata Metadata) (*CommitLog, error)
 	GetCommit(ctx context.Context, repository, reference string) (*CommitLog, error)
 	ListCommits(ctx context.Context, repository, branch string, fromReference string, limit int) ([]*CommitLog, bool, error)
-	PrepareExpiredCommits(ctx context.Context, repository string, previouslyExpiredCommits []string) (string, error)
+	PrepareExpiredCommits(ctx context.Context, repository string, previousResultPath string) (string, error)
 
 	// Revert creates a reverse patch to the given commit, and applies it as a new commit on the given branch.
 	Revert(ctx context.Context, repository, branch string, params RevertParams) error

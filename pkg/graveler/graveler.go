@@ -883,7 +883,7 @@ func (g *Graveler) GetExpiredCommits(ctx context.Context, repositoryID Repositor
 	// TODO use "_lakefs" from configuration
 	rules, err := g.retentionRuleManager.GetRules(ctx, fmt.Sprintf("%s/_lakefs/retention/rules/config.json", repo.StorageNamespace))
 	if err != nil {
-		return nil, nil, fmt.Errorf("get retention rules: %v", err)
+		return nil, nil, fmt.Errorf("get retention rules: %w", err)
 	}
 	return g.RefManager.GetExpiredCommits(ctx, repositoryID, previouslyExpiredCommits, rules)
 }
