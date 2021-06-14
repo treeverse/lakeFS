@@ -53,7 +53,7 @@ Examples may be:
 * Different Spark configurations
 * Different code versions of an ETL
 
-Run each experiment on its own independent branch, while the main remains untouched. Once both experiments are done, create a comparison query (using hive or presto or any other tool of your choice) to compare data characteristics, performance or any other metric you see fit.
+Run each experiment on its own independent branch, while the main remains untouched. Once both experiments are done, create a comparison query (using Hive or Presto or any other tool of your choice) to compare data characteristics, performance or any other metric you see fit.
 
 With lakeFS you don't need to worry about creating data paths for the experiments, copying data, and remembering to delete it. It’s substantially easier to avoid errors and maintain a clean lake after.
 
