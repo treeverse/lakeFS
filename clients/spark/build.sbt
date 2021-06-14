@@ -57,7 +57,7 @@ def generateExamplesProject(buildType: BuildType) =
       sharedSettings,
       settingsToCompileIn("examples"),
       scalaVersion := buildType.scalaVersion,
-      libraryDependencies ++= Seq("org. apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
+      libraryDependencies ++= Seq("org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
         "software.amazon.awssdk" % "bom" % "2.15.15",
         "software.amazon.awssdk" % "s3" % "2.15.15",
         "com.amazonaws" % "aws-java-sdk" % "1.7.4", // should match hadoop-aws version(!)
