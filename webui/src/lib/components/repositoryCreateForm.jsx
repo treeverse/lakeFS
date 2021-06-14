@@ -46,7 +46,7 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
     const storageNamespaceValidityRegex = RegExp(storageNamespaceValidityRegexStr);
     const storageNamespaceExample = config ? config.blockstore_namespace_example : DEFAULT_BLOCKSTORE_EXAMPLE;
     return (
-        <Form onSubmit={(e) => {
+        <Form className={"mt-5"} onSubmit={(e) => {
             e.preventDefault();
             if (!formValid) {
                 return;
