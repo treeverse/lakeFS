@@ -115,7 +115,6 @@ func TestSuperUserPolicies(t *testing.T) {
 	resListPolicies, err := superUserClient.ListGroupPoliciesWithResponse(ctx, "Admins", &api.ListGroupPoliciesParams{})
 	require.NoError(t, err, "SuperUser failed while testing list Admin policies")
 	require.Equal(t, http.StatusUnauthorized, resListPolicies.StatusCode(), "SuperUser unexpectedly did not receive unauthorized response while listing Admin policies")
-
 }
 
 // Test Developer Policies: AuthManageOwnCredentials, FSFullAccess, RepoManagementReadAll
@@ -158,11 +157,10 @@ func TestDeveloperPolicies(t *testing.T) {
 	require.NoError(t, err, "Developer failed while testing delete repository")
 	require.Equal(t, http.StatusUnauthorized, resDeleteRepo.StatusCode(), "Developer unexpectedly did not receive unauthorized response while deleting repo")
 
-	// attempting to read the storage config should be unauthorized
-	resReadConfig, err := developerClient.GetConfigWithResponse(ctx)
-	require.NoError(t, err, "Developer failed while testing read storage config")
-	require.Equal(t, http.StatusUnauthorized, resReadConfig.StatusCode(), "Developer unexpectedly did not receive unauthorized response while reading storage config")
-
+	// attempting to list the users should be unauthorized
+	resListUsers, err := developerClient.ListUsersWithResponse(ctx, &api.ListUsersParams{})
+	require.NoError(t, err, "Developer failed while testing list users")
+	require.Equal(t, http.StatusUnauthorized, resListUsers.StatusCode(), "Developer unexpectedly did not receive unauthorized response while listing users")
 }
 
 // Test Viewer Policies: AuthManageOwnCredentials, FSReadAll
