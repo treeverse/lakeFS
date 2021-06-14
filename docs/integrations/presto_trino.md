@@ -46,9 +46,9 @@ hive.s3.endpoint=https://s3.lakefs.example.com
 
 ### Configure Hive
 
-Presto uses Hive to write data to S3.
-If we want to be able to write data to lakeFS we will need to configure hive as well.
-In file `hdfs-site.xml` add to the configuration:
+Presto/Trino uses Hive metastore service (HMS), or a compatible implementation of the Hive metastore, such as AWS Glue Data Catalog to write data to S3.
+In case you are using Hive metastore, you will need to configure Hive as well.
+In file `hive-site.xml` add to the configuration:
 ```xml
 <configuration>
     ...
