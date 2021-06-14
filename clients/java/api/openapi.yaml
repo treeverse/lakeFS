@@ -3789,6 +3789,26 @@ paths:
       tags:
       - healthCheck
       x-accepts: application/json
+  /config/version:
+    get:
+      description: get version of lakeFS server
+      operationId: getLakeFSVersion
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionConfig'
+          description: lakeFS version
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+      tags:
+      - config
+      x-accepts: application/json
   /config/storage:
     get:
       description: retrieve lakeFS storage configuration
@@ -4742,6 +4762,13 @@ components:
       - blockstore_namespace_ValidityRegex
       - blockstore_namespace_example
       - blockstore_type
+      type: object
+    VersionConfig:
+      example:
+        version: version
+      properties:
+        version:
+          type: string
       type: object
     ActionRun:
       example:

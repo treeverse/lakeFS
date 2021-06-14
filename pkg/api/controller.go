@@ -33,6 +33,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/upload"
+	"github.com/treeverse/lakefs/pkg/version"
 )
 
 type contextKey string
@@ -2708,6 +2709,16 @@ func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 		User: user,
 	}
 	writeResponse(w, http.StatusOK, response)
+}
+
+func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	user, ok := ctx.Value(UserContextKey).(*model.User)
+	if !ok || user == nil {
+		writeError(w, http.StatusUnauthorized, ErrAuthenticationFailed)
+		return
+	}
+	writeResponse(w, http.StatusOK, VersionConfig{Version: swag.String(version.Version)})
 }
 
 func IsStatusCodeOK(statusCode int) bool {

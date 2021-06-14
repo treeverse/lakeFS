@@ -5,13 +5,17 @@ import Nav from 'react-bootstrap/Nav';
 import NavDropdown from 'react-bootstrap/NavDropdown';
 
 import useUser from '../hooks/user'
-import {auth} from "../api";
+import {auth, config} from "../api";
 import {useRouter} from "../hooks/router";
 import {Link} from "./nav";
+import {useAPI} from "../hooks/api";
 
 const NavUserInfo = () => {
     const router = useRouter();
     const { user, loading, error } = useUser();
+    const { response: versionResponse, loading: versionLoading, error: versionError } = useAPI(() => {
+        return config.getLakeFSVersion()
+    }, [])
     if (loading)  return <Navbar.Text>Loading...</Navbar.Text>;
     if (!user || !!error) return (<></>);
     return (
@@ -37,6 +41,10 @@ const NavUserInfo = () => {
                     }}>
                     Logout
                 </NavDropdown.Item>
+                {!versionLoading && !versionError && <><NavDropdown.Divider/>
+                <NavDropdown.Item disabled={true}>
+                    <small>lakeFS {versionResponse.version}</small>
+                </NavDropdown.Item></>}
             </NavDropdown>
         </Navbar.Collapse>
     );
