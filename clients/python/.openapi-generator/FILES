@@ -21,13 +21,13 @@ docs/CurrentUser.md
 docs/Diff.md
 docs/DiffList.md
 docs/Error.md
+docs/GarbageCollectionCommits.md
 docs/Group.md
 docs/GroupCreation.md
 docs/GroupList.md
 docs/HealthCheckApi.md
 docs/HookRun.md
 docs/HookRunList.md
-docs/InlineResponse201.md
 docs/LoginInformation.md
 docs/Merge.md
 docs/MergeResult.md
@@ -99,12 +99,12 @@ lakefs_client/model/current_user.py
 lakefs_client/model/diff.py
 lakefs_client/model/diff_list.py
 lakefs_client/model/error.py
+lakefs_client/model/garbage_collection_commits.py
 lakefs_client/model/group.py
 lakefs_client/model/group_creation.py
 lakefs_client/model/group_list.py
 lakefs_client/model/hook_run.py
 lakefs_client/model/hook_run_list.py
-lakefs_client/model/inline_response201.py
 lakefs_client/model/login_information.py
 lakefs_client/model/merge.py
 lakefs_client/model/merge_result.py
@@ -143,6 +143,4 @@ setup.cfg
 setup.py
 test-requirements.txt
 test/__init__.py
-test/test_inline_response201.py
-test/test_retention_api.py
 tox.ini

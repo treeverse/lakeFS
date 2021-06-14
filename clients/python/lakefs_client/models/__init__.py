@@ -24,12 +24,12 @@ from lakefs_client.model.current_user import CurrentUser
 from lakefs_client.model.diff import Diff
 from lakefs_client.model.diff_list import DiffList
 from lakefs_client.model.error import Error
+ from lakefs_client.model.garbage_collection_commits import GarbageCollectionCommits
 from lakefs_client.model.group import Group
 from lakefs_client.model.group_creation import GroupCreation
 from lakefs_client.model.group_list import GroupList
 from lakefs_client.model.hook_run import HookRun
 from lakefs_client.model.hook_run_list import HookRunList
-from lakefs_client.model.inline_response201 import InlineResponse201
 from lakefs_client.model.login_information import LoginInformation
 from lakefs_client.model.merge import Merge
 from lakefs_client.model.merge_result import MergeResult

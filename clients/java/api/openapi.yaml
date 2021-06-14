@@ -3740,7 +3740,7 @@ paths:
       x-accepts: application/json
   /repositories/{repository}/gc/prepare:
     post:
-      operationId: prepareRetentionCommits
+      operationId: prepareGarbageCollectionCommits
       parameters:
       - explode: false
         in: path
@@ -3754,8 +3754,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_201'
-          description: paths to commit sets
+                $ref: '#/components/schemas/GarbageCollectionCommits'
+          description: paths to commit dataset
         "401":
           content:
             application/json:
@@ -4923,21 +4923,19 @@ components:
       - size_bytes
       - staging
       type: object
+    GarbageCollectionCommits:
+      example:
+        path: path
+      properties:
+        path:
+          description: path to a dataset of commits
+          type: string
+      type: object
     inline_object:
       properties:
         content:
           description: Object content to upload
           format: binary
-          type: string
-      type: object
-    inline_response_201:
-      example:
-        path_to_expired: path_to_expired
-        path_to_active: path_to_active
-      properties:
-        path_to_expired:
-          type: string
-        path_to_active:
           type: string
       type: object
     MergeResult_summary:

@@ -1,4 +1,4 @@
-package retention
+package ref
 
 import (
 	"context"
@@ -11,7 +11,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/mock"
 	gtestutil "github.com/treeverse/lakefs/pkg/graveler/testutil"
-	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
 type testExpirationDateGetter struct {
@@ -34,7 +33,7 @@ func newTestCommit(daysPassed int, parents ...graveler.CommitID) testCommit {
 	}
 }
 
-func newCommitSet(commitIDs []string) CommitSet {
+func newCommitSet(commitIDs []string) map[graveler.CommitID]bool {
 	res := make(map[graveler.CommitID]bool, 0)
 	for _, commitID := range commitIDs {
 		res[graveler.CommitID(commitID)] = true
@@ -180,33 +179,44 @@ func TestExpiredCommits(t *testing.T) {
 					refManagerMock.EXPECT().GetCommit(ctx, graveler.RepositoryID("test"), id).Return(commitMap[id], nil)
 				}
 			}
-			finder := ExpiredCommitFinder{
-				refManager: refManagerMock,
+			finder := ExpiredCommitsFinder{
+				commitGetter: refManagerMock,
+				branchLister: refManagerMock,
 				expirationDateGetter: &testExpirationDateGetter{
 					expirationDates: expirationDates,
 				},
 			}
-			retentionCommits, err := finder.Find(ctx, "test", previouslyExpired)
-			testutil.MustDo(t, "find active commits", err)
-			activeCommitIDs := make([]string, 0, len(retentionCommits.Active))
-			for commitID := range retentionCommits.Active {
-				activeCommitIDs = append(activeCommitIDs, string(commitID.Ref()))
+			previouslyExpiredCommitIDs := make([]graveler.CommitID, len(tst.previouslyExpired))
+			for i := range tst.previouslyExpired {
+				previouslyExpiredCommitIDs[i] = graveler.CommitID(tst.previouslyExpired[i])
+			}
+			activeCommits, expiredCommits, err := finder.GetExpiredCommits(ctx, "test", previouslyExpiredCommitIDs)
+			if err != nil {
+				t.Fatalf("failed to find expired commits: %v", err)
 			}
 			sort.Strings(tst.expectedActiveIDs)
-			sort.Strings(activeCommitIDs)
-			if diff := deep.Equal(tst.expectedActiveIDs, activeCommitIDs); diff != nil {
+			sort.Slice(activeCommits, func(i, j int) bool {
+				return activeCommits[i].Ref() < activeCommits[j].Ref()
+			})
+			if diff := deep.Equal(tst.expectedActiveIDs, testToStringArray(activeCommits)); diff != nil {
 				t.Errorf("active commits ids diff=%s", diff)
 			}
-			expiredCommitIDs := make([]string, 0, len(retentionCommits.Expired))
 
-			for commitID := range retentionCommits.Expired {
-				expiredCommitIDs = append(expiredCommitIDs, string(commitID.Ref()))
-			}
 			sort.Strings(tst.expectedExpiredIDs)
-			sort.Strings(expiredCommitIDs)
-			if diff := deep.Equal(tst.expectedExpiredIDs, expiredCommitIDs); diff != nil {
+			sort.Slice(expiredCommits, func(i, j int) bool {
+				return expiredCommits[i].Ref() < expiredCommits[j].Ref()
+			})
+			if diff := deep.Equal(tst.expectedExpiredIDs, testToStringArray(expiredCommits)); diff != nil {
 				t.Errorf("expired commits ids diff=%s", diff)
 			}
 		})
 	}
+}
+
+func testToStringArray(commitIDs []graveler.CommitID) []string {
+	res := make([]string, len(commitIDs))
+	for i := range commitIDs {
+		res[i] = string(commitIDs[i])
+	}
+	return res
 }

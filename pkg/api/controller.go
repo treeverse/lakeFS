@@ -15,6 +15,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-openapi/swag"
+
 	"github.com/aws/aws-sdk-go/aws"
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/treeverse/lakefs/pkg/actions"
@@ -1911,7 +1913,7 @@ func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repositor
 	writeResponse(w, http.StatusOK, response)
 }
 
-func (c *Controller) PrepareRetentionCommits(w http.ResponseWriter, r *http.Request, repository string) {
+func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *http.Request, repository string) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
 			Action:   permissions.ListObjectsAction,
@@ -1920,7 +1922,8 @@ func (c *Controller) PrepareRetentionCommits(w http.ResponseWriter, r *http.Requ
 	}) {
 		return
 	}
-	c.Logger
+	pth := ""
+	writeResponse(w, http.StatusCreated, GarbageCollectionCommits{Path: swag.String(pth)})
 }
 
 func (c *Controller) GetMetaRange(w http.ResponseWriter, r *http.Request, repository string, metaRange string) {

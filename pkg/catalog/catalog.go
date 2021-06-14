@@ -4,12 +4,15 @@ import (
 	"context"
 	"crypto"
 	_ "crypto/sha256"
+	"encoding/csv"
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/cockroachdb/pebble"
+	"github.com/google/uuid"
 	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -1173,6 +1176,68 @@ func (c *Catalog) GetMetaRange(ctx context.Context, repositoryID, metaRangeID st
 
 func (c *Catalog) GetRange(ctx context.Context, repositoryID, rangeID string) (graveler.RangeInfo, error) {
 	return c.Store.GetRange(ctx, graveler.RepositoryID(repositoryID), graveler.RangeID(rangeID))
+}
+
+func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repository string, previousResultPath string) (string, error) {
+	repositoryID := graveler.RepositoryID(repository)
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+	}); err != nil {
+		return "", err
+	}
+	repo, err := c.Store.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return "", err
+	}
+	previousRunReader, err := c.BlockAdapter.Get(ctx, block.ObjectPointer{
+		StorageNamespace: string(repo.StorageNamespace),
+		Identifier:       fmt.Sprintf(previousResultPath),
+		IdentifierType:   block.IdentifierTypeRelative,
+	}, -1)
+	if err != nil {
+		return "", err
+	}
+	previouslyExpiredCommits := make([]graveler.CommitID, 0)
+	if previousResultPath != "" {
+		csvReader := csv.NewReader(previousRunReader)
+		previousCommits, err := csvReader.ReadAll()
+		if err != nil {
+			return "", err
+		}
+		for _, commitRow := range previousCommits {
+			previouslyExpiredCommits = append(previouslyExpiredCommits, graveler.CommitID(commitRow[1]))
+		}
+	}
+	activeCommits, expiredCommits, err := c.Store.GetExpiredCommits(ctx, repositoryID, previouslyExpiredCommits)
+	if err != nil {
+		return "", fmt.Errorf("preparing expired commits: %v", err)
+	}
+	b := &strings.Builder{}
+	csvWriter := csv.NewWriter(b)
+	for _, commitID := range expiredCommits {
+		err = csvWriter.Write([]string{string(commitID), strconv.FormatBool(true)})
+		if err != nil {
+			return "", err
+		}
+	}
+	for _, commitID := range activeCommits {
+		err = csvWriter.Write([]string{string(commitID), strconv.FormatBool(false)})
+		if err != nil {
+			return "", err
+		}
+	}
+	commitsStr := b.String()
+	runId := uuid.New().String()
+	path := fmt.Sprintf("_lakefs/retention/commits/run_id=%s/commits.csv", runId)
+	err = c.BlockAdapter.Put(ctx, block.ObjectPointer{
+		StorageNamespace: string(repo.StorageNamespace),
+		Identifier:       path,
+		IdentifierType:   block.IdentifierTypeRelative,
+	}, int64(len(commitsStr)), strings.NewReader(commitsStr), block.PutOpts{})
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s/%s", repo.StorageNamespace, path), nil
 }
 
 func (c *Catalog) Close() error {

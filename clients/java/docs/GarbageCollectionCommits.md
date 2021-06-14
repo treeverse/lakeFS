@@ -1,14 +1,13 @@
 
 
-# InlineResponse201
+# GarbageCollectionCommits
 
 
 ## Properties
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**pathToExpired** | **String** |  |  [optional]
-**pathToActive** | **String** |  |  [optional]
+**path** | **String** | path to a dataset of commits |  [optional]
 
 
 

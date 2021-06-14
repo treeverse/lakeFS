@@ -28,7 +28,7 @@ import java.io.IOException;
 
 
 import io.lakefs.clients.api.model.Error;
-import io.lakefs.clients.api.model.InlineResponse201;
+import io.lakefs.clients.api.model.GarbageCollectionCommits;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -56,7 +56,7 @@ public class RetentionApi {
     }
 
     /**
-     * Build call for prepareRetentionCommits
+     * Build call for prepareGarbageCollectionCommits
      * @param repository  (required)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
@@ -64,13 +64,13 @@ public class RetentionApi {
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 201 </td><td> paths to commit sets </td><td>  -  </td></tr>
+        <tr><td> 201 </td><td> paths to commit dataset </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call prepareRetentionCommitsCall(String repository, final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call prepareGarbageCollectionCommitsCall(String repository, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = null;
 
         // create path and map variables
@@ -102,15 +102,15 @@ public class RetentionApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call prepareRetentionCommitsValidateBeforeCall(String repository, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call prepareGarbageCollectionCommitsValidateBeforeCall(String repository, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'repository' is set
         if (repository == null) {
-            throw new ApiException("Missing the required parameter 'repository' when calling prepareRetentionCommits(Async)");
+            throw new ApiException("Missing the required parameter 'repository' when calling prepareGarbageCollectionCommits(Async)");
         }
         
 
-        okhttp3.Call localVarCall = prepareRetentionCommitsCall(repository, _callback);
+        okhttp3.Call localVarCall = prepareGarbageCollectionCommitsCall(repository, _callback);
         return localVarCall;
 
     }
@@ -119,19 +119,19 @@ public class RetentionApi {
      * save lists of active and expired commits for garbage collection
      * 
      * @param repository  (required)
-     * @return InlineResponse201
+     * @return GarbageCollectionCommits
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 201 </td><td> paths to commit sets </td><td>  -  </td></tr>
+        <tr><td> 201 </td><td> paths to commit dataset </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public InlineResponse201 prepareRetentionCommits(String repository) throws ApiException {
-        ApiResponse<InlineResponse201> localVarResp = prepareRetentionCommitsWithHttpInfo(repository);
+    public GarbageCollectionCommits prepareGarbageCollectionCommits(String repository) throws ApiException {
+        ApiResponse<GarbageCollectionCommits> localVarResp = prepareGarbageCollectionCommitsWithHttpInfo(repository);
         return localVarResp.getData();
     }
 
@@ -139,20 +139,20 @@ public class RetentionApi {
      * save lists of active and expired commits for garbage collection
      * 
      * @param repository  (required)
-     * @return ApiResponse&lt;InlineResponse201&gt;
+     * @return ApiResponse&lt;GarbageCollectionCommits&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 201 </td><td> paths to commit sets </td><td>  -  </td></tr>
+        <tr><td> 201 </td><td> paths to commit dataset </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<InlineResponse201> prepareRetentionCommitsWithHttpInfo(String repository) throws ApiException {
-        okhttp3.Call localVarCall = prepareRetentionCommitsValidateBeforeCall(repository, null);
-        Type localVarReturnType = new TypeToken<InlineResponse201>(){}.getType();
+    public ApiResponse<GarbageCollectionCommits> prepareGarbageCollectionCommitsWithHttpInfo(String repository) throws ApiException {
+        okhttp3.Call localVarCall = prepareGarbageCollectionCommitsValidateBeforeCall(repository, null);
+        Type localVarReturnType = new TypeToken<GarbageCollectionCommits>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
@@ -166,16 +166,16 @@ public class RetentionApi {
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 201 </td><td> paths to commit sets </td><td>  -  </td></tr>
+        <tr><td> 201 </td><td> paths to commit dataset </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call prepareRetentionCommitsAsync(String repository, final ApiCallback<InlineResponse201> _callback) throws ApiException {
+    public okhttp3.Call prepareGarbageCollectionCommitsAsync(String repository, final ApiCallback<GarbageCollectionCommits> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = prepareRetentionCommitsValidateBeforeCall(repository, _callback);
-        Type localVarReturnType = new TypeToken<InlineResponse201>(){}.getType();
+        okhttp3.Call localVarCall = prepareGarbageCollectionCommitsValidateBeforeCall(repository, _callback);
+        Type localVarReturnType = new TypeToken<GarbageCollectionCommits>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
     }

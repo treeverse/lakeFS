@@ -811,6 +811,13 @@ components:
         - checksum
         - size_bytes
 
+    GarbageCollectionCommits:
+      type: object
+      properties:
+        path:
+          type: string
+          description: path to a dataset of commits
+
 paths:
   /setup_lakefs:
     post:
@@ -2833,20 +2840,15 @@ paths:
     post:
       tags:
         - retention
-      operationId: prepareRetentionCommits
+      operationId: prepareGarbageCollectionCommits
       summary: save lists of active and expired commits for garbage collection
       responses:
         201:
-          description: paths to commit sets
+          description: paths to commit dataset
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  path_to_expired:
-                    type: string
-                  path_to_active:
-                    type: string
+                $ref: "#/components/schemas/GarbageCollectionCommits"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:

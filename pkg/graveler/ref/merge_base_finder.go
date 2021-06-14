@@ -7,10 +7,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler"
 )
 
-type CommitGetter interface {
-	GetCommit(ctx context.Context, repositoryID graveler.RepositoryID, commitID graveler.CommitID) (*graveler.Commit, error)
-}
-
 type reachedFlags uint8
 
 const (
@@ -20,7 +16,7 @@ const (
 
 // FindMergeBase finds the best common ancestor according to the definition in the git-merge-base documentation: https://git-scm.com/docs/git-merge-base
 // One common ancestor is better than another common ancestor if the latter is an ancestor of the former.
-func FindMergeBase(ctx context.Context, getter CommitGetter, repositoryID graveler.RepositoryID, leftID, rightID graveler.CommitID) (*graveler.Commit, error) {
+func FindMergeBase(ctx context.Context, getter graveler.CommitGetter, repositoryID graveler.RepositoryID, leftID, rightID graveler.CommitID) (*graveler.Commit, error) {
 	var commitRecord *graveler.CommitRecord
 	queue := NewCommitsGenerationPriorityQueue()
 	reached := make(map[graveler.CommitID]reachedFlags)

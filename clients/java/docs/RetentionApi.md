@@ -4,12 +4,12 @@ All URIs are relative to *http://localhost/api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**prepareRetentionCommits**](RetentionApi.md#prepareRetentionCommits) | **POST** /repositories/{repository}/gc/prepare | save lists of active and expired commits for garbage collection
+[**prepareGarbageCollectionCommits**](RetentionApi.md#prepareGarbageCollectionCommits) | **POST** /repositories/{repository}/gc/prepare | save lists of active and expired commits for garbage collection
 
 
-<a name="prepareRetentionCommits"></a>
-# **prepareRetentionCommits**
-> InlineResponse201 prepareRetentionCommits(repository)
+<a name="prepareGarbageCollectionCommits"></a>
+# **prepareGarbageCollectionCommits**
+> GarbageCollectionCommits prepareGarbageCollectionCommits(repository)
 
 save lists of active and expired commits for garbage collection
 
@@ -46,10 +46,10 @@ public class Example {
     RetentionApi apiInstance = new RetentionApi(defaultClient);
     String repository = "repository_example"; // String | 
     try {
-      InlineResponse201 result = apiInstance.prepareRetentionCommits(repository);
+      GarbageCollectionCommits result = apiInstance.prepareGarbageCollectionCommits(repository);
       System.out.println(result);
     } catch (ApiException e) {
-      System.err.println("Exception when calling RetentionApi#prepareRetentionCommits");
+      System.err.println("Exception when calling RetentionApi#prepareGarbageCollectionCommits");
       System.err.println("Status code: " + e.getCode());
       System.err.println("Reason: " + e.getResponseBody());
       System.err.println("Response headers: " + e.getResponseHeaders());
@@ -67,7 +67,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**InlineResponse201**](InlineResponse201.md)
+[**GarbageCollectionCommits**](GarbageCollectionCommits.md)
 
 ### Authorization
 
@@ -81,7 +81,7 @@ Name | Type | Description  | Notes
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**201** | paths to commit sets |  -  |
+**201** | paths to commit dataset |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **0** | Internal Server Error |  -  |

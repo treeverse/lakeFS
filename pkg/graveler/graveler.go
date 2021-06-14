@@ -370,6 +370,10 @@ type VersionController interface {
 	// GetStagingToken returns the token identifying current staging for branchID of
 	// repositoryID.
 	GetStagingToken(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (*StagingToken, error)
+
+	// GetExpiredCommits returns the sets of active and expired commits, according to the branch rules for garbage collection.
+	// The commits in the given set previouslyExpiredCommits will not be scanned.
+	GetExpiredCommits(ctx context.Context, repositoryID RepositoryID, previouslyExpiredCommits []CommitID) (expired []CommitID, active []CommitID, err error)
 }
 
 // Plumbing includes commands for fiddling more directly with graveler implementation
@@ -468,6 +472,14 @@ type CommitIterator interface {
 	Close()
 }
 
+type CommitGetter interface {
+	GetCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (*Commit, error)
+}
+
+type BranchLister interface {
+	ListBranches(ctx context.Context, repositoryID RepositoryID) (BranchIterator, error)
+}
+
 // These are the more complex internal components that compose the functionality of the Graveler
 
 // RefManager handles references: branches, commits, probably tags in the future
@@ -535,6 +547,10 @@ type RefManager interface {
 	// FillGenerations computes and updates the generation field for all commits in a repository.
 	// It should be used for restoring commits from a commit-dump which was performed before the field was introduced.
 	FillGenerations(ctx context.Context, repositoryID RepositoryID) error
+
+	// GetExpiredCommits returns the sets of active and expired commits, according to the branch rules for garbage collection.
+	// The commits in the given set previouslyExpiredCommits will not be scanned.
+	GetExpiredCommits(ctx context.Context, repositoryID RepositoryID, previouslyExpiredCommits []CommitID) (expired []CommitID, active []CommitID, err error)
 }
 
 // CommittedManager reads and applies committed snapshots
@@ -631,7 +647,6 @@ func (id Key) Copy() Key {
 	copy(keyCopy, id)
 	return keyCopy
 }
-
 func (id Key) String() string {
 	return string(id)
 }
@@ -856,6 +871,10 @@ func (g *Graveler) GetStagingToken(ctx context.Context, repositoryID RepositoryI
 		return nil, err
 	}
 	return &branch.StagingToken, nil
+}
+
+func (g *Graveler) GetExpiredCommits(ctx context.Context, repositoryID RepositoryID, previouslyExpiredCommits []CommitID) (expired []CommitID, active []CommitID, err error) {
+	panic("implement me")
 }
 
 func (g *Graveler) Get(ctx context.Context, repositoryID RepositoryID, ref Ref, key Key) (*Value, error) {

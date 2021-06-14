@@ -4,11 +4,11 @@ All URIs are relative to *http://localhost/api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**prepare_retention_commits**](RetentionApi.md#prepare_retention_commits) | **POST** /repositories/{repository}/gc/prepare | save lists of active and expired commits for garbage collection
+[**prepare_garbage_collection_commits**](RetentionApi.md#prepare_garbage_collection_commits) | **POST** /repositories/{repository}/gc/prepare | save lists of active and expired commits for garbage collection
 
 
-# **prepare_retention_commits**
-> InlineResponse201 prepare_retention_commits(repository)
+# **prepare_garbage_collection_commits**
+> GarbageCollectionCommits prepare_garbage_collection_commits(repository)
 
 save lists of active and expired commits for garbage collection
 
@@ -21,7 +21,7 @@ save lists of active and expired commits for garbage collection
 import time
 import lakefs_client
 from lakefs_client.api import retention_api
-from lakefs_client.model.inline_response201 import InlineResponse201
+from lakefs_client.model.garbage_collection_commits import GarbageCollectionCommits
 from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
@@ -61,10 +61,10 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # example passing only required values which don't have defaults set
     try:
         # save lists of active and expired commits for garbage collection
-        api_response = api_instance.prepare_retention_commits(repository)
+        api_response = api_instance.prepare_garbage_collection_commits(repository)
         pprint(api_response)
     except lakefs_client.ApiException as e:
-        print("Exception when calling RetentionApi->prepare_retention_commits: %s\n" % e)
+        print("Exception when calling RetentionApi->prepare_garbage_collection_commits: %s\n" % e)
 ```
 
 
@@ -76,7 +76,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**InlineResponse201**](InlineResponse201.md)
+[**GarbageCollectionCommits**](GarbageCollectionCommits.md)
 
 ### Authorization
 
@@ -91,7 +91,7 @@ Name | Type | Description  | Notes
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**201** | paths to commit sets |  -  |
+**201** | paths to commit dataset |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **0** | Internal Server Error |  -  |

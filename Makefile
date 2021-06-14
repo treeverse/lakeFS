@@ -68,7 +68,7 @@ clean:
 		pkg/ddl/statik.go \
 		pkg/graveler/sstable/mock \
 		pkg/webui \
-	    pkg/graveler/committed/mock
+	    pkg/graveler/committed/mock \
 	    pkg/graveler/mock
 
 check-licenses: check-licenses-go-mod check-licenses-npm

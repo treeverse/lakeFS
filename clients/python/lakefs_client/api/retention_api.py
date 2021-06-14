@@ -23,7 +23,7 @@ from lakefs_client.model_utils import (  # noqa: F401
     validate_and_convert_types
 )
 from lakefs_client.model.error import Error
-from lakefs_client.model.inline_response201 import InlineResponse201
+from lakefs_client.model.garbage_collection_commits import GarbageCollectionCommits
 
 
 class RetentionApi(object):
@@ -38,7 +38,7 @@ class RetentionApi(object):
             api_client = ApiClient()
         self.api_client = api_client
 
-        def __prepare_retention_commits(
+        def __prepare_garbage_collection_commits(
             self,
             repository,
             **kwargs
@@ -48,7 +48,7 @@ class RetentionApi(object):
             This method makes a synchronous HTTP request by default. To make an
             asynchronous HTTP request, please pass async_req=True
 
-            >>> thread = api.prepare_retention_commits(repository, async_req=True)
+            >>> thread = api.prepare_garbage_collection_commits(repository, async_req=True)
             >>> result = thread.get()
 
             Args:
@@ -76,7 +76,7 @@ class RetentionApi(object):
                 async_req (bool): execute request asynchronously
 
             Returns:
-                InlineResponse201
+                GarbageCollectionCommits
                     If the method is called asynchronously, returns the request
                     thread.
             """
@@ -103,16 +103,16 @@ class RetentionApi(object):
                 repository
             return self.call_with_http_info(**kwargs)
 
-        self.prepare_retention_commits = _Endpoint(
+        self.prepare_garbage_collection_commits = _Endpoint(
             settings={
-                'response_type': (InlineResponse201,),
+                'response_type': (GarbageCollectionCommits,),
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/gc/prepare',
-                'operation_id': 'prepare_retention_commits',
+                'operation_id': 'prepare_garbage_collection_commits',
                 'http_method': 'POST',
                 'servers': None,
             },
@@ -155,5 +155,5 @@ class RetentionApi(object):
                 'content_type': [],
             },
             api_client=api_client,
-            callable=__prepare_retention_commits
+            callable=__prepare_garbage_collection_commits
         )
