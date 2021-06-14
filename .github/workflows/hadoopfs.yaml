@@ -20,4 +20,4 @@ jobs:
           distribution: 'adopt'
       - name: Build hadoopfs
         working-directory: clients/hadoopfs
-        run: mvn --batch-mode --update-snapshots -P'!treeverse-signing' verify
+        run: mvn --quiet --batch-mode --update-snapshots -P'!treeverse-signing' verify
