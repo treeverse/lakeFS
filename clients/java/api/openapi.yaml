@@ -3749,6 +3749,11 @@ paths:
         schema:
           type: string
         style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GarbageCollectionPrepareRequest'
       responses:
         "201":
           content:
@@ -3777,6 +3782,7 @@ paths:
       summary: save lists of active and expired commits for garbage collection
       tags:
       - retention
+      x-contentType: application/json
       x-accepts: application/json
   /healthcheck:
     get:
@@ -4949,6 +4955,14 @@ components:
       - checksum
       - size_bytes
       - staging
+      type: object
+    GarbageCollectionPrepareRequest:
+      example:
+        previous_result_path: previous_result_path
+      properties:
+        previous_result_path:
+          description: path to the result of a previous successful GC job
+          type: string
       type: object
     GarbageCollectionCommits:
       example:

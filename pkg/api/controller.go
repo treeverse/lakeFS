@@ -1914,7 +1914,7 @@ func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repositor
 	writeResponse(w, http.StatusOK, response)
 }
 
-func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *http.Request, repository string) {
+func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *http.Request, body PrepareGarbageCollectionCommitsJSONRequestBody, repository string) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
 			Action:   permissions.ListObjectsAction,
@@ -1923,7 +1923,16 @@ func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *h
 	}) {
 		return
 	}
-	pth := ""
+	ctx := r.Context()
+	c.LogAction(ctx, "prepare_garbage_collection_commits")
+	previousResultPath := ""
+	if body.PreviousResultPath != nil {
+		previousResultPath = *body.PreviousResultPath
+	}
+	pth, err := c.Catalog.PrepareExpiredCommits(ctx, repository, previousResultPath)
+	if handleAPIError(w, err) {
+		return
+	}
 	writeResponse(w, http.StatusCreated, GarbageCollectionCommits{Path: swag.String(pth)})
 }
 

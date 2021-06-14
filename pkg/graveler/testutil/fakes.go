@@ -204,6 +204,10 @@ type RefsFake struct {
 	Commits             map[graveler.CommitID]*graveler.Commit
 }
 
+func (m *RefsFake) GetExpiredCommits(ctx context.Context, repositoryID graveler.RepositoryID, previouslyExpiredCommits []graveler.CommitID, rules *graveler.RetentionRules) (expired []graveler.CommitID, active []graveler.CommitID, err error) {
+	panic("implement me")
+}
+
 func (m *RefsFake) FillGenerations(ctx context.Context, repositoryID graveler.RepositoryID) error {
 	panic("implement me")
 }

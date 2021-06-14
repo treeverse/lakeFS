@@ -9,7 +9,7 @@ Method | HTTP request | Description
 
 <a name="prepareGarbageCollectionCommits"></a>
 # **prepareGarbageCollectionCommits**
-> GarbageCollectionCommits prepareGarbageCollectionCommits(repository)
+> GarbageCollectionCommits prepareGarbageCollectionCommits(repository, garbageCollectionPrepareRequest)
 
 save lists of active and expired commits for garbage collection
 
@@ -45,8 +45,9 @@ public class Example {
 
     RetentionApi apiInstance = new RetentionApi(defaultClient);
     String repository = "repository_example"; // String | 
+    GarbageCollectionPrepareRequest garbageCollectionPrepareRequest = new GarbageCollectionPrepareRequest(); // GarbageCollectionPrepareRequest | 
     try {
-      GarbageCollectionCommits result = apiInstance.prepareGarbageCollectionCommits(repository);
+      GarbageCollectionCommits result = apiInstance.prepareGarbageCollectionCommits(repository, garbageCollectionPrepareRequest);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling RetentionApi#prepareGarbageCollectionCommits");
@@ -64,6 +65,7 @@ public class Example {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **String**|  |
+ **garbageCollectionPrepareRequest** | [**GarbageCollectionPrepareRequest**](GarbageCollectionPrepareRequest.md)|  | [optional]
 
 ### Return type
 
@@ -75,7 +77,7 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
+ - **Content-Type**: application/json
  - **Accept**: application/json
 
 ### HTTP response details

@@ -5,10 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/graveler/testutil"
-
 	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/graveler/testutil"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

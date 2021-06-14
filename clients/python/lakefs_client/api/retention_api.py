@@ -24,6 +24,7 @@ from lakefs_client.model_utils import (  # noqa: F401
 )
 from lakefs_client.model.error import Error
 from lakefs_client.model.garbage_collection_commits import GarbageCollectionCommits
+from lakefs_client.model.garbage_collection_prepare_request import GarbageCollectionPrepareRequest
 
 
 class RetentionApi(object):
@@ -55,6 +56,7 @@ class RetentionApi(object):
                 repository (str):
 
             Keyword Args:
+                garbage_collection_prepare_request (GarbageCollectionPrepareRequest): [optional]
                 _return_http_data_only (bool): response data without head status
                     code and headers. Default is True.
                 _preload_content (bool): if False, the urllib3.HTTPResponse object
@@ -119,6 +121,7 @@ class RetentionApi(object):
             params_map={
                 'all': [
                     'repository',
+                    'garbage_collection_prepare_request',
                 ],
                 'required': [
                     'repository',
@@ -138,12 +141,15 @@ class RetentionApi(object):
                 'openapi_types': {
                     'repository':
                         (str,),
+                    'garbage_collection_prepare_request':
+                        (GarbageCollectionPrepareRequest,),
                 },
                 'attribute_map': {
                     'repository': 'repository',
                 },
                 'location_map': {
                     'repository': 'path',
+                    'garbage_collection_prepare_request': 'body',
                 },
                 'collection_format_map': {
                 }
@@ -152,7 +158,9 @@ class RetentionApi(object):
                 'accept': [
                     'application/json'
                 ],
-                'content_type': [],
+                'content_type': [
+                    'application/json'
+                ]
             },
             api_client=api_client,
             callable=__prepare_garbage_collection_commits

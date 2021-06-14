@@ -198,6 +198,7 @@ Class | Method | HTTP request | Description
  - [DiffList](docs/DiffList.md)
  - [Error](docs/Error.md)
  - [GarbageCollectionCommits](docs/GarbageCollectionCommits.md)
+ - [GarbageCollectionPrepareRequest](docs/GarbageCollectionPrepareRequest.md)
  - [Group](docs/Group.md)
  - [GroupCreation](docs/GroupCreation.md)
  - [GroupList](docs/GroupList.md)

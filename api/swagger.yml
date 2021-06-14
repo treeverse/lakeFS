@@ -817,6 +817,12 @@ components:
         - checksum
         - size_bytes
 
+    GarbageCollectionPrepareRequest:
+      type: object
+      properties:
+        previous_result_path:
+          type: string
+          description: path to the result of a previous successful GC job
     GarbageCollectionCommits:
       type: object
       properties:
@@ -2844,6 +2850,11 @@ paths:
         schema:
           type: string
     post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GarbageCollectionPrepareRequest"
       tags:
         - retention
       operationId: prepareGarbageCollectionCommits

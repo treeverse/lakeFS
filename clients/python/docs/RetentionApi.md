@@ -23,6 +23,7 @@ import lakefs_client
 from lakefs_client.api import retention_api
 from lakefs_client.model.garbage_collection_commits import GarbageCollectionCommits
 from lakefs_client.model.error import Error
+from lakefs_client.model.garbage_collection_prepare_request import GarbageCollectionPrepareRequest
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
@@ -57,11 +58,23 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = retention_api.RetentionApi(api_client)
     repository = "repository_example" # str | 
+    garbage_collection_prepare_request = GarbageCollectionPrepareRequest(
+        previous_result_path="previous_result_path_example",
+    ) # GarbageCollectionPrepareRequest |  (optional)
 
     # example passing only required values which don't have defaults set
     try:
         # save lists of active and expired commits for garbage collection
         api_response = api_instance.prepare_garbage_collection_commits(repository)
+        pprint(api_response)
+    except lakefs_client.ApiException as e:
+        print("Exception when calling RetentionApi->prepare_garbage_collection_commits: %s\n" % e)
+
+    # example passing only required values which don't have defaults set
+    # and optional values
+    try:
+        # save lists of active and expired commits for garbage collection
+        api_response = api_instance.prepare_garbage_collection_commits(repository, garbage_collection_prepare_request=garbage_collection_prepare_request)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling RetentionApi->prepare_garbage_collection_commits: %s\n" % e)
@@ -73,6 +86,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
+ **garbage_collection_prepare_request** | [**GarbageCollectionPrepareRequest**](GarbageCollectionPrepareRequest.md)|  | [optional]
 
 ### Return type
 
@@ -84,7 +98,7 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
+ - **Content-Type**: application/json
  - **Accept**: application/json
 
 

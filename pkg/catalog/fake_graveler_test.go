@@ -19,6 +19,10 @@ type FakeGraveler struct {
 	hooks                     graveler.HooksHandler
 }
 
+func (g *FakeGraveler) GetExpiredCommits(ctx context.Context, repositoryID graveler.RepositoryID, previouslyExpiredCommits []graveler.CommitID) (expired []graveler.CommitID, active []graveler.CommitID, err error) {
+	panic("implement me")
+}
+
 func (g *FakeGraveler) CreateBareRepository(ctx context.Context, repositoryID graveler.RepositoryID, storageNamespace graveler.StorageNamespace, branchID graveler.BranchID) (*graveler.Repository, error) {
 	panic("implement me")
 }

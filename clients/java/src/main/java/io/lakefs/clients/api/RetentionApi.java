@@ -29,6 +29,7 @@ import java.io.IOException;
 
 import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.GarbageCollectionCommits;
+import io.lakefs.clients.api.model.GarbageCollectionPrepareRequest;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -58,6 +59,7 @@ public class RetentionApi {
     /**
      * Build call for prepareGarbageCollectionCommits
      * @param repository  (required)
+     * @param garbageCollectionPrepareRequest  (optional)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -70,8 +72,8 @@ public class RetentionApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call prepareGarbageCollectionCommitsCall(String repository, final ApiCallback _callback) throws ApiException {
-        Object localVarPostBody = null;
+    public okhttp3.Call prepareGarbageCollectionCommitsCall(String repository, GarbageCollectionPrepareRequest garbageCollectionPrepareRequest, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = garbageCollectionPrepareRequest;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/gc/prepare"
@@ -92,7 +94,7 @@ public class RetentionApi {
         }
 
         final String[] localVarContentTypes = {
-            
+            "application/json"
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
         localVarHeaderParams.put("Content-Type", localVarContentType);
@@ -102,7 +104,7 @@ public class RetentionApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call prepareGarbageCollectionCommitsValidateBeforeCall(String repository, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call prepareGarbageCollectionCommitsValidateBeforeCall(String repository, GarbageCollectionPrepareRequest garbageCollectionPrepareRequest, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'repository' is set
         if (repository == null) {
@@ -110,7 +112,7 @@ public class RetentionApi {
         }
         
 
-        okhttp3.Call localVarCall = prepareGarbageCollectionCommitsCall(repository, _callback);
+        okhttp3.Call localVarCall = prepareGarbageCollectionCommitsCall(repository, garbageCollectionPrepareRequest, _callback);
         return localVarCall;
 
     }
@@ -119,6 +121,7 @@ public class RetentionApi {
      * save lists of active and expired commits for garbage collection
      * 
      * @param repository  (required)
+     * @param garbageCollectionPrepareRequest  (optional)
      * @return GarbageCollectionCommits
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -130,8 +133,8 @@ public class RetentionApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public GarbageCollectionCommits prepareGarbageCollectionCommits(String repository) throws ApiException {
-        ApiResponse<GarbageCollectionCommits> localVarResp = prepareGarbageCollectionCommitsWithHttpInfo(repository);
+    public GarbageCollectionCommits prepareGarbageCollectionCommits(String repository, GarbageCollectionPrepareRequest garbageCollectionPrepareRequest) throws ApiException {
+        ApiResponse<GarbageCollectionCommits> localVarResp = prepareGarbageCollectionCommitsWithHttpInfo(repository, garbageCollectionPrepareRequest);
         return localVarResp.getData();
     }
 
@@ -139,6 +142,7 @@ public class RetentionApi {
      * save lists of active and expired commits for garbage collection
      * 
      * @param repository  (required)
+     * @param garbageCollectionPrepareRequest  (optional)
      * @return ApiResponse&lt;GarbageCollectionCommits&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -150,8 +154,8 @@ public class RetentionApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<GarbageCollectionCommits> prepareGarbageCollectionCommitsWithHttpInfo(String repository) throws ApiException {
-        okhttp3.Call localVarCall = prepareGarbageCollectionCommitsValidateBeforeCall(repository, null);
+    public ApiResponse<GarbageCollectionCommits> prepareGarbageCollectionCommitsWithHttpInfo(String repository, GarbageCollectionPrepareRequest garbageCollectionPrepareRequest) throws ApiException {
+        okhttp3.Call localVarCall = prepareGarbageCollectionCommitsValidateBeforeCall(repository, garbageCollectionPrepareRequest, null);
         Type localVarReturnType = new TypeToken<GarbageCollectionCommits>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
@@ -160,6 +164,7 @@ public class RetentionApi {
      * save lists of active and expired commits for garbage collection (asynchronously)
      * 
      * @param repository  (required)
+     * @param garbageCollectionPrepareRequest  (optional)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -172,9 +177,9 @@ public class RetentionApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call prepareGarbageCollectionCommitsAsync(String repository, final ApiCallback<GarbageCollectionCommits> _callback) throws ApiException {
+    public okhttp3.Call prepareGarbageCollectionCommitsAsync(String repository, GarbageCollectionPrepareRequest garbageCollectionPrepareRequest, final ApiCallback<GarbageCollectionCommits> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = prepareGarbageCollectionCommitsValidateBeforeCall(repository, _callback);
+        okhttp3.Call localVarCall = prepareGarbageCollectionCommitsValidateBeforeCall(repository, garbageCollectionPrepareRequest, _callback);
         Type localVarReturnType = new TypeToken<GarbageCollectionCommits>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;

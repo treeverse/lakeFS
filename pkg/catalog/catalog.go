@@ -1191,16 +1191,16 @@ func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repository string, 
 	if err != nil {
 		return "", err
 	}
-	previousRunReader, err := c.BlockAdapter.Get(ctx, block.ObjectPointer{
-		StorageNamespace: string(repo.StorageNamespace),
-		Identifier:       previousResultPath,
-		IdentifierType:   block.IdentifierTypeRelative,
-	}, -1)
-	if err != nil {
-		return "", err
-	}
 	previouslyExpiredCommits := make([]graveler.CommitID, 0)
 	if previousResultPath != "" {
+		previousRunReader, err := c.BlockAdapter.Get(ctx, block.ObjectPointer{
+			StorageNamespace: string(repo.StorageNamespace),
+			Identifier:       previousResultPath,
+			IdentifierType:   block.IdentifierTypeRelative,
+		}, -1)
+		if err != nil {
+			return "", err
+		}
 		csvReader := csv.NewReader(previousRunReader)
 		previousCommits, err := csvReader.ReadAll()
 		if err != nil {
