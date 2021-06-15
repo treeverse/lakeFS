@@ -189,13 +189,15 @@ const ChangesBrowser = ({ repo, reference, after, prefix, delimiter, onSelectRef
                             .then(refresh)
                             .catch(error => setActionError(error))
                     }}/>
-                    <CommitButton repo={repo} enabled={results.length > 0} onCommit={(commitDetails, done) => {
-                        commits
-                            .commit(repo.id, reference.id, commitDetails.message, commitDetails.metadata)
-                            .then(() => {
-                                done()
-                                refresh()
-                            })
+                    <CommitButton repo={repo} enabled={results.length > 0} onCommit={async (commitDetails, done) => {
+                        try {
+                            await commits.commit(repo.id, reference.id, commitDetails.message, commitDetails.metadata);
+                            setActionError(null);
+                            refresh();
+                        } catch (err) {
+                            setActionError(err);
+                        }
+                        done();
                     }}/>
                 </ActionGroup>
             </ActionsBar>
