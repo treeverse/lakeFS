@@ -216,10 +216,10 @@ FileSystem.
 #### Load the FileSystem JARs
 
 Add the package `io.lakefs:hadoop-lakefs-assembly:<VERSION>` to your Spark job.  Right now
-this is a snapshot, so you add
+this is version 0.1.0, so add:
 
 ```
---repositories https://s01.oss.sonatype.org/content/repositories/snapshots/  --packages io.lakefs:hadoop-lakefs-assembly:0.1.0-RC.0-SNAPSHOT
+--repositories --packages io.lakefs:hadoop-lakefs-assembly:0.1.0
 ```
 
 to your Spark commandlines.
