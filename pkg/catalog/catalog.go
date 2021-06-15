@@ -185,7 +185,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 
 	refManager := ref.NewPGRefManager(executor, cfg.DB, ident.NewHexAddressProvider())
 	branchLocker := ref.NewBranchLocker(cfg.LockDB)
-	retentionRuleManager := retention.NewRuleManager(tierFSParams.Adapter)
+	retentionRuleManager := retention.NewRuleManager(tierFSParams.Adapter, cfg.Config.GetCommittedBlockStoragePrefix())
 	store := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager, retentionRuleManager)
 
 	return &Catalog{

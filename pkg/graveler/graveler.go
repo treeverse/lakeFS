@@ -885,7 +885,7 @@ func (g *Graveler) GetRetentionRules(ctx context.Context, repositoryID Repositor
 	if err != nil {
 		return nil, err
 	}
-	return g.retentionRuleManager.GetRules(ctx, fmt.Sprintf("%s/_lakefs/retention/rules/config.json", repo.StorageNamespace))
+	return g.retentionRuleManager.GetRules(ctx, string(repo.StorageNamespace))
 }
 
 func (g *Graveler) SetRetentionRules(ctx context.Context, repositoryID RepositoryID, rules *RetentionRules) error {
@@ -894,7 +894,7 @@ func (g *Graveler) SetRetentionRules(ctx context.Context, repositoryID Repositor
 	if err != nil {
 		return err
 	}
-	return g.retentionRuleManager.SaveRules(ctx, fmt.Sprintf("%s/_lakefs/retention/rules/config.json", repo.StorageNamespace), rules)
+	return g.retentionRuleManager.SaveRules(ctx, string(repo.StorageNamespace), rules)
 }
 
 func (g *Graveler) GetExpiredCommits(ctx context.Context, repositoryID RepositoryID, previouslyExpiredCommits []CommitID) (expired []CommitID, active []CommitID, err error) {
@@ -2030,8 +2030,8 @@ func (c *commitValueIterator) Close() {
 }
 
 type RetentionRuleManager interface {
-	GetRules(ctx context.Context, rulesConfigurationPath string) (*RetentionRules, error)
-	SaveRules(ctx context.Context, rulesConfigurationPath string, rules *RetentionRules) error
+	GetRules(ctx context.Context, configurationFilePrefix string) (*RetentionRules, error)
+	SaveRules(ctx context.Context, configurationFilePrefix string, rules *RetentionRules) error
 }
 
 type RetentionRules struct {

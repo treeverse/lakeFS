@@ -4,22 +4,24 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/graveler"
 )
 
 type RuleManager struct {
-	blockAdapter block.Adapter
+	configurationFileSuffix string
+	blockAdapter            block.Adapter
 }
 
-func NewRuleManager(blockAdapter block.Adapter) *RuleManager {
-	return &RuleManager{blockAdapter: blockAdapter}
+func NewRuleManager(blockAdapter block.Adapter, blockStoragePrefix string) *RuleManager {
+	return &RuleManager{blockAdapter: blockAdapter, configurationFileSuffix: fmt.Sprintf("/%s/retention/rules/config.json", blockStoragePrefix)}
 }
 
-func (m *RuleManager) GetRules(ctx context.Context, rulesConfigurationPath string) (*graveler.RetentionRules, error) {
+func (m *RuleManager) GetRules(ctx context.Context, configurationFilePrefix string) (*graveler.RetentionRules, error) {
 	reader, err := m.blockAdapter.Get(ctx, block.ObjectPointer{
-		Identifier:     rulesConfigurationPath,
+		Identifier:     configurationFilePrefix + m.configurationFileSuffix,
 		IdentifierType: block.IdentifierTypeFull,
 	}, -1)
 	if err != nil {
@@ -36,13 +38,13 @@ func (m *RuleManager) GetRules(ctx context.Context, rulesConfigurationPath strin
 	return &rules, nil
 }
 
-func (m *RuleManager) SaveRules(ctx context.Context, rulesConfigurationPath string, rules *graveler.RetentionRules) error {
+func (m *RuleManager) SaveRules(ctx context.Context, configurationFilePrefix string, rules *graveler.RetentionRules) error {
 	rulesBytes, err := json.Marshal(rules)
 	if err != nil {
 		return err
 	}
 	return m.blockAdapter.Put(ctx, block.ObjectPointer{
-		Identifier:     rulesConfigurationPath,
+		Identifier:     configurationFilePrefix + m.configurationFileSuffix,
 		IdentifierType: block.IdentifierTypeFull,
 	}, int64(len(rulesBytes)), bytes.NewReader(rulesBytes), block.PutOpts{})
 }
