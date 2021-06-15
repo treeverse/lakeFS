@@ -5,7 +5,9 @@ description: This section covers how you can start using lakeFS with Presto/Trin
 parent: Integrations
 nav_order: 40
 has_children: false
-redirect_from: ../using/presto.html
+redirect_from:
+    - /integrations/presto.html
+    - /using/presto.html
 ---
 
 # Using lakeFS with Presto/Trino
