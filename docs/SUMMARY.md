@@ -14,6 +14,6 @@
 * [Reference](reference/index.md)
 * [Integrations](integrations/index.md)
 * [Understanding lakeFS](understand/index.md)
-* Contributing(contributing.md)
+* [Contributing](contributing.md)
 * [FAQ](faq.md)
   
