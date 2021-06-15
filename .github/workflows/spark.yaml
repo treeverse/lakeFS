@@ -24,7 +24,7 @@ jobs:
         run: sbt scalafmtCheck
       - name: validate unused
         working-directory: clients/spark
-        run: sbt scalafix RemoveUnused --check
+        run: sbt "scalafix RemoveUnused --check"
 
 
 
