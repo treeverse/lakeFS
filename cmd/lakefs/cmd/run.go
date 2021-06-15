@@ -36,8 +36,7 @@ import (
 const (
 	gracefulShutdownTimeout = 30 * time.Second
 
-	serviceAPIServer = "api"
-	serviceS3Gateway = "s3gateway"
+	mismatchedReposFlagName = "allow-mismatched-repos"
 )
 
 type Shutter interface {
@@ -117,7 +116,14 @@ var runCmd = &cobra.Command{
 		// send metadata
 		bufferedCollector.CollectMetadata(metadata)
 
-		checkForeignRepos(ctx, logger, authMetadataManager, blockStore, c)
+		allowForeign, err := cmd.Flags().GetBool(mismatchedReposFlagName)
+		if err != nil {
+			fmt.Printf("%s: %s\n", mismatchedReposFlagName, err)
+			os.Exit(1)
+		}
+		if !allowForeign {
+			checkForeignRepos(ctx, logger, authMetadataManager, blockStore, c)
+		}
 
 		// update health info with installation ID
 		httputil.SetHealthHandlerInfo(metadata.InstallationID)
@@ -310,5 +316,11 @@ func gracefulShutdown(ctx context.Context, quit <-chan os.Signal, done chan<- bo
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(runCmd)
-	runCmd.Flags().StringArrayP("service", "s", []string{serviceS3Gateway, serviceAPIServer}, "lakeFS services to run")
+
+	runCmd.Flags().BoolP(mismatchedReposFlagName, "m", false, "Allow repositories from other object store types")
+	if err := runCmd.Flags().MarkHidden(mismatchedReposFlagName); err != nil {
+		// (internal error)
+		fmt.Fprint(os.Stderr, err)
+		os.Exit(internalErrorCode)
+	}
 }
