@@ -190,7 +190,9 @@ Class | Method | HTTP request | Description
 *RepositoriesApi* | [**deleteRepository**](docs/RepositoriesApi.md#deleteRepository) | **DELETE** /repositories/{repository} | delete repository
 *RepositoriesApi* | [**getRepository**](docs/RepositoriesApi.md#getRepository) | **GET** /repositories/{repository} | get repository
 *RepositoriesApi* | [**listRepositories**](docs/RepositoriesApi.md#listRepositories) | **GET** /repositories | list repositories
+*RetentionApi* | [**getGarbageCollectionRules**](docs/RetentionApi.md#getGarbageCollectionRules) | **GET** /repositories/{repository}/gc/rules | 
 *RetentionApi* | [**prepareGarbageCollectionCommits**](docs/RetentionApi.md#prepareGarbageCollectionCommits) | **POST** /repositories/{repository}/gc/prepare | save lists of active and expired commits for garbage collection
+*RetentionApi* | [**setGarbageCollectionRules**](docs/RetentionApi.md#setGarbageCollectionRules) | **POST** /repositories/{repository}/gc/rules | 
 *StagingApi* | [**getPhysicalAddress**](docs/StagingApi.md#getPhysicalAddress) | **GET** /repositories/{repository}/branches/{branch}/staging/backing | get a physical address and a return token to write object to underlying storage
 *StagingApi* | [**linkPhysicalAddress**](docs/StagingApi.md#linkPhysicalAddress) | **PUT** /repositories/{repository}/branches/{branch}/staging/backing | associate staging on this physical address with a path
 *TagsApi* | [**createTag**](docs/TagsApi.md#createTag) | **POST** /repositories/{repository}/tags | create tag
@@ -218,6 +220,8 @@ Class | Method | HTTP request | Description
  - [Error](docs/Error.md)
  - [GarbageCollectionCommits](docs/GarbageCollectionCommits.md)
  - [GarbageCollectionPrepareRequest](docs/GarbageCollectionPrepareRequest.md)
+ - [GarbageCollectionRule](docs/GarbageCollectionRule.md)
+ - [GarbageCollectionRules](docs/GarbageCollectionRules.md)
  - [Group](docs/Group.md)
  - [GroupCreation](docs/GroupCreation.md)
  - [GroupList](docs/GroupList.md)

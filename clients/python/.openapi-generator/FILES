@@ -23,6 +23,8 @@ docs/DiffList.md
 docs/Error.md
 docs/GarbageCollectionCommits.md
 docs/GarbageCollectionPrepareRequest.md
+docs/GarbageCollectionRule.md
+docs/GarbageCollectionRules.md
 docs/Group.md
 docs/GroupCreation.md
 docs/GroupList.md
@@ -103,6 +105,8 @@ lakefs_client/model/diff_list.py
 lakefs_client/model/error.py
 lakefs_client/model/garbage_collection_commits.py
 lakefs_client/model/garbage_collection_prepare_request.py
+lakefs_client/model/garbage_collection_rule.py
+lakefs_client/model/garbage_collection_rules.py
 lakefs_client/model/group.py
 lakefs_client/model/group_creation.py
 lakefs_client/model/group_list.py
@@ -147,4 +151,6 @@ setup.cfg
 setup.py
 test-requirements.txt
 test/__init__.py
+test/test_garbage_collection_rule.py
+test/test_garbage_collection_rules.py
 tox.ini

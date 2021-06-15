@@ -3738,6 +3738,68 @@ paths:
       tags:
       - metadata
       x-accepts: application/json
+  /repositories/{repository}/gc/rules:
+    get:
+      operationId: getGarbageCollectionRules
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GarbageCollectionRules'
+          description: gc rule list
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - retention
+      x-accepts: application/json
+    post:
+      operationId: set garbage collection rules
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GarbageCollectionRules'
+        required: true
+      responses:
+        "204":
+          description: set garbage collection rules successfully
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - retention
+      x-contentType: application/json
+      x-accepts: application/json
   /repositories/{repository}/gc/prepare:
     post:
       operationId: prepareGarbageCollectionCommits
@@ -4971,6 +5033,38 @@ components:
         path:
           description: path to a dataset of commits
           type: string
+      type: object
+    GarbageCollectionRule:
+      example:
+        branch_id: branch_id
+        retention_days: 6
+      properties:
+        branch_id:
+          type: string
+        retention_days:
+          type: integer
+      required:
+      - branch_id
+      - retention_days
+      type: object
+    GarbageCollectionRules:
+      example:
+        branches:
+        - branch_id: branch_id
+          retention_days: 6
+        - branch_id: branch_id
+          retention_days: 6
+        default_retention_days: 0
+      properties:
+        default_retention_days:
+          type: integer
+        branches:
+          items:
+            $ref: '#/components/schemas/GarbageCollectionRule'
+          type: array
+      required:
+      - branches
+      - default_retention_days
       type: object
     inline_object:
       properties:
