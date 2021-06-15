@@ -42,8 +42,8 @@ Our [Go release workflow](https://github.com/treeverse/lakeFS/blob/master/.githu
     1. [Docker](https://docs.docker.com/get-docker/)
     1. [Go](https://golang.org/doc/install)
     1. [Node.js & npm](https://www.npmjs.com/get-npm)
-    2. [Maven](https://maven.apache.org/) to build and test Spark client codes.
-    3. *Optional* - [PostgreSQL 11](https://www.postgresql.org/docs/11/tutorial-install.html) (useful for running and debugging locally)
+    1. [Maven](https://maven.apache.org/) to build and test Spark client codes.
+    1. *Optional* - [PostgreSQL 11](https://www.postgresql.org/docs/11/tutorial-install.html) (useful for running and debugging locally)
 1. Install statik:
    
    ```shell
