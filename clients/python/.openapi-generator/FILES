@@ -151,6 +151,4 @@ setup.cfg
 setup.py
 test-requirements.txt
 test/__init__.py
-test/test_garbage_collection_rule.py
-test/test_garbage_collection_rules.py
 tox.ini
