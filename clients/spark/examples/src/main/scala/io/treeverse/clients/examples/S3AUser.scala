@@ -2,22 +2,16 @@ package io.treeverse.clients.examples
 
 import java.net.URI
 import java.nio.charset.Charset
-import java.io.OutputStreamWriter
 import scala.collection.JavaConverters._
 import scala.util.{Try, Success, Failure}
 
-import com.amazonaws.auth.profile.ProfileCredentialsProvider
 import com.amazonaws.SDKGlobalConfiguration
 
 import org.apache.hadoop.fs
 import org.apache.hadoop.fs.s3a
 import org.apache.hadoop.conf.Configuration
 
-import software.amazon.awssdk.services.s3.model.{
-  DeleteObjectRequest,
-  ListObjectsV2Request,
-  PutObjectRequest
-}
+import software.amazon.awssdk.services.s3.model.{DeleteObjectRequest, ListObjectsV2Request}
 import software.amazon.awssdk.services.s3.S3Client
 import scala.collection.immutable.Stream
 import scala.collection.mutable

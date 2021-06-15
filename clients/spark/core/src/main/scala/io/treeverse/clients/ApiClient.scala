@@ -1,12 +1,9 @@
 package io.treeverse.clients
 
 import com.google.common.cache.CacheBuilder
-import org.json4s._
-import org.json4s.native.JsonMethods._
 import io.treeverse.lakefs.clients.api
 
 import java.net.URI
-import java.time.Duration
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.Callable
 
