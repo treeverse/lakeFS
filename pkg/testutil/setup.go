@@ -58,15 +58,7 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 	logger = logging.Default()
 	logger.WithField("settings", viper.AllSettings()).Info(fmt.Sprintf("Starting %s", params.Name))
 
-	endpointURL := viper.GetString("endpoint_url")
-	u, err := url.Parse(endpointURL)
-	if err != nil {
-		logger.WithError(err).Fatal("Failed to parse endpoint URL", endpointURL)
-	}
-
-	if u.Path == "" || u.Path == "/" {
-		endpointURL = strings.TrimRight(endpointURL, "/") + api.BaseURL
-	}
+	endpointURL := ParseEndpointURL(logger, viper.GetString("endpoint_url"))
 
 	client, err := api.NewClientWithResponses(endpointURL)
 	if err != nil {
@@ -103,11 +95,7 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 		viper.Set("secret_access_key", credentialsWithSecret.SecretAccessKey)
 	}
 
-	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(viper.GetString("access_key_id"), viper.GetString("secret_access_key"))
-	if err != nil {
-		logger.WithError(err).Fatal("could not initialize basic auth security provider")
-	}
-	client, err = api.NewClientWithResponses(endpointURL, api.WithRequestEditorFn(basicAuthProvider.Intercept))
+	client, err = NewClientFromCreds(logger, viper.GetString("access_key_id"), viper.GetString("secret_access_key"), endpointURL)
 	if err != nil {
 		logger.WithError(err).Fatal("could not initialize API client with security provider")
 	}
@@ -127,6 +115,29 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 					}})))
 
 	return logger, client, svc
+}
+
+// Parses the given endpoint string
+func ParseEndpointURL(logger logging.Logger, endpointURL string) string {
+	u, err := url.Parse(endpointURL)
+	if err != nil {
+		logger.WithError(err).Fatal("could not initialize API client with security provider")
+	}
+	if u.Path == "" || u.Path == "/" {
+		endpointURL = strings.TrimRight(endpointURL, "/") + api.BaseURL
+	}
+
+	return endpointURL
+}
+
+// Creates a client using the credentials of a user
+func NewClientFromCreds(logger logging.Logger, accessKeyID string, secretAccessKey string, endpointURL string) (*api.ClientWithResponses, error) {
+	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(accessKeyID, secretAccessKey)
+	if err != nil {
+		logger.WithError(err).Fatal("could not initialize basic auth security provider")
+	}
+
+	return api.NewClientWithResponses(endpointURL, api.WithRequestEditorFn(basicAuthProvider.Intercept))
 }
 
 const checkIteration = 5 * time.Second
