@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Presto/Trino
-description: This section covers how you can start using lakeFS with Presto, is an open source, distributed SQL query engine
+description: This section covers how you can start using lakeFS with Presto/Trino, an open source distributed SQL query engine
 parent: Integrations
 nav_order: 40
 has_children: false
@@ -120,4 +120,3 @@ Copy the created table `page_views` on schema `main` to schema `example_branch` 
 ```shell
 lakectl metastore copy --from-schema main --from-table page_views --to-branch example_branch 
 ```
-
