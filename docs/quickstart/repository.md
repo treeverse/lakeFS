@@ -37,7 +37,7 @@ Once we have a repository created, we can start [copying and modifying objects](
 
    A [repository](../understand/branching-model.md#repositories) is lakeFS's basic namespace, akin to S3's Bucket (read more about the data model [here](../understand/branching-model.md)).
    Since we're using the `local` block adapter, the value used for `Storage Namespace` should be a static `local://`.
-   For a deployment that uses S3 as a block adapter, this would be a bucket name with an optional prefix, e.g. `s3://my-bucket/prefix`.
+   For a deployment that uses S3 as a block adapter, this would be a bucket name with an optional prefix, e.g. `s3://example-bucket/prefix`.
    Notice that lakeFS will only manage the data written under that prefix. All actions on the managed data must go through lakeFS endpoint.
    Data written directly to the bucket under different paths will be accessible in the same way it was before.   
    {: .note .note-info }
