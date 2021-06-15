@@ -219,7 +219,7 @@ Add the package `io.lakefs:hadoop-lakefs-assembly:<VERSION>` to your Spark job. 
 this is version 0.1.0, so add:
 
 ```
---repositories --packages io.lakefs:hadoop-lakefs-assembly:0.1.0
+--packages io.lakefs:hadoop-lakefs-assembly:0.1.0
 ```
 
 to your Spark commandlines.
