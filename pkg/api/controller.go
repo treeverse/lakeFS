@@ -1914,6 +1914,52 @@ func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repositor
 	writeResponse(w, http.StatusOK, response)
 }
 
+func (c *Controller) GetGarbageCollectionRules(w http.ResponseWriter, r *http.Request, repository string) {
+	if !c.authorize(w, r, []permissions.Permission{
+		{
+			Action:   permissions.GetGarbageCollectionRules,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	rules, err := c.Catalog.GetRetentionRules(ctx, repository)
+	if handleAPIError(w, err) {
+		return
+	}
+	resp := GarbageCollectionRules{}
+	resp.DefaultRetentionDays = rules.DefaultRetentionDays
+	for branchID, retentionDays := range rules.BranchRetentionDays {
+		resp.Branches = append(resp.Branches, GarbageCollectionRule{BranchId: branchID.String(), RetentionDays: retentionDays})
+	}
+	writeResponse(w, http.StatusOK, resp)
+}
+
+func (c *Controller) SetGarbageCollectionRules(w http.ResponseWriter, r *http.Request, body SetGarbageCollectionRulesJSONRequestBody, repository string) {
+	if !c.authorize(w, r, []permissions.Permission{
+		{
+			Action:   permissions.GetGarbageCollectionRules,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	rules := &graveler.RetentionRules{
+		DefaultRetentionDays: body.DefaultRetentionDays,
+		BranchRetentionDays:  make(map[graveler.BranchID]int),
+	}
+	for _, rule := range body.Branches {
+		rules.BranchRetentionDays[graveler.BranchID(rule.BranchId)] = rule.RetentionDays
+	}
+	err := c.Catalog.SetRetentionRules(ctx, repository, rules)
+	if handleAPIError(w, err) {
+		return
+	}
+	writeResponse(w, http.StatusNoContent, nil)
+}
+
 func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *http.Request, body PrepareGarbageCollectionCommitsJSONRequestBody, repository string) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{

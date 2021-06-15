@@ -371,6 +371,10 @@ type VersionController interface {
 	// repositoryID.
 	GetStagingToken(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (*StagingToken, error)
 
+	GetRetentionRules(ctx context.Context, repositoryID RepositoryID) (*RetentionRules, error)
+
+	SetRetentionRules(ctx context.Context, repositoryID RepositoryID, rules *RetentionRules) error
+
 	// GetExpiredCommits returns the sets of active and expired commits, according to the branch rules for garbage collection.
 	// The commits in the given set previouslyExpiredCommits will not be scanned.
 	GetExpiredCommits(ctx context.Context, repositoryID RepositoryID, previouslyExpiredCommits []CommitID) (expired []CommitID, active []CommitID, err error)
@@ -875,13 +879,26 @@ func (g *Graveler) GetStagingToken(ctx context.Context, repositoryID RepositoryI
 	return &branch.StagingToken, nil
 }
 
-func (g *Graveler) GetExpiredCommits(ctx context.Context, repositoryID RepositoryID, previouslyExpiredCommits []CommitID) (expired []CommitID, active []CommitID, err error) {
+func (g *Graveler) GetRetentionRules(ctx context.Context, repositoryID RepositoryID) (*RetentionRules, error) {
+	// TODO use "_lakefs" from configuration
 	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
+	return g.retentionRuleManager.GetRules(ctx, fmt.Sprintf("%s/_lakefs/retention/rules/config.json", repo.StorageNamespace))
+}
+
+func (g *Graveler) SetRetentionRules(ctx context.Context, repositoryID RepositoryID, rules *RetentionRules) error {
 	// TODO use "_lakefs" from configuration
-	rules, err := g.retentionRuleManager.GetRules(ctx, fmt.Sprintf("%s/_lakefs/retention/rules/config.json", repo.StorageNamespace))
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return err
+	}
+	return g.retentionRuleManager.SaveRules(ctx, fmt.Sprintf("%s/_lakefs/retention/rules/config.json", repo.StorageNamespace), rules)
+}
+
+func (g *Graveler) GetExpiredCommits(ctx context.Context, repositoryID RepositoryID, previouslyExpiredCommits []CommitID) (expired []CommitID, active []CommitID, err error) {
+	rules, err := g.GetRetentionRules(ctx, repositoryID)
 	if err != nil {
 		return nil, nil, fmt.Errorf("get retention rules: %w", err)
 	}
@@ -2014,6 +2031,7 @@ func (c *commitValueIterator) Close() {
 
 type RetentionRuleManager interface {
 	GetRules(ctx context.Context, rulesConfigurationPath string) (*RetentionRules, error)
+	SaveRules(ctx context.Context, rulesConfigurationPath string, rules *RetentionRules) error
 }
 
 type RetentionRules struct {

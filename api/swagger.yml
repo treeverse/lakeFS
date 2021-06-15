@@ -823,12 +823,37 @@ components:
         previous_result_path:
           type: string
           description: path to the result of a previous successful GC job
+
     GarbageCollectionCommits:
       type: object
       properties:
         path:
           type: string
           description: path to a dataset of commits
+
+    GarbageCollectionRule:
+      type: object
+      properties:
+        branch_id:
+          type: string
+        retention_days:
+          type: integer
+      required:
+        - branch_id
+        - retention_days
+
+    GarbageCollectionRules:
+      type: object
+      properties:
+        default_retention_days:
+          type: integer
+        branches:
+          type: array
+          items:
+            $ref: '#/components/schemas/GarbageCollectionRule'
+      required:
+        - default_retention_days
+        - branches
 
 paths:
   /setup_lakefs:
@@ -2842,6 +2867,45 @@ paths:
           $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
+  /repositories/{repository}/gc/rules:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - retention
+      operationId: getGarbageCollectionRules
+      responses:
+        200:
+          description: gc rule list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GarbageCollectionRules"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ServerError"
+    post:
+      tags:
+        - retention
+      operationId: set garbage collection rules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GarbageCollectionRules"
+      responses:
+        204:
+          description: set garbage collection rules successfully
+        default:
+          $ref: "#/components/responses/ServerError"
+
+
   /repositories/{repository}/gc/prepare:
     parameters:
       - in: path

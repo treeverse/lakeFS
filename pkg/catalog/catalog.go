@@ -1180,6 +1180,14 @@ func (c *Catalog) GetRange(ctx context.Context, repositoryID, rangeID string) (g
 	return c.Store.GetRange(ctx, graveler.RepositoryID(repositoryID), graveler.RangeID(rangeID))
 }
 
+func (c *Catalog) GetRetentionRules(ctx context.Context, repositoryID string) (*graveler.RetentionRules, error) {
+	return c.Store.GetRetentionRules(ctx, graveler.RepositoryID(repositoryID))
+}
+
+func (c *Catalog) SetRetentionRules(ctx context.Context, repositoryID string, rules *graveler.RetentionRules) error {
+	return c.Store.SetRetentionRules(ctx, graveler.RepositoryID(repositoryID), rules)
+}
+
 func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repository string, previousResultPath string) (string, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	if err := Validate([]ValidateArg{
@@ -1228,6 +1236,7 @@ func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repository string, 
 			return "", err
 		}
 	}
+	csvWriter.Flush()
 	commitsStr := b.String()
 	runID := uuid.New().String()
 	path := fmt.Sprintf("_lakefs/retention/commits/run_id=%s/commits.csv", runID)

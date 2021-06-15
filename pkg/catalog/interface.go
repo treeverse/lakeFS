@@ -94,7 +94,6 @@ type Interface interface {
 	Commit(ctx context.Context, repository, branch string, message string, committer string, metadata Metadata) (*CommitLog, error)
 	GetCommit(ctx context.Context, repository, reference string) (*CommitLog, error)
 	ListCommits(ctx context.Context, repository, branch string, fromReference string, limit int) ([]*CommitLog, bool, error)
-	PrepareExpiredCommits(ctx context.Context, repository string, previousResultPath string) (string, error)
 
 	// Revert creates a reverse patch to the given commit, and applies it as a new commit on the given branch.
 	Revert(ctx context.Context, repository, branch string, params RevertParams) error
@@ -116,6 +115,10 @@ type Interface interface {
 	// forward metadata for thick clients
 	GetMetaRange(ctx context.Context, repositoryID, metaRangeID string) (graveler.MetaRangeInfo, error)
 	GetRange(ctx context.Context, repositoryID, rangeID string) (graveler.RangeInfo, error)
+
+	GetRetentionRules(ctx context.Context, repositoryID string) (*graveler.RetentionRules, error)
+	SetRetentionRules(ctx context.Context, repositoryID string, rules *graveler.RetentionRules) error
+	PrepareExpiredCommits(ctx context.Context, repositoryID string, previousResultPath string) (string, error)
 
 	io.Closer
 }

@@ -22,12 +22,12 @@ func (m *RuleManager) GetRules(ctx context.Context, rulesConfigurationPath strin
 		Identifier:     rulesConfigurationPath,
 		IdentifierType: block.IdentifierTypeFull,
 	}, -1)
-	defer func() {
-		_ = reader.Close()
-	}()
 	if err != nil {
 		return nil, err
 	}
+	defer func() {
+		_ = reader.Close()
+	}()
 	var rules graveler.RetentionRules
 	err = json.NewDecoder(reader).Decode(&rules)
 	if err != nil {
