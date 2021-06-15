@@ -77,6 +77,7 @@ public class LakeFSFileSystemTest {
         withEnv("MINIO_ROOT_USER", S3_ACCESS_KEY_ID).
         withEnv("MINIO_ROOT_PASSWORD", S3_SECRET_ACCESS_KEY).
         withEnv("MINIO_DOMAIN", "s3.local.lakefs.io").
+        withEnv("MINIO_UPDATE", "off").
         withExposedPorts(9000);
 
     protected static String makeS3BucketName() {

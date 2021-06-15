@@ -36,7 +36,7 @@ services:
         - tester.env
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
   spark:
-    image: docker.io/bitnami/spark:3
+    image: docker.io/bitnami/spark:${SPARK_TAG}
     environment:
       - SPARK_MODE=master
       - SPARK_MASTER_HOST=spark
@@ -52,7 +52,7 @@ services:
       - "gateway-test.s3.docker.lakefs.io:10.5.0.55"
       - "thick-client-test.s3.docker.lakefs.io:10.5.0.55"
   spark-worker:
-    image: docker.io/bitnami/spark:3
+    image: docker.io/bitnami/spark:${SPARK_TAG}
     ports:
       - 8081
     environment:
@@ -77,7 +77,7 @@ services:
       - "gateway-test.s3.docker.lakefs.io:10.5.0.55"
       - "thick-client-test.s3.docker.lakefs.io:10.5.0.55"
   spark-submit:
-    image: docker.io/bitnami/spark:3
+    image: docker.io/bitnami/spark:${SPARK_TAG}
     profiles: ["command"]
     volumes:
       - ./:/local
