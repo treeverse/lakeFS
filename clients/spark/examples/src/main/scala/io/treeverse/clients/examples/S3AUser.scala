@@ -4,7 +4,7 @@ import java.net.URI
 import java.nio.charset.Charset
 import java.io.OutputStreamWriter
 import scala.collection.JavaConverters._
-import scala.util.{Try,Success,Failure}
+import scala.util.{Try, Success, Failure}
 
 import com.amazonaws.auth.profile.ProfileCredentialsProvider
 import com.amazonaws.SDKGlobalConfiguration
@@ -13,7 +13,11 @@ import org.apache.hadoop.fs
 import org.apache.hadoop.fs.s3a
 import org.apache.hadoop.conf.Configuration
 
-import software.amazon.awssdk.services.s3.model.{DeleteObjectRequest, ListObjectsV2Request, PutObjectRequest}
+import software.amazon.awssdk.services.s3.model.{
+  DeleteObjectRequest,
+  ListObjectsV2Request,
+  PutObjectRequest
+}
 import software.amazon.awssdk.services.s3.S3Client
 import scala.collection.immutable.Stream
 import scala.collection.mutable
@@ -38,11 +42,13 @@ class UnderlyingFS(s3aFS: s3a.S3AFileSystem, bucket: String, prefix: String) ext
   def download(key: String): String = {
     val path = new fs.Path("s3a", bucket, prefix + key)
     val is = s3aFS.open(path, 16384)
-    val bytes = Stream.continually({
-      val buf = new Array[Byte](10)
-      val len = is.read(buf)
-      if (len == -1) null else buf.slice(0, len)
-    }).takeWhile(buf => buf != null)
+    val bytes = Stream
+      .continually({
+        val buf = new Array[Byte](10)
+        val len = is.read(buf)
+        if (len == -1) null else buf.slice(0, len)
+      })
+      .takeWhile(buf => buf != null)
       .fold(new Array[Byte](0))(_ ++ _)
     new String(bytes)
   }
@@ -67,6 +73,7 @@ class KeyStore extends Store {
 }
 
 class CompareStore(val a: Store, val b: Store) extends Store {
+
   /** Upload key -> contents to each store. */
   def upload(key: String, contents: String) = {
     a.upload(key, contents)
@@ -89,9 +96,10 @@ class CompareStore(val a: Store, val b: Store) extends Store {
 
 /** Direct access to the object store of that FileSystem. */
 class ObjectStore(val s3: S3Client, val bucket: String) {
+
   /**
     * @return keys of all objects that start with prefix.
-    * 
+    *
     * @bug no support for paging.
     */
   def list(prefix: String): Seq[String] = {
@@ -118,7 +126,7 @@ object S3AUser extends App {
   def makeS3A(conf: Configuration, bucket: String): s3a.S3AFileSystem = {
     fs.FileSystem.get(new URI("s3a", bucket, "", ""), conf) match {
       case s3aFS: s3a.S3AFileSystem => s3aFS
-      case _ => throw new ClassCastException
+      case _                        => throw new ClassCastException
     }
   }
 
@@ -140,7 +148,10 @@ object S3AUser extends App {
     val region = System.getenv("AWS_REGION")
     if (region != null) {
       conf.set("fs.s3a.region", region)
-      conf.set("fs.s3a.endpoint", s"s3.${region}.amazonaws.com") // Otherwise it tries host-based addressing and fails
+      conf.set(
+        "fs.s3a.endpoint",
+        s"s3.${region}.amazonaws.com"
+      ) // Otherwise it tries host-based addressing and fails
     }
 
     Try(new URI(args(0))) match {
@@ -157,12 +168,17 @@ object S3AUser extends App {
         val prefix = baseURI.getPath
 
         def failDownload(key: String, stores: Store*): String =
-          stores.map(store =>
-            Try(store.download(key)) match {
-              case Failure(_: java.io.FileNotFoundException | _: java.util.NoSuchElementException) => null
-              case Failure(e) => s"unexpected exception ${e}"
-              case Success(contents) => s"value ${contents}, expected deleted"
-            })
+          stores
+            .map(store =>
+              Try(store.download(key)) match {
+                case Failure(
+                      _: java.io.FileNotFoundException | _: java.util.NoSuchElementException
+                    ) =>
+                  null
+                case Failure(e)        => s"unexpected exception ${e}"
+                case Success(contents) => s"value ${contents}, expected deleted"
+              }
+            )
             .filter(_ != null)
             .mkString(", ")
 
@@ -172,12 +188,12 @@ object S3AUser extends App {
           val tooMany = actual diff expected
           val tooFew = expected diff actual
           Seq(
-            (if (tooMany.isEmpty) null else  s"""unexpected objects ${tooMany.mkString(", ")}"""),
+            (if (tooMany.isEmpty) null else s"""unexpected objects ${tooMany.mkString(", ")}"""),
             (if (tooFew.isEmpty) null else s"""missing objects ${tooFew.mkString(", ")}""")
           ).filter(_ != null).mkString("; ")
         }
 
-        def isNonemptyString(s: Any) = s match { case s: String => s != ""; case _ => false}
+        def isNonemptyString(s: Any) = s match { case s: String => s != ""; case _ => false }
 
         val s3aFS = makeS3A(conf, bucket)
         val fs = new UnderlyingFS(s3aFS, bucket, prefix)
@@ -202,10 +218,16 @@ object S3AUser extends App {
         )
 
         // TODO(ariels): Compare current state on ObjectStore after each action.
-        actions.map(_()).zipWithIndex.filter({ case (res, _) => isNonemptyString(res) }).foreach({ case (err, idx) => {
-          Console.err.println(s"[${idx}] ${err}")
-          numFailures += 1
-        }})
+        actions
+          .map(_())
+          .zipWithIndex
+          .filter({ case (res, _) => isNonemptyString(res) })
+          .foreach({
+            case (err, idx) => {
+              Console.err.println(s"[${idx}] ${err}")
+              numFailures += 1
+            }
+          })
 
         // Clean up (_only_ known files).
         mem.list().foreach(key => objects.delete(prefix, key))

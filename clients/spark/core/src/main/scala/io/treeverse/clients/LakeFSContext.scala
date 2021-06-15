@@ -18,7 +18,11 @@ object LakeFSContext {
   val LAKEFS_CONF_JOB_REPO_NAME_KEY = "lakefs.job.repo_name"
   val LAKEFS_CONF_JOB_COMMIT_ID_KEY = "lakefs.job.commit_id"
 
-  def newRDD(sc: SparkContext, repoName: String, commitID: String): RDD[(Array[Byte], WithIdentifier[Entry])] = {
+  def newRDD(
+      sc: SparkContext,
+      repoName: String,
+      commitID: String
+  ): RDD[(Array[Byte], WithIdentifier[Entry])] = {
     val conf = new Configuration(sc.hadoopConfiguration)
     conf.set(LAKEFS_CONF_JOB_REPO_NAME_KEY, repoName)
     conf.set(LAKEFS_CONF_JOB_COMMIT_ID_KEY, commitID)
@@ -40,15 +44,16 @@ object LakeFSContext {
   }
 
   def newDF(spark: SparkSession, repoName: String, commitID: String): DataFrame = {
-    val rdd = newRDD(spark.sparkContext, repoName, commitID).map { case (k, v) =>
-      val entry = v.message
-      Row(
-        new String(k),
-        entry.address,
-        entry.eTag,
-        new java.sql.Timestamp(TimeUnit.SECONDS.toMillis(entry.getLastModified.seconds)),
-        entry.size
-      )
+    val rdd = newRDD(spark.sparkContext, repoName, commitID).map {
+      case (k, v) =>
+        val entry = v.message
+        Row(
+          new String(k),
+          entry.address,
+          entry.eTag,
+          new java.sql.Timestamp(TimeUnit.SECONDS.toMillis(entry.getLastModified.seconds)),
+          entry.size
+        )
     }
     val schema = new StructType()
       .add(StructField("key", StringType))

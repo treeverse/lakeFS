@@ -12,8 +12,16 @@ import java.util.concurrent.Callable
 
 private object ApiClient {
   def translateS3(uri: URI): URI =
-    if (uri.getScheme == "s3") new URI(
-      "s3a", uri.getUserInfo, uri.getHost, uri.getPort, uri.getPath, uri.getQuery, uri.getFragment)
+    if (uri.getScheme == "s3")
+      new URI(
+        "s3a",
+        uri.getUserInfo,
+        uri.getHost,
+        uri.getPort,
+        uri.getPath,
+        uri.getQuery,
+        uri.getFragment
+      )
     else
       uri
 }
@@ -28,18 +36,22 @@ class ApiClient(apiUrl: String, accessKey: String, secretKey: String) {
   private val metadataApi = new api.MetadataApi(client)
   private val branchesApi = new api.BranchesApi(client)
 
-  private val storageNamespaceCache = CacheBuilder.newBuilder().expireAfterWrite(2, TimeUnit.MINUTES).build[String, String]()
+  private val storageNamespaceCache =
+    CacheBuilder.newBuilder().expireAfterWrite(2, TimeUnit.MINUTES).build[String, String]()
 
   private class CallableFn(val fn: () => String) extends Callable[String] {
     def call(): String = fn()
   }
 
   def getStorageNamespace(repoName: String): String = {
-    storageNamespaceCache.get(repoName, new CallableFn(() => {
-      val repo = repositoriesApi.getRepository(repoName)
+    storageNamespaceCache.get(
+      repoName,
+      new CallableFn(() => {
+        val repo = repositoriesApi.getRepository(repoName)
 
-      ApiClient.translateS3(URI.create(repo.getStorageNamespace)).normalize().toString
-    }))
+        ApiClient.translateS3(URI.create(repo.getStorageNamespace)).normalize().toString
+      })
+    )
   }
 
   def getMetaRangeURL(repoName: String, commitID: String): String = {
