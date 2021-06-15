@@ -23,7 +23,10 @@ const DeleteRepositoryModal = ({repo, show, onSubmit, onCancel}) => {
     };
 
     return (
-        <Modal show={show} onHide={onCancel} size="lg">
+        <Modal show={show} onHide={() => {
+            setIsDisabled(true);
+            onCancel();
+        }} size="lg">
             <Modal.Header closeButton>
                 <Modal.Title>Delete Repository</Modal.Title>
             </Modal.Header>
