@@ -89,7 +89,7 @@ Name | Type | Description  | Notes
 
 <a name="prepareGarbageCollectionCommits"></a>
 # **prepareGarbageCollectionCommits**
-> GarbageCollectionCommits prepareGarbageCollectionCommits(repository, garbageCollectionPrepareRequest)
+> GarbageCollectionPrepareResponse prepareGarbageCollectionCommits(repository, garbageCollectionPrepareRequest)
 
 save lists of active and expired commits for garbage collection
 
@@ -127,7 +127,7 @@ public class Example {
     String repository = "repository_example"; // String | 
     GarbageCollectionPrepareRequest garbageCollectionPrepareRequest = new GarbageCollectionPrepareRequest(); // GarbageCollectionPrepareRequest | 
     try {
-      GarbageCollectionCommits result = apiInstance.prepareGarbageCollectionCommits(repository, garbageCollectionPrepareRequest);
+      GarbageCollectionPrepareResponse result = apiInstance.prepareGarbageCollectionCommits(repository, garbageCollectionPrepareRequest);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling RetentionApi#prepareGarbageCollectionCommits");
@@ -149,7 +149,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**GarbageCollectionCommits**](GarbageCollectionCommits.md)
+[**GarbageCollectionPrepareResponse**](GarbageCollectionPrepareResponse.md)
 
 ### Authorization
 

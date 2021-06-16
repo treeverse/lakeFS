@@ -7,7 +7,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**previousResultPath** | **String** | path to the result of a previous successful GC job |  [optional]
+**previousRunId** | **String** | run id of a previous successful GC job |  [optional]
 
 
 

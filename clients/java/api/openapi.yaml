@@ -3821,7 +3821,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GarbageCollectionCommits'
+                $ref: '#/components/schemas/GarbageCollectionPrepareResponse'
           description: paths to commit dataset
         "401":
           content:
@@ -5020,19 +5020,21 @@ components:
       type: object
     GarbageCollectionPrepareRequest:
       example:
-        previous_result_path: previous_result_path
+        previous_run_id: previous_run_id
       properties:
-        previous_result_path:
-          description: path to the result of a previous successful GC job
+        previous_run_id:
+          description: run id of a previous successful GC job
           type: string
       type: object
-    GarbageCollectionCommits:
+    GarbageCollectionPrepareResponse:
       example:
-        path: path
+        run_id: run_id
       properties:
-        path:
-          description: path to a dataset of commits
+        run_id:
+          description: a unique identifier generated for this GC job
           type: string
+      required:
+      - run_id
       type: object
     GarbageCollectionRule:
       example:

@@ -371,13 +371,14 @@ type VersionController interface {
 	// repositoryID.
 	GetStagingToken(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (*StagingToken, error)
 
-	GetRetentionRules(ctx context.Context, repositoryID RepositoryID) (*RetentionRules, error)
+	GetGarbageCollectionRules(ctx context.Context, repositoryID RepositoryID) (*GarbageCollectionRules, error)
 
-	SetRetentionRules(ctx context.Context, repositoryID RepositoryID, rules *RetentionRules) error
+	SetGarbageCollectionRules(ctx context.Context, repositoryID RepositoryID, rules *GarbageCollectionRules) error
 
-	// GetExpiredCommits returns the sets of active and expired commits, according to the branch rules for garbage collection.
-	// The commits in the given set previouslyExpiredCommits will not be scanned.
-	GetExpiredCommits(ctx context.Context, repositoryID RepositoryID, previouslyExpiredCommits []CommitID) (expired []CommitID, active []CommitID, err error)
+	// SaveGarbageCollectionCommits saves the sets of active and expired commits, according to the branch rules for garbage collection.
+	// Returns a run id which can later be used to retrieve the set of commits.
+	// If a previousRunID is specified, commits that were already expired in that run will not be scanned.
+	SaveGarbageCollectionCommits(ctx context.Context, repositoryID RepositoryID, previousRunID string) (runID string, err error)
 }
 
 // Plumbing includes commands for fiddling more directly with graveler implementation
@@ -551,10 +552,6 @@ type RefManager interface {
 	// FillGenerations computes and updates the generation field for all commits in a repository.
 	// It should be used for restoring commits from a commit-dump which was performed before the field was introduced.
 	FillGenerations(ctx context.Context, repositoryID RepositoryID) error
-
-	// GetExpiredCommits returns the sets of active and expired commits, according to the branch rules for garbage collection.
-	// The commits in the given set previouslyExpiredCommits will not be scanned.
-	GetExpiredCommits(ctx context.Context, repositoryID RepositoryID, previouslyExpiredCommits []CommitID, rules *RetentionRules) (expired []CommitID, active []CommitID, err error)
 }
 
 // CommittedManager reads and applies committed snapshots
@@ -668,24 +665,24 @@ func (id TagID) String() string {
 }
 
 type Graveler struct {
-	CommittedManager     CommittedManager
-	StagingManager       StagingManager
-	RefManager           RefManager
-	branchLocker         BranchLocker
-	hooks                HooksHandler
-	retentionRuleManager RetentionRuleManager
-	log                  logging.Logger
+	CommittedManager         CommittedManager
+	StagingManager           StagingManager
+	RefManager               RefManager
+	branchLocker             BranchLocker
+	hooks                    HooksHandler
+	garbageCollectionManager GarbageCollectionManager
+	log                      logging.Logger
 }
 
-func NewGraveler(branchLocker BranchLocker, committedManager CommittedManager, stagingManager StagingManager, refManager RefManager, retentionRuleManager RetentionRuleManager) *Graveler {
+func NewGraveler(branchLocker BranchLocker, committedManager CommittedManager, stagingManager StagingManager, refManager RefManager, gcManager GarbageCollectionManager) *Graveler {
 	return &Graveler{
-		CommittedManager:     committedManager,
-		StagingManager:       stagingManager,
-		RefManager:           refManager,
-		branchLocker:         branchLocker,
-		hooks:                &HooksNoOp{},
-		retentionRuleManager: retentionRuleManager,
-		log:                  logging.Default().WithField("service_name", "graveler_graveler"),
+		CommittedManager:         committedManager,
+		StagingManager:           stagingManager,
+		RefManager:               refManager,
+		branchLocker:             branchLocker,
+		hooks:                    &HooksNoOp{},
+		garbageCollectionManager: gcManager,
+		log:                      logging.Default().WithField("service_name", "graveler_graveler"),
 	}
 }
 
@@ -879,30 +876,36 @@ func (g *Graveler) GetStagingToken(ctx context.Context, repositoryID RepositoryI
 	return &branch.StagingToken, nil
 }
 
-func (g *Graveler) GetRetentionRules(ctx context.Context, repositoryID RepositoryID) (*RetentionRules, error) {
-	// TODO use "_lakefs" from configuration
+func (g *Graveler) GetGarbageCollectionRules(ctx context.Context, repositoryID RepositoryID) (*GarbageCollectionRules, error) {
 	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, err
 	}
-	return g.retentionRuleManager.GetRules(ctx, string(repo.StorageNamespace))
+	return g.garbageCollectionManager.GetRules(ctx, repo.StorageNamespace)
 }
 
-func (g *Graveler) SetRetentionRules(ctx context.Context, repositoryID RepositoryID, rules *RetentionRules) error {
-	// TODO use "_lakefs" from configuration
+func (g *Graveler) SetGarbageCollectionRules(ctx context.Context, repositoryID RepositoryID, rules *GarbageCollectionRules) error {
 	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 	if err != nil {
 		return err
 	}
-	return g.retentionRuleManager.SaveRules(ctx, string(repo.StorageNamespace), rules)
+	return g.garbageCollectionManager.SaveRules(ctx, repo.StorageNamespace, rules)
 }
 
-func (g *Graveler) GetExpiredCommits(ctx context.Context, repositoryID RepositoryID, previouslyExpiredCommits []CommitID) (expired []CommitID, active []CommitID, err error) {
-	rules, err := g.GetRetentionRules(ctx, repositoryID)
+func (g *Graveler) SaveGarbageCollectionCommits(ctx context.Context, repositoryID RepositoryID, previousRunID string) (runID string, err error) {
+	rules, err := g.GetGarbageCollectionRules(ctx, repositoryID)
 	if err != nil {
-		return nil, nil, fmt.Errorf("get retention rules: %w", err)
+		return "", fmt.Errorf("get gc rules: %w", err)
 	}
-	return g.RefManager.GetExpiredCommits(ctx, repositoryID, previouslyExpiredCommits, rules)
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return "", fmt.Errorf("get repository: %w", err)
+	}
+	previouslyExpiredCommits, err := g.garbageCollectionManager.GetRunExpiredCommits(ctx, repo.StorageNamespace, previousRunID)
+	if err != nil {
+		return "", fmt.Errorf("get expired commits from previous run: %w", err)
+	}
+	return g.garbageCollectionManager.SaveGarbageCollectionCommits(ctx, repo.StorageNamespace, repositoryID, rules, previouslyExpiredCommits)
 }
 
 func (g *Graveler) Get(ctx context.Context, repositoryID RepositoryID, ref Ref, key Key) (*Value, error) {
@@ -2029,12 +2032,15 @@ func (c *commitValueIterator) Close() {
 	c.src.Close()
 }
 
-type RetentionRuleManager interface {
-	GetRules(ctx context.Context, configurationFilePrefix string) (*RetentionRules, error)
-	SaveRules(ctx context.Context, configurationFilePrefix string, rules *RetentionRules) error
+type GarbageCollectionManager interface {
+	GetRules(ctx context.Context, storageNamespace StorageNamespace) (*GarbageCollectionRules, error)
+	SaveRules(ctx context.Context, storageNamespace StorageNamespace, rules *GarbageCollectionRules) error
+
+	SaveGarbageCollectionCommits(ctx context.Context, storageNamespace StorageNamespace, repositoryID RepositoryID, rules *GarbageCollectionRules, previouslyExpiredCommits []CommitID) (string, error)
+	GetRunExpiredCommits(ctx context.Context, storageNamespace StorageNamespace, runID string) ([]CommitID, error)
 }
 
-type RetentionRules struct {
+type GarbageCollectionRules struct {
 	DefaultRetentionDays int              `json:"default"`
 	BranchRetentionDays  map[BranchID]int `json:"branches"`
 }

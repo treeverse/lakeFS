@@ -23,8 +23,8 @@ from lakefs_client.model_utils import (  # noqa: F401
     validate_and_convert_types
 )
 from lakefs_client.model.error import Error
-from lakefs_client.model.garbage_collection_commits import GarbageCollectionCommits
 from lakefs_client.model.garbage_collection_prepare_request import GarbageCollectionPrepareRequest
+from lakefs_client.model.garbage_collection_prepare_response import GarbageCollectionPrepareResponse
 from lakefs_client.model.garbage_collection_rules import GarbageCollectionRules
 
 
@@ -199,7 +199,7 @@ class RetentionApi(object):
                 async_req (bool): execute request asynchronously
 
             Returns:
-                GarbageCollectionCommits
+                GarbageCollectionPrepareResponse
                     If the method is called asynchronously, returns the request
                     thread.
             """
@@ -228,7 +228,7 @@ class RetentionApi(object):
 
         self.prepare_garbage_collection_commits = _Endpoint(
             settings={
-                'response_type': (GarbageCollectionCommits,),
+                'response_type': (GarbageCollectionPrepareResponse,),
                 'auth': [
                     'basic_auth',
                     'cookie_auth',

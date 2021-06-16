@@ -116,9 +116,9 @@ type Interface interface {
 	GetMetaRange(ctx context.Context, repositoryID, metaRangeID string) (graveler.MetaRangeInfo, error)
 	GetRange(ctx context.Context, repositoryID, rangeID string) (graveler.RangeInfo, error)
 
-	GetRetentionRules(ctx context.Context, repositoryID string) (*graveler.RetentionRules, error)
-	SetRetentionRules(ctx context.Context, repositoryID string, rules *graveler.RetentionRules) error
-	PrepareExpiredCommits(ctx context.Context, repositoryID string, previousResultPath string) (string, error)
+	GetGarbageCollectionRules(ctx context.Context, repositoryID string) (*graveler.GarbageCollectionRules, error)
+	SetGarbageCollectionRules(ctx context.Context, repositoryID string, rules *graveler.GarbageCollectionRules) error
+	PrepareExpiredCommits(ctx context.Context, repositoryID string, previousRunID string) (string, error)
 
 	io.Closer
 }

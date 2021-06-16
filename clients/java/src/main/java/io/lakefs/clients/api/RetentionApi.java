@@ -28,8 +28,8 @@ import java.io.IOException;
 
 
 import io.lakefs.clients.api.model.Error;
-import io.lakefs.clients.api.model.GarbageCollectionCommits;
 import io.lakefs.clients.api.model.GarbageCollectionPrepareRequest;
+import io.lakefs.clients.api.model.GarbageCollectionPrepareResponse;
 import io.lakefs.clients.api.model.GarbageCollectionRules;
 
 import java.lang.reflect.Type;
@@ -243,7 +243,7 @@ public class RetentionApi {
      * 
      * @param repository  (required)
      * @param garbageCollectionPrepareRequest  (optional)
-     * @return GarbageCollectionCommits
+     * @return GarbageCollectionPrepareResponse
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
@@ -254,8 +254,8 @@ public class RetentionApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public GarbageCollectionCommits prepareGarbageCollectionCommits(String repository, GarbageCollectionPrepareRequest garbageCollectionPrepareRequest) throws ApiException {
-        ApiResponse<GarbageCollectionCommits> localVarResp = prepareGarbageCollectionCommitsWithHttpInfo(repository, garbageCollectionPrepareRequest);
+    public GarbageCollectionPrepareResponse prepareGarbageCollectionCommits(String repository, GarbageCollectionPrepareRequest garbageCollectionPrepareRequest) throws ApiException {
+        ApiResponse<GarbageCollectionPrepareResponse> localVarResp = prepareGarbageCollectionCommitsWithHttpInfo(repository, garbageCollectionPrepareRequest);
         return localVarResp.getData();
     }
 
@@ -264,7 +264,7 @@ public class RetentionApi {
      * 
      * @param repository  (required)
      * @param garbageCollectionPrepareRequest  (optional)
-     * @return ApiResponse&lt;GarbageCollectionCommits&gt;
+     * @return ApiResponse&lt;GarbageCollectionPrepareResponse&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
@@ -275,9 +275,9 @@ public class RetentionApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<GarbageCollectionCommits> prepareGarbageCollectionCommitsWithHttpInfo(String repository, GarbageCollectionPrepareRequest garbageCollectionPrepareRequest) throws ApiException {
+    public ApiResponse<GarbageCollectionPrepareResponse> prepareGarbageCollectionCommitsWithHttpInfo(String repository, GarbageCollectionPrepareRequest garbageCollectionPrepareRequest) throws ApiException {
         okhttp3.Call localVarCall = prepareGarbageCollectionCommitsValidateBeforeCall(repository, garbageCollectionPrepareRequest, null);
-        Type localVarReturnType = new TypeToken<GarbageCollectionCommits>(){}.getType();
+        Type localVarReturnType = new TypeToken<GarbageCollectionPrepareResponse>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
@@ -298,10 +298,10 @@ public class RetentionApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call prepareGarbageCollectionCommitsAsync(String repository, GarbageCollectionPrepareRequest garbageCollectionPrepareRequest, final ApiCallback<GarbageCollectionCommits> _callback) throws ApiException {
+    public okhttp3.Call prepareGarbageCollectionCommitsAsync(String repository, GarbageCollectionPrepareRequest garbageCollectionPrepareRequest, final ApiCallback<GarbageCollectionPrepareResponse> _callback) throws ApiException {
 
         okhttp3.Call localVarCall = prepareGarbageCollectionCommitsValidateBeforeCall(repository, garbageCollectionPrepareRequest, _callback);
-        Type localVarReturnType = new TypeToken<GarbageCollectionCommits>(){}.getType();
+        Type localVarReturnType = new TypeToken<GarbageCollectionPrepareResponse>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
     }

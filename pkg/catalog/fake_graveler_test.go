@@ -19,15 +19,15 @@ type FakeGraveler struct {
 	hooks                     graveler.HooksHandler
 }
 
-func (g *FakeGraveler) GetRetentionRules(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.RetentionRules, error) {
+func (g *FakeGraveler) SaveGarbageCollectionCommits(ctx context.Context, repositoryID graveler.RepositoryID, previousRunID string) (runID string, err error) {
 	panic("implement me")
 }
 
-func (g *FakeGraveler) SetRetentionRules(ctx context.Context, repositoryID graveler.RepositoryID, rules *graveler.RetentionRules) error {
+func (g *FakeGraveler) GetGarbageCollectionRules(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.GarbageCollectionRules, error) {
 	panic("implement me")
 }
 
-func (g *FakeGraveler) GetExpiredCommits(ctx context.Context, repositoryID graveler.RepositoryID, previouslyExpiredCommits []graveler.CommitID) (expired []graveler.CommitID, active []graveler.CommitID, err error) {
+func (g *FakeGraveler) SetGarbageCollectionRules(ctx context.Context, repositoryID graveler.RepositoryID, rules *graveler.GarbageCollectionRules) error {
 	panic("implement me")
 }
 

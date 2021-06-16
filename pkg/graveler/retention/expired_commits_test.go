@@ -1,4 +1,4 @@
-package ref
+package retention
 
 import (
 	"context"
@@ -150,17 +150,17 @@ func TestExpiredCommits(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			refManagerMock := mock.NewMockRefManager(ctrl)
 			ctx := context.Background()
-			retentionRules := &graveler.RetentionRules{DefaultRetentionDays: 0, BranchRetentionDays: make(map[graveler.BranchID]int)}
+			garbageCollectionRules := &graveler.GarbageCollectionRules{DefaultRetentionDays: 0, BranchRetentionDays: make(map[graveler.BranchID]int)}
 			for head, retentionDays := range tst.headsRetentionDays {
 				branchRecords = append(branchRecords, &graveler.BranchRecord{
 					BranchID: graveler.BranchID(head),
 					Branch:   &graveler.Branch{CommitID: graveler.CommitID(head)},
 				})
-				retentionRules.BranchRetentionDays[graveler.BranchID(head)] = retentionDays
+				garbageCollectionRules.BranchRetentionDays[graveler.BranchID(head)] = retentionDays
 			}
 			sort.Slice(branchRecords, func(i, j int) bool {
-				// start with the branch with the strictest retention rules
-				return retentionRules.BranchRetentionDays[branchRecords[i].BranchID] > retentionRules.BranchRetentionDays[branchRecords[j].BranchID]
+				// start with the branch with the strictest gc rules
+				return garbageCollectionRules.BranchRetentionDays[branchRecords[i].BranchID] > garbageCollectionRules.BranchRetentionDays[branchRecords[j].BranchID]
 			})
 			branchIterator := gtestutil.NewFakeBranchIterator(branchRecords)
 			refManagerMock.EXPECT().ListBranches(ctx, graveler.RepositoryID("test")).Return(branchIterator, nil)
@@ -176,13 +176,12 @@ func TestExpiredCommits(t *testing.T) {
 			finder := ExpiredCommitsFinder{
 				commitGetter: refManagerMock,
 				branchLister: refManagerMock,
-				rules:        retentionRules,
 			}
 			previouslyExpiredCommitIDs := make([]graveler.CommitID, len(tst.previouslyExpired))
 			for i := range tst.previouslyExpired {
 				previouslyExpiredCommitIDs[i] = graveler.CommitID(tst.previouslyExpired[i])
 			}
-			activeCommits, expiredCommits, err := finder.GetExpiredCommits(ctx, "test", previouslyExpiredCommitIDs)
+			activeCommits, expiredCommits, err := finder.GetExpiredCommits(ctx, "test", garbageCollectionRules, previouslyExpiredCommitIDs)
 			if err != nil {
 				t.Fatalf("failed to find expired commits: %v", err)
 			}

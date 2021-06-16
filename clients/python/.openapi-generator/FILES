@@ -21,8 +21,8 @@ docs/CurrentUser.md
 docs/Diff.md
 docs/DiffList.md
 docs/Error.md
-docs/GarbageCollectionCommits.md
 docs/GarbageCollectionPrepareRequest.md
+docs/GarbageCollectionPrepareResponse.md
 docs/GarbageCollectionRule.md
 docs/GarbageCollectionRules.md
 docs/Group.md
@@ -103,8 +103,8 @@ lakefs_client/model/current_user.py
 lakefs_client/model/diff.py
 lakefs_client/model/diff_list.py
 lakefs_client/model/error.py
-lakefs_client/model/garbage_collection_commits.py
 lakefs_client/model/garbage_collection_prepare_request.py
+lakefs_client/model/garbage_collection_prepare_response.py
 lakefs_client/model/garbage_collection_rule.py
 lakefs_client/model/garbage_collection_rules.py
 lakefs_client/model/group.py

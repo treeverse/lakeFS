@@ -820,17 +820,18 @@ components:
     GarbageCollectionPrepareRequest:
       type: object
       properties:
-        previous_result_path:
+        previous_run_id:
           type: string
-          description: path to the result of a previous successful GC job
+          description: run id of a previous successful GC job
 
-    GarbageCollectionCommits:
+    GarbageCollectionPrepareResponse:
       type: object
       properties:
-        path:
+        run_id:
           type: string
-          description: path to a dataset of commits
-
+          description: a unique identifier generated for this GC job
+      required:
+        - run_id
     GarbageCollectionRule:
       type: object
       properties:
@@ -2929,7 +2930,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GarbageCollectionCommits"
+                $ref: "#/components/schemas/GarbageCollectionPrepareResponse"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:

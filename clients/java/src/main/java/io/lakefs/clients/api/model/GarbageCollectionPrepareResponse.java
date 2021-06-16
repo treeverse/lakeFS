@@ -25,35 +25,34 @@ import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
 
 /**
- * GarbageCollectionPrepareRequest
+ * GarbageCollectionPrepareResponse
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class GarbageCollectionPrepareRequest {
-  public static final String SERIALIZED_NAME_PREVIOUS_RUN_ID = "previous_run_id";
-  @SerializedName(SERIALIZED_NAME_PREVIOUS_RUN_ID)
-  private String previousRunId;
+public class GarbageCollectionPrepareResponse {
+  public static final String SERIALIZED_NAME_RUN_ID = "run_id";
+  @SerializedName(SERIALIZED_NAME_RUN_ID)
+  private String runId;
 
 
-  public GarbageCollectionPrepareRequest previousRunId(String previousRunId) {
+  public GarbageCollectionPrepareResponse runId(String runId) {
     
-    this.previousRunId = previousRunId;
+    this.runId = runId;
     return this;
   }
 
    /**
-   * run id of a previous successful GC job
-   * @return previousRunId
+   * a unique identifier generated for this GC job
+   * @return runId
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "run id of a previous successful GC job")
+  @ApiModelProperty(required = true, value = "a unique identifier generated for this GC job")
 
-  public String getPreviousRunId() {
-    return previousRunId;
+  public String getRunId() {
+    return runId;
   }
 
 
-  public void setPreviousRunId(String previousRunId) {
-    this.previousRunId = previousRunId;
+  public void setRunId(String runId) {
+    this.runId = runId;
   }
 
 
@@ -65,20 +64,20 @@ public class GarbageCollectionPrepareRequest {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    GarbageCollectionPrepareRequest garbageCollectionPrepareRequest = (GarbageCollectionPrepareRequest) o;
-    return Objects.equals(this.previousRunId, garbageCollectionPrepareRequest.previousRunId);
+    GarbageCollectionPrepareResponse garbageCollectionPrepareResponse = (GarbageCollectionPrepareResponse) o;
+    return Objects.equals(this.runId, garbageCollectionPrepareResponse.runId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(previousRunId);
+    return Objects.hash(runId);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class GarbageCollectionPrepareRequest {\n");
-    sb.append("    previousRunId: ").append(toIndentedString(previousRunId)).append("\n");
+    sb.append("class GarbageCollectionPrepareResponse {\n");
+    sb.append("    runId: ").append(toIndentedString(runId)).append("\n");
     sb.append("}");
     return sb.toString();
   }

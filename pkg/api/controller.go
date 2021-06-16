@@ -1924,7 +1924,7 @@ func (c *Controller) GetGarbageCollectionRules(w http.ResponseWriter, r *http.Re
 		return
 	}
 	ctx := r.Context()
-	rules, err := c.Catalog.GetRetentionRules(ctx, repository)
+	rules, err := c.Catalog.GetGarbageCollectionRules(ctx, repository)
 	if handleAPIError(w, err) {
 		return
 	}
@@ -1946,14 +1946,14 @@ func (c *Controller) SetGarbageCollectionRules(w http.ResponseWriter, r *http.Re
 		return
 	}
 	ctx := r.Context()
-	rules := &graveler.RetentionRules{
+	rules := &graveler.GarbageCollectionRules{
 		DefaultRetentionDays: body.DefaultRetentionDays,
 		BranchRetentionDays:  make(map[graveler.BranchID]int),
 	}
 	for _, rule := range body.Branches {
 		rules.BranchRetentionDays[graveler.BranchID(rule.BranchId)] = rule.RetentionDays
 	}
-	err := c.Catalog.SetRetentionRules(ctx, repository, rules)
+	err := c.Catalog.SetGarbageCollectionRules(ctx, repository, rules)
 	if handleAPIError(w, err) {
 		return
 	}
@@ -1971,15 +1971,11 @@ func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *h
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "prepare_garbage_collection_commits")
-	previousResultPath := ""
-	if body.PreviousResultPath != nil {
-		previousResultPath = *body.PreviousResultPath
-	}
-	pth, err := c.Catalog.PrepareExpiredCommits(ctx, repository, previousResultPath)
+	runID, err := c.Catalog.PrepareExpiredCommits(ctx, repository, swag.StringValue(body.PreviousRunId))
 	if handleAPIError(w, err) {
 		return
 	}
-	writeResponse(w, http.StatusCreated, GarbageCollectionCommits{Path: swag.String(pth)})
+	writeResponse(w, http.StatusCreated, GarbageCollectionPrepareResponse{RunId: runID})
 }
 
 func (c *Controller) GetMetaRange(w http.ResponseWriter, r *http.Request, repository string, metaRange string) {

@@ -1,4 +1,4 @@
-package ref
+package retention
 
 import (
 	"context"
@@ -7,21 +7,16 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler"
 )
 
-type ExpirationDateGetter interface {
-	Get(c *graveler.CommitRecord) time.Time
-}
-
 type ExpiredCommitsFinder struct {
 	branchLister graveler.BranchLister
 	commitGetter graveler.CommitGetter
-	rules        *graveler.RetentionRules
 }
 
-func NewExpiredCommitsFinder(branchLister graveler.BranchLister, commitGetter graveler.CommitGetter, rules *graveler.RetentionRules) *ExpiredCommitsFinder {
-	return &ExpiredCommitsFinder{branchLister: branchLister, commitGetter: commitGetter, rules: rules}
+func NewExpiredCommitsFinder(branchLister graveler.BranchLister, commitGetter graveler.CommitGetter) *ExpiredCommitsFinder {
+	return &ExpiredCommitsFinder{branchLister: branchLister, commitGetter: commitGetter}
 }
 
-func (e *ExpiredCommitsFinder) GetExpiredCommits(ctx context.Context, repositoryID graveler.RepositoryID, previouslyExpiredCommits []graveler.CommitID) (expired []graveler.CommitID, active []graveler.CommitID, err error) {
+func (e *ExpiredCommitsFinder) GetExpiredCommits(ctx context.Context, repositoryID graveler.RepositoryID, rules *graveler.GarbageCollectionRules, previouslyExpiredCommits []graveler.CommitID) (expired []graveler.CommitID, active []graveler.CommitID, err error) {
 	now := time.Now()
 	processed := make(map[graveler.CommitID]time.Time)
 
@@ -37,8 +32,8 @@ func (e *ExpiredCommitsFinder) GetExpiredCommits(ctx context.Context, repository
 	expiredMap := make(map[graveler.CommitID]bool)
 	for branchIterator.Next() {
 		branchRecord := branchIterator.Value()
-		branchExpirationThreshold := now.AddDate(0, 0, -e.rules.DefaultRetentionDays)
-		if branchExpirationPeriod, ok := e.rules.BranchRetentionDays[branchRecord.BranchID]; ok {
+		branchExpirationThreshold := now.AddDate(0, 0, -rules.DefaultRetentionDays)
+		if branchExpirationPeriod, ok := rules.BranchRetentionDays[branchRecord.BranchID]; ok {
 			branchExpirationThreshold = now.AddDate(0, 0, -branchExpirationPeriod)
 		}
 		commitID := branchRecord.CommitID

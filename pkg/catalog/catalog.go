@@ -4,15 +4,12 @@ import (
 	"context"
 	"crypto"
 	_ "crypto/sha256"
-	"encoding/csv"
 	"errors"
 	"fmt"
 	"io"
-	"strconv"
 	"strings"
 
 	"github.com/cockroachdb/pebble"
-	"github.com/google/uuid"
 	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -185,8 +182,8 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 
 	refManager := ref.NewPGRefManager(executor, cfg.DB, ident.NewHexAddressProvider())
 	branchLocker := ref.NewBranchLocker(cfg.LockDB)
-	retentionRuleManager := retention.NewRuleManager(tierFSParams.Adapter, cfg.Config.GetCommittedBlockStoragePrefix())
-	store := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager, retentionRuleManager)
+	gcManager := retention.NewGarbageCollectionManager(tierFSParams.Adapter, refManager, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
+	store := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager)
 
 	return &Catalog{
 		BlockAdapter: tierFSParams.Adapter,
@@ -1180,75 +1177,22 @@ func (c *Catalog) GetRange(ctx context.Context, repositoryID, rangeID string) (g
 	return c.Store.GetRange(ctx, graveler.RepositoryID(repositoryID), graveler.RangeID(rangeID))
 }
 
-func (c *Catalog) GetRetentionRules(ctx context.Context, repositoryID string) (*graveler.RetentionRules, error) {
-	return c.Store.GetRetentionRules(ctx, graveler.RepositoryID(repositoryID))
+func (c *Catalog) GetGarbageCollectionRules(ctx context.Context, repositoryID string) (*graveler.GarbageCollectionRules, error) {
+	return c.Store.GetGarbageCollectionRules(ctx, graveler.RepositoryID(repositoryID))
 }
 
-func (c *Catalog) SetRetentionRules(ctx context.Context, repositoryID string, rules *graveler.RetentionRules) error {
-	return c.Store.SetRetentionRules(ctx, graveler.RepositoryID(repositoryID), rules)
+func (c *Catalog) SetGarbageCollectionRules(ctx context.Context, repositoryID string, rules *graveler.GarbageCollectionRules) error {
+	return c.Store.SetGarbageCollectionRules(ctx, graveler.RepositoryID(repositoryID), rules)
 }
 
-func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repository string, previousResultPath string) (string, error) {
+func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repository string, previousRunID string) (string, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	if err := Validate([]ValidateArg{
 		{"repositoryID", repositoryID, ValidateRepositoryID},
 	}); err != nil {
 		return "", err
 	}
-	repo, err := c.Store.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return "", err
-	}
-	previouslyExpiredCommits := make([]graveler.CommitID, 0)
-	if previousResultPath != "" {
-		previousRunReader, err := c.BlockAdapter.Get(ctx, block.ObjectPointer{
-			StorageNamespace: string(repo.StorageNamespace),
-			Identifier:       previousResultPath,
-			IdentifierType:   block.IdentifierTypeRelative,
-		}, -1)
-		if err != nil {
-			return "", err
-		}
-		csvReader := csv.NewReader(previousRunReader)
-		previousCommits, err := csvReader.ReadAll()
-		if err != nil {
-			return "", err
-		}
-		for _, commitRow := range previousCommits {
-			previouslyExpiredCommits = append(previouslyExpiredCommits, graveler.CommitID(commitRow[1]))
-		}
-	}
-	activeCommits, expiredCommits, err := c.Store.GetExpiredCommits(ctx, repositoryID, previouslyExpiredCommits)
-	if err != nil {
-		return "", fmt.Errorf("preparing expired commits: %w", err)
-	}
-	b := &strings.Builder{}
-	csvWriter := csv.NewWriter(b)
-	for _, commitID := range expiredCommits {
-		err = csvWriter.Write([]string{string(commitID), strconv.FormatBool(true)})
-		if err != nil {
-			return "", err
-		}
-	}
-	for _, commitID := range activeCommits {
-		err = csvWriter.Write([]string{string(commitID), strconv.FormatBool(false)})
-		if err != nil {
-			return "", err
-		}
-	}
-	csvWriter.Flush()
-	commitsStr := b.String()
-	runID := uuid.New().String()
-	path := fmt.Sprintf("_lakefs/retention/commits/run_id=%s/commits.csv", runID)
-	err = c.BlockAdapter.Put(ctx, block.ObjectPointer{
-		StorageNamespace: string(repo.StorageNamespace),
-		Identifier:       path,
-		IdentifierType:   block.IdentifierTypeRelative,
-	}, int64(len(commitsStr)), strings.NewReader(commitsStr), block.PutOpts{})
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%s/%s", repo.StorageNamespace, path), nil
+	return c.Store.SaveGarbageCollectionCommits(ctx, repositoryID, previousRunID)
 }
 
 func (c *Catalog) Close() error {

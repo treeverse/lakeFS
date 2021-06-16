@@ -99,7 +99,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **prepare_garbage_collection_commits**
-> GarbageCollectionCommits prepare_garbage_collection_commits(repository)
+> GarbageCollectionPrepareResponse prepare_garbage_collection_commits(repository)
 
 save lists of active and expired commits for garbage collection
 
@@ -112,8 +112,8 @@ save lists of active and expired commits for garbage collection
 import time
 import lakefs_client
 from lakefs_client.api import retention_api
-from lakefs_client.model.garbage_collection_commits import GarbageCollectionCommits
 from lakefs_client.model.error import Error
+from lakefs_client.model.garbage_collection_prepare_response import GarbageCollectionPrepareResponse
 from lakefs_client.model.garbage_collection_prepare_request import GarbageCollectionPrepareRequest
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
@@ -150,7 +150,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     api_instance = retention_api.RetentionApi(api_client)
     repository = "repository_example" # str | 
     garbage_collection_prepare_request = GarbageCollectionPrepareRequest(
-        previous_result_path="previous_result_path_example",
+        previous_run_id="previous_run_id_example",
     ) # GarbageCollectionPrepareRequest |  (optional)
 
     # example passing only required values which don't have defaults set
@@ -181,7 +181,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**GarbageCollectionCommits**](GarbageCollectionCommits.md)
+[**GarbageCollectionPrepareResponse**](GarbageCollectionPrepareResponse.md)
 
 ### Authorization
 
