@@ -17,12 +17,16 @@ private object local {
   }
 }
 
-class SSTableIterator[Proto <: GeneratedMessage with scalapb.Message[Proto]](val it: SstFileReaderIterator, companion: GeneratedMessageCompanion[Proto]) extends Iterator[Item[Proto]] with Closeable {
+class SSTableIterator[Proto <: GeneratedMessage with scalapb.Message[Proto]](
+    val it: SstFileReaderIterator,
+    companion: GeneratedMessageCompanion[Proto]
+) extends Iterator[Item[Proto]]
+    with Closeable {
   // TODO(ariels): explicitly make it closeable, and figure out how to close it when used by
   //     Spark.
   override def hasNext: Boolean = it.isValid
 
-  override def close() : Unit = it.close()
+  override def close(): Unit = it.close()
 
   override def next(): Item[Proto] = {
     val bais = new ByteArrayInputStream(it.value)
@@ -50,7 +54,10 @@ object SSTableReader {
   RocksDB.loadLibrary()
 }
 
-class SSTableReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](sstableFile: String, companion: GeneratedMessageCompanion[Proto]) extends Closeable {
+class SSTableReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
+    sstableFile: String,
+    companion: GeneratedMessageCompanion[Proto]
+) extends Closeable {
   private val options = new Options
   private val reader = new SstFileReader(options)
   private val readOptions = new ReadOptions
@@ -62,7 +69,8 @@ class SSTableReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](sstab
     readOptions.close()
   }
 
-  def getMetadata: Map[String, String] = reader.getTableProperties.getUserCollectedProperties.asScala.toMap
+  def getMetadata: Map[String, String] =
+    reader.getTableProperties.getUserCollectedProperties.asScala.toMap
 
   def newIterator(): SSTableIterator[Proto] = {
     val it = reader.newIterator(readOptions)

@@ -8,10 +8,10 @@ class SparkFilter extends KeyFilter {
 
   override def rounds(): Int = 2
 
-  override def roundForKey(key: String) : Int = {
+  override def roundForKey(key: String): Int = {
     key match {
       case sparkSuccessFileRegex(_) => 2
-      case _ => 1
+      case _                        => 1
     }
   }
 }
