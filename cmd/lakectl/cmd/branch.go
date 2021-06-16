@@ -8,10 +8,10 @@ import (
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
-const branchRevertCmdArgs = 2
-
 const (
 	ParentNumberFlagName = "parent-number"
+
+	branchRevertCmdArgs = 2
 )
 
 // branchCmd represents the branch command
@@ -70,7 +70,7 @@ var branchCreateCmd = &cobra.Command{
 			Source: sourceURI.Ref,
 		})
 		DieOnResponseError(resp, err)
-		Fmt("created branch '%s'\n", string(resp.Body))
+		Fmt("created branch '%s' %s\n", u.Ref, string(resp.Body))
 	},
 }
 
