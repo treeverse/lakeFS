@@ -3,9 +3,7 @@ package io.treeverse.clients
 import java.io.DataInput
 import java.io.IOException
 
-
-/**
- * from https://github.com/addthis/stream-lib/blob/master/src/main/java/com/clearspring/analytics/util/Varint.java
+/** from https://github.com/addthis/stream-lib/blob/master/src/main/java/com/clearspring/analytics/util/Varint.java
  */
 object VarInt {
   @throws[IOException]
@@ -25,11 +23,11 @@ object VarInt {
     var i = 0
     var b = 0L
 
-    while ( {
+    while ({
       b = in.readByte()
       (b & 0x80L) != 0
     }) {
-      value |= (b & 0x7F) << i
+      value |= (b & 0x7f) << i
       i += 7
       if (i > 63) throw new IllegalArgumentException("Variable length quantity is too long")
     }
