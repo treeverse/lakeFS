@@ -5,7 +5,8 @@ import org.apache.spark.sql.SparkSession
 
 object List extends App {
   private def dirs(path: String): Seq[String] =
-    path.split("/")
+    path
+      .split("/")
       .dropRight(1)
       .scanLeft("")((a, b: String) => (if (a.isEmpty) "" else a + "/") + b)
 
@@ -22,7 +23,8 @@ object List extends App {
     val outputPath = args(2)
     val files = LakeFSContext.newRDD(sc, repo, ref)
 
-    val size = files.flatMap({ case (key, entry) => dirs(new String(key)).map(d => (d, entry.message.size)) })
+    val size = files
+      .flatMap({ case (key, entry) => dirs(new String(key)).map(d => (d, entry.message.size)) })
       .reduceByKey(_ + _)
 
     size.saveAsTextFile(outputPath)

@@ -12,8 +12,15 @@ import scala.collection.JavaConverters._
 import org.apache.spark._
 import org.rogach.scallop._
 
-class Exporter(spark : SparkSession, apiClient: ApiClient, filter: KeyFilter, repoName: String, dstRoot: String, parallelism: Int) {
-  def this(spark : SparkSession, apiClient: ApiClient, repoName: String, dstRoot: String) {
+class Exporter(
+    spark: SparkSession,
+    apiClient: ApiClient,
+    filter: KeyFilter,
+    repoName: String,
+    dstRoot: String,
+    parallelism: Int
+) {
+  def this(spark: SparkSession, apiClient: ApiClient, repoName: String, dstRoot: String) {
     this(spark, apiClient, new SparkFilter(), repoName, dstRoot, Exporter.defaultParallelism)
   }
 
@@ -37,30 +44,46 @@ class Exporter(spark : SparkSession, apiClient: ApiClient, filter: KeyFilter, re
   }
 
   final private val maxLoggedErrors = 10000
-  private def export(round: Int, ns: String, rel: String, commitID: String, actionsDF: DataFrame) : Boolean =  {
+  private def export(
+      round: Int,
+      ns: String,
+      rel: String,
+      commitID: String,
+      actionsDF: DataFrame
+  ): Boolean = {
     import spark.implicits._
 
     val hadoopConf = spark.sparkContext.hadoopConfiguration
     val serializedConf = new SerializableWritable(hadoopConf)
     val f = filter
     val par = parallelism
-    val errs = actionsDF.mapPartitions( part => {
-      val pool: ExecutorService = Executors.newFixedThreadPool(par)
+    val errs = actionsDF
+      .mapPartitions(part => {
+        val pool: ExecutorService = Executors.newFixedThreadPool(par)
 
-      val res = pool.invokeAll(
-        part.map(row =>
-          new Handler(f, round, ns, rel, serializedConf, row)
-        ).toList.asJava).asScala.map(fut => fut.get()).iterator
-      pool.shutdown()
-      res
-    }
-    ).filter(status => !status.success)
+        val res = pool
+          .invokeAll(
+            part.map(row => new Handler(f, round, ns, rel, serializedConf, row)).toList.asJava
+          )
+          .asScala
+          .map(fut => fut.get())
+          .iterator
+        pool.shutdown()
+        res
+      })
+      .filter(status => !status.success)
 
-    if (errs.isEmpty){
+    if (errs.isEmpty) {
       return true
     }
     val count = errs.count()
-    writeSummaryFile(false, commitID, errs.sample(math.min(1.0, maxLoggedErrors.toDouble/count)).map(s => s.msg).reduce(_+"\n"+_))
+    writeSummaryFile(false,
+                     commitID,
+                     errs
+                       .sample(math.min(1.0, maxLoggedErrors.toDouble / count))
+                       .map(s => s.msg)
+                       .reduce(_ + "\n" + _)
+                    )
     false
   }
 
@@ -71,8 +94,8 @@ class Exporter(spark : SparkSession, apiClient: ApiClient, filter: KeyFilter, re
     val newDF = LakeFSContext.newDF(spark, repoName, commitID)
     val prevDF = LakeFSContext.newDF(spark, repoName, prevCommitID)
 
-    val newTableName =  randPrefix() + "_new_commit"
-    val prevTableName =  randPrefix() + "_prev_commit"
+    val newTableName = randPrefix() + "_new_commit"
+    val prevTableName = randPrefix() + "_prev_commit"
     newDF.createOrReplaceTempView(newTableName)
     prevDF.createOrReplaceTempView(prevTableName)
 
@@ -98,8 +121,13 @@ class Exporter(spark : SparkSession, apiClient: ApiClient, filter: KeyFilter, re
   }
 
   final private val successMsg = "Export completed successfully!"
-  private def actOnActions(ns: String, dst: String, commitID: String, actionsDF: DataFrame): Unit = {
-    for( i <- 1 to filter.rounds()){
+  private def actOnActions(
+      ns: String,
+      dst: String,
+      commitID: String,
+      actionsDF: DataFrame
+  ): Unit = {
+    for (i <- 1 to filter.rounds()) {
       if (!export(i, ns, dst, commitID, actionsDF)) {
         // failed to export files, don't export next round
         return
@@ -109,8 +137,8 @@ class Exporter(spark : SparkSession, apiClient: ApiClient, filter: KeyFilter, re
     writeSummaryFile(true, commitID, successMsg)
   }
 
-  private def writeSummaryFile(success: Boolean, commitID: String, content : String) = {
-    val suffix = if(success) "SUCCESS" else "FAILURE"
+  private def writeSummaryFile(success: Boolean, commitID: String, content: String) = {
+    val suffix = if (success) "SUCCESS" else "FAILURE"
     val time = DateTimeFormatter.ISO_INSTANT.format(java.time.Clock.systemUTC.instant())
     val dstPath = URLResolver.resolveURL(new URI(dstRoot), s"EXPORT_${commitID}_${time}_${suffix}")
     val dstFS = dstPath.getFileSystem(spark.sparkContext.hadoopConfiguration)
@@ -121,13 +149,13 @@ class Exporter(spark : SparkSession, apiClient: ApiClient, filter: KeyFilter, re
   }
 
   final private val prefixLen = 8
-  private def randPrefix() : String = {
+  private def randPrefix(): String = {
     val gen = Random.alphanumeric.dropWhile(_.isDigit)
     gen.take(prefixLen).mkString("")
   }
 }
 
-object Exporter{
+object Exporter {
   final val defaultParallelism = 10
 }
 
@@ -154,7 +182,9 @@ object Main {
 
     val rawLocation = conf.rootLocation()
     val s3Prefix = "s3://"
-    val rootLocation = if (rawLocation.startsWith(s3Prefix)) "s3a://" + rawLocation.substring(s3Prefix.length)  else rawLocation
+    val rootLocation =
+      if (rawLocation.startsWith(s3Prefix)) "s3a://" + rawLocation.substring(s3Prefix.length)
+      else rawLocation
     val apiClient = new ApiClient(endpoint, accessKey, secretKey)
     val exporter = new Exporter(spark, apiClient, conf.repo(), rootLocation)
 
@@ -172,14 +202,12 @@ object Main {
   }
 }
 
-
 /** Conf options and arguments usage is documented in https://github.com/scallop/scallop/wiki
- *
  */
 class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
-  val branch = opt[String](required=false)
-  val commit_id = opt[String](required=false)
-  val prev_commit_id = opt[String](required=false)
+  val branch = opt[String](required = false)
+  val commit_id = opt[String](required = false)
+  val prev_commit_id = opt[String](required = false)
   val repo = trailArg[String](required = true)
   val rootLocation = trailArg[String](required = true)
   requireOne(commit_id, branch)
@@ -187,17 +215,32 @@ class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
   verify()
 }
 
-class Handler(filter: KeyFilter, round:Int, ns: String, rootDst: String, serializedConf: SerializableWritable[Configuration], row: Row) extends Callable[ExportStatus] with Serializable {
-  def call() : ExportStatus = {
+class Handler(
+    filter: KeyFilter,
+    round: Int,
+    ns: String,
+    rootDst: String,
+    serializedConf: SerializableWritable[Configuration],
+    row: Row
+) extends Callable[ExportStatus]
+    with Serializable {
+  def call(): ExportStatus = {
     handleRow(filter, round, ns, rootDst, serializedConf, row)
   }
 
-  def handleRow(filter: KeyFilter, round:Int, ns: String, rootDst: String, serializedConf: SerializableWritable[Configuration], row: Row) : ExportStatus =  {
+  def handleRow(
+      filter: KeyFilter,
+      round: Int,
+      ns: String,
+      rootDst: String,
+      serializedConf: SerializableWritable[Configuration],
+      row: Row
+  ): ExportStatus = {
     val action = row(0)
     val key = row(1).toString
     val address = row(2).toString
 
-    if (filter.roundForKey(key) != round){
+    if (filter.roundForKey(key) != round) {
       // skip this round
       return ExportStatus(key, success = true, "skipped")
     }
@@ -214,23 +257,36 @@ class Handler(filter: KeyFilter, round:Int, ns: String, rootDst: String, seriali
           dstFS.delete(dstPath, false)
           ExportStatus(key, success = true, "")
         } catch {
-          case e : (IOException) =>  ExportStatus(dstPath.toString, success = false, s"Unable to delete file ${dstPath}: ${e}")
+          case e: (IOException) =>
+            ExportStatus(dstPath.toString,
+                         success = false,
+                         s"Unable to delete file ${dstPath}: ${e}"
+                        )
         }
       }
 
-      case "copy" =>{
+      case "copy" => {
         try {
-          org.apache.hadoop.fs.FileUtil.copy(
-            srcPath.getFileSystem(conf),
-            srcPath,
-            dstFS,
-            dstPath,
-            false,
-            conf)
+          org.apache.hadoop.fs.FileUtil.copy(srcPath.getFileSystem(conf),
+                                             srcPath,
+                                             dstFS,
+                                             dstPath,
+                                             false,
+                                             conf
+                                            )
           ExportStatus(key, success = true, "")
-        } catch  {
-          case e : (FileNotFoundException) =>  ExportStatus(dstPath.toString, success = true, s"Unable to copy file ${dstPath} from source ${srcPath} since source file is missing: ${e}")
-          case e : (IOException) =>  ExportStatus(dstPath.toString, success = false, s"Unable to copy file ${dstPath} from source ${srcPath}: ${e}")
+        } catch {
+          case e: (FileNotFoundException) =>
+            ExportStatus(
+              dstPath.toString,
+              success = true,
+              s"Unable to copy file ${dstPath} from source ${srcPath} since source file is missing: ${e}"
+            )
+          case e: (IOException) =>
+            ExportStatus(dstPath.toString,
+                         success = false,
+                         s"Unable to copy file ${dstPath} from source ${srcPath}: ${e}"
+                        )
         }
       }
     }

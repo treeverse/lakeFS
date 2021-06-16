@@ -11,7 +11,9 @@ import org.apache.spark.sql.SparkSession
 object Export extends App {
   override def main(args: Array[String]) {
     if (args.length != 4) {
-      Console.err.println("Usage: ... <repo_name> <branch_id> <prev_commit_id> s3://path/to/output/du")
+      Console.err.println(
+        "Usage: ... <repo_name> <branch_id> <prev_commit_id> s3://path/to/output/du"
+      )
       System.exit(1)
     }
 
