@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -15,6 +16,8 @@ const (
 	DefaultMaxIdleConnections    = 25
 	DefaultConnectionMaxLifetime = 5 * time.Minute
 	DatabaseDriver               = "pgx"
+	DefaultMaxDatabaseRetries    = 6
+	RetryBase                    = 2
 )
 
 // BuildDatabaseConnection returns a database connection based on a pool for the configuration
@@ -60,9 +63,21 @@ func ConnectDBPool(ctx context.Context, p params.Database) (*pgxpool.Pool, error
 	config.MaxConnLifetime = p.ConnectionMaxLifetime
 
 	pool, err := pgxpool.ConnectConfig(ctx, config)
-	if err != nil {
-		return nil, fmt.Errorf("could not open DB: %w", err)
+	for i := 0; i < DefaultMaxDatabaseRetries; i++ {
+		if err != nil {
+			if i != DefaultMaxDatabaseRetries-1 {
+				waitTime := math.Pow(RetryBase, float64(i))
+				log.Info(fmt.Sprintf("could not open DB: trying again in %ds", int(waitTime)))
+				time.Sleep(time.Duration(waitTime) * time.Second)
+				pool, err = pgxpool.ConnectConfig(ctx, config)
+
+				continue
+			} else {
+				return nil, fmt.Errorf("could not open DB: %w", err)
+			}
+		}
 	}
+
 	err = Ping(ctx, pool)
 	if err != nil {
 		pool.Close()
