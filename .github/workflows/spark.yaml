@@ -1,4 +1,4 @@
-name: spark
+name: Spark metadata client
 on:
   push:
     paths:
@@ -8,21 +8,20 @@ on:
   pull_request:
 jobs:
   lakefs-spark:
-    name: lakeFS Spark
+    name: lakeFS Spark metadata client
     runs-on: ubuntu-20.04
     steps:
       - name: Check-out code
         uses: actions/checkout@v2
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
-
-      - name: package
-        working-directory: clients/spark
-        run: sbt package
       - name: validate format
         working-directory: clients/spark
         run: sbt scalafmtCheck
       - name: validate unused
         working-directory: clients/spark
         run: sbt "scalafix --check"
+      - name: package
+        working-directory: clients/spark
+        run: sbt package
 
