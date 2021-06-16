@@ -10,7 +10,6 @@ import java.util.concurrent.{Callable, ExecutorService, Executors}
 import scala.util.Random
 import scala.collection.JavaConverters._
 import org.apache.spark._
-import SparkContext._
 import org.rogach.scallop._
 
 class Exporter(spark : SparkSession, apiClient: ApiClient, filter: KeyFilter, repoName: String, dstRoot: String, parallelism: Int) {
