@@ -3,12 +3,12 @@ package db
 import (
 	"context"
 	"fmt"
-	"math"
 	"time"
 
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/treeverse/lakefs/pkg/db/params"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"gopkg.in/retry.v1"
 )
 
 const (
@@ -16,8 +16,9 @@ const (
 	DefaultMaxIdleConnections    = 25
 	DefaultConnectionMaxLifetime = 5 * time.Minute
 	DatabaseDriver               = "pgx"
-	DefaultMaxDatabaseRetries    = 6
-	RetryBase                    = 2
+	firstWait                    = 50 * time.Millisecond
+	waitGrowth                   = 1.2
+	maxWait                      = 3 * time.Second
 )
 
 // BuildDatabaseConnection returns a database connection based on a pool for the configuration
@@ -62,20 +63,9 @@ func ConnectDBPool(ctx context.Context, p params.Database) (*pgxpool.Pool, error
 	config.MinConns = p.MaxIdleConnections
 	config.MaxConnLifetime = p.ConnectionMaxLifetime
 
-	pool, err := pgxpool.ConnectConfig(ctx, config)
-	for i := 0; i < DefaultMaxDatabaseRetries; i++ {
-		if err != nil {
-			if i != DefaultMaxDatabaseRetries-1 {
-				waitTime := math.Pow(RetryBase, float64(i))
-				log.Info(fmt.Sprintf("could not open DB: trying again in %ds", int(waitTime)))
-				time.Sleep(time.Duration(waitTime) * time.Second)
-				pool, err = pgxpool.ConnectConfig(ctx, config)
-
-				continue
-			} else {
-				return nil, fmt.Errorf("could not open DB: %w", err)
-			}
-		}
+	pool, err := tryConnectConfig(ctx, config, log)
+	if err != nil {
+		return nil, err
 	}
 
 	err = Ping(ctx, pool)
@@ -113,4 +103,27 @@ func normalizeDBParams(p *params.Database) {
 	if p.ConnectionMaxLifetime == 0 {
 		p.ConnectionMaxLifetime = DefaultConnectionMaxLifetime
 	}
+}
+
+func tryConnectConfig(ctx context.Context, config *pgxpool.Config, log logging.Logger) (*pgxpool.Pool, error) {
+	strategy := retry.LimitTime(maxWait,
+		retry.Exponential{
+			Initial: firstWait,
+			Factor:  waitGrowth,
+		},
+	)
+	var e error
+	for a := retry.Start(strategy, nil); a.Next(); {
+		pool, err := pgxpool.ConnectConfig(ctx, config)
+		if err == nil {
+			return pool, nil
+		}
+		if a.More() {
+			log.Info("could not open DB: Trying again")
+		} else {
+			e = err
+		}
+	}
+
+	return nil, fmt.Errorf("could not open DB: %w", e)
 }
