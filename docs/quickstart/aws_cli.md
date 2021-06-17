@@ -1,5 +1,5 @@
 ---
-layout: default
+layout: default 
 title: Add Data
 description: In this section we will learn how to configure and use AWS CLI to manage data with the lakeFS Server.
 parent: Quickstart
@@ -16,7 +16,7 @@ In this section we'll review how to copy files into lakeFS using the AWS CLI.
    ```bash
    aws configure --profile local
    # output:
-   # AWS Access Key ID [None]: AKIAIOSFODNN7EXAMPLE
+   # AWS Access Key ID [None]: AKIAJVHTOKZWGCD2QQYQ
    # AWS Secret Access Key [None]: ****************************************
    # Default region name [None]:
    # Default output format [None]:
@@ -26,7 +26,7 @@ In this section we'll review how to copy files into lakeFS using the AWS CLI.
    ```bash
    aws --endpoint-url=http://s3.local.lakefs.io:8000 --profile local s3 ls
    # output:
-   # 2020-05-18 17:47:03 example
+   # 2021-06-15 13:43:03 example-repo
    ```
    
    **Note:** We're using `s3.local.lakefs.io` - a special DNS record which always resolves to localhost, subdomains included.  
@@ -36,9 +36,9 @@ In this section we'll review how to copy files into lakeFS using the AWS CLI.
 1. Great, now let's copy some files. We'll write to the main branch. This is done by prefixing our path with the name of the branch we'd like to read/write from:
 
    ```bash
-   aws --endpoint-url=http://s3.local.lakefs.io:8000 --profile local s3 cp ./foo.txt s3://example/main/
+   aws --endpoint-url=http://s3.local.lakefs.io:8000 --profile local s3 cp ./foo.txt s3://example-repo/main/
    # output:
-   # upload: ./foo.txt to s3://example/main/foo.txt
+   # upload: ./foo.txt to s3://example-repo/main/foo.txt
    ```
 
 1. Back in the lakeFS UI, we should be able to see our file added to the main branch!
