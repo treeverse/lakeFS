@@ -444,6 +444,7 @@ jobs:
 
   run-system-azure-abfs:
     name: Run latest lakeFS app on Azure with Azure blobstore
+    if: false # skip step until we update the azure account
     needs: [gen-code, deploy-image]
     runs-on: ubuntu-20.04
     env:
