@@ -1,0 +1,230 @@
+# ConfigApi
+
+## ConfigApi
+
+All URIs are relative to [http://localhost/api/v1](http://localhost/api/v1)
+
+| Method | HTTP request | Description |
+| :--- | :--- | :--- |
+| [**getLakeFSVersion**](configapi.md#getLakeFSVersion) | **GET** /config/version |  |
+| [**getStorageConfig**](configapi.md#getStorageConfig) | **GET** /config/storage |  |
+| [**setup**](configapi.md#setup) | **POST** /setup\_lakefs | setup lakeFS and create a first user |
+
+## **getLakeFSVersion**
+
+> VersionConfig getLakeFSVersion\(\)
+
+get version of lakeFS server
+
+### Example
+
+```java
+// Import classes:
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.ConfigApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("http://localhost/api/v1");
+
+    // Configure HTTP basic authorization: basic_auth
+    HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
+    basic_auth.setUsername("YOUR USERNAME");
+    basic_auth.setPassword("YOUR PASSWORD");
+
+    // Configure API key authorization: cookie_auth
+    ApiKeyAuth cookie_auth = (ApiKeyAuth) defaultClient.getAuthentication("cookie_auth");
+    cookie_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //cookie_auth.setApiKeyPrefix("Token");
+
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
+    ConfigApi apiInstance = new ConfigApi(defaultClient);
+    try {
+      VersionConfig result = apiInstance.getLakeFSVersion();
+      System.out.println(result);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling ConfigApi#getLakeFSVersion");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+[**VersionConfig**](versionconfig.md)
+
+### Authorization
+
+[basic\_auth](../#basic_auth), [cookie\_auth](../#cookie_auth), [jwt\_token](../#jwt_token)
+
+### HTTP request headers
+
+* **Content-Type**: Not defined
+* **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+| :--- | :--- | :--- |
+
+
+**200** \| lakeFS version \| - \| **401** \| Unauthorized \| - \|
+
+## **getStorageConfig**
+
+> StorageConfig getStorageConfig\(\)
+
+retrieve lakeFS storage configuration
+
+### Example
+
+```java
+// Import classes:
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.ConfigApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("http://localhost/api/v1");
+
+    // Configure HTTP basic authorization: basic_auth
+    HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
+    basic_auth.setUsername("YOUR USERNAME");
+    basic_auth.setPassword("YOUR PASSWORD");
+
+    // Configure API key authorization: cookie_auth
+    ApiKeyAuth cookie_auth = (ApiKeyAuth) defaultClient.getAuthentication("cookie_auth");
+    cookie_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //cookie_auth.setApiKeyPrefix("Token");
+
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
+    ConfigApi apiInstance = new ConfigApi(defaultClient);
+    try {
+      StorageConfig result = apiInstance.getStorageConfig();
+      System.out.println(result);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling ConfigApi#getStorageConfig");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+[**StorageConfig**](storageconfig.md)
+
+### Authorization
+
+[basic\_auth](../#basic_auth), [cookie\_auth](../#cookie_auth), [jwt\_token](../#jwt_token)
+
+### HTTP request headers
+
+* **Content-Type**: Not defined
+* **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+| :--- | :--- | :--- |
+
+
+**200** \| lakeFS storage configuration \| - \| **401** \| Unauthorized \| - \|
+
+## **setup**
+
+> CredentialsWithSecret setup\(setup\)
+
+setup lakeFS and create a first user
+
+### Example
+
+```java
+// Import classes:
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.ConfigApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("http://localhost/api/v1");
+
+    ConfigApi apiInstance = new ConfigApi(defaultClient);
+    Setup setup = new Setup(); // Setup | 
+    try {
+      CredentialsWithSecret result = apiInstance.setup(setup);
+      System.out.println(result);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling ConfigApi#setup");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| :--- | :--- | :--- | :--- |
+| **setup** | [**Setup**](setup.md) |  |  |
+
+### Return type
+
+[**CredentialsWithSecret**](credentialswithsecret.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+* **Content-Type**: application/json
+* **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+| :--- | :--- | :--- |
+
+
+**200** \| user created successfully \| - \| **400** \| bad request \| - \| **409** \| setup was already called \| - \| **0** \| Internal Server Error \| - \|
+

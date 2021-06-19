@@ -1,76 +1,91 @@
----
-layout: default
-title: What is lakeFS
-description: >-
-  A lakeFS documentation website that provides information on how to use lakeFS
-  to deliver resilience and manageability to data lakes.
-nav_order: 0
-redirect_from: ./downloads.html
----
+# README
 
-# What is lakeFS
+![](.gitbook/assets/logo_large.png)
 
-{: .no\_toc }
+ [![Apache License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://raw.githubusercontent.com/treeverse/lakeFS/master/LICENSE) [![Go tests status](https://github.com/treeverse/lakeFS/workflows/Go/badge.svg?branch=master)](https://github.com/treeverse/lakeFS/actions?query=workflow%3AGo+branch%3Amaster++) [![Node tests status](https://github.com/treeverse/lakeFS/workflows/Node/badge.svg?branch=master)](https://github.com/treeverse/lakeFS/actions?query=workflow%3ANode+branch%3Amaster++) [![nessie integration tests status](https://github.com/treeverse/lakeFS/workflows/Nessie/badge.svg)](https://github.com/treeverse/lakeFS/actions?query=workflow%3ANessie) [![Artifact HUB](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/lakefs)](https://artifacthub.io/packages/search?repo=lakefs) [![code of conduct](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](code_of_conduct.md)
 
-lakeFS is an open source platform that delivers resilience and manageability to object-storage based data lakes.
+## What is lakeFS
+
+lakeFS is an open source layer that delivers resilience and manageability to object-storage based data lakes.
 
 With lakeFS you can build repeatable, atomic and versioned data lake operations - from complex ETL jobs to data science and analytics.
 
-lakeFS supports AWS S3, Azure Blob Storage and Google Cloud Storage \(GCS\) as its underlying storage service. It is [API compatible with S3](https://github.com/treeverse/lakeFS/tree/b7c8b3f4ad69e73a5dc68d3168ee38f65fa57f15/docs/reference/s3.md) and works seamlessly with all modern data frameworks such as Spark, Hive, AWS Athena, Presto, etc.
+lakeFS supports AWS S3, Azure Blob Storage and Google Cloud Storage as its underlying storage service. It is API compatible with S3, and works seamlessly with all modern data frameworks such as Spark, Hive, AWS Athena, Presto, etc.
 
-![lakeFS](.gitbook/assets/wrapper.png)
+For more information see the [official lakeFS documentation](https://docs.lakefs.io).
 
-{: .pb-5 }
+## Capabilities
 
-## Why you need lakeFS and what it can do
+**Development Environment for Data**
 
-lakeFS provides a [Git-like branching and committing model](index-7/branching-model.md) that scales to exabytes of data by utilizing S3, GCS, or Azure Blob for storage.
+* **Experimentation** - try tools, upgrade versions and evaluate code changes in isolation. 
+* **Reproducibility** - go back to any point of time to a consistent version of your data lake.
 
-This branching model makes your data lake ACID compliant by allowing changes to happen in isolated branches that can be created, merged and rolled back atomically and instantly.
+**Continuous Data Integration**
 
-Since lakeFS is compatible with the S3 API, all popular applications will work without modification, by simply adding the branch name to the object path:
+* **Ingest new data safely by enforcing best practices** - make sure new data sources adhere to your lake’s best practices such as format and schema enforcement, naming convention, etc.  
+* **Metadata validation** - prevent breaking changes from entering the production data environment.
 
-![lakeFS s3 addressing](.gitbook/assets/s3_branch.png)
+**Continuous Data Deployment**
 
-## Use-cases:
+* **Instantly revert changes to data** - if low quality data is exposed to your consumers, you can revert instantly to a former, consistent and correct snapshot of your data lake.
+* **Enforce cross collection consistency** - provide to consumers several collections of data that must be synchronized, in one atomic, revertible, action.
+* **Prevent data quality issues by enabling**
+  * Testing of production data before exposing it to users / consumers.
+  * Testing of intermediate results in your DAG to avoid cascading quality issues.
 
-### Development Environment for Data
+## Getting Started
 
-* **Experimentation** - try tools, upgrade versions and evaluate code changes in isolation. By creating a branch of the lake you get an isolated snapshot of the lake you can experiment with while others are not exposed. You can compare branches with different experiments or compare your branch to the main branch of the lake.  
-* **Reproducibility** - go back to any point in time to a consistent version of your data lake. By making commit history available for a configurable duration - you can read from the lake at any point in time, compare changes made, and safely roll back if necessary.
+### Docker \(MacOS, Linux\)
 
-[Learn more](index-4/data-devenv.md){:id="user-content-learn-more-env"}
+1. Ensure you have Docker & Docker Compose installed on your computer.
+2. Run the following command:
 
-### Continuous Data Integration
+   ```bash
+   curl https://compose.lakefs.io | docker-compose -f - up
+   ```
 
-* **Ingest new data safely by enforcing best practices** - make sure new data sources adhere to your lake’s best practices such as format and schema enforcement, naming convention, etc. By consuming data to an isolated branch and creating pre-merge hooks you can define automated rules and tests that are required to pass before introducing new data sources.
-* **Metadata validation** - prevent breaking changes from entering the production data environment. Ingesting data to an isolated branch can also prevent breaking changes from entering your production data environment.
+3. Open [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup) in your web browser to set up an initial admin user, used to login and send API requests.
 
-[Learn more](index-4/ci.md){:id="user-content-learn-more-int"}
+### Docker \(Windows\)
 
-### Continuous Data Deployment
+1. Ensure you have Docker installed.
+2. Run the following command in PowerShell:
 
-* **Instantly revert changes to data** - if low quality data is exposed to your consumers, you can revert instantly to a former, consistent and correct snapshot of your data lake. By making commit history available for a configurable duration - you can revert the lake to the previous version instantly with one atomic action.
-* **Enforce cross collection consistency** - provide to consumers several collections of data that must be synchronized, in one atomic, revertable, action. Using branches, writers can provide consistency guarantees across different logical collections - merging to the main branch is only done after all relevant datasets have been created successfully.
-* **Prevent data quality issues by enabling** -
-  * Testing of production data before exposing it to users / consumers
-  * Testing of intermediate results in your DAG to avoid cascading quality issues
+   \`\`\`shell script Invoke-WebRequest [https://compose.lakefs.io](https://compose.lakefs.io) \| Select-Object -ExpandProperty Content \| docker-compose -f - up
 
-[Learn more](index-4/cd.md){:id="user-content-learn-more-dep"}
+   \`\`\`
 
-## Downloads
+3. Open [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup) in your web browser to set up an initial admin user, used to login and send API requests.
 
-### Binary Releases
+### Download the Binary
 
-Binary packages are available for Linux/macOS/Windows on [GitHub Releases](https://github.com/treeverse/lakeFS/releases){: target="\_blank" }
+Alternatively, you can download the lakeFS binaries and run them directly.
 
-### Docker Images
+Binaries are available at [https://github.com/treeverse/lakeFS/releases](https://github.com/treeverse/lakeFS/releases).
 
-Official Docker images are available at [https://hub.docker.com/r/treeverse/lakefs](https://hub.docker.com/r/treeverse/lakefs){: target="\_blank" }
+### Setting up a repository
 
-## Next steps
+Please follow the [Guide to Get Started](https://docs.lakefs.io/quickstart/repository) to set up your local lakeFS installation.
 
-Read about the [branching model](index-7/branching-model.md) of lakeFS or run it locally and see how it works for yourself!
+For more detailed information on how to set up lakeFS, please visit the [lakeFS documentation](https://docs.lakefs.io).
 
-Check out the [Quick Start Guide](index-1/)
+## Community
+
+Stay up to date and get lakeFS support via:
+
+* [Slack](https://lakefs.io/slack) \(to get help from our team and other users\).
+* [Twitter](https://twitter.com/lakeFS) \(follow for updates and news\)
+* [YouTube](https://lakefs.io/youtube) \(learn from video tutorials\)
+* [Contact us](https://lakefs.io/contact-us/) \(for anything\)
+
+## More information
+
+* [lakeFS documentation](https://docs.lakefs.io)
+* If you would like to contribute, check out our [contributing guide](https://docs.lakefs.io/contributing).
+* [Roadmap](https://docs.lakefs.io/roadmap.html)
+
+## Licensing
+
+lakeFS is completely free and open source and licensed under the [Apache 2.0 License](https://www.apache.org/licenses/LICENSE-2.0).
 
