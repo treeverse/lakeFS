@@ -110,20 +110,20 @@ func tryConnectConfig(ctx context.Context, config *pgxpool.Config, log logging.L
 		retry.Exponential{
 			Initial: firstWait,
 			Factor:  waitGrowth,
+			Jitter:  true,
 		},
 	)
-	var e error
+	var pool *pgxpool.Pool
+	var err error
 	for a := retry.Start(strategy, nil); a.Next(); {
-		pool, err := pgxpool.ConnectConfig(ctx, config)
+		pool, err = pgxpool.ConnectConfig(ctx, config)
 		if err == nil {
 			return pool, nil
 		}
 		if a.More() {
-			log.Info("could not open DB: Trying again")
-		} else {
-			e = err
+			log.WithError(err).Info("could not open DB: Trying again")
 		}
 	}
 
-	return nil, fmt.Errorf("could not open DB: %w", e)
+	return nil, fmt.Errorf("could not open DB: %w", err)
 }
