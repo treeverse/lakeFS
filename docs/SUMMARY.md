@@ -29,6 +29,12 @@
 * [Reference](reference/index.md)
 * [Integrations](integrations/index.md)
 * [Understanding lakeFS](understand/index.md)
+    * [Architecture](understand/architecture.md)
+    * [Data Model](understand/data-model.md)
+    * [Branching Model](understand/branching-model.md)
+    * [Sizing Guide](understand/sizing-guide.md)
+    * [Roadmap](understand/roadmap.md)
+    * [Licensing](understand/licensing.md)
 * [Contributing](contributing.md)
 * [FAQ](faq.md)
   
