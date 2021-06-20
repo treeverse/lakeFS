@@ -119,11 +119,11 @@ const GetStarted = ({onCreateRepo}) => {
             //</Row>
     return (
         <Container className="m-4 mb-5">
-            <h2 className="mt-2">To get started with Actions</h2>
+            <h2 className="mt-2">No Actions log, to define a new Action:</h2>
 
             <Row className="pt-2 ml-2">
                 <DotIcon className="mr-1 mt-1"/>
-                See the &nbsp;<a href="https://docs.lakefs.io/setup/hooks.html" target="_blank" rel="noopener noreferrer">docs</a>&nbsp; for setup new Actions
+                See the&nbsp;<a href="https://docs.lakefs.io/setup/hooks.html" target="_blank" rel="noopener noreferrer">docs</a>&nbsp;for information on hooks configuration
             </Row>
         </Container>
     );

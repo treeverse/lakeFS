@@ -65,7 +65,7 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
 const GetStarted = ({onCreateRepo}) => {
     return (
         <Container className="m-4 mb-5">
-            <h2 className="mt-2">To get started create a new repository</h2>
+            <h2 className="mt-2">To get started create a new repository:</h2>
 
             <Row className="pt-2 ml-2">
                 <DotIcon className="mr-1 mt-1"/>
@@ -73,7 +73,7 @@ const GetStarted = ({onCreateRepo}) => {
             </Row>
             <Row className="pt-2 ml-2">
                 <DotIcon className="mr-1 mt-1"/>
-                See the &nbsp;<a href="https://docs.lakefs.io/setup/create-repo.html#create-the-repository" target="_blank" rel="noopener noreferrer">docs</a>&nbsp; for more information.
+                See the&nbsp;<a href="https://docs.lakefs.io/setup/create-repo.html#create-the-repository" target="_blank" rel="noopener noreferrer">docs</a>&nbsp;for more information.
             </Row>
         </Container>
     );
