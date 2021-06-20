@@ -1,15 +1,14 @@
 package config
 
 import (
+	"reflect"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
-	"reflect"
 )
-
-
 
 // configuration is the user-visible configuration structure in Golang form.  When editing
 // make sure *all* fields have a `mapstructure:"..."` tag, to simplify future refactoring.
@@ -85,11 +84,11 @@ const (
 	HiveDBLocationURIKey = "metastore.hive.db_location_uri"
 
 	// Defaults
-	HiveDBLocationURI = "file:/user/hive/warehouse/"
-	ConfigServerEndpointURL = "server.endpoint_url"
+	HiveDBLocationURI        = "file:/user/hive/warehouse/"
+	ConfigServerEndpointURL  = "server.endpoint_url"
 	DefaultServerEndpointURL = "http://127.0.0.1:8000"
-	ConfigAccessKeyID = "credentials.access_key_id"
-	ConfigSecretAccessKey = "credentials.secret_access_key"
+	ConfigAccessKeyID        = "credentials.access_key_id"
+	ConfigSecretAccessKey    = "credentials.secret_access_key"
 )
 
 func setDefaults() {
