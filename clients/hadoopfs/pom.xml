@@ -20,7 +20,7 @@ To export to S3:
     <artifactId>hadoop-lakefs${name-suffix}</artifactId>
     <packaging>jar</packaging>
     <name>hadoop-lakefs${name-suffix}</name>
-    <version>0.1.0-RC.0-SNAPSHOT</version>
+    <version>0.1.0</version>
     <url>https://github.com/treeverse/lakeFS/tree/master/clients/hadoopfs</url>
     <scm>
         <connection>scm:git:git@github.com:treeverse/lakeFS.git</connection>
@@ -51,6 +51,39 @@ To export to S3:
     </developers>
 
     <profiles>
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>2.2.1</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>2.9.1</version>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
         <profile>
             <id>assembly</id>
             <build>

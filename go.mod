@@ -97,6 +97,7 @@ require (
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/dgrijalva/jwt-go.v3 v3.2.0
 	gopkg.in/ini.v1 v1.62.0 // indirect
+	gopkg.in/retry.v1 v1.0.3
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	pgregory.net/rapid v0.4.0 // indirect
 )

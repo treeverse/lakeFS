@@ -26,7 +26,7 @@ has_children: false
      lakectl config
      # output:
      # Config file /home/janedoe/.lakectl.yaml will be used
-     # Access key ID: AKIAIOSFODNN7EXAMPLE
+     # Access key ID: AKIAJVHTOKZWGCD2QQYQ
      # Secret access key: ****************************************
      # Server endpoint URL: http://localhost:8000/api/v1
      ```
@@ -34,7 +34,7 @@ has_children: false
   1. Now that we've configured it, let's run a few sample commands:
 
      ```bash
-     lakectl branch list lakefs://example
+     lakectl branch list lakefs://example-repo
      # output:
      # +----------+------------------------------------------------------------------+
      # | REF NAME | COMMIT ID                                                        |
@@ -42,19 +42,19 @@ has_children: false
      # | main     | a91f56a7e11be1348fc405053e5234e4af7d6da01ed02f3d9a8ba7b1f71499c8 |
      # +----------+------------------------------------------------------------------+
      
-     lakectl commit lakefs://example/main -m 'added our first file!'
+     lakectl commit lakefs://example-repo/main -m 'added our first file!'
      # output:
      # Commit for branch "main" done.
      # 
      # ID: 901f7b21e1508e761642b142aea0ccf28451675199655381f65101ea230ebb87
-     # Timestamp: 2020-05-18 19:26:37 +0300 IDT
+     # Timestamp: 2021-06-15 13:48:37 +0300 IDT
      # Parents: a91f56a7e11be1348fc405053e5234e4af7d6da01ed02f3d9a8ba7b1f71499c8
   
-     lakectl log lakefs://example/main
+     lakectl log lakefs://example-repo/main
      # output:  
      # commit 901f7b21e1508e761642b142aea0ccf28451675199655381f65101ea230ebb87
      # Author: Example User <user@example.com>
-     # Date: 2020-05-18 19:26:37 +0300 IDT
+     # Date: 2021-06-15 13:48:37 +0300 IDT
        
            added our first file!
        

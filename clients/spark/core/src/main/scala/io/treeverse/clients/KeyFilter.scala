@@ -8,5 +8,5 @@ trait KeyFilter extends Serializable {
   def rounds(): Int
 
   // Return the matching round for the key
-  def roundForKey(key: String) : Int
+  def roundForKey(key: String): Int
 }

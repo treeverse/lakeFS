@@ -31,6 +31,9 @@ def generateCoreProject(buildType: BuildType) =
       s3UploadSettings,
       settingsToCompileIn("core"),
       scalaVersion := buildType.scalaVersion,
+      semanticdbEnabled := true, // enable SemanticDB
+      semanticdbVersion := scalafixSemanticdb.revision,
+      scalacOptions += "-Ywarn-unused-import",
       PB.targets := Seq(
         scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
       ),
@@ -57,6 +60,9 @@ def generateExamplesProject(buildType: BuildType) =
       sharedSettings,
       settingsToCompileIn("examples"),
       scalaVersion := buildType.scalaVersion,
+      semanticdbEnabled := true, // enable SemanticDB
+      semanticdbVersion := scalafixSemanticdb.revision,
+      scalacOptions += "-Ywarn-unused-import",
       libraryDependencies ++= Seq("org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
         "software.amazon.awssdk" % "bom" % "2.15.15",
         "software.amazon.awssdk" % "s3" % "2.15.15",
