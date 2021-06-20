@@ -3762,6 +3762,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
         default:
           content:
             application/json:
@@ -3790,6 +3796,18 @@ paths:
       responses:
         "204":
           description: set garbage collection rules successfully
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
         default:
           content:
             application/json:
@@ -3800,7 +3818,7 @@ paths:
       - retention
       x-contentType: application/json
       x-accepts: application/json
-  /repositories/{repository}/gc/prepare:
+  /repositories/{repository}/gc/prepare_commits:
     post:
       operationId: prepareGarbageCollectionCommits
       parameters:

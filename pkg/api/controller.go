@@ -1917,7 +1917,7 @@ func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repositor
 func (c *Controller) GetGarbageCollectionRules(w http.ResponseWriter, r *http.Request, repository string) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
-			Action:   permissions.GetGarbageCollectionRules,
+			Action:   permissions.GetGarbageCollectionRulesAction,
 			Resource: permissions.RepoArn(repository),
 		},
 	}) {
@@ -1929,9 +1929,9 @@ func (c *Controller) GetGarbageCollectionRules(w http.ResponseWriter, r *http.Re
 		return
 	}
 	resp := GarbageCollectionRules{}
-	resp.DefaultRetentionDays = rules.DefaultRetentionDays
+	resp.DefaultRetentionDays = int(rules.DefaultRetentionDays)
 	for branchID, retentionDays := range rules.BranchRetentionDays {
-		resp.Branches = append(resp.Branches, GarbageCollectionRule{BranchId: branchID.String(), RetentionDays: retentionDays})
+		resp.Branches = append(resp.Branches, GarbageCollectionRule{BranchId: branchID, RetentionDays: int(retentionDays)})
 	}
 	writeResponse(w, http.StatusOK, resp)
 }
@@ -1939,7 +1939,7 @@ func (c *Controller) GetGarbageCollectionRules(w http.ResponseWriter, r *http.Re
 func (c *Controller) SetGarbageCollectionRules(w http.ResponseWriter, r *http.Request, body SetGarbageCollectionRulesJSONRequestBody, repository string) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
-			Action:   permissions.GetGarbageCollectionRules,
+			Action:   permissions.SetGarbageCollectionRulesAction,
 			Resource: permissions.RepoArn(repository),
 		},
 	}) {
@@ -1947,11 +1947,11 @@ func (c *Controller) SetGarbageCollectionRules(w http.ResponseWriter, r *http.Re
 	}
 	ctx := r.Context()
 	rules := &graveler.GarbageCollectionRules{
-		DefaultRetentionDays: body.DefaultRetentionDays,
-		BranchRetentionDays:  make(map[graveler.BranchID]int),
+		DefaultRetentionDays: int32(body.DefaultRetentionDays),
+		BranchRetentionDays:  make(map[string]int32),
 	}
 	for _, rule := range body.Branches {
-		rules.BranchRetentionDays[graveler.BranchID(rule.BranchId)] = rule.RetentionDays
+		rules.BranchRetentionDays[rule.BranchId] = int32(rule.RetentionDays)
 	}
 	err := c.Catalog.SetGarbageCollectionRules(ctx, repository, rules)
 	if handleAPIError(w, err) {
@@ -1963,7 +1963,7 @@ func (c *Controller) SetGarbageCollectionRules(w http.ResponseWriter, r *http.Re
 func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *http.Request, body PrepareGarbageCollectionCommitsJSONRequestBody, repository string) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
-			Action:   permissions.ListObjectsAction,
+			Action:   permissions.PrepareGarbageCollectionCommitsAction,
 			Resource: permissions.RepoArn(repository),
 		},
 	}) {

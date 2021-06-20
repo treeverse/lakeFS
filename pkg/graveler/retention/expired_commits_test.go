@@ -36,7 +36,7 @@ func newCommitSet(commitIDs []string) map[graveler.CommitID]bool {
 func TestExpiredCommits(t *testing.T) {
 	tests := map[string]struct {
 		commits            map[string]testCommit
-		headsRetentionDays map[string]int
+		headsRetentionDays map[string]int32
 		previouslyExpired  []string
 		expectedActiveIDs  []string
 		expectedExpiredIDs []string
@@ -50,7 +50,7 @@ func TestExpiredCommits(t *testing.T) {
 				"e": newTestCommit(5, "b"),
 				"f": newTestCommit(1, "e"),
 			},
-			headsRetentionDays: map[string]int{"f": 7, "d": 3},
+			headsRetentionDays: map[string]int32{"f": 7, "d": 3},
 			expectedActiveIDs:  []string{"b", "d", "e", "f"},
 			expectedExpiredIDs: []string{"a", "c"},
 		},
@@ -61,7 +61,7 @@ func TestExpiredCommits(t *testing.T) {
 				"c": newTestCommit(20, "a"),
 				"d": newTestCommit(20, "a"),
 			},
-			headsRetentionDays: map[string]int{"b": 7, "c": 7, "d": 7},
+			headsRetentionDays: map[string]int32{"b": 7, "c": 7, "d": 7},
 			expectedActiveIDs:  []string{"b", "c", "d"},
 			expectedExpiredIDs: []string{"a"},
 		},
@@ -73,7 +73,7 @@ func TestExpiredCommits(t *testing.T) {
 				"d": newTestCommit(2, "b"),
 				"e": newTestCommit(1, "b"),
 			},
-			headsRetentionDays: map[string]int{"d": 15, "e": 7, "c": 2},
+			headsRetentionDays: map[string]int32{"d": 15, "e": 7, "c": 2},
 			expectedActiveIDs:  []string{"a", "b", "c", "d", "e"},
 			expectedExpiredIDs: []string{},
 		},
@@ -84,7 +84,7 @@ func TestExpiredCommits(t *testing.T) {
 				"c": newTestCommit(7),
 				"d": newTestCommit(6, "c", "a"),
 			},
-			headsRetentionDays: map[string]int{"b": 3, "d": 10},
+			headsRetentionDays: map[string]int32{"b": 3, "d": 10},
 			expectedActiveIDs:  []string{"b", "c", "d"},
 			expectedExpiredIDs: []string{"a"},
 		},
@@ -97,7 +97,7 @@ func TestExpiredCommits(t *testing.T) {
 				"e": newTestCommit(5, "b"),
 				"f": newTestCommit(1, "e"),
 			},
-			headsRetentionDays: map[string]int{"f": 7, "d": 3},
+			headsRetentionDays: map[string]int32{"f": 7, "d": 3},
 			previouslyExpired:  []string{"a"},
 			expectedActiveIDs:  []string{"b", "d", "e", "f"},
 			expectedExpiredIDs: []string{"c"},
@@ -115,7 +115,7 @@ func TestExpiredCommits(t *testing.T) {
 				"b":  newTestCommit(5, "a"),
 				"c":  newTestCommit(5, "a"),
 			},
-			headsRetentionDays: map[string]int{"c": 7, "b": 7},
+			headsRetentionDays: map[string]int32{"c": 7, "b": 7},
 			previouslyExpired:  []string{"e1", "e2", "e3", "e4", "e5", "e6", "e7"},
 			expectedActiveIDs:  []string{"a", "b", "c"},
 			expectedExpiredIDs: []string{},
@@ -137,7 +137,7 @@ func TestExpiredCommits(t *testing.T) {
 				"g": newTestCommit(4, "b", "e"),
 				"h": newTestCommit(3, "a", "f"),
 			},
-			headsRetentionDays: map[string]int{"h": 14, "g": 7, "f": 7},
+			headsRetentionDays: map[string]int32{"h": 14, "g": 7, "f": 7},
 			previouslyExpired:  []string{},
 			expectedActiveIDs:  []string{"h", "a", "b", "c", "f", "g"},
 			expectedExpiredIDs: []string{"e", "d"},
@@ -150,17 +150,17 @@ func TestExpiredCommits(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			refManagerMock := mock.NewMockRefManager(ctrl)
 			ctx := context.Background()
-			garbageCollectionRules := &graveler.GarbageCollectionRules{DefaultRetentionDays: 0, BranchRetentionDays: make(map[graveler.BranchID]int)}
+			garbageCollectionRules := &graveler.GarbageCollectionRules{DefaultRetentionDays: 0, BranchRetentionDays: make(map[string]int32)}
 			for head, retentionDays := range tst.headsRetentionDays {
 				branchRecords = append(branchRecords, &graveler.BranchRecord{
 					BranchID: graveler.BranchID(head),
 					Branch:   &graveler.Branch{CommitID: graveler.CommitID(head)},
 				})
-				garbageCollectionRules.BranchRetentionDays[graveler.BranchID(head)] = retentionDays
+				garbageCollectionRules.BranchRetentionDays[head] = retentionDays
 			}
 			sort.Slice(branchRecords, func(i, j int) bool {
 				// start with the branch with the strictest gc rules
-				return garbageCollectionRules.BranchRetentionDays[branchRecords[i].BranchID] > garbageCollectionRules.BranchRetentionDays[branchRecords[j].BranchID]
+				return garbageCollectionRules.BranchRetentionDays[string(branchRecords[i].BranchID)] > garbageCollectionRules.BranchRetentionDays[string(branchRecords[j].BranchID)]
 			})
 			branchIterator := gtestutil.NewFakeBranchIterator(branchRecords)
 			refManagerMock.EXPECT().ListBranches(ctx, graveler.RepositoryID("test")).Return(branchIterator, nil)
@@ -173,7 +173,7 @@ func TestExpiredCommits(t *testing.T) {
 					refManagerMock.EXPECT().GetCommit(ctx, graveler.RepositoryID("test"), id).Return(commitMap[id], nil).Times(1)
 				}
 			}
-			finder := ExpiredCommitsFinder{
+			finder := GarbageCollectionCommitsFinder{
 				commitGetter: refManagerMock,
 				branchLister: refManagerMock,
 			}
@@ -181,23 +181,23 @@ func TestExpiredCommits(t *testing.T) {
 			for i := range tst.previouslyExpired {
 				previouslyExpiredCommitIDs[i] = graveler.CommitID(tst.previouslyExpired[i])
 			}
-			activeCommits, expiredCommits, err := finder.GetExpiredCommits(ctx, "test", garbageCollectionRules, previouslyExpiredCommitIDs)
+			gcCommits, err := finder.GetGarbageCollectionCommits(ctx, "test", garbageCollectionRules, previouslyExpiredCommitIDs)
 			if err != nil {
 				t.Fatalf("failed to find expired commits: %v", err)
 			}
 			sort.Strings(tst.expectedActiveIDs)
-			sort.Slice(activeCommits, func(i, j int) bool {
-				return activeCommits[i].Ref() < activeCommits[j].Ref()
+			sort.Slice(gcCommits.active, func(i, j int) bool {
+				return gcCommits.active[i].Ref() < gcCommits.active[j].Ref()
 			})
-			if diff := deep.Equal(tst.expectedActiveIDs, testToStringArray(activeCommits)); diff != nil {
+			if diff := deep.Equal(tst.expectedActiveIDs, testToStringArray(gcCommits.active)); diff != nil {
 				t.Errorf("active commits ids diff=%s", diff)
 			}
 
 			sort.Strings(tst.expectedExpiredIDs)
-			sort.Slice(expiredCommits, func(i, j int) bool {
-				return expiredCommits[i].Ref() < expiredCommits[j].Ref()
+			sort.Slice(gcCommits.expired, func(i, j int) bool {
+				return gcCommits.expired[i].Ref() < gcCommits.expired[j].Ref()
 			})
-			if diff := deep.Equal(tst.expectedExpiredIDs, testToStringArray(expiredCommits)); diff != nil {
+			if diff := deep.Equal(tst.expectedExpiredIDs, testToStringArray(gcCommits.expired)); diff != nil {
 				t.Errorf("expired commits ids diff=%s", diff)
 			}
 		})

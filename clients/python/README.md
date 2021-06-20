@@ -172,7 +172,7 @@ Class | Method | HTTP request | Description
 *RepositoriesApi* | [**get_repository**](docs/RepositoriesApi.md#get_repository) | **GET** /repositories/{repository} | get repository
 *RepositoriesApi* | [**list_repositories**](docs/RepositoriesApi.md#list_repositories) | **GET** /repositories | list repositories
 *RetentionApi* | [**get_garbage_collection_rules**](docs/RetentionApi.md#get_garbage_collection_rules) | **GET** /repositories/{repository}/gc/rules | 
-*RetentionApi* | [**prepare_garbage_collection_commits**](docs/RetentionApi.md#prepare_garbage_collection_commits) | **POST** /repositories/{repository}/gc/prepare | save lists of active and expired commits for garbage collection
+*RetentionApi* | [**prepare_garbage_collection_commits**](docs/RetentionApi.md#prepare_garbage_collection_commits) | **POST** /repositories/{repository}/gc/prepare_commits | save lists of active and expired commits for garbage collection
 *RetentionApi* | [**set_garbage_collection_rules**](docs/RetentionApi.md#set_garbage_collection_rules) | **POST** /repositories/{repository}/gc/rules | 
 *StagingApi* | [**get_physical_address**](docs/StagingApi.md#get_physical_address) | **GET** /repositories/{repository}/branches/{branch}/staging/backing | get a physical address and a return token to write object to underlying storage
 *StagingApi* | [**link_physical_address**](docs/StagingApi.md#link_physical_address) | **PUT** /repositories/{repository}/branches/{branch}/staging/backing | associate staging on this physical address with a path

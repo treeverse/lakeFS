@@ -5,7 +5,7 @@ All URIs are relative to *http://localhost/api/v1*
 Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**get_garbage_collection_rules**](RetentionApi.md#get_garbage_collection_rules) | **GET** /repositories/{repository}/gc/rules | 
-[**prepare_garbage_collection_commits**](RetentionApi.md#prepare_garbage_collection_commits) | **POST** /repositories/{repository}/gc/prepare | save lists of active and expired commits for garbage collection
+[**prepare_garbage_collection_commits**](RetentionApi.md#prepare_garbage_collection_commits) | **POST** /repositories/{repository}/gc/prepare_commits | save lists of active and expired commits for garbage collection
 [**set_garbage_collection_rules**](RetentionApi.md#set_garbage_collection_rules) | **POST** /repositories/{repository}/gc/rules | 
 
 
@@ -94,6 +94,7 @@ Name | Type | Description  | Notes
 |-------------|-------------|------------------|
 **200** | gc rule list |  -  |
 **401** | Unauthorized |  -  |
+**404** | Resource Not Found |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -296,6 +297,8 @@ void (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | set garbage collection rules successfully |  -  |
+**401** | Unauthorized |  -  |
+**404** | Resource Not Found |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

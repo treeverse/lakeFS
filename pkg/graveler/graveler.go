@@ -377,7 +377,8 @@ type VersionController interface {
 
 	// SaveGarbageCollectionCommits saves the sets of active and expired commits, according to the branch rules for garbage collection.
 	// Returns a run id which can later be used to retrieve the set of commits.
-	// If a previousRunID is specified, commits that were already expired in that run will not be scanned.
+	// If a previousRunID is specified, commits that were already expired and their ancestors will not be considered as expired/active.
+	// Note: Ancestors of previously expired commits may still be considered if they can be reached from a non-expired commit.
 	SaveGarbageCollectionCommits(ctx context.Context, repositoryID RepositoryID, previousRunID string) (runID string, err error)
 }
 
@@ -2038,9 +2039,4 @@ type GarbageCollectionManager interface {
 
 	SaveGarbageCollectionCommits(ctx context.Context, storageNamespace StorageNamespace, repositoryID RepositoryID, rules *GarbageCollectionRules, previouslyExpiredCommits []CommitID) (string, error)
 	GetRunExpiredCommits(ctx context.Context, storageNamespace StorageNamespace, runID string) ([]CommitID, error)
-}
-
-type GarbageCollectionRules struct {
-	DefaultRetentionDays int              `json:"default"`
-	BranchRetentionDays  map[BranchID]int `json:"branches"`
 }

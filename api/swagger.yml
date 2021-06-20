@@ -2888,6 +2888,8 @@ paths:
                 $ref: "#/components/schemas/GarbageCollectionRules"
         401:
           $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
     post:
@@ -2903,11 +2905,14 @@ paths:
       responses:
         204:
           description: set garbage collection rules successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
 
-
-  /repositories/{repository}/gc/prepare:
+  /repositories/{repository}/gc/prepare_commits:
     parameters:
       - in: path
         name: repository

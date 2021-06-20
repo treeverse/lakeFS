@@ -5,7 +5,7 @@ All URIs are relative to *http://localhost/api/v1*
 Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**getGarbageCollectionRules**](RetentionApi.md#getGarbageCollectionRules) | **GET** /repositories/{repository}/gc/rules | 
-[**prepareGarbageCollectionCommits**](RetentionApi.md#prepareGarbageCollectionCommits) | **POST** /repositories/{repository}/gc/prepare | save lists of active and expired commits for garbage collection
+[**prepareGarbageCollectionCommits**](RetentionApi.md#prepareGarbageCollectionCommits) | **POST** /repositories/{repository}/gc/prepare_commits | save lists of active and expired commits for garbage collection
 [**setGarbageCollectionRules**](RetentionApi.md#setGarbageCollectionRules) | **POST** /repositories/{repository}/gc/rules | 
 
 
@@ -85,6 +85,7 @@ Name | Type | Description  | Notes
 |-------------|-------------|------------------|
 **200** | gc rule list |  -  |
 **401** | Unauthorized |  -  |
+**404** | Resource Not Found |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="prepareGarbageCollectionCommits"></a>
@@ -244,5 +245,7 @@ null (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | set garbage collection rules successfully |  -  |
+**401** | Unauthorized |  -  |
+**404** | Resource Not Found |  -  |
 **0** | Internal Server Error |  -  |
 

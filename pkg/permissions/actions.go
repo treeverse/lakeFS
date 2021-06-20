@@ -58,8 +58,9 @@ const (
 
 	ReadActionsAction = "ci:ReadAction"
 
-	GetGarbageCollectionRules = "retention:GetGarbageCollectionRules"
-	SetGarbageCollectionRules = "retention:SetGarbageCollectionRules"
+	PrepareGarbageCollectionCommitsAction = "retention:PrepareGarbageCollectionCommits"
+	GetGarbageCollectionRulesAction       = "retention:GetGarbageCollectionRules"
+	SetGarbageCollectionRulesAction       = "retention:SetGarbageCollectionRules"
 )
 
 var serviceSet = map[string]struct{}{

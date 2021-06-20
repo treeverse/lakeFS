@@ -234,7 +234,7 @@ class RetentionApi(object):
                     'cookie_auth',
                     'jwt_token'
                 ],
-                'endpoint_path': '/repositories/{repository}/gc/prepare',
+                'endpoint_path': '/repositories/{repository}/gc/prepare_commits',
                 'operation_id': 'prepare_garbage_collection_commits',
                 'http_method': 'POST',
                 'servers': None,
