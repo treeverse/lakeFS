@@ -698,6 +698,12 @@ components:
         blockstore_namespace_ValidityRegex:
           type: string
 
+    VersionConfig:
+      type: object
+      properties:
+        version:
+          type: string
+
     ActionRun:
       type: object
       required:
@@ -2834,7 +2840,21 @@ paths:
       responses:
         204:
           description: NoContent
-
+  /config/version:
+    get:
+      tags:
+        - config
+      operationId: getLakeFSVersion
+      description: get version of lakeFS server
+      responses:
+        200:
+          description: lakeFS version
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VersionConfig"
+        401:
+          $ref: "#/components/responses/Unauthorized"
   /config/storage:
     get:
       tags:
