@@ -20,11 +20,6 @@ import (
 )
 
 const (
-	ConfigAccessKeyID        = "credentials.access_key_id"
-	ConfigSecretAccessKey    = "credentials.secret_access_key"
-	ConfigServerEndpointURL  = "server.endpoint_url"
-	DefaultServerEndpointURL = "http://127.0.0.1:8000"
-
 	DefaultMaxIdleConnsPerHost = 1000
 )
 

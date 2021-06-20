@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/config"
 	"net/url"
 	"path/filepath"
 
@@ -32,9 +33,9 @@ var configCmd = &cobra.Command{
 			Key    string
 			Prompt *promptui.Prompt
 		}{
-			{Key: ConfigAccessKeyID, Prompt: &promptui.Prompt{Label: "Access key ID"}},
-			{Key: ConfigSecretAccessKey, Prompt: &promptui.Prompt{Label: "Secret access key"}},
-			{Key: ConfigServerEndpointURL, Prompt: &promptui.Prompt{Label: "Server endpoint URL", Validate: func(rawurl string) error {
+			{Key: config.ConfigAccessKeyID, Prompt: &promptui.Prompt{Label: "Access key ID"}},
+			{Key: config.ConfigSecretAccessKey, Prompt: &promptui.Prompt{Label: "Secret access key"}},
+			{Key: config.ConfigServerEndpointURL, Prompt: &promptui.Prompt{Label: "Server endpoint URL", Validate: func(rawurl string) error {
 				_, err := url.ParseRequestURI(rawurl)
 				return err
 			}}},
