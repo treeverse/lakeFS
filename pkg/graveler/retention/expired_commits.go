@@ -7,8 +7,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler"
 )
 
-var empty struct{}
-
 type GarbageCollectionCommits struct {
 	expired []graveler.CommitID
 	active  []graveler.CommitID
@@ -41,7 +39,7 @@ func GetGarbageCollectionCommits(ctx context.Context, branchIterator graveler.Br
 			continue
 		}
 		processed[commitID] = branchExpirationThreshold
-		activeMap[commitID] = empty
+		activeMap[commitID] = struct{}{}
 		for len(commit.Parents) > 0 {
 			// every branch retains only its main ancestry, acquired by recursively taking the first parent:
 			nextCommitID := commit.Parents[0]
@@ -54,10 +52,10 @@ func GetGarbageCollectionCommits(ctx context.Context, branchIterator graveler.Br
 				break
 			}
 			if commit.CreationDate.After(branchExpirationThreshold) {
-				activeMap[nextCommitID] = empty
+				activeMap[nextCommitID] = struct{}{}
 				delete(expiredMap, nextCommitID)
 			} else if _, ok := activeMap[nextCommitID]; !ok {
-				expiredMap[nextCommitID] = empty
+				expiredMap[nextCommitID] = struct{}{}
 			}
 			commit, err = commitGetter.GetCommit(ctx, nextCommitID)
 			if err != nil {
