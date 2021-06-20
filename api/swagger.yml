@@ -823,6 +823,7 @@ components:
         previous_run_id:
           type: string
           description: run id of a previous successful GC job
+          example: 64eaa103-d726-4a33-bcb8-7c0b4abfe09e
 
     GarbageCollectionPrepareResponse:
       type: object
@@ -830,8 +831,10 @@ components:
         run_id:
           type: string
           description: a unique identifier generated for this GC job
+          example: 64eaa103-d726-4a33-bcb8-7c0b4abfe09e
       required:
         - run_id
+
     GarbageCollectionRule:
       type: object
       properties:
