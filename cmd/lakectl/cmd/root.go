@@ -89,14 +89,14 @@ func getClient() api.ClientWithResponsesInterface {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.MaxIdleConnsPerHost = DefaultMaxIdleConnsPerHost
 
-	accessKeyID := cfg.Credentials.AccessKeyID
-	secretAccessKey := cfg.Credentials.SecretAccessKey
+	accessKeyID := cfg.Values.Credentials.AccessKeyID
+	secretAccessKey := cfg.Values.Credentials.SecretAccessKey
 	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(accessKeyID, secretAccessKey)
 	if err != nil {
 		DieErr(err)
 	}
 
-	serverEndpoint := cfg.Server.EndpointURL
+	serverEndpoint := cfg.Values.Server.EndpointURL
 	u, err := url.Parse(serverEndpoint)
 	if err != nil {
 		DieErr(err)
