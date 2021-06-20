@@ -15,7 +15,7 @@ type GarbageCollectionCommits struct {
 }
 
 // GetGarbageCollectionCommits returns the sets of expired and active commits, according to the repository's garbage collection rules.
-func GetGarbageCollectionCommits(ctx context.Context, branchIterator graveler.BranchIterator, commitGetter *RepositoryCommitGetter, rules *graveler.GarbageCollectionRules, previouslyExpired []graveler.CommitID) (*GarbageCollectionCommits, error) {
+func GetGarbageCollectionCommits(ctx context.Context, commitIterator CommitIterator, commitGetter *RepositoryCommitGetter, rules *graveler.GarbageCollectionRules, previouslyExpired []graveler.CommitID) (*GarbageCollectionCommits, error) {
 	now := time.Now()
 	processed := make(map[graveler.CommitID]time.Time)
 	previouslyExpiredMap := make(map[graveler.CommitID]bool)
@@ -24,7 +24,7 @@ func GetGarbageCollectionCommits(ctx context.Context, branchIterator graveler.Br
 	}
 	activeMap := make(map[graveler.CommitID]struct{})
 	expiredMap := make(map[graveler.CommitID]struct{})
-	for branchIterator.Next() {
+	for co.Next() {
 		branchRecord := branchIterator.Value()
 		retentionDays := int(rules.DefaultRetentionDays)
 		if branchRetentionDays, ok := rules.BranchRetentionDays[string(branchRecord.BranchID)]; ok {

@@ -1,0 +1,1 @@
+DROP INDEX graveler_commits_idx_parents;

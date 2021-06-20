@@ -1,0 +1,1 @@
+CREATE INDEX graveler_commits_idx_parents ON graveler_commits USING GIN(parents);
