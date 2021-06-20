@@ -6,14 +6,12 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
-	"strconv"
 	"strings"
-
-	"google.golang.org/protobuf/proto"
 
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -23,22 +21,32 @@ const (
 
 type GarbageCollectionManager struct {
 	blockAdapter                block.Adapter
-	expiredCommitsFinder        *GarbageCollectionCommitsFinder
+	refManager                  graveler.RefManager
 	committedBlockStoragePrefix string
 }
 
-func NewGarbageCollectionManager(blockAdapter block.Adapter, commitGetter graveler.CommitGetter, branchLister graveler.BranchLister, committedBlockStoragePrefix string) *GarbageCollectionManager {
+type RepositoryCommitGetter struct {
+	refManager   graveler.RefManager
+	repositoryID graveler.RepositoryID
+}
+
+func (r *RepositoryCommitGetter) GetCommit(ctx context.Context, commitID graveler.CommitID) (*graveler.Commit, error) {
+	return r.refManager.GetCommit(ctx, r.repositoryID, commitID)
+}
+
+func NewGarbageCollectionManager(blockAdapter block.Adapter, refManager graveler.RefManager, committedBlockStoragePrefix string) *GarbageCollectionManager {
 	return &GarbageCollectionManager{
 		blockAdapter:                blockAdapter,
-		expiredCommitsFinder:        NewGarbageCollectionCommitsFinder(branchLister, commitGetter),
+		refManager:                  refManager,
 		committedBlockStoragePrefix: committedBlockStoragePrefix,
 	}
 }
 
 func (m *GarbageCollectionManager) GetRules(ctx context.Context, storageNamespace graveler.StorageNamespace) (*graveler.GarbageCollectionRules, error) {
 	reader, err := m.blockAdapter.Get(ctx, block.ObjectPointer{
-		Identifier:     string(storageNamespace) + fmt.Sprintf(configFileSuffixTemplate, m.committedBlockStoragePrefix),
-		IdentifierType: block.IdentifierTypeFull,
+		StorageNamespace: string(storageNamespace),
+		Identifier:       fmt.Sprintf(configFileSuffixTemplate, m.committedBlockStoragePrefix),
+		IdentifierType:   block.IdentifierTypeRelative,
 	}, -1)
 	if err != nil {
 		return nil, err
@@ -64,8 +72,9 @@ func (m *GarbageCollectionManager) SaveRules(ctx context.Context, storageNamespa
 		return err
 	}
 	return m.blockAdapter.Put(ctx, block.ObjectPointer{
-		Identifier:     string(storageNamespace) + fmt.Sprintf(configFileSuffixTemplate, m.committedBlockStoragePrefix),
-		IdentifierType: block.IdentifierTypeFull,
+		StorageNamespace: string(storageNamespace),
+		Identifier:       fmt.Sprintf(configFileSuffixTemplate, m.committedBlockStoragePrefix),
+		IdentifierType:   block.IdentifierTypeRelative,
 	}, int64(len(rulesBytes)), bytes.NewReader(rulesBytes), block.PutOpts{})
 }
 
@@ -81,12 +90,16 @@ func (m *GarbageCollectionManager) GetRunExpiredCommits(ctx context.Context, sto
 		return nil, err
 	}
 	csvReader := csv.NewReader(previousRunReader)
-	previousCommits, err := csvReader.ReadAll()
-	if err != nil {
-		return nil, err
-	}
-	res := make([]graveler.CommitID, 0)
-	for _, commitRow := range previousCommits {
+	csvReader.ReuseRecord = true
+	var res []graveler.CommitID
+	for {
+		commitRow, err := csvReader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
 		if commitRow[1] == "true" {
 			res = append(res, graveler.CommitID(commitRow[0]))
 		}
@@ -95,25 +108,37 @@ func (m *GarbageCollectionManager) GetRunExpiredCommits(ctx context.Context, sto
 }
 
 func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Context, storageNamespace graveler.StorageNamespace, repositoryID graveler.RepositoryID, rules *graveler.GarbageCollectionRules, previouslyExpiredCommits []graveler.CommitID) (string, error) {
-	gcCommits, err := m.expiredCommitsFinder.GetGarbageCollectionCommits(ctx, repositoryID, rules, previouslyExpiredCommits)
+	branchIterator, err := m.refManager.ListBranches(ctx, repositoryID)
+	if err != nil {
+		return "", fmt.Errorf("list repository branches: %w", err)
+	}
+	commitGetter := &RepositoryCommitGetter{
+		refManager:   m.refManager,
+		repositoryID: repositoryID,
+	}
+	gcCommits, err := GetGarbageCollectionCommits(ctx, branchIterator, commitGetter, rules, previouslyExpiredCommits)
 	if err != nil {
 		return "", fmt.Errorf("find expired commits: %w", err)
 	}
 	b := &strings.Builder{}
 	csvWriter := csv.NewWriter(b)
 	for _, commitID := range gcCommits.expired {
-		err := csvWriter.Write([]string{string(commitID), strconv.FormatBool(true)})
+		err := csvWriter.Write([]string{string(commitID), "true"})
 		if err != nil {
 			return "", err
 		}
 	}
 	for _, commitID := range gcCommits.active {
-		err := csvWriter.Write([]string{string(commitID), strconv.FormatBool(false)})
+		err := csvWriter.Write([]string{string(commitID), "false"})
 		if err != nil {
 			return "", err
 		}
 	}
 	csvWriter.Flush()
+	err = csvWriter.Error()
+	if err != nil {
+		return "", err
+	}
 	commitsStr := b.String()
 	runID := uuid.New().String()
 	err = m.blockAdapter.Put(ctx, block.ObjectPointer{

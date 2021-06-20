@@ -9,28 +9,15 @@ import (
 
 var empty struct{}
 
-type GarbageCollectionCommitsFinder struct {
-	branchLister graveler.BranchLister
-	commitGetter graveler.CommitGetter
-}
-
 type GarbageCollectionCommits struct {
 	expired []graveler.CommitID
 	active  []graveler.CommitID
 }
 
-func NewGarbageCollectionCommitsFinder(branchLister graveler.BranchLister, commitGetter graveler.CommitGetter) *GarbageCollectionCommitsFinder {
-	return &GarbageCollectionCommitsFinder{branchLister: branchLister, commitGetter: commitGetter}
-}
-
-func (e *GarbageCollectionCommitsFinder) GetGarbageCollectionCommits(ctx context.Context, repositoryID graveler.RepositoryID, rules *graveler.GarbageCollectionRules, previouslyExpired []graveler.CommitID) (*GarbageCollectionCommits, error) {
+// GetGarbageCollectionCommits returns the sets of expired and active commits, according to the repository's garbage collection rules.
+func GetGarbageCollectionCommits(ctx context.Context, branchIterator graveler.BranchIterator, commitGetter *RepositoryCommitGetter, rules *graveler.GarbageCollectionRules, previouslyExpired []graveler.CommitID) (*GarbageCollectionCommits, error) {
 	now := time.Now()
 	processed := make(map[graveler.CommitID]time.Time)
-
-	branchIterator, err := e.branchLister.ListBranches(ctx, repositoryID)
-	if err != nil {
-		return nil, err
-	}
 	previouslyExpiredMap := make(map[graveler.CommitID]bool)
 	for _, commitID := range previouslyExpired {
 		previouslyExpiredMap[commitID] = true
@@ -39,12 +26,13 @@ func (e *GarbageCollectionCommitsFinder) GetGarbageCollectionCommits(ctx context
 	expiredMap := make(map[graveler.CommitID]struct{})
 	for branchIterator.Next() {
 		branchRecord := branchIterator.Value()
-		branchExpirationThreshold := now.AddDate(0, 0, int(-rules.DefaultRetentionDays))
-		if branchExpirationPeriod, ok := rules.BranchRetentionDays[string(branchRecord.BranchID)]; ok {
-			branchExpirationThreshold = now.AddDate(0, 0, int(-branchExpirationPeriod))
+		retentionDays := int(rules.DefaultRetentionDays)
+		if branchRetentionDays, ok := rules.BranchRetentionDays[string(branchRecord.BranchID)]; ok {
+			retentionDays = int(branchRetentionDays)
 		}
+		branchExpirationThreshold := now.AddDate(0, 0, -retentionDays)
 		commitID := branchRecord.CommitID
-		previousCommit, err := e.commitGetter.GetCommit(ctx, repositoryID, commitID)
+		commit, err := commitGetter.GetCommit(ctx, commitID)
 		if err != nil {
 			return nil, err
 		}
@@ -54,27 +42,28 @@ func (e *GarbageCollectionCommitsFinder) GetGarbageCollectionCommits(ctx context
 		}
 		processed[commitID] = branchExpirationThreshold
 		activeMap[commitID] = empty
-		for len(previousCommit.Parents) > 0 {
-			commitID = previousCommit.Parents[0]
-			if _, ok := previouslyExpiredMap[commitID]; ok {
+		for len(commit.Parents) > 0 {
+			// every branch retains only its main ancestry, acquired by recursively taking the first parent:
+			nextCommitID := commit.Parents[0]
+			if _, ok := previouslyExpiredMap[nextCommitID]; ok {
 				// commit was already expired in a previous run
 				break
 			}
-			if previousThreshold, ok := processed[commitID]; ok && !previousThreshold.After(branchExpirationThreshold) {
+			if previousThreshold, ok := processed[nextCommitID]; ok && !previousThreshold.After(branchExpirationThreshold) {
 				// was already here with earlier expiration date
 				break
 			}
-			if previousCommit.CreationDate.After(branchExpirationThreshold) {
-				activeMap[commitID] = empty
-				delete(expiredMap, commitID)
-			} else if _, ok := activeMap[commitID]; !ok {
-				expiredMap[commitID] = empty
+			if commit.CreationDate.After(branchExpirationThreshold) {
+				activeMap[nextCommitID] = empty
+				delete(expiredMap, nextCommitID)
+			} else if _, ok := activeMap[nextCommitID]; !ok {
+				expiredMap[nextCommitID] = empty
 			}
-			previousCommit, err = e.commitGetter.GetCommit(ctx, repositoryID, commitID)
+			commit, err = commitGetter.GetCommit(ctx, nextCommitID)
 			if err != nil {
 				return nil, err
 			}
-			processed[commitID] = branchExpirationThreshold
+			processed[nextCommitID] = branchExpirationThreshold
 		}
 	}
 	if branchIterator.Err() != nil {

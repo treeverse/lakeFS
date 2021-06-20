@@ -478,14 +478,6 @@ type CommitIterator interface {
 	Close()
 }
 
-type CommitGetter interface {
-	GetCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (*Commit, error)
-}
-
-type BranchLister interface {
-	ListBranches(ctx context.Context, repositoryID RepositoryID) (BranchIterator, error)
-}
-
 // These are the more complex internal components that compose the functionality of the Graveler
 
 // RefManager handles references: branches, commits, probably tags in the future

@@ -163,7 +163,6 @@ func TestExpiredCommits(t *testing.T) {
 				return garbageCollectionRules.BranchRetentionDays[string(branchRecords[i].BranchID)] > garbageCollectionRules.BranchRetentionDays[string(branchRecords[j].BranchID)]
 			})
 			branchIterator := gtestutil.NewFakeBranchIterator(branchRecords)
-			refManagerMock.EXPECT().ListBranches(ctx, graveler.RepositoryID("test")).Return(branchIterator, nil)
 			commitMap := make(map[graveler.CommitID]*graveler.Commit)
 			previouslyExpired := newCommitSet(tst.previouslyExpired)
 			for commitID, testCommit := range tst.commits {
@@ -173,15 +172,14 @@ func TestExpiredCommits(t *testing.T) {
 					refManagerMock.EXPECT().GetCommit(ctx, graveler.RepositoryID("test"), id).Return(commitMap[id], nil).Times(1)
 				}
 			}
-			finder := GarbageCollectionCommitsFinder{
-				commitGetter: refManagerMock,
-				branchLister: refManagerMock,
-			}
 			previouslyExpiredCommitIDs := make([]graveler.CommitID, len(tst.previouslyExpired))
 			for i := range tst.previouslyExpired {
 				previouslyExpiredCommitIDs[i] = graveler.CommitID(tst.previouslyExpired[i])
 			}
-			gcCommits, err := finder.GetGarbageCollectionCommits(ctx, "test", garbageCollectionRules, previouslyExpiredCommitIDs)
+			gcCommits, err := GetGarbageCollectionCommits(ctx, branchIterator, &RepositoryCommitGetter{
+				refManager:   refManagerMock,
+				repositoryID: "test",
+			}, garbageCollectionRules, previouslyExpiredCommitIDs)
 			if err != nil {
 				t.Fatalf("failed to find expired commits: %v", err)
 			}
