@@ -1,11 +1,8 @@
 import build.BuildType
 
-val baseName = "lakefsfs"
+val baseName = "lakefsfs-test"
 
 val projectVersion = "0.1.0"
-
-ThisBuild / resolvers +=
-  "Sonatype OSS Snapshots" at "https://s01.oss.sonatype.org/content/repositories/snapshots/"
 
 // Spark versions 2.4.7 and 3.0.1 use different Scala versions.  Changing this is a deep
 // change, so key the Spark distinction by the Scala distinction.  sbt doesn't appear to
@@ -26,6 +23,7 @@ def generateProject(buildType: BuildType) =
   Project(s"${baseName}-${buildType.name}", file(s"target/${baseName}-${buildType.name}"))
     .settings(
       sharedSettings,
+      s3UploadSettings,
       settingsToCompileIn(),
       scalaVersion := buildType.scalaVersion,
       libraryDependencies ++= Seq(
@@ -34,13 +32,13 @@ def generateProject(buildType: BuildType) =
         // package.
         // In case of using the lakefs client library, we will need to shade the required libraries by the client api as
         // the hadoop-lakefs doesn't shade the client and also use it.
-        "io.lakefs" % "hadoop-lakefs-assembly" % "0.1.0-RC.0-SNAPSHOT",
+        "io.lakefs" % "hadoop-lakefs-assembly" % "0.1.0",
         "org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
         "org.apache.hadoop" % "hadoop-aws" % buildType.hadoopVersion,
         "org.apache.hadoop" % "hadoop-common" % buildType.hadoopVersion,
       ),
       target := { baseDirectory.value / "target" / s"${baseName}-${buildType.name}" }
-    )
+    ).enablePlugins(S3Plugin)
 
 val spark2Type = new BuildType("247", scala211Version, "2.4.7", "2.7.7")
 val spark3Type = new BuildType("301", scala212Version, "3.0.1", "2.7.7")
@@ -64,6 +62,16 @@ lazy val assemblySettings = Seq(
     ShadeRule.rename("okhttp3.**" -> "okhttp3.shaded.@0").inAll,
     ShadeRule.rename("scala.collection.compat.**" -> "shadecompat.@1").inAll,
   ),
+)
+
+// Upload assembly jars to S3
+lazy val s3UploadSettings = Seq(
+  s3Upload / mappings := Seq(
+    (assemblyOutputPath in assembly).value ->
+      s"${name.value}/${version.value}/${(assemblyJarName in assembly).value}"
+  ),
+  s3Upload / s3Host := "treeverse-clients-us-east.s3.amazonaws.com",
+  s3Upload / s3Progress  := true
 )
 
 lazy val commonSettings = Seq(
