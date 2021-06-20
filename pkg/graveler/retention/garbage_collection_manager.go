@@ -8,6 +8,9 @@ import (
 	"io"
 	"strings"
 
+	"github.com/treeverse/lakefs/pkg/db"
+	"github.com/treeverse/lakefs/pkg/graveler/ref"
+
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -23,6 +26,7 @@ type GarbageCollectionManager struct {
 	blockAdapter                block.Adapter
 	refManager                  graveler.RefManager
 	committedBlockStoragePrefix string
+	db                          db.Database
 }
 
 type RepositoryCommitGetter struct {
@@ -34,11 +38,12 @@ func (r *RepositoryCommitGetter) GetCommit(ctx context.Context, commitID gravele
 	return r.refManager.GetCommit(ctx, r.repositoryID, commitID)
 }
 
-func NewGarbageCollectionManager(blockAdapter block.Adapter, refManager graveler.RefManager, committedBlockStoragePrefix string) *GarbageCollectionManager {
+func NewGarbageCollectionManager(db db.Database, blockAdapter block.Adapter, refManager graveler.RefManager, committedBlockStoragePrefix string) *GarbageCollectionManager {
 	return &GarbageCollectionManager{
 		blockAdapter:                blockAdapter,
 		refManager:                  refManager,
 		committedBlockStoragePrefix: committedBlockStoragePrefix,
+		db:                          db,
 	}
 }
 
@@ -108,15 +113,13 @@ func (m *GarbageCollectionManager) GetRunExpiredCommits(ctx context.Context, sto
 }
 
 func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Context, storageNamespace graveler.StorageNamespace, repositoryID graveler.RepositoryID, rules *graveler.GarbageCollectionRules, previouslyExpiredCommits []graveler.CommitID) (string, error) {
-	branchIterator, err := m.refManager.ListBranches(ctx, repositoryID)
-	if err != nil {
-		return "", fmt.Errorf("list repository branches: %w", err)
-	}
 	commitGetter := &RepositoryCommitGetter{
 		refManager:   m.refManager,
 		repositoryID: repositoryID,
 	}
-	gcCommits, err := GetGarbageCollectionCommits(ctx, branchIterator, commitGetter, rules, previouslyExpiredCommits)
+	branchIterator := ref.NewBranchIterator(ctx, m.db, repositoryID, 1000, ref.WithOrderBy("commit_id"))
+	commitIterator := ref.NewOrderedCommitIterator(ctx, m.db, repositoryID, 1000, ref.WithAdditionalCondition("NOT EXISTS (SELECT * FROM graveler_commits c2 WHERE c2.repository_id=graveler_commits.repository_id AND c2.parents[1]=graveler_commits.id"))
+	gcCommits, err := GetGarbageCollectionCommits(ctx, NewGCStartingPointIterator(commitIterator, branchIterator), commitGetter, rules, previouslyExpiredCommits)
 	if err != nil {
 		return "", fmt.Errorf("find expired commits: %w", err)
 	}

@@ -390,7 +390,7 @@ func (m *Manager) ListCommits(ctx context.Context, repositoryID graveler.Reposit
 	if err != nil {
 		return nil, err
 	}
-	return NewOrderedCommitIterator(ctx, m.db, repositoryID, IteratorPrefetchSize)
+	return NewOrderedCommitIterator(ctx, m.db, repositoryID, IteratorPrefetchSize), nil
 }
 
 func (m *Manager) FillGenerations(ctx context.Context, repositoryID graveler.RepositoryID) error {

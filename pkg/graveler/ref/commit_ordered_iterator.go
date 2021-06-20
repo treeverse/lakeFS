@@ -8,28 +8,41 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler"
 )
 
+type OrderedCommitIteratorOption func(oci *OrderedCommitIterator)
+
+func WithAdditionalCondition(additionalCondition string) OrderedCommitIteratorOption {
+	return func(oci *OrderedCommitIterator) {
+		oci.additionalCondition = additionalCondition
+	}
+}
+
 // NewOrderedCommitIterator returns an iterator over all commits in the given repository.
 // Ordering is based on the Commit ID value.
-func NewOrderedCommitIterator(ctx context.Context, database db.Database, repositoryID graveler.RepositoryID, prefetchSize int) (*OrderedCommitIterator, error) {
-	return &OrderedCommitIterator{
+func NewOrderedCommitIterator(ctx context.Context, database db.Database, repositoryID graveler.RepositoryID, prefetchSize int, opts ...OrderedCommitIteratorOption) *OrderedCommitIterator {
+	res := &OrderedCommitIterator{
 		ctx:          ctx,
 		db:           database,
 		repositoryID: repositoryID,
 		prefetchSize: prefetchSize,
 		buf:          make([]*graveler.CommitRecord, 0, prefetchSize),
-	}, nil
+	}
+	for _, opt := range opts {
+		opt(res)
+	}
+	return res
 }
 
 type OrderedCommitIterator struct {
-	ctx          context.Context
-	db           db.Database
-	repositoryID graveler.RepositoryID
-	prefetchSize int
-	buf          []*graveler.CommitRecord
-	err          error
-	value        *graveler.CommitRecord
-	offset       string
-	state        iteratorState
+	ctx                 context.Context
+	db                  db.Database
+	repositoryID        graveler.RepositoryID
+	prefetchSize        int
+	buf                 []*graveler.CommitRecord
+	err                 error
+	value               *graveler.CommitRecord
+	offset              string
+	state               iteratorState
+	additionalCondition string
 }
 
 func (iter *OrderedCommitIterator) Next() bool {
@@ -65,11 +78,15 @@ func (iter *OrderedCommitIterator) maybeFetch() {
 	}
 
 	var buf []*commitRecord
+	additionalConditionExpression := ""
+	if iter.additionalCondition != "" {
+		additionalConditionExpression = " AND " + iter.additionalCondition + " "
+	}
 	err := iter.db.Select(iter.ctx, &buf, `
 			SELECT id, committer, message, creation_date, meta_range_id, parents, metadata, version
 			FROM graveler_commits
 			WHERE repository_id = $1
-			AND id `+offsetCondition+` $2
+			AND id `+offsetCondition+` $2`+additionalConditionExpression+`
 			ORDER BY id ASC
 			LIMIT $3`, iter.repositoryID, iter.offset, iter.prefetchSize)
 	if err != nil {
