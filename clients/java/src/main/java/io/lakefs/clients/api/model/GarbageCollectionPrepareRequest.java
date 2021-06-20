@@ -45,7 +45,7 @@ public class GarbageCollectionPrepareRequest {
    * @return previousRunId
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "run id of a previous successful GC job")
+  @ApiModelProperty(example = "64eaa103-d726-4a33-bcb8-7c0b4abfe09e", value = "run id of a previous successful GC job")
 
   public String getPreviousRunId() {
     return previousRunId;

@@ -5038,18 +5038,20 @@ components:
       type: object
     GarbageCollectionPrepareRequest:
       example:
-        previous_run_id: previous_run_id
+        previous_run_id: 64eaa103-d726-4a33-bcb8-7c0b4abfe09e
       properties:
         previous_run_id:
           description: run id of a previous successful GC job
+          example: 64eaa103-d726-4a33-bcb8-7c0b4abfe09e
           type: string
       type: object
     GarbageCollectionPrepareResponse:
       example:
-        run_id: run_id
+        run_id: 64eaa103-d726-4a33-bcb8-7c0b4abfe09e
       properties:
         run_id:
           description: a unique identifier generated for this GC job
+          example: 64eaa103-d726-4a33-bcb8-7c0b4abfe09e
           type: string
       required:
       - run_id

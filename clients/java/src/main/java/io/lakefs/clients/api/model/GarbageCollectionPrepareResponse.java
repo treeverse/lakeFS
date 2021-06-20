@@ -44,7 +44,7 @@ public class GarbageCollectionPrepareResponse {
    * a unique identifier generated for this GC job
    * @return runId
   **/
-  @ApiModelProperty(required = true, value = "a unique identifier generated for this GC job")
+  @ApiModelProperty(example = "64eaa103-d726-4a33-bcb8-7c0b4abfe09e", required = true, value = "a unique identifier generated for this GC job")
 
   public String getRunId() {
     return runId;
