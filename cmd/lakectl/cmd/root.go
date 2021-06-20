@@ -170,8 +170,5 @@ func initConfig() {
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_")) // support nested config
 	viper.AutomaticEnv()                                   // read in environment variables that match
 
-	// Configuration defaults
-	viper.SetDefault(ConfigServerEndpointURL, DefaultServerEndpointURL)
-
 	cfg = config.ReadConfig()
 }

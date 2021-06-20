@@ -4,6 +4,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/spf13/viper"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"reflect"
@@ -88,6 +89,7 @@ const (
 
 func setDefaults() {
 	viper.SetDefault(HiveDBLocationURIKey, HiveDBLocationURI)
+	viper.SetDefault(cmd.ConfigServerEndpointURL, cmd.DefaultServerEndpointURL)
 }
 
 func (c *Config) Err() error {
