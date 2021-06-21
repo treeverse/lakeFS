@@ -33,9 +33,9 @@ var configCmd = &cobra.Command{
 			Key    string
 			Prompt *promptui.Prompt
 		}{
-			{Key: config.ConfigAccessKeyID, Prompt: &promptui.Prompt{Label: "Access key ID"}},
+			{Key: config.ConfigAccessKeyIDKey, Prompt: &promptui.Prompt{Label: "Access key ID"}},
 			{Key: config.ConfigSecretAccessKey, Prompt: &promptui.Prompt{Label: "Secret access key"}},
-			{Key: config.ConfigServerEndpointURL, Prompt: &promptui.Prompt{Label: "Server endpoint URL", Validate: func(rawurl string) error {
+			{Key: config.ConfigServerEndpointURLKey, Prompt: &promptui.Prompt{Label: "Server endpoint URL", Validate: func(rawurl string) error {
 				_, err := url.ParseRequestURI(rawurl)
 				return err
 			}}},

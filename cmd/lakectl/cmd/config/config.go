@@ -76,19 +76,19 @@ func ReadConfig() (c *Config) {
 
 const (
 	// Default flag keys
-	HiveDBLocationURIKey = "metastore.hive.db_location_uri"
+	HiveDBLocationURIKey       = "metastore.hive.db_location_uri"
+	ConfigServerEndpointURLKey = "server.endpoint_url"
+	ConfigAccessKeyIDKey       = "credentials.access_key_id"
+	ConfigSecretAccessKey      = "credentials.secret_access_key"
 
 	// Defaults
-	HiveDBLocationURI        = "file:/user/hive/warehouse/"
-	ConfigServerEndpointURL  = "server.endpoint_url"
+	DefaultHiveDBLocationURI = "file:/user/hive/warehouse/"
 	DefaultServerEndpointURL = "http://127.0.0.1:8000"
-	ConfigAccessKeyID        = "credentials.access_key_id"
-	ConfigSecretAccessKey    = "credentials.secret_access_key"
 )
 
 func setDefaults() {
-	viper.SetDefault(HiveDBLocationURIKey, HiveDBLocationURI)
-	viper.SetDefault(ConfigServerEndpointURL, DefaultServerEndpointURL)
+	viper.SetDefault(HiveDBLocationURIKey, DefaultHiveDBLocationURI)
+	viper.SetDefault(ConfigServerEndpointURLKey, DefaultServerEndpointURL)
 }
 
 func (c *Config) Err() error {
