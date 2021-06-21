@@ -62,15 +62,18 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
 		}
 
 		if errors.As(cfg.Err(), &viper.ConfigFileNotFoundError{}) {
-			if cfgFile == "" {
-				// if the config file wasn't provided, try to run using the default values + env vars
-				return
+			if cfgFile != "" {
+				// specific message in case the file isn't found
+				DieFmt("config file not found, please run \"lakectl config\" to create one\n%s\n", cfg.Err())
 			}
-			// specific message in case the file isn't found
-			DieFmt("config file not found, please run \"lakectl config\" to create one\n%s\n", cfg.Err())
+			// if the config file wasn't provided, try to run using the default values + env vars
 		} else if cfg.Err() != nil {
 			// other errors while reading the config file
 			DieFmt("error reading configuration file: %v", cfg.Err())
+		}
+
+		if err := viper.UnmarshalExact(&cfg.Values); err != nil {
+			DieFmt("error unmarshal configuration: %v", err)
 		}
 	},
 	Version: version.Version,

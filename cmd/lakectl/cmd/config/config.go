@@ -71,11 +71,6 @@ func ReadConfig() (c *Config) {
 	} else if _, ok := c.err.(viper.ConfigFileNotFoundError); !ok {
 		logger.WithError(c.err).Fatal("failed to read config file")
 	}
-
-	c.err = viper.UnmarshalExact(&c.Values)
-	if c.err != nil {
-		return
-	}
 	return
 }
 
