@@ -1,9 +1,13 @@
 package config
 
 import (
+	"reflect"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/spf13/viper"
+	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 // configuration is the user-visible configuration structure in Golang form.  When editing
@@ -42,33 +46,49 @@ type configuration struct {
 // Config is the currently-loaded configuration.  Its error state supports being able to run
 // `lakectl config' without a valid configuration.
 type Config struct {
-	configuration
-	err error
+	Values configuration
+	err    error
 }
 
 // ReadConfig loads according to the current viper configuration into a Config, which will
 // have non-nil Err() if loading fails.
 func ReadConfig() (c *Config) {
 	c = &Config{}
+
+	// Inform viper of all expected fields.  Otherwise it fails to deserialize from the
+	// environment.
+	keys := config.GetStructKeys(reflect.TypeOf(c.Values), "mapstructure", "squash")
+	for _, key := range keys {
+		viper.SetDefault(key, nil)
+	}
+
 	setDefaults()
 	c.err = viper.ReadInConfig()
-	if c.err != nil {
-		return
+	logger := logging.Default().WithField("file", viper.ConfigFileUsed())
+
+	if c.err == nil {
+		logger.Info("loaded configuration from file")
+	} else if _, ok := c.err.(viper.ConfigFileNotFoundError); !ok {
+		logger.WithError(c.err).Fatal("failed to read config file")
 	}
-	c.err = viper.UnmarshalExact(&c.configuration)
 	return
 }
 
 const (
 	// Default flag keys
-	HiveDBLocationURIKey = "metastore.hive.db_location_uri"
+	HiveDBLocationURIKey       = "metastore.hive.db_location_uri"
+	ConfigServerEndpointURLKey = "server.endpoint_url"
+	ConfigAccessKeyIDKey       = "credentials.access_key_id"
+	ConfigSecretAccessKey      = "credentials.secret_access_key"
 
 	// Defaults
-	HiveDBLocationURI = "file:/user/hive/warehouse/"
+	DefaultHiveDBLocationURI = "file:/user/hive/warehouse/"
+	DefaultServerEndpointURL = "http://127.0.0.1:8000"
 )
 
 func setDefaults() {
-	viper.SetDefault(HiveDBLocationURIKey, HiveDBLocationURI)
+	viper.SetDefault(HiveDBLocationURIKey, DefaultHiveDBLocationURI)
+	viper.SetDefault(ConfigServerEndpointURLKey, DefaultServerEndpointURL)
 }
 
 func (c *Config) Err() error {
@@ -77,39 +97,39 @@ func (c *Config) Err() error {
 
 func (c *Config) GetMetastoreAwsConfig() *aws.Config {
 	cfg := &aws.Config{
-		Region: aws.String(c.configuration.Metastore.Glue.Region),
+		Region: aws.String(c.Values.Metastore.Glue.Region),
 	}
-	if c.Metastore.Glue.Profile != "" || c.Metastore.Glue.CredentialsFile != "" {
+	if c.Values.Metastore.Glue.Profile != "" || c.Values.Metastore.Glue.CredentialsFile != "" {
 		cfg.Credentials = credentials.NewSharedCredentials(
-			c.Metastore.Glue.CredentialsFile,
-			c.Metastore.Glue.Profile,
+			c.Values.Metastore.Glue.CredentialsFile,
+			c.Values.Metastore.Glue.Profile,
 		)
 	}
-	if c.Metastore.Glue.Credentials != nil {
+	if c.Values.Metastore.Glue.Credentials != nil {
 		cfg.Credentials = credentials.NewStaticCredentials(
-			c.Metastore.Glue.Credentials.AccessKeyID,
-			c.Metastore.Glue.Credentials.AccessSecretKey,
-			c.Metastore.Glue.Credentials.SessionToken,
+			c.Values.Metastore.Glue.Credentials.AccessKeyID,
+			c.Values.Metastore.Glue.Credentials.AccessSecretKey,
+			c.Values.Metastore.Glue.Credentials.SessionToken,
 		)
 	}
 	return cfg
 }
 
 func (c *Config) GetMetastoreHiveURI() string {
-	return c.Metastore.Hive.URI
+	return c.Values.Metastore.Hive.URI
 }
 
 func (c *Config) GetMetastoreGlueCatalogID() string {
-	return c.Metastore.Glue.CatalogID
+	return c.Values.Metastore.Glue.CatalogID
 }
 func (c *Config) GetMetastoreType() string {
-	return c.Metastore.Type
+	return c.Values.Metastore.Type
 }
 
 func (c *Config) GetHiveDBLocationURI() string {
-	return c.Metastore.Hive.DBLocationtURI
+	return c.Values.Metastore.Hive.DBLocationtURI
 }
 
 func (c *Config) GetGlueDBLocationURI() string {
-	return c.Metastore.Glue.DBLocationtURI
+	return c.Values.Metastore.Glue.DBLocationtURI
 }

@@ -20,11 +20,6 @@ import (
 )
 
 const (
-	ConfigAccessKeyID        = "credentials.access_key_id"
-	ConfigSecretAccessKey    = "credentials.secret_access_key"
-	ConfigServerEndpointURL  = "server.endpoint_url"
-	DefaultServerEndpointURL = "http://127.0.0.1:8000"
-
 	DefaultMaxIdleConnsPerHost = 1000
 )
 
@@ -67,15 +62,18 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
 		}
 
 		if errors.As(cfg.Err(), &viper.ConfigFileNotFoundError{}) {
-			if cfgFile == "" {
-				// if the config file wasn't provided, try to run using the default values + env vars
-				return
+			if cfgFile != "" {
+				// specific message in case the file isn't found
+				DieFmt("config file not found, please run \"lakectl config\" to create one\n%s\n", cfg.Err())
 			}
-			// specific message in case the file isn't found
-			DieFmt("config file not found, please run \"lakectl config\" to create one\n%s\n", cfg.Err())
+			// if the config file wasn't provided, try to run using the default values + env vars
 		} else if cfg.Err() != nil {
 			// other errors while reading the config file
 			DieFmt("error reading configuration file: %v", cfg.Err())
+		}
+
+		if err := viper.UnmarshalExact(&cfg.Values); err != nil {
+			DieFmt("error unmarshal configuration: %v", err)
 		}
 	},
 	Version: version.Version,
@@ -89,14 +87,14 @@ func getClient() api.ClientWithResponsesInterface {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.MaxIdleConnsPerHost = DefaultMaxIdleConnsPerHost
 
-	accessKeyID := cfg.Credentials.AccessKeyID
-	secretAccessKey := cfg.Credentials.SecretAccessKey
+	accessKeyID := cfg.Values.Credentials.AccessKeyID
+	secretAccessKey := cfg.Values.Credentials.SecretAccessKey
 	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(accessKeyID, secretAccessKey)
 	if err != nil {
 		DieErr(err)
 	}
 
-	serverEndpoint := cfg.Server.EndpointURL
+	serverEndpoint := cfg.Values.Server.EndpointURL
 	u, err := url.Parse(serverEndpoint)
 	if err != nil {
 		DieErr(err)
@@ -169,9 +167,6 @@ func initConfig() {
 	viper.SetEnvPrefix("LAKECTL")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_")) // support nested config
 	viper.AutomaticEnv()                                   // read in environment variables that match
-
-	// Configuration defaults
-	viper.SetDefault(ConfigServerEndpointURL, DefaultServerEndpointURL)
 
 	cfg = config.ReadConfig()
 }
