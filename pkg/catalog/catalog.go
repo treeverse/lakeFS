@@ -18,6 +18,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
+	"github.com/treeverse/lakefs/pkg/graveler/retention"
 	"github.com/treeverse/lakefs/pkg/graveler/sstable"
 	"github.com/treeverse/lakefs/pkg/graveler/staging"
 	"github.com/treeverse/lakefs/pkg/ident"
@@ -181,7 +182,8 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 
 	refManager := ref.NewPGRefManager(executor, cfg.DB, ident.NewHexAddressProvider())
 	branchLocker := ref.NewBranchLocker(cfg.LockDB)
-	store := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager)
+	gcManager := retention.NewGarbageCollectionManager(tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
+	store := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager)
 
 	return &Catalog{
 		BlockAdapter: tierFSParams.Adapter,
@@ -1173,6 +1175,24 @@ func (c *Catalog) GetMetaRange(ctx context.Context, repositoryID, metaRangeID st
 
 func (c *Catalog) GetRange(ctx context.Context, repositoryID, rangeID string) (graveler.RangeInfo, error) {
 	return c.Store.GetRange(ctx, graveler.RepositoryID(repositoryID), graveler.RangeID(rangeID))
+}
+
+func (c *Catalog) GetGarbageCollectionRules(ctx context.Context, repositoryID string) (*graveler.GarbageCollectionRules, error) {
+	return c.Store.GetGarbageCollectionRules(ctx, graveler.RepositoryID(repositoryID))
+}
+
+func (c *Catalog) SetGarbageCollectionRules(ctx context.Context, repositoryID string, rules *graveler.GarbageCollectionRules) error {
+	return c.Store.SetGarbageCollectionRules(ctx, graveler.RepositoryID(repositoryID), rules)
+}
+
+func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repository string, previousRunID string) (string, error) {
+	repositoryID := graveler.RepositoryID(repository)
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+	}); err != nil {
+		return "", err
+	}
+	return c.Store.SaveGarbageCollectionCommits(ctx, repositoryID, previousRunID)
 }
 
 func (c *Catalog) Close() error {

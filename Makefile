@@ -68,7 +68,8 @@ clean:
 		pkg/ddl/statik.go \
 		pkg/graveler/sstable/mock \
 		pkg/webui \
-	    pkg/graveler/committed/mock
+	    pkg/graveler/committed/mock \
+	    pkg/graveler/mock
 
 check-licenses: check-licenses-go-mod check-licenses-npm
 
@@ -137,6 +138,7 @@ gen-api: go-install ## Run the swagger code generator
 gen-mockgen: go-install ## Run the generator for inline commands
 	$(GOGENERATE) ./pkg/graveler/sstable
 	$(GOGENERATE) ./pkg/graveler/committed
+	$(GOGENERATE) ./pkg/graveler
 	$(GOGENERATE) ./pkg/pyramid
 	$(GOGENERATE) ./pkg/onboard
 	$(GOGENERATE) ./pkg/actions

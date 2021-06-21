@@ -14,6 +14,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+//go:generate mockgen -source=graveler.go -destination=mock/graveler.go -package=mock
+
 // Basic Types
 
 // DiffType represents the type of the change
@@ -368,6 +370,16 @@ type VersionController interface {
 	// GetStagingToken returns the token identifying current staging for branchID of
 	// repositoryID.
 	GetStagingToken(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (*StagingToken, error)
+
+	GetGarbageCollectionRules(ctx context.Context, repositoryID RepositoryID) (*GarbageCollectionRules, error)
+
+	SetGarbageCollectionRules(ctx context.Context, repositoryID RepositoryID, rules *GarbageCollectionRules) error
+
+	// SaveGarbageCollectionCommits saves the sets of active and expired commits, according to the branch rules for garbage collection.
+	// Returns a run id which can later be used to retrieve the set of commits.
+	// If a previousRunID is specified, commits that were already expired and their ancestors will not be considered as expired/active.
+	// Note: Ancestors of previously expired commits may still be considered if they can be reached from a non-expired commit.
+	SaveGarbageCollectionCommits(ctx context.Context, repositoryID RepositoryID, previousRunID string) (runID string, err error)
 }
 
 // Plumbing includes commands for fiddling more directly with graveler implementation
@@ -629,7 +641,6 @@ func (id Key) Copy() Key {
 	copy(keyCopy, id)
 	return keyCopy
 }
-
 func (id Key) String() string {
 	return string(id)
 }
@@ -647,22 +658,24 @@ func (id TagID) String() string {
 }
 
 type Graveler struct {
-	CommittedManager CommittedManager
-	StagingManager   StagingManager
-	RefManager       RefManager
-	branchLocker     BranchLocker
-	hooks            HooksHandler
-	log              logging.Logger
+	CommittedManager         CommittedManager
+	StagingManager           StagingManager
+	RefManager               RefManager
+	branchLocker             BranchLocker
+	hooks                    HooksHandler
+	garbageCollectionManager GarbageCollectionManager
+	log                      logging.Logger
 }
 
-func NewGraveler(branchLocker BranchLocker, committedManager CommittedManager, stagingManager StagingManager, refManager RefManager) *Graveler {
+func NewGraveler(branchLocker BranchLocker, committedManager CommittedManager, stagingManager StagingManager, refManager RefManager, gcManager GarbageCollectionManager) *Graveler {
 	return &Graveler{
-		CommittedManager: committedManager,
-		StagingManager:   stagingManager,
-		RefManager:       refManager,
-		branchLocker:     branchLocker,
-		hooks:            &HooksNoOp{},
-		log:              logging.Default().WithField("service_name", "graveler_graveler"),
+		CommittedManager:         committedManager,
+		StagingManager:           stagingManager,
+		RefManager:               refManager,
+		branchLocker:             branchLocker,
+		hooks:                    &HooksNoOp{},
+		garbageCollectionManager: gcManager,
+		log:                      logging.Default().WithField("service_name", "graveler_graveler"),
 	}
 }
 
@@ -854,6 +867,38 @@ func (g *Graveler) GetStagingToken(ctx context.Context, repositoryID RepositoryI
 		return nil, err
 	}
 	return &branch.StagingToken, nil
+}
+
+func (g *Graveler) GetGarbageCollectionRules(ctx context.Context, repositoryID RepositoryID) (*GarbageCollectionRules, error) {
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	return g.garbageCollectionManager.GetRules(ctx, repo.StorageNamespace)
+}
+
+func (g *Graveler) SetGarbageCollectionRules(ctx context.Context, repositoryID RepositoryID, rules *GarbageCollectionRules) error {
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return err
+	}
+	return g.garbageCollectionManager.SaveRules(ctx, repo.StorageNamespace, rules)
+}
+
+func (g *Graveler) SaveGarbageCollectionCommits(ctx context.Context, repositoryID RepositoryID, previousRunID string) (runID string, err error) {
+	rules, err := g.GetGarbageCollectionRules(ctx, repositoryID)
+	if err != nil {
+		return "", fmt.Errorf("get gc rules: %w", err)
+	}
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return "", fmt.Errorf("get repository: %w", err)
+	}
+	previouslyExpiredCommits, err := g.garbageCollectionManager.GetRunExpiredCommits(ctx, repo.StorageNamespace, previousRunID)
+	if err != nil {
+		return "", fmt.Errorf("get expired commits from previous run: %w", err)
+	}
+	return g.garbageCollectionManager.SaveGarbageCollectionCommits(ctx, repo.StorageNamespace, repositoryID, rules, previouslyExpiredCommits)
 }
 
 func (g *Graveler) Get(ctx context.Context, repositoryID RepositoryID, ref Ref, key Key) (*Value, error) {
@@ -1978,4 +2023,12 @@ func (c *commitValueIterator) Err() error {
 
 func (c *commitValueIterator) Close() {
 	c.src.Close()
+}
+
+type GarbageCollectionManager interface {
+	GetRules(ctx context.Context, storageNamespace StorageNamespace) (*GarbageCollectionRules, error)
+	SaveRules(ctx context.Context, storageNamespace StorageNamespace, rules *GarbageCollectionRules) error
+
+	SaveGarbageCollectionCommits(ctx context.Context, storageNamespace StorageNamespace, repositoryID RepositoryID, rules *GarbageCollectionRules, previouslyExpiredCommits []CommitID) (string, error)
+	GetRunExpiredCommits(ctx context.Context, storageNamespace StorageNamespace, runID string) ([]CommitID, error)
 }

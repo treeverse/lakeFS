@@ -57,6 +57,10 @@ const (
 	ListCredentialsAction   = "auth:ListCredentials"
 
 	ReadActionsAction = "ci:ReadAction"
+
+	PrepareGarbageCollectionCommitsAction = "retention:PrepareGarbageCollectionCommits"
+	GetGarbageCollectionRulesAction       = "retention:GetGarbageCollectionRules"
+	SetGarbageCollectionRulesAction       = "retention:SetGarbageCollectionRules"
 )
 
 var serviceSet = map[string]struct{}{
