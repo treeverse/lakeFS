@@ -19,6 +19,18 @@ type FakeGraveler struct {
 	hooks                     graveler.HooksHandler
 }
 
+func (g *FakeGraveler) SaveGarbageCollectionCommits(ctx context.Context, repositoryID graveler.RepositoryID, previousRunID string) (runID string, err error) {
+	panic("implement me")
+}
+
+func (g *FakeGraveler) GetGarbageCollectionRules(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.GarbageCollectionRules, error) {
+	panic("implement me")
+}
+
+func (g *FakeGraveler) SetGarbageCollectionRules(ctx context.Context, repositoryID graveler.RepositoryID, rules *graveler.GarbageCollectionRules) error {
+	panic("implement me")
+}
+
 func (g *FakeGraveler) CreateBareRepository(ctx context.Context, repositoryID graveler.RepositoryID, storageNamespace graveler.StorageNamespace, branchID graveler.BranchID) (*graveler.Repository, error) {
 	panic("implement me")
 }
@@ -372,47 +384,6 @@ func (m *FakeRepositoryIterator) Err() error {
 }
 
 func (m *FakeRepositoryIterator) Close() {}
-
-type FakeBranchIterator struct {
-	Data  []*graveler.BranchRecord
-	Index int
-}
-
-func NewFakeBranchIterator(data []*graveler.BranchRecord) *FakeBranchIterator {
-	return &FakeBranchIterator{Data: data, Index: -1}
-}
-
-func NewFakeBranchIteratorFactory(data []*graveler.BranchRecord) func() graveler.BranchIterator {
-	return func() graveler.BranchIterator { return NewFakeBranchIterator(data) }
-}
-
-func (m *FakeBranchIterator) Next() bool {
-	if m.Index >= len(m.Data) {
-		return false
-	}
-	m.Index++
-	return m.Index < len(m.Data)
-}
-
-func (m *FakeBranchIterator) SeekGE(id graveler.BranchID) {
-	m.Index = len(m.Data)
-	for i, item := range m.Data {
-		if item.BranchID >= id {
-			m.Index = i - 1
-			return
-		}
-	}
-}
-
-func (m *FakeBranchIterator) Value() *graveler.BranchRecord {
-	return m.Data[m.Index]
-}
-
-func (m *FakeBranchIterator) Err() error {
-	return nil
-}
-
-func (m *FakeBranchIterator) Close() {}
 
 type FakeTagIterator struct {
 	Data  []*graveler.TagRecord

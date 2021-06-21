@@ -26,3 +26,8 @@ message CommitData {
   int32 version = 8;
   int32 generation = 9;
 }
+
+message GarbageCollectionRules {
+  int32 default_retention_days = 1;
+  map<string,int32> branch_retention_days = 2;
+}

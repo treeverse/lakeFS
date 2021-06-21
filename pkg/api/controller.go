@@ -1914,6 +1914,70 @@ func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repositor
 	writeResponse(w, http.StatusOK, response)
 }
 
+func (c *Controller) GetGarbageCollectionRules(w http.ResponseWriter, r *http.Request, repository string) {
+	if !c.authorize(w, r, []permissions.Permission{
+		{
+			Action:   permissions.GetGarbageCollectionRulesAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	rules, err := c.Catalog.GetGarbageCollectionRules(ctx, repository)
+	if handleAPIError(w, err) {
+		return
+	}
+	resp := GarbageCollectionRules{}
+	resp.DefaultRetentionDays = int(rules.DefaultRetentionDays)
+	for branchID, retentionDays := range rules.BranchRetentionDays {
+		resp.Branches = append(resp.Branches, GarbageCollectionRule{BranchId: branchID, RetentionDays: int(retentionDays)})
+	}
+	writeResponse(w, http.StatusOK, resp)
+}
+
+func (c *Controller) SetGarbageCollectionRules(w http.ResponseWriter, r *http.Request, body SetGarbageCollectionRulesJSONRequestBody, repository string) {
+	if !c.authorize(w, r, []permissions.Permission{
+		{
+			Action:   permissions.SetGarbageCollectionRulesAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	rules := &graveler.GarbageCollectionRules{
+		DefaultRetentionDays: int32(body.DefaultRetentionDays),
+		BranchRetentionDays:  make(map[string]int32),
+	}
+	for _, rule := range body.Branches {
+		rules.BranchRetentionDays[rule.BranchId] = int32(rule.RetentionDays)
+	}
+	err := c.Catalog.SetGarbageCollectionRules(ctx, repository, rules)
+	if handleAPIError(w, err) {
+		return
+	}
+	writeResponse(w, http.StatusNoContent, nil)
+}
+
+func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *http.Request, body PrepareGarbageCollectionCommitsJSONRequestBody, repository string) {
+	if !c.authorize(w, r, []permissions.Permission{
+		{
+			Action:   permissions.PrepareGarbageCollectionCommitsAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "prepare_garbage_collection_commits")
+	runID, err := c.Catalog.PrepareExpiredCommits(ctx, repository, swag.StringValue(body.PreviousRunId))
+	if handleAPIError(w, err) {
+		return
+	}
+	writeResponse(w, http.StatusCreated, GarbageCollectionPrepareResponse{RunId: runID})
+}
+
 func (c *Controller) GetMetaRange(w http.ResponseWriter, r *http.Request, repository string, metaRange string) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{

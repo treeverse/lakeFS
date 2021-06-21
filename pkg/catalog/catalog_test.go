@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/graveler/testutil"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -168,7 +169,7 @@ func TestCatalog_BranchExists(t *testing.T) {
 		t.Run(tt.Branch, func(t *testing.T) {
 			// setup Catalog
 			gravelerMock := &FakeGraveler{
-				BranchIteratorFactory: NewFakeBranchIteratorFactory(gravelerData),
+				BranchIteratorFactory: testutil.NewFakeBranchIteratorFactory(gravelerData),
 			}
 			c := &Catalog{
 				Store: gravelerMock,
@@ -270,7 +271,7 @@ func TestCatalog_ListBranches(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// setup Catalog
 			gravelerMock := &FakeGraveler{
-				BranchIteratorFactory: NewFakeBranchIteratorFactory(gravelerData),
+				BranchIteratorFactory: testutil.NewFakeBranchIteratorFactory(gravelerData),
 			}
 			c := &Catalog{
 				Store: gravelerMock,
