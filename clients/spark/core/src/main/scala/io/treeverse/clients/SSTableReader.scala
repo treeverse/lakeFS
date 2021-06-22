@@ -1,10 +1,14 @@
 package io.treeverse.clients
 
 import com.google.protobuf.CodedInputStream
+import io.treeverse.lakefs.catalog.Entry
+import io.treeverse.lakefs.graveler.committed.RangeData
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.Path
 import org.rocksdb.{SstFileReader, _}
 import scalapb.{GeneratedMessage, GeneratedMessageCompanion}
 
-import java.io.{ByteArrayInputStream, Closeable, DataInputStream}
+import java.io.{ByteArrayInputStream, Closeable, DataInputStream, File}
 import scala.collection.JavaConverters._
 
 class Item[T](val key: Array[Byte], val id: Array[Byte], val message: T)
@@ -49,9 +53,33 @@ class SSTableIterator[Proto <: GeneratedMessage with scalapb.Message[Proto]](
     new Item(key, id, message)
   }
 }
-
-object SSTableReader {
+object SSTableReader
+{
   RocksDB.loadLibrary()
+  def forRange(configuration: Configuration, metaRangeURL: String) = {
+    val p = new Path(metaRangeURL)
+    val fs = p.getFileSystem(configuration)
+    val localFile = File.createTempFile("lakefs.", ".metarange")
+    localFile.deleteOnExit()
+    fs.copyToLocalFile(p, new Path(localFile.getAbsolutePath))
+    val rangesReader = new SSTableReader(
+      localFile.getAbsolutePath,
+      RangeData.messageCompanion
+    )
+    rangesReader
+  }
+  def forEntry(configuration: Configuration, rangeURL: String) = {
+    val p = new Path(rangeURL)
+    val fs = p.getFileSystem(configuration)
+    val localFile = File.createTempFile("lakefs.", ".range")
+    localFile.deleteOnExit()
+    fs.copyToLocalFile(p, new Path(localFile.getAbsolutePath))
+    val rangesReader = new SSTableReader(
+      localFile.getAbsolutePath,
+      Entry.messageCompanion
+    )
+    rangesReader
+  }
 }
 
 class SSTableReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
