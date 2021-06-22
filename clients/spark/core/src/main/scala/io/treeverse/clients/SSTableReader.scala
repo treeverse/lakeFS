@@ -55,29 +55,30 @@ class SSTableIterator[Proto <: GeneratedMessage with scalapb.Message[Proto]](
 }
 object SSTableReader {
   RocksDB.loadLibrary()
-  def forRange(configuration: Configuration, metaRangeURL: String) = {
-    val p = new Path(metaRangeURL)
+
+  private def copyToLocal(configuration: Configuration, url: String) = {
+    val p = new Path(url)
     val fs = p.getFileSystem(configuration)
-    val localFile = File.createTempFile("lakefs.", ".metarange")
+    val localFile = File.createTempFile("lakefs.", ".sstable")
     localFile.deleteOnExit()
     fs.copyToLocalFile(p, new Path(localFile.getAbsolutePath))
-    val rangesReader = new SSTableReader(
+    localFile
+  }
+
+  def forMetaRange(configuration: Configuration, metaRangeURL: String) = {
+    val localFile: File = copyToLocal(configuration, metaRangeURL)
+    new SSTableReader(
       localFile.getAbsolutePath,
       RangeData.messageCompanion
     )
-    rangesReader
   }
-  def forEntry(configuration: Configuration, rangeURL: String) = {
-    val p = new Path(rangeURL)
-    val fs = p.getFileSystem(configuration)
-    val localFile = File.createTempFile("lakefs.", ".range")
-    localFile.deleteOnExit()
-    fs.copyToLocalFile(p, new Path(localFile.getAbsolutePath))
-    val rangesReader = new SSTableReader(
+
+  def forRange(configuration: Configuration, rangeURL: String) = {
+    val localFile: File = copyToLocal(configuration, rangeURL)
+    new SSTableReader(
       localFile.getAbsolutePath,
       Entry.messageCompanion
     )
-    rangesReader
   }
 }
 

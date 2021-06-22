@@ -21,7 +21,7 @@ object GarbageCollector {
       .option("header", value = true)
       .option("inferSchema", value = true)
       .csv(commitDFLocation)
-      .where(col("runID") === runID)
+      .where(col("run_id") === runID)
   }
 
   private def getRangeTuples(
@@ -32,9 +32,11 @@ object GarbageCollector {
     val location =
       new ApiClient(conf.apiURL, conf.accessKey, conf.secretKey).getMetaRangeURL(repo, commitID)
     SSTableReader
-      .forRange(new Configuration(), location)
+      .forMetaRange(new Configuration(), location)
       .newIterator()
-      .map(a => (new String(a.id), a.message.minKey.toStringUtf8, a.message.maxKey.toStringUtf8))
+      .map(range =>
+        (new String(range.id), range.message.minKey.toStringUtf8, range.message.maxKey.toStringUtf8)
+      )
       .toSet
   }
 
@@ -48,27 +50,27 @@ object GarbageCollector {
     })
 
     commits.distinct
-      .select(col("expired"), explode(get_range_tuples(col("commitID"))).as("rangeData"))
+      .select(col("expired"), explode(get_range_tuples(col("commit_id"))).as("range_data"))
       .select(
         col("expired"),
-        col("rangeData._1").as("rangeID"),
-        col("rangeData._2").as("min_key"),
-        col("rangeData._3").as("max_key")
+        col("range_data._1").as("range_id"),
+        col("range_data._2").as("min_key"),
+        col("range_data._3").as("max_key")
       )
       .distinct
   }
 
-  def getRangeAddresses(rangeID: String, conf: APIConfigurations): Set[String] = {
+  def getRangeAddresses(rangeID: String, conf: APIConfigurations, repo: String): Set[String] = {
     val location =
-      new ApiClient(conf.apiURL, conf.accessKey, conf.secretKey).getRangeURL("test", rangeID)
+      new ApiClient(conf.apiURL, conf.accessKey, conf.secretKey).getRangeURL(repo, rangeID)
     SSTableReader
-      .forEntry(new Configuration(), location)
+      .forRange(new Configuration(), location)
       .newIterator()
       .map(a => new String(a.key))
       .toSet
   }
 
-  def getAddressTuples(
+  def getEntryTuples(
       rangeID: String,
       conf: APIConfigurations
   ): Set[(String, String, Boolean, Long)] = {
@@ -79,7 +81,7 @@ object GarbageCollector {
     val location =
       new ApiClient(conf.apiURL, conf.accessKey, conf.secretKey).getRangeURL("test", rangeID)
     SSTableReader
-      .forEntry(new Configuration(), location)
+      .forRange(new Configuration(), location)
       .newIterator()
       .map(a =>
         (
@@ -97,15 +99,16 @@ object GarbageCollector {
   ): Set[(String, String, Boolean, Long)] = {
     if (rangeIDs.isEmpty) Set()
     else
-      getAddressTuples(rangeIDs.head, conf).union(getAddressesTuples(rangeIDs.tail, conf))
+      getEntryTuples(rangeIDs.head, conf).union(getAddressesTuples(rangeIDs.tail, conf))
   }
 
   def subtractAddressesInRange(
       addresses: Set[(String, String, Boolean, Long)],
       rangeID: String,
-      conf: APIConfigurations
+      conf: APIConfigurations,
+      repo: String
   ): Set[(String, String, Boolean, Long)] = {
-    val activeAddresses = getRangeAddresses(rangeID, conf)
+    val activeAddresses = getRangeAddresses(rangeID, conf, repo)
     addresses.filterNot(x => activeAddresses.contains(x._1))
   }
 
@@ -117,7 +120,8 @@ object GarbageCollector {
   def leftAntiJoinAddresses(
       leftRangeIDs: Set[String],
       rightRangeIDs: Set[String],
-      conf: APIConfigurations
+      conf: APIConfigurations,
+      repo: String
   ): Set[(String, String, Boolean, Long)] = {
     @tailrec
     def subtractAddressesInRanges(
@@ -127,7 +131,7 @@ object GarbageCollector {
       if (rangeIDs.isEmpty) addresses
       else
         subtractAddressesInRanges(
-          subtractAddressesInRange(addresses, rangeIDs.head, conf),
+          subtractAddressesInRange(addresses, rangeIDs.head, conf, repo),
           rangeIDs.tail
         )
     }
@@ -138,9 +142,13 @@ object GarbageCollector {
    *  @param ranges dataframe of type   rangeID:String | expired: Boolean
    *  @return dataframe of type  key:String | address:String | relative:Boolean | last_modified:Long
    */
-  def getAddressesDFFromRanges(ranges: Dataset[Row], conf: APIConfigurations): Dataset[Row] = {
+  def getAddressesDFFromRanges(
+      ranges: Dataset[Row],
+      conf: APIConfigurations,
+      repo: String
+  ): Dataset[Row] = {
     val left_anti_join_addresses = udf((x: Seq[String], y: Seq[String]) => {
-      leftAntiJoinAddresses(x.toSet, y.toSet, conf).toSeq
+      leftAntiJoinAddresses(x.toSet, y.toSet, conf, repo).toSeq
     })
     val expiredRangesDF = ranges.where("expired")
     val activeRangesDF = ranges.where("!expired")
@@ -148,11 +156,11 @@ object GarbageCollector {
     // ranges existing in expired and not in active
     val uniqueExpiredRangesDF = expiredRangesDF.join(
       activeRangesDF,
-      expiredRangesDF("rangeID") === activeRangesDF("rangeID"),
+      expiredRangesDF("range_id") === activeRangesDF("range_id"),
       "leftanti"
     )
 
-    // for every expired range - get all active ranges with Intersecting range
+    // for every expired range - get all intersecting active ranges
     //  expired_range | active_ranges  | min-max (of expired_range)
     val joinActiveByRange = uniqueExpiredRangesDF
       .as("u")
@@ -168,6 +176,9 @@ object GarbageCollector {
         functions.concat(col("u.min_key"), col("u.max_key")).as("min-max")
       )
 
+    // group unique_ranges and active_ranges by min-max
+    // unique_ranges: Set[String] | active_ranges: Set[String] | min-max
+    // for each row, unique_ranges contains ranges with exact min-max, active_ranges contain ranges intersecting with min-max
     val groupByMinMax = joinActiveByRange
       .groupBy("min-max")
       .agg(
@@ -201,14 +212,14 @@ object GarbageCollector {
   ): Dataset[Row] = {
     val commitsDF = getCommitsDF(runID, commitDFLocation, spark)
     val rangesDF = getRangesDFFromCommits(commitsDF, repo, conf)
-    getAddressesDFFromRanges(rangesDF, conf)
+    getAddressesDFFromRanges(rangesDF, conf, repo)
   }
 
   def main(args: Array[String]) {
     val spark = SparkSession.builder().getOrCreate()
     if (args.length != 4) {
       Console.err.println(
-        "Usage: ... <repo_name> <runID> s3://storageNamespace/addressesDFLocation s3://storageNamespace/addressesDFLocation s3://path/to/output/du"
+        "Usage: ... <repo_name> <runID> s3://storageNamespace/prepared_commits_table s3://storageNamespace/output_destination_table"
       )
       System.exit(1)
     }
@@ -227,7 +238,7 @@ object GarbageCollector {
                                                commitDFLocation,
                                                spark,
                                                APIConfigurations(apiURL, accessKey, secretKey)
-                                              ).withColumn("runID", lit(runID))
-    expiredAddresses.write.partitionBy("runID").mode(SaveMode.Append).parquet(addressesDFLocation)
+                                              ).withColumn("run_id", lit(runID))
+    expiredAddresses.write.partitionBy("run_id").mode(SaveMode.Append).parquet(addressesDFLocation)
   }
 }
