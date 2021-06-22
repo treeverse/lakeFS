@@ -113,10 +113,6 @@ const RunTable = ({ repo, runs, nextPage, after, onPaginate, onFilterBranch, onF
 }
 
 const GetStarted = ({onCreateRepo}) => {
-            //<Row className="pt-2 ml-2">
-                //<DotIcon className="mr-1 mt-1"/>
-                //<Button variant="link" onClick={onCreateRepo}>Create</Button>&nbsp;a new repository.
-            //</Row>
     return (
         <Container className="m-4 mb-5">
             <h2 className="mt-2">No Actions log, to define a new Action:</h2>
