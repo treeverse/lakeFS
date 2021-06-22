@@ -106,7 +106,8 @@ class LakeFSInputFormat extends InputFormat[Array[Byte], WithIdentifier[Entry]] 
       conf.get(LAKEFS_CONF_API_SECRET_KEY_KEY)
     )
     val metaRangeURL = apiClient.getMetaRangeURL(repoName, commitID)
-    val rangesReader: SSTableReader[RangeData] = SSTableReader.forRange(job.getConfiguration, metaRangeURL)
+    val rangesReader: SSTableReader[RangeData] =
+      SSTableReader.forRange(job.getConfiguration, metaRangeURL)
     val ranges = read(rangesReader)
     ranges.map(r =>
       new GravelerSplit(

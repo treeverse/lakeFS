@@ -1,7 +1,11 @@
 package io.treeverse.clients
 
 import com.google.protobuf.timestamp.Timestamp
-import io.treeverse.clients.LakeFSContext.{LAKEFS_CONF_API_ACCESS_KEY_KEY, LAKEFS_CONF_API_SECRET_KEY_KEY, LAKEFS_CONF_API_URL_KEY}
+import io.treeverse.clients.LakeFSContext.{
+  LAKEFS_CONF_API_ACCESS_KEY_KEY,
+  LAKEFS_CONF_API_SECRET_KEY_KEY,
+  LAKEFS_CONF_API_URL_KEY
+}
 import org.apache.hadoop.conf.Configuration
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{SparkSession, _}
@@ -105,13 +109,11 @@ object GarbageCollector {
     addresses.filterNot(x => activeAddresses.contains(x._1))
   }
 
-  /**
-    *
-    * @param leftRangeIDs
-    * @param rightRangeIDs
-    * @param conf
-    * @return tuples of type (key, address, isRelative, lastModified) for every address existing in leftRanges and not in rightRanges
-    */
+  /** @param leftRangeIDs
+   *  @param rightRangeIDs
+   *  @param conf
+   *  @return tuples of type (key, address, isRelative, lastModified) for every address existing in leftRanges and not in rightRanges
+   */
   def leftAntiJoinAddresses(
       leftRangeIDs: Set[String],
       rightRangeIDs: Set[String],
@@ -138,9 +140,7 @@ object GarbageCollector {
    */
   def getAddressesDFFromRanges(ranges: Dataset[Row], conf: APIConfigurations): Dataset[Row] = {
     val left_anti_join_addresses = udf((x: Seq[String], y: Seq[String]) => {
-      leftAntiJoinAddresses(x.toSet, y.toSet,
-                            conf
-                           ).toSeq
+      leftAntiJoinAddresses(x.toSet, y.toSet, conf).toSeq
     })
     val expiredRangesDF = ranges.where("expired")
     val activeRangesDF = ranges.where("!expired")

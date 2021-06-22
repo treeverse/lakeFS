@@ -53,8 +53,7 @@ class SSTableIterator[Proto <: GeneratedMessage with scalapb.Message[Proto]](
     new Item(key, id, message)
   }
 }
-object SSTableReader
-{
+object SSTableReader {
   RocksDB.loadLibrary()
   def forRange(configuration: Configuration, metaRangeURL: String) = {
     val p = new Path(metaRangeURL)
