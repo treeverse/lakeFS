@@ -67,4 +67,4 @@ plugins:
   - jekyll-redirect-from
   - jekyll-seo-tag
 
-exclude: ["deploy/includes"]
+exclude: ["deploy/includes", "vendor"]
