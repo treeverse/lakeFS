@@ -230,6 +230,10 @@ publish-scala: ## sbt publish spark client jars to nexus and s3 bucket
 	cd clients/spark && sbt assembly && sbt s3Upload && sbt publish
 	aws s3 cp --recursive --acl public-read $(CLIENT_JARS_BUCKET) $(CLIENT_JARS_BUCKET) --metadata-directive REPLACE
 
+publish-lakefsfs-test: ## sbt publish spark lakefsfs test jars to s3 bucket
+	cd test/lakefsfs && sbt assembly && sbt s3Upload
+	aws s3 cp --recursive --acl public-read $(CLIENT_JARS_BUCKET) $(CLIENT_JARS_BUCKET) --metadata-directive REPLACE
+
 help:  ## Show Help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
