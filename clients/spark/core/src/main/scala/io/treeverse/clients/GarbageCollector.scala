@@ -10,8 +10,6 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{SparkSession, _}
 
-import scala.annotation.tailrec
-
 object GarbageCollector {
 
   case class APIConfigurations(apiURL: String, accessKey: String, secretKey: String)
@@ -72,14 +70,15 @@ object GarbageCollector {
 
   def getEntryTuples(
       rangeID: String,
-      conf: APIConfigurations
+      conf: APIConfigurations,
+      repo: String
   ): Set[(String, String, Boolean, Long)] = {
     def getSeconds(ts: Option[Timestamp]): Long = {
       ts.getOrElse(0).asInstanceOf[Timestamp].seconds
     }
 
     val location =
-      new ApiClient(conf.apiURL, conf.accessKey, conf.secretKey).getRangeURL("test", rangeID)
+      new ApiClient(conf.apiURL, conf.accessKey, conf.secretKey).getRangeURL(repo, rangeID)
     SSTableReader
       .forRange(new Configuration(), location)
       .newIterator()
@@ -93,24 +92,6 @@ object GarbageCollector {
       )
       .toSet
   }
-  def getAddressesTuples(
-      rangeIDs: Set[String],
-      conf: APIConfigurations
-  ): Set[(String, String, Boolean, Long)] = {
-    if (rangeIDs.isEmpty) Set()
-    else
-      getEntryTuples(rangeIDs.head, conf).union(getAddressesTuples(rangeIDs.tail, conf))
-  }
-
-  def subtractAddressesInRange(
-      addresses: Set[(String, String, Boolean, Long)],
-      rangeID: String,
-      conf: APIConfigurations,
-      repo: String
-  ): Set[(String, String, Boolean, Long)] = {
-    val activeAddresses = getRangeAddresses(rangeID, conf, repo)
-    addresses.filterNot(x => activeAddresses.contains(x._1))
-  }
 
   /** @param leftRangeIDs
    *  @param rightRangeIDs
@@ -123,26 +104,24 @@ object GarbageCollector {
       conf: APIConfigurations,
       repo: String
   ): Set[(String, String, Boolean, Long)] = {
-    @tailrec
-    def subtractAddressesInRanges(
-        addresses: Set[(String, String, Boolean, Long)],
-        rangeIDs: Set[String]
-    ): Set[(String, String, Boolean, Long)] = {
-      if (rangeIDs.isEmpty) addresses
-      else
-        subtractAddressesInRanges(
-          subtractAddressesInRange(addresses, rangeIDs.head, conf, repo),
-          rangeIDs.tail
-        )
-    }
-    subtractAddressesInRanges(getAddressesTuples(leftRangeIDs, conf), rightRangeIDs)
+    distinctEntryTuples(leftRangeIDs, conf, repo)
+
+    val leftTuples = distinctEntryTuples(leftRangeIDs, conf, repo)
+    val rightTuples = distinctEntryTuples(rightRangeIDs, conf, repo)
+    leftTuples -- rightTuples
   }
 
-  /** receives a dataframe containing active and expired ranges and returns addresses contained only in expired ranges
+  private def distinctEntryTuples(rangeIDs: Set[String], conf: APIConfigurations, repo: String) = {
+    val tuples = rangeIDs.map((rangeID: String) => getEntryTuples(rangeID, conf, repo))
+    if (tuples.isEmpty) Set[(String, String, Boolean, Long)]() else tuples.reduce(_.union(_))
+  }
+
+  /** receives a dataframe containing active and expired ranges and returns entries contained only in expired ranges
+   *
    *  @param ranges dataframe of type   rangeID:String | expired: Boolean
    *  @return dataframe of type  key:String | address:String | relative:Boolean | last_modified:Long
    */
-  def getAddressesDFFromRanges(
+  def getExpiredEntriesFromRanges(
       ranges: Dataset[Row],
       conf: APIConfigurations,
       repo: String
@@ -160,20 +139,27 @@ object GarbageCollector {
       "leftanti"
     )
 
+    //  intersecting options are __(____[_____)______]__   __(____[____]___)__   ___[___(__)___]___   ___[__(___]___)__
+    //  intersecting ranges  maintain  ( <= ] && [ <= )
+    val intersecting = udf((aMin: String, aMax: String, bMin: String, bMax: String) => {
+      aMin <= bMax && bMin <= aMax
+    })
+
+    val minMax = udf((min: String, max: String) => (min, max))
+
     // for every expired range - get all intersecting active ranges
     //  expired_range | active_ranges  | min-max (of expired_range)
     val joinActiveByRange = uniqueExpiredRangesDF
       .as("u")
       .join(
         activeRangesDF.as("a"),
-        (col("a.max_key") <= col("u.max_key")) && (col("a.max_key") >= col("u.min_key")) ||
-          ((col("a.min_key") <= col("u.max_key")) && (col("a.min_Key") >= col("u.min_key"))),
+        intersecting(col("a.min_key"), col("a.max_key"), col("u.min_key"), col("u.max_key")),
         "left"
       )
       .select(
-        col("u.rangeID").as("unique_range"),
-        col("a.rangeID").as("active_range"),
-        functions.concat(col("u.min_key"), col("u.max_key")).as("min-max")
+        col("u.range_id").as("unique_range"),
+        col("a.range_id").as("active_range"),
+        minMax(col("u.min_key"), col("u.max_key")).as("min-max")
       )
 
     // group unique_ranges and active_ranges by min-max
@@ -212,7 +198,7 @@ object GarbageCollector {
   ): Dataset[Row] = {
     val commitsDF = getCommitsDF(runID, commitDFLocation, spark)
     val rangesDF = getRangesDFFromCommits(commitsDF, repo, conf)
-    getAddressesDFFromRanges(rangesDF, conf, repo)
+    getExpiredEntriesFromRanges(rangesDF, conf, repo)
   }
 
   def main(args: Array[String]) {
