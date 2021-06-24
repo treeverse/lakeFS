@@ -36,35 +36,35 @@ For `lakectl` to work with Kubeflow, you will need to pass your lakeFS configura
 {: .no_toc }
 1. Create new branch: A ContainerOp that creates a branch called `example-branch` based on the `main` branch of `example-repo`.  
 
-    ```python
-     import kfp
-     from kfp import dsl
-     from kubernetes.client.models import V1EnvVar
-     
-     def create_branch_op():
-        return dsl.ContainerOp(
-        name='create_branch',
-        image='treeverse/lakectl',
-        arguments=['branch', 'create', 'lakefs://example-repo/example-branch', '-s', 'lakefs://example-repo/main']).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_ACCESS_KEY_ID',value='AKIAIOSFODNN7EXAMPLE')).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY',value='wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY')).add_env_variable(V1EnvVar(name='LAKECTL_SERVER_ENDPOINT_URL',value='https://lakefs.example.com'))
-     ```
+   ```python
+   import kfp
+   from kfp import dsl
+   from kubernetes.client.models import V1EnvVar
+   
+   def create_branch_op():
+     return dsl.ContainerOp(
+     name='create_branch',
+     image='treeverse/lakectl',
+     arguments=['branch', 'create', 'lakefs://example-repo/example-branch', '-s', 'lakefs://example-repo/main']).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_ACCESS_KEY_ID',value='AKIAIOSFODNN7EXAMPLE')).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY',value='wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY')).add_env_variable(V1EnvVar(name='LAKECTL_SERVER_ENDPOINT_URL',value='https://lakefs.example.com'))
+   ```
 2. Commit changes to a branch: A ContainerOp that commits uncommitted changes to `example-branch` on `example-repo`.
 
-     ```python
-     def commit_op():
-         return dsl.ContainerOp(
-         name='commit',
-         image='treeverse/lakectl',
-         arguments=['commit', 'lakefs://example-repo/example-branch', '-m', 'commit message']).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_ACCESS_KEY_ID',value='AKIAIOSFODNN7EXAMPLE')).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY',value='wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY')).add_env_variable(V1EnvVar(name='LAKECTL_SERVER_ENDPOINT_URL',value='https://lakefs.example.com'))
-     ```
+   ```python
+   def commit_op():
+      return dsl.ContainerOp(
+      name='commit',
+      image='treeverse/lakectl',
+      arguments=['commit', 'lakefs://example-repo/example-branch', '-m', 'commit message']).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_ACCESS_KEY_ID',value='AKIAIOSFODNN7EXAMPLE')).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY',value='wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY')).add_env_variable(V1EnvVar(name='LAKECTL_SERVER_ENDPOINT_URL',value='https://lakefs.example.com'))
+   ```
 3. Merge two lakeFS branches: A ContainerOp that merges `example-branch` into the `main` branch of `example-repo`.
     
-    ```python
-     def merge_op():
-         return dsl.ContainerOp(
-         name='merge',
-         image='treeverse/lakectl',
-         arguments=['merge', 'lakefs://example-repo/example-branch', 'lakefs://example-repo/main']).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_ACCESS_KEY_ID',value='AKIAIOSFODNN7EXAMPLE')).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY',value='wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY')).add_env_variable(V1EnvVar(name='LAKECTL_SERVER_ENDPOINT_URL',value='https://lakefs.example.com'))
-     ```
+   ```python
+   def merge_op():
+     return dsl.ContainerOp(
+     name='merge',
+     image='treeverse/lakectl',
+     arguments=['merge', 'lakefs://example-repo/example-branch', 'lakefs://example-repo/main']).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_ACCESS_KEY_ID',value='AKIAIOSFODNN7EXAMPLE')).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY',value='wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY')).add_env_variable(V1EnvVar(name='LAKECTL_SERVER_ENDPOINT_URL',value='https://lakefs.example.com'))
+   ```
 
 You can invoke any lakeFS operation supported by `lakectl` by implementing it as a ContainerOp. Check out the complete [CLI reference](https://docs.lakefs.io/reference/commands.html) for the list of supported operations. \ 
 *Note:*  Some `lakectl` operations may require mounting data sources into the pod running their corresponding ContainerOps. For example, the `lakectl fs` operations.   
@@ -86,6 +86,6 @@ def lakectl_pipeline():
    load_task = example_load_op()
 ```
 
-**Note**  \
+**Note**  \ 
 The lakeFS Kubeflow integration is supported on lakeFS version >= v0.43.0.
 {: .note }
