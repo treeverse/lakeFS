@@ -71,7 +71,6 @@ For `lakectl` to work with Kubeflow, you will need to pass your lakeFS configura
    ```
 
 You can invoke any lakeFS operation supported by `lakectl` by implementing it as a ContainerOp. Check out the complete [CLI reference](https://docs.lakefs.io/reference/commands.html) for the list of supported operations. \ 
-*Note:*  Some `lakectl` operations may require mounting data sources into the pod running their corresponding ContainerOps. For example, the `lakectl fs` operations.   
 
 ## Add the lakeFS steps to your pipeline
 
