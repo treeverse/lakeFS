@@ -27,7 +27,7 @@ To build lakeFS-specific pipeline steps, Kubeflow should be able to pull the `tr
 As mentioned above, a pipeline component is represented as a ContainerOp. To integrate lakeFS onto your Kubeflow pipeline, we will need to create components that perform lakeFS operations.
 To do that, we will implement ContainerOps, that use the `treeverse/lakectl` as their image, and run `lakectl` commands to execute the desired lakeFS-specific operation.   
 
-For `lakectl` to work with Kubeflow, you will need to provide your `lakectl` configurations as environment variables named:
+For `lakectl` to work with Kubeflow, you will need to pass your lakeFS configurations as environment variables named:
 * `LAKECTL_CREDENTIALS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE`
 * `LAKECTL_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY`
 * `LAKECTL_SERVER_ENDPOINT_URL: https://lakefs.example.com`
