@@ -7,31 +7,29 @@ nav_order: 56
 has_children: false
 
 ---
-
-
+# Using lakeFS with Kubeflow pipelines
+{: .no_toc }
 [Kubeflow](https://www.kubeflow.org/docs/about/kubeflow/) is a project dedicated to making deployments of ML workflows on Kubernetes simple, portable and scalable.
-
+A Kubeflow pipeline is a portable and scalable definition of an ML workflow composed of steps. Each step in the pipeline is an instance of a component represented as an instance of [ContainerOp](https://kubeflow-pipelines.readthedocs.io/en/latest/source/kfp.dsl.html#kfp.dsl.ContainerOp).
+  
 ## Table of contents
-{: .no_toc .text-delta }
+{: .no_toc .text-delta } 
 
 1. TOC 
-{:toc}
+{:toc}  
 
-## Using lakeFS with Kubeflow pipelines
-{: .no_toc }
-A Kubeflow pipeline is a portable and scalable definition of an ML workflow composed of steps. Each step in the pipeline is an instance of a component represented as an instance of [ContainerOp](https://kubeflow-pipelines.readthedocs.io/en/latest/source/kfp.dsl.html#kfp.dsl.ContainerOp).
+## Prerequisites 
+### Make lakectl docker image accessible by Kubeflow
+lakeFS comes with its own [native CLI client](https://docs.lakefs.io/quickstart/lakefs_cli.html), which is also available as a [docker image](https://hub.docker.com/r/treeverse/lakectl). 
+To build lakeFS-specific pipeline steps, Kubeflow should be able to pull the `treeverse/lakectl` docker image either from docker hub, or from your private registry. 
 
 ## Add lakeFS-specific pipeline steps
-lakeFS comes with its own native CLI client. We will use it to build lakeFS-specific Kubeflow pipeline steps.
-To install and configure the lakeFS CLI client follow [this](https://docs.lakefs.io/quickstart/lakefs_cli.html) guide.
-
-As mentioned above, a pipeline component is represented as a ContainerOp. The pipeline components that invoke lakeFS operations use `lakectl`
-Once you have `lakectl` installed, you can add pipeline components that invoke lakeFS operations.
-
+As mentioned above, a pipeline component is represented as a ContainerOp. To integrate lakeFS onto your Kubeflow pipeline, we will need to create components that perform lakeFS operations.
+To do that, we will implement ContainerOps, that use the `treeverse/lakectl` as their image, and run `lakectl` commands to execute the desired lakeFS-specific operation.   
 
 For `lakectl` to work with Kubeflow, you will need to provide your `lakectl` configurations as environment variables named:
 * `LAKECTL_CREDENTIALS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE`
-* `LAKECTL_SECRET_ACCESS_KEY:  wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY`
+* `LAKECTL_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY`
 * `LAKECTL_SERVER_ENDPOINT_URL: https://lakefs.example.com`
 
 ### Example operations
@@ -68,7 +66,8 @@ For `lakectl` to work with Kubeflow, you will need to provide your `lakectl` con
            arguments=['merge', 'lakefs://repo/example-branch', 'lakefs://example-repo/main']).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_ACCESS_KEY_ID',value='AKIAIOSFODNN7EXAMPLE')).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY',value='wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY')).add_env_variable(V1EnvVar(name='LAKECTL_SERVER_ENDPOINT_URL',value='https://lakefs.example.com'))
     ```
 
-You can invoke any lakeFS operation supported by `lakectl` by implementing it as a ContainerOp. Check out the complete [CLI reference](https://docs.lakefs.io/reference/commands.html) for the list of supported operations.  
+You can invoke any lakeFS operation supported by `lakectl` by implementing it as a ContainerOp. Check out the complete [CLI reference](https://docs.lakefs.io/reference/commands.html) for the list of supported operations. \ 
+*Note:*  Some `lakectl` operations may require mounting data sources into the pod running their corresponding ContainerOps. For example, the `lakectl fs` operations.   
 
 ## Add the lakeFS steps to your pipeline
 Add the steps created on the previous step to your pipeline before compiling it. 
@@ -92,7 +91,7 @@ We are working to make the lakeFS [python client](https://docs.lakefs.io/integra
 
 
 
-**Notes**  \  
+**Notes**  \
 lakeFS version <= v0.33.1 uses '@' (instead of '/') as separator between repository and branch.  \
 The lakeFS Kubeflow integration is supported on lakeFS version >= v0.43.0.
 {: .note}
