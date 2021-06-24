@@ -20,7 +20,7 @@ A Kubeflow pipeline is a portable and scalable definition of an ML workflow comp
 
 ## Prerequisites 
 ### Make lakectl docker image accessible by Kubeflow
-lakeFS comes with its own [native CLI client](https://docs.lakefs.io/quickstart/lakefs_cli.html), which is also available as a [docker image](https://hub.docker.com/r/treeverse/lakectl). 
+lakeFS comes with its own [native CLI client](../quickstart/lakefs_cli.md), which is also available as a [docker image](https://hub.docker.com/r/treeverse/lakectl). 
 To build lakeFS-specific pipeline steps, Kubeflow should be able to pull the `treeverse/lakectl` docker image either from docker hub, or from your private registry. 
 
 ## Add lakeFS-specific pipeline steps
@@ -34,37 +34,37 @@ For `lakectl` to work with Kubeflow, you will need to provide your `lakectl` con
 
 ### Example operations
 {: .no_toc }
-1. Create new branch 
-    
-   ```python
-    import kfp
-    from kfp import dsl
-    from kubernetes.client.models import V1EnvVar
-    
-    def create_branch_op():
-       return dsl.ContainerOp(
-          name='create_branch',
-          image='treeverse/lakectl',
-          arguments=['branch', 'create', 'lakefs://example-repo/example-branch', '-s', 'lakefs://example-repo/main']).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_ACCESS_KEY_ID',value='AKIAIOSFODNN7EXAMPLE')).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY',value='wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY')).add_env_variable(V1EnvVar(name='LAKECTL_SERVER_ENDPOINT_URL',value='https://lakefs.example.com'))
-    ```
-2. Commit changes to a branch
+1. Create new branch: A ContainerOp that creates a branch called `example-branch` based on the `main` branch of `example-repo`.  
+
+    ```python
+     import kfp
+     from kfp import dsl
+     from kubernetes.client.models import V1EnvVar
+     
+     def create_branch_op():
+        return dsl.ContainerOp(
+        name='create_branch',
+        image='treeverse/lakectl',
+        arguments=['branch', 'create', 'lakefs://example-repo/example-branch', '-s', 'lakefs://example-repo/main']).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_ACCESS_KEY_ID',value='AKIAIOSFODNN7EXAMPLE')).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY',value='wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY')).add_env_variable(V1EnvVar(name='LAKECTL_SERVER_ENDPOINT_URL',value='https://lakefs.example.com'))
+     ```
+2. Commit changes to a branch: A ContainerOp that commits uncommitted changes to `example-branch` on `example-repo`.
+
+     ```python
+     def commit_op():
+         return dsl.ContainerOp(
+         name='commit',
+         image='treeverse/lakectl',
+         arguments=['commit', 'lakefs://example-repo/example-branch', '-m', 'commit message']).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_ACCESS_KEY_ID',value='AKIAIOSFODNN7EXAMPLE')).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY',value='wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY')).add_env_variable(V1EnvVar(name='LAKECTL_SERVER_ENDPOINT_URL',value='https://lakefs.example.com'))
+     ```
+3. Merge two lakeFS branches: A ContainerOp that merges `example-branch` into the `main` branch of `example-repo`.
     
     ```python
-    def commit_op():
-        return dsl.ContainerOp(
-           name='commit',
-           image='treeverse/lakectl',
-           arguments=['commit', 'lakefs://repo/example-repo', '-m', 'commit message']).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_ACCESS_KEY_ID',value='AKIAIOSFODNN7EXAMPLE')).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY',value='wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY')).add_env_variable(V1EnvVar(name='LAKECTL_SERVER_ENDPOINT_URL',value='https://lakefs.example.com'))
-    ```
-3. Merge two lakeFS branches
-    
-   ```python
-    def merge_op():
-        return dsl.ContainerOp(
-           name='merge',
-           image='treeverse/lakectl',
-           arguments=['merge', 'lakefs://repo/example-branch', 'lakefs://example-repo/main']).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_ACCESS_KEY_ID',value='AKIAIOSFODNN7EXAMPLE')).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY',value='wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY')).add_env_variable(V1EnvVar(name='LAKECTL_SERVER_ENDPOINT_URL',value='https://lakefs.example.com'))
-    ```
+     def merge_op():
+         return dsl.ContainerOp(
+         name='merge',
+         image='treeverse/lakectl',
+         arguments=['merge', 'lakefs://example-repo/example-branch', 'lakefs://example-repo/main']).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_ACCESS_KEY_ID',value='AKIAIOSFODNN7EXAMPLE')).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY',value='wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY')).add_env_variable(V1EnvVar(name='LAKECTL_SERVER_ENDPOINT_URL',value='https://lakefs.example.com'))
+     ```
 
 You can invoke any lakeFS operation supported by `lakectl` by implementing it as a ContainerOp. Check out the complete [CLI reference](https://docs.lakefs.io/reference/commands.html) for the list of supported operations. \ 
 *Note:*  Some `lakectl` operations may require mounting data sources into the pod running their corresponding ContainerOps. For example, the `lakectl fs` operations.   
@@ -75,23 +75,17 @@ Add the steps created on the previous step to your pipeline before compiling it.
 ### Example pipeline
 {: .no_toc }
 A pipeline that implements a simple ETL, that has steps for branch creation and commits.    
-   ```python
-    def lakectl_pipeline():
-       create_branch_task = create_branch_op()
-       extract_task = example_extract_op() 
-       commit_task = commit_op() 
-       transform_task = example_transform_op()
-       commit_task = commit_op()
-       load_task = example_load_op()
-   ```
 
-## What's next?
-{: .no_toc }
-We are working to make the lakeFS [python client](https://docs.lakefs.io/integrations/python.html) work with Kubeflow.
+```python
+def lakectl_pipeline():
+   create_branch_task = create_branch_op()
+   extract_task = example_extract_op() 
+   commit_task = commit_op() 
+   transform_task = example_transform_op()
+   commit_task = commit_op()
+   load_task = example_load_op()
+```
 
-
-
-**Notes**  \
-lakeFS version <= v0.33.1 uses '@' (instead of '/') as separator between repository and branch.  \
+**Note**  \
 The lakeFS Kubeflow integration is supported on lakeFS version >= v0.43.0.
-{: .note}
+{: .note }
