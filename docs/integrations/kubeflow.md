@@ -19,11 +19,14 @@ A Kubeflow pipeline is a portable and scalable definition of an ML workflow comp
 {:toc}  
 
 ## Prerequisites 
+
 ### Make lakectl docker image accessible by Kubeflow
+
 lakeFS comes with its own [native CLI client](../quickstart/lakefs_cli.md), which is also available as a [docker image](https://hub.docker.com/r/treeverse/lakectl). 
 To build lakeFS-specific pipeline steps, Kubeflow should be able to pull the `treeverse/lakectl` docker image either from docker hub, or from your private registry. 
 
 ## Add lakeFS-specific pipeline steps
+
 As mentioned above, a pipeline component is represented as a ContainerOp. To integrate lakeFS onto your Kubeflow pipeline, we will need to create components that perform lakeFS operations.
 To do that, we will implement ContainerOps, that use the `treeverse/lakectl` as their image, and run `lakectl` commands to execute the desired lakeFS-specific operation.   
 
@@ -33,6 +36,7 @@ For `lakectl` to work with Kubeflow, you will need to pass your lakeFS configura
 * `LAKECTL_SERVER_ENDPOINT_URL: https://lakefs.example.com`
 
 ### Example operations
+
 {: .no_toc }
 1. Create new branch: A ContainerOp that creates a branch called `example-branch` based on the `main` branch of `example-repo`.  
 
@@ -70,9 +74,11 @@ You can invoke any lakeFS operation supported by `lakectl` by implementing it as
 *Note:*  Some `lakectl` operations may require mounting data sources into the pod running their corresponding ContainerOps. For example, the `lakectl fs` operations.   
 
 ## Add the lakeFS steps to your pipeline
+
 Add the steps created on the previous step to your pipeline before compiling it. 
 
 ### Example pipeline
+
 {: .no_toc }
 A pipeline that implements a simple ETL, that has steps for branch creation and commits.    
 
@@ -86,6 +92,7 @@ def lakectl_pipeline():
    load_task = example_load_op()
 ```
 
-**Note**  \ 
+
+**Note**
 The lakeFS Kubeflow integration is supported on lakeFS version >= v0.43.0.
 {: .note }
