@@ -86,7 +86,7 @@ Alternatively, you can download the lakeFS binaries and run them directly.
 Binaries are available at [https://github.com/treeverse/lakeFS/releases](https://github.com/treeverse/lakeFS/releases).
 
 
-#### Setting up a repository
+##### Setting up a repository
 
 Please follow the [Guide to Get Started](https://docs.lakefs.io/quickstart/repository) to set up your local lakeFS installation.
 
