@@ -118,8 +118,11 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Cont
 		repositoryID: repositoryID,
 	}
 	branchIterator := ref.NewBranchIterator(ctx, m.db, repositoryID, 1000, ref.WithOrderBy("commit_id"))
-	commitIterator := ref.NewOrderedCommitIterator(ctx, m.db, repositoryID, 1000, ref.WithAdditionalCondition("NOT EXISTS (SELECT * FROM graveler_commits c2 WHERE c2.repository_id=graveler_commits.repository_id AND c2.parents[1]=graveler_commits.id"))
-	gcCommits, err := GetGarbageCollectionCommits(ctx, NewGCStartingPointIterator(commitIterator, branchIterator), commitGetter, rules, previouslyExpiredCommits)
+	// get all commits that are not the first parent of any commit:
+	mainAncestryLeaves := "NOT EXISTS (SELECT * FROM graveler_commits c2 WHERE c2.repository_id=graveler_commits.repository_id AND c2.parents[1]=graveler_commits.id"
+	commitIterator := ref.NewOrderedCommitIterator(ctx, m.db, repositoryID, 1000, ref.WithAdditionalCondition(mainAncestryLeaves))
+	startingPointIterator := NewGCStartingPointIterator(commitIterator, branchIterator)
+	gcCommits, err := GetGarbageCollectionCommits(ctx, startingPointIterator, commitGetter, rules, previouslyExpiredCommits)
 	if err != nil {
 		return "", fmt.Errorf("find expired commits: %w", err)
 	}

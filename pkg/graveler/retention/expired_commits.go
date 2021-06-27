@@ -12,83 +12,15 @@ type GarbageCollectionCommits struct {
 	active  []graveler.CommitID
 }
 
-type GCStartingPoint struct {
-	BranchID graveler.BranchID
-	CommitID graveler.CommitID
-}
-
-type GCStartingPointIterator struct {
-	commitIterator graveler.CommitIterator
-	branchIterator graveler.BranchIterator
-
-	commitValue *graveler.CommitRecord
-	branchValue *graveler.BranchRecord
-	value       *GCStartingPoint
-}
-
-func NewGCStartingPointIterator(commitIterator graveler.CommitIterator, branchIterator graveler.BranchIterator) *GCStartingPointIterator {
-	return &GCStartingPointIterator{commitIterator: commitIterator, branchIterator: branchIterator}
-}
-
-func (sp *GCStartingPointIterator) Next() bool {
-	prepareBranchValue := func() bool {
-		sp.value = &GCStartingPoint{
-			BranchID: sp.branchValue.BranchID,
-			CommitID: sp.branchValue.CommitID,
-		}
-		sp.branchValue = nil
-		return true
-	}
-	prepareCommitValue := func() bool {
-		sp.value = &GCStartingPoint{
-			CommitID: sp.commitValue.CommitID,
-		}
-		sp.commitValue = nil
-		return true
-	}
-
-	if sp.branchValue == nil && sp.branchIterator.Next() {
-		sp.branchValue = sp.branchIterator.Value()
-	}
-	if sp.commitValue == nil && sp.commitIterator.Next() {
-		sp.commitValue = sp.commitIterator.Value()
-	}
-	if sp.commitValue == nil {
-		if sp.branchValue == nil {
-			return false
-		}
-		// has only branch
-		return prepareBranchValue()
-	}
-	if sp.branchValue == nil || sp.commitValue.CommitID < sp.branchValue.CommitID {
-		// has only commit, or commit is before branch
-		return prepareCommitValue()
-	}
-	if sp.branchValue.CommitID == sp.commitValue.CommitID {
-		// commit is same as branch head - skip the commit
-		sp.commitValue = nil
-	}
-	// branch is before or equal to commit
-	return prepareBranchValue()
-}
-
-func (sp *GCStartingPointIterator) Value() *GCStartingPoint {
-	return sp.value
-}
-
-func (sp *GCStartingPointIterator) Err() error {
-	if sp.branchIterator != nil {
-		return sp.branchIterator.Err()
-	}
-	return sp.commitIterator.Err()
-}
-
-func (sp *GCStartingPointIterator) Close() {
-	sp.commitIterator.Close()
-	sp.branchIterator.Close()
-}
-
 // GetGarbageCollectionCommits returns the sets of expired and active commits, according to the repository's garbage collection rules.
+// From each starting point in the given startingPointIterator, it iterates through its main ancestry (see more below).
+// While iterating, it marks all commits as active, until and including the first commit performed before the start of the retention period.
+// All further commits in the ancestry will be marked as expired, stopping when reaching a commit in the previouslyExpired set, or the DAG root.
+//
+// The main ancestry of a commit is acquired by recursively taking the first parent.
+// The commit from which to start depends on the starting point:
+// - if the starting point is a branch's HEAD, simply start from it.
+// - otherwise, start from a hypothetical HEAD which is the child of the starting point commit.
 func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCStartingPointIterator, commitGetter *RepositoryCommitGetter, rules *graveler.GarbageCollectionRules, previouslyExpired []graveler.CommitID) (*GarbageCollectionCommits, error) {
 	now := time.Now()
 	processed := make(map[graveler.CommitID]time.Time)
@@ -102,12 +34,12 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 		var err error
 		startingPoint := startingPointIterator.Value()
 		retentionDays := int(rules.DefaultRetentionDays)
-		var commit *graveler.Commit
-		commit, err = commitGetter.GetCommit(ctx, startingPoint.CommitID)
+		commit, err := commitGetter.GetCommit(ctx, startingPoint.CommitID)
 		if err != nil {
 			return nil, err
 		}
 		if startingPoint.BranchID == "" {
+			// not a branch HEAD - add a hypothetical HEAD as its parent
 			commit = &graveler.Commit{
 				CreationDate: commit.CreationDate,
 				Parents:      []graveler.CommitID{startingPoint.CommitID},
