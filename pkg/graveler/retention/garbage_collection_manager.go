@@ -8,12 +8,11 @@ import (
 	"io"
 	"strings"
 
-	"github.com/treeverse/lakefs/pkg/db"
-	"github.com/treeverse/lakefs/pkg/graveler/ref"
-
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"google.golang.org/protobuf/proto"
 )
 

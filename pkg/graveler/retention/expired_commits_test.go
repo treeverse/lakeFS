@@ -33,22 +33,23 @@ func newCommitSet(commitIDs []string) map[graveler.CommitID]bool {
 	return res
 }
 
-func findDanglingCommits(now time.Time, heads map[string]int32, commits map[string]testCommit) []*graveler.CommitRecord {
+// findMainAncestryLeaves returns commits which are not the first parent of any child.
+func findMainAncestryLeaves(now time.Time, heads map[string]int32, commits map[string]testCommit) []*graveler.CommitRecord {
 	var res []*graveler.CommitRecord
 	for commitID1, commit1 := range commits {
 		if _, ok := heads[commitID1]; ok {
 			continue
 		}
-		isDangling := true
+		isLeaf := true
 		for _, commit2 := range commits {
 			if len(commit2.parents) == 0 {
 				continue
 			}
 			if commitID1 == string(commit2.parents[0]) {
-				isDangling = false
+				isLeaf = false
 			}
 		}
-		if isDangling {
+		if isLeaf {
 			res = append(res, &graveler.CommitRecord{
 				CommitID: graveler.CommitID(commitID1),
 				Commit: &graveler.Commit{
@@ -287,7 +288,7 @@ func TestExpiredCommits(t *testing.T) {
 				previouslyExpiredCommitIDs[i] = graveler.CommitID(tst.previouslyExpired[i])
 			}
 			gcCommits, err := GetGarbageCollectionCommits(ctx, NewGCStartingPointIterator(
-				testutil.NewFakeCommitIterator(findDanglingCommits(now, tst.headsRetentionDays, tst.commits)),
+				testutil.NewFakeCommitIterator(findMainAncestryLeaves(now, tst.headsRetentionDays, tst.commits)),
 				testutil.NewFakeBranchIterator(branches)), &RepositoryCommitGetter{
 				refManager:   refManagerMock,
 				repositoryID: "test",
