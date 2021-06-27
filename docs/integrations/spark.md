@@ -28,12 +28,6 @@ Similarly, properties defining lakeFS credentials should be configured in secure
 not on the command line or inlined in code where they might be exposed.
 {: .note}
 
-##  &#x26A0; Pre-release &#x26A0;
-
-The [lakeFS-specific Hadoop
-  FileSystem](#access-lakefs-using-the-lakefs-specific-hadoop-filesystem) is a pre-release.
-  Please do check it out, however it may not yet be suitable for production use.
-
 ## Two-tiered Spark support
 
 lakeFS support in Spark has two tiers:
@@ -265,7 +259,7 @@ spark-shell --conf spark.hadoop.fs.s3a.access.key='AKIAIOSFODNN7EXAMPLE' \
               --conf spark.hadoop.fs.lakefs.impl=io.lakefs.LakeFSFileSystem \
               --conf spark.hadoop.fs.lakefs.access.key=AKIAlakefs12345EXAMPLE \
               --conf spark.hadoop.fs.lakefs.secret.key=abc/lakefs/1234567bPxRfiCYEXAMPLEKEY \
-              --conf spark.hadoop.fs.lakefs.endpoint=https://s3.lakefs.example.com \
+              --conf spark.hadoop.fs.lakefs.endpoint=https://lakefs.example.com/api/v1/ \
               --packages io.lakefs:lakefsfs:0.45.56
               ...
 ```
@@ -282,7 +276,7 @@ spark.sparkContext.hadoopConfiguration.set("fs.s3a.endpoint", "https://s3.eu-cen
 spark.sparkContext.hadoopConfiguration.set("fs.lakefs.impl", "io.lakefs.LakeFSFileSystem")
 spark.sparkContext.hadoopConfiguration.set("fs.lakefs.access.key", "AKIAlakefs12345EXAMPLE")
 spark.sparkContext.hadoopConfiguration.set("fs.lakefs.secret.key", "abc/lakefs/1234567bPxRfiCYEXAMPLEKEY")
-spark.sparkContext.hadoopConfiguration.set("fs.lakefs.endpoint", "https://s3.lakefs.example.com")
+spark.sparkContext.hadoopConfiguration.set("fs.lakefs.endpoint", "https://lakefs.example.com/api/v1/")
 ```
   </div>
   <div markdown="1" id="lakefs-config-tabs-xml">
@@ -319,7 +313,7 @@ and then add these into a configuration file, e.g. `$SPARK_HOME/conf/hdfs-site.x
     </property>
     <property>
         <name>fs.lakefs.endpoint</name>
-        <value>https://s3.lakefs.example.com"</value>
+        <value>https://lakefs.example.com/api/v1/"</value>
     </property>
 </configuration>
 ```
