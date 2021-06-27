@@ -26,14 +26,14 @@ object GarbageCollector {
       commitID: String,
       repo: String,
       conf: APIConfigurations
-  ): Set[(String, String, String)] = {
+  ): Set[(String, Array[Byte], Array[Byte])] = {
     val location =
       new ApiClient(conf.apiURL, conf.accessKey, conf.secretKey).getMetaRangeURL(repo, commitID)
     SSTableReader
       .forMetaRange(new Configuration(), location)
       .newIterator()
       .map(range =>
-        (new String(range.id), range.message.minKey.toStringUtf8, range.message.maxKey.toStringUtf8)
+        (new String(range.id), range.message.minKey.toByteArray, range.message.maxKey.toByteArray)
       )
       .toSet
   }
@@ -141,9 +141,11 @@ object GarbageCollector {
 
     //  intersecting options are __(____[_____)______]__   __(____[____]___)__   ___[___(__)___]___   ___[__(___]___)__
     //  intersecting ranges  maintain  ( <= ] && [ <= )
-    val intersecting = udf((aMin: String, aMax: String, bMin: String, bMax: String) => {
-      aMin <= bMax && bMin <= aMax
-    })
+    val intersecting =
+      udf((aMin: Array[Byte], aMax: Array[Byte], bMin: Array[Byte], bMax: Array[Byte]) => {
+        val byteArrayOrdering = Ordering.by((_: Array[Byte]).toIterable)
+        byteArrayOrdering.compare(aMin, bMax) <= 0 && byteArrayOrdering.compare(bMin, aMax) <= 0
+      })
 
     val minMax = udf((min: String, max: String) => (min, max))
 
