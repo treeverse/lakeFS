@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"os"
 
@@ -46,7 +47,7 @@ Example configuration file:
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseRepoURI("repository", args[0])
 		filename := MustString(cmd.Flags().GetString("filename"))
-		var reader *os.File
+		var reader io.ReadCloser
 		var err error
 		if filename == "-" {
 			reader = os.Stdin
@@ -55,6 +56,9 @@ Example configuration file:
 			if err != nil {
 				DieErr(err)
 			}
+			defer func() {
+				_ = reader.Close()
+			}()
 		}
 		var body api.SetGarbageCollectionRulesJSONRequestBody
 		err = json.NewDecoder(reader).Decode(&body)
