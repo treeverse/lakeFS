@@ -19,69 +19,58 @@ A Kubeflow pipeline is a portable and scalable definition of an ML workflow comp
 {:toc}  
 
 
-# Add lakeFS-specific pipeline steps
+## Add pipeline steps for lakeFS operations
 
-To integrate lakeFS onto your Kubeflow pipeline, we will need to create Kubeflow components that perform lakeFS-specific operations.
-Currently, there are two methods to create lakeFS-specific ContainerOps:
-1. Implement function-based ContainerOps that use lakeFS's Python API to invoke lakeFS-specific operations.
-2. Implement ContainerOps that use the `lakectl` CLI to invoke lakeFS-specific operations.
+To integrate lakeFS onto your Kubeflow pipeline, we will need to create Kubeflow components that perform lakeFS operations.
+Currently, there are two methods to create lakeFS ContainerOp:
+1. Implement a function-based ContainerOp that uses lakeFS's Python API to invoke lakeFS operations.
+1. Implement a ContainerOps that uses the `lakectl` CLI docker image to invoke lakeFS operations.
 
-## Function-based ContainerOps with lakeFS Python API client
+### Function-based ContainerOps 
 
-lakeFS comes with a [Python API client](python.md). To use it to build lakeFS-specific pipeline steps, you can write Python functions that use 
-the client to invoke lakeFS-specific operations, and then use Kubeflow's mechanism to build a [function-based component](https://www.kubeflow.org/docs/components/pipelines/sdk/python-function-components/) out of it.
+To implement a [function-based component](https://www.kubeflow.org/docs/components/pipelines/sdk/python-function-components/) that invoke lakeFS operations, 
+you should use the [Python openAPI client](python.md) lakeFS has. See the example below that demonstrates how to make the client's package available to your ContainerOp.   
 
-### Example operations
+#### Example operations
 {: .no_toc }
 
 Create new branch: A function-based ContainerOp that creates a branch called `example-branch` based on the `main` branch of `example-repo`.
-   ```python
-   import kfp
-   from kfp import dsl
-   from kfp import components
-   
-   def create_branch(repo_name, branch_name, source_branch):
-      import lakefs_client
-      from lakefs_client import models
-      from lakefs_client.client import LakeFSClient
-   
-      # lakeFS credentials and endpoint
-      configuration = lakefs_client.Configuration()
-      configuration.username = 'AKIAIOSFODNN7EXAMPLE'
-      configuration.password = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
-      configuration.host = 'https://lakefs.example.com'
-      client = LakeFSClient(configuration)
-   
-      client.branches.create_branch(repository=repo_name, branch_creation=models.BranchCreation(name=branch_name, source=source_branch))
 
-   # Convert the function to a lakeFS-specific pipeline step.
-   create_branch_op = components.func_to_container_op(
-      func=create_branch,
-      packages_to_install=['lakefs_client==<lakeFS version>']) # Type in the lakeFS version your server is using
-   ```
+```python
+from kfp import components
 
-## ContainerOps with lakectl CLI
+def create_branch(repo_name, branch_name, source_branch):
+   import lakefs_client
+   from lakefs_client import models
+   from lakefs_client.client import LakeFSClient
 
-### Prerequisites
-{: .no_toc }
+   # lakeFS credentials and endpoint
+   configuration = lakefs_client.Configuration()
+   configuration.username = 'AKIAIOSFODNN7EXAMPLE'
+   configuration.password = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
+   configuration.host = 'https://lakefs.example.com'
+   client = LakeFSClient(configuration)
 
-#### Make lakectl docker image accessible by Kubeflow
-{: .no_toc }
+   client.branches.create_branch(repository=repo_name, branch_creation=models.BranchCreation(name=branch_name, source=source_branch))
 
-lakeFS comes with its own [native CLI client](../quickstart/lakefs_cli.md), which is also available as a [docker image](https://hub.docker.com/r/treeverse/lakectl). 
-To build lakeFS-specific pipeline steps that invoke lakectl commands, Kubeflow should be able to pull the `treeverse/lakectl` docker image either from docker hub, or from your private registry. 
+# Convert the function to a lakeFS pipeline step.
+create_branch_op = components.func_to_container_op(
+   func=create_branch,
+   packages_to_install=['lakefs_client==<lakeFS version>']) # Type in the lakeFS version you are using
+```
 
-### Implementation
-{: .no_toc }
+### Non-function-based ContainerOps
 
-This method implements ContainerOps, that use the `treeverse/lakectl` as their image, and run `lakectl` commands to execute the desired lakeFS-specific operation.   
+To implement a non-function based ContainerOp, you should use the [`treeverse/lakectl`]((https://hub.docker.com/r/treeverse/lakectl)) docker image.
+With this image you can run [lakeFS CLI](../quickstart/lakefs_cli.md) commands to execute the desired lakeFS operation.
 
 For `lakectl` to work with Kubeflow, you will need to pass your lakeFS configurations as environment variables named:
+
 * `LAKECTL_CREDENTIALS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE`
 * `LAKECTL_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY`
 * `LAKECTL_SERVER_ENDPOINT_URL: https://lakefs.example.com`
 
-### Example operations
+#### Example operations
 {: .no_toc }
 
 1. Commit changes to a branch: A ContainerOp that commits uncommitted changes to `example-branch` on `example-repo`.
@@ -95,7 +84,7 @@ For `lakectl` to work with Kubeflow, you will need to pass your lakeFS configura
       image='treeverse/lakectl',
       arguments=['commit', 'lakefs://example-repo/example-branch', '-m', 'commit message']).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_ACCESS_KEY_ID',value='AKIAIOSFODNN7EXAMPLE')).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY',value='wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY')).add_env_variable(V1EnvVar(name='LAKECTL_SERVER_ENDPOINT_URL',value='https://lakefs.example.com'))
    ```
-2. Merge two lakeFS branches: A ContainerOp that merges `example-branch` into the `main` branch of `example-repo`.
+1. Merge two lakeFS branches: A ContainerOp that merges `example-branch` into the `main` branch of `example-repo`.
     
    ```python
    def merge_op():
@@ -112,7 +101,7 @@ You can invoke any lakeFS operation supported by `lakectl` by implementing it as
 The lakeFS Kubeflow integration that uses `lakectl` is supported on lakeFS version >= v0.43.0.
 {: .note }
 
-# Add the lakeFS steps to your pipeline
+## Add the lakeFS steps to your pipeline
 
 Add the steps created on the previous step to your pipeline before compiling it. 
 
