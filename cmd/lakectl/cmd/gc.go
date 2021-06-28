@@ -17,6 +17,9 @@ Branch Rules: {{ range $branch := .Branches }}
   - Branch: {{ $branch.BranchId }}
     Retention Days: {{ $branch.RetentionDays }}{{ end }}
 `
+
+	filenameFlagName = "filename"
+	jsonFlagName     = "json"
 )
 
 var gcCmd = &cobra.Command{
@@ -46,7 +49,7 @@ Example configuration file:
 	Args:    cobra.ExactArgs(gcSetConfigCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseRepoURI("repository", args[0])
-		filename := MustString(cmd.Flags().GetString("filename"))
+		filename := MustString(cmd.Flags().GetString(filenameFlagName))
 		var reader io.ReadCloser
 		var err error
 		if filename == "-" {
@@ -81,7 +84,7 @@ var gcGetConfigCmd = &cobra.Command{
 	Args:    cobra.ExactArgs(gcSetConfigCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseRepoURI("repository", args[0])
-		isJSON := MustBool(cmd.Flags().GetBool("json"))
+		isJSON := MustBool(cmd.Flags().GetBool(jsonFlagName))
 		client := getClient()
 		resp, err := client.GetGarbageCollectionRulesWithResponse(cmd.Context(), u.Repository)
 		DieOnResponseError(resp, err)
@@ -95,9 +98,9 @@ var gcGetConfigCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	gcSetConfigCmd.Flags().StringP("filename", "f", "", "file containing the GC configuration")
-	_ = gcSetConfigCmd.MarkFlagRequired("filename")
-	gcGetConfigCmd.Flags().BoolP("json", "p", false, "get rules as JSON")
+	gcSetConfigCmd.Flags().StringP(filenameFlagName, "f", "", "file containing the GC configuration")
+	_ = gcSetConfigCmd.MarkFlagRequired(filenameFlagName)
+	gcGetConfigCmd.Flags().BoolP(jsonFlagName, "p", false, "get rules as JSON")
 	rootCmd.AddCommand(gcCmd)
 	gcCmd.AddCommand(gcSetConfigCmd)
 	gcCmd.AddCommand(gcGetConfigCmd)
