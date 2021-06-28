@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
+	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
@@ -14,7 +14,8 @@ const (
 	gcRulesTemplate    = `Default Retention Days: {{ .DefaultRetentionDays }}
 Branch Rules: {{ range $branch := .Branches }}
   - Branch: {{ $branch.BranchId }}
-    Retention Days: {{ $branch.RetentionDays }}{{ end }}`
+    Retention Days: {{ $branch.RetentionDays }}{{ end }}
+`
 )
 
 var gcCmd = &cobra.Command{
@@ -28,7 +29,7 @@ var gcSetConfigCmd = &cobra.Command{
 	Long: `Sets the garbage collection configuration JSON.
 Example configuration file:
 {
-  "default_retention_days": 21
+  "default_retention_days": 21,
   "branches": [
     {
       "branch_id": "main",
@@ -45,12 +46,18 @@ Example configuration file:
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseRepoURI("repository", args[0])
 		filename := MustString(cmd.Flags().GetString("filename"))
-		file, err := ioutil.ReadFile(filename)
-		if err != nil {
-			DieErr(err)
+		var reader *os.File
+		var err error
+		if filename == "-" {
+			reader = os.Stdin
+		} else {
+			reader, err = os.Open(filename)
+			if err != nil {
+				DieErr(err)
+			}
 		}
 		var body api.SetGarbageCollectionRulesJSONRequestBody
-		err = json.Unmarshal(file, &body)
+		err = json.NewDecoder(reader).Decode(&body)
 		if err != nil {
 			DieErr(err)
 		}
@@ -70,11 +77,11 @@ var gcGetConfigCmd = &cobra.Command{
 	Args:    cobra.ExactArgs(gcSetConfigCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseRepoURI("repository", args[0])
-		isJson := MustBool(cmd.Flags().GetBool("json"))
+		isJSON := MustBool(cmd.Flags().GetBool("json"))
 		client := getClient()
 		resp, err := client.GetGarbageCollectionRulesWithResponse(cmd.Context(), u.Repository)
 		DieOnResponseError(resp, err)
-		if isJson {
+		if isJSON {
 			Write("{{ . | json }}", resp.JSON200)
 		} else {
 			Write(gcRulesTemplate, resp.JSON200)
