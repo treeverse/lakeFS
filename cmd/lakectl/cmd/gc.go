@@ -5,9 +5,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/treeverse/lakefs/pkg/api"
-
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/pkg/api"
 )
 
 const (
@@ -24,8 +23,23 @@ var gcCmd = &cobra.Command{
 }
 
 var gcSetConfigCmd = &cobra.Command{
-	Use:     "set-config",
-	Short:   "set the garbage collection configuration JSON",
+	Use:   "set-config",
+	Short: "set the garbage collection configuration JSON",
+	Long: `Sets the garbage collection configuration JSON.
+Example configuration file:
+{
+  "default_retention_days": 21
+  "branches": [
+    {
+      "branch_id": "main",
+      "retention_days": 28
+    },
+    {
+      "branch_id": "dev",
+      "retention_days": 14
+    }
+  ]
+}`,
 	Example: "lakectl gc set-config <repository uri> -f config.json",
 	Args:    cobra.ExactArgs(gcSetConfigCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
