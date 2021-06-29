@@ -24,7 +24,7 @@ redirect_from: ../roadmap.html
 ### Ephemeral branches with a TTL
 Throwaway development or experimentation branches that live for a pre-configured amount of time, and are cleaned up afterwards. This is especially useful when running automated tests or when experimenting with new technologies, code or algorithms. We want to see what the outcome looks like, but don’t really need the output to live much longer than the duration of the experiment.
 
-[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/1771){: target="_blank" class="btn" }
+[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/2180){: target="_blank" class="btn" }
 
 
 ---
@@ -36,11 +36,18 @@ The ability to explicitly depend on data residing in another repository. While i
 
 [Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/1771){: target="_blank" class="btn" }
 
+### Git-lakeFS integration
+The ability to connect Git commits with lakeFS commits.
+Especially useful for reproducibility: By looking at a set of changes to the **data**, be able to reference (or ever run) the job that produced it. 
+
+[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/2073){: target="_blank" class="btn" }
+
+
 ### Protected Branches
-A way to ensure certain branches (i.e. main) are only merged to, and are not being directly written to. In combination with [Webhook Support](#webhook-support) (see above), this allows users to provide a set of quality guarantees about a given branch (i.e., reading from
+A way to ensure certain branches (i.e. main) are only merged to, and are not being directly written to. In combination with [Webhook Support](../setup/hooks.md), this allows users to provide a set of quality guarantees about a given branch (i.e., reading from
 main ensures schema never breaks and all partitions are complete and tested)
 
-[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/1771){: target="_blank" class="btn" }
+[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/2181){: target="_blank" class="btn" }
 
 ---
 
@@ -55,7 +62,7 @@ This will allow users to move across different branches or commits for both data
 
 Additionally, for CD use cases, it will allow a merge operation to introduce Hive table changes (schema evolution, partition addition/removal) atomically alongside the change to the data itself - as well as track those changes with the same set of commits - a lakeFS diff will show both metadata and data changes.
 
-[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/1771){: target="_blank" class="btn" }
+[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/1846){: target="_blank" class="btn" }
 
 ### Webhooks: merged/committed snapshot <span>High Priority</span>{: .label }
 
@@ -65,17 +72,17 @@ Once all hooks pass, the branch is then moved to point at the new merge commit, 
 
 This change will also allow running hooks without holding a branch lock, moving to an optimistic concurrency model. This is required in order to support long running operations such as Spark jobs, table scans, etc.
 
-[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/1771){: target="_blank" class="btn" }
+[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/1742){: target="_blank" class="btn" }
 
 ### Webhook Support integration: Metastore registration
 Using webhooks, we can automatically register or update collections in a Hive/Glue metastore, using [Symlink Generation](../integrations/glue_hive_metastore.md#create-symlink), this will also allow systems that don’t natively integrate with lakeFS to consume data produced using lakeFS.
 
-[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/1771){: target="_blank" class="btn" }
+[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/2182){: target="_blank" class="btn" }
 
 ### Webhook Alerting
 Support integration into existing alerting systems that trigger in the event a webhook returns a failure. This is useful for example when a data quality test fails, so new data is not merged into main due to a quality issue, so will alert the owning team.
 
-[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/1771){: target="_blank" class="btn" }
+[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/2183){: target="_blank" class="btn" }
 
 ---
 
@@ -104,7 +111,7 @@ Making this store a pluggable component would allow the following:
 
 This release will mark the completion of project **["lakeFS on the Rocks"](https://docs.google.com/document/d/1jzD7-jun-tdU5BGapmnMBe9ovSzBvTNjXCcVztV07A4/edit?usp=sharing){:target="_blank"}**
 
-[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/1771){: target="_blank" class="btn" }
+[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/pull/1685){: target="_blank" class="btn" }
 
 
 ### Snowflake Support <span>Requires Discussion</span>{: .label .label-yellow }
@@ -119,7 +126,7 @@ If you'd like to have data in Snowflake managed by lakeFS, with full branching/m
 Reduce the operational overhead of managing access control: Currently operators working with both lakeFS and the native object store are required to manage a similar set of access controls for both.
 Moving to a federated access control model using the object store’s native access control facilities (e.g. [IAM](https://aws.amazon.com/iam/)) will help reduce this overhead. This requires more discovery around the different use cases to help design something coherent. If you’re using lakeFS and have strong opinions about access control, please reach out on Slack.
 
-[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/1771){: target="_blank" class="btn" }
+[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/2184){: target="_blank" class="btn" }
 
 
 ### Native Spark OutputCommitter
@@ -134,4 +141,4 @@ Each job will use its native job ID as (part of) a branch name for isolation, wi
 - Allows incorporating simple hooks into the spark job: users can define a webhook to happen before such a merge is completed successfully
 - Traceability: Attaching metadata to each commit means we get quite a lot of information on where data is coming from, how it's generated, etc. This allows building reproducible pipelines in an easier way.
 
-[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/1771){: target="_blank" class="btn" }
+[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/2042){: target="_blank" class="btn" }
