@@ -2,7 +2,7 @@
 layout: default
 title: Roadmap
 parent: Understanding lakeFS
-description: New features and improvements are lined up next for lakeFS. We would love you to be part of building lakeFS’s roadmap.
+description: New features and improvements are lined-up next for lakeFS. We would love you to be part of building lakeFS’s roadmap.
 nav_order: 40
 has_children: false
 redirect_from: ../roadmap.html
@@ -32,7 +32,7 @@ Throwaway development or experimentation branches that live for a pre-configured
 ## Use Case: Continuous Integration
 
 ### Repo linking
-The ability to explicitly depend on data residing in another repository. While it is possible to state these cross links by sticking them in the report’s commit metadata, we think a more explicit and structured approach would be valuable. Stating our dependencies in something that resembles a [pom.xml](https://maven.apache.org/guides/introduction/introduction-to-the-pom.html#:~:text=A%20Project%20Object%20Model%20or,default%20values%20for%20most%20projects.) or [go.mod](https://github.com/golang/go/wiki/Modules#gomod) file would allow us to support better CI and CD integrations that ensure reproducibility without vendoring or copying data.
+The ability to explicitly depend on data residing in another repository. While it is possible to state these cross-links by sticking them in the report’s commit metadata, we think a more explicit and structured approach would be valuable. Stating our dependencies in something that resembles a [pom.xml](https://maven.apache.org/guides/introduction/introduction-to-the-pom.html#:~:text=A%20Project%20Object%20Model%20or,default%20values%20for%20most%20projects.) or [go.mod](https://github.com/golang/go/wiki/Modules#gomod) file would allow us to support better CI and CD integrations that ensure reproducibility without vendoring or copying data.
 
 [Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/1771){: target="_blank" class="btn" }
 
@@ -70,7 +70,7 @@ Currently, pre-merge hooks run before a merged view is even available (and befor
 Ideally, pre-merge should actually run after the logical merge operation has completed: the hook should be handed a commit to run on, otherwise modeling data validation tests is very hard.
 Once all hooks pass, the branch is then moved to point at the new merge commit, completing the operation.
 
-This change will also allow running hooks without holding a branch lock, moving to an optimistic concurrency model. This is required in order to support long running operations such as Spark jobs, table scans, etc.
+This change will also allow running hooks without holding a branch lock, moving to an optimistic concurrency model. This is required in order to support long-running operations such as Spark jobs, table scans, etc.
 
 [Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/1742){: target="_blank" class="btn" }
 
@@ -137,7 +137,7 @@ This allows creating atomic Spark writes that are automatically tracked in lakeF
 Each job will use its native job ID as (part of) a branch name for isolation, with the Output Committer doing a commit and merge operation to the requested branch on success. This has several benefits:
 
 - Performance: This committer does metadata operations only, and doesn't rely on copying data
-- Atomicity: A commit in lakeFS is guarateed to either succeed or fail, but will not leave any intermediate state on failure.
+- Atomicity: A commit in lakeFS is guaranteed to either succeed or fail, but will not leave any intermediate state on failure.
 - Allows incorporating simple hooks into the spark job: users can define a webhook to happen before such a merge is completed successfully
 - Traceability: Attaching metadata to each commit means we get quite a lot of information on where data is coming from, how it's generated, etc. This allows building reproducible pipelines in an easier way.
 
