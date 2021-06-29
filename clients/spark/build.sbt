@@ -50,6 +50,7 @@ def generateCoreProject(buildType: BuildType) =
         "com.google.guava" % "guava" % "16.0.1",
         "com.google.guava" % "failureaccess" % "1.0.1",
         "org.rogach" %% "scallop" % "4.0.3",
+        "software.amazon.awssdk" % "s3" % "2.15.15",
       ),
       target := file(s"target/core-${buildType.name}/")
     ).enablePlugins(S3Plugin)
