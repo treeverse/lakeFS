@@ -1,6 +1,5 @@
 package io.treeverse.clients
 
-import com.amazonaws.services.s3.AmazonS3URI
 import com.google.protobuf.timestamp.Timestamp
 import io.treeverse.clients.LakeFSContext.{
   LAKEFS_CONF_API_ACCESS_KEY_KEY,
@@ -17,6 +16,7 @@ import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.{Delete, DeleteObjectsRequest, ObjectIdentifier}
 
+import java.net.URI
 import collection.JavaConverters._
 import scala.collection.mutable
 
@@ -338,11 +338,13 @@ object S3BulkDeleter {
     val accessKey = hc.get(LAKEFS_CONF_API_ACCESS_KEY_KEY)
     val secretKey = hc.get(LAKEFS_CONF_API_SECRET_KEY_KEY)
     val storageNamespace = new ApiClient(apiURL, accessKey, secretKey).getStorageNamespace(repo)
+    val uri = new URI(storageNamespace)
+    val bucket = uri.getHost
+    val key = uri.getPath
+    val addSuffixSlash = if (key.endsWith("/")) key else key.concat("/")
+    val snPrefix =
+      if (addSuffixSlash.startsWith("/")) addSuffixSlash.substring(1) else addSuffixSlash
 
-    val a = new AmazonS3URI(storageNamespace)
-    val bucket = a.getBucket
-    val key = a.getKey
-    val snPrefix = if (key.endsWith("/")) key else key.concat("/")
     val df = spark.read
       .parquet(addressesDFLocation)
       .where(col("run_id") === runID)
