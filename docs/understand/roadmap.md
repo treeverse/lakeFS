@@ -65,7 +65,9 @@ Each job will use its native job ID as (part of) a branch name for isolation, wi
 - Allows incorporating simple hooks into the spark job: users can define a webhook to happen before such a merge is completed successfully
 - Traceability: Attaching metadata to each commit means we get quite a lot of information on where data is coming from, how it's generated, etc. This allows building reproducible pipelines in an easier way.
 
-## Integrations: Snowflake
+## Integrations
+
+### Snowflake
 
 TBD - We don't yet have concrete plans on how to handle Snowflake (and potentially other Data Warehouse/Database sources).
 If you'd like to have data in Snowflake managed by lakeFS, with full branching/merging/CI/CD capabilities, [please contact us, we'd love to talk about it!](mailto:hello@treeverse.io?subject=using+lakeFS+with+Snowflake).
