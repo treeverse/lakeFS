@@ -2,7 +2,11 @@ package io.treeverse.clients
 
 import com.amazonaws.services.s3.AmazonS3URI
 import com.google.protobuf.timestamp.Timestamp
-import io.treeverse.clients.LakeFSContext.{LAKEFS_CONF_API_ACCESS_KEY_KEY, LAKEFS_CONF_API_SECRET_KEY_KEY, LAKEFS_CONF_API_URL_KEY}
+import io.treeverse.clients.LakeFSContext.{
+  LAKEFS_CONF_API_ACCESS_KEY_KEY,
+  LAKEFS_CONF_API_SECRET_KEY_KEY,
+  LAKEFS_CONF_API_URL_KEY
+}
 import org.apache.hadoop.conf.Configuration
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{SparkSession, _}
@@ -13,7 +17,6 @@ import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.{Delete, DeleteObjectsRequest, ObjectIdentifier}
 
-import java.net.URI
 import collection.JavaConverters._
 import scala.collection.mutable
 
@@ -248,9 +251,15 @@ object S3BulkDeleter {
     df.repartitionByRange(nPartitions, col(column))
   }
 
-  def delObjIteration(bucket: String, keys: Seq[String], s3Client: S3Client, snPrefix: String): Seq[String] = {
+  def delObjIteration(
+      bucket: String,
+      keys: Seq[String],
+      s3Client: S3Client,
+      snPrefix: String
+  ): Seq[String] = {
     if (keys.isEmpty) None
-    val removeKeys = keys.map(x => ObjectIdentifier.builder().key(snPrefix.concat(x)).build()).asJava
+    val removeKeys =
+      keys.map(x => ObjectIdentifier.builder().key(snPrefix.concat(x)).build()).asJava
     val delObj = Delete.builder().objects(removeKeys).build()
     val delObjReq = DeleteObjectsRequest.builder.delete(delObj).bucket(bucket).build()
     val res = s3Client.deleteObjects(delObjReq)
@@ -267,7 +276,14 @@ object S3BulkDeleter {
     S3Client.builder.region(Region.of(region)).overrideConfiguration(configuration).build
   }
 
-  def bulkRemoveFromIter(keys: Iterator[String], bucket: String, region: String, bulkSize: Int, numRetries: Int, snPrefix: String): Iterator[mutable.Buffer[String]] = {
+  def bulkRemoveFromIter(
+      keys: Iterator[String],
+      bucket: String,
+      region: String,
+      bulkSize: Int,
+      numRetries: Int,
+      snPrefix: String
+  ): Iterator[mutable.Buffer[String]] = {
     var nextBatch = keys.take(bulkSize)
     var res = Seq[mutable.Buffer[String]]()
     val s3Client = getS3Client(region, numRetries)
@@ -280,7 +296,15 @@ object S3BulkDeleter {
     res.toIterator
   }
 
-  def bulkRemove(readKeysDF: DataFrame, bulkSize: Int, spark: SparkSession, bucket: String, region: String, numRetries: Int, snPrefix: String): Dataset[String] = {
+  def bulkRemove(
+      readKeysDF: DataFrame,
+      bulkSize: Int,
+      spark: SparkSession,
+      bucket: String,
+      region: String,
+      numRetries: Int,
+      snPrefix: String
+  ): Dataset[String] = {
     import spark.implicits._
     val repartitionedKeys = repartitionBySize(readKeysDF, bulkSize, "address")
     val bulkedKeyStrings = repartitionedKeys
@@ -313,17 +337,18 @@ object S3BulkDeleter {
     val apiURL = hc.get(LAKEFS_CONF_API_URL_KEY)
     val accessKey = hc.get(LAKEFS_CONF_API_ACCESS_KEY_KEY)
     val secretKey = hc.get(LAKEFS_CONF_API_SECRET_KEY_KEY)
-    val storageNamespace = new ApiClient(apiURL,accessKey,secretKey).getStorageNamespace(repo)
+    val storageNamespace = new ApiClient(apiURL, accessKey, secretKey).getStorageNamespace(repo)
 
-    val a =new  AmazonS3URI(storageNamespace)
+    val a = new AmazonS3URI(storageNamespace)
     val bucket = a.getBucket
     val key = a.getKey
-    val snPrefix = if(key.endsWith("/")) key else key.concat("/")
+    val snPrefix = if (key.endsWith("/")) key else key.concat("/")
     val df = spark.read
       .parquet(addressesDFLocation)
       .where(col("run_id") === runID)
       .where(col("relative") === true)
-    val res = bulkRemove(df, MaxBulkSize, spark, bucket, region, awsRetries, snPrefix).toDF("addresses")
+    val res =
+      bulkRemove(df, MaxBulkSize, spark, bucket, region, awsRetries, snPrefix).toDF("addresses")
     res
       .withColumn("run_id", lit(runID))
       .write
