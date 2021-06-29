@@ -17,8 +17,70 @@ redirect_from: ../roadmap.html
 1. TOC
 {:toc}
 
+---
 
-## Architecture
+## Use Case: Development Environment
+
+### Ephemeral branches with a TTL
+Throwaway development or experimentation branches that live for a pre-configured amount of time, and are cleaned up afterwards. This is especially useful when running automated tests or when experimenting with new technologies, code or algorithms. We want to see what the outcome looks like, but don’t really need the output to live much longer than the duration of the experiment.
+
+[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/1771){: target="_blank" class="btn" }
+
+
+---
+
+## Use Case: Continuous Integration
+
+### Repo linking
+The ability to explicitly depend on data residing in another repository. While it is possible to state these cross links by sticking them in the report’s commit metadata, we think a more explicit and structured approach would be valuable. Stating our dependencies in something that resembles a [pom.xml](https://maven.apache.org/guides/introduction/introduction-to-the-pom.html#:~:text=A%20Project%20Object%20Model%20or,default%20values%20for%20most%20projects.) or [go.mod](https://github.com/golang/go/wiki/Modules#gomod) file would allow us to support better CI and CD integrations that ensure reproducibility without vendoring or copying data.
+
+[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/1771){: target="_blank" class="btn" }
+
+### Protected Branches
+A way to ensure certain branches (i.e. main) are only merged to, and are not being directly written to. In combination with [Webhook Support](#webhook-support) (see above), this allows users to provide a set of quality guarantees about a given branch (i.e., reading from
+main ensures schema never breaks and all partitions are complete and tested)
+
+[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/1771){: target="_blank" class="btn" }
+
+---
+
+## Use Case: Continuous Deployment
+
+### Native Metastore Integration <span>High Priority</span>{: .label }
+
+Create a robust connection between a Hive Metastore and lakeFS.
+Ideally, metastore representations of tables managed in lakeFS should be versioned in the same way.
+
+This will allow users to move across different branches or commits for both data and metadata, so that querying from a certain commit will always produce the same results.
+
+Additionally, for CD use cases, it will allow a merge operation to introduce Hive table changes (schema evolution, partition addition/removal) atomically alongside the change to the data itself - as well as track those changes with the same set of commits - a lakeFS diff will show both metadata and data changes.
+
+[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/1771){: target="_blank" class="btn" }
+
+### Webhooks: merged/committed snapshot <span>High Priority</span>{: .label }
+
+Currently, pre-merge hooks run before a merged view is even available (and before conflicts are detected).
+Ideally, pre-merge should actually run after the logical merge operation has completed: the hook should be handed a commit to run on, otherwise modeling data validation tests is very hard.
+Once all hooks pass, the branch is then moved to point at the new merge commit, completing the operation.
+
+This change will also allow running hooks without holding a branch lock, moving to an optimistic concurrency model. This is required in order to support long running operations such as Spark jobs, table scans, etc.
+
+[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/1771){: target="_blank" class="btn" }
+
+### Webhook Support integration: Metastore registration
+Using webhooks, we can automatically register or update collections in a Hive/Glue metastore, using [Symlink Generation](../integrations/glue_hive_metastore.md#create-symlink), this will also allow systems that don’t natively integrate with lakeFS to consume data produced using lakeFS.
+
+[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/1771){: target="_blank" class="btn" }
+
+### Webhook Alerting
+Support integration into existing alerting systems that trigger in the event a webhook returns a failure. This is useful for example when a data quality test fails, so new data is not merged into main due to a quality issue, so will alert the owning team.
+
+[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/1771){: target="_blank" class="btn" }
+
+---
+
+
+## Architecture & Operations
 
 _TL;DR_ - After receiving feedback on early versions of lakeFS, project **["lakeFS on the Rocks"](https://docs.google.com/document/d/1jzD7-jun-tdU5BGapmnMBe9ovSzBvTNjXCcVztV07A4/edit?usp=sharing){:target="_blank"}** represents a set of changes to the architecture and data model of lakeFS. The main motivators are simplicity, reduced barriers of entry, scalability -  and the added benefit of having lakeFS adhere more closely to Git in semantics and UX.
 {: .note .note-warning }
@@ -30,28 +92,27 @@ There are 3 big shifts in design:
 1. ~~Expose metadata operations as part of the OpenAPI gateway to allow other client types (e.g., Hadoop FileSystem) except for the S3 gateway interface~~
 1. Implement a pluggable ref-store that allows storing references not (only) on PostgreSQL
 
-### Implement a pluggable ref-store that allows storing references not (only) on PostgreSQL
+### Decouple ref-store from PostgreSQL
 
-Make the ref-store (component storing branch references and uncommitted entries) a pluggable component.
-This would allow the following:
+Currently lakeFS requires a PostgreSQL database. Internally, it is used to store references (branches, tags, etc) other metadata such as user management.
 
-1. Simpler quickstart using only an object store: allow running lakeFS without any dependencies. This ref-store will use the underlying object store to also store the references. For S3 (or any object store that doesn't support any native transaction/compare-and-swap semantics) this will be available only when running in single-instance mode. This is still beneficial for running lakeFS in POC or development mode, removing the need to run and connect multiple Docker containers.
-1. Will allow easier production setup. A PostgreSQL option will still be available of course, but additional implementations will also be possible: running lakeFS as a Raft consensus group, using an external DB such as MySQL or using a managed service such as DynamoDB that lakeFS will be able to manage itself
-1. Scaling RDBS for very high throughput while keeping it predictable in performance for different loads and access patterns has a very high operational cost.
+Making this store a pluggable component would allow the following:
 
-This release will mark the completion of project **["lakeFS on the Rocks"](https://docs.google.com/document/d/1jzD7-jun-tdU5BGapmnMBe9ovSzBvTNjXCcVztV07A4/edit?usp=sharing){:target="_blank"}** 
+1. Simpler quickstart using **only an object store**: allow running lakeFS without any dependencies. This ref-store will use the underlying object store to also store the references. For S3 (or any object store that doesn't support any native transaction/compare-and-swap semantics) this will be available only when running in single-instance mode. This is still beneficial for running lakeFS in POC or development mode, removing the need to run and connect multiple Docker containers.
+1. Flexible production setup: A PostgreSQL option will still be available, but additional implementations will also be possible: running lakeFS as a Raft consensus group, using an other RDBMS types such as MySQL &emdash; or using managed services such as DynamoDB that lakeFS will be able to manage itself
+1. Easier scalability: Scaling RDBMS for very high throughput while keeping it predictable in performance for different loads and access patterns has a very high operational cost.
 
-## Operations & Security
+This release will mark the completion of project **["lakeFS on the Rocks"](https://docs.google.com/document/d/1jzD7-jun-tdU5BGapmnMBe9ovSzBvTNjXCcVztV07A4/edit?usp=sharing){:target="_blank"}**
+
+[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/1771){: target="_blank" class="btn" }
 
 
-### Kubernetes operator for gateways and Metadata servers
-We see Kubernetes as a first class deployment target for lakeFS. While deploying the stateless components such as the S3 Gateway and the OpenAPI server is relatively easy, deploying the metadata service which is a stateful Raft group is a little more involved. Design is still pending while we learn more about the best practices (for example, the [Consul Kubernetes operator](https://www.consul.io/docs/k8s/installation/install#architecture)).
-
-### Metadata operations security and access model
+### Metadata operations security and access model <span>High Priority</span>{: .label }
 Reduce the operational overhead of managing access control: Currently operators working with both lakeFS and the native object store are required to manage a similar set of access controls for both.
 Moving to a federated access control model using the object store’s native access control facilities (e.g. [IAM](https://aws.amazon.com/iam/)) will help reduce this overhead. This requires more discovery around the different use cases to help design something coherent. If you’re using lakeFS and have strong opinions about access control, please reach out on Slack.
 
-## Clients
+[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/1771){: target="_blank" class="btn" }
+
 
 ### Native Spark OutputCommitter
 
@@ -60,55 +121,17 @@ This allows creating atomic Spark writes that are automatically tracked in lakeF
 
 Each job will use its native job ID as (part of) a branch name for isolation, with the Output Committer doing a commit and merge operation to the requested branch on success. This has several benefits:
 
-- Performance: This committer does metadata operations only, and doesn't rely on copying data 
+- Performance: This committer does metadata operations only, and doesn't rely on copying data
 - Atomicity: A commit in lakeFS is guarateed to either succeed or fail, but will not leave any intermediate state on failure.
 - Allows incorporating simple hooks into the spark job: users can define a webhook to happen before such a merge is completed successfully
 - Traceability: Attaching metadata to each commit means we get quite a lot of information on where data is coming from, how it's generated, etc. This allows building reproducible pipelines in an easier way.
 
-## Integrations
+[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/1771){: target="_blank" class="btn" }
 
-### Snowflake
+
+### Snowflake Support <span>Requires Discussion</span>{: .label .label-yellow }
 
 TBD - We don't yet have concrete plans on how to handle Snowflake (and potentially other Data Warehouse/Database sources).
-If you'd like to have data in Snowflake managed by lakeFS, with full branching/merging/CI/CD capabilities, [please contact us, we'd love to talk about it!](mailto:hello@treeverse.io?subject=using+lakeFS+with+Snowflake).
+If you'd like to have data in Snowflake managed by lakeFS, with full branching/merging/CI/CD capabilities,
 
-
-## Use Case: Development Environment
-
-### Ephemeral branches with a TTL
-Throwaway development or experimentation branches that live for a pre-configured amount of time, and are cleaned up afterwards. This is especially useful when running automated tests or when experimenting with new technologies, code or algorithms. We want to see what the outcome looks like, but don’t really need the output to live much longer than the duration of the experiment.
-
-
-## Use Case: Continuous Integration
-
-### Repo linking
-The ability to explicitly depend on data residing in another repository. While it is possible to state these cross links by sticking them in the report’s commit metadata, we think a more explicit and structured approach would be valuable. Stating our dependencies in something that resembles a [pom.xml](https://maven.apache.org/guides/introduction/introduction-to-the-pom.html#:~:text=A%20Project%20Object%20Model%20or,default%20values%20for%20most%20projects.) or [go.mod](https://github.com/golang/go/wiki/Modules#gomod) file would allow us to support better CI and CD integrations that ensure reproducibility without vendoring or copying data.
-
-### Protected Branches
-A way to ensure certain branches (i.e. main) are only merged to, and are not being directly written to. In combination with [Webhook Support](#webhook-support) (see above), this allows users to provide a set of quality guarantees about a given branch (i.e., reading from
-main ensures schema never breaks and all partitions are complete and tested)
-
-## Use Case: Continuous Deployment
-
-### Native Metastore Integration
-
-Create a robust connection between a Hive Metastore and lakeFS.
-Ideally, metastore representations of tables managed in lakeFS should be versioned in the same way.
-
-This will allow users to move across different branches or commits for both data and metadata, so that querying from a certain commit will always produce the same results.
-
-Additionally, for CD use cases, it will allow a merge operation to introduce Hive table changes (schema evolution, partition addition/removal) atomically alongside the change to the data itself - as well as track those changes with the same set of commits - a lakeFS diff will show both metadata and data changes.
-
-### Webhooks: merged/committed snapshot
-
-Currently, pre-merge hooks run before a merged view is even available (and before conflicts are detected).
-Ideally, pre-merge should actually run after the logical merge operation has completed: the hook should be handed a commit to run on, otherwise modeling data validation tests is very hard.
-Once all hooks pass, the branch is then moved to point at the new merge commit, completing the operation.
-
-This change will also allow running hooks without holding a branch lock, moving to an optimistic concurrency model. This is required in order to support long running operations such as Spark jobs, table scans, etc.
-
-### Webhook Support integration: Metastore registration
-Using webhooks, we can automatically register or update collections in a Hive/Glue metastore, using [Symlink Generation](../integrations/glue_hive_metastore.md#create-symlink), this will also allow systems that don’t natively integrate with lakeFS to consume data produced using lakeFS.
-
-### Webhook Alerting
-Support integration into existing alerting systems that trigger in the event a webhook returns a failure. This is useful for example when a data quality test fails, so new data is not merged into main due to a quality issue, so will alert the owning team.
+[Contact us, we'd love to talk about it!](mailto:hello@treeverse.io?subject=using+lakeFS+with+Snowflake){: target="_blank" class="btn" }
