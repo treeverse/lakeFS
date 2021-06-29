@@ -107,6 +107,14 @@ This release will mark the completion of project **["lakeFS on the Rocks"](https
 [Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/1771){: target="_blank" class="btn" }
 
 
+### Snowflake Support <span>Requires Discussion</span>{: .label .label-yellow }
+
+TBD - We don't yet have concrete plans on how to handle Snowflake (and potentially other Data Warehouse/Database sources).
+If you'd like to have data in Snowflake managed by lakeFS, with full branching/merging/CI/CD capabilities, please contact us!
+
+[Contact us, we'd love to talk about it!](mailto:hello@treeverse.io?subject=using+lakeFS+with+Snowflake){: target="_blank" class="btn" }
+
+
 ### Metadata operations security and access model <span>High Priority</span>{: .label }
 Reduce the operational overhead of managing access control: Currently operators working with both lakeFS and the native object store are required to manage a similar set of access controls for both.
 Moving to a federated access control model using the object store’s native access control facilities (e.g. [IAM](https://aws.amazon.com/iam/)) will help reduce this overhead. This requires more discovery around the different use cases to help design something coherent. If you’re using lakeFS and have strong opinions about access control, please reach out on Slack.
@@ -127,11 +135,3 @@ Each job will use its native job ID as (part of) a branch name for isolation, wi
 - Traceability: Attaching metadata to each commit means we get quite a lot of information on where data is coming from, how it's generated, etc. This allows building reproducible pipelines in an easier way.
 
 [Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/1771){: target="_blank" class="btn" }
-
-
-### Snowflake Support <span>Requires Discussion</span>{: .label .label-yellow }
-
-TBD - We don't yet have concrete plans on how to handle Snowflake (and potentially other Data Warehouse/Database sources).
-If you'd like to have data in Snowflake managed by lakeFS, with full branching/merging/CI/CD capabilities,
-
-[Contact us, we'd love to talk about it!](mailto:hello@treeverse.io?subject=using+lakeFS+with+Snowflake){: target="_blank" class="btn" }
