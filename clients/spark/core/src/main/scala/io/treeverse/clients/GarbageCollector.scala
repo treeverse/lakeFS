@@ -18,7 +18,6 @@ import software.amazon.awssdk.services.s3.model.{Delete, DeleteObjectsRequest, O
 
 import java.net.URI
 import collection.JavaConverters._
-import scala.collection.mutable
 
 object GarbageCollector {
 
@@ -271,29 +270,9 @@ object S3BulkDeleter {
       .builder()
       .backoffStrategy(BackoffStrategy.defaultThrottlingStrategy())
       .numRetries(numRetries)
-      .build() // TODO: change to configurable
+      .build()
     val configuration = ClientOverrideConfiguration.builder().retryPolicy(retryPolicy).build()
     S3Client.builder.region(Region.of(region)).overrideConfiguration(configuration).build
-  }
-
-  def bulkRemoveFromIter(
-      keys: Iterator[String],
-      bucket: String,
-      region: String,
-      bulkSize: Int,
-      numRetries: Int,
-      snPrefix: String
-  ): Iterator[mutable.Buffer[String]] = {
-    var nextBatch = keys.take(bulkSize)
-    var res = Seq[mutable.Buffer[String]]()
-    val s3Client = getS3Client(region, numRetries)
-    while (!nextBatch.isEmpty) {
-      res = res ++ delObjIteration(bucket, nextBatch.toSeq, s3Client, snPrefix).map(x =>
-        mutable.Buffer[String](x)
-      )
-      nextBatch = keys.take(bulkSize)
-    }
-    res.toIterator
   }
 
   def bulkRemove(
@@ -312,9 +291,10 @@ object S3BulkDeleter {
       .map(_.getString(0)) // get address as string (address is in index 0 of row)
     bulkedKeyStrings
       .mapPartitions(iter => {
-        bulkRemoveFromIter(iter, bucket, region, bulkSize, numRetries, snPrefix)
+        iter
+          .grouped(bulkSize)
+          .flatMap(delObjIteration(bucket, _, getS3Client(region, numRetries), snPrefix))
       })
-      .map(x => x.head)
   }
 
   def main(args: Array[String]): Unit = {
