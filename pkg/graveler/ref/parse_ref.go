@@ -46,23 +46,23 @@ func parseRefModifier(buf string) (graveler.RefModifier, error) {
 	}, nil
 }
 
-func ParseRef(r graveler.Ref) (graveler.ParsedRef, error) {
+func ParseRef(r graveler.Ref) (graveler.RawRef, error) {
 	ref := string(r)
 	parts := modifiersRegexp.FindAllString(ref, -1)
 	if len(parts) == 0 || len(parts[0]) == 0 {
-		return graveler.ParsedRef{}, graveler.ErrInvalidRef
+		return graveler.RawRef{}, graveler.ErrInvalidRef
 	}
 	baseRef := parts[0]
 	mods := make([]graveler.RefModifier, 0, len(parts)-1)
 	for _, part := range parts[1:] {
 		mod, err := parseRefModifier(part)
 		if err != nil {
-			return graveler.ParsedRef{}, err
+			return graveler.RawRef{}, err
 		}
 		mods = append(mods, mod)
 	}
-	return graveler.ParsedRef{
-		BaseRef:      baseRef,
-		RefModifiers: mods,
+	return graveler.RawRef{
+		BaseRef:   baseRef,
+		Modifiers: mods,
 	}, nil
 }

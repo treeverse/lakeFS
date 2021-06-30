@@ -1,11 +1,9 @@
 package graveler
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -44,21 +42,12 @@ type RefModifier struct {
 	Value int
 }
 
-type ParsedRef struct {
-	BaseRef      string
-	RefModifiers []RefModifier
-}
-
-func (p *ParsedRef) Ref() Ref {
-	var b bytes.Buffer
-	b.WriteString(p.BaseRef)
-	for _, m := range p.RefModifiers {
-		b.WriteRune(rune(m.Type))
-		if m.Value != 0 {
-			b.WriteString(strconv.Itoa(m.Value))
-		}
-	}
-	return Ref(b.String())
+// RawRef parsed Ref into 'BaseRef' that holds the branch/tag/hash and list of
+//   modifiers that applied on the reference (order is important)
+// Example: master~2 will be parsed into {BaseRef:"master", Modifiers:[{Type:RefModTypeTilde, Value:2}]}
+type RawRef struct {
+	BaseRef   string
+	Modifiers []RefModifier
 }
 
 type DiffSummary struct {
@@ -372,11 +361,11 @@ type VersionController interface {
 	// Dereference returns the resolved ref information based on 'ref' reference
 	Dereference(ctx context.Context, repositoryID RepositoryID, ref Ref) (*ResolvedRef, error)
 
-	// ParseRef returns parsed 'ref' information as ParsedRef
-	ParseRef(ref Ref) (ParsedRef, error)
+	// ParseRef returns parsed 'ref' information as raw reference
+	ParseRef(ref Ref) (RawRef, error)
 
-	// ResolveParsedRef returns the ResolvedRef matching the given ParsedRef
-	ResolveParsedRef(ctx context.Context, repositoryID RepositoryID, parsedRef ParsedRef) (*ResolvedRef, error)
+	// ResolveRawRef returns the ResolvedRef matching the given RawRef
+	ResolveRawRef(ctx context.Context, repositoryID RepositoryID, rawRef RawRef) (*ResolvedRef, error)
 
 	// Reset throws all staged data on the repository / branch
 	Reset(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error
@@ -541,11 +530,11 @@ type RefManager interface {
 	// DeleteRepository deletes the repository
 	DeleteRepository(ctx context.Context, repositoryID RepositoryID) error
 
-	// ParseRef returns parsed 'ref' information as ParsedRef
-	ParseRef(ref Ref) (ParsedRef, error)
+	// ParseRef returns parsed 'ref' information as RawRef
+	ParseRef(ref Ref) (RawRef, error)
 
-	// ResolveParsedRef returns the ResolvedRef matching the given ParsedRef
-	ResolveParsedRef(ctx context.Context, repositoryID RepositoryID, parsedRef ParsedRef) (*ResolvedRef, error)
+	// ResolveRawRef returns the ResolvedRef matching the given RawRef
+	ResolveRawRef(ctx context.Context, repositoryID RepositoryID, rawRef RawRef) (*ResolvedRef, error)
 
 	// GetBranch returns the Branch metadata object for the given BranchID
 	GetBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (*Branch, error)
@@ -873,19 +862,19 @@ func (g *Graveler) ListTags(ctx context.Context, repositoryID RepositoryID) (Tag
 }
 
 func (g *Graveler) Dereference(ctx context.Context, repositoryID RepositoryID, ref Ref) (*ResolvedRef, error) {
-	parsedRef, err := g.ParseRef(ref)
+	rawRef, err := g.ParseRef(ref)
 	if err != nil {
 		return nil, err
 	}
-	return g.ResolveParsedRef(ctx, repositoryID, parsedRef)
+	return g.ResolveRawRef(ctx, repositoryID, rawRef)
 }
 
-func (g *Graveler) ParseRef(ref Ref) (ParsedRef, error) {
+func (g *Graveler) ParseRef(ref Ref) (RawRef, error) {
 	return g.RefManager.ParseRef(ref)
 }
 
-func (g *Graveler) ResolveParsedRef(ctx context.Context, repositoryID RepositoryID, parsedRef ParsedRef) (*ResolvedRef, error) {
-	return g.RefManager.ResolveParsedRef(ctx, repositoryID, parsedRef)
+func (g *Graveler) ResolveRawRef(ctx context.Context, repositoryID RepositoryID, rawRef RawRef) (*ResolvedRef, error) {
+	return g.RefManager.ResolveRawRef(ctx, repositoryID, rawRef)
 }
 
 func (g *Graveler) Log(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (CommitIterator, error) {

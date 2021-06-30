@@ -212,16 +212,16 @@ func (m *RefsFake) ListCommits(ctx context.Context, repositoryID graveler.Reposi
 	return nil, nil
 }
 
-func (m *RefsFake) ParseRef(ref graveler.Ref) (graveler.ParsedRef, error) {
+func (m *RefsFake) ParseRef(ref graveler.Ref) (graveler.RawRef, error) {
 	// fake so we use the base ref to capture the ref for resolve lookup
-	return graveler.ParsedRef{
+	return graveler.RawRef{
 		BaseRef: string(ref),
 	}, nil
 }
 
-func (m *RefsFake) ResolveParsedRef(ctx context.Context, repoID graveler.RepositoryID, parsedRef graveler.ParsedRef) (*graveler.ResolvedRef, error) {
+func (m *RefsFake) ResolveRawRef(ctx context.Context, repoID graveler.RepositoryID, rawRef graveler.RawRef) (*graveler.ResolvedRef, error) {
 	if m.Refs != nil {
-		ref := graveler.Ref(parsedRef.BaseRef)
+		ref := graveler.Ref(rawRef.BaseRef)
 		if res, ok := m.Refs[ref]; ok {
 			return res, nil
 		}

@@ -13,7 +13,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
-func TestResolveParsedRef(t *testing.T) {
+func TestResolveRawRef(t *testing.T) {
 	r := testRefManager(t)
 	ctx := context.Background()
 	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
@@ -199,14 +199,14 @@ func TestResolveParsedRef(t *testing.T) {
 
 	for _, cas := range table {
 		t.Run(cas.Name, func(t *testing.T) {
-			parsedRef, err := r.ParseRef(cas.Ref)
+			rawRef, err := r.ParseRef(cas.Ref)
 			if err != nil {
 				if cas.ExpectedErr == nil || !errors.Is(err, cas.ExpectedErr) {
 					t.Fatalf("unexpected error while parse '%s': %v, expected: %s", cas.Ref, err, cas.ExpectedErr)
 				}
 				return
 			}
-			resolvedRef, err := r.ResolveParsedRef(ctx, "repo1", parsedRef)
+			resolvedRef, err := r.ResolveRawRef(ctx, "repo1", rawRef)
 			if err != nil {
 				if cas.ExpectedErr == nil || !errors.Is(err, cas.ExpectedErr) {
 					t.Fatalf("unexpected error while resolve '%s': %v, expected: %s", cas.Ref, err, cas.ExpectedErr)
@@ -370,9 +370,9 @@ func TestResolveRef_DereferenceWithGraph(t *testing.T) {
 }
 
 func resolveRef(ctx context.Context, store ref.Store, addressProvider ident.AddressProvider, repositoryID graveler.RepositoryID, reference graveler.Ref) (*graveler.ResolvedRef, error) {
-	parsedRef, err := ref.ParseRef(reference)
+	rawRef, err := ref.ParseRef(reference)
 	if err != nil {
 		return nil, err
 	}
-	return ref.ResolveParsedRef(ctx, store, addressProvider, repositoryID, parsedRef)
+	return ref.ResolveRawRef(ctx, store, addressProvider, repositoryID, rawRef)
 }

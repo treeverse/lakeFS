@@ -19,11 +19,11 @@ type FakeGraveler struct {
 	hooks                     graveler.HooksHandler
 }
 
-func (g *FakeGraveler) ParseRef(ref graveler.Ref) (graveler.ParsedRef, error) {
+func (g *FakeGraveler) ParseRef(ref graveler.Ref) (graveler.RawRef, error) {
 	panic("implement me")
 }
 
-func (g *FakeGraveler) ResolveParsedRef(ctx context.Context, repositoryID graveler.RepositoryID, parsedRef graveler.ParsedRef) (*graveler.ResolvedRef, error) {
+func (g *FakeGraveler) ResolveRawRef(ctx context.Context, repositoryID graveler.RepositoryID, rawRef graveler.RawRef) (*graveler.ResolvedRef, error) {
 	panic("implement me")
 }
 

@@ -39,21 +39,21 @@ func revResolve(ctx context.Context, store Store, addressProvider ident.AddressP
 	return nil, graveler.ErrNotFound
 }
 
-func ResolveParsedRef(ctx context.Context, store Store, addressProvider ident.AddressProvider, repositoryID graveler.RepositoryID, parsedRef graveler.ParsedRef) (*graveler.ResolvedRef, error) {
-	rr, err := revResolve(ctx, store, addressProvider, repositoryID, parsedRef.BaseRef)
+func ResolveRawRef(ctx context.Context, store Store, addressProvider ident.AddressProvider, repositoryID graveler.RepositoryID, rawRef graveler.RawRef) (*graveler.ResolvedRef, error) {
+	rr, err := revResolve(ctx, store, addressProvider, repositoryID, rawRef.BaseRef)
 	if err != nil {
 		return nil, err
 	}
 	// return the matched reference, when no modifiers on ref or use the commit id as base
-	if len(parsedRef.RefModifiers) == 0 {
+	if len(rawRef.Modifiers) == 0 {
 		return rr, nil
 	}
 	baseCommit := rr.CommitID
-	for _, mod := range parsedRef.RefModifiers {
+	for _, mod := range rawRef.Modifiers {
 		// lastly, apply modifier
 		switch mod.Type {
 		case graveler.RefModTypeAt:
-			if rr.Type != graveler.ReferenceTypeBranch || len(parsedRef.RefModifiers) != 1 {
+			if rr.Type != graveler.ReferenceTypeBranch || len(rawRef.Modifiers) != 1 {
 				return nil, graveler.ErrInvalidRef
 			}
 			return &graveler.ResolvedRef{
@@ -63,7 +63,7 @@ func ResolveParsedRef(ctx context.Context, store Store, addressProvider ident.Ad
 			}, nil
 
 		case graveler.RefModTypeDollar:
-			if rr.Type != graveler.ReferenceTypeBranch || len(parsedRef.RefModifiers) != 1 {
+			if rr.Type != graveler.ReferenceTypeBranch || len(rawRef.Modifiers) != 1 {
 				return nil, graveler.ErrInvalidRef
 			}
 			return &graveler.ResolvedRef{

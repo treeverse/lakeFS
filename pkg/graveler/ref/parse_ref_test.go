@@ -12,23 +12,23 @@ func TestParseRef(t *testing.T) {
 	table := []struct {
 		Name        string
 		Input       string
-		Expected    graveler.ParsedRef
+		Expected    graveler.RawRef
 		ExpectedErr error
 	}{
 		{
 			Name:  "just_branch",
 			Input: "main",
-			Expected: graveler.ParsedRef{
-				BaseRef:      "main",
-				RefModifiers: make([]graveler.RefModifier, 0),
+			Expected: graveler.RawRef{
+				BaseRef:   "main",
+				Modifiers: make([]graveler.RefModifier, 0),
 			},
 		},
 		{
 			Name:  "branch_one_caret",
 			Input: "main^",
-			Expected: graveler.ParsedRef{
+			Expected: graveler.RawRef{
 				BaseRef: "main",
-				RefModifiers: []graveler.RefModifier{
+				Modifiers: []graveler.RefModifier{
 					{
 						Type:  graveler.RefModTypeCaret,
 						Value: 1,
@@ -39,9 +39,9 @@ func TestParseRef(t *testing.T) {
 		{
 			Name:  "branch_one_dollar",
 			Input: "main$",
-			Expected: graveler.ParsedRef{
+			Expected: graveler.RawRef{
 				BaseRef: "main",
-				RefModifiers: []graveler.RefModifier{
+				Modifiers: []graveler.RefModifier{
 					{
 						Type:  graveler.RefModTypeDollar,
 						Value: 1,
@@ -52,9 +52,9 @@ func TestParseRef(t *testing.T) {
 		{
 			Name:  "branch_one_at",
 			Input: "main@",
-			Expected: graveler.ParsedRef{
+			Expected: graveler.RawRef{
 				BaseRef: "main",
-				RefModifiers: []graveler.RefModifier{
+				Modifiers: []graveler.RefModifier{
 					{
 						Type:  graveler.RefModTypeAt,
 						Value: 1,
@@ -70,9 +70,9 @@ func TestParseRef(t *testing.T) {
 		{
 			Name:  "branch_two_caret",
 			Input: "main^^",
-			Expected: graveler.ParsedRef{
+			Expected: graveler.RawRef{
 				BaseRef: "main",
-				RefModifiers: []graveler.RefModifier{
+				Modifiers: []graveler.RefModifier{
 					{
 						Type:  graveler.RefModTypeCaret,
 						Value: 1,
@@ -87,9 +87,9 @@ func TestParseRef(t *testing.T) {
 		{
 			Name:  "branch_two_caret_one_qualified",
 			Input: "main^2^",
-			Expected: graveler.ParsedRef{
+			Expected: graveler.RawRef{
 				BaseRef: "main",
-				RefModifiers: []graveler.RefModifier{
+				Modifiers: []graveler.RefModifier{
 					{
 						Type:  graveler.RefModTypeCaret,
 						Value: 2,
@@ -104,9 +104,9 @@ func TestParseRef(t *testing.T) {
 		{
 			Name:  "branch_tilde_caret_tilde",
 			Input: "main~^~3",
-			Expected: graveler.ParsedRef{
+			Expected: graveler.RawRef{
 				BaseRef: "main",
-				RefModifiers: []graveler.RefModifier{
+				Modifiers: []graveler.RefModifier{
 					{
 						Type:  graveler.RefModTypeTilde,
 						Value: 1,
@@ -150,19 +150,19 @@ func TestParseRef(t *testing.T) {
 				t.Fatalf("expected base rev: %s got %s", cas.Expected.BaseRef, got.BaseRef)
 			}
 
-			if len(got.RefModifiers) != len(cas.Expected.RefModifiers) {
+			if len(got.Modifiers) != len(cas.Expected.Modifiers) {
 				t.Fatalf("got wrong number of modifiers, expected %d got %d",
-					len(cas.Expected.RefModifiers), len(got.RefModifiers))
+					len(cas.Expected.Modifiers), len(got.Modifiers))
 			}
 
-			for i, m := range got.RefModifiers {
-				if m.Type != cas.Expected.RefModifiers[i].Type {
+			for i, m := range got.Modifiers {
+				if m.Type != cas.Expected.Modifiers[i].Type {
 					t.Fatalf("unexpected modifier at index %d: expected type %d got %d",
-						i, cas.Expected.RefModifiers[i].Type, m.Type)
+						i, cas.Expected.Modifiers[i].Type, m.Type)
 				}
-				if m.Value != cas.Expected.RefModifiers[i].Value {
+				if m.Value != cas.Expected.Modifiers[i].Value {
 					t.Fatalf("unexpected modifier at index %d: expected value %d got %d",
-						i, cas.Expected.RefModifiers[i].Value, m.Value)
+						i, cas.Expected.Modifiers[i].Value, m.Value)
 				}
 			}
 		})
