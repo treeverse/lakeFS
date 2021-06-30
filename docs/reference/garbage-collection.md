@@ -1,7 +1,7 @@
 ---
 layout: default
-title: Hard Deletion
-description: Data retention feature to clean up unnecessary objects
+title: Garbage Collection
+description: Clean up unnecessary objects
 parent: Reference
 nav_order: 25
 has_children: false
@@ -35,8 +35,8 @@ Example GC rules for a repository:
 {
   "default_retention_days": 21,
   "branches": [
-    {"branch_id":  "main", "retention_days":  28},
-    {"branch_id":  "dev", "retention_days":  7}
+    {"branch_id": "main", "retention_days": 28},
+    {"branch_id": "dev", "retention_days": 7}
   ]
 }
 ```
@@ -53,8 +53,8 @@ cat <<EOT >> example_repo_gc_rules.json
 {
   "default_retention_days": 21,
   "branches": [
-    {"branch_id":  "main", "retention_days":  28},
-    {"branch_id":  "dev", "retention_days":  7}
+    {"branch_id": "main", "retention_days": 28},
+    {"branch_id": "dev", "retention_days": 7}
   ]
 }
 EOT
@@ -64,3 +64,15 @@ lakectl gc set-config lakefs://example-repo -f example_repo_gc_rules.json
 
 ## Running the GC job
 
+## Considerations
+1. lakeFS will never delete objects outside your repository's storage namespace.
+   In particular, objects that were imported using `lakefs import` or `lakectl ingest` will not be affected by GC jobs.
+   
+1. In cases where deleted objects are brought back to life while a GC job is running, said objects may or may not be
+   deleted. Such actions include:
+   1. Reverting a commit in which a file was deleted.
+   1. Branching out from an old commit.
+   1. Expanding the retention period of a branch.
+   1. Creating a branch from an existing branch, where the new branch has a longer retention period.
+
+1. You should not run more than a single GC job at the same time.
