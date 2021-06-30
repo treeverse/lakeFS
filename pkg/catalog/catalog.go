@@ -849,8 +849,15 @@ func (c *Catalog) ListCommits(ctx context.Context, repository string, branch str
 	}); err != nil {
 		return nil, false, err
 	}
-	commitID, err := c.dereferenceCommit(ctx, repositoryID, graveler.Ref(branchRef))
-	it, err := c.Store.Log(ctx, repositoryID, commitID)
+	rawRef, err := c.Store.Dereference(ctx, repositoryID, graveler.Ref(branchRef))
+	if err != nil {
+		return nil, false, fmt.Errorf("branch ref: %w", err)
+	}
+	if rawRef.CommitID == "" {
+		// return empty log if there is no commit on branch yet
+		return make([]*CommitLog, 0), false, nil
+	}
+	it, err := c.Store.Log(ctx, repositoryID, rawRef.CommitID)
 	if err != nil {
 		return nil, false, err
 	}
