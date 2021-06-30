@@ -1,13 +1,13 @@
 ---
 layout: default
-title: Exporting data
+title: Exporting Data
 description: Use lakeFS Spark client to export lakeFS commit to the object store. 
 parent: Reference
 nav_order: 5
 has_children: false
 ---
 
-# Exporting data
+# Exporting Data
 {: .no_toc }
 The export operation copies all data from a given lakeFS commit to 
 a designated object store location.
