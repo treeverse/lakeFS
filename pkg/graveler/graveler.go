@@ -63,11 +63,20 @@ const (
 	ReferenceTypeBranch
 )
 
+type ResolvedBranchModifier int
+
+const (
+	ResolvedBranchModifierNone ResolvedBranchModifier = iota
+	ResolvedBranchModifierCommitted
+	ResolvedBranchModifierStaging
+)
+
 type ResolvedRef struct {
-	Type         ReferenceType
-	BranchID     BranchID
-	CommitID     CommitID
-	StagingToken StagingToken
+	Type                   ReferenceType
+	BranchID               BranchID
+	ResolvedBranchModifier ResolvedBranchModifier
+	CommitID               CommitID
+	StagingToken           StagingToken
 }
 
 type MetaRangeInfo struct {

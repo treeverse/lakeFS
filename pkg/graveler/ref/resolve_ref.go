@@ -57,9 +57,9 @@ func ResolveRawRef(ctx context.Context, store Store, addressProvider ident.Addre
 				return nil, graveler.ErrInvalidRef
 			}
 			return &graveler.ResolvedRef{
-				Type:     graveler.ReferenceTypeBranch,
-				BranchID: rr.BranchID,
-				CommitID: rr.CommitID,
+				Type:                   graveler.ReferenceTypeBranch,
+				ResolvedBranchModifier: graveler.ResolvedBranchModifierCommitted,
+				CommitID:               rr.CommitID,
 			}, nil
 
 		case graveler.RefModTypeDollar:
@@ -67,9 +67,10 @@ func ResolveRawRef(ctx context.Context, store Store, addressProvider ident.Addre
 				return nil, graveler.ErrInvalidRef
 			}
 			return &graveler.ResolvedRef{
-				Type:         graveler.ReferenceTypeBranch,
-				BranchID:     rr.BranchID,
-				StagingToken: rr.StagingToken,
+				Type:                   graveler.ReferenceTypeBranch,
+				ResolvedBranchModifier: graveler.ResolvedBranchModifierStaging,
+				StagingToken:           rr.StagingToken,
+				CommitID:               rr.CommitID,
 			}, nil
 
 		case graveler.RefModTypeTilde:
