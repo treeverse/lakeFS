@@ -42,8 +42,8 @@ type RefModifier struct {
 	Value int
 }
 
-// RawRef parsed Ref into 'BaseRef' that holds the branch/tag/hash and list of
-//   modifiers that applied on the reference (order is important)
+// RawRef is a parsed Ref that includes 'BaseRef' that holds the branch/tag/hash and a list of
+//   ordered modifiers that applied to the reference.
 // Example: master~2 will be parsed into {BaseRef:"master", Modifiers:[{Type:RefModTypeTilde, Value:2}]}
 type RawRef struct {
 	BaseRef   string
