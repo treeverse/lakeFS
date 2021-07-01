@@ -25,7 +25,7 @@ func MetricsMiddleware(swagger *openapi3.Swagger) func(http.Handler) http.Handle
 			start := time.Now()
 			mrw := httputil.NewMetricResponseWriter(w)
 			next.ServeHTTP(mrw, r)
-			if err != nil {
+			if err == nil {
 				requestHistograms.
 					WithLabelValues(route.Operation.OperationID, strconv.Itoa(mrw.StatusCode)).
 					Observe(time.Since(start).Seconds())
