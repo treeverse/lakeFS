@@ -1976,9 +1976,9 @@ func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *h
 		return
 	}
 	writeResponse(w, http.StatusCreated, GarbageCollectionPrepareResponse{
-		GcCommitsLocation:   gcRUnMetadata.CommitsCSVLocation,
+		GcCommitsLocation:   gcRUnMetadata.CommitsCsvLocation,
 		GcAddressesLocation: gcRUnMetadata.AddressLocation,
-		RunId:               gcRUnMetadata.RunID,
+		RunId:               gcRUnMetadata.RunId,
 	})
 }
 

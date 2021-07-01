@@ -909,8 +909,8 @@ func (g *Graveler) SaveGarbageCollectionCommits(ctx context.Context, repositoryI
 	addressLocation := repo.StorageNamespace.String() + g.garbageCollectionManager.GetAddressesLocation()
 
 	return &GarbageCollectionRunMetadata{
-		RunID:              runID,
-		CommitsCSVLocation: commitsLocation,
+		RunId:              runID,
+		CommitsCsvLocation: commitsLocation,
 		AddressLocation:    addressLocation,
 	}, err
 }
