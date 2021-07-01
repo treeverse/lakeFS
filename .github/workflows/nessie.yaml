@@ -500,6 +500,7 @@ jobs:
     uses: benc-uk/workflow-dispatch@v1
     with:
       workflow: DeployLakeFS
+      repo: treeverse/terraform
       token: ${{ secrets.PERSONAL_TOKEN }}
       inputs: '{ "lakefs-version": ${{ needs.deploy-image.outputs.tag }}, "environment": "nirav-lakefs" }'
       
