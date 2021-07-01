@@ -905,7 +905,7 @@ func (g *Graveler) SaveGarbageCollectionCommits(ctx context.Context, repositoryI
 	if err != nil {
 		return "", "", "", fmt.Errorf("save garbage collection commits: %w", err)
 	}
-	commitsLocation = repo.StorageNamespace.String() + g.garbageCollectionManager.GetCommitsLocation(runID)
+	commitsLocation = repo.StorageNamespace.String() + g.garbageCollectionManager.GetCommitsCSVLocation(runID)
 	addressLocation = repo.StorageNamespace.String() + g.garbageCollectionManager.GetAddressesLocation()
 	return
 }
@@ -2040,6 +2040,6 @@ type GarbageCollectionManager interface {
 
 	SaveGarbageCollectionCommits(ctx context.Context, storageNamespace StorageNamespace, repositoryID RepositoryID, rules *GarbageCollectionRules, previouslyExpiredCommits []CommitID) (string, error)
 	GetRunExpiredCommits(ctx context.Context, storageNamespace StorageNamespace, runID string) ([]CommitID, error)
-	GetCommitsLocation(runID string) string
+	GetCommitsCSVLocation(runID string) string
 	GetAddressesLocation() string
 }

@@ -31,7 +31,7 @@ func (g *FakeGraveler) GetRunExpiredCommits(ctx context.Context, storageNamespac
 	panic("implement me")
 }
 
-func (g *FakeGraveler) GetCommitsLocation(string) string {
+func (g *FakeGraveler) GetCommitsCSVLocation(string) string {
 	panic("implement me")
 }
 

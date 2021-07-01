@@ -26,7 +26,7 @@ type GarbageCollectionManager struct {
 	committedBlockStoragePrefix string
 }
 
-func (m *GarbageCollectionManager) GetCommitsLocation(runID string) string {
+func (m *GarbageCollectionManager) GetCommitsCSVLocation(runID string) string {
 	return fmt.Sprintf(commitsFileSuffixTemplate, m.committedBlockStoragePrefix, runID)
 }
 
