@@ -33,6 +33,14 @@ public class GarbageCollectionPrepareResponse {
   @SerializedName(SERIALIZED_NAME_RUN_ID)
   private String runId;
 
+  public static final String SERIALIZED_NAME_GC_COMMITS_LOCATION = "gc_commits_location";
+  @SerializedName(SERIALIZED_NAME_GC_COMMITS_LOCATION)
+  private String gcCommitsLocation;
+
+  public static final String SERIALIZED_NAME_GC_ADDRESSES_LOCATION = "gc_addresses_location";
+  @SerializedName(SERIALIZED_NAME_GC_ADDRESSES_LOCATION)
+  private String gcAddressesLocation;
+
 
   public GarbageCollectionPrepareResponse runId(String runId) {
     
@@ -56,6 +64,50 @@ public class GarbageCollectionPrepareResponse {
   }
 
 
+  public GarbageCollectionPrepareResponse gcCommitsLocation(String gcCommitsLocation) {
+    
+    this.gcCommitsLocation = gcCommitsLocation;
+    return this;
+  }
+
+   /**
+   * location of commits csv table (partitioned by run_id)
+   * @return gcCommitsLocation
+  **/
+  @ApiModelProperty(example = "s3://my-storage-namespace/_lakefs/retention/commits", required = true, value = "location of commits csv table (partitioned by run_id)")
+
+  public String getGcCommitsLocation() {
+    return gcCommitsLocation;
+  }
+
+
+  public void setGcCommitsLocation(String gcCommitsLocation) {
+    this.gcCommitsLocation = gcCommitsLocation;
+  }
+
+
+  public GarbageCollectionPrepareResponse gcAddressesLocation(String gcAddressesLocation) {
+    
+    this.gcAddressesLocation = gcAddressesLocation;
+    return this;
+  }
+
+   /**
+   * location for expired addresses parquet table (partitioned by run_id)
+   * @return gcAddressesLocation
+  **/
+  @ApiModelProperty(example = "s3://my-storage-namespace/_lakefs/retention/addresses", required = true, value = "location for expired addresses parquet table (partitioned by run_id)")
+
+  public String getGcAddressesLocation() {
+    return gcAddressesLocation;
+  }
+
+
+  public void setGcAddressesLocation(String gcAddressesLocation) {
+    this.gcAddressesLocation = gcAddressesLocation;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -65,12 +117,14 @@ public class GarbageCollectionPrepareResponse {
       return false;
     }
     GarbageCollectionPrepareResponse garbageCollectionPrepareResponse = (GarbageCollectionPrepareResponse) o;
-    return Objects.equals(this.runId, garbageCollectionPrepareResponse.runId);
+    return Objects.equals(this.runId, garbageCollectionPrepareResponse.runId) &&
+        Objects.equals(this.gcCommitsLocation, garbageCollectionPrepareResponse.gcCommitsLocation) &&
+        Objects.equals(this.gcAddressesLocation, garbageCollectionPrepareResponse.gcAddressesLocation);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(runId);
+    return Objects.hash(runId, gcCommitsLocation, gcAddressesLocation);
   }
 
   @Override
@@ -78,6 +132,8 @@ public class GarbageCollectionPrepareResponse {
     StringBuilder sb = new StringBuilder();
     sb.append("class GarbageCollectionPrepareResponse {\n");
     sb.append("    runId: ").append(toIndentedString(runId)).append("\n");
+    sb.append("    gcCommitsLocation: ").append(toIndentedString(gcCommitsLocation)).append("\n");
+    sb.append("    gcAddressesLocation: ").append(toIndentedString(gcAddressesLocation)).append("\n");
     sb.append("}");
     return sb.toString();
   }

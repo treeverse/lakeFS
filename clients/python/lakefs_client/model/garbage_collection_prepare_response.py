@@ -74,6 +74,8 @@ class GarbageCollectionPrepareResponse(ModelNormal):
         """
         return {
             'run_id': (str,),  # noqa: E501
+            'gc_commits_location': (str,),  # noqa: E501
+            'gc_addresses_location': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -83,6 +85,8 @@ class GarbageCollectionPrepareResponse(ModelNormal):
 
     attribute_map = {
         'run_id': 'run_id',  # noqa: E501
+        'gc_commits_location': 'gc_commits_location',  # noqa: E501
+        'gc_addresses_location': 'gc_addresses_location',  # noqa: E501
     }
 
     _composed_schemas = {}
@@ -134,6 +138,8 @@ class GarbageCollectionPrepareResponse(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            gc_commits_location (str): location of commits csv table (partitioned by run_id). [optional]  # noqa: E501
+            gc_addresses_location (str): location for expired addresses parquet table (partitioned by run_id). [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

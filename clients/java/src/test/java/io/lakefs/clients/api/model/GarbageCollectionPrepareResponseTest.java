@@ -48,4 +48,20 @@ public class GarbageCollectionPrepareResponseTest {
         // TODO: test runId
     }
 
+    /**
+     * Test the property 'gcCommitsLocation'
+     */
+    @Test
+    public void gcCommitsLocationTest() {
+        // TODO: test gcCommitsLocation
+    }
+
+    /**
+     * Test the property 'gcAddressesLocation'
+     */
+    @Test
+    public void gcAddressesLocationTest() {
+        // TODO: test gcAddressesLocation
+    }
+
 }

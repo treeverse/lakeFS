@@ -1185,12 +1185,12 @@ func (c *Catalog) SetGarbageCollectionRules(ctx context.Context, repositoryID st
 	return c.Store.SetGarbageCollectionRules(ctx, graveler.RepositoryID(repositoryID), rules)
 }
 
-func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repository string, previousRunID string) (string, error) {
+func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repository string, previousRunID string) (string, string, string, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	if err := Validate([]ValidateArg{
 		{"repositoryID", repositoryID, ValidateRepositoryID},
 	}); err != nil {
-		return "", err
+		return "", "", "", err
 	}
 	return c.Store.SaveGarbageCollectionCommits(ctx, repositoryID, previousRunID)
 }

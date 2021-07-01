@@ -5048,12 +5048,25 @@ components:
     GarbageCollectionPrepareResponse:
       example:
         run_id: 64eaa103-d726-4a33-bcb8-7c0b4abfe09e
+        gc_addresses_location: s3://my-storage-namespace/_lakefs/retention/addresses
+        gc_commits_location: s3://my-storage-namespace/_lakefs/retention/commits
       properties:
         run_id:
           description: a unique identifier generated for this GC job
           example: 64eaa103-d726-4a33-bcb8-7c0b4abfe09e
           type: string
+        gc_commits_location:
+          description: location of commits csv table (partitioned by run_id)
+          example: s3://my-storage-namespace/_lakefs/retention/commits
+          type: string
+        gc_addresses_location:
+          description: location for expired addresses parquet table (partitioned by
+            run_id)
+          example: s3://my-storage-namespace/_lakefs/retention/addresses
+          type: string
       required:
+      - gc_addresses_location
+      - gc_commits_location
       - run_id
       type: object
     GarbageCollectionRule:
