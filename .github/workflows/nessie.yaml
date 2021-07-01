@@ -12,6 +12,7 @@ on:
       - "design/**"
     branches:
       - master
+      - persistent-lakefs
 
 jobs:
   check-secrets:
@@ -492,3 +493,13 @@ jobs:
         # with:
         #   files: ./nessie-cover.out
         #   fail_ci_if_error: false
+  invoke-terraform-workflow:
+    name: Invoke Terraform Workflow to deploy ECS container
+    needs: [deploy-image, spark2, spark3, run-system-aws-s3, run-system-gcp-gs, run-system-azure-abfs]  
+    runs-on: ubuntu-20.04
+    uses: benc-uk/workflow-dispatch@v1
+    with:
+      workflow: DeployLakeFS
+      token: ${{ secrets.PERSONAL_TOKEN }}
+      inputs: '{ "lakefs-version": ${{ needs.deploy-image.outputs.tag }}, "environment": "nirav-lakefs" }'
+      
