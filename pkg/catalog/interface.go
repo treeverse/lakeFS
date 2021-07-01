@@ -118,7 +118,7 @@ type Interface interface {
 
 	GetGarbageCollectionRules(ctx context.Context, repositoryID string) (*graveler.GarbageCollectionRules, error)
 	SetGarbageCollectionRules(ctx context.Context, repositoryID string, rules *graveler.GarbageCollectionRules) error
-	PrepareExpiredCommits(ctx context.Context, repositoryID string, previousRunID string) (string, error)
+	PrepareExpiredCommits(ctx context.Context, repositoryID string, previousRunID string) (*graveler.GarbageCollectionRunMetadata, error)
 
 	io.Closer
 }
