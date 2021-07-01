@@ -71,10 +71,10 @@ public class GarbageCollectionPrepareResponse {
   }
 
    /**
-   * location of commits csv table (partitioned by run_id)
+   * location of the resulting commits csv table (partitioned by run_id)
    * @return gcCommitsLocation
   **/
-  @ApiModelProperty(example = "s3://my-storage-namespace/_lakefs/retention/commits", required = true, value = "location of commits csv table (partitioned by run_id)")
+  @ApiModelProperty(example = "s3://my-storage-namespace/_lakefs/retention/commits", required = true, value = "location of the resulting commits csv table (partitioned by run_id)")
 
   public String getGcCommitsLocation() {
     return gcCommitsLocation;
@@ -93,10 +93,10 @@ public class GarbageCollectionPrepareResponse {
   }
 
    /**
-   * location for expired addresses parquet table (partitioned by run_id)
+   * location to use for expired addresses parquet table (partitioned by run_id)
    * @return gcAddressesLocation
   **/
-  @ApiModelProperty(example = "s3://my-storage-namespace/_lakefs/retention/addresses", required = true, value = "location for expired addresses parquet table (partitioned by run_id)")
+  @ApiModelProperty(example = "s3://my-storage-namespace/_lakefs/retention/addresses", required = true, value = "location to use for expired addresses parquet table (partitioned by run_id)")
 
   public String getGcAddressesLocation() {
     return gcAddressesLocation;

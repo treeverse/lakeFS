@@ -7,12 +7,13 @@
 package graveler
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	proto "github.com/golang/protobuf/proto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -254,6 +255,12 @@ type GarbageCollectionRules struct {
 
 	DefaultRetentionDays int32            `protobuf:"varint,1,opt,name=default_retention_days,json=defaultRetentionDays,proto3" json:"default_retention_days,omitempty"`
 	BranchRetentionDays  map[string]int32 `protobuf:"bytes,2,rep,name=branch_retention_days,json=branchRetentionDays,proto3" json:"branch_retention_days,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3"`
+}
+
+type GarbageCollectionRunMetadata struct {
+	RunID              string
+	CommitsCSVLocation string
+	AddressLocation    string
 }
 
 func (x *GarbageCollectionRules) Reset() {

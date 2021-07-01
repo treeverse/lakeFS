@@ -1971,14 +1971,14 @@ func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *h
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "prepare_garbage_collection_commits")
-	runID, gcCommitsLocation, gcAddressesLocation, err := c.Catalog.PrepareExpiredCommits(ctx, repository, swag.StringValue(body.PreviousRunId))
+	gcRUnMetadata, err := c.Catalog.PrepareExpiredCommits(ctx, repository, swag.StringValue(body.PreviousRunId))
 	if handleAPIError(w, err) {
 		return
 	}
 	writeResponse(w, http.StatusCreated, GarbageCollectionPrepareResponse{
-		GcCommitsLocation:   gcCommitsLocation,
-		GcAddressesLocation: gcAddressesLocation,
-		RunId:               runID,
+		GcCommitsLocation:   gcRUnMetadata.CommitsCSVLocation,
+		GcAddressesLocation: gcRUnMetadata.AddressLocation,
+		RunId:               gcRUnMetadata.RunID,
 	})
 }
 

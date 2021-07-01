@@ -106,8 +106,8 @@ class GarbageCollectionPrepareResponse(ModelNormal):
 
         Args:
             run_id (str): a unique identifier generated for this GC job
-            gc_commits_location (str): location of commits csv table (partitioned by run_id)
-            gc_addresses_location (str): location for expired addresses parquet table (partitioned by run_id)
+            gc_commits_location (str): location of the resulting commits csv table (partitioned by run_id)
+            gc_addresses_location (str): location to use for expired addresses parquet table (partitioned by run_id)
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types

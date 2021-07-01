@@ -19,27 +19,7 @@ type FakeGraveler struct {
 	hooks                     graveler.HooksHandler
 }
 
-func (g *FakeGraveler) GetRules(ctx context.Context, storageNamespace graveler.StorageNamespace) (*graveler.GarbageCollectionRules, error) {
-	panic("implement me")
-}
-
-func (g *FakeGraveler) SaveRules(ctx context.Context, storageNamespace graveler.StorageNamespace, rules *graveler.GarbageCollectionRules) error {
-	panic("implement me")
-}
-
-func (g *FakeGraveler) GetRunExpiredCommits(ctx context.Context, storageNamespace graveler.StorageNamespace, runID string) ([]graveler.CommitID, error) {
-	panic("implement me")
-}
-
-func (g *FakeGraveler) GetCommitsCSVLocation(string) string {
-	panic("implement me")
-}
-
-func (g *FakeGraveler) GetAddressesLocation() string {
-	panic("implement me")
-}
-
-func (g *FakeGraveler) SaveGarbageCollectionCommits(ctx context.Context, storageNamespace graveler.StorageNamespace, repositoryID graveler.RepositoryID, rules *graveler.GarbageCollectionRules, previouslyExpiredCommits []graveler.CommitID) (string, error) {
+func (g *FakeGraveler) SaveGarbageCollectionCommits(ctx context.Context, repositoryID graveler.RepositoryID, previousRunID string) (garbageCollectionRunMetadata *graveler.GarbageCollectionRunMetadata, err error) {
 	panic("implement me")
 }
 
