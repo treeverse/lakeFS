@@ -15,7 +15,9 @@ package io.lakefs.clients.api;
 
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.Error;
-import io.lakefs.clients.api.model.InlineResponse201;
+import io.lakefs.clients.api.model.GarbageCollectionPrepareRequest;
+import io.lakefs.clients.api.model.GarbageCollectionPrepareResponse;
+import io.lakefs.clients.api.model.GarbageCollectionRules;
 import org.junit.Test;
 import org.junit.Ignore;
 
@@ -34,6 +36,22 @@ public class RetentionApiTest {
 
     
     /**
+     * 
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void getGarbageCollectionRulesTest() throws ApiException {
+        String repository = null;
+        GarbageCollectionRules response = api.getGarbageCollectionRules(repository);
+
+        // TODO: test validations
+    }
+    
+    /**
      * save lists of active and expired commits for garbage collection
      *
      * 
@@ -42,9 +60,27 @@ public class RetentionApiTest {
      *          if the Api call fails
      */
     @Test
-    public void prepareRetentionCommitsTest() throws ApiException {
+    public void prepareGarbageCollectionCommitsTest() throws ApiException {
         String repository = null;
-        InlineResponse201 response = api.prepareRetentionCommits(repository);
+        GarbageCollectionPrepareRequest garbageCollectionPrepareRequest = null;
+        GarbageCollectionPrepareResponse response = api.prepareGarbageCollectionCommits(repository, garbageCollectionPrepareRequest);
+
+        // TODO: test validations
+    }
+    
+    /**
+     * 
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void setGarbageCollectionRulesTest() throws ApiException {
+        String repository = null;
+        GarbageCollectionRules garbageCollectionRules = null;
+        api.setGarbageCollectionRules(repository, garbageCollectionRules);
 
         // TODO: test validations
     }
