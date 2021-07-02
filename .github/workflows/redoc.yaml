@@ -28,7 +28,7 @@ jobs:
       - name: redoc-cli test
         uses: seeebiii/redoc-cli-github-action@v10
         with:
-          args: 'bundle api/swagger.yml -o redoc/api.html'
+          args: 'bundle api/swagger.yml -o redoc/index.html'
 
       - name: upload reference api doc to S3
         uses: jakejarvis/s3-sync-action@master
@@ -39,4 +39,3 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET_API_REFERENCE }}
           SOURCE_DIR: redoc
-          DEST_DIR: /
