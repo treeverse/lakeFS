@@ -3,6 +3,8 @@ name: redoc
 on:
   #release:
     #types: [published]
+  # temp for testing
+  pull_request:
   push:
     branches:
       - master
