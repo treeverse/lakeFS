@@ -1,4 +1,4 @@
-name: goreleaser
+name: redoc
 
 on:
   #release:
@@ -27,13 +27,6 @@ jobs:
         uses: seeebiii/redoc-cli-github-action@v10
         with:
           args: 'bundle api/swagger.yml -o docs/reference/api.html'
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
 
       - uses: jakejarvis/s3-sync-action@master
         with:
