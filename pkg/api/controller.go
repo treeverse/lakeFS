@@ -1971,11 +1971,15 @@ func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *h
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "prepare_garbage_collection_commits")
-	runID, err := c.Catalog.PrepareExpiredCommits(ctx, repository, swag.StringValue(body.PreviousRunId))
+	gcRUnMetadata, err := c.Catalog.PrepareExpiredCommits(ctx, repository, swag.StringValue(body.PreviousRunId))
 	if handleAPIError(w, err) {
 		return
 	}
-	writeResponse(w, http.StatusCreated, GarbageCollectionPrepareResponse{RunId: runID})
+	writeResponse(w, http.StatusCreated, GarbageCollectionPrepareResponse{
+		GcCommitsLocation:   gcRUnMetadata.CommitsCsvLocation,
+		GcAddressesLocation: gcRUnMetadata.AddressLocation,
+		RunId:               gcRUnMetadata.RunId,
+	})
 }
 
 func (c *Controller) GetMetaRange(w http.ResponseWriter, r *http.Request, repository string, metaRange string) {
