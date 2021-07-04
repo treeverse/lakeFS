@@ -64,9 +64,10 @@ const (
 )
 
 var serviceSet = map[string]struct{}{
-	"fs":   {},
-	"auth": {},
-	"ci":   {},
+	"fs":        {},
+	"auth":      {},
+	"ci":        {},
+	"retention": {},
 }
 
 func IsValidAction(name string) error {
