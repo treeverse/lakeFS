@@ -64,6 +64,16 @@ lakectl gc set-config lakefs://example-repo -f example_repo_gc_rules.json
 
 ## Running the GC job
 
+```bash
+spark-submit --class io.treeverse.clients.GarbageCollector \
+  -c spark.hadoop.lakefs.api.url=https://lakefs.example.com:8000/api/v1  \
+  -c spark.hadoop.lakefs.api.access_key=LAKEFS_ACCESS_KEY \
+  -c spark.hadoop.lakefs.api.secret_key=LAKEFS_SECRET_KEY \
+  -c spark.hadoop.fs.s3a.access.key=S3_ACCESS_KEY \
+  -c spark.hadoop.fs.s3a.secret.key=S3_SECRET_KEY \
+  --packages io.lakefs:lakefs-spark-client-301_2.12:0.1.0 \
+  example-repo us-east-1
+```
 ## Considerations
 1. lakeFS will never delete objects outside your repository's storage namespace.
    In particular, objects that were imported using `lakefs import` or `lakectl ingest` will not be affected by GC jobs.
