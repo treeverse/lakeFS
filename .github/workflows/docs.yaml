@@ -1,4 +1,4 @@
-name: redoc
+name: docs
 
 on:
   #release:
@@ -20,15 +20,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      #- name: Extract version
-        #shell: bash
-        #run: echo "::set-output name=tag::sha-$(git rev-parse --short HEAD | sed s/^v//g)"
-        #id: version
+      - name: Extract version
+        shell: bash
+        run: echo "::set-output name=tag::sha-$(git rev-parse --short HEAD | sed s/^v//g)"
+        id: version
 
-      - name: redoc-cli test
+      - name: API Reference - master
         uses: seeebiii/redoc-cli-github-action@v10
+        if: github.ref == 'refs/heads/master'
         with:
-          args: 'bundle api/swagger.yml -o redoc/index.html'
+          args: "bundle api/swagger.yml -o redoc/index.html"
+
+      - name: API Reference - tag
+        uses: seeebiii/redoc-cli-github-action@v10
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          args: "bundle api/swagger.yml -o redoc/${{ steps.version.outputs.tag }}.html"
 
       - name: upload reference api doc to S3
         uses: jakejarvis/s3-sync-action@master
