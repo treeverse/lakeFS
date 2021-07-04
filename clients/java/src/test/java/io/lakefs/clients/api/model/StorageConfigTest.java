@@ -41,6 +41,14 @@ public class StorageConfigTest {
     }
 
     /**
+     * Test the property 'blockstoreType'
+     */
+    @Test
+    public void blockstoreTypeTest() {
+        // TODO: test blockstoreType
+    }
+
+    /**
      * Test the property 'blockstoreNamespaceExample'
      */
     @Test

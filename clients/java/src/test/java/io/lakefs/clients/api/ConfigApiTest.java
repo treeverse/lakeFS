@@ -18,6 +18,7 @@ import io.lakefs.clients.api.model.CredentialsWithSecret;
 import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.Setup;
 import io.lakefs.clients.api.model.StorageConfig;
+import io.lakefs.clients.api.model.VersionConfig;
 import org.junit.Test;
 import org.junit.Ignore;
 
@@ -34,6 +35,21 @@ public class ConfigApiTest {
 
     private final ConfigApi api = new ConfigApi();
 
+    
+    /**
+     * 
+     *
+     * get version of lakeFS server
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void getLakeFSVersionTest() throws ApiException {
+        VersionConfig response = api.getLakeFSVersion();
+
+        // TODO: test validations
+    }
     
     /**
      * 

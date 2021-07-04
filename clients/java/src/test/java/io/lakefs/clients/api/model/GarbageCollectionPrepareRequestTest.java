@@ -41,11 +41,11 @@ public class GarbageCollectionPrepareRequestTest {
     }
 
     /**
-     * Test the property 'previousResultPath'
+     * Test the property 'previousRunId'
      */
     @Test
-    public void previousResultPathTest() {
-        // TODO: test previousResultPath
+    public void previousRunIdTest() {
+        // TODO: test previousRunId
     }
 
 }

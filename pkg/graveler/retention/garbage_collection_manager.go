@@ -15,14 +15,23 @@ import (
 )
 
 const (
-	configFileSuffixTemplate  = "/%s/retention/gc/rules/config.json"
-	commitsFileSuffixTemplate = "/%s/retention/gc/commits/run_id=%s/commits.csv"
+	configFileSuffixTemplate    = "/%s/retention/gc/rules/config.json"
+	addressesFilePrefixTemplate = "/%s/retention/gc/addresses/"
+	commitsFileSuffixTemplate   = "/%s/retention/gc/commits/run_id=%s/commits.csv"
 )
 
 type GarbageCollectionManager struct {
 	blockAdapter                block.Adapter
 	refManager                  graveler.RefManager
 	committedBlockStoragePrefix string
+}
+
+func (m *GarbageCollectionManager) GetCommitsCSVLocation(runID string) string {
+	return fmt.Sprintf(commitsFileSuffixTemplate, m.committedBlockStoragePrefix, runID)
+}
+
+func (m *GarbageCollectionManager) GetAddressesLocation() string {
+	return fmt.Sprintf(addressesFilePrefixTemplate, m.committedBlockStoragePrefix)
 }
 
 type RepositoryCommitGetter struct {
@@ -122,6 +131,10 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Cont
 	}
 	b := &strings.Builder{}
 	csvWriter := csv.NewWriter(b)
+	err = csvWriter.Write([]string{"commit_id", "expired"}) // write headers
+	if err != nil {
+		return "", err
+	}
 	for _, commitID := range gcCommits.expired {
 		err := csvWriter.Write([]string{string(commitID), "true"})
 		if err != nil {
