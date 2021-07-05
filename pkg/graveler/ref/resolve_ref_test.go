@@ -95,12 +95,14 @@ func TestResolveRawRef(t *testing.T) {
 
 	branch1CommitID := commitLog[3]
 	testutil.Must(t, r.SetBranch(ctx, "repo1", "branch1", graveler.Branch{
-		CommitID: branch1CommitID,
+		CommitID:     branch1CommitID,
+		StagingToken: "token1",
 	}))
 
 	branch2CommitID := commitLog[16]
 	testutil.Must(t, r.SetBranch(ctx, "repo1", "branch2", graveler.Branch{
-		CommitID: branch2CommitID,
+		CommitID:     branch2CommitID,
+		StagingToken: "token2",
 	}))
 
 	tagCommitID := commitLog[9]
@@ -120,6 +122,7 @@ func TestResolveRawRef(t *testing.T) {
 			Name:                   "branch_exist",
 			Ref:                    graveler.Ref("branch1"),
 			ExpectedBranchModifier: graveler.ResolvedBranchModifierNone,
+			ExpectedToken:          "token1",
 			ExpectedCommitID:       branch1CommitID,
 		},
 		{

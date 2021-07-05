@@ -913,7 +913,7 @@ func (c *Catalog) ListCommits(ctx context.Context, repository string, branch str
 func (c *Catalog) Revert(ctx context.Context, repository string, branch string, params RevertParams) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
-	revertRef := graveler.Ref(params.Reference)
+	reference := graveler.Ref(params.Reference)
 	commitParams := graveler.CommitParams{
 		Committer: params.Committer,
 		Message:   fmt.Sprintf("Revert %s", params.Reference),
@@ -922,14 +922,14 @@ func (c *Catalog) Revert(ctx context.Context, repository string, branch string, 
 	if err := Validate([]ValidateArg{
 		{"repositoryID", repositoryID, ValidateRepositoryID},
 		{"branchID", branchID, ValidateBranchID},
-		{"ref", revertRef, ValidateRef},
+		{"ref", reference, ValidateRef},
 		{"committer", commitParams.Committer, ValidateRequiredString},
 		{"message", commitParams.Message, ValidateRequiredString},
 		{"parentNumber", parentNumber, ValidateNonNegativeInt},
 	}); err != nil {
 		return err
 	}
-	_, _, err := c.Store.Revert(ctx, repositoryID, branchID, revertRef, parentNumber, commitParams)
+	_, _, err := c.Store.Revert(ctx, repositoryID, branchID, reference, parentNumber, commitParams)
 	return err
 }
 
