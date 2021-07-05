@@ -113,6 +113,10 @@ type Repository struct {
 	DefaultBranchID  BranchID         `db:"default_branch"`
 }
 
+func (r Repository) GetStorageNamespace() StorageNamespace {
+	return StorageNamespace(strings.TrimSuffix(r.StorageNamespace.String(), "/"))
+}
+
 type RepositoryRecord struct {
 	RepositoryID RepositoryID `db:"id"`
 	*Repository
@@ -901,12 +905,13 @@ func (g *Graveler) SaveGarbageCollectionCommits(ctx context.Context, repositoryI
 	if err != nil {
 		return nil, fmt.Errorf("get expired commits from previous run: %w", err)
 	}
-	runID, err := g.garbageCollectionManager.SaveGarbageCollectionCommits(ctx, repo.StorageNamespace, repositoryID, rules, previouslyExpiredCommits)
+	sn := repo.GetStorageNamespace()
+	runID, err := g.garbageCollectionManager.SaveGarbageCollectionCommits(ctx, sn, repositoryID, rules, previouslyExpiredCommits)
 	if err != nil {
 		return nil, fmt.Errorf("save garbage collection commits: %w", err)
 	}
-	commitsLocation := repo.StorageNamespace.String() + g.garbageCollectionManager.GetCommitsCSVLocation(runID)
-	addressLocation := repo.StorageNamespace.String() + g.garbageCollectionManager.GetAddressesLocation()
+	commitsLocation := sn.String() + g.garbageCollectionManager.GetCommitsCSVLocation(runID)
+	addressLocation := sn.String() + g.garbageCollectionManager.GetAddressesLocation()
 
 	return &GarbageCollectionRunMetadata{
 		RunId:              runID,
