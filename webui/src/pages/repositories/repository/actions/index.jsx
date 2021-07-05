@@ -115,11 +115,11 @@ const RunTable = ({ repo, runs, nextPage, after, onPaginate, onFilterBranch, onF
 const GetStarted = ({onCreateRepo}) => {
     return (
         <Container className="m-4 mb-5">
-            <h2 className="mt-2">No Actions log, to define a new Action:</h2>
+            <h2 className="mt-2">No actions have been logged!</h2>
 
             <Row className="pt-2 ml-2">
                 <DotIcon className="mr-1 mt-1"/>
-                See the&nbsp;<a href="https://docs.lakefs.io/setup/hooks.html" target="_blank" rel="noopener noreferrer">docs</a>&nbsp;for information on hooks configuration
+                See the&nbsp;<a href="https://docs.lakefs.io/setup/hooks.html" target="_blank" rel="noopener noreferrer">docs</a>&nbsp;for information on how to use this feature
             </Row>
         </Container>
     );

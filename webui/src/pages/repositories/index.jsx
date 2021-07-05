@@ -65,11 +65,11 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
 const GetStarted = ({onCreateRepo}) => {
     return (
         <Container className="m-4 mb-5">
-            <h2 className="mt-2">To get started create a new repository:</h2>
+            <h2 className="mt-2">Looks like you don't have any repositories!</h2>
 
             <Row className="pt-2 ml-2">
                 <DotIcon className="mr-1 mt-1"/>
-                <Button variant="link" onClick={onCreateRepo}>Create</Button>&nbsp;a new repository.
+                <Button variant="link" onClick={onCreateRepo}>Click</Button>&nbsp;here to create your first one :)
             </Row>
             <Row className="pt-2 ml-2">
                 <DotIcon className="mr-1 mt-1"/>
