@@ -63,7 +63,6 @@ public class LakeFSFileSystem extends FileSystem {
     private URI uri;
     private Path workingDirectory = new Path(Constants.SEPARATOR);
     private LakeFSClient lfsClient;
-    private AmazonS3 s3Client;
     private int listAmount;
     private FileSystem fsForConfig;
 
@@ -97,7 +96,6 @@ public class LakeFSFileSystem extends FileSystem {
         setConf(conf);
         this.uri = name;
 
-        s3Client = createS3ClientFromConf(conf);
         this.lfsClient = lfsClient;
 
         listAmount = conf.getInt(FS_LAKEFS_LIST_AMOUNT_KEY, DEFAULT_LIST_AMOUNT);
@@ -129,46 +127,6 @@ public class LakeFSFileSystem extends FileSystem {
         Path path = new Path(uri.toString());
         FileSystem fs = path.getFileSystem(conf);
         return f.apply(fs, path);
-    }
-
-    /**
-     * @return an Amazon S3 client configured much like S3A configure theirs.
-     */
-    static private AmazonS3 createS3ClientFromConf(Configuration conf) {
-        String accessKey = conf.get(org.apache.hadoop.fs.s3a.Constants.ACCESS_KEY, null);
-        String secretKey = conf.get(org.apache.hadoop.fs.s3a.Constants.SECRET_KEY, null);
-        AWSCredentialsProviderChain credentials = new AWSCredentialsProviderChain(
-                new BasicAWSCredentialsProvider(accessKey, secretKey),
-                new InstanceProfileCredentialsProvider(),
-                new AnonymousAWSCredentialsProvider());
-
-        ClientConfiguration awsConf = new ClientConfiguration();
-        awsConf.setMaxConnections(conf.getInt(org.apache.hadoop.fs.s3a.Constants.MAXIMUM_CONNECTIONS,
-                org.apache.hadoop.fs.s3a.Constants.DEFAULT_MAXIMUM_CONNECTIONS));
-        boolean secureConnections = conf.getBoolean(org.apache.hadoop.fs.s3a.Constants.SECURE_CONNECTIONS,
-                org.apache.hadoop.fs.s3a.Constants.DEFAULT_SECURE_CONNECTIONS);
-        awsConf.setProtocol(secureConnections ? Protocol.HTTPS : Protocol.HTTP);
-        awsConf.setMaxErrorRetry(conf.getInt(org.apache.hadoop.fs.s3a.Constants.MAX_ERROR_RETRIES,
-                org.apache.hadoop.fs.s3a.Constants.DEFAULT_MAX_ERROR_RETRIES));
-        awsConf.setConnectionTimeout(conf.getInt(org.apache.hadoop.fs.s3a.Constants.ESTABLISH_TIMEOUT,
-                org.apache.hadoop.fs.s3a.Constants.DEFAULT_ESTABLISH_TIMEOUT));
-        awsConf.setSocketTimeout(conf.getInt(org.apache.hadoop.fs.s3a.Constants.SOCKET_TIMEOUT,
-                org.apache.hadoop.fs.s3a.Constants.DEFAULT_SOCKET_TIMEOUT));
-
-        // TODO(ariels): Also copy proxy configuration?
-
-        AmazonS3 s3 = new AmazonS3Client(credentials, awsConf);
-        String endPoint = conf.getTrimmed(org.apache.hadoop.fs.s3a.Constants.ENDPOINT, "");
-        if (!endPoint.isEmpty()) {
-            try {
-                s3.setEndpoint(endPoint);
-            } catch (IllegalArgumentException e) {
-                String msg = "Incorrect endpoint: " + e.getMessage();
-                LOG.error(msg);
-                throw new IllegalArgumentException(msg, e);
-            }
-        }
-        return s3;
     }
 
     @Override
@@ -230,8 +188,9 @@ public class LakeFSFileSystem extends FileSystem {
             FileSystem physicalFs = physicalPath.getFileSystem(conf);
 
             // TODO(ariels): add fs.FileSystem.Statistics here to keep track.
-            return new FSDataOutputStream(new LinkOnCloseOutputStream(s3Client, staging, stagingLoc, objectLoc,
+            return new FSDataOutputStream(new LinkOnCloseOutputStream(staging, stagingLoc, objectLoc,
                     physicalUri,
+                    physicalFs,
                     // FSDataOutputStream is a kind of OutputStream(!)
                     physicalFs.create(physicalPath, false, bufferSize, replication, blockSize, progress)),
                     null);
