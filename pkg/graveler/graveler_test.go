@@ -608,8 +608,12 @@ func TestGraveler_PreMergeHook(t *testing.T) {
 	refManager := &testutil.RefsFake{
 		CommitID: expectedCommitID,
 		Branch:   &graveler.Branch{CommitID: destinationCommitID},
-		RevParseRes: map[graveler.Ref]graveler.Reference{
-			graveler.Ref(mergeDestination): testutil.NewFakeReference(graveler.ReferenceTypeBranch, mergeDestination, destinationCommitID),
+		Refs: map[graveler.Ref]*graveler.ResolvedRef{
+			graveler.Ref(mergeDestination): {
+				Type:     graveler.ReferenceTypeBranch,
+				BranchID: mergeDestination,
+				CommitID: destinationCommitID,
+			},
 		},
 		Commits: map[graveler.CommitID]*graveler.Commit{
 			expectedCommitID:    {MetaRangeID: expectedRangeID},

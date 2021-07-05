@@ -1,9 +1,11 @@
 package graveler
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -28,6 +30,37 @@ const (
 	DiffTypeConflict
 )
 
+type RefModType rune
+
+const (
+	RefModTypeTilde  RefModType = '~'
+	RefModTypeCaret  RefModType = '^'
+	RefModTypeAt     RefModType = '@'
+	RefModTypeDollar RefModType = '$'
+)
+
+type RefModifier struct {
+	Type  RefModType
+	Value int
+}
+
+type ParsedRef struct {
+	BaseRef      string
+	RefModifiers []RefModifier
+}
+
+func (p *ParsedRef) Ref() Ref {
+	var b bytes.Buffer
+	b.WriteString(p.BaseRef)
+	for _, m := range p.RefModifiers {
+		b.WriteRune(rune(m.Type))
+		if m.Value != 0 {
+			b.WriteString(strconv.Itoa(m.Value))
+		}
+	}
+	return Ref(b.String())
+}
+
 type DiffSummary struct {
 	Count map[DiffType]int
 }
@@ -41,10 +74,11 @@ const (
 	ReferenceTypeBranch
 )
 
-type Reference interface {
-	Type() ReferenceType
-	Branch() Branch
-	CommitID() CommitID
+type ResolvedRef struct {
+	Type         ReferenceType
+	BranchID     BranchID
+	CommitID     CommitID
+	StagingToken StagingToken
 }
 
 type MetaRangeInfo struct {
@@ -335,8 +369,14 @@ type VersionController interface {
 	// GetCommit returns the Commit metadata object for the given CommitID
 	GetCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (*Commit, error)
 
-	// Dereference returns the commit ID based on 'ref' reference
-	Dereference(ctx context.Context, repositoryID RepositoryID, ref Ref) (CommitID, error)
+	// Dereference returns the resolved ref information based on 'ref' reference
+	Dereference(ctx context.Context, repositoryID RepositoryID, ref Ref) (*ResolvedRef, error)
+
+	// ParseRef returns parsed 'ref' information as ParsedRef
+	ParseRef(ref Ref) (ParsedRef, error)
+
+	// ResolveParsedRef returns the ResolvedRef matching the given ParsedRef
+	ResolveParsedRef(ctx context.Context, repositoryID RepositoryID, parsedRef ParsedRef) (*ResolvedRef, error)
 
 	// Reset throws all staged data on the repository / branch
 	Reset(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error
@@ -501,8 +541,11 @@ type RefManager interface {
 	// DeleteRepository deletes the repository
 	DeleteRepository(ctx context.Context, repositoryID RepositoryID) error
 
-	// RevParse returns the Reference matching the given Ref
-	RevParse(ctx context.Context, repositoryID RepositoryID, ref Ref) (Reference, error)
+	// ParseRef returns parsed 'ref' information as ParsedRef
+	ParseRef(ref Ref) (ParsedRef, error)
+
+	// ResolveParsedRef returns the ResolvedRef matching the given ParsedRef
+	ResolveParsedRef(ctx context.Context, repositoryID RepositoryID, parsedRef ParsedRef) (*ResolvedRef, error)
 
 	// GetBranch returns the Branch metadata object for the given BranchID
 	GetBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (*Branch, error)
@@ -749,15 +792,15 @@ func (g *Graveler) CreateBranch(ctx context.Context, repositoryID RepositoryID, 
 		return nil, fmt.Errorf("branch '%s': %w", branchID, err)
 	}
 
-	reference, err := g.RefManager.RevParse(ctx, repositoryID, ref)
+	reference, err := g.Dereference(ctx, repositoryID, ref)
 	if err != nil {
 		return nil, fmt.Errorf("source reference '%s': %w", ref, err)
 	}
-	if reference.CommitID() == "" {
+	if reference.CommitID == "" {
 		return nil, fmt.Errorf("source reference '%s': %w", ref, ErrCreateBranchNoCommit)
 	}
 	newBranch := Branch{
-		CommitID:     reference.CommitID(),
+		CommitID:     reference.CommitID,
 		StagingToken: generateStagingToken(repositoryID, branchID),
 	}
 	err = g.RefManager.SetBranch(ctx, repositoryID, branchID, newBranch)
@@ -778,7 +821,7 @@ func (g *Graveler) UpdateBranch(ctx context.Context, repositoryID RepositoryID, 
 }
 
 func (g *Graveler) updateBranchNoLock(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (*Branch, error) {
-	reference, err := g.RefManager.RevParse(ctx, repositoryID, ref)
+	reference, err := g.Dereference(ctx, repositoryID, ref)
 	if err != nil {
 		return nil, err
 	}
@@ -799,7 +842,7 @@ func (g *Graveler) updateBranchNoLock(ctx context.Context, repositoryID Reposito
 	}
 
 	newBranch := Branch{
-		CommitID:     reference.CommitID(),
+		CommitID:     reference.CommitID,
 		StagingToken: curBranch.StagingToken,
 	}
 	err = g.RefManager.SetBranch(ctx, repositoryID, branchID, newBranch)
@@ -829,12 +872,20 @@ func (g *Graveler) ListTags(ctx context.Context, repositoryID RepositoryID) (Tag
 	return g.RefManager.ListTags(ctx, repositoryID)
 }
 
-func (g *Graveler) Dereference(ctx context.Context, repositoryID RepositoryID, ref Ref) (CommitID, error) {
-	reference, err := g.RefManager.RevParse(ctx, repositoryID, ref)
+func (g *Graveler) Dereference(ctx context.Context, repositoryID RepositoryID, ref Ref) (*ResolvedRef, error) {
+	parsedRef, err := g.ParseRef(ref)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return reference.CommitID(), nil
+	return g.ResolveParsedRef(ctx, repositoryID, parsedRef)
+}
+
+func (g *Graveler) ParseRef(ref Ref) (ParsedRef, error) {
+	return g.RefManager.ParseRef(ref)
+}
+
+func (g *Graveler) ResolveParsedRef(ctx context.Context, repositoryID RepositoryID, parsedRef ParsedRef) (*ResolvedRef, error) {
+	return g.RefManager.ResolveParsedRef(ctx, repositoryID, parsedRef)
 }
 
 func (g *Graveler) Log(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (CommitIterator, error) {
@@ -920,14 +971,13 @@ func (g *Graveler) Get(ctx context.Context, repositoryID RepositoryID, ref Ref, 
 	if err != nil {
 		return nil, err
 	}
-	reference, err := g.RefManager.RevParse(ctx, repositoryID, ref)
+	reference, err := g.Dereference(ctx, repositoryID, ref)
 	if err != nil {
 		return nil, err
 	}
-	if reference.Type() == ReferenceTypeBranch {
+	if reference.Type == ReferenceTypeBranch {
 		// try to get from staging, if not found proceed to committed
-		branch := reference.Branch()
-		value, err := g.StagingManager.Get(ctx, branch.StagingToken, key)
+		value, err := g.StagingManager.Get(ctx, reference.StagingToken, key)
 		if !errors.Is(err, ErrNotFound) {
 			if err != nil {
 				return nil, err
@@ -939,7 +989,7 @@ func (g *Graveler) Get(ctx context.Context, repositoryID RepositoryID, ref Ref, 
 			return value, nil
 		}
 	}
-	commitID := reference.CommitID()
+	commitID := reference.CommitID
 	commit, err := g.RefManager.GetCommit(ctx, repositoryID, commitID)
 	if err != nil {
 		return nil, err
@@ -1040,11 +1090,11 @@ func (g *Graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref)
 	if err != nil {
 		return nil, err
 	}
-	reference, err := g.RefManager.RevParse(ctx, repositoryID, ref)
+	reference, err := g.Dereference(ctx, repositoryID, ref)
 	if err != nil {
 		return nil, err
 	}
-	commitID := reference.CommitID()
+	commitID := reference.CommitID
 	var metaRangeID MetaRangeID
 	if commitID != "" {
 		commit, err := g.RefManager.GetCommit(ctx, repositoryID, commitID)
@@ -1058,8 +1108,8 @@ func (g *Graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref)
 	if err != nil {
 		return nil, err
 	}
-	if reference.Type() == ReferenceTypeBranch {
-		stagingList, err := g.StagingManager.List(ctx, reference.Branch().StagingToken)
+	if reference.Type == ReferenceTypeBranch {
+		stagingList, err := g.StagingManager.List(ctx, reference.StagingToken)
 		if err != nil {
 			return nil, err
 		}
@@ -1573,16 +1623,16 @@ func (g *Graveler) DiffUncommitted(ctx context.Context, repositoryID RepositoryI
 }
 
 func (g *Graveler) getCommitRecordFromRef(ctx context.Context, repositoryID RepositoryID, ref Ref) (*CommitRecord, error) {
-	reference, err := g.RefManager.RevParse(ctx, repositoryID, ref)
+	reference, err := g.Dereference(ctx, repositoryID, ref)
 	if err != nil {
 		return nil, err
 	}
-	commit, err := g.RefManager.GetCommit(ctx, repositoryID, reference.CommitID())
+	commit, err := g.RefManager.GetCommit(ctx, repositoryID, reference.CommitID)
 	if err != nil {
 		return nil, err
 	}
 	return &CommitRecord{
-		CommitID: reference.CommitID(),
+		CommitID: reference.CommitID,
 		Commit:   commit,
 	}, nil
 }
