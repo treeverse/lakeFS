@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 	"time"
 
@@ -789,8 +790,12 @@ func (c *Catalog) Commit(ctx context.Context, repository string, branch string, 
 		return nil, err
 	}
 	var commitDate time.Time
-	if metadata["gc-test-date"] != "" {
-		commitDate, _ = time.Parse(time.RFC3339, metadata["gc-test-date"])
+	if metadata["gc-test-days-ago"] != "" {
+		daysAgo, err := strconv.Atoi(metadata["gc-test-days-ago"])
+		if err != nil {
+			return nil, err
+		}
+		commitDate = time.Now().AddDate(0, 0, -daysAgo)
 	}
 	commitID, err := c.Store.Commit(ctx, repositoryID, branchID, graveler.CommitParams{
 		CommitDate: commitDate,
@@ -1099,8 +1104,12 @@ func (c *Catalog) Merge(ctx context.Context, repository string, destinationBranc
 	source := graveler.Ref(sourceRef)
 	meta := graveler.Metadata(metadata)
 	var commitDate time.Time
-	if metadata["gc-test-date"] != "" {
-		commitDate, _ = time.Parse(time.RFC3339, metadata["gc-test-date"])
+	if metadata["gc-test-days-ago"] != "" {
+		daysAgo, err := strconv.Atoi(metadata["gc-test-days-ago"])
+		if err != nil {
+			return nil, err
+		}
+		commitDate = time.Now().AddDate(0, 0, -daysAgo)
 	}
 	commitParams := graveler.CommitParams{
 		CommitDate: commitDate,
