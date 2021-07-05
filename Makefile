@@ -227,7 +227,7 @@ proto: ## Build proto (Protocol Buffers) files
 	$(PROTOC) --proto_path=pkg/graveler --go_out=pkg/graveler --go_opt=paths=source_relative graveler.proto
 
 publish-scala: ## sbt publish spark client jars to nexus and s3 bucket
-	cd clients/spark && sbt assembly && sbt s3Upload && sbt publish
+	cd clients/spark && sbt assembly && sbt s3Upload && sbt publishSigned
 	aws s3 cp --recursive --acl public-read $(CLIENT_JARS_BUCKET) $(CLIENT_JARS_BUCKET) --metadata-directive REPLACE
 
 publish-lakefsfs-test: ## sbt publish spark lakefsfs test jars to s3 bucket
