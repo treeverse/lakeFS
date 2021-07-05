@@ -51,6 +51,11 @@ def generateCoreProject(buildType: BuildType) =
         "com.google.guava" % "failureaccess" % "1.0.1",
         "org.rogach" %% "scallop" % "4.0.3",
         "software.amazon.awssdk" % "s3" % "2.15.15",
+        "org.ow2.asm" % "asm" % "9.2",
+        "org.ow2.asm" % "asm-util" % "9.2",
+
+        "org.scalactic" %% "scalactic" % "3.2.9",
+        "org.scalatest" %% "scalatest" % "3.2.9" % "test",
       ),
       target := file(s"target/core-${buildType.name}/")
     ).enablePlugins(S3Plugin)
@@ -110,6 +115,8 @@ lazy val s3UploadSettings = Seq(
 
 // Don't publish root project
 root / publish / skip := true
+
+root / Test / logBuffered := false
 
 lazy val commonSettings = Seq(
   version := projectVersion,
