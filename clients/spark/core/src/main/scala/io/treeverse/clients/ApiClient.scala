@@ -1,7 +1,7 @@
 package io.treeverse.clients
 
 import com.google.common.cache.CacheBuilder
-import io.treeverse.lakefs.clients.api
+import io.lakefs.clients.api
 
 import java.net.URI
 import java.util.concurrent.TimeUnit
