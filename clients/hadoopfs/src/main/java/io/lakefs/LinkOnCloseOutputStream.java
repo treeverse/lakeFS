@@ -6,14 +6,18 @@ import java.beans.PropertyDescriptor;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.URI;
 
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import io.lakefs.clients.api.StagingApi;
 import io.lakefs.clients.api.model.StagingLocation;
 import io.lakefs.clients.api.model.StagingMetadata;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.s3a.S3AFileSystem;
 
 /**
  * Wraps a FSDataOutputStream to link file on staging when done writing
@@ -69,14 +73,31 @@ class LinkOnCloseOutputStream extends OutputStream {
 
         // Now the object is on the underlying store, find its parameters (sadly lost by
         // the underlying Hadoop FileSystem) so we can link it on lakeFS.
-        FileStatus fileStatus = physicalFs.getFileStatus(new Path(physicalUri.getPath()));
-        String checksum = getChecksumFromFileStatus(fileStatus);
+        Path physicalPath = new Path(physicalUri.getPath());
+        FileStatus fileStatus = physicalFs.getFileStatus(physicalPath);
+        S3AFileSystem fs2;
         long sizeBytes = fileStatus.getLen();
+
+        String etag = getEtagFromFileStatus(fileStatus);
+        if (etag.isEmpty()) {
+            // Missing etag - try to use the underlying s3 client and get the Etag
+            try {
+                String bucket = physicalUri.getHost();
+                String key = physicalUri.getPath().substring(1);
+                Method amazonS3ClientGetter = physicalFs.getClass().getDeclaredMethod("getAmazonS3Client");
+                amazonS3ClientGetter.setAccessible(true);
+                AmazonS3Client s3 = (AmazonS3Client)amazonS3ClientGetter.invoke(physicalFs);
+                ObjectMetadata objectMetadata = s3.getObjectMetadata(bucket, key);
+                etag = objectMetadata.getETag();
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                throw new IOException("failed to get etag with underlying s3 client", e);
+            }
+        }
 
         // TODO(ariels): Can we add metadata here?
         StagingMetadata metadata = new StagingMetadata()
                 .staging(stagingLoc)
-                .checksum(checksum)
+                .checksum(etag)
                 .sizeBytes(sizeBytes);
         try {
             staging.linkPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(), metadata);
@@ -85,7 +106,7 @@ class LinkOnCloseOutputStream extends OutputStream {
         }
     }
 
-    private String getChecksumFromFileStatus(FileStatus fileStatus) throws IOException {
+    private String getEtagFromFileStatus(FileStatus fileStatus) throws IOException {
         try {
             for (PropertyDescriptor pd : Introspector.getBeanInfo(fileStatus.getClass()).getPropertyDescriptors()) {
                 if (pd.getReadMethod() != null && pd.getName().equals("etag")) {
@@ -98,6 +119,6 @@ class LinkOnCloseOutputStream extends OutputStream {
         } catch (IntrospectionException | IllegalAccessException | InvocationTargetException e) {
             throw new IOException("failed to extract etag from FileStatus", e);
         }
-        throw new IOException("FileStatus missing etag value");
+        return "";
     }
 }
