@@ -63,8 +63,7 @@ const (
 	ReferenceTypeBranch
 )
 
-// ResolvedBranchModifier branch modifier to identify
-//   Identify if resolved branch information was to a committed/staging or none was specified
+// ResolvedBranchModifier indicates if the ref specified one of the committed/staging modifiers, and which.
 type ResolvedBranchModifier int
 
 const (
@@ -77,8 +76,8 @@ const (
 //   Type: Branch / Tag / Commit
 //   BranchID: for type ReferenceTypeBranch will hold the branch ID
 //   ResolvedBranchModifier: branch indicator if resolved to a branch latest commit, staging or none was specified.
-//   CommitID: set for branch (none or committed), tag or commit
-//   StagingToken: set for branch (none or staging)
+//   CommitID: set to the latest branch commit, tag or specific hash.
+//   StagingToken: empty if ResolvedBranchModifier is ResolvedBranchModifierCommmitted.
 //
 type ResolvedRef struct {
 	Type                   ReferenceType
