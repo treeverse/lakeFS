@@ -114,7 +114,6 @@ object GarbageCollector {
     SSTableReader
       .forRange(new Configuration(), location)
       .newIterator()
-      .filter(!_.message.addressType.isRelative)
       .filter(x =>set.contains(x.message.address))
       .map(a =>
           new String(a.message.address),
