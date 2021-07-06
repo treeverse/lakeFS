@@ -499,7 +499,7 @@ jobs:
     runs-on: ubuntu-20.04
     uses: benc-uk/workflow-dispatch@v1
     with:
-      workflow: DeployLakeFS
+      workflow: Deploy LakeFS
       repo: treeverse/terraform
       token: ${{ secrets.PERSONAL_TOKEN }}
       inputs: '{ "lakefs-version": ${{ needs.deploy-image.outputs.tag }} }'
