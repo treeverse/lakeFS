@@ -47,8 +47,9 @@ public class MetadataClient {
             o.setContentLength(fileStatus.getLen());
             o.setHeader("ETag", etag);
             return o;
-        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
-            LOG.trace("failed to get etag from file status", e);
+        } catch (InvocationTargetException | IllegalAccessException e) {
+            LOG.warn("failed to get etag from file status", e);
+        } catch (NoSuchMethodException ignored) {
         }
 
         // fallback - use the underlying s3 client, get object metadata

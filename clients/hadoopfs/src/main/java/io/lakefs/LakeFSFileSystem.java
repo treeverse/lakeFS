@@ -382,22 +382,15 @@ public class LakeFSFileSystem extends FileSystem {
      * @return an IOException that corresponds to the translated API exception
      */
     private IOException translateException(String msg, ApiException e) {
-        IOException ex;
         int code = e.getCode();
         switch (code) {
             case HttpStatus.SC_NOT_FOUND:
-                ex = new FileNotFoundException(msg);
-                ex.initCause(e);
-                break;
+                return (FileNotFoundException) new FileNotFoundException(msg).initCause(e);
             case HttpStatus.SC_FORBIDDEN:
-                ex = new AccessDeniedException(msg);
-                ex.initCause(e);
-                break;
+                return (AccessDeniedException) new AccessDeniedException(msg).initCause(e);
             default:
-                ex = new IOException(msg, e);
-                break;
+                return new IOException(msg, e);
         }
-        return ex;
     }
 
     @Override
