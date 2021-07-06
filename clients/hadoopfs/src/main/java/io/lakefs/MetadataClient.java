@@ -17,23 +17,12 @@ import java.net.URI;
 public class MetadataClient {
     public static final Logger LOG = LoggerFactory.getLogger(MetadataClient.class);
     private final FileSystem fs;
-    private Method getObjectMetadataMethod;
-    private Object s3Client;
 
     public MetadataClient(FileSystem fs) {
         if (fs == null) {
             throw new NullArgumentException("fs");
         }
         this.fs = fs;
-        try {
-            // cache s3 client and get object metadata method
-            Method amazonS3ClientGetter = fs.getClass().getDeclaredMethod("getAmazonS3Client");
-            amazonS3ClientGetter.setAccessible(true);
-            this.s3Client = amazonS3ClientGetter.invoke(fs);
-            this.getObjectMetadataMethod = s3Client.getClass().getDeclaredMethod("getObjectMetadata", GetObjectMetadataRequest.class);
-        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-            LOG.debug("get underlying get object metadata method:", e);
-        }
     }
 
     /**
@@ -63,17 +52,15 @@ public class MetadataClient {
         }
 
         // fallback - use the underlying s3 client, get object metadata
-        if (this.s3Client == null) {
-            throw new IOException("no s3Client for object metadata");
-        }
-        if (this.getObjectMetadataMethod == null) {
-            throw new IOException("no getObjectMetadataMethod for object metadata");
-        }
-
         try {
+            // cache s3 client and get object metadata method
+            Method amazonS3ClientGetter = fs.getClass().getDeclaredMethod("getAmazonS3Client");
+            amazonS3ClientGetter.setAccessible(true);
+            Object s3Client = amazonS3ClientGetter.invoke(fs);
+            Method getObjectMetadataMethod = s3Client.getClass().getDeclaredMethod("getObjectMetadata", GetObjectMetadataRequest.class);
             GetObjectMetadataRequest metadataRequest = new GetObjectMetadataRequest(bucket, key);
-            return (ObjectMetadata) getObjectMetadataMethod.invoke(this.s3Client, metadataRequest);
-        } catch (IllegalAccessException | InvocationTargetException e) {
+            return (ObjectMetadata) getObjectMetadataMethod.invoke(s3Client, metadataRequest);
+        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
             LOG.warn("failed to get object metadata using underlying s3 client", e);
             throw new IOException("get object metadata using underlying s3 client", e);
         }

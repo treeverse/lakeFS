@@ -48,7 +48,6 @@ public class LakeFSFileSystem extends FileSystem {
     private LakeFSClient lfsClient;
     private int listAmount;
     private FileSystem fsForConfig;
-    private MetadataClient metadataClient;
 
     private URI translateUri(URI uri) throws java.net.URISyntaxException {
         switch (uri.getScheme()) {
@@ -97,8 +96,6 @@ public class LakeFSFileSystem extends FileSystem {
         } catch (ApiException | URISyntaxException e) {
             LOG.warn("get underlying filesystem for {}: {} (use default values)", path, e);
         }
-
-        this.metadataClient = new MetadataClient(fsForConfig);
     }
 
     @FunctionalInterface
@@ -177,7 +174,7 @@ public class LakeFSFileSystem extends FileSystem {
             // TODO(ariels): add fs.FileSystem.Statistics here to keep track.
             return new FSDataOutputStream(new LinkOnCloseOutputStream(staging, stagingLoc, objectLoc,
                     physicalUri,
-                    this.metadataClient,
+                    new MetadataClient(physicalFs),
                     // FSDataOutputStream is a kind of OutputStream(!)
                     physicalFs.create(physicalPath, false, bufferSize, replication, blockSize, progress)),
                     null);
