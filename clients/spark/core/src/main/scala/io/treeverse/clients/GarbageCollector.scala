@@ -81,7 +81,7 @@ object GarbageCollector {
     SSTableReader
       .forRange(new Configuration(), location)
       .newIterator()
-      .map(a => new String(a.key))
+      .map(a => new String(a.message.address))
       .toSeq
   }
 
@@ -279,6 +279,7 @@ object GarbageCollector {
                                                spark,
                                                APIConfigurations(apiURL, accessKey, secretKey)
                                               ).withColumn("run_id", lit(runID))
+    spark.conf.set("spark.sql.sources.partitionOverwriteMode","dynamic")
     expiredAddresses.write
       .partitionBy("run_id")
       .mode(SaveMode.Overwrite)
