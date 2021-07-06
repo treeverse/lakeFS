@@ -39,7 +39,8 @@ object GarbageCollector {
   ): Set[(String, Array[Byte], Array[Byte])] = {
     val location =
       new ApiClient(conf.apiURL, conf.accessKey, conf.secretKey).getMetaRangeURL(repo, commitID)
-    if (location == "") Set[(String, Array[Byte], Array[Byte])]()
+    // continue on empty location, empty location is a result of a commit with no metaRangeID (e.g 'Repository created' commit)
+    if (location == "") Set()
     else
       SSTableReader
         .forMetaRange(new Configuration(), location)
@@ -73,15 +74,14 @@ object GarbageCollector {
   def getRangeAddresses(
       rangeID: String,
       conf: APIConfigurations,
-      repo: String,
-      spark: SparkSession
+      repo: String
   ): Seq[String] = {
     val location =
       new ApiClient(conf.apiURL, conf.accessKey, conf.secretKey).getRangeURL(repo, rangeID)
     SSTableReader
       .forRange(new Configuration(), location)
       .newIterator()
-      .map(a => new String(a.message.address))
+      .map(a => a.message.address)
       .toSeq
   }
 
@@ -219,7 +219,6 @@ object GarbageCollector {
     val rangesDF = getRangesDFFromCommits(commitsDF, repo, conf)
     val expired = getExpiredEntriesFromRanges(rangesDF, conf, repo)
 
-    // validate deduplications
     val activeRangesDF = rangesDF.where("!expired")
     subtractDeduplications(expired, activeRangesDF, conf, repo, spark)
   }
@@ -235,7 +234,7 @@ object GarbageCollector {
       activeRangesDF.select("range_id").rdd.distinct().map(x => x.getString(0))
     val activeAddresses: RDD[String] = activeRangesRDD
       .flatMap(range => {
-        getRangeAddresses(range, conf, repo, spark)
+        getRangeAddresses(range, conf, repo)
       })
       .distinct()
     val activeAddressesRows: RDD[Row] = activeAddresses.map(x => Row(x))
@@ -279,7 +278,7 @@ object GarbageCollector {
                                                spark,
                                                APIConfigurations(apiURL, accessKey, secretKey)
                                               ).withColumn("run_id", lit(runID))
-    spark.conf.set("spark.sql.sources.partitionOverwriteMode","dynamic")
+    spark.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
     expiredAddresses.write
       .partitionBy("run_id")
       .mode(SaveMode.Overwrite)

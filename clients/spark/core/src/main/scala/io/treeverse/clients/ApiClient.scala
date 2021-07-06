@@ -72,7 +72,7 @@ class ApiClient(apiUrl: String, accessKey: String, secretKey: String) {
     if (metaRangeID != "") {
       val metaRange = metadataApi.getMetaRange(repoName, metaRangeID)
       val location = metaRange.getLocation
-      URI.create(getStorageNamespace(repoName) + "/" + location).normalize().toString
+      URI.create(getStorageNamespace(repoName) + "/").resolve(location).normalize().toString
     } else ""
   }
 
