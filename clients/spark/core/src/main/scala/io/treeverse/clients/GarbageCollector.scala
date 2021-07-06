@@ -7,6 +7,7 @@ import io.treeverse.clients.LakeFSContext.{
   LAKEFS_CONF_API_URL_KEY
 }
 import org.apache.hadoop.conf.Configuration
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{SparkSession, _}
@@ -69,14 +70,19 @@ object GarbageCollector {
       .distinct
   }
 
-  def getRangeAddresses(rangeID: String, conf: APIConfigurations, repo: String): Set[String] = {
+  def getRangeAddresses(
+      rangeID: String,
+      conf: APIConfigurations,
+      repo: String,
+      spark: SparkSession
+  ): Seq[String] = {
     val location =
       new ApiClient(conf.apiURL, conf.accessKey, conf.secretKey).getRangeURL(repo, rangeID)
     SSTableReader
       .forRange(new Configuration(), location)
       .newIterator()
       .map(a => new String(a.key))
-      .toSet
+      .toSeq
   }
 
   def getEntryTuples(
@@ -101,23 +107,6 @@ object GarbageCollector {
           getSeconds(a.message.lastModified)
         )
       )
-      .toSet
-  }
-
-  def getEntryAddressesIfInSet(
-      rangeID: String,
-      conf: APIConfigurations,
-      repo: String,
-      set: Set[String]
-  ): Set[String] = {
-
-    val location =
-      new ApiClient(conf.apiURL, conf.accessKey, conf.secretKey).getRangeURL(repo, rangeID)
-    SSTableReader
-      .forRange(new Configuration(), location)
-      .newIterator()
-      .filter(x => set.contains(x.message.address))
-      .map(a => new String(a.message.address))
       .toSet
   }
 
@@ -242,19 +231,17 @@ object GarbageCollector {
       repo: String,
       spark: SparkSession
   ): Dataset[Row] = {
-    val expiredAddr: Set[String] = expired.select("address").collect().map(_.getString(0)).toSet
-    val ranges: Seq[String] =
-      activeRangesDF.select("range_id").collect().map(_.getString(0)).toSeq.distinct
-    val rangesRDD = spark.sparkContext.parallelize(ranges)
-
-    val activeAddresses = rangesRDD
+    val activeRangesRDD: RDD[String] =
+      activeRangesDF.select("range_id").rdd.distinct().map(x => x.getString(0))
+    val activeAddresses: RDD[String] = activeRangesRDD
       .flatMap(range => {
-        getEntryAddressesIfInSet(range, conf, repo, expiredAddr)
+        getRangeAddresses(range, conf, repo, spark)
       })
-      .map(x => Row(x))
-
+      .distinct()
+    val activeAddressesRows: RDD[Row] = activeAddresses.map(x => Row(x))
     val schema = new StructType().add(StructField("address", StringType, true))
-    val activeDF = spark.createDataFrame(activeAddresses, schema)
+    val activeDF = spark.createDataFrame(activeAddressesRows, schema)
+    // remove active addresses from delete candidates
     expired.join(
       activeDF,
       expired("address") === activeDF("address"),
@@ -354,7 +341,13 @@ object S3BulkDeleter {
       })
   }
 
-  def remove(repo: String, location: String, runID: String, region: String, spark: SparkSession) = {
+  def remove(
+      repo: String,
+      addressDFLocation: String,
+      runID: String,
+      region: String,
+      spark: SparkSession
+  ) = {
     val MaxBulkSize = 1000
     val awsRetries = 1000
 
@@ -371,7 +364,7 @@ object S3BulkDeleter {
       if (addSuffixSlash.startsWith("/")) addSuffixSlash.substring(1) else addSuffixSlash
 
     val df = spark.read
-      .parquet(location)
+      .parquet(addressDFLocation)
       .where(col("run_id") === runID)
       .where(col("relative") === true)
     val res =
@@ -381,7 +374,7 @@ object S3BulkDeleter {
   }
 
   def main(args: Array[String]): Unit = {
-    if (args.length != 5) {
+    if (args.length != 4) {
       Console.err.println(
         "Usage: ... <repo_name> <runID> <region> s3://storageNamespace/prepared_addresses_table"
       )
