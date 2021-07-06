@@ -76,7 +76,7 @@ const (
 //   Type: Branch / Tag / Commit
 //   BranchID: for type ReferenceTypeBranch will hold the branch ID
 //   ResolvedBranchModifier: branch indicator if resolved to a branch latest commit, staging or none was specified.
-//   CommitID: set to the latest branch commit, tag or specific hash.
+//   CommitID: the commit ID of the branch head,  tag or specific hash.
 //   StagingToken: empty if ResolvedBranchModifier is ResolvedBranchModifierCommmitted.
 //
 type ResolvedRef struct {
