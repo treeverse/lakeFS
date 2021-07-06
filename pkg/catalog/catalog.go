@@ -596,15 +596,15 @@ func (c *Catalog) GetTag(ctx context.Context, repository string, tagID string) (
 // the entry with ExpiredError if it has expired from underlying storage.
 func (c *Catalog) GetEntry(ctx context.Context, repository string, reference string, path string, _ GetEntryParams) (*DBEntry, error) {
 	repositoryID := graveler.RepositoryID(repository)
-	getRef := graveler.Ref(reference)
+	refToGet := graveler.Ref(reference)
 	if err := Validate([]ValidateArg{
 		{"repositoryID", repositoryID, ValidateRepositoryID},
-		{"ref", getRef, ValidateRef},
+		{"ref", refToGet, ValidateRef},
 		{"path", Path(path), ValidatePath},
 	}); err != nil {
 		return nil, err
 	}
-	val, err := c.Store.Get(ctx, repositoryID, getRef, graveler.Key(path))
+	val, err := c.Store.Get(ctx, repositoryID, refToGet, graveler.Key(path))
 	if err != nil {
 		return nil, err
 	}
@@ -706,16 +706,16 @@ func (c *Catalog) ListEntries(ctx context.Context, repository string, reference 
 	afterPath := Path(after)
 	delimiterPath := Path(delimiter)
 	repositoryID := graveler.RepositoryID(repository)
-	listRef := graveler.Ref(reference)
+	refToList := graveler.Ref(reference)
 	if err := Validate([]ValidateArg{
 		{"repositoryID", repositoryID, ValidateRepositoryID},
-		{"ref", listRef, ValidateRef},
+		{"ref", refToList, ValidateRef},
 		{"prefix", prefixPath, ValidatePathOptional},
 		{"delimiter", delimiterPath, ValidatePathOptional},
 	}); err != nil {
 		return nil, false, err
 	}
-	iter, err := c.Store.List(ctx, repositoryID, listRef)
+	iter, err := c.Store.List(ctx, repositoryID, refToList)
 	if err != nil {
 		return nil, false, err
 	}
