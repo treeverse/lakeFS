@@ -101,8 +101,18 @@ at run-time.
 
 ### Return types are safely covariant
 
-The ClassLoader does nothing to translate return types where covariance is
-safe and automatic.  No JVM action is required here.
+The ClassLoader adds no code to translate return types: covariance is safe
+and automatic.  However it does change the method to return the interface:
+the caller will not be aware of the real type.
+
+Because Java has no variance annotation on any of its types, in general it
+is not possible to perform such type translation on complex types (without
+performing slow two-way copies and other undesired and unsafe edits).  For
+instance, the ClassLoader does nothing when returning container types such
+as arrays, functions, or generic containers, that involve types which need
+translation.  Fortunately the methods of `rocksdbjni` which we need do not
+have methods with such "composite" return types, so this less important in
+the first phase.
 
 ### Parameter types are (at best) unsafely covariant
 
@@ -136,10 +146,4 @@ class SstFileReader(options: shading.rocksdb.Options) ... {
 }
 ```
 
-Because Java has no variance annotation on any of its types, in general it
-is not possible to perform such type translation on complex types (without
-performing slow two-way copies and other undesired and unsafe edits).  For
-instance, the ClassLoader does nothing with parameters of array, function,
-or container types that involve type translation.  Such methods seem to be
-less common in the code we are interested in translating, making this less
-important in the first phase.
+We do not handle composite parameter types, just like for return types.
