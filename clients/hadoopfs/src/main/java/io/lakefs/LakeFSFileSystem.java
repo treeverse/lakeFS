@@ -4,8 +4,14 @@ import static io.lakefs.Constants.DEFAULT_LIST_AMOUNT;
 import static io.lakefs.Constants.FS_LAKEFS_LIST_AMOUNT_KEY;
 import static io.lakefs.Constants.SEPARATOR;
 
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InvalidObjectException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.AccessDeniedException;
@@ -15,18 +21,12 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.Protocol;
-import com.amazonaws.auth.AWSCredentialsProviderChain;
-import com.amazonaws.auth.InstanceProfileCredentialsProvider;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
-
+import com.amazonaws.services.s3.model.GetObjectMetadataRequest;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.hadoop.fs.s3a.AnonymousAWSCredentialsProvider;
-import org.apache.hadoop.fs.s3a.BasicAWSCredentialsProvider;
+import org.apache.hadoop.fs.s3a.S3AFileSystem;
 import org.apache.hadoop.util.Progressable;
 import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
@@ -65,6 +65,7 @@ public class LakeFSFileSystem extends FileSystem {
     private LakeFSClient lfsClient;
     private int listAmount;
     private FileSystem fsForConfig;
+    private MetadataClient metadataClient;
 
     private URI translateUri(URI uri) throws java.net.URISyntaxException {
         switch (uri.getScheme()) {
@@ -100,6 +101,7 @@ public class LakeFSFileSystem extends FileSystem {
 
         listAmount = conf.getInt(FS_LAKEFS_LIST_AMOUNT_KEY, DEFAULT_LIST_AMOUNT);
 
+        // based on path get underlying FileSystem
         Path path = new Path(name);
         ObjectLocation objectLoc = pathToObjectLocation(path);
         RepositoriesApi repositoriesApi = lfsClient.getRepositories();
@@ -112,6 +114,8 @@ public class LakeFSFileSystem extends FileSystem {
         } catch (ApiException | URISyntaxException e) {
             LOG.warn("get underlying filesystem for {}: {} (use default values)", path, e);
         }
+
+        this.metadataClient = new MetadataClient(fsForConfig);
     }
 
     @FunctionalInterface
@@ -190,7 +194,7 @@ public class LakeFSFileSystem extends FileSystem {
             // TODO(ariels): add fs.FileSystem.Statistics here to keep track.
             return new FSDataOutputStream(new LinkOnCloseOutputStream(staging, stagingLoc, objectLoc,
                     physicalUri,
-                    physicalFs,
+                    this.metadataClient,
                     // FSDataOutputStream is a kind of OutputStream(!)
                     physicalFs.create(physicalPath, false, bufferSize, replication, blockSize, progress)),
                     null);
@@ -377,14 +381,14 @@ public class LakeFSFileSystem extends FileSystem {
             objects.stageObject(dstObjectLoc.getRepository(), dstObjectLoc.getRef(), dstObjectLoc.getPath(),
                     creationReq);
         } catch (ApiException e) {
-            throw translateException("renameObject: src:" + srcStatus.getPath() +", dst: " + dst + ", failed to stage object", e);
+            throw translateException("renameObject: src:" + srcStatus.getPath() + ", dst: " + dst + ", failed to stage object", e);
         }
 
         // delete src path
         try {
             objects.deleteObject(srcObjectLoc.getRepository(), srcObjectLoc.getRef(), srcObjectLoc.getPath());
         } catch (ApiException e) {
-            throw translateException("renameObject: src:" + srcStatus.getPath() +", dst: " + dst +
+            throw translateException("renameObject: src:" + srcStatus.getPath() + ", dst: " + dst +
                     ", failed to delete src", e);
         }
         return true;
@@ -392,17 +396,18 @@ public class LakeFSFileSystem extends FileSystem {
 
     /**
      * Translate {@link ApiException} to an {@link IOException}.
+     *
      * @param msg the message describing the exception
-     * @param e the exception to translate
+     * @param e   the exception to translate
      * @return an IOException that corresponds to the translated API exception
      */
     private IOException translateException(String msg, ApiException e) {
         int code = e.getCode();
         switch (code) {
             case HttpStatus.SC_NOT_FOUND:
-                return (IOException)new FileNotFoundException(msg).initCause(e);
+                return (IOException) new FileNotFoundException(msg).initCause(e);
             case HttpStatus.SC_FORBIDDEN:
-                return (IOException)new AccessDeniedException(msg).initCause(e);
+                return (IOException) new AccessDeniedException(msg).initCause(e);
             default:
                 return new IOException(msg, e);
         }
@@ -685,6 +690,7 @@ public class LakeFSFileSystem extends FileSystem {
 
     /**
      * Build a {@link LakeFSLocatedFileStatus} from a {@link LakeFSFileStatus} instance.
+     *
      * @param status lakeFS file status
      * @return a located status with block locations
      * @throws IOException IO Problems.

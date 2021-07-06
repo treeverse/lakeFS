@@ -10,6 +10,7 @@ import java.lang.reflect.Method;
 import java.net.URI;
 
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.GetObjectMetadataRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import io.lakefs.clients.api.StagingApi;
 import io.lakefs.clients.api.model.StagingLocation;
@@ -27,7 +28,7 @@ class LinkOnCloseOutputStream extends OutputStream {
     private StagingLocation stagingLoc;
     private ObjectLocation objectLoc;
     private URI physicalUri;
-    private final FileSystem physicalFs;
+    private final MetadataClient metadataClient;
     private OutputStream out;
 
     /**
@@ -35,15 +36,15 @@ class LinkOnCloseOutputStream extends OutputStream {
      * @param stagingLoc physical location of object data on S3.
      * @param objectLoc location of object on lakeFS.
      * @param physicalUri translated physical location of object data for underlying FileSystem.
-     * @param physicalFs underlying filesystem used to query status for checksum.
+     * @param metadataClient client used to request metadata information from the underlying FileSystem.
      * @param out stream on underlying filesystem to wrap.
      */
-    LinkOnCloseOutputStream(StagingApi staging, StagingLocation stagingLoc, ObjectLocation objectLoc, URI physicalUri, FileSystem physicalFs, OutputStream out) {
+    LinkOnCloseOutputStream(StagingApi staging, StagingLocation stagingLoc, ObjectLocation objectLoc, URI physicalUri, MetadataClient metadataClient, OutputStream out) {
         this.staging = staging;
         this.stagingLoc = stagingLoc;
         this.objectLoc = objectLoc;
         this.physicalUri = physicalUri;
-        this.physicalFs = physicalFs;
+        this.metadataClient = metadataClient;
         this.out = out;
     }
 
@@ -73,32 +74,12 @@ class LinkOnCloseOutputStream extends OutputStream {
 
         // Now the object is on the underlying store, find its parameters (sadly lost by
         // the underlying Hadoop FileSystem) so we can link it on lakeFS.
-        Path physicalPath = new Path(physicalUri.getPath());
-        FileStatus fileStatus = physicalFs.getFileStatus(physicalPath);
-        S3AFileSystem fs2;
-        long sizeBytes = fileStatus.getLen();
-
-        String etag = getEtagFromFileStatus(fileStatus);
-        if (etag.isEmpty()) {
-            // Missing etag - try to use the underlying s3 client and get the Etag
-            try {
-                String bucket = physicalUri.getHost();
-                String key = physicalUri.getPath().substring(1);
-                Method amazonS3ClientGetter = physicalFs.getClass().getDeclaredMethod("getAmazonS3Client");
-                amazonS3ClientGetter.setAccessible(true);
-                AmazonS3Client s3 = (AmazonS3Client)amazonS3ClientGetter.invoke(physicalFs);
-                ObjectMetadata objectMetadata = s3.getObjectMetadata(bucket, key);
-                etag = objectMetadata.getETag();
-            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                throw new IOException("failed to get etag with underlying s3 client", e);
-            }
-        }
-
+        ObjectMetadata objectMetadata = metadataClient.getObjectMetadata(physicalUri);
         // TODO(ariels): Can we add metadata here?
         StagingMetadata metadata = new StagingMetadata()
                 .staging(stagingLoc)
-                .checksum(etag)
-                .sizeBytes(sizeBytes);
+                .checksum(objectMetadata.getETag())
+                .sizeBytes(objectMetadata.getContentLength());
         try {
             staging.linkPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(), metadata);
         } catch (io.lakefs.clients.api.ApiException e) {
@@ -106,19 +87,5 @@ class LinkOnCloseOutputStream extends OutputStream {
         }
     }
 
-    private String getEtagFromFileStatus(FileStatus fileStatus) throws IOException {
-        try {
-            for (PropertyDescriptor pd : Introspector.getBeanInfo(fileStatus.getClass()).getPropertyDescriptors()) {
-                if (pd.getReadMethod() != null && pd.getName().equals("etag")) {
-                    String etag = (String) pd.getReadMethod().invoke(fileStatus);
-                    if (etag != null && !etag.isEmpty()) {
-                        return etag;
-                    }
-                }
-            }
-        } catch (IntrospectionException | IllegalAccessException | InvocationTargetException e) {
-            throw new IOException("failed to extract etag from FileStatus", e);
-        }
-        return "";
-    }
+
 }
