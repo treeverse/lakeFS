@@ -8,6 +8,7 @@ import io.lakefs.clients.api.model.*;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
+import org.apache.hadoop.fs.s3a.S3AFileSystem;
 import org.apache.hadoop.util.Progressable;
 import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
@@ -384,15 +385,22 @@ public class LakeFSFileSystem extends FileSystem {
      * @return an IOException that corresponds to the translated API exception
      */
     private IOException translateException(String msg, ApiException e) {
+        IOException ex;
         int code = e.getCode();
         switch (code) {
             case HttpStatus.SC_NOT_FOUND:
-                return (IOException) new FileNotFoundException(msg).initCause(e);
+                ex = new FileNotFoundException(msg);
+                ex.initCause(e);
+                break;
             case HttpStatus.SC_FORBIDDEN:
-                return (IOException) new AccessDeniedException(msg).initCause(e);
+                ex = new AccessDeniedException(msg);
+                ex.initCause(e);
+                break;
             default:
-                return new IOException(msg, e);
+                ex = new IOException(msg, e);
+                break;
         }
+        return ex;
     }
 
     @Override
