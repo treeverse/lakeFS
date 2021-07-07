@@ -9,6 +9,10 @@ This release requires running database migration.
 The lakeFS service will not run if the migration version isn't compatible with the binary.
 Before running the new version you will require to run migrate, with the new version:
 
+```sh
+$ lakefs migrate up
+```
+
 Fix Authentication migration for garbage collection.
 
 
