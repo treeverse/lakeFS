@@ -14,6 +14,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
 
+/**
+ * MetadataClient used to extract ObjectMetadata with content size and etag information from the underlying filesystem.
+ */
 public class MetadataClient {
     public static final Logger LOG = LoggerFactory.getLogger(MetadataClient.class);
     private final FileSystem fs;
@@ -26,7 +29,8 @@ public class MetadataClient {
     }
 
     /**
-     * get object metadata by physical address
+     * Get object metadata by physical address. First it will try to extract the information from the FileSystem's FileStatus.
+     * Fallback by extracting s3 client and call getObjectMetadata.
      * @param physicalUri physical uri of object
      * @return ObjectMetadata filled with Etag and content length
      * @throws IOException case etag can't be extracted by s3 or file status
@@ -42,19 +46,18 @@ public class MetadataClient {
         try {
             Method getETagMethod = fileStatus.getClass().getMethod("getETag");
             String etag = (String) getETagMethod.invoke(fileStatus);
-            // return the two properties over object metadata for easy fallback
-            ObjectMetadata o = new ObjectMetadata();
-            o.setContentLength(fileStatus.getLen());
-            o.setHeader("ETag", etag);
-            return o;
+            // return the specific properties over object metadata for easy fallback
+            ObjectMetadata objectMetadata = new ObjectMetadata();
+            objectMetadata.setContentLength(fileStatus.getLen());
+            objectMetadata.setHeader("ETag", etag);
+            return objectMetadata;
         } catch (InvocationTargetException | IllegalAccessException e) {
             LOG.warn("failed to get etag from file status", e);
         } catch (NoSuchMethodException ignored) {
         }
 
-        // fallback - use the underlying s3 client, get object metadata
+        // fallback - get the underlying s3 client and request object metadata
         try {
-            // cache s3 client and get object metadata method
             Method amazonS3ClientGetter = fs.getClass().getDeclaredMethod("getAmazonS3Client");
             amazonS3ClientGetter.setAccessible(true);
             Object s3Client = amazonS3ClientGetter.invoke(fs);
