@@ -67,7 +67,7 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
   -c spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
   -c spark.hadoop.fs.s3a.access.key=<S3_ACCESS_KEY> \
   -c spark.hadoop.fs.s3a.secret.key=<S3_SECRET_KEY> \
-  --packages io.lakefs:lakefs-spark-client-301_2.12:0.1.0 \
+  --packages io.lakefs:lakefs-spark-client-301_2.12:0.5.0 \
   example-repo us-east-1
 ```
 ## Considerations
