@@ -26,12 +26,22 @@ type GarbageCollectionManager struct {
 	committedBlockStoragePrefix string
 }
 
-func (m *GarbageCollectionManager) GetCommitsCSVLocation(runID string) string {
-	return fmt.Sprintf(commitsFileSuffixTemplate, m.committedBlockStoragePrefix, runID)
+func (m *GarbageCollectionManager) GetCommitsCSVLocation(runID string, sn graveler.StorageNamespace) (string, error) {
+	key := fmt.Sprintf(commitsFileSuffixTemplate, m.committedBlockStoragePrefix, runID)
+	qk, err := block.ResolveNamespace(sn.String(), key, block.IdentifierTypeRelative)
+	if err != nil {
+		return "", err
+	}
+	return qk.Format(), nil
 }
 
-func (m *GarbageCollectionManager) GetAddressesLocation() string {
-	return fmt.Sprintf(addressesFilePrefixTemplate, m.committedBlockStoragePrefix)
+func (m *GarbageCollectionManager) GetAddressesLocation(sn graveler.StorageNamespace) (string, error) {
+	key := fmt.Sprintf(addressesFilePrefixTemplate, m.committedBlockStoragePrefix)
+	qk, err := block.ResolveNamespace(sn.String(), key, block.IdentifierTypeRelative)
+	if err != nil {
+		return "", err
+	}
+	return qk.Format(), nil
 }
 
 type RepositoryCommitGetter struct {
@@ -91,8 +101,12 @@ func (m *GarbageCollectionManager) GetRunExpiredCommits(ctx context.Context, sto
 	if runID == "" {
 		return nil, nil
 	}
+	csvLocation, err := m.GetCommitsCSVLocation(runID, storageNamespace)
+	if err != nil {
+		return nil, err
+	}
 	previousRunReader, err := m.blockAdapter.Get(ctx, block.ObjectPointer{
-		Identifier:     string(storageNamespace) + fmt.Sprintf(commitsFileSuffixTemplate, m.committedBlockStoragePrefix, runID),
+		Identifier:     csvLocation,
 		IdentifierType: block.IdentifierTypeFull,
 	}, -1)
 	if err != nil {
@@ -154,8 +168,12 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Cont
 	}
 	commitsStr := b.String()
 	runID := uuid.New().String()
+	csvLocation, err := m.GetCommitsCSVLocation(runID, storageNamespace)
+	if err != nil {
+		return "", err
+	}
 	err = m.blockAdapter.Put(ctx, block.ObjectPointer{
-		Identifier:     string(storageNamespace) + fmt.Sprintf(commitsFileSuffixTemplate, m.committedBlockStoragePrefix, runID),
+		Identifier:     csvLocation,
 		IdentifierType: block.IdentifierTypeFull,
 	}, int64(len(commitsStr)), strings.NewReader(commitsStr), block.PutOpts{})
 	if err != nil {

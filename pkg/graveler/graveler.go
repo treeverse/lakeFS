@@ -113,10 +113,6 @@ type Repository struct {
 	DefaultBranchID  BranchID         `db:"default_branch"`
 }
 
-func (r Repository) GetStorageNamespace() StorageNamespace {
-	return StorageNamespace(strings.TrimSuffix(r.StorageNamespace.String(), "/"))
-}
-
 type RepositoryRecord struct {
 	RepositoryID RepositoryID `db:"id"`
 	*Repository
@@ -905,13 +901,19 @@ func (g *Graveler) SaveGarbageCollectionCommits(ctx context.Context, repositoryI
 	if err != nil {
 		return nil, fmt.Errorf("get expired commits from previous run: %w", err)
 	}
-	sn := repo.GetStorageNamespace()
-	runID, err := g.garbageCollectionManager.SaveGarbageCollectionCommits(ctx, sn, repositoryID, rules, previouslyExpiredCommits)
+
+	runID, err := g.garbageCollectionManager.SaveGarbageCollectionCommits(ctx, repo.StorageNamespace, repositoryID, rules, previouslyExpiredCommits)
 	if err != nil {
 		return nil, fmt.Errorf("save garbage collection commits: %w", err)
 	}
-	commitsLocation := sn.String() + g.garbageCollectionManager.GetCommitsCSVLocation(runID)
-	addressLocation := sn.String() + g.garbageCollectionManager.GetAddressesLocation()
+	commitsLocation, err := g.garbageCollectionManager.GetCommitsCSVLocation(runID, repo.StorageNamespace)
+	if err != nil {
+		return nil, err
+	}
+	addressLocation, err := g.garbageCollectionManager.GetAddressesLocation(repo.StorageNamespace)
+	if err != nil {
+		return nil, err
+	}
 
 	return &GarbageCollectionRunMetadata{
 		RunId:              runID,
@@ -2050,6 +2052,6 @@ type GarbageCollectionManager interface {
 
 	SaveGarbageCollectionCommits(ctx context.Context, storageNamespace StorageNamespace, repositoryID RepositoryID, rules *GarbageCollectionRules, previouslyExpiredCommits []CommitID) (string, error)
 	GetRunExpiredCommits(ctx context.Context, storageNamespace StorageNamespace, runID string) ([]CommitID, error)
-	GetCommitsCSVLocation(runID string) string
-	GetAddressesLocation() string
+	GetCommitsCSVLocation(runID string, sn StorageNamespace) (string, error)
+	GetAddressesLocation(sn StorageNamespace) (string, error)
 }
