@@ -3,6 +3,14 @@
 
 ## Unreleased - XXXX-XX-XX
 
+## v0.45.0 - 2021-07-07
+
+This release requires running database migration.
+The lakeFS service will not run if the migration version isn't compatible with the binary.
+Before running the new version you will require to run migrate, with the new version:
+
+Fix Authentication migration for garbage collection.
+
 
 ## v0.44.0 - 2021-07-01
 
