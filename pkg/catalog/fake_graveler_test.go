@@ -19,6 +19,14 @@ type FakeGraveler struct {
 	hooks                     graveler.HooksHandler
 }
 
+func (g *FakeGraveler) ParseRef(ref graveler.Ref) (graveler.RawRef, error) {
+	panic("implement me")
+}
+
+func (g *FakeGraveler) ResolveRawRef(ctx context.Context, repositoryID graveler.RepositoryID, rawRef graveler.RawRef) (*graveler.ResolvedRef, error) {
+	panic("implement me")
+}
+
 func (g *FakeGraveler) SaveGarbageCollectionCommits(ctx context.Context, repositoryID graveler.RepositoryID, previousRunID string) (garbageCollectionRunMetadata *graveler.GarbageCollectionRunMetadata, err error) {
 	panic("implement me")
 }
@@ -192,7 +200,7 @@ func (g *FakeGraveler) GetCommit(ctx context.Context, repositoryID graveler.Repo
 	panic("implement me")
 }
 
-func (g *FakeGraveler) Dereference(ctx context.Context, repositoryID graveler.RepositoryID, ref graveler.Ref) (graveler.CommitID, error) {
+func (g *FakeGraveler) Dereference(ctx context.Context, repositoryID graveler.RepositoryID, ref graveler.Ref) (*graveler.ResolvedRef, error) {
 	panic("implement me")
 }
 
