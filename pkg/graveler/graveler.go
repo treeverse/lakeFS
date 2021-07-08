@@ -802,7 +802,7 @@ func (g *Graveler) CreateBranch(ctx context.Context, repositoryID RepositoryID, 
 	if err != nil {
 		return nil, fmt.Errorf("source reference '%s': %w", ref, err)
 	}
-	if reference.CommitID == "" {
+	if reference.ResolvedBranchModifier == ResolvedBranchModifierStaging {
 		return nil, fmt.Errorf("source reference '%s': %w", ref, ErrCreateBranchNoCommit)
 	}
 	newBranch := Branch{
@@ -830,6 +830,9 @@ func (g *Graveler) updateBranchNoLock(ctx context.Context, repositoryID Reposito
 	reference, err := g.Dereference(ctx, repositoryID, ref)
 	if err != nil {
 		return nil, err
+	}
+	if reference.ResolvedBranchModifier == ResolvedBranchModifierStaging {
+		return nil, fmt.Errorf("reference '%s': %w", ref, ErrCreateBranchNoCommit)
 	}
 
 	curBranch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
@@ -988,7 +991,7 @@ func (g *Graveler) Get(ctx context.Context, repositoryID RepositoryID, ref Ref, 
 	if err != nil {
 		return nil, err
 	}
-	if reference.Type == ReferenceTypeBranch {
+	if reference.StagingToken != "" {
 		// try to get from staging, if not found proceed to committed
 		value, err := g.StagingManager.Get(ctx, reference.StagingToken, key)
 		if !errors.Is(err, ErrNotFound) {
@@ -1107,10 +1110,9 @@ func (g *Graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref)
 	if err != nil {
 		return nil, err
 	}
-	commitID := reference.CommitID
 	var metaRangeID MetaRangeID
-	if commitID != "" {
-		commit, err := g.RefManager.GetCommit(ctx, repositoryID, commitID)
+	if reference.CommitID != "" {
+		commit, err := g.RefManager.GetCommit(ctx, repositoryID, reference.CommitID)
 		if err != nil {
 			return nil, err
 		}
@@ -1121,7 +1123,7 @@ func (g *Graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref)
 	if err != nil {
 		return nil, err
 	}
-	if reference.Type == ReferenceTypeBranch {
+	if reference.StagingToken != "" {
 		stagingList, err := g.StagingManager.List(ctx, reference.StagingToken)
 		if err != nil {
 			return nil, err
@@ -1429,7 +1431,7 @@ type CommitIDAndSummary struct {
 // That is, try to apply the diff from C2 to C1 on the tip of the branch.
 // If the commit is a merge commit, 'parentNumber' is the parent number (1-based) relative to which the revert is done.
 func (g *Graveler) Revert(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref, parentNumber int, commitParams CommitParams) (CommitID, DiffSummary, error) {
-	commitRecord, err := g.getCommitRecordFromRef(ctx, repositoryID, ref)
+	commitRecord, err := g.dereferenceCommit(ctx, repositoryID, ref)
 	if err != nil {
 		return "", DiffSummary{}, fmt.Errorf("get commit from ref %s: %w", ref, err)
 	}
@@ -1460,13 +1462,13 @@ func (g *Graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 		}
 		var parentMetaRangeID MetaRangeID
 		if len(commitRecord.Parents) > 0 {
-			parentCommit, err := g.getCommitRecordFromRef(ctx, repositoryID, commitRecord.Parents[parentNumber].Ref())
+			parentCommit, err := g.dereferenceCommit(ctx, repositoryID, commitRecord.Parents[parentNumber].Ref())
 			if err != nil {
 				return "", fmt.Errorf("get commit from ref %s: %w", commitRecord.Parents[parentNumber], err)
 			}
 			parentMetaRangeID = parentCommit.MetaRangeID
 		}
-		branchCommit, err := g.getCommitRecordFromRef(ctx, repositoryID, branch.CommitID.Ref())
+		branchCommit, err := g.dereferenceCommit(ctx, repositoryID, branch.CommitID.Ref())
 		if err != nil {
 			return "", fmt.Errorf("get commit from ref %s: %w", branch.CommitID, err)
 		}
@@ -1635,10 +1637,15 @@ func (g *Graveler) DiffUncommitted(ctx context.Context, repositoryID RepositoryI
 	return NewUncommittedDiffIterator(ctx, committedValueIterator, valueIterator, repo.StorageNamespace, metaRangeID), nil
 }
 
-func (g *Graveler) getCommitRecordFromRef(ctx context.Context, repositoryID RepositoryID, ref Ref) (*CommitRecord, error) {
+// dereferenceCommit will dereference and load the commit record based on 'ref'.
+//   will return an error if 'ref' points to an explicit staging area
+func (g *Graveler) dereferenceCommit(ctx context.Context, repositoryID RepositoryID, ref Ref) (*CommitRecord, error) {
 	reference, err := g.Dereference(ctx, repositoryID, ref)
 	if err != nil {
 		return nil, err
+	}
+	if reference.ResolvedBranchModifier == ResolvedBranchModifierStaging {
+		return nil, fmt.Errorf("reference '%s': %w", ref, ErrCreateBranchNoCommit)
 	}
 	commit, err := g.RefManager.GetCommit(ctx, repositoryID, reference.CommitID)
 	if err != nil {
@@ -1655,11 +1662,11 @@ func (g *Graveler) Diff(ctx context.Context, repositoryID RepositoryID, left, ri
 	if err != nil {
 		return nil, err
 	}
-	leftCommit, err := g.getCommitRecordFromRef(ctx, repositoryID, left)
+	leftCommit, err := g.dereferenceCommit(ctx, repositoryID, left)
 	if err != nil {
 		return nil, err
 	}
-	rightCommit, err := g.getCommitRecordFromRef(ctx, repositoryID, right)
+	rightCommit, err := g.dereferenceCommit(ctx, repositoryID, right)
 	if err != nil {
 		return nil, err
 	}
@@ -1688,11 +1695,11 @@ func (g *Graveler) SetHooksHandler(handler HooksHandler) {
 }
 
 func (g *Graveler) getCommitsForMerge(ctx context.Context, repositoryID RepositoryID, from Ref, to Ref) (*CommitRecord, *CommitRecord, *Commit, error) {
-	fromCommit, err := g.getCommitRecordFromRef(ctx, repositoryID, from)
+	fromCommit, err := g.dereferenceCommit(ctx, repositoryID, from)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("get commit by ref %s: %w", from, err)
 	}
-	toCommit, err := g.getCommitRecordFromRef(ctx, repositoryID, to)
+	toCommit, err := g.dereferenceCommit(ctx, repositoryID, to)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("get commit by branch %s: %w", to, err)
 	}

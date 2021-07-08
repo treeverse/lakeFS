@@ -508,7 +508,7 @@ func (c *Catalog) CreateTag(ctx context.Context, repository string, tagID string
 	}); err != nil {
 		return "", err
 	}
-	commitID, err := c.dereferenceCommit(ctx, repositoryID, graveler.Ref(ref))
+	commitID, err := c.dereferenceCommitID(ctx, repositoryID, graveler.Ref(ref))
 	if err != nil {
 		return "", err
 	}
@@ -818,7 +818,7 @@ func (c *Catalog) GetCommit(ctx context.Context, repository string, reference st
 	}); err != nil {
 		return nil, err
 	}
-	commitID, err := c.dereferenceCommit(ctx, repositoryID, graveler.Ref(reference))
+	commitID, err := c.dereferenceCommitID(ctx, repositoryID, graveler.Ref(reference))
 	if err != nil {
 		return nil, err
 	}
@@ -849,27 +849,23 @@ func (c *Catalog) ListCommits(ctx context.Context, repository string, branch str
 	}); err != nil {
 		return nil, false, err
 	}
-	rawRef, err := c.Store.Dereference(ctx, repositoryID, graveler.Ref(branchRef))
+	commitID, err := c.dereferenceCommitID(ctx, repositoryID, graveler.Ref(branchRef))
 	if err != nil {
 		return nil, false, fmt.Errorf("branch ref: %w", err)
 	}
-	if rawRef.CommitID == "" {
-		// return empty log if there is no commit on branch yet
-		return make([]*CommitLog, 0), false, nil
-	}
-	it, err := c.Store.Log(ctx, repositoryID, rawRef.CommitID)
+	it, err := c.Store.Log(ctx, repositoryID, commitID)
 	if err != nil {
 		return nil, false, err
 	}
 	defer it.Close()
 	// skip until 'fromReference' if needed
 	if fromReference != "" {
-		fromResolvedRef, err := c.Store.Dereference(ctx, repositoryID, graveler.Ref(fromReference))
+		fromCommitID, err := c.dereferenceCommitID(ctx, repositoryID, graveler.Ref(fromReference))
 		if err != nil {
 			return nil, false, fmt.Errorf("from ref: %w", err)
 		}
 		for it.Next() {
-			if it.Value().CommitID == fromResolvedRef.CommitID {
+			if it.Value().CommitID == fromCommitID {
 				break
 			}
 		}
@@ -1202,13 +1198,17 @@ func (c *Catalog) Close() error {
 	return errs
 }
 
-func (c *Catalog) dereferenceCommit(ctx context.Context, repositoryID graveler.RepositoryID, ref graveler.Ref) (graveler.CommitID, error) {
+// dereferenceCommitID dereference 'ref' and make sure it doesn't point to staging
+func (c *Catalog) dereferenceCommitID(ctx context.Context, repositoryID graveler.RepositoryID, ref graveler.Ref) (graveler.CommitID, error) {
 	resolvedRef, err := c.Store.Dereference(ctx, repositoryID, ref)
 	if err != nil {
 		return "", err
 	}
 	if resolvedRef.CommitID == "" {
 		return "", fmt.Errorf("%w: no commit", ErrInvalidRef)
+	}
+	if resolvedRef.ResolvedBranchModifier == graveler.ResolvedBranchModifierStaging {
+		return "", fmt.Errorf("%w: should point to a commit", ErrInvalidRef)
 	}
 	return resolvedRef.CommitID, nil
 }
