@@ -6,14 +6,19 @@ import java.io.ByteArrayOutputStream
 import com.google.common.io.ByteStreams
 
 class AsInterfaceClassLoader(
-  parent: ClassLoader, ifaces: Map[String, Class[_]]) extends ClassLoader(parent) {
+  parent: ClassLoader, ifaces: Map[String, Class[_]], val pw: PrintWriter = null)
+    extends ClassLoader(parent) {
 
   val skip = ifaces.values.map(_.getName).toSet
 
   private def asInterfaceClass(bytes: Array[Byte]): Array[Byte] = {
     val cr = new ClassReader(bytes)
     val cw = new ClassWriter(cr, 0)
-    val cc = new CheckClassAdapter(cw)
+    val tw = if (pw != null) new TraceClassVisitor(cw, pw) else cw
+    val cc = new CheckClassAdapter(tw)
+    // TODO(ariels): Add a visitor to verify that resulting class satisfies
+    //     the interface from ifaces (if any).  Otherwise methods are only
+    //     checked when (if) used.
     val ai = new AsInterface(cc, ifaces)
 
     cr.accept(ai, 0)

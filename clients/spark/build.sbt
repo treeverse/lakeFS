@@ -57,6 +57,8 @@ def generateCoreProject(buildType: BuildType) =
         "org.scalactic" %% "scalactic" % "3.2.9",
         "org.scalatest" %% "scalatest" % "3.2.9" % "test",
       ),
+      Test / logBuffered := false,
+      Test / testOptions += Tests.Argument("-oF"),
       target := file(s"target/core-${buildType.name}/")
     ).enablePlugins(S3Plugin)
 
@@ -115,8 +117,6 @@ lazy val s3UploadSettings = Seq(
 
 // Don't publish root project
 root / publish / skip := true
-
-root / Test / logBuffered := false
 
 lazy val commonSettings = Seq(
   version := projectVersion,
