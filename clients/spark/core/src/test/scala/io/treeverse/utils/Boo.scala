@@ -1,8 +1,8 @@
 package io.treeverse.utils
 
-// Boo could implement Foo, but doesn't...
-class Boo {
-  def foo(x: Int): Int = x * x
+// Boo could implement Foo, but doesn't...  
+class Boo(val s: Integer) {
+  def foo(x: Int): Int = s * x
 
-  def another(): Boo = new Boo
+  def addFoo(b: Boo): Boo = new Boo(s + b.s)
 }

@@ -1,8 +1,8 @@
 package io.treeverse.utils
 
 import org.objectweb.asm.{ClassReader, ClassWriter}
-import org.objectweb.asm.util.{CheckClassAdapter}
-import java.io.ByteArrayOutputStream
+import org.objectweb.asm.util.{CheckClassAdapter, TraceClassVisitor}
+import java.io.{ByteArrayOutputStream, PrintWriter}
 import com.google.common.io.ByteStreams
 
 class AsInterfaceClassLoader(

@@ -11,7 +11,7 @@ import com.google.common.io.ByteStreams
 class AsInterfaceTest extends AnyFunSuite {
   test("[internal] Boo does not implement Foo") {
     assertThrows[ClassCastException] {
-      (new Boo).asInstanceOf[Foo]
+      (new Boo(9)).asInstanceOf[Foo]
     }
   }
 
@@ -31,23 +31,24 @@ class AsInterfaceTest extends AnyFunSuite {
     val aicl = new AsInterfaceClassLoader(
       getClass.getClassLoader,
       Map(("io/treeverse/utils/Boo", classOf[Foo])))
-    val f: Foo = aicl.loadClass("io.treeverse.utils.Boo").newInstance.asInstanceOf[Foo]
-    assert(f.foo(4) === 16)
+    val f: Foo = aicl.loadClass("io.treeverse.utils.Boo").getConstructor(classOf[Integer]).newInstance(9.asInstanceOf[Integer]).asInstanceOf[Foo]
+    assert(f.foo(4) === 36)
   }
 
-  test("Boo as Foo can use method returning a Boo") {
+  test("Boo as Foo can use method taking and returning a Boo") {
     val aicl = new AsInterfaceClassLoader(
       getClass.getClassLoader,
       Map(("io/treeverse/utils/Boo", classOf[Foo])))
-    val f: Foo = aicl.loadClass("io.treeverse.utils.Boo").newInstance.asInstanceOf[Foo]
-    assert(f.another.foo(4) === 16)
+    val f: Foo = aicl.loadClass("io.treeverse.utils.Boo").getConstructor(classOf[Integer]).newInstance(9.asInstanceOf[Integer]).asInstanceOf[Foo]
+    val f2: Foo = aicl.loadClass("io.treeverse.utils.Boo").getConstructor(classOf[Integer]).newInstance(3.asInstanceOf[Integer]).asInstanceOf[Foo]
+    assert(f.addFoo(f2).foo(4) === (9 + 3) * 4)
   }
 
   test("Goo as Foo fails") {
     val aicl = new AsInterfaceClassLoader(
       getClass.getClassLoader,
       Map(("io/treeverse/utils/Goo", classOf[Foo])))
-    val f: Foo = aicl.loadClass("io.treeverse.utils.Goo").newInstance.asInstanceOf[Foo]
+    val f: Foo = aicl.loadClass("io.treeverse.utils.Goo").getConstructor().newInstance().asInstanceOf[Foo]
     assertThrows[AbstractMethodError](f.foo(4))
   }
 
@@ -56,7 +57,7 @@ class AsInterfaceTest extends AnyFunSuite {
       getClass.getClassLoader,
       Map(("io/treeverse/utils/Boo", classOf[Foo])))
     assertThrows[ClassCastException](
-      aicl.loadClass("io.treeverse.utils.Boo").newInstance.asInstanceOf[Moo]
+      aicl.loadClass("io.treeverse.utils.Boo").getConstructor(classOf[Integer]).newInstance(9.asInstanceOf[Integer]).asInstanceOf[Moo]
     )
   }
 
@@ -64,7 +65,7 @@ class AsInterfaceTest extends AnyFunSuite {
     val aicl = new AsInterfaceClassLoader(
       getClass.getClassLoader,
       Map(("io/treeverse/utils/Boo", classOf[Moo])))
-    assertThrows[InstantiationException](
-      aicl.loadClass("io.treeverse.utils.Moo").newInstance.asInstanceOf[Moo])
+    // BUG(ariels): It works because it's lazy :-(
+    aicl.loadClass("io.treeverse.utils.Boo").getConstructor(classOf[Integer]).newInstance(9.asInstanceOf[Integer]).asInstanceOf[Moo]
   }
 }
