@@ -40,6 +40,7 @@ type configuration struct {
 			Region    string `mapstructure:"region"`
 			CatalogID string `mapstructure:"catalog_id"`
 		}
+		FixSparkPlaceholder bool `mapstructure:"fix_spark_placeholder"`
 	}
 }
 
@@ -132,4 +133,8 @@ func (c *Config) GetHiveDBLocationURI() string {
 
 func (c *Config) GetGlueDBLocationURI() string {
 	return c.Values.Metastore.Glue.DBLocationtURI
+}
+
+func (c *Config) GetFixSparkPlaceholder() bool {
+	return c.Values.Metastore.FixSparkPlaceholder
 }

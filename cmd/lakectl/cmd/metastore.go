@@ -57,7 +57,7 @@ var metastoreCopyCmd = &cobra.Command{
 			"partition":        partition,
 		}).Info("Metadata copy or merge table")
 		fmt.Printf("copy %s.%s -> %s.%s\n", fromDB, fromTable, toDB, toTable)
-		err := metastore.CopyOrMerge(cmd.Context(), fromClient, toClient, fromDB, fromTable, toDB, toTable, toBranch, serde, partition)
+		err := metastore.CopyOrMerge(cmd.Context(), fromClient, toClient, fromDB, fromTable, toDB, toTable, toBranch, serde, partition, cfg.GetFixSparkPlaceholder())
 		if err != nil {
 			DieErr(err)
 		}
@@ -122,7 +122,7 @@ var metastoreCopyAllCmd = &cobra.Command{
 		defer toDeferFunc()
 
 		fmt.Printf("copy %s -> %s\n", fromAddress, toAddress)
-		err := metastore.CopyOrMergeAll(cmd.Context(), fromClient, toClient, schemaFilter, tableFilter, branch, continueOnError)
+		err := metastore.CopyOrMergeAll(cmd.Context(), fromClient, toClient, schemaFilter, tableFilter, branch, continueOnError, cfg.GetFixSparkPlaceholder())
 		if err != nil {
 			DieErr(err)
 		}
@@ -210,7 +210,7 @@ var glueSymlinkCmd = &cobra.Command{
 			DieErr(err)
 		}
 
-		err = metastore.CopyOrMergeToSymlink(cmd.Context(), msClient, fromDB, fromTable, toDB, toTable, location)
+		err = metastore.CopyOrMergeToSymlink(cmd.Context(), msClient, fromDB, fromTable, toDB, toTable, location, cfg.GetFixSparkPlaceholder())
 		if err != nil {
 			DieErr(err)
 		}
