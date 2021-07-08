@@ -2,6 +2,7 @@ package metastore
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
 
 	"github.com/treeverse/lakefs/pkg/gateway/path"
@@ -33,7 +34,7 @@ func ReplaceExternalToLakeFSImported(location, repo, branch string) (string, err
 		return "", err
 	}
 	if u.Scheme == "" || u.Host == "" {
-		return "", ErrInvalidLocation
+		return "", fmt.Errorf("%w: %s", ErrInvalidLocation, location)
 	}
 	return u.Scheme + "://" + repo + "/" + branch + "/" + u.Path, nil
 }

@@ -314,7 +314,7 @@ func init() {
 	_ = metastoreImportAllCmd.MarkFlagRequired("repo")
 	_ = metastoreImportAllCmd.Flags().String("branch", "", "lakeFS branch name")
 	_ = metastoreImportAllCmd.MarkFlagRequired("branch")
-	_ = metastoreImportAllCmd.Flags().String("continue-on-error", "", "prevent copy-all from failing when a single table fails")
+	_ = metastoreImportAllCmd.Flags().String("continue-on-error", "", "prevent import-all from failing when a single table fails")
 
 	metastoreCmd.AddCommand(glueSymlinkCmd)
 	_ = glueSymlinkCmd.Flags().String("repo", "", "lakeFS repository name")
