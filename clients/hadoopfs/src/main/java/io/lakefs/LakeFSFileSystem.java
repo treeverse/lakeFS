@@ -1,9 +1,20 @@
 package io.lakefs;
 
-import static io.lakefs.Constants.DEFAULT_LIST_AMOUNT;
-import static io.lakefs.Constants.FS_LAKEFS_LIST_AMOUNT_KEY;
-import static io.lakefs.Constants.SEPARATOR;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.ObjectsApi;
+import io.lakefs.clients.api.RepositoriesApi;
+import io.lakefs.clients.api.StagingApi;
+import io.lakefs.clients.api.model.*;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.permission.FsPermission;
+import org.apache.hadoop.fs.s3a.S3AFileSystem;
+import org.apache.hadoop.util.Progressable;
+import org.apache.http.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
@@ -13,35 +24,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import javax.annotation.Nonnull;
-
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.Protocol;
-import com.amazonaws.auth.AWSCredentialsProviderChain;
-import com.amazonaws.auth.InstanceProfileCredentialsProvider;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
-
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.*;
-import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.hadoop.fs.s3a.AnonymousAWSCredentialsProvider;
-import org.apache.hadoop.fs.s3a.BasicAWSCredentialsProvider;
-import org.apache.hadoop.util.Progressable;
-import org.apache.http.HttpStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.ObjectsApi;
-import io.lakefs.clients.api.RepositoriesApi;
-import io.lakefs.clients.api.StagingApi;
-import io.lakefs.clients.api.model.ObjectStageCreation;
-import io.lakefs.clients.api.model.ObjectStats;
-import io.lakefs.clients.api.model.ObjectStatsList;
-import io.lakefs.clients.api.model.Pagination;
-import io.lakefs.clients.api.model.Repository;
-import io.lakefs.clients.api.model.StagingLocation;
+import static io.lakefs.Constants.*;
 
 /**
  * A dummy implementation of the core lakeFS Filesystem.
@@ -63,7 +46,6 @@ public class LakeFSFileSystem extends FileSystem {
     private URI uri;
     private Path workingDirectory = new Path(Constants.SEPARATOR);
     private LakeFSClient lfsClient;
-    private AmazonS3 s3Client;
     private int listAmount;
     private FileSystem fsForConfig;
 
@@ -97,11 +79,11 @@ public class LakeFSFileSystem extends FileSystem {
         setConf(conf);
         this.uri = name;
 
-        s3Client = createS3ClientFromConf(conf);
         this.lfsClient = lfsClient;
 
         listAmount = conf.getInt(FS_LAKEFS_LIST_AMOUNT_KEY, DEFAULT_LIST_AMOUNT);
 
+        // based on path get underlying FileSystem
         Path path = new Path(name);
         ObjectLocation objectLoc = pathToObjectLocation(path);
         RepositoriesApi repositoriesApi = lfsClient.getRepositories();
@@ -129,46 +111,6 @@ public class LakeFSFileSystem extends FileSystem {
         Path path = new Path(uri.toString());
         FileSystem fs = path.getFileSystem(conf);
         return f.apply(fs, path);
-    }
-
-    /**
-     * @return an Amazon S3 client configured much like S3A configure theirs.
-     */
-    static private AmazonS3 createS3ClientFromConf(Configuration conf) {
-        String accessKey = conf.get(org.apache.hadoop.fs.s3a.Constants.ACCESS_KEY, null);
-        String secretKey = conf.get(org.apache.hadoop.fs.s3a.Constants.SECRET_KEY, null);
-        AWSCredentialsProviderChain credentials = new AWSCredentialsProviderChain(
-                new BasicAWSCredentialsProvider(accessKey, secretKey),
-                new InstanceProfileCredentialsProvider(),
-                new AnonymousAWSCredentialsProvider());
-
-        ClientConfiguration awsConf = new ClientConfiguration();
-        awsConf.setMaxConnections(conf.getInt(org.apache.hadoop.fs.s3a.Constants.MAXIMUM_CONNECTIONS,
-                org.apache.hadoop.fs.s3a.Constants.DEFAULT_MAXIMUM_CONNECTIONS));
-        boolean secureConnections = conf.getBoolean(org.apache.hadoop.fs.s3a.Constants.SECURE_CONNECTIONS,
-                org.apache.hadoop.fs.s3a.Constants.DEFAULT_SECURE_CONNECTIONS);
-        awsConf.setProtocol(secureConnections ? Protocol.HTTPS : Protocol.HTTP);
-        awsConf.setMaxErrorRetry(conf.getInt(org.apache.hadoop.fs.s3a.Constants.MAX_ERROR_RETRIES,
-                org.apache.hadoop.fs.s3a.Constants.DEFAULT_MAX_ERROR_RETRIES));
-        awsConf.setConnectionTimeout(conf.getInt(org.apache.hadoop.fs.s3a.Constants.ESTABLISH_TIMEOUT,
-                org.apache.hadoop.fs.s3a.Constants.DEFAULT_ESTABLISH_TIMEOUT));
-        awsConf.setSocketTimeout(conf.getInt(org.apache.hadoop.fs.s3a.Constants.SOCKET_TIMEOUT,
-                org.apache.hadoop.fs.s3a.Constants.DEFAULT_SOCKET_TIMEOUT));
-
-        // TODO(ariels): Also copy proxy configuration?
-
-        AmazonS3 s3 = new AmazonS3Client(credentials, awsConf);
-        String endPoint = conf.getTrimmed(org.apache.hadoop.fs.s3a.Constants.ENDPOINT, "");
-        if (!endPoint.isEmpty()) {
-            try {
-                s3.setEndpoint(endPoint);
-            } catch (IllegalArgumentException e) {
-                String msg = "Incorrect endpoint: " + e.getMessage();
-                LOG.error(msg);
-                throw new IllegalArgumentException(msg, e);
-            }
-        }
-        return s3;
     }
 
     @Override
@@ -230,8 +172,9 @@ public class LakeFSFileSystem extends FileSystem {
             FileSystem physicalFs = physicalPath.getFileSystem(conf);
 
             // TODO(ariels): add fs.FileSystem.Statistics here to keep track.
-            return new FSDataOutputStream(new LinkOnCloseOutputStream(s3Client, staging, stagingLoc, objectLoc,
+            return new FSDataOutputStream(new LinkOnCloseOutputStream(staging, stagingLoc, objectLoc,
                     physicalUri,
+                    new MetadataClient(physicalFs),
                     // FSDataOutputStream is a kind of OutputStream(!)
                     physicalFs.create(physicalPath, false, bufferSize, replication, blockSize, progress)),
                     null);
@@ -418,14 +361,14 @@ public class LakeFSFileSystem extends FileSystem {
             objects.stageObject(dstObjectLoc.getRepository(), dstObjectLoc.getRef(), dstObjectLoc.getPath(),
                     creationReq);
         } catch (ApiException e) {
-            throw translateException("renameObject: src:" + srcStatus.getPath() +", dst: " + dst + ", failed to stage object", e);
+            throw translateException("renameObject: src:" + srcStatus.getPath() + ", dst: " + dst + ", failed to stage object", e);
         }
 
         // delete src path
         try {
             objects.deleteObject(srcObjectLoc.getRepository(), srcObjectLoc.getRef(), srcObjectLoc.getPath());
         } catch (ApiException e) {
-            throw translateException("renameObject: src:" + srcStatus.getPath() +", dst: " + dst +
+            throw translateException("renameObject: src:" + srcStatus.getPath() + ", dst: " + dst +
                     ", failed to delete src", e);
         }
         return true;
@@ -433,17 +376,18 @@ public class LakeFSFileSystem extends FileSystem {
 
     /**
      * Translate {@link ApiException} to an {@link IOException}.
+     *
      * @param msg the message describing the exception
-     * @param e the exception to translate
+     * @param e   the exception to translate
      * @return an IOException that corresponds to the translated API exception
      */
     private IOException translateException(String msg, ApiException e) {
         int code = e.getCode();
         switch (code) {
             case HttpStatus.SC_NOT_FOUND:
-                return (IOException)new FileNotFoundException(msg).initCause(e);
+                return (FileNotFoundException) new FileNotFoundException(msg).initCause(e);
             case HttpStatus.SC_FORBIDDEN:
-                return (IOException)new AccessDeniedException(msg).initCause(e);
+                return (AccessDeniedException) new AccessDeniedException(msg).initCause(e);
             default:
                 return new IOException(msg, e);
         }
@@ -726,6 +670,7 @@ public class LakeFSFileSystem extends FileSystem {
 
     /**
      * Build a {@link LakeFSLocatedFileStatus} from a {@link LakeFSFileStatus} instance.
+     *
      * @param status lakeFS file status
      * @return a located status with block locations
      * @throws IOException IO Problems.

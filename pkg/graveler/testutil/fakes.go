@@ -35,10 +35,6 @@ func (t *MetaRangeFake) ID() graveler.MetaRangeID {
 	return t.id
 }
 
-func NewCommittedFake() *CommittedFake {
-	return &CommittedFake{}
-}
-
 func (c *CommittedFake) Exists(context.Context, graveler.StorageNamespace, graveler.MetaRangeID) (bool, error) {
 	if c.Err != nil {
 		return false, c.Err
@@ -191,7 +187,7 @@ type AddedCommitData struct {
 type RefsFake struct {
 	ListRepositoriesRes graveler.RepositoryIterator
 	ListBranchesRes     graveler.BranchIterator
-	RevParseRes         map[graveler.Ref]graveler.Reference
+	Refs                map[graveler.Ref]*graveler.ResolvedRef
 	ListTagsRes         graveler.TagIterator
 	CommitIter          graveler.CommitIterator
 	RefType             graveler.ReferenceType
@@ -216,9 +212,17 @@ func (m *RefsFake) ListCommits(ctx context.Context, repositoryID graveler.Reposi
 	return nil, nil
 }
 
-func (m *RefsFake) RevParse(ctx context.Context, repoID graveler.RepositoryID, ref graveler.Ref) (graveler.Reference, error) {
-	if m.RevParseRes != nil {
-		if res, ok := m.RevParseRes[ref]; ok {
+func (m *RefsFake) ParseRef(ref graveler.Ref) (graveler.RawRef, error) {
+	// fake so we use the base ref to capture the ref for resolve lookup
+	return graveler.RawRef{
+		BaseRef: string(ref),
+	}, nil
+}
+
+func (m *RefsFake) ResolveRawRef(ctx context.Context, repoID graveler.RepositoryID, rawRef graveler.RawRef) (*graveler.ResolvedRef, error) {
+	if m.Refs != nil {
+		ref := graveler.Ref(rawRef.BaseRef)
+		if res, ok := m.Refs[ref]; ok {
 			return res, nil
 		}
 	}
@@ -228,7 +232,11 @@ func (m *RefsFake) RevParse(ctx context.Context, repoID graveler.RepositoryID, r
 		branch = DefaultBranchID
 	}
 
-	return NewFakeReference(m.RefType, branch, m.CommitID), nil
+	return &graveler.ResolvedRef{
+		Type:     m.RefType,
+		BranchID: branch,
+		CommitID: m.CommitID,
+	}, nil
 }
 
 func (m *RefsFake) GetRepository(context.Context, graveler.RepositoryID) (*graveler.Repository, error) {
@@ -415,38 +423,6 @@ func (r *committedValueIteratorFake) Err() error {
 }
 
 func (r *committedValueIteratorFake) Close() {}
-
-type referenceFake struct {
-	refType  graveler.ReferenceType
-	branch   graveler.Branch
-	commitID graveler.CommitID
-}
-
-// NewFakeReference returns a referenceFake
-// if branch parameter is empty branch record will be nil
-func NewFakeReference(refType graveler.ReferenceType, branchID graveler.BranchID, commitID graveler.CommitID) *referenceFake {
-	var branch graveler.Branch
-	if branchID != "" {
-		branch = graveler.Branch{CommitID: commitID}
-	}
-	return &referenceFake{
-		refType:  refType,
-		branch:   branch,
-		commitID: commitID,
-	}
-}
-
-func (m *referenceFake) Type() graveler.ReferenceType {
-	return m.refType
-}
-
-func (m *referenceFake) Branch() graveler.Branch {
-	return m.branch
-}
-
-func (m *referenceFake) CommitID() graveler.CommitID {
-	return m.commitID
-}
 
 type RV struct {
 	R *committed.Range

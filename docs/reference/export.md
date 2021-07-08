@@ -1,13 +1,13 @@
 ---
 layout: default
-title: Exporting data
+title: Exporting Data
 description: Use lakeFS Spark client to export lakeFS commit to the object store. 
 parent: Reference
 nav_order: 5
 has_children: false
 ---
 
-# Exporting data
+# Exporting Data
 {: .no_toc }
 The export operation copies all data from a given lakeFS commit to 
 a designated object store location.
@@ -61,8 +61,7 @@ The complete `spark-submit` command would look like:
 spark-submit --conf spark.hadoop.lakefs.api.url=https://<LAKEFS_ENDPOINT>/api/v1 \
 --conf spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY_ID> \
 --conf spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_ACCESS_KEY> \
---repositories https://s01.oss.sonatype.org/content/repositories/snapshots/ \
---packages io.treeverse:lakefs-spark-client-301_2.12:0.1.3-SNAPSHOT \
+--packages io.lakefs:lakefs-spark-client-301_2.12:0.1.0 \
 --class io.treeverse.clients.Main export-app example-repo s3://example-bucket/prefix \
 --branch=example-branch
 ```

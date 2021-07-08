@@ -75,6 +75,7 @@ terraform.rc
 # generated mock files
 /pkg/graveler/committed/mock/
 /pkg/graveler/sstable/mock/
+/pkg/graveler/mock/
 /pkg/pyramid/mock/
 /pkg/onboard/mock/
 /pkg/actions/mock/

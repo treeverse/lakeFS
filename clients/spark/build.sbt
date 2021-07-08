@@ -2,8 +2,8 @@ import build.BuildType
 
 lazy val baseName = "lakefs-spark"
 
-lazy val projectVersion = "0.1.4-SNAPSHOT"
-ThisBuild / isSnapshot := true
+lazy val projectVersion = "0.1.5"
+ThisBuild / isSnapshot := false
 
 // Spark versions 2.4.7 and 3.0.1 use different Scala versions.  Changing this is a deep
 // change, so key the Spark distinction by the Scala distinction.  sbt doesn't appear to
@@ -38,7 +38,7 @@ def generateCoreProject(buildType: BuildType) =
         scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
       ),
       libraryDependencies ++= Seq(
-        "io.lakefs" % "api-client" % "0.40.3",
+        "io.lakefs" % "api-client" % "0.44.0",
         "org.rocksdb" % "rocksdbjni" % "6.6.4",
         "commons-codec" % "commons-codec" % "1.15",
         "org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
@@ -50,6 +50,7 @@ def generateCoreProject(buildType: BuildType) =
         "com.google.guava" % "guava" % "16.0.1",
         "com.google.guava" % "failureaccess" % "1.0.1",
         "org.rogach" %% "scallop" % "4.0.3",
+        "software.amazon.awssdk" % "s3" % "2.15.15",
       ),
       target := file(s"target/core-${buildType.name}/")
     ).enablePlugins(S3Plugin)
@@ -173,7 +174,7 @@ ThisBuild / developers := List(
 )
 
 ThisBuild / versionScheme := Some("early-semver")
-ThisBuild / organization := "io.treeverse"
+ThisBuild / organization := "io.lakefs"
 ThisBuild / organizationName := "Treeverse Labs"
 ThisBuild / organizationHomepage := Some(url("http://treeverse.io"))
 ThisBuild / description := "Spark client for lakeFS object metadata."
