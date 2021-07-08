@@ -259,7 +259,7 @@ spark-shell --conf spark.hadoop.fs.s3a.access.key='AKIAIOSFODNN7EXAMPLE' \
               --conf spark.hadoop.fs.lakefs.impl=io.lakefs.LakeFSFileSystem \
               --conf spark.hadoop.fs.lakefs.access.key=AKIAlakefs12345EXAMPLE \
               --conf spark.hadoop.fs.lakefs.secret.key=abc/lakefs/1234567bPxRfiCYEXAMPLEKEY \
-              --conf spark.hadoop.fs.lakefs.endpoint=https://lakefs.example.com/api/v1/ \
+              --conf spark.hadoop.fs.lakefs.endpoint=https://lakefs.example.com/api/v1 \
               --packages io.lakefs:lakefsfs:0.45.56
               ...
 ```
@@ -276,7 +276,7 @@ spark.sparkContext.hadoopConfiguration.set("fs.s3a.endpoint", "https://s3.eu-cen
 spark.sparkContext.hadoopConfiguration.set("fs.lakefs.impl", "io.lakefs.LakeFSFileSystem")
 spark.sparkContext.hadoopConfiguration.set("fs.lakefs.access.key", "AKIAlakefs12345EXAMPLE")
 spark.sparkContext.hadoopConfiguration.set("fs.lakefs.secret.key", "abc/lakefs/1234567bPxRfiCYEXAMPLEKEY")
-spark.sparkContext.hadoopConfiguration.set("fs.lakefs.endpoint", "https://lakefs.example.com/api/v1/")
+spark.sparkContext.hadoopConfiguration.set("fs.lakefs.endpoint", "https://lakefs.example.com/api/v1")
 ```
   </div>
   <div markdown="1" id="lakefs-config-tabs-xml">
@@ -301,19 +301,19 @@ and then add these into a configuration file, e.g. `$SPARK_HOME/conf/hdfs-site.x
     </property>
     <property>
         <name>fs.lakefs.impl</name>
-        <value>io.lakefs.LakeFSFileSystem"</value>
+        <value>io.lakefs.LakeFSFileSystem</value>
     </property>
     <property>
         <name>fs.lakefs.access.key</name>
-        <value>AKIAlakefs12345EXAMPLE"</value>
+        <value>AKIAlakefs12345EXAMPLE</value>
     </property>
     <property>
         <name>fs.lakefs.secret.key</name>
-        <value>abc/lakefs/1234567bPxRfiCYEXAMPLEKEY"</value>
+        <value>abc/lakefs/1234567bPxRfiCYEXAMPLEKEY</value>
     </property>
     <property>
         <name>fs.lakefs.endpoint</name>
-        <value>https://lakefs.example.com/api/v1/"</value>
+        <value>https://lakefs.example.com/api/v1</value>
     </property>
 </configuration>
 ```
