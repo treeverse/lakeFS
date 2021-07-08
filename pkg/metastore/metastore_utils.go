@@ -27,6 +27,17 @@ func ReplaceBranchName(location, branch string) (string, error) {
 	return u.Scheme + "://" + u.Host + "/" + branch + "/" + p.Path, nil
 }
 
+func ReplaceExternalToLakeFSImported(location, repo, branch string) (string, error) {
+	u, err := url.Parse(location)
+	if err != nil {
+		return "", err
+	}
+	if u.Scheme == "" || u.Host == "" {
+		return "", ErrInvalidLocation
+	}
+	return u.Scheme + "://" + repo + "/" + branch + "/" + u.Path, nil
+}
+
 func GetSymlinkLocation(location, locationPrefix string) (string, error) {
 	u, err := url.Parse(location)
 	if err != nil {

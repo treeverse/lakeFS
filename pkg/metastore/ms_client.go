@@ -106,12 +106,30 @@ func CopyOrMergeAll(ctx context.Context, fromClient, toClient Client, schemaFilt
 	if err != nil {
 		return err
 	}
+	transformLocation := func(location string) (string, error) {
+		return ReplaceBranchName(location, toBranch)
+	}
+	return applyAll(ctx, fromClient, toClient, databases, tableFilter, transformLocation, fixSparkPlaceHolder, continueOnError)
+}
+
+func ImportAll(ctx context.Context, fromClient, toClient Client, schemaFilter, tableFilter, repo, toBranch string, continueOnError, fixSparkPlaceHolder bool) error {
+	databases, err := fromClient.GetDatabases(ctx, schemaFilter)
+	if err != nil {
+		return err
+	}
+	transformLocation := func(location string) (string, error) {
+		return ReplaceExternalToLakeFSImported(location, repo, toBranch)
+	}
+	return applyAll(ctx, fromClient, toClient, databases, tableFilter, transformLocation, fixSparkPlaceHolder, continueOnError)
+}
+
+func applyAll(ctx context.Context, fromClient Client, toClient Client, databases []*Database, tableFilter string, transformLocation func(location string) (string, error), fixSparkPlaceHolder bool, continueOnError bool) error {
 	for _, database := range databases {
 		fromDBName := database.Name
 		toDBName := toClient.NormalizeDBName(database.Name)
 		database.Name = toDBName
 		database.LocationURI = toClient.GetDBLocation(toDBName)
-		err = toClient.CreateDatabaseIfNotExists(ctx, database)
+		err := toClient.CreateDatabaseIfNotExists(ctx, database)
 		if err != nil {
 			return err
 		}
@@ -119,16 +137,9 @@ func CopyOrMergeAll(ctx context.Context, fromClient, toClient Client, schemaFilt
 		if err != nil {
 			return err
 		}
-		transformLocation := func(location string) (string, error) {
-			location, err := ReplaceBranchName(location, toBranch)
-			if err != nil {
-				return "", err
-			}
-			return location, err
-		}
 		for _, table := range tables {
 			tableName := table.TableName
-			fmt.Printf("copy table %s.%s -> %s.%s\n", fromDBName, tableName, toDBName, tableName)
+			fmt.Printf("table %s.%s -> %s.%s\n", fromDBName, tableName, toDBName, tableName)
 			err = CopyOrMergeFromValues(ctx, fromClient, table, toClient, fromDBName, tableName, toDBName, tableName, tableName, transformLocation, fixSparkPlaceHolder)
 			if err != nil {
 				if !continueOnError {
