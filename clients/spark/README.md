@@ -49,7 +49,7 @@ Otherwise, the client can be included using Maven coordinates.
 CLIENT_VERSION=0.1.0
 SPARK_VERSION=301 # or 247
 SCALA_VERSION=2.12 # or 2.11
-spark-submit --conf spark.hadoop.lakefs.api.url=https://lakefs.example.com/api/v1/ \
+spark-submit --conf spark.hadoop.lakefs.api.url=https://lakefs.example.com/api/v1 \
 --conf spark.hadoop.fs.s3a.access.key=<S3_ACCESS_KEY> \
 --conf spark.hadoop.fs.s3a.secret.key=<S3_SECRET_KEY> \
 --conf spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY> \
@@ -64,7 +64,7 @@ spark-submit --conf spark.hadoop.lakefs.api.url=https://lakefs.example.com/api/v
 CLIENT_VERSION=0.1.4-SNAPSHOT
 SPARK_VERSION=301 # or 247
 
-spark-submit --conf spark.hadoop.lakefs.api.url=https://lakefs.example.com/api/v1/ \
+spark-submit --conf spark.hadoop.lakefs.api.url=https://lakefs.example.com/api/v1 \
 --conf spark.hadoop.fs.s3a.access.key=<S3_ACCESS_KEY> \
 --conf spark.hadoop.fs.s3a.secret.key=<S3_SECRET_KEY> \
 --conf spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY> \
