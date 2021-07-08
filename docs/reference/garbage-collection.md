@@ -74,7 +74,7 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
 1. In order for an object to be hard-deleted, it must be deleted from all branches.
    You should remove stale branches to prevent them from retaining old objects.
    For example, consider a branch that has been merged to `main` and has become stale.
-   An object which is later deleted from `main` will always be present in the stale branch, prevent from being hard-deleted.
+   An object which is later deleted from `main` will always be present in the stale branch, preventing it from being hard-deleted.
    
 1. lakeFS will never delete objects outside your repository's storage namespace.
    In particular, objects that were imported using `lakefs import` or `lakectl ingest` will not be affected by GC jobs.
