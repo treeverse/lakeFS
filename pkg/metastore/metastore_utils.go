@@ -2,6 +2,7 @@ package metastore
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
 
 	"github.com/treeverse/lakefs/pkg/gateway/path"
@@ -25,6 +26,17 @@ func ReplaceBranchName(location, branch string) (string, error) {
 	}
 
 	return u.Scheme + "://" + u.Host + "/" + branch + "/" + p.Path, nil
+}
+
+func ReplaceExternalToLakeFSImported(location, repo, branch string) (string, error) {
+	u, err := url.Parse(location)
+	if err != nil {
+		return "", err
+	}
+	if u.Scheme == "" || u.Host == "" {
+		return "", fmt.Errorf("%w: %s", ErrInvalidLocation, location)
+	}
+	return u.Scheme + "://" + repo + "/" + branch + "/" + u.Path, nil
 }
 
 func GetSymlinkLocation(location, locationPrefix string) (string, error) {
