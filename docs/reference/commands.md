@@ -63,6 +63,27 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
 ```
 
 
+### lakectl base-uri
+
+Base URI value is a lakefs reference or part of a reference that starts lakectl uses for each argument that accept reference and doesn't start with `lakefs://` prefix.
+The value for base URI is set by a flag `--base-uri` and the default value when not set is the set by an environment variable LAKECTL_BASE_URI.
+
+Having the environemnt varilabe sets to a repository, for example, can shorten your command by passing relative path:
+
+
+```sh
+export LAKECTL_BASE_URI=lakefs://repo/
+lakectl fs cat main/data/file.csv
+lakectl diff feature main
+```
+
+Same as the above without using the base URI:
+
+```sh
+lakectl fs cat lakefs://repo/main/data/file.csv
+lakectl diff lakefs://repo/feature lakefs://repo/main
+```
+
 
 ### lakectl abuse
 
