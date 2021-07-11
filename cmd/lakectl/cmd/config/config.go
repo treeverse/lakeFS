@@ -40,6 +40,8 @@ type configuration struct {
 			Region    string `mapstructure:"region"`
 			CatalogID string `mapstructure:"catalog_id"`
 		}
+		// setting FixSparkPlaceholder to true will change spark placeholder with the actual location. for more information see https://github.com/treeverse/lakeFS/issues/2213
+		FixSparkPlaceholder bool `mapstructure:"fix_spark_placeholder"`
 	}
 }
 
@@ -132,4 +134,8 @@ func (c *Config) GetHiveDBLocationURI() string {
 
 func (c *Config) GetGlueDBLocationURI() string {
 	return c.Values.Metastore.Glue.DBLocationtURI
+}
+
+func (c *Config) GetFixSparkPlaceholder() bool {
+	return c.Values.Metastore.FixSparkPlaceholder
 }
