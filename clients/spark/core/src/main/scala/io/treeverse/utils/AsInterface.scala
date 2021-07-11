@@ -87,8 +87,6 @@ private class AsInterface(cv: ClassVisitor, val ifaces: Map[String, Class[_]]) e
       m.getName + ": " + Type.getMethodDescriptor(m)
     ).toSet
     val unimplemented = interfaceMethodDescs -- translatedMethodDescs
-    Console.out.println(s"[DEBUG] end ${className} implemented ${translatedMethodDescs} required ${interfaceMethodDescs}")
-    Console.out.println(s"[DEBUG] end ${className} missing ${unimplemented}")
     if (!unimplemented.isEmpty) {
       throw new UnimplementedMethodsException("Unimplemented methods", unimplemented)
     }
@@ -97,7 +95,6 @@ private class AsInterface(cv: ClassVisitor, val ifaces: Map[String, Class[_]]) e
   override def visitMethod(access: Int, name: String, desc: String, signature: String, exceptions: Array[String]): MethodVisitor = {
     // BUG(ariels): Does not support generic methods (ignores signature).
     //     At least throw an exception...
-    Console.out.println(s"[DEBUG] name ${className}.${name} desc ${desc} signature ${signature}")
 
     // BUG(ariels): Test exceptions.
     generateForwardingMethod(access, name, desc, exceptions)
@@ -109,13 +106,11 @@ private class AsInterface(cv: ClassVisitor, val ifaces: Map[String, Class[_]]) e
   def generateForwardingMethod(access: Int, name: String, desc: String, exceptions: Array[String]): Unit = {
     val argTypes = Type.getArgumentTypes(desc)
     if (argTypes == null) throw new IllegalArgumentException(s"Bad method descriptor ${desc}")
-    argTypes.foreach((typ) => Console.out.println(s"[DEBUG] arg " + AsInterface.getName(typ)))
     val translatedArgTypes = argTypes.map(translateType)
 
     val retType = Type.getReturnType(desc)
 
     val translatedRetType = translateType(retType)
-    Console.out.println(s"[DEBUG] return type ${retType.getInternalName} => ${translatedRetType.getInternalName}")
 
     val translatedExceptions = if (exceptions != null)
       exceptions.map((name: String) => translateType(Type.getObjectType(name)).getInternalName)
@@ -129,11 +124,9 @@ private class AsInterface(cv: ClassVisitor, val ifaces: Map[String, Class[_]]) e
     if (retType.equals(translatedRetType) &&
       (exceptions == null || AsInterface.equals(exceptions, translatedExceptions)) &&
       AsInterface.equals(argTypes, translatedArgTypes)) {
-      Console.out.println("[DEBUG] nothing to do")
       return
     }
 
-    Console.out.println(s"[DEBUG] create casting overload for ${name}${translatedDesc}")
     val mv = cv.visitMethod(access, name, translatedDesc, null /* no support for generics */, translatedExceptions)
 
     mv.visitCode()
