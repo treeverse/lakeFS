@@ -2,9 +2,11 @@ package api_test
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -147,9 +149,24 @@ func setupClientByEndpoint(t testing.TB, endpointURL string, accessKeyID, secret
 
 func setupServer(t testing.TB, handler http.Handler) *httptest.Server {
 	t.Helper()
-	server := httptest.NewServer(http.TimeoutHandler(handler, ServerTimeout, `{"error": "timeout"}`))
+	if shouldUseServerTimeout() {
+		handler = http.TimeoutHandler(handler, ServerTimeout, `{"error": "timeout"}`)
+	}
+	server := httptest.NewServer(handler)
 	t.Cleanup(server.Close)
 	return server
+}
+
+func shouldUseServerTimeout() bool {
+	withServerTimeoutVal := os.Getenv("TEST_WITH_SERVER_TIMEOUT")
+	if withServerTimeoutVal == "" {
+		return true // default
+	}
+	withServerTimeout, err := strconv.ParseBool(withServerTimeoutVal)
+	if err != nil {
+		panic(fmt.Errorf("invalid TEST_WITH_SERVER_TIMEOUT value: %w", err))
+	}
+	return withServerTimeout
 }
 
 func setupClientWithAdmin(t testing.TB, blockstoreType string, opts ...testutil.GetDBOption) (api.ClientWithResponsesInterface, *dependencies) {
