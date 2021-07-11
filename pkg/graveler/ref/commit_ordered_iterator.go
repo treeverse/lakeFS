@@ -3,7 +3,6 @@ package ref
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	sq "github.com/Masterminds/squirrel"
 
@@ -13,9 +12,11 @@ import (
 
 type OrderedCommitIteratorOption func(oci *OrderedCommitIterator)
 
-func WithOnlyDanglingCommits() OrderedCommitIteratorOption {
+// WithOnlyAncestryLeaves causes the iterator to return only commits which are not the first parent of any other commit.
+// Consider a commit graph where all non-first-parent edges are removed. This graph is a tree, and ancestry leaves are its leaves.
+func WithOnlyAncestryLeaves() OrderedCommitIteratorOption {
 	return func(oci *OrderedCommitIterator) {
-		oci.onlyDanglingCommits = true
+		oci.onlyAncestryLeaves = true
 	}
 }
 
@@ -36,16 +37,16 @@ func NewOrderedCommitIterator(ctx context.Context, database db.Database, reposit
 }
 
 type OrderedCommitIterator struct {
-	ctx                 context.Context
-	db                  db.Database
-	repositoryID        graveler.RepositoryID
-	prefetchSize        int
-	buf                 []*graveler.CommitRecord
-	err                 error
-	value               *graveler.CommitRecord
-	offset              string
-	state               iteratorState
-	onlyDanglingCommits bool
+	ctx                context.Context
+	db                 db.Database
+	repositoryID       graveler.RepositoryID
+	prefetchSize       int
+	buf                []*graveler.CommitRecord
+	err                error
+	value              *graveler.CommitRecord
+	offset             string
+	state              iteratorState
+	onlyAncestryLeaves bool
 }
 
 func (iter *OrderedCommitIterator) Next() bool {
@@ -71,8 +72,8 @@ func (iter *OrderedCommitIterator) maybeFetch() {
 	if len(iter.buf) > 0 {
 		return
 	}
-
-	q := sq.Select("id", "committer", "message", "creation_date", "meta_range_id", "parents", "metadata", "version").
+	psql := sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
+	q := psql.Select("id", "committer", "message", "creation_date", "meta_range_id", "parents", "metadata", "version").
 		From("graveler_commits").
 		Where(sq.Eq{"repository_id": iter.repositoryID})
 
@@ -85,16 +86,18 @@ func (iter *OrderedCommitIterator) maybeFetch() {
 
 	var buf []*commitRecord
 
-	if iter.onlyDanglingCommits {
-		danglingCommitsQueryTemplate := "NOT EXISTS (SELECT * FROM graveler_commits c2 WHERE c2.repository_id=graveler_commits.repository_id AND c2.parents[%d]=graveler_commits.id)"
-		q = q.Where(sq.Or{
+	if iter.onlyAncestryLeaves {
+		ancestryLeafCondition := psql.Select("*").Prefix("NOT EXISTS (").Suffix(")").From("graveler_commits c2").Where("c2.repository_id=graveler_commits.repository_id")
+		ancestryLeafPredicate := sq.Or{
 			sq.And{
-				sq.Lt{"version": graveler.CommitVersionParentSwitch},
-				sq.Expr(fmt.Sprintf(danglingCommitsQueryTemplate, 2))},
+				sq.Lt{"c2.version": graveler.CommitVersionParentSwitch},
+				sq.Expr("c2.parents[array_length(c2.parents, 1)]=graveler_commits.id")},
 			sq.And{
-				sq.GtOrEq{"version": graveler.CommitVersionParentSwitch},
-				sq.Expr(fmt.Sprintf(danglingCommitsQueryTemplate, 1))},
-		})
+				sq.GtOrEq{"c2.version": graveler.CommitVersionParentSwitch},
+				sq.Expr("c2.parents[1]=graveler_commits.id")},
+		}
+		ancestryLeafCondition = ancestryLeafCondition.Where(ancestryLeafPredicate)
+		q = q.Where(ancestryLeafCondition)
 	}
 	q.OrderBy("id ASC")
 	q.Limit(uint64(iter.prefetchSize))
@@ -103,7 +106,7 @@ func (iter *OrderedCommitIterator) maybeFetch() {
 		iter.err = err
 		return
 	}
-	err = iter.db.Select(iter.ctx, &buf, query, args)
+	err = iter.db.Select(iter.ctx, &buf, query, args...)
 	if err != nil {
 		iter.err = err
 		return

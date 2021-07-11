@@ -32,10 +32,10 @@ func testRefManagerWithDB(t testing.TB) (*ref.Manager, db.Database) {
 	return ref.NewPGRefManager(batch.NopExecutor(), conn, ident.NewHexAddressProvider()), conn
 }
 
-func testRefManagerWithAddressProvider(t testing.TB, addressProvider ident.AddressProvider) *ref.Manager {
+func testRefManagerWithAddressProvider(t testing.TB, addressProvider ident.AddressProvider) (*ref.Manager, db.Database) {
 	t.Helper()
 	conn, _ := testutil.GetDB(t, databaseURI, testutil.WithGetDBApplyDDL(true))
-	return ref.NewPGRefManager(batch.NopExecutor(), conn, addressProvider)
+	return ref.NewPGRefManager(batch.NopExecutor(), conn, addressProvider), conn
 }
 
 func TestMain(m *testing.M) {
