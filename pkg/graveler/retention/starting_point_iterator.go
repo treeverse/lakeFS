@@ -10,7 +10,7 @@ type GCStartingPoint struct {
 }
 
 // GCStartingPointIterator combines a branch iterator and a commit iterator. Both are assumed to be sorted and to contain no duplicates.
-// Each returned GCStartingPoint object contains the commit id. If the entry came from the branch iterator, it also the branch id.
+// Each returned GCStartingPoint object contains the commit id. If the entry came from the branch iterator, it also contains the branch id.
 // Commits appearing in both iterators appear only once and include the branch id.
 type GCStartingPointIterator struct {
 	commitIterator graveler.CommitIterator

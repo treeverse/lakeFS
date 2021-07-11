@@ -3,6 +3,9 @@ package ref
 import (
 	"context"
 	"errors"
+	"fmt"
+
+	sq "github.com/Masterminds/squirrel"
 
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -10,9 +13,9 @@ import (
 
 type OrderedCommitIteratorOption func(oci *OrderedCommitIterator)
 
-func WithAdditionalCondition(additionalCondition string) OrderedCommitIteratorOption {
+func WithOnlyDanglingCommits() OrderedCommitIteratorOption {
 	return func(oci *OrderedCommitIterator) {
-		oci.additionalCondition = additionalCondition
+		oci.onlyDanglingCommits = true
 	}
 }
 
@@ -42,7 +45,7 @@ type OrderedCommitIterator struct {
 	value               *graveler.CommitRecord
 	offset              string
 	state               iteratorState
-	additionalCondition string
+	onlyDanglingCommits bool
 }
 
 func (iter *OrderedCommitIterator) Next() bool {
@@ -69,26 +72,38 @@ func (iter *OrderedCommitIterator) maybeFetch() {
 		return
 	}
 
-	var offsetCondition string
+	q := sq.Select("id", "committer", "message", "creation_date", "meta_range_id", "parents", "metadata", "version").
+		From("graveler_commits").
+		Where(sq.Eq{"repository_id": iter.repositoryID})
+
 	if iter.state == iteratorStateInit {
-		offsetCondition = iteratorOffsetCondition(true)
 		iter.state = iteratorStateQuerying
+		q = q.Where(sq.GtOrEq{"id": iter.offset})
 	} else {
-		offsetCondition = iteratorOffsetCondition(false)
+		q = q.Where(sq.Gt{"id": iter.offset})
 	}
 
 	var buf []*commitRecord
-	additionalConditionExpression := ""
-	if iter.additionalCondition != "" {
-		additionalConditionExpression = " AND " + iter.additionalCondition + " "
+
+	if iter.onlyDanglingCommits {
+		danglingCommitsQueryTemplate := "NOT EXISTS (SELECT * FROM graveler_commits c2 WHERE c2.repository_id=graveler_commits.repository_id AND c2.parents[%d]=graveler_commits.id)"
+		q = q.Where(sq.Or{
+			sq.And{
+				sq.Lt{"version": graveler.CommitVersionParentSwitch},
+				sq.Expr(fmt.Sprintf(danglingCommitsQueryTemplate, 2))},
+			sq.And{
+				sq.GtOrEq{"version": graveler.CommitVersionParentSwitch},
+				sq.Expr(fmt.Sprintf(danglingCommitsQueryTemplate, 1))},
+		})
 	}
-	err := iter.db.Select(iter.ctx, &buf, `
-			SELECT id, committer, message, creation_date, meta_range_id, parents, metadata, version
-			FROM graveler_commits
-			WHERE repository_id = $1
-			AND id `+offsetCondition+` $2`+additionalConditionExpression+`
-			ORDER BY id ASC
-			LIMIT $3`, iter.repositoryID, iter.offset, iter.prefetchSize)
+	q.OrderBy("id ASC")
+	q.Limit(uint64(iter.prefetchSize))
+	query, args, err := q.ToSql()
+	if err != nil {
+		iter.err = err
+		return
+	}
+	err = iter.db.Select(iter.ctx, &buf, query, args)
 	if err != nil {
 		iter.err = err
 		return
