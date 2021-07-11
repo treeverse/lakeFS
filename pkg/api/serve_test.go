@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -147,7 +148,15 @@ func setupClientByEndpoint(t testing.TB, endpointURL string, accessKeyID, secret
 
 func setupServer(t testing.TB, handler http.Handler) *httptest.Server {
 	t.Helper()
-	server := httptest.NewServer(http.TimeoutHandler(handler, ServerTimeout, `{"error": "timeout"}`))
+	withServerTimeout, err := strconv.ParseBool(os.Getenv("TEST_WITH_SERVER_TIMEOUT"))
+	if err != nil {
+		// by default we test with server timeout
+		withServerTimeout = true
+	}
+	if withServerTimeout {
+		handler = http.TimeoutHandler(handler, ServerTimeout, `{"error": "timeout"}`)
+	}
+	server := httptest.NewServer(handler)
 	t.Cleanup(server.Close)
 	return server
 }
