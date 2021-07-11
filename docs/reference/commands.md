@@ -63,6 +63,27 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
 ```
 
 
+### lakectl base-uri
+
+Base URI allows you to use relative paths. When setting the Base URI, lakectl will add the Base URI as a prefix to all relative paths (paths not starting with lakefs://).
+The value for base URI is set by the flag `--base-uri`. When the flag is not set, the default value will be taken from the environment variable LAKECTL_BASE_URI.
+
+Setting the environment variable to a repository will allow you to use only the relative path, enabling you to shorten your commands, for example:
+
+
+```sh
+export LAKECTL_BASE_URI=lakefs://repo/
+lakectl fs cat main/data/file.csv
+lakectl diff feature main
+```
+
+Same as the above without using the base URI:
+
+```sh
+lakectl fs cat lakefs://repo/main/data/file.csv
+lakectl diff lakefs://repo/feature lakefs://repo/main
+```
+
 
 ### lakectl abuse
 
@@ -2019,6 +2040,3 @@ lakectl tag show <tag uri> [flags]
 ```
   -h, --help   help for show
 ```
-
-
-
