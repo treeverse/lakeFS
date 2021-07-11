@@ -68,7 +68,7 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
 Base URI value is a lakefs reference or part of a reference that starts lakectl uses for each argument that accept reference and doesn't start with `lakefs://` prefix.
 The value for base URI is set by a flag `--base-uri` and the default value when not set is the set by an environment variable LAKECTL_BASE_URI.
 
-Having the environemnt varilabe sets to a repository, for example, can shorten your command by passing relative path:
+Setting the environment variable to a repository will allow you to use only the relative path, enabling you to shorten your commands, for example:
 
 
 ```sh
@@ -2040,6 +2040,5 @@ lakectl tag show <tag uri> [flags]
 ```
   -h, --help   help for show
 ```
-
 
 
