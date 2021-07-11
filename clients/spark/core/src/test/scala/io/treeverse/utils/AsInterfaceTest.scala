@@ -48,8 +48,10 @@ class AsInterfaceTest extends AnyFunSuite {
     val aicl = new AsInterfaceClassLoader(
       getClass.getClassLoader,
       Map(("io/treeverse/utils/Goo", classOf[Foo])))
-    val f: Foo = aicl.loadClass("io.treeverse.utils.Goo").getConstructor().newInstance().asInstanceOf[Foo]
-    assertThrows[AbstractMethodError](f.foo(4))
+    val cce = intercept[UnimplementedMethodsException](aicl.loadClass("io.treeverse.utils.Goo"))
+    assert(cce.methods == Set(
+      "foo: (I)I",
+      "addFoo: (Lio/treeverse/utils/Foo;)Lio/treeverse/utils/Foo;"))
   }
 
   test("Boo as Foo is not a Moo") {
@@ -61,11 +63,13 @@ class AsInterfaceTest extends AnyFunSuite {
     )
   }
 
-  test("Boo as a Moo fails at runtime") {
+  test("Boo as a Moo fails to load") {
     val aicl = new AsInterfaceClassLoader(
       getClass.getClassLoader,
       Map(("io/treeverse/utils/Boo", classOf[Moo])))
-    // BUG(ariels): It works because it's lazy :-(
-    aicl.loadClass("io.treeverse.utils.Boo").getConstructor(classOf[Integer]).newInstance(9.asInstanceOf[Integer]).asInstanceOf[Moo]
+    assertThrows[ClassCastException](aicl.loadClass("io.treeverse.utils.Boo")
+        .getConstructor(classOf[Integer])
+        .newInstance(9.asInstanceOf[Integer])
+        .asInstanceOf[Moo])
   }
 }

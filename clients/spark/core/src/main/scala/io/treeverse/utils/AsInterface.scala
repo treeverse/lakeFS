@@ -4,6 +4,8 @@ import org.objectweb.asm.{ClassVisitor, MethodVisitor}
 import org.objectweb.asm.Opcodes._
 import org.objectweb.asm.Type
 
+import java.lang.reflect.Method
+
 private object AsInterface {
   def getName(typ: Type): String =
     typ.getSort match {
@@ -46,6 +48,9 @@ private object AsInterface {
 
 private class AsInterface(cv: ClassVisitor, val ifaces: Map[String, Class[_]]) extends ClassVisitor(ASM8, cv) {
   var className: String = ""
+  // If set, the interface to be translated.
+  var toIface : Class[_] = null
+  var translatedMethodDescs = Set[String]()
 
   override def visit(
     version: Int,
@@ -56,8 +61,11 @@ private class AsInterface(cv: ClassVisitor, val ifaces: Map[String, Class[_]]) e
     interfaces: Array[String]
   ) = {
     val newInterfaces = ifaces get name match {
-        case Some(iface) => interfaces :+ Type.getType(iface).getInternalName
-        case None => interfaces
+      case Some(iface) => {
+        toIface = iface
+        interfaces :+ Type.getType(iface).getInternalName
+      }
+      case None => interfaces
     }
     className = name
     cv.visit(version, access, name, signature, superName, newInterfaces)
@@ -68,6 +76,23 @@ private class AsInterface(cv: ClassVisitor, val ifaces: Map[String, Class[_]]) e
       case Some(iface) => Type.getType(iface)
       case None => typ
     }
+
+  // Verify that any interface methods were translated, i.e. implemented.
+  override def visitEnd(): Unit = {
+    if (toIface == null) {
+      // No translation, nothing to verify.
+      return
+    }
+    val interfaceMethodDescs = toIface.getDeclaredMethods.map((m: Method) =>
+      m.getName + ": " + Type.getMethodDescriptor(m)
+    ).toSet
+    val unimplemented = interfaceMethodDescs -- translatedMethodDescs
+    Console.out.println(s"[DEBUG] end ${className} implemented ${translatedMethodDescs} required ${interfaceMethodDescs}")
+    Console.out.println(s"[DEBUG] end ${className} missing ${unimplemented}")
+    if (!unimplemented.isEmpty) {
+      throw new UnimplementedMethodsException("Unimplemented methods", unimplemented)
+    }
+  }
 
   override def visitMethod(access: Int, name: String, desc: String, signature: String, exceptions: Array[String]): MethodVisitor = {
     // BUG(ariels): Does not support generic methods (ignores signature).
@@ -99,6 +124,8 @@ private class AsInterface(cv: ClassVisitor, val ifaces: Map[String, Class[_]]) e
 
     val translatedDesc = Type.getMethodDescriptor(translatedRetType, translatedArgTypes: _*)
 
+    translatedMethodDescs = translatedMethodDescs + (name + ": " + translatedDesc)
+
     if (retType.equals(translatedRetType) &&
       (exceptions == null || AsInterface.equals(exceptions, translatedExceptions)) &&
       AsInterface.equals(argTypes, translatedArgTypes)) {
@@ -114,7 +141,6 @@ private class AsInterface(cv: ClassVisitor, val ifaces: Map[String, Class[_]]) e
     mv.visitVarInsn(ALOAD, 0) // load "this"
 
     for (((argType, translatedArgType), index) <- (argTypes zip translatedArgTypes).zipWithIndex) {
-      // BUG(ariels): Maybe *LOAD.
       mv.visitVarInsn(AsInterface.loadFor(argType.getSort), index+1) // load arg
       if (!argType.equals(translatedRetType)) {
         mv.visitTypeInsn(CHECKCAST, argType.getInternalName)
@@ -122,7 +148,6 @@ private class AsInterface(cv: ClassVisitor, val ifaces: Map[String, Class[_]]) e
     }
 
     mv.visitMethodInsn(INVOKESPECIAL, className, name, desc)
-    // TODO(ariels): Do we have to upcast here?
     mv.visitInsn(AsInterface.returnFor(translatedRetType.getSort))
 
     mv.visitMaxs(argTypes.length + 1, argTypes.length + 1)
@@ -130,3 +155,6 @@ private class AsInterface(cv: ClassVisitor, val ifaces: Map[String, Class[_]]) e
     mv.visitEnd()
   }
 }
+
+private class UnimplementedMethodsException(message: String, val methods: Set[String])
+    extends ClassCastException(s"${message}: ${methods.iterator.mkString(", ")}") {}
