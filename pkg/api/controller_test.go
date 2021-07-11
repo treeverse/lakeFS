@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/go-test/deep"
+	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
@@ -1548,4 +1549,151 @@ func TestController_MergeDiffWithParent(t *testing.T) {
 	if diff := deep.Equal(diffResp.JSON200.Results, expectedResults); diff != nil {
 		t.Fatal("Diff results not as expected:", diff)
 	}
+}
+
+func TestController_MergeIntoStage(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t, "")
+	ctx := context.Background()
+	// setup env
+	repo := testUniqueRepoName()
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+	testutil.Must(t, err)
+	_, err = deps.catalog.CreateBranch(ctx, repo, "branch1", "main")
+	testutil.Must(t, err)
+	testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, repo, "branch1", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
+	commit1, err := deps.catalog.Commit(ctx, repo, "branch1", "some message", DefaultUserID, nil)
+	testutil.Must(t, err)
+
+	// merge 'branch1' to 'main' staging
+	commitMessage := "add foo1"
+	tagResp, err := clt.MergeIntoBranchWithResponse(ctx, repo, "branch1", "main$", api.MergeIntoBranchJSONRequestBody{
+		Message: &commitMessage,
+	})
+	testutil.Must(t, err)
+	if tagResp.JSONDefault == nil {
+		t.Fatalf("merge to staging should fail with an error, got: %v", tagResp)
+	}
+
+	// merge 'branch1' to 'main' committed
+	tagResp2, err := clt.MergeIntoBranchWithResponse(ctx, repo, "branch1", "main", api.MergeIntoBranchJSONRequestBody{
+		Message: &commitMessage,
+	})
+	verifyResponseOK(t, tagResp2, err)
+
+	commit, err := clt.GetCommitWithResponse(ctx, repo, tagResp2.JSON200.Reference)
+	verifyResponseOK(t, commit, err)
+	if len(commit.JSON200.Parents) != 2 || commit.JSON200.Parents[1] != commit1.Reference {
+		t.Fatal("Merge parents should include source commit", commit.JSON200)
+	}
+}
+
+func TestController_CreateTag(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t, "")
+	ctx := context.Background()
+	// setup env
+	repo := testUniqueRepoName()
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+	testutil.Must(t, err)
+	testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
+	commit1, err := deps.catalog.Commit(ctx, repo, "main", "some message", DefaultUserID, nil)
+	testutil.Must(t, err)
+
+	t.Run("ref", func(t *testing.T) {
+		tagResp, err := clt.CreateTagWithResponse(ctx, repo, api.CreateTagJSONRequestBody{
+			Id:  "tag1",
+			Ref: commit1.Reference,
+		})
+		verifyResponseOK(t, tagResp, err)
+	})
+
+	t.Run("branch", func(t *testing.T) {
+		tagResp, err := clt.CreateTagWithResponse(ctx, repo, api.CreateTagJSONRequestBody{
+			Id:  "tag2",
+			Ref: "main",
+		})
+		verifyResponseOK(t, tagResp, err)
+	})
+
+	t.Run("explicit_branch_latest", func(t *testing.T) {
+		tagResp, err := clt.CreateTagWithResponse(ctx, repo, api.CreateTagJSONRequestBody{
+			Id:  "tag3",
+			Ref: "main@",
+		})
+		verifyResponseOK(t, tagResp, err)
+	})
+
+	t.Run("explicit_branch_stage", func(t *testing.T) {
+		tagResp, err := clt.CreateTagWithResponse(ctx, repo, api.CreateTagJSONRequestBody{
+			Id:  "tag4",
+			Ref: "main$",
+		})
+		testutil.Must(t, err)
+		if tagResp.JSONDefault == nil {
+			t.Errorf("create tag to explicit stage should fail with error, got %v", tagResp)
+		}
+	})
+
+	t.Run("tag_tag", func(t *testing.T) {
+		tagResp, err := clt.CreateTagWithResponse(ctx, repo, api.CreateTagJSONRequestBody{
+			Id:  "tag5",
+			Ref: "main",
+		})
+		verifyResponseOK(t, tagResp, err)
+		tagResp2, err := clt.CreateTagWithResponse(ctx, repo, api.CreateTagJSONRequestBody{
+			Id:  "tag6",
+			Ref: "tag5",
+		})
+		verifyResponseOK(t, tagResp2, err)
+	})
+
+	t.Run("not_exists", func(t *testing.T) {
+		tagResp, err := clt.CreateTagWithResponse(ctx, repo, api.CreateTagJSONRequestBody{
+			Id:  "tag6",
+			Ref: "unknown",
+		})
+		testutil.Must(t, err)
+		if tagResp.JSON404 == nil {
+			t.Errorf("create tag to unknown ref expected 404, got %v", tagResp)
+		}
+	})
+}
+func testUniqueRepoName() string {
+	return "repo-" + nanoid.MustGenerate("abcdef1234567890", 8)
+}
+
+func TestController_Revert(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t, "")
+	ctx := context.Background()
+	// setup env
+	repo := testUniqueRepoName()
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+	testutil.Must(t, err)
+	testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
+	_, err = deps.catalog.Commit(ctx, repo, "main", "some message", DefaultUserID, nil)
+	testutil.Must(t, err)
+
+	t.Run("ref", func(t *testing.T) {
+		branchResp, err := clt.GetBranchWithResponse(ctx, repo, "main")
+		verifyResponseOK(t, branchResp, err)
+		revertResp, err := clt.RevertBranchWithResponse(ctx, repo, "main", api.RevertBranchJSONRequestBody{Ref: branchResp.JSON200.CommitId})
+		verifyResponseOK(t, revertResp, err)
+	})
+
+	t.Run("branch", func(t *testing.T) {
+		revertResp, err := clt.RevertBranchWithResponse(ctx, repo, "main", api.RevertBranchJSONRequestBody{Ref: "main"})
+		verifyResponseOK(t, revertResp, err)
+	})
+
+	t.Run("committed", func(t *testing.T) {
+		revertResp, err := clt.RevertBranchWithResponse(ctx, repo, "main", api.RevertBranchJSONRequestBody{Ref: "main@"})
+		verifyResponseOK(t, revertResp, err)
+	})
+
+	t.Run("staging", func(t *testing.T) {
+		revertResp, err := clt.RevertBranchWithResponse(ctx, repo, "main", api.RevertBranchJSONRequestBody{Ref: "main$"})
+		testutil.Must(t, err)
+		if revertResp.JSONDefault == nil {
+			t.Errorf("revert to explicit staging should fail with error, got %v", revertResp)
+		}
+	})
 }

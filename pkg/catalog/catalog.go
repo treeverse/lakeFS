@@ -1198,7 +1198,7 @@ func (c *Catalog) Close() error {
 	return errs
 }
 
-// dereferenceCommitID dereference 'ref' and make sure it doesn't point to staging
+// dereferenceCommitID dereference 'ref' to a commit ID, this helper makes sure we do not point to explicit branch staging
 func (c *Catalog) dereferenceCommitID(ctx context.Context, repositoryID graveler.RepositoryID, ref graveler.Ref) (graveler.CommitID, error) {
 	resolvedRef, err := c.Store.Dereference(ctx, repositoryID, ref)
 	if err != nil {
