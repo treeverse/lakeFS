@@ -11,6 +11,14 @@ class AsInterfaceClassLoader(
 
   val skip = ifaces.values.map(_.getName).toSet
 
+  def newInstance(name: String, args: Any*): Any = {
+    val argsTypes = args.map(_.getClass).toArray
+    val ctor = loadClass(name).getConstructor(argsTypes: _*)
+    // Box any primitives so they become Objects for the newInstance call.
+    val boxedArgs = args.map(_.asInstanceOf[AnyRef])
+    ctor.newInstance(boxedArgs: _*)
+  }
+
   private def asInterfaceClass(bytes: Array[Byte]): Array[Byte] = {
     val cr = new ClassReader(bytes)
     val cw = new ClassWriter(cr, 0)

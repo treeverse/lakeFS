@@ -31,7 +31,7 @@ class AsInterfaceTest extends AnyFunSuite {
     val aicl = new AsInterfaceClassLoader(
       getClass.getClassLoader,
       Map(("io/treeverse/utils/Boo", classOf[Foo])))
-    val f: Foo = aicl.loadClass("io.treeverse.utils.Boo").getConstructor(classOf[Integer]).newInstance(9.asInstanceOf[Integer]).asInstanceOf[Foo]
+    val f = aicl.newInstance("io.treeverse.utils.Boo", 9).asInstanceOf[Foo]
     assert(f.foo(4) === 36)
   }
 
@@ -39,8 +39,8 @@ class AsInterfaceTest extends AnyFunSuite {
     val aicl = new AsInterfaceClassLoader(
       getClass.getClassLoader,
       Map(("io/treeverse/utils/Boo", classOf[Foo])))
-    val f: Foo = aicl.loadClass("io.treeverse.utils.Boo").getConstructor(classOf[Integer]).newInstance(9.asInstanceOf[Integer]).asInstanceOf[Foo]
-    val f2: Foo = aicl.loadClass("io.treeverse.utils.Boo").getConstructor(classOf[Integer]).newInstance(3.asInstanceOf[Integer]).asInstanceOf[Foo]
+    val f: Foo = aicl.newInstance("io.treeverse.utils.Boo", 9).asInstanceOf[Foo]
+    val f2: Foo = aicl.newInstance("io.treeverse.utils.Boo", 3).asInstanceOf[Foo]
     assert(f.addFoo(f2).foo(4) === (9 + 3) * 4)
   }
 
@@ -59,7 +59,7 @@ class AsInterfaceTest extends AnyFunSuite {
       getClass.getClassLoader,
       Map(("io/treeverse/utils/Boo", classOf[Foo])))
     assertThrows[ClassCastException](
-      aicl.loadClass("io.treeverse.utils.Boo").getConstructor(classOf[Integer]).newInstance(9.asInstanceOf[Integer]).asInstanceOf[Moo]
+      aicl.newInstance("io.treeverse.utils.Boo", 9).asInstanceOf[Moo]
     )
   }
 
@@ -67,9 +67,7 @@ class AsInterfaceTest extends AnyFunSuite {
     val aicl = new AsInterfaceClassLoader(
       getClass.getClassLoader,
       Map(("io/treeverse/utils/Boo", classOf[Moo])))
-    assertThrows[ClassCastException](aicl.loadClass("io.treeverse.utils.Boo")
-        .getConstructor(classOf[Integer])
-        .newInstance(9.asInstanceOf[Integer])
-        .asInstanceOf[Moo])
+    assertThrows[ClassCastException](
+      aicl.newInstance("io.treeverse.utils.Boo", 9).asInstanceOf[Moo])
   }
 }
