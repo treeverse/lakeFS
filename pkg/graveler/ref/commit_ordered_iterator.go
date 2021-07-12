@@ -87,17 +87,19 @@ func (iter *OrderedCommitIterator) maybeFetch() {
 	var buf []*commitRecord
 
 	if iter.onlyAncestryLeaves {
-		ancestryLeafCondition := psql.Select("*").Prefix("NOT EXISTS (").Suffix(")").From("graveler_commits c2").Where("c2.repository_id=graveler_commits.repository_id")
-		ancestryLeafPredicate := sq.Or{
-			sq.And{
-				sq.Lt{"c2.version": graveler.CommitVersionParentSwitch},
-				sq.Expr("c2.parents[array_length(c2.parents, 1)]=graveler_commits.id")},
-			sq.And{
-				sq.GtOrEq{"c2.version": graveler.CommitVersionParentSwitch},
-				sq.Expr("c2.parents[1]=graveler_commits.id")},
-		}
-		ancestryLeafCondition = ancestryLeafCondition.Where(ancestryLeafPredicate)
-		q = q.Where(ancestryLeafCondition)
+		notExistsCondition := psql.Select("*").Prefix("NOT EXISTS (").
+			Suffix(")").
+			From("graveler_commits c2").
+			Where("c2.repository_id=graveler_commits.repository_id").
+			Where(sq.Or{
+				sq.And{
+					sq.Lt{"c2.version": graveler.CommitVersionParentSwitch},
+					sq.Expr("c2.parents[array_length(c2.parents, 1)]=graveler_commits.id")},
+				sq.And{
+					sq.GtOrEq{"c2.version": graveler.CommitVersionParentSwitch},
+					sq.Expr("c2.parents[1]=graveler_commits.id")},
+			})
+		q = q.Where(notExistsCondition)
 	}
 	q.OrderBy("id ASC")
 	q.Limit(uint64(iter.prefetchSize))
