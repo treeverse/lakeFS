@@ -94,7 +94,8 @@ func ValidateBranchID(v interface{}) error {
 	if len(s) == 0 {
 		return ErrRequiredValue
 	}
-	if !reValidBranchID.MatchString(s.String()) {
+	branchName := s.String()
+	if !reValidBranchID.MatchString(branchName) {
 		return ErrInvalidValue
 	}
 	return nil

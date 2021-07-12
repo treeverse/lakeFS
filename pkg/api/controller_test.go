@@ -22,6 +22,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
+	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/testutil"
@@ -1551,39 +1552,38 @@ func TestController_MergeDiffWithParent(t *testing.T) {
 	}
 }
 
-func TestController_MergeIntoStage(t *testing.T) {
+func TestController_MergeIntoExplicitBranch(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t, "")
 	ctx := context.Background()
+
 	// setup env
 	repo := testUniqueRepoName()
 	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
 	testutil.Must(t, err)
 	_, err = deps.catalog.CreateBranch(ctx, repo, "branch1", "main")
 	testutil.Must(t, err)
-	testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, repo, "branch1", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
-	commit1, err := deps.catalog.Commit(ctx, repo, "branch1", "some message", DefaultUserID, nil)
+	err = deps.catalog.CreateEntry(ctx, repo, "branch1", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"})
+	testutil.Must(t, err)
+	_, err = deps.catalog.Commit(ctx, repo, "branch1", "some message", DefaultUserID, nil)
 	testutil.Must(t, err)
 
-	// merge 'branch1' to 'main' staging
-	commitMessage := "add foo1"
-	tagResp, err := clt.MergeIntoBranchWithResponse(ctx, repo, "branch1", "main$", api.MergeIntoBranchJSONRequestBody{
-		Message: &commitMessage,
-	})
-	testutil.Must(t, err)
-	if tagResp.JSONDefault == nil {
-		t.Fatalf("merge to staging should fail with an error, got: %v", tagResp)
+	// test branch with mods
+	table := []struct {
+		Name string
+		Mod  graveler.RefModType
+	}{
+		{Name: "staging", Mod: graveler.RefModTypeDollar},
+		{Name: "committed", Mod: graveler.RefModTypeAt},
 	}
-
-	// merge 'branch1' to 'main' committed
-	tagResp2, err := clt.MergeIntoBranchWithResponse(ctx, repo, "branch1", "main", api.MergeIntoBranchJSONRequestBody{
-		Message: &commitMessage,
-	})
-	verifyResponseOK(t, tagResp2, err)
-
-	commit, err := clt.GetCommitWithResponse(ctx, repo, tagResp2.JSON200.Reference)
-	verifyResponseOK(t, commit, err)
-	if len(commit.JSON200.Parents) != 2 || commit.JSON200.Parents[1] != commit1.Reference {
-		t.Fatal("Merge parents should include source commit", commit.JSON200)
+	for _, tt := range table {
+		t.Run(tt.Name, func(t *testing.T) {
+			destinationBranch := "main" + string(tt.Mod)
+			resp, err := clt.MergeIntoBranchWithResponse(ctx, repo, "branch1", destinationBranch, api.MergeIntoBranchJSONRequestBody{})
+			testutil.MustDo(t, "perform merge into branch", err)
+			if resp.JSONDefault == nil {
+				t.Fatalf("merge to explict branch should fail, with an error, got: %v", resp)
+			}
+		})
 	}
 }
 
@@ -1614,7 +1614,7 @@ func TestController_CreateTag(t *testing.T) {
 		verifyResponseOK(t, tagResp, err)
 	})
 
-	t.Run("explicit_branch_latest", func(t *testing.T) {
+	t.Run("branch_with_latest_modifier", func(t *testing.T) {
 		tagResp, err := clt.CreateTagWithResponse(ctx, repo, api.CreateTagJSONRequestBody{
 			Id:  "tag3",
 			Ref: "main@",
@@ -1622,14 +1622,14 @@ func TestController_CreateTag(t *testing.T) {
 		verifyResponseOK(t, tagResp, err)
 	})
 
-	t.Run("explicit_branch_stage", func(t *testing.T) {
+	t.Run("branch_with_staging_modifier", func(t *testing.T) {
 		tagResp, err := clt.CreateTagWithResponse(ctx, repo, api.CreateTagJSONRequestBody{
 			Id:  "tag4",
 			Ref: "main$",
 		})
 		testutil.Must(t, err)
 		if tagResp.JSONDefault == nil {
-			t.Errorf("create tag to explicit stage should fail with error, got %v", tagResp)
+			t.Errorf("Create tag to explicit stage should fail with error, got %v", tagResp)
 		}
 	})
 
@@ -1639,11 +1639,11 @@ func TestController_CreateTag(t *testing.T) {
 			Ref: "main",
 		})
 		verifyResponseOK(t, tagResp, err)
-		tagResp2, err := clt.CreateTagWithResponse(ctx, repo, api.CreateTagJSONRequestBody{
+		tagTagResp, err := clt.CreateTagWithResponse(ctx, repo, api.CreateTagJSONRequestBody{
 			Id:  "tag6",
 			Ref: "tag5",
 		})
-		verifyResponseOK(t, tagResp2, err)
+		verifyResponseOK(t, tagTagResp, err)
 	})
 
 	t.Run("not_exists", func(t *testing.T) {
@@ -1653,7 +1653,7 @@ func TestController_CreateTag(t *testing.T) {
 		})
 		testutil.Must(t, err)
 		if tagResp.JSON404 == nil {
-			t.Errorf("create tag to unknown ref expected 404, got %v", tagResp)
+			t.Errorf("Create tag to unknown ref expected 404, got %v", tagResp)
 		}
 	})
 }
@@ -1693,7 +1693,7 @@ func TestController_Revert(t *testing.T) {
 		revertResp, err := clt.RevertBranchWithResponse(ctx, repo, "main", api.RevertBranchJSONRequestBody{Ref: "main$"})
 		testutil.Must(t, err)
 		if revertResp.JSONDefault == nil {
-			t.Errorf("revert to explicit staging should fail with error, got %v", revertResp)
+			t.Errorf("Revert to explicit staging should fail with error, got %v", revertResp)
 		}
 	})
 }
