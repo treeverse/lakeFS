@@ -56,7 +56,7 @@ There are 4 basic components to the system:
 
 **Resources** - A unique identifier representing a specific resource in the system - a repository, an object, a user, etc.
 
-**Policies** - Representing a set of **Actions**, a **Resource** and an effect: whether or not these actions are `Allowed` or `Denied` for the given resource(s).
+**Policies** - Representing a set of **Actions**, a **Resource** and an effect: whether or not these actions are `allowed` or `denied` for the given resource(s).
 
 **Groups** - A named collection of users. Users can belong to multiple groups.
 
@@ -76,10 +76,10 @@ When a user makes a request to perform that action, the following process takes 
 
 ### Policy Precedence
 
-Each policy attached to a user or a group has an `Effect` - either `Allow` or `Deny`.
-During evaluation of a request, `Deny` would take precedence over any other `Allow` policy. 
+Each policy attached to a user or a group has an `Effect` - either `allow` or `deny`.
+During evaluation of a request, `deny` would take precedence over any other `allow` policy. 
 
-This helps us compose policies together. For example, we could attach a very permissive policy to a user and use `Deny` rules to then selectively restrict what that user can do.
+This helps us compose policies together. For example, we could attach a very permissive policy to a user and use `deny` rules to then selectively restrict what that user can do.
 
 
 ### Resource naming - ARNs
@@ -176,11 +176,15 @@ Policy:
 
 ```json
 {
-  "Action": [
-    "fs:*"
-  ],
-  "Effect": "Allow",
-  "Resource": "*"
+  "statement": [
+    {
+      "action": [
+        "fs:*"
+      ],
+      "effect": "allow",
+      "resource": "*"
+    }    
+  ]
 }
 ```
 
@@ -190,12 +194,16 @@ Policy:
 
 ```json
 {
-  "Action": [
-    "fs:List*",
-    "fs:Read*"
-  ],
-  "Effect": "Allow",
-  "Resource": "*"
+  "statement": [
+    {
+      "action": [
+        "fs:List*",
+        "fs:Read*"
+      ],
+      "effect": "allow",
+      "resource": "*"
+    }
+  ]
 }
 ```
 
@@ -222,7 +230,7 @@ Policy:
                 "fs:DeleteBranch",
                 "fs:CreateCommit"
             ],
-            "effect": "Allow",
+            "effect": "allow",
             "resource": "*"
         }
     ]
@@ -235,11 +243,15 @@ Policy:
 
 ```json
 {
-  "Action": [
-    "auth:*"
-  ],
-  "Effect": "Allow",
-  "Resource": "*"
+  "statement": [
+    {
+      "action": [
+        "auth:*"
+      ],
+      "effect": "allow",
+      "resource": "*"
+    }
+  ]
 }
 ```
 
@@ -249,14 +261,18 @@ Policy:
 
 ```json
 {
-  "Action": [
-    "auth:CreateCredentials",
-    "auth:DeleteCredentials",
-    "auth:ListCredentials",
-    "auth:ReadCredentials"
-  ],
-  "Effect": "Allow",
-  "Resource": "arn:lakefs:auth:::user/${user}"
+  "statement": [
+    {
+      "action": [
+        "auth:CreateCredentials",
+        "auth:DeleteCredentials",
+        "auth:ListCredentials",
+        "auth:ReadCredentials"
+      ],
+      "effect": "allow",
+      "resource": "arn:lakefs:auth:::user/${user}"
+    }
+  ]
 }
 ```
 
