@@ -13,15 +13,11 @@ type GarbageCollectionCommits struct {
 }
 
 // GetGarbageCollectionCommits returns the sets of expired and active commits, according to the repository's garbage collection rules.
-// From each starting point in the given startingPointIterator, it iterates through its main ancestry (see more below).
-// While iterating, it marks all commits as active, until and including the first commit performed before the start of the retention period.
-// All further commits in the ancestry will be marked as expired, stopping when reaching a commit in the previouslyExpired set, or the DAG root.
-//
-// The main ancestry of a commit is acquired by recursively taking the first parent.
-// The commit from which to start depends on the starting point:
-// - if the starting point is a branch's HEAD, simply start from it.
-// - otherwise, start from a hypothetical HEAD which is the child of the starting point commit.
+// See https://github.com/treeverse/lakeFS/issues/1932 for more details.
 func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCStartingPointIterator, commitGetter *RepositoryCommitGetter, rules *graveler.GarbageCollectionRules, previouslyExpired []graveler.CommitID) (*GarbageCollectionCommits, error) {
+	// From each starting point in the given startingPointIterator, it iterates through its main ancestry.
+	// All commits reached are added to the active set, until and including the first commit performed before the start of the retention period.
+	// All further commits in the ancestry are added to the expired set. The iteration stops upon reaching a commit which exists in the previouslyExpired set, or the DAG root.
 	now := time.Now()
 	processed := make(map[graveler.CommitID]time.Time)
 	previouslyExpiredMap := make(map[graveler.CommitID]bool)
@@ -31,7 +27,6 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 	activeMap := make(map[graveler.CommitID]struct{})
 	expiredMap := make(map[graveler.CommitID]struct{})
 	for startingPointIterator.Next() {
-		var err error
 		startingPoint := startingPointIterator.Value()
 		retentionDays := int(rules.DefaultRetentionDays)
 		commit, err := commitGetter.GetCommit(ctx, startingPoint.CommitID)
@@ -83,10 +78,10 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 		return nil, startingPointIterator.Err()
 	}
 	startingPointIterator.Close()
-	return &GarbageCollectionCommits{active: commitSetToArray(activeMap), expired: commitSetToArray(expiredMap)}, nil
+	return &GarbageCollectionCommits{active: commitSetToSlice(activeMap), expired: commitSetToSlice(expiredMap)}, nil
 }
 
-func commitSetToArray(commitMap map[graveler.CommitID]struct{}) []graveler.CommitID {
+func commitSetToSlice(commitMap map[graveler.CommitID]struct{}) []graveler.CommitID {
 	res := make([]graveler.CommitID, 0, len(commitMap))
 	for commitID := range commitMap {
 		res = append(res, commitID)

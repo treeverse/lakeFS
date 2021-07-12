@@ -4,6 +4,7 @@ import "github.com/treeverse/lakefs/pkg/graveler"
 
 // A GCStartingPoint represents a commit from which the GC algorithm should start scanning.
 // It could be either a branch HEAD, or a dangling commit.
+// The CommitID field is always set, while BranchID is set only if the commit is a branch HEAD.
 type GCStartingPoint struct {
 	BranchID graveler.BranchID
 	CommitID graveler.CommitID
@@ -26,7 +27,21 @@ func NewGCStartingPointIterator(commitIterator graveler.CommitIterator, branchIt
 }
 
 func (sp *GCStartingPointIterator) Next() bool {
-	prepareBranchValue := func() bool {
+	if sp.branchValue == nil && sp.branchIterator.Next() {
+		sp.branchValue = sp.branchIterator.Value()
+	}
+	if sp.commitValue == nil && sp.commitIterator.Next() {
+		sp.commitValue = sp.commitIterator.Value()
+	}
+	if sp.branchValue == nil && sp.commitValue == nil {
+		return false
+	}
+	if sp.branchValue != nil && sp.commitValue != nil && sp.branchValue.CommitID == sp.commitValue.CommitID {
+		// commit is same as branch head - skip the commit
+		sp.commitValue = nil
+	}
+	if sp.commitValue == nil || (sp.branchValue != nil && sp.commitValue.CommitID > sp.branchValue.CommitID) {
+		// has only branch, or branch is before commit
 		sp.value = &GCStartingPoint{
 			BranchID: sp.branchValue.BranchID,
 			CommitID: sp.branchValue.CommitID,
@@ -34,37 +49,15 @@ func (sp *GCStartingPointIterator) Next() bool {
 		sp.branchValue = nil
 		return true
 	}
-	prepareCommitValue := func() bool {
+	if sp.branchValue == nil || sp.commitValue.CommitID < sp.branchValue.CommitID {
+		// has only commit, or commit is before branch
 		sp.value = &GCStartingPoint{
 			CommitID: sp.commitValue.CommitID,
 		}
 		sp.commitValue = nil
 		return true
 	}
-
-	if sp.branchValue == nil && sp.branchIterator.Next() {
-		sp.branchValue = sp.branchIterator.Value()
-	}
-	if sp.commitValue == nil && sp.commitIterator.Next() {
-		sp.commitValue = sp.commitIterator.Value()
-	}
-	if sp.commitValue == nil {
-		if sp.branchValue == nil {
-			return false
-		}
-		// has only branch
-		return prepareBranchValue()
-	}
-	if sp.branchValue == nil || sp.commitValue.CommitID < sp.branchValue.CommitID {
-		// has only commit, or commit is before branch
-		return prepareCommitValue()
-	}
-	if sp.branchValue.CommitID == sp.commitValue.CommitID {
-		// commit is same as branch head - skip the commit
-		sp.commitValue = nil
-	}
-	// branch is before or equal to commit
-	return prepareBranchValue()
+	return false
 }
 
 func (sp *GCStartingPointIterator) Value() *GCStartingPoint {
