@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	sq "github.com/Masterminds/squirrel"
-
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
 )
