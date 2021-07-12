@@ -198,6 +198,7 @@ type RefsFake struct {
 	AddedCommit         AddedCommitData
 	CommitID            graveler.CommitID
 	Commits             map[graveler.CommitID]*graveler.Commit
+	StagingToken        graveler.StagingToken
 }
 
 func (m *RefsFake) FillGenerations(ctx context.Context, repositoryID graveler.RepositoryID) error {
@@ -228,14 +229,17 @@ func (m *RefsFake) ResolveRawRef(ctx context.Context, repoID graveler.Repository
 	}
 
 	var branch graveler.BranchID
+	var stagingToken graveler.StagingToken
 	if m.RefType == graveler.ReferenceTypeBranch {
 		branch = DefaultBranchID
+		stagingToken = m.StagingToken
 	}
 
 	return &graveler.ResolvedRef{
-		Type:     m.RefType,
-		BranchID: branch,
-		CommitID: m.CommitID,
+		Type:         m.RefType,
+		BranchID:     branch,
+		CommitID:     m.CommitID,
+		StagingToken: stagingToken,
 	}, nil
 }
 
