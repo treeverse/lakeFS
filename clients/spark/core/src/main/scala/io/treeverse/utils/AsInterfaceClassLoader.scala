@@ -6,8 +6,10 @@ import java.io.{ByteArrayOutputStream, PrintWriter}
 import com.google.common.io.ByteStreams
 
 class AsInterfaceClassLoader(
-  parent: ClassLoader, ifaces: Map[String, Class[_]], val pw: PrintWriter = null)
-    extends ClassLoader(parent) {
+    parent: ClassLoader,
+    ifaces: Map[String, Class[_]],
+    val pw: PrintWriter = null
+) extends ClassLoader(parent) {
 
   val skip = ifaces.values.map(_.getName).toSet
 
