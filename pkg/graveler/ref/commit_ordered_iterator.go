@@ -87,8 +87,8 @@ func (iter *OrderedCommitIterator) maybeFetch() {
 	var buf []*commitRecord
 
 	if iter.onlyAncestryLeaves {
-		notExistsCondition := psql.Select("*").Prefix("NOT EXISTS (").
-			Suffix(")").
+		notExistsCondition := psql.Select("*").
+			Prefix("NOT EXISTS (").Suffix(")").
 			From("graveler_commits c2").
 			Where("c2.repository_id=graveler_commits.repository_id").
 			Where(sq.Or{
