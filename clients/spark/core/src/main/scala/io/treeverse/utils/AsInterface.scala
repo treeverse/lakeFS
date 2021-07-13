@@ -60,7 +60,7 @@ private class AsInterface(cv: ClassVisitor, val ifaces: Map[String, Class[_]])
   ) = {
     val newInterfaces = ifaces get name match {
       case Some(iface) => interfaces :+ Type.getType(iface).getInternalName
-      case None => interfaces
+      case None        => interfaces
     }
     className = name
     cv.visit(version, access, name, signature, superName, newInterfaces)
