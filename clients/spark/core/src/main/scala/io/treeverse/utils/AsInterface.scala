@@ -4,8 +4,6 @@ import org.objectweb.asm.{ClassVisitor, MethodVisitor}
 import org.objectweb.asm.Opcodes._
 import org.objectweb.asm.Type
 
-import java.lang.reflect.Method
-
 private object AsInterface {
   def getName(typ: Type): String =
     typ.getSort match {
