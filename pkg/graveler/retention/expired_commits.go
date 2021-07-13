@@ -53,6 +53,9 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 		for len(commit.Parents) > 0 {
 			// every branch retains only its main ancestry, acquired by recursively taking the first parent:
 			nextCommitID := commit.Parents[0]
+			if commit.Version < graveler.CommitVersionParentSwitch {
+				nextCommitID = commit.Parents[len(commit.Parents)-1]
+			}
 			if _, ok := previouslyExpiredMap[nextCommitID]; ok {
 				// commit was already expired in a previous run
 				break

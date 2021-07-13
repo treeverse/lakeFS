@@ -90,18 +90,11 @@ func (iter *OrderedCommitIterator) maybeFetch() {
 			Prefix("NOT EXISTS (").Suffix(")").
 			From("graveler_commits c2").
 			Where("c2.repository_id=graveler_commits.repository_id").
-			Where(sq.Or{
-				sq.And{
-					sq.Lt{"c2.version": graveler.CommitVersionParentSwitch},
-					sq.Expr("c2.parents[array_length(c2.parents, 1)]=graveler_commits.id")},
-				sq.And{
-					sq.GtOrEq{"c2.version": graveler.CommitVersionParentSwitch},
-					sq.Expr("c2.parents[1]=graveler_commits.id")},
-			})
+			Where("first_parent(c2.parents, c2.version)=graveler_commits.id")
 		q = q.Where(notExistsCondition)
 	}
-	q.OrderBy("id ASC")
-	q.Limit(uint64(iter.prefetchSize))
+	q = q.OrderBy("id ASC")
+	q = q.Limit(uint64(iter.prefetchSize))
 	query, args, err := q.ToSql()
 	if err != nil {
 		iter.err = err

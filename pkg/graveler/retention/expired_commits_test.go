@@ -53,6 +53,7 @@ func findMainAncestryLeaves(now time.Time, heads map[string]int32, commits map[s
 			res = append(res, &graveler.CommitRecord{
 				CommitID: graveler.CommitID(commitID1),
 				Commit: &graveler.Commit{
+					Version:      graveler.CurrentCommitVersion,
 					CreationDate: now.AddDate(0, 0, -commit1.daysPassed),
 					Parents:      commit1.parents,
 				},
@@ -278,7 +279,7 @@ func TestExpiredCommits(t *testing.T) {
 			previouslyExpired := newCommitSet(tst.previouslyExpired)
 			for commitID, testCommit := range tst.commits {
 				id := graveler.CommitID(commitID)
-				commitMap[id] = &graveler.Commit{Message: commitID, Parents: testCommit.parents, CreationDate: now.AddDate(0, 0, -testCommit.daysPassed)}
+				commitMap[id] = &graveler.Commit{Message: commitID, Parents: testCommit.parents, CreationDate: now.AddDate(0, 0, -testCommit.daysPassed), Version: graveler.CurrentCommitVersion}
 				if !previouslyExpired[id] {
 					refManagerMock.EXPECT().GetCommit(ctx, graveler.RepositoryID("test"), id).Return(commitMap[id], nil).MaxTimes(2)
 				}
