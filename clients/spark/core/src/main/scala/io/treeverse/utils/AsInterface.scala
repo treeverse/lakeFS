@@ -49,9 +49,6 @@ private object AsInterface {
 private class AsInterface(cv: ClassVisitor, val ifaces: Map[String, Class[_]])
     extends ClassVisitor(ASM8, cv) {
   var className: String = ""
-  // If set, the interface to be translated.
-  var toIface: Class[_] = null
-  var translatedMethodDescs = Set[String]()
 
   override def visit(
       version: Int,
@@ -62,10 +59,7 @@ private class AsInterface(cv: ClassVisitor, val ifaces: Map[String, Class[_]])
       interfaces: Array[String]
   ) = {
     val newInterfaces = ifaces get name match {
-      case Some(iface) => {
-        toIface = iface
-        interfaces :+ Type.getType(iface).getInternalName
-      }
+      case Some(iface) => interfaces :+ Type.getType(iface).getInternalName
       case None => interfaces
     }
     className = name
@@ -77,21 +71,6 @@ private class AsInterface(cv: ClassVisitor, val ifaces: Map[String, Class[_]])
       case Some(iface) => Type.getType(iface)
       case None        => typ
     }
-
-  // Verify that any interface methods were translated, i.e. implemented.
-  override def visitEnd(): Unit = {
-    if (toIface == null) {
-      // No translation, nothing to verify.
-      return
-    }
-    val interfaceMethodDescs = toIface.getDeclaredMethods
-      .map((m: Method) => m.getName + ": " + Type.getMethodDescriptor(m))
-      .toSet
-    val unimplemented = interfaceMethodDescs -- translatedMethodDescs
-    if (!unimplemented.isEmpty) {
-      throw new UnimplementedMethodsException("Unimplemented methods", unimplemented)
-    }
-  }
 
   override def visitMethod(
       access: Int,
@@ -132,8 +111,6 @@ private class AsInterface(cv: ClassVisitor, val ifaces: Map[String, Class[_]])
 
     val translatedDesc = Type.getMethodDescriptor(translatedRetType, translatedArgTypes: _*)
 
-    translatedMethodDescs = translatedMethodDescs + (name + ": " + translatedDesc)
-
     if (
       retType.equals(translatedRetType) &&
       (exceptions == null || AsInterface.equals(exceptions, translatedExceptions)) &&
@@ -168,6 +145,3 @@ private class AsInterface(cv: ClassVisitor, val ifaces: Map[String, Class[_]])
     mv.visitEnd()
   }
 }
-
-private class UnimplementedMethodsException(message: String, val methods: Set[String])
-    extends ClassCastException(s"${message}: ${methods.iterator.mkString(", ")}") {}

@@ -44,14 +44,12 @@ class AsInterfaceTest extends AnyFunSuite {
     assert(f.addFoo(f2).foo(4) === (9 + 3) * 4)
   }
 
-  test("Goo as Foo fails") {
+  test("Goo as Foo fails to call missing method at call time :-(") {
     val aicl = new AsInterfaceClassLoader(
       getClass.getClassLoader,
       Map(("io/treeverse/utils/Goo", classOf[Foo])))
-    val cce = intercept[UnimplementedMethodsException](aicl.loadClass("io.treeverse.utils.Goo"))
-    assert(cce.methods == Set(
-      "foo: (I)I",
-      "addFoo: (Lio/treeverse/utils/Foo;)Lio/treeverse/utils/Foo;"))
+    val notF: Foo = aicl.newInstance("io.treeverse.utils.Goo").asInstanceOf[Foo]
+    assertThrows[AbstractMethodError](notF.foo(0))
   }
 
   test("Boo as Foo is not a Moo") {
@@ -63,11 +61,11 @@ class AsInterfaceTest extends AnyFunSuite {
     )
   }
 
-  test("Boo as a Moo fails to load") {
+  test("Boo as a Moo fails to call missing method at call time :-(") {
     val aicl = new AsInterfaceClassLoader(
       getClass.getClassLoader,
       Map(("io/treeverse/utils/Boo", classOf[Moo])))
-    assertThrows[ClassCastException](
-      aicl.newInstance("io.treeverse.utils.Boo", 9).asInstanceOf[Moo])
+    val notM: Moo = aicl.newInstance("io.treeverse.utils.Boo", 9).asInstanceOf[Moo]
+    assertThrows[AbstractMethodError](notM.bar(0))
   }
 }
