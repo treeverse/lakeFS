@@ -31,7 +31,7 @@ class AsInterfaceTest extends AnyFunSuite {
     val aicl = new AsInterfaceClassLoader(
       getClass.getClassLoader,
       Map(("io/treeverse/utils/Boo", classOf[Foo])))
-    val f = aicl.newInstance("io.treeverse.utils.Boo", 9).asInstanceOf[Foo]
+    val f = aicl.newInstance[Foo]("io.treeverse.utils.Boo", 9)
     assert(f.foo(4) === 36)
   }
 
@@ -39,8 +39,8 @@ class AsInterfaceTest extends AnyFunSuite {
     val aicl = new AsInterfaceClassLoader(
       getClass.getClassLoader,
       Map(("io/treeverse/utils/Boo", classOf[Foo])))
-    val f: Foo = aicl.newInstance("io.treeverse.utils.Boo", 9).asInstanceOf[Foo]
-    val f2: Foo = aicl.newInstance("io.treeverse.utils.Boo", 3).asInstanceOf[Foo]
+    val f: Foo = aicl.newInstance[Foo]("io.treeverse.utils.Boo", 9)
+    val f2: Foo = aicl.newInstance[Foo]("io.treeverse.utils.Boo", 3)
     assert(f.addFoo(f2).foo(4) === (9 + 3) * 4)
   }
 
@@ -48,7 +48,7 @@ class AsInterfaceTest extends AnyFunSuite {
     val aicl = new AsInterfaceClassLoader(
       getClass.getClassLoader,
       Map(("io/treeverse/utils/Goo", classOf[Foo])))
-    val notF: Foo = aicl.newInstance("io.treeverse.utils.Goo").asInstanceOf[Foo]
+    val notF: Foo = aicl.newInstance[Foo]("io.treeverse.utils.Goo")
     assertThrows[AbstractMethodError](notF.foo(0))
   }
 
@@ -57,7 +57,7 @@ class AsInterfaceTest extends AnyFunSuite {
       getClass.getClassLoader,
       Map(("io/treeverse/utils/Boo", classOf[Foo])))
     assertThrows[ClassCastException](
-      aicl.newInstance("io.treeverse.utils.Boo", 9).asInstanceOf[Moo]
+      aicl.newInstance[Moo]("io.treeverse.utils.Boo", 9)
     )
   }
 
@@ -65,7 +65,7 @@ class AsInterfaceTest extends AnyFunSuite {
     val aicl = new AsInterfaceClassLoader(
       getClass.getClassLoader,
       Map(("io/treeverse/utils/Boo", classOf[Moo])))
-    val notM: Moo = aicl.newInstance("io.treeverse.utils.Boo", 9).asInstanceOf[Moo]
+    val notM: Moo = aicl.newInstance[Moo]("io.treeverse.utils.Boo", 9)
     assertThrows[AbstractMethodError](notM.bar(0))
   }
 }

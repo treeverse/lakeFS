@@ -13,12 +13,12 @@ class AsInterfaceClassLoader(
 
   val skip = ifaces.values.map(_.getName).toSet
 
-  def newInstance(name: String, args: Any*): Any = {
+  def newInstance[C](name: String, args: Any*): C = {
     val argsTypes = args.map(_.getClass).toArray
     val ctor = loadClass(name).getConstructor(argsTypes: _*)
     // Box any primitives so they become Objects for the newInstance call.
     val boxedArgs = args.map(_.asInstanceOf[AnyRef])
-    ctor.newInstance(boxedArgs: _*)
+    ctor.newInstance(boxedArgs: _*).asInstanceOf[C]
   }
 
   private def asInterfaceClass(bytes: Array[Byte]): Array[Byte] = {
