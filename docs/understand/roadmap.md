@@ -80,7 +80,7 @@ While webhooks are easy to understand, they can be challenging in terms of opera
 
 #### Expose merged snapshot to pre-merge hooks
 
-pre-merge hooks are a great place to introduce data validation checks. However, currently lakeFS exposes the source branch, the destination branch and the diff between them. In many cases, the desired input is actually the merged view of both branches. By have a referencable commit ID that could be passed to e.g. Spark,
+pre-merge hooks are a great place to introduce data validation checks. However, currently lakeFS exposes the source branch, the destination branch and the diff between them. In many cases, the desired input is actually the merged view of both branches. By having a referencable commit ID that could be passed to e.g. Spark,
 users will be able to directly feed the merged view into a dataframe, a testing framework, etc.
 
 [Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/1742){: target="_blank" class="btn" }
