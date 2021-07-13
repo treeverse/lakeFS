@@ -37,16 +37,20 @@ private object AsInterface {
     }
   }
 
+  def undot(dotted: String) = dotted.replaceAll("\\.", "/")
+
   // Scala array equality is too hard: the best (only-ish) way is to use
   // java.util.Arrays.equals, but that doesn't work because the variance
   // between Array[A] and Array[Object] is not defined there.
-  def equals[T](a: Array[T], b: Array[T]): Boolean =
+  def equals[T](a: Seq[T], b: Seq[T]): Boolean =
     (a zip b).foldLeft(true) { case (e, (x, y)) => e && x == y }
 }
 
 private class AsInterface(cv: ClassVisitor, val ifaces: Map[String, Class[_]])
     extends ClassVisitor(ASM8, cv) {
   var className: String = ""
+  val revIfaces = ifaces.map({ case (iface, klass) => (AsInterface.undot(klass.getName), iface) })
+  require(revIfaces.size == ifaces.size, "ifaces map is not 1-to-1")
 
   override def visit(
       version: Int,
@@ -56,73 +60,83 @@ private class AsInterface(cv: ClassVisitor, val ifaces: Map[String, Class[_]])
       superName: String,
       interfaces: Array[String]
   ) = {
-    val newInterfaces = ifaces get name match {
-      case Some(iface) => interfaces :+ Type.getType(iface).getInternalName
-      case None        => interfaces
+    val (maybeIface, newInterfaces) = ifaces get name match {
+      case Some(iface) => (Some(iface), interfaces :+ Type.getType(iface).getInternalName)
+      case None        => (None, interfaces)
     }
     className = name
     cv.visit(version, access, name, signature, superName, newInterfaces)
+
+    maybeIface match {
+      case Some(iface) => {
+        // Generate wrappers for all methods of iface in the class.
+        iface.getMethods.foreach(method =>
+          generateForwardingMethod(
+            ACC_PUBLIC | ACC_SYNTHETIC, method.getName, Type.getMethodDescriptor(method),
+            method.getExceptionTypes.map(e => Type.getType(e).getDescriptor)))
+        // Generate wrapper for all constructors for the class.
+        iface.getConstructors.foreach(ctor =>
+          generateForwardingMethod(
+            ACC_PUBLIC | ACC_SYNTHETIC, "<init>", Type.getConstructorDescriptor(ctor),
+            ctor.getExceptionTypes.map(e => Type.getType(e).getDescriptor)))
+      }
+      case _ => Unit
+    }
   }
 
   def translateType(typ: Type) =
-    ifaces get typ.getInternalName.replaceAll("\\.", "/") match {
+    ifaces get AsInterface.undot(typ.getInternalName) match {
       case Some(iface) => Type.getType(iface)
       case None        => typ
     }
 
-  override def visitMethod(
-      access: Int,
-      name: String,
-      desc: String,
-      signature: String,
-      exceptions: Array[String]
-  ): MethodVisitor = {
-    // BUG(ariels): Does not support generic methods (ignores signature).
-    //     At least throw an exception...
-
-    // BUG(ariels): Test exceptions.
-    generateForwardingMethod(access, name, desc, exceptions)
-
-    val mv = cv.visitMethod(access, name, desc, null, exceptions)
-    return mv;
-  }
+  def revTranslateType(typ: Type) =
+    revIfaces get typ.getInternalName match {
+      case Some(klassName) => Type.getObjectType(klassName)
+      case None            => typ
+    }
 
   def generateForwardingMethod(
-      access: Int,
-      name: String,
-      desc: String,
-      exceptions: Array[String]
+    access: Int,
+    name: String,
+    translatedDesc: String,
+    translatedExceptions: Seq[String]
   ): Unit = {
-    val argTypes = Type.getArgumentTypes(desc)
-    if (argTypes == null) throw new IllegalArgumentException(s"Bad method descriptor ${desc}")
-    val translatedArgTypes = argTypes.map(translateType)
+    val translatedArgTypes = Type.getArgumentTypes(translatedDesc)
+    if (translatedArgTypes == null) {
+      throw new IllegalArgumentException(s"Bad translated method descriptor ${translatedDesc}")
+    }
+    val argTypes = translatedArgTypes.map(revTranslateType)
 
-    val retType = Type.getReturnType(desc)
+    val translatedRetType = Type.getReturnType(translatedDesc)
+    val retType = revTranslateType(translatedRetType)
 
-    val translatedRetType = translateType(retType)
-
-    val translatedExceptions =
-      if (exceptions != null)
-        exceptions.map((name: String) => translateType(Type.getObjectType(name)).getInternalName)
+    // BUG(ariels): To handle exceptions, need to wrap INVOKE with
+    //
+    //     try {...} catch (exception) { throw translatedException }
+    val exceptions =
+      if (translatedExceptions != null)
+        translatedExceptions.map((name: String) =>
+          revTranslateType(Type.getObjectType(name)).getInternalName)
       else
-        exceptions
+        null
 
-    val translatedDesc = Type.getMethodDescriptor(translatedRetType, translatedArgTypes: _*)
+    val desc = Type.getMethodDescriptor(retType, argTypes: _*)
 
-    if (
-      retType.equals(translatedRetType) &&
+    if (retType.equals(translatedRetType) &&
       (exceptions == null || AsInterface.equals(exceptions, translatedExceptions)) &&
       AsInterface.equals(argTypes, translatedArgTypes)
     ) {
       return
     }
 
-    val mv = cv.visitMethod(access,
-                            name,
-                            translatedDesc,
-                            null /* no support for generics */,
-                            translatedExceptions
-                           )
+    val mv = cv.visitMethod(
+      access,
+      name,
+      translatedDesc,
+      null /* no support for generics */,
+      translatedExceptions.toArray
+    )
 
     mv.visitCode()
     // BUG(ariels): assumes non-static.
