@@ -31,7 +31,7 @@ public class LakeFSClient {
 
         ApiClient apiClient = io.lakefs.clients.api.Configuration.getDefaultApiClient();
         String endpoint = conf.get(Constants.FS_LAKEFS_ENDPOINT_KEY, "http://localhost:8000/api/v1");
-         if (endpoint.endsWith("/")) {
+        if (endpoint.endsWith("/")) {
             endpoint = endpoint.substring(0, endpoint.length() - 1);
         }
         apiClient.setBasePath(endpoint);
