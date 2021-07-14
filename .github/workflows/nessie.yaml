@@ -493,14 +493,17 @@ jobs:
         # with:
         #   files: ./nessie-cover.out
         #   fail_ci_if_error: false
+
   invoke-terraform-workflow:
-    name: Invoke Terraform Workflow to deploy ECS container
+    name: Invoke Terraform Workflow to deploy Cryptolake ECS container
     needs: [deploy-image, spark2, spark3, run-system-aws-s3, run-system-gcp-gs, run-system-azure-abfs]  
+    if: github.ref == 'refs/heads/persistent-lakefs'
     runs-on: ubuntu-20.04
-    uses: benc-uk/workflow-dispatch@v1
-    with:
-      workflow: Deploy LakeFS
-      repo: treeverse/terraform
-      token: ${{ secrets.PERSONAL_TOKEN }}
-      inputs: '{ "lakefs-version": ${{ needs.deploy-image.outputs.tag }} }'
+    run: |
+      curl -u ":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" \
+      -X POST \
+      -H "Accept: application/vnd.github.v3+json" \
+      https://api.github.com/repos/treeverse/terraform/actions/workflows/deploy-lakefs-on-ecs.yaml/dispatches \
+      -d '{"ref":"master", "inputs": {"lakefs-version": "${{ needs.deploy-image.outputs.tag }}" }}'
+
       
