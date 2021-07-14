@@ -2,6 +2,7 @@ package ref_test
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"reflect"
@@ -596,20 +597,8 @@ func TestManager_LogGraph(t *testing.T) {
 	}
 }
 
-type fakeAddressProvider struct {
-	identities []string
-	idx        int
-}
-
-func (f *fakeAddressProvider) ContentAddress(_ ident.Identifiable) string {
-	res := f.identities[f.idx]
-	f.idx = (f.idx + 1) % len(f.identities)
-	return res
-}
-
 func TestConsistentCommitIdentity(t *testing.T) {
-	hex := ident.NewHexAddressProvider()
-
+	addressProvider := ident.NewHexAddressProvider()
 	commit := graveler.Commit{
 		Committer:    "some-committer",
 		Message:      "I just committed",
@@ -635,14 +624,17 @@ func TestConsistentCommitIdentity(t *testing.T) {
 	const iterations = 10000
 
 	for i := 0; i < iterations; i++ {
-		res := hex.ContentAddress(commit)
+		res := addressProvider.ContentAddress(commit)
 		assert.Equalf(t, expected, res, "iteration %d content mismatch", i+1)
 	}
 }
 
 func TestManager_GetCommitByPrefix(t *testing.T) {
 	commitIDs := []string{"c1234", "d1", "b1", "c1245", "a1"}
-	r := testRefManagerWithAddressProvider(t, &fakeAddressProvider{identities: append([]string{"zero-commit-id"}, commitIDs...)})
+	identityToFakeIdentity := make(map[string]string)
+
+	provider := &fakeAddressProvider{identityToFakeIdentity: identityToFakeIdentity}
+	r, _ := testRefManagerWithAddressProvider(t, provider)
 
 	ctx := context.Background()
 	err := r.CreateRepository(ctx, "repo1", graveler.Repository{
@@ -659,6 +651,7 @@ func TestManager_GetCommitByPrefix(t *testing.T) {
 			Parents:      graveler.CommitParents{"deadbeef1"},
 			Metadata:     graveler.Metadata{"foo": "bar"},
 		}
+		identityToFakeIdentity[hex.EncodeToString(c.Identity())] = commitID
 		_, err := r.AddCommit(ctx, "repo1", c)
 		testutil.MustDo(t, "add commit", err)
 		if err != nil {

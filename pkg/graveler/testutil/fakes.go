@@ -703,3 +703,44 @@ func (m *FakeBranchIterator) Err() error {
 }
 
 func (m *FakeBranchIterator) Close() {}
+
+type FakeCommitIterator struct {
+	Data  []*graveler.CommitRecord
+	Index int
+}
+
+func NewFakeCommitIterator(data []*graveler.CommitRecord) *FakeCommitIterator {
+	return &FakeCommitIterator{Data: data, Index: -1}
+}
+
+func NewFakeCommitIteratorFactory(data []*graveler.CommitRecord) func() graveler.CommitIterator {
+	return func() graveler.CommitIterator { return NewFakeCommitIterator(data) }
+}
+
+func (m *FakeCommitIterator) Next() bool {
+	if m.Index >= len(m.Data) {
+		return false
+	}
+	m.Index++
+	return m.Index < len(m.Data)
+}
+
+func (m *FakeCommitIterator) SeekGE(id graveler.CommitID) {
+	m.Index = len(m.Data)
+	for i, item := range m.Data {
+		if item.CommitID >= id {
+			m.Index = i - 1
+			return
+		}
+	}
+}
+
+func (m *FakeCommitIterator) Value() *graveler.CommitRecord {
+	return m.Data[m.Index]
+}
+
+func (m *FakeCommitIterator) Err() error {
+	return nil
+}
+
+func (m *FakeCommitIterator) Close() {}
