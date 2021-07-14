@@ -444,7 +444,7 @@ public class LakeFSFileSystem extends FileSystem {
         ListingIterator iterator = new ListingIterator(path, false, listAmount);
         while (iterator.hasNext()) {
             LocatedFileStatus fileStatus = iterator.next();
-            fileStatuses.add(fileStatus);
+            fileStatuses.add(((LakeFSLocatedFileStatus)fileStatus).toLakeFSFileStatus());
         }
         return fileStatuses.toArray(new FileStatus[0]);
     }
