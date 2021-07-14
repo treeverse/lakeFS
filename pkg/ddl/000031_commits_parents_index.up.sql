@@ -8,9 +8,8 @@ CREATE OR REPLACE FUNCTION first_parent(parents text[], version int)
 RETURNS text AS
     $$
     DECLARE
-        parent_switch_commit_version int;
+        parent_switch_commit_version CONSTANT INT = 1;
     BEGIN
-        parent_switch_commit_version := 1;
         RETURN CASE WHEN version < parent_switch_commit_version THEN parents[array_length(parents, 1)] ELSE parents[1] END;
     END
     $$
@@ -19,4 +18,3 @@ LANGUAGE plpgsql IMMUTABLE;
 CREATE INDEX graveler_commits_idx_first_parent ON graveler_commits(first_parent(parents, version));
 
 COMMIT;
-
