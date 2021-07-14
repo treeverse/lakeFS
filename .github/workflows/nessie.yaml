@@ -500,7 +500,7 @@ jobs:
     if: github.ref == 'refs/heads/persistent-lakefs'
     runs-on: ubuntu-20.04
     run: |
-      curl -u ":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" \
+      curl -u ":${{ secrets.PERSONAL_TOKEN }}" \
       -X POST \
       -H "Accept: application/vnd.github.v3+json" \
       https://api.github.com/repos/treeverse/terraform/actions/workflows/deploy-lakefs-on-ecs.yaml/dispatches \
