@@ -31,7 +31,7 @@ class ApiClient(apiUrl: String, accessKey: String, secretKey: String) {
   private val client = new api.ApiClient
   client.setUsername(accessKey)
   client.setPassword(secretKey)
-  client.setBasePath(apiUrl)
+  client.setBasePath(apiUrl.stripSuffix("/"))
   private val repositoriesApi = new api.RepositoriesApi(client)
   private val commitsApi = new api.CommitsApi(client)
   private val metadataApi = new api.MetadataApi(client)

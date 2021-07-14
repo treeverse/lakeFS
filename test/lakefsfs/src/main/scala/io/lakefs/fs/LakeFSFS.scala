@@ -85,7 +85,7 @@ object LakeFSFS {
     LOG.info("Setup lakeFS API client")
     val accessKey = conf.get("spark.hadoop.fs.lakefs.access.key")
     val secretKey = conf.get("spark.hadoop.fs.lakefs.secret.key")
-    val endpoint = conf.get("spark.hadoop.fs.lakefs.endpoint")
+    val endpoint = conf.get("spark.hadoop.fs.lakefs.endpoint").stripSuffix("/")
     LOG.info("lakeFS API client endpoint={}", endpoint)
     val apiClient = io.lakefs.clients.api.Configuration.getDefaultApiClient
     apiClient.setBasePath(endpoint)
