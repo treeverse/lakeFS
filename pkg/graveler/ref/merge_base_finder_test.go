@@ -197,7 +197,7 @@ func TestFindMergeBase(t *testing.T) {
 				b := &graveler.Commit{Message: "b", Parents: []graveler.CommitID{"c"}}
 				a := &graveler.Commit{Message: "a", Parents: []graveler.CommitID{"b"}}
 				g := &graveler.Commit{Message: "g", Parents: []graveler.CommitID{"b", "e"}}
-				h := &graveler.Commit{Message: "h0", Parents: []graveler.CommitID{"a", "f"}}
+				h := &graveler.Commit{Message: "h", Parents: []graveler.CommitID{"a", "f"}}
 				return newReader(map[graveler.CommitID]*graveler.Commit{
 					"e": e, "d": d, "f": f, "c": c, "b": b, "a": a, "g": g, "h": h,
 				})

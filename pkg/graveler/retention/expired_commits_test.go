@@ -10,7 +10,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/mock"
-	gtestutil "github.com/treeverse/lakefs/pkg/graveler/testutil"
+	"github.com/treeverse/lakefs/pkg/graveler/testutil"
 )
 
 type testCommit struct {
@@ -30,6 +30,39 @@ func newCommitSet(commitIDs []string) map[graveler.CommitID]bool {
 	for _, commitID := range commitIDs {
 		res[graveler.CommitID(commitID)] = true
 	}
+	return res
+}
+
+// findMainAncestryLeaves returns commits which are not the first parent of any child.
+func findMainAncestryLeaves(now time.Time, heads map[string]int32, commits map[string]testCommit) []*graveler.CommitRecord {
+	var res []*graveler.CommitRecord
+	for commitID1, commit1 := range commits {
+		if _, ok := heads[commitID1]; ok {
+			continue
+		}
+		isLeaf := true
+		for _, commit2 := range commits {
+			if len(commit2.parents) == 0 {
+				continue
+			}
+			if commitID1 == string(commit2.parents[0]) {
+				isLeaf = false
+			}
+		}
+		if isLeaf {
+			res = append(res, &graveler.CommitRecord{
+				CommitID: graveler.CommitID(commitID1),
+				Commit: &graveler.Commit{
+					Version:      graveler.CurrentCommitVersion,
+					CreationDate: now.AddDate(0, 0, -commit1.daysPassed),
+					Parents:      commit1.parents,
+				},
+			})
+		}
+	}
+	sort.Slice(res, func(i, j int) bool {
+		return res[i].CommitID < res[j].CommitID
+	})
 	return res
 }
 
@@ -142,41 +175,122 @@ func TestExpiredCommits(t *testing.T) {
 			expectedActiveIDs:  []string{"h", "a", "b", "c", "f", "g"},
 			expectedExpiredIDs: []string{"e", "d"},
 		},
+		"dangling_commits_active": {
+			commits: map[string]testCommit{
+				"a": newTestCommit(15),
+				"b": newTestCommit(10, "a"),
+				"c": newTestCommit(10, "a"),
+				"d": newTestCommit(5, "c"),
+				"e": newTestCommit(5, "b"),
+				"f": newTestCommit(1, "e"),
+				"g": newTestCommit(8, "c"),
+				"h": newTestCommit(7, "g"),
+				"i": newTestCommit(4, "h"),
+			},
+			headsRetentionDays: map[string]int32{"f": 7, "d": 3},
+			expectedActiveIDs:  []string{"b", "d", "e", "f", "h", "i"},
+			expectedExpiredIDs: []string{"a", "c", "g"},
+		},
+		"dangling_commits_expired": {
+			commits: map[string]testCommit{
+				"a": newTestCommit(15),
+				"b": newTestCommit(10, "a"),
+				"c": newTestCommit(10, "a"),
+				"d": newTestCommit(5, "c"),
+				"e": newTestCommit(5, "b"),
+				"f": newTestCommit(1, "e"),
+				"g": newTestCommit(8, "c"),
+				"h": newTestCommit(7, "g"),
+				"i": newTestCommit(6, "h"),
+			},
+			headsRetentionDays: map[string]int32{"f": 7, "d": 3},
+			expectedActiveIDs:  []string{"b", "d", "e", "f"},
+			expectedExpiredIDs: []string{"a", "c", "g", "h", "i"},
+		},
+		"dangling_from_previously_expired": {
+			commits: map[string]testCommit{
+				"a": newTestCommit(15),
+				"b": newTestCommit(10, "a"),
+				"c": newTestCommit(10, "a"),
+				"d": newTestCommit(5, "c"),
+				"e": newTestCommit(5, "b"),
+				"f": newTestCommit(1, "e"),
+				"g": newTestCommit(10, "a"), // dangling
+				"h": newTestCommit(6, "g"),  // dangling
+			},
+			headsRetentionDays: map[string]int32{"f": 7, "d": 3},
+			previouslyExpired:  []string{"a"},
+			expectedActiveIDs:  []string{"b", "d", "e", "f"},
+			expectedExpiredIDs: []string{"c", "g", "h"},
+		},
+		"dangling_from_before_expired": {
+			commits: map[string]testCommit{
+				"root":        newTestCommit(20),
+				"pre_expired": newTestCommit(20, "root"),
+				"e1":          newTestCommit(15, "pre_expired"),
+				"b":           newTestCommit(10, "e1"),
+				"c":           newTestCommit(10, "e1"),
+				"d":           newTestCommit(5, "c"),
+				"e":           newTestCommit(5, "b"),
+				"f":           newTestCommit(1, "e"),
+				"g":           newTestCommit(10, "root"), //dangling
+				"h":           newTestCommit(6, "g"),     //dangling
+			},
+			headsRetentionDays: map[string]int32{"f": 7, "d": 3},
+			previouslyExpired:  []string{"e1"},
+			expectedActiveIDs:  []string{"b", "d", "e", "f"},
+			expectedExpiredIDs: []string{"c", "g", "root", "h"},
+		},
+		"retained_by_non_leaf_head": {
+			// commit x is retained because of the rule of head2, and not the rule of head1.
+			commits: map[string]testCommit{
+				"root":  newTestCommit(20),
+				"x":     newTestCommit(14, "root"),
+				"head2": newTestCommit(10, "x"),
+				"head1": newTestCommit(9, "head2"),
+			},
+			headsRetentionDays: map[string]int32{"head1": 9, "head2": 12},
+			expectedActiveIDs:  []string{"head1", "head2", "x"},
+			expectedExpiredIDs: []string{"root"},
+		},
 	}
 	for name, tst := range tests {
 		t.Run(name, func(t *testing.T) {
 			now := time.Now()
-			branchRecords := make([]*graveler.BranchRecord, 0, len(tst.headsRetentionDays))
 			ctrl := gomock.NewController(t)
 			refManagerMock := mock.NewMockRefManager(ctrl)
 			ctx := context.Background()
-			garbageCollectionRules := &graveler.GarbageCollectionRules{DefaultRetentionDays: 0, BranchRetentionDays: make(map[string]int32)}
+			garbageCollectionRules := &graveler.GarbageCollectionRules{DefaultRetentionDays: 5, BranchRetentionDays: make(map[string]int32)}
+			var branches []*graveler.BranchRecord
 			for head, retentionDays := range tst.headsRetentionDays {
-				branchRecords = append(branchRecords, &graveler.BranchRecord{
+				branches = append(branches, &graveler.BranchRecord{
 					BranchID: graveler.BranchID(head),
-					Branch:   &graveler.Branch{CommitID: graveler.CommitID(head)},
+					Branch: &graveler.Branch{
+						CommitID: graveler.CommitID(head),
+					},
 				})
 				garbageCollectionRules.BranchRetentionDays[head] = retentionDays
 			}
-			sort.Slice(branchRecords, func(i, j int) bool {
-				// start with the branch with the strictest gc rules
-				return garbageCollectionRules.BranchRetentionDays[string(branchRecords[i].BranchID)] > garbageCollectionRules.BranchRetentionDays[string(branchRecords[j].BranchID)]
+			sort.Slice(branches, func(i, j int) bool {
+				return branches[i].CommitID < branches[j].CommitID
 			})
-			branchIterator := gtestutil.NewFakeBranchIterator(branchRecords)
+
 			commitMap := make(map[graveler.CommitID]*graveler.Commit)
 			previouslyExpired := newCommitSet(tst.previouslyExpired)
 			for commitID, testCommit := range tst.commits {
 				id := graveler.CommitID(commitID)
-				commitMap[id] = &graveler.Commit{Message: commitID, Parents: testCommit.parents, CreationDate: now.AddDate(0, 0, -testCommit.daysPassed)}
+				commitMap[id] = &graveler.Commit{Message: commitID, Parents: testCommit.parents, CreationDate: now.AddDate(0, 0, -testCommit.daysPassed), Version: graveler.CurrentCommitVersion}
 				if !previouslyExpired[id] {
-					refManagerMock.EXPECT().GetCommit(ctx, graveler.RepositoryID("test"), id).Return(commitMap[id], nil).Times(1)
+					refManagerMock.EXPECT().GetCommit(ctx, graveler.RepositoryID("test"), id).Return(commitMap[id], nil).MaxTimes(2)
 				}
 			}
 			previouslyExpiredCommitIDs := make([]graveler.CommitID, len(tst.previouslyExpired))
 			for i := range tst.previouslyExpired {
 				previouslyExpiredCommitIDs[i] = graveler.CommitID(tst.previouslyExpired[i])
 			}
-			gcCommits, err := GetGarbageCollectionCommits(ctx, branchIterator, &RepositoryCommitGetter{
+			gcCommits, err := GetGarbageCollectionCommits(ctx, NewGCStartingPointIterator(
+				testutil.NewFakeCommitIterator(findMainAncestryLeaves(now, tst.headsRetentionDays, tst.commits)),
+				testutil.NewFakeBranchIterator(branches)), &RepositoryCommitGetter{
 				refManager:   refManagerMock,
 				repositoryID: "test",
 			}, garbageCollectionRules, previouslyExpiredCommitIDs)
