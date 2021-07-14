@@ -1,6 +1,6 @@
 package io.treeverse.utils
 
-import org.objectweb.asm.{ClassVisitor, MethodVisitor}
+import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.Opcodes._
 import org.objectweb.asm.Type
 
@@ -71,14 +71,20 @@ private class AsInterface(cv: ClassVisitor, val ifaces: Map[String, Class[_]])
       case Some(iface) => {
         // Generate wrappers for all methods of iface in the class.
         iface.getMethods.foreach(method =>
-          generateForwardingMethod(
-            ACC_PUBLIC | ACC_SYNTHETIC, method.getName, Type.getMethodDescriptor(method),
-            method.getExceptionTypes.map(e => Type.getType(e).getDescriptor)))
+          generateForwardingMethod(ACC_PUBLIC | ACC_SYNTHETIC,
+                                   method.getName,
+                                   Type.getMethodDescriptor(method),
+                                   method.getExceptionTypes.map(e => Type.getType(e).getDescriptor)
+                                  )
+        )
         // Generate wrapper for all constructors for the class.
         iface.getConstructors.foreach(ctor =>
-          generateForwardingMethod(
-            ACC_PUBLIC | ACC_SYNTHETIC, "<init>", Type.getConstructorDescriptor(ctor),
-            ctor.getExceptionTypes.map(e => Type.getType(e).getDescriptor)))
+          generateForwardingMethod(ACC_PUBLIC | ACC_SYNTHETIC,
+                                   "<init>",
+                                   Type.getConstructorDescriptor(ctor),
+                                   ctor.getExceptionTypes.map(e => Type.getType(e).getDescriptor)
+                                  )
+        )
       }
       case _ => Unit
     }
@@ -97,10 +103,10 @@ private class AsInterface(cv: ClassVisitor, val ifaces: Map[String, Class[_]])
     }
 
   def generateForwardingMethod(
-    access: Int,
-    name: String,
-    translatedDesc: String,
-    translatedExceptions: Seq[String]
+      access: Int,
+      name: String,
+      translatedDesc: String,
+      translatedExceptions: Seq[String]
   ): Unit = {
     val translatedArgTypes = Type.getArgumentTypes(translatedDesc)
     if (translatedArgTypes == null) {
@@ -117,13 +123,15 @@ private class AsInterface(cv: ClassVisitor, val ifaces: Map[String, Class[_]])
     val exceptions =
       if (translatedExceptions != null)
         translatedExceptions.map((name: String) =>
-          revTranslateType(Type.getObjectType(name)).getInternalName)
+          revTranslateType(Type.getObjectType(name)).getInternalName
+        )
       else
         null
 
     val desc = Type.getMethodDescriptor(retType, argTypes: _*)
 
-    if (retType.equals(translatedRetType) &&
+    if (
+      retType.equals(translatedRetType) &&
       (exceptions == null || AsInterface.equals(exceptions, translatedExceptions)) &&
       AsInterface.equals(argTypes, translatedArgTypes)
     ) {
