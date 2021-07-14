@@ -28,7 +28,7 @@ hooks:
 `
 
 const actionPreCommitYaml = `
-name: Test Commit
+name: Test Pre Commit
 description: set of checks to verify that branch is good
 on:
   pre-commit:
@@ -40,6 +40,21 @@ hooks:
     description: Check webhooks for pre-commit works
     properties:
       url: "{{.URL}}/pre-commit"
+`
+
+const actionPostCommitYaml = `
+name: Test Post Commit
+description: set of checks to verify that branch is good
+on:
+  post-commit:
+    branches:
+      - feature-*
+hooks:
+  - id: test_webhook
+    type: webhook
+    description: Check webhooks for post-commit works
+    properties:
+      url: "{{.URL}}/post-commit"
 `
 
 func TestHooksSuccess(t *testing.T) {
@@ -83,6 +98,17 @@ func TestHooksSuccess(t *testing.T) {
 	uploadResp, err := uploadContent(ctx, repo, branch, "_lakefs_actions/testing_pre_commit", preCommitAction)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusCreated, uploadResp.StatusCode())
+
+	actionPostCommitTmpl := template.Must(template.New("action-post-commit").Parse(actionPostCommitYaml))
+	doc.Reset()
+	err = actionPostCommitTmpl.Execute(&doc, docData)
+	require.NoError(t, err)
+	postCommitAction := doc.String()
+
+	uploadResp, err = uploadContent(ctx, repo, branch, "_lakefs_actions/testing_post_commit", postCommitAction)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusCreated, uploadResp.StatusCode())
+
 	logger.WithField("branch", branch).Info("Commit initial content")
 
 	commitResp, err := client.CommitWithResponse(ctx, repo, branch, api.CommitJSONRequestBody{
@@ -96,19 +122,36 @@ func TestHooksSuccess(t *testing.T) {
 
 	require.NoError(t, webhookData.err, "error on pre commit serving")
 	decoder := json.NewDecoder(bytes.NewReader(webhookData.data))
-	var commitEvent, mergeEvent webhookEventInfo
-	require.NoError(t, decoder.Decode(&commitEvent), "reading pre-commit data")
+	var preCommitEvent, postCommitEvent, mergeEvent webhookEventInfo
+	require.NoError(t, decoder.Decode(&preCommitEvent), "reading pre-commit data")
 
 	commitRecord := commitResp.JSON201
-	require.Equal(t, "pre-commit", commitEvent.EventType)
-	require.Equal(t, "Test Commit", commitEvent.ActionName)
-	require.Equal(t, "test_webhook", commitEvent.HookID)
-	require.Equal(t, repo, commitEvent.RepositoryID)
-	require.Equal(t, branch, commitEvent.BranchID)
-	require.Equal(t, commitRecord.Committer, commitEvent.Committer)
-	require.Equal(t, commitRecord.Message, commitEvent.CommitMessage)
-	require.Equal(t, branch, commitEvent.SourceRef)
-	require.Equal(t, commitRecord.Metadata.AdditionalProperties, commitEvent.Metadata)
+	require.Equal(t, "pre-commit", preCommitEvent.EventType)
+	require.Equal(t, "Test Commit", preCommitEvent.ActionName)
+	require.Equal(t, "test_webhook", preCommitEvent.HookID)
+	require.Equal(t, repo, preCommitEvent.RepositoryID)
+	require.Equal(t, branch, preCommitEvent.BranchID)
+	require.Equal(t, commitRecord.Committer, preCommitEvent.Committer)
+	require.Equal(t, commitRecord.Message, preCommitEvent.CommitMessage)
+	require.Equal(t, branch, preCommitEvent.SourceRef)
+	require.Equal(t, commitRecord.Metadata.AdditionalProperties, preCommitEvent.Metadata)
+
+	webhookData, err = responseWithTimeout(server, 1*time.Minute)
+	require.NoError(t, err)
+
+	require.NoError(t, webhookData.err, "error on post commit serving")
+	decoder = json.NewDecoder(bytes.NewReader(webhookData.data))
+	require.NoError(t, decoder.Decode(&postCommitEvent), "reading post-commit data")
+
+	require.Equal(t, "post-commit", postCommitEvent.EventType)
+	require.Equal(t, "Test Commit", postCommitEvent.ActionName)
+	require.Equal(t, "test_webhook", postCommitEvent.HookID)
+	require.Equal(t, repo, postCommitEvent.RepositoryID)
+	require.Equal(t, branch, postCommitEvent.BranchID)
+	require.Equal(t, commitRecord.Committer, postCommitEvent.Committer)
+	require.Equal(t, commitRecord.Message, postCommitEvent.CommitMessage)
+	require.Equal(t, branch, postCommitEvent.SourceRef)
+	require.Equal(t, commitRecord.Metadata.AdditionalProperties, postCommitEvent.Metadata)
 
 	mergeResp, err := client.MergeIntoBranchWithResponse(ctx, repo, branch, mainBranch, api.MergeIntoBranchJSONRequestBody{})
 

@@ -83,11 +83,13 @@ var runCmd = &cobra.Command{
 
 		// wire actions
 		actionsService := actions.NewService(
+			ctx,
 			dbPool,
 			catalog.NewActionsSource(c),
 			catalog.NewActionsOutputWriter(c.BlockAdapter),
 		)
 		c.SetHooksHandler(actionsService)
+		defer actionsService.Stop()
 
 		multipartsTracker := multiparts.NewTracker(dbPool)
 
