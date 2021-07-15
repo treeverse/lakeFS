@@ -4,12 +4,29 @@ import lakefs_client
 from lakefs_client.apis import ActionsApi, AuthApi, BranchesApi, CommitsApi, ConfigApi, HealthCheckApi, MetadataApi, \
     ObjectsApi, RefsApi, RepositoriesApi, StagingApi, TagsApi
 
+class _WrappedApiClient(lakefs_client.ApiClient):
+    """ApiClient that fixes some weirdnesses."""
+
+    # Wrap files_parameters to work with unnamed "files" (e.g. MemIOs).
+    def files_parameters(self, files=None):
+        if files is not None:
+            for (param_name, file_instances) in files.items():
+                i = 0
+                if file_instances is None:
+                    continue
+                for file_instance in file_instances:
+                    if file_instance is not None and not hasattr(file_instance, 'name'):
+                        # Generate a fake name.
+                        i += 1
+                        file_instance.name = f'{param_name}{i}'
+        return super().files_parameters(files)
+
 class LakeFSClient:
     def __init__(self, configuration=None, header_name=None, header_value=None, cookie=None, pool_threads=1):
         if configuration:
             configuration = LakeFSClient._ensure_endpoint(configuration)
-        self._api = lakefs_client.ApiClient(configuration=configuration, header_name=header_name,
-                                            header_value=header_value, cookie=cookie, pool_threads=pool_threads)
+        self._api = _WrappedApiClient(configuration=configuration, header_name=header_name,
+                                          header_value=header_value, cookie=cookie, pool_threads=pool_threads)
         self.actions = ActionsApi(self._api)
         self.auth = AuthApi(self._api)
         self.branches = BranchesApi(self._api)
