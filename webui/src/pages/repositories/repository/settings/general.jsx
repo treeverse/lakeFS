@@ -1,18 +1,18 @@
 import React, {useRef, useState} from "react";
 
-import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
-import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
+import {RefContextProvider, useRefs} from "../../../../lib/hooks/repo";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import {TrashIcon} from "@primer/octicons-react";
 import Col from "react-bootstrap/Col";
-import {Error, Loading} from "../../../lib/components/controls";
+import {Error, Loading} from "../../../../lib/components/controls";
 import Modal from "react-bootstrap/Modal";
-import {repositories} from "../../../lib/api";
-import {useRouter} from "../../../lib/hooks/router";
-
+import {repositories} from "../../../../lib/api";
+import {useRouter} from "../../../../lib/hooks/router";
+import {SettingsLayout} from "./layout";
+import {RepositoryPageLayout} from "../../../../lib/components/repository/layout";
 
 const DeleteRepositoryModal = ({repo, show, onSubmit, onCancel}) => {
     const [isDisabled, setIsDisabled] = useState(true);
@@ -117,16 +117,17 @@ const SettingsContainer = () => {
 };
 
 
-const RepositorySettingsPage = () => {
+const RepositoryGeneralSettingsPage = () => {
     return (
         <RefContextProvider>
             <RepositoryPageLayout activePage={'settings'}>
-                <SettingsContainer/>
+                <SettingsLayout activeTab={"general"}>
+                    <SettingsContainer/>
+                </SettingsLayout>
             </RepositoryPageLayout>
         </RefContextProvider>
     )
 }
 
 
-
-export default RepositorySettingsPage;
+export default RepositoryGeneralSettingsPage;

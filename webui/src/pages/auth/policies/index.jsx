@@ -7,7 +7,7 @@ import {useAPIWithPagination} from "../../../lib/hooks/api";
 import {AuthLayout} from "../../../lib/components/auth/layout";
 import {ConfirmationButton} from "../../../lib/components/modals";
 import {Paginator} from "../../../lib/components/pagination";
-import {PolicyEditor} from "../../../lib/components/auth/policy";
+import {PolicyEditor} from "../../../lib/components/policy";
 import {
     ActionGroup,
     ActionsBar,

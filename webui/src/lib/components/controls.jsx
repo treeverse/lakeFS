@@ -330,7 +330,7 @@ export const ToggleSwitch = ({  label, id, defaultChecked, onChange }) => {
                 label={label}
                 id={id}
                 defaultChecked={defaultChecked}
-                onChange={onChange}
+                onChange={(e) => onChange(e.target.checked)}
             />
         </Form>
     )

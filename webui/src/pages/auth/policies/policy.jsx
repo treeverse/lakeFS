@@ -8,7 +8,7 @@ import {AuthLayout} from "../../../lib/components/auth/layout";
 import {PolicyHeader} from "../../../lib/components/auth/nav";
 import {useAPI} from "../../../lib/hooks/api";
 import {auth} from "../../../lib/api";
-import {PolicyDisplay, PolicyEditor} from "../../../lib/components/auth/policy";
+import {PolicyDisplay, PolicyEditor} from "../../../lib/components/policy";
 import {
     ActionGroup,
     ActionsBar,
