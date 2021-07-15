@@ -12,6 +12,7 @@ on:
       - "design/**"
     branches:
       - master
+      - cryptolake
 
 jobs:
   check-secrets:
@@ -492,3 +493,17 @@ jobs:
         # with:
         #   files: ./nessie-cover.out
         #   fail_ci_if_error: false
+
+  invoke-terraform-workflow:
+    name: Invoke Terraform Workflow to deploy Cryptolake ECS container
+    needs: [deploy-image, spark2, spark3, run-system-aws-s3, run-system-gcp-gs, run-system-azure-abfs]  
+    if: github.ref == 'refs/heads/cryptolake'
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Invoke Terraform Workflow
+        run: |
+          curl -u ":${{ secrets.PERSONAL_TOKEN }}" \
+          -X POST \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/repos/treeverse/terraform/actions/workflows/deploy-lakefs-on-ecs.yaml/dispatches \
+          -d '{"ref":"master", "inputs": {"lakefs-version": "${{ needs.deploy-image.outputs.tag }}", "environment": "cryptolake-prod" }}'
