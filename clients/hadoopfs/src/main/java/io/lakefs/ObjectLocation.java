@@ -6,7 +6,7 @@ class ObjectLocation {
     private String path;
 
     public static String formatPath(String repository, String ref, String path) {
-        return String.format("%s://%s/%s/%s", Constants.URI_SCHEME,repository, ref, path);
+        return String.format("%s://%s/%s/%s", Constants.URI_SCHEME, repository, ref, path);
     }
 
     public String getRepository() {
@@ -31,6 +31,10 @@ class ObjectLocation {
 
     public void setPath(String path) {
         this.path = path;
+    }
+
+    public boolean isValidObjectPath() {
+        return this.path.isEmpty() || this.ref.isEmpty() || this.repository.isEmpty();
     }
 
     static String trimLeadingSlash(String s) {
