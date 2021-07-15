@@ -1,12 +1,21 @@
 package io.lakefs;
 
 class ObjectLocation {
+    private String scheme;
     private String repository;
     private String ref;
     private String path;
 
-    public static String formatPath(String repository, String ref, String path) {
-        return String.format("%s://%s/%s/%s", Constants.URI_SCHEME,repository, ref, path);
+    public static String formatPath(String scheme, String repository, String ref, String path) {
+        return String.format("%s://%s/%s/%s", scheme, repository, ref, path);
+    }
+
+    public String getScheme() {
+        return scheme;
+    }
+
+    public void setScheme(String scheme) {
+        this.scheme = scheme;
     }
 
     public String getRepository() {
@@ -66,6 +75,6 @@ class ObjectLocation {
 
     @Override
     public String toString() {
-        return formatPath(repository, ref, path);
+        return formatPath(scheme, repository, ref, path);
     }
 }
