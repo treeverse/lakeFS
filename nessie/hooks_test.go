@@ -127,7 +127,7 @@ func TestHooksSuccess(t *testing.T) {
 
 	commitRecord := commitResp.JSON201
 	require.Equal(t, "pre-commit", preCommitEvent.EventType)
-	require.Equal(t, "Test Commit", preCommitEvent.ActionName)
+	require.Equal(t, "Test Pre Commit", preCommitEvent.ActionName)
 	require.Equal(t, "test_webhook", preCommitEvent.HookID)
 	require.Equal(t, repo, preCommitEvent.RepositoryID)
 	require.Equal(t, branch, preCommitEvent.BranchID)
@@ -144,7 +144,7 @@ func TestHooksSuccess(t *testing.T) {
 	require.NoError(t, decoder.Decode(&postCommitEvent), "reading post-commit data")
 
 	require.Equal(t, "post-commit", postCommitEvent.EventType)
-	require.Equal(t, "Test Commit", postCommitEvent.ActionName)
+	require.Equal(t, "Test Post Commit", postCommitEvent.ActionName)
 	require.Equal(t, "test_webhook", postCommitEvent.HookID)
 	require.Equal(t, repo, postCommitEvent.RepositoryID)
 	require.Equal(t, branch, postCommitEvent.BranchID)
