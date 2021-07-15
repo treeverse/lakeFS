@@ -84,7 +84,7 @@ const GCPolicy = ({repo}) => {
     let content;
 
     if (loading) content = <Loading/>;
-    else if (!!error) content = error instanceof NotFoundError ? <GetStarted repo={repo} onSubmit={onSubmit}/> : content = <Error error={error}/>;
+    else if (!!error) content = error instanceof NotFoundError ? <GetStarted repo={repo} onSubmit={onSubmit}/> :  <Error error={error}/>;
     else {
         content = (
                     <>
