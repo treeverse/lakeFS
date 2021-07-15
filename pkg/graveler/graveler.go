@@ -289,9 +289,10 @@ func (d *Diff) Copy() *Diff {
 }
 
 type CommitParams struct {
-	Committer string
-	Message   string
-	Metadata  Metadata
+	Committer  string
+	Message    string
+	Metadata   Metadata
+	CommitDate time.Time
 }
 
 type KeyValueStore interface {
@@ -1151,6 +1152,9 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 
 		// fill commit information - use for pre-commit and after adding the commit information used by commit
 		commit = NewCommit()
+		if !params.CommitDate.IsZero() {
+			commit.CreationDate = params.CommitDate
+		}
 		commit.Committer = params.Committer
 		commit.Message = params.Message
 		commit.Metadata = params.Metadata
@@ -1481,6 +1485,9 @@ func (g *Graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 			return "", err
 		}
 		commit := NewCommit()
+		if !commitParams.CommitDate.IsZero() {
+			commit.CreationDate = commitParams.CommitDate
+		}
 		commit.Committer = commitParams.Committer
 		commit.Message = commitParams.Message
 		commit.MetaRangeID = metaRangeID
@@ -1541,6 +1548,9 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 			return "", err
 		}
 		commit = NewCommit()
+		if !commitParams.CommitDate.IsZero() {
+			commit.CreationDate = commitParams.CommitDate
+		}
 		commit.Committer = commitParams.Committer
 		commit.Message = commitParams.Message
 		commit.MetaRangeID = metaRangeID

@@ -7,7 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/cockroachdb/pebble"
 	"github.com/hashicorp/go-multierror"
@@ -785,10 +787,19 @@ func (c *Catalog) Commit(ctx context.Context, repository string, branch string, 
 	}); err != nil {
 		return nil, err
 	}
+	var commitDate time.Time
+	if metadata["gc-test-days-ago"] != "" {
+		daysAgo, err := strconv.Atoi(metadata["gc-test-days-ago"])
+		if err != nil {
+			return nil, err
+		}
+		commitDate = time.Now().AddDate(0, 0, -daysAgo)
+	}
 	commitID, err := c.Store.Commit(ctx, repositoryID, branchID, graveler.CommitParams{
-		Committer: committer,
-		Message:   message,
-		Metadata:  map[string]string(metadata),
+		CommitDate: commitDate,
+		Committer:  committer,
+		Message:    message,
+		Metadata:   map[string]string(metadata),
 	})
 	if err != nil {
 		return nil, err
@@ -1084,10 +1095,19 @@ func (c *Catalog) Merge(ctx context.Context, repository string, destinationBranc
 	destination := graveler.BranchID(destinationBranch)
 	source := graveler.Ref(sourceRef)
 	meta := graveler.Metadata(metadata)
+	var commitDate time.Time
+	if metadata["gc-test-days-ago"] != "" {
+		daysAgo, err := strconv.Atoi(metadata["gc-test-days-ago"])
+		if err != nil {
+			return nil, err
+		}
+		commitDate = time.Now().AddDate(0, 0, -daysAgo)
+	}
 	commitParams := graveler.CommitParams{
-		Committer: committer,
-		Message:   message,
-		Metadata:  meta,
+		CommitDate: commitDate,
+		Committer:  committer,
+		Message:    message,
+		Metadata:   meta,
 	}
 	if commitParams.Message == "" {
 		commitParams.Message = fmt.Sprintf("Merge '%s' into '%s'", source, destination)

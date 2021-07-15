@@ -71,6 +71,7 @@ func createBareRepository(tx db.Tx, repositoryID graveler.RepositoryID, reposito
 
 func (m *Manager) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository, token graveler.StagingToken) error {
 	firstCommit := graveler.NewCommit()
+	firstCommit.CreationDate = time.Now().AddDate(-1, 0, 0)
 	firstCommit.Message = graveler.FirstCommitMsg
 	firstCommit.Generation = 1
 	commitID := m.addressProvider.ContentAddress(firstCommit)
