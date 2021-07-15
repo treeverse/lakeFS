@@ -102,7 +102,7 @@ func (s *Service) Stop() {
 	s.wg.Wait()
 }
 
-func (s *Service) AsyncRun(record graveler.HookRecord) error {
+func (s *Service) AsyncRun(record graveler.HookRecord) {
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
@@ -113,8 +113,6 @@ func (s *Service) AsyncRun(record graveler.HookRecord) error {
 				Info("Async run of hook failed")
 		}
 	}()
-
-	return nil
 }
 
 // Run load and run actions based on the event information
@@ -424,7 +422,8 @@ func (s *Service) PostCommitHook(ctx context.Context, record graveler.HookRecord
 		return err
 	}
 
-	return s.Run(ctx, record)
+	s.AsyncRun(record)
+	return nil
 }
 
 func (s *Service) PreMergeHook(ctx context.Context, record graveler.HookRecord) error {
@@ -438,7 +437,8 @@ func (s *Service) PostMergeHook(ctx context.Context, record graveler.HookRecord)
 		return err
 	}
 
-	return s.Run(ctx, record)
+	s.AsyncRun(record)
+	return nil
 }
 
 func NewHookRunID(actionIdx, hookIdx int) string {
