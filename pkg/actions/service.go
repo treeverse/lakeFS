@@ -299,7 +299,7 @@ func buildRunManifestFromTasks(record graveler.HookRecord, tasks [][]*Task) RunM
 				manifest.Run.EndTime = task.EndTime
 			}
 			// did we failed
-			manifest.Run.Passed = manifest.Run.Passed && task.Err != nil
+			manifest.Run.Passed = manifest.Run.Passed && task.Err == nil
 		}
 	}
 
