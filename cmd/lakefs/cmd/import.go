@@ -99,11 +99,13 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 
 	// wire actions into entry catalog
 	actionsService := actions.NewService(
+		ctx,
 		dbPool,
 		catalog.NewActionsSource(c),
 		catalog.NewActionsOutputWriter(c.BlockAdapter),
 	)
 	c.SetHooksHandler(actionsService)
+	defer actionsService.Stop()
 
 	u := uri.Must(uri.Parse(args[0]))
 	if !u.IsRepository() {

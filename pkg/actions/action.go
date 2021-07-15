@@ -20,8 +20,10 @@ type Action struct {
 }
 
 type OnEvents struct {
-	PreMerge  *ActionOn `yaml:"pre-merge"`
-	PreCommit *ActionOn `yaml:"pre-commit"`
+	PreMerge   *ActionOn `yaml:"pre-merge"`
+	PostMerge  *ActionOn `yaml:"post-merge"`
+	PreCommit  *ActionOn `yaml:"pre-commit"`
+	PostCommit *ActionOn `yaml:"post-commit"`
 }
 
 type ActionOn struct {
@@ -55,7 +57,10 @@ func (a *Action) Validate() error {
 	if !reName.MatchString(a.Name) {
 		return fmt.Errorf("'name' is invalid: %w", ErrInvalidAction)
 	}
-	if a.On.PreMerge == nil && a.On.PreCommit == nil {
+	if a.On.PreMerge == nil &&
+		a.On.PostMerge == nil &&
+		a.On.PreCommit == nil &&
+		a.On.PostCommit == nil {
 		return fmt.Errorf("'on' is required: %w", ErrInvalidAction)
 	}
 	ids := make(map[string]struct{})
@@ -82,6 +87,10 @@ func (a *Action) Match(spec MatchSpec) (bool, error) {
 		actionOn = a.On.PreCommit
 	case graveler.EventTypePreMerge:
 		actionOn = a.On.PreMerge
+	case graveler.EventTypePostCommit:
+		actionOn = a.On.PostCommit
+	case graveler.EventTypePostMerge:
+		actionOn = a.On.PostMerge
 	default:
 		return false, ErrInvalidEventType
 	}

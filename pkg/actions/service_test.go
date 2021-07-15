@@ -150,7 +150,8 @@ hooks:
 
 	// run actions
 	now := time.Now()
-	actionsService := actions.NewService(conn, testSource, testOutputWriter)
+	actionsService := actions.NewService(ctx, conn, testSource, testOutputWriter)
+	defer actionsService.Stop()
 
 	err := actionsService.Run(ctx, record)
 	if err != nil {
