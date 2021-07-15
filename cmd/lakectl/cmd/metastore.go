@@ -31,6 +31,7 @@ var metastoreCopyCmd = &cobra.Command{
 		toBranch, _ := cmd.Flags().GetString("to-branch")
 		serde, _ := cmd.Flags().GetString("serde")
 		partition, _ := cmd.Flags().GetStringSlice("partition")
+		dbfsLocation, _ := cmd.Flags().GetString("dbfs-location")
 
 		fromClient, fromClientDeferFunc := getMetastoreClient(fromClientType, "")
 		defer fromClientDeferFunc()
@@ -57,7 +58,7 @@ var metastoreCopyCmd = &cobra.Command{
 			"partition":        partition,
 		}).Info("Metadata copy or merge table")
 		fmt.Printf("copy %s.%s -> %s.%s\n", fromDB, fromTable, toDB, toTable)
-		err := metastore.CopyOrMerge(cmd.Context(), fromClient, toClient, fromDB, fromTable, toDB, toTable, toBranch, serde, partition, cfg.GetFixSparkPlaceholder())
+		err := metastore.CopyOrMerge(cmd.Context(), fromClient, toClient, fromDB, fromTable, toDB, toTable, toBranch, serde, partition, cfg.GetFixSparkPlaceholder(), dbfsLocation)
 		if err != nil {
 			DieErr(err)
 		}
@@ -111,6 +112,7 @@ var metastoreCopyAllCmd = &cobra.Command{
 		tableFilter, _ := cmd.Flags().GetString("table-filter")
 		branch, _ := cmd.Flags().GetString("branch")
 		continueOnError, _ := cmd.Flags().GetBool("continue-on-error")
+		dbfsLocation, _ := cmd.Flags().GetString("dbfs-location")
 
 		if fromAddress == toAddress {
 			Die("from-address must be different than to-address", 1)
@@ -122,7 +124,7 @@ var metastoreCopyAllCmd = &cobra.Command{
 		defer toDeferFunc()
 
 		fmt.Printf("copy %s -> %s\n", fromAddress, toAddress)
-		err := metastore.CopyOrMergeAll(cmd.Context(), fromClient, toClient, schemaFilter, tableFilter, branch, continueOnError, cfg.GetFixSparkPlaceholder())
+		err := metastore.CopyOrMergeAll(cmd.Context(), fromClient, toClient, schemaFilter, tableFilter, branch, continueOnError, cfg.GetFixSparkPlaceholder(), dbfsLocation)
 		if err != nil {
 			DieErr(err)
 		}
@@ -147,7 +149,7 @@ will be transformed to location s3://repo-param/bucket-param/path/to/table
 		repo, _ := cmd.Flags().GetString("repo")
 		branch, _ := cmd.Flags().GetString("branch")
 		continueOnError, _ := cmd.Flags().GetBool("continue-on-error")
-
+		dbfsLocation, _ := cmd.Flags().GetString("dbfs-location")
 		if fromAddress == toAddress {
 			Die("from-address must be different than to-address", 1)
 		}
@@ -158,7 +160,7 @@ will be transformed to location s3://repo-param/bucket-param/path/to/table
 		defer toDeferFunc()
 
 		fmt.Printf("import %s -> %s\n", fromAddress, toAddress)
-		err := metastore.ImportAll(cmd.Context(), fromClient, toClient, schemaFilter, tableFilter, repo, branch, continueOnError, cfg.GetFixSparkPlaceholder())
+		err := metastore.ImportAll(cmd.Context(), fromClient, toClient, schemaFilter, tableFilter, repo, branch, continueOnError, cfg.GetFixSparkPlaceholder(), dbfsLocation)
 		if err != nil {
 			DieErr(err)
 		}
@@ -273,7 +275,7 @@ func init() {
 	_ = metastoreCopyCmd.MarkFlagRequired("to-branch")
 	_ = metastoreCopyCmd.Flags().String("serde", "", "serde to set copy to  [default is  to-table]")
 	_ = metastoreCopyCmd.Flags().StringSliceP("partition", "p", nil, "partition to copy")
-
+	_ = metastoreCopyCmd.Flags().String("dbfs-root", "", "dbfs location root will replace `dbfs:/` in the location before transforming")
 	metastoreCmd.AddCommand(metastoreDiffCmd)
 	_ = metastoreDiffCmd.Flags().String("from-client-type", "", "metastore type [hive, glue]")
 	_ = metastoreDiffCmd.Flags().String("metastore-uri", "", "Hive metastore URI")
@@ -301,7 +303,7 @@ func init() {
 	_ = metastoreCopyAllCmd.Flags().String("branch", "", "lakeFS branch name")
 	_ = metastoreCopyAllCmd.MarkFlagRequired("branch")
 	_ = metastoreCopyAllCmd.Flags().String("continue-on-error", "", "prevent copy-all from failing when a single table fails")
-
+	_ = metastoreCopyAllCmd.Flags().String("dbfs-root", "", "dbfs location root will replace `dbfs:/` in the location before transforming")
 	metastoreCmd.AddCommand(metastoreImportAllCmd)
 	_ = metastoreImportAllCmd.Flags().String("from-client-type", "", "metastore type [hive, glue]")
 	_ = metastoreImportAllCmd.Flags().String("from-address", "", "source metastore address")
@@ -315,7 +317,7 @@ func init() {
 	_ = metastoreImportAllCmd.Flags().String("branch", "", "lakeFS branch name")
 	_ = metastoreImportAllCmd.MarkFlagRequired("branch")
 	_ = metastoreImportAllCmd.Flags().String("continue-on-error", "", "prevent import-all from failing when a single table fails")
-
+	_ = metastoreImportAllCmd.Flags().String("dbfs-root", "", "dbfs location root will replace `dbfs:/` in the location before transforming")
 	metastoreCmd.AddCommand(glueSymlinkCmd)
 	_ = glueSymlinkCmd.Flags().String("repo", "", "lakeFS repository name")
 	_ = glueSymlinkCmd.MarkFlagRequired("repo")

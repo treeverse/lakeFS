@@ -3,10 +3,13 @@ package metastore
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
+
+const dbfsPrefix = "dbfs:/"
 
 type ReadClient interface {
 	GetTable(ctx context.Context, dbName string, tableName string) (r *Table, err error)
@@ -36,8 +39,9 @@ type Client interface {
 	WriteClient
 }
 
-func CopyOrMerge(ctx context.Context, fromClient, toClient Client, fromDB, fromTable, toDB, toTable, toBranch, serde string, partition []string, fixSparkPlaceHolder bool) error {
+func CopyOrMerge(ctx context.Context, fromClient, toClient Client, fromDB, fromTable, toDB, toTable, toBranch, serde string, partition []string, fixSparkPlaceHolder bool, dbfsLocation string) error {
 	transformLocation := func(location string) (string, error) {
+		location = HandleDBFSLocation(location, dbfsLocation)
 		return ReplaceBranchName(location, toBranch)
 	}
 	return copyOrMergeWithTransformLocation(ctx, fromClient, toClient, fromDB, fromTable, toDB, toTable, serde, partition, transformLocation, fixSparkPlaceHolder)
@@ -101,23 +105,33 @@ func CopyOrMergeFromValues(ctx context.Context, fromClient Client, fTable *Table
 	return Merge(ctx, fTable, partitionCollection, toDB, toTable, serde, toClient, transformLocation, fixSparkPlaceHolder)
 }
 
-func CopyOrMergeAll(ctx context.Context, fromClient, toClient Client, schemaFilter, tableFilter, toBranch string, continueOnError, fixSparkPlaceHolder bool) error {
+func CopyOrMergeAll(ctx context.Context, fromClient, toClient Client, schemaFilter, tableFilter, toBranch string, continueOnError, fixSparkPlaceHolder bool, dbfsLocation string) error {
 	databases, err := fromClient.GetDatabases(ctx, schemaFilter)
 	if err != nil {
 		return err
 	}
 	transformLocation := func(location string) (string, error) {
+		location = HandleDBFSLocation(location, dbfsLocation)
 		return ReplaceBranchName(location, toBranch)
 	}
 	return applyAll(ctx, fromClient, toClient, databases, tableFilter, transformLocation, fixSparkPlaceHolder, continueOnError)
 }
 
-func ImportAll(ctx context.Context, fromClient, toClient Client, schemaFilter, tableFilter, repo, toBranch string, continueOnError, fixSparkPlaceHolder bool) error {
+// HandleDBFSLocation translates Data Bricks File system path to the S3 path using the dbfsLocation
+func HandleDBFSLocation(location string, dbfsLocation string) string {
+	if dbfsLocation != "" && strings.HasPrefix(location, dbfsPrefix) {
+		location = strings.Replace(location, dbfsPrefix, dbfsLocation, 1)
+	}
+	return location
+}
+
+func ImportAll(ctx context.Context, fromClient, toClient Client, schemaFilter, tableFilter, repo, toBranch string, continueOnError, fixSparkPlaceHolder bool, dbfsLocation string) error {
 	databases, err := fromClient.GetDatabases(ctx, schemaFilter)
 	if err != nil {
 		return err
 	}
 	transformLocation := func(location string) (string, error) {
+		location = HandleDBFSLocation(location, dbfsLocation)
 		return ReplaceExternalToLakeFSImported(location, repo, toBranch)
 	}
 	return applyAll(ctx, fromClient, toClient, databases, tableFilter, transformLocation, fixSparkPlaceHolder, continueOnError)
