@@ -5,7 +5,7 @@ import io.treeverse.lakefs.catalog.Entry
 import io.treeverse.lakefs.graveler.committed.RangeData
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
-import org.rocksdb.{SstFileReader, _}
+import org.rocksdb.{Options, ReadOptions, RocksDB, SstFileReader, SstFileReaderIterator}
 import scalapb.{GeneratedMessage, GeneratedMessageCompanion}
 
 import java.io.{ByteArrayInputStream, Closeable, DataInputStream, File}
