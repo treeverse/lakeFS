@@ -47,7 +47,6 @@ public class LakeFSFileSystem extends FileSystem {
     private LakeFSClient lfsClient;
     private int listAmount;
     private FileSystem fsForConfig;
-    private String scheme;
 
     private URI translateUri(URI uri) throws java.net.URISyntaxException {
         switch (uri.getScheme()) {
@@ -70,17 +69,15 @@ public class LakeFSFileSystem extends FileSystem {
 
     void initializeWithClient(URI name, Configuration conf, LakeFSClient lfsClient) throws IOException {
         super.initialize(name, conf);
-        this.scheme = name.getScheme();
+        this.uri = name;
         this.conf = conf;
+        this.lfsClient = lfsClient;
 
         String host = name.getHost();
         if (host == null) {
             throw new IOException("Invalid repository specified");
         }
         setConf(conf);
-        this.uri = name;
-
-        this.lfsClient = lfsClient;
 
         listAmount = conf.getInt(FS_LAKEFS_LIST_AMOUNT_KEY, DEFAULT_LIST_AMOUNT);
 
@@ -530,7 +527,7 @@ public class LakeFSFileSystem extends FileSystem {
      */
     @Override
     public String getScheme() {
-        return scheme;
+        return this.uri.getScheme();
     }
 
     @Override
