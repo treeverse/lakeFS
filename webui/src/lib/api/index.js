@@ -613,6 +613,29 @@ class Actions {
 
 }
 
+class Retention {
+    async getGCPolicy(repoID) {
+        const response = await apiRequest(`/repositories/${repoID}/gc/rules`);
+        if (response.status === 404) {
+            throw new NotFoundError('policy not found')
+        }
+        if (response.status !== 200) {
+            throw new Error(`could not get gc policy: ${await extractError(response)}`);
+        }
+        return response.json();
+    }
+
+    async setGCPolicy(repoID,policy) {
+        const response = await apiRequest(`/repositories/${repoID}/gc/rules`,{
+            method: 'POST',
+            body: policy
+        });
+        if (response.status !== 204) {
+            throw new Error(`could not set gc policy: ${await extractError(response)}`);
+        }
+        return response;
+    }
+}
 
 class Setup {
     async lakeFS(username) {
@@ -675,4 +698,5 @@ export const refs = new Refs();
 export const setup = new Setup();
 export const auth = new Auth();
 export const actions = new Actions();
+export const retention = new Retention();
 export const config = new Config();
