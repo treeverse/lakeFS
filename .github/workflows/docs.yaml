@@ -1,0 +1,48 @@
+name: docs
+
+on:
+  #release:
+    #types: [published]
+  # temp for testing
+  pull_request:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag/version to publish
+
+jobs:
+  redoc:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Extract version
+        shell: bash
+        run: echo "::set-output name=tag::sha-$(git rev-parse --short HEAD | sed s/^v//g)"
+        id: version
+
+      - name: API Reference - master
+        uses: seeebiii/redoc-cli-github-action@v10
+        if: github.ref == 'refs/heads/master'
+        with:
+          args: "bundle api/swagger.yml -o redoc/index.html"
+
+      - name: API Reference - tag
+        uses: seeebiii/redoc-cli-github-action@v10
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          args: "bundle api/swagger.yml -o redoc/${{ steps.version.outputs.tag }}.html"
+
+      - name: upload reference api doc to S3
+        uses: jakejarvis/s3-sync-action@master
+        with:
+          args: --acl public-read --follow-symlinks --include '*.html'
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET_API_REFERENCE }}
+          SOURCE_DIR: redoc
