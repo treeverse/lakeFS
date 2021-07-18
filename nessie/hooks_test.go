@@ -62,13 +62,13 @@ const actionPostMergeYaml = `
 name: Test Post Merge
 description: set of checks to verify that branch is good
 on:
-  pre-merge:
+  post-merge:
     branches:
       - main
 hooks:
   - id: test_webhook
     type: webhook
-    description: Check webhooks for pre-merge works
+    description: Check webhooks for post-merge works
     properties:
       url: "{{.URL}}/post-merge"
 `
@@ -90,8 +90,8 @@ func TestHooksSuccess(t *testing.T) {
 
 	parseAndUpload(t, ctx, repo, branch, actionPreMergeYaml, "action-pre-merge", "testing_pre_merge")
 	parseAndUpload(t, ctx, repo, branch, actionPreCommitYaml, "action-pre-commit", "testing_pre_commit")
-	parseAndUpload(t, ctx, repo, branch, actionPostMergeYaml, "action-post-merge", "testing_post_merge")
 	parseAndUpload(t, ctx, repo, branch, actionPostCommitYaml, "action-post-commit", "testing_post_commit")
+	parseAndUpload(t, ctx, repo, branch, actionPostMergeYaml, "action-post-merge", "testing_post_merge")
 
 	logger.WithField("branch", branch).Info("Commit initial content")
 
