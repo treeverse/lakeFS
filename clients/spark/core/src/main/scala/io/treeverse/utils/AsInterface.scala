@@ -12,31 +12,6 @@ private object AsInterface {
       case _           => typ.getClassName
     }
 
-  def loadFor(sort: Int) = {
-    import Type._
-    sort match {
-      case BOOLEAN | CHAR | SHORT | INT => ILOAD
-      case LONG                         => LLOAD
-      case FLOAT                        => FLOAD
-      case DOUBLE                       => DLOAD
-      case ARRAY | OBJECT               => ALOAD
-      case _ => throw new IllegalArgumentException(s"cannot load type of sort ${sort}")
-    }
-  }
-
-  def returnFor(sort: Int) = {
-    import Type._
-    sort match {
-      case BOOLEAN | CHAR | SHORT | INT => IRETURN
-      case LONG                         => LRETURN
-      case FLOAT                        => FRETURN
-      case DOUBLE                       => DRETURN
-      case ARRAY | OBJECT               => ARETURN
-      case VOID                         => RETURN
-      case _ => throw new IllegalArgumentException(s"cannot load type of sort ${sort}")
-    }
-  }
-
   def undot(dotted: String) = dotted.replaceAll("\\.", "/")
 
   // Scala array equality is too hard: the best (only-ish) way is to use
@@ -151,14 +126,14 @@ private class AsInterface(cv: ClassVisitor, val ifaces: Map[String, Class[_]])
     mv.visitVarInsn(ALOAD, 0) // load "this"
 
     for (((argType, translatedArgType), index) <- (argTypes zip translatedArgTypes).zipWithIndex) {
-      mv.visitVarInsn(AsInterface.loadFor(argType.getSort), index + 1) // load arg
+      mv.visitVarInsn(argType.getOpcode(ILOAD), index + 1) // load arg
       if (!argType.equals(translatedRetType)) {
         mv.visitTypeInsn(CHECKCAST, argType.getInternalName)
       }
     }
 
     mv.visitMethodInsn(INVOKESPECIAL, className, name, desc)
-    mv.visitInsn(AsInterface.returnFor(translatedRetType.getSort))
+    mv.visitInsn(translatedRetType.getOpcode(IRETURN))
 
     mv.visitMaxs(argTypes.length + 1, argTypes.length + 1)
 
