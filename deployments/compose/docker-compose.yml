@@ -137,6 +137,52 @@ services:
     profiles: ["client"]
     entrypoint: ["trino", "--server", "trino:8080", "--catalog", "s3", "--schema", "default"]
 
+  spark:
+    image: docker.io/bitnami/spark:3
+    environment:
+      - SPARK_MODE=master
+      - SPARK_MASTER_HOST=spark
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    ports:
+      - 18080:8080
+    networks:
+      - lakefs-network
+    links:
+      - lakefs:s3.docker.lakefs.io
+
+  spark-worker:
+    image: docker.io/bitnami/spark:3
+    ports:
+      - 8081
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark:7077
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_WORKER_CORES=1
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    networks:
+      - lakefs-network
+    deploy:
+      replicas: 3
+    links:
+      - lakefs:s3.docker.lakefs.io
+
+  spark-submit:
+    image: docker.io/bitnami/spark:3
+    profiles: ["client"]
+    volumes:
+      - ./:/local
+    networks:
+      - lakefs-network
+    links:
+      - lakefs:s3.docker.lakefs.io
+
 networks:
   lakefs-network:
     name: lakefs
