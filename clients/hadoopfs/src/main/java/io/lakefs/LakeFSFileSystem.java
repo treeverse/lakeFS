@@ -8,7 +8,6 @@ import io.lakefs.clients.api.model.*;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.hadoop.fs.s3a.S3AFileSystem;
 import org.apache.hadoop.util.Progressable;
 import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
@@ -70,16 +69,15 @@ public class LakeFSFileSystem extends FileSystem {
 
     void initializeWithClient(URI name, Configuration conf, LakeFSClient lfsClient) throws IOException {
         super.initialize(name, conf);
+        this.uri = name;
         this.conf = conf;
+        this.lfsClient = lfsClient;
 
         String host = name.getHost();
         if (host == null) {
             throw new IOException("Invalid repository specified");
         }
         setConf(conf);
-        this.uri = name;
-
-        this.lfsClient = lfsClient;
 
         listAmount = conf.getInt(FS_LAKEFS_LIST_AMOUNT_KEY, DEFAULT_LIST_AMOUNT);
 
@@ -433,7 +431,7 @@ public class LakeFSFileSystem extends FileSystem {
         try {
             ObjectsApi objectsApi = lfsClient.getObjects();
             ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
-            LakeFSFileStatus fileStatus = convertObjectStatsToFileStatus(objectLoc.getRepository(), objectLoc.getRef(), objectStat);
+            LakeFSFileStatus fileStatus = convertObjectStatsToFileStatus(objectLoc, objectStat);
             return new FileStatus[]{fileStatus};
         } catch (ApiException e) {
             if (e.getCode() != HttpStatus.SC_NOT_FOUND) {
@@ -476,7 +474,7 @@ public class LakeFSFileSystem extends FileSystem {
         ObjectsApi objectsApi = lfsClient.getObjects();
         try {
             ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
-            return convertObjectStatsToFileStatus(objectLoc.getRepository(), objectLoc.getRef(), objectStat);
+            return convertObjectStatsToFileStatus(objectLoc, objectStat);
         } catch (ApiException e) {
             if (e.getCode() != HttpStatus.SC_NOT_FOUND) {
                 throw new IOException("statObject", e);
@@ -493,7 +491,7 @@ public class LakeFSFileSystem extends FileSystem {
     }
 
     @Nonnull
-    private LakeFSFileStatus convertObjectStatsToFileStatus(String repository, String ref, ObjectStats objectStat) throws IOException {
+    private LakeFSFileStatus convertObjectStatsToFileStatus(ObjectLocation objectLocation, ObjectStats objectStat) throws IOException {
         try {
             long length = 0;
             Long sizeBytes = objectStat.getSizeBytes();
@@ -505,7 +503,8 @@ public class LakeFSFileSystem extends FileSystem {
             if (mtime != null) {
                 modificationTime = TimeUnit.SECONDS.toMillis(mtime);
             }
-            Path filePath = new Path(ObjectLocation.formatPath(repository, ref, objectStat.getPath()));
+            Path filePath = new Path(ObjectLocation.formatPath(objectLocation.getScheme(), objectLocation.getRepository(),
+                    objectLocation.getRef(), objectStat.getPath()));
             boolean isDir = isDirectory(objectStat);
             long blockSize = 0;
             if (!isDir) {
@@ -528,7 +527,7 @@ public class LakeFSFileSystem extends FileSystem {
      */
     @Override
     public String getScheme() {
-        return Constants.URI_SCHEME;
+        return this.uri.getScheme();
     }
 
     @Override
@@ -572,6 +571,7 @@ public class LakeFSFileSystem extends FileSystem {
 
         URI uri = path.toUri();
         ObjectLocation loc = new ObjectLocation();
+        loc.setScheme(uri.getScheme());
         loc.setRepository(uri.getHost());
         // extract ref and rest of the path after removing the '/' prefix
         String s = ObjectLocation.trimLeadingSlash(uri.getPath());
@@ -661,8 +661,7 @@ public class LakeFSFileSystem extends FileSystem {
             }
             ObjectStats objectStats = chunk.get(pos++);
             LakeFSFileStatus fileStatus = convertObjectStatsToFileStatus(
-                    objectLocation.getRepository(),
-                    objectLocation.getRef(),
+                    objectLocation,
                     objectStats);
             return toLakeFSLocatedFileStatus(fileStatus);
         }
