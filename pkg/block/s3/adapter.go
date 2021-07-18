@@ -274,8 +274,8 @@ func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, er
 	}
 	_, err = a.s3.HeadObjectWithContext(ctx, &input)
 	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			if aerr.Code() == s3.ErrCodeNoSuchKey {
+		if aerr, ok := err.(awserr.RequestFailure); ok {
+			if aerr.StatusCode() == http.StatusNotFound {
 				return false, nil
 			}
 		}
