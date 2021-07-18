@@ -13,14 +13,46 @@ private object AsInterface {
     }
 
   def undot(dotted: String) = dotted.replaceAll("\\.", "/")
-
-  // Scala array equality is too hard: the best (only-ish) way is to use
-  // java.util.Arrays.equals, but that doesn't work because the variance
-  // between Array[A] and Array[Object] is not defined there.
-  def equals[T](a: Seq[T], b: Seq[T]): Boolean =
-    (a zip b).foldLeft(true) { case (e, (x, y)) => e && x == y }
 }
 
+/**
+ * ASM ClassVisitor that translates the visited class from the loaded
+ * library into a parallel class that uses `interface` types instead of
+ * exporting its own classes.  When visited, writes a similar class, except
+ * that any type named as a key in ifaces is translated to the corresponding
+ * interface.
+ *
+ * This is not always possible and does not even always make sense; here is
+ * what it <em>does</em> do:
+ *
+ * 1. A class whose name is a key in ifaces is exported from the loaded
+ *    library to the client side.  So its matching interface is added to the
+ *    list of implements that it implements.
+ * 1. Any return type appearing in ifaces is automatically translated to
+ *    return as an interface.  While this is not required to compile regular
+ *    uses, it _will_ matter when client code tries to select a desired
+ *    method.
+ * 1. For any interface appearing in ifaces, an overload is generated into
+ *    the class.  The overload accepts the interface type(s) and downcasts
+ *    them to the required parameter types, then calls the original method
+ *    (which might be defined in this class or in a superclass).  This cast
+ *    is safe ''as long as the client does not implement the interface on
+ *    its own and tries to pass it in''.
+ * 1. In particular, any types parametric in ifaces are '''not'''
+ *    translated, as there is no way to ensure type safety.  So even if you
+ *    define a mapping from a type named `Concrete` to an interface `Iface`
+ *    in ifaces, the generated class '''cannot''' handle types such as
+ *    `Concrete[]` or `Set<Concrete>`.
+ *
+ * Many errors cannot be detected during translation (without reading and
+ * loading the entire class), so will only be detected when the method is
+ * used.  This *is* part of a ClassLoader, and ClassLoaders can have trouble
+ * when translation fails.
+ *
+ * @param cv ClassVisitor to use to generate code.
+ * @param ifaces Map of concrete class names in the loaded library to
+ *     interface types that will be exposed on the client side.
+ */
 private class AsInterface(cv: ClassVisitor, val ifaces: Map[String, Class[_]])
     extends ClassVisitor(ASM8, cv) {
   var className: String = ""
@@ -36,6 +68,8 @@ private class AsInterface(cv: ClassVisitor, val ifaces: Map[String, Class[_]])
       interfaces: Array[String]
   ) = {
     val (maybeIface, newInterfaces) = ifaces get name match {
+      // If this class should be translated to an interface, add a claim
+      // that this class implements the interface.
       case Some(iface) => (Some(iface), interfaces :+ Type.getType(iface).getInternalName)
       case None        => (None, interfaces)
     }
@@ -44,7 +78,7 @@ private class AsInterface(cv: ClassVisitor, val ifaces: Map[String, Class[_]])
 
     maybeIface match {
       case Some(iface) => {
-        // Generate wrappers for all methods of iface in the class.
+        // Generate wrappers for all public methods of iface in the class.
         iface.getMethods.foreach(method =>
           generateForwardingMethod(ACC_PUBLIC | ACC_SYNTHETIC,
                                    method.getName,
@@ -52,7 +86,7 @@ private class AsInterface(cv: ClassVisitor, val ifaces: Map[String, Class[_]])
                                    method.getExceptionTypes.map(e => Type.getType(e).getDescriptor)
                                   )
         )
-        // Generate wrapper for all constructors for the class.
+        // Generate wrapper for all public constructors for the class.
         iface.getConstructors.foreach(ctor =>
           generateForwardingMethod(ACC_PUBLIC | ACC_SYNTHETIC,
                                    "<init>",
@@ -73,7 +107,7 @@ private class AsInterface(cv: ClassVisitor, val ifaces: Map[String, Class[_]])
 
   def revTranslateType(typ: Type) =
     revIfaces get typ.getInternalName match {
-      case Some(klassName) => Type.getObjectType(klassName)
+      case Some(className) => Type.getObjectType(className)
       case None            => typ
     }
 
@@ -107,8 +141,8 @@ private class AsInterface(cv: ClassVisitor, val ifaces: Map[String, Class[_]])
 
     if (
       retType.equals(translatedRetType) &&
-      (exceptions == null || AsInterface.equals(exceptions, translatedExceptions)) &&
-      AsInterface.equals(argTypes, translatedArgTypes)
+      (exceptions == null || exceptions.sameElements(translatedExceptions)) &&
+      argTypes.sameElements(translatedArgTypes)
     ) {
       return
     }
@@ -128,6 +162,8 @@ private class AsInterface(cv: ClassVisitor, val ifaces: Map[String, Class[_]])
     for (((argType, translatedArgType), index) <- (argTypes zip translatedArgTypes).zipWithIndex) {
       mv.visitVarInsn(argType.getOpcode(ILOAD), index + 1) // load arg
       if (!argType.equals(translatedRetType)) {
+        // Cast to the desired type.  If the cast fails, throws
+        // ClassCastException, which is exactly correct.
         mv.visitTypeInsn(CHECKCAST, argType.getInternalName)
       }
     }

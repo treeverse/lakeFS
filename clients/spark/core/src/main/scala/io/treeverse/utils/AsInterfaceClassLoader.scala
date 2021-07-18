@@ -11,6 +11,11 @@ class AsInterfaceClassLoader(
     val pw: PrintWriter = null
 ) extends ClassLoader(parent) {
 
+  // Some additional classes never to attempt to translate.  If an interface
+  // is supplied that is *also* defined on the library side, cannot
+  // translate it -- so don't even try.  The interfaces in particular are
+  // used by the classloader, so need to be loaded -- transfer them directly
+  // to the parent classloader.
   val skip = ifaces.values.map(_.getName).toSet
 
   def newInstance[C](name: String, args: Any*): C = {
