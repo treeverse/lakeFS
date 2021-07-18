@@ -289,7 +289,6 @@ var fsRmCmd = &cobra.Command{
 var fsCmd = &cobra.Command{
 	Use:    "fs",
 	Short:  "View and manipulate objects",
-	Hidden: true,
 }
 
 //nolint:gochecknoinits
