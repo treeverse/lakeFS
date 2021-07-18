@@ -19,8 +19,7 @@
 
 
 ## What is lakeFS
-
-lakeFS is an open source layer that delivers resilience and manageability to object-storage based data lakes.
+lakeFS is an open source layer that transforms your object storage into a Git-like repository. It enables you to manage your data lake the way you manage your code.
 
 With lakeFS you can build repeatable, atomic and versioned data lake operations - from complex ETL jobs to data science and analytics.
 
