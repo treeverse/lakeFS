@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/hashicorp/go-multierror"
@@ -20,6 +21,9 @@ type Service struct {
 	DB     db.Database
 	Source Source
 	Writer OutputWriter
+	ctx    context.Context
+	cancel context.CancelFunc
+	wg     sync.WaitGroup
 }
 
 type Task struct {
@@ -81,12 +85,34 @@ const defaultFetchSize = 1024
 
 var ErrNotFound = errors.New("not found")
 
-func NewService(db db.Database, source Source, writer OutputWriter) *Service {
+func NewService(ctx context.Context, db db.Database, source Source, writer OutputWriter) *Service {
+	ctx, cancel := context.WithCancel(ctx)
 	return &Service{
 		DB:     db,
 		Source: source,
 		Writer: writer,
+		ctx:    ctx,
+		cancel: cancel,
+		wg:     sync.WaitGroup{},
 	}
+}
+
+func (s *Service) Stop() {
+	s.cancel()
+	s.wg.Wait()
+}
+
+func (s *Service) asyncRun(record graveler.HookRecord) {
+	s.wg.Add(1)
+	go func() {
+		defer s.wg.Done()
+
+		// passing the global context for cancelling all runs when lakeFS shuts down
+		if err := s.Run(s.ctx, record); err != nil {
+			logging.Default().WithField("record", record).
+				Info("Async run of hook failed")
+		}
+	}()
 }
 
 // Run load and run actions based on the event information
@@ -271,9 +297,7 @@ func buildRunManifestFromTasks(record graveler.HookRecord, tasks [][]*Task) RunM
 				manifest.Run.EndTime = task.EndTime
 			}
 			// did we failed
-			if manifest.Run.Passed && task.Err != nil {
-				manifest.Run.Passed = false
-			}
+			manifest.Run.Passed = manifest.Run.Passed && task.Err == nil
 		}
 	}
 
@@ -397,7 +421,8 @@ func (s *Service) PostCommitHook(ctx context.Context, record graveler.HookRecord
 	if err != nil {
 		return err
 	}
-	// post commit actions will be enabled here
+
+	s.asyncRun(record)
 	return nil
 }
 
@@ -411,7 +436,8 @@ func (s *Service) PostMergeHook(ctx context.Context, record graveler.HookRecord)
 	if err != nil {
 		return err
 	}
-	// post merge actions will be enabled here
+
+	s.asyncRun(record)
 	return nil
 }
 

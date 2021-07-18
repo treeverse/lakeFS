@@ -89,6 +89,7 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 
 	// wire actions
 	actionsService := actions.NewService(
+		ctx,
 		conn,
 		catalog.NewActionsSource(c),
 		catalog.NewActionsOutputWriter(c.BlockAdapter),
