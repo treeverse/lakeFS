@@ -36,6 +36,7 @@ func startWebhookServer() (*webhookServer, error) {
 	mux.HandleFunc("/pre-commit", hookHandlerFunc(respCh))
 	mux.HandleFunc("/post-commit", hookHandlerFunc(respCh))
 	mux.HandleFunc("/pre-merge", hookHandlerFunc(respCh))
+	mux.HandleFunc("/post-merge", hookHandlerFunc(respCh))
 	mux.HandleFunc("/timeout", timeoutHandlerFunc(respCh))
 	mux.HandleFunc("/fail", failHandlerFunc(respCh))
 	listener, err := net.Listen("tcp", ":0")

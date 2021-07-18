@@ -102,7 +102,7 @@ func (s *Service) Stop() {
 	s.wg.Wait()
 }
 
-func (s *Service) AsyncRun(record graveler.HookRecord) {
+func (s *Service) asyncRun(record graveler.HookRecord) {
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
@@ -422,7 +422,7 @@ func (s *Service) PostCommitHook(ctx context.Context, record graveler.HookRecord
 		return err
 	}
 
-	s.AsyncRun(record)
+	s.asyncRun(record)
 	return nil
 }
 
@@ -437,7 +437,7 @@ func (s *Service) PostMergeHook(ctx context.Context, record graveler.HookRecord)
 		return err
 	}
 
-	s.AsyncRun(record)
+	s.asyncRun(record)
 	return nil
 }
 

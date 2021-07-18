@@ -2,6 +2,7 @@ package nessie
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"testing"
@@ -13,7 +14,7 @@ import (
 )
 
 const actionPreMergeYaml = `
-name: Test Merge
+name: Test Pre Merge
 description: set of checks to verify that branch is good
 on:
   pre-merge:
@@ -57,6 +58,21 @@ hooks:
       url: "{{.URL}}/post-commit"
 `
 
+const actionPostMergeYaml = `
+name: Test Post Merge
+description: set of checks to verify that branch is good
+on:
+  pre-merge:
+    branches:
+      - main
+hooks:
+  - id: test_webhook
+    type: webhook
+    description: Check webhooks for pre-merge works
+    properties:
+      url: "{{.URL}}/post-merge"
+`
+
 func TestHooksSuccess(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
 	const branch = "feature-1"
@@ -72,42 +88,10 @@ func TestHooksSuccess(t *testing.T) {
 	logger.WithField("branchRef", ref).Info("Branch created")
 	logger.WithField("branch", branch).Info("Upload initial content")
 
-	// render actions based on templates
-	docData := struct {
-		URL string
-	}{
-		URL: server.BaseURL(),
-	}
-
-	actionPreMergeTmpl := template.Must(template.New("action-pre-merge").Parse(actionPreMergeYaml))
-	var doc bytes.Buffer
-	err = actionPreMergeTmpl.Execute(&doc, docData)
-	require.NoError(t, err)
-	preMergeAction := doc.String()
-
-	resp, err := uploadContent(ctx, repo, branch, "_lakefs_actions/testing_pre_merge", preMergeAction)
-	require.NoError(t, err)
-	require.Equal(t, http.StatusCreated, resp.StatusCode())
-
-	actionPreCommitTmpl := template.Must(template.New("action-pre-commit").Parse(actionPreCommitYaml))
-	doc.Reset()
-	err = actionPreCommitTmpl.Execute(&doc, docData)
-	require.NoError(t, err)
-	preCommitAction := doc.String()
-
-	uploadResp, err := uploadContent(ctx, repo, branch, "_lakefs_actions/testing_pre_commit", preCommitAction)
-	require.NoError(t, err)
-	require.Equal(t, http.StatusCreated, uploadResp.StatusCode())
-
-	actionPostCommitTmpl := template.Must(template.New("action-post-commit").Parse(actionPostCommitYaml))
-	doc.Reset()
-	err = actionPostCommitTmpl.Execute(&doc, docData)
-	require.NoError(t, err)
-	postCommitAction := doc.String()
-
-	uploadResp, err = uploadContent(ctx, repo, branch, "_lakefs_actions/testing_post_commit", postCommitAction)
-	require.NoError(t, err)
-	require.Equal(t, http.StatusCreated, uploadResp.StatusCode())
+	parseAndUpload(t, ctx, repo, branch, actionPreMergeYaml, "action-pre-merge", "testing_pre_merge")
+	parseAndUpload(t, ctx, repo, branch, actionPreCommitYaml, "action-pre-commit", "testing_pre_commit")
+	parseAndUpload(t, ctx, repo, branch, actionPostMergeYaml, "action-post-merge", "testing_post_merge")
+	parseAndUpload(t, ctx, repo, branch, actionPostCommitYaml, "action-post-commit", "testing_post_commit")
 
 	logger.WithField("branch", branch).Info("Commit initial content")
 
@@ -122,7 +106,7 @@ func TestHooksSuccess(t *testing.T) {
 
 	require.NoError(t, webhookData.err, "error on pre commit serving")
 	decoder := json.NewDecoder(bytes.NewReader(webhookData.data))
-	var preCommitEvent, postCommitEvent, mergeEvent webhookEventInfo
+	var preCommitEvent, postCommitEvent, preMergeEvent, postMergeEvent webhookEventInfo
 	require.NoError(t, decoder.Decode(&preCommitEvent), "reading pre-commit data")
 
 	commitRecord := commitResp.JSON201
@@ -164,14 +148,28 @@ func TestHooksSuccess(t *testing.T) {
 
 	require.NoError(t, err, "error on pre commit serving")
 	decoder = json.NewDecoder(bytes.NewReader(webhookData.data))
-	require.NoError(t, decoder.Decode(&mergeEvent), "reading pre-merge data")
+	require.NoError(t, decoder.Decode(&preMergeEvent), "reading pre-merge data")
 
-	require.Equal(t, "pre-merge", mergeEvent.EventType)
-	require.Equal(t, "Test Merge", mergeEvent.ActionName)
-	require.Equal(t, "test_webhook", mergeEvent.HookID)
-	require.Equal(t, repo, mergeEvent.RepositoryID)
-	require.Equal(t, mainBranch, mergeEvent.BranchID)
-	require.Equal(t, commitRecord.Id, mergeEvent.SourceRef)
+	require.Equal(t, "pre-merge", preMergeEvent.EventType)
+	require.Equal(t, "Test Pre Merge", preMergeEvent.ActionName)
+	require.Equal(t, "test_webhook", preMergeEvent.HookID)
+	require.Equal(t, repo, preMergeEvent.RepositoryID)
+	require.Equal(t, mainBranch, preMergeEvent.BranchID)
+	require.Equal(t, commitRecord.Id, preMergeEvent.SourceRef)
+
+	// Testing post-merge hook response
+	webhookData, err = responseWithTimeout(server, 1*time.Minute)
+	require.NoError(t, err)
+
+	decoder = json.NewDecoder(bytes.NewReader(webhookData.data))
+	require.NoError(t, decoder.Decode(&postMergeEvent), "reading post-merge data")
+
+	require.Equal(t, "post-merge", postMergeEvent.EventType)
+	require.Equal(t, "Test Post Merge", postMergeEvent.ActionName)
+	require.Equal(t, "test_webhook", postMergeEvent.HookID)
+	require.Equal(t, repo, postMergeEvent.RepositoryID)
+	require.Equal(t, mainBranch, postMergeEvent.BranchID)
+	require.Equal(t, commitRecord.Id, postMergeEvent.SourceRef)
 
 	t.Log("List repository runs", mergeRef)
 	runsResp, err := client.ListRepositoryRunsWithResponse(ctx, repo, &api.ListRepositoryRunsParams{
@@ -186,6 +184,26 @@ func TestHooksSuccess(t *testing.T) {
 	require.Equal(t, "pre-merge", run.EventType)
 	require.Equal(t, "completed", run.Status)
 	require.Equal(t, "main", run.Branch)
+}
+
+func parseAndUpload(t *testing.T, ctx context.Context, repo, branch, yaml, templateName, actionPath string) {
+	// render actions based on templates
+	docData := struct {
+		URL string
+	}{
+		URL: server.BaseURL(),
+	}
+
+	var doc bytes.Buffer
+
+	actionPreMergeTmpl := template.Must(template.New(templateName).Parse(yaml))
+	err := actionPreMergeTmpl.Execute(&doc, docData)
+	require.NoError(t, err)
+	action := doc.String()
+
+	resp, err := uploadContent(ctx, repo, branch, "_lakefs_actions/"+actionPath, action)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusCreated, resp.StatusCode())
 }
 
 type webhookEventInfo struct {
