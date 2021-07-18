@@ -169,7 +169,7 @@ func TestHooksSuccess(t *testing.T) {
 	require.Equal(t, "test_webhook", postMergeEvent.HookID)
 	require.Equal(t, repo, postMergeEvent.RepositoryID)
 	require.Equal(t, mainBranch, postMergeEvent.BranchID)
-	require.Equal(t, commitRecord.Id, postMergeEvent.SourceRef)
+	require.Equal(t, branch, postMergeEvent.SourceRef)
 
 	t.Log("List repository runs", mergeRef)
 	runsResp, err := client.ListRepositoryRunsWithResponse(ctx, repo, &api.ListRepositoryRunsParams{
