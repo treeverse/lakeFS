@@ -17,13 +17,13 @@ const (
 // branchCmd represents the branch command
 var branchCmd = &cobra.Command{
 	Use:   "branch",
-	Short: "create and manage branches within a repository",
+	Short: "Create and manage branches within a repository",
 	Long:  `Create delete and list branches within a lakeFS repository`,
 }
 
 var branchListCmd = &cobra.Command{
 	Use:     "list <repository uri>",
-	Short:   "list branches in a repository",
+	Short:   "List branches in a repository",
 	Example: "lakectl branch list lakefs://<repository>",
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -50,7 +50,7 @@ var branchListCmd = &cobra.Command{
 
 var branchCreateCmd = &cobra.Command{
 	Use:   "create <ref uri>",
-	Short: "create a new branch in a repository",
+	Short: "Create a new branch in a repository",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseRefURI("branch", args[0])
@@ -76,7 +76,7 @@ var branchCreateCmd = &cobra.Command{
 
 var branchDeleteCmd = &cobra.Command{
 	Use:   "delete <branch uri>",
-	Short: "delete a branch in a repository, along with its uncommitted changes (CAREFUL)",
+	Short: "Delete a branch in a repository, along with its uncommitted changes (CAREFUL)",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		confirmation, err := Confirm(cmd.Flags(), "Are you sure you want to delete branch")
@@ -94,7 +94,7 @@ var branchDeleteCmd = &cobra.Command{
 // lakectl branch revert lakefs://myrepo/main commitId
 var branchRevertCmd = &cobra.Command{
 	Use:   "revert <branch uri> <commit ref to revert>",
-	Short: "given a commit, record a new commit to reverse the effect of this commit",
+	Short: "Given a commit, record a new commit to reverse the effect of this commit",
 	Args:  cobra.ExactArgs(branchRevertCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseRefURI("branch", args[0])
@@ -121,7 +121,7 @@ var branchRevertCmd = &cobra.Command{
 // lakectl branch reset lakefs://myrepo/main --commit commitId --prefix path --object path
 var branchResetCmd = &cobra.Command{
 	Use:   "reset <branch uri> [flags]",
-	Short: "reset changes to specified commit, or reset uncommitted changes - all changes, or by path",
+	Short: "Reset changes to specified commit, or reset uncommitted changes - all changes, or by path",
 	Long: `reset changes.  There are four different ways to reset changes:
   1. reset all uncommitted changes - reset lakefs://myrepo/main 
   2. reset uncommitted changes under specific path -	reset lakefs://myrepo/main --prefix path
@@ -174,7 +174,7 @@ var branchResetCmd = &cobra.Command{
 
 var branchShowCmd = &cobra.Command{
 	Use:   "show <branch uri>",
-	Short: "show branch latest commit reference",
+	Short: "Show branch latest commit reference",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()

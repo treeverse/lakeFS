@@ -22,7 +22,7 @@ var errInvalidKeyValueFormat = fmt.Errorf("invalid key/value pair - should be se
 
 var commitCmd = &cobra.Command{
 	Use:   "commit <branch uri>",
-	Short: "commit changes on a given branch",
+	Short: "Commit changes on a given branch",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		// validate message
