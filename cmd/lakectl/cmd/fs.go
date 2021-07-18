@@ -287,8 +287,8 @@ var fsRmCmd = &cobra.Command{
 
 // fsCmd represents the fs command
 var fsCmd = &cobra.Command{
-	Use:    "fs",
-	Short:  "View and manipulate objects",
+	Use:   "fs",
+	Short: "View and manipulate objects",
 }
 
 //nolint:gochecknoinits
