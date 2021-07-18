@@ -27,8 +27,8 @@ type FromTo struct {
 // mergeCmd represents the merge command
 var mergeCmd = &cobra.Command{
 	Use:   "merge <source ref> <destination ref>",
-	Short: "merge",
-	Long:  "merge & commit changes from source branch into destination branch",
+	Short: "Merge & commit changes from source branch into destination branch",
+	Long:  "Merge & commit changes from source branch into destination branch",
 	Args:  cobra.RangeArgs(mergeCmdMinArgs, mergeCmdMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()

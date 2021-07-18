@@ -15,12 +15,12 @@ const (
 // repoCmd represents the repo command
 var repoCmd = &cobra.Command{
 	Use:   "repo",
-	Short: "manage and explore repos",
+	Short: "Manage and explore repos",
 }
 
 var repoListCmd = &cobra.Command{
 	Use:   "list",
-	Short: "list repositories",
+	Short: "List repositories",
 	Run: func(cmd *cobra.Command, args []string) {
 		amount := MustInt(cmd.Flags().GetInt("amount"))
 		after := MustString(cmd.Flags().GetString("after"))
@@ -46,7 +46,7 @@ var repoListCmd = &cobra.Command{
 // lakectl create lakefs://myrepo s3://my-bucket/
 var repoCreateCmd = &cobra.Command{
 	Use:   "create <repository uri> <storage namespace>",
-	Short: "create a new repository ",
+	Short: "Create a new repository ",
 	Args:  cobra.ExactArgs(repoCreateCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
@@ -78,7 +78,7 @@ var repoCreateCmd = &cobra.Command{
 // lakectl create-bare lakefs://myrepo s3://my-bucket/
 var repoCreateBareCmd = &cobra.Command{
 	Use:    "create-bare <repository uri> <storage namespace>",
-	Short:  "create a new repository with no initial branch or commit",
+	Short:  "Create a new repository with no initial branch or commit",
 	Hidden: true,
 	Args:   cobra.ExactArgs(repoCreateCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -112,7 +112,7 @@ var repoCreateBareCmd = &cobra.Command{
 // lakectl delete lakefs://myrepo
 var repoDeleteCmd = &cobra.Command{
 	Use:   "delete <repository uri>",
-	Short: "delete existing repository",
+	Short: "Delete existing repository",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()

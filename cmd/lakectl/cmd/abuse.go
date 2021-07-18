@@ -18,7 +18,7 @@ import (
 
 var abuseCmd = &cobra.Command{
 	Use:    "abuse <sub command>",
-	Short:  "abuse a running lakeFS instance. See sub commands for more info.",
+	Short:  "Abuse a running lakeFS instance. See sub commands for more info.",
 	Hidden: true,
 }
 
