@@ -15,42 +15,41 @@ private object AsInterface {
   def undot(dotted: String) = dotted.replaceAll("\\.", "/")
 }
 
-/**
- * ASM ClassVisitor that translates the visited class from the loaded
- * library into a parallel class that uses `interface` types instead of
- * exporting its own classes.  When visited, writes a similar class, except
- * that any type named as a key in ifaces is translated to the corresponding
- * interface.
+/** ASM ClassVisitor that translates the visited class from the loaded
+ *  library into a parallel class that uses `interface` types instead of
+ *  exporting its own classes.  When visited, writes a similar class, except
+ *  that any type named as a key in ifaces is translated to the corresponding
+ *  interface.
  *
- * This is not always possible and does not even always make sense; here is
- * what it <em>does</em> do:
+ *  This is not always possible and does not even always make sense; here is
+ *  what it <em>does</em> do:
  *
- * 1. A class whose name is a key in ifaces is exported from the loaded
+ *  1. A class whose name is a key in ifaces is exported from the loaded
  *    library to the client side.  So its matching interface is added to the
  *    list of implements that it implements.
- * 1. Any return type appearing in ifaces is automatically translated to
+ *  1. Any return type appearing in ifaces is automatically translated to
  *    return as an interface.  While this is not required to compile regular
  *    uses, it _will_ matter when client code tries to select a desired
  *    method.
- * 1. For any interface appearing in ifaces, an overload is generated into
+ *  1. For any interface appearing in ifaces, an overload is generated into
  *    the class.  The overload accepts the interface type(s) and downcasts
  *    them to the required parameter types, then calls the original method
  *    (which might be defined in this class or in a superclass).  This cast
  *    is safe ''as long as the client does not implement the interface on
  *    its own and tries to pass it in''.
- * 1. In particular, any types parametric in ifaces are '''not'''
+ *  1. In particular, any types parametric in ifaces are '''not'''
  *    translated, as there is no way to ensure type safety.  So even if you
  *    define a mapping from a type named `Concrete` to an interface `Iface`
  *    in ifaces, the generated class '''cannot''' handle types such as
  *    `Concrete[]` or `Set<Concrete>`.
  *
- * Many errors cannot be detected during translation (without reading and
- * loading the entire class), so will only be detected when the method is
- * used.  This *is* part of a ClassLoader, and ClassLoaders can have trouble
- * when translation fails.
+ *  Many errors cannot be detected during translation (without reading and
+ *  loading the entire class), so will only be detected when the method is
+ *  used.  This *is* part of a ClassLoader, and ClassLoaders can have trouble
+ *  when translation fails.
  *
- * @param cv ClassVisitor to use to generate code.
- * @param ifaces Map of concrete class names in the loaded library to
+ *  @param cv ClassVisitor to use to generate code.
+ *  @param ifaces Map of concrete class names in the loaded library to
  *     interface types that will be exposed on the client side.
  */
 private class AsInterface(cv: ClassVisitor, val ifaces: Map[String, Class[_]])
