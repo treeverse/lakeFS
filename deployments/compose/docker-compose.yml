@@ -150,6 +150,8 @@ services:
       - 18080:8080
     networks:
       - lakefs-network
+    volumes:
+      - ./etc/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml
     links:
       - lakefs:s3.docker.lakefs.io
 
@@ -170,14 +172,48 @@ services:
       - lakefs-network
     deploy:
       replicas: 3
+    volumes:
+      - ./etc/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml
     links:
       - lakefs:s3.docker.lakefs.io
 
   spark-submit:
     image: docker.io/bitnami/spark:3
     profiles: ["client"]
+    entrypoint: /opt/bitnami/spark/bin/spark-submit
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark:7077
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_WORKER_CORES=1
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
     volumes:
       - ./:/local
+      - ./etc/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml
+    networks:
+      - lakefs-network
+    links:
+      - lakefs:s3.docker.lakefs.io
+
+  spark-sql:
+    image: docker.io/bitnami/spark:3
+    profiles: ["client"]
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark:7077
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_WORKER_CORES=1
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    volumes:
+      - ./:/local
+      - ./etc/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml
+    command: ["spark-sql", "--master", "spark://spark:7077"]
     networks:
       - lakefs-network
     links:
