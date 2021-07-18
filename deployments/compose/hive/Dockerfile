@@ -14,9 +14,8 @@ RUN curl -sSL https://archive.apache.org/dist/hadoop/common/hadoop-${HADOOP_VERS
 RUN curl -sSL https://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-java-8.0.19.tar.gz | tar -zx --strip-components 1 -C ${HIVE_HOME}/lib -f - mysql-connector-java-8.0.19/mysql-connector-java-8.0.19.jar
 RUN ln -s ${HADOOP_HOME}/share/hadoop/tools/lib/aws-java-sdk-bundle-${AWS_SDK_VERSION}.jar ${HIVE_HOME}/lib/
 RUN ln -s ${HADOOP_HOME}/share/hadoop/tools/lib/hadoop-aws-${HADOOP_VERSION}.jar ${HIVE_HOME}/lib/
-RUN apt-get update -y && apt-get install -y netcat procps
+RUN apt-get update -y && apt-get install -y netcat procps wait-for-it
 
-COPY wait-for /usr/local/bin/
 COPY entrypoint.sh /
 
 ENV HADOOP_CLASSPATH=${HADOOP_HOME}/share/hadoop/tools/lib/aws-java-sdk-bundle-${AWS_SDK_VERSION}.jar:${HADOOP_HOME}/share/hadoop/tools/lib/hadoop-aws-${HADOOP_VERSION}.jar
