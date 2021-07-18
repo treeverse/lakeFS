@@ -14,12 +14,12 @@ import (
 
 var metastoreCmd = &cobra.Command{
 	Use:   "metastore",
-	Short: "manage metastore commands",
+	Short: "Manage metastore commands",
 }
 
 var metastoreCopyCmd = &cobra.Command{
 	Use:   "copy",
-	Short: "copy or merge table",
+	Short: "Copy or merge table",
 	Long:  "copy or merge table. the destination table will point to the selected branch",
 	Run: func(cmd *cobra.Command, args []string) {
 		fromClientType, _ := cmd.Flags().GetString("from-client-type")
@@ -100,7 +100,7 @@ func getMetastoreClient(msType, hiveAddress string) (metastore.Client, func()) {
 
 var metastoreCopyAllCmd = &cobra.Command{
 	Use:   "copy-all",
-	Short: "copy from one metastore to another",
+	Short: "Copy from one metastore to another",
 	Long:  "copy or merge requested tables between hive metastores. the destination tables will point to the selected branch",
 	Run: func(cmd *cobra.Command, args []string) {
 		fromClientType, _ := cmd.Flags().GetString("from-client-type")
@@ -131,7 +131,7 @@ var metastoreCopyAllCmd = &cobra.Command{
 
 var metastoreImportAllCmd = &cobra.Command{
 	Use:   "import-all",
-	Short: "import from one metastore to another",
+	Short: "Import from one metastore to another",
 	Long: `
 import requested tables between hive metastores. the destination tables will point to the selected repository and branch
 table with location s3://my-s3-bucket/path/to/table 
@@ -167,7 +167,7 @@ will be transformed to location s3://repo-param/bucket-param/path/to/table
 
 var metastoreDiffCmd = &cobra.Command{
 	Use:   "diff",
-	Short: "show column and partition differences between two tables",
+	Short: "Show column and partition differences between two tables",
 	Run: func(cmd *cobra.Command, args []string) {
 		fromClientType, _ := cmd.Flags().GetString("from-client-type")
 		toAddress, _ := cmd.Flags().GetString("to-address")
@@ -222,7 +222,7 @@ var metastoreDiffCmd = &cobra.Command{
 
 var glueSymlinkCmd = &cobra.Command{
 	Use:   "create-symlink",
-	Short: "create symlink table and data",
+	Short: "Create symlink table and data",
 	Long:  "create table with symlinks, and create the symlinks in s3 in order to access from external services that could only access s3 directly (e.g athena)",
 	Run: func(cmd *cobra.Command, args []string) {
 		repo, _ := cmd.Flags().GetString("repo")

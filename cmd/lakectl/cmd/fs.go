@@ -33,7 +33,7 @@ Human Total Size: {{.Bytes|human_bytes}}
 
 var fsStatCmd = &cobra.Command{
 	Use:   "stat <path uri>",
-	Short: "view object metadata",
+	Short: "View object metadata",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := MustParsePathURI("path", args[0])
@@ -55,7 +55,7 @@ const fsLsTemplate = `{{ range $val := . -}}
 
 var fsListCmd = &cobra.Command{
 	Use:   "ls <path uri>",
-	Short: "list entries under a given tree",
+	Short: "List entries under a given tree",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
@@ -108,7 +108,7 @@ var fsListCmd = &cobra.Command{
 
 var fsCatCmd = &cobra.Command{
 	Use:   "cat <path uri>",
-	Short: "dump content of object to stdout",
+	Short: "Dump content of object to stdout",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
@@ -181,7 +181,7 @@ func uploadObject(ctx context.Context, client api.ClientWithResponsesInterface, 
 
 var fsUploadCmd = &cobra.Command{
 	Use:   "upload <path uri>",
-	Short: "upload a local file to the specified URI",
+	Short: "Upload a local file to the specified URI",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
@@ -232,7 +232,7 @@ var fsUploadCmd = &cobra.Command{
 
 var fsStageCmd = &cobra.Command{
 	Use:    "stage <path uri>",
-	Short:  "stages a reference to an existing object, to be managed in lakeFS",
+	Short:  "Stage a reference to an existing object, to be managed in lakeFS",
 	Hidden: true,
 	Args:   cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -273,7 +273,7 @@ var fsStageCmd = &cobra.Command{
 
 var fsRmCmd = &cobra.Command{
 	Use:   "rm <path uri>",
-	Short: "delete object",
+	Short: "Delete object",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := MustParsePathURI("path", args[0])
@@ -287,9 +287,8 @@ var fsRmCmd = &cobra.Command{
 
 // fsCmd represents the fs command
 var fsCmd = &cobra.Command{
-	Use:    "fs",
-	Short:  "view and manipulate objects",
-	Hidden: true,
+	Use:   "fs",
+	Short: "View and manipulate objects",
 }
 
 //nolint:gochecknoinits
