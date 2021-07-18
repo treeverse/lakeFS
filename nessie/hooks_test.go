@@ -187,6 +187,8 @@ func TestHooksSuccess(t *testing.T) {
 }
 
 func parseAndUpload(t *testing.T, ctx context.Context, repo, branch, yaml, templateName, actionPath string) {
+	t.Helper()
+
 	// render actions based on templates
 	docData := struct {
 		URL string
