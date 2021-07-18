@@ -94,7 +94,7 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	toDBName := "default"
 	toBranch := "br1"
 
-	err := metastore.CopyOrMerge(ctx, clientFrom, clientTo, dbName, tableName, toDBName, toTableName, toBranch, toTableName, nil, false)
+	err := metastore.CopyOrMerge(ctx, clientFrom, clientTo, dbName, tableName, toDBName, toTableName, toBranch, toTableName, nil, false, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -162,7 +162,7 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 		t.Fatal(err)
 	}
 	// now merge back
-	err = metastore.CopyOrMerge(ctx, clientTo, clientFrom, toDBName, toTableName, dbName, tableName, branch, toTableName, nil, false)
+	err = metastore.CopyOrMerge(ctx, clientTo, clientFrom, toDBName, toTableName, dbName, tableName, branch, toTableName, nil, false, "")
 	if err != nil {
 		t.Fatal(err)
 	}
