@@ -21,7 +21,16 @@ var (
 	ErrInvalidNamespace = errors.New("invalid namespace")
 )
 
-func (s StorageType) String() string {
+func (s StorageType) BlockstoreType() string {
+	switch s {
+	case StorageTypeAzure:
+		return "azure"
+	default:
+		return s.Scheme()
+	}
+}
+
+func (s StorageType) Scheme() string {
 	scheme := ""
 	switch s {
 	case StorageTypeMem:
@@ -58,7 +67,7 @@ type QualifiedPrefix struct {
 }
 
 func (qk QualifiedKey) Format() string {
-	return qk.StorageType.String() + "://" + formatPathWithNamespace(qk.StorageNamespace, qk.Key)
+	return qk.StorageType.Scheme() + "://" + formatPathWithNamespace(qk.StorageNamespace, qk.Key)
 }
 
 func GetStorageType(namespaceURL *url.URL) (StorageType, error) {

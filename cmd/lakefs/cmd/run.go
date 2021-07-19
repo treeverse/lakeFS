@@ -233,9 +233,9 @@ func checkForeignRepos(ctx context.Context, logger logging.Logger, authMetadataM
 					logger.WithError(err).Fatalf("Failed to parse to parse storage type '%s'", nsURL)
 				}
 
-				if (adapterStorageType != repoStorageType.String() && adapterStorageType != "azure") || (repoStorageType.String() != "https" && adapterStorageType == "azure") {
+				if adapterStorageType != repoStorageType.BlockstoreType() {
 					logger.Fatalf("Mismatched adapter detected. lakeFS started with adapter of type '%s', but repository '%s' is of type '%s'",
-						adapterStorageType, repo.Name, repoStorageType)
+						adapterStorageType, repo.Name, repoStorageType.BlockstoreType())
 				}
 
 				next = repo.Name
