@@ -21,7 +21,7 @@ var (
 	ErrInvalidNamespace = errors.New("invalid namespace")
 )
 
-func (s StorageType) MatchingAdapterPrefix() string {
+func (s StorageType) BlockstoreType() string {
 	switch s {
 	case StorageTypeAzure:
 		return "azure"
