@@ -42,6 +42,9 @@ class ObjectLocation {
     }
 
     public ObjectLocation getParent() {
+        if (this.path == null) {
+            return null;
+        }
         Path parentPath = new Path(this.path).getParent();
         if (parentPath == null) {
             return null;
