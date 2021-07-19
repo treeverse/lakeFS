@@ -7,6 +7,7 @@ import io.lakefs.clients.api.StagingApi;
 import io.lakefs.clients.api.auth.HttpBasicAuth;
 import org.apache.hadoop.conf.Configuration;
 
+import javax.xml.bind.annotation.XmlType;
 import java.io.IOException;
 
 /**
@@ -14,24 +15,30 @@ import java.io.IOException;
  * This class uses the configuration to initialize API client and instance per API interface we expose.
  */
 public class LakeFSClient {
+    public static final String DEFAULT_SCHEME = "lakefs";
+    public static final String DEFAULT_ENDPOINT = "http://localhost:8000/api/v1";
     private static final String BASIC_AUTH = "basic_auth";
+
     private final ObjectsApi objects;
     private final StagingApi staging;
     private final RepositoriesApi repositories;
 
-    public LakeFSClient(Configuration conf) throws IOException {
-        String accessKey = conf.get(Constants.FS_LAKEFS_ACCESS_KEY);
+    public LakeFSClient(String scheme, Configuration conf) throws IOException {
+        String accessKey = getFSConfigurationValue(conf, scheme, "access.key");
         if (accessKey == null) {
             throw new IOException("Missing lakeFS access key");
         }
-        String secretKey = conf.get(Constants.FS_LAKEFS_SECRET_KEY);
+
+        String secretKey = getFSConfigurationValue(conf, scheme, "secret.key");
         if (secretKey == null) {
             throw new IOException("Missing lakeFS secret key");
         }
 
         ApiClient apiClient = io.lakefs.clients.api.Configuration.getDefaultApiClient();
-        String endpoint = conf.get(Constants.FS_LAKEFS_ENDPOINT_KEY, "http://localhost:8000/api/v1");
-        if (endpoint.endsWith("/")) {
+        String endpoint = getFSConfigurationValue(conf, scheme, "endpoint");
+        if (endpoint == null) {
+            endpoint = DEFAULT_ENDPOINT;
+        } else if (endpoint.endsWith("/")) {
             endpoint = endpoint.substring(0, endpoint.length() - 1);
         }
         apiClient.setBasePath(endpoint);
@@ -54,4 +61,26 @@ public class LakeFSClient {
     }
 
     public RepositoriesApi getRepositories() { return repositories; }
+
+    private static String formatFSConfigurationKey(String scheme, String key) {
+        return "fs." + scheme + "." + key;
+    }
+
+    /**
+     * lookup value from configuration based on scheme and key suffix.
+     * first try to get "fs.\<scheme\>.\<key suffix\>", if value not found use the default scheme
+     * to build a key for lookup.
+     * @param conf configuration object to get the value from
+     * @param scheme used to format the key for lookup
+     * @param keySuffix key suffix
+     * @return key value or null in case no value found
+     */
+    private static String getFSConfigurationValue(Configuration conf, String scheme, String keySuffix) {
+        String key = formatFSConfigurationKey(scheme, keySuffix);
+        String value = conf.get(key);
+        if (value == null && !scheme.equals(DEFAULT_SCHEME)) {
+            value = conf.get(fallbackKey);
+        }
+        return value;
+    }
 }

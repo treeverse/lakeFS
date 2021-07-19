@@ -64,7 +64,7 @@ public class LakeFSFileSystem extends FileSystem {
 
     @Override
     public void initialize(URI name, Configuration conf) throws IOException {
-        initializeWithClient(name, conf, new LakeFSClient(conf));
+        initializeWithClient(name, conf, new LakeFSClient(name.getScheme(), conf));
     }
 
     void initializeWithClient(URI name, Configuration conf, LakeFSClient lfsClient) throws IOException {
