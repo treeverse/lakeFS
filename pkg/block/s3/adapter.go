@@ -273,13 +273,11 @@ func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, er
 		Key:    aws.String(qualifiedKey.Key),
 	}
 	_, err = a.s3.HeadObjectWithContext(ctx, &input)
+	var reqErr awserr.RequestFailure
+	if errors.As(err, &reqErr) && reqErr.StatusCode() == http.StatusNotFound {
+		return false, nil
+	}
 	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			if aerr.Code() == s3.ErrCodeNoSuchKey {
-				return false, nil
-			}
-		}
-
 		log.WithError(err).Errorf("failed to stat S3 object")
 		return false, err
 	}
