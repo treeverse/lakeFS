@@ -170,12 +170,62 @@ public class LakeFSFileSystemTest {
     }
 
     @Test
+    public void testGetFileStatus() throws ApiException, IOException {
+        // existing file
+        Path p = new Path("lakefs://repo/main/exists");
+        ObjectStats os = new ObjectStats();
+        os.setPath("exists");
+        os.checksum(UNUSED_CHECKSUM);
+        os.setPathType(PathTypeEnum.OBJECT);
+        os.setMtime(UNUSED_MTIME);
+        os.setSizeBytes(UNUSED_FILE_SIZE);
+        os.setPhysicalAddress(s3Url("/repo-base/exists"));
+        when(objectsApi.statObject("repo", "main", "exists"))
+                .thenReturn(os);
+        LakeFSFileStatus fileStatus = fs.getFileStatus(p);
+        Assert.assertTrue(fileStatus.isFile());
+        Assert.assertEquals(p, fileStatus.getPath());
+
+        // no file
+        Path noFilePath = new Path("lakefs://repo/main/no.file");
+        ApiException noSuchFileException = new ApiException(HttpStatus.SC_NOT_FOUND, "no such file");
+        when(objectsApi.statObject("repo", "main", "no.file"))
+                .thenThrow(noSuchFileException);
+        when(objectsApi.statObject("repo", "main", "no.file/"))
+                .thenThrow(noSuchFileException);
+        when(objectsApi.listObjects(any(), any(), any(), any(), any(), any()))
+                .thenReturn(new ObjectStatsList().results(Collections.emptyList()).pagination(new Pagination().hasMore(false)));
+        Assert.assertThrows(FileNotFoundException.class, () -> fs.getFileStatus(noFilePath));
+
+        // fake directory
+        Path dirPath = new Path("lakefs://repo/main/dir1/dir2");
+        when(objectsApi.statObject("repo", "main", "dir1/dir2"))
+                .thenThrow(noSuchFileException);
+        ObjectStats dirObjectStats = new ObjectStats();
+        dirObjectStats.setPath("dir1/dir2/");
+        dirObjectStats.checksum(UNUSED_CHECKSUM);
+        dirObjectStats.setPathType(PathTypeEnum.OBJECT);
+        dirObjectStats.setMtime(UNUSED_MTIME);
+        dirObjectStats.setSizeBytes(0L);
+        dirObjectStats.setPhysicalAddress(s3Url("/repo-base/dir12"));
+        when(objectsApi.statObject("repo", "main", "dir1/dir2/"))
+                .thenReturn(dirObjectStats);
+        LakeFSFileStatus dirStatus = fs.getFileStatus(dirPath);
+        Assert.assertTrue(dirStatus.isDirectory());
+        Assert.assertEquals(dirPath, dirStatus.getPath());
+    }
+
+    @Test
     public void testExists_Exists() throws ApiException, IOException {
         Path p = new Path("lakefs://repo/main/exis.ts");
         when(objectsApi.statObject("repo", "main", "exis.ts"))
             .thenReturn(new ObjectStats());
-
         Assert.assertTrue(fs.exists(p));
+
+        Path dirPath = new Path("lakefs://repo/main/dir1/dir2/dir3");
+        when(objectsApi.statObject("repo", "main", "dir1/dir2/dir3/"))
+                .thenReturn(new ObjectStats());
+        Assert.assertTrue(fs.exists(dirPath));
     }
 
     @Test
@@ -188,7 +238,7 @@ public class LakeFSFileSystemTest {
 
         Assert.assertFalse(fs.exists(p));
     }
-    
+
     @Test
     public void testDelete_FileExists() throws ApiException, IOException {
         when(objectsApi.statObject("repo", "main", "delete/sample/file.txt"))
@@ -289,6 +339,45 @@ public class LakeFSFileSystemTest {
     }
 
     @Test
+    public void testMkdirs() throws ApiException, IOException {
+        // setup empty folder checks
+        ApiException noSuchFileException = new ApiException(HttpStatus.SC_NOT_FOUND, "no such file");
+        Path testPath = new Path("dir1/dir2/dir3");
+        do {
+            when(objectsApi.statObject("repo", "main", testPath.toString()))
+                    .thenThrow(noSuchFileException);
+            when(objectsApi.statObject("repo", "main", testPath.toString()+"/"))
+                    .thenThrow(noSuchFileException);
+            when(objectsApi.listObjects(eq("repo"), eq("main"), eq(testPath.toString()+"/"), eq(""), any(), eq("")))
+                    .thenReturn(new ObjectStatsList().results(Collections.emptyList()).pagination(new Pagination().hasMore(false)));
+            testPath = testPath.getParent();
+        } while(testPath != null && !testPath.isRoot());
+
+        // physical address to fake directory object
+        StagingLocation stagingLocation = new StagingLocation().token("foo").physicalAddress(s3Url("/repo-base/fakedir"));
+        when(stagingApi.getPhysicalAddress("repo", "main", "dir1/dir2/dir3/"))
+                .thenReturn(stagingLocation);
+
+        // call mkdirs
+        Path p = new Path("lakefs://repo/main/dir1/dir2/dir3");
+        boolean mkdirs = fs.mkdirs(p);
+        Assert.assertTrue("make dirs", mkdirs);
+
+        // verify metadata
+        ArgumentCaptor<StagingMetadata> metadataCapture = ArgumentCaptor.forClass(StagingMetadata.class);
+        verify(stagingApi).linkPhysicalAddress(eq("repo"), eq("main"), eq("dir1/dir2/dir3/"),
+                metadataCapture.capture());
+        StagingMetadata actualMetadata = metadataCapture.getValue();
+        Assert.assertEquals(stagingLocation, actualMetadata.getStaging());
+        Assert.assertEquals(0, (long)actualMetadata.getSizeBytes());
+
+        // verify file exists on s3
+        S3Object ret = s3Client.getObject(new GetObjectRequest(s3Bucket, "/repo-base/fakedir"));
+        String actual = IOUtils.toString(ret.getObjectContent());
+        Assert.assertEquals("", actual);
+    }
+
+    @Test
     public void testOpen() throws IOException, ApiException {
         String contents = "The quick brown fox jumps over the lazy dog.";
         byte[] contentsBytes = contents.getBytes();
@@ -323,8 +412,7 @@ public class LakeFSFileSystemTest {
         ApiException noSuchFileException = new ApiException(HttpStatus.SC_NOT_FOUND, "no such file");
         when(objectsApi.statObject(any(), any(), any()))
             .thenThrow(noSuchFileException);
-        try (InputStream in = fs.open(p)) {
-        }
+        fs.open(p);
     }
 
     /*
@@ -436,6 +524,9 @@ public class LakeFSFileSystemTest {
         when(objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath()))
                 .thenThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "no such file"));
 
+        when(objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath() + Constants.SEPARATOR))
+                .thenThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "no such file"));
+
         when(objectsApi.listObjects(eq(objectLoc.getRepository()), eq(objectLoc.getRef()),
                 eq(objectLoc.getPath() + Constants.SEPARATOR), eq(""), any(), eq("")))
                 .thenReturn(new ObjectStatsList().pagination(new Pagination().hasMore(false)));
@@ -448,14 +539,21 @@ public class LakeFSFileSystemTest {
         when(objectsApi.statObject(dirObjLoc.getRepository(), dirObjLoc.getRef(), dirObjLoc.getPath()))
                 .thenThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "no such file"));
 
-        // Mock the files under this directory
         ObjectStatsList stats = new ObjectStatsList();
+
+        // Mock fake empty directory file
+        ObjectStats fakeDirStat = mockFakeEmptyDirectory(dirObjLoc);
+        stats.addResultsItem(fakeDirStat);
+
+        // Mock the files under this directory
         for (ObjectLocation loc : filesInDir) {
             ObjectStats fileStat = mockExistingFilePath(loc);
-            stats.addResultsItem(fileStat).setPagination(new Pagination().hasMore(false));
+            stats.addResultsItem(fileStat);
         }
 
+
         // Mock listing the files under this directory
+        stats.setPagination(new Pagination().hasMore(false));
         when(objectsApi.listObjects(eq(dirObjLoc.getRepository()), eq(dirObjLoc.getRef()),
                 eq(dirObjLoc.getPath() + Constants.SEPARATOR), eq(""), any(), eq("")))
                 .thenReturn(stats);
@@ -471,6 +569,20 @@ public class LakeFSFileSystemTest {
                 .physicalAddress(s3Url(key))
                 .checksum(UNUSED_CHECKSUM);
         when(objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath())).thenReturn(srcStats);
+        return srcStats;
+    }
+
+    private ObjectStats mockFakeEmptyDirectory(ObjectLocation objectLoc) throws ApiException {
+        String key = objectLocToS3ObjKey(objectLoc);
+        ObjectStats srcStats = new ObjectStats()
+                .path(objectLoc.getPath() + Constants.SEPARATOR)
+                .sizeBytes(0L)
+                .mtime(UNUSED_MTIME)
+                .pathType(PathTypeEnum.OBJECT)
+                .physicalAddress(s3Url(key+Constants.SEPARATOR))
+                .checksum(UNUSED_CHECKSUM);
+        when(objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath() + Constants.SEPARATOR))
+                .thenReturn(srcStats);
         return srcStats;
     }
 

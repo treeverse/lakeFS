@@ -14,11 +14,13 @@ public class LakeFSFileStatus extends FileStatus {
 
     private String checksum;
     private String physicalAddress;
+    private boolean isEmptyDirectory;
 
     private LakeFSFileStatus(Builder builder) {
         super(builder.length, builder.isdir, builder.blockReplication, builder.blockSize, builder.mTime, builder.path);
         this.checksum = builder.checksum;
         this.physicalAddress = builder.physicalAddress;
+        this.isEmptyDirectory = builder.isEmptyDirectory;
     }
 
     public String getChecksum() {
@@ -29,6 +31,8 @@ public class LakeFSFileStatus extends FileStatus {
         return physicalAddress;
     }
 
+    public boolean isEmptyDirectory() { return isEmptyDirectory; }
+
     public static class Builder {
         private Path path;
         private long length;
@@ -38,6 +42,7 @@ public class LakeFSFileStatus extends FileStatus {
         private long mTime;
         private String checksum;
         private String physicalAddress;
+        private boolean isEmptyDirectory;
 
         public Builder(Path path) {
             this.path = path;
@@ -78,9 +83,13 @@ public class LakeFSFileStatus extends FileStatus {
             return this;
         }
 
+        public Builder isEmptyDirectory(boolean isEmptyDirectory) {
+            this.isEmptyDirectory = isEmptyDirectory;
+            return this;
+        }
+
         public LakeFSFileStatus build() {
-            LakeFSFileStatus lakeFSFileStatus =  new LakeFSFileStatus(this);
-            return lakeFSFileStatus;
+            return new LakeFSFileStatus(this);
         }
     }
 }

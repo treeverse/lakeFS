@@ -42,6 +42,10 @@ class ObjectLocation {
         this.path = path;
     }
 
+    public boolean isValidObjectPath() {
+        return this.path.isEmpty() || this.ref.isEmpty() || this.repository.isEmpty();
+    }
+
     static String trimLeadingSlash(String s) {
         if (s.startsWith(Constants.SEPARATOR)) {
             return s.substring(1);

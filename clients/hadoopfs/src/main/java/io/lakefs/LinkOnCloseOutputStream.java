@@ -4,6 +4,7 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import io.lakefs.clients.api.StagingApi;
 import io.lakefs.clients.api.model.StagingLocation;
 import io.lakefs.clients.api.model.StagingMetadata;
+import org.apache.hadoop.fs.Path;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -13,6 +14,7 @@ import java.net.URI;
  * Wraps a FSDataOutputStream to link file on staging when done writing
  */
 class LinkOnCloseOutputStream extends OutputStream {
+    private final LakeFSFileSystem fs;
     private StagingApi staging;
     private StagingLocation stagingLoc;
     private ObjectLocation objectLoc;
@@ -21,6 +23,7 @@ class LinkOnCloseOutputStream extends OutputStream {
     private OutputStream out;
 
     /**
+     * @param fs LakeFS file system
      * @param staging client used to access metadata on lakeFS.
      * @param stagingLoc physical location of object data on S3.
      * @param objectLoc location of object on lakeFS.
@@ -28,7 +31,8 @@ class LinkOnCloseOutputStream extends OutputStream {
      * @param metadataClient client used to request metadata information from the underlying FileSystem.
      * @param out stream on underlying filesystem to wrap.
      */
-    LinkOnCloseOutputStream(StagingApi staging, StagingLocation stagingLoc, ObjectLocation objectLoc, URI physicalUri, MetadataClient metadataClient, OutputStream out) {
+    LinkOnCloseOutputStream(LakeFSFileSystem fs, StagingApi staging, StagingLocation stagingLoc, ObjectLocation objectLoc, URI physicalUri, MetadataClient metadataClient, OutputStream out) {
+        this.fs = fs;
         this.staging = staging;
         this.stagingLoc = stagingLoc;
         this.objectLoc = objectLoc;
@@ -74,7 +78,6 @@ class LinkOnCloseOutputStream extends OutputStream {
         } catch (io.lakefs.clients.api.ApiException e) {
             throw new IOException("link lakeFS path to physical address", e);
         }
+        this.fs.finishedWrite(new Path(objectLoc.toString()));
     }
-
-
 }
