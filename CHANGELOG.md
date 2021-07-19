@@ -3,6 +3,10 @@
 
 ## Unreleased - XXXX-XX-XX
 
+### Notable bugfixes
+
+- Python client: Accept most IOBase objects for upload (#2241)
+
 ## v0.45.0 - 2021-07-07
 
 This release requires running database migration.
