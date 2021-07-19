@@ -180,7 +180,7 @@ public class LakeFSFileSystem extends FileSystem {
      * @param createStream callback function accepts the underlying filesystem and the physical path
      * @param objectLoc to write to
      * @param handleFinishedWrite when true, after stream closes it will delete unnecessary directory marker directories in parent
-     * @return
+     * @return output stream to write
      * @throws ApiException
      * @throws URISyntaxException
      * @throws IOException
@@ -263,7 +263,7 @@ public class LakeFSFileSystem extends FileSystem {
             result = renameFile(srcStatus, dst);
         }
         if (src.getParent() != dst.getParent()) {
-            deleteUnnecessaryDirectoryMarkers(dst.getParent());
+            deleteEmptyDirectoryMarkers(dst.getParent());
             createDirectoryMarkerIfNecessary(src.getParent());
         }
         return result;
@@ -458,7 +458,7 @@ public class LakeFSFileSystem extends FileSystem {
      * Assume the caller created an object under the path which will make the empty directory irrelevant.
      * @param f path to start for empty directory markers
      */
-    private void deleteUnnecessaryDirectoryMarkers(Path f) {
+    void deleteEmptyDirectoryMarkers(Path f) {
         while (true) {
             try {
                 ObjectLocation objectLocation = pathToObjectLocation(f);
@@ -842,13 +842,5 @@ public class LakeFSFileSystem extends FileSystem {
     public static RemoteIterator<LocatedFileStatus> toLocatedFileStatusIterator(
             RemoteIterator<? extends LocatedFileStatus> iterator) {
         return (RemoteIterator<LocatedFileStatus>) iterator;
-    }
-
-    /**
-     * delete unnecessary directory marker directories
-     * @param f path to new object
-     */
-    void finishedWrite(Path f) {
-        deleteUnnecessaryDirectoryMarkers(f.getParent());
     }
 }
