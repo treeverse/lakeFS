@@ -321,7 +321,7 @@ public class LakeFSFileSystemTest {
                 .thenReturn(stagingLocation);
 
         // mock sub1/sub2 was an empty directory
-        ObjectLocation sub2Loc = new ObjectLocation("repo", "main", "sub1/sub2");
+        ObjectLocation sub2Loc = new ObjectLocation("lakefs", "repo", "main", "sub1/sub2");
         mockEmptyDirectoryMarker(sub2Loc);
 
         OutputStream out = fs.create(p);

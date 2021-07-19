@@ -49,7 +49,7 @@ class ObjectLocation {
         if (parentPath == null) {
             return null;
         }
-        return new ObjectLocation(repository, ref, parentPath.toString());
+        return new ObjectLocation(scheme, repository, ref, parentPath.toString());
     }
 
     public String getRepository() {
