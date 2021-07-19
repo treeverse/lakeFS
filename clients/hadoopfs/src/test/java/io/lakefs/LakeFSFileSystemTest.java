@@ -170,8 +170,7 @@ public class LakeFSFileSystemTest {
     }
 
     @Test
-    public void testGetFileStatus() throws ApiException, IOException {
-        // existing file
+    public void testGetFileStatus_ExistingFile() throws ApiException, IOException {
         Path p = new Path("lakefs://repo/main/exists");
         ObjectStats os = new ObjectStats();
         os.setPath("exists");
@@ -185,8 +184,10 @@ public class LakeFSFileSystemTest {
         LakeFSFileStatus fileStatus = fs.getFileStatus(p);
         Assert.assertTrue(fileStatus.isFile());
         Assert.assertEquals(p, fileStatus.getPath());
+    }
 
-        // no file
+    @Test
+    public void testGetFileStatus_NoFile() throws ApiException, IOException {
         Path noFilePath = new Path("lakefs://repo/main/no.file");
         ApiException noSuchFileException = new ApiException(HttpStatus.SC_NOT_FOUND, "no such file");
         when(objectsApi.statObject("repo", "main", "no.file"))
@@ -196,9 +197,12 @@ public class LakeFSFileSystemTest {
         when(objectsApi.listObjects(any(), any(), any(), any(), any(), any()))
                 .thenReturn(new ObjectStatsList().results(Collections.emptyList()).pagination(new Pagination().hasMore(false)));
         Assert.assertThrows(FileNotFoundException.class, () -> fs.getFileStatus(noFilePath));
+    }
 
-        // fake directory
+    @Test
+    public void testGetFileStatus_FakeDirectory() throws ApiException, IOException {
         Path dirPath = new Path("lakefs://repo/main/dir1/dir2");
+        ApiException noSuchFileException = new ApiException(HttpStatus.SC_NOT_FOUND, "no such file");
         when(objectsApi.statObject("repo", "main", "dir1/dir2"))
                 .thenThrow(noSuchFileException);
         ObjectStats dirObjectStats = new ObjectStats();

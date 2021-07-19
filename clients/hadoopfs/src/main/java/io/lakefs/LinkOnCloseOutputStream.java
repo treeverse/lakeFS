@@ -1,9 +1,7 @@
 package io.lakefs;
 
-import com.amazonaws.services.s3.model.ObjectMetadata;
 import io.lakefs.clients.api.StagingApi;
 import io.lakefs.clients.api.model.StagingLocation;
-import io.lakefs.clients.api.model.StagingMetadata;
 import org.apache.hadoop.fs.Path;
 
 import java.io.IOException;
@@ -14,31 +12,32 @@ import java.net.URI;
  * Wraps a FSDataOutputStream to link file on staging when done writing
  */
 class LinkOnCloseOutputStream extends OutputStream {
-    private final LakeFSFileSystem fs;
-    private StagingApi staging;
-    private StagingLocation stagingLoc;
-    private ObjectLocation objectLoc;
-    private URI physicalUri;
+    private final LakeFSFileSystem lfs;
+    private final StagingLocation stagingLoc;
+    private final ObjectLocation objectLoc;
+    private final URI physicalUri;
     private final MetadataClient metadataClient;
-    private OutputStream out;
+    private final OutputStream out;
+    private final boolean handleFinishedWrite;
 
     /**
-     * @param fs LakeFS file system
-     * @param staging client used to access metadata on lakeFS.
+     * @param lfs LakeFS file system
      * @param stagingLoc physical location of object data on S3.
      * @param objectLoc location of object on lakeFS.
      * @param physicalUri translated physical location of object data for underlying FileSystem.
      * @param metadataClient client used to request metadata information from the underlying FileSystem.
      * @param out stream on underlying filesystem to wrap.
+     * @param handleFinishedWrite calls LakeFS finishedWrite on after write completes
      */
-    LinkOnCloseOutputStream(LakeFSFileSystem fs, StagingApi staging, StagingLocation stagingLoc, ObjectLocation objectLoc, URI physicalUri, MetadataClient metadataClient, OutputStream out) {
-        this.fs = fs;
-        this.staging = staging;
+    LinkOnCloseOutputStream(LakeFSFileSystem lfs, StagingLocation stagingLoc, ObjectLocation objectLoc,
+                            URI physicalUri, MetadataClient metadataClient, OutputStream out, boolean handleFinishedWrite) {
+        this.lfs = lfs;
         this.stagingLoc = stagingLoc;
         this.objectLoc = objectLoc;
         this.physicalUri = physicalUri;
         this.metadataClient = metadataClient;
         this.out = out;
+        this.handleFinishedWrite = handleFinishedWrite;
     }
 
     @Override
@@ -67,17 +66,13 @@ class LinkOnCloseOutputStream extends OutputStream {
 
         // Now the object is on the underlying store, find its parameters (sadly lost by
         // the underlying Hadoop FileSystem) so we can link it on lakeFS.
-        ObjectMetadata objectMetadata = metadataClient.getObjectMetadata(physicalUri);
-        // TODO(ariels): Can we add metadata here?
-        StagingMetadata metadata = new StagingMetadata()
-                .staging(stagingLoc)
-                .checksum(objectMetadata.getETag())
-                .sizeBytes(objectMetadata.getContentLength());
         try {
-            staging.linkPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(), metadata);
+            lfs.linkPhysicalAddress(objectLoc, stagingLoc, physicalUri, metadataClient);
         } catch (io.lakefs.clients.api.ApiException e) {
             throw new IOException("link lakeFS path to physical address", e);
         }
-        this.fs.finishedWrite(new Path(objectLoc.toString()));
+        if (handleFinishedWrite) {
+            lfs.finishedWrite(new Path(objectLoc.toString()));
+        }
     }
 }

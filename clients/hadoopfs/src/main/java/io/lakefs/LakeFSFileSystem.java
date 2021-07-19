@@ -11,12 +11,14 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.util.Progressable;
 import org.apache.http.HttpStatus;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.AccessDeniedException;
@@ -161,26 +163,44 @@ public class LakeFSFileSystem extends FileSystem {
         OPERATIONS_LOG.trace("create({})", path);
         try {
             // TODO(ariels): overwrite ignored.
-            StagingApi staging = lfsClient.getStaging();
             ObjectLocation objectLoc = pathToObjectLocation(path);
-            StagingLocation stagingLoc = staging.getPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
-            URI physicalUri = translateUri(new URI(Objects.requireNonNull(stagingLoc.getPhysicalAddress())));
-
-            Path physicalPath = new Path(physicalUri.toString());
-            FileSystem physicalFs = physicalPath.getFileSystem(conf);
-
-            // TODO(ariels): add fs.FileSystem.Statistics here to keep track.
-            // FSDataOutputStream is a kind of OutputStream(!)
-            return new FSDataOutputStream(new LinkOnCloseOutputStream(this, staging, stagingLoc, objectLoc,
-                    physicalUri,
-                    new MetadataClient(physicalFs),
-                    physicalFs.create(physicalPath, false, bufferSize, replication, blockSize, progress)),
-                    null);
+            return createDataOutputStream(
+                    (fs, fp) -> fs.create(fp, false, bufferSize, replication, blockSize, progress),
+                    objectLoc,
+                    true);
         } catch (io.lakefs.clients.api.ApiException e) {
             throw new IOException("staging.getPhysicalAddress: " + e.getResponseBody(), e);
         } catch (java.net.URISyntaxException e) {
             throw new IOException("underlying storage uri", e);
         }
+    }
+
+    /**
+     * Returns output stream to write data into object location
+     * @param createStream callback function accepts the underlying filesystem and the physical path
+     * @param objectLoc to write to
+     * @param handleFinishedWrite when true, after stream closes it will delete unnecessary fake directories in parent
+     * @return
+     * @throws ApiException
+     * @throws URISyntaxException
+     * @throws IOException
+     */
+    @NotNull
+    private FSDataOutputStream createDataOutputStream(BiFunctionWithIOException<FileSystem, Path, OutputStream> createStream,
+                                                      ObjectLocation objectLoc, boolean handleFinishedWrite)
+            throws ApiException, URISyntaxException, IOException {
+        StagingApi staging = lfsClient.getStaging();
+        StagingLocation stagingLoc = staging.getPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
+        URI physicalUri = translateUri(new URI(Objects.requireNonNull(stagingLoc.getPhysicalAddress())));
+
+        Path physicalPath = new Path(physicalUri.toString());
+        FileSystem physicalFs = physicalPath.getFileSystem(conf);
+        OutputStream physicalOut = createStream.apply(physicalFs, physicalPath);
+        MetadataClient metadataClient = new MetadataClient(physicalFs);
+        LinkOnCloseOutputStream out = new LinkOnCloseOutputStream(this,
+                stagingLoc, objectLoc, physicalUri, metadataClient, physicalOut, handleFinishedWrite);
+        // TODO(ariels): add fs.FileSystem.Statistics here to keep track.
+        return new FSDataOutputStream(out, null);
     }
 
     @Override
@@ -496,10 +516,20 @@ public class LakeFSFileSystem extends FileSystem {
         return this.workingDirectory;
     }
 
+    /**
+     * Make the given path and all non-existent parents into directories.
+     * We use the same technic as S3A implementation, an object size 0, without a name with delimiter ('/') that
+     * keeps the directory exists.
+     * When we write an object into the directory - we can delete the marker.
+     * @param path path to create
+     * @param fsPermission to apply (passing to the underlying filesystem)
+     * @return an IOException that corresponds to the translated API exception
+     */
     @Override
     public boolean mkdirs(Path path, FsPermission fsPermission) throws IOException {
+        OPERATIONS_LOG.trace("mkdirs({})", path);
         try {
-            // check path is not a directory already
+            // Check that path is not already a directory
             FileStatus fileStatus = getFileStatus(path);
             if (fileStatus.isDirectory()) {
                 return true;
@@ -508,20 +538,20 @@ public class LakeFSFileSystem extends FileSystem {
         } catch (FileNotFoundException e) {
             // check if part of path is a file already
             ObjectLocation objectLocation = pathToObjectLocation(path);
-            Path branchRoot = new Path(String.format("%s://%s/%s", objectLocation.getScheme(), objectLocation.getRepository(), objectLocation.getRef()));
-            Path fPart = path;
+            Path branchRoot = new Path(objectLocation.toRefString());
+            Path currentPath = path;
             do {
                 try {
-                    FileStatus fileStatus = getFileStatus(fPart);
+                    FileStatus fileStatus = getFileStatus(currentPath);
                     if (fileStatus.isFile()) {
                         throw new FileAlreadyExistsException(String.format(
                                 "Can't make directory for path '%s' since it is a file.",
-                                fPart));
+                                currentPath));
                     }
                 } catch (FileNotFoundException ignored) {
                 }
-                fPart = fPart.getParent();
-            } while (fPart != null && !fPart.equals(branchRoot));
+                currentPath = currentPath.getParent();
+            } while (currentPath != null && !currentPath.equals(branchRoot));
 
             createFakeDirectory(path);
             return true;
@@ -530,32 +560,32 @@ public class LakeFSFileSystem extends FileSystem {
 
     private void createFakeDirectory(Path path) throws IOException {
         try {
-            StagingApi staging = lfsClient.getStaging();
             ObjectLocation objectLoc = pathToObjectLocation(path);
             // append directory separator
             if (!objectLoc.getPath().endsWith(SEPARATOR)) {
                 objectLoc.setPath(objectLoc.getPath() + SEPARATOR);
             }
 
-            StagingLocation stagingLoc = staging.getPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
-            URI physicalUri = translateUri(new URI(Objects.requireNonNull(stagingLoc.getPhysicalAddress())));
-            Path physicalPath = new Path(physicalUri.toString());
-            FileSystem physicalFs = physicalPath.getFileSystem(conf);
-            FSDataOutputStream outputStream = physicalFs.create(physicalPath);
-            outputStream.flush();
-            outputStream.close();
-            MetadataClient metadataClient = new MetadataClient(physicalFs);
-            ObjectMetadata objectMetadata = metadataClient.getObjectMetadata(physicalUri);
-            StagingMetadata metadata = new StagingMetadata()
-                    .staging(stagingLoc)
-                    .checksum(objectMetadata.getETag())
-                    .sizeBytes(objectMetadata.getContentLength());
-            staging.linkPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(), metadata);
+            OutputStream out = createDataOutputStream(
+                    FileSystem::create,
+                    objectLoc,
+                    false);
+            out.close();
         } catch (io.lakefs.clients.api.ApiException e) {
             throw new IOException("createFakeDirectory: " + e.getResponseBody(), e);
         } catch (java.net.URISyntaxException e) {
             throw new IOException("createFakeDirectory", e);
         }
+    }
+
+    void linkPhysicalAddress(ObjectLocation objectLoc, StagingLocation stagingLoc, URI physicalUri, MetadataClient metadataClient) throws IOException, ApiException {
+        ObjectMetadata objectMetadata = metadataClient.getObjectMetadata(physicalUri);
+        StagingMetadata metadata = new StagingMetadata()
+                .staging(stagingLoc)
+                .checksum(objectMetadata.getETag())
+                .sizeBytes(objectMetadata.getContentLength());
+        StagingApi staging = lfsClient.getStaging();
+        staging.linkPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(), metadata);
     }
 
     /**
@@ -812,8 +842,11 @@ public class LakeFSFileSystem extends FileSystem {
         return (RemoteIterator<LocatedFileStatus>) iterator;
     }
 
-    public void finishedWrite(Path f) throws IOException {
+    /**
+     * delete unnecessary fake directories
+     * @param f
+     */
+    void finishedWrite(Path f) {
         deleteUnnecessaryFakeDirectories(f.getParent());
     }
 }
-

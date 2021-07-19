@@ -18,6 +18,10 @@ class ObjectLocation {
         this.scheme = scheme;
     }
 
+    public static String formatPath(String repository, String ref) {
+        return String.format("%s://%s/%s", Constants.URI_SCHEME, repository, ref);
+    }
+
     public String getRepository() {
         return repository;
     }
@@ -81,4 +85,6 @@ class ObjectLocation {
     public String toString() {
         return formatPath(scheme, repository, ref, path);
     }
+
+    public String toRefString() {return formatPath(repository, ref);}
 }
