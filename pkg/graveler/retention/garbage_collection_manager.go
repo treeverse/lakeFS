@@ -67,7 +67,7 @@ func (m *GarbageCollectionManager) GetRules(ctx context.Context, storageNamespac
 		Identifier:       fmt.Sprintf(configFileSuffixTemplate, m.committedBlockStoragePrefix),
 		IdentifierType:   block.IdentifierTypeRelative,
 	}
-	exists, err := m.blockAdapter.Exists(ctx, objectPointer) // TODO(Guys): return ErrNotFound from adapters check the err returned from get.
+	exists, err := m.blockAdapter.Exists(ctx, objectPointer) // TODO(Guys): remove exists validation once get returns not found.
 	if err != nil {
 		return nil, err
 	}

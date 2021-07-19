@@ -78,7 +78,7 @@ export const PolicyEditor = ({ show, onHide, onSubmit, policy = null, noID = fal
             </Modal.Body>
 
             <Modal.Footer>
-                <Button onClick={submit} variant="success">{actionName}</Button>
+                <Button onClick={submit} variant="success">Save</Button>
                 <Button onClick={hide} variant="secondary">Cancel</Button>
             </Modal.Footer>
         </Modal>

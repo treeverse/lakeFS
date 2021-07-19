@@ -35,10 +35,10 @@ const RepositoryPage = () => {
             <Route path="/repositories/:repoId/actions">
                 <RepositoryActionsIndexPage/>
             </Route>
-            <Route  exact path="/repositories/:repoId/settings/">
+            <Route exact path="/repositories/:repoId/settings/">
                 <RepositoryGeneralSettingsPage/>
             </Route>
-            <Route  path="/repositories/:repoId/settings/general">
+            <Route path="/repositories/:repoId/settings/general">
                 <RepositoryGeneralSettingsPage/>
             </Route>
             <Route path="/repositories/:repoId/settings/retention">

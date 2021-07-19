@@ -14,7 +14,6 @@ import {useAPI} from "../../../../lib/hooks/api";
 import {RefContextProvider, useRefs} from "../../../../lib/hooks/repo";
 import Card from "react-bootstrap/Card";
 import Table from "react-bootstrap/Table";
-
 import {SettingsLayout} from "./layout";
 import {Container, Row} from "react-bootstrap";
 import Col from "react-bootstrap/Col";
@@ -37,7 +36,7 @@ const GetStarted = ({repo, onSubmit}) => {
             <Container className="m-4 mb-5">
                 <h2 className="mt-2">No Garbage collection policy found</h2>
                 <br/>
-                A garbage collection policy controls the retention duration in lakeFS for deleted objects.
+                This policy determines for how long objects are kept in the storage after they are deleted in lakeFS.
                 <br/>
                 <Row>
                     <Col md={{span: 5, offset: 3}}>
@@ -113,7 +112,7 @@ const GCPolicy = ({repo}) => {
                                     </tbody>
                                 </Table>
                                 <Card>
-                                    <Table>
+                                    {policy.branches && <Table>
                                         <thead>
                                         <tr>
                                             <th width={"80%"}>Branch</th>
@@ -130,16 +129,15 @@ const GCPolicy = ({repo}) => {
                                             );
                                         })}
                                         </tbody>
-                                    </Table>
+                                    </Table>}
                                 </Card>
                                 <br/>
                                 <br/>
                                 <Row className="pt-2 ml-2">
                                     For information about how to run the garbage collection see the&nbsp;<a
                                     href="https://docs.lakefs.io/reference/garbage-collection.html" target="_blank"
-                                    rel="noopener noreferrer">docs</a>
+                                    rel="noopener noreferrer">docs</a>.
                                 </Row>
-
                             </>
                         )}
 
