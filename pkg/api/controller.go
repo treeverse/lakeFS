@@ -201,9 +201,9 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	}
 
 	blockStoreType := c.BlockAdapter.BlockstoreType()
-	if qk.StorageType.String() != blockStoreType {
+	if qk.StorageType.BlockstoreType() != blockStoreType {
 		writeError(w, http.StatusBadRequest, fmt.Sprintf("invalid storage type: %s: current block adapter is %s",
-			qk.StorageType.String(),
+			qk.StorageType.BlockstoreType(),
 			blockStoreType,
 		))
 		return
