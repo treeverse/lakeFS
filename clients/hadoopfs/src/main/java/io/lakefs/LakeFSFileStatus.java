@@ -63,8 +63,8 @@ public class LakeFSFileStatus extends FileStatus {
             return this;
         }
 
-        public Builder blocksize(long blocksize) {
-            this.blockSize = blocksize;
+        public Builder blockSize(long blockSize) {
+            this.blockSize = blockSize;
             return this;
         }
 

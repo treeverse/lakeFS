@@ -23,7 +23,7 @@ public class LakeFSLocatedFileStatus extends LocatedFileStatus {
                 .length(getLen())
                 .isdir(isDirectory())
                 .isEmptyDirectory(isEmptyDirectory)
-                .blocksize(getBlockSize())
+                .blockSize(getBlockSize())
                 .mTime(getModificationTime())
                 .checksum(checksum)
                 .physicalAddress(physicalAddress)

@@ -1,5 +1,7 @@
 package io.lakefs;
 
+import org.apache.hadoop.fs.Path;
+
 class ObjectLocation {
     private String scheme;
     private String repository;
@@ -10,6 +12,11 @@ class ObjectLocation {
         return String.format("%s://%s/%s/%s", scheme, repository, ref, path);
     }
 
+
+    public static String formatPath(String scheme, String repository, String ref) {
+        return String.format("%s://%s/%s", scheme, repository, ref);
+    }
+
     public String getScheme() {
         return scheme;
     }
@@ -18,8 +25,28 @@ class ObjectLocation {
         this.scheme = scheme;
     }
 
-    public static String formatPath(String repository, String ref) {
-        return String.format("%s://%s/%s", Constants.URI_SCHEME, repository, ref);
+    public ObjectLocation() {
+    }
+
+    public ObjectLocation(String scheme, String repository, String ref) {
+        this.scheme = scheme;
+        this.repository = repository;
+        this.ref = ref;
+    }
+
+    public ObjectLocation(String scheme, String repository, String ref, String path) {
+        this.scheme = scheme;
+        this.repository = repository;
+        this.ref = ref;
+        this.path = path;
+    }
+
+    public ObjectLocation getParent() {
+        Path parentPath = new Path(this.path).getParent();
+        if (parentPath == null) {
+            return null;
+        }
+        return new ObjectLocation(repository, ref, parentPath.toString());
     }
 
     public String getRepository() {
@@ -46,8 +73,10 @@ class ObjectLocation {
         this.path = path;
     }
 
-    public boolean isValidObjectPath() {
-        return this.path.isEmpty() || this.ref.isEmpty() || this.repository.isEmpty();
+    public boolean isValidPath() {
+        return !this.repository.isEmpty() &&
+                !this.ref.isEmpty() &&
+                !this.path.isEmpty();
     }
 
     static String trimLeadingSlash(String s) {
@@ -86,5 +115,7 @@ class ObjectLocation {
         return formatPath(scheme, repository, ref, path);
     }
 
-    public String toRefString() {return formatPath(repository, ref);}
+    public String toRefString() {
+        return formatPath(scheme, repository, ref);
+    }
 }

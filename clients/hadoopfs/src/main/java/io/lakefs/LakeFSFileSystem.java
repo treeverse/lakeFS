@@ -179,7 +179,7 @@ public class LakeFSFileSystem extends FileSystem {
      * Returns output stream to write data into object location
      * @param createStream callback function accepts the underlying filesystem and the physical path
      * @param objectLoc to write to
-     * @param handleFinishedWrite when true, after stream closes it will delete unnecessary fake directories in parent
+     * @param handleFinishedWrite when true, after stream closes it will delete unnecessary directory marker directories in parent
      * @return
      * @throws ApiException
      * @throws URISyntaxException
@@ -263,8 +263,8 @@ public class LakeFSFileSystem extends FileSystem {
             result = renameFile(srcStatus, dst);
         }
         if (src.getParent() != dst.getParent()) {
-            deleteUnnecessaryFakeDirectories(dst.getParent());
-            createFakeDirectoryIfNecessary(src.getParent());
+            deleteUnnecessaryDirectoryMarkers(dst.getParent());
+            createDirectoryMarkerIfNecessary(src.getParent());
         }
         return result;
     }
@@ -424,7 +424,7 @@ public class LakeFSFileSystem extends FileSystem {
         OPERATIONS_LOG.trace("delete({}), recursive={}", path, recursive);
         boolean deleted = true;
         if (!recursive) {
-            // TODO(barak): handle case of delete fake directory without recursive
+            // TODO(barak): handle case of delete directory marker directory without recursive
             deleted = deleteHelper(path);
         } else {
             ListingIterator iterator = new ListingIterator(path, true, listAmount);
@@ -433,7 +433,7 @@ public class LakeFSFileSystem extends FileSystem {
                 deleteHelper(fileStatus.getPath());
             }
         }
-        createFakeDirectoryIfNecessary(path.getParent());
+        createDirectoryMarkerIfNecessary(path.getParent());
         return deleted;
     }
 
@@ -453,17 +453,22 @@ public class LakeFSFileSystem extends FileSystem {
         return true;
     }
 
-    private void deleteUnnecessaryFakeDirectories(Path f) {
+    /**
+     * Delete parents directory markers from path until the root.
+     * Assume the caller created an object under the path which will make the empty directory irrelevant.
+     * @param f path to start for empty directory markers
+     */
+    private void deleteUnnecessaryDirectoryMarkers(Path f) {
         while (true) {
             try {
                 ObjectLocation objectLocation = pathToObjectLocation(f);
-                if (objectLocation.isValidObjectPath()) {
+                if (!objectLocation.isValidPath()) {
                     break;
                 }
 
                 LakeFSFileStatus status = getFileStatus(f);
                 if (status.isDirectory() && status.isEmptyDirectory()) {
-                    delete(f, false);
+                    deleteHelper(f);
                 }
             } catch (IOException ignored) {
             }
@@ -476,10 +481,10 @@ public class LakeFSFileSystem extends FileSystem {
         }
     }
 
-    private void createFakeDirectoryIfNecessary(Path f) throws IOException {
+    private void createDirectoryMarkerIfNecessary(Path f) throws IOException {
         ObjectLocation objectLocation = pathToObjectLocation(f);
-        if (!objectLocation.isValidObjectPath() && !exists(f)) {
-            createFakeDirectory(f);
+        if (objectLocation.isValidPath() && !exists(f)) {
+            createDirectoryMarker(f);
         }
     }
 
@@ -553,12 +558,12 @@ public class LakeFSFileSystem extends FileSystem {
                 currentPath = currentPath.getParent();
             } while (currentPath != null && !currentPath.equals(branchRoot));
 
-            createFakeDirectory(path);
+            createDirectoryMarker(path);
             return true;
         }
     }
 
-    private void createFakeDirectory(Path path) throws IOException {
+    private void createDirectoryMarker(Path path) throws IOException {
         try {
             ObjectLocation objectLoc = pathToObjectLocation(path);
             // append directory separator
@@ -572,9 +577,9 @@ public class LakeFSFileSystem extends FileSystem {
                     false);
             out.close();
         } catch (io.lakefs.clients.api.ApiException e) {
-            throw new IOException("createFakeDirectory: " + e.getResponseBody(), e);
+            throw new IOException("createDirectoryMarker: " + e.getResponseBody(), e);
         } catch (java.net.URISyntaxException e) {
-            throw new IOException("createFakeDirectory", e);
+            throw new IOException("createDirectoryMarker", e);
         }
     }
 
@@ -607,7 +612,7 @@ public class LakeFSFileSystem extends FileSystem {
                 throw new IOException("statObject", e);
             }
         }
-        // get object status on path + "/" for fake directory
+        // get object status on path + "/" for directory marker directory
         try {
             ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath() + SEPARATOR);
             return convertObjectStatsToFileStatus(objectLoc, objectStat);
@@ -616,11 +621,10 @@ public class LakeFSFileSystem extends FileSystem {
                 throw new IOException("statObject", e);
             }
         }
-        // not found as a file or fake; check if path is a "directory", i.e. a prefix.
+        // not found as a file or directory marker; check if path is a "directory", i.e. a prefix.
         ListingIterator iterator = new ListingIterator(path, true, 1);
         if (iterator.hasNext()) {
             Path filePath = new Path(objectLoc.toString());
-
             return new LakeFSFileStatus.Builder(filePath).isdir(true).build();
         }
         throw new FileNotFoundException(path + " not found");
@@ -652,7 +656,7 @@ public class LakeFSFileSystem extends FileSystem {
                             .length(length)
                             .isdir(isDir)
                             .isEmptyDirectory(isEmptyDirectory)
-                            .blocksize(blockSize)
+                            .blockSize(blockSize)
                             .mTime(modificationTime)
                             .checksum(objectStat.getChecksum())
                             .physicalAddress(physicalAddress);
@@ -676,9 +680,7 @@ public class LakeFSFileSystem extends FileSystem {
     public FileStatus[] globStatus(Path pathPattern) throws IOException {
         FileStatus fStatus = new FileStatus(0, false, 1, 20, 1,
                 new Path("tal-test"));
-        FileStatus[] res = new FileStatus[1];
-        res[0] = fStatus;
-        return res;
+        return new FileStatus[]{fStatus};
     }
 
     @Override
@@ -695,7 +697,7 @@ public class LakeFSFileSystem extends FileSystem {
                 throw new IOException("statObject", e);
             }
         }
-        // check if fake directory exists
+        // check if directory marker directory exists
         try {
             objects.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath() + SEPARATOR);
             return true;
@@ -843,10 +845,10 @@ public class LakeFSFileSystem extends FileSystem {
     }
 
     /**
-     * delete unnecessary fake directories
-     * @param f
+     * delete unnecessary directory marker directories
+     * @param f path to new object
      */
     void finishedWrite(Path f) {
-        deleteUnnecessaryFakeDirectories(f.getParent());
+        deleteUnnecessaryDirectoryMarkers(f.getParent());
     }
 }
