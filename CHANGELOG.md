@@ -3,6 +3,14 @@
 
 ## Unreleased - XXXX-XX-XX
 
+## v0.45.1 - 2021-07-19
+ - Support post-merge and post-commit events
+ - UI - add garbage collection policy configuration
+ - Metastore tool - add flag to support DBFS location
+ - Metastore tool - handle Spark placeholder on copy
+ - Deployment of lakeFS (docker-compose) above MinIO including the following services: Hive metastore, Hive server, Trino and Spark
+ - Fix LakeFS startup with Azure storage type
+
 ## v0.45.0 - 2021-07-07
 
 This release requires running database migration.
