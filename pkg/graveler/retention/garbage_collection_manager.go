@@ -66,11 +66,19 @@ func NewGarbageCollectionManager(db db.Database, blockAdapter block.Adapter, ref
 }
 
 func (m *GarbageCollectionManager) GetRules(ctx context.Context, storageNamespace graveler.StorageNamespace) (*graveler.GarbageCollectionRules, error) {
-	reader, err := m.blockAdapter.Get(ctx, block.ObjectPointer{
+	objectPointer := block.ObjectPointer{
 		StorageNamespace: string(storageNamespace),
 		Identifier:       fmt.Sprintf(configFileSuffixTemplate, m.committedBlockStoragePrefix),
 		IdentifierType:   block.IdentifierTypeRelative,
-	}, -1)
+	}
+	exists, err := m.blockAdapter.Exists(ctx, objectPointer) // TODO(Guys): remove exists validation once get returns not found.
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, graveler.ErrNotFound
+	}
+	reader, err := m.blockAdapter.Get(ctx, objectPointer, -1)
 	if err != nil {
 		return nil, err
 	}

@@ -59,11 +59,11 @@ const ChangeList = ({ repo, commit, after, prefix, delimiter, onPaginate }) => {
                                 label="Directory View"
                                 id="changes-directory-view-toggle"
                                 defaultChecked={(delimiter !== "")}
-                                onChange={(e) => {
+                                onChange={(checked) => {
                                     push({
                                         pathname: '/repositories/:repoId/commits/:commitId',
                                         params: {repoId: repo.id, commitId: commit.id},
-                                        query: {delimiter: (e.target.checked) ? "/" : ""},
+                                        query: {delimiter: (checked) ? "/" : ""},
                                     })
                                 }}
                             />

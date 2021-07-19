@@ -6,10 +6,11 @@ import Form from "react-bootstrap/Form";
 import {FormControl} from "react-bootstrap";
 import Button from "react-bootstrap/Button";
 
-import {Error, FormattedDate} from "../controls";
+import {Error, FormattedDate} from "./controls";
 
 
-export const PolicyEditor = ({ show, onHide, onSubmit, policy = null }) => {
+
+export const PolicyEditor = ({ show, onHide, onSubmit, policy = null, noID = false, isCreate = false }) => {
     const [error, setError] = useState(null);
     const idField = useRef(null);
     const bodyField = useRef(null);
@@ -22,7 +23,7 @@ export const PolicyEditor = ({ show, onHide, onSubmit, policy = null }) => {
     const [body, setBody] = useState('')
     useEffect(() => {
         if (policy !== null) {
-            setBody(JSON.stringify({statement: policy.statement}, null, 4));
+            setBody(JSON.stringify(policy, null, 4));
         }
     }, [policy]);
 
@@ -42,11 +43,11 @@ export const PolicyEditor = ({ show, onHide, onSubmit, policy = null }) => {
         setError(null);
         onHide();
     };
-
+    const actionName = policy === null || isCreate ? 'Create' : 'Edit'
     return (
         <Modal show={show} onHide={hide}>
             <Modal.Header closeButton>
-                <Modal.Title>{(policy === null) ? 'Create' : 'Edit'} Policy</Modal.Title>
+                <Modal.Title>{actionName} Policy</Modal.Title>
             </Modal.Header>
 
             <Modal.Body>
@@ -54,7 +55,7 @@ export const PolicyEditor = ({ show, onHide, onSubmit, policy = null }) => {
                     e.preventDefault();
                     submit();
                 }}>
-                    {(policy === null) && (
+                    {(policy === null) && !noID && (
                         <Form.Group>
                             <FormControl ref={idField} autoFocus placeholder="Policy ID (e.g. 'MyRepoReadWrite')" type="text"/>
                         </Form.Group>
@@ -77,7 +78,7 @@ export const PolicyEditor = ({ show, onHide, onSubmit, policy = null }) => {
             </Modal.Body>
 
             <Modal.Footer>
-                <Button onClick={submit} variant="success">{(policy === null) ? 'Create' : 'Edit'}</Button>
+                <Button onClick={submit} variant="success">Save</Button>
                 <Button onClick={hide} variant="secondary">Cancel</Button>
             </Modal.Footer>
         </Modal>
