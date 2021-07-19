@@ -7,7 +7,6 @@ import io.lakefs.clients.api.StagingApi;
 import io.lakefs.clients.api.auth.HttpBasicAuth;
 import org.apache.hadoop.conf.Configuration;
 
-import javax.xml.bind.annotation.XmlType;
 import java.io.IOException;
 
 /**
