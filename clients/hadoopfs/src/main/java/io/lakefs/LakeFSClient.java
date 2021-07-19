@@ -78,7 +78,8 @@ public class LakeFSClient {
         String key = formatFSConfigurationKey(scheme, keySuffix);
         String value = conf.get(key);
         if (value == null && !scheme.equals(DEFAULT_SCHEME)) {
-            value = conf.get(fallbackKey);
+            key = formatFSConfigurationKey(DEFAULT_SCHEME, keySuffix);
+            value = conf.get(key);
         }
         return value;
     }
