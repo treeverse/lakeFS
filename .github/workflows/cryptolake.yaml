@@ -1,0 +1,31 @@
+name: Cryptolake
+on:
+  workflow_run:
+    workflows:
+      - "Nessie"
+    branches:
+      - cryptolake
+    types:
+      - completed
+
+jobs:
+  invoke-terraform-workflow:
+    name: Invoke Terraform Workflow to deploy Cryptolake ECS container 
+    runs-on: ubuntu-20.04
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Extract version
+        shell: bash
+        run: echo "::set-output name=tag::sha-$(git rev-parse --short HEAD | sed s/^v//g)"
+        id: version
+
+      - name: Invoke Terraform Workflow in terraform repository with workflow dispatch
+        run: |
+          curl -u ":${{ secrets.PERSONAL_TOKEN }}" \
+          -X POST \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/repos/treeverse/terraform/actions/workflows/deploy-lakefs-on-ecs.yaml/dispatches \
+          -d '{"ref":"master", "inputs": {"lakefs-version": "${{ steps.version.outputs.tag }}", "environment": "cryptolake-prod" }}'
