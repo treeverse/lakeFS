@@ -241,10 +241,7 @@ func (a *Adapter) streamToS3(ctx context.Context, sdkRequest *request.Request, s
 
 func isErrNotFound(err error) bool {
 	var reqErr awserr.RequestFailure
-	if errors.As(err, &reqErr) && reqErr.StatusCode() == http.StatusNotFound {
-		return true
-	}
-	return false
+	return errors.As(err, &reqErr) && reqErr.StatusCode() == http.StatusNotFound
 }
 
 func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
@@ -262,7 +259,7 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 	}
 	objectOutput, err := a.s3.GetObjectWithContext(ctx, &getObjectInput)
 	if isErrNotFound(err) {
-		return nil, adapter.ErrNotFound
+		return nil, adapter.ErrDataNotFound
 	}
 	if err != nil {
 		log.WithError(err).Errorf("failed to get S3 object bucket %s key %s", qualifiedKey.StorageNamespace, qualifiedKey.Key)
@@ -311,7 +308,7 @@ func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPo
 	}
 	objectOutput, err := a.s3.GetObjectWithContext(ctx, &getObjectInput)
 	if isErrNotFound(err) {
-		return nil, adapter.ErrNotFound
+		return nil, adapter.ErrDataNotFound
 	}
 	if err != nil {
 		log.WithError(err).WithFields(logging.Fields{

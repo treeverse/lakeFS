@@ -199,7 +199,7 @@ func (a *Adapter) Download(ctx context.Context, obj block.ObjectPointer, offset,
 	keyOptions := azblob.ClientProvidedKeyOptions{}
 	downloadResponse, err := blobURL.Download(ctx, offset, count, azblob.BlobAccessConditions{}, false, keyOptions)
 	if isErrNotFound(err) {
-		return nil, adapter.ErrNotFound
+		return nil, adapter.ErrDataNotFound
 	}
 	if err != nil {
 		a.log(ctx).WithError(err).Errorf("failed to get azure blob from container %s key %s", container, blobURL)
@@ -237,10 +237,7 @@ func (a *Adapter) Walk(ctx context.Context, walkOpt block.WalkOpts, walkFn block
 
 func isErrNotFound(err error) bool {
 	var storageErr azblob.StorageError
-	if errors.As(err, &storageErr) && storageErr.ServiceCode() == azblob.ServiceCodeBlobNotFound {
-		return true
-	}
-	return false
+	return errors.As(err, &storageErr) && storageErr.ServiceCode() == azblob.ServiceCodeBlobNotFound
 }
 
 func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, error) {

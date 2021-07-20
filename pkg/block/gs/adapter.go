@@ -115,7 +115,7 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 	}
 	r, err := a.client.Bucket(qualifiedKey.StorageNamespace).Object(qualifiedKey.Key).NewReader(ctx)
 	if isErrNotFound(err) {
-		return nil, adapter.ErrNotFound
+		return nil, adapter.ErrDataNotFound
 	}
 	if err != nil {
 		a.log(ctx).WithError(err).Errorf("failed to get object bucket %s key %s", qualifiedKey.StorageNamespace, qualifiedKey.Key)
@@ -154,10 +154,7 @@ func (a *Adapter) Walk(ctx context.Context, walkOpt block.WalkOpts, walkFn block
 }
 
 func isErrNotFound(err error) bool {
-	if errors.Is(err, storage.ErrObjectNotExist) {
-		return true
-	}
-	return false
+	return errors.Is(err, storage.ErrObjectNotExist)
 }
 
 func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, error) {
@@ -189,7 +186,7 @@ func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPo
 		Object(qualifiedKey.Key).
 		NewRangeReader(ctx, startPosition, endPosition-startPosition+1)
 	if isErrNotFound(err) {
-		return nil, adapter.ErrNotFound
+		return nil, adapter.ErrDataNotFound
 	}
 	if err != nil {
 		a.log(ctx).WithError(err).Errorf("failed to get object bucket %s key %s", qualifiedKey.StorageNamespace, qualifiedKey.Key)

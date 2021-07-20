@@ -23,7 +23,7 @@ import (
 const BlockstoreType = "mem"
 
 var (
-	ErrNoDataForKey            = fmt.Errorf("no data for key: %w", adapter.ErrNotFound)
+	ErrNoDataForKey            = fmt.Errorf("no data for key: %w", adapter.ErrDataNotFound)
 	ErrMultiPartNotFound       = fmt.Errorf("multipart ID not found")
 	ErrNoPropertiesForKey      = fmt.Errorf("no properties for key")
 	ErrInventoryNotImplemented = errors.New("inventory feature not implemented for memory storage adapter")

@@ -1522,8 +1522,8 @@ func handleAPIError(w http.ResponseWriter, err error) bool {
 
 	case errors.Is(err, graveler.ErrLockNotAcquired):
 		writeError(w, http.StatusInternalServerError, "branch is currently locked, try again later")
-	case errors.Is(err, adapter.ErrNotFound):
-		writeError(w, http.StatusGone, "Data has been removed")
+	case errors.Is(err, adapter.ErrDataNotFound):
+		writeError(w, http.StatusGone, "No data")
 	case err != nil:
 		writeError(w, http.StatusInternalServerError, err)
 	default:

@@ -9,10 +9,9 @@ import (
 	"io"
 	"strings"
 
-	"github.com/treeverse/lakefs/pkg/block/adapter"
-
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/block/adapter"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
@@ -75,7 +74,7 @@ func (m *GarbageCollectionManager) GetRules(ctx context.Context, storageNamespac
 		IdentifierType:   block.IdentifierTypeRelative,
 	}
 	reader, err := m.blockAdapter.Get(ctx, objectPointer, -1)
-	if errors.Is(err, adapter.ErrNotFound) {
+	if errors.Is(err, adapter.ErrDataNotFound) {
 		return nil, graveler.ErrNotFound
 	}
 	if err != nil {
