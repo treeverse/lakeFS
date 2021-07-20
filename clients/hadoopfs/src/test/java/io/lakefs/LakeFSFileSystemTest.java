@@ -255,13 +255,15 @@ public class LakeFSFileSystemTest {
                         mtime(UNUSED_MTIME).
                         sizeBytes(UNUSED_FILE_SIZE));
         ApiException noSuchFile = new ApiException(HttpStatus.SC_NOT_FOUND, "no such file");
-        when(objectsApi.statObject("repo", "main", "no/place"))
-                .thenThrow(noSuchFile);
-        when(objectsApi.statObject("repo", "main", "no/place/"))
-                .thenThrow(noSuchFile);
-        when(objectsApi.listObjects(eq("repo"), eq("main"), eq("no/place/"), eq(""), any(), eq("")))
-                .thenReturn(new ObjectStatsList().results(Collections.emptyList()).pagination(new Pagination().hasMore(false)));
-
+        String[] arrDirs = {"no/place", "no"};
+        for (String dir: arrDirs) {
+            when(objectsApi.statObject("repo", "main", dir))
+                    .thenThrow(noSuchFile);
+            when(objectsApi.statObject("repo", "main", dir + Constants.SEPARATOR))
+                    .thenThrow(noSuchFile);
+            when(objectsApi.listObjects(eq("repo"), eq("main"), eq(dir + Constants.SEPARATOR), eq(""), any(), eq("")))
+                    .thenReturn(new ObjectStatsList().results(Collections.emptyList()).pagination(new Pagination().hasMore(false)));
+        }
         StagingLocation stagingLocation = new StagingLocation().token("foo").physicalAddress(s3Url("/repo-base/dir-marker"));
         when(stagingApi.getPhysicalAddress("repo", "main", "no/place/"))
                 .thenReturn(stagingLocation);

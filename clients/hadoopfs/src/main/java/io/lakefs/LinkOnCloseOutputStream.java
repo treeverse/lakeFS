@@ -17,7 +17,6 @@ class LinkOnCloseOutputStream extends OutputStream {
     private final URI physicalUri;
     private final MetadataClient metadataClient;
     private final OutputStream out;
-    private final boolean deleteEmptyDirectoryMarkers;
 
     /**
      * @param lfs LakeFS file system
@@ -26,18 +25,15 @@ class LinkOnCloseOutputStream extends OutputStream {
      * @param physicalUri translated physical location of object data for underlying FileSystem.
      * @param metadataClient client used to request metadata information from the underlying FileSystem.
      * @param out stream on underlying filesystem to wrap.
-     * @param deleteEmptyDirectoryMarkers call delete empty directory markers after stream close
      */
     LinkOnCloseOutputStream(LakeFSFileSystem lfs, StagingLocation stagingLoc, ObjectLocation objectLoc,
-                            URI physicalUri, MetadataClient metadataClient, OutputStream out,
-                            boolean deleteEmptyDirectoryMarkers) {
+                            URI physicalUri, MetadataClient metadataClient, OutputStream out) {
         this.lfs = lfs;
         this.stagingLoc = stagingLoc;
         this.objectLoc = objectLoc;
         this.physicalUri = physicalUri;
         this.metadataClient = metadataClient;
         this.out = out;
-        this.deleteEmptyDirectoryMarkers = deleteEmptyDirectoryMarkers;
     }
 
     @Override
@@ -71,8 +67,6 @@ class LinkOnCloseOutputStream extends OutputStream {
         } catch (io.lakefs.clients.api.ApiException e) {
             throw new IOException("link lakeFS path to physical address", e);
         }
-        if (deleteEmptyDirectoryMarkers) {
-            lfs.deleteEmptyDirectoryMarkers(new Path(objectLoc.toString()).getParent());
-        }
+        lfs.deleteEmptyDirectoryMarkers(new Path(objectLoc.toString()).getParent());
     }
 }

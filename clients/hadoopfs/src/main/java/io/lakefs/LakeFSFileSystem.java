@@ -166,8 +166,7 @@ public class LakeFSFileSystem extends FileSystem {
             ObjectLocation objectLoc = pathToObjectLocation(path);
             return createDataOutputStream(
                     (fs, fp) -> fs.create(fp, false, bufferSize, replication, blockSize, progress),
-                    objectLoc,
-                    true);
+                    objectLoc);
         } catch (io.lakefs.clients.api.ApiException e) {
             throw new IOException("staging.getPhysicalAddress: " + e.getResponseBody(), e);
         } catch (java.net.URISyntaxException e) {
@@ -179,7 +178,6 @@ public class LakeFSFileSystem extends FileSystem {
      * Returns output stream to write data into object location
      * @param createStream callback function accepts the underlying filesystem and the physical path
      * @param objectLoc to write to
-     * @param handleFinishedWrite when true, after stream closes it will delete unnecessary directory marker directories in parent
      * @return output stream to write
      * @throws ApiException
      * @throws URISyntaxException
@@ -187,7 +185,7 @@ public class LakeFSFileSystem extends FileSystem {
      */
     @NotNull
     private FSDataOutputStream createDataOutputStream(BiFunctionWithIOException<FileSystem, Path, OutputStream> createStream,
-                                                      ObjectLocation objectLoc, boolean handleFinishedWrite)
+                                                      ObjectLocation objectLoc)
             throws ApiException, URISyntaxException, IOException {
         StagingApi staging = lfsClient.getStaging();
         StagingLocation stagingLoc = staging.getPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
@@ -198,7 +196,7 @@ public class LakeFSFileSystem extends FileSystem {
         OutputStream physicalOut = createStream.apply(physicalFs, physicalPath);
         MetadataClient metadataClient = new MetadataClient(physicalFs);
         LinkOnCloseOutputStream out = new LinkOnCloseOutputStream(this,
-                stagingLoc, objectLoc, physicalUri, metadataClient, physicalOut, handleFinishedWrite);
+                stagingLoc, objectLoc, physicalUri, metadataClient, physicalOut);
         // TODO(ariels): add fs.FileSystem.Statistics here to keep track.
         return new FSDataOutputStream(out, null);
     }
@@ -262,7 +260,7 @@ public class LakeFSFileSystem extends FileSystem {
         } else {
             result = renameFile(srcStatus, dst);
         }
-        if (src.getParent() != dst.getParent()) {
+        if (!src.getParent().equals(dst.getParent())) {
             deleteEmptyDirectoryMarkers(dst.getParent());
             createDirectoryMarkerIfEmptyDirectory(src.getParent());
         }
@@ -601,10 +599,7 @@ public class LakeFSFileSystem extends FileSystem {
     private void createDirectoryMarker(Path path) throws IOException {
         try {
             ObjectLocation objectLoc = pathToObjectLocation(path).toDirectory();
-            OutputStream out = createDataOutputStream(
-                    FileSystem::create,
-                    objectLoc,
-                    false);
+            OutputStream out = createDataOutputStream(FileSystem::create, objectLoc);
             out.close();
         } catch (io.lakefs.clients.api.ApiException e) {
             throw new IOException("createDirectoryMarker: " + e.getResponseBody(), e);
