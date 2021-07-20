@@ -17,7 +17,7 @@ Reasons for this include cost-reduction and privacy policies.
 Garbage collection rules in lakeFS define for how long to retain objects after they have been deleted (see more information [below](#considerations)).
 After running a GC job, objects that have been deleted prior to the retention period are hard-deleted.
 The GC job does not remove any commits: you will still be able to use commits containing hard-deleted objects,
-but trying to read these objects from lakeFS will result in a `409 Gone` HTTP status.
+but trying to read these objects from lakeFS will result in a `410 Gone` HTTP status.
 
 ## Understanding Garbage Collection
 
