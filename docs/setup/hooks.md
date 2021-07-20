@@ -208,7 +208,7 @@ There are a couple of online tools that can intercept and display the webhook re
 1. Go to [play.svix.com](https://play.svix.com) and copy the URL address supplied by Svix.
 It should look like `https://api.relay.svix.com/api/v1/play/receive/<Random_Gen_String>/`
    
-1. Upload the following action file to lakeFS under the path `_lakefs_actions\test.yaml` in the default branch:
+1. Upload the following action file to lakeFS under the path `_lakefs_actions/test.yaml` in the default branch:
 
    ```yaml
    name: Sending everything to Svix
@@ -228,6 +228,18 @@ It should look like `https://api.relay.svix.com/api/v1/play/receive/<Random_Gen_
         properties:
            url: "https://api.relay.svix.com/api/v1/play/receive/<Random_Gen_String>/"
    ```
+   
+   by using:
+   ```bash
+      lakectl fs upload lakefs://example-repo/main/_lakefs_action/test.yaml -s path/to/action/file
+   ```
+   or the UI.
 1. Commit that file to the branch.
+```bash
+      lakectl commit lakefs://example-repo/main -m 'added webhook action file'
+   ```   
+
 1. Every time you commit or merge to a branch, the relevant `pre-*` and `post-*` requests will be available 
 in the Svix endpoint you provided. You can also check the `Actions` tab in the lakeFS UI for more details.
+
+![Setup](../assets/img/svix_play.png)
