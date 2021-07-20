@@ -89,6 +89,10 @@ class ObjectLocation {
         return s;
     }
 
+    static String addLeadingSlash(String s) {
+        return s.isEmpty() || s.endsWith(Constants.SEPARATOR) ? s : s + Constants.SEPARATOR;
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (obj == this) {
@@ -120,5 +124,9 @@ class ObjectLocation {
 
     public String toRefString() {
         return formatPath(scheme, repository, ref);
+    }
+
+    public ObjectLocation toDirectory() {
+        return new ObjectLocation(scheme, repository, ref, addLeadingSlash(path));
     }
 }

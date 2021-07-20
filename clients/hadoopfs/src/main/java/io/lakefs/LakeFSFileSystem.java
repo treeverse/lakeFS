@@ -264,7 +264,7 @@ public class LakeFSFileSystem extends FileSystem {
         }
         if (src.getParent() != dst.getParent()) {
             deleteEmptyDirectoryMarkers(dst.getParent());
-            createDirectoryMarkerIfNecessary(src.getParent());
+            createDirectoryMarkerIfEmptyDirectory(src.getParent());
         }
         return result;
     }
@@ -422,30 +422,43 @@ public class LakeFSFileSystem extends FileSystem {
     @Override
     public boolean delete(Path path, boolean recursive) throws IOException {
         OPERATIONS_LOG.trace("delete({}), recursive={}", path, recursive);
-        boolean deleted = true;
-        if (!recursive) {
-            // TODO(barak): handle case of delete directory marker directory without recursive
-            deleted = deleteHelper(path);
-        } else {
-            ListingIterator iterator = new ListingIterator(path, true, listAmount);
-            while (iterator.hasNext()) {
-                LocatedFileStatus fileStatus = iterator.next();
-                deleteHelper(fileStatus.getPath());
-            }
+        LakeFSFileStatus status;
+        try {
+            status = getFileStatus(path);
+        } catch (FileNotFoundException ignored) {
+            return false;
         }
-        createDirectoryMarkerIfNecessary(path.getParent());
+
+        boolean deleted = true;
+        ObjectLocation loc = pathToObjectLocation(path);
+        if (status.isDirectory()) {
+            if (!recursive || status.isEmptyDirectory()) {
+                loc = loc.toDirectory();
+                deleted = deleteHelper(loc);
+            } else {
+                ListingIterator iterator = new ListingIterator(path, true, listAmount);
+                while (iterator.hasNext()) {
+                    LocatedFileStatus fileStatus = iterator.next();
+                    ObjectLocation fileLoc = pathToObjectLocation(fileStatus.getPath());
+                    deleteHelper(loc);
+                }
+            }
+        } else {
+            deleted = deleteHelper(loc);
+        }
+
+        createDirectoryMarkerIfEmptyDirectory(path.getParent());
         return deleted;
     }
 
-    private boolean deleteHelper(Path path) throws IOException {
+    private boolean deleteHelper(ObjectLocation loc) throws IOException {
         try {
-            ObjectLocation objectLoc = pathToObjectLocation(path);
             ObjectsApi objectsApi = lfsClient.getObjects();
-            objectsApi.deleteObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
+            objectsApi.deleteObject(loc.getRepository(), loc.getRef(), loc.getPath());
         } catch (ApiException e) {
             // This condition mimics s3a behaviour in https://github.com/apache/hadoop/blob/7f93349ee74da5f35276b7535781714501ab2457/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L2741
             if (e.getCode() == HttpStatus.SC_NOT_FOUND) {
-                LOG.error("Could not delete: {}, reason: {}", path, e.getResponseBody());
+                LOG.error("Could not delete: {}, reason: {}", loc, e.getResponseBody());
                 return false;
             }
             throw new IOException("deleteObject", e);
@@ -468,7 +481,7 @@ public class LakeFSFileSystem extends FileSystem {
 
                 LakeFSFileStatus status = getFileStatus(f);
                 if (status.isDirectory() && status.isEmptyDirectory()) {
-                    deleteHelper(f);
+                    deleteHelper(objectLocation.toDirectory());
                 }
             } catch (IOException ignored) {
             }
@@ -481,7 +494,12 @@ public class LakeFSFileSystem extends FileSystem {
         }
     }
 
-    private void createDirectoryMarkerIfNecessary(Path f) throws IOException {
+    /**
+     * create marker object for empty directory
+     * @param f path to check if empty directory marker is needed
+     * @throws IOException any issue with lakeFS or underlying filesystem
+     */
+    private void createDirectoryMarkerIfEmptyDirectory(Path f) throws IOException {
         ObjectLocation objectLocation = pathToObjectLocation(f);
         if (objectLocation.isValidPath() && !exists(f)) {
             createDirectoryMarker(f);
@@ -565,12 +583,7 @@ public class LakeFSFileSystem extends FileSystem {
 
     private void createDirectoryMarker(Path path) throws IOException {
         try {
-            ObjectLocation objectLoc = pathToObjectLocation(path);
-            // append directory separator
-            if (!objectLoc.getPath().endsWith(SEPARATOR)) {
-                objectLoc.setPath(objectLoc.getPath() + SEPARATOR);
-            }
-
+            ObjectLocation objectLoc = pathToObjectLocation(path).toDirectory();
             OutputStream out = createDataOutputStream(
                     FileSystem::create,
                     objectLoc,

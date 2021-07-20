@@ -269,6 +269,30 @@ public class LakeFSFileSystemTest {
     }
 
     @Test
+    public void testDelete_EmptyDirectoryExists() throws ApiException, IOException {
+        ObjectLocation dirObjLoc = new ObjectLocation("lakefs", "repo", "main", "delete/me");
+        String key = objectLocToS3ObjKey(dirObjLoc);
+
+        ApiException noSuchFile = new ApiException(HttpStatus.SC_NOT_FOUND, "no such file");
+        when(objectsApi.statObject(dirObjLoc.getRepository(), dirObjLoc.getRef(), dirObjLoc.getPath()))
+                .thenThrow(noSuchFile);
+
+        ObjectStats srcStats = new ObjectStats()
+                .path(dirObjLoc.getPath() + Constants.SEPARATOR)
+                .sizeBytes(0L)
+                .mtime(UNUSED_MTIME)
+                .pathType(PathTypeEnum.OBJECT)
+                .physicalAddress(s3Url(key+Constants.SEPARATOR))
+                .checksum(UNUSED_CHECKSUM);
+        when(objectsApi.statObject(dirObjLoc.getRepository(), dirObjLoc.getRef(), dirObjLoc.getPath() + Constants.SEPARATOR))
+                .thenReturn(srcStats)
+                .thenThrow(noSuchFile);
+
+        boolean success = fs.delete(new Path("lakefs://repo/main/delete/me"), false);
+        Assert.assertTrue(success);
+    }
+
+    @Test
     public void testDelete_DirectoryExists() throws ApiException, IOException {
         doThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "not found"))
                 .when(objectsApi).deleteObject("repo", "main", "delete/sample");
@@ -546,8 +570,6 @@ public class LakeFSFileSystemTest {
         // io.lakefs.LakeFSFileSystem.getFileStatus tries to get object stats, when it can't find an object if will
         // fall back to try listing items under this path to discover the objects it contains. if objects are found,
         // then the path considered a directory.
-        when(objectsApi.statObject(dirObjLoc.getRepository(), dirObjLoc.getRef(), dirObjLoc.getPath()))
-                .thenThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "no such file"));
 
         ObjectStatsList stats = new ObjectStatsList();
 
@@ -556,6 +578,8 @@ public class LakeFSFileSystemTest {
             ObjectStats markerStat = mockEmptyDirectoryMarker(dirObjLoc);
             stats.addResultsItem(markerStat);
         } else {
+            when(objectsApi.statObject(dirObjLoc.getRepository(), dirObjLoc.getRef(), dirObjLoc.getPath()))
+                    .thenThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "no such file"));
             when(objectsApi.statObject(dirObjLoc.getRepository(), dirObjLoc.getRef(), dirObjLoc.getPath() + Constants.SEPARATOR))
                     .thenThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "no such file"));
         }
