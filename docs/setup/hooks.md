@@ -9,14 +9,25 @@ redirect_from: ../hooks.html
 ---
 
 # Configurable Hooks
+{: .no_toc }
+
+## Table of contents
+{: .no_toc .text-delta }
+
+1. TOC
+{:toc}
+   
 Like other version control systems, lakeFS allows the configuration of `Actions` to trigger when predefined events occur.
  
 Supported Events:
 1. `pre_commit` - Action runs when the commit occurs, before the commit is finalized.
-2. `pre_merge` - Action runs when the merge occurs, before the merge is finalized.
- 
+1. `post_commit` - Action runs after the commit is finalized. 
+1. `pre_merge` - Action runs when the merge occurs, before the merge is finalized.
+1. `post_merge` - Action runs after the merge is finalized.
+
 lakeFS `Actions` are handled per repository and cannot be shared between repositories.  
 Failure of any `Hook` under any `Action` of a `pre_*` event will result in aborting the lakeFS operation that is taking place.
+On the contrary, `Hook` failures under any `Action` of a `post_*` event will not affect the same operation.
 
 `Hooks` are managed by `Action` files that are written to a prefix in the lakeFS repository. 
 This allows configuration-as-code inside lakeFS, where `Action` files are declarative and written in YAML.
@@ -30,15 +41,23 @@ This allows configuration-as-code inside lakeFS, where `Action` files are declar
 
 For more examples and configuration samples, check out [lakeFS-hooks](https://github.com/treeverse/lakeFS-hooks) example repo.
 
-## Action
+## Terminology
+
+### Action
+{: .no_toc }
+
 An `Action` is a list of `Hooks` with the same trigger configuration, i.e. an event will trigger all `Hooks` under an `Action`, or none at all.
 The `Hooks` under an `Action` are ordered and so is their execution. A `Hook` will only be executed if all previous `Hooks` that were triggered with it, had passed.
 
-### Hook
+#### Hook
+{: .no_toc }
+
 A `Hook` is the basic building block of an `Action`. 
 Failure of a single `Hook` will stop the execution of the containing `Action` and fail the `Run`. 
 
-### Action file
+#### Action file
+{: .no_toc }
+
 Schema of the Action file:
 
 |Property          |Description                                            |Data Type |Required |Default Value
@@ -77,14 +96,16 @@ hooks:
 Use `lakectl actions validate <path>` to validate your action files locally. 
 {: .note }
 
-## Run
+### Run
+{: .no_toc }
+
 A `Run` is an instantiation of the repository's `Action` files when the triggering event occurs. 
 For example, if our repository contains a pre-commit hook, every commit would generate a `Run` for that specific commit.
  
 lakeFS will fetch, parse and filter the repository `Action` files and start to execute the `Hooks` under each `Action`.
 All executed `Hooks` (each with `hook_run_id`) exists in the context of that `Run` (`run_id`).   
 
-## How to upload Action files
+## Uploading Action files
 `Action` files should be uploaded with the prefix `_lakefs_actions/` to the lakeFS repository.
 When an actionable event (see Supported Events above) takes place, lakeFS will read all files with prefix `_lakefs_actions/`
 in the repository branch where the action occurred. 
@@ -100,6 +121,8 @@ The endpoint also allows to download the execution log of any executed `Hook` un
 
 
 ### Result Files 
+{: .no_toc }
+
 There are 2 types of files that are stored in the metadata section of lakeFS repository with each `Run`:
 1. `_lakefs/actions/log/<runID>/<hookRunID>.log` - Execution log of the specific `Hook` run.
 2. `_lakefs/actions/log/<runID>/run.manifest` - Manifest with all `Hooks` execution for the run with their results and additional metadata.
@@ -108,10 +131,9 @@ There are 2 types of files that are stored in the metadata section of lakeFS rep
 Metadata files stored in the metadata section aren't accessible like user stored files.
 {: .note }
 
-## Type of hooks
+## Hook types
 Currently, only a single type of `Hooks` is supported by lakeFS: `webhook`.
-
-## Webhooks
+### Webhooks
 A `Webhook` is a `Hook` type that sends an HTTP POST request to the configured URL.
 Any non 2XX response by the responding endpoint will fail the `Hook`, cancel the execution of the following `Hooks` 
 under the same `Action` and abort the operation that triggered the `Action`.
@@ -120,7 +142,7 @@ under the same `Action` and abort the operation that triggered the `Action`.
 Moreover, since the branch is locked during the execution, any write operation to the branch (like uploading file or committing) by the webhook server is bound to fail.
 {: .note } 
 
-### Action file Webhook properties
+#### Action file Webhook properties
 
 |Property          |Description                                            |Data Type                                                                                |Required |Default Value
 |------------------|-------------------------------------------------------|-----------------------------------------------------------------------------------------|---------|--------------------------------------|
@@ -144,7 +166,7 @@ hooks:
 ...
 ```
 
-### Request body schema
+#### Request body schema
 Upon execution, a webhook will send a request containing a JSON object with the following fields:
 
 |Field             |Description                                                                          |Type  |Example                  |
@@ -177,3 +199,47 @@ Example:
   }
 }
 ```
+
+## Experimentation
+
+It's sometimes easier to start experimenting with lakeFS webhooks, even before you have a running server to receive the calls.
+There are a couple of online tools that can intercept and display the webhook requests, one of them is Svix.
+
+1. Go to [play.svix.com](https://play.svix.com) and copy the URL address supplied by Svix.
+It should look like `https://api.relay.svix.com/api/v1/play/receive/<Random_Gen_String>/`
+   
+1. Upload the following action file to lakeFS under the path `_lakefs_actions/test.yaml` in the default branch:
+
+   ```yaml
+   name: Sending everything to Svix
+   description: Experimenting with webhooks
+   on:
+      pre-commit:
+         branches:
+      pre-merge:
+         branches:
+      post-commit:
+         branches:
+      post-merge:
+         branches:
+   hooks:
+      - id: svix
+        type: webhook
+        properties:
+           url: "https://api.relay.svix.com/api/v1/play/receive/<Random_Gen_String>/"
+   ```
+   
+   by using:
+   ```bash
+      lakectl fs upload lakefs://example-repo/main/_lakefs_action/test.yaml -s path/to/action/file
+   ```
+   or the UI.
+1. Commit that file to the branch.
+```bash
+      lakectl commit lakefs://example-repo/main -m 'added webhook action file'
+   ```   
+
+1. Every time you commit or merge to a branch, the relevant `pre-*` and `post-*` requests will be available 
+in the Svix endpoint you provided. You can also check the `Actions` tab in the lakeFS UI for more details.
+
+![Setup](../assets/img/svix_play.png)
