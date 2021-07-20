@@ -15,14 +15,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-openapi/swag"
-
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/go-openapi/swag"
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/block/adapter"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/config"
@@ -1522,10 +1522,10 @@ func handleAPIError(w http.ResponseWriter, err error) bool {
 
 	case errors.Is(err, graveler.ErrLockNotAcquired):
 		writeError(w, http.StatusInternalServerError, "branch is currently locked, try again later")
-
+	case errors.Is(err, adapter.ErrNotFound):
+		writeError(w, http.StatusGone, "Data has been removed")
 	case err != nil:
 		writeError(w, http.StatusInternalServerError, err)
-
 	default:
 		return false
 	}
@@ -2367,8 +2367,7 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 
 	// setup response
 	reader, err := c.BlockAdapter.Get(ctx, block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: entry.PhysicalAddress}, entry.Size)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
+	if handleAPIError(w, err) {
 		return
 	}
 	defer func() {
