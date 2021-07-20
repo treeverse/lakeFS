@@ -289,26 +289,29 @@ public class LakeFSFileSystem extends FileSystem {
             }
             // lakefsFs only has non-empty directories. Therefore, if the destination is an existing directory we consider
             // it to be non-empty. The behaviour is same as https://github.com/apache/hadoop/blob/2960d83c255a00a549f8809882cd3b73a6266b6d/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L1530
-            LOG.error("renameDirectory: rename src {} to dst {}: dst is a non-empty directory.", src, dst);
-            return false;
+            if (!dstFileStatus.isEmptyDirectory()) {
+                LOG.error("renameDirectory: rename src {} to dst {}: dst is a non-empty directory.", src, dst);
+                return false;
+            }
         } catch (FileNotFoundException e) {
             LOG.debug("renameDirectory: dst {} does not exist", dst);
         }
 
         ListingIterator iterator = new ListingIterator(src, true, listAmount);
+        iterator.setRemoveDirectory(false);
         while (iterator.hasNext()) {
             // TODO (Tals): parallelize objects rename process.
             LakeFSLocatedFileStatus locatedFileStatus = iterator.next();
-            Path objDst = dstExists ? buildObjPathOnExistingDestinationDir(locatedFileStatus.getPath(), dst) :
-                    buildObjPathOnNonExistingDestinationDir(locatedFileStatus.getPath(), src, dst);
-
+            Path objDst = dstExists
+                    ? buildObjPathOnExistingDestinationDir(locatedFileStatus.getPath(), dst)
+                    : buildObjPathOnNonExistingDestinationDir(locatedFileStatus.getPath(), src, dst);
             try {
                 renameObject(locatedFileStatus.toLakeFSFileStatus(), objDst);
             } catch (IOException e) {
                 // Rename dir operation in non-transactional. if one object rename failed we will end up in an
                 // intermediate state. TODO: consider adding a cleanup similar to
                 // https://github.com/apache/hadoop/blob/2960d83c255a00a549f8809882cd3b73a6266b6d/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/impl/RenameOperation.java#L191
-                throw new IOException("renameDirectory: failed to rename src dir " + src, e);
+                throw new IOException("renameDirectory: failed to rename src directory " + src, e);
             }
         }
         return true;
@@ -375,6 +378,10 @@ public class LakeFSFileSystem extends FileSystem {
     private boolean renameObject(LakeFSFileStatus srcStatus, Path dst) throws IOException {
         ObjectLocation srcObjectLoc = pathToObjectLocation(srcStatus.getPath());
         ObjectLocation dstObjectLoc = pathToObjectLocation(dst);
+        if (srcStatus.isEmptyDirectory()) {
+            srcObjectLoc = srcObjectLoc.toDirectory();
+            dstObjectLoc = dstObjectLoc.toDirectory();
+        }
 
         ObjectsApi objects = lfsClient.getObjects();
         //TODO (Tals): Can we add metadata? we currently don't have an API to get the metadata of an object.
@@ -432,15 +439,23 @@ public class LakeFSFileSystem extends FileSystem {
         boolean deleted = true;
         ObjectLocation loc = pathToObjectLocation(path);
         if (status.isDirectory()) {
-            if (!recursive || status.isEmptyDirectory()) {
+            if (!recursive && !status.isEmptyDirectory()) {
+                throw new IOException("Path is a non-empty directory: " + path);
+            }
+
+            if (status.isEmptyDirectory()) {
                 loc = loc.toDirectory();
                 deleted = deleteHelper(loc);
             } else {
                 ListingIterator iterator = new ListingIterator(path, true, listAmount);
+                iterator.setRemoveDirectory(false);
                 while (iterator.hasNext()) {
                     LocatedFileStatus fileStatus = iterator.next();
                     ObjectLocation fileLoc = pathToObjectLocation(fileStatus.getPath());
-                    deleteHelper(loc);
+                    if (fileStatus.isDirectory()) {
+                        fileLoc = fileLoc.toDirectory();
+                    }
+                    deleteHelper(fileLoc);
                 }
             }
         } else {
@@ -467,8 +482,10 @@ public class LakeFSFileSystem extends FileSystem {
     }
 
     /**
-     * Delete parents directory markers from path until the root.
+     * Delete parents directory markers from path until root.
      * Assume the caller created an object under the path which will make the empty directory irrelevant.
+     * Based on the S3AFileSystem implementation.
+     * NOTE there is a race with mkdir which in case we move a file to a directory which mkdirs try to create, in case we try to delete
      * @param f path to start for empty directory markers
      */
     void deleteEmptyDirectoryMarkers(Path f) {
@@ -607,9 +624,11 @@ public class LakeFSFileSystem extends FileSystem {
     }
 
     /**
-     * {@inheritDoc}
-     *
-     * @return {@link LakeFSFileStatus}
+     * Return a file status object that represents the path.
+     * @param path to a file or directory
+     * @return a LakeFSFileStatus object
+     * @throws java.io.FileNotFoundException when the path does not exist;
+     *         IOException API call or underlying filesystem exceptions
      */
     @Override
     public LakeFSFileStatus getFileStatus(Path path) throws IOException {
@@ -636,6 +655,7 @@ public class LakeFSFileSystem extends FileSystem {
         }
         // not found as a file or directory marker; check if path is a "directory", i.e. a prefix.
         ListingIterator iterator = new ListingIterator(path, true, 1);
+        iterator.setRemoveDirectory(false);
         if (iterator.hasNext()) {
             Path filePath = new Path(objectLoc.toString());
             return new LakeFSFileStatus.Builder(filePath).isdir(true).build();
@@ -754,10 +774,10 @@ public class LakeFSFileSystem extends FileSystem {
     }
 
     class ListingIterator implements RemoteIterator<LakeFSLocatedFileStatus> {
-        private final boolean removeDirectory;
         private final ObjectLocation objectLocation;
         private final String delimiter;
         private final int amount;
+        private boolean removeDirectory;
         private String nextOffset;
         private boolean last;
         private List<ObjectStats> chunk;
@@ -775,12 +795,8 @@ public class LakeFSFileSystem extends FileSystem {
         public ListingIterator(Path path, boolean recursive, int amount) {
             this.removeDirectory = recursive;
             this.chunk = Collections.emptyList();
-            this.objectLocation = pathToObjectLocation(path);
-            String locationPath = this.objectLocation.getPath();
-            // we assume that 'path' is a directory by default
-            if (!locationPath.isEmpty() && !locationPath.endsWith(SEPARATOR)) {
-                this.objectLocation.setPath(locationPath + SEPARATOR);
-            }
+            // we assume that 'path' is a directory
+            this.objectLocation = pathToObjectLocation(path).toDirectory();
             this.delimiter = recursive ? "" : SEPARATOR;
             this.last = false;
             this.pos = 0;
@@ -819,6 +835,14 @@ public class LakeFSFileSystem extends FileSystem {
                 }
                 // loop until we have something or last chunk
             } while (chunk.isEmpty() && !last);
+        }
+
+        public boolean isRemoveDirectory() {
+            return removeDirectory;
+        }
+
+        public void setRemoveDirectory(boolean removeDirectory) {
+            this.removeDirectory = removeDirectory;
         }
 
         @Override

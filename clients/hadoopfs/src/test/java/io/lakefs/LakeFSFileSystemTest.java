@@ -21,7 +21,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileAlreadyExistsException;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.s3a.S3AFileSystem;
 import org.apache.http.HttpStatus;
 import org.junit.Assert;
 import org.junit.Before;
@@ -241,12 +240,13 @@ public class LakeFSFileSystemTest {
         when(objectsApi.listObjects(any(), any(), any(), any(), any(), any()))
             .thenReturn(new ObjectStatsList().results(Collections.emptyList()).pagination(new Pagination().hasMore(false)));
 
-        Assert.assertFalse(fs.exists(p));
+        boolean exists = fs.exists(p);
+        Assert.assertFalse(exists);
     }
 
     @Test
     public void testDelete_FileExists() throws ApiException, IOException {
-        when(objectsApi.statObject("repo", "main", "delete/sample/file.txt"))
+        when(objectsApi.statObject("repo", "main", "no/place/file.txt"))
                 .thenReturn(new ObjectStats().
                         path("lakefs://repo/main/delete/sample/file.txt").
                         pathType(PathTypeEnum.OBJECT).
@@ -254,18 +254,38 @@ public class LakeFSFileSystemTest {
                         checksum(UNUSED_CHECKSUM).
                         mtime(UNUSED_MTIME).
                         sizeBytes(UNUSED_FILE_SIZE));
+        ApiException noSuchFile = new ApiException(HttpStatus.SC_NOT_FOUND, "no such file");
+        when(objectsApi.statObject("repo", "main", "no/place"))
+                .thenThrow(noSuchFile);
+        when(objectsApi.statObject("repo", "main", "no/place/"))
+                .thenThrow(noSuchFile);
+        when(objectsApi.listObjects(eq("repo"), eq("main"), eq("no/place/"), eq(""), any(), eq("")))
+                .thenReturn(new ObjectStatsList().results(Collections.emptyList()).pagination(new Pagination().hasMore(false)));
+
+        StagingLocation stagingLocation = new StagingLocation().token("foo").physicalAddress(s3Url("/repo-base/dir-marker"));
+        when(stagingApi.getPhysicalAddress("repo", "main", "no/place/"))
+                .thenReturn(stagingLocation);
+
         // return true because file found
-        Assert.assertTrue(
-                fs.delete(new Path("lakefs://repo/main/no/place/file.txt"), false));
+        boolean success = fs.delete(new Path("lakefs://repo/main/no/place/file.txt"), false);
+        Assert.assertTrue(success);
     }
 
     @Test
     public void testDelete_FileNotExists() throws ApiException, IOException {
         doThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "not found"))
                 .when(objectsApi).deleteObject("repo", "main", "no/place/file.txt");
+        ApiException noSuchFile = new ApiException(HttpStatus.SC_NOT_FOUND, "no such file");
+        when(objectsApi.statObject("repo", "main", "no/place/file.txt"))
+                .thenThrow(noSuchFile);
+        when(objectsApi.statObject("repo", "main", "no/place/file.txt/"))
+                .thenThrow(noSuchFile);
+        when(objectsApi.listObjects(eq("repo"), eq("main"), eq("no/place/file.txt/"), eq(""), any(), eq("")))
+                .thenReturn(new ObjectStatsList().results(Collections.emptyList()).pagination(new Pagination().hasMore(false)));
+
         // return false because file not found
-        Assert.assertFalse(
-                fs.delete(new Path("lakefs://repo/main/no/place/file.txt"), false));
+        boolean success = fs.delete(new Path("lakefs://repo/main/no/place/file.txt"), false);
+        Assert.assertFalse(success);
     }
 
     @Test
@@ -292,10 +312,13 @@ public class LakeFSFileSystemTest {
         Assert.assertTrue(success);
     }
 
-    @Test
-    public void testDelete_DirectoryExists() throws ApiException, IOException {
-        doThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "not found"))
-                .when(objectsApi).deleteObject("repo", "main", "delete/sample");
+    @Test(expected = IOException.class)
+    public void testDelete_DirectoryWithFile() throws ApiException, IOException {
+        ApiException noSuchFile = new ApiException(HttpStatus.SC_NOT_FOUND, "no such file");
+        when(objectsApi.statObject("repo", "main", "delete/sample"))
+                .thenThrow(noSuchFile);
+        when(objectsApi.statObject("repo", "main", "delete/sample/"))
+                .thenThrow(noSuchFile);
         when(objectsApi.listObjects(eq("repo"), eq("main"), eq("delete/sample/"), eq(""), any(), eq("")))
                 .thenReturn(new ObjectStatsList().results(Collections.singletonList(new ObjectStats().
                         path("lakefs://repo/main/delete/sample/file.txt").
@@ -304,35 +327,43 @@ public class LakeFSFileSystemTest {
                         checksum(UNUSED_CHECKSUM).
                         mtime(UNUSED_MTIME).
                         sizeBytes(UNUSED_FILE_SIZE))).pagination(new Pagination().hasMore(false)));
+        doThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "not found"))
+                .when(objectsApi).deleteObject("repo", "main", "delete/sample/");
         // return false because we can't delete a directory without recursive
-        Assert.assertFalse(
-                fs.delete(new Path("lakefs://repo/main/delete/sample"), false));
+        fs.delete(new Path("lakefs://repo/main/delete/sample"), false);
     }
 
     @Test
     public void testDelete_NotExistsRecursive() throws ApiException, IOException {
-        doThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "not found"))
-                .when(objectsApi).deleteObject("repo", "main", "no/place/file.txt");
+        ApiException noSuchFileException = new ApiException(HttpStatus.SC_NOT_FOUND, "no such file");
+        when(objectsApi.statObject(eq("repo"), eq("main"), any()))
+                .thenThrow(noSuchFileException);
         when(objectsApi.listObjects(eq("repo"), eq("main"), eq("no/place/file.txt/"), eq(""), any(), eq("")))
                 .thenReturn(new ObjectStatsList().results(Collections.emptyList()).pagination(new Pagination().hasMore(false)));
-        // recursive will always end successfully
-        Assert.assertTrue(
-                fs.delete(new Path("lakefs://repo/main/no/place/file.txt"), true));
+        boolean delete = fs.delete(new Path("lakefs://repo/main/no/place/file.txt"), true);
+        Assert.assertFalse(delete);
     }
 
     @Test
-    public void testDelete_ExistsRecursive() throws ApiException, IOException {
+    public void testDelete_DirectoryWithFileRecursive() throws ApiException, IOException {
+        ApiException noSuchFileException = new ApiException(HttpStatus.SC_NOT_FOUND, "no such file");
+        when(objectsApi.statObject("repo", "main", "delete/sample"))
+                .thenThrow(noSuchFileException);
+        when(objectsApi.statObject("repo", "main", "delete/sample/"))
+                .thenThrow(noSuchFileException);
         when(objectsApi.listObjects(eq("repo"), eq("main"), eq("delete/sample/"), eq(""), any(), eq("")))
-                .thenReturn(new ObjectStatsList().results(Collections.singletonList(new ObjectStats().
-                        path("lakefs://repo/main/delete/sample/file.txt").
-                        pathType(PathTypeEnum.OBJECT).
-                        physicalAddress(s3Url("/repo-base/delete")).
-                        checksum(UNUSED_CHECKSUM).
-                        mtime(UNUSED_MTIME).
-                        sizeBytes(UNUSED_FILE_SIZE))).pagination(new Pagination().hasMore(false)));
+                .thenReturn(new ObjectStatsList().results(Collections
+                        .singletonList(new ObjectStats().
+                                path("lakefs://repo/main/delete/sample/file.txt").
+                                pathType(PathTypeEnum.OBJECT).
+                                physicalAddress(s3Url("/repo-base/delete")).
+                                checksum(UNUSED_CHECKSUM).
+                                mtime(UNUSED_MTIME).
+                                sizeBytes(UNUSED_FILE_SIZE)))
+                        .pagination(new Pagination().hasMore(false)));
         // recursive will always end successfully
-        Assert.assertTrue(
-                fs.delete(new Path("lakefs://repo/main/delete/sample"), true));
+        boolean delete = fs.delete(new Path("lakefs://repo/main/delete/sample"), true);
+        Assert.assertTrue(delete);
     }
 
     @Test
@@ -370,7 +401,7 @@ public class LakeFSFileSystemTest {
         Assert.assertEquals(ImmutableList.of("repo-base/create"), actualFiles);
 
         // expected to delete the empty dir marker
-        verifyObjDeletion(sub2Loc);
+        verifyObjDeletion(new ObjectLocation("lakefs", "repo", "main", "sub1/sub2/"));
     }
 
     @Test
