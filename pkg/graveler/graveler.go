@@ -783,7 +783,6 @@ func (g *Graveler) GetCommit(ctx context.Context, repositoryID RepositoryID, com
 }
 
 func generateStagingToken(repositoryID RepositoryID, branchID BranchID) StagingToken {
-	// TODO(Guys): initial implementation, change this
 	uid := uuid.New().String()
 	return StagingToken(fmt.Sprintf("%s-%s:%s", repositoryID, branchID, uid))
 }
