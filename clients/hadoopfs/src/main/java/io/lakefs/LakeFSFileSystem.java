@@ -64,7 +64,7 @@ public class LakeFSFileSystem extends FileSystem {
 
     @Override
     public void initialize(URI name, Configuration conf) throws IOException {
-        initializeWithClient(name, conf, new LakeFSClient(conf));
+        initializeWithClient(name, conf, new LakeFSClient(name.getScheme(), conf));
     }
 
     void initializeWithClient(URI name, Configuration conf, LakeFSClient lfsClient) throws IOException {
@@ -79,7 +79,7 @@ public class LakeFSFileSystem extends FileSystem {
         }
         setConf(conf);
 
-        listAmount = conf.getInt(FS_LAKEFS_LIST_AMOUNT_KEY, DEFAULT_LIST_AMOUNT);
+        listAmount = FSConfiguration.getInt(conf, uri.getScheme(), LIST_AMOUNT_KEY_SUFFIX, DEFAULT_LIST_AMOUNT);
 
         // based on path get underlying FileSystem
         Path path = new Path(name);
