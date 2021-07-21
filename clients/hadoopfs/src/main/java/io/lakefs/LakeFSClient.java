@@ -14,30 +14,30 @@ import java.io.IOException;
  * This class uses the configuration to initialize API client and instance per API interface we expose.
  */
 public class LakeFSClient {
-    public static final String DEFAULT_SCHEME = "lakefs";
     public static final String DEFAULT_ENDPOINT = "http://localhost:8000/api/v1";
     private static final String BASIC_AUTH = "basic_auth";
+    public static final String ACCESS_KEY_KEY_SUFFIX = "access.key";
+    public static final String SECRET_KEY_KEY_SUFFIX = "secret.key";
+    public static final String ENDPOINT_KEY_SUFFIX = "endpoint";
 
     private final ObjectsApi objects;
     private final StagingApi staging;
     private final RepositoriesApi repositories;
 
     public LakeFSClient(String scheme, Configuration conf) throws IOException {
-        String accessKey = getFSConfigurationValue(conf, scheme, "access.key");
+        String accessKey = FSConfiguration.get(conf, scheme, ACCESS_KEY_KEY_SUFFIX);
         if (accessKey == null) {
             throw new IOException("Missing lakeFS access key");
         }
 
-        String secretKey = getFSConfigurationValue(conf, scheme, "secret.key");
+        String secretKey = FSConfiguration.get(conf, scheme, SECRET_KEY_KEY_SUFFIX);
         if (secretKey == null) {
             throw new IOException("Missing lakeFS secret key");
         }
 
         ApiClient apiClient = io.lakefs.clients.api.Configuration.getDefaultApiClient();
-        String endpoint = getFSConfigurationValue(conf, scheme, "endpoint");
-        if (endpoint == null) {
-            endpoint = DEFAULT_ENDPOINT;
-        } else if (endpoint.endsWith("/")) {
+        String endpoint = FSConfiguration.get(conf, scheme, ENDPOINT_KEY_SUFFIX, DEFAULT_ENDPOINT);
+        if (endpoint.endsWith("/")) {
             endpoint = endpoint.substring(0, endpoint.length() - 1);
         }
         apiClient.setBasePath(endpoint);
@@ -60,27 +60,4 @@ public class LakeFSClient {
     }
 
     public RepositoriesApi getRepositories() { return repositories; }
-
-    private static String formatFSConfigurationKey(String scheme, String key) {
-        return "fs." + scheme + "." + key;
-    }
-
-    /**
-     * lookup value from configuration based on scheme and key suffix.
-     * first try to get "fs.\<scheme\>.\<key suffix\>", if value not found use the default scheme
-     * to build a key for lookup.
-     * @param conf configuration object to get the value from
-     * @param scheme used to format the key for lookup
-     * @param keySuffix key suffix
-     * @return key value or null in case no value found
-     */
-    private static String getFSConfigurationValue(Configuration conf, String scheme, String keySuffix) {
-        String key = formatFSConfigurationKey(scheme, keySuffix);
-        String value = conf.get(key);
-        if (value == null && !scheme.equals(DEFAULT_SCHEME)) {
-            key = formatFSConfigurationKey(DEFAULT_SCHEME, keySuffix);
-            value = conf.get(key);
-        }
-        return value;
-    }
 }

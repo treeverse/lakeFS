@@ -38,7 +38,6 @@ import org.testcontainers.utility.DockerImageName;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
