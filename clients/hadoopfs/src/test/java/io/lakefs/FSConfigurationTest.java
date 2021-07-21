@@ -1,11 +1,12 @@
 package io.lakefs;
 
-import junit.framework.TestCase;
 import org.apache.hadoop.conf.Configuration;
 import org.junit.Assert;
+import org.junit.Test;
 
-public class FSConfigurationTest extends TestCase {
+public class FSConfigurationTest {
 
+    @Test
     public void testGet() {
         Configuration conf = new Configuration(false);
         conf.set("fs.lakefs.key1", "lakefs1");
@@ -28,6 +29,7 @@ public class FSConfigurationTest extends TestCase {
         Assert.assertEquals("default", FSConfiguration.get(conf, "lakefs", "missing", "default"));
     }
 
+    @Test
     public void testGetInt() {
         Configuration conf = new Configuration(false);
         conf.setInt("fs.lakefs.key1", 1);

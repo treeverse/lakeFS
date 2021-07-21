@@ -14,29 +14,25 @@ import java.io.IOException;
  * This class uses the configuration to initialize API client and instance per API interface we expose.
  */
 public class LakeFSClient {
-    public static final String DEFAULT_ENDPOINT = "http://localhost:8000/api/v1";
     private static final String BASIC_AUTH = "basic_auth";
-    public static final String ACCESS_KEY_KEY_SUFFIX = "access.key";
-    public static final String SECRET_KEY_KEY_SUFFIX = "secret.key";
-    public static final String ENDPOINT_KEY_SUFFIX = "endpoint";
 
     private final ObjectsApi objects;
     private final StagingApi staging;
     private final RepositoriesApi repositories;
 
     public LakeFSClient(String scheme, Configuration conf) throws IOException {
-        String accessKey = FSConfiguration.get(conf, scheme, ACCESS_KEY_KEY_SUFFIX);
+        String accessKey = FSConfiguration.get(conf, scheme, Constants.ACCESS_KEY_KEY_SUFFIX);
         if (accessKey == null) {
             throw new IOException("Missing lakeFS access key");
         }
 
-        String secretKey = FSConfiguration.get(conf, scheme, SECRET_KEY_KEY_SUFFIX);
+        String secretKey = FSConfiguration.get(conf, scheme, Constants.SECRET_KEY_KEY_SUFFIX);
         if (secretKey == null) {
             throw new IOException("Missing lakeFS secret key");
         }
 
         ApiClient apiClient = io.lakefs.clients.api.Configuration.getDefaultApiClient();
-        String endpoint = FSConfiguration.get(conf, scheme, ENDPOINT_KEY_SUFFIX, DEFAULT_ENDPOINT);
+        String endpoint = FSConfiguration.get(conf, scheme, Constants.ENDPOINT_KEY_SUFFIX, Constants.DEFAULT_CLIENT_ENDPOINT);
         if (endpoint.endsWith("/")) {
             endpoint = endpoint.substring(0, endpoint.length() - 1);
         }

@@ -79,7 +79,7 @@ public class LakeFSFileSystem extends FileSystem {
         }
         setConf(conf);
 
-        listAmount = FSConfiguration.getInt(conf, uri.getScheme(), FS_LAKEFS_LIST_AMOUNT_KEY_SUFFIX, DEFAULT_LIST_AMOUNT);
+        listAmount = FSConfiguration.getInt(conf, uri.getScheme(), LIST_AMOUNT_KEY_SUFFIX, DEFAULT_LIST_AMOUNT);
 
         // based on path get underlying FileSystem
         Path path = new Path(name);
