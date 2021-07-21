@@ -13,6 +13,7 @@ import (
 	"github.com/Azure/azure-pipeline-go/pipeline"
 	"github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/block/adapter"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -143,6 +144,10 @@ func translatePutOpts(opts block.PutOpts) azblob.UploadStreamToBlockBlobOptions 
 	return res
 }
 
+func (a *Adapter) log(ctx context.Context) logging.Logger {
+	return logging.FromContext(ctx)
+}
+
 func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) error {
 	var err error
 	defer reportMetrics("Put", time.Now(), &sizeBytes, &err)
@@ -193,8 +198,11 @@ func (a *Adapter) Download(ctx context.Context, obj block.ObjectPointer, offset,
 
 	keyOptions := azblob.ClientProvidedKeyOptions{}
 	downloadResponse, err := blobURL.Download(ctx, offset, count, azblob.BlobAccessConditions{}, false, keyOptions)
-
+	if isErrNotFound(err) {
+		return nil, adapter.ErrDataNotFound
+	}
 	if err != nil {
+		a.log(ctx).WithError(err).Errorf("failed to get azure blob from container %s key %s", container, blobURL)
 		return nil, err
 	}
 	bodyStream := downloadResponse.Body(a.configurations.retryReaderOptions)
@@ -217,7 +225,6 @@ func (a *Adapter) Walk(ctx context.Context, walkOpt block.WalkOpts, walkFn block
 		if err != nil {
 			return err
 		}
-
 		marker = listBlob.NextMarker
 		for _, blobInfo := range listBlob.Segment.BlobItems {
 			if err := walkFn(blobInfo.Name); err != nil {
@@ -226,6 +233,11 @@ func (a *Adapter) Walk(ctx context.Context, walkOpt block.WalkOpts, walkFn block
 		}
 	}
 	return nil
+}
+
+func isErrNotFound(err error) bool {
+	var storageErr azblob.StorageError
+	return errors.As(err, &storageErr) && storageErr.ServiceCode() == azblob.ServiceCodeBlobNotFound
 }
 
 func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, error) {
@@ -241,11 +253,11 @@ func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, er
 	blobURL := container.NewBlobURL(qualifiedKey.BlobURL)
 
 	_, err = blobURL.GetProperties(ctx, azblob.BlobAccessConditions{}, azblob.ClientProvidedKeyOptions{})
-	var storageErr azblob.StorageError
 
-	if errors.As(err, &storageErr) && storageErr.ServiceCode() == azblob.ServiceCodeBlobNotFound {
+	if isErrNotFound(err) {
 		return false, nil
-	} else if err != nil {
+	}
+	if err != nil {
 		return false, err
 	}
 	return true, nil
