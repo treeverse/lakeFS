@@ -138,7 +138,7 @@ A `Webhook` is a `Hook` type that sends an HTTP POST request to the configured U
 Any non 2XX response by the responding endpoint will fail the `Hook`, cancel the execution of the following `Hooks` 
 under the same `Action` and abort the operation that triggered the `Action`.
 
-**Warning:** Actions Run is a blocking operation - users should not use the webhook for long-running tasks (e.g. Running Spark jobs and waiting to completion).
+**Warning:** Actions Run is a blocking operation - you should not use the webhook for long-running tasks (e.g. Running Spark jobs and waiting to completion).
 Moreover, since the branch is locked during the execution, any write operation to the branch (like uploading file or committing) by the webhook server is bound to fail.
 {: .note } 
 
