@@ -16,9 +16,6 @@ const (
 	DefaultMaxIdleConnections    = 25
 	DefaultConnectionMaxLifetime = 5 * time.Minute
 	DatabaseDriver               = "pgx"
-	firstWait                    = 50 * time.Millisecond
-	waitGrowth                   = 1.2
-	maxWait                      = 3 * time.Second
 )
 
 // BuildDatabaseConnection returns a database connection based on a pool for the configuration
@@ -106,13 +103,7 @@ func normalizeDBParams(p *params.Database) {
 }
 
 func tryConnectConfig(ctx context.Context, config *pgxpool.Config, log logging.Logger) (*pgxpool.Pool, error) {
-	strategy := retry.LimitTime(maxWait,
-		retry.Exponential{
-			Initial: firstWait,
-			Factor:  waitGrowth,
-			Jitter:  true,
-		},
-	)
+	strategy := params.DatabaseRetryStrategy
 	var pool *pgxpool.Pool
 	var err error
 	for a := retry.Start(strategy, nil); a.Next(); {
