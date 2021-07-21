@@ -15,6 +15,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/db/params"
 	"github.com/treeverse/lakefs/pkg/ddl"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"gopkg.in/retry.v1"
 )
 
 var ErrSchemaNotCompatible = errors.New("db schema version not compatible with latest version")
@@ -109,11 +110,26 @@ func getMigrate(params params.Database) (*migrate.Migrate, error) {
 	if connectionString == "" {
 		connectionString = "postgres://:/"
 	}
-	m, err := migrate.NewWithSourceInstance("httpfs", src, connectionString)
+	m, err := tryNewWithSourceInstance("httpfs", src, connectionString)
 	if err != nil {
 		return nil, err
 	}
 	return m, nil
+}
+
+func tryNewWithSourceInstance(sourceName string, sourceInstance source.Driver, databaseURL string) (*migrate.Migrate, error) {
+	strategy := params.DatabaseRetryStrategy
+	var err error
+	for a := retry.Start(strategy, nil); a.Next(); {
+		m, err := migrate.NewWithSourceInstance(sourceName, sourceInstance, databaseURL)
+		if err == nil {
+			return m, nil
+		}
+
+		logging.Default().WithError(err).Error("could not open DB: Trying again")
+	}
+
+	return nil, fmt.Errorf("could not open DB: %w", err)
 }
 
 func closeMigrate(m *migrate.Migrate) {
