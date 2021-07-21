@@ -26,7 +26,7 @@ If you already have a database, take note of the connection string and skip to t
 
 1. Follow the official [Google documentation](https://cloud.google.com/sql/docs/postgres/quickstart#create-instance) on how to create a PostgreSQL instance.
    Make sure you're using PostgreSQL version >= 11.
-1. On the *Users* tab in the console, create a user. The lakeFS installation will use to connect to your database.
+1. On the *Users* tab in the console, create a user. The lakeFS installation will use it to connect to your database.
 1. Choose the method by which lakeFS [will connect to your database](https://cloud.google.com/sql/docs/postgres/connect-overview). Google recommends using
    the [SQL Auth Proxy](https://cloud.google.com/sql/docs/postgres/sql-proxy).
 
