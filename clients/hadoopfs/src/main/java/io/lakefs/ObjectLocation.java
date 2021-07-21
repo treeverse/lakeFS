@@ -114,7 +114,9 @@ class ObjectLocation {
      * @return true if the object location is on same branch, false otherwise
      */
     public boolean onSameBranch(ObjectLocation otherObjLoc) {
-        return this.repository.equals(otherObjLoc.getRepository()) && this.ref.equals(otherObjLoc.getRef());
+        return this.scheme.equals(otherObjLoc.getScheme()) &&
+                this.repository.equals(otherObjLoc.getRepository()) &&
+                this.ref.equals(otherObjLoc.getRef());
     }
 
     @Override

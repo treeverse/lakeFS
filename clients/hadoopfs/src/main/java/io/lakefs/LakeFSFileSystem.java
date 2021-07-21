@@ -274,12 +274,9 @@ public class LakeFSFileSystem extends FileSystem {
      * @return true if all objects under src renamed successfully, false otherwise.
      */
     private boolean renameDirectory(Path src, Path dst) throws IOException {
-        boolean dstExists = false;
-        LakeFSFileStatus dstFileStatus;
         try {
             // May be unnecessary with https://github.com/treeverse/lakeFS/issues/1691
-            dstFileStatus = getFileStatus(dst);
-            dstExists = true;
+            LakeFSFileStatus dstFileStatus = getFileStatus(dst);
             if (!dstFileStatus.isDirectory()) {
                 // Same as https://github.com/apache/hadoop/blob/2960d83c255a00a549f8809882cd3b73a6266b6d/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L1527
                 throw new FileAlreadyExistsException("Failed rename " + src + " to " + dst
@@ -291,6 +288,9 @@ public class LakeFSFileSystem extends FileSystem {
                 LOG.error("renameDirectory: rename src {} to dst {}: dst is a non-empty directory.", src, dst);
                 return false;
             }
+            // delete empty directory marker from destination
+            // based on the same behaviour https://github.com/apache/hadoop/blob/2960d83c255a00a549f8809882cd3b73a6266b6d/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/impl/RenameOperation.java#L403
+            deleteHelper(pathToObjectLocation(dst).toDirectory());
         } catch (FileNotFoundException e) {
             LOG.debug("renameDirectory: dst {} does not exist", dst);
         }
@@ -300,9 +300,7 @@ public class LakeFSFileSystem extends FileSystem {
         while (iterator.hasNext()) {
             // TODO (Tals): parallelize objects rename process.
             LakeFSLocatedFileStatus locatedFileStatus = iterator.next();
-            Path objDst = dstExists
-                    ? buildObjPathOnExistingDestinationDir(locatedFileStatus.getPath(), dst)
-                    : buildObjPathOnNonExistingDestinationDir(locatedFileStatus.getPath(), src, dst);
+            Path objDst = buildObjPathOnNonExistingDestinationDir(locatedFileStatus.getPath(), src, dst);
             try {
                 renameObject(locatedFileStatus.toLakeFSFileStatus(), objDst);
             } catch (IOException e) {
@@ -325,7 +323,13 @@ public class LakeFSFileSystem extends FileSystem {
      * lakefs://repo/main/dir2/file1.txt
      */
     private Path buildObjPathOnNonExistingDestinationDir(Path renamedObj, Path srcDir, Path dstDir) {
-        String renamedObjName = renamedObj.toUri().getPath().substring(srcDir.toUri().getPath().length() + 1);
+        String renamedPath = renamedObj.toUri().getPath();
+        String srcPath = srcDir.toUri().getPath();
+        if (srcPath.length() == renamedPath.length()) {
+            // we rename a directory
+            return new Path(dstDir.toUri());
+        }
+        String renamedObjName = renamedPath.substring(srcPath.length() + 1);
         String newObjPath = dstDir.toUri() + SEPARATOR + renamedObjName;
         return new Path(newObjPath);
     }
