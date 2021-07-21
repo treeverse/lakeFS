@@ -15,22 +15,24 @@ import java.io.IOException;
  */
 public class LakeFSClient {
     private static final String BASIC_AUTH = "basic_auth";
+
     private final ObjectsApi objects;
     private final StagingApi staging;
     private final RepositoriesApi repositories;
 
-    public LakeFSClient(Configuration conf) throws IOException {
-        String accessKey = conf.get(Constants.FS_LAKEFS_ACCESS_KEY);
+    public LakeFSClient(String scheme, Configuration conf) throws IOException {
+        String accessKey = FSConfiguration.get(conf, scheme, Constants.ACCESS_KEY_KEY_SUFFIX);
         if (accessKey == null) {
             throw new IOException("Missing lakeFS access key");
         }
-        String secretKey = conf.get(Constants.FS_LAKEFS_SECRET_KEY);
+
+        String secretKey = FSConfiguration.get(conf, scheme, Constants.SECRET_KEY_KEY_SUFFIX);
         if (secretKey == null) {
             throw new IOException("Missing lakeFS secret key");
         }
 
         ApiClient apiClient = io.lakefs.clients.api.Configuration.getDefaultApiClient();
-        String endpoint = conf.get(Constants.FS_LAKEFS_ENDPOINT_KEY, "http://localhost:8000/api/v1");
+        String endpoint = FSConfiguration.get(conf, scheme, Constants.ENDPOINT_KEY_SUFFIX, Constants.DEFAULT_CLIENT_ENDPOINT);
         if (endpoint.endsWith("/")) {
             endpoint = endpoint.substring(0, endpoint.length() - 1);
         }

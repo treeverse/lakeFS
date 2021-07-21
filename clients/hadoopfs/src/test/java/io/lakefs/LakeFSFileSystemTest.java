@@ -38,7 +38,6 @@ import org.testcontainers.utility.DockerImageName;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -123,9 +122,6 @@ public class LakeFSFileSystemTest {
         Configuration conf = new Configuration(false);
 
         conf.set("fs.lakefs.impl", "io.lakefs.LakeFSFileSystem");
-        conf.set(Constants.FS_LAKEFS_ACCESS_KEY, "<lakefs key>");
-        conf.set(Constants.FS_LAKEFS_SECRET_KEY, "<lakefs secret>");
-        conf.set(Constants.FS_LAKEFS_ENDPOINT_KEY, "http://unused.invalid");
 
         conf.set("fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem");
         conf.set(org.apache.hadoop.fs.s3a.Constants.ACCESS_KEY, S3_ACCESS_KEY_ID);
