@@ -8,7 +8,7 @@ has_children: false
 ---
 
 # Commands (CLI) Reference
-{: .no_toc }
+{:.no_toc}
 
 ## Table of contents
 {: .no_toc .text-delta }
@@ -45,12 +45,14 @@ will provide a link to download a preconfigured configuration file for you.
 A cli tool to explore manage and work with lakeFS
 
 #### Synopsis
+{:.no_toc}
 
 lakeFS is data lake management solution, allowing Git-like semantics over common object stores
 
 lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environment
 
 #### Options
+{:.no_toc}
 
 ```
       --base-uri string     base URI used for lakeFS address parse
@@ -72,6 +74,7 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
 Abuse a running lakeFS instance. See sub commands for more info.
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for abuse
@@ -88,6 +91,7 @@ lakectl abuse create-branches <source ref uri> [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
       --amount int             amount of things to do (default 1000000)
@@ -104,6 +108,7 @@ lakectl abuse create-branches <source ref uri> [flags]
 Help about any command
 
 #### Synopsis
+{:.no_toc}
 
 Help provides help for any command in the application.
 Simply type abuse help [path to command] for full details.
@@ -113,6 +118,7 @@ lakectl abuse help [command] [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for help
@@ -129,6 +135,7 @@ lakectl abuse random-read <source ref uri> [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
       --amount int         amount of reads to do (default 1000000)
@@ -148,6 +155,7 @@ lakectl abuse random-write <source branch uri> [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
       --amount int        amount of writes to do (default 1000000)
@@ -163,6 +171,7 @@ lakectl abuse random-write <source branch uri> [flags]
 Manage Actions commands
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for actions
@@ -175,6 +184,7 @@ Manage Actions commands
 Help about any command
 
 #### Synopsis
+{:.no_toc}
 
 Help provides help for any command in the application.
 Simply type actions help [path to command] for full details.
@@ -184,6 +194,7 @@ lakectl actions help [command] [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for help
@@ -196,6 +207,7 @@ lakectl actions help [command] [flags]
 Explore runs information
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for runs
@@ -208,6 +220,7 @@ Explore runs information
 Describe run results
 
 #### Synopsis
+{:.no_toc}
 
 Show information about the run and all the hooks that were executed as part of the run
 
@@ -216,12 +229,14 @@ lakectl actions runs describe [flags]
 ```
 
 #### Examples
+{:.no_toc}
 
 ```
 lakectl actions runs describe lakefs://<repository> <run_id>
 ```
 
 #### Options
+{:.no_toc}
 
 ```
       --after string   show results after this value (used for pagination)
@@ -236,6 +251,7 @@ lakectl actions runs describe lakefs://<repository> <run_id>
 Help about any command
 
 #### Synopsis
+{:.no_toc}
 
 Help provides help for any command in the application.
 Simply type runs help [path to command] for full details.
@@ -245,6 +261,7 @@ lakectl actions runs help [command] [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for help
@@ -257,6 +274,7 @@ lakectl actions runs help [command] [flags]
 List runs
 
 #### Synopsis
+{:.no_toc}
 
 List all runs on a repository optional filter by branch or commit
 
@@ -265,12 +283,14 @@ lakectl actions runs list [flags]
 ```
 
 #### Examples
+{:.no_toc}
 
 ```
 lakectl actions runs list lakefs://<repository> [--branch <branch>] [--commit <commit_id>]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
       --after string    show results after this value (used for pagination)
@@ -287,6 +307,7 @@ lakectl actions runs list lakefs://<repository> [--branch <branch>] [--commit <c
 Validate action file
 
 #### Synopsis
+{:.no_toc}
 
 Tries to parse the input action file as lakeFS action file
 
@@ -295,12 +316,14 @@ lakectl actions validate [flags]
 ```
 
 #### Examples
+{:.no_toc}
 
 ```
 lakectl actions validate <path>
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for validate
@@ -313,10 +336,12 @@ lakectl actions validate <path>
 Manage authentication and authorization
 
 #### Synopsis
+{:.no_toc}
 
 manage authentication and authorization including users, groups and policies
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for auth
@@ -329,6 +354,7 @@ manage authentication and authorization including users, groups and policies
 Manage groups
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for groups
@@ -345,6 +371,7 @@ lakectl auth groups create [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help        help for create
@@ -362,6 +389,7 @@ lakectl auth groups delete [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help        help for delete
@@ -375,6 +403,7 @@ lakectl auth groups delete [flags]
 Help about any command
 
 #### Synopsis
+{:.no_toc}
 
 Help provides help for any command in the application.
 Simply type groups help [path to command] for full details.
@@ -384,6 +413,7 @@ lakectl auth groups help [command] [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for help
@@ -400,6 +430,7 @@ lakectl auth groups list [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
       --after string   show results after this value (used for pagination)
@@ -414,6 +445,7 @@ lakectl auth groups list [flags]
 Manage group user memberships
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for members
@@ -430,6 +462,7 @@ lakectl auth groups members add [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help          help for add
@@ -444,6 +477,7 @@ lakectl auth groups members add [flags]
 Help about any command
 
 #### Synopsis
+{:.no_toc}
 
 Help provides help for any command in the application.
 Simply type members help [path to command] for full details.
@@ -453,6 +487,7 @@ lakectl auth groups members help [command] [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for help
@@ -469,6 +504,7 @@ lakectl auth groups members list [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
       --after string   show results after this value (used for pagination)
@@ -488,6 +524,7 @@ lakectl auth groups members remove [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help          help for remove
@@ -502,6 +539,7 @@ lakectl auth groups members remove [flags]
 Manage group policies
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for policies
@@ -518,6 +556,7 @@ lakectl auth groups policies attach [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help            help for attach
@@ -536,6 +575,7 @@ lakectl auth groups policies detach [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help            help for detach
@@ -550,6 +590,7 @@ lakectl auth groups policies detach [flags]
 Help about any command
 
 #### Synopsis
+{:.no_toc}
 
 Help provides help for any command in the application.
 Simply type policies help [path to command] for full details.
@@ -559,6 +600,7 @@ lakectl auth groups policies help [command] [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for help
@@ -575,6 +617,7 @@ lakectl auth groups policies list [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
       --after string   show results after this value (used for pagination)
@@ -590,6 +633,7 @@ lakectl auth groups policies list [flags]
 Help about any command
 
 #### Synopsis
+{:.no_toc}
 
 Help provides help for any command in the application.
 Simply type auth help [path to command] for full details.
@@ -599,6 +643,7 @@ lakectl auth help [command] [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for help
@@ -611,6 +656,7 @@ lakectl auth help [command] [flags]
 Manage policies
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for policies
@@ -627,6 +673,7 @@ lakectl auth policies create [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help                        help for create
@@ -645,6 +692,7 @@ lakectl auth policies delete [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help        help for delete
@@ -658,6 +706,7 @@ lakectl auth policies delete [flags]
 Help about any command
 
 #### Synopsis
+{:.no_toc}
 
 Help provides help for any command in the application.
 Simply type policies help [path to command] for full details.
@@ -667,6 +716,7 @@ lakectl auth policies help [command] [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for help
@@ -683,6 +733,7 @@ lakectl auth policies list [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
       --after string   show results after this value (used for pagination)
@@ -701,6 +752,7 @@ lakectl auth policies show [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help        help for show
@@ -714,6 +766,7 @@ lakectl auth policies show [flags]
 Manage users
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for users
@@ -730,6 +783,7 @@ lakectl auth users create [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help        help for create
@@ -743,6 +797,7 @@ lakectl auth users create [flags]
 Manage user credentials
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for credentials
@@ -759,6 +814,7 @@ lakectl auth users credentials create [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help        help for create
@@ -776,6 +832,7 @@ lakectl auth users credentials delete [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
       --access-key-id string   access key ID to delete
@@ -790,6 +847,7 @@ lakectl auth users credentials delete [flags]
 Help about any command
 
 #### Synopsis
+{:.no_toc}
 
 Help provides help for any command in the application.
 Simply type credentials help [path to command] for full details.
@@ -799,6 +857,7 @@ lakectl auth users credentials help [command] [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for help
@@ -815,6 +874,7 @@ lakectl auth users credentials list [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
       --after string   show results after this value (used for pagination)
@@ -834,6 +894,7 @@ lakectl auth users delete [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help        help for delete
@@ -847,6 +908,7 @@ lakectl auth users delete [flags]
 Manage user groups
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for groups
@@ -859,6 +921,7 @@ Manage user groups
 Help about any command
 
 #### Synopsis
+{:.no_toc}
 
 Help provides help for any command in the application.
 Simply type groups help [path to command] for full details.
@@ -868,6 +931,7 @@ lakectl auth users groups help [command] [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for help
@@ -884,6 +948,7 @@ lakectl auth users groups list [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
       --after string   show results after this value (used for pagination)
@@ -899,6 +964,7 @@ lakectl auth users groups list [flags]
 Help about any command
 
 #### Synopsis
+{:.no_toc}
 
 Help provides help for any command in the application.
 Simply type users help [path to command] for full details.
@@ -908,6 +974,7 @@ lakectl auth users help [command] [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for help
@@ -924,6 +991,7 @@ lakectl auth users list [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
       --after string   show results after this value (used for pagination)
@@ -938,6 +1006,7 @@ lakectl auth users list [flags]
 Manage user policies
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for policies
@@ -954,6 +1023,7 @@ lakectl auth users policies attach [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help            help for attach
@@ -972,6 +1042,7 @@ lakectl auth users policies detach [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help            help for detach
@@ -986,6 +1057,7 @@ lakectl auth users policies detach [flags]
 Help about any command
 
 #### Synopsis
+{:.no_toc}
 
 Help provides help for any command in the application.
 Simply type policies help [path to command] for full details.
@@ -995,6 +1067,7 @@ lakectl auth users policies help [command] [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for help
@@ -1011,6 +1084,7 @@ lakectl auth users policies list [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
       --after string   show results after this value (used for pagination)
@@ -1027,10 +1101,12 @@ lakectl auth users policies list [flags]
 Create and manage branches within a repository
 
 #### Synopsis
+{:.no_toc}
 
 Create delete and list branches within a lakeFS repository
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for branch
@@ -1047,6 +1123,7 @@ lakectl branch create <ref uri> [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help            help for create
@@ -1064,6 +1141,7 @@ lakectl branch delete <branch uri> [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for delete
@@ -1077,6 +1155,7 @@ lakectl branch delete <branch uri> [flags]
 Help about any command
 
 #### Synopsis
+{:.no_toc}
 
 Help provides help for any command in the application.
 Simply type branch help [path to command] for full details.
@@ -1086,6 +1165,7 @@ lakectl branch help [command] [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for help
@@ -1102,12 +1182,14 @@ lakectl branch list <repository uri> [flags]
 ```
 
 #### Examples
+{:.no_toc}
 
 ```
 lakectl branch list lakefs://<repository>
 ```
 
 #### Options
+{:.no_toc}
 
 ```
       --after string   show results after this value (used for pagination)
@@ -1122,6 +1204,7 @@ lakectl branch list lakefs://<repository>
 Reset changes to specified commit, or reset uncommitted changes - all changes, or by path
 
 #### Synopsis
+{:.no_toc}
 
 reset changes.  There are four different ways to reset changes:
   1. reset all uncommitted changes - reset lakefs://myrepo/main 
@@ -1133,6 +1216,7 @@ lakectl branch reset <branch uri> [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help            help for reset
@@ -1152,6 +1236,7 @@ lakectl branch revert <branch uri> <commit ref to revert> [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help                help for revert
@@ -1170,6 +1255,7 @@ lakectl branch show <branch uri> [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for show
@@ -1189,12 +1275,14 @@ lakectl cat-hook-output [flags]
 ```
 
 #### Examples
+{:.no_toc}
 
 ```
 lakectl cat-hook-output lakefs://<repository> <run_id> <run_hook_id>
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for cat-hook-output
@@ -1214,6 +1302,7 @@ lakectl cat-sst <sst-file> [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
       --amount int    how many records to return, or -1 for all records (default -1)
@@ -1232,6 +1321,7 @@ lakectl commit <branch uri> [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help             help for commit
@@ -1246,6 +1336,7 @@ lakectl commit <branch uri> [flags]
 Generate completion script
 
 #### Synopsis
+{:.no_toc}
 
 To load completions:
 
@@ -1303,6 +1394,7 @@ lakectl completion <bash|zsh|fish>
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for completion
@@ -1319,6 +1411,7 @@ lakectl config [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for config
@@ -1331,6 +1424,7 @@ lakectl config [flags]
 diff between commits/hashes
 
 #### Synopsis
+{:.no_toc}
 
 see the list of paths added/changed/removed in a branch or between two references (could be either commit hash or branch name)
 
@@ -1339,6 +1433,7 @@ lakectl diff <ref uri> [other ref uri] [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for diff
@@ -1358,6 +1453,7 @@ lakectl docs [outfile] [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for docs
@@ -1370,6 +1466,7 @@ lakectl docs [outfile] [flags]
 View and manipulate objects
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for fs
@@ -1386,6 +1483,7 @@ lakectl fs cat <path uri> [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -d, --direct   read directly from backing store (faster but requires more credentials)
@@ -1399,6 +1497,7 @@ lakectl fs cat <path uri> [flags]
 Help about any command
 
 #### Synopsis
+{:.no_toc}
 
 Help provides help for any command in the application.
 Simply type fs help [path to command] for full details.
@@ -1408,6 +1507,7 @@ lakectl fs help [command] [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for help
@@ -1424,6 +1524,7 @@ lakectl fs ls <path uri> [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help        help for ls
@@ -1441,6 +1542,7 @@ lakectl fs rm <path uri> [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for rm
@@ -1460,6 +1562,7 @@ lakectl fs stage <path uri> [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
       --checksum string   Object MD5 checksum as a hexadecimal string
@@ -1481,6 +1584,7 @@ lakectl fs stat <path uri> [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for stat
@@ -1497,6 +1601,7 @@ lakectl fs upload <path uri> [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -d, --direct          write directly to backing store (faster but requires more credentials)
@@ -1512,6 +1617,7 @@ lakectl fs upload <path uri> [flags]
 Manage garbage collection configuration
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for gc
@@ -1528,12 +1634,14 @@ lakectl gc get-config [flags]
 ```
 
 #### Examples
+{:.no_toc}
 
 ```
 lakectl gc get-config <repository uri>
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for get-config
@@ -1547,6 +1655,7 @@ lakectl gc get-config <repository uri>
 Help about any command
 
 #### Synopsis
+{:.no_toc}
 
 Help provides help for any command in the application.
 Simply type gc help [path to command] for full details.
@@ -1556,6 +1665,7 @@ lakectl gc help [command] [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for help
@@ -1568,6 +1678,7 @@ lakectl gc help [command] [flags]
 Set garbage collection configuration JSON
 
 #### Synopsis
+{:.no_toc}
 
 Sets the garbage collection configuration JSON.
 Example configuration file:
@@ -1590,12 +1701,14 @@ lakectl gc set-config [flags]
 ```
 
 #### Examples
+{:.no_toc}
 
 ```
 lakectl gc set-config <repository uri> -f config.json
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -f, --filename string   file containing the GC configuration
@@ -1609,6 +1722,7 @@ lakectl gc set-config <repository uri> -f config.json
 Help about any command
 
 #### Synopsis
+{:.no_toc}
 
 Help provides help for any command in the application.
 Simply type lakectl help [path to command] for full details.
@@ -1618,6 +1732,7 @@ lakectl help [command] [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for help
@@ -1634,6 +1749,7 @@ lakectl ingest --from <object store URI> --to <lakeFS path URI> [--dry-run] [fla
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -C, --concurrency int   max concurrent API calls to make to the lakeFS server (default 64)
@@ -1651,6 +1767,7 @@ lakectl ingest --from <object store URI> --to <lakeFS path URI> [--dry-run] [fla
 Show log of commits
 
 #### Synopsis
+{:.no_toc}
 
 Show log of commits for a given branch
 
@@ -1659,6 +1776,7 @@ lakectl log <branch uri> [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
       --after string         show results after this value (used for pagination)
@@ -1674,6 +1792,7 @@ lakectl log <branch uri> [flags]
 Merge & commit changes from source branch into destination branch
 
 #### Synopsis
+{:.no_toc}
 
 Merge & commit changes from source branch into destination branch
 
@@ -1682,6 +1801,7 @@ lakectl merge <source ref> <destination ref> [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for merge
@@ -1694,6 +1814,7 @@ lakectl merge <source ref> <destination ref> [flags]
 Manage metastore commands
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for metastore
@@ -1706,6 +1827,7 @@ Manage metastore commands
 Copy or merge table
 
 #### Synopsis
+{:.no_toc}
 
 copy or merge table. the destination table will point to the selected branch
 
@@ -1714,6 +1836,7 @@ lakectl metastore copy [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
       --catalog-id string         Glue catalog ID
@@ -1738,6 +1861,7 @@ lakectl metastore copy [flags]
 Copy from one metastore to another
 
 #### Synopsis
+{:.no_toc}
 
 copy or merge requested tables between hive metastores. the destination tables will point to the selected branch
 
@@ -1746,6 +1870,7 @@ lakectl metastore copy-all [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
       --branch string             lakeFS branch name
@@ -1767,6 +1892,7 @@ lakectl metastore copy-all [flags]
 Create symlink table and data
 
 #### Synopsis
+{:.no_toc}
 
 create table with symlinks, and create the symlinks in s3 in order to access from external services that could only access s3 directly (e.g athena)
 
@@ -1775,6 +1901,7 @@ lakectl metastore create-symlink [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
       --branch string        lakeFS branch name
@@ -1799,6 +1926,7 @@ lakectl metastore diff [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
       --catalog-id string         Glue catalog ID
@@ -1821,6 +1949,7 @@ lakectl metastore diff [flags]
 Help about any command
 
 #### Synopsis
+{:.no_toc}
 
 Help provides help for any command in the application.
 Simply type metastore help [path to command] for full details.
@@ -1830,6 +1959,7 @@ lakectl metastore help [command] [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for help
@@ -1842,6 +1972,7 @@ lakectl metastore help [command] [flags]
 Import from one metastore to another
 
 #### Synopsis
+{:.no_toc}
 
 
 import requested tables between hive metastores. the destination tables will point to the selected repository and branch
@@ -1854,6 +1985,7 @@ lakectl metastore import-all [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
       --branch string             lakeFS branch name
@@ -1883,6 +2015,7 @@ lakectl refs-dump <repository uri> [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for refs-dump
@@ -1898,6 +2031,7 @@ lakectl refs-dump <repository uri> [flags]
 Restores refs (branches, commits, tags) from the underlying object store to a bare repository
 
 #### Synopsis
+{:.no_toc}
 
 restores refs (branches, commits, tags) from the underlying object store to a bare repository.
 
@@ -1909,12 +2043,14 @@ lakectl refs-restore <repository uri> [flags]
 ```
 
 #### Examples
+{:.no_toc}
 
 ```
 aws s3 cp s3://bucket/_lakefs/refs_manifest.json - | lakectl refs-load lakefs://my-bare-repository --manifest -
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help                 help for refs-restore
@@ -1928,6 +2064,7 @@ aws s3 cp s3://bucket/_lakefs/refs_manifest.json - | lakectl refs-load lakefs://
 Manage and explore repos
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for repo
@@ -1944,6 +2081,7 @@ lakectl repo create <repository uri> <storage namespace> [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -d, --default-branch string   the default branch of this repository (default "main")
@@ -1964,6 +2102,7 @@ lakectl repo create-bare <repository uri> <storage namespace> [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -d, --default-branch string   the default branch name of this repository (will not be created) (default "main")
@@ -1981,6 +2120,7 @@ lakectl repo delete <repository uri> [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for delete
@@ -1994,6 +2134,7 @@ lakectl repo delete <repository uri> [flags]
 Help about any command
 
 #### Synopsis
+{:.no_toc}
 
 Help provides help for any command in the application.
 Simply type repo help [path to command] for full details.
@@ -2003,6 +2144,7 @@ lakectl repo help [command] [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for help
@@ -2019,6 +2161,7 @@ lakectl repo list [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
       --after string   show results after this value (used for pagination)
@@ -2037,6 +2180,7 @@ lakectl show <repository uri> [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
       --commit string        commit ID to show
@@ -2051,10 +2195,12 @@ lakectl show <repository uri> [flags]
 Create and manage tags within a repository
 
 #### Synopsis
+{:.no_toc}
 
 Create delete and list tags within a lakeFS repository
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for tag
@@ -2071,6 +2217,7 @@ lakectl tag create <tag uri> <commit ref> [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -f, --force   override the tag if it exists
@@ -2088,6 +2235,7 @@ lakectl tag delete <tag uri> [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for delete
@@ -2100,6 +2248,7 @@ lakectl tag delete <tag uri> [flags]
 Help about any command
 
 #### Synopsis
+{:.no_toc}
 
 Help provides help for any command in the application.
 Simply type tag help [path to command] for full details.
@@ -2109,6 +2258,7 @@ lakectl tag help [command] [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for help
@@ -2125,12 +2275,14 @@ lakectl tag list <repository uri> [flags]
 ```
 
 #### Examples
+{:.no_toc}
 
 ```
 lakectl tag list lakefs://<repository>
 ```
 
 #### Options
+{:.no_toc}
 
 ```
       --after string   show results after this value (used for pagination)
@@ -2149,6 +2301,7 @@ lakectl tag show <tag uri> [flags]
 ```
 
 #### Options
+{:.no_toc}
 
 ```
   -h, --help   help for show
