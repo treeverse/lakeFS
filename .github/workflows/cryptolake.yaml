@@ -24,13 +24,13 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      - name: Verify lakeFS version in ECR
-        run: aws ecr describe-images --repository-name=lakefs --image-ids=imageTag="${{ github.event.inputs.lakefs_version }}"
-
       - name: Extract version
         shell: bash
         run: echo "::set-output name=tag::sha-$(git rev-parse --short HEAD | sed s/^v//g)"
         id: version
+
+      - name: Verify lakeFS version in ECR
+        run: aws ecr describe-images --repository-name=lakefs --image-ids=imageTag="${{ steps.version.outputs.tag }}"
 
       - name: Invoke Terraform Workflow in terraform repository with workflow dispatch
         run: |
