@@ -19,7 +19,7 @@ redirect_from: ../roadmap.html
 
 ---
 
-## Use Case: Development Environment
+## Use Case: Development
 
 ### Ephemeral branches with a TTL
 Throwaway development or experimentation branches that live for a pre-configured amount of time, and are cleaned up afterwards. This is especially useful when running automated tests or when experimenting with new technologies, code or algorithms. We want to see what the outcome looks like, but don’t really need the output to live much longer than the duration of the experiment.
@@ -29,7 +29,7 @@ Throwaway development or experimentation branches that live for a pre-configured
 
 ---
 
-## Use Case: Continuous Integration
+## Use Case: Deployment
 
 ### Repo linking
 The ability to explicitly depend on data residing in another repository. While it is possible to state these cross-links by sticking them in the report’s commit metadata, we think a more explicit and structured approach would be valuable. Stating our dependencies in something that resembles a [pom.xml](https://maven.apache.org/guides/introduction/introduction-to-the-pom.html#:~:text=A%20Project%20Object%20Model%20or,default%20values%20for%20most%20projects.) or [go.mod](https://github.com/golang/go/wiki/Modules#gomod) file would allow us to support better CI and CD integrations that ensure reproducibility without vendoring or copying data.
@@ -50,8 +50,6 @@ main ensures schema never breaks and all partitions are complete and tested)
 [Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/2181){: target="_blank" class="btn" }
 
 ---
-
-## Use Case: Continuous Deployment
 
 ### Native Metastore Integration <span>High Priority</span>{: .label }
 
@@ -104,6 +102,8 @@ Expanding on the abilities above (executing hooks locally as a command line or d
 can expose a set of pre-defined hooks that could be installed in a single click through the UI and provide useful functionality (schema validation, metastore updates, format enforcement, Symlink generation - and more, etc).
 
 [Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/2233){: target="_blank" class="btn" }
+
+## Use Case: Production
 
 ### Webhook Alerting
 Support integration into existing alerting systems that trigger in the event a webhook returns a failure. This is useful for example when a data quality test fails, so new data is not merged into main due to a quality issue, so will alert the owning team.
