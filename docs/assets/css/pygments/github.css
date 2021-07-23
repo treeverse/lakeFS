@@ -356,3 +356,7 @@ code{
 body .note-info code{
   color: #000!important;
 }
+.main ul li,.main ol li{
+  font-family: 'Rene-Bieder-Galano-Grotesque-Medium'!important;
+  font-size: 14px !important;
+}
