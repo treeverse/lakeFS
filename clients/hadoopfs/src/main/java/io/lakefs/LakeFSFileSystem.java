@@ -253,7 +253,12 @@ public class LakeFSFileSystem extends FileSystem {
         // Throws FileNotFoundException when src does not exist. mimics s3a's behaviour in
         // https://github.com/apache/hadoop/blob/2960d83c255a00a549f8809882cd3b73a6266b6d/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L1505
         LakeFSFileStatus srcStatus;
-        srcStatus = getFileStatus(src);
+        try {
+            srcStatus = getFileStatus(src);
+        }
+        catch (FileNotFoundException e) {
+            return false;
+        }
         boolean result;
         if (srcStatus.isDirectory()) {
             result = renameDirectory(src, dst);
