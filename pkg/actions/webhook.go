@@ -72,8 +72,10 @@ func NewWebhook(h ActionHook, action *Action) (Hook, error) {
 	}
 
 	return &Webhook{
-		//ID:          h.ID,
-		//ActionName:  action.Name,
+		HookBase: HookBase{
+			ID:         h.ID,
+			ActionName: action.Name,
+		},
 		Timeout:     requestTimeout,
 		URL:         webhookURL,
 		QueryParams: queryParams,
@@ -179,7 +181,7 @@ func extractQueryParams(props map[string]interface{}) (map[string][]string, erro
 		return nil, nil
 	}
 
-	paramsMap, ok := params.(map[string]interface{})
+	paramsMap, ok := params.(Properties)
 	if !ok {
 		return nil, fmt.Errorf("unsupported query params: %w", errWebhookWrongFormat)
 	}
