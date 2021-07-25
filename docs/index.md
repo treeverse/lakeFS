@@ -32,24 +32,25 @@ Since lakeFS is compatible with the S3 API, all popular applications will work w
 
 ## Use-cases:
 
-### Development Environment for Data
-* **Experimentation** - try tools, upgrade versions and evaluate code changes in isolation. By creating a branch of the lake you get an isolated snapshot of the lake you can experiment with while others are not exposed. You can compare branches with different experiments or compare your branch to the main branch of the lake.  
-* **Reproducibility** - go back to any point in time to a consistent version of your data lake. By making commit history available for a configurable duration - you can read from the lake at any point in time, compare changes made, and safely roll back if necessary.
+lakeFS enhances processing workflows at each step of the data lifecycle:
+
+### In Development
+* **Experiment** - try new tools, upgrade versions, and evaluate code changes in isolation. By creating a branch of the data you get an isolated snapshot to run experiments over, while others are not exposed. Compare between branches with different experiments or to the main branch of the repository to understand a change's impact.  
+* **Debug** - checkout specific commits in a repository's commit history to materialize consistent, historical versions of your data. See the exact state of your data at the point-in-time of an error to understand its root cause.
+* **Collaborate** - avoid managing data access at the two extremes of either 1) treating your data lake like a shared folder or 2) creating multiple copies of the data to safely collaborate. Instead, leverage isolated branches managed by metadata (not copies of files) to work in parallel.
 
 [Learn more](./usecases/data-devenv.md){:id="user-content-learn-more-env"}
 
-### Continuous Data Integration
-* **Ingest new data safely by enforcing best practices** - make sure new data sources adhere to your lake’s best practices such as format and schema enforcement, naming convention, etc. By consuming data to an isolated branch and creating pre-merge hooks you can define automated rules and tests that are required to pass before introducing new data sources.
-* **Metadata validation** - prevent breaking changes from entering the production data environment. Ingesting data to an isolated branch can also prevent breaking changes from entering your production data environment.
+### During Deployment
+* **Version Control** - deploy data safely with CI/CD workflows borrowed from software engineering best practices. Ingest new data onto an isolated branch, perform data validations, then add to production through a merge operation.
+* **Test** - define pre-merge and pre-commit hooks to run tests that enforce schema and validate properties of the data to catch issues before they reach production.
 
 [Learn more](./usecases/ci.md){:id="user-content-learn-more-int"}
 
-### Continuous Data Deployment
-* **Instantly revert changes to data** - if low quality data is exposed to your consumers, you can revert instantly to a former, consistent and correct snapshot of your data lake. By making commit history available for a configurable duration - you can revert the lake to the previous version instantly with one atomic action.
-* **Enforce cross collection consistency** - provide to consumers several collections of data that must be synchronized, in one atomic, revertable, action. Using branches, writers can provide consistency guarantees across different logical collections - merging to the main branch is only done after all relevant datasets have been created successfully.
-* **Prevent data quality issues by enabling** -
-   * Testing of production data before exposing it to users / consumers
-   * Testing of intermediate results in your DAG to avoid cascading quality issues
+### In Production
+* **Roll Back** - recover from errors by instantly reverting data to a former, consistent snapshot of the data lake. Choose any commit in a repository's commit history to revert in one atomic action.
+* **Troubleshoot** - investigate production errors by starting with a snapshot of the inputs to the failed process. Spend less time re-creating the state of datasets at the time of failure, and more time finding the solution.
+* **Cross-collection Consistency** - provide consumers multiple synchronized collections of data in one atomic, revertable action. Using branches, writers provide consistency guarantees across different logical collections - merging to the main branch only after all relevant datasets have been created or updated successfully.
    
 [Learn more](./usecases/cd.md){:id="user-content-learn-more-dep"}
 

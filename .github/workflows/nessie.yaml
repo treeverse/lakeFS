@@ -12,6 +12,7 @@ on:
       - "design/**"
     branches:
       - master
+      - cryptolake
 
 jobs:
   check-secrets:
