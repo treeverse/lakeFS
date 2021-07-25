@@ -64,9 +64,9 @@ func NewAirflowHook(h ActionHook, action *Action) (Hook, error) {
 
 	conf, ok := h.Properties[airflowConf]
 	if ok {
-		airflowHook.AdditionalConf, ok = conf.(map[string]interface{})
+		airflowHook.AdditionalConf, ok = conf.(Properties)
 		if !ok {
-			return nil, fmt.Errorf("airflow hook conf is not of type 'map[string]string': %w", errWrongValueType)
+			return nil, fmt.Errorf("airflow hook conf is not of type 'map[string]interface{}': %w", errWrongValueType)
 		}
 	}
 
@@ -74,17 +74,23 @@ func NewAirflowHook(h ActionHook, action *Action) (Hook, error) {
 }
 
 type DagRunReq struct {
-	// Run ID. The value of this field can be set only when creating the object. If you try to modify the field of an existing object, the request fails with an BAD_REQUEST error. If not provided, a value will be generated based on execution_date. If the specified dag_run_id is in use, the creation request fails with an ALREADY_EXISTS error. This together with DAG_ID are a unique key.
+	// Run ID. This together with DAG_ID are a unique key.
 	DagRunID *string `json:"dag_run_id,omitempty"`
-	// JSON object describing additional configuration parameters. The value of this field can be set only when creating the object. If you try to modify the field of an existing object, the request fails with an BAD_REQUEST error.
+
+	// JSON object describing additional configuration parameters.
 	Conf map[string]interface{} `json:"conf,omitempty"`
 }
 
 func (a *Airflow) Run(ctx context.Context, record graveler.HookRecord, writer *HookOutputWriter) error {
-	id := fmt.Sprintf("lakeFS_hook_%s_%s", a.ID, time.Now().Format(time.RFC3339))
-	a.AdditionalConf["hook_record"] = record
+	eventData, err := marshalEventInformation(a.ActionName, a.ID, record)
+	if err != nil {
+		return err
+	}
+	a.AdditionalConf["lakeFS_event"] = eventData
+
+	dagRunID := fmt.Sprintf("lakeFS_hook_%s_%s", a.ID, time.Now().Format(time.RFC3339))
 	bod, err := json.Marshal(DagRunReq{
-		DagRunID: &id,
+		DagRunID: &dagRunID,
 		Conf:     a.AdditionalConf,
 	})
 	if err != nil {
