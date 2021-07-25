@@ -6,6 +6,7 @@ on:
       - completed
 jobs:
   extract-version:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Extract version
         shell: bash
@@ -22,6 +23,7 @@ jobs:
       TAG: ${{ needs.extract-version.outputs.tag }}
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
       SPARK_TAG: 2
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Check-out code
         uses: actions/checkout@v2
@@ -103,6 +105,7 @@ jobs:
       TAG: ${{ needs.extract-version.outputs.tag }}
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
       SPARK_TAG: 3
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Check-out code
         uses: actions/checkout@v2
@@ -184,6 +187,7 @@ jobs:
       TAG: ${{ needs.extract-version.outputs.tag }}
       # Setting Account_ID as a secret as a way to avoid specifying it here
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Retrieve generated code
         uses: actions/download-artifact@v2
@@ -255,6 +259,7 @@ jobs:
       TAG: ${{ needs.extract-version.outputs.tag }}
       # Setting Account_ID as a secret as a way to avoid specifying it here
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Retrieve generated code
         uses: actions/download-artifact@v2
@@ -298,6 +303,7 @@ jobs:
       TAG: ${{ needs.extract-version.outputs.tag }}
       # Setting Account_ID as a secret as a way to avoid specifying it here
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Retrieve generated code
         uses: actions/download-artifact@v2
