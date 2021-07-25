@@ -62,13 +62,13 @@ jobs:
 
   wait-for-image:
     steps:
-      - name: Wait for image push
-        uses: lewagon/wait-on-check-action@v0.2
+      - name: "Wait for build to succeed"
+        uses: fountainhead/action-wait-for-check@v1.0.0
+        id: wait-for-build
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          check-name: 'Build and push Docker image'
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-interval: 10
+          tokenv: ${{ secrets.GITHUB_TOKEN }}
+          checkName: "Build and push Docker image"
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Extract version
         shell: bash
         run: echo "::set-output name=tag::sha-$(git rev-parse --short HEAD | sed s/^v//g)"
