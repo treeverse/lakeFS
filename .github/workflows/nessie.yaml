@@ -2,7 +2,6 @@ name: Nessie
 on:
   workflow_run:
     workflows: ["Prepare image for tests"]
-    branches: [main]
     types:
       - completed
 jobs:
