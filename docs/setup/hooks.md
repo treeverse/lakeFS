@@ -136,10 +136,10 @@ Currently, only a single type of `Hooks` is supported by lakeFS: `webhook`.
 ### Webhooks
 A `Webhook` is a `Hook` type that sends an HTTP POST request to the configured URL.
 Any non 2XX response by the responding endpoint will fail the `Hook`, cancel the execution of the following `Hooks` 
-under the same `Action` and abort the operation that triggered the `Action`.
+under the same `Action`. For `pre_*` hooks, the triggering operation (commit/merge) will also be aborted.
 
-**Warning:** Actions Run is a blocking operation - you should not use the webhook for long-running tasks (e.g. Running Spark jobs and waiting to completion).
-Moreover, since the branch is locked during the execution, any write operation to the branch (like uploading file or committing) by the webhook server is bound to fail.
+**Warning:** You should not use `pre_*` webhooks for long-running tasks, since they block the performed operation.
+Moreover, the branch is locked during the execution of `pre_*` hooks, so the webhook server cannot perform any write operations (like uploading or commits) on the branch.
 {: .note } 
 
 #### Action file Webhook properties
@@ -239,7 +239,7 @@ It should look like `https://api.relay.svix.com/api/v1/play/receive/<Random_Gen_
       lakectl commit lakefs://example-repo/main -m 'added webhook action file'
    ```   
 
-1. Every time you commit or merge to a branch, the relevant `pre-*` and `post-*` requests will be available 
+1. Every time you commit or merge to a branch, the relevant `pre_*` and `post_*` requests will be available 
 in the Svix endpoint you provided. You can also check the `Actions` tab in the lakeFS UI for more details.
 
 ![Setup](../assets/img/svix_play.png)
