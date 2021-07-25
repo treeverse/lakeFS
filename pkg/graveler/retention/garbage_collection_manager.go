@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/csv"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
 
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/block/adapter"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
@@ -71,14 +73,10 @@ func (m *GarbageCollectionManager) GetRules(ctx context.Context, storageNamespac
 		Identifier:       fmt.Sprintf(configFileSuffixTemplate, m.committedBlockStoragePrefix),
 		IdentifierType:   block.IdentifierTypeRelative,
 	}
-	exists, err := m.blockAdapter.Exists(ctx, objectPointer) // TODO(Guys): remove exists validation once get returns not found.
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
+	reader, err := m.blockAdapter.Get(ctx, objectPointer, -1)
+	if errors.Is(err, adapter.ErrDataNotFound) {
 		return nil, graveler.ErrNotFound
 	}
-	reader, err := m.blockAdapter.Get(ctx, objectPointer, -1)
 	if err != nil {
 		return nil, err
 	}
