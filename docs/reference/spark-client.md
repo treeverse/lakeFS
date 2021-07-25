@@ -47,9 +47,10 @@ Alternatively, the Jars are publicly available on S3:
    | `spark.hadoop.lakefs.api.access_key` | The access key to use for fetching metadata from lakeFS      |
    | `spark.hadoop.lakefs.api.secret_key` | Corresponding lakeFS secret key                              |
 
-1. The client will also directly interact with your storage using Hadoop FileSystem. Therefore, your Spark session must be able to access the underlying storage of your lakeFS repository.
-
-    For instance, running as a user with a personal account on S3 (not in production) you might add:
+1. The client will also directly interact with your storage using Hadoop FileSystem.
+   Therefore, your Spark session must be able to access the underlying storage of your lakeFS repository.
+   There are [various ways to do this](https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html#Authenticating_with_S3){:target="_blank"},
+   but for a non-production environment you can use the following Hadoop configurations:
 
    | Configuration                    | Description                                              |
    |----------------------------------|----------------------------------------------------------|
