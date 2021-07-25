@@ -46,6 +46,6 @@
     # Add the credentials for the service you are testing against
     -->
     <include xmlns="http://www.w3.org/2001/XInclude"
-             href="auth-keys2.xml"/>
+             href="auth-keys.xml"/>
 
 </configuration>
