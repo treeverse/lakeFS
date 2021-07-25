@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Monitoring using Prometheus
-description: Users looking to monitor their lakeFS instances can point Prometheus configuration to scrape data from this endpoint. This guide explains how to setup
+description: Monitor your lakeFS installation with Prometheus
 parent: Reference
 nav_order: 30
 has_children: false
