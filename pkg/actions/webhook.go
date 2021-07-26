@@ -101,7 +101,7 @@ func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, writer *H
 	return nil
 }
 
-func executeAndLogHTTP(ctx context.Context, req *http.Request, writer *HookOutputWriter, timeout time.Duration) (int, error) {
+func executeAndLogHTTP(ctx context.Context, req *http.Request, writer *HookOutputWriter, timeout time.Duration) (n int, err error) {
 	req = req.WithContext(ctx)
 
 	client := &http.Client{
@@ -109,7 +109,6 @@ func executeAndLogHTTP(ctx context.Context, req *http.Request, writer *HookOutpu
 	}
 	start := time.Now()
 
-	var err error
 	buf := bytes.NewBufferString("Request:\n")
 	defer func() {
 		err2 := writer.OutputWrite(ctx, buf, int64(buf.Len()))

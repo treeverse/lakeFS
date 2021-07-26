@@ -3,7 +3,6 @@ package actions_test
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"io"
@@ -44,36 +43,6 @@ func TestServiceRun(t *testing.T) {
 	const airflowHookID = "airflow_hook_id"
 	hookResponse := "OK"
 
-	checkEvent := func(event actions.EventInfo, hookID string) {
-		if event.EventType != string(record.EventType) {
-			t.Errorf("Webhook post EventType=%s, expected=%s", event.EventType, record.EventType)
-		}
-		if event.ActionName != actionName {
-			t.Errorf("Webhook post ActionName=%s, expected=%s", event.ActionName, actionName)
-		}
-		if event.HookID != hookID {
-			t.Errorf("Webhook post HookID=%s, expected=%s", event.HookID, webhookID)
-		}
-		if event.RepositoryID != record.RepositoryID.String() {
-			t.Errorf("Webhook post RepositoryID=%s, expected=%s", event.RepositoryID, record.RepositoryID)
-		}
-		if event.BranchID != record.BranchID.String() {
-			t.Errorf("Webhook post BranchID=%s, expected=%s", event.BranchID, record.BranchID)
-		}
-		if event.SourceRef != record.SourceRef.String() {
-			t.Errorf("Webhook post SourceRef=%s, expected=%s", event.SourceRef, record.SourceRef)
-		}
-		if event.CommitMessage != record.Commit.Message {
-			t.Errorf("Webhook post CommitMessage=%s, expected=%s", event.CommitMessage, record.Commit.Message)
-		}
-		if event.Committer != record.Commit.Committer {
-			t.Errorf("Webhook post Committer=%s, expected=%s", event.Committer, record.Commit.Committer)
-		}
-		if diff := deep.Equal(event.CommitMetadata, map[string]string(record.Commit.Metadata)); diff != nil {
-			t.Errorf("Webhook post Metadata diff=%s", diff)
-		}
-	}
-
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() { _ = r.Body.Close() }()
 		data, err := ioutil.ReadAll(r.Body)
@@ -97,27 +66,30 @@ func TestServiceRun(t *testing.T) {
 				return
 			}
 
-			checkEvent(eventInfo, webhookID)
+			checkEvent(t, record, eventInfo, actionName, webhookID)
 		} else if r.URL.Path == "/airflow/api/v1/dags/some_dag_id/dagRuns" {
 			var req actions.DagRunReq
 			require.NoError(t, json.Unmarshal(data, &req))
-			require.True(t, strings.HasPrefix(*req.DagRunID, "lakeFS_hook_"+airflowHookID))
+			require.True(t, strings.HasPrefix(req.DagRunID, "lakeFS_hook_"+airflowHookID))
 			require.Equal(t, req.Conf["some"], "additional_conf")
 
 			username, pass, ok := r.BasicAuth()
 			require.True(t, ok)
 			require.Equal(t, "some_username", username)
 			require.Equal(t, "some_password", pass)
+
 			rawEvent, ok := req.Conf["lakeFS_event"]
 			require.True(t, ok, "missing lakeFS event")
+			b, err := json.Marshal(rawEvent)
+			require.NoError(t, err)
 
 			var event actions.EventInfo
-			rawBytes, err := base64.StdEncoding.DecodeString(rawEvent.(string))
+			require.NoError(t, json.Unmarshal(b, &event))
 
-			require.NoError(t, err)
-			require.NoError(t, json.Unmarshal(rawBytes, &event))
-
-			checkEvent(event, airflowHookID)
+			checkEvent(t, record, event, actionName, airflowHookID)
+		} else {
+			w.WriteHeader(http.StatusNotFound)
+			return
 		}
 
 		_, _ = io.WriteString(w, hookResponse)
@@ -275,4 +247,35 @@ hooks:
 	}
 
 	require.Greater(t, bytes.Count(writerBytes, []byte("\n")), 10)
+}
+
+func checkEvent(t *testing.T, record graveler.HookRecord, event actions.EventInfo, actionName string, hookID string) {
+	t.Helper()
+	if event.EventType != string(record.EventType) {
+		t.Errorf("Webhook post EventType=%s, expected=%s", event.EventType, record.EventType)
+	}
+	if event.ActionName != actionName {
+		t.Errorf("Webhook post ActionName=%s, expected=%s", event.ActionName, actionName)
+	}
+	if event.HookID != hookID {
+		t.Errorf("Webhook post HookID=%s, expected=%s", event.HookID, hookID)
+	}
+	if event.RepositoryID != record.RepositoryID.String() {
+		t.Errorf("Webhook post RepositoryID=%s, expected=%s", event.RepositoryID, record.RepositoryID)
+	}
+	if event.BranchID != record.BranchID.String() {
+		t.Errorf("Webhook post BranchID=%s, expected=%s", event.BranchID, record.BranchID)
+	}
+	if event.SourceRef != record.SourceRef.String() {
+		t.Errorf("Webhook post SourceRef=%s, expected=%s", event.SourceRef, record.SourceRef)
+	}
+	if event.CommitMessage != record.Commit.Message {
+		t.Errorf("Webhook post CommitMessage=%s, expected=%s", event.CommitMessage, record.Commit.Message)
+	}
+	if event.Committer != record.Commit.Committer {
+		t.Errorf("Webhook post Committer=%s, expected=%s", event.Committer, record.Commit.Committer)
+	}
+	if diff := deep.Equal(event.CommitMetadata, map[string]string(record.Commit.Metadata)); diff != nil {
+		t.Errorf("Webhook post Metadata diff=%s", diff)
+	}
 }

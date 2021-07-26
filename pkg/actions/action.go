@@ -37,7 +37,7 @@ var (
 
 type Properties map[string]interface{}
 
-func (p Properties) getRequiredString(key string) (string, error) {
+func (p Properties) getRequiredProperty(key string) (string, error) {
 	raw, ok := p[key]
 	if !ok {
 		return "", fmt.Errorf("key %s: %w", key, errMissingKey)

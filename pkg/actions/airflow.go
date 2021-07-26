@@ -16,11 +16,11 @@ import (
 
 type Airflow struct {
 	HookBase
-	URL            string
-	DagID          string
-	Username       string
-	Password       string
-	AdditionalConf map[string]interface{}
+	URL      string
+	DagID    string
+	Username string
+	Password string
+	DAGConf  map[string]interface{}
 }
 
 const (
@@ -44,29 +44,29 @@ func NewAirflowHook(h ActionHook, action *Action) (Hook, error) {
 		},
 	}
 	var err error
-	airflowHook.URL, err = h.Properties.getRequiredString(airflowURLPropertyKey)
+	airflowHook.URL, err = h.Properties.getRequiredProperty(airflowURLPropertyKey)
 	if err != nil {
 		return nil, fmt.Errorf("airflow hook url property: %w", err)
 	}
 
-	airflowHook.DagID, err = h.Properties.getRequiredString(airflowDagIDPropertyKey)
+	airflowHook.DagID, err = h.Properties.getRequiredProperty(airflowDagIDPropertyKey)
 	if err != nil {
 		return nil, fmt.Errorf("airflow hook DAG ID property: %w", err)
 	}
-	airflowHook.Username, err = h.Properties.getRequiredString(airflowUsernamePropertyKey)
+	airflowHook.Username, err = h.Properties.getRequiredProperty(airflowUsernamePropertyKey)
 	if err != nil {
 		return nil, fmt.Errorf("airflow hook username property: %w", err)
 	}
-	airflowHook.Password, err = h.Properties.getRequiredString(airflowPasswordPropertyKey)
+	airflowHook.Password, err = h.Properties.getRequiredProperty(airflowPasswordPropertyKey)
 	if err != nil {
 		return nil, fmt.Errorf("airflow hook password property: %w", err)
 	}
 
 	conf, ok := h.Properties[airflowConf]
 	if ok {
-		airflowHook.AdditionalConf, ok = conf.(Properties)
+		airflowHook.DAGConf, ok = conf.(Properties)
 		if !ok {
-			return nil, fmt.Errorf("airflow hook conf is not of type 'map[string]interface{}': %w", errWrongValueType)
+			return nil, fmt.Errorf("airflow hook conf is not of type Properties: %w", errWrongValueType)
 		}
 	}
 
@@ -75,7 +75,7 @@ func NewAirflowHook(h ActionHook, action *Action) (Hook, error) {
 
 type DagRunReq struct {
 	// Run ID. This together with DAG_ID are a unique key.
-	DagRunID *string `json:"dag_run_id,omitempty"`
+	DagRunID string `json:"dag_run_id,omitempty"`
 
 	// JSON object describing additional configuration parameters.
 	Conf map[string]interface{} `json:"conf,omitempty"`
@@ -86,12 +86,12 @@ func (a *Airflow) Run(ctx context.Context, record graveler.HookRecord, writer *H
 	if err != nil {
 		return err
 	}
-	a.AdditionalConf["lakeFS_event"] = eventData
+	a.DAGConf["lakeFS_event"] = json.RawMessage(eventData)
 
 	dagRunID := fmt.Sprintf("lakeFS_hook_%s_%s", a.ID, time.Now().Format(time.RFC3339))
 	bod, err := json.Marshal(DagRunReq{
-		DagRunID: &dagRunID,
-		Conf:     a.AdditionalConf,
+		DagRunID: dagRunID,
+		Conf:     a.DAGConf,
 	})
 	if err != nil {
 		return fmt.Errorf("request serialization error: %w", err)
