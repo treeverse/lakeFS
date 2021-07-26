@@ -30,11 +30,36 @@ type ActionOn struct {
 	Branches []string `yaml:"branches"`
 }
 
+var (
+	errMissingKey     = errors.New("missing key in properties")
+	errWrongValueType = errors.New("wrong value type")
+)
+
+type Properties map[string]interface{}
+
+func (p Properties) getRequiredProperty(key string) (string, error) {
+	raw, ok := p[key]
+	if !ok {
+		return "", fmt.Errorf("key %s: %w", key, errMissingKey)
+	}
+
+	val, ok := raw.(string)
+	if !ok {
+		return "", fmt.Errorf("value of %s is not of type string: %w", key, errWrongValueType)
+	}
+
+	if val == "" {
+		return "", fmt.Errorf("value of %s is empty: %w", key, errMissingKey)
+	}
+
+	return val, nil
+}
+
 type ActionHook struct {
-	ID          string                 `yaml:"id"`
-	Type        HookType               `yaml:"type"`
-	Description string                 `yaml:"description"`
-	Properties  map[string]interface{} `yaml:"properties"`
+	ID          string     `yaml:"id"`
+	Type        HookType   `yaml:"type"`
+	Description string     `yaml:"description"`
+	Properties  Properties `yaml:"properties"`
 }
 
 type MatchSpec struct {
