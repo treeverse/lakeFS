@@ -1,4 +1,4 @@
-# lakeFS docker-compsoe
+# lakeFS `docker-compose`
 
 Compose file for lakeFS using variety of services lakeFS can work with.
 
