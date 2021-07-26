@@ -22,14 +22,16 @@ Utilize the power of Spark to interact with the metadata on lakeFS. Possible use
 Start Spark Shell / PySpark with the `--packages` flag:
 
 Spark 3.0.1:
-   ```bash
-   spark-shell --packages io.lakefs:lakefs-spark-client-301_2.12:0.1.0
-   ```
+
+```bash
+spark-shell --packages io.lakefs:lakefs-spark-client-301_2.12:0.1.0
+```
 
 Spark 2.4.7:
-   ```bash
-   spark-shell --packages io.lakefs:lakefs-spark-client-247_2.11:0.1.0
-   ```
+
+```bash
+spark-shell --packages io.lakefs:lakefs-spark-client-247_2.11:0.1.0
+```
 
 Alternatively, the Jars are publicly available on S3:
 
@@ -62,37 +64,36 @@ Alternatively, the Jars are publicly available on S3:
 
 1. Get a DataFrame for listing all objects in a commit:
 
-    ```scala
-    import io.treeverse.clients.LakeFSContext
+   ```scala
+   import io.treeverse.clients.LakeFSContext
     
-    val commitID = "a1b2c3d4"
-    val df = LakeFSContext.newDF(spark, "example-repo", commitID)
-    df.show
-    /* output example:
-       +------------+--------------------+--------------------+-------------------+----+
-       |        key |             address|                etag|      last_modified|size|
-       +------------+--------------------+--------------------+-------------------+----+
-       |     file_1 |791457df80a0465a8...|7b90878a7c9be5a27...|2021-03-05 11:23:30|  36|
-       |     file_2 |e15be8f6e2a74c329...|95bee987e9504e2c3...|2021-03-05 11:45:25|  36|
-       |     file_3 |f6089c25029240578...|32e2f296cb3867d57...|2021-03-07 13:43:19|  36|
-       |     file_4 |bef38ef97883445c8...|e920efe2bc220ffbb...|2021-03-07 13:43:11|  13|
-       +------------+--------------------+--------------------+-------------------+----+
-     */
-    ```
+   val commitID = "a1b2c3d4"
+   val df = LakeFSContext.newDF(spark, "example-repo", commitID)
+   df.show
+   /* output example:
+      +------------+--------------------+--------------------+-------------------+----+
+      |        key |             address|                etag|      last_modified|size|
+      +------------+--------------------+--------------------+-------------------+----+
+      |     file_1 |791457df80a0465a8...|7b90878a7c9be5a27...|2021-03-05 11:23:30|  36|
+      |     file_2 |e15be8f6e2a74c329...|95bee987e9504e2c3...|2021-03-05 11:45:25|  36|
+      |     file_3 |f6089c25029240578...|32e2f296cb3867d57...|2021-03-07 13:43:19|  36|
+      |     file_4 |bef38ef97883445c8...|e920efe2bc220ffbb...|2021-03-07 13:43:11|  13|
+      +------------+--------------------+--------------------+-------------------+----+
+    */
+   ```
 
 1. Run SQL queries on your metadata:
 
    ```scala
-    df.createOrReplaceTempView("files")
-    spark.sql("SELECT DATE(last_modified), COUNT(*) FROM files GROUP BY 1 ORDER BY 1")
-    /* output example:
-       +----------+--------+
-       |        dt|count(1)|
-       +----------+--------+
-       |2021-03-05|       2|
-       |2021-03-07|       2|
-       +----------+--------+
-     */
+   df.createOrReplaceTempView("files")
+   spark.sql("SELECT DATE(last_modified), COUNT(*) FROM files GROUP BY 1 ORDER BY 1")
+   /* output example:
+      +----------+--------+
+      |        dt|count(1)|
+      +----------+--------+
+      |2021-03-05|       2|
+      |2021-03-07|       2|
+      +----------+--------+
+    */
    ```
-
 
