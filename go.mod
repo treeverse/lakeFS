@@ -13,7 +13,6 @@ require (
 	github.com/Masterminds/squirrel v1.5.0
 	github.com/Microsoft/go-winio v0.4.16 // indirect
 	github.com/apache/thrift v0.14.1
-	github.com/avast/retry-go v2.6.1+incompatible
 	github.com/aws/aws-sdk-go v1.37.26
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/cockroachdb/errors v1.8.2 // indirect
