@@ -7,16 +7,34 @@
 }
 @font-face {
 	font-family: GalanoGrotesque;
-	src: local(GalanoGrotesque-Regular),
-		url('../fonts/Rene Bieder - Galano Grotesque.otf');
+    src: local(GalanoGrotesque-Regular),
+        url('../fonts/Rene Bieder - Galano Grotesque.otf') format('otf'),
+}
+@font-face {
+    font-family: GalanoGrotesque-Medium;
+    src: local(GalanoGrotesque-Medium),
+        url('../fonts/Rene-Bieder-Galano-Grotesque-Medium.otf') format('otf'),
+        url('../fonts/Rene-Bieder-Galano-Grotesque-Medium.eot?#iefix') format('embedded-opentype'),
+        url('../fonts/Rene-Bieder-Galano-Grotesque-Medium.svg#Rene-Bieder-Galano-Grotesque-Medium') format('svg'),
+        url('../fonts/Rene-Bieder-Galano-Grotesque-Medium.ttf') format('truetype'),
+        url('../fonts/Rene-Bieder-Galano-Grotesque-Medium.woff') format('woff'),
+        url('../fonts/Rene-Bieder-Galano-Grotesque-Medium.woff2') format('woff2');
 }
 @font-face {
 	font-family: GalanoGrotesque-Bold;
 	src: local(GalanoGrotesque-Bold),
-		url('../fonts/Rene Bieder - Galano Grotesque Bold.otf');
+		url('../fonts/Rene Bieder - Galano Grotesque Bold.otf'),
+        url('../fonts/Rene-Bieder-Galano-Grotesque-Bold.eot?#iefix') format('embedded-opentype'),
+        url('../fonts/Rene-Bieder-Galano-Grotesque-Bold.otf') format('otf'),
+        url('../fonts/Rene-Bieder-Galano-Grotesque-Bold.svg#Rene-Bieder-Galano-Grotesque-Bold') format('svg'),
+        url('../fonts/Rene-Bieder-Galano-Grotesque-Bold.ttf') format('truetype'),
+        url('../fonts/Rene-Bieder-Galano-Grotesque-Bold.woff') format('woff'),
+        url('../fonts/Rene-Bieder-Galano-Grotesque-Bold.woff2') format('woff2');
 }
 
 $white: #ffffff;
+$waikawa-grey: #576489;
+$sidebar-grey: #f5f7f9;
 $pale-grey: #f1f9f9;
 $light-blue-grey: #def1f1;
 $info-blue: #3498db;
@@ -33,13 +51,16 @@ $white-two: #f8f8f8;
 $charcoal: #2f3433;
 $note: #fff3e5;
 $note-border: #f3a342;
+$humming-bird: #d8faf1;
+$shuttle-grey: #575e65;
 
 // General
 html {
 	scroll-padding-top: 90px;
 }
+
 body {
-	font-family: GalanoGrotesque;
+	font-family: GalanoGrotesque-Medium;
 	color: $black;
 	.body-wrapper,
 	footer {
@@ -63,7 +84,7 @@ body {
 			max-width: 25%;
 			position: relative;
 			height: auto;
-			background-color: $white-two;
+            background-color: $sidebar-grey;
 		}
 	}
 
@@ -73,41 +94,59 @@ body {
 
 	h1 {
 		margin-top: 40px !important;
-		font-family: GalanoGrotesque;
 		font-size: 42px;
 		color: $black;
 	}
+
 	h2 {
 		margin-top: 40px !important;
 		font-size: 28px;
 		&#table-of-contents {
-			font-family: GalanoGrotesque;
-			color: $black;
-			font-size: 16px !important;
-		}
+            width: 100%;
+            max-width: 264px;
+            display: block;
+            background-color: $teal-green;
+            color: $white;
+            border-radius: 2px 2px 0 0;
+            font-size: 14px !important;
+            padding: 10px 15px 8px 15px;
+            font-family: GalanoGrotesque-Medium;
+        }
 	}
 
 	h3 {
 		margin-top: 25px !important;
-		font-size: 22px;
+		font-size: 18px;
 		font-weight: 600;
-		font-family: GalanoGrotesque;
+		font-family: GalanoGrotesque-Bold;
 	}
 	h4,
 	.text-delta {
 		text-transform: none;
 	}
 	#markdown-toc {
-		border-left: solid 2px $border-grey;
+        background-color: $sidebar-grey;
+        width: 100%;
+        max-width: 264px;
+        border: none;
+        margin-top: 0;
+        border-radius: 0;
+        position: relative;
+        top: -3px;
+        padding: 15px 25px 15px 25px;
 		li {
+            content: none;
 			&::before {
 				display: none;
 			}
 			a {
-				color: $black;
-				font-size: 16px;
 				padding: 8px 0;
 				background-image: none;
+                font-size: 14px;
+                color: $teal-green;
+                font-family: GalanoGrotesque-Medium;
+                text-decoration: underline;
+                white-space: normal;
 				&:hover {
 					background-image: none;
 					color: $teal-green;
@@ -116,9 +155,23 @@ body {
 			ol,
 			ul {
 				border: none;
+                background-color: $sidebar-grey;
+                width: 100%;
+                max-width: 264px;
+                margin-top: 0;
+                border-radius: 0;
+                position: relative;
+                top: -3px;
+                padding: 15px 25px 15px 25px;
 				li {
+                    content: none;
 					a {
 						padding-bottom: 0;
+                        font-size: 14px;
+                        color: $teal-green;
+                        font-family: GalanoGrotesque-Medium;
+                        text-decoration: underline;
+                        white-space: normal;
 					}
 				}
 			}
@@ -126,7 +179,7 @@ body {
 	}
 
 	pre code {
-		background-color: initial;
+        background-color: initial;
 	}
 
 	.btn {
@@ -144,23 +197,26 @@ body {
 		}
 	}
 	.note {
-		background-color: $note;
-		border-left: 4px solid $note-border;
-		border-radius: 2px;
+        font-size: 16px;
+		background-color: $sidebar-grey;
+		border-left: 4px solid $aqua-marine;
+		border-radius: 0px 2px 2px 0px;
 		padding: 8px 20px;
 	}
 	.note-info {
-		background-color: $info-blue;
-		border-left: 4px solid $info-blue-highlight;
-		color: $white;
+		background-color: $aqua-marine;
+		border-left: none;
+		color: $black;
 
 		a {
-			color: $white-two;
+			color: $black;
 			font-weight: 500;
+            background-image: linear-gradient(#000 0%, #000 100%);
 		}
 
 		code {
-			color: $battleship-grey;
+            background-color: $humming-bird;
+            border: 1px solid $humming-bird;
 		}
 	}
 
@@ -190,6 +246,9 @@ body {
 				}
 			}
 		}
+        p {
+            font-size: 14px;
+        }
 	}
 }
 
@@ -227,6 +286,7 @@ body {
 				}
 				&:hover,
 				&.active {
+                    background-color: $white;
 					a {
 						color: $teal-green;
 					}
@@ -344,14 +404,14 @@ body {
 
 				a.nav-list-link {
 					padding: 12px 40px 12px calc(100% - 290px);
-					font-size: 16px !important;
-					color: $black;
+					font-size: 13px !important;
+					color: $waikawa-grey;
 					letter-spacing: 1.1px;
 					&.active,
 					&:hover {
-						background-color: #ededed;
+						background-color: $white;
 						background-image: none;
-						font-family: GalanoGrotesque;
+                        color: $teal-green;
 					}
 				}
 				.nav-list-expander {
@@ -401,7 +461,7 @@ body {
 			z-index: 1;
 
 			.search-input {
-				background-color: $white-two;
+                background-color: $sidebar-grey;
 				border: 1px solid $border-grey;
 				border-radius: 4px;
 				color: $battleship-grey;
@@ -411,12 +471,12 @@ body {
 					color: black;
 				}
 				.search-icon {
-					color: $battleship-grey;
+					color: $warm-grey-two;
 				}
 			}
 
 			.search-input:focus + .search-label .search-icon {
-				color: $teal-green;
+                color: $warm-grey-two;
 			}
 		}
 		.mobile-menu {
@@ -751,7 +811,7 @@ footer {
 }
 
 .highlighter-rouge {
-	position: relative;
+    position: relative;
 }
 
 .language-shell.highlighter-rouge pre.highlight::before,
