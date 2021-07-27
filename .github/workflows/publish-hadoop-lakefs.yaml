@@ -55,7 +55,7 @@ jobs:
 
       - name: Publish assembly
         working-directory: clients/hadoopfs
-        run: mvn -Passembly --batch-mode deploy -Dgpg.executable="${GITHUB_WORKSPACE}/scripts/gpg_loopback.sh"
+        run: mvn -Passembly --batch-mode deploy -Dgpg.executable="${GITHUB_WORKSPACE}/scripts/gpg_loopback.sh" -DskipTests
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
@@ -69,8 +69,8 @@ jobs:
 
       - name: Upload S3
         working-directory: clients/hadoopfs
-        run: mvn package s3-storage-wagon:s3-upload@upload-jar
+        run: mvn package s3-storage-wagon:s3-upload@upload-jar -DskipTests
 
       - name: Upload S3 assembly
         working-directory: clients/hadoopfs
-        run: mvn -Passembly package s3-storage-wagon:s3-upload@upload-jar
+        run: mvn -Passembly package s3-storage-wagon:s3-upload@upload-jar -DskipTests
