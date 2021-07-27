@@ -29,7 +29,7 @@ const (
 	airflowDagIDPropertyKey     = "dag_id"
 	airflowUsernamePropertyKey  = "username"
 	airflowPasswordPropertyKey  = "password"
-	airflowConf                 = "conf"
+	airflowConf                 = "dag_conf"
 )
 
 var (
