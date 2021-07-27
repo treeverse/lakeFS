@@ -5,6 +5,9 @@ on:
     inputs:
       tag:
         description: Tag/version to publish
+  push:
+    branches:
+      - chore/s3-hadoopfs
 
 jobs:
   deploy:
@@ -39,11 +42,29 @@ jobs:
           server-username: MAVEN_USERNAME
           server-password: MAVEN_PASSWORD
 
-      - name: Deploy hadoop-lakefs
+
+      - name: Update package version
         working-directory: clients/hadoopfs
-        run: |
-          sed -i.bak 's/<version>.*<\/version><!--MARKER.*/<version>'${{ steps.version.outputs.tag }}'<\/version>/' pom.xml
-          mvn --batch-mode deploy -Dgpg.executable="${GITHUB_WORKSPACE}/scripts/gpg_loopback.sh"
+        run: sed -i.bak 's/<version>.*<\/version><!--MARKER.*/<version>'${{ steps.version.outputs.tag }}'<\/version>/' pom.xml
+
+      - name: Publish
+        working-directory: clients/hadoopfs
+        run: mvn --batch-mode deploy -Dgpg.executable="${GITHUB_WORKSPACE}/scripts/gpg_loopback.sh"
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+
+      - name: Publish assembly
+        working-directory: clients/hadoopfs
+        run: mvn -Passembly --batch-mode deploy -Dgpg.executable="${GITHUB_WORKSPACE}/scripts/gpg_loopback.sh"
+        env:
+          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+
+      - name: Upload S3
+        working-directory: clients/hadoopfs
+        run: mvn package s3-storage-wagon:s3-upload@upload-jar
+
+      - name: Upload S3 assembly
+        working-directory: clients/hadoopfs
+        run: mvn -Passembly package s3-storage-wagon:s3-upload@upload-jar
