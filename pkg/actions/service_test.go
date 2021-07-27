@@ -118,7 +118,7 @@ hooks:
       dag_id: "some_dag_id"
       username: "some_username" 
       password: "some_password"
-      conf:
+      dag_conf:
         some: "additional_conf"
 `
 
