@@ -212,7 +212,6 @@ To export to S3:
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
             <version>2.7.7</version>
-            <scope>compile</scope>
         </dependency>
 
         <dependency>
@@ -222,7 +221,6 @@ To export to S3:
             <type>test-jar</type>
             <version>2.7.7</version>
         </dependency>
-
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-aws</artifactId>
