@@ -1,12 +1,14 @@
 name: publish hadoop lakefs
 
 on:
-  #release:
-    #types: [published]
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       tag:
         description: Tag/version to publish
+  push:
+    chore/publish-hadoopfs
 
 jobs:
   deploy:
