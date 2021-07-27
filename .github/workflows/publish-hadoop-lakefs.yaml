@@ -8,7 +8,8 @@ on:
       tag:
         description: Tag/version to publish
   push:
-    chore/publish-hadoopfs
+    branches:
+      - chore/publish-hadoopfs
 
 jobs:
   deploy:
