@@ -38,7 +38,7 @@ services:
     ports:
       - 9000:9000
       - 9001:9001
-    entrypoint: ["minio", "server", "/data", "--console-address", ":9001"]
+    entrypoint: ["minio", "server", "/data", "--address", ":9001"]
 
   lakefs:
     image: treeverse/lakefs:latest
