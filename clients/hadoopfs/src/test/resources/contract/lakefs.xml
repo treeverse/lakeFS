@@ -24,7 +24,7 @@
 
     <property>
         <name>fs.contract.test.root-tests-enabled</name>
-        <value>true</value>
+        <value>false</value>
     </property>
 
     <property>

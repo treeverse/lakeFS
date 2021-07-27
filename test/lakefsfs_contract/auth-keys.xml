@@ -1,0 +1,44 @@
+<configuration>
+
+    <property>
+        <name>test.fs.lakefs.name</name>
+        <value>lakefs</value>
+    </property>
+
+    <property>
+        <name>fs.contract.test.fs.lakefs</name>
+        <value>lakefs://${env.REPOSITORY}/</value>
+    </property>
+
+<!--    <property>-->
+<!--        <name>fs.s3a.access.key</name>-->
+<!--        <description>AWS access key ID. Omit for IAM role-based authentication.</description>-->
+<!--        <value>${env.AWS_ACCESS_KEY}</value>-->
+<!--    </property>-->
+<!--    <property>-->
+<!--        <name>fs.s3a.secret.key</name>-->
+<!--        <description>AWS secret key. Omit for IAM role-based authentication.</description>-->
+<!--        <value>${env.AWS_SECRET_KEY}</value>-->
+<!--    </property>-->
+    <property>
+        <name>fs.lakefs.impl</name>
+        <value>io.lakefs.LakeFSFileSystem</value>
+    </property>
+    <property>
+        <name>fs.lakefs.access.key</name>
+        <value>${env.TESTER_ACCESS_KEY_ID}</value>
+    </property>
+    <property>
+        <name>fs.lakefs.secret.key</name>
+        <value>${env.TESTER_SECRET_ACCESS_KEY}</value>
+    </property>
+    <property>
+        <name>fs.lakefs.endpoint</name>
+        <value>http://lakefs:8000/api/v1</value>
+    </property>
+    <property>
+        <name>test.sts.endpoint</name>
+        <description>Specific endpoint to use for STS requests.</description>
+        <value>sts.amazonaws.com</value>
+    </property>
+</configuration>

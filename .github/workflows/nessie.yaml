@@ -166,8 +166,42 @@ jobs:
             echo "Image doesn't exist"
             docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}
           fi
-
+  hadoopfs-contract:
+    name: Test lakeFS Hadoop FileSystem contract
+    needs: deploy-image
+    runs-on: ubuntu-20.04
+    env:
+      TAG: ${{ needs.deploy-image.outputs.tag }}
+      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v2
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      - name: Start lakeFS
+        env:
+          LAKEFS_STATS_ENABLED: "false"
+          LAKEFS_BLOCKSTORE_TYPE: s3
+          LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.docker.lakefs.io:8000
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
+        working-directory: test/lakefsfs_contract
+        run: docker-compose up -d
+      - name: Setup contract tests
+        working-directory: test/lakefsfs_contract
+        run: ./setup-test.sh
+      - name: Run contract tests
+        env:
+          STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-lakefsfs-contract
+          REPOSITORY: lakefsfs-contract-test
+        working-directory: test/lakefsfs_contract
+        run: ./run-test.sh
   spark2:
+    if: ${{ !always() }}
     name: Test lakeFS with Spark 2.x
     needs: deploy-image
     runs-on: ubuntu-20.04
@@ -249,6 +283,7 @@ jobs:
         run: docker-compose logs --tail=1000 lakefs
 
   spark3:
+    if: ${{ !always() }}
     name: Test lakeFS with Spark 3.x
     needs: deploy-image
     runs-on: ubuntu-20.04
@@ -330,6 +365,7 @@ jobs:
         run: docker-compose logs --tail=1000 lakefs
 
   run-system-aws-s3:
+    if: ${{ !always() }}
     name: Run latest lakeFS app on AWS S3
     needs: [gen-code, deploy-image]
     runs-on: ubuntu-20.04
@@ -401,6 +437,7 @@ jobs:
           docker-compose -f nessie/ops/docker-compose.yaml up --quiet-pull --exit-code-from=nessie
 
   run-system-gcp-gs:
+    if: ${{ !always() }}
     name: Run latest lakeFS app on Google Cloud Platform and Google Cloud Storage
     needs: [gen-code, deploy-image]
     runs-on: ubuntu-20.04
@@ -444,6 +481,7 @@ jobs:
         run: docker-compose -f nessie/ops/docker-compose.yaml logs --tail=1000 lakefs
 
   run-system-azure-abfs:
+    if: ${{ !always() }}
     name: Run latest lakeFS app on Azure with Azure blobstore
     needs: [gen-code, deploy-image]
     runs-on: ubuntu-20.04
