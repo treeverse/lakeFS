@@ -48,14 +48,14 @@ jobs:
 
       - name: Publish
         working-directory: clients/hadoopfs
-        run: mvn --batch-mode deploy -Dgpg.executable="${GITHUB_WORKSPACE}/scripts/gpg_loopback.sh"
+        run: mvn -Prelease --batch-mode deploy -Dgpg.executable="${GITHUB_WORKSPACE}/scripts/gpg_loopback.sh"
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
 
       - name: Publish assembly
         working-directory: clients/hadoopfs
-        run: mvn -Passembly --batch-mode deploy -Dgpg.executable="${GITHUB_WORKSPACE}/scripts/gpg_loopback.sh" -DskipTests
+        run: mvn -Prelease,assembly --batch-mode deploy -Dgpg.executable="${GITHUB_WORKSPACE}/scripts/gpg_loopback.sh" -DskipTests
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
