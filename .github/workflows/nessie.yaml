@@ -119,7 +119,7 @@ jobs:
         env:
           STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-lakefsfs-contract
           REPOSITORY: lakefsfs-contract-test
-        working-directory: test/lakefsfs_contract
+        working-directory: clients/hadoopfs
         run: ./run-test.sh
   spark2:
     if: ${{ !always() }}
