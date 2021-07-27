@@ -13,6 +13,11 @@
         <value>com.mysql.jdbc.Driver</value>
     </property>
     <property>
+        <!-- https://community.hortonworks.com/content/supportkb/247055/errorjavalangunsupportedoperationexception-storage.html -->
+         <name>metastore.storage.schema.reader.impl</name>
+         <value>org.apache.hadoop.hive.metastore.SerDeStorageSchemaReader</value>
+    </property>
+    <property>
         <name>javax.jdo.option.ConnectionURL</name>
         <value>jdbc:mysql://mariadb:3306/metastore_db</value>
     </property>
