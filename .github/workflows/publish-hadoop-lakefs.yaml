@@ -5,9 +5,6 @@ on:
     inputs:
       tag:
         description: Tag/version to publish
-  push:
-    branches:
-      - chore/s3-hadoopfs
 
 jobs:
   deploy:
