@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Kubeflow
-description: Easily build reproducible data pipelines with Kubeflow and lakeFS using commits, without modifying the code or logic of your job. 
+description: Easily build reproducible data pipelines with Kubeflow and lakeFS using commits, without modifying the code or logic of your job.
 parent: Integrations
 nav_order: 56
 has_children: false
@@ -11,12 +11,12 @@ has_children: false
 {: .no_toc }
 [Kubeflow](https://www.kubeflow.org/docs/about/kubeflow/) is a project dedicated to making deployments of ML workflows on Kubernetes simple, portable and scalable.
 A Kubeflow pipeline is a portable and scalable definition of an ML workflow composed of steps. Each step in the pipeline is an instance of a component represented as an instance of [ContainerOp](https://kubeflow-pipelines.readthedocs.io/en/latest/source/kfp.dsl.html#kfp.dsl.ContainerOp).
-  
-## Table of contents
-{: .no_toc .text-delta } 
 
-1. TOC 
-{:toc}  
+## Table of contents
+{: .no_toc .text-delta }
+
+1. TOC
+{:toc}
 
 
 ## Add pipeline steps for lakeFS operations
@@ -26,10 +26,10 @@ Currently, there are two methods to create lakeFS ContainerOps:
 1. Implement a function-based ContainerOp that uses lakeFS's Python API to invoke lakeFS operations.
 1. Implement a ContainerOp that uses the `lakectl` CLI docker image to invoke lakeFS operations.
 
-### Function-based ContainerOps 
+### Function-based ContainerOps
 
-To implement a [function-based component](https://www.kubeflow.org/docs/components/pipelines/sdk/python-function-components/) that invokes lakeFS operations, 
-you should use the [Python OpenAPI client](python.md) lakeFS has. See the example below that demonstrates how to make the client's package available to your ContainerOp.   
+To implement a [function-based component](https://www.kubeflow.org/docs/components/pipelines/sdk/python-function-components/) that invokes lakeFS operations,
+you should use the [Python OpenAPI client](python.md) lakeFS has. See the example below that demonstrates how to make the client's package available to your ContainerOp.
 
 #### Example operations
 {: .no_toc }
@@ -59,8 +59,8 @@ create_branch_op = components.func_to_container_op(
    packages_to_install=['lakefs_client==<lakeFS version>']) # Type in the lakeFS version you are using
 ```
 
-You can invoke any lakeFS operation supported by lakeFS OpenAPI, for example, you could implement a commit and merge function-based ContainerOps. 
-Check out the full API [reference](https://docs.lakefs.io/reference/api.html).    
+You can invoke any lakeFS operation supported by lakeFS OpenAPI, for example, you could implement a commit and merge function-based ContainerOps.
+Check out the full API [reference](https://docs.lakefs.io/reference/api.html).
 
 ### Non-function-based ContainerOps
 
@@ -87,8 +87,9 @@ For `lakectl` to work with Kubeflow, you will need to pass your lakeFS configura
       image='treeverse/lakectl',
       arguments=['commit', 'lakefs://example-repo/example-branch', '-m', 'commit message']).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_ACCESS_KEY_ID',value='AKIAIOSFODNN7EXAMPLE')).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY',value='wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY')).add_env_variable(V1EnvVar(name='LAKECTL_SERVER_ENDPOINT_URL',value='https://lakefs.example.com'))
    ```
+
 1. Merge two lakeFS branches: A ContainerOp that merges `example-branch` into the `main` branch of `example-repo`.
-    
+
    ```python
    def merge_op():
      return dsl.ContainerOp(
@@ -106,17 +107,17 @@ The lakeFS Kubeflow integration that uses `lakectl` is supported on lakeFS versi
 
 ## Add the lakeFS steps to your pipeline
 
-Add the steps created on the previous step to your pipeline before compiling it. 
+Add the steps created on the previous step to your pipeline before compiling it.
 
 ### Example pipeline
 {: .no_toc }
 
-A pipeline that implements a simple ETL, that has steps for branch creation and commits.    
+A pipeline that implements a simple ETL, that has steps for branch creation and commits.
 
 ```python
 def lakectl_pipeline():
-   create_branch_task = create_branch_op('example-repo', 'example-branch', 'main') # A function-based component   
-   extract_task = example_extract_op() 
+   create_branch_task = create_branch_op('example-repo', 'example-branch', 'main') # A function-based component
+   extract_task = example_extract_op()
    commit_task = commit_op()
    transform_task = example_transform_op()
    commit_task = commit_op()
