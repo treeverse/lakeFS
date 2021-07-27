@@ -42,7 +42,6 @@ jobs:
           server-username: MAVEN_USERNAME
           server-password: MAVEN_PASSWORD
 
-
       - name: Update package version
         working-directory: clients/hadoopfs
         run: sed -i.bak 's/<version>.*<\/version><!--MARKER.*/<version>'${{ steps.version.outputs.tag }}'<\/version>/' pom.xml
@@ -60,6 +59,13 @@ jobs:
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
 
       - name: Upload S3
         working-directory: clients/hadoopfs
