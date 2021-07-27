@@ -69,8 +69,8 @@ jobs:
 
       - name: Upload S3
         working-directory: clients/hadoopfs
-        run: mvn package s3-storage-wagon:s3-upload@upload-jar -DskipTests
+        run: mvn package s3-storage-wagon:s3-upload@upload-jar -DpublicRepository=true -DskipTests
 
       - name: Upload S3 assembly
         working-directory: clients/hadoopfs
-        run: mvn -Passembly package s3-storage-wagon:s3-upload@upload-jar -DskipTests
+        run: mvn -Passembly package s3-storage-wagon:s3-upload@upload-jar -DpublicRepository=true -DskipTests
