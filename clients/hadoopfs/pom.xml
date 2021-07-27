@@ -52,7 +52,7 @@ To export to S3:
 
     <profiles>
         <profile>
-            <id>contact-tests-off</id>
+            <id>contract-tests-off</id>
             <activation>
                 <file>
                     <missing>src/test/resources/auth-keys.xml</missing>
