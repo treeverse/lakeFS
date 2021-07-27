@@ -31,13 +31,18 @@ For more information see the [official lakeFS documentation](https://docs.lakefs
 ## Capabilities
 
 **In Development**
+
 * **Experiment** - try new tools, upgrade versions, and evaluate code changes in isolation. By creating a branch of the data you get an isolated snapshot to run and compare experiments over, while others are not exposed. 
 * **Debug** - checkout specific commits in a repository’s commit history to materialize consistent, historical versions of your data. 
 * **Collaborate** - leverage isolated branches managed by metadata (not copies of files) to work in parallel.
+
 **During Deployment**
+
 * **Version Control** - deploy data safely with CI/CD workflows borrowed from software engineering best practices. Ingest new data onto an isolated branch, perform data validations, then add to production through a merge operation.
 * **Test** - define pre-merge and pre-commit hooks to run tests that enforce schema and validate properties of the data to catch issues before they reach production.
+
 **In Production**
+
 * **Roll Back** - recover from errors by instantly reverting data to a former, consistent snapshot of the data lake. Choose any commit in a repository’s commit history to revert in one atomic action.
 * **Troubleshoot** - investigate production errors by starting with a snapshot of the inputs to the failed process. 
 * **Cross-collection Consistency** - provide consumers multiple synchronized collections of data in one atomic, revertable action. 
