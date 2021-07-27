@@ -210,18 +210,19 @@ Example:
 
 ### Airflow Hooks
 Airflow Hook triggers a DAG run in an Airflow installation using [Airflow's REST API](https://airflow.apache.org/docs/apache-airflow/stable/stable-rest-api-ref.html#operation/post_dag_run).
-Ends successfully if the DAG was triggered, and fails if it wasn't. 
+The hook run succeeds if the DAG was triggered, and fails otherwise.
 
 #### Action file Airflow hook properties
 
 
-| Property | Description                                     | Data Type | Example                 | Required |
-|----------|-------------------------------------------------|-----------|-------------------------|----------|
-| url      | The URL address of the Airflow instance         | String    | "http://localhost:8080" | true     |
-| dag_id   | The DAG to trigger                              | String    | "example_dag"           | true     |
-| username | The name of the user performing the request     | String    | "admin"                 | true     |
-| password | The password of the user performing the request | String    | "admin"                 | true     |
-| conf     | DAG run configuration that will be pass as is   | JSON      |                         | false    |
+| Property | Description                                             | Data Type | Example                 | Required |
+|----------|---------------------------------------------------------|-----------|-------------------------|----------|
+| url      | The URL of the Airflow instance                         | String    | "http://localhost:8080" | true     |
+| dag_id   | The DAG to trigger                                      | String    | "example_dag"           | true     |
+| username | The name of the Airflow user performing the request     | String    | "admin"                 | true     |
+| password | The password of the Airflow user performing the request | String    | "admin"                 | true     |
+| dag_conf | DAG run configuration that will be passed as is         | JSON      |                         | false    |
+
 
 Example:
 ```yaml
@@ -235,15 +236,15 @@ hooks:
        dag_id: "example_dag"
        username: "admin"
        password: "admin"
-       conf:
+       dag_conf:
           some: "additional_conf"
 ...
 ```
 
 #### Hook Record in configuration field
-lakeFS will add an entry to the configuration property with the event that triggered the action.
+lakeFS will add an entry to the Airflow request configuration property (`conf`) with the event that triggered the action.
 
-The key of the record would be `lakeFS_event` and value will match the one described in the previous [schema](#request-body-schema)
+The key of the record will be `lakeFS_event` and the value will match the one described [here](#request-body-schema)
 
 ## Experimentation
 
