@@ -25,10 +25,11 @@ In order to import existing data to lakeFS, you may choose to copy it using [S3 
 or using tools like [Apache DistCp](../integrations/distcp.md#from-s3-to-lakefs). This is the most straightforward way, and we recommend it if it’s applicable for you.
 
 ## Limitations
+
 Unfortunately, copying data is not always feasible for the following reasons:
 1. Some data is just too big to copy.
-2. It requires you to stop making changes to the data before starting to copy.
-3. It requires you to switch to using the lakeFS endpoint in all places at once.
+1. It requires you to stop making changes to the data before starting to copy.
+1. It requires you to switch to using the lakeFS endpoint in all places at once.
 
 ## Importing data from an object store without actually copying it
 
@@ -102,6 +103,7 @@ when accessing it through other branches. In a sense, your original bucket becom
 {: .note .pb-3 }
 
 ### Prerequisites
+
 - Your bucket should have S3 Inventory enabled.
 - The inventory should be in Parquet or ORC format.
 - The inventory must contain (at least) the size, last-modified-at, and e-tag columns.
@@ -109,7 +111,8 @@ when accessing it through other branches. In a sense, your original bucket becom
 - If you want to use the tool for [gradual import](#gradual-import), you should not delete the data for the most recently imported inventory, until a more recent inventory is successfully imported.
 
 ### Using the import tool
-Import is performed by `lakefs` 's `import` command.
+
+Import is performed by `lakefs`'s `import` command.
 
 Assuming your manifest.json is at `s3://example-bucket/path/to/inventory/YYYY-MM-DDT00-00Z/manifest.json`, and your lakeFS configuration yaml is at `config.yaml` (see notes below), run the following command to start the import:
 
@@ -143,6 +146,7 @@ lakefs import --with-merge lakefs://example-repo -m s3://example-bucket/path/to/
 
 #### Notes
 {: .no_toc }
+
 1. Perform the import from a machine with access to your database, and on the same region of your destination bucket.
 
 1. You can download the `lakefs` binary from [here](https://github.com/treeverse/lakeFS/releases). Make sure you choose one compatible with your installation of lakeFS.
