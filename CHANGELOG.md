@@ -6,9 +6,9 @@
 
 ## v0.47.0 - 2021-07-28
 
- - Support Airflow Dag Triggering Hook (#2266)
- - Fix --continue-on-error flag in metastore copy and import (#2267)
- - Return gone response (410) in case physical data was removed (#2264)
+ - Hooks: support triggering Airflow DAGs (#2266)
+ - Metasore tool: fix --continue-on-error flag on copy and import (#2267)
+ - API: Return gone response (410) in case physical data was removed (#2264)
 
 ## v0.46.0 - 2021-07-19
 
