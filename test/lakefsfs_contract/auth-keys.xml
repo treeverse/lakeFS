@@ -7,7 +7,7 @@
 
     <property>
         <name>fs.contract.test.fs.lakefs</name>
-        <value>lakefs://${env.REPOSITORY}/</value>
+        <value>lakefs://lakefsfs-contract-test/</value>
     </property>
 
 <!--    <property>-->
@@ -26,11 +26,11 @@
     </property>
     <property>
         <name>fs.lakefs.access.key</name>
-        <value>${env.TESTER_ACCESS_KEY_ID}</value>
+        <value>AKIAIOSFODNN7EXAMPLE</value>
     </property>
     <property>
         <name>fs.lakefs.secret.key</name>
-        <value>${env.TESTER_SECRET_ACCESS_KEY}</value>
+        <value>wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY</value>
     </property>
     <property>
         <name>fs.lakefs.endpoint</name>
