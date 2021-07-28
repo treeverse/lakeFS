@@ -2,24 +2,28 @@
 
     <property>
         <name>test.fs.lakefs.name</name>
-        <value>lakefs</value>
+        <value>lakefs://lakefsfs-contract-test</value>
     </property>
 
     <property>
         <name>fs.contract.test.fs.lakefs</name>
-        <value>lakefs://lakefsfs-contract-test/</value>
+        <value>lakefs://lakefsfs-contract-test</value>
+    </property>
+    <property>
+        <name>fs.s3a.access.key</name>
+        <value>minio</value>
     </property>
 
-<!--    <property>-->
-<!--        <name>fs.s3a.access.key</name>-->
-<!--        <description>AWS access key ID. Omit for IAM role-based authentication.</description>-->
-<!--        <value>${env.AWS_ACCESS_KEY}</value>-->
-<!--    </property>-->
-<!--    <property>-->
-<!--        <name>fs.s3a.secret.key</name>-->
-<!--        <description>AWS secret key. Omit for IAM role-based authentication.</description>-->
-<!--        <value>${env.AWS_SECRET_KEY}</value>-->
-<!--    </property>-->
+    <property>
+        <name>fs.s3a.secret.key</name>
+        <value>minio123</value>
+    </property>
+
+    <property>
+        <name>fs.s3a.endpoint</name>
+        <value>http://s3.local.lakefs.io:9000</value>
+    </property>
+
     <property>
         <name>fs.lakefs.impl</name>
         <value>io.lakefs.LakeFSFileSystem</value>

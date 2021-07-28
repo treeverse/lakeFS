@@ -97,10 +97,6 @@ public class TestLakeFSFileSystemContract extends FileSystemContractBaseTest {
                fs.exists(path("/test/new/newdir/subdir/file2")));
   }
 
-  protected Path path(String pathString) {
-    return new Path("lakefs://yoni-test3/main" + pathString).makeQualified(this.fs);
-  }
-
 //  @Override
   public void testMoveDirUnderParent() throws Throwable {
     // not support because
