@@ -63,12 +63,11 @@ jobs:
             ${{ runner.os }}-build-
             ${{ runner.os }}-
 
-      - name: Generate code
-        run: |
-          make gen
-          tar -cf /tmp/generated.tar.gz .
-
-      - name: Store generated code
+      - name: download generated code
+        run: aws s3 cp s3://yoni-test3/jars/generated.tar.gz /tmp/
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         uses: actions/upload-artifact@v2
         with:
           name: generated-code
