@@ -38,12 +38,15 @@ public class TestLakeFSFileSystemContract extends FileSystemContractBaseTest {
   protected static final Logger LOG =
       LoggerFactory.getLogger(TestLakeFSFileSystemContract.class);
   public static final String TEST_FS_LAKEFS_NAME = "test.fs.lakefs.name";
+  private String pathPrefix;
 
   @Override
   public void setUp() throws Exception {
     Configuration conf = new Configuration();
 
     fs = LakeFSTestUtils.createTestFileSystem(conf);
+
+    pathPrefix = conf.get(TEST_FS_LAKEFS_NAME) + "/main";
     super.setUp();
   }
 
@@ -58,6 +61,11 @@ public class TestLakeFSFileSystemContract extends FileSystemContractBaseTest {
   @Override
   public void testMkdirsWithUmask() throws Exception {
     // not supported
+  }
+
+  @Override
+  protected Path path(String pathString) {
+     return new Path(pathPrefix + pathString);
   }
 
   @Override
