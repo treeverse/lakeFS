@@ -115,6 +115,9 @@ jobs:
       - name: Setup contract tests
         working-directory: test/lakefsfs_contract
         run: ./setup-test.sh
+        env:
+          AWS_ACCESS_KEY_ID: minio
+          AWS_SECRET_ACCESS_KEY: minio123
       - name: Run contract tests
         env:
           STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-lakefsfs-contract
