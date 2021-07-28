@@ -107,9 +107,9 @@ jobs:
         env:
           LAKEFS_STATS_ENABLED: "false"
           LAKEFS_BLOCKSTORE_TYPE: s3
-          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
-          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
-          LAKEFS_BLOCKSTORE_S3_ENDPOINT: "http://minio:9000"
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: minio
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: minio123
+          LAKEFS_BLOCKSTORE_S3_ENDPOINT: "http://s3.local.lakefs.io:9000"
         working-directory: test/lakefsfs_contract
         run: docker-compose up -d
       - name: Setup contract tests
