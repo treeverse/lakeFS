@@ -3,7 +3,15 @@
 
 ## Unreleased - XXXX-XX-XX
 
-## v0.45.1 - 2021-07-19
+
+## v0.47.0 - 2021-07-28
+
+ - Support Airflow Dag Triggering Hook (#2266)
+ - Fix --continue-on-error flag in metastore copy and import (#2267)
+ - Return gone response (410) in case physical data was removed (#2264)
+
+## v0.46.0 - 2021-07-19
+
  - Support post-merge and post-commit events
  - UI - add garbage collection policy configuration
  - Metastore tool - add flag to support DBFS location
