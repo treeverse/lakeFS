@@ -43,13 +43,6 @@ jobs:
         working-directory: clients/hadoopfs
         run: sed -i.bak 's/<version>.*<\/version><!--MARKER.*/<version>'${{ steps.version.outputs.tag }}'<\/version>/' pom.xml
 
-      - name: Publish
-        working-directory: clients/hadoopfs
-        run: mvn -Passembly,release --batch-mode deploy -Dgpg.executable="${GITHUB_WORKSPACE}/scripts/gpg_loopback.sh"
-        env:
-          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
-
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -57,10 +50,26 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
+      - name: Publish
+        working-directory: clients/hadoopfs
+        run: mvn -Passembly,release --batch-mode deploy -Dgpg.executable="${GITHUB_WORKSPACE}/scripts/gpg_loopback.sh"
+        env:
+          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+
       - name: Upload S3
         working-directory: clients/hadoopfs
         run: mvn package s3-storage-wagon:s3-upload@upload-jar -DpublicRepository=true -DskipTests
 
-      - name: Upload S3 assembly
+      - name: Publish - assembly
+        working-directory: clients/hadoopfs
+        run: |
+          mvn clean
+          mvn -Passembly,release --batch-mode deploy -Dgpg.executable="${GITHUB_WORKSPACE}/scripts/gpg_loopback.sh"
+        env:
+          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+
+      - name: Upload S3 - assembly
         working-directory: clients/hadoopfs
         run: mvn -Passembly package s3-storage-wagon:s3-upload@upload-jar -DpublicRepository=true -DskipTests
