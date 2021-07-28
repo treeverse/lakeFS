@@ -114,10 +114,10 @@ when accessing it through other branches. In a sense, your original bucket becom
 
 Import is performed by `lakefs`'s `import` command.
 
-Assuming your manifest.json is at `s3://example-bucket/path/to/inventory/YYYY-MM-DDT00-00Z/manifest.json`, and your lakeFS configuration yaml is at `config.yaml` (see notes below), run the following command to start the import:
+Assuming your manifest.json is at `s3://example-bucket/path/to/inventory/YYYY-MM-DDT00-00Z/manifest.json`, and your lakeFS configuration yaml is at `.lakefs.yaml` (see notes below), run the following command to start the import:
 
 ```bash
-lakefs import lakefs://example-repo -m s3://example-bucket/path/to/inventory/YYYY-MM-DDT00-00Z/manifest.json --config config.yaml
+lakefs import lakefs://example-repo -m s3://example-bucket/path/to/inventory/YYYY-MM-DDT00-00Z/manifest.json --config .lakefs.yaml
 ```
 
 You will see the progress of your import as it is performed.
@@ -141,7 +141,7 @@ As previously mentioned, the above command imports data to the dedicated `import
 By adding the `--with-merge` flag to the import command, this branch will be automatically merged to your main branch immediately after the import.
 
 ```bash
-lakefs import --with-merge lakefs://example-repo -m s3://example-bucket/path/to/inventory/YYYY-MM-DDT00-00Z/manifest.json --config config.yaml
+lakefs import --with-merge lakefs://example-repo -m s3://example-bucket/path/to/inventory/YYYY-MM-DDT00-00Z/manifest.json --config .lakefs.yaml
 ```
 
 #### Notes

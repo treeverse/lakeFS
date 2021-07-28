@@ -36,7 +36,7 @@ For example, if you install lakeFS on GKE, you need to deploy the SQL Auth Proxy
 ## Installation Options
 
 ### On Google Compute Engine
-1. Save the following configuration file as `config.yaml`:
+1. Save the following configuration file as `.lakefs.yaml`:
 
    ```yaml
    ---
@@ -60,7 +60,7 @@ For example, if you install lakeFS on GKE, you need to deploy the SQL Auth Proxy
 1. [Download the binary](../index.md#downloads) to the GCE instance.
 1. Run the `lakefs` binary on the GCE machine:
    ```bash
-   lakefs --config config.yaml run
+   lakefs --config /path/to/.lakefs.yaml run
    ```
    **Note:** it is preferable to run the binary as a service using systemd or your operating system's facilities.
 

@@ -33,7 +33,7 @@ If you already have a database, take note of the connection string and skip to t
 ## Installation Options
 
 ### On Azure VM
-1. Save the following configuration file as `config.yaml`:
+1. Save the following configuration file as `.lakefs.yaml`:
 
    ```yaml
    ---
@@ -59,7 +59,7 @@ If you already have a database, take note of the connection string and skip to t
 1. [Download the binary](../index.md#downloads) to the Azure Virtual Machine.
 1. Run the `lakefs` binary on the machine:
    ```bash
-   lakefs --config config.yaml run
+   lakefs --config /path/to/.lakefs.yaml run
    ```
    **Note:** it is preferable to run the binary as a service using systemd or your operating system's facilities.
 1. To support Azure AD authentication go to `Identity` tab and switch `Status` toggle to on, then add the `Storage Blob Data Contributor' role on the container you created.

@@ -53,7 +53,7 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
 
 1. Install and configure [PostgreSQL](https://www.postgresql.org/download/){:target="_blank"}
 
-1. Create a configuration file:
+1. Create a configuration file and save it as `.lakefs.yaml`:
     
    ```yaml
    ---
@@ -82,5 +82,5 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
 1. Run the server:
     
    ```bash
-   ./lakefs --config /path/to/config.yaml run
+   ./lakefs --config /path/to/.lakefs.yaml run
    ```

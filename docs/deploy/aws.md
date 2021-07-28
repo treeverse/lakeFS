@@ -40,7 +40,7 @@ If you already have a database, take note of the connection string and skip to t
 ## Installation Options
 
 ### On EC2
-1. Save the following configuration file as `config.yaml`:
+1. Save the following configuration file as `.lakefs.yaml`:
 
    ```yaml
    ---
@@ -63,7 +63,7 @@ If you already have a database, take note of the connection string and skip to t
 1. [Download the binary](../index.md#downloads) to the EC2 instance.
 1. Run the `lakefs` binary on the EC2 instance:
    ```bash
-   lakefs --config config.yaml run
+   lakefs --config /path/to/.lakefs.yaml run
    ```
    **Note:** it is preferable to run the binary as a service using systemd or your operating system's facilities.
 
