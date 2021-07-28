@@ -173,7 +173,7 @@ jobs:
 
       - name: Test lakeFS S3 with Spark 2.x
         env:
-          STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-spark
+          STORAGE_NAMESPACE: s3://test-bucket/data
           REPOSITORY: gateway-test
           SONNET_JAR: sonnets-246/target/sonnets-246/scala-2.11/sonnets-246_2.11-0.1.0.jar
         working-directory: test/spark
