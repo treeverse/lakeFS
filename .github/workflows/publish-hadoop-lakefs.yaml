@@ -5,6 +5,9 @@ on:
     inputs:
       tag:
         description: Tag/version to publish
+  push:
+    branches:
+      - fix/hadoop-lakefs-release
 
 jobs:
   deploy:
