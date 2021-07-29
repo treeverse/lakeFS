@@ -117,13 +117,6 @@ jobs:
         run: echo "::set-output name=tag::sha-$(git rev-parse --short HEAD | sed s/^v//g)"
         id: version
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
@@ -173,8 +166,8 @@ jobs:
             echo "Image doesn't exist"
             docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}
           fi
-  hadoopfs-contract:
-    name: Test lakeFS Hadoop FileSystem contract
+  hadoopfs-tests:
+    name: Test lakeFS Hadoop FileSystem
     needs: deploy-image
     runs-on: ubuntu-20.04
     env:
@@ -207,6 +200,8 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: minio
           AWS_SECRET_ACCESS_KEY: minio123
+          STORAGE_NAMESPACE: s3://test-bucket/data
+          REPOSITORY: lakefsfs-contract-test
       - name: Build and test hadoopfs
         working-directory: clients/hadoopfs
         run: mvn --quiet --batch-mode --update-snapshots -P'!treeverse-signing' verify
