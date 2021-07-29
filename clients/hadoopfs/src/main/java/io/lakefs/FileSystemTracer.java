@@ -23,36 +23,35 @@ import java.net.URI;
  * This configures the FileSystemTracer to be the file system that handles paths with the lakefs scheme. i.e. paths with
  * lakefs:// prefix.
  *
- * What does the FileSystemTracer do:
+ * How does the FileSystemTracer work:
  * The FileSystemTracer holds instances of {@link LakeFSFileSystem} and {@link S3AFileSystem}. On a file system operation,
  * the FileSystemTracer invokes the operation on both file systems, logs the output of both calls, and returns the result
- * of one of the file systems according to a configuration (S3AFileSystem output by default).
+ * of one of the file systems based on a configuration (S3AFileSystem output by default).
 
- * Additional configurations:
- * Mandatory -
- * - fs.lakefs.tracer.working.dir - the s3 location in which the tracer can operate. This should be an S3 bucket name or
+ * Configuration:
+ * - fs.lakefs.tracer.working_dir - the s3 location in which the tracer can operate. This should be an S3 bucket name or
  *   an absolute path of a directory on a bucket.
  * Optional -
- * - fs.lakefs.tracer.use.lakefs - tells the tracer whether it should return the response coming from the lakefs file
+ * - fs.lakefs.tracer.use_lakefs_output - tells the tracer whether it should return the response coming from the lakefs file
  *   system or return s3a's response. by default it is set to false and returns s3a's response.
  *
  * Assumptions:
- * - listing results of lakefs://repository/branch/$PATH and s3a://${fs.lakefs.tracer.working.dir}/$PATH are identical.
+ * - The content of lakefs://repository/branch/ and s3a://${fs.lakefs.tracer.working.dir}/ should be identical.
  * - The s3 credentials available for Spark allow access to fs.lakefs.tracer.working.dir on s3.
  */
 public class FileSystemTracer extends FileSystem {
 
-    public static final Logger LOG = LoggerFactory.getLogger(FileSystemTracer.class);
-    private static final String TRACER_WORKING_DIR = "fs.lakefs.tracer.working.dir";
-    private static final String USE_LAKEFS_RESPONSE = "fs.lakefs.tracer.use.lakefs";
-    private static final Object S3_URI_PREFIX = "s3";
+    private static final Logger LOG = LoggerFactory.getLogger(FileSystemTracer.class);
+    private static final String TRACER_WORKING_DIR = "fs.lakefs.tracer.working_dir";
+    private static final String USE_LAKEFS_OUTPUT = "fs.lakefs.tracer.use_lakefs_output";
+    private static final Object S3_URI_SCHEME = "s3";
     private static final Object RESULTS_COMPARISON = "[RESULTS_COMPARISON]";
 
 
     /*
      A property that determines which file system's response the FileSystemTracer returns.
      */
-    private boolean useLakeFSFileSystemRes;
+    private boolean useLakeFSFileSystemResults;
     private LakeFSFileSystem lfsFileSystem;
     private FileSystem s3AFileSystem;
     private String s3aPathPrefix;
@@ -62,18 +61,10 @@ public class FileSystemTracer extends FileSystem {
      * Transforms a lakefs path into an s3 path.
      * Example:
      *   in: lakefs://repository/branch/key=1/a.parquet
-     *   out: s3://${fs.lakefs.tracer.working.dir}/key=1/a.parquet
+     *   out: s3://${fs.lakefs.tracer.working_dir}/key=1/a.parquet
      */
     private Path translateLakeFSPathToS3APath(Path path) {
-        ObjectLocation objectLoc = lfsFileSystem.pathToObjectLocation(path);
-        String lakefsPath = path.toString();
-        String lakefsPrefix = String.format("%s://%s/%s", objectLoc.getScheme(), objectLoc.getRepository(),
-                objectLoc.getRef());
-
-        String s3aPath = lakefsPath.replace(lakefsPrefix, s3aPathPrefix);
-        LOG.trace("Converted {} to {}", path, s3aPath);
-
-        return new Path(s3aPath);
+        return replacePathPrefix(path, lfsPathPrefix, s3aPathPrefix);
     }
 
     /**
@@ -81,16 +72,25 @@ public class FileSystemTracer extends FileSystem {
      * This method is used to transform the output of S3AFileSystem operations that include paths, so that Spark
      * continues to direct it's requests to the FileSystemTracer that handles paths with the "lakefs://" prefix.
      * Example:
-     *   in: s3://${fs.lakefs.tracer.working.dir}/key=1/a.parquet
+     *   in: s3://${fs.lakefs.tracer.working_dir}/key=1/a.parquet
      *   out: lakefs://repository/branch/key=1/a.parquet
      */
     private Path translateS3APathToLakeFSPath(Path path) {
-        String p = path.toString();
-        String lfsPath = p.replace(s3aPathPrefix, lfsPathPrefix);
-        LOG.trace("Converted {} to {}", path, lfsPath);
-        return new Path(lfsPath);
+        return replacePathPrefix(path, s3aPathPrefix, lfsPathPrefix);
     }
 
+    private Path replacePathPrefix(Path path, String curPrefix, String newPrefix) {
+        String p = path.toString();
+        boolean isValidPath = p.startsWith(curPrefix);
+        if (isValidPath) {
+            String objRelativePath = ObjectLocation.trimLeadingSlash(p.substring(curPrefix.length()));
+            String newPath = String.format("%s/%s", newPrefix, objRelativePath);
+            LOG.trace("Converted {} to {}", path, newPath);
+            return new Path(newPath);
+        }
+        LOG.error("Invalid path {}", path);
+        return null;
+    }
 
     @Override
     public void initialize(URI name, Configuration conf) throws IOException {
@@ -100,12 +100,15 @@ public class FileSystemTracer extends FileSystem {
         lfsPathPrefix = String.format("%s://%s/%s", loc.getScheme(), loc.getRepository(), loc.getRef());
 
         String tracerWorkingDir = conf.get(TRACER_WORKING_DIR);
-        s3aPathPrefix = String.format("%s://%s", S3_URI_PREFIX, tracerWorkingDir);
+        if (tracerWorkingDir == null) {
+            throw new IOException("tracerWorkingDir is null");
+        }
+        s3aPathPrefix = String.format("%s://%s", S3_URI_SCHEME, tracerWorkingDir);
         Path s3aPath = new Path(s3aPathPrefix);
         s3AFileSystem = s3aPath.getFileSystem(conf);
 
-        useLakeFSFileSystemRes = conf.getBoolean(USE_LAKEFS_RESPONSE, false);
-        LOG.trace("Initialized FileSystemTracer, fs.lakefs.tracer.use.lakefs: {}", useLakeFSFileSystemRes);
+        useLakeFSFileSystemResults = conf.getBoolean(USE_LAKEFS_OUTPUT, false);
+        LOG.trace("Initialization finished, fs.lakefs.tracer.use_lakefs_output: {}", useLakeFSFileSystemResults);
     }
 
     @Override
@@ -116,7 +119,7 @@ public class FileSystemTracer extends FileSystem {
         URI s3aRes = s3AFileSystem.getUri();
         LOG.trace("{}[getUri] lakefs: {}, s3a: {}", RESULTS_COMPARISON, lakefsRes, s3aRes);
 
-        if (useLakeFSFileSystemRes) {
+        if (useLakeFSFileSystemResults) {
             return lakefsRes;
         }
         return s3aRes;
@@ -128,9 +131,9 @@ public class FileSystemTracer extends FileSystem {
 
         Path lakefsRes = lfsFileSystem.makeQualified(path);
         Path s3aRes = s3AFileSystem.makeQualified(translateLakeFSPathToS3APath(path));
-        LOG.trace("{}[makeQualified] lakefs: {}, s3a: {}",RESULTS_COMPARISON, lakefsRes, s3aRes);
+        LOG.trace("{}[makeQualified] lakefs: {}, s3a: {}", RESULTS_COMPARISON, lakefsRes, s3aRes);
 
-        if (useLakeFSFileSystemRes) {
+        if (useLakeFSFileSystemResults) {
             return lakefsRes;
         }
         return translateS3APathToLakeFSPath(s3aRes);
@@ -139,12 +142,35 @@ public class FileSystemTracer extends FileSystem {
     @Override
     public FSDataInputStream open(Path f, int bufferSize) throws IOException {
         LOG.trace("open(Path {}, bufferSize {})", f, bufferSize);
+        FSDataInputStream lakefsRes = null;
+        FSDataInputStream s3aRes = null;
+        IOException lakeFSException = null;
+        IOException s3aException = null;
+        Path s3aPath = translateLakeFSPathToS3APath(f);
+        try {
+            lakefsRes = lfsFileSystem.open(f, bufferSize);
+        } catch (IOException e) {
+            lakeFSException = e;
+            LOG.error("[open] Can't open {} with lakeFSFileSystem, exception {}", f, e.getMessage());
+        }
+        try {
+            s3aRes = s3AFileSystem.open(translateLakeFSPathToS3APath(f), bufferSize);
+        } catch (IOException e) {
+            s3aException = e;
+            LOG.error("[open] Can't open {} with S3AFileSystem, exception {}", s3aPath, e.getMessage());
+        }
 
-        FSDataInputStream lakefsRes = lfsFileSystem.open(f, bufferSize);
-        FSDataInputStream s3aRes = s3AFileSystem.open(translateLakeFSPathToS3APath(f), bufferSize);
-        LOG.trace("{}[open]: lakefs: {}, s3a: {}", RESULTS_COMPARISON, lakefsRes, s3aRes);
+        if (useLakeFSFileSystemResults && lakeFSException != null) {
+            LOG.trace("[open] exception by lakeFSFileSystem");
+            throw lakeFSException;
+        }
+        if (!useLakeFSFileSystemResults && s3aException != null) {
+            LOG.trace("[open] exception by S3AFileSystem");
+            throw s3aException;
+        }
 
-        if (useLakeFSFileSystemRes) {
+        LOG.trace("{}[open] lakefs: {}, s3a: {}", RESULTS_COMPARISON, lakefsRes, s3aRes);
+        if (useLakeFSFileSystemResults) {
             return lakefsRes;
         }
         return s3aRes;
@@ -155,8 +181,38 @@ public class FileSystemTracer extends FileSystem {
                                      short replication, long blockSize, Progressable progress) throws IOException {
         LOG.trace("create(Path {}, permission {}, overwrite {}, bufferSize {}, replication {}, blockSize {}, progress {})",
                 f, permission, overwrite, bufferSize, replication, blockSize, progress);
+        FSDataOutputStream lakeFSStream = null;
+        FSDataOutputStream s3aStream = null;
+        IOException lakeFSException = null;
+        IOException s3aException = null;
+        Path s3aPath = translateLakeFSPathToS3APath(f);
+        try {
+            lakeFSStream = lfsFileSystem.create(f, permission, overwrite, bufferSize, replication, blockSize, progress);
+        } catch (IOException e) {
+            lakeFSException = e;
+            LOG.error("[create] Can't create {} with lakeFSFileSystem, exception {}", f, e.getMessage());
+        }
+        try {
+            s3aStream = s3AFileSystem.create(s3aPath, permission, overwrite, bufferSize,
+                replication, blockSize, progress);
+        } catch (IOException e) {
+            s3aException = e;
+            LOG.error("[create] Can't create {} with S3AFileSystem, exception {}", s3aPath, e.getMessage());
+        }
 
-        TracerOutputTStream tOutputStream = new TracerOutputTStream(f, permission, overwrite, bufferSize, replication, blockSize, progress);
+        if (useLakeFSFileSystemResults && lakeFSException != null) {
+            LOG.trace("[create] exception by lakeFSFileSystem");
+            s3aStream.close();
+            throw lakeFSException;
+        }
+        if (!useLakeFSFileSystemResults && s3aException != null) {
+            LOG.trace("[create] exception by S3AFileSystem");
+            lakeFSStream.close();
+            throw s3aException;
+        }
+
+        LOG.trace("{}[create] lakefs: {}, s3a: {}", RESULTS_COMPARISON, lakeFSStream, s3aStream);
+        TracerOutputTStream tOutputStream = new TracerOutputTStream(lakeFSStream, s3aStream);
         return new FSDataOutputStream(tOutputStream, null);
     }
 
@@ -168,21 +224,43 @@ public class FileSystemTracer extends FileSystem {
         FSDataOutputStream s3aRes = s3AFileSystem.append(translateLakeFSPathToS3APath(f), bufferSize, progress);
         LOG.trace("{}[append] lakefs: {}, s3a: {}", RESULTS_COMPARISON, lakefsRes, s3aRes);
 
-        if (useLakeFSFileSystemRes) {
+        if (useLakeFSFileSystemResults) {
             return lakefsRes;
         }
-        return s3aRes;//unused
+        return s3aRes;
     }
 
     @Override
     public boolean rename(Path src, Path dst) throws IOException {
         LOG.trace("rename(src {}, dst {})", src, dst);
+        boolean lakefsRes = false;
+        boolean s3aRes = false;
+        IOException lakeFSException = null;
+        IOException s3aException = null;
+        try {
+            lakefsRes = lfsFileSystem.rename(src, dst);
+        } catch (IOException e) {
+            lakeFSException = e;
+            LOG.error("[rename] Can't rename {} to {} with lakeFSFileSystem, exception {}", src, dst, e.getMessage());
+        }
+        try {
+            s3aRes = s3AFileSystem.rename(translateLakeFSPathToS3APath(src), translateLakeFSPathToS3APath(dst));
+        } catch (IOException e) {
+            s3aException = e;
+            LOG.error("[rename] Can't  rename {} to {} with S3AFileSystem, exception {}", src, dst, e.getMessage());
+        }
 
-        boolean lakefsRes = lfsFileSystem.rename(src, dst);
-        boolean s3aRes = s3AFileSystem.rename(translateLakeFSPathToS3APath(src), translateLakeFSPathToS3APath(dst));
+        if (useLakeFSFileSystemResults && lakeFSException != null) {
+            LOG.trace("[rename] exception by lakeFSFileSystem");
+            throw lakeFSException;
+        }
+        if (!useLakeFSFileSystemResults && s3aException != null) {
+            LOG.trace("[rename] exception by S3AFileSystem");
+            throw s3aException;
+        }
+
         LOG.trace("{}[rename] lakefs: {}, s3a: {}", RESULTS_COMPARISON, lakefsRes, s3aRes);
-
-        if (useLakeFSFileSystemRes) {
+        if (useLakeFSFileSystemResults) {
             return lakefsRes;
         }
         return s3aRes;
@@ -191,12 +269,34 @@ public class FileSystemTracer extends FileSystem {
     @Override
     public boolean delete(Path f, boolean recursive) throws IOException {
         LOG.trace("delete(f {}, recursive {})", f, recursive);
+        boolean lakefsRes = false;
+        boolean s3aRes = false;
+        IOException lakeFSException = null;
+        IOException s3aException = null;
+        try {
+            lakefsRes = delete(f, recursive);
+        } catch (IOException e) {
+            lakeFSException = e;
+            LOG.error("[delete] Can't delete {} with lakeFSFileSystem, exception {}", f, e.getMessage());
+        }
+        try {
+            s3aRes = s3AFileSystem.delete(translateLakeFSPathToS3APath(f), recursive);
+        } catch (IOException e) {
+            s3aException = e;
+            LOG.error("[delete] Can't delete {} to {} with S3AFileSystem, exception {}", f, e.getMessage());
+        }
 
-        boolean lakefsRes = lfsFileSystem.delete(f, recursive);
-        boolean s3aRes = s3AFileSystem.delete(translateLakeFSPathToS3APath(f), recursive);
+        if (useLakeFSFileSystemResults && lakeFSException != null) {
+            LOG.trace("[delete] exception by lakeFSFileSystem");
+            throw lakeFSException;
+        }
+        if (!useLakeFSFileSystemResults && s3aException != null) {
+            LOG.trace("[delete] exception by S3AFileSystem");
+            throw s3aException;
+        }
+
         LOG.trace("{}[delete] lakefs: {}, s3a: {}", RESULTS_COMPARISON, lakefsRes, s3aRes);
-
-        if (useLakeFSFileSystemRes) {
+        if (useLakeFSFileSystemResults) {
             return lakefsRes;
         }
         return s3aRes;
@@ -206,35 +306,50 @@ public class FileSystemTracer extends FileSystem {
     public FileStatus[] listStatus(Path f) throws FileNotFoundException, IOException {
         LOG.trace("listStatus(f {})", f);
 
-        FileStatus[] lakefsRes = lfsFileSystem.listStatus(f);
-        FileStatus[] s3aRes = s3AFileSystem.listStatus(translateLakeFSPathToS3APath(f));
-        LOG.trace("{}[listStatus] lakefs: {}, s3a: {}", RESULTS_COMPARISON, lakefsRes, s3aRes);
-
-        if (useLakeFSFileSystemRes) {
-            return lakefsRes;
+        FileStatus[] lakefsRes = null;
+        FileStatus[] s3aRes = null;
+        IOException lakeFSException = null;
+        IOException s3aException = null;
+        Path s3aPath = translateLakeFSPathToS3APath(f);
+        try {
+            lakefsRes = lfsFileSystem.listStatus(f);
+        } catch (IOException e) {
+            lakeFSException = e;
+            LOG.error("[listStatus] Can't list the status of {} with lakeFSFileSystem, exception {}", f, e.getMessage());
+        }
+        try {
+            s3aRes = s3AFileSystem.listStatus(s3aPath);
+        } catch (IOException e) {
+            s3aException = e;
+            LOG.error("[listStatus] Can't list the status of {} with S3AFileSystem, exception {}", s3aPath, e.getMessage());
         }
 
+        if (useLakeFSFileSystemResults && lakeFSException != null) {
+            LOG.trace("[listStatus] exception by lakeFSFileSystem");
+            throw lakeFSException;
+        }
+        if (!useLakeFSFileSystemResults && s3aException != null) {
+            LOG.trace("[listStatus] exception by S3AFileSystem");
+            throw s3aException;
+        }
+
+        LOG.trace("{}[listStatus] lakefs: {}, s3a: {}", RESULTS_COMPARISON, lakefsRes, s3aRes);
+        if (useLakeFSFileSystemResults) {
+            return lakefsRes;
+        }
         for (FileStatus stat : s3aRes) {
-            Path s3aPath = stat.getPath();
-            Path lfsPath = translateS3APathToLakeFSPath(s3aPath);
+            Path filePath = stat.getPath();
+            Path lfsPath = translateS3APathToLakeFSPath(filePath);
             stat.setPath(lfsPath);
         }
         return s3aRes;
     }
 
-    /**
-     * Set the current working directory for the given file system. All relative
-     * paths will be resolved relative to it.
-     *
-     * @param new_dir
-     */
     @Override
     public void setWorkingDirectory(Path new_dir) {
         LOG.trace("setWorkingDirectory(new_dir {})", new_dir);
 
-        if (useLakeFSFileSystemRes) {
-            lfsFileSystem.setWorkingDirectory(new_dir);
-        }
+        lfsFileSystem.setWorkingDirectory(new_dir);
         s3AFileSystem.setWorkingDirectory(translateLakeFSPathToS3APath(new_dir));
     }
 
@@ -246,7 +361,7 @@ public class FileSystemTracer extends FileSystem {
         Path s3aRes = s3AFileSystem.getWorkingDirectory();
         LOG.trace("{}[getWorkingDirectory] lakefs: {}, s3a: {}", RESULTS_COMPARISON, lakefsRes, s3aRes);
 
-        if (useLakeFSFileSystemRes) {
+        if (useLakeFSFileSystemResults) {
             return lakefsRes;
         }
         return s3aRes;
@@ -255,12 +370,34 @@ public class FileSystemTracer extends FileSystem {
     @Override
     public boolean mkdirs(Path f, FsPermission permission) throws IOException {
         LOG.trace("mkdirs(f {}, permission {})", f, permission);
+        boolean lakefsRes = false;
+        boolean s3aRes = false;
+        IOException lakeFSException = null;
+        IOException s3aException = null;
+        try {
+            lakefsRes = lfsFileSystem.mkdirs(f, permission);
+        } catch (IOException e) {
+            lakeFSException = e;
+            LOG.error("[mkdirs] Can't mkdir {} with lakeFSFileSystem, exception {}", f, e.getMessage());
+        }
+        try {
+            s3aRes = s3AFileSystem.mkdirs(translateLakeFSPathToS3APath(f), permission);
+        } catch (IOException e) {
+            s3aException = e;
+            LOG.error("[mkdirs] Can't mkdir {} to {} with S3AFileSystem, exception {}", f, e.getMessage());
+        }
 
-        boolean lakefsRes = lfsFileSystem.mkdirs(f, permission);
-        boolean s3aRes = s3AFileSystem.mkdirs(translateLakeFSPathToS3APath(f), permission);
-        LOG.trace("{}s[mkdirs] lakefs: {}, s3a: {}", RESULTS_COMPARISON, lakefsRes, s3aRes);
+        if (useLakeFSFileSystemResults && lakeFSException != null) {
+            LOG.trace("[mkdirs] exception by lakeFSFileSystem");
+            throw lakeFSException;
+        }
+        if (!useLakeFSFileSystemResults && s3aException != null) {
+            LOG.trace("[mkdirs] exception by S3AFileSystem");
+            throw s3aException;
+        }
 
-        if (useLakeFSFileSystemRes) {
+        LOG.trace("{}[mkdirs] lakefs: {}, s3a: {}", RESULTS_COMPARISON, lakefsRes, s3aRes);
+        if (useLakeFSFileSystemResults) {
             return lakefsRes;
         }
         return s3aRes;
@@ -270,35 +407,36 @@ public class FileSystemTracer extends FileSystem {
     public FileStatus getFileStatus(Path f) throws IOException {
         LOG.trace("getFileStatus(f {})", f);
 
-        FileStatus lakefsRes = new FileStatus();
-        FileStatus s3aRes = new FileStatus();
+        FileStatus lakefsRes = null;
+        FileStatus s3aRes = null;
+        IOException lakeFSException = null;
+        IOException s3aException = null;
         Path s3aPath = translateLakeFSPathToS3APath(f);
-        boolean fileNotFoundOnLakeFS = false;
-        boolean fileNotFoundOnLakeS3A = false;
         try {
             lakefsRes = lfsFileSystem.getFileStatus(f);
-        } catch (Exception e) {
-            LOG.error("[getFileStatus] Can't get {} file status with lakeFSFileSystem", f);
-            fileNotFoundOnLakeFS = true;
+        } catch (IOException e) {
+            lakeFSException = e;
+            LOG.error("[getFileStatus] Can't get {} file status with lakeFSFileSystem, exception {}", f, e.getMessage());
         }
         try {
             s3aRes = s3AFileSystem.getFileStatus(s3aPath);
-        } catch (Exception e) {
-            LOG.error("[getFileStatus] Can't get {} file status with S3AFileSystem", s3aPath);
-            fileNotFoundOnLakeS3A = true;
+        } catch (IOException e) {
+            s3aException = e;
+            LOG.error("[getFileStatus] Can't get {} file status with S3AFileSystem, exception {}", s3aPath, e.getMessage());
+        }
+
+        if (useLakeFSFileSystemResults && lakeFSException != null) {
+            LOG.trace("[getFileStatus] exception by lakeFSFileSystem");
+            throw lakeFSException;
+        }
+        if (!useLakeFSFileSystemResults && s3aException != null) {
+            LOG.trace("[getFileStatus] exception by S3AFileSystem");
+            throw s3aException;
         }
 
         LOG.trace("{}[getFileStatus] lakefs: {}, s3a: {}", RESULTS_COMPARISON, lakefsRes, s3aRes);
-
-        if (useLakeFSFileSystemRes) {
-            if (fileNotFoundOnLakeFS) {
-                throw new FileNotFoundException("getFileStatus, not found on lakeFS");
-            }
+        if (useLakeFSFileSystemResults) {
             return lakefsRes;
-        }
-
-        if (fileNotFoundOnLakeS3A) {
-            throw new FileNotFoundException("getFileStatus, not found on S3A");
         }
         Path lfsPath = translateS3APathToLakeFSPath(s3aPath);
         s3aRes.setPath(lfsPath);
@@ -313,11 +451,9 @@ public class FileSystemTracer extends FileSystem {
         private FSDataOutputStream lakeFSStream;
         private FSDataOutputStream s3aStream;
 
-        public TracerOutputTStream(Path f, FsPermission permission, boolean overwrite, int bufferSize,
-                                   short replication, long blockSize, Progressable progress) throws IOException {
-            lakeFSStream = lfsFileSystem.create(f, permission, overwrite, bufferSize, replication, blockSize, progress);
-            s3aStream = s3AFileSystem.create(translateLakeFSPathToS3APath(f), permission, overwrite, bufferSize,
-                    replication, blockSize, progress);
+        public TracerOutputTStream(FSDataOutputStream lakeFSStream, FSDataOutputStream s3aStream) throws IOException {
+            this.lakeFSStream = lakeFSStream;
+            this.s3aStream = s3aStream;
         }
 
         @Override
