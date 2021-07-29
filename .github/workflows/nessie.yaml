@@ -181,6 +181,12 @@ jobs:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
     steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
@@ -201,14 +207,9 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: minio
           AWS_SECRET_ACCESS_KEY: minio123
-      - name: Run contract tests
-        env:
-          STORAGE_NAMESPACE: s3://test-bucket/data
-          REPOSITORY: lakefsfs-contract-test
-          AWS_ACCESS_KEY_ID: minio
-          AWS_SECRET_ACCESS_KEY: minio123
-        working-directory: test/lakefsfs_contract
-        run: ./run-test.sh
+      - name: Build and test hadoopfs
+        working-directory: clients/hadoopfs
+        run: mvn --quiet --batch-mode --update-snapshots -P'!treeverse-signing' verify
   spark2:
     name: Test lakeFS with Spark 2.x
     needs: deploy-image
