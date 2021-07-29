@@ -69,8 +69,7 @@ public class TestLakeFSFileSystemContract extends FileSystemContractBaseTest {
 
   public void testRenameFileAsExistingFile() throws Exception {
     // TODO make this test green and uncomment
-    ContractTestUtils.skip("test needs to be fixed");
-//    if (!renameSupported()) return;
+      if (!renameSupported()) return;
 //
 //    Path src = path("/test/hadoop/file");
 //    createFile(src);
@@ -113,37 +112,31 @@ public class TestLakeFSFileSystemContract extends FileSystemContractBaseTest {
 
   @Override
   public void testMkdirs() throws Exception {
-    ContractTestUtils.skip("test needs to be fixed");
     // TODO make this test green and remove override
   }
 
   @Override
   public void testWorkingDirectory() throws Exception {
-    ContractTestUtils.skip("test needs to be fixed");
     // TODO make this test green and remove override
   }
 
   @Override
   public void testListStatus() throws Exception {
-    ContractTestUtils.skip("test needs to be fixed");
     // TODO make this test green and remove override
   }
 
   @Override
   public void testRenameDirectoryMoveToNonExistentDirectory() throws Exception {
-    ContractTestUtils.skip("test needs to be fixed");
     // TODO make this test green and remove override
   }
 
   @Override
   public void testRenameFileAsExistingDirectory() throws Exception {
-    ContractTestUtils.skip("test needs to be fixed");
     // TODO make this test green and remove override
   }
 
   @Override
   public void testListStatusThrowsExceptionForNonExistentFile() throws Exception {
-    ContractTestUtils.skip("test needs to be fixed");
     // TODO make this test green and remove override
   }
 
@@ -153,19 +146,16 @@ public class TestLakeFSFileSystemContract extends FileSystemContractBaseTest {
 
   @Override
   public void testRenameDirectoryAsExistingFile() throws Exception {
-    ContractTestUtils.skip("test needs to be fixed");
     // TODO make this test green and remove override
   }
 
   @Override
   public void testRenameNonExistentPath() throws Exception {
-    ContractTestUtils.skip("test needs to be fixed");
     // TODO make this test green and remove override
   }
 
   @Override
   public void testRenameFileMoveToNonExistentDirectory() throws Exception {
-    ContractTestUtils.skip("test needs to be fixed");
     // TODO make this test green and remove override
   }
 }
