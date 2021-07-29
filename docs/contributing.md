@@ -101,5 +101,5 @@ Check back shortly after submitting your pull request to make sure that your cod
 ## Documentation
 
 Documentation of features and changes in behaviour should be included in the pull-request.
-You could create separate pull requests for documentation changes only.
+You can create separate pull requests for documentation changes only.
 Documentation site customizations should be performed in accordance with the [Just The Docs Customization](https://pmarsceill.github.io/just-the-docs/docs/customization/) guide, which is applied during the site creation process.
