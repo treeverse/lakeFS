@@ -1,0 +1,50 @@
+package io.treeverse.jpebble
+
+import java.nio.ByteBuffer
+
+object IndexedBytes {
+  def create(buf: ByteBuffer): IndexedBytes = new ByteBufferIndexedBytes(buf)
+}
+
+trait IndexedBytes {
+  // Limit to 2GiB, because Java ByteBuffer has limited size, because Java.
+  def size: Int
+  def slice(offset: Int, size: Int): IndexedBytes
+  def iterator: Iterator[Byte]
+  def apply(i: Int): Byte
+  def toByteBuffer: ByteBuffer = throw new UnsupportedOperationException("toByteBuffer not implemented")
+}
+
+/**
+ * Iterator over a ByteByffer.
+ */
+class ByteBufferIterator(private val buf: ByteBufferIndexedBytes) extends Iterator[Byte] {
+  var index = 0
+  override def hasNext = index < buf.size
+  override def next(): Byte = {
+    val ret = buf(index)
+    index += 1
+    ret
+  }
+}
+
+/**
+ * IndexedBytes running on an immutable ("owned") ByteBufffer.  After
+ * calling, change *nothing* in buf, not even its position or limit.  (Or
+ * slice() it first to create a shallow copy, then you can change position
+ * and limit...)
+ */
+class ByteBufferIndexedBytes(private val buf: ByteBuffer) extends IndexedBytes {
+  override def size = buf.limit() - buf.position()
+
+  override def slice(start: Int, end: Int) = new ByteBufferIndexedBytes(buf
+    .slice()
+    .limit(end)
+    .position(start))
+
+  override def iterator = new ByteBufferIterator(this)
+
+  override def toByteBuffer = buf
+
+  override def apply(i: Int) = toByteBuffer.get(i + buf.position())
+}
