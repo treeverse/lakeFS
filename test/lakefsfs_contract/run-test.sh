@@ -5,4 +5,4 @@ docker-compose exec -T lakefs lakectl repo delete -y "lakefs://${REPOSITORY}" ||
 docker-compose exec -T lakefs lakectl repo create "lakefs://${REPOSITORY}" ${STORAGE_NAMESPACE} -d main
 
 cd ../../clients/hadoopfs
-mvn test
+mvn test -Dtest=io.lakefs.contract.*
