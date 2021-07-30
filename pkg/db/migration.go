@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"time"
 
@@ -125,8 +126,13 @@ func tryNewWithSourceInstance(sourceName string, sourceInstance source.Driver, d
 		if err == nil {
 			return m, nil
 		}
-
-		logging.Default().WithError(err).Error("could not open DB: Trying again")
+		netError := &net.OpError{}
+		if !(errors.As(err, &netError) && netError.Op == "dial") {
+			return nil, err
+		}
+		if a.More() {
+			logging.Default().WithError(err).Error("could not open DB: Trying again")
+		}
 	}
 
 	return nil, fmt.Errorf("could not open DB: %w", err)
