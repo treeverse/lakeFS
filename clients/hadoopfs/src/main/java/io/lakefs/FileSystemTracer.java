@@ -83,7 +83,7 @@ public class FileSystemTracer extends FileSystem {
         String p = path.toString();
         boolean isValidPath = p.startsWith(curPrefix);
         if (isValidPath) {
-            String objRelativePath = ObjectLocation.trimLeadingSlash(p.substring(curPrefix.length()));
+            String objRelativePath = StringUtils.trimLeadingSlash(p.substring(curPrefix.length()));
             String newPath = String.format("%s/%s", newPrefix, objRelativePath);
             LOG.trace("Converted {} to {}", path, newPath);
             return new Path(newPath);

@@ -760,7 +760,7 @@ public class LakeFSFileSystem extends FileSystem {
         loc.setScheme(uri.getScheme());
         loc.setRepository(uri.getHost());
         // extract ref and rest of the path after removing the '/' prefix
-        String s = ObjectLocation.trimLeadingSlash(uri.getPath());
+        String s = StringUtils.trimLeadingSlash(uri.getPath());
         int i = s.indexOf(Constants.SEPARATOR);
         if (i == -1) {
             loc.setRef(s);
