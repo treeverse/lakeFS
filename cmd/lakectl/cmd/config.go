@@ -15,7 +15,7 @@ import (
 // configCmd represents the config command
 var configCmd = &cobra.Command{
 	Use:   "config",
-	Short: "create/update local lakeFS configuration",
+	Short: "Create/update local lakeFS configuration",
 	Run: func(cmd *cobra.Command, args []string) {
 		if viper.ConfigFileUsed() == "" {
 			// Find home directory.

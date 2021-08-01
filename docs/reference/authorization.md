@@ -56,7 +56,7 @@ There are 4 basic components to the system:
 
 **Resources** - A unique identifier representing a specific resource in the system - a repository, an object, a user, etc.
 
-**Policies** - Representing a set of **Actions**, a **Resource** and an effect: whether or not these actions are `Allowed` or `Denied` for the given resource(s).
+**Policies** - Representing a set of **Actions**, a **Resource** and an effect: whether or not these actions are `allowed` or `denied` for the given resource(s).
 
 **Groups** - A named collection of users. Users can belong to multiple groups.
 
@@ -70,16 +70,16 @@ Every action in the system, be it an API request, UI interaction, S3 Gateway cal
 When a user makes a request to perform that action, the following process takes place:
 
 1. Authentication - The credentials passed in the request are evaluated, and the user's identity is extracted.
-2. Action permission resolution - lakeFS would then calculate the set of allowed actions and resources that this request requires.
-3. Effective policy resolution - the user's policies (either attached directly or through group memberships) are calculated
-4. Policy/Permission evaluation - lakeFS will compare the given user policies with the request actions and determine whether or not the request is allowed to continue
+1. Action permission resolution - lakeFS would then calculate the set of allowed actions and resources that this request requires.
+1. Effective policy resolution - the user's policies (either attached directly or through group memberships) are calculated
+1. Policy/Permission evaluation - lakeFS will compare the given user policies with the request actions and determine whether or not the request is allowed to continue
 
 ### Policy Precedence
 
-Each policy attached to a user or a group has an `Effect` - either `Allow` or `Deny`.
-During evaluation of a request, `Deny` would take precedence over any other `Allow` policy. 
+Each policy attached to a user or a group has an `Effect` - either `allow` or `deny`.
+During evaluation of a request, `deny` would take precedence over any other `allow` policy. 
 
-This helps us compose policies together. For example, we could attach a very permissive policy to a user and use `Deny` rules to then selectively restrict what that user can do.
+This helps us compose policies together. For example, we could attach a very permissive policy to a user and use `deny` rules to then selectively restrict what that user can do.
 
 
 ### Resource naming - ARNs
@@ -91,7 +91,7 @@ Additionally, the current user's ID is interpolated in runtime into the ARN usin
 
 Here are a few examples of valid ARNs within lakeFS:
 
- ```text
+```text
 arn:lakefs:auth:::user/jane.doe
 arn:lakefs:auth:::user/*
 arn:lakefs:fs:::repository/myrepo/*
@@ -100,11 +100,10 @@ arn:lakefs:fs:::repository/myrepo/object/*
 arn:lakefs:fs:::repository/*
 arn:lakefs:fs:::*
 ```
+
 this allows us to create fine-grained policies affecting only a specific subset of resources. 
 
 See below for a full reference of ARNs and actions
-
-
 
 
 
@@ -176,11 +175,15 @@ Policy:
 
 ```json
 {
-  "Action": [
-    "fs:*"
-  ],
-  "Effect": "Allow",
-  "Resource": "*"
+  "statement": [
+    {
+      "action": [
+        "fs:*"
+      ],
+      "effect": "allow",
+      "resource": "*"
+    }    
+  ]
 }
 ```
 
@@ -190,12 +193,16 @@ Policy:
 
 ```json
 {
-  "Action": [
-    "fs:List*",
-    "fs:Read*"
-  ],
-  "Effect": "Allow",
-  "Resource": "*"
+  "statement": [
+    {
+      "action": [
+        "fs:List*",
+        "fs:Read*"
+      ],
+      "effect": "allow",
+      "resource": "*"
+    }
+  ]
 }
 ```
 
@@ -222,7 +229,7 @@ Policy:
                 "fs:DeleteBranch",
                 "fs:CreateCommit"
             ],
-            "effect": "Allow",
+            "effect": "allow",
             "resource": "*"
         }
     ]
@@ -235,11 +242,15 @@ Policy:
 
 ```json
 {
-  "Action": [
-    "auth:*"
-  ],
-  "Effect": "Allow",
-  "Resource": "*"
+  "statement": [
+    {
+      "action": [
+        "auth:*"
+      ],
+      "effect": "allow",
+      "resource": "*"
+    }
+  ]
 }
 ```
 
@@ -249,14 +260,18 @@ Policy:
 
 ```json
 {
-  "Action": [
-    "auth:CreateCredentials",
-    "auth:DeleteCredentials",
-    "auth:ListCredentials",
-    "auth:ReadCredentials"
-  ],
-  "Effect": "Allow",
-  "Resource": "arn:lakefs:auth:::user/${user}"
+  "statement": [
+    {
+      "action": [
+        "auth:CreateCredentials",
+        "auth:DeleteCredentials",
+        "auth:ListCredentials",
+        "auth:ReadCredentials"
+      ],
+      "effect": "allow",
+      "resource": "arn:lakefs:auth:::user/${user}"
+    }
+  ]
 }
 ```
 

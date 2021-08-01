@@ -32,7 +32,7 @@ Note that an older version of lakeFS cannot run on a migrated database.
 
 ### Prior to lakeFS 0.30.0
 
-**Note:** users of lakeFS < 0.30.0 should first upgrade to 0.30.0 following this guide, before upgrading to any higher version
+**Note:** with lakeFS < 0.30.0, you should first upgrade to 0.30.0 following this guide. Then, proceed to upgrade to the newest version.
 {: .note .pb-3 }
 
 Starting version 0.30.0, lakeFS handles your committed metadata in a [new way](https://docs.google.com/document/d/1jzD7-jun-tdU5BGapmnMBe9ovSzBvTNjXCcVztV07A4/edit?usp=sharing){: target="_blank" }, which is more robust and has better performance.

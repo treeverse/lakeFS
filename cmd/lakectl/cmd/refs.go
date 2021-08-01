@@ -18,7 +18,7 @@ var refsRestoreSuccess = `
 
 var refsRestoreCmd = &cobra.Command{
 	Use:   "refs-restore <repository uri>",
-	Short: "restores refs (branches, commits, tags) from the underlying object store to a bare repository",
+	Short: "Restores refs (branches, commits, tags) from the underlying object store to a bare repository",
 	Long: `restores refs (branches, commits, tags) from the underlying object store to a bare repository.
 
 This command is expected to run on a bare repository (i.e. one created with 'lakectl repo create-bare').
@@ -55,7 +55,7 @@ Since a bare repo is expected, in case of transient failure, delete the reposito
 
 var refsDumpCmd = &cobra.Command{
 	Use:    "refs-dump <repository uri>",
-	Short:  "dumps refs (branches, commits, tags) to the underlying object store",
+	Short:  "Dumps refs (branches, commits, tags) to the underlying object store",
 	Hidden: true,
 	Args:   cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {

@@ -4,13 +4,17 @@ import (
 	"bytes"
 	"context"
 	"encoding/csv"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
 
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/block/adapter"
+	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -24,14 +28,25 @@ type GarbageCollectionManager struct {
 	blockAdapter                block.Adapter
 	refManager                  graveler.RefManager
 	committedBlockStoragePrefix string
+	db                          db.Database
 }
 
-func (m *GarbageCollectionManager) GetCommitsCSVLocation(runID string) string {
-	return fmt.Sprintf(commitsFileSuffixTemplate, m.committedBlockStoragePrefix, runID)
+func (m *GarbageCollectionManager) GetCommitsCSVLocation(runID string, sn graveler.StorageNamespace) (string, error) {
+	key := fmt.Sprintf(commitsFileSuffixTemplate, m.committedBlockStoragePrefix, runID)
+	qk, err := block.ResolveNamespace(sn.String(), key, block.IdentifierTypeRelative)
+	if err != nil {
+		return "", err
+	}
+	return qk.Format(), nil
 }
 
-func (m *GarbageCollectionManager) GetAddressesLocation() string {
-	return fmt.Sprintf(addressesFilePrefixTemplate, m.committedBlockStoragePrefix)
+func (m *GarbageCollectionManager) GetAddressesLocation(sn graveler.StorageNamespace) (string, error) {
+	key := fmt.Sprintf(addressesFilePrefixTemplate, m.committedBlockStoragePrefix)
+	qk, err := block.ResolveNamespace(sn.String(), key, block.IdentifierTypeRelative)
+	if err != nil {
+		return "", err
+	}
+	return qk.Format(), nil
 }
 
 type RepositoryCommitGetter struct {
@@ -43,20 +58,25 @@ func (r *RepositoryCommitGetter) GetCommit(ctx context.Context, commitID gravele
 	return r.refManager.GetCommit(ctx, r.repositoryID, commitID)
 }
 
-func NewGarbageCollectionManager(blockAdapter block.Adapter, refManager graveler.RefManager, committedBlockStoragePrefix string) *GarbageCollectionManager {
+func NewGarbageCollectionManager(db db.Database, blockAdapter block.Adapter, refManager graveler.RefManager, committedBlockStoragePrefix string) *GarbageCollectionManager {
 	return &GarbageCollectionManager{
 		blockAdapter:                blockAdapter,
 		refManager:                  refManager,
 		committedBlockStoragePrefix: committedBlockStoragePrefix,
+		db:                          db,
 	}
 }
 
 func (m *GarbageCollectionManager) GetRules(ctx context.Context, storageNamespace graveler.StorageNamespace) (*graveler.GarbageCollectionRules, error) {
-	reader, err := m.blockAdapter.Get(ctx, block.ObjectPointer{
+	objectPointer := block.ObjectPointer{
 		StorageNamespace: string(storageNamespace),
 		Identifier:       fmt.Sprintf(configFileSuffixTemplate, m.committedBlockStoragePrefix),
 		IdentifierType:   block.IdentifierTypeRelative,
-	}, -1)
+	}
+	reader, err := m.blockAdapter.Get(ctx, objectPointer, -1)
+	if errors.Is(err, adapter.ErrDataNotFound) {
+		return nil, graveler.ErrNotFound
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -91,8 +111,12 @@ func (m *GarbageCollectionManager) GetRunExpiredCommits(ctx context.Context, sto
 	if runID == "" {
 		return nil, nil
 	}
+	csvLocation, err := m.GetCommitsCSVLocation(runID, storageNamespace)
+	if err != nil {
+		return nil, err
+	}
 	previousRunReader, err := m.blockAdapter.Get(ctx, block.ObjectPointer{
-		Identifier:     string(storageNamespace) + fmt.Sprintf(commitsFileSuffixTemplate, m.committedBlockStoragePrefix, runID),
+		Identifier:     csvLocation,
 		IdentifierType: block.IdentifierTypeFull,
 	}, -1)
 	if err != nil {
@@ -117,15 +141,15 @@ func (m *GarbageCollectionManager) GetRunExpiredCommits(ctx context.Context, sto
 }
 
 func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Context, storageNamespace graveler.StorageNamespace, repositoryID graveler.RepositoryID, rules *graveler.GarbageCollectionRules, previouslyExpiredCommits []graveler.CommitID) (string, error) {
-	branchIterator, err := m.refManager.ListBranches(ctx, repositoryID)
-	if err != nil {
-		return "", fmt.Errorf("list repository branches: %w", err)
-	}
 	commitGetter := &RepositoryCommitGetter{
 		refManager:   m.refManager,
 		repositoryID: repositoryID,
 	}
-	gcCommits, err := GetGarbageCollectionCommits(ctx, branchIterator, commitGetter, rules, previouslyExpiredCommits)
+	branchIterator := ref.NewBranchIterator(ctx, m.db, repositoryID, 1000, ref.WithOrderBy("commit_id"))
+	// get all commits that are not the first parent of any commit:
+	commitIterator := ref.NewOrderedCommitIterator(ctx, m.db, repositoryID, 1000, ref.WithOnlyAncestryLeaves())
+	startingPointIterator := NewGCStartingPointIterator(commitIterator, branchIterator)
+	gcCommits, err := GetGarbageCollectionCommits(ctx, startingPointIterator, commitGetter, rules, previouslyExpiredCommits)
 	if err != nil {
 		return "", fmt.Errorf("find expired commits: %w", err)
 	}
@@ -154,8 +178,12 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Cont
 	}
 	commitsStr := b.String()
 	runID := uuid.New().String()
+	csvLocation, err := m.GetCommitsCSVLocation(runID, storageNamespace)
+	if err != nil {
+		return "", err
+	}
 	err = m.blockAdapter.Put(ctx, block.ObjectPointer{
-		Identifier:     string(storageNamespace) + fmt.Sprintf(commitsFileSuffixTemplate, m.committedBlockStoragePrefix, runID),
+		Identifier:     csvLocation,
 		IdentifierType: block.IdentifierTypeFull,
 	}, int64(len(commitsStr)), strings.NewReader(commitsStr), block.PutOpts{})
 	if err != nil {

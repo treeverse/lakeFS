@@ -19,6 +19,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/block/adapter"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -239,6 +240,9 @@ func (l *Adapter) Get(_ context.Context, obj block.ObjectPointer, _ int64) (read
 		return nil, err
 	}
 	f, err := os.OpenFile(filepath.Clean(p), os.O_RDONLY, 0600)
+	if os.IsNotExist(err) {
+		return nil, adapter.ErrDataNotFound
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -278,6 +282,9 @@ func (l *Adapter) GetRange(_ context.Context, obj block.ObjectPointer, start int
 	}
 	f, err := os.Open(filepath.Clean(p))
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, adapter.ErrDataNotFound
+		}
 		return nil, err
 	}
 	return &struct {

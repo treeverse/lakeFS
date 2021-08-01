@@ -15,14 +15,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-openapi/swag"
-
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/go-openapi/swag"
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/block/adapter"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/config"
@@ -201,9 +201,9 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	}
 
 	blockStoreType := c.BlockAdapter.BlockstoreType()
-	if qk.StorageType.String() != blockStoreType {
+	if qk.StorageType.BlockstoreType() != blockStoreType {
 		writeError(w, http.StatusBadRequest, fmt.Sprintf("invalid storage type: %s: current block adapter is %s",
-			qk.StorageType.String(),
+			qk.StorageType.BlockstoreType(),
 			blockStoreType,
 		))
 		return
@@ -1510,7 +1510,8 @@ func handleAPIError(w http.ResponseWriter, err error) bool {
 		errors.Is(err, graveler.ErrNoChanges),
 		errors.Is(err, permissions.ErrInvalidServiceName),
 		errors.Is(err, permissions.ErrInvalidAction),
-		errors.Is(err, model.ErrValidationError):
+		errors.Is(err, model.ErrValidationError),
+		errors.Is(err, graveler.ErrInvalidRef):
 		writeError(w, http.StatusBadRequest, err)
 
 	case errors.Is(err, graveler.ErrNotUnique):
@@ -1521,10 +1522,10 @@ func handleAPIError(w http.ResponseWriter, err error) bool {
 
 	case errors.Is(err, graveler.ErrLockNotAcquired):
 		writeError(w, http.StatusInternalServerError, "branch is currently locked, try again later")
-
+	case errors.Is(err, adapter.ErrDataNotFound):
+		writeError(w, http.StatusGone, "No data")
 	case err != nil:
 		writeError(w, http.StatusInternalServerError, err)
-
 	default:
 		return false
 	}
@@ -2366,8 +2367,7 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 
 	// setup response
 	reader, err := c.BlockAdapter.Get(ctx, block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: entry.PhysicalAddress}, entry.Size)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
+	if handleAPIError(w, err) {
 		return
 	}
 	defer func() {

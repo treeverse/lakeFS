@@ -4,6 +4,34 @@
 ## Unreleased - XXXX-XX-XX
 
 
+## v0.47.0 - 2021-07-28
+
+ - Hooks: support triggering Airflow DAGs (#2266)
+ - Metastore tool: fix --continue-on-error flag on copy and import (#2267)
+ - API: Return gone response (410) in case physical data was removed (#2264)
+
+## v0.46.0 - 2021-07-19
+
+ - Support post-merge and post-commit events
+ - UI - add garbage collection policy configuration
+ - Metastore tool - add flag to support DBFS location
+ - Metastore tool - handle Spark placeholder on copy
+ - Deployment of lakeFS (docker-compose) above MinIO including the following services: Hive metastore, Hive server, Trino and Spark
+ - Fix LakeFS startup with Azure storage type
+
+## v0.45.0 - 2021-07-07
+
+This release requires running database migration.
+The lakeFS service will not run if the migration version isn't compatible with the binary.
+Before running the new version you will require to run migrate, with the new version:
+
+```sh
+$ lakefs migrate up
+```
+
+Fix Authentication migration for garbage collection.
+
+
 ## v0.44.0 - 2021-07-01
 
 

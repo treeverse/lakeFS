@@ -50,7 +50,11 @@ the [documentation](https://docs.databricks.com/data/data-sources/aws/amazon-s3.
 When lakeFS runs inside your private network, your Databricks cluster needs to be able to access it. This can be done by
 setting up a VPC peering between the two VPCs (the one where lakeFS runs, and the one where Databricks runs). For this to
 work on DeltaLake tables, you would also have to
-disable [multi-cluster writes](https://docs.databricks.com/delta/delta-faq.html#what-does-it-mean-that-delta-lake-supports-multi-cluster-writes).
+disable [multi-cluster writes](https://docs.databricks.com/delta/delta-faq.html#what-does-it-mean-that-delta-lake-supports-multi-cluster-writes) with: 
+
+```
+spark.databricks.delta.multiClusterWrites.enabled false
+```
 
 #### Using multi-cluster writes
 

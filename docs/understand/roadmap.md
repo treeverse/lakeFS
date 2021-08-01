@@ -19,7 +19,7 @@ redirect_from: ../roadmap.html
 
 ---
 
-## Use Case: Development Environment
+## Use Case: Development
 
 ### Ephemeral branches with a TTL
 Throwaway development or experimentation branches that live for a pre-configured amount of time, and are cleaned up afterwards. This is especially useful when running automated tests or when experimenting with new technologies, code or algorithms. We want to see what the outcome looks like, but don’t really need the output to live much longer than the duration of the experiment.
@@ -29,7 +29,7 @@ Throwaway development or experimentation branches that live for a pre-configured
 
 ---
 
-## Use Case: Continuous Integration
+## Use Case: Deployment
 
 ### Repo linking
 The ability to explicitly depend on data residing in another repository. While it is possible to state these cross-links by sticking them in the report’s commit metadata, we think a more explicit and structured approach would be valuable. Stating our dependencies in something that resembles a [pom.xml](https://maven.apache.org/guides/introduction/introduction-to-the-pom.html#:~:text=A%20Project%20Object%20Model%20or,default%20values%20for%20most%20projects.) or [go.mod](https://github.com/golang/go/wiki/Modules#gomod) file would allow us to support better CI and CD integrations that ensure reproducibility without vendoring or copying data.
@@ -51,8 +51,6 @@ main ensures schema never breaks and all partitions are complete and tested)
 
 ---
 
-## Use Case: Continuous Deployment
-
 ### Native Metastore Integration <span>High Priority</span>{: .label }
 
 Create a robust connection between a Hive Metastore and lakeFS.
@@ -64,20 +62,48 @@ Additionally, for CD use cases, it will allow a merge operation to introduce Hiv
 
 [Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/1846){: target="_blank" class="btn" }
 
-### Webhooks: merged/committed snapshot <span>High Priority</span>{: .label }
 
-Currently, pre-merge hooks run before a merged view is even available (and before conflicts are detected).
-Ideally, pre-merge should actually run after the logical merge operation has completed: the hook should be handed a commit to run on, otherwise modeling data validation tests is very hard.
-Once all hooks pass, the branch is then moved to point at the new merge commit, completing the operation.
+### Hooks: usability improvements <span>High Priority</span>{: .label }
 
-This change will also allow running hooks without holding a branch lock, moving to an optimistic concurrency model. This is required in order to support long-running operations such as Spark jobs, table scans, etc.
+While hooks are an immensely useful tool that provides strong guarantees to data consumers, we want to make them more useful but also easier to implement:
+
+#### Extended hook types beyond webhooks
+
+While webhooks are easy to understand, they can be challenging in terms of operations: they require a running server listening for requests,
+ network access and authentication information need to be applied between lakeFS and the hook server and network timeouts might interfere with long running hooks.
+
+ To help reduce this burden, we plan on adding more hook types that are easier to manage - running a command line script, executing a docker image or calling out to an external orchestration/scheduling system such as Airflow or even Kubernetes. 
+
+[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/2231){: target="_blank" class="btn" }
+
+#### Expose merged snapshot to pre-merge hooks
+
+pre-merge hooks are a great place to introduce data validation checks. However, currently lakeFS exposes the source branch, the destination branch and the diff between them. In many cases, the desired input is actually the merged view of both branches. By having a referencable commit ID that could be passed to e.g. Spark,
+users will be able to directly feed the merged view into a dataframe, a testing framework, etc.
 
 [Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/1742){: target="_blank" class="btn" }
 
-### Webhook Support integration: Metastore registration
-Using webhooks, we can automatically register or update collections in a Hive/Glue metastore, using [Symlink Generation](../integrations/glue_hive_metastore.md#create-symlink), this will also allow systems that don’t natively integrate with lakeFS to consume data produced using lakeFS.
+#### Create and edit hooks directly in the UI:
+
+Hooks require a YAML configuration file to describe the required functionality and triggers. Instead of having to edit them somewhere else and then carefully uploading to the correct path for them to take effect, we want to allow creating and editing hooks with a single click in the UI
+
+[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/2232){: target="_blank" class="btn" }
+
+#### Post-commit, Post-merge hooks
+
+For validation, testing and governance, pre-commit and pre-merge hooks provide strong guarantees about what we can or cannot expose to downstream consumers.
+However, in some cases we wish to run or notify another system when a commit or a merge occurs. The most common example would be registering changes in external systems: register new partitions in Hive Metastore, update last update date on data discovery tools, generate manifest files for e.g. AWS Athena and more.
 
 [Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/2182){: target="_blank" class="btn" }
+
+#### One-click reusable hook installation
+
+Expanding on the abilities above (executing hooks locally as a command line or docker container - and the ability to create hooks in the UI), lakeFS
+can expose a set of pre-defined hooks that could be installed in a single click through the UI and provide useful functionality (schema validation, metastore updates, format enforcement, Symlink generation - and more, etc).
+
+[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/2233){: target="_blank" class="btn" }
+
+## Use Case: Production
 
 ### Webhook Alerting
 Support integration into existing alerting systems that trigger in the event a webhook returns a failure. This is useful for example when a data quality test fails, so new data is not merged into main due to a quality issue, so will alert the owning team.

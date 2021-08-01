@@ -13,14 +13,19 @@ import (
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
-func TestResolveRef_Dereference(t *testing.T) {
+func TestResolveRawRef(t *testing.T) {
 	r := testRefManager(t)
 	ctx := context.Background()
 	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
-	}, ""))
+	}, "token"))
+
+	mainBranch, err := r.GetBranch(ctx, "repo1", "main")
+	if err != nil {
+		t.Fatalf("Failed to get main branch information: %s", err)
+	}
 
 	ts, _ := time.Parse(time.RFC3339, "2020-12-01T15:00:00Z")
 	var previous graveler.CommitID
@@ -90,12 +95,14 @@ func TestResolveRef_Dereference(t *testing.T) {
 
 	branch1CommitID := commitLog[3]
 	testutil.Must(t, r.SetBranch(ctx, "repo1", "branch1", graveler.Branch{
-		CommitID: branch1CommitID,
+		CommitID:     branch1CommitID,
+		StagingToken: "token1",
 	}))
 
 	branch2CommitID := commitLog[16]
 	testutil.Must(t, r.SetBranch(ctx, "repo1", "branch2", graveler.Branch{
-		CommitID: branch2CommitID,
+		CommitID:     branch2CommitID,
+		StagingToken: "token2",
 	}))
 
 	tagCommitID := commitLog[9]
@@ -104,15 +111,19 @@ func TestResolveRef_Dereference(t *testing.T) {
 	commitCommitID := commitLog[11]
 
 	table := []struct {
-		Name        string
-		Ref         graveler.Ref
-		Expected    graveler.CommitID
-		ExpectedErr error
+		Name                   string
+		Ref                    graveler.Ref
+		ExpectedCommitID       graveler.CommitID
+		ExpectedBranchModifier graveler.ResolvedBranchModifier
+		ExpectedToken          graveler.StagingToken
+		ExpectedErr            error
 	}{
 		{
-			Name:     "branch_exist",
-			Ref:      graveler.Ref("branch1"),
-			Expected: branch1CommitID,
+			Name:                   "branch_exist",
+			Ref:                    graveler.Ref("branch1"),
+			ExpectedBranchModifier: graveler.ResolvedBranchModifierNone,
+			ExpectedToken:          "token1",
+			ExpectedCommitID:       branch1CommitID,
 		},
 		{
 			Name:        "branch_doesnt_exist",
@@ -120,9 +131,43 @@ func TestResolveRef_Dereference(t *testing.T) {
 			ExpectedErr: graveler.ErrNotFound,
 		},
 		{
-			Name:     "tag_exist",
-			Ref:      graveler.Ref("v1.0"),
-			Expected: tagCommitID,
+			Name:                   "branch_head",
+			Ref:                    graveler.Ref("branch1@"),
+			ExpectedBranchModifier: graveler.ResolvedBranchModifierCommitted,
+			ExpectedCommitID:       branch1CommitID,
+		},
+		{
+			Name:        "branch_invalid_head",
+			Ref:         graveler.Ref("branch1@1"),
+			ExpectedErr: graveler.ErrInvalidRef,
+		},
+		{
+			Name:        "branch_invalid_head_caret1",
+			Ref:         graveler.Ref("branch1@^"),
+			ExpectedErr: graveler.ErrInvalidRef,
+		},
+		{
+			Name:        "branch_invalid_head_caret2",
+			Ref:         graveler.Ref("branch1^@"),
+			ExpectedErr: graveler.ErrInvalidRef,
+		},
+		{
+			Name:                   "main_staging",
+			Ref:                    graveler.Ref("main$"),
+			ExpectedBranchModifier: graveler.ResolvedBranchModifierStaging,
+			ExpectedCommitID:       mainBranch.CommitID,
+			ExpectedToken:          mainBranch.StagingToken,
+		},
+		{
+			Name:                   "main_committed",
+			Ref:                    graveler.Ref("main@"),
+			ExpectedBranchModifier: graveler.ResolvedBranchModifierCommitted,
+			ExpectedCommitID:       mainBranch.CommitID,
+		},
+		{
+			Name:             "tag_exist",
+			Ref:              graveler.Ref("v1.0"),
+			ExpectedCommitID: tagCommitID,
 		},
 		{
 			Name:        "tag_doesnt_exist",
@@ -130,14 +175,14 @@ func TestResolveRef_Dereference(t *testing.T) {
 			ExpectedErr: graveler.ErrNotFound,
 		},
 		{
-			Name:     "commit",
-			Ref:      graveler.Ref(commitCommitID),
-			Expected: graveler.CommitID(commitCommitID),
+			Name:             "commit",
+			Ref:              graveler.Ref(commitCommitID),
+			ExpectedCommitID: commitCommitID,
 		},
 		{
-			Name:     "commit_prefix_good",
-			Ref:      graveler.Ref(commitCommitID[:5]),
-			Expected: graveler.CommitID(commitCommitID),
+			Name:             "commit_prefix_good",
+			Ref:              graveler.Ref(commitCommitID[:5]),
+			ExpectedCommitID: commitCommitID,
 		},
 		{
 			Name:        "commit_prefix_ambiguous",
@@ -150,19 +195,19 @@ func TestResolveRef_Dereference(t *testing.T) {
 			ExpectedErr: graveler.ErrNotFound,
 		},
 		{
-			Name:     "branch_with_modifier",
-			Ref:      graveler.Ref(branch1CommitID + "~2"),
-			Expected: commitLog[5],
+			Name:             "branch_with_modifier",
+			Ref:              graveler.Ref(branch1CommitID + "~2"),
+			ExpectedCommitID: commitLog[5],
 		},
 		{
-			Name:     "commit_with_modifier",
-			Ref:      graveler.Ref(commitCommitID + "~2"),
-			Expected: graveler.CommitID(commitLog[13]),
+			Name:             "commit_with_modifier",
+			Ref:              graveler.Ref(commitCommitID + "~2"),
+			ExpectedCommitID: commitLog[13],
 		},
 		{
-			Name:     "commit_prefix_with_modifier",
-			Ref:      graveler.Ref(commitCommitID[:5] + "~2"),
-			Expected: graveler.CommitID(commitLog[13]),
+			Name:             "commit_prefix_with_modifier",
+			Ref:              graveler.Ref(commitCommitID[:5] + "~2"),
+			ExpectedCommitID: commitLog[13],
 		},
 		{
 			Name:        "commit_prefix_with_modifier_too_big",
@@ -173,15 +218,31 @@ func TestResolveRef_Dereference(t *testing.T) {
 
 	for _, cas := range table {
 		t.Run(cas.Name, func(t *testing.T) {
-			ref, err := r.RevParse(ctx, "repo1", cas.Ref)
+			rawRef, err := r.ParseRef(cas.Ref)
 			if err != nil {
 				if cas.ExpectedErr == nil || !errors.Is(err, cas.ExpectedErr) {
-					t.Fatalf("unexpected error: %v", err)
+					t.Fatalf("unexpected error while parse '%s': %v, expected: %s", cas.Ref, err, cas.ExpectedErr)
 				}
 				return
 			}
-			if cas.Expected != ref.CommitID() {
-				t.Fatalf("got unexpected commit ID: %s - expected %s", ref.CommitID(), cas.Expected)
+			resolvedRef, err := r.ResolveRawRef(ctx, "repo1", rawRef)
+			if err != nil {
+				if cas.ExpectedErr == nil || !errors.Is(err, cas.ExpectedErr) {
+					t.Fatalf("unexpected error while resolve '%s': %v, expected: %s", cas.Ref, err, cas.ExpectedErr)
+				}
+				return
+			}
+			if cas.ExpectedCommitID != resolvedRef.CommitID {
+				t.Fatalf("got unexpected commit ID: '%s', expected: '%s'",
+					resolvedRef.CommitID, cas.ExpectedCommitID)
+			}
+			if cas.ExpectedToken != resolvedRef.StagingToken {
+				t.Fatalf("got unexpected staging token: '%s', expected: '%s'",
+					resolvedRef.StagingToken, cas.ExpectedToken)
+			}
+			if cas.ExpectedBranchModifier != resolvedRef.ResolvedBranchModifier {
+				t.Fatalf("got unexpected branch modifier: %d, expected: %d",
+					resolvedRef.ResolvedBranchModifier, cas.ExpectedBranchModifier)
 			}
 		})
 	}
@@ -294,13 +355,12 @@ func TestResolveRef_DereferenceWithGraph(t *testing.T) {
 	resolve := func(base graveler.CommitID, mod string, expected graveler.CommitID) {
 		t.Helper()
 		reference := string(base) + mod
-		resolved, err := ref.ResolveRef(context.Background(), r, ident.NewHexAddressProvider(), "repo1", graveler.Ref(reference))
-		//resolved, err := r.RevParse(context.Background(), "repo1", graveler.Ref(ref))
+		resolved, err := resolveRef(context.Background(), r, ident.NewHexAddressProvider(), "repo1", graveler.Ref(reference))
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if resolved.CommitID() != expected {
-			t.Fatalf("Ref %s got %s, expected %s", reference, resolved.CommitID(), expected)
+		if resolved.CommitID != expected {
+			t.Fatalf("Ref %s got %s, expected %s", reference, resolved.CommitID, expected)
 		}
 	}
 
@@ -332,4 +392,12 @@ func TestResolveRef_DereferenceWithGraph(t *testing.T) {
 	resolve(F, "^2", J)
 	resolve(B, "^3^2", J)
 	resolve(A, "^^3^2", J)
+}
+
+func resolveRef(ctx context.Context, store ref.Store, addressProvider ident.AddressProvider, repositoryID graveler.RepositoryID, reference graveler.Ref) (*graveler.ResolvedRef, error) {
+	rawRef, err := ref.ParseRef(reference)
+	if err != nil {
+		return nil, err
+	}
+	return ref.ResolveRawRef(ctx, store, addressProvider, repositoryID, rawRef)
 }

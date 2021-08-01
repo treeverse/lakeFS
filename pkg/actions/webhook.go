@@ -3,7 +3,6 @@ package actions
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -14,24 +13,10 @@ import (
 )
 
 type Webhook struct {
-	ID          string
-	ActionName  string
+	HookBase
 	URL         string
 	Timeout     time.Duration
 	QueryParams map[string][]string
-}
-
-type WebhookEventInfo struct {
-	EventType      string            `json:"event_type"`
-	EventTime      string            `json:"event_time"`
-	ActionName     string            `json:"action_name"`
-	HookID         string            `json:"hook_id"`
-	RepositoryID   string            `json:"repository_id"`
-	BranchID       string            `json:"branch_id"`
-	SourceRef      string            `json:"source_ref,omitempty"`
-	CommitMessage  string            `json:"commit_message"`
-	Committer      string            `json:"committer"`
-	CommitMetadata map[string]string `json:"commit_metadata,omitempty"`
 }
 
 const (
@@ -42,18 +27,18 @@ const (
 )
 
 var (
-	ErrWebhookRequestFailed = errors.New("webhook request failed")
-	ErrWebhookWrongFormat   = errors.New("webhook wrong format")
+	errWebhookRequestFailed = errors.New("webhook request failed")
+	errWebhookWrongFormat   = errors.New("webhook wrong format")
 )
 
 func NewWebhook(h ActionHook, action *Action) (Hook, error) {
 	url, ok := h.Properties[webhookURLPropertyKey]
 	if !ok {
-		return nil, fmt.Errorf("missing url: %w", ErrWebhookWrongFormat)
+		return nil, fmt.Errorf("missing url: %w", errWebhookWrongFormat)
 	}
 	webhookURL, ok := url.(string)
 	if !ok {
-		return nil, fmt.Errorf("webhook url must be string: %w", ErrWebhookWrongFormat)
+		return nil, fmt.Errorf("webhook url must be string: %w", errWebhookWrongFormat)
 	}
 
 	queryParams, err := extractQueryParams(h.Properties)
@@ -73,8 +58,10 @@ func NewWebhook(h ActionHook, action *Action) (Hook, error) {
 	}
 
 	return &Webhook{
-		ID:          h.ID,
-		ActionName:  action.Name,
+		HookBase: HookBase{
+			ID:         h.ID,
+			ActionName: action.Name,
+		},
 		Timeout:     requestTimeout,
 		URL:         webhookURL,
 		QueryParams: queryParams,
@@ -83,7 +70,7 @@ func NewWebhook(h ActionHook, action *Action) (Hook, error) {
 
 func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, writer *HookOutputWriter) (err error) {
 	// post event information as json to webhook endpoint
-	eventData, err := w.marshalEventInformation(record)
+	eventData, err := marshalEventInformation(w.ActionName, w.ID, record)
 	if err != nil {
 		return err
 	}
@@ -102,15 +89,27 @@ func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, writer *H
 		}
 	}
 	req.URL.RawQuery = q.Encode()
-
-	client := &http.Client{
-		Timeout: w.Timeout,
+	statusCode, err := executeAndLogHTTP(ctx, req, writer, w.Timeout)
+	if err != nil {
+		return err
 	}
 
+	// check status code
+	if statusCode < 200 || statusCode >= 300 {
+		return fmt.Errorf("%w (status code: %d)", errWebhookRequestFailed, statusCode)
+	}
+	return nil
+}
+
+func executeAndLogHTTP(ctx context.Context, req *http.Request, writer *HookOutputWriter, timeout time.Duration) (n int, err error) {
 	req = req.WithContext(ctx)
+
+	client := &http.Client{
+		Timeout: timeout,
+	}
 	start := time.Now()
 
-	buf := bytes.NewBufferString("Webhook request:\n")
+	buf := bytes.NewBufferString("Request:\n")
 	defer func() {
 		err2 := writer.OutputWrite(ctx, buf, int64(buf.Len()))
 		if err == nil {
@@ -128,41 +127,20 @@ func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, writer *H
 	elapsed := time.Since(start)
 	buf.WriteString(fmt.Sprintf("\nRequest duration: %s\n", elapsed))
 	if err != nil {
-		return err
+		return -1, err
 	}
 	defer func() {
 		_ = resp.Body.Close()
 	}()
 
-	buf.WriteString("\nWebhook response:\n")
+	buf.WriteString("\nResponse:\n")
 	if dumpResp, err := httputil.DumpResponse(resp, true); err == nil {
 		buf.Write(dumpResp)
 	} else {
 		buf.WriteString(fmt.Sprintf("Failed dumping response: %s", err))
 	}
 
-	// check status code
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("%w (status code: %d)", ErrWebhookRequestFailed, resp.StatusCode)
-	}
-	return nil
-}
-
-func (w *Webhook) marshalEventInformation(record graveler.HookRecord) ([]byte, error) {
-	now := time.Now()
-	info := WebhookEventInfo{
-		EventType:      string(record.EventType),
-		EventTime:      now.UTC().Format(time.RFC3339),
-		ActionName:     w.ActionName,
-		HookID:         w.ID,
-		RepositoryID:   record.RepositoryID.String(),
-		BranchID:       record.BranchID.String(),
-		SourceRef:      record.SourceRef.String(),
-		CommitMessage:  record.Commit.Message,
-		Committer:      record.Commit.Committer,
-		CommitMetadata: record.Commit.Metadata,
-	}
-	return json.Marshal(info)
+	return resp.StatusCode, nil
 }
 
 func extractQueryParams(props map[string]interface{}) (map[string][]string, error) {
@@ -171,9 +149,9 @@ func extractQueryParams(props map[string]interface{}) (map[string][]string, erro
 		return nil, nil
 	}
 
-	paramsMap, ok := params.(map[string]interface{})
+	paramsMap, ok := params.(Properties)
 	if !ok {
-		return nil, fmt.Errorf("unsupported query params: %w", ErrWebhookWrongFormat)
+		return nil, fmt.Errorf("unsupported query params: %w", errWebhookWrongFormat)
 	}
 
 	res := map[string][]string{}
@@ -182,7 +160,7 @@ func extractQueryParams(props map[string]interface{}) (map[string][]string, erro
 			for _, v := range ar {
 				av, ok := v.(string)
 				if !ok {
-					return nil, fmt.Errorf("query params array should contains only strings: %w", ErrWebhookWrongFormat)
+					return nil, fmt.Errorf("query params array should contains only strings: %w", errWebhookWrongFormat)
 				}
 
 				res[k] = append(res[k], av)
@@ -191,7 +169,7 @@ func extractQueryParams(props map[string]interface{}) (map[string][]string, erro
 		}
 		av, ok := v.(string)
 		if !ok {
-			return nil, fmt.Errorf("query params single value should be of type string: %w", ErrWebhookWrongFormat)
+			return nil, fmt.Errorf("query params single value should be of type string: %w", errWebhookWrongFormat)
 		}
 		res[k] = []string{av}
 	}

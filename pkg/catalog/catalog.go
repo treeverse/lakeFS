@@ -104,9 +104,8 @@ type Config struct {
 type Catalog struct {
 	BlockAdapter block.Adapter
 	Store        Store
-
-	log      logging.Logger
-	managers []io.Closer
+	log          logging.Logger
+	managers     []io.Closer
 }
 
 const (
@@ -184,7 +183,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 
 	refManager := ref.NewPGRefManager(executor, cfg.DB, ident.NewHexAddressProvider())
 	branchLocker := ref.NewBranchLocker(cfg.LockDB)
-	gcManager := retention.NewGarbageCollectionManager(tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
+	gcManager := retention.NewGarbageCollectionManager(cfg.DB, tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
 	store := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager)
 
 	return &Catalog{
@@ -511,7 +510,7 @@ func (c *Catalog) CreateTag(ctx context.Context, repository string, tagID string
 	}); err != nil {
 		return "", err
 	}
-	commitID, err := c.Store.Dereference(ctx, repositoryID, graveler.Ref(ref))
+	commitID, err := c.dereferenceCommitID(ctx, repositoryID, graveler.Ref(ref))
 	if err != nil {
 		return "", err
 	}
@@ -599,16 +598,15 @@ func (c *Catalog) GetTag(ctx context.Context, repository string, tagID string) (
 // the entry with ExpiredError if it has expired from underlying storage.
 func (c *Catalog) GetEntry(ctx context.Context, repository string, reference string, path string, _ GetEntryParams) (*DBEntry, error) {
 	repositoryID := graveler.RepositoryID(repository)
-	ref := graveler.Ref(reference)
-	p := Path(path)
+	refToGet := graveler.Ref(reference)
 	if err := Validate([]ValidateArg{
 		{"repositoryID", repositoryID, ValidateRepositoryID},
-		{"ref", ref, ValidateRef},
-		{"path", p, ValidatePath},
+		{"ref", refToGet, ValidateRef},
+		{"path", Path(path), ValidatePath},
 	}); err != nil {
 		return nil, err
 	}
-	val, err := c.Store.Get(ctx, repositoryID, ref, graveler.Key(p))
+	val, err := c.Store.Get(ctx, repositoryID, refToGet, graveler.Key(path))
 	if err != nil {
 		return nil, err
 	}
@@ -616,7 +614,7 @@ func (c *Catalog) GetEntry(ctx context.Context, repository string, reference str
 	if err != nil {
 		return nil, err
 	}
-	catalogEntry := newCatalogEntryFromEntry(false, p.String(), ent)
+	catalogEntry := newCatalogEntryFromEntry(false, path, ent)
 	return &catalogEntry, nil
 }
 
@@ -710,16 +708,16 @@ func (c *Catalog) ListEntries(ctx context.Context, repository string, reference 
 	afterPath := Path(after)
 	delimiterPath := Path(delimiter)
 	repositoryID := graveler.RepositoryID(repository)
-	ref := graveler.Ref(reference)
+	refToList := graveler.Ref(reference)
 	if err := Validate([]ValidateArg{
 		{"repositoryID", repositoryID, ValidateRepositoryID},
-		{"ref", ref, ValidateRef},
+		{"ref", refToList, ValidateRef},
 		{"prefix", prefixPath, ValidatePathOptional},
 		{"delimiter", delimiterPath, ValidatePathOptional},
 	}); err != nil {
 		return nil, false, err
 	}
-	iter, err := c.Store.List(ctx, repositoryID, ref)
+	iter, err := c.Store.List(ctx, repositoryID, refToList)
 	if err != nil {
 		return nil, false, err
 	}
@@ -826,23 +824,21 @@ func (c *Catalog) Commit(ctx context.Context, repository string, branch string, 
 
 func (c *Catalog) GetCommit(ctx context.Context, repository string, reference string) (*CommitLog, error) {
 	repositoryID := graveler.RepositoryID(repository)
-	ref := graveler.Ref(reference)
 	if err := Validate([]ValidateArg{
 		{"repositoryID", repositoryID, ValidateRepositoryID},
 	}); err != nil {
 		return nil, err
 	}
-	commitID, err := c.Store.Dereference(ctx, repositoryID, ref)
+	commitID, err := c.dereferenceCommitID(ctx, repositoryID, graveler.Ref(reference))
 	if err != nil {
 		return nil, err
 	}
-
 	commit, err := c.Store.GetCommit(ctx, repositoryID, commitID)
 	if err != nil {
 		return nil, err
 	}
 	catalogCommitLog := &CommitLog{
-		Reference:    ref.String(),
+		Reference:    reference,
 		Committer:    commit.Committer,
 		Message:      commit.Message,
 		CreationDate: commit.CreationDate,
@@ -864,22 +860,18 @@ func (c *Catalog) ListCommits(ctx context.Context, repository string, branch str
 	}); err != nil {
 		return nil, false, err
 	}
-	branchCommitID, err := c.Store.Dereference(ctx, repositoryID, graveler.Ref(branchRef))
+	commitID, err := c.dereferenceCommitID(ctx, repositoryID, graveler.Ref(branchRef))
 	if err != nil {
 		return nil, false, fmt.Errorf("branch ref: %w", err)
 	}
-	if branchCommitID == "" {
-		// return empty log if there is no commit on branch yet
-		return make([]*CommitLog, 0), false, nil
-	}
-	it, err := c.Store.Log(ctx, repositoryID, branchCommitID)
+	it, err := c.Store.Log(ctx, repositoryID, commitID)
 	if err != nil {
 		return nil, false, err
 	}
 	defer it.Close()
 	// skip until 'fromReference' if needed
 	if fromReference != "" {
-		fromCommitID, err := c.Store.Dereference(ctx, repositoryID, graveler.Ref(fromReference))
+		fromCommitID, err := c.dereferenceCommitID(ctx, repositoryID, graveler.Ref(fromReference))
 		if err != nil {
 			return nil, false, fmt.Errorf("from ref: %w", err)
 		}
@@ -928,7 +920,7 @@ func (c *Catalog) ListCommits(ctx context.Context, repository string, branch str
 func (c *Catalog) Revert(ctx context.Context, repository string, branch string, params RevertParams) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
-	ref := graveler.Ref(params.Reference)
+	reference := graveler.Ref(params.Reference)
 	commitParams := graveler.CommitParams{
 		Committer: params.Committer,
 		Message:   fmt.Sprintf("Revert %s", params.Reference),
@@ -937,14 +929,14 @@ func (c *Catalog) Revert(ctx context.Context, repository string, branch string, 
 	if err := Validate([]ValidateArg{
 		{"repositoryID", repositoryID, ValidateRepositoryID},
 		{"branchID", branchID, ValidateBranchID},
-		{"ref", ref, ValidateRef},
+		{"ref", reference, ValidateRef},
 		{"committer", commitParams.Committer, ValidateRequiredString},
 		{"message", commitParams.Message, ValidateRequiredString},
 		{"parentNumber", parentNumber, ValidateNonNegativeInt},
 	}); err != nil {
 		return err
 	}
-	_, _, err := c.Store.Revert(ctx, repositoryID, branchID, ref, parentNumber, commitParams)
+	_, _, err := c.Store.Revert(ctx, repositoryID, branchID, reference, parentNumber, commitParams)
 	return err
 }
 
@@ -1224,6 +1216,21 @@ func (c *Catalog) Close() error {
 		}
 	}
 	return errs
+}
+
+// dereferenceCommitID dereference 'ref' to a commit ID, this helper makes sure we do not point to explicit branch staging
+func (c *Catalog) dereferenceCommitID(ctx context.Context, repositoryID graveler.RepositoryID, ref graveler.Ref) (graveler.CommitID, error) {
+	resolvedRef, err := c.Store.Dereference(ctx, repositoryID, ref)
+	if err != nil {
+		return "", err
+	}
+	if resolvedRef.CommitID == "" {
+		return "", fmt.Errorf("%w: no commit", ErrInvalidRef)
+	}
+	if resolvedRef.ResolvedBranchModifier == graveler.ResolvedBranchModifierStaging {
+		return "", fmt.Errorf("%w: should point to a commit", ErrInvalidRef)
+	}
+	return resolvedRef.CommitID, nil
 }
 
 func newCatalogEntryFromEntry(commonPrefix bool, path string, ent *Entry) DBEntry {

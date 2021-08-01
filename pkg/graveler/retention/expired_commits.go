@@ -13,7 +13,12 @@ type GarbageCollectionCommits struct {
 }
 
 // GetGarbageCollectionCommits returns the sets of expired and active commits, according to the repository's garbage collection rules.
-func GetGarbageCollectionCommits(ctx context.Context, branchIterator graveler.BranchIterator, commitGetter *RepositoryCommitGetter, rules *graveler.GarbageCollectionRules, previouslyExpired []graveler.CommitID) (*GarbageCollectionCommits, error) {
+// See https://github.com/treeverse/lakeFS/issues/1932 for more details.
+// Upon completion, the given startingPointIterator is closed.
+func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCStartingPointIterator, commitGetter *RepositoryCommitGetter, rules *graveler.GarbageCollectionRules, previouslyExpired []graveler.CommitID) (*GarbageCollectionCommits, error) {
+	// From each starting point in the given startingPointIterator, it iterates through its main ancestry.
+	// All commits reached are added to the active set, until and including the first commit performed before the start of the retention period.
+	// All further commits in the ancestry are added to the expired set. The iteration stops upon reaching a commit which exists in the previouslyExpired set, or the DAG root.
 	now := time.Now()
 	processed := make(map[graveler.CommitID]time.Time)
 	previouslyExpiredMap := make(map[graveler.CommitID]bool)
@@ -22,27 +27,37 @@ func GetGarbageCollectionCommits(ctx context.Context, branchIterator graveler.Br
 	}
 	activeMap := make(map[graveler.CommitID]struct{})
 	expiredMap := make(map[graveler.CommitID]struct{})
-	for branchIterator.Next() {
-		branchRecord := branchIterator.Value()
+	defer startingPointIterator.Close()
+	for startingPointIterator.Next() {
+		startingPoint := startingPointIterator.Value()
 		retentionDays := int(rules.DefaultRetentionDays)
-		if branchRetentionDays, ok := rules.BranchRetentionDays[string(branchRecord.BranchID)]; ok {
-			retentionDays = int(branchRetentionDays)
-		}
-		branchExpirationThreshold := now.AddDate(0, 0, -retentionDays)
-		commitID := branchRecord.CommitID
-		commit, err := commitGetter.GetCommit(ctx, commitID)
+		commit, err := commitGetter.GetCommit(ctx, startingPoint.CommitID)
 		if err != nil {
 			return nil, err
 		}
-		if previousThreshold, ok := processed[commitID]; ok && !previousThreshold.After(branchExpirationThreshold) {
-			// was already here with earlier expiration date
-			continue
+		if startingPoint.BranchID == "" {
+			// not a branch HEAD - add a hypothetical HEAD as its parent
+			commit = &graveler.Commit{
+				CreationDate: commit.CreationDate,
+				Parents:      []graveler.CommitID{startingPoint.CommitID},
+			}
+		} else {
+			if branchRetentionDays, ok := rules.BranchRetentionDays[string(startingPoint.BranchID)]; ok {
+				retentionDays = int(branchRetentionDays)
+			}
+			activeMap[startingPoint.CommitID] = struct{}{}
+			delete(expiredMap, startingPoint.CommitID)
 		}
-		processed[commitID] = branchExpirationThreshold
-		activeMap[commitID] = struct{}{}
+		branchExpirationThreshold := now.AddDate(0, 0, -retentionDays)
+		if startingPoint.BranchID != "" {
+			processed[startingPoint.CommitID] = now.AddDate(0, 0, -retentionDays)
+		}
 		for len(commit.Parents) > 0 {
 			// every branch retains only its main ancestry, acquired by recursively taking the first parent:
 			nextCommitID := commit.Parents[0]
+			if commit.Version < graveler.CommitVersionParentSwitch {
+				nextCommitID = commit.Parents[len(commit.Parents)-1]
+			}
 			if _, ok := previouslyExpiredMap[nextCommitID]; ok {
 				// commit was already expired in a previous run
 				break
@@ -64,13 +79,13 @@ func GetGarbageCollectionCommits(ctx context.Context, branchIterator graveler.Br
 			processed[nextCommitID] = branchExpirationThreshold
 		}
 	}
-	if branchIterator.Err() != nil {
-		return nil, branchIterator.Err()
+	if startingPointIterator.Err() != nil {
+		return nil, startingPointIterator.Err()
 	}
-	return &GarbageCollectionCommits{active: commitSetToArray(activeMap), expired: commitSetToArray(expiredMap)}, nil
+	return &GarbageCollectionCommits{active: commitSetToSlice(activeMap), expired: commitSetToSlice(expiredMap)}, nil
 }
 
-func commitSetToArray(commitMap map[graveler.CommitID]struct{}) []graveler.CommitID {
+func commitSetToSlice(commitMap map[graveler.CommitID]struct{}) []graveler.CommitID {
 	res := make([]graveler.CommitID, 0, len(commitMap))
 	for commitID := range commitMap {
 		res = append(res, commitID)

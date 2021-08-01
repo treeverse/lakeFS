@@ -20,19 +20,46 @@ type Action struct {
 }
 
 type OnEvents struct {
-	PreMerge  *ActionOn `yaml:"pre-merge"`
-	PreCommit *ActionOn `yaml:"pre-commit"`
+	PreMerge   *ActionOn `yaml:"pre-merge"`
+	PostMerge  *ActionOn `yaml:"post-merge"`
+	PreCommit  *ActionOn `yaml:"pre-commit"`
+	PostCommit *ActionOn `yaml:"post-commit"`
 }
 
 type ActionOn struct {
 	Branches []string `yaml:"branches"`
 }
 
+var (
+	errMissingKey     = errors.New("missing key in properties")
+	errWrongValueType = errors.New("wrong value type")
+)
+
+type Properties map[string]interface{}
+
+func (p Properties) getRequiredProperty(key string) (string, error) {
+	raw, ok := p[key]
+	if !ok {
+		return "", fmt.Errorf("key %s: %w", key, errMissingKey)
+	}
+
+	val, ok := raw.(string)
+	if !ok {
+		return "", fmt.Errorf("value of %s is not of type string: %w", key, errWrongValueType)
+	}
+
+	if val == "" {
+		return "", fmt.Errorf("value of %s is empty: %w", key, errMissingKey)
+	}
+
+	return val, nil
+}
+
 type ActionHook struct {
-	ID          string                 `yaml:"id"`
-	Type        HookType               `yaml:"type"`
-	Description string                 `yaml:"description"`
-	Properties  map[string]interface{} `yaml:"properties"`
+	ID          string     `yaml:"id"`
+	Type        HookType   `yaml:"type"`
+	Description string     `yaml:"description"`
+	Properties  Properties `yaml:"properties"`
 }
 
 type MatchSpec struct {
@@ -55,7 +82,10 @@ func (a *Action) Validate() error {
 	if !reName.MatchString(a.Name) {
 		return fmt.Errorf("'name' is invalid: %w", ErrInvalidAction)
 	}
-	if a.On.PreMerge == nil && a.On.PreCommit == nil {
+	if a.On.PreMerge == nil &&
+		a.On.PostMerge == nil &&
+		a.On.PreCommit == nil &&
+		a.On.PostCommit == nil {
 		return fmt.Errorf("'on' is required: %w", ErrInvalidAction)
 	}
 	ids := make(map[string]struct{})
@@ -82,6 +112,10 @@ func (a *Action) Match(spec MatchSpec) (bool, error) {
 		actionOn = a.On.PreCommit
 	case graveler.EventTypePreMerge:
 		actionOn = a.On.PreMerge
+	case graveler.EventTypePostCommit:
+		actionOn = a.On.PostCommit
+	case graveler.EventTypePostMerge:
+		actionOn = a.On.PostMerge
 	default:
 		return false, ErrInvalidEventType
 	}

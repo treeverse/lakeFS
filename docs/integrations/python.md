@@ -59,7 +59,7 @@ Now that we have a client object, we can use it to interact with the API.
 ### Creating a repository
 
 ```python
-repo = models.RepositoryCreation(name="example-repo", storage_namespace="s3://storage-bucket/repos/example-repo", default_branch="main")
+repo = models.RepositoryCreation(name='example-repo', storage_namespace='s3://storage-bucket/repos/example-repo', default_branch='main')
 client.repositories.create_repository(repo)
 # output:
 # {'creation_date': 1617532175,

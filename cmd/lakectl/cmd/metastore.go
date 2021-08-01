@@ -14,12 +14,12 @@ import (
 
 var metastoreCmd = &cobra.Command{
 	Use:   "metastore",
-	Short: "manage metastore commands",
+	Short: "Manage metastore commands",
 }
 
 var metastoreCopyCmd = &cobra.Command{
 	Use:   "copy",
-	Short: "copy or merge table",
+	Short: "Copy or merge table",
 	Long:  "copy or merge table. the destination table will point to the selected branch",
 	Run: func(cmd *cobra.Command, args []string) {
 		fromClientType, _ := cmd.Flags().GetString("from-client-type")
@@ -31,6 +31,7 @@ var metastoreCopyCmd = &cobra.Command{
 		toBranch, _ := cmd.Flags().GetString("to-branch")
 		serde, _ := cmd.Flags().GetString("serde")
 		partition, _ := cmd.Flags().GetStringSlice("partition")
+		dbfsLocation, _ := cmd.Flags().GetString("dbfs-location")
 
 		fromClient, fromClientDeferFunc := getMetastoreClient(fromClientType, "")
 		defer fromClientDeferFunc()
@@ -57,7 +58,7 @@ var metastoreCopyCmd = &cobra.Command{
 			"partition":        partition,
 		}).Info("Metadata copy or merge table")
 		fmt.Printf("copy %s.%s -> %s.%s\n", fromDB, fromTable, toDB, toTable)
-		err := metastore.CopyOrMerge(cmd.Context(), fromClient, toClient, fromDB, fromTable, toDB, toTable, toBranch, serde, partition)
+		err := metastore.CopyOrMerge(cmd.Context(), fromClient, toClient, fromDB, fromTable, toDB, toTable, toBranch, serde, partition, cfg.GetFixSparkPlaceholder(), dbfsLocation)
 		if err != nil {
 			DieErr(err)
 		}
@@ -100,7 +101,7 @@ func getMetastoreClient(msType, hiveAddress string) (metastore.Client, func()) {
 
 var metastoreCopyAllCmd = &cobra.Command{
 	Use:   "copy-all",
-	Short: "copy from one metastore to another",
+	Short: "Copy from one metastore to another",
 	Long:  "copy or merge requested tables between hive metastores. the destination tables will point to the selected branch",
 	Run: func(cmd *cobra.Command, args []string) {
 		fromClientType, _ := cmd.Flags().GetString("from-client-type")
@@ -111,6 +112,7 @@ var metastoreCopyAllCmd = &cobra.Command{
 		tableFilter, _ := cmd.Flags().GetString("table-filter")
 		branch, _ := cmd.Flags().GetString("branch")
 		continueOnError, _ := cmd.Flags().GetBool("continue-on-error")
+		dbfsLocation, _ := cmd.Flags().GetString("dbfs-location")
 
 		if fromAddress == toAddress {
 			Die("from-address must be different than to-address", 1)
@@ -122,7 +124,43 @@ var metastoreCopyAllCmd = &cobra.Command{
 		defer toDeferFunc()
 
 		fmt.Printf("copy %s -> %s\n", fromAddress, toAddress)
-		err := metastore.CopyOrMergeAll(cmd.Context(), fromClient, toClient, schemaFilter, tableFilter, branch, continueOnError)
+		err := metastore.CopyOrMergeAll(cmd.Context(), fromClient, toClient, schemaFilter, tableFilter, branch, continueOnError, cfg.GetFixSparkPlaceholder(), dbfsLocation)
+		if err != nil {
+			DieErr(err)
+		}
+	},
+}
+
+var metastoreImportAllCmd = &cobra.Command{
+	Use:   "import-all",
+	Short: "Import from one metastore to another",
+	Long: `
+import requested tables between hive metastores. the destination tables will point to the selected repository and branch
+table with location s3://my-s3-bucket/path/to/table 
+will be transformed to location s3://repo-param/bucket-param/path/to/table
+	`,
+	Run: func(cmd *cobra.Command, args []string) {
+		fromClientType, _ := cmd.Flags().GetString("from-client-type")
+		fromAddress, _ := cmd.Flags().GetString("from-address")
+		toClientType, _ := cmd.Flags().GetString("to-client-type")
+		toAddress, _ := cmd.Flags().GetString("to-address")
+		schemaFilter, _ := cmd.Flags().GetString("schema-filter")
+		tableFilter, _ := cmd.Flags().GetString("table-filter")
+		repo, _ := cmd.Flags().GetString("repo")
+		branch, _ := cmd.Flags().GetString("branch")
+		continueOnError, _ := cmd.Flags().GetBool("continue-on-error")
+		dbfsLocation, _ := cmd.Flags().GetString("dbfs-location")
+		if fromAddress == toAddress {
+			Die("from-address must be different than to-address", 1)
+		}
+
+		fromClient, deferFunc := getMetastoreClient(fromClientType, fromAddress)
+		defer deferFunc()
+		toClient, toDeferFunc := getMetastoreClient(toClientType, toAddress)
+		defer toDeferFunc()
+
+		fmt.Printf("import %s -> %s\n", fromAddress, toAddress)
+		err := metastore.ImportAll(cmd.Context(), fromClient, toClient, schemaFilter, tableFilter, repo, branch, continueOnError, cfg.GetFixSparkPlaceholder(), dbfsLocation)
 		if err != nil {
 			DieErr(err)
 		}
@@ -131,7 +169,7 @@ var metastoreCopyAllCmd = &cobra.Command{
 
 var metastoreDiffCmd = &cobra.Command{
 	Use:   "diff",
-	Short: "show column and partition differences between two tables",
+	Short: "Show column and partition differences between two tables",
 	Run: func(cmd *cobra.Command, args []string) {
 		fromClientType, _ := cmd.Flags().GetString("from-client-type")
 		toAddress, _ := cmd.Flags().GetString("to-address")
@@ -186,7 +224,7 @@ var metastoreDiffCmd = &cobra.Command{
 
 var glueSymlinkCmd = &cobra.Command{
 	Use:   "create-symlink",
-	Short: "create symlink table and data",
+	Short: "Create symlink table and data",
 	Long:  "create table with symlinks, and create the symlinks in s3 in order to access from external services that could only access s3 directly (e.g athena)",
 	Run: func(cmd *cobra.Command, args []string) {
 		repo, _ := cmd.Flags().GetString("repo")
@@ -210,7 +248,7 @@ var glueSymlinkCmd = &cobra.Command{
 			DieErr(err)
 		}
 
-		err = metastore.CopyOrMergeToSymlink(cmd.Context(), msClient, fromDB, fromTable, toDB, toTable, location)
+		err = metastore.CopyOrMergeToSymlink(cmd.Context(), msClient, fromDB, fromTable, toDB, toTable, location, cfg.GetFixSparkPlaceholder())
 		if err != nil {
 			DieErr(err)
 		}
@@ -237,7 +275,7 @@ func init() {
 	_ = metastoreCopyCmd.MarkFlagRequired("to-branch")
 	_ = metastoreCopyCmd.Flags().String("serde", "", "serde to set copy to  [default is  to-table]")
 	_ = metastoreCopyCmd.Flags().StringSliceP("partition", "p", nil, "partition to copy")
-
+	_ = metastoreCopyCmd.Flags().String("dbfs-root", "", "dbfs location root will replace `dbfs:/` in the location before transforming")
 	metastoreCmd.AddCommand(metastoreDiffCmd)
 	_ = metastoreDiffCmd.Flags().String("from-client-type", "", "metastore type [hive, glue]")
 	_ = metastoreDiffCmd.Flags().String("metastore-uri", "", "Hive metastore URI")
@@ -264,8 +302,22 @@ func init() {
 	_ = metastoreCopyAllCmd.Flags().String("table-filter", ".*", "filter for tables to copy in metastore pattern")
 	_ = metastoreCopyAllCmd.Flags().String("branch", "", "lakeFS branch name")
 	_ = metastoreCopyAllCmd.MarkFlagRequired("branch")
-	_ = metastoreCopyAllCmd.Flags().String("continue-on-error", "", "prevent copy-all from failing when a single table fails")
-
+	_ = metastoreCopyAllCmd.Flags().Bool("continue-on-error", false, "prevent copy-all from failing when a single table fails")
+	_ = metastoreCopyAllCmd.Flags().String("dbfs-root", "", "dbfs location root will replace `dbfs:/` in the location before transforming")
+	metastoreCmd.AddCommand(metastoreImportAllCmd)
+	_ = metastoreImportAllCmd.Flags().String("from-client-type", "", "metastore type [hive, glue]")
+	_ = metastoreImportAllCmd.Flags().String("from-address", "", "source metastore address")
+	_ = metastoreImportAllCmd.Flags().String("to-client-type", "", "metastore type [hive, glue]")
+	_ = metastoreImportAllCmd.Flags().String("to-address", "", "destination metastore address")
+	_ = metastoreImportAllCmd.MarkFlagRequired("to-address")
+	_ = metastoreImportAllCmd.Flags().String("schema-filter", ".*", "filter for schemas to copy in metastore pattern")
+	_ = metastoreImportAllCmd.Flags().String("table-filter", ".*", "filter for tables to copy in metastore pattern")
+	_ = metastoreImportAllCmd.Flags().String("repo", "", "lakeFS repo name")
+	_ = metastoreImportAllCmd.MarkFlagRequired("repo")
+	_ = metastoreImportAllCmd.Flags().String("branch", "", "lakeFS branch name")
+	_ = metastoreImportAllCmd.MarkFlagRequired("branch")
+	_ = metastoreImportAllCmd.Flags().Bool("continue-on-error", false, "prevent import-all from failing when a single table fails")
+	_ = metastoreImportAllCmd.Flags().String("dbfs-root", "", "dbfs location root will replace `dbfs:/` in the location before transforming")
 	metastoreCmd.AddCommand(glueSymlinkCmd)
 	_ = glueSymlinkCmd.Flags().String("repo", "", "lakeFS repository name")
 	_ = glueSymlinkCmd.MarkFlagRequired("repo")

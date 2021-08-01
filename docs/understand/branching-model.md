@@ -53,4 +53,3 @@ Unlike Git, lakeFS does not care about the contents of an object - if we try to 
 This is because lakeFS doesn't assume anything about the structure of the object and so cannot try to merge both changesets into a single object (additionally, this operation makes little sense for machine generated files, and data in general).
 
 The actual data itself is not stored inside lakeFS directly, but rather stored in an underlying object store. lakeFS will manage these writes, and will store a pointer to the object in its metadata database.
-Addressing the object in the underlying object store is done using a deduplication ID - objects with the same content will receive the same ID, thus stored only once.

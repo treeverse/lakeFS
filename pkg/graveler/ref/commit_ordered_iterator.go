@@ -4,32 +4,48 @@ import (
 	"context"
 	"errors"
 
+	sq "github.com/Masterminds/squirrel"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
 )
 
+type OrderedCommitIteratorOption func(oci *OrderedCommitIterator)
+
+// WithOnlyAncestryLeaves causes the iterator to return only commits which are not the first parent of any other commit.
+// Consider a commit graph where all non-first-parent edges are removed. This graph is a tree, and ancestry leaves are its leaves.
+func WithOnlyAncestryLeaves() OrderedCommitIteratorOption {
+	return func(oci *OrderedCommitIterator) {
+		oci.onlyAncestryLeaves = true
+	}
+}
+
 // NewOrderedCommitIterator returns an iterator over all commits in the given repository.
 // Ordering is based on the Commit ID value.
-func NewOrderedCommitIterator(ctx context.Context, database db.Database, repositoryID graveler.RepositoryID, prefetchSize int) (*OrderedCommitIterator, error) {
-	return &OrderedCommitIterator{
+func NewOrderedCommitIterator(ctx context.Context, database db.Database, repositoryID graveler.RepositoryID, prefetchSize int, opts ...OrderedCommitIteratorOption) *OrderedCommitIterator {
+	res := &OrderedCommitIterator{
 		ctx:          ctx,
 		db:           database,
 		repositoryID: repositoryID,
 		prefetchSize: prefetchSize,
 		buf:          make([]*graveler.CommitRecord, 0, prefetchSize),
-	}, nil
+	}
+	for _, opt := range opts {
+		opt(res)
+	}
+	return res
 }
 
 type OrderedCommitIterator struct {
-	ctx          context.Context
-	db           db.Database
-	repositoryID graveler.RepositoryID
-	prefetchSize int
-	buf          []*graveler.CommitRecord
-	err          error
-	value        *graveler.CommitRecord
-	offset       string
-	state        iteratorState
+	ctx                context.Context
+	db                 db.Database
+	repositoryID       graveler.RepositoryID
+	prefetchSize       int
+	buf                []*graveler.CommitRecord
+	err                error
+	value              *graveler.CommitRecord
+	offset             string
+	state              iteratorState
+	onlyAncestryLeaves bool
 }
 
 func (iter *OrderedCommitIterator) Next() bool {
@@ -55,23 +71,36 @@ func (iter *OrderedCommitIterator) maybeFetch() {
 	if len(iter.buf) > 0 {
 		return
 	}
+	psql := sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
+	q := psql.Select("id", "committer", "message", "creation_date", "meta_range_id", "parents", "metadata", "version").
+		From("graveler_commits").
+		Where(sq.Eq{"repository_id": iter.repositoryID})
 
-	var offsetCondition string
 	if iter.state == iteratorStateInit {
-		offsetCondition = iteratorOffsetCondition(true)
 		iter.state = iteratorStateQuerying
+		q = q.Where(sq.GtOrEq{"id": iter.offset})
 	} else {
-		offsetCondition = iteratorOffsetCondition(false)
+		q = q.Where(sq.Gt{"id": iter.offset})
 	}
 
 	var buf []*commitRecord
-	err := iter.db.Select(iter.ctx, &buf, `
-			SELECT id, committer, message, creation_date, meta_range_id, parents, metadata, version
-			FROM graveler_commits
-			WHERE repository_id = $1
-			AND id `+offsetCondition+` $2
-			ORDER BY id ASC
-			LIMIT $3`, iter.repositoryID, iter.offset, iter.prefetchSize)
+
+	if iter.onlyAncestryLeaves {
+		notExistsCondition := psql.Select("*").
+			Prefix("NOT EXISTS (").Suffix(")").
+			From("graveler_commits c2").
+			Where("c2.repository_id=graveler_commits.repository_id").
+			Where("first_parent(c2.parents, c2.version)=graveler_commits.id")
+		q = q.Where(notExistsCondition)
+	}
+	q = q.OrderBy("id ASC")
+	q = q.Limit(uint64(iter.prefetchSize))
+	query, args, err := q.ToSql()
+	if err != nil {
+		iter.err = err
+		return
+	}
+	err = iter.db.Select(iter.ctx, &buf, query, args...)
 	if err != nil {
 		iter.err = err
 		return

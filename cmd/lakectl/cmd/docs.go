@@ -20,7 +20,7 @@ has_children: false
 ---
 
 # Commands (CLI) Reference
-{: .no_toc }
+{:.no_toc}
 
 ## Table of contents
 {: .no_toc .text-delta }
@@ -58,7 +58,7 @@ func printOptions(buf *bytes.Buffer, cmd *cobra.Command) error {
 	flags := cmd.NonInheritedFlags()
 	flags.SetOutput(buf)
 	if flags.HasAvailableFlags() {
-		buf.WriteString("#### Options\n\n```\n")
+		buf.WriteString("#### Options\n{:.no_toc}\n\n```\n")
 		flags.PrintDefaults()
 		buf.WriteString("```\n\n")
 	}
@@ -84,7 +84,7 @@ func genMarkdownForCmd(cmd *cobra.Command, w io.Writer) error {
 
 	buf.WriteString(cmd.Short + "\n\n")
 	if len(cmd.Long) > 0 {
-		buf.WriteString("#### Synopsis\n\n")
+		buf.WriteString("#### Synopsis\n{:.no_toc}\n\n")
 		buf.WriteString(cmd.Long + "\n\n")
 	}
 
@@ -93,7 +93,7 @@ func genMarkdownForCmd(cmd *cobra.Command, w io.Writer) error {
 	}
 
 	if len(cmd.Example) > 0 {
-		buf.WriteString("#### Examples\n\n")
+		buf.WriteString("#### Examples\n{:.no_toc}\n\n")
 		buf.WriteString(fmt.Sprintf("```\n%s\n```\n\n", cmd.Example))
 	}
 

@@ -24,12 +24,12 @@ Branch Rules: {{ range $branch := .Branches }}
 
 var gcCmd = &cobra.Command{
 	Use:   "gc",
-	Short: "manage garbage collection configuration",
+	Short: "Manage garbage collection configuration",
 }
 
 var gcSetConfigCmd = &cobra.Command{
 	Use:   "set-config",
-	Short: "set the garbage collection configuration JSON",
+	Short: "Set garbage collection configuration JSON",
 	Long: `Sets the garbage collection configuration JSON.
 Example configuration file:
 {
@@ -79,7 +79,7 @@ Example configuration file:
 
 var gcGetConfigCmd = &cobra.Command{
 	Use:     "get-config",
-	Short:   "show the garbage collection configuration JSON",
+	Short:   "Show garbage collection configuration JSON",
 	Example: "lakectl gc get-config <repository uri>",
 	Args:    cobra.ExactArgs(gcSetConfigCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {

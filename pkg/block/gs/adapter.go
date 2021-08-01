@@ -11,6 +11,7 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/block/adapter"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"google.golang.org/api/iterator"
 )
@@ -113,7 +114,14 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 		return nil, err
 	}
 	r, err := a.client.Bucket(qualifiedKey.StorageNamespace).Object(qualifiedKey.Key).NewReader(ctx)
-	return r, err
+	if isErrNotFound(err) {
+		return nil, adapter.ErrDataNotFound
+	}
+	if err != nil {
+		a.log(ctx).WithError(err).Errorf("failed to get object bucket %s key %s", qualifiedKey.StorageNamespace, qualifiedKey.Key)
+		return nil, err
+	}
+	return r, nil
 }
 
 func (a *Adapter) Walk(ctx context.Context, walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
@@ -145,6 +153,10 @@ func (a *Adapter) Walk(ctx context.Context, walkOpt block.WalkOpts, walkFn block
 	return nil
 }
 
+func isErrNotFound(err error) bool {
+	return errors.Is(err, storage.ErrObjectNotExist)
+}
+
 func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, error) {
 	var err error
 	defer reportMetrics("Exists", time.Now(), nil, &err)
@@ -153,7 +165,7 @@ func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, er
 		return false, err
 	}
 	_, err = a.client.Bucket(qualifiedKey.StorageNamespace).Object(qualifiedKey.Key).Attrs(ctx)
-	if errors.Is(err, storage.ErrObjectNotExist) {
+	if isErrNotFound(err) {
 		return false, nil
 	}
 	if err != nil {
@@ -173,7 +185,11 @@ func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPo
 		Bucket(qualifiedKey.StorageNamespace).
 		Object(qualifiedKey.Key).
 		NewRangeReader(ctx, startPosition, endPosition-startPosition+1)
+	if isErrNotFound(err) {
+		return nil, adapter.ErrDataNotFound
+	}
 	if err != nil {
+		a.log(ctx).WithError(err).Errorf("failed to get object bucket %s key %s", qualifiedKey.StorageNamespace, qualifiedKey.Key)
 		return nil, err
 	}
 	return r, nil

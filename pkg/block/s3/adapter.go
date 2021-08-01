@@ -18,6 +18,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/block/adapter"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -238,6 +239,11 @@ func (a *Adapter) streamToS3(ctx context.Context, sdkRequest *request.Request, s
 	return etag, nil
 }
 
+func isErrNotFound(err error) bool {
+	var reqErr awserr.RequestFailure
+	return errors.As(err, &reqErr) && reqErr.StatusCode() == http.StatusNotFound
+}
+
 func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
 	var err error
 	var sizeBytes int64
@@ -252,6 +258,9 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 		Key:    aws.String(qualifiedKey.Key),
 	}
 	objectOutput, err := a.s3.GetObjectWithContext(ctx, &getObjectInput)
+	if isErrNotFound(err) {
+		return nil, adapter.ErrDataNotFound
+	}
 	if err != nil {
 		log.WithError(err).Errorf("failed to get S3 object bucket %s key %s", qualifiedKey.StorageNamespace, qualifiedKey.Key)
 		return nil, err
@@ -273,13 +282,10 @@ func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, er
 		Key:    aws.String(qualifiedKey.Key),
 	}
 	_, err = a.s3.HeadObjectWithContext(ctx, &input)
+	if isErrNotFound(err) {
+		return false, nil
+	}
 	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			if aerr.Code() == s3.ErrCodeNoSuchKey {
-				return false, nil
-			}
-		}
-
 		log.WithError(err).Errorf("failed to stat S3 object")
 		return false, err
 	}
@@ -301,6 +307,9 @@ func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPo
 		Range:  aws.String(fmt.Sprintf("bytes=%d-%d", startPosition, endPosition)),
 	}
 	objectOutput, err := a.s3.GetObjectWithContext(ctx, &getObjectInput)
+	if isErrNotFound(err) {
+		return nil, adapter.ErrDataNotFound
+	}
 	if err != nil {
 		log.WithError(err).WithFields(logging.Fields{
 			"start_position": startPosition,

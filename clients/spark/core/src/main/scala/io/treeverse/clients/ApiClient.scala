@@ -1,7 +1,12 @@
 package io.treeverse.clients
 
 import com.google.common.cache.CacheBuilder
-import io.treeverse.lakefs.clients.api
+import io.lakefs.clients.api
+import io.lakefs.clients.api.RetentionApi
+import io.lakefs.clients.api.model.{
+  GarbageCollectionPrepareRequest,
+  GarbageCollectionPrepareResponse
+}
 
 import java.net.URI
 import java.util.concurrent.TimeUnit
@@ -26,11 +31,12 @@ class ApiClient(apiUrl: String, accessKey: String, secretKey: String) {
   private val client = new api.ApiClient
   client.setUsername(accessKey)
   client.setPassword(secretKey)
-  client.setBasePath(apiUrl)
+  client.setBasePath(apiUrl.stripSuffix("/"))
   private val repositoriesApi = new api.RepositoriesApi(client)
   private val commitsApi = new api.CommitsApi(client)
   private val metadataApi = new api.MetadataApi(client)
   private val branchesApi = new api.BranchesApi(client)
+  private val retentionApi = new RetentionApi(client)
 
   private val storageNamespaceCache =
     CacheBuilder.newBuilder().expireAfterWrite(2, TimeUnit.MINUTES).build[String, String]()
@@ -50,13 +56,24 @@ class ApiClient(apiUrl: String, accessKey: String, secretKey: String) {
     )
   }
 
+  def prepareGarbageCollectionCommits(
+      repoName: String,
+      previousRunID: String
+  ): GarbageCollectionPrepareResponse = {
+    retentionApi.prepareGarbageCollectionCommits(
+      repoName,
+      new GarbageCollectionPrepareRequest().previousRunId(previousRunID)
+    )
+  }
+
   def getMetaRangeURL(repoName: String, commitID: String): String = {
     val commit = commitsApi.getCommit(repoName, commitID)
     val metaRangeID = commit.getMetaRangeId
-
-    val metaRange = metadataApi.getMetaRange(repoName, metaRangeID)
-    val location = metaRange.getLocation
-    URI.create(getStorageNamespace(repoName) + "/" + location).normalize().toString
+    if (metaRangeID != "") {
+      val metaRange = metadataApi.getMetaRange(repoName, metaRangeID)
+      val location = metaRange.getLocation
+      URI.create(getStorageNamespace(repoName) + "/").resolve(location).normalize().toString
+    } else ""
   }
 
   def getRangeURL(repoName: String, rangeID: String): String = {

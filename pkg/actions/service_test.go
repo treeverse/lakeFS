@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -38,7 +39,8 @@ func TestServiceRun(t *testing.T) {
 		},
 	}
 	const actionName = "test action"
-	const hookID = "hook_id"
+	const webhookID = "webhook_id"
+	const airflowHookID = "airflow_hook_id"
 	hookResponse := "OK"
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -49,46 +51,47 @@ func TestServiceRun(t *testing.T) {
 			return
 		}
 
-		queryParams := map[string][]string(r.URL.Query())
-		require.Len(t, queryParams["prefix"], 1)
-		require.Equal(t, "public/", queryParams["prefix"][0])
-		require.Len(t, queryParams["disallow"], 2)
-		require.Equal(t, "user_", queryParams["disallow"][0])
-		require.Equal(t, "private_", queryParams["disallow"][1])
+		if r.URL.Path == "/webhook" {
+			queryParams := map[string][]string(r.URL.Query())
+			require.Len(t, queryParams["prefix"], 1)
+			require.Equal(t, "public/", queryParams["prefix"][0])
+			require.Len(t, queryParams["disallow"], 2)
+			require.Equal(t, "user_", queryParams["disallow"][0])
+			require.Equal(t, "private_", queryParams["disallow"][1])
 
-		var eventInfo actions.WebhookEventInfo
-		err = json.Unmarshal(data, &eventInfo)
-		if err != nil {
-			t.Error("Failed to unmarshal webhook data", err)
+			var eventInfo actions.EventInfo
+			err = json.Unmarshal(data, &eventInfo)
+			if err != nil {
+				t.Error("Failed to unmarshal webhook data", err)
+				return
+			}
+
+			checkEvent(t, record, eventInfo, actionName, webhookID)
+		} else if r.URL.Path == "/airflow/api/v1/dags/some_dag_id/dagRuns" {
+			var req actions.DagRunReq
+			require.NoError(t, json.Unmarshal(data, &req))
+			require.True(t, strings.HasPrefix(req.DagRunID, "lakeFS_hook_"+airflowHookID))
+			require.Equal(t, req.Conf["some"], "additional_conf")
+
+			username, pass, ok := r.BasicAuth()
+			require.True(t, ok)
+			require.Equal(t, "some_username", username)
+			require.Equal(t, "some_password", pass)
+
+			rawEvent, ok := req.Conf["lakeFS_event"]
+			require.True(t, ok, "missing lakeFS event")
+			b, err := json.Marshal(rawEvent)
+			require.NoError(t, err)
+
+			var event actions.EventInfo
+			require.NoError(t, json.Unmarshal(b, &event))
+
+			checkEvent(t, record, event, actionName, airflowHookID)
+		} else {
+			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		if eventInfo.EventType != string(record.EventType) {
-			t.Errorf("Webhook post EventType=%s, expected=%s", eventInfo.EventType, record.EventType)
-		}
-		if eventInfo.ActionName != actionName {
-			t.Errorf("Webhook post ActionName=%s, expected=%s", eventInfo.ActionName, actionName)
-		}
-		if eventInfo.HookID != hookID {
-			t.Errorf("Webhook post HookID=%s, expected=%s", eventInfo.HookID, hookID)
-		}
-		if eventInfo.RepositoryID != record.RepositoryID.String() {
-			t.Errorf("Webhook post RepositoryID=%s, expected=%s", eventInfo.RepositoryID, record.RepositoryID)
-		}
-		if eventInfo.BranchID != record.BranchID.String() {
-			t.Errorf("Webhook post BranchID=%s, expected=%s", eventInfo.BranchID, record.BranchID)
-		}
-		if eventInfo.SourceRef != record.SourceRef.String() {
-			t.Errorf("Webhook post SourceRef=%s, expected=%s", eventInfo.SourceRef, record.SourceRef)
-		}
-		if eventInfo.CommitMessage != record.Commit.Message {
-			t.Errorf("Webhook post CommitMessage=%s, expected=%s", eventInfo.CommitMessage, record.Commit.Message)
-		}
-		if eventInfo.Committer != record.Commit.Committer {
-			t.Errorf("Webhook post Committer=%s, expected=%s", eventInfo.Committer, record.Commit.Committer)
-		}
-		if diff := deep.Equal(eventInfo.CommitMetadata, map[string]string(record.Commit.Metadata)); diff != nil {
-			t.Errorf("Webhook post Metadata diff=%s", diff)
-		}
+
 		_, _ = io.WriteString(w, hookResponse)
 	}))
 	defer ts.Close()
@@ -100,23 +103,41 @@ func TestServiceRun(t *testing.T) {
 on:
   pre-commit: {}
 hooks:
-  - id: ` + hookID + `
+  - id: ` + webhookID + `
     type: webhook
     properties:
-      url: "` + ts.URL + `/hook"
+      url: "` + ts.URL + `/webhook"
       timeout: 2m30s
       query_params:
         prefix: public/
         disallow: ["user_", "private_"]
+  - id: ` + airflowHookID + `
+    type: airflow
+    properties:
+      url: "` + ts.URL + `/airflow"
+      dag_id: "some_dag_id"
+      username: "some_username" 
+      password: "some_password"
+      dag_conf:
+        some: "additional_conf"
 `
 
 	ctx := context.Background()
 	testOutputWriter := mock.NewMockOutputWriter(ctrl)
-	expectedHookRunID := actions.NewHookRunID(0, 0)
+	expectedWebhookRunID := actions.NewHookRunID(0, 0)
+	expectedAirflowHookRunID := actions.NewHookRunID(0, 1)
 	var lastManifest *actions.RunManifest
 	var writerBytes []byte
 	testOutputWriter.EXPECT().
-		OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatHookOutputPath(record.RunID, expectedHookRunID), gomock.Any(), gomock.Any()).
+		OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatHookOutputPath(record.RunID, expectedWebhookRunID), gomock.Any(), gomock.Any()).
+		Return(nil).
+		DoAndReturn(func(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
+			var err error
+			writerBytes, err = ioutil.ReadAll(reader)
+			return err
+		})
+	testOutputWriter.EXPECT().
+		OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatHookOutputPath(record.RunID, expectedAirflowHookRunID), gomock.Any(), gomock.Any()).
 		Return(nil).
 		DoAndReturn(func(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
 			var err error
@@ -150,7 +171,8 @@ hooks:
 
 	// run actions
 	now := time.Now()
-	actionsService := actions.NewService(conn, testSource, testOutputWriter)
+	actionsService := actions.NewService(ctx, conn, testSource, testOutputWriter)
+	defer actionsService.Stop()
 
 	err := actionsService.Run(ctx, record)
 	if err != nil {
@@ -225,4 +247,35 @@ hooks:
 	}
 
 	require.Greater(t, bytes.Count(writerBytes, []byte("\n")), 10)
+}
+
+func checkEvent(t *testing.T, record graveler.HookRecord, event actions.EventInfo, actionName string, hookID string) {
+	t.Helper()
+	if event.EventType != string(record.EventType) {
+		t.Errorf("Webhook post EventType=%s, expected=%s", event.EventType, record.EventType)
+	}
+	if event.ActionName != actionName {
+		t.Errorf("Webhook post ActionName=%s, expected=%s", event.ActionName, actionName)
+	}
+	if event.HookID != hookID {
+		t.Errorf("Webhook post HookID=%s, expected=%s", event.HookID, hookID)
+	}
+	if event.RepositoryID != record.RepositoryID.String() {
+		t.Errorf("Webhook post RepositoryID=%s, expected=%s", event.RepositoryID, record.RepositoryID)
+	}
+	if event.BranchID != record.BranchID.String() {
+		t.Errorf("Webhook post BranchID=%s, expected=%s", event.BranchID, record.BranchID)
+	}
+	if event.SourceRef != record.SourceRef.String() {
+		t.Errorf("Webhook post SourceRef=%s, expected=%s", event.SourceRef, record.SourceRef)
+	}
+	if event.CommitMessage != record.Commit.Message {
+		t.Errorf("Webhook post CommitMessage=%s, expected=%s", event.CommitMessage, record.Commit.Message)
+	}
+	if event.Committer != record.Commit.Committer {
+		t.Errorf("Webhook post Committer=%s, expected=%s", event.Committer, record.Commit.Committer)
+	}
+	if diff := deep.Equal(event.CommitMetadata, map[string]string(record.Commit.Metadata)); diff != nil {
+		t.Errorf("Webhook post Metadata diff=%s", diff)
+	}
 }

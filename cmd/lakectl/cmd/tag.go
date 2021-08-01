@@ -10,13 +10,13 @@ const tagCreateRequiredArgs = 2
 // tagCmd represents the tag command
 var tagCmd = &cobra.Command{
 	Use:   "tag",
-	Short: "create and manage tags within a repository",
+	Short: "Create and manage tags within a repository",
 	Long:  `Create delete and list tags within a lakeFS repository`,
 }
 
 var tagListCmd = &cobra.Command{
 	Use:     "list <repository uri>",
-	Short:   "list tags in a repository",
+	Short:   "List tags in a repository",
 	Example: "lakectl tag list lakefs://<repository>",
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -62,7 +62,7 @@ var tagListCmd = &cobra.Command{
 
 var tagCreateCmd = &cobra.Command{
 	Use:   "create <tag uri> <commit ref>",
-	Short: "create a new tag in a repository",
+	Short: "Create a new tag in a repository",
 	Args:  cobra.ExactArgs(tagCreateRequiredArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		tagURI := MustParseRefURI("tag", args[0])
@@ -96,7 +96,7 @@ var tagCreateCmd = &cobra.Command{
 
 var tagDeleteCmd = &cobra.Command{
 	Use:   "delete <tag uri>",
-	Short: "delete a tag from a repository",
+	Short: "Delete a tag from a repository",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		confirmation, err := Confirm(cmd.Flags(), "Are you sure you want to delete tag")
@@ -115,7 +115,7 @@ var tagDeleteCmd = &cobra.Command{
 
 var tagShowCmd = &cobra.Command{
 	Use:   "show <tag uri>",
-	Short: "show tag's commit reference",
+	Short: "Show tag's commit reference",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()

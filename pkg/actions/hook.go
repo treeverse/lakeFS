@@ -12,6 +12,7 @@ type HookType string
 
 const (
 	HookTypeWebhook HookType = "webhook"
+	HookTypeAirflow HookType = "airflow"
 )
 
 // Hook is the abstraction of the basic user-configured runnable building-stone
@@ -21,8 +22,14 @@ type Hook interface {
 
 type NewHookFunc func(ActionHook, *Action) (Hook, error)
 
+type HookBase struct {
+	ID         string
+	ActionName string
+}
+
 var hooks = map[HookType]NewHookFunc{
 	HookTypeWebhook: NewWebhook,
+	HookTypeAirflow: NewAirflowHook,
 }
 
 var ErrUnknownHookType = errors.New("unknown hook type")
