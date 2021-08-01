@@ -97,7 +97,7 @@ public class FileSystemTracer extends FileSystem {
         lfsFileSystem = new LakeFSFileSystem();
         lfsFileSystem.initialize(name, conf);
         ObjectLocation loc = lfsFileSystem.pathToObjectLocation(new Path(name));
-        lfsPathPrefix = String.format("%s://%s/%s", loc.getScheme(), loc.getRepository(), loc.getRef());
+        lfsPathPrefix = ObjectLocation.formatPath(loc.getScheme(), loc.getRepository(), loc.getRef());
 
         String tracerWorkingDir = conf.get(TRACER_WORKING_DIR);
         if (tracerWorkingDir == null) {
@@ -202,12 +202,16 @@ public class FileSystemTracer extends FileSystem {
 
         if (useLakeFSFileSystemResults && lakeFSException != null) {
             LOG.trace("[create] exception by lakeFSFileSystem");
-            s3aStream.close();
+            if (s3aStream != null) {
+                s3aStream.close();
+            }
             throw lakeFSException;
         }
         if (!useLakeFSFileSystemResults && s3aException != null) {
             LOG.trace("[create] exception by S3AFileSystem");
-            lakeFSStream.close();
+            if (lakeFSStream != null) {
+                lakeFSStream.close();
+            }
             throw s3aException;
         }
 
@@ -247,7 +251,7 @@ public class FileSystemTracer extends FileSystem {
             s3aRes = s3AFileSystem.rename(translateLakeFSPathToS3APath(src), translateLakeFSPathToS3APath(dst));
         } catch (IOException e) {
             s3aException = e;
-            LOG.error("[rename] Can't  rename {} to {} with S3AFileSystem, exception {}", src, dst, e.getMessage());
+            LOG.error("[rename] Can't rename {} to {} with S3AFileSystem, exception {}", src, dst, e.getMessage());
         }
 
         if (useLakeFSFileSystemResults && lakeFSException != null) {
@@ -346,11 +350,11 @@ public class FileSystemTracer extends FileSystem {
     }
 
     @Override
-    public void setWorkingDirectory(Path new_dir) {
-        LOG.trace("setWorkingDirectory(new_dir {})", new_dir);
+    public void setWorkingDirectory(Path newDir) {
+        LOG.trace("setWorkingDirectory(new_dir {})", newDir);
 
-        lfsFileSystem.setWorkingDirectory(new_dir);
-        s3AFileSystem.setWorkingDirectory(translateLakeFSPathToS3APath(new_dir));
+        lfsFileSystem.setWorkingDirectory(newDir);
+        s3AFileSystem.setWorkingDirectory(translateLakeFSPathToS3APath(newDir));
     }
 
     @Override
@@ -458,32 +462,52 @@ public class FileSystemTracer extends FileSystem {
 
         @Override
         public void write(int b) throws IOException {
-            lakeFSStream.write(b);
-            s3aStream.write(b);
+            if (lakeFSStream != null) {
+                lakeFSStream.write(b);
+            }
+            if (s3aStream != null) {
+                s3aStream.write(b);
+            }
         }
 
         @Override
         public void write(@NotNull byte[] b) throws IOException {
-            lakeFSStream.write(b);
-            s3aStream.write(b);
+            if (lakeFSStream != null) {
+                lakeFSStream.write(b);
+            }
+            if (s3aStream != null) {
+                s3aStream.write(b);
+            }
         }
 
         @Override
         public void write(@NotNull byte[] b, int off, int len) throws IOException {
-            lakeFSStream.write(b, off, len);
-            s3aStream.write(b, off, len);
+            if (lakeFSStream != null) {
+                lakeFSStream.write(b, off, len);
+            }
+            if (s3aStream != null) {
+                s3aStream.write(b, off, len);
+            }
         }
 
         @Override
         public void flush() throws IOException {
-            lakeFSStream.flush();
-            s3aStream.flush();
+            if (lakeFSStream != null) {
+                lakeFSStream.flush();
+            }
+            if (s3aStream != null) {
+                s3aStream.flush();
+            }
         }
 
         @Override
         public void close() throws IOException {
-            lakeFSStream.close();
-            s3aStream.close();
+            if (lakeFSStream != null) {
+                lakeFSStream.close();
+            }
+            if (s3aStream != null) {
+                s3aStream.close();
+            }
         }
     }
 }
