@@ -52,25 +52,16 @@ To export to S3:
 
     <profiles>
         <profile>
-            <id>contract-tests-off</id>
-            <activation>
-                <file>
-                    <missing>src/test/resources/auth-keys.xml</missing>
-                </file>
-            </activation>
+            <id>contract-tests</id>
+            <properties>
+                <exclude.tests>nothing-to-exclude</exclude.tests>
+            </properties>
             <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <version>2.12.4</version>
-                        <configuration>
-                            <excludes>
-                                <exclude>io/lakefs/contract/**</exclude>
-                            </excludes>
-                        </configuration>
-                    </plugin>
-                </plugins>
+                <resources>
+                    <resource>
+                        <directory>${contract_tests.resource_dir}</directory>
+                    </resource>
+                </resources>
             </build>
         </profile>
         <profile>
@@ -164,11 +155,22 @@ To export to S3:
     </profiles>
 
     <properties>
+        <exclude.tests>io/lakefs/contract/**</exclude.tests>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <name-suffix/>          <!-- Set via profile to rename JAR -->
     </properties>
     <build>
         <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>2.12.4</version>
+                    <configuration>
+                        <excludes>
+                            <exclude>${exclude.tests}</exclude>
+                        </excludes>
+                    </configuration>
+                </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
