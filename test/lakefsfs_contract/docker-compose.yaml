@@ -55,7 +55,7 @@ services:
       - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT
       - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY
     env_file:
-        - tester.env
+      - tester.env
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
     extra_hosts:
       - "test-bucket.s3.local.lakefs.io:10.5.0.54"
