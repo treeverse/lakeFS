@@ -55,6 +55,7 @@ To export to S3:
             <id>contract-tests</id>
             <properties>
                 <exclude.tests>nothing-to-exclude</exclude.tests>
+                <contract_tests.resource_dir>../../test/lakefsfs_contract/</contract_tests.resource_dir>
             </properties>
             <build>
                 <resources>
@@ -161,16 +162,16 @@ To export to S3:
     </properties>
     <build>
         <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <version>2.12.4</version>
-                    <configuration>
-                        <excludes>
-                            <exclude>${exclude.tests}</exclude>
-                        </excludes>
-                    </configuration>
-                </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.12.4</version>
+                <configuration>
+                    <excludes>
+                        <exclude>${exclude.tests}</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>

@@ -204,7 +204,7 @@ jobs:
           REPOSITORY: lakefsfs-contract-test
       - name: Build and test hadoopfs
         working-directory: clients/hadoopfs
-        run: mvn --quiet --batch-mode --update-snapshots -P'!treeverse-signing',contract-tests  -Dcontract_tests.resource_dir=../../test/lakefsfs_contract verify
+        run: mvn --quiet --batch-mode --update-snapshots -P'!treeverse-signing',contract-tests verify
   spark2:
     name: Test lakeFS with Spark 2.x
     needs: deploy-image
