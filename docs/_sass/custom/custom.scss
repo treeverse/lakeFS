@@ -15,6 +15,11 @@
 	src: local(GalanoGrotesque-Bold),
 		url('../fonts/Rene Bieder - Galano Grotesque Bold.otf');
 }
+@font-face {
+	font-family: Rene-Bieder-Galano-Grotesque-Medium;
+	src: local(Rene-Bieder-Galano-Grotesque-Medium),
+		url('../fonts/Rene Bieder - Galano Grotesque Medium.otf');
+}
 
 $white: #ffffff;
 $pale-grey: #f1f9f9;
@@ -33,6 +38,13 @@ $white-two: #f8f8f8;
 $charcoal: #2f3433;
 $note: #fff3e5;
 $note-border: #f3a342;
+$whitegrey:#f5f7f9;
+$lightblack:#6e7171;
+$darkgrey:#949494;
+$darkblue:#576489;
+$darkblack:#575e65;
+$lightgreen:#d8faf1;
+$bglinear:linear-gradient(#000 0%, #000 100%);
 
 // General
 html {
@@ -63,51 +75,98 @@ body {
 			max-width: 25%;
 			position: relative;
 			height: auto;
-			background-color: $white-two;
+			background-color: $whitegrey;
 		}
 	}
 
 	a {
 		color: $teal-green;
 	}
+	p, li{
+		font-family: Rene-Bieder-Galano-Grotesque-Medium;
+	    font-size: 14px;
+	}
 
 	h1 {
 		margin-top: 40px !important;
-		font-family: GalanoGrotesque;
-		font-size: 42px;
+		font-family: Rene-Bieder-Galano-Grotesque-Medium;
+		font-size: 42px!important;
 		color: $black;
 	}
 	h2 {
 		margin-top: 40px !important;
-		font-size: 28px;
+		font-size: 28px!important;
+		font-family: Rene-Bieder-Galano-Grotesque-Medium;
 		&#table-of-contents {
-			font-family: GalanoGrotesque;
-			color: $black;
-			font-size: 16px !important;
+			font-family: Rene-Bieder-Galano-Grotesque-Medium;
+			color: $white;
+			font-size: 14px !important;
 		}
 	}
 
 	h3 {
 		margin-top: 25px !important;
-		font-size: 22px;
+		font-size: 18px!important;
 		font-weight: 600;
-		font-family: GalanoGrotesque;
+		font-family: GalanoGrotesque-Bold;
 	}
 	h4,
 	.text-delta {
 		text-transform: none;
+		width: 100%;
+	    max-width: 264px;
+	    display: block;
+	    background-color: $teal-green;
+	    color: $white;
+	    border-radius: 2px 2px 0 0;
+	    font-size: 14px!important;
+	    padding: 10px 15px 8px 15px;
+	}
+	.text-delta + ul{
+		background-color: $whitegrey;
+	    width: 100%;
+	    max-width: 264px;
+	    border: none;
+	    margin-top: 0;
+	    border-radius: 0;
+	    position: relative;
+	    top: -3px;
+	    padding: 15px 25px 15px 25px;
+	    li{
+	    	text-decoration: underline;
+	    	&::before {
+				content: none;
+			}
+			a:hover{
+				background-image: none;
+			}
+			a{
+				white-space: normal;
+			}
+	    }
 	}
 	#markdown-toc {
-		border-left: solid 2px $border-grey;
+		/* border-left: solid 2px $border-grey; */
+		background-color: $whitegrey;
+	    width: 100%;
+	    max-width: 264px;
+	    border: none;
+	    margin-top: 0;
+	    border-radius: 0;
+	    position: relative;
+	    top: -3px;
+	    padding: 15px 25px 15px 25px;
 		li {
+			text-decoration: underline;
 			&::before {
 				display: none;
 			}
 			a {
-				color: $black;
-				font-size: 16px;
-				padding: 8px 0;
+				color: $teal-green;
+				font-size: 14px;
+				/* padding: 8px 0; */
 				background-image: none;
+				white-space: normal;
 				&:hover {
 					background-image: none;
 					color: $teal-green;
@@ -126,7 +185,9 @@ body {
 	}
 
 	pre code {
-		background-color: initial;
+		/* background-color: initial; */
+		background-color: #575e65;
+    	border: 0px solid #d8faf1;
 	}
 
 	.btn {
@@ -144,23 +205,24 @@ body {
 		}
 	}
 	.note {
-		background-color: $note;
-		border-left: 4px solid $note-border;
-		border-radius: 2px;
+		background-color: $whitegrey;
+		border-left: 4px solid $aqua-marine;
+		border-radius: 0px 2px 2px 0px;
 		padding: 8px 20px;
 	}
 	.note-info {
-		background-color: $info-blue;
-		border-left: 4px solid $info-blue-highlight;
-		color: $white;
+		border-left: none;
+		color: $black;
+	    background-color: $aqua-marine;
 
 		a {
-			color: $white-two;
+    		background-image: $bglinear;
+			color: $black;
 			font-weight: 500;
 		}
 
 		code {
-			color: $battleship-grey;
+			color: $black;
 		}
 	}
 
@@ -308,7 +370,7 @@ body {
 			.aux-nav-list-item {
 				padding: 0;
 				&:hover {
-					background-color: #ededed;
+					background-color: $white;
 				}
 				&.active {
 					&:hover {
@@ -319,7 +381,7 @@ body {
 							padding-right: 0;
 							padding-left: 0;
 							&:hover {
-								background-color: #ededed;
+								background-color: $white;
 							}
 						}
 					}
@@ -344,15 +406,20 @@ body {
 
 				a.nav-list-link {
 					padding: 12px 40px 12px calc(100% - 290px);
-					font-size: 16px !important;
-					color: $black;
+					font-size: 14px !important;
+					color: $darkblue;
+					font-family: Rene-Bieder-Galano-Grotesque-Medium;
 					letter-spacing: 1.1px;
 					&.active,
 					&:hover {
-						background-color: #ededed;
+						background-color: $white;
 						background-image: none;
-						font-family: GalanoGrotesque;
+						
 					}
+				}
+				a.nav-list-link.active{
+					font-family: GalanoGrotesque-Bold!important;
+    				color: $teal-green !important;
 				}
 				.nav-list-expander {
 					right: 40px;
@@ -375,7 +442,7 @@ body {
 					a.nav-list-link,
 					a.aux-nav-list-item {
 						margin-left: 20px;
-						font-size: 14px !important;
+						font-size: 13px !important;
 						letter-spacing: 0.05px;
 					}
 					.nav-list,
@@ -401,22 +468,23 @@ body {
 			z-index: 1;
 
 			.search-input {
-				background-color: $white-two;
+				background-color: $whitegrey;
 				border: 1px solid $border-grey;
 				border-radius: 4px;
-				color: $battleship-grey;
+				color: $lightblack;
+				font-family: Rene-Bieder-Galano-Grotesque-Medium;
 				&:focus,
 				&:active {
-					background-color: $white;
-					color: black;
+					background-color: $whitegrey;
+					color: $lightblack;
 				}
 				.search-icon {
-					color: $battleship-grey;
+					color: $darkgrey;
 				}
 			}
 
 			.search-input:focus + .search-label .search-icon {
-				color: $teal-green;
+				color: $darkgrey;
 			}
 		}
 		.mobile-menu {
@@ -758,7 +826,7 @@ footer {
 .language-sh.highlighter-rouge pre.highlight::before,
 .language-bash.highlighter-rouge pre.highlight::before{
 	content: "$ ";
-	color: $teal-green;
+	color: $lightgreen;
 	font-weight: 400;
 	font-family: monospace;
 	font-size: 0.75em;
@@ -798,4 +866,22 @@ th, td {
 }
 .tabs .ui-tabs-nav .ui-state-active a {
 	color: $teal-green;
+}
+/*overridden*/
+div.highlighter-rouge{
+  border-radius: 4px;
+  background-color: $darkblack!important;
+}
+
+.highlighter-rouge .highlight{
+  background-color: $darkblack;
+}
+.highlighter-rouge .highlight:before,.highlighter-rouge .highlight code, .highlighter-rouge .highlight .nt,
+.highlighter-rouge .highlight .s1, .copy-code-button, .highlight .nb, .highlight .na, .highlight .pi, .highlight .c1,.highlight  .nv
+, .highlight .o, .highlight  .se, .highlight .si , .highlight .nl, .highlight .k, .highlight .py, .highlight .nf,.highlight .n, .highlight .kt
+, .highlight .nn, .highlight .nc, .highlight .sh , .highlight .no, .highlight .p, .highlight .kn, .highlight .ow{
+  color: $light-blue-grey!important;
+}
+.highlighter-rouge .highlight code .c, .highlight code .s, .highlight .s2, .highlight .m{
+  color: $lightgreen!important;
 }
