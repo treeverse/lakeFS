@@ -166,7 +166,45 @@ jobs:
             echo "Image doesn't exist"
             docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}
           fi
-
+  hadoopfs-tests:
+    name: Test lakeFS Hadoop FileSystem
+    needs: deploy-image
+    runs-on: ubuntu-20.04
+    env:
+      TAG: ${{ needs.deploy-image.outputs.tag }}
+      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+      - name: Check-out code
+        uses: actions/checkout@v2
+      - name: Start lakeFS
+        env:
+          LAKEFS_STATS_ENABLED: "false"
+          LAKEFS_BLOCKSTORE_TYPE: s3
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: minio
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: minio123
+          LAKEFS_BLOCKSTORE_S3_ENDPOINT: "http://s3.local.lakefs.io:9000"
+        working-directory: test/lakefsfs_contract
+        run: docker-compose up -d
+      - name: Setup contract tests
+        working-directory: test/lakefsfs_contract
+        run: ./setup-test.sh
+        env:
+          AWS_ACCESS_KEY_ID: minio
+          AWS_SECRET_ACCESS_KEY: minio123
+          STORAGE_NAMESPACE: s3://test-bucket/data
+          REPOSITORY: lakefsfs-contract-test
+      - name: Build and test hadoopfs
+        working-directory: clients/hadoopfs
+        run: mvn --quiet --batch-mode --update-snapshots -P'!treeverse-signing',contract-tests verify
   spark2:
     name: Test lakeFS with Spark 2.x
     needs: deploy-image
