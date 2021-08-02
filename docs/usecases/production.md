@@ -58,3 +58,6 @@ The same logic can apply if the data is ingested in streaming, using standard fo
 
 <img src="../assets/img/branching_8.png" alt="branching_8" width="500px"/>
 
+## Case Study: Winward
+See how Winward is using lakeFS’ isolation and atomic commits to [achieve consistency](https://medium.com/data-rocks/how-windward-leverages-lakefs-for-resilient-data-ingestion-52b838da2cb8) on top of S3.
+
