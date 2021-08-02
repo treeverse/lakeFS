@@ -82,17 +82,6 @@ class ObjectLocation {
                 !this.path.isEmpty();
     }
 
-    static String trimLeadingSlash(String s) {
-        if (s.startsWith(Constants.SEPARATOR)) {
-            return s.substring(1);
-        }
-        return s;
-    }
-
-    static String addLeadingSlash(String s) {
-        return s.isEmpty() || s.endsWith(Constants.SEPARATOR) ? s : s + Constants.SEPARATOR;
-    }
-
     @Override
     public boolean equals(Object obj) {
         if (obj == this) {
@@ -129,6 +118,6 @@ class ObjectLocation {
     }
 
     public ObjectLocation toDirectory() {
-        return new ObjectLocation(scheme, repository, ref, addLeadingSlash(path));
+        return new ObjectLocation(scheme, repository, ref, StringUtils.addLeadingSlash(path));
     }
 }
