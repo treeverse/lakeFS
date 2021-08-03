@@ -2,9 +2,7 @@ package db
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"net"
 	"time"
 
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -113,14 +111,13 @@ func tryConnectConfig(ctx context.Context, config *pgxpool.Config, log logging.L
 		if err == nil {
 			return pool, nil
 		}
-		netError := &net.OpError{}
-		if !(errors.As(err, &netError) && netError.Op == "dial") {
-			return nil, err
+		if !IsDialError(err) {
+			return nil, fmt.Errorf("error while connecting to DB: %w", err)
 		}
 		if a.More() {
-			log.WithError(err).Info("could not open DB: Trying again")
+			log.WithError(err).Info("could not connect to DB: Trying again")
 		}
 	}
 
-	return nil, fmt.Errorf("could not open DB: %w", err)
+	return nil, fmt.Errorf("could not connect to DB: %w", err)
 }

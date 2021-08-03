@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
 	"os"
 	"time"
 
@@ -126,16 +125,15 @@ func tryNewWithSourceInstance(sourceName string, sourceInstance source.Driver, d
 		if err == nil {
 			return m, nil
 		}
-		netError := &net.OpError{}
-		if !(errors.As(err, &netError) && netError.Op == "dial") {
-			return nil, err
+		if !IsDialError(err) {
+			return nil, fmt.Errorf("error while connecting to DB: %w", err)
 		}
 		if a.More() {
-			logging.Default().WithError(err).Error("could not open DB: Trying again")
+			logging.Default().WithError(err).Info("could not connect to DB: Trying again")
 		}
 	}
 
-	return nil, fmt.Errorf("could not open DB: %w", err)
+	return nil, fmt.Errorf("could not connect to DB: %w", err)
 }
 
 func closeMigrate(m *migrate.Migrate) {
