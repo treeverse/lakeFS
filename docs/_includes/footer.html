@@ -28,8 +28,8 @@
                     <li class="aux-nav-list-item">
                         <a href="{{ link.last }}" class="site-button" {% if site.aux_links_new_tab %} target="_blank"
                             rel="noopener noreferrer" {% endif %}>
-                            <img src="{{ '/' | absolute_url }}assets/icons/{{ link.first }}.svg" class="no-hover" />
-                            <img src="{{ '/' | absolute_url }}assets/icons/{{ link.first }}-hover.svg" class="hover" />
+                            <img src="{{ site.baseurl }}/assets/icons/{{ link.first }}.svg" class="no-hover" />
+                            <img src="{{ site.baseurl }}/assets/icons/{{ link.first }}-hover.svg" class="hover" />
                         </a>
                     </li>
                     {% endfor %}

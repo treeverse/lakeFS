@@ -20,11 +20,11 @@ Note: If you already have lakeFS credentials, skip to step 2 and login.
 
 1. Follow the steps to create an initial administrator user. Save the credentials you've received somewhere safe, you won't be able to see them again!
 
-   ![Setup](../assets/img/setup_done.png)
+   ![Setup]({{ site.baseurl }}/assets/img/setup_done.png)
 
 2. Follow the link and go to the login screen
 
-   ![Login Screen](../assets/img/login.png)
+   ![Login Screen]({{ site.baseurl }}/assets/img/login.png)
 
 3. Use the credentials from step #1 to login as an administrator
    
@@ -32,7 +32,7 @@ Note: If you already have lakeFS credentials, skip to step 2 and login.
 
 1. Click `Create Repository`
     
-   ![Create Repository](../assets/img/create_repo_s3.png)
+   ![Create Repository]({{ site.baseurl }}/assets/img/create_repo_s3.png)
 
    Under `Storage Namespace`, be sure to set the path to the bucket you've configured in a [previous step](./storage/index.md).
    
