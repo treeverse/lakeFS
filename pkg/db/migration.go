@@ -119,9 +119,10 @@ func getMigrate(params params.Database) (*migrate.Migrate, error) {
 
 func tryNewWithSourceInstance(sourceName string, sourceInstance source.Driver, databaseURL string) (*migrate.Migrate, error) {
 	strategy := params.DatabaseRetryStrategy
+	var m *migrate.Migrate
 	var err error
 	for a := retry.Start(strategy, nil); a.Next(); {
-		m, err := migrate.NewWithSourceInstance(sourceName, sourceInstance, databaseURL)
+		m, err = migrate.NewWithSourceInstance(sourceName, sourceInstance, databaseURL)
 		if err == nil {
 			return m, nil
 		}
