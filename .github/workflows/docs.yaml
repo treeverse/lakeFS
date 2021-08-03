@@ -34,8 +34,8 @@ jobs:
           API_TOKEN_GITHUB: ${{ secrets.PERSONAL_TOKEN }}
         with:
           source-directory: docs/_site/
-          destination-github-username: nopcoder
-          destination-repository-name: treeverse/docs-lakeFS
+          destination-github-username: treeverse
+          destination-repository-name: docs-lakeFS
           user-email: barak.amar@treeverse.io
           target-branch: main
 
