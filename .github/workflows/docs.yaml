@@ -24,6 +24,7 @@ jobs:
         #if: github.ref == 'refs/heads/master'
         working-directory: docs
         run: |
+          gem install jekyll bundler
           bundle install
           bundle exec jekyll build --config _config.yml,_config.master.yml -d _site/ -b /
 
