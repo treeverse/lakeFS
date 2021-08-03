@@ -28,17 +28,6 @@ jobs:
             jekyll_src: docs
             build_only: true
     
-      - name: Copy
-        uses: andstor/copycat-action@v3
-        with:
-            personal_token: ${{ secrets.PERSONAL_TOKEN }}
-            src_path: docs/_site/
-            src 
-            dst_path: /
-            dst_owner: nopcoder
-            dst_repo_name: docs-lakeFS
-            dst_branch:
-
       - name: Push documentation
         uses: cpina/github-action-push-to-another-repository@main
         env:
