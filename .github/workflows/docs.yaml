@@ -26,6 +26,7 @@ jobs:
         with:
           jekyll_build_options: "--config _config.yml,_config.master.yml"
           jekyll_src: docs
+          target_path: /
           build_only: true
     
       - name: Push documentation
