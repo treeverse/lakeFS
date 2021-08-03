@@ -2,7 +2,7 @@
 # Changelog
 
 ## Unreleased - XXXX-XX-XX
-
+ - Fix blank screen bug in UI (#1908)
 
 ## v0.47.0 - 2021-07-28
 

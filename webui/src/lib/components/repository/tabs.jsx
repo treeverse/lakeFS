@@ -10,12 +10,9 @@ import {useRouter} from "../../hooks/router";
 
 
 export const RepositoryNavTabs = ({ active }) => {
-
-    const { repo, reference, loading, error } = useRefs();
-
+    const { reference } = useRefs();
     const router = useRouter();
-
-    const repoId = (loading && !error) ? '' : repo.id;
+    const { repoId } = router.params;
 
     const withRefContext = (url) => {
         const params = new URLSearchParams();
