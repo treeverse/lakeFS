@@ -6,6 +6,7 @@ on:
     branches:
       - master
   pull_request:
+  workflow_dispatch:
 jobs:
   lakefs-spark:
     name: lakeFS Spark metadata client
@@ -24,4 +25,6 @@ jobs:
       - name: package
         working-directory: clients/spark
         run: sbt package
-
+      - name: Publish artifacts
+        if: github.event == 'workflow_dispatch'
+        run: make publish-scala
