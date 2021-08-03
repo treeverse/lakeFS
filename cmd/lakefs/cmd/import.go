@@ -35,6 +35,8 @@ const (
 	CommitterName        = "lakefs"
 )
 
+var errInvalidKeyValueFormat = fmt.Errorf("invalid key/value pair - should be separated by \"=\"")
+
 var importCmd = &cobra.Command{
 	Use:   "import <repository uri> --manifest <s3 uri to manifest.json>",
 	Short: "Import data from S3 to a lakeFS repository",
@@ -58,6 +60,23 @@ var importBaseCmd = &cobra.Command{
 	},
 }
 
+func getKV(cmd *cobra.Command, name string) (map[string]string, error) {
+	kvList, err := cmd.Flags().GetStringSlice(name)
+	if err != nil {
+		return nil, err
+	}
+	const keyValueParts = 2
+	kv := make(map[string]string)
+	for _, pair := range kvList {
+		parts := strings.SplitN(pair, "=", keyValueParts)
+		if len(parts) != keyValueParts {
+			return nil, errInvalidKeyValueFormat
+		}
+		kv[parts[0]] = parts[1]
+	}
+	return kv, nil
+}
+
 func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	flags := cmd.Flags()
 	dryRun, _ := flags.GetBool(DryRunFlagName)
@@ -66,6 +85,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	hideProgress, _ := flags.GetBool(HideProgressFlagName)
 	prefixFile, _ := flags.GetString(PrefixesFileFlagName)
 	baseCommit, _ := flags.GetString(BaseCommitFlagName)
+	kvPairs, _ := getKV(cmd, "meta")
 
 	ctx := cmd.Context()
 	conf, err := config.NewConfig()
@@ -171,6 +191,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 		Store:              c.Store,
 		KeyPrefixes:        prefixes,
 		BaseCommit:         graveler.CommitID(baseCommit),
+		CommitMetadata:     catalog.Metadata(kvPairs),
 	}
 
 	importer, err := onboard.CreateImporter(ctx, logger, importConfig)
@@ -253,6 +274,7 @@ func init() {
 	importCmd.Flags().Bool(WithMergeFlagName, false, "Merge imported data to the repository's main branch")
 	importCmd.Flags().Bool(HideProgressFlagName, false, hideMsg)
 	importCmd.Flags().StringP(PrefixesFileFlagName, "p", "", prefixesMsg)
+	importCmd.Flags().StringSlice("meta", []string{}, "key value pair in the form of key=value")
 
 	rootCmd.AddCommand(importBaseCmd)
 	importBaseCmd.Flags().StringP(ManifestURLFlagName, "m", "", manifestFlagMsg)
@@ -260,5 +282,7 @@ func init() {
 	importBaseCmd.Flags().Bool(HideProgressFlagName, false, hideMsg)
 	importBaseCmd.Flags().StringP(PrefixesFileFlagName, "p", "", prefixesMsg)
 	importBaseCmd.Flags().StringP(BaseCommitFlagName, "b", "", "Commit to apply to apply the import on top of")
+	importBaseCmd.Flags().StringSlice("meta", []string{}, "key value pair in the form of key=value")
+
 	_ = importCmd.MarkFlagRequired(BaseCommitFlagName)
 }

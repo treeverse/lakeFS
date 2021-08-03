@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/catalog"
+
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/cmdutils"
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -36,7 +38,8 @@ type Config struct {
 	KeyPrefixes        []string
 
 	// BaseCommit is available only for import-plumbing command
-	BaseCommit graveler.CommitID
+	BaseCommit     graveler.CommitID
+	CommitMetadata catalog.Metadata
 }
 
 type Stats struct {

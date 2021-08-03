@@ -22,7 +22,8 @@ type RepoActions interface {
 
 // CatalogRepoActions is in-charge of importing data to lakeFS with Rocks implementation
 type CatalogRepoActions struct {
-	committer string
+	committer      string
+	commitMetadata catalog.Metadata
 
 	defaultBranchID graveler.BranchID
 	repoID          graveler.RepositoryID
@@ -60,6 +61,7 @@ func NewCatalogRepoActions(config *Config, logger logging.Logger) *CatalogRepoAc
 		repoID:          config.RepositoryID,
 		defaultBranchID: config.DefaultBranchID,
 		committer:       config.CommitUsername,
+		commitMetadata:  config.CommitMetadata,
 		logger:          logger,
 		prefixes:        config.KeyPrefixes,
 		progress:        cmdutils.NewActiveProgress("Objects imported", cmdutils.Spinner),
@@ -150,6 +152,9 @@ func (c *CatalogRepoActions) Commit(ctx context.Context, commitMsg string, metad
 	commit.Message = commitMsg
 	commit.MetaRangeID = *c.createdMetaRangeID
 	commit.Metadata = graveler.Metadata(metadata)
+	for k, v := range c.commitMetadata {
+		commit.Metadata[k] = v
+	}
 	if c.previousCommitID != "" {
 		previousCommit, err := c.entryCatalog.GetCommit(ctx, c.repoID, c.previousCommitID)
 		if err != nil {
