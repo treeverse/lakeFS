@@ -22,8 +22,8 @@ jobs:
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1.79.0
-        working-directory: docs
         with:
+          working-directory: docs
           ruby-version: 2.6
           bundler-cache: true # runs 'bundle install' and caches installed gems automatically
 
