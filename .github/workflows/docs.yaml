@@ -21,19 +21,18 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Build
-        uses: helaili/jekyll-action@v2
         #if: github.ref == 'refs/heads/master'
-        with:
-          jekyll_build_options: "--config _config.yml,_config.master.yml -b /"
-          jekyll_src: docs
-          build_only: true
-    
-      - name: Push documentation
+        working-directory: docs
+        run: |
+          bundle install
+          bundle exec jekyll build --config _config.yml,_config.master.yml -d _site/ -b /
+
+      - name: Push
         uses: cpina/github-action-push-to-another-repository@main
         env:
           API_TOKEN_GITHUB: ${{ secrets.PERSONAL_TOKEN }}
         with:
-          source-directory: jekyll_build
+          source-directory: docs/_site
           destination-github-username: treeverse
           destination-repository-name: docs-lakeFS
           user-email: barak.amar@treeverse.io
