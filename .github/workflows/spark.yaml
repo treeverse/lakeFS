@@ -29,14 +29,14 @@ jobs:
         if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' # TODO delete after ||
         run: |
           mkdir -p ~/.sbt
-          echo realm=Amazon S3\
-          host=treeverse-clients-us-east.s3.amazonaws.com\
-          user=${AWS_ACCESS_KEY_ID}\
-          password=${AWS_SECRET_ACCESS_KEY} > ~/.sbt/credentials
-          echo realm=Sonatype Nexus Repository Manager\
-          host=s01.oss.sonatype.org\
-          user=${OSSRH_USERNAME}\
-          password=${OSSRH_TOKEN} > ~/.sbt/sonatype_credentials
+          echo "realm=Amazon S3" > ~/.sbt/credentials
+          echo "host=treeverse-clients-us-east.s3.amazonaws.com" >> ~/.sbt/credentials
+          echo "user=${AWS_ACCESS_KEY_ID}"  >> ~/.sbt/credentials
+          echo "password=${AWS_SECRET_ACCESS_KEY}"  >> ~/.sbt/credentials
+          echo "realm=Sonatype Nexus Repository Manager" > ~/.sbt/sonatype_credentials
+          echo "host=s01.oss.sonatype.org" >> ~/.sbt/sonatype_credentials
+          echo "user=${OSSRH_USERNAME}" >> ~/.sbt/sonatype_credentials
+          echo "password=${OSSRH_TOKEN}" >> ~/.sbt/sonatype_credentials
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
