@@ -33,10 +33,22 @@ jobs:
         with:
             personal_token: ${{ secrets.PERSONAL_TOKEN }}
             src_path: docs/_site/
+            src 
             dst_path: /
             dst_owner: nopcoder
             dst_repo_name: docs-lakeFS
+            dst_branch:
 
+      - name: Push documentation
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.PERSONAL_TOKEN }}
+          with:
+            source-directory: docs/_site/
+            destination-github-username: nopcoder
+            destination-repository-name: docs-lakeFS
+            user-email: barak.amar@treeverse.io
+            target-branch: main
             # build specific version exclude version.json
       #- name: Build specific version
         #uses: helaili/jekyll-build@v2
