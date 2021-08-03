@@ -24,9 +24,9 @@ jobs:
         uses: helaili/jekyll-build@v2
         #if: github.ref == 'refs/heads/master'
         with:
-            jekyll_build_options: "--config _config.yml,_config.master.yml"
-            jekyll_src: docs
-            build_only: true
+          jekyll_build_options: "--config _config.yml,_config.master.yml"
+          jekyll_src: docs
+          build_only: true
     
       - name: Push documentation
         uses: cpina/github-action-push-to-another-repository@main
