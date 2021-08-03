@@ -20,13 +20,16 @@ jobs:
       - name: Check-out
         uses: actions/checkout@v2
 
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1.79.0
+        working-directory: docs
+        with:
+          ruby-version: 2.6
+          bundler-cache: true # runs 'bundle install' and caches installed gems automatically
+
       - name: Build
         #if: github.ref == 'refs/heads/master'
-        working-directory: docs
-        run: |
-          gem install jekyll bundler
-          bundle install
-          bundle exec jekyll build --config _config.yml,_config.master.yml -d _site/ -b /
+        run: bundle exec jekyll build --config _config.yml,_config.master.yml -d _site/ -b /
 
       - name: Push
         uses: cpina/github-action-push-to-another-repository@main
