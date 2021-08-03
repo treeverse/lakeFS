@@ -25,6 +25,11 @@ jobs:
 #      - name: package
 #        working-directory: clients/spark
 #        run: sbt package
+      - name: Install secret key for signing
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' # TODO delete after ||
+        run: |
+          cat <(echo -e '${{ secrets.OSSRH_GPG_SECRET_KEY }}') | gpg --batch --import
+          gpg --list-secret-keys --keyid-format LONG
       - name: Prepare publish credentials
         if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' # TODO delete after ||
         run: |
