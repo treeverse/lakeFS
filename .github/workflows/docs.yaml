@@ -29,6 +29,7 @@ jobs:
 
       - name: Build
         #if: github.ref == 'refs/heads/master'
+        working-directory: docs
         run: bundle exec jekyll build --config _config.yml,_config.master.yml -d _site/ -b /
 
       - name: Push
