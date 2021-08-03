@@ -1,3 +1,5 @@
+repository: github.com/treeverse/lakeFS
+
 # Enable or disable the site search
 # Supports true (default) or false
 search_enabled: true
