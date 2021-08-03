@@ -30,7 +30,7 @@ jobs:
         run: |
           mkdir -p ~/.sbt
           echo "realm=Amazon S3" > ~/.sbt/credentials
-          echo "host=treeverse-clients-us-east.s3.amazonaws.com" >> ~/.sbt/credentials
+          echo "host=treeverse-clients-us-east.s3.us-east-1.amazonaws.com" >> ~/.sbt/credentials
           echo "user=${AWS_ACCESS_KEY_ID}"  >> ~/.sbt/credentials
           echo "password=${AWS_SECRET_ACCESS_KEY}"  >> ~/.sbt/credentials
           echo "realm=Sonatype Nexus Repository Manager" > ~/.sbt/sonatype_credentials
