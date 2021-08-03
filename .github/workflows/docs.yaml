@@ -1,0 +1,41 @@
+name: documentation
+
+on:
+  push:
+    paths:
+      - "docs/**"
+    branches:
+      - master
+      - feature/docs-versions
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "specific version to publish"
+
+jobs:
+  lakefs-hadoopfs:
+    name: Build documentation
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check-out
+        uses: actions/checkout@v2
+
+      - name: Build
+        uses: helaili/jekyll-action@v2
+        #if: github.ref == 'refs/heads/master'
+        with:
+            jekyll_build_options: "--config _config.yml,_config.master.yml"
+            jekyll_src: docs
+            target_branch: gh-pages
+            target_path: /
+            token: ${{ secrets.GITHUB_TOKEN }}
+
+            # build specific version exclude version.json
+      #- name: Build specific version
+        #uses: helaili/jekyll-build@v2
+        #if: startsWith(github.ref, 'refs/tags/v')
+        #with:
+            #target_branch: gh-pages
+            #target_path: /
+            #keep_history: true
+            #token: ${{ secrets.GITHUB_TOKEN }}

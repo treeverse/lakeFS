@@ -85,40 +85,30 @@ layout: table_wrappers
             </div>
             {% endif %}
 
-            {% if site.just_the_docs.collections %}
-                <div class="nav-category">
-                    <label for="selectversion">Version:</label>
-                    <select id="selectversion" name="version" onchange="javascript:location.href = this.value;">
-                    {% assign collections_size = site.just_the_docs.collections | size %}
-                    {% for collection_entry in site.just_the_docs.collections %}
-                        {% assign collection_key = collection_entry[0] %}
-                        {% assign collection_value = collection_entry[1] %}
-                        {% assign collection = site[collection_key] %}
-                        {% if collection_value.nav_exclude != true %}
-                            {% if collection_key == 'latest' %}
-                                <option value="/">{{ collection_value.name }}</option>
-                            {% else %}
-                                <option value="/{{ collection_key }}">{{ collection_value.name }}</option>
-                            {% endif %}
-                        {% endif %}
-                    {% endfor %}
-                    </select>
-                </div>
-                <script>
-                    const selectedVersion = '/' + location.pathname.split('/')[1];
+            <div class="nav-category">
+                <label for="selectversion">Version:</label>
+                <select id="selectversion" name="version" onchange="javascript:location.href = '/' + this.value;">
+                    <option value="" selected>Latest</option>
+                </select>
+            </div>
+            <script async>
+                (async function () {
+                    const pathFirstLevel = location.pathname.split('/')[1];
+                    const selectedVersion = pathFirstLevel.startsWith('v') && pathFirstLevel || '';
                     const selectVersionElm = document.getElementById('selectversion');
-                    let selectVersionIdx = 0;
-                    if (selectedVersion.startsWith('/v')) {
-                        for (let i = 0; i < selectVersionElm.length; i++) {
-                            if (selectVersionElm[i].value == selectedVersion) {
-                                selectVersionIdx = i;
-                                break;
-                            }
+                    const response = await fetch('/versions.json');
+                    const versions = await response.json();
+                    for (let key in versions) {
+                        const el = document.createElement("option");
+                        el.value = key;
+                        el.textContent = versions[key].name;
+                        if (key === selectedVersion) {
+                            el.selected = true;
                         }
+                        selectVersionElm.append(el);
                     }
-                    selectVersionElm.selectedIndex = selectVersionIdx;
-                </script>
-            {% endif %}
+                })();
+            </script>
 
             {% include nav.html pages=site.html_pages %}
             <div class="mobile-menu">

@@ -69,21 +69,20 @@ plugins:
 
 exclude: 
   - deploy/includes
-  - verndor
+  - vendor
+  - versions.json
 
-collections:
-  latest:
-    permalink: "/:collection/:path/"
-    output: true
-  v0.47:
-    permalink: "/:collection/:path/"
-    output: true
+#collections:
+  #latest:
+    #permalink: "/:collection/:path/"
+    #output: true
+  #v0.47:
+    #permalink: "/:collection/:path/"
+    #output: true
 
-just_the_docs:
-  collections:
-    latest:
-      name: Latest
-    v0.47:
-      name: v0.47
-
-baseurl:
+#just_the_docs:
+  #collections:
+    #latest:
+      #name: Latest
+    #v0.47:
+      #name: v0.47
