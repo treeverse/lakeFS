@@ -150,19 +150,19 @@ func (c *CatalogRepoActions) Commit(ctx context.Context, commitMsg string, metad
 	}
 
 	commit := graveler.NewCommit()
-	if metadata["gc-test-days-ago"] != "" {
-		daysAgo, err := strconv.Atoi(metadata["gc-test-days-ago"])
-		if err != nil {
-			return "", err
-		}
-		commit.CreationDate = time.Now().AddDate(0, 0, -daysAgo)
-	}
 	commit.Committer = c.committer
 	commit.Message = commitMsg
 	commit.MetaRangeID = *c.createdMetaRangeID
 	commit.Metadata = graveler.Metadata(metadata)
 	for k, v := range c.commitMetadata {
 		commit.Metadata[k] = v
+	}
+	if metadata["gc-test-days-ago"] != "" {
+		daysAgo, err := strconv.Atoi(metadata["gc-test-days-ago"])
+		if err != nil {
+			return "", err
+		}
+		commit.CreationDate = time.Now().AddDate(0, 0, -daysAgo)
 	}
 	if c.previousCommitID != "" {
 		previousCommit, err := c.entryCatalog.GetCommit(ctx, c.repoID, c.previousCommitID)
