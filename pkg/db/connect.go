@@ -111,7 +111,7 @@ func tryConnectConfig(ctx context.Context, config *pgxpool.Config, log logging.L
 		if err == nil {
 			return pool, nil
 		}
-		if !IsDialError(err) {
+		if !isDialError(err) {
 			return nil, fmt.Errorf("error while connecting to DB: %w", err)
 		}
 		if a.More() {

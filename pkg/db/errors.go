@@ -14,7 +14,7 @@ var (
 	ErrSerialization = errors.New("serialization error")
 )
 
-func IsDialError(err error) bool {
+func isDialError(err error) bool {
 	netError := &net.OpError{}
 	return errors.As(err, &netError) && netError.Op == "dial"
 }

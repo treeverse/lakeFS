@@ -126,15 +126,15 @@ func tryNewWithSourceInstance(sourceName string, sourceInstance source.Driver, d
 		if err == nil {
 			return m, nil
 		}
-		if !IsDialError(err) {
+		if !isDialError(err) {
 			return nil, fmt.Errorf("error while connecting to DB: %w", err)
 		}
 		if a.More() {
-			logging.Default().WithError(err).Info("could not connect to DB: Trying again")
+			logging.Default().WithError(err).Info("Could not connect to DB: Trying again")
 		}
 	}
 
-	return nil, fmt.Errorf("could not connect to DB: %w", err)
+	return nil, fmt.Errorf("retries exhausted, could not connect to DB: %w", err)
 }
 
 func closeMigrate(m *migrate.Migrate) {
