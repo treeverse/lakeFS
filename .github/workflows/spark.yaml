@@ -28,6 +28,7 @@ jobs:
       - name: Prepare publish credentials
         if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' # TODO delete after ||
         run: |
+          mkdir -p ~/.sbt
           echo realm=Amazon S3\
           host=treeverse-clients-us-east.s3.amazonaws.com\
           user=${AWS_ACCESS_KEY_ID}\
