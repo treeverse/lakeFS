@@ -33,7 +33,7 @@ jobs:
         env:
           API_TOKEN_GITHUB: ${{ secrets.PERSONAL_TOKEN }}
         with:
-          source-directory: docs/build
+          source-directory: jekyll_build
           destination-github-username: treeverse
           destination-repository-name: docs-lakeFS
           user-email: barak.amar@treeverse.io
