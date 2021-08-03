@@ -6,7 +6,6 @@ $(() => {
     $("div.highlighter-rouge").prepend(copyCodeContainer);
     $("div.highlighter-rouge .copy-code-button").click(function() {
         const tempTextArea = document.createElement('textarea');
-        console.log($(this))
         tempTextArea.textContent = $(this).parent().parent().find("code").text()
         document.body.appendChild(tempTextArea);
         const selection = document.getSelection();
