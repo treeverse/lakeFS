@@ -30,7 +30,7 @@ jobs:
       - name: Build
         #if: github.ref == 'refs/heads/master'
         working-directory: docs
-        run: bundle exec jekyll build --config _config.yml,_config.master.yml -d _site/ -b /
+        run: bundle exec jekyll build --config _config.yml,_config.master.yml -d _site/ -b /docs-lakeFS
 
       - name: Push
         uses: cpina/github-action-push-to-another-repository@main
