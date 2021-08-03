@@ -32,13 +32,14 @@ jobs:
         uses: cpina/github-action-push-to-another-repository@main
         env:
           API_TOKEN_GITHUB: ${{ secrets.PERSONAL_TOKEN }}
-          with:
-            source-directory: docs/_site/
-            destination-github-username: nopcoder
-            destination-repository-name: docs-lakeFS
-            user-email: barak.amar@treeverse.io
-            target-branch: main
-            # build specific version exclude version.json
+        with:
+          source-directory: docs/_site/
+          destination-github-username: nopcoder
+          destination-repository-name: docs-lakeFS
+          user-email: barak.amar@treeverse.io
+          target-branch: main
+
+      # build specific version exclude version.json
       #- name: Build specific version
         #uses: helaili/jekyll-build@v2
         #if: startsWith(github.ref, 'refs/tags/v')
