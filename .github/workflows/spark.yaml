@@ -40,9 +40,10 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: us-east-1
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}
       - name: Publish artifacts
         if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' # TODO delete after ||
         run: make publish-scala
+        env:
+          AWS_REGION: us-east-1
