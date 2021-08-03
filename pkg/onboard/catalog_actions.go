@@ -6,6 +6,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
+	"time"
 
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/cmdutils"
@@ -148,6 +150,13 @@ func (c *CatalogRepoActions) Commit(ctx context.Context, commitMsg string, metad
 	}
 
 	commit := graveler.NewCommit()
+	if metadata["gc-test-days-ago"] != "" {
+		daysAgo, err := strconv.Atoi(metadata["gc-test-days-ago"])
+		if err != nil {
+			return "", err
+		}
+		commit.CreationDate = time.Now().AddDate(0, 0, -daysAgo)
+	}
 	commit.Committer = c.committer
 	commit.Message = commitMsg
 	commit.MetaRangeID = *c.createdMetaRangeID
