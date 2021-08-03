@@ -115,9 +115,9 @@ func tryConnectConfig(ctx context.Context, config *pgxpool.Config, log logging.L
 			return nil, fmt.Errorf("error while connecting to DB: %w", err)
 		}
 		if a.More() {
-			log.WithError(err).Info("could not connect to DB: Trying again")
+			log.WithError(err).Info("Could not connect to DB: Trying again")
 		}
 	}
 
-	return nil, fmt.Errorf("could not connect to DB: %w", err)
+	return nil, fmt.Errorf("retries exhausted, could not connect to DB: %w", err)
 }
