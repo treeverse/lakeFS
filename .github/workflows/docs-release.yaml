@@ -1,0 +1,67 @@
+name: documentation release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "specific version to publish"
+
+jobs:
+  docs-release:
+    name: Documentation release
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check-out
+        uses: actions/checkout@v2
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1.79.0
+        with:
+          working-directory: docs
+          ruby-version: 2.6
+          bundler-cache: true # runs 'bundle install' and caches installed gems automatically
+
+      - name: Extract version
+        id: version
+        shell: bash
+        run: |
+          if [ "${{ github.event.inputs.tag }}" != "" ]; then
+            echo "::set-output name=tag::$(echo ${{ github.event.inputs.tag }} | cut -d. -f1-2)"
+          else
+            echo "::set-output name=tag::$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)"
+          fi
+
+      - name: Build release
+        working-directory: docs
+        run: bundle exec jekyll build --config _config.yml -d _site/${{ steps.version.outputs.tag }} -b /${{ steps.version.outputs.tag }}
+
+      - name: Create available versions
+        id: create-versions
+        uses: jsdaniell/create-json@1.1.2
+        with:
+          name: versions.json
+          dir: docs/_site/
+          json: >
+            {
+            }
+
+      - name: Update current published version
+        uses: jossef/action-set-json-field@v1
+        with:
+          file: docs/_site/versions.json
+          field: ${{ steps.version.outputs.tag}}
+          value: ${{ steps.version.outputs.tag}}
+
+      - name: Publish to docs repository
+        uses: dmnemec/copy_file_to_another_repo_action@v1.1.1
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.PERSONAL_TOKEN }}
+        with:
+          source_file: docs/_site/.
+          destination_repo: treeverse/docs-lakeFS
+          destination_folder: /
+          user_email: 'barak.amar@treeverse.io'
+          user_name: 'nopcoder'
+

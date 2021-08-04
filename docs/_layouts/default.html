@@ -98,10 +98,10 @@ layout: table_wrappers
                     const selectVersionElm = document.getElementById('selectversion');
                     const response = await fetch('/versions.json');
                     const versions = await response.json();
-                    for (let key in versions) {
+                    for (let [key, value] of Object.entries(versions)) {
                         const el = document.createElement("option");
                         el.value = key;
-                        el.textContent = versions[key].name;
+                        el.textContent = value;
                         if (key === selectedVersion) {
                             el.selected = true;
                         }

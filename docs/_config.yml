@@ -8,7 +8,7 @@ search_tokenizer_separator: /[\s/]+/
 
 aux_links_new_tab: true
 
-logo: 'assets/logo.svg'
+logo: '/assets/logo.svg'
 logo_link: 'https://lakefs.io'
 
 remote_theme: pmarsceill/just-the-docs
@@ -33,7 +33,7 @@ buttons:
 # footer_content: 'Copyright &copy; 2020 Treeverse Labs LTD.'
 footer:
   'img-bottom':
-    - 'assets/by-treeverse.png'
+    - '/assets/by-treeverse.png'
   'img-bottom-link':
     - 'https://www.treeverse.io/'
 
@@ -63,7 +63,7 @@ footer_bottom_links:
   'Privacy Policy':
     - 'https://lakefs.io/privacy-policy/'
     
-image: 'assets/img/shared-image.png'
+image: '/assets/img/shared-image.png'
 
 plugins:
   - jekyll-redirect-from
