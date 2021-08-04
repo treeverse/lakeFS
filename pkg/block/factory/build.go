@@ -7,8 +7,6 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/Azure/azure-storage-blob-go/azblob"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/option"
 
@@ -84,13 +82,7 @@ func buildLocalAdapter(params params.Local) (*local.Adapter, error) {
 }
 
 func buildS3Adapter(params params.S3) (*s3a.Adapter, error) {
-	sess, err := session.NewSession(params.AwsConfig)
-	if err != nil {
-		return nil, err
-	}
-	sess.ClientConfig(s3.ServiceName)
-	svc := s3.New(sess)
-	adapter := s3a.NewAdapter(svc,
+	adapter := s3a.NewAdapter(params.AwsConfig,
 		s3a.WithStreamingChunkSize(params.StreamingChunkSize),
 		s3a.WithStreamingChunkTimeout(params.StreamingChunkTimeout),
 	)

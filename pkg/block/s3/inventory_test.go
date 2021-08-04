@@ -1,17 +1,11 @@
 package s3_test
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
-	"io/ioutil"
-	"regexp"
 	"strings"
 	"testing"
 	"time"
 
-	s3sdk "github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/s3"
 	"github.com/treeverse/lakefs/pkg/cloud/aws/s3inventory"
@@ -212,12 +206,19 @@ func TestIterator(t *testing.T) {
 	manifestURL := "s3://example-bucket/manifest1.json"
 	for name, test := range testdata {
 		t.Run(name, func(t *testing.T) {
-
-			s3api := &mockS3Client{
-				FilesByManifestURL: map[string][]string{manifestURL: test.InventoryFiles},
-			}
 			reader := &mockInventoryReader{openFiles: make(map[string]bool), lastModified: lastModified}
-			inv, err := s3.GenerateInventory(logging.Default(), manifestURL, s3api, reader, test.ShouldSort, test.Prefixes)
+			inventoryFiles := make([]s3.InventoryFile, 0, len(test.InventoryFiles))
+			for _, filename := range test.InventoryFiles {
+				inventoryFiles = append(inventoryFiles, s3.InventoryFile{Key: filename})
+			}
+			inv, err := s3.GenerateInventory(logging.Default(), &s3.Manifest{
+				URL:                manifestURL,
+				InventoryBucketArn: "arn:aws:s3:::example-bucket",
+				SourceBucket:       "lakefs-example-data",
+				Files:              inventoryFiles,
+				Format:             "Parquet",
+				CreationTimestamp:  "1593216000000",
+			}, reader, test.ShouldSort, test.Prefixes)
 			if err != nil {
 				if errors.Is(err, test.ErrExpected) {
 					return
@@ -329,51 +330,4 @@ func (m *mockInventoryReader) GetFileReader(_ string, _ string, key string) (s3i
 func (m *mockInventoryReader) GetMetadataReader(_ string, _ string, key string) (s3inventory.MetadataReader, error) {
 	m.openFiles[key] = true
 	return &mockInventoryFileReader{rows: rows(fileContents[key], m.lastModified), inventoryReader: m, key: key}, nil
-}
-func (m *mockS3Client) GetObject(input *s3sdk.GetObjectInput) (*s3sdk.GetObjectOutput, error) {
-	output := s3sdk.GetObjectOutput{}
-	manifestURL := fmt.Sprintf("s3://%s%s", *input.Bucket, *input.Key)
-	if !manifestExists(manifestURL) {
-		return &output, nil
-	}
-	inventoryFileNames := m.FilesByManifestURL[manifestURL]
-	if inventoryFileNames == nil {
-		inventoryFileNames = []string{"inventory/lakefs-example-data/my_inventory/data/ea8268b2-a6ba-42de-8694-91a9833b4ff1.parquet"}
-	}
-	inventoryFiles := make([]interface{}, 0, len(inventoryFileNames))
-	for _, filename := range inventoryFileNames {
-		inventoryFiles = append(inventoryFiles, struct {
-			Key string `json:"key"`
-		}{
-			Key: filename,
-		})
-	}
-	filesJSON, err := json.Marshal(inventoryFiles)
-	if err != nil {
-		return nil, err
-	}
-	destBucket := m.DestBucket
-	if m.DestBucket == "" {
-		destBucket = "example-bucket"
-	}
-	reader := strings.NewReader(fmt.Sprintf(`{
-  "sourceBucket" : "lakefs-example-data",
-  "destinationBucket" : "arn:aws:s3:::%s",
-  "version" : "2016-11-30",
-  "creationTimestamp" : "1593216000000",
-  "fileFormat" : "Parquet",
-  "fileSchema" : "message s3.inventory {  required binary bucket (STRING);  required binary key (STRING);  optional binary version_id (STRING);  optional boolean is_latest;  optional boolean is_delete_marker;  optional int64 size;  optional int64 last_modified_date (TIMESTAMP(MILLIS,true));  optional binary e_tag (STRING);  optional binary storage_class (STRING);  optional boolean is_multipart_uploaded;}",
-  "files" : %s}`, destBucket, filesJSON))
-	return output.SetBody(ioutil.NopCloser(reader)), nil
-}
-
-type mockS3Client struct {
-	s3iface.S3API
-	FilesByManifestURL map[string][]string
-	DestBucket         string
-}
-
-func manifestExists(manifestURL string) bool {
-	match, _ := regexp.MatchString("s3://example-bucket/manifest[0-9]+.json", manifestURL)
-	return match
 }
