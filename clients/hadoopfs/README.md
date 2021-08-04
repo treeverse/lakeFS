@@ -1,6 +1,6 @@
 # lakeFS Hadoop FileSystem
 
-An implementation of `org.apache.hadoop.fs.FileSystem`, the lakeFS Hadoop Filesystem allows to run Spark jobs on lakeFS with data operations performed directly on S3.
+An implementation of `org.apache.hadoop.fs.FileSystem`, the lakeFS Hadoop Filesystem allows to run Spark jobs on lakeFS with data operations performed directly on the underlying storage.
 It uses the lakeFS server for metadata operations only.
 
 ## Publishing
