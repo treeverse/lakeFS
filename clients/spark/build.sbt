@@ -52,6 +52,11 @@ def generateCoreProject(buildType: BuildType) =
         "com.google.guava" % "failureaccess" % "1.0.1",
         "org.rogach" %% "scallop" % "4.0.3",
         "software.amazon.awssdk" % "s3" % "2.15.15",
+        // Snappy is JNI :-(.  However it does claim to work with
+        // ClassLoaders, and (even more importantly!) using a preloaded JNI
+        // version will probably continue to work because the C language API
+        // is quite stable.
+        "org.xerial.snappy" % "snappy-java" % "1.1.8.4",
         "org.ow2.asm" % "asm" % "9.2",
         "org.ow2.asm" % "asm-util" % "9.2",
 
