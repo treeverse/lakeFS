@@ -175,7 +175,7 @@ class BlockParserSpec extends AnyFunSpec with Matchers {
       bytes.hasNext should be (false)
     }
 
-    it("reads metaindex") {
+    it("reads metaindex block") {
       // Read handles from footer
       val footerBytes = in.iterate(tempFile.length - BlockParser.footerLength, BlockParser.footerLength)
       val footer = BlockParser.readFooter(footerBytes)
@@ -184,13 +184,27 @@ class BlockParserSpec extends AnyFunSpec with Matchers {
       Console.out.println("[metaindex] " +
         f"${bh.offset}%08x (${bh.offset}) -> ${bh.size}%08x (${bh.size}%d)")
 
-      val bytes = in.readBlock(
-        footer.metaIndex.offset,
-        footer.metaIndex.size + BlockParser.blockTrailerLen)
+      val bytes = in.readBlock(bh.offset, bh.size + BlockParser.blockTrailerLen)
       val block = BlockParser.startBlockParse(bytes)
       val blockIt = BlockParser.parseDataBlock(block)
       for (entry <- blockIt) {
         Console.out.println(s"[metaindex]      ${entry}")
+      }
+    }
+
+    it("reads index block") {
+      val footerBytes = in.iterate(tempFile.length - BlockParser.footerLength, BlockParser.footerLength)
+      val footer = BlockParser.readFooter(footerBytes)
+
+      val bh = footer.index
+      Console.out.println("[index] " +
+        f"${bh.offset}%08x (${bh.offset}) -> ${bh.size}%08x (${bh.size}%d)")
+
+      val bytes = in.readBlock(bh.offset, bh.size + BlockParser.blockTrailerLen)
+      val block = BlockParser.startBlockParse(bytes)
+      val blockIt = BlockParser.parseDataBlock(block)
+      for (entry <- blockIt) {
+        Console.out.println(s"[index]      ${entry}")
       }
     }
   }

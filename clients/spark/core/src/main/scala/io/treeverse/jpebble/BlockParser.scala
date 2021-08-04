@@ -1,5 +1,8 @@
 package io.treeverse.jpebble
 
+import org.xerial.snappy.Snappy
+
+import java.nio.ByteBuffer
 import java.util.zip.CRC32C
 
 // The Block-Based RocksDB SSTable format is described in
@@ -42,8 +45,15 @@ class DebuggingIt(it: Iterator[Byte]) extends Iterator[Byte] {
   }
 }
 
+object Binary {
+  def readable(bytes: Seq[Byte]): String =
+    bytes.foldLeft("")((s: String, b: Byte) =>
+      s + (if (32 <= b && b < 127) b.toChar.toString else f"\\x$b%02x"))
+}
+
 case class Entry(key: Array[Byte], value: Array[Byte]) {
-  override def toString() = s"${new String(key)} -> ${new String(value)}"
+  import Binary.readable
+  override def toString() = s"${readable(key)} -> ${readable(value)}"
 }
 
 /**
@@ -92,6 +102,9 @@ object BlockParser {
   val footerMagic = Seq(0xf7, 0xcf, 0xf4, 0x85, 0xb7, 0x41, 0xe2, 0x88).map(_.toByte)
 
   val blockTrailerLen = 1 + 4
+
+  val COMPRESSION_BLOCK_TYPE_NONE = 0
+  val COMPRESSION_BLOCK_TYPE_SNAPPY = 1
 
   def readEnd(bytes: Iterator[Byte]) =
     if (bytes.hasNext) throw new IllegalArgumentException("Input too long")
@@ -196,7 +209,21 @@ object BlockParser {
       throw new IllegalArgumentException(
         "Bad CRC got %08x != stored %08x".format(computedCRC, expectedCRC))
     }
-    block.slice(0, block.size - blockTrailerLen)
+    val compressionType = block(block.size - blockTrailerLen)
+    val data = block.slice(0, block.size - blockTrailerLen)
+    compressionType match {
+      case COMPRESSION_BLOCK_TYPE_NONE => data
+      case COMPRESSION_BLOCK_TYPE_SNAPPY => {
+        val dataBytes = data.toByteBuffer
+        if (!Snappy.isValidCompressedBuffer(dataBytes)) {
+          throw new IllegalArgumentException("Bad Snappy-compressed data")
+        }
+        val uncompressed = ByteBuffer.allocateDirect(Snappy.uncompressedLength(dataBytes))
+        Snappy.uncompress(dataBytes, uncompressed)
+        IndexedBytes.create(uncompressed)
+      }
+      case _ => throw new IllegalArgumentException(s"Unknown compression type $compressionType")
+    }
   }
 
   def parseDataBlock(block: IndexedBytes): Iterator[Entry] = {
