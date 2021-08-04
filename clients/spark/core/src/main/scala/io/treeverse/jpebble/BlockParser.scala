@@ -34,6 +34,7 @@ class DebuggingIt(it: Iterator[Byte]) extends Iterator[Byte] {
     if (!hn) { Console.out.println("[DEBUG] end of iteration") }
     hn
   }
+
   def next(): Byte = {
     val n = it.next()
     Console.out.println(s"[DEBUG] next ${n} ${n.asInstanceOf[Char]}")
@@ -210,8 +211,6 @@ object BlockParser {
     // restarts[i] contains the offset within the block of the ith restart point.
     val numRestarts = readInt32(block.slice(block.size - 4, block.size).iterator)
     val blockWithoutTrailer = block.slice(0, block.size - 4 * (numRestarts + 1))
-    // BUG(ariels): Only works if wrapping in a DebuggingIt -- which does
-    // "nothing" (except perhaps some eagerness??)
-    new DataBlockIterator(new DebuggingIt(blockWithoutTrailer.iterator))
+    new DataBlockIterator(blockWithoutTrailer.iterator)
   }
 }
