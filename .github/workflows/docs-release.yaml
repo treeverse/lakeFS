@@ -37,22 +37,12 @@ jobs:
         working-directory: docs
         run: bundle exec jekyll build --config _config.yml -d _site/${{ steps.version.outputs.tag }} -b /${{ steps.version.outputs.tag }}
 
-      - name: Create available versions
-        id: create-versions
-        uses: jsdaniell/create-json@1.1.2
-        with:
-          name: versions.json
-          dir: docs/_site/
-          json: >
-            {
-            }
-
-      - name: Update current published version
-        uses: jossef/action-set-json-field@v1
-        with:
-          file: docs/_site/versions.json
-          field: ${{ steps.version.outputs.tag}}
-          value: ${{ steps.version.outputs.tag}}
+      - name: Update published version
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.PERSONAL_TOKEN }}
+        run: >
+            curl -s https://${API_TOKEN_GITHUB}@raw.githubusercontent.com/treeverse/docs-lakeFS/main/versions.json |
+            jq '."${{ steps.version.outputs.tag}}" = "${{ steps.version.outputs.tag}}"' > docs/_site/versions.json
 
       - name: Publish to docs repository
         uses: dmnemec/copy_file_to_another_repo_action@v1.1.1
