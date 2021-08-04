@@ -72,6 +72,6 @@ plugins:
 exclude: 
   - deploy/includes
   - vendor
-  - versions.json
+  - CNAME
 
 baseurl: 
