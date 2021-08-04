@@ -11,6 +11,7 @@ jobs:
   lakefs-spark:
     name: lakeFS Spark metadata client
     runs-on: ubuntu-20.04
+    environment: Treeverse signing
     steps:
       - name: Check-out code
         uses: actions/checkout@v2
