@@ -124,13 +124,19 @@ func (a *Adapter) getBucketRegion(ctx context.Context, bucket string) (string, e
 		return "", err
 	}
 	a.log(ctx).WithField("bucket", bucket).Debug("getting region for bucket")
-	return s3manager.GetBucketRegion(ctx, sess, bucket, "")
+	region, err := s3manager.GetBucketRegion(ctx, sess, bucket, "")
+	if err != nil {
+		region = *a.awsConfig.Region
+		a.log(ctx).WithError(err).Error("failed to get region for bucket, falling back to default region")
+	}
+	a.regionByBucket[bucket] = region
+	return region, nil
 }
 
 func (a *Adapter) s3Client(ctx context.Context, bucket string) (s3iface.S3API, error) {
 	region, err := a.getBucketRegion(ctx, bucket)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get bucket region: %v", err)
 	}
 	if client, hasClient := a.s3ClientByRegion[region]; hasClient {
 		return client, nil
