@@ -123,6 +123,7 @@ func (a *Adapter) getBucketRegion(ctx context.Context, bucket string) (string, e
 	if err != nil {
 		return "", err
 	}
+	a.log(ctx).WithField("bucket", bucket).Debug("getting region for bucket")
 	return s3manager.GetBucketRegion(ctx, sess, bucket, "")
 }
 
@@ -134,6 +135,7 @@ func (a *Adapter) s3Client(ctx context.Context, bucket string) (s3iface.S3API, e
 	if client, hasClient := a.s3ClientByRegion[region]; hasClient {
 		return client, nil
 	}
+	a.log(ctx).WithField("bucket", bucket).WithField("region", region).Debug("creating client for region")
 	sess, err := session.NewSession(a.awsConfig, &aws.Config{Region: swag.String(region)})
 	if err != nil {
 		return nil, err
