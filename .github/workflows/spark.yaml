@@ -8,7 +8,7 @@ on:
   pull_request:
   workflow_dispatch:
 jobs:
-  lakefs-spark:
+  lakefs-spark-client:
     name: lakeFS Spark metadata client
     runs-on: ubuntu-20.04
     environment: Treeverse signing
@@ -17,39 +17,43 @@ jobs:
         uses: actions/checkout@v2
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
-      - name: validate format
-        working-directory: clients/spark
-        run: sbt scalafmtCheck
-      - name: validate unused
-        working-directory: clients/spark
-        run: sbt "scalafix --check"
-      - name: package
-        working-directory: clients/spark
-        run: sbt package
+#      - name: validate format
+#        working-directory: clients/spark
+#        run: sbt scalafmtCheck
+#      - name: validate unused
+#        working-directory: clients/spark
+#        run: sbt "scalafix --check"
+#      - name: package
+#        working-directory: clients/spark
+#        run: sbt package
       - name: Install secret key for signing
-        if: github.event_name == 'workflow_dispatch'
+#        if: github.event_name == 'workflow_dispatch'
         run: |
           echo -e '${{ secrets.OSSRH_GPG_SECRET_KEY }}' | gpg --batch --import
           gpg --list-secret-keys --keyid-format LONG
       - name: Prepare publish credentials
-        if: github.event_name == 'workflow_dispatch'
+#        if: github.event_name == 'workflow_dispatch'
         run: |
           mkdir -p ~/.sbt
-          echo "realm=Amazon S3" > ~/.sbt/credentials
-          echo "host=treeverse-clients-us-east.s3.amazonaws.com" >> ~/.sbt/credentials
-          echo "user=${AWS_ACCESS_KEY_ID}"  >> ~/.sbt/credentials
-          echo "password=${AWS_SECRET_ACCESS_KEY}"  >> ~/.sbt/credentials
-          echo "realm=Sonatype Nexus Repository Manager" > ~/.sbt/sonatype_credentials
-          echo "host=s01.oss.sonatype.org" >> ~/.sbt/sonatype_credentials
-          echo "user=${OSSRH_USERNAME}" >> ~/.sbt/sonatype_credentials
-          echo "password=${OSSRH_TOKEN}" >> ~/.sbt/sonatype_credentials
+          cat << EOS > ~/.sbt/credentials
+          realm=Amazon S3" > ~/.sbt/credentials
+          host=treeverse-clients-us-east.s3.amazonaws.com
+          user=${AWS_ACCESS_KEY_ID}
+          password=${AWS_SECRET_ACCESS_KEY}
+          EOS
+          cat << EOS > ~/.sbt/sonatype_credentials
+          realm=Sonatype Nexus Repository Manager
+          host=s01.oss.sonatype.org
+          user=${OSSRH_USERNAME}
+          password=${OSSRH_TOKEN}
+          EOS
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}
       - name: Publish artifacts
-        if: github.event_name == 'workflow_dispatch'
+#        if: github.event_name == 'workflow_dispatch'
         run: make publish-scala
         env:
           AWS_REGION: us-east-1
