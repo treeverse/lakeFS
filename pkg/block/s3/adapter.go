@@ -65,7 +65,7 @@ func resolveNamespacePrefix(opts block.WalkOpts) (block.QualifiedPrefix, error) 
 }
 
 type Adapter struct {
-	awsConfig             *aws.Config
+	awsSession            *session.Session
 	s3ClientByRegion      map[string]s3iface.S3API
 	regionByBucket        map[string]string
 	httpClient            *http.Client
@@ -100,11 +100,11 @@ func WithTranslator(t block.UploadIDTranslator) func(a *Adapter) {
 	}
 }
 
-func NewAdapter(awsConfig *aws.Config, opts ...func(a *Adapter)) *Adapter {
+func NewAdapter(awsSession *session.Session, opts ...func(a *Adapter)) *Adapter {
 	a := &Adapter{
 		s3ClientByRegion:      make(map[string]s3iface.S3API),
 		regionByBucket:        make(map[string]string),
-		awsConfig:             awsConfig,
+		awsSession:            awsSession,
 		httpClient:            http.DefaultClient,
 		uploadIDTranslator:    &block.NoOpTranslator{},
 		streamingChunkSize:    DefaultStreamingChunkSize,
@@ -115,38 +115,27 @@ func NewAdapter(awsConfig *aws.Config, opts ...func(a *Adapter)) *Adapter {
 	}
 	return a
 }
-func (a *Adapter) getBucketRegion(ctx context.Context, bucket string) (string, error) {
+
+func (a *Adapter) getBucketRegion(ctx context.Context, bucket string) string {
 	if region, hasRegion := a.regionByBucket[bucket]; hasRegion {
-		return region, nil
+		return region
 	}
-	sess, err := session.NewSession(a.awsConfig)
+	a.log(ctx).WithField("bucket", bucket).Debug("requesting region for bucket")
+	region, err := s3manager.GetBucketRegion(ctx, a.awsSession, bucket, "")
 	if err != nil {
-		return "", err
-	}
-	a.log(ctx).WithField("bucket", bucket).Debug("getting region for bucket")
-	region, err := s3manager.GetBucketRegion(ctx, sess, bucket, "")
-	if err != nil {
-		region = *a.awsConfig.Region
 		a.log(ctx).WithError(err).Error("failed to get region for bucket, falling back to default region")
+		region = *a.awsSession.Config.Region
 	}
 	a.regionByBucket[bucket] = region
-	return region, nil
+	return region
 }
 
 func (a *Adapter) s3Client(ctx context.Context, bucket string) (s3iface.S3API, error) {
-	region, err := a.getBucketRegion(ctx, bucket)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get bucket region: %v", err)
+	region := a.getBucketRegion(ctx, bucket)
+	if _, hasClient := a.s3ClientByRegion[region]; !hasClient {
+		a.log(ctx).WithField("bucket", bucket).WithField("region", region).Debug("creating client for region")
+		a.s3ClientByRegion[region] = s3.New(a.awsSession, &aws.Config{Region: swag.String(region)})
 	}
-	if client, hasClient := a.s3ClientByRegion[region]; hasClient {
-		return client, nil
-	}
-	a.log(ctx).WithField("bucket", bucket).WithField("region", region).Debug("creating client for region")
-	sess, err := session.NewSession(a.awsConfig, &aws.Config{Region: swag.String(region)})
-	if err != nil {
-		return nil, err
-	}
-	a.s3ClientByRegion[region] = s3.New(sess)
 	return a.s3ClientByRegion[region], nil
 }
 

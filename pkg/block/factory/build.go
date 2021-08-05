@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/aws/aws-sdk-go/aws/session"
+
 	"cloud.google.com/go/storage"
 	"github.com/Azure/azure-storage-blob-go/azblob"
 	"golang.org/x/oauth2/google"
@@ -46,7 +48,7 @@ func BuildBlockAdapter(ctx context.Context, c params.AdapterConfig) (block.Adapt
 		if err != nil {
 			return nil, err
 		}
-		return buildS3Adapter(p), nil
+		return buildS3Adapter(p)
 	case mem.BlockstoreType, "memory":
 		return mem.New(), nil
 	case transient.BlockstoreType:
@@ -81,13 +83,17 @@ func buildLocalAdapter(params params.Local) (*local.Adapter, error) {
 	return adapter, nil
 }
 
-func buildS3Adapter(params params.S3) *s3a.Adapter {
-	adapter := s3a.NewAdapter(params.AwsConfig,
+func buildS3Adapter(params params.S3) (*s3a.Adapter, error) {
+	sess, err := session.NewSession(params.AwsConfig)
+	if err != nil {
+		return nil, err
+	}
+	adapter := s3a.NewAdapter(sess,
 		s3a.WithStreamingChunkSize(params.StreamingChunkSize),
 		s3a.WithStreamingChunkTimeout(params.StreamingChunkTimeout),
 	)
 	logging.Default().WithField("type", "s3").Info("initialized blockstore adapter")
-	return adapter
+	return adapter, nil
 }
 
 func buildGSAdapter(ctx context.Context, params params.GS) (*gs.Adapter, error) {

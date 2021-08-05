@@ -12,6 +12,7 @@ import (
 	"cloud.google.com/go/storage"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4/pgxpool"
 	_ "github.com/jackc/pgx/v4/stdlib"
@@ -235,7 +236,8 @@ func NewBlockAdapterByType(t testing.TB, translator block.UploadIDTranslator, bl
 		} else {
 			cfg.Credentials = credentials.NewSharedCredentials("", "default")
 		}
-		return lakefsS3.NewAdapter(cfg, lakefsS3.WithTranslator(translator))
+		sess := session.Must(session.NewSession(cfg))
+		return lakefsS3.NewAdapter(sess, lakefsS3.WithTranslator(translator))
 
 	default:
 		return mem.New(mem.WithTranslator(translator))
