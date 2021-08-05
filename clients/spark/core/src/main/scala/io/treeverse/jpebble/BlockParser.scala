@@ -2,6 +2,7 @@ package io.treeverse.jpebble
 
 import org.xerial.snappy.Snappy
 
+import java.io.IOException
 import java.nio.ByteBuffer
 import java.util.zip.CRC32C
 
@@ -13,6 +14,8 @@ case class BlockHandle(offset: Long, size: Long) {
 }
 
 case class IndexBlockHandles(metaIndex: BlockHandle, index: BlockHandle)
+
+class BadFileFormatException(msg: String) extends IOException(msg)
 
 /**
  * A wrapper for Iterator that counts calls to next.
@@ -31,7 +34,7 @@ class CountedIterator[T](it: Iterator[T]) extends Iterator[T] {
   }
 }
 
-class DebuggingIt(it: Iterator[Byte]) extends Iterator[Byte] {
+class DebuggingIterator(it: Iterator[Byte]) extends Iterator[Byte] {
   def hasNext = {
     val hn = it.hasNext
     if (!hn) { Console.out.println("[DEBUG] end of iteration") }
@@ -88,6 +91,7 @@ class DataBlockIterator(private val it: Iterator[Byte]) extends Iterator[Entry] 
     val keySharedPrefix = lastKey.slice(0, sharedBytesSize.toInt)
     val keyUnshared = BlockParser.readBytes(it, unsharedBytesSize).toArray
     val value = BlockParser.readBytes(it, valueSize).toArray
+    Console.out.println(f"[DEBUG]   next: ${Binary.readable(keySharedPrefix)}%s|${Binary.readable(keyUnshared)}%s -> ${Binary.readable(value)}%s    ($sharedBytesSize%d+$unsharedBytesSize%d) ; $valueSize%d")
     lastKey = (keySharedPrefix ++ keyUnshared).toArray
     Entry(lastKey, value)
   }
@@ -107,7 +111,7 @@ object BlockParser {
   val COMPRESSION_BLOCK_TYPE_SNAPPY = 1
 
   def readEnd(bytes: Iterator[Byte]) =
-    if (bytes.hasNext) throw new IllegalArgumentException("Input too long")
+    if (bytes.hasNext) throw new BadFileFormatException("Input too long")
 
   def readMagic(bytes: Iterator[Byte]) = {
     val magic = bytes.take(footerMagic.length).toArray
@@ -115,7 +119,7 @@ object BlockParser {
       .filter({ case ((a, b)) => a != b })
       .isEmpty
     if (!isMatch) {
-      throw new IllegalArgumentException(s"Bad magic ${magic.map("%02x".format(_)).mkString(" ")}")
+      throw new BadFileFormatException(s"Bad magic ${magic.map("%02x".format(_)).mkString(" ")}")
     }
   }
 
@@ -138,7 +142,7 @@ object BlockParser {
       .foldLeft((0, 0L))(
         { case ((i, v), b) => (i + 7, v | (b & 0x7f).toLong << i) }
       )
-    if (i > 63) throw new IllegalArgumentException("Variable length quantity is too long")
+    if (i > 63) throw new BadFileFormatException("Variable length quantity is too long")
     v | (rest.next.toLong << i)
   }
 
@@ -163,7 +167,7 @@ object BlockParser {
     val ret = new IndexBlockHandles(readBlockHandle(countedBytes), readBlockHandle(countedBytes))
     val skip = BlockParser.footerLength - countedBytes.count - footerMagic.length
     if (skip < 0) {
-      throw new IllegalArgumentException("[I] Footer overflow (bad varint parser?)")
+      throw new BadFileFormatException("[I] Footer overflow (bad varint parser?)")
     }
 
     val after = bytes.drop(skip)
@@ -188,7 +192,7 @@ object BlockParser {
    * protocol.  We need to follow the format regardless of whether or not
    * using CRCs like this is justified!)
    */
-  def fixupCRC(crc: Int): Int = (crc>>15|crc<<17) + 0xa282ead8
+  def fixupCRC(crc: Int): Int = (crc>>>15|crc<<17) + 0xa282ead8
 
   /**
    * Verify the block checksum and return the sequence of its contents.
@@ -206,7 +210,7 @@ object BlockParser {
     val computedCRC = fixupCRC(crc.getValue().toInt)
     val expectedCRC = readFixedInt(block.slice(block.size - blockTrailerLen + 1, block.size).iterator)
     if (computedCRC != expectedCRC) {
-      throw new IllegalArgumentException(
+      throw new BadFileFormatException(
         "Bad CRC got %08x != stored %08x".format(computedCRC, expectedCRC))
     }
     val compressionType = block(block.size - blockTrailerLen)
@@ -216,13 +220,13 @@ object BlockParser {
       case COMPRESSION_BLOCK_TYPE_SNAPPY => {
         val dataBytes = data.toByteBuffer
         if (!Snappy.isValidCompressedBuffer(dataBytes)) {
-          throw new IllegalArgumentException("Bad Snappy-compressed data")
+          throw new BadFileFormatException("Bad Snappy-compressed data")
         }
         val uncompressed = ByteBuffer.allocateDirect(Snappy.uncompressedLength(dataBytes))
         Snappy.uncompress(dataBytes, uncompressed)
         IndexedBytes.create(uncompressed)
       }
-      case _ => throw new IllegalArgumentException(s"Unknown compression type $compressionType")
+      case _ => throw new BadFileFormatException(s"Unknown compression type $compressionType")
     }
   }
 
@@ -240,4 +244,56 @@ object BlockParser {
     val blockWithoutTrailer = block.slice(0, block.size - 4 * (numRestarts + 1))
     new DataBlockIterator(blockWithoutTrailer.iterator)
   }
+}
+
+/**
+ * Iterator over all SSTable entries
+ *
+ * BUG(ariels): No support for 2-level indexes!
+ */
+class EntryIterator(val in: BlockReadable) extends Iterator[Entry] {
+  private val bytes = in.iterate(in.length - BlockParser.footerLength, BlockParser.footerLength)
+  private val footer = BlockParser.readFooter(bytes)
+  if (bytes.hasNext) {
+    throw new BadFileFormatException("Parsed footer too short")
+  }
+
+  private val indexIt = {
+    val bytes = in.readBlock(footer.index.offset, footer.index.size + BlockParser.blockTrailerLen)
+    val block = BlockParser.startBlockParse(bytes)
+    BlockParser.parseDataBlock(block)
+  }
+
+  private var entryIt: Iterator[Entry] = null
+
+  private def advanceToEntry(): Boolean = {
+    while (entryIt == null || !entryIt.hasNext) {
+      if (!indexIt.hasNext) {
+        return false
+      }
+      val data = indexIt.next()
+      // Ignore separating key: for iterating over all the value, only the
+      // blockhandle in the value is important.
+      val it = data.value.iterator
+      val bh = BlockParser.readBlockHandle(it)
+      Console.out.println(s"[DEBUG] Start block ${bh}")
+      if (it.hasNext) {
+        throw new BadFileFormatException("Parsed blockhandle too short")
+      }
+
+      val bytes = in.readBlock(bh.offset, bh.size + BlockParser.blockTrailerLen)
+      val block = BlockParser.startBlockParse(bytes)
+      entryIt = BlockParser.parseDataBlock(block)
+    }
+    return true
+  }
+
+  advanceToEntry() // Move to first entry
+
+  private def stripInternalKey(entry: Entry) =
+    new Entry(entry.key.slice(0, entry.key.length - 8), entry.value)
+
+  def hasNext = advanceToEntry()
+
+  def next(): Entry = stripInternalKey(entryIt.next)
 }

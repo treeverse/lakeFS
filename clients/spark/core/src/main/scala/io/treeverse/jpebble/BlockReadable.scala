@@ -7,6 +7,8 @@ import java.nio.channels.FileChannel
  * random-access capabilities.
  */
 trait BlockReadable {
+  def length: Long
+
   /**
    * Return a new block.
    *
@@ -23,6 +25,10 @@ trait BlockReadable {
 }
 
 class BlockReadableFileChannel(private val in: FileChannel) extends BlockReadable {
+  val size = in.size() // Compute once, the file should anyway be immutable!
+
+  override def length: Long = size
+
   override def readBlock(offset: Long, size: Long) =
     // TODO(ariels): Cache return values - readonly mmaps are reusable
     IndexedBytes.create(in.map(FileChannel.MapMode.READ_ONLY, offset, size))

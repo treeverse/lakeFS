@@ -25,14 +25,14 @@ class BlockParserSpec extends AnyFunSpec with Matchers {
     it("fails to read changed magic") {
       val bytes = magicBytes.toArray
       bytes(2) = (bytes(2) + 3).toByte
-      assertThrows[IllegalArgumentException]{
+      assertThrows[BadFileFormatException]{
         BlockParser.readMagic(bytes.iterator)
       }
     }
 
     it("fails to read truncated magic") {
       val bytes = magicBytes.iterator.drop(3)
-      assertThrows[IllegalArgumentException]{
+      assertThrows[BadFileFormatException]{
         BlockParser.readMagic(bytes)
       }
     }
@@ -157,7 +157,7 @@ class BlockParserSpec extends AnyFunSpec with Matchers {
 
   describe("read RocksDB SSTable") {
     // Copy SSTable to a readable file
-    val sstContents = this.getClass.getClassLoader.getResourceAsStream("sstable/ok1.sst")
+    val sstContents = this.getClass.getClassLoader.getResourceAsStream("sstable/range.sst")
     val tempFile = File.createTempFile("test-block-parser.", ".sst")
     tempFile.deleteOnExit()
     val out = new java.io.FileOutputStream(tempFile)
@@ -204,7 +204,18 @@ class BlockParserSpec extends AnyFunSpec with Matchers {
       val block = BlockParser.startBlockParse(bytes)
       val blockIt = BlockParser.parseDataBlock(block)
       for (entry <- blockIt) {
-        Console.out.println(s"[index]      ${entry}")
+        val bhIt = entry.value.iterator
+        val bh = BlockParser.readBlockHandle(bhIt)
+        bhIt.hasNext should be (false)
+        Console.out.println(s"[index]      ${Binary.readable(entry.key)} -> ${bh}")
+      }
+    }
+
+    it("reads everything") {
+      val it = new EntryIterator(in)
+
+      for (entry <- it) {
+        Console.out.println(s"[entry] ${entry}")
       }
     }
   }
