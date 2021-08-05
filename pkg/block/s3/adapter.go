@@ -19,6 +19,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/adapter"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -65,7 +66,8 @@ func resolveNamespacePrefix(opts block.WalkOpts) (block.QualifiedPrefix, error) 
 
 type Adapter struct {
 	awsConfig             *aws.Config
-	s3Clients             map[string]s3iface.S3API
+	s3ClientByRegion      map[string]s3iface.S3API
+	regionByBucket        map[string]string
 	httpClient            *http.Client
 	uploadIDTranslator    block.UploadIDTranslator
 	streamingChunkSize    int
@@ -100,7 +102,8 @@ func WithTranslator(t block.UploadIDTranslator) func(a *Adapter) {
 
 func NewAdapter(awsConfig *aws.Config, opts ...func(a *Adapter)) *Adapter {
 	a := &Adapter{
-		s3Clients:             make(map[string]s3iface.S3API),
+		s3ClientByRegion:      make(map[string]s3iface.S3API),
+		regionByBucket:        make(map[string]string),
 		awsConfig:             awsConfig,
 		httpClient:            http.DefaultClient,
 		uploadIDTranslator:    &block.NoOpTranslator{},
@@ -112,26 +115,31 @@ func NewAdapter(awsConfig *aws.Config, opts ...func(a *Adapter)) *Adapter {
 	}
 	return a
 }
-func (a *Adapter) newClient(ctx context.Context, bucket string) (s3iface.S3API, error) {
+func (a *Adapter) getBucketRegion(ctx context.Context, bucket string) (string, error) {
+	if region, hasRegion := a.regionByBucket[bucket]; hasRegion {
+		return region, nil
+	}
 	sess, err := session.NewSession(a.awsConfig)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	region, err := s3manager.GetBucketRegion(ctx, sess, bucket, "")
-	if err != nil {
-		return nil, err
-	}
-	a.awsConfig = a.awsConfig.WithRegion(region)
-	sess.ClientConfig(s3.ServiceName)
-	return s3.New(sess), nil
+	return s3manager.GetBucketRegion(ctx, sess, bucket, "")
 }
 
 func (a *Adapter) s3Client(ctx context.Context, bucket string) (s3iface.S3API, error) {
-	var err error
-	if _, ok := a.s3Clients[bucket]; !ok {
-		a.s3Clients[bucket], err = a.newClient(ctx, bucket)
+	region, err := a.getBucketRegion(ctx, bucket)
+	if err != nil {
+		return nil, err
 	}
-	return a.s3Clients[bucket], err
+	if client, hasClient := a.s3ClientByRegion[region]; hasClient {
+		return client, nil
+	}
+	sess, err := session.NewSession(a.awsConfig, &aws.Config{Region: swag.String(region)})
+	if err != nil {
+		return nil, err
+	}
+	a.s3ClientByRegion[region] = s3.New(sess)
+	return a.s3ClientByRegion[region], nil
 }
 
 func (a *Adapter) log(ctx context.Context) logging.Logger {
