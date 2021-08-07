@@ -69,14 +69,16 @@ func (t *TimeTicker) Tick() <-chan time.Time {
 }
 
 type BufferedCollector struct {
-	cache          keyIndex
-	writes         chan primaryKey
-	sender         Sender
-	sendTimeout    time.Duration
-	flushTicker    FlushTicker
-	done           chan bool
-	installationID string
-	processID      string
+	cache            keyIndex
+	writes           chan primaryKey
+	sender           Sender
+	sendTimeout      time.Duration
+	flushTicker      FlushTicker
+	done             chan bool
+	installationID   string
+	processID        string
+	runtimeCollector func() map[string]string
+	runtimeStats     map[string]string
 }
 
 type BufferedCollectorOpts func(s *BufferedCollector)
@@ -111,18 +113,20 @@ func WithSendTimeout(d time.Duration) BufferedCollectorOpts {
 	}
 }
 
-func NewBufferedCollector(installationID string, c *config.Config, opts ...BufferedCollectorOpts) *BufferedCollector {
+func NewBufferedCollector(installationID string, runtimeCollector func() map[string]string, c *config.Config, opts ...BufferedCollectorOpts) *BufferedCollector {
 	processID, moreOpts := getBufferedCollectorArgs(c)
 	opts = append(opts, moreOpts...)
 	s := &BufferedCollector{
-		cache:          make(keyIndex),
-		writes:         make(chan primaryKey, collectorEventBufferSize),
-		done:           make(chan bool),
-		sender:         NewDummySender(),
-		sendTimeout:    sendTimeout,
-		flushTicker:    &TimeTicker{ticker: time.NewTicker(flushInterval)},
-		installationID: installationID,
-		processID:      processID,
+		cache:            make(keyIndex),
+		writes:           make(chan primaryKey, collectorEventBufferSize),
+		done:             make(chan bool),
+		sender:           NewDummySender(),
+		sendTimeout:      sendTimeout,
+		runtimeCollector: runtimeCollector,
+		runtimeStats:     map[string]string{},
+		flushTicker:      &TimeTicker{ticker: time.NewTicker(flushInterval)},
+		installationID:   installationID,
+		processID:        processID,
 	}
 	for _, opt := range opts {
 		opt(s)
@@ -171,6 +175,7 @@ func (s *BufferedCollector) Run(ctx context.Context) {
 		case w := <-s.writes: // collect events
 			s.incr(w)
 		case <-s.flushTicker.Tick(): // every N seconds, send the collected events
+			s.handleRuntimeStats()
 			metrics := makeMetrics(s.cache)
 			s.cache = make(keyIndex)
 			go s.send(metrics) // no need to block on this
@@ -222,6 +227,46 @@ func (s *BufferedCollector) collectHeartbeat(ctx context.Context) {
 
 func (s *BufferedCollector) SetInstallationID(installationID string) {
 	s.installationID = installationID
+}
+
+func (s *BufferedCollector) handleRuntimeStats() {
+	if s.runtimeCollector == nil {
+		// nothing to do
+		return
+	}
+
+	currStats := s.runtimeCollector()
+	if len(currStats) == 0 {
+		return
+	}
+
+	anyChange := false
+	if len(s.runtimeStats) == 0 {
+		// first time runtime stats are reported
+		anyChange = true
+		s.runtimeStats = currStats
+	} else {
+		for currK, currV := range currStats {
+			if prevV, ok := s.runtimeStats[currK]; !ok || prevV != currV {
+				// some reported metric changed, need to report it
+				s.runtimeStats[currK] = currV
+				anyChange = true
+			}
+		}
+	}
+
+	if anyChange {
+		go s.sendRuntimeStats()
+	}
+}
+
+func (s *BufferedCollector) sendRuntimeStats() {
+	m := Metadata{InstallationID: s.installationID}
+	for k, v := range s.runtimeStats {
+		m.Entries = append(m.Entries, MetadataEntry{Name: k, Value: v})
+	}
+
+	s.CollectMetadata(&m)
 }
 
 func getBufferedCollectorArgs(c *config.Config) (processID string, opts []BufferedCollectorOpts) {

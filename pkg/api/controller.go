@@ -16,13 +16,16 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/go-openapi/swag"
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/block/adapter"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/cloud"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
@@ -30,6 +33,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/upload"
+	"github.com/treeverse/lakefs/pkg/version"
 )
 
 type contextKey string
@@ -42,6 +46,9 @@ const (
 
 	actionStatusCompleted = "completed"
 	actionStatusFailed    = "failed"
+
+	entryTypeObject       = "object"
+	entryTypeCommonPrefix = "common_prefix"
 )
 
 type actionsHandler interface {
@@ -52,6 +59,7 @@ type actionsHandler interface {
 }
 
 type Controller struct {
+	Config                *config.Config
 	Catalog               catalog.Interface
 	Auth                  auth.Service
 	BlockAdapter          block.Adapter
@@ -193,9 +201,9 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	}
 
 	blockStoreType := c.BlockAdapter.BlockstoreType()
-	if qk.StorageType.String() != blockStoreType {
+	if qk.StorageType.BlockstoreType() != blockStoreType {
 		writeError(w, http.StatusBadRequest, fmt.Sprintf("invalid storage type: %s: current block adapter is %s",
-			qk.StorageType.String(),
+			qk.StorageType.BlockstoreType(),
 			blockStoreType,
 		))
 		return
@@ -1001,17 +1009,18 @@ func (c *Controller) AttachPolicyToUser(w http.ResponseWriter, r *http.Request, 
 	writeResponse(w, http.StatusCreated, nil)
 }
 
-func (c *Controller) GetConfig(w http.ResponseWriter, r *http.Request) {
+func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
-			Action:   permissions.ReadConfigAction,
+			Action:   permissions.ReadStorageConfiguration,
 			Resource: permissions.All,
 		},
 	}) {
 		return
 	}
 	info := c.BlockAdapter.GetStorageNamespaceInfo()
-	response := Config{
+	response := StorageConfig{
+		BlockstoreType:                   c.Config.GetBlockstoreType(),
 		BlockstoreNamespaceValidityRegex: info.ValidityRegex,
 		BlockstoreNamespaceExample:       info.Example,
 	}
@@ -1501,7 +1510,8 @@ func handleAPIError(w http.ResponseWriter, err error) bool {
 		errors.Is(err, graveler.ErrNoChanges),
 		errors.Is(err, permissions.ErrInvalidServiceName),
 		errors.Is(err, permissions.ErrInvalidAction),
-		errors.Is(err, model.ErrValidationError):
+		errors.Is(err, model.ErrValidationError),
+		errors.Is(err, graveler.ErrInvalidRef):
 		writeError(w, http.StatusBadRequest, err)
 
 	case errors.Is(err, graveler.ErrNotUnique):
@@ -1512,10 +1522,10 @@ func handleAPIError(w http.ResponseWriter, err error) bool {
 
 	case errors.Is(err, graveler.ErrLockNotAcquired):
 		writeError(w, http.StatusInternalServerError, "branch is currently locked, try again later")
-
+	case errors.Is(err, adapter.ErrDataNotFound):
+		writeError(w, http.StatusGone, "No data")
 	case err != nil:
 		writeError(w, http.StatusInternalServerError, err)
-
 	default:
 		return false
 	}
@@ -1536,11 +1546,11 @@ func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body Re
 
 	var err error
 	switch body.Type {
-	case "common_prefix":
+	case entryTypeCommonPrefix:
 		err = c.Catalog.ResetEntries(ctx, repository, branch, StringValue(body.Path))
 	case "reset":
 		err = c.Catalog.ResetBranch(ctx, repository, branch)
-	case "object":
+	case entryTypeObject:
 		err = c.Catalog.ResetEntry(ctx, repository, branch, StringValue(body.Path))
 	default:
 		writeError(w, http.StatusNotFound, "reset type not found")
@@ -1611,18 +1621,35 @@ func (c *Controller) DiffBranch(w http.ResponseWriter, r *http.Request, reposito
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "diff_workspace")
-	diff, hasMore, err := c.Catalog.DiffUncommitted(ctx, repository, branch, paginationAmount(params.Amount), paginationAfter(params.After))
+
+	diff, hasMore, err := c.Catalog.DiffUncommitted(
+		ctx,
+		repository,
+		branch,
+		paginationPrefix(params.Prefix),
+		paginationDelimiter(params.Delimiter),
+		paginationAmount(params.Amount),
+		paginationAfter(params.After),
+	)
 	if handleAPIError(w, err) {
 		return
 	}
 
 	results := make([]Diff, 0, len(diff))
 	for _, d := range diff {
-		results = append(results, Diff{
+		pathType := entryTypeObject
+		if d.CommonLevel {
+			pathType = entryTypeCommonPrefix
+		}
+		diff := Diff{
 			Path:     d.Path,
 			Type:     transformDifferenceTypeToString(d.Type),
-			PathType: "object",
-		})
+			PathType: pathType,
+		}
+		if !d.CommonLevel {
+			diff.SizeBytes = &d.Size
+		}
+		results = append(results, diff)
 	}
 	response := DiffList{
 		Pagination: paginationFor(hasMore, results, "Path"),
@@ -1752,7 +1779,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		Checksum:        blob.Checksum,
 		Mtime:           writeTime.Unix(),
 		Path:            params.Path,
-		PathType:        "object",
+		PathType:        entryTypeObject,
 		PhysicalAddress: qk.Format(),
 		SizeBytes:       Int64Ptr(blob.Size),
 	}
@@ -1818,7 +1845,7 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body St
 		Checksum:        entry.Checksum,
 		Mtime:           entry.CreationDate.Unix(),
 		Path:            entry.Path,
-		PathType:        "object",
+		PathType:        entryTypeObject,
 		PhysicalAddress: qk.Format(),
 		SizeBytes:       Int64Ptr(entry.Size),
 	}
@@ -1886,6 +1913,74 @@ func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repositor
 		Parents:      commit.Parents,
 	}
 	writeResponse(w, http.StatusOK, response)
+}
+
+func (c *Controller) GetGarbageCollectionRules(w http.ResponseWriter, r *http.Request, repository string) {
+	if !c.authorize(w, r, []permissions.Permission{
+		{
+			Action:   permissions.GetGarbageCollectionRulesAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	rules, err := c.Catalog.GetGarbageCollectionRules(ctx, repository)
+	if handleAPIError(w, err) {
+		return
+	}
+	resp := GarbageCollectionRules{}
+	resp.DefaultRetentionDays = int(rules.DefaultRetentionDays)
+	for branchID, retentionDays := range rules.BranchRetentionDays {
+		resp.Branches = append(resp.Branches, GarbageCollectionRule{BranchId: branchID, RetentionDays: int(retentionDays)})
+	}
+	writeResponse(w, http.StatusOK, resp)
+}
+
+func (c *Controller) SetGarbageCollectionRules(w http.ResponseWriter, r *http.Request, body SetGarbageCollectionRulesJSONRequestBody, repository string) {
+	if !c.authorize(w, r, []permissions.Permission{
+		{
+			Action:   permissions.SetGarbageCollectionRulesAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	rules := &graveler.GarbageCollectionRules{
+		DefaultRetentionDays: int32(body.DefaultRetentionDays),
+		BranchRetentionDays:  make(map[string]int32),
+	}
+	for _, rule := range body.Branches {
+		rules.BranchRetentionDays[rule.BranchId] = int32(rule.RetentionDays)
+	}
+	err := c.Catalog.SetGarbageCollectionRules(ctx, repository, rules)
+	if handleAPIError(w, err) {
+		return
+	}
+	writeResponse(w, http.StatusNoContent, nil)
+}
+
+func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *http.Request, body PrepareGarbageCollectionCommitsJSONRequestBody, repository string) {
+	if !c.authorize(w, r, []permissions.Permission{
+		{
+			Action:   permissions.PrepareGarbageCollectionCommitsAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "prepare_garbage_collection_commits")
+	gcRUnMetadata, err := c.Catalog.PrepareExpiredCommits(ctx, repository, swag.StringValue(body.PreviousRunId))
+	if handleAPIError(w, err) {
+		return
+	}
+	writeResponse(w, http.StatusCreated, GarbageCollectionPrepareResponse{
+		GcCommitsLocation:   gcRUnMetadata.CommitsCsvLocation,
+		GcAddressesLocation: gcRUnMetadata.AddressLocation,
+		RunId:               gcRUnMetadata.RunId,
+	})
 }
 
 func (c *Controller) GetMetaRange(w http.ResponseWriter, r *http.Request, repository string, metaRange string) {
@@ -2158,20 +2253,32 @@ func (c *Controller) DiffRefs(w http.ResponseWriter, r *http.Request, repository
 	if params.Type != nil && *params.Type == "two_dot" {
 		diffFunc = c.Catalog.Diff
 	}
+
 	diff, hasMore, err := diffFunc(ctx, repository, leftRef, rightRef, catalog.DiffParams{
-		Limit: paginationAmount(params.Amount),
-		After: paginationAfter(params.After),
+		Limit:            paginationAmount(params.Amount),
+		After:            paginationAfter(params.After),
+		Prefix:           paginationPrefix(params.Prefix),
+		Delimiter:        paginationDelimiter(params.Delimiter),
+		AdditionalFields: nil,
 	})
 	if handleAPIError(w, err) {
 		return
 	}
 	results := make([]Diff, 0, len(diff))
 	for _, d := range diff {
-		results = append(results, Diff{
+		pathType := entryTypeObject
+		if d.CommonLevel {
+			pathType = entryTypeCommonPrefix
+		}
+		diff := Diff{
 			Path:     d.Path,
 			Type:     transformDifferenceTypeToString(d.Type),
-			PathType: "object",
-		})
+			PathType: pathType,
+		}
+		if !d.CommonLevel {
+			diff.SizeBytes = &d.Size
+		}
+		results = append(results, diff)
 	}
 	response := DiffList{
 		Pagination: paginationFor(hasMore, results, "Path"),
@@ -2260,8 +2367,7 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 
 	// setup response
 	reader, err := c.BlockAdapter.Get(ctx, block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: entry.PhysicalAddress}, entry.Size)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
+	if handleAPIError(w, err) {
 		return
 	}
 	defer func() {
@@ -2299,23 +2405,13 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 	ctx := r.Context()
 	c.LogAction(ctx, "list_objects")
 
-	// discern between an empty delimiter and no delimiter being passed at all
-	// by default, go-swagger will use the default value ("/") even if we pass
-	// a delimiter param that is explicitly empty. This overrides this (wrong) behavior.
-	var delimiter string
-	if params.Delimiter == nil {
-		delimiter = "/"
-	} else {
-		delimiter = *params.Delimiter
-	}
-
 	res, hasMore, err := c.Catalog.ListEntries(
 		ctx,
 		repository,
 		ref,
-		StringValue(params.Prefix),
+		paginationPrefix(params.Prefix),
 		paginationAfter(params.After),
-		delimiter,
+		paginationDelimiter(params.Delimiter),
 		paginationAmount(params.Amount),
 	)
 	if handleAPIError(w, err) {
@@ -2338,7 +2434,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 		if entry.CommonLevel {
 			objList = append(objList, ObjectStats{
 				Path:     entry.Path,
-				PathType: "common_prefix",
+				PathType: entryTypeCommonPrefix,
 			})
 		} else {
 			var mtime int64
@@ -2350,7 +2446,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 				Mtime:           mtime,
 				Path:            entry.Path,
 				PhysicalAddress: qk.Format(),
-				PathType:        "object",
+				PathType:        entryTypeObject,
 				SizeBytes:       Int64Ptr(entry.Size),
 			})
 		}
@@ -2401,7 +2497,7 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 		Checksum:        entry.Checksum,
 		Mtime:           entry.CreationDate.Unix(),
 		Path:            params.Path,
-		PathType:        "object",
+		PathType:        entryTypeObject,
 		PhysicalAddress: qk.Format(),
 		SizeBytes:       Int64Ptr(entry.Size),
 	}
@@ -2616,13 +2712,18 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 
 	// check if previous setup completed
 	ctx := r.Context()
-	if ts, _ := c.MetadataManager.SetupTimestamp(ctx); !ts.IsZero() {
+	initialized, err := c.MetadataManager.IsInitialized(ctx)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	if initialized {
 		writeError(w, http.StatusConflict, "lakeFS already initialized")
 		return
 	}
 
 	// migrate the database if needed
-	err := c.Migrator.Migrate(ctx)
+	err = c.Migrator.Migrate(ctx)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
@@ -2663,6 +2764,16 @@ func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 		User: user,
 	}
 	writeResponse(w, http.StatusOK, response)
+}
+
+func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	user, ok := ctx.Value(UserContextKey).(*model.User)
+	if !ok || user == nil {
+		writeError(w, http.StatusUnauthorized, ErrAuthenticationFailed)
+		return
+	}
+	writeResponse(w, http.StatusOK, VersionConfig{Version: swag.String(version.Version)})
 }
 
 func IsStatusCodeOK(statusCode int) bool {
@@ -2735,6 +2846,13 @@ func paginationPrefix(v *PaginationPrefix) string {
 	return string(*v)
 }
 
+func paginationDelimiter(v *PaginationDelimiter) string {
+	if v == nil {
+		return ""
+	}
+	return string(*v)
+}
+
 func paginationAmount(v *PaginationAmount) int {
 	if v == nil {
 		return DefaultMaxPerPage
@@ -2750,6 +2868,7 @@ func paginationAmount(v *PaginationAmount) int {
 }
 
 func NewController(
+	cfg *config.Config,
 	catalog catalog.Interface,
 	authService auth.Service,
 	blockAdapter block.Adapter,
@@ -2761,6 +2880,7 @@ func NewController(
 	logger logging.Logger,
 ) *Controller {
 	return &Controller{
+		Config:                cfg,
 		Catalog:               catalog,
 		Auth:                  authService,
 		BlockAdapter:          blockAdapter,

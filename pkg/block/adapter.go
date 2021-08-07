@@ -103,6 +103,7 @@ type Adapter interface {
 	ValidateConfiguration(ctx context.Context, storageNamespace string) error
 	BlockstoreType() string
 	GetStorageNamespaceInfo() StorageNamespaceInfo
+	RuntimeStats() map[string]string
 }
 
 type UploadIDTranslator interface {

@@ -35,12 +35,14 @@ components:
       description: return items prefixed with this value
       schema:
         type: string
+
     PaginationAfter:
       in: query
       name: after
       description: return items after this value
       schema:
         type: string
+
     PaginationAmount:
       in: query
       name: amount
@@ -50,6 +52,13 @@ components:
         minimum: -1
         maximum: 1000
         default: 100
+
+    PaginationDelimiter:
+      in: query
+      name: delimiter
+      description: delimiter used to group common prefixes by
+      schema:
+        type: string
 
   responses:
     Unauthorized:
@@ -66,6 +75,12 @@ components:
             $ref: "#/components/schemas/Error"
     NotFound:
       description: Resource Not Found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Conflict:
+      description: Resource Conflicts With Target
       content:
         application/json:
           schema:
@@ -236,6 +251,10 @@ components:
         size_bytes:
           type: integer
           format: int64
+        mtime:
+          type: integer
+          format: int64
+          description: Unix Epoch in seconds
         metadata:
           type: object
           additionalProperties:
@@ -286,6 +305,10 @@ components:
         path_type:
           type: string
           enum: [ common_prefix, object ]
+        size_bytes:
+          type: integer
+          description: represents the size of the added/changed/deleted entry
+          format: int64
 
     DiffList:
       type: object
@@ -307,9 +330,7 @@ components:
       properties:
         type:
           type: string
-          enum: [ object, common_prefix, commit, reset ]
-        commit:
-          type: string
+          enum: [ object, common_prefix, reset ]
         path:
           type: string
 
@@ -663,15 +684,24 @@ components:
           items:
             $ref: "#/components/schemas/Policy"
 
-    Config:
+    StorageConfig:
       type: object
       required:
+        - blockstore_type
         - blockstore_namespace_example
         - blockstore_namespace_ValidityRegex
       properties:
+        blockstore_type:
+          type: string
         blockstore_namespace_example:
           type: string
         blockstore_namespace_ValidityRegex:
+          type: string
+
+    VersionConfig:
+      type: object
+      properties:
+        version:
           type: string
 
     ActionRun:
@@ -786,6 +816,58 @@ components:
         - staging
         - checksum
         - size_bytes
+
+    GarbageCollectionPrepareRequest:
+      type: object
+      properties:
+        previous_run_id:
+          type: string
+          description: run id of a previous successful GC job
+          example: 64eaa103-d726-4a33-bcb8-7c0b4abfe09e
+
+    GarbageCollectionPrepareResponse:
+      type: object
+      properties:
+        run_id:
+          type: string
+          description: a unique identifier generated for this GC job
+          example: 64eaa103-d726-4a33-bcb8-7c0b4abfe09e
+        gc_commits_location:
+          type: string
+          description: location of the resulting commits csv table (partitioned by run_id)
+          example: s3://my-storage-namespace/_lakefs/retention/commits
+        gc_addresses_location:
+          type: string
+          description: location to use for expired addresses parquet table (partitioned by run_id)
+          example: s3://my-storage-namespace/_lakefs/retention/addresses
+      required:
+        - run_id
+        - gc_commits_location
+        - gc_addresses_location
+
+    GarbageCollectionRule:
+      type: object
+      properties:
+        branch_id:
+          type: string
+        retention_days:
+          type: integer
+      required:
+        - branch_id
+        - retention_days
+
+    GarbageCollectionRules:
+      type: object
+      properties:
+        default_retention_days:
+          type: integer
+        branches:
+          type: array
+          items:
+            $ref: '#/components/schemas/GarbageCollectionRule'
+      required:
+        - default_retention_days
+        - branches
 
 paths:
   /setup_lakefs:
@@ -1560,6 +1642,8 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        409:
+          $ref: "#/components/responses/Conflict"
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -1714,6 +1798,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        409:
+          $ref: "#/components/responses/Conflict"
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -1815,6 +1901,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        409:
+          $ref: "#/components/responses/Conflict"
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2080,6 +2168,8 @@ paths:
     parameters:
       - $ref: "#/components/parameters/PaginationAfter"
       - $ref: "#/components/parameters/PaginationAmount"
+      - $ref: "#/components/parameters/PaginationPrefix"
+      - $ref: "#/components/parameters/PaginationDelimiter"
       - in: path
         name: repository
         required: true
@@ -2090,6 +2180,7 @@ paths:
         required: true
         schema:
           type: string
+
     get:
       tags:
         - branches
@@ -2130,6 +2221,8 @@ paths:
         description: a reference (could be either a branch or a commit ID) to compare against
       - $ref: "#/components/parameters/PaginationAfter"
       - $ref: "#/components/parameters/PaginationAmount"
+      - $ref: "#/components/parameters/PaginationPrefix"
+      - $ref: "#/components/parameters/PaginationDelimiter"
       - in: query
         name: type
         schema:
@@ -2140,6 +2233,7 @@ paths:
           type: string
           enum: [two_dot, three_dot]
           default: three_dot
+
     get:
       tags:
         - refs
@@ -2518,18 +2612,11 @@ paths:
         schema:
           type: string
         description: a reference (could be either a branch or a commit ID)
-      - in: query
-        name: prefix
-        required: false
-        schema:
-          type: string
       - $ref: "#/components/parameters/PaginationAfter"
       - $ref: "#/components/parameters/PaginationAmount"
-      - in: query
-        name: delimiter
-        schema:
-          type: string
-          default: "/"
+      - $ref: "#/components/parameters/PaginationDelimiter"
+      - $ref: "#/components/parameters/PaginationPrefix"
+
     get:
       tags:
         - objects
@@ -2794,7 +2881,80 @@ paths:
           $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
+  /repositories/{repository}/gc/rules:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - retention
+      operationId: getGarbageCollectionRules
+      responses:
+        200:
+          description: gc rule list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GarbageCollectionRules"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+    post:
+      tags:
+        - retention
+      operationId: set garbage collection rules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GarbageCollectionRules"
+      responses:
+        204:
+          description: set garbage collection rules successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
 
+  /repositories/{repository}/gc/prepare_commits:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GarbageCollectionPrepareRequest"
+      tags:
+        - retention
+      operationId: prepareGarbageCollectionCommits
+      summary: save lists of active and expired commits for garbage collection
+      responses:
+        201:
+          description: paths to commit dataset
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GarbageCollectionPrepareResponse"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
   /healthcheck:
     get:
       operationId: healthCheck
@@ -2805,19 +2965,33 @@ paths:
       responses:
         204:
           description: NoContent
-
-  /config:
+  /config/version:
     get:
       tags:
         - config
-      operationId: getConfig
-      description: retrieve the lakefs config
+      operationId: getLakeFSVersion
+      description: get version of lakeFS server
       responses:
         200:
-          description: the lakefs config
+          description: lakeFS version
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Config"
+                $ref: "#/components/schemas/VersionConfig"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+  /config/storage:
+    get:
+      tags:
+        - config
+      operationId: getStorageConfig
+      description: retrieve lakeFS storage configuration
+      responses:
+        200:
+          description: lakeFS storage configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StorageConfig"
         401:
           $ref: "#/components/responses/Unauthorized"

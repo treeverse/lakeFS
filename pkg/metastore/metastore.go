@@ -5,26 +5,49 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/glue"
+	"github.com/davecgh/go-spew/spew"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-func (m *Table) Update(db, table, serde string, transformLocation func(location string) (string, error)) error {
+const (
+	// sparkSQLWorkaroundSuffix is a suffix added as a hack in Spark SQL, locations with this suffix are not used and should not be changed, Please refer to https://issues.apache.org/jira/browse/SPARK-15269 for more details.
+	sparkSQLWorkaroundSuffix = "-__PLACEHOLDER__"
+	// sparkSQLTableProviderKey  specifies the table is a Spark SQL data source table
+	sparkSQLTableProviderKey    = "spark.sql.sources.provider"
+	sparkSQLProviderLocationKey = "path"
+)
+
+func (m *Table) Update(db, table, serde string, transformLocation func(location string) (string, error), isSparkSQLTable, fixSparkPlaceHolder bool) error {
+	log := logging.Default().WithFields(logging.Fields{
+		"db":    db,
+		"table": table,
+		"serde": serde,
+	})
 	if m.Sd == nil {
 		m.Sd = &StorageDescriptor{}
 	}
-	if m.Sd.SerdeInfo == nil {
-		m.Sd.SerdeInfo = &SerDeInfo{}
-	}
 	m.DBName = db
 	m.TableName = table
-	m.Sd.SerdeInfo.Name = serde
-	var err error
-	if m.Sd.Location != "" {
-		m.Sd.Location, err = transformLocation(m.Sd.Location)
+	err := m.Sd.Update(db, table, serde, transformLocation, isSparkSQLTable, fixSparkPlaceHolder)
+	if err != nil {
+		log.WithError(err).WithField("table", spew.Sdump(*m)).Error("Update table")
+		return err
 	}
-	return err
+	log.WithField("table", spew.Sdump(*m)).Debug("Update table")
+	return nil
 }
 
-func (m *Partition) Update(db, table, serde string, transformLocation func(location string) (string, error)) error {
+func (m *Table) isSparkSQLTable() (res bool) {
+	_, res = m.Parameters[sparkSQLTableProviderKey]
+	return
+}
+
+func (m *Partition) Update(db, table, serde string, transformLocation func(location string) (string, error), isSparkSQLTable, fixSparkPlaceHolder bool) error {
+	log := logging.Default().WithFields(logging.Fields{
+		"db":    db,
+		"table": table,
+		"serde": serde,
+	})
 	if m.Sd == nil {
 		m.Sd = &StorageDescriptor{}
 	}
@@ -34,9 +57,41 @@ func (m *Partition) Update(db, table, serde string, transformLocation func(locat
 	m.DBName = db
 	m.TableName = table
 	m.Sd.SerdeInfo.Name = serde
+	err := m.Sd.Update(db, table, serde, transformLocation, isSparkSQLTable, fixSparkPlaceHolder)
+	if err != nil {
+		log.WithError(err).WithField("table", spew.Sdump(*m)).Error("Update table")
+		return err
+	}
+	log.WithField("table", spew.Sdump(*m)).Debug("Update table")
+	return nil
+}
+
+func (m *StorageDescriptor) Update(db, table, serde string, transformLocation func(location string) (string, error), isSparkSQLTable, fixSparkPlaceHolder bool) error {
+	if m.SerdeInfo == nil {
+		m.SerdeInfo = &SerDeInfo{}
+	}
+
+	m.SerdeInfo.Name = serde
 	var err error
-	if m.Sd.Location != "" {
-		m.Sd.Location, err = transformLocation(m.Sd.Location)
+	if m.Location != "" && !(isSparkSQLTable && strings.HasSuffix(m.Location, sparkSQLWorkaroundSuffix)) {
+		m.Location, err = transformLocation(m.Location)
+	}
+	if err != nil {
+		return err
+	}
+
+	if isSparkSQLTable {
+		// Table was created by Spark SQL, we should change the internal stored Spark SQL location
+		if l, ok := m.SerdeInfo.Parameters[sparkSQLProviderLocationKey]; ok {
+			updatedLocation, err := transformLocation(l)
+			if err != nil {
+				return err
+			}
+			m.SerdeInfo.Parameters[sparkSQLProviderLocationKey] = updatedLocation
+			if fixSparkPlaceHolder && strings.HasSuffix(m.Location, sparkSQLWorkaroundSuffix) {
+				m.Location = updatedLocation
+			}
+		}
 	}
 	return err
 }

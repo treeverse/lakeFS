@@ -33,6 +33,8 @@ GOTESTRACE=$(GOTEST) -race
 GOGET=$(GOCMD) get
 GOFMT=$(GOCMD)fmt
 
+GOTEST_PARALLELISM=4
+
 GO_TEST_MODULES=$(shell $(GOCMD) list ./... | grep -v 'lakefs/pkg/api/gen/')
 
 LAKEFS_BINARY_NAME=lakefs
@@ -66,7 +68,8 @@ clean:
 		pkg/ddl/statik.go \
 		pkg/graveler/sstable/mock \
 		pkg/webui \
-	    pkg/graveler/committed/mock
+	    pkg/graveler/committed/mock \
+	    pkg/graveler/mock
 
 check-licenses: check-licenses-go-mod check-licenses-npm
 
@@ -135,6 +138,7 @@ gen-api: go-install ## Run the swagger code generator
 gen-mockgen: go-install ## Run the generator for inline commands
 	$(GOGENERATE) ./pkg/graveler/sstable
 	$(GOGENERATE) ./pkg/graveler/committed
+	$(GOGENERATE) ./pkg/graveler
 	$(GOGENERATE) ./pkg/pyramid
 	$(GOGENERATE) ./pkg/onboard
 	$(GOGENERATE) ./pkg/actions
@@ -150,8 +154,13 @@ lint: go-install  ## Lint code
 nessie: ## run nessie (system testing)
 	$(GOTEST) -v ./nessie --args --system-tests
 
-test: gen  ## Run tests for the project
-	$(GOTEST) -count=1 -coverprofile=cover.out -race -cover -failfast $(GO_TEST_MODULES)
+test: test-go test-hadoopfs  ## Run tests for the project
+
+test-go: gen			# Run parallelism > num_cores: most of our slow tests are *not* CPU-bound.
+	$(GOTEST) -count=1 -coverprofile=cover.out -race -cover -failfast --parallel="$(GOTEST_PARALLELISM)" $(GO_TEST_MODULES)
+
+test-hadoopfs:
+	cd clients/hadoopfs && mvn test
 
 run-test:  ## Run tests without generating anything (faster if already generated)
 	$(GOTEST) -count=1 -coverprofile=cover.out -race -short -cover -failfast $(GO_TEST_MODULES)
@@ -218,7 +227,11 @@ proto: ## Build proto (Protocol Buffers) files
 	$(PROTOC) --proto_path=pkg/graveler --go_out=pkg/graveler --go_opt=paths=source_relative graveler.proto
 
 publish-scala: ## sbt publish spark client jars to nexus and s3 bucket
-	cd clients/spark && sbt assembly && sbt s3Upload && sbt publish
+	cd clients/spark && sbt assembly && sbt s3Upload && sbt publishSigned
+	aws s3 cp --recursive --acl public-read $(CLIENT_JARS_BUCKET) $(CLIENT_JARS_BUCKET) --metadata-directive REPLACE
+
+publish-lakefsfs-test: ## sbt publish spark lakefsfs test jars to s3 bucket
+	cd test/lakefsfs && sbt assembly && sbt s3Upload
 	aws s3 cp --recursive --acl public-read $(CLIENT_JARS_BUCKET) $(CLIENT_JARS_BUCKET) --metadata-directive REPLACE
 
 help:  ## Show Help menu

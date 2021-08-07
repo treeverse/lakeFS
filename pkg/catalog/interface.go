@@ -14,6 +14,8 @@ const (
 type DiffParams struct {
 	Limit            int
 	After            string
+	Prefix           string
+	Delimiter        string
 	AdditionalFields []string // db fields names that will be load in additional to Path on Difference's Entry
 }
 
@@ -98,7 +100,7 @@ type Interface interface {
 
 	Diff(ctx context.Context, repository, leftReference string, rightReference string, params DiffParams) (Differences, bool, error)
 	Compare(ctx context.Context, repository, leftReference string, rightReference string, params DiffParams) (Differences, bool, error)
-	DiffUncommitted(ctx context.Context, repository, branch string, limit int, after string) (Differences, bool, error)
+	DiffUncommitted(ctx context.Context, repository, branch, prefix, delimiter string, limit int, after string) (Differences, bool, error)
 
 	Merge(ctx context.Context, repository, destinationBranch, sourceRef, committer, message string, metadata Metadata) (*MergeResult, error)
 
@@ -113,6 +115,10 @@ type Interface interface {
 	// forward metadata for thick clients
 	GetMetaRange(ctx context.Context, repositoryID, metaRangeID string) (graveler.MetaRangeInfo, error)
 	GetRange(ctx context.Context, repositoryID, rangeID string) (graveler.RangeInfo, error)
+
+	GetGarbageCollectionRules(ctx context.Context, repositoryID string) (*graveler.GarbageCollectionRules, error)
+	SetGarbageCollectionRules(ctx context.Context, repositoryID string, rules *graveler.GarbageCollectionRules) error
+	PrepareExpiredCommits(ctx context.Context, repositoryID string, previousRunID string) (*graveler.GarbageCollectionRunMetadata, error)
 
 	io.Closer
 }

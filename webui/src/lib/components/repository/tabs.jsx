@@ -10,12 +10,9 @@ import {useRouter} from "../../hooks/router";
 
 
 export const RepositoryNavTabs = ({ active }) => {
-
-    const { repo, reference, loading, error } = useRefs();
-
+    const { reference } = useRefs();
     const router = useRouter();
-
-    const repoId = (loading && !error) ? '' : repo.id;
+    const { repoId } = router.params;
 
     const withRefContext = (url) => {
         const params = new URLSearchParams();
@@ -49,7 +46,7 @@ export const RepositoryNavTabs = ({ active }) => {
                 <DatabaseIcon/> Objects
             </Link>
             <Link active={active === 'changes'} href={withBranchContext(`/repositories/${repoId}/changes`)} component={NavItem}>
-                <FileDiffIcon/> Changes
+                <FileDiffIcon/> Uncommitted Changes
             </Link>
             <Link active={active === 'commits'} href={withRefContext(`/repositories/${repoId}/commits`)} component={NavItem}>
                 <GitCommitIcon/> Commits

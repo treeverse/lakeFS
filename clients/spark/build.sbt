@@ -2,8 +2,8 @@ import build.BuildType
 
 lazy val baseName = "lakefs-spark"
 
-lazy val projectVersion = "0.1.0-SNAPSHOT"
-ThisBuild / isSnapshot := true
+lazy val projectVersion = "0.1.5"
+ThisBuild / isSnapshot := false
 
 // Spark versions 2.4.7 and 3.0.1 use different Scala versions.  Changing this is a deep
 // change, so key the Spark distinction by the Scala distinction.  sbt doesn't appear to
@@ -31,11 +31,14 @@ def generateCoreProject(buildType: BuildType) =
       s3UploadSettings,
       settingsToCompileIn("core"),
       scalaVersion := buildType.scalaVersion,
+      semanticdbEnabled := true, // enable SemanticDB
+      semanticdbVersion := scalafixSemanticdb.revision,
+      scalacOptions += "-Ywarn-unused-import",
       PB.targets := Seq(
         scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
       ),
       libraryDependencies ++= Seq(
-        "io.lakefs" % "api-client" % "0.40.3",
+        "io.lakefs" % "api-client" % "0.44.0",
         "org.rocksdb" % "rocksdbjni" % "6.6.4",
         "commons-codec" % "commons-codec" % "1.15",
         "org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
@@ -46,7 +49,16 @@ def generateCoreProject(buildType: BuildType) =
         "org.json4s" %% "json4s-native" % "3.7.0-M8",
         "com.google.guava" % "guava" % "16.0.1",
         "com.google.guava" % "failureaccess" % "1.0.1",
+        "org.rogach" %% "scallop" % "4.0.3",
+        "software.amazon.awssdk" % "s3" % "2.15.15",
+        "org.ow2.asm" % "asm" % "9.2",
+        "org.ow2.asm" % "asm-util" % "9.2",
+
+        "org.scalactic" %% "scalactic" % "3.2.9",
+        "org.scalatest" %% "scalatest" % "3.2.9" % "test",
       ),
+      Test / logBuffered := false,
+      Test / testOptions += Tests.Argument("-oF"),
       target := file(s"target/core-${buildType.name}/")
     ).enablePlugins(S3Plugin)
 
@@ -56,6 +68,9 @@ def generateExamplesProject(buildType: BuildType) =
       sharedSettings,
       settingsToCompileIn("examples"),
       scalaVersion := buildType.scalaVersion,
+      semanticdbEnabled := true, // enable SemanticDB
+      semanticdbVersion := scalafixSemanticdb.revision,
+      scalacOptions += "-Ywarn-unused-import",
       libraryDependencies ++= Seq("org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
         "software.amazon.awssdk" % "bom" % "2.15.15",
         "software.amazon.awssdk" % "s3" % "2.15.15",
@@ -85,6 +100,8 @@ lazy val assemblySettings = Seq(
       .inLibrary("com.google.guava" % "guava" % "30.1-jre", "com.google.guava" % "failureaccess" % "1.0.1")
       .inProject,
     ShadeRule.rename("scala.collection.compat.**" -> "shadecompat.@1").inAll,
+    ShadeRule.rename("okio.**" -> "okio.shaded.@0").inAll,
+    ShadeRule.rename("okhttp3.**" -> "okhttp3.shaded.@0").inAll,
   ),
 )
 
@@ -164,7 +181,7 @@ ThisBuild / developers := List(
 )
 
 ThisBuild / versionScheme := Some("early-semver")
-ThisBuild / organization := "io.treeverse"
+ThisBuild / organization := "io.lakefs"
 ThisBuild / organizationName := "Treeverse Labs"
 ThisBuild / organizationHomepage := Some(url("http://treeverse.io"))
 ThisBuild / description := "Spark client for lakeFS object metadata."

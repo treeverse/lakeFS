@@ -220,23 +220,38 @@ function pathParts(path, rootName = "root") {
     return resolved;
 }
 
-const URINavigator = ({ repo, reference, path }) => {
+const buildPathURL = (params, query) => {
+    return {pathname: '/repositories/:repoId/objects', params, query};
+};
+
+export const URINavigator = ({ repo, reference, path, relativeTo = "", pathURLBuilder = buildPathURL }) => {
     const parts = pathParts(path);
     const params = {repoId: repo.id};
 
     return (
         <span className="lakefs-uri">
-            <strong>{'lakefs://'}</strong>
-            <Link href={{pathname: '/repositories/:repoId/objects', params}}>{repo.id}</Link>
-            <strong>{'/'}</strong>
-            <Link href={{pathname: '/repositories/:repoId/objects',params, query: {ref: reference.id}}}>{(reference.type === 'commit') ? reference.id.substr(0, 12) : reference.id}</Link>
-            <strong>{'/'}</strong>
+            {(relativeTo === "") ? (
+                <>
+                    <strong>{'lakefs://'}</strong>
+                    <Link href={{pathname: '/repositories/:repoId/objects', params}}>{repo.id}</Link>
+                    <strong>{'/'}</strong>
+                    <Link href={{pathname: '/repositories/:repoId/objects',params, query: {ref: reference.id}}}>{(reference.type === 'commit') ? reference.id.substr(0, 12) : reference.id}</Link>
+                    <strong>{'/'}</strong>
+                </>
+            ): (
+
+                <>
+                    <Link href={pathURLBuilder(params, {path: ""})}>{relativeTo}</Link>
+                    <strong>{'/'}</strong>
+                </>
+            )}
+
             {parts.map((part, i) => {
                 const path = parts.slice(0, i+1).map(p => p.name).join('/') + '/';
                 const query = {path, ref: reference.id};
                 return (
                     <span key={i}>
-                        <Link href={{pathname: '/repositories/:repoId/objects', params, query}}>{part.name}</Link>
+                        <Link href={pathURLBuilder(params, query)}>{part.name}</Link>
                         <strong>{'/'}</strong>
                     </span>
                 );
@@ -248,7 +263,7 @@ const URINavigator = ({ repo, reference, path }) => {
 const GetStarted = ({ onUpload }) => {
     return (
         <Container className="m-4 mb-5">
-            <h2 className="mt-2">To get started with this repository, you can:</h2>
+            <h2 className="mt-2">To get started with this repository:</h2>
 
             <Row className="pt-2 ml-2">
                 <DotIcon className="mr-1 mt-1"/>
@@ -257,7 +272,13 @@ const GetStarted = ({ onUpload }) => {
 
             <Row className="pt-2 ml-2">
                 <DotIcon className="mr-1 mt-1"/>
-                See the &nbsp;<a href="https://docs.lakefs.io/using/" target="_blank" rel="noopener noreferrer">docs</a>&nbsp;for other ways to import data to your repository.
+                Use&nbsp;<a href="https://docs.lakefs.io/integrations/distcp.html" target="_blank" rel="noopener noreferrer">DistCp</a>&nbsp;or&nbsp;
+                <a href="https://docs.lakefs.io/integrations/rclone.html" target="_blank" rel="noopener noreferrer">Rclone</a>&nbsp;to copy data into your repository.
+            </Row>
+
+            <Row className="pt-2 ml-2">
+                <DotIcon className="mr-1 mt-1"/>
+                See the&nbsp;<a href="https://docs.lakefs.io/setup/import.html" target="_blank" rel="noopener noreferrer">docs</a>&nbsp;for other ways to import data to your repository.
             </Row>
         </Container>
     );

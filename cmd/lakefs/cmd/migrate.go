@@ -11,7 +11,7 @@ import (
 // migrateCmd represents the migrate command
 var migrateCmd = &cobra.Command{
 	Use:   "migrate",
-	Short: "manage migrations",
+	Short: "Manage migrations",
 }
 
 var versionCmd = &cobra.Command{

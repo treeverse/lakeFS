@@ -18,4 +18,5 @@ var (
 	ErrInvalidValue             = fmt.Errorf("invalid value: %w", ErrInvalid)
 	ErrNoDifferenceWasFound     = errors.New("no difference was found")
 	ErrConflictFound            = errors.New("conflict found")
+	ErrInvalidRef               = errors.New("invalid ref")
 )

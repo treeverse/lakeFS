@@ -73,6 +73,7 @@ func TestLocalLoad(t *testing.T) {
 
 	// wire actions
 	actionsService := actions.NewService(
+		ctx,
 		conn,
 		catalog.NewActionsSource(c),
 		catalog.NewActionsOutputWriter(c.BlockAdapter),
@@ -87,6 +88,7 @@ func TestLocalLoad(t *testing.T) {
 	})
 
 	handler := api.Serve(
+		conf,
 		c,
 		authService,
 		blockAdapter,

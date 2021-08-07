@@ -82,12 +82,6 @@ func (l *LazyOutput) Close() error {
 	return err
 }
 
-var PlaybackParams struct {
-	IsPlayback                bool
-	CurrentUploadID           []byte // used at playback to set the upload id in
-	RecordingDir, PlaybackDir string
-}
-
 type ResponseWriter struct {
 	uploadID       []byte
 	OriginalWriter http.ResponseWriter

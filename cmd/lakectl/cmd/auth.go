@@ -41,18 +41,18 @@ var policyCreatedTemplate = `{{ "Policy created successfully." | green }}
 
 var authCmd = &cobra.Command{
 	Use:   "auth [sub-command]",
-	Short: "manage authentication and authorization",
+	Short: "Manage authentication and authorization",
 	Long:  "manage authentication and authorization including users, groups and policies",
 }
 
 var authUsers = &cobra.Command{
 	Use:   "users",
-	Short: "manage users",
+	Short: "Manage users",
 }
 
 var authUsersList = &cobra.Command{
 	Use:   "list",
-	Short: "list users",
+	Short: "List users",
 	Run: func(cmd *cobra.Command, args []string) {
 		amount, _ := cmd.Flags().GetInt("amount")
 		after, _ := cmd.Flags().GetString("after")
@@ -79,7 +79,7 @@ var authUsersList = &cobra.Command{
 
 var authUsersCreate = &cobra.Command{
 	Use:   "create",
-	Short: "create a user",
+	Short: "Create a user",
 	Run: func(cmd *cobra.Command, args []string) {
 		id, _ := cmd.Flags().GetString("id")
 		clt := getClient()
@@ -95,7 +95,7 @@ var authUsersCreate = &cobra.Command{
 
 var authUsersDelete = &cobra.Command{
 	Use:   "delete",
-	Short: "delete a user",
+	Short: "Delete a user",
 	Run: func(cmd *cobra.Command, args []string) {
 		id, _ := cmd.Flags().GetString("id")
 		clt := getClient()
@@ -108,12 +108,12 @@ var authUsersDelete = &cobra.Command{
 
 var authUsersGroups = &cobra.Command{
 	Use:   "groups",
-	Short: "manage user groups",
+	Short: "Manage user groups",
 }
 
 var authUsersGroupsList = &cobra.Command{
 	Use:   "list",
-	Short: "list groups for the given user",
+	Short: "List groups for the given user",
 	Run: func(cmd *cobra.Command, args []string) {
 		id, _ := cmd.Flags().GetString("id")
 		amount, _ := cmd.Flags().GetInt("amount")
@@ -141,12 +141,12 @@ var authUsersGroupsList = &cobra.Command{
 
 var authUsersPolicies = &cobra.Command{
 	Use:   "policies",
-	Short: "manage user policies",
+	Short: "Manage user policies",
 }
 
 var authUsersPoliciesList = &cobra.Command{
 	Use:   "list",
-	Short: "list policies for the given user",
+	Short: "List policies for the given user",
 	Run: func(cmd *cobra.Command, args []string) {
 		id, _ := cmd.Flags().GetString("id")
 		amount, _ := cmd.Flags().GetInt("amount")
@@ -179,7 +179,7 @@ var authUsersPoliciesList = &cobra.Command{
 
 var authUsersPoliciesAttach = &cobra.Command{
 	Use:   "attach",
-	Short: "attach a policy to a user",
+	Short: "Attach a policy to a user",
 	Run: func(cmd *cobra.Command, args []string) {
 		id, _ := cmd.Flags().GetString("id")
 		policy, _ := cmd.Flags().GetString("policy")
@@ -192,7 +192,7 @@ var authUsersPoliciesAttach = &cobra.Command{
 
 var authUsersPoliciesDetach = &cobra.Command{
 	Use:   "detach",
-	Short: "detach a policy from a user",
+	Short: "Detach a policy from a user",
 	Run: func(cmd *cobra.Command, args []string) {
 		id, _ := cmd.Flags().GetString("id")
 		policy, _ := cmd.Flags().GetString("policy")
@@ -207,12 +207,12 @@ var authUsersPoliciesDetach = &cobra.Command{
 
 var authUsersCredentials = &cobra.Command{
 	Use:   "credentials",
-	Short: "manage user credentials",
+	Short: "Manage user credentials",
 }
 
 var authUsersCredentialsCreate = &cobra.Command{
 	Use:   "create",
-	Short: "create user credentials",
+	Short: "Create user credentials",
 	Run: func(cmd *cobra.Command, args []string) {
 		id, _ := cmd.Flags().GetString("id")
 		clt := getClient()
@@ -233,7 +233,7 @@ var authUsersCredentialsCreate = &cobra.Command{
 
 var authUsersCredentialsDelete = &cobra.Command{
 	Use:   "delete",
-	Short: "delete user credentials",
+	Short: "Delete user credentials",
 	Run: func(cmd *cobra.Command, args []string) {
 		id, _ := cmd.Flags().GetString("id")
 		accessKeyID, _ := cmd.Flags().GetString("access-key-id")
@@ -253,7 +253,7 @@ var authUsersCredentialsDelete = &cobra.Command{
 
 var authUsersCredentialsList = &cobra.Command{
 	Use:   "list",
-	Short: "list user credentials",
+	Short: "List user credentials",
 	Run: func(cmd *cobra.Command, args []string) {
 		amount, _ := cmd.Flags().GetInt("amount")
 		after, _ := cmd.Flags().GetString("after")
@@ -286,12 +286,12 @@ var authUsersCredentialsList = &cobra.Command{
 // groups
 var authGroups = &cobra.Command{
 	Use:   "groups",
-	Short: "manage groups",
+	Short: "Manage groups",
 }
 
 var authGroupsList = &cobra.Command{
 	Use:   "list",
-	Short: "list groups",
+	Short: "List groups",
 	Run: func(cmd *cobra.Command, args []string) {
 		amount, _ := cmd.Flags().GetInt("amount")
 		after, _ := cmd.Flags().GetString("after")
@@ -318,7 +318,7 @@ var authGroupsList = &cobra.Command{
 
 var authGroupsCreate = &cobra.Command{
 	Use:   "create",
-	Short: "create a group",
+	Short: "Create a group",
 	Run: func(cmd *cobra.Command, args []string) {
 		id, _ := cmd.Flags().GetString("id")
 		clt := getClient()
@@ -334,7 +334,7 @@ var authGroupsCreate = &cobra.Command{
 
 var authGroupsDelete = &cobra.Command{
 	Use:   "delete",
-	Short: "delete a group",
+	Short: "Delete a group",
 	Run: func(cmd *cobra.Command, args []string) {
 		id, _ := cmd.Flags().GetString("id")
 		clt := getClient()
@@ -347,12 +347,12 @@ var authGroupsDelete = &cobra.Command{
 
 var authGroupsMembers = &cobra.Command{
 	Use:   "members",
-	Short: "manage group user memberships",
+	Short: "Manage group user memberships",
 }
 
 var authGroupsListMembers = &cobra.Command{
 	Use:   "list",
-	Short: "list users in a group",
+	Short: "List users in a group",
 	Run: func(cmd *cobra.Command, args []string) {
 		id, _ := cmd.Flags().GetString("id")
 		amount, _ := cmd.Flags().GetInt("amount")
@@ -379,7 +379,7 @@ var authGroupsListMembers = &cobra.Command{
 
 var authGroupsAddMember = &cobra.Command{
 	Use:   "add",
-	Short: "add a user to a group",
+	Short: "Add a user to a group",
 	Run: func(cmd *cobra.Command, args []string) {
 		id, _ := cmd.Flags().GetString("id")
 		user, _ := cmd.Flags().GetString("user")
@@ -393,7 +393,7 @@ var authGroupsAddMember = &cobra.Command{
 
 var authGroupsRemoveMember = &cobra.Command{
 	Use:   "remove",
-	Short: "remove a user from a group",
+	Short: "Remove a user from a group",
 	Run: func(cmd *cobra.Command, args []string) {
 		id, _ := cmd.Flags().GetString("id")
 		user, _ := cmd.Flags().GetString("user")
@@ -407,12 +407,12 @@ var authGroupsRemoveMember = &cobra.Command{
 
 var authGroupsPolicies = &cobra.Command{
 	Use:   "policies",
-	Short: "manage group policies",
+	Short: "Manage group policies",
 }
 
 var authGroupsPoliciesList = &cobra.Command{
 	Use:   "list",
-	Short: "list policies for the given group",
+	Short: "List policies for the given group",
 	Run: func(cmd *cobra.Command, args []string) {
 		id, _ := cmd.Flags().GetString("id")
 		amount, _ := cmd.Flags().GetInt("amount")
@@ -443,7 +443,7 @@ var authGroupsPoliciesList = &cobra.Command{
 
 var authGroupsPoliciesAttach = &cobra.Command{
 	Use:   "attach",
-	Short: "attach a policy to a group",
+	Short: "Attach a policy to a group",
 	Run: func(cmd *cobra.Command, args []string) {
 		id, _ := cmd.Flags().GetString("id")
 		policy, _ := cmd.Flags().GetString("policy")
@@ -458,7 +458,7 @@ var authGroupsPoliciesAttach = &cobra.Command{
 
 var authGroupsPoliciesDetach = &cobra.Command{
 	Use:   "detach",
-	Short: "detach a policy from a group",
+	Short: "Detach a policy from a group",
 	Run: func(cmd *cobra.Command, args []string) {
 		id, _ := cmd.Flags().GetString("id")
 		policy, _ := cmd.Flags().GetString("policy")
@@ -474,12 +474,12 @@ var authGroupsPoliciesDetach = &cobra.Command{
 // policies
 var authPolicies = &cobra.Command{
 	Use:   "policies",
-	Short: "manage policies",
+	Short: "Manage policies",
 }
 
 var authPoliciesList = &cobra.Command{
 	Use:   "list",
-	Short: "list policies",
+	Short: "List policies",
 	Run: func(cmd *cobra.Command, args []string) {
 		amount, _ := cmd.Flags().GetInt("amount")
 		after, _ := cmd.Flags().GetString("after")
@@ -505,7 +505,7 @@ var authPoliciesList = &cobra.Command{
 
 var authPoliciesCreate = &cobra.Command{
 	Use:   "create",
-	Short: "create a policy",
+	Short: "Create a policy",
 	Run: func(cmd *cobra.Command, args []string) {
 		id, _ := cmd.Flags().GetString("id")
 		document, _ := cmd.Flags().GetString("statement-document")
@@ -555,7 +555,7 @@ type StatementDoc struct {
 
 var authPoliciesShow = &cobra.Command{
 	Use:   "show",
-	Short: "show a policy",
+	Short: "Show a policy",
 	Run: func(cmd *cobra.Command, args []string) {
 		id, _ := cmd.Flags().GetString("id")
 		clt := getClient()
@@ -578,7 +578,7 @@ var authPoliciesShow = &cobra.Command{
 
 var authPoliciesDelete = &cobra.Command{
 	Use:   "delete",
-	Short: "delete a policy",
+	Short: "Delete a policy",
 	Run: func(cmd *cobra.Command, args []string) {
 		id, _ := cmd.Flags().GetString("id")
 		clt := getClient()

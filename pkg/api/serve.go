@@ -18,6 +18,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/cloud"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -37,6 +38,7 @@ type responseError struct {
 }
 
 func Serve(
+	cfg *config.Config,
 	catalog catalog.Interface,
 	authService auth.Service,
 	blockAdapter block.Adapter,
@@ -64,6 +66,7 @@ func Serve(
 	)
 
 	controller := NewController(
+		cfg,
 		catalog,
 		authService,
 		blockAdapter,

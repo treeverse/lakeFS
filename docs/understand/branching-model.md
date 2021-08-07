@@ -32,7 +32,7 @@ When creating a new branch in lakeFS, we are actually creating a consistent snap
 Another way to think of branches is like a very long-lived database transaction, providing us with [Snapshot Isolation](https://en.wikipedia.org/wiki/Snapshot_isolation){: target="_blank" }.
 
 Once we've made the necessary changes to our data within our isolated branch, we can merge it back to the branch we branched from.  
-This operation is atomic in lakeFS - readers will either see all our committed changes or non at all.
+This operation is atomic in lakeFS - readers will either see all our committed changes or none at all.
 
 Isolation and Atomicity are very powerful tools: it allows us to do things that are otherwise extremely hard to get right: replace data in-place,
 add or update multiple objects and collections as a single piece, run tests and validations before exposing data to others and more.
@@ -53,4 +53,3 @@ Unlike Git, lakeFS does not care about the contents of an object - if we try to 
 This is because lakeFS doesn't assume anything about the structure of the object and so cannot try to merge both changesets into a single object (additionally, this operation makes little sense for machine generated files, and data in general).
 
 The actual data itself is not stored inside lakeFS directly, but rather stored in an underlying object store. lakeFS will manage these writes, and will store a pointer to the object in its metadata database.
-Addressing the object in the underlying object store is done using a deduplication ID - objects with the same content will receive the same ID, thus stored only once.

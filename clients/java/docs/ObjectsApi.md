@@ -264,7 +264,7 @@ Name | Type | Description  | Notes
 
 <a name="listObjects"></a>
 # **listObjects**
-> ObjectStatsList listObjects(repository, ref, prefix, after, amount, delimiter)
+> ObjectStatsList listObjects(repository, ref, after, amount, delimiter, prefix)
 
 list objects under a given prefix
 
@@ -301,12 +301,12 @@ public class Example {
     ObjectsApi apiInstance = new ObjectsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String ref = "ref_example"; // String | a reference (could be either a branch or a commit ID)
-    String prefix = "prefix_example"; // String | 
     String after = "after_example"; // String | return items after this value
     Integer amount = 100; // Integer | how many items to return
-    String delimiter = "/"; // String | 
+    String delimiter = "delimiter_example"; // String | delimiter used to group common prefixes by
+    String prefix = "prefix_example"; // String | return items prefixed with this value
     try {
-      ObjectStatsList result = apiInstance.listObjects(repository, ref, prefix, after, amount, delimiter);
+      ObjectStatsList result = apiInstance.listObjects(repository, ref, after, amount, delimiter, prefix);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ObjectsApi#listObjects");
@@ -325,10 +325,10 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **String**|  |
  **ref** | **String**| a reference (could be either a branch or a commit ID) |
- **prefix** | **String**|  | [optional]
  **after** | **String**| return items after this value | [optional]
  **amount** | **Integer**| how many items to return | [optional] [default to 100]
- **delimiter** | **String**|  | [optional] [default to /]
+ **delimiter** | **String**| delimiter used to group common prefixes by | [optional]
+ **prefix** | **String**| return items prefixed with this value | [optional]
 
 ### Return type
 

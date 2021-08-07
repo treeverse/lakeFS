@@ -35,10 +35,6 @@ func (t *MetaRangeFake) ID() graveler.MetaRangeID {
 	return t.id
 }
 
-func NewCommittedFake() *CommittedFake {
-	return &CommittedFake{}
-}
-
 func (c *CommittedFake) Exists(context.Context, graveler.StorageNamespace, graveler.MetaRangeID) (bool, error) {
 	if c.Err != nil {
 		return false, c.Err
@@ -191,7 +187,7 @@ type AddedCommitData struct {
 type RefsFake struct {
 	ListRepositoriesRes graveler.RepositoryIterator
 	ListBranchesRes     graveler.BranchIterator
-	RevParseRes         map[graveler.Ref]graveler.Reference
+	Refs                map[graveler.Ref]*graveler.ResolvedRef
 	ListTagsRes         graveler.TagIterator
 	CommitIter          graveler.CommitIterator
 	RefType             graveler.ReferenceType
@@ -202,6 +198,11 @@ type RefsFake struct {
 	AddedCommit         AddedCommitData
 	CommitID            graveler.CommitID
 	Commits             map[graveler.CommitID]*graveler.Commit
+	StagingToken        graveler.StagingToken
+}
+
+func (m *RefsFake) FillGenerations(ctx context.Context, repositoryID graveler.RepositoryID) error {
+	panic("implement me")
 }
 
 func (m *RefsFake) CreateBareRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository) error {
@@ -212,19 +213,34 @@ func (m *RefsFake) ListCommits(ctx context.Context, repositoryID graveler.Reposi
 	return nil, nil
 }
 
-func (m *RefsFake) RevParse(ctx context.Context, repoID graveler.RepositoryID, ref graveler.Ref) (graveler.Reference, error) {
-	if m.RevParseRes != nil {
-		if res, ok := m.RevParseRes[ref]; ok {
+func (m *RefsFake) ParseRef(ref graveler.Ref) (graveler.RawRef, error) {
+	// fake so we use the base ref to capture the ref for resolve lookup
+	return graveler.RawRef{
+		BaseRef: string(ref),
+	}, nil
+}
+
+func (m *RefsFake) ResolveRawRef(ctx context.Context, repoID graveler.RepositoryID, rawRef graveler.RawRef) (*graveler.ResolvedRef, error) {
+	if m.Refs != nil {
+		ref := graveler.Ref(rawRef.BaseRef)
+		if res, ok := m.Refs[ref]; ok {
 			return res, nil
 		}
 	}
 
 	var branch graveler.BranchID
+	var stagingToken graveler.StagingToken
 	if m.RefType == graveler.ReferenceTypeBranch {
 		branch = DefaultBranchID
+		stagingToken = m.StagingToken
 	}
 
-	return NewFakeReference(m.RefType, branch, m.CommitID), nil
+	return &graveler.ResolvedRef{
+		Type:         m.RefType,
+		BranchID:     branch,
+		CommitID:     m.CommitID,
+		StagingToken: stagingToken,
+	}, nil
 }
 
 func (m *RefsFake) GetRepository(context.Context, graveler.RepositoryID) (*graveler.Repository, error) {
@@ -411,38 +427,6 @@ func (r *committedValueIteratorFake) Err() error {
 }
 
 func (r *committedValueIteratorFake) Close() {}
-
-type referenceFake struct {
-	refType  graveler.ReferenceType
-	branch   graveler.Branch
-	commitID graveler.CommitID
-}
-
-// NewFakeReference returns a referenceFake
-// if branch parameter is empty branch record will be nil
-func NewFakeReference(refType graveler.ReferenceType, branchID graveler.BranchID, commitID graveler.CommitID) *referenceFake {
-	var branch graveler.Branch
-	if branchID != "" {
-		branch = graveler.Branch{CommitID: commitID}
-	}
-	return &referenceFake{
-		refType:  refType,
-		branch:   branch,
-		commitID: commitID,
-	}
-}
-
-func (m *referenceFake) Type() graveler.ReferenceType {
-	return m.refType
-}
-
-func (m *referenceFake) Branch() graveler.Branch {
-	return m.branch
-}
-
-func (m *referenceFake) CommitID() graveler.CommitID {
-	return m.commitID
-}
 
 type RV struct {
 	R *committed.Range
@@ -678,3 +662,85 @@ func (i *FakeDiffIterator) Err() error {
 func (i *FakeDiffIterator) Close() {
 	i.closed = true
 }
+
+type FakeBranchIterator struct {
+	Data  []*graveler.BranchRecord
+	Index int
+}
+
+func NewFakeBranchIterator(data []*graveler.BranchRecord) *FakeBranchIterator {
+	return &FakeBranchIterator{Data: data, Index: -1}
+}
+
+func NewFakeBranchIteratorFactory(data []*graveler.BranchRecord) func() graveler.BranchIterator {
+	return func() graveler.BranchIterator { return NewFakeBranchIterator(data) }
+}
+
+func (m *FakeBranchIterator) Next() bool {
+	if m.Index >= len(m.Data) {
+		return false
+	}
+	m.Index++
+	return m.Index < len(m.Data)
+}
+
+func (m *FakeBranchIterator) SeekGE(id graveler.BranchID) {
+	m.Index = len(m.Data)
+	for i, item := range m.Data {
+		if item.BranchID >= id {
+			m.Index = i - 1
+			return
+		}
+	}
+}
+
+func (m *FakeBranchIterator) Value() *graveler.BranchRecord {
+	return m.Data[m.Index]
+}
+
+func (m *FakeBranchIterator) Err() error {
+	return nil
+}
+
+func (m *FakeBranchIterator) Close() {}
+
+type FakeCommitIterator struct {
+	Data  []*graveler.CommitRecord
+	Index int
+}
+
+func NewFakeCommitIterator(data []*graveler.CommitRecord) *FakeCommitIterator {
+	return &FakeCommitIterator{Data: data, Index: -1}
+}
+
+func NewFakeCommitIteratorFactory(data []*graveler.CommitRecord) func() graveler.CommitIterator {
+	return func() graveler.CommitIterator { return NewFakeCommitIterator(data) }
+}
+
+func (m *FakeCommitIterator) Next() bool {
+	if m.Index >= len(m.Data) {
+		return false
+	}
+	m.Index++
+	return m.Index < len(m.Data)
+}
+
+func (m *FakeCommitIterator) SeekGE(id graveler.CommitID) {
+	m.Index = len(m.Data)
+	for i, item := range m.Data {
+		if item.CommitID >= id {
+			m.Index = i - 1
+			return
+		}
+	}
+}
+
+func (m *FakeCommitIterator) Value() *graveler.CommitRecord {
+	return m.Data[m.Index]
+}
+
+func (m *FakeCommitIterator) Err() error {
+	return nil
+}
+
+func (m *FakeCommitIterator) Close() {}

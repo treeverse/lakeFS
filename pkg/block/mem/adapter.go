@@ -16,13 +16,14 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/block/adapter"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 const BlockstoreType = "mem"
 
 var (
-	ErrNoDataForKey            = fmt.Errorf("no data for key")
+	ErrNoDataForKey            = fmt.Errorf("no data for key: %w", adapter.ErrDataNotFound)
 	ErrMultiPartNotFound       = fmt.Errorf("multipart ID not found")
 	ErrNoPropertiesForKey      = fmt.Errorf("no properties for key")
 	ErrInventoryNotImplemented = errors.New("inventory feature not implemented for memory storage adapter")
@@ -304,4 +305,8 @@ func (a *Adapter) BlockstoreType() string {
 
 func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	return block.DefaultStorageNamespaceInfo(BlockstoreType)
+}
+
+func (a *Adapter) RuntimeStats() map[string]string {
+	return nil
 }

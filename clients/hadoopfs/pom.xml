@@ -1,19 +1,177 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+Can build a JAR and an assembled JAR.  The first is useful for programming a larger
+component, and will most likely require assembly and shading to use.  The second is
+useful for inserting directly into Spark.
+
+To publish to Maven Central:
+    mvn deploy
+    mvn -Passembly deploy
+
+To export to S3:
+    mvn package s3-storage-wagon:s3-upload@upload-jar
+    mvn -Passembly package s3-storage-wagon:s3-upload@upload-jar
+-->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.lakefs</groupId>
-    <artifactId>hadoopfs</artifactId>
+    <artifactId>hadoop-lakefs${name-suffix}</artifactId>
     <packaging>jar</packaging>
-    <name>hadoopfs</name>
-    <version>0.1.0</version>
+    <name>hadoop-lakefs${name-suffix}</name>
+    <version>0.1.0</version><!--MARKER: keep this comment here, we update the version with the lakeFS version when on deploy-->
     <url>https://github.com/treeverse/lakeFS/tree/master/clients/hadoopfs</url>
+    <scm>
+        <connection>scm:git:git@github.com:treeverse/lakeFS.git</connection>
+        <developerConnection>scm:git:git@github.com:treeverse/lakeFS.git</developerConnection>
+        <url>https://github.com/treeverse/lakeFS</url>
+    </scm>
+    <parent>
+        <groupId>io.lakefs</groupId>
+        <artifactId>lakefs-parent</artifactId>
+        <version>0</version>
+    </parent>
+
+    <licenses>
+        <license>
+            <name>apache2</name>
+            <url>http://www.apache.org/licenses/</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Treeverse lakeFS dev</name>
+            <email>services@treeverse.io</email>
+            <organization>lakefs.io</organization>
+            <organizationUrl>https://lakefs.io</organizationUrl>
+        </developer>
+    </developers>
+
+    <profiles>
+        <profile>
+            <id>contract-tests</id>
+            <properties>
+                <exclude.tests>nothing-to-exclude</exclude.tests>
+                <contract_tests.resource_dir>../../test/lakefsfs_contract/</contract_tests.resource_dir>
+            </properties>
+            <build>
+                <resources>
+                    <resource>
+                        <directory>${contract_tests.resource_dir}</directory>
+                    </resource>
+                </resources>
+            </build>
+        </profile>
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>2.2.1</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>2.9.1</version>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>assembly</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-shade-plugin</artifactId>
+                        <version>3.2.4</version>
+                        <executions>
+                            <execution>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>shade</goal>
+                                </goals>
+                                <configuration>
+                                    <filters>
+                                        <filter>
+                                            <artifact>*:*</artifact>
+                                            <excludes>
+                                                <exclude>module-info.class</exclude>
+                                                <exclude>META-INF/maven/**</exclude>
+                                                <exclude>META-INF/*.SF</exclude>
+                                                <exclude>META-INF/*.DSA</exclude>
+                                                <exclude>META-INF/*.RSA</exclude>
+                                            </excludes>
+                                        </filter>
+                                    </filters>
+                                    <relocations>
+                                        <relocation>
+                                            <pattern>org.apache.httpcomponents</pattern>
+                                            <shadedPattern>io.lakefs.shaded.apache.httpcomponents</shadedPattern>
+                                        </relocation>
+                                        <relocation>
+                                            <pattern>okio</pattern>
+                                            <shadedPattern>io.lakefs.shaded.okio</shadedPattern>
+                                        </relocation>
+                                        <relocation>
+                                            <pattern>okhttp3</pattern>
+                                            <shadedPattern>io.lakefs.shaded.okhttp3</shadedPattern>
+                                        </relocation>
+                                        <relocation>
+                                            <pattern>com.google.gson</pattern>
+                                            <shadedPattern>io.lakefs.shaded.gson</shadedPattern>
+                                        </relocation>
+                                    </relocations>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+            <properties>
+                <name-suffix>-assembly</name-suffix>
+            </properties>
+        </profile>
+    </profiles>
+
     <properties>
+        <exclude.tests>io/lakefs/contract/**</exclude.tests>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <name-suffix/>          <!-- Set via profile to rename JAR -->
     </properties>
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.12.4</version>
+                <configuration>
+                    <excludes>
+                        <exclude>${exclude.tests}</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -23,43 +181,22 @@
                     <target>1.8</target>
                 </configuration>
             </plugin>
+
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.2.4</version>
+                <groupId>com.gkatzioura.maven.cloud</groupId>
+                <artifactId>s3-storage-wagon</artifactId>
+                <version>2.3</version>
                 <executions>
                     <execution>
-                        <phase>package</phase>
+                        <id>upload-jar</id>
                         <goals>
-                            <goal>shade</goal>
+                            <goal>s3-upload</goal>
                         </goals>
                         <configuration>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>module-info.class</exclude>
-                                        <exclude>META-INF/maven/**</exclude>
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-			    <relocations>
-			      <relocation>
-				  <pattern>org.apache.httpcomponents</pattern>
-				  <shadedPattern>io.lakefs.shaded.apache.httpcomponents</shadedPattern>
-			      </relocation>
-			      <relocation>
-				<pattern>okio</pattern>
-				<shadedPattern>io.lakefs.shaded.okio</shadedPattern>
-			      </relocation>
-			      <relocation>
-				<pattern>okhttp3</pattern>
-				<shadedPattern>io.lakefs.shaded.okhttp3</shadedPattern>
-			      </relocation>
-			    </relocations>
+                            <path>target/${project.artifactId}-${project.version}.jar</path>
+                            <bucket>treeverse-clients-us-east</bucket>
+                            <region>us-east-1</region>
+                            <key>hadoop/${project.artifactId}-${project.version}.jar</key>
                         </configuration>
                     </execution>
                 </executions>
@@ -81,20 +218,27 @@
         </dependency>
         <dependency>
             <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-common</artifactId>
+            <scope>test</scope>
+            <type>test-jar</type>
+            <version>2.7.7</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-aws</artifactId>
             <version>2.7.7</version>
         </dependency>
 
-	<dependency>
-	  <groupId>com.amazonaws</groupId>
-	  <artifactId>aws-java-sdk</artifactId>
-	  <version>1.7.4</version><!-- should match hadoop-aws version(!) -->
-	</dependency>
-	<dependency>		<!-- needed for aws-java-sdk in tests(!) -->
-	  <groupId>org.apache.httpcomponents</groupId>
-	  <artifactId>httpclient</artifactId>
-	  <version>4.2</version>
-	</dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk</artifactId>
+            <version>1.7.4</version><!-- should match hadoop-aws version(!) -->
+        </dependency>
+        <dependency>        <!-- needed for aws-java-sdk in tests(!) -->
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.3.6</version>
+        </dependency>
 
         <dependency>
             <groupId>junit</groupId>
@@ -104,9 +248,46 @@
         </dependency>
 
         <dependency>
+            <groupId>com.aventrix.jnanoid</groupId>
+            <artifactId>jnanoid</artifactId>
+            <version>2.0.0</version>
+            <scope>test</scope>
+        </dependency>
+
+	<dependency>
+	  <groupId>org.testcontainers</groupId>
+	  <artifactId>testcontainers</artifactId>
+	  <version>1.15.2</version>
+	  <scope>test</scope>
+	</dependency>
+
+	<!--
+	     https://stackoverflow.com/questions/35569092/java-lang-classnotfoundexception-com-fasterxml-jackson-annotation-jsonincludev
+	     says to keep all of these on the same versions -->
+	<dependency>
+	  <groupId>com.fasterxml.jackson.core</groupId>
+	  <artifactId>jackson-databind</artifactId>
+	  <version>2.12.3</version>
+	  <scope>test</scope>
+	</dependency>
+	<dependency>
+	  <groupId>com.fasterxml.jackson.core</groupId>
+	  <artifactId>jackson-core</artifactId>
+	  <version>2.12.3</version>
+	  <scope>test</scope>
+	</dependency>
+	<dependency>
+	  <groupId>com.fasterxml.jackson.core</groupId>
+	  <artifactId>jackson-annotations</artifactId>
+	  <version>2.12.3</version>
+	  <scope>test</scope>
+	</dependency>
+
+        <dependency>
             <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
-            <version>1.10.19</version>
+            <!-- "inline" currently required in order to mock constructor calls. -->
+            <artifactId>mockito-inline</artifactId>
+            <version>3.10.0</version>
 	    <scope>test</scope>
         </dependency>
     </dependencies>

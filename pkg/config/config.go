@@ -402,3 +402,7 @@ func (c *Config) GetCommittedParams() *committed.Params {
 func (c *Config) GetFixedInstallationID() string {
 	return c.values.Installation.FixedID
 }
+
+func (c *Config) GetCommittedBlockStoragePrefix() string {
+	return c.values.Committed.BlockStoragePrefix
+}

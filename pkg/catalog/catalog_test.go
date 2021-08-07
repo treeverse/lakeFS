@@ -7,8 +7,52 @@ import (
 
 	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/graveler/testutil"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+func TestGetStartPos(t *testing.T) {
+	/**
+	Here are the possible states for where to start iterating, given a prefix, an "after" and a delimiter:
+	delim	prefix	after	expected start position
+	0		0		0		""
+	0		0		1		at after (when iterating we'll skip the exact match anyway)
+	0		1		0		at prefix
+	0		1		1		at after (when iterating we'll skip the exact match anyway)
+	1		0		0		""
+	1		0		1		next common prefix after "after"
+	1		1		0		at prefix
+	1		1		1		next common prefix after "after"
+	*/
+	cases := []struct {
+		Name      string
+		Delimiter string
+		Prefix    string
+		After     string
+		Expected  string
+	}{
+		{"all_empty", "", "", "", ""},
+		{"only_after", "", "", "a/b/", "a/b/"},
+		{"only_prefix", "", "a/", "", "a/"},
+		{"prefix_and_after", "", "a/", "a/b/", "a/b/"},
+		{"only_delimiter", "/", "", "", ""},
+		{"delimiter_and_after", "/", "", "a/b/", string(graveler.UpperBoundForPrefix([]byte("a/b/")))},
+		{"delimiter_and_prefix", "/", "a/", "", "a/"},
+		{"delimiter_prefix_and_after", "/", "a/", "a/b/", string(graveler.UpperBoundForPrefix([]byte("a/b/")))},
+		{"empty_directory", "/", "", "a/b//", string(graveler.UpperBoundForPrefix([]byte("a/b//")))},
+		{"after_before_prefix", "", "c", "a", "c"},
+		{"after_before_prefix_with_delim", "/", "c/", "a", "c/"},
+	}
+
+	for _, cas := range cases {
+		t.Run(cas.Name, func(t *testing.T) {
+			got := GetStartPos(cas.Prefix, cas.After, cas.Delimiter)
+			if got != cas.Expected {
+				t.Fatalf("expected %s got %s", cas.Expected, got)
+			}
+		})
+	}
+}
 
 func TestCatalog_ListRepositories(t *testing.T) {
 	// prepare data tests
@@ -125,7 +169,7 @@ func TestCatalog_BranchExists(t *testing.T) {
 		t.Run(tt.Branch, func(t *testing.T) {
 			// setup Catalog
 			gravelerMock := &FakeGraveler{
-				BranchIteratorFactory: NewFakeBranchIteratorFactory(gravelerData),
+				BranchIteratorFactory: testutil.NewFakeBranchIteratorFactory(gravelerData),
 			}
 			c := &Catalog{
 				Store: gravelerMock,
@@ -227,7 +271,7 @@ func TestCatalog_ListBranches(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// setup Catalog
 			gravelerMock := &FakeGraveler{
-				BranchIteratorFactory: NewFakeBranchIteratorFactory(gravelerData),
+				BranchIteratorFactory: testutil.NewFakeBranchIteratorFactory(gravelerData),
 			}
 			c := &Catalog{
 				Store: gravelerMock,

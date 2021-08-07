@@ -21,7 +21,19 @@ message CommitData {
   string message = 3;
   google.protobuf.Timestamp creation_date = 4;
   string meta_range_id = 5;
-  map<string,string> metadata = 6;
+  map<string, string> metadata = 6;
   repeated string parents = 7;
   int32 version = 8;
+  int32 generation = 9;
+}
+
+message GarbageCollectionRules {
+  int32 default_retention_days = 1;
+  map<string, int32> branch_retention_days = 2;
+}
+
+message GarbageCollectionRunMetadata {
+  string run_id = 1;
+  string Commits_csv_location = 2;
+  string Address_location = 3;
 }

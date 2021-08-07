@@ -3,9 +3,13 @@ package metastore
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/treeverse/lakefs/pkg/catalog"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
+
+const dbfsPrefix = "dbfs:/"
 
 type ReadClient interface {
 	GetTable(ctx context.Context, dbName string, tableName string) (r *Table, err error)
@@ -35,22 +39,33 @@ type Client interface {
 	WriteClient
 }
 
-func CopyOrMerge(ctx context.Context, fromClient Client, toClient Client, fromDB, fromTable, toDB, toTable, toBranch, serde string, partition []string) error {
+func CopyOrMerge(ctx context.Context, fromClient, toClient Client, fromDB, fromTable, toDB, toTable, toBranch, serde string, partition []string, fixSparkPlaceHolder bool, dbfsLocation string) error {
 	transformLocation := func(location string) (string, error) {
+		location = HandleDBFSLocation(location, dbfsLocation)
 		return ReplaceBranchName(location, toBranch)
 	}
-	return copyOrMergeWithTransformLocation(ctx, fromClient, toClient, fromDB, fromTable, toDB, toTable, serde, partition, transformLocation)
+	return copyOrMergeWithTransformLocation(ctx, fromClient, toClient, fromDB, fromTable, toDB, toTable, serde, partition, transformLocation, fixSparkPlaceHolder)
 }
 
-func copyOrMergeWithTransformLocation(ctx context.Context, fromClient, toClient Client, fromDB, fromTable, toDB, toTable, serde string, partition []string, transformLocation func(location string) (string, error)) error {
+func copyOrMergeWithTransformLocation(ctx context.Context, fromClient, toClient Client, fromDB, fromTable, toDB, toTable, serde string, partition []string, transformLocation func(location string) (string, error), fixSparkPlaceHolder bool) error {
+	log := logging.Default().WithFields(logging.Fields{
+		"from_db":       fromDB,
+		"from_table":    fromTable,
+		"to_db":         toDB,
+		"to_table":      toTable,
+		"serde":         serde,
+		"partition_len": len(partition),
+	})
 	if len(partition) > 0 {
-		return CopyPartition(ctx, fromClient, toClient, fromDB, fromTable, toDB, toTable, serde, partition, transformLocation)
+		log.Debug("CopyPartition")
+		return CopyPartition(ctx, fromClient, toClient, fromDB, fromTable, toDB, toTable, serde, partition, transformLocation, fixSparkPlaceHolder)
 	}
 	hasTable, err := toClient.HasTable(ctx, toDB, toTable)
 	if err != nil {
 		return err
 	}
 	if !hasTable {
+		log.Debug("Copy")
 		table, err := fromClient.GetTable(ctx, fromDB, fromTable)
 		if err != nil {
 			return err
@@ -59,8 +74,9 @@ func copyOrMergeWithTransformLocation(ctx context.Context, fromClient, toClient 
 		if err != nil {
 			return err
 		}
-		return Copy(ctx, table, partitions, toDB, toTable, serde, toClient, transformLocation)
+		return Copy(ctx, table, partitions, toDB, toTable, serde, toClient, transformLocation, fixSparkPlaceHolder)
 	}
+	log.Debug("Merge")
 	table, err := fromClient.GetTable(ctx, fromDB, fromTable)
 	if err != nil {
 		return err
@@ -70,10 +86,10 @@ func copyOrMergeWithTransformLocation(ctx context.Context, fromClient, toClient 
 		return err
 	}
 	partitionCollection := NewPartitionCollection(partitions)
-	return Merge(ctx, table, partitionCollection, toDB, toTable, serde, toClient, transformLocation)
+	return Merge(ctx, table, partitionCollection, toDB, toTable, serde, toClient, transformLocation, fixSparkPlaceHolder)
 }
 
-func CopyOrMergeFromValues(ctx context.Context, fromClient Client, fTable *Table, toClient Client, fromDB, fromTable, toDB, toTable, serde string, transformLocation func(location string) (string, error)) error {
+func CopyOrMergeFromValues(ctx context.Context, fromClient Client, fTable *Table, toClient Client, fromDB, fromTable, toDB, toTable, serde string, transformLocation func(location string) (string, error), fixSparkPlaceHolder bool) error {
 	hasTable, err := toClient.HasTable(ctx, toDB, toTable)
 	if err != nil {
 		return err
@@ -83,23 +99,51 @@ func CopyOrMergeFromValues(ctx context.Context, fromClient Client, fTable *Table
 		return err
 	}
 	if !hasTable {
-		return Copy(ctx, fTable, partitions, toDB, toTable, serde, toClient, transformLocation)
+		return Copy(ctx, fTable, partitions, toDB, toTable, serde, toClient, transformLocation, fixSparkPlaceHolder)
 	}
 	partitionCollection := NewPartitionCollection(partitions)
-	return Merge(ctx, fTable, partitionCollection, toDB, toTable, serde, toClient, transformLocation)
+	return Merge(ctx, fTable, partitionCollection, toDB, toTable, serde, toClient, transformLocation, fixSparkPlaceHolder)
 }
 
-func CopyOrMergeAll(ctx context.Context, fromClient, toClient Client, schemaFilter, tableFilter, toBranch string, continueOnError bool) error {
+func CopyOrMergeAll(ctx context.Context, fromClient, toClient Client, schemaFilter, tableFilter, toBranch string, continueOnError, fixSparkPlaceHolder bool, dbfsLocation string) error {
 	databases, err := fromClient.GetDatabases(ctx, schemaFilter)
 	if err != nil {
 		return err
 	}
+	transformLocation := func(location string) (string, error) {
+		location = HandleDBFSLocation(location, dbfsLocation)
+		return ReplaceBranchName(location, toBranch)
+	}
+	return applyAll(ctx, fromClient, toClient, databases, tableFilter, transformLocation, fixSparkPlaceHolder, continueOnError)
+}
+
+// HandleDBFSLocation translates Data Bricks File system path to the S3 path using the dbfsLocation
+func HandleDBFSLocation(location string, dbfsLocation string) string {
+	if dbfsLocation != "" && strings.HasPrefix(location, dbfsPrefix) {
+		location = strings.Replace(location, dbfsPrefix, dbfsLocation, 1)
+	}
+	return location
+}
+
+func ImportAll(ctx context.Context, fromClient, toClient Client, schemaFilter, tableFilter, repo, toBranch string, continueOnError, fixSparkPlaceHolder bool, dbfsLocation string) error {
+	databases, err := fromClient.GetDatabases(ctx, schemaFilter)
+	if err != nil {
+		return err
+	}
+	transformLocation := func(location string) (string, error) {
+		location = HandleDBFSLocation(location, dbfsLocation)
+		return ReplaceExternalToLakeFSImported(location, repo, toBranch)
+	}
+	return applyAll(ctx, fromClient, toClient, databases, tableFilter, transformLocation, fixSparkPlaceHolder, continueOnError)
+}
+
+func applyAll(ctx context.Context, fromClient Client, toClient Client, databases []*Database, tableFilter string, transformLocation func(location string) (string, error), fixSparkPlaceHolder bool, continueOnError bool) error {
 	for _, database := range databases {
 		fromDBName := database.Name
 		toDBName := toClient.NormalizeDBName(database.Name)
 		database.Name = toDBName
 		database.LocationURI = toClient.GetDBLocation(toDBName)
-		err = toClient.CreateDatabaseIfNotExists(ctx, database)
+		err := toClient.CreateDatabaseIfNotExists(ctx, database)
 		if err != nil {
 			return err
 		}
@@ -107,17 +151,10 @@ func CopyOrMergeAll(ctx context.Context, fromClient, toClient Client, schemaFilt
 		if err != nil {
 			return err
 		}
-		transformLocation := func(location string) (string, error) {
-			location, err := ReplaceBranchName(location, toBranch)
-			if err != nil {
-				return "", err
-			}
-			return location, err
-		}
 		for _, table := range tables {
 			tableName := table.TableName
-			fmt.Printf("copy table %s.%s -> %s.%s\n", fromDBName, tableName, toDBName, tableName)
-			err = CopyOrMergeFromValues(ctx, fromClient, table, toClient, fromDBName, tableName, toDBName, tableName, tableName, transformLocation)
+			fmt.Printf("table %s.%s -> %s.%s\n", fromDBName, tableName, toDBName, tableName)
+			err = CopyOrMergeFromValues(ctx, fromClient, table, toClient, fromDBName, tableName, toDBName, tableName, tableName, transformLocation, fixSparkPlaceHolder)
 			if err != nil {
 				if !continueOnError {
 					return err
@@ -129,13 +166,14 @@ func CopyOrMergeAll(ctx context.Context, fromClient, toClient Client, schemaFilt
 	return nil
 }
 
-func Copy(ctx context.Context, fromTable *Table, partitions []*Partition, toDB, toTable, serde string, toClient WriteClient, transformLocation func(location string) (string, error)) error {
-	err := fromTable.Update(toDB, toTable, serde, transformLocation)
+func Copy(ctx context.Context, fromTable *Table, partitions []*Partition, toDB, toTable, serde string, toClient WriteClient, transformLocation func(location string) (string, error), fixSparkPlaceHolder bool) error {
+	isSparkSQLTable := fromTable.isSparkSQLTable()
+	err := fromTable.Update(toDB, toTable, serde, transformLocation, isSparkSQLTable, fixSparkPlaceHolder)
 	if err != nil {
 		return err
 	}
 	for _, partition := range partitions {
-		err := partition.Update(toDB, toTable, serde, transformLocation)
+		err := partition.Update(toDB, toTable, serde, transformLocation, isSparkSQLTable, fixSparkPlaceHolder)
 		if err != nil {
 			return err
 		}
@@ -148,8 +186,9 @@ func Copy(ctx context.Context, fromTable *Table, partitions []*Partition, toDB, 
 	return err
 }
 
-func Merge(ctx context.Context, table *Table, partitionIter Collection, toDB, toTable, serde string, toClient Client, transformLocation func(location string) (string, error)) error {
-	err := table.Update(toDB, toTable, serde, transformLocation)
+func Merge(ctx context.Context, table *Table, partitionIter Collection, toDB, toTable, serde string, toClient Client, transformLocation func(location string) (string, error), fixSparkPlaceHolder bool) error {
+	isSparkSQLTable := table.isSparkSQLTable()
+	err := table.Update(toDB, toTable, serde, transformLocation, isSparkSQLTable, fixSparkPlaceHolder)
 	if err != nil {
 		return err
 	}
@@ -164,7 +203,7 @@ func Merge(ctx context.Context, table *Table, partitionIter Collection, toDB, to
 		if !ok {
 			return fmt.Errorf("%w in diffIterable call. expected to get * Partition, but got: %T", ErrExpectedType, value)
 		}
-		err = partition.Update(toDB, toTable, serde, transformLocation)
+		err = partition.Update(toDB, toTable, serde, transformLocation, isSparkSQLTable, fixSparkPlaceHolder)
 		if err != nil {
 			return err
 		}
@@ -205,7 +244,11 @@ func Merge(ctx context.Context, table *Table, partitionIter Collection, toDB, to
 	return nil
 }
 
-func CopyPartition(ctx context.Context, fromClient ReadClient, toClient Client, fromDB, fromTable, toDB, toTable, serde string, partition []string, transformLocation func(location string) (string, error)) error {
+func CopyPartition(ctx context.Context, fromClient ReadClient, toClient Client, fromDB, fromTable, toDB, toTable, serde string, partition []string, transformLocation func(location string) (string, error), fixSparkPlaceHolder bool) error {
+	t1, err := fromClient.GetTable(ctx, fromDB, fromTable)
+	if err != nil {
+		return err
+	}
 	p1, err := fromClient.GetPartition(ctx, fromDB, fromTable, partition)
 	if err != nil {
 		return err
@@ -214,7 +257,7 @@ func CopyPartition(ctx context.Context, fromClient ReadClient, toClient Client, 
 	if err != nil {
 		return err
 	}
-	err = p1.Update(toDB, toTable, serde, transformLocation)
+	err = p1.Update(toDB, toTable, serde, transformLocation, t1.isSparkSQLTable(), fixSparkPlaceHolder)
 	if err != nil {
 		return err
 	}
@@ -272,9 +315,9 @@ func getColumnDiff(ctx context.Context, fromClient, toClient ReadClient, fromDB,
 	return Diff(colsIter, toColsIter)
 }
 
-func CopyOrMergeToSymlink(ctx context.Context, client Client, fromDB, fromTable, toDB, toTable, locationPrefix string) error {
+func CopyOrMergeToSymlink(ctx context.Context, client Client, fromDB, fromTable, toDB, toTable, locationPrefix string, fixSparkPlaceHolder bool) error {
 	transformLocation := func(location string) (string, error) {
 		return GetSymlinkLocation(location, locationPrefix)
 	}
-	return copyOrMergeWithTransformLocation(ctx, client, client, fromDB, fromTable, toDB, toTable, "", nil, transformLocation)
+	return copyOrMergeWithTransformLocation(ctx, client, client, fromDB, fromTable, toDB, toTable, "", nil, transformLocation, fixSparkPlaceHolder)
 }

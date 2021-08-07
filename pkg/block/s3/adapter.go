@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -17,6 +18,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/block/adapter"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -65,6 +67,8 @@ type Adapter struct {
 	uploadIDTranslator    block.UploadIDTranslator
 	streamingChunkSize    int
 	streamingChunkTimeout time.Duration
+	respServer            string
+	respServerLock        sync.Mutex
 }
 
 func WithHTTPClient(c *http.Client) func(a *Adapter) {
@@ -224,12 +228,20 @@ func (a *Adapter) streamToS3(ctx context.Context, sdkRequest *request.Request, s
 			Error("bad S3 PutObject response")
 		return "", err
 	}
+
+	a.extractS3Server(resp)
+
 	etag := resp.Header.Get("Etag")
 	// error in case etag is missing - note that empty header value will cause the same error
 	if len(etag) == 0 {
 		return "", ErrMissingETag
 	}
 	return etag, nil
+}
+
+func isErrNotFound(err error) bool {
+	var reqErr awserr.RequestFailure
+	return errors.As(err, &reqErr) && reqErr.StatusCode() == http.StatusNotFound
 }
 
 func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
@@ -246,6 +258,9 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 		Key:    aws.String(qualifiedKey.Key),
 	}
 	objectOutput, err := a.s3.GetObjectWithContext(ctx, &getObjectInput)
+	if isErrNotFound(err) {
+		return nil, adapter.ErrDataNotFound
+	}
 	if err != nil {
 		log.WithError(err).Errorf("failed to get S3 object bucket %s key %s", qualifiedKey.StorageNamespace, qualifiedKey.Key)
 		return nil, err
@@ -267,13 +282,10 @@ func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, er
 		Key:    aws.String(qualifiedKey.Key),
 	}
 	_, err = a.s3.HeadObjectWithContext(ctx, &input)
+	if isErrNotFound(err) {
+		return false, nil
+	}
 	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			if aerr.Code() == s3.ErrCodeNoSuchKey {
-				return false, nil
-			}
-		}
-
 		log.WithError(err).Errorf("failed to stat S3 object")
 		return false, err
 	}
@@ -295,6 +307,9 @@ func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPo
 		Range:  aws.String(fmt.Sprintf("bytes=%d-%d", startPosition, endPosition)),
 	}
 	objectOutput, err := a.s3.GetObjectWithContext(ctx, &getObjectInput)
+	if isErrNotFound(err) {
+		return nil, adapter.ErrDataNotFound
+	}
 	if err != nil {
 		log.WithError(err).WithFields(logging.Fields{
 			"start_position": startPosition,
@@ -623,4 +638,32 @@ func (a *Adapter) BlockstoreType() string {
 
 func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	return block.DefaultStorageNamespaceInfo(BlockstoreType)
+}
+
+func (a *Adapter) RuntimeStats() map[string]string {
+	a.respServerLock.Lock()
+	defer a.respServerLock.Unlock()
+	if a.respServer == "" {
+		return nil
+	}
+	return map[string]string{
+		"resp_server": a.respServer,
+	}
+}
+
+func (a *Adapter) extractS3Server(resp *http.Response) {
+	if resp == nil || resp.Header == nil {
+		return
+	}
+
+	// Extract the responding server from the response.
+	// Expected values: "S3" from AWS, "MinIO" for MinIO. Others unknown.
+	server := resp.Header.Get("Server")
+	if server == "" {
+		return
+	}
+
+	a.respServerLock.Lock()
+	defer a.respServerLock.Unlock()
+	a.respServer = server
 }

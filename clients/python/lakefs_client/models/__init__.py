@@ -17,7 +17,6 @@ from lakefs_client.model.branch_creation import BranchCreation
 from lakefs_client.model.commit import Commit
 from lakefs_client.model.commit_creation import CommitCreation
 from lakefs_client.model.commit_list import CommitList
-from lakefs_client.model.config import Config
 from lakefs_client.model.credentials import Credentials
 from lakefs_client.model.credentials_list import CredentialsList
 from lakefs_client.model.credentials_with_secret import CredentialsWithSecret
@@ -25,6 +24,10 @@ from lakefs_client.model.current_user import CurrentUser
 from lakefs_client.model.diff import Diff
 from lakefs_client.model.diff_list import DiffList
 from lakefs_client.model.error import Error
+from lakefs_client.model.garbage_collection_prepare_request import GarbageCollectionPrepareRequest
+from lakefs_client.model.garbage_collection_prepare_response import GarbageCollectionPrepareResponse
+from lakefs_client.model.garbage_collection_rule import GarbageCollectionRule
+from lakefs_client.model.garbage_collection_rules import GarbageCollectionRules
 from lakefs_client.model.group import Group
 from lakefs_client.model.group_creation import GroupCreation
 from lakefs_client.model.group_list import GroupList
@@ -52,9 +55,11 @@ from lakefs_client.model.setup import Setup
 from lakefs_client.model.staging_location import StagingLocation
 from lakefs_client.model.staging_metadata import StagingMetadata
 from lakefs_client.model.statement import Statement
+from lakefs_client.model.storage_config import StorageConfig
 from lakefs_client.model.storage_uri import StorageURI
 from lakefs_client.model.tag_creation import TagCreation
 from lakefs_client.model.underlying_object_properties import UnderlyingObjectProperties
 from lakefs_client.model.user import User
 from lakefs_client.model.user_creation import UserCreation
 from lakefs_client.model.user_list import UserList
+from lakefs_client.model.version_config import VersionConfig

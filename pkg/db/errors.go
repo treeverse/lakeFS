@@ -3,6 +3,7 @@ package db
 import (
 	"errors"
 	"fmt"
+	"net"
 
 	"github.com/jackc/pgx/v4"
 )
@@ -12,3 +13,8 @@ var (
 	ErrAlreadyExists = errors.New("already exists")
 	ErrSerialization = errors.New("serialization error")
 )
+
+func isDialError(err error) bool {
+	netError := &net.OpError{}
+	return errors.As(err, &netError) && netError.Op == "dial"
+}

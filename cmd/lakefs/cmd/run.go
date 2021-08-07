@@ -20,6 +20,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
+	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/db"
@@ -35,8 +36,7 @@ import (
 const (
 	gracefulShutdownTimeout = 30 * time.Second
 
-	serviceAPIServer = "api"
-	serviceS3Gateway = "s3gateway"
+	mismatchedReposFlagName = "allow-mismatched-repos"
 )
 
 type Shutter interface {
@@ -83,11 +83,13 @@ var runCmd = &cobra.Command{
 
 		// wire actions
 		actionsService := actions.NewService(
+			ctx,
 			dbPool,
 			catalog.NewActionsSource(c),
 			catalog.NewActionsOutputWriter(c.BlockAdapter),
 		)
 		c.SetHooksHandler(actionsService)
+		defer actionsService.Stop()
 
 		multipartsTracker := multiparts.NewTracker(dbPool)
 
@@ -104,11 +106,26 @@ var runCmd = &cobra.Command{
 			cfg.GetAuthCacheConfig())
 		authMetadataManager := auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
-		metadata := stats.NewMetadata(ctx, logger, cfg.GetBlockstoreType(), authMetadataManager, cloudMetadataProvider)
-		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, cfg)
+		blockstoreType := cfg.GetBlockstoreType()
+		if blockstoreType == "local" || blockstoreType == "mem" {
+			printLocalWarning(os.Stderr, blockstoreType)
+			logger.WithField("adapter_type", blockstoreType).
+				Error("Block adapter NOT SUPPORTED for production use")
+		}
+		metadata := stats.NewMetadata(ctx, logger, blockstoreType, authMetadataManager, cloudMetadataProvider)
+		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, blockStore.RuntimeStats, cfg)
 
 		// send metadata
 		bufferedCollector.CollectMetadata(metadata)
+
+		allowForeign, err := cmd.Flags().GetBool(mismatchedReposFlagName)
+		if err != nil {
+			fmt.Printf("%s: %s\n", mismatchedReposFlagName, err)
+			os.Exit(1)
+		}
+		if !allowForeign {
+			checkForeignRepos(ctx, logger, authMetadataManager, blockStore, c)
+		}
 
 		// update health info with installation ID
 		httputil.SetHealthHandlerInfo(metadata.InstallationID)
@@ -119,6 +136,7 @@ var runCmd = &cobra.Command{
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
 		apiHandler := api.Serve(
+			cfg,
 			c,
 			authService,
 			blockStore,
@@ -181,6 +199,51 @@ var runCmd = &cobra.Command{
 	},
 }
 
+// A foreign repo is a repository which namespace doesn't match the current block adapter.
+// A foreign repo might exists if the lakeFS instance configuration changed after a repository was
+// already created. The behaviour of lakeFS for foreign repos is undefined and should be blocked.
+func checkForeignRepos(ctx context.Context, logger logging.Logger, authMetadataManager *auth.DBMetadataManager, blockStore block.Adapter, c *catalog.Catalog) {
+	initialized, err := authMetadataManager.IsInitialized(ctx)
+	if err != nil {
+		logger.WithError(err).Fatal("Failed to check if lakeFS is initialized")
+	}
+	if !initialized {
+		logger.Debug("lakeFS isn't initialized, skipping mismatched adapter checks")
+	} else {
+		logger.Debug("lakeFS is initialized, checking repositories for mismatched adapter(%s)", blockStore.BlockstoreType())
+		hasMore := true
+		next := ""
+
+		for hasMore {
+			var err error
+			var repos []*catalog.Repository
+			repos, hasMore, err = c.ListRepositories(ctx, -1, "", next)
+			if err != nil {
+				logger.WithError(err).Fatal("Checking existing repositories failed")
+			}
+
+			adapterStorageType := blockStore.BlockstoreType()
+			for _, repo := range repos {
+				nsURL, err := url.Parse(repo.StorageNamespace)
+				if err != nil {
+					logger.WithError(err).Fatalf("Failed to parse repository %s namespace '%s'", repo.Name, repo.StorageNamespace)
+				}
+				repoStorageType, err := block.GetStorageType(nsURL)
+				if err != nil {
+					logger.WithError(err).Fatalf("Failed to parse to parse storage type '%s'", nsURL)
+				}
+
+				if adapterStorageType != repoStorageType.BlockstoreType() {
+					logger.Fatalf("Mismatched adapter detected. lakeFS started with adapter of type '%s', but repository '%s' is of type '%s'",
+						adapterStorageType, repo.Name, repoStorageType.BlockstoreType())
+				}
+
+				next = repo.Name
+			}
+		}
+	}
+}
+
 const runBanner = `
 
      ██╗      █████╗ ██╗  ██╗███████╗███████╗███████╗
@@ -210,6 +273,17 @@ const runBanner = `
 func printWelcome(w io.Writer) {
 	_, _ = fmt.Fprint(w, runBanner)
 	_, _ = fmt.Fprintf(w, "Version %s\n\n", version.Version)
+}
+
+var localWarningBanner = `
+WARNING!
+
+Using the "%s" block adapter.  This is suitable only for testing, but not
+for production.
+`
+
+func printLocalWarning(w io.Writer, adapter string) {
+	_, _ = fmt.Fprintf(w, localWarningBanner, adapter)
 }
 
 func registerPrometheusCollector(db sqlstats.StatsGetter) {
@@ -244,5 +318,11 @@ func gracefulShutdown(ctx context.Context, quit <-chan os.Signal, done chan<- bo
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(runCmd)
-	runCmd.Flags().StringArrayP("service", "s", []string{serviceS3Gateway, serviceAPIServer}, "lakeFS services to run")
+
+	runCmd.Flags().BoolP(mismatchedReposFlagName, "m", false, "Allow repositories from other object store types")
+	if err := runCmd.Flags().MarkHidden(mismatchedReposFlagName); err != nil {
+		// (internal error)
+		fmt.Fprint(os.Stderr, err)
+		os.Exit(internalErrorCode)
+	}
 }

@@ -19,8 +19,7 @@
 
 
 ## What is lakeFS
-
-lakeFS is an open source layer that delivers resilience and manageability to object-storage based data lakes.
+lakeFS is an open source tool that transforms your object storage into a Git-like repository. It enables you to manage your data lake the way you manage your code.
 
 With lakeFS you can build repeatable, atomic and versioned data lake operations - from complex ETL jobs to data science and analytics.
 
@@ -29,26 +28,26 @@ lakeFS supports AWS S3, Azure Blob Storage and Google Cloud Storage as its under
 
 For more information see the [official lakeFS documentation](https://docs.lakefs.io).
 
-<div style="background: #ffdddd border: 3px solid #dd4444; margine: 15px;">
-
-
 ## Capabilities
 
-**Development Environment for Data**
-* **Experimentation** - try tools, upgrade versions and evaluate code changes in isolation. 
-* **Reproducibility** - go back to any point of time to a consistent version of your data lake.
+**In Development**
 
-**Continuous Data Integration**
-* **Ingest new data safely by enforcing best practices** - make sure new data sources adhere to your lake’s best practices such as format and schema enforcement, naming convention, etc.  
-* **Metadata validation** - prevent breaking changes from entering the production data environment.
+* **Experiment** - try new tools, upgrade versions, and evaluate code changes in isolation. By creating a branch of the data you get an isolated snapshot to run and compare experiments over, while others are not exposed. 
+* **Debug** - checkout specific commits in a repository’s commit history to materialize consistent, historical versions of your data. 
+* **Collaborate** - leverage isolated branches managed by metadata (not copies of files) to work in parallel.
+
+**During Deployment**
+
+* **Version Control** - deploy data safely with CI/CD workflows borrowed from software engineering best practices. Ingest new data onto an isolated branch, perform data validations, then add to production through a merge operation.
+* **Test** - define pre-merge and pre-commit hooks to run tests that enforce schema and validate properties of the data to catch issues before they reach production.
+
+**In Production**
+
+* **Roll Back** - recover from errors by instantly reverting data to a former, consistent snapshot of the data lake. Choose any commit in a repository’s commit history to revert in one atomic action.
+* **Troubleshoot** - investigate production errors by starting with a snapshot of the inputs to the failed process. 
+* **Cross-collection Consistency** - provide consumers multiple synchronized collections of data in one atomic, revertable action. 
 
 
-**Continuous Data Deployment**
-* **Instantly revert changes to data** - if low quality data is exposed to your consumers, you can revert instantly to a former, consistent and correct snapshot of your data lake.
-* **Enforce cross collection consistency** - provide to consumers several collections of data that must be synchronized, in one atomic, revertible, action.
-* **Prevent data quality issues by enabling**
-  - Testing of production data before exposing it to users / consumers.
-  - Testing of intermediate results in your DAG to avoid cascading quality issues.
 
 ## Getting Started
 

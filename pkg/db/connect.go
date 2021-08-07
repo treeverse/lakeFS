@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/treeverse/lakefs/pkg/db/params"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"gopkg.in/retry.v1"
 )
 
 const (
@@ -59,10 +60,11 @@ func ConnectDBPool(ctx context.Context, p params.Database) (*pgxpool.Pool, error
 	config.MinConns = p.MaxIdleConnections
 	config.MaxConnLifetime = p.ConnectionMaxLifetime
 
-	pool, err := pgxpool.ConnectConfig(ctx, config)
+	pool, err := tryConnectConfig(ctx, config, log)
 	if err != nil {
-		return nil, fmt.Errorf("could not open DB: %w", err)
+		return nil, err
 	}
+
 	err = Ping(ctx, pool)
 	if err != nil {
 		pool.Close()
@@ -98,4 +100,24 @@ func normalizeDBParams(p *params.Database) {
 	if p.ConnectionMaxLifetime == 0 {
 		p.ConnectionMaxLifetime = DefaultConnectionMaxLifetime
 	}
+}
+
+func tryConnectConfig(ctx context.Context, config *pgxpool.Config, log logging.Logger) (*pgxpool.Pool, error) {
+	strategy := params.DatabaseRetryStrategy
+	var pool *pgxpool.Pool
+	var err error
+	for a := retry.Start(strategy, nil); a.Next(); {
+		pool, err = pgxpool.ConnectConfig(ctx, config)
+		if err == nil {
+			return pool, nil
+		}
+		if !isDialError(err) {
+			return nil, fmt.Errorf("error while connecting to DB: %w", err)
+		}
+		if a.More() {
+			log.WithError(err).Info("Could not connect to DB: Trying again")
+		}
+	}
+
+	return nil, fmt.Errorf("retries exhausted, could not connect to DB: %w", err)
 }

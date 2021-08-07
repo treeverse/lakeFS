@@ -75,6 +75,7 @@ class Config(ModelNormal):
         return {
             'blockstore_namespace_example': (str,),  # noqa: E501
             'blockstore_namespace_validity_regex': (str,),  # noqa: E501
+            'warnings': ([str],),  # noqa: E501
         }
 
     @cached_property
@@ -85,6 +86,7 @@ class Config(ModelNormal):
     attribute_map = {
         'blockstore_namespace_example': 'blockstore_namespace_example',  # noqa: E501
         'blockstore_namespace_validity_regex': 'blockstore_namespace_ValidityRegex',  # noqa: E501
+        'warnings': 'warnings',  # noqa: E501
     }
 
     _composed_schemas = {}
@@ -137,6 +139,7 @@ class Config(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            warnings ([str]): warnings to show user about this configuration. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

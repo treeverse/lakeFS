@@ -13,7 +13,6 @@ docs/Commit.md
 docs/CommitCreation.md
 docs/CommitList.md
 docs/CommitsApi.md
-docs/Config.md
 docs/ConfigApi.md
 docs/Credentials.md
 docs/CredentialsList.md
@@ -22,6 +21,10 @@ docs/CurrentUser.md
 docs/Diff.md
 docs/DiffList.md
 docs/Error.md
+docs/GarbageCollectionPrepareRequest.md
+docs/GarbageCollectionPrepareResponse.md
+docs/GarbageCollectionRule.md
+docs/GarbageCollectionRules.md
 docs/Group.md
 docs/GroupCreation.md
 docs/GroupList.md
@@ -49,12 +52,14 @@ docs/Repository.md
 docs/RepositoryCreation.md
 docs/RepositoryList.md
 docs/ResetCreation.md
+docs/RetentionApi.md
 docs/RevertCreation.md
 docs/Setup.md
 docs/StagingApi.md
 docs/StagingLocation.md
 docs/StagingMetadata.md
 docs/Statement.md
+docs/StorageConfig.md
 docs/StorageURI.md
 docs/TagCreation.md
 docs/TagsApi.md
@@ -62,6 +67,7 @@ docs/UnderlyingObjectProperties.md
 docs/User.md
 docs/UserCreation.md
 docs/UserList.md
+docs/VersionConfig.md
 lakefs_client/__init__.py
 lakefs_client/api/__init__.py
 lakefs_client/api/actions_api.py
@@ -74,6 +80,7 @@ lakefs_client/api/metadata_api.py
 lakefs_client/api/objects_api.py
 lakefs_client/api/refs_api.py
 lakefs_client/api/repositories_api.py
+lakefs_client/api/retention_api.py
 lakefs_client/api/staging_api.py
 lakefs_client/api/tags_api.py
 lakefs_client/api_client.py
@@ -89,7 +96,6 @@ lakefs_client/model/branch_creation.py
 lakefs_client/model/commit.py
 lakefs_client/model/commit_creation.py
 lakefs_client/model/commit_list.py
-lakefs_client/model/config.py
 lakefs_client/model/credentials.py
 lakefs_client/model/credentials_list.py
 lakefs_client/model/credentials_with_secret.py
@@ -97,6 +103,10 @@ lakefs_client/model/current_user.py
 lakefs_client/model/diff.py
 lakefs_client/model/diff_list.py
 lakefs_client/model/error.py
+lakefs_client/model/garbage_collection_prepare_request.py
+lakefs_client/model/garbage_collection_prepare_response.py
+lakefs_client/model/garbage_collection_rule.py
+lakefs_client/model/garbage_collection_rules.py
 lakefs_client/model/group.py
 lakefs_client/model/group_creation.py
 lakefs_client/model/group_list.py
@@ -124,12 +134,14 @@ lakefs_client/model/setup.py
 lakefs_client/model/staging_location.py
 lakefs_client/model/staging_metadata.py
 lakefs_client/model/statement.py
+lakefs_client/model/storage_config.py
 lakefs_client/model/storage_uri.py
 lakefs_client/model/tag_creation.py
 lakefs_client/model/underlying_object_properties.py
 lakefs_client/model/user.py
 lakefs_client/model/user_creation.py
 lakefs_client/model/user_list.py
+lakefs_client/model/version_config.py
 lakefs_client/model_utils.py
 lakefs_client/models/__init__.py
 lakefs_client/models/__init__.py

@@ -67,6 +67,8 @@ const apiRequest = async (uri, requestData = {}, additionalHeaders = {}) => {
         if (errorMessage === authenticationError) {
             cache.delete('user')
             throw new AuthenticationError('Authentication Error');
+        } else {
+            throw new AuthorizationError(errorMessage);
         }
     }
 
@@ -81,6 +83,12 @@ export class NotFoundError extends Error {
     }
 }
 
+export class AuthorizationError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = "AuthorizationError"
+    }
+}
 
 export class AuthenticationError extends Error {
     constructor(message) {
@@ -484,8 +492,8 @@ class Tags {
 
 class Objects {
 
-    async list(repoId, ref, tree, after = "", amount = DEFAULT_LISTING_AMOUNT, readUncommitted = true) {
-        const query = qs({prefix:tree, amount, after, readUncommitted});
+    async list(repoId, ref, tree, after = "", amount = DEFAULT_LISTING_AMOUNT, readUncommitted = true, delimiter = "/") {
+        const query = qs({prefix:tree, amount, after, readUncommitted, delimiter});
         const response = await apiRequest(`/repositories/${repoId}/refs/${ref}/objects/ls?${query}`);
         if (response.status !== 200) {
             throw new Error(await extractError(response));
@@ -554,8 +562,8 @@ class Commits {
 
 class Refs {
 
-    async changes(repoId, branchId, after, amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({after, amount});
+    async changes(repoId, branchId, after, prefix, delimiter, amount = DEFAULT_LISTING_AMOUNT) {
+        const query = qs({after, prefix, delimiter, amount});
         const response = await apiRequest(`/repositories/${repoId}/branches/${branchId}/diff?${query}`);
         if (response.status !== 200) {
             throw new Error(await extractError(response));
@@ -563,8 +571,8 @@ class Refs {
         return response.json();
     }
 
-    async diff(repoId, leftRef, rightRef, after, amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({after, amount});
+    async diff(repoId, leftRef, rightRef, after, prefix = "", delimiter = "", amount = DEFAULT_LISTING_AMOUNT) {
+        const query = qs({after, amount, delimiter, prefix});
         const response = await apiRequest(`/repositories/${repoId}/refs/${leftRef}/diff/${rightRef}?${query}`);
         if (response.status !== 200) {
             throw new Error(await extractError(response));
@@ -630,6 +638,29 @@ class Actions {
 
 }
 
+class Retention {
+    async getGCPolicy(repoID) {
+        const response = await apiRequest(`/repositories/${repoID}/gc/rules`);
+        if (response.status === 404) {
+            throw new NotFoundError('policy not found')
+        }
+        if (response.status !== 200) {
+            throw new Error(`could not get gc policy: ${await extractError(response)}`);
+        }
+        return response.json();
+    }
+
+    async setGCPolicy(repoID,policy) {
+        const response = await apiRequest(`/repositories/${repoID}/gc/rules`,{
+            method: 'POST',
+            body: policy
+        });
+        if (response.status !== 204) {
+            throw new Error(`could not set gc policy: ${await extractError(response)}`);
+        }
+        return response;
+    }
+}
 
 class Setup {
     async lakeFS(username) {
@@ -653,21 +684,36 @@ class Setup {
 }
 
 class Config {
-    async get() {
-        const response = await apiRequest('/config', {
+    async getStorageConfig() {
+        const response = await apiRequest('/config/storage', {
             method: 'GET',
         });
         switch (response.status) {
             case 200:
-                return await response.json();
+                const cfg = await response.json();
+                cfg.warnings = []
+                if (cfg.blockstore_type === 'local' || cfg.blockstore_type === 'mem') {
+                    cfg.warnings.push(`Block adapter ${cfg.blockstore_type} not usable in production`)
+                }
+                return cfg;
             case 409:
                 throw new Error('Conflict');
             default:
                 throw new Error('Unknown');
         }
     }
+    async getLakeFSVersion() {
+        const response = await apiRequest('/config/version', {
+            method: 'GET',
+        });
+        switch (response.status) {
+            case 200:
+                return await response.json();
+            default:
+                throw new Error('Unknown');
+        }
+    }
 }
-
 
 export const repositories = new Repositories();
 export const branches = new Branches();
@@ -678,4 +724,5 @@ export const refs = new Refs();
 export const setup = new Setup();
 export const auth = new Auth();
 export const actions = new Actions();
+export const retention = new Retention();
 export const config = new Config();

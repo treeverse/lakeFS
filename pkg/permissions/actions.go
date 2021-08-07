@@ -12,26 +12,27 @@ var (
 )
 
 const (
-	ReadRepositoryAction   = "fs:ReadRepository"
-	CreateRepositoryAction = "fs:CreateRepository"
-	DeleteRepositoryAction = "fs:DeleteRepository"
-	ListRepositoriesAction = "fs:ListRepositories"
-	ReadObjectAction       = "fs:ReadObject"
-	WriteObjectAction      = "fs:WriteObject"
-	DeleteObjectAction     = "fs:DeleteObject"
-	ListObjectsAction      = "fs:ListObjects"
-	CreateCommitAction     = "fs:CreateCommit"
-	ReadCommitAction       = "fs:ReadCommit"
-	ListCommitsAction      = "fs:ListCommits"
-	CreateBranchAction     = "fs:CreateBranch"
-	DeleteBranchAction     = "fs:DeleteBranch"
-	ReadBranchAction       = "fs:ReadBranch"
-	RevertBranchAction     = "fs:RevertBranch"
-	ListBranchesAction     = "fs:ListBranches"
-	CreateTagAction        = "fs:CreateTag"
-	DeleteTagAction        = "fs:DeleteTag"
-	ReadTagAction          = "fs:ReadTag"
-	ListTagsAction         = "fs:ListTags"
+	ReadRepositoryAction     = "fs:ReadRepository"
+	CreateRepositoryAction   = "fs:CreateRepository"
+	DeleteRepositoryAction   = "fs:DeleteRepository"
+	ListRepositoriesAction   = "fs:ListRepositories"
+	ReadObjectAction         = "fs:ReadObject"
+	WriteObjectAction        = "fs:WriteObject"
+	DeleteObjectAction       = "fs:DeleteObject"
+	ListObjectsAction        = "fs:ListObjects"
+	CreateCommitAction       = "fs:CreateCommit"
+	ReadCommitAction         = "fs:ReadCommit"
+	ListCommitsAction        = "fs:ListCommits"
+	CreateBranchAction       = "fs:CreateBranch"
+	DeleteBranchAction       = "fs:DeleteBranch"
+	ReadBranchAction         = "fs:ReadBranch"
+	RevertBranchAction       = "fs:RevertBranch"
+	ListBranchesAction       = "fs:ListBranches"
+	CreateTagAction          = "fs:CreateTag"
+	DeleteTagAction          = "fs:DeleteTag"
+	ReadTagAction            = "fs:ReadTag"
+	ListTagsAction           = "fs:ListTags"
+	ReadStorageConfiguration = "fs:ReadConfig"
 
 	ReadUserAction          = "auth:ReadUser"
 	CreateUserAction        = "auth:CreateUser"
@@ -54,15 +55,19 @@ const (
 	CreateCredentialsAction = "auth:CreateCredentials"
 	DeleteCredentialsAction = "auth:DeleteCredentials"
 	ListCredentialsAction   = "auth:ListCredentials"
-	ReadConfigAction        = "auth:ReadConfig"
 
 	ReadActionsAction = "ci:ReadAction"
+
+	PrepareGarbageCollectionCommitsAction = "retention:PrepareGarbageCollectionCommits"
+	GetGarbageCollectionRulesAction       = "retention:GetGarbageCollectionRules"
+	SetGarbageCollectionRulesAction       = "retention:SetGarbageCollectionRules"
 )
 
 var serviceSet = map[string]struct{}{
-	"fs":   {},
-	"auth": {},
-	"ci":   {},
+	"fs":        {},
+	"auth":      {},
+	"ci":        {},
+	"retention": {},
 }
 
 func IsValidAction(name string) error {

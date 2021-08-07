@@ -12,9 +12,7 @@ import scalapb.{GeneratedMessage, GeneratedMessageCompanion}
 import java.io.{DataInput, DataOutput, File}
 import scala.collection.JavaConverters._
 
-class GravelerSplit(var range: RangeData, var path: Path)
-    extends InputSplit
-    with Writable {
+class GravelerSplit(var range: RangeData, var path: Path) extends InputSplit with Writable {
   def this() = this(null, null)
 
   override def write(out: DataOutput): Unit = {
@@ -53,7 +51,7 @@ class WithIdentifier[Proto <: GeneratedMessage with scalapb.Message[Proto]](
 ) {}
 
 class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
-  companion: GeneratedMessageCompanion[Proto]
+    companion: GeneratedMessageCompanion[Proto]
 ) extends RecordReader[Array[Byte], WithIdentifier[Proto]] {
   var it: SSTableIterator[Proto] = _
   var item: Item[Proto] = _
@@ -90,11 +88,12 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
 }
 
 object LakeFSInputFormat {
-  private def read[Proto <: GeneratedMessage with scalapb.Message[Proto]](reader: SSTableReader[Proto]): Seq[Item[Proto]] = reader.newIterator().toSeq
+  private def read[Proto <: GeneratedMessage with scalapb.Message[Proto]](
+      reader: SSTableReader[Proto]
+  ): Seq[Item[Proto]] = reader.newIterator().toSeq
 }
 
-class LakeFSInputFormat
-    extends InputFormat[Array[Byte], WithIdentifier[Entry]] {
+class LakeFSInputFormat extends InputFormat[Array[Byte], WithIdentifier[Entry]] {
   import LakeFSInputFormat._
 
   override def getSplits(job: JobContext): java.util.List[InputSplit] = {
@@ -107,24 +106,16 @@ class LakeFSInputFormat
       conf.get(LAKEFS_CONF_API_SECRET_KEY_KEY)
     )
     val metaRangeURL = apiClient.getMetaRangeURL(repoName, commitID)
-    val p = new Path(metaRangeURL)
-
-    val fs = p.getFileSystem(job.getConfiguration)
-    val localFile = File.createTempFile("lakefs.", ".metarange")
-    fs.copyToLocalFile(p, new Path(localFile.getAbsolutePath))
-    val rangesReader = new SSTableReader(
-      localFile.getAbsolutePath,
-      RangeData.messageCompanion
-    )
-    localFile.delete()
+    val rangesReader: SSTableReader[RangeData] =
+      SSTableReader.forMetaRange(job.getConfiguration, metaRangeURL)
     val ranges = read(rangesReader)
     ranges.map(r =>
       new GravelerSplit(
         r.message,
         new Path(apiClient.getRangeURL(repoName, new String(r.id)))
       )
-      // Scala / JRE not strong enough to handle List<FileSplit> as List<InputSplit>;
-      // explicitly upcast to generate Seq[InputSplit].
+        // Scala / JRE not strong enough to handle List<FileSplit> as List<InputSplit>;
+        // explicitly upcast to generate Seq[InputSplit].
         .asInstanceOf[InputSplit]
     )
   }.asJava

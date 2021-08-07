@@ -2,6 +2,7 @@ package ref_test
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"reflect"
@@ -596,20 +597,8 @@ func TestManager_LogGraph(t *testing.T) {
 	}
 }
 
-type fakeAddressProvider struct {
-	identities []string
-	idx        int
-}
-
-func (f *fakeAddressProvider) ContentAddress(_ ident.Identifiable) string {
-	res := f.identities[f.idx]
-	f.idx = (f.idx + 1) % len(f.identities)
-	return res
-}
-
 func TestConsistentCommitIdentity(t *testing.T) {
-	hex := ident.NewHexAddressProvider()
-
+	addressProvider := ident.NewHexAddressProvider()
 	commit := graveler.Commit{
 		Committer:    "some-committer",
 		Message:      "I just committed",
@@ -635,14 +624,17 @@ func TestConsistentCommitIdentity(t *testing.T) {
 	const iterations = 10000
 
 	for i := 0; i < iterations; i++ {
-		res := hex.ContentAddress(commit)
+		res := addressProvider.ContentAddress(commit)
 		assert.Equalf(t, expected, res, "iteration %d content mismatch", i+1)
 	}
 }
 
 func TestManager_GetCommitByPrefix(t *testing.T) {
 	commitIDs := []string{"c1234", "d1", "b1", "c1245", "a1"}
-	r := testRefManagerWithAddressProvider(t, &fakeAddressProvider{identities: append([]string{"zero-commit-id"}, commitIDs...)})
+	identityToFakeIdentity := make(map[string]string)
+
+	provider := &fakeAddressProvider{identityToFakeIdentity: identityToFakeIdentity}
+	r, _ := testRefManagerWithAddressProvider(t, provider)
 
 	ctx := context.Background()
 	err := r.CreateRepository(ctx, "repo1", graveler.Repository{
@@ -659,6 +651,7 @@ func TestManager_GetCommitByPrefix(t *testing.T) {
 			Parents:      graveler.CommitParents{"deadbeef1"},
 			Metadata:     graveler.Metadata{"foo": "bar"},
 		}
+		identityToFakeIdentity[hex.EncodeToString(c.Identity())] = commitID
 		_, err := r.AddCommit(ctx, "repo1", c)
 		testutil.MustDo(t, "add commit", err)
 		if err != nil {
@@ -700,5 +693,54 @@ func TestManager_GetCommitByPrefix(t *testing.T) {
 				t.Fatalf("got commit different than expected. expected=%s, got=%s", tst.ExpectedCommitMessage, c.Message)
 			}
 		})
+	}
+}
+
+func TestManager_FillGenerations(t *testing.T) {
+	r := testRefManager(t)
+	ctx := context.Background()
+	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageNamespace: "s3://",
+		CreationDate:     time.Now(),
+		DefaultBranchID:  "main",
+	}, ""))
+	nextCommitNumber := 0
+	addNextCommit := func(parents ...graveler.CommitID) graveler.CommitID {
+		nextCommitNumber++
+		id := "c" + strconv.Itoa(nextCommitNumber)
+		c := graveler.Commit{
+			Message: id,
+			Parents: parents,
+		}
+		cid, err := r.AddCommit(ctx, "repo1", c)
+		testutil.MustDo(t, "Add commit "+id, err)
+		return cid
+	}
+	c1 := addNextCommit()
+	c2 := addNextCommit(c1)
+	c3 := addNextCommit(c1)
+	c4 := addNextCommit(c2)
+	c5 := addNextCommit(c3)
+	c6 := addNextCommit(c5)
+	c7 := addNextCommit(c4)
+	c8 := addNextCommit(c6, c1)
+	/*
+	 1----2----4---7
+	 | \
+	 |  3----5----6
+	 |             \
+	 ---------------8
+	*/
+	commits := []graveler.CommitID{c1, c2, c3, c4, c5, c6, c7, c8}
+	expectedGenerations := []int{1, 2, 2, 3, 3, 4, 4, 5}
+	err := r.FillGenerations(ctx, "repo1")
+	testutil.MustDo(t, "fill generations", err)
+	for i, commitID := range commits {
+		commitIdx := i + 1
+		commit, err := r.GetCommit(ctx, "repo1", commitID)
+		testutil.MustDo(t, fmt.Sprintf("get commit c%d", commitIdx), err)
+		if commit.Generation != expectedGenerations[i] {
+			t.Errorf("wrong gen for c%d. expected=%d, got=%d", commitIdx, expectedGenerations[i], commit.Generation)
+		}
 	}
 }

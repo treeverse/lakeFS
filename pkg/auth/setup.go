@@ -117,6 +117,8 @@ func SetupBaseGroups(ctx context.Context, authService Service, ts time.Time) err
 				{
 					Action: []string{
 						"ci:*",
+						"retention:*",
+						"fs:ReadConfig",
 					},
 					Resource: permissions.All,
 					Effect:   model.StatementEffectAllow,
@@ -130,6 +132,8 @@ func SetupBaseGroups(ctx context.Context, authService Service, ts time.Time) err
 				{
 					Action: []string{
 						"ci:Read*",
+						"retention:Get*",
+						"fs:ReadConfig",
 					},
 					Resource: permissions.All,
 					Effect:   model.StatementEffectAllow,
