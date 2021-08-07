@@ -120,7 +120,7 @@ const CreateTagButton = ({ repo, variant = "success", onCreate = null, children 
                         e.preventDefault();
                     }}>
                         <Form.Group controlId="name" className="float-left w-25">
-                            <Form.Control type="text" placeholder="Tag Version" name="text" ref={textRef} />
+                            <Form.Control type="text" placeholder="Tag Name" name="text" ref={textRef} />
                         </Form.Group>
                         <Form.Group controlId="source">
                             <span className="ml-2 mr-2">@</span>
