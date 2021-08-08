@@ -79,7 +79,7 @@ def generateExamplesProject(buildType: BuildType) =
       ),
       assembly / mainClass := Some("io.treeverse.examples.List"),
       target := file(s"target/examples-${buildType.name}/"),
-      run / fork := true, // https://stackoverflow.com/questions/44298847/sbt-spark-fork-in-run
+      run / fork := false, // https://stackoverflow.com/questions/44298847/sbt-spark-fork-in-run
     )
 
 lazy val spark2Type = new BuildType("247", scala211Version, "2.4.7", "0.9.8", "2.7.7", "hadoop2-2.0.1")
