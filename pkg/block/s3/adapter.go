@@ -66,8 +66,8 @@ func resolveNamespacePrefix(opts block.WalkOpts) (block.QualifiedPrefix, error) 
 
 type Adapter struct {
 	awsSession            *session.Session
-	s3ClientByRegion      map[string]s3iface.S3API
-	regionByBucket        map[string]string
+	regionToS3Client      map[string]s3iface.S3API
+	bucketToRegion        map[string]string
 	httpClient            *http.Client
 	uploadIDTranslator    block.UploadIDTranslator
 	streamingChunkSize    int
@@ -102,8 +102,8 @@ func WithTranslator(t block.UploadIDTranslator) func(a *Adapter) {
 
 func NewAdapter(awsSession *session.Session, opts ...func(a *Adapter)) *Adapter {
 	a := &Adapter{
-		s3ClientByRegion:      make(map[string]s3iface.S3API),
-		regionByBucket:        make(map[string]string),
+		regionToS3Client:      make(map[string]s3iface.S3API),
+		bucketToRegion:        make(map[string]string),
 		awsSession:            awsSession,
 		httpClient:            http.DefaultClient,
 		uploadIDTranslator:    &block.NoOpTranslator{},
@@ -117,7 +117,7 @@ func NewAdapter(awsSession *session.Session, opts ...func(a *Adapter)) *Adapter 
 }
 
 func (a *Adapter) getBucketRegion(ctx context.Context, bucket string) string {
-	if region, hasRegion := a.regionByBucket[bucket]; hasRegion {
+	if region, hasRegion := a.bucketToRegion[bucket]; hasRegion {
 		return region
 	}
 	a.log(ctx).WithField("bucket", bucket).Debug("requesting region for bucket")
@@ -126,17 +126,17 @@ func (a *Adapter) getBucketRegion(ctx context.Context, bucket string) string {
 		a.log(ctx).WithError(err).Error("failed to get region for bucket, falling back to default region")
 		region = *a.awsSession.Config.Region
 	}
-	a.regionByBucket[bucket] = region
+	a.bucketToRegion[bucket] = region
 	return region
 }
 
 func (a *Adapter) s3Client(ctx context.Context, bucket string) s3iface.S3API {
 	region := a.getBucketRegion(ctx, bucket)
-	if _, hasClient := a.s3ClientByRegion[region]; !hasClient {
+	if _, hasClient := a.regionToS3Client[region]; !hasClient {
 		a.log(ctx).WithField("bucket", bucket).WithField("region", region).Debug("creating client for region")
-		a.s3ClientByRegion[region] = s3.New(a.awsSession, &aws.Config{Region: swag.String(region)})
+		a.regionToS3Client[region] = s3.New(a.awsSession, &aws.Config{Region: swag.String(region)})
 	}
-	return a.s3ClientByRegion[region]
+	return a.regionToS3Client[region]
 }
 
 func (a *Adapter) log(ctx context.Context) logging.Logger {
@@ -366,9 +366,7 @@ func (a *Adapter) Walk(ctx context.Context, walkOpt block.WalkOpts, walkFn block
 		Bucket: aws.String(qualifiedPrefix.StorageNamespace),
 		Prefix: aws.String(qualifiedPrefix.Prefix),
 	}
-	if err != nil {
-		return err
-	}
+
 	for {
 		listOutput, err := a.s3Client(ctx, qualifiedPrefix.StorageNamespace).ListObjectsWithContext(ctx, &listObjectInput)
 		if err != nil {
