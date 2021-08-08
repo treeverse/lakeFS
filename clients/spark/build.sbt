@@ -39,7 +39,6 @@ def generateCoreProject(buildType: BuildType) =
       ),
       libraryDependencies ++= Seq(
         "io.lakefs" % "api-client" % "0.44.0",
-        "org.rocksdb" % "rocksdbjni" % "6.6.4",
         "commons-codec" % "commons-codec" % "1.15",
         "org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
         "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
@@ -57,8 +56,6 @@ def generateCoreProject(buildType: BuildType) =
         // version will probably continue to work because the C language API
         // is quite stable.
         "org.xerial.snappy" % "snappy-java" % "1.1.8.4",
-        "org.ow2.asm" % "asm" % "9.2",
-        "org.ow2.asm" % "asm-util" % "9.2",
 
         "org.scalactic" %% "scalactic" % "3.2.9",
         "org.scalatest" %% "scalatest" % "3.2.9" % "test",
