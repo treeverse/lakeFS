@@ -19,7 +19,7 @@ type Airflow struct {
 	URL      string
 	DagID    string
 	Username string
-	Password string
+	Password SecureString
 	DAGConf  map[string]interface{}
 }
 
@@ -57,7 +57,11 @@ func NewAirflowHook(h ActionHook, action *Action) (Hook, error) {
 	if err != nil {
 		return nil, fmt.Errorf("airflow hook username property: %w", err)
 	}
-	airflowHook.Password, err = h.Properties.getRequiredProperty(airflowPasswordPropertyKey)
+	rawPass, err := h.Properties.getRequiredProperty(airflowPasswordPropertyKey)
+	if err != nil {
+		return nil, fmt.Errorf("airflow hook password property: %w", err)
+	}
+	airflowHook.Password, err = NewFromString(rawPass)
 	if err != nil {
 		return nil, fmt.Errorf("airflow hook password property: %w", err)
 	}
@@ -98,19 +102,23 @@ func (a *Airflow) Run(ctx context.Context, record graveler.HookRecord, writer *H
 	}
 	reqReader := bytes.NewReader(bod)
 
-	p, err := a.buildDagRunURL()
+	dagRunURL, err := a.buildDagRunURL()
 	if err != nil {
 		return fmt.Errorf("building dag run path: %w", err)
 	}
+	buf := bytes.NewBufferString(fmt.Sprintf("Request:\nPOST %s\n", dagRunURL))
 
-	req, err := http.NewRequest(http.MethodPost, p, reqReader)
+	req, err := http.NewRequest(http.MethodPost, dagRunURL, reqReader)
 	if err != nil {
 		return fmt.Errorf("request serialization error: %w", err)
 	}
-	req.SetBasicAuth(a.Username, a.Password)
+	req.SetBasicAuth(a.Username, a.Password.val)
+	buf.WriteString(fmt.Sprintf("Username: %s, Password: %s\n", a.Username, a.Password.String()))
+
 	req.Header.Set("Content-Type", "application/json")
 
-	statusCode, err := executeAndLogHTTP(ctx, req, writer, airflowClientDefaultTimeout)
+	buf.WriteString(fmt.Sprintf("Body: %s\n\n", bod))
+	statusCode, err := executeAndLogResponse(ctx, req, buf, writer, airflowClientDefaultTimeout)
 	if err != nil {
 		return fmt.Errorf("failed executing airflow request: %w", err)
 	}
