@@ -307,21 +307,13 @@ func TestMissingEnvVar(t *testing.T) {
 on:
   pre-commit: {}
 hooks:
-  - id: webhook_id
-    type: webhook
-    properties:
-      url: "http://wontsendrequesthere/webhook"
-      timeout: 2m30s
-      query_params:
-        prefix: public/
-        disallow: ["user_", "{{ ENV.PRIVATE }}"]
   - id: airflow_hook_id
     type: airflow
     properties:
       url: "http://wontsendrequesthere/airflow"
       dag_id: "some_dag_id"
       username: "some_username"
-      password: "{{ ENV.AIRFLOW_PASSWORD }}"
+      password: "{{ ENV.NEW_AIRFLOW_PASSWORD }}"
       dag_conf:
         some: "additional_conf"
 `
