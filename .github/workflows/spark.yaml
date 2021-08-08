@@ -8,7 +8,7 @@ on:
   pull_request:
   workflow_dispatch:
 jobs:
-  lakefs-spark:
+  spark-metadata-client:
     name: lakeFS Spark metadata client
     runs-on: ubuntu-20.04
     environment: Treeverse signing
