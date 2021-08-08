@@ -129,18 +129,18 @@ jobs:
       - name: Login to GitHub Docker Registry
         uses: docker/login-action@v1
         with:
-          registry: docker.pkg.github.com
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Pull last built docker image cache
         run: |
-          docker pull docker.pkg.github.com/${GITHUB_REPOSITORY,,}/build-cache:${{ steps.version.outputs.tag }} || \
-          docker pull docker.pkg.github.com/${GITHUB_REPOSITORY,,}/build-cache || \
+          docker pull ghcr.io/${GITHUB_REPOSITORY,,}/build-cache:${{ steps.version.outputs.tag }} || \
+          docker pull ghcr.io/${GITHUB_REPOSITORY,,}/build-cache || \
           true
       - name: Build Docker image with cache and push
         run: |
           set -ex
-          ghr=docker.pkg.github.com/${GITHUB_REPOSITORY,,}/build-cache
+          ghr=ghcr.io/${GITHUB_REPOSITORY,,}/build-cache
           ghr_build_tag="-t ${ghr}:${{ steps.version.outputs.tag }}"
           if [[ -n $GITHUB_REF ]]; then
               ghr_ref_tag="-t ${ghr}:${GITHUB_REF##*/}"
