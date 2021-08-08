@@ -53,7 +53,7 @@ jobs:
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}
       - name: Publish artifacts
-#        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch'
         run: make publish-scala
         env:
           AWS_REGION: us-east-1
