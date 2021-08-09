@@ -61,7 +61,8 @@ def generateCoreProject(buildType: BuildType) =
         "org.scalatest" %% "scalatest" % "3.2.9" % "test",
       ),
       Test / logBuffered := false,
-      Test / testOptions += Tests.Argument("-oF"),
+      // Uncomment to get (very) full stacktraces in test:
+      //      Test / testOptions += Tests.Argument("-oF"),
       target := file(s"target/core-${buildType.name}/")
     ).enablePlugins(S3Plugin)
 
