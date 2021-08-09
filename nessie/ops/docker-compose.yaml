@@ -42,6 +42,7 @@ services:
       - NESSIE_AWS_ACCESS_KEY_ID
       - NESSIE_AWS_SECRET_ACCESS_KEY
       - NESSIE_ENDPOINT_URL=http://lakefs:8000
+      - ACTIONS_VAR="this_is_actions_var"
     working_dir: /lakefs
     entrypoint: ["go", "test", "-v", "./nessie", "--system-tests"]
     volumes:

@@ -375,7 +375,6 @@ jobs:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       # Setting Account_ID as a secret as a way to avoid specifying it here
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
-      ACTIONS_VAR: "this_is_actions_var"
     steps:
       - name: Retrieve generated code
         uses: actions/download-artifact@v2
@@ -447,7 +446,6 @@ jobs:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       # Setting Account_ID as a secret as a way to avoid specifying it here
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
-      ACTIONS_VAR: "this_is_actions_var"
     steps:
       - name: Retrieve generated code
         uses: actions/download-artifact@v2
@@ -491,7 +489,6 @@ jobs:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       # Setting Account_ID as a secret as a way to avoid specifying it here
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
-      ACTIONS_VAR: "this_is_actions_var"
     steps:
       - name: Retrieve generated code
         uses: actions/download-artifact@v2
