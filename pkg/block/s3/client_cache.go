@@ -2,6 +2,7 @@ package s3
 
 import (
 	"context"
+	"sync"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
@@ -16,8 +17,8 @@ import (
 type clientFactory func(awsSession client.ConfigProvider, cfgs ...*aws.Config) s3iface.S3API
 
 type ClientCache struct {
-	regionToS3Client map[string]s3iface.S3API
-	bucketToRegion   map[string]string
+	regionToS3Client sync.Map
+	bucketToRegion   sync.Map
 	awsSession       *session.Session
 	defaultClient    s3iface.S3API
 	clientFactory    func(awsSession client.ConfigProvider, cfgs ...*aws.Config) s3iface.S3API
@@ -29,11 +30,9 @@ func newS3Client(p client.ConfigProvider, cfgs ...*aws.Config) s3iface.S3API {
 
 func NewClientCache(awsSession *session.Session) *ClientCache {
 	return &ClientCache{
-		regionToS3Client: make(map[string]s3iface.S3API),
-		bucketToRegion:   make(map[string]string),
-		awsSession:       awsSession,
-		clientFactory:    newS3Client,
-		defaultClient:    newS3Client(awsSession),
+		awsSession:    awsSession,
+		clientFactory: newS3Client,
+		defaultClient: newS3Client(awsSession),
 	}
 }
 
@@ -44,8 +43,8 @@ func (c *ClientCache) WithClientFactory(clientFactory clientFactory) *ClientCach
 }
 
 func (c *ClientCache) getBucketRegion(ctx context.Context, bucket string) string {
-	if region, hasRegion := c.bucketToRegion[bucket]; hasRegion {
-		return region
+	if region, hasRegion := c.bucketToRegion.Load(bucket); hasRegion {
+		return region.(string)
 	}
 	logging.FromContext(ctx).WithField("bucket", bucket).Debug("requesting region for bucket")
 	region, err := s3manager.GetBucketRegionWithClient(ctx, c.defaultClient, bucket)
@@ -53,15 +52,18 @@ func (c *ClientCache) getBucketRegion(ctx context.Context, bucket string) string
 		logging.FromContext(ctx).WithError(err).Error("failed to get region for bucket, falling back to default region")
 		region = *c.awsSession.Config.Region
 	}
-	c.bucketToRegion[bucket] = region
+	c.bucketToRegion.Store(bucket, region)
 	return region
 }
 
 func (c *ClientCache) Get(ctx context.Context, bucket string) s3iface.S3API {
 	region := c.getBucketRegion(ctx, bucket)
-	if _, hasClient := c.regionToS3Client[region]; !hasClient {
+	if _, hasClient := c.regionToS3Client.Load(region); !hasClient {
 		logging.FromContext(ctx).WithField("bucket", bucket).WithField("region", region).Debug("creating client for region")
-		c.regionToS3Client[region] = c.clientFactory(c.awsSession, &aws.Config{Region: swag.String(region)})
+		svc := c.clientFactory(c.awsSession, &aws.Config{Region: swag.String(region)})
+		c.regionToS3Client.Store(region, svc)
+		return svc
 	}
-	return c.regionToS3Client[region]
+	svc, _ := c.regionToS3Client.Load(region)
+	return svc.(s3iface.S3API)
 }
