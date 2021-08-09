@@ -96,10 +96,10 @@ func TestClientCache(t *testing.T) {
 				c.Get(context.Background(), bucket)
 			}
 			if diff := deep.Equal(expectedClientsCreated, actualClientsCreated); diff != nil {
-				t.Fatal("unexpected client cache miss count. diff: ", diff)
+				t.Fatal("unexpected client creation count: ", diff)
 			}
 			if diff := deep.Equal(expectedRegionFetch, actualRegionFetch); diff != nil {
-				t.Fatal("unexpected region cache miss count. diff: ", diff)
+				t.Fatal("unexpected region fetch count. diff: ", diff)
 			}
 		})
 	}
