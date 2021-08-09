@@ -27,3 +27,6 @@ git_push.sh
 build-package.sh
 lakefs_client/client.py
 
+Gemfile.lock
+Gemfile
+_config.yml
