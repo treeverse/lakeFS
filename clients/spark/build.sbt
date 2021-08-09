@@ -54,8 +54,9 @@ def generateCoreProject(buildType: BuildType) =
         // Snappy is JNI :-(.  However it does claim to work with
         // ClassLoaders, and (even more importantly!) using a preloaded JNI
         // version will probably continue to work because the C language API
-        // is quite stable.
-        "org.xerial.snappy" % "snappy-java" % "1.1.8.4",
+        // is quite stable.  Take the version documented in DataBricks
+        // Runtime 7.6, and note that it changes in 8.3 :-(
+        "org.xerial.snappy" % "snappy-java" % "1.1.7.5",
 
         "org.scalactic" %% "scalactic" % "3.2.9",
         "org.scalatest" %% "scalatest" % "3.2.9" % "test",

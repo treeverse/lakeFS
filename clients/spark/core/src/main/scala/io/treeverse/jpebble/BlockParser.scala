@@ -4,7 +4,8 @@ import org.xerial.snappy.Snappy
 
 import java.io.IOException
 import java.nio.ByteBuffer
-import java.util.zip.CRC32C
+import java.util.zip.Checksum;
+import org.xerial.snappy.{PureJavaCrc32C => CRC32C}
 
 // The Block-Based RocksDB SSTable format is described in
 // https://github.com/facebook/rocksdb/wiki/Rocksdb-BlockBasedTable-Format
@@ -91,7 +92,6 @@ class DataBlockIterator(private val it: Iterator[Byte]) extends Iterator[Entry] 
     val keySharedPrefix = lastKey.slice(0, sharedBytesSize.toInt)
     val keyUnshared = BlockParser.readBytes(it, unsharedBytesSize).toArray
     val value = BlockParser.readBytes(it, valueSize).toArray
-    Console.out.println(f"[DEBUG]   next: ${Binary.readable(keySharedPrefix)}%s|${Binary.readable(keyUnshared)}%s -> ${Binary.readable(value)}%s    ($sharedBytesSize%d+$unsharedBytesSize%d) ; $valueSize%d")
     lastKey = (keySharedPrefix ++ keyUnshared).toArray
     Entry(lastKey, value)
   }
@@ -109,6 +109,15 @@ object BlockParser {
 
   val COMPRESSION_BLOCK_TYPE_NONE = 0
   val COMPRESSION_BLOCK_TYPE_SNAPPY = 1
+
+  def update(checksum: Checksum, buf: ByteBuffer, offset: Int, length: Int) {
+    if (buf.hasArray()) {
+      checksum.update(buf.array(), buf.position() + buf.arrayOffset() + offset, length)
+    } else {
+      val start = buf.position() + offset
+      (start until start + length).foreach((b) => checksum.update(buf.get(b)))
+    }
+  }
 
   def readEnd(bytes: Iterator[Byte]) =
     if (bytes.hasNext) throw new BadFileFormatException("Input too long")
@@ -206,7 +215,7 @@ object BlockParser {
    */
   def startBlockParse(block: IndexedBytes): IndexedBytes = {
     val crc = new CRC32C()
-    crc.update(block.slice(0, block.size - blockTrailerLen + 1).toByteBuffer)
+    update(crc, block.toByteBuffer, 0, block.size - blockTrailerLen + 1)
     val computedCRC = fixupCRC(crc.getValue().toInt)
     val expectedCRC = readFixedInt(block.slice(block.size - blockTrailerLen + 1, block.size).iterator)
     if (computedCRC != expectedCRC) {
@@ -276,7 +285,6 @@ class EntryIterator(val in: BlockReadable) extends Iterator[Entry] {
       // blockhandle in the value is important.
       val it = data.value.iterator
       val bh = BlockParser.readBlockHandle(it)
-      Console.out.println(s"[DEBUG] Start block ${bh}")
       if (it.hasNext) {
         throw new BadFileFormatException("Parsed blockhandle too short")
       }
