@@ -16,6 +16,7 @@ check that the API server is up and running
 
 ### Example
 
+
 ```python
 import time
 import lakefs_client
@@ -59,6 +60,7 @@ No authorization required
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | NoContent |  -  |
