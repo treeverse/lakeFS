@@ -1,6 +1,6 @@
 package io.treeverse.jpebble
 
-import java.nio.ByteBuffer
+import java.nio.{Buffer, ByteBuffer}
 
 object IndexedBytes {
   def create(buf: ByteBuffer): IndexedBytes = new ByteBufferIndexedBytes(buf)
@@ -37,10 +37,19 @@ class ByteBufferIterator(private val buf: ByteBufferIndexedBytes) extends Iterat
 class ByteBufferIndexedBytes(private val buf: ByteBuffer) extends IndexedBytes {
   override def size = buf.limit() - buf.position()
 
-  override def slice(start: Int, end: Int) = new ByteBufferIndexedBytes(buf
-    .slice()
-    .limit(end)
-    .position(start))
+  override def slice(start: Int, end: Int) = new ByteBufferIndexedBytes(
+    // Hack around Java / Scala / Ubuntu / SBT / ??? madness: JDK changed
+    // Buffer methods to be covariant in their return types in version 9.
+    // Now Scala and/or Ubuntu compile based on the wrong JDK version, so
+    // code emitted tries to access ByteBuffer.limit but the JVM has only
+    // Buffer.limit.  Cast around that.
+    //
+    // Ref: https://stackoverflow.com/a/51223234/192263
+    buf.slice()
+      .asInstanceOf[Buffer]
+      .limit(end)
+      .position(start)
+      .asInstanceOf[ByteBuffer])
 
   override def iterator = new ByteBufferIterator(this)
 
