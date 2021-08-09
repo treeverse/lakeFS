@@ -29,11 +29,11 @@ We will show you how to create a database on AWS RDS, but you can use any Postgr
 
 If you already have a database, take note of the connection string and skip to the [next step](#install-lakefs-on-ec2)
 
-1. Follow the official [AWS documentation](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_GettingStarted.CreatingConnecting.PostgreSQL.html){: target="_blank" } on how to create a PostgreSQL instance and connect to it.  
+1. Follow the official [AWS documentation](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_GettingStarted.CreatingConnecting.PostgreSQL.html){: target="_blank" } on how to create a PostgreSQL instance and connect to it.
    You may use the default PostgreSQL engine, or [Aurora PostgreSQL](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Aurora.AuroraPostgreSQL.html){: target="_blank" }. Make sure you're using PostgreSQL version >= 11.
 2. Once your RDS is set up and the server is in `Available` state, take note of the endpoint and port.
 
-   ![RDS Connection String](../assets/img/rds_conn.png)
+   ![RDS Connection String]({{ site.baseurl }}/assets/img/rds_conn.png)
 
 3. Make sure your security group rules allow you to connect to the database instance.
 
@@ -106,7 +106,7 @@ As mentioned above, you should create 3 DNS records for lakeFS:
 
 For an AWS load balancer with Route53 DNS, create a simple record, and choose *Alias to Application and Classic Load Balancer* with an `A` record type.
 
-![Configuring a simple record in Route53](../assets/img/route53.png)
+![Configuring a simple record in Route53]({{ site.baseurl }}/assets/img/route53.png)
 
 For other DNS providers, refer to the documentation on how to add CNAME records.
 
