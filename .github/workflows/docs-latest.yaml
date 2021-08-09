@@ -36,5 +36,5 @@ jobs:
           destination_repo: treeverse/docs-lakeFS
           destination_folder: /
           user_email: 'support@treeverse.io'
-          user_name: 'nopcoder'
+          user_name: 'docs-action'
 
