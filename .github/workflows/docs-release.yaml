@@ -52,6 +52,6 @@ jobs:
           source_file: docs/_site/.
           destination_repo: treeverse/docs-lakeFS
           destination_folder: /
-          user_email: 'barak.amar@treeverse.io'
+          user_email: 'support@treeverse.io'
           user_name: 'nopcoder'
 
