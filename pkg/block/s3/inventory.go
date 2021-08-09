@@ -39,7 +39,7 @@ func (a *Adapter) GenerateInventory(ctx context.Context, logger logging.Logger, 
 	if err != nil {
 		return nil, err
 	}
-	svc := a.s3Client(ctx, m.inventoryBucket)
+	svc := a.clients.Get(ctx, m.inventoryBucket)
 	return GenerateInventory(logger, m, s3inventory.NewReader(ctx, svc, logger), shouldSort, prefixes)
 }
 
@@ -85,7 +85,7 @@ func (a *Adapter) loadManifest(ctx context.Context, manifestURL string) (*Manife
 	if err != nil {
 		return nil, err
 	}
-	output, err := a.s3Client(ctx, u.Host).GetObject(&s3.GetObjectInput{Bucket: &u.Host, Key: &u.Path})
+	output, err := a.clients.Get(ctx, u.Host).GetObject(&s3.GetObjectInput{Bucket: &u.Host, Key: &u.Path})
 	if err != nil {
 		return nil, fmt.Errorf("%w: failed to read manifest.json from %s", err, manifestURL)
 	}
