@@ -43,7 +43,7 @@ In this section we'll review how to copy files into lakeFS using the AWS CLI.
 
 1. Back in the lakeFS UI, we should be able to see our file added to the main branch!
 
-   ![Object Added](../assets/img/object_added.png)
+   ![Object Added]({{ site.baseurl }}/assets/img/object_added.png)
    
 ### Next steps
 
