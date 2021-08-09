@@ -41,6 +41,8 @@ hooks:
     description: Check webhooks for pre-commit works
     properties:
       url: "{{.URL}}/pre-commit"
+	  query_params:
+        check_env_vars: {{ ENV.ACTIONS_VAR }}
 `
 
 const actionPostCommitYaml = `
@@ -119,6 +121,9 @@ func TestHooksSuccess(t *testing.T) {
 	require.Equal(t, commitRecord.Message, preCommitEvent.CommitMessage)
 	require.Equal(t, branch, preCommitEvent.SourceRef)
 	require.Equal(t, commitRecord.Metadata.AdditionalProperties, preCommitEvent.Metadata)
+	require.NotNil(t, webhookData.queryParams)
+	require.Contains(t, webhookData.queryParams, "check_env_vars")
+	require.Equal(t, webhookData.queryParams["check_env_vars"], []string{"this_is_actions_var"})
 
 	webhookData, err = responseWithTimeout(server, 1*time.Minute)
 	require.NoError(t, err)
