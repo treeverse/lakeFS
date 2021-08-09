@@ -1,3 +1,5 @@
+repository: treeverse/lakeFS
+
 # Enable or disable the site search
 # Supports true (default) or false
 search_enabled: true
@@ -67,4 +69,9 @@ plugins:
   - jekyll-redirect-from
   - jekyll-seo-tag
 
-exclude: ["deploy/includes"]
+exclude: 
+  - deploy/includes
+  - vendor
+  - CNAME
+
+baseurl: 

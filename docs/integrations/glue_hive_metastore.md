@@ -25,14 +25,14 @@ They contain metadata such as the location of the table, information about colum
 In order to query the table `my_table`, Spark will:
 * Request the metadata from Hive metastore (steps 1,2)
 * Use the location from the metadata to access the data in S3 (steps 3,4).
-![metastore with S3](../assets/img/metastore-S3.svg)
+![metastore with S3]({{ site.baseurl }}/assets/img/metastore-S3.svg)
 
 <br/><br/>
 
 ## With lakeFS
 {: .no_toc }
 When using lakeFS, the flow stays exactly the same. Note that the location of the table `my_table` now contains the branch `s3://example/main/path/to/table`
-![metastore with S3](../assets/img/metastore-lakefs.svg)
+![metastore with S3]({{ site.baseurl }}/assets/img/metastore-lakefs.svg)
 
 
 <br/><br/><br/>

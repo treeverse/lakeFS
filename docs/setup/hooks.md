@@ -292,4 +292,4 @@ It should look like `https://api.relay.svix.com/api/v1/play/receive/<Random_Gen_
 1. Every time you commit or merge to a branch, the relevant `pre_*` and `post_*` requests will be available
 in the Svix endpoint you provided. You can also check the `Actions` tab in the lakeFS UI for more details.
 
-![Setup](../assets/img/svix_play.png)
+![Setup]({{ site.baseurl }}/assets/img/svix_play.png)

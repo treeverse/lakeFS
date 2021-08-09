@@ -53,4 +53,4 @@ S3 Destination connector supports custom S3 endpoints strating from Airbyte's ve
 
 The UI configuration will look like:
 
-![S3 Destination Connector Configuration](../assets/img/airbyte.png)
+![S3 Destination Connector Configuration]({{ site.baseurl }}/assets/img/airbyte.png)
