@@ -205,11 +205,6 @@ jobs:
       - name: Build and test hadoopfs
         working-directory: clients/hadoopfs
         run: mvn --quiet --batch-mode --update-snapshots -P'!treeverse-signing',contract-tests verify
-      - name: lakeFS Logs on failure
-        if: ${{ failure() }}
-        continue-on-error: true
-        working-directory: test/lakefsfs_contract
-        run: docker-compose logs --tail=1000 lakefs
   spark2:
     name: Test lakeFS with Spark 2.x
     needs: deploy-image
