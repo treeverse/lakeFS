@@ -42,7 +42,7 @@ hooks:
     properties:
       url: "{{.URL}}/pre-commit"
 	  query_params:
-        check_env_vars: {{ ENV.ACTIONS_VAR }}
+        check_env_vars: {{"{{"}} ENV.ACTIONS_VAR {{"}}"}}
 `
 
 const actionPostCommitYaml = `
