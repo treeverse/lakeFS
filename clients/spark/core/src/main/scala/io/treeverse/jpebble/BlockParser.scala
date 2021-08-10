@@ -95,9 +95,8 @@ class DataBlockIterator(private val it: Iterator[Byte]) extends Iterator[Entry] 
     Entry(lastKey, value)
   }
 
-  /**
-   * Convert (remainder of iterator) to a Map.  Arrays are great for
-   * entries, less so for Map keys -- use Seq keys to allow value lookups.
+  /** Convert (remainder of iterator) to a Map.  Arrays are great for
+   *  entries, less so for Map keys -- use Seq keys to allow value lookups.
    */
   def toMap: Map[Seq[Byte], Array[Byte]] = this.map({ case Entry(k, v) => (k.toSeq, v) }).toMap
 }
@@ -260,10 +259,13 @@ object BlockParser {
     new DataBlockIterator(blockWithoutTrailer.iterator)
   }
 
-  def readProperties(file: BlockReadable, footer: IndexBlockHandles): Map[Seq[Byte], Array[Byte]] = {
+  def readProperties(
+      file: BlockReadable,
+      footer: IndexBlockHandles
+  ): Map[Seq[Byte], Array[Byte]] = {
     val metaIndex = {
-      val bytes = file.readBlock(
-        footer.metaIndex.offset, footer.metaIndex.size + BlockParser.blockTrailerLen)
+      val bytes =
+        file.readBlock(footer.metaIndex.offset, footer.metaIndex.size + BlockParser.blockTrailerLen)
       val block = BlockParser.startBlockParse(bytes)
       BlockParser.parseDataBlock(block).toMap
     }
@@ -279,8 +281,7 @@ object BlockParser {
     }
   }
 
-  /**
-   * @return Iterator over all SSTable entries
+  /** @return Iterator over all SSTable entries
    */
   def entryIterator(in: BlockReadable): Iterator[Entry] = {
     val bytes = in.iterate(in.length - BlockParser.footerLength, BlockParser.footerLength)
@@ -301,18 +302,19 @@ object BlockParser {
       BlockParser.parseDataBlock(block)
     }
 
-    val index2It = if (blockIndexType == INDEX_TYPE_TWO_LEVEL) // TODO(ariels): == or & ?
-      indexIt.flatMap((data) => {
-        val it = data.value.iterator
-        val bh = BlockParser.readBlockHandle(it)
-        BlockParser.readEnd(it)
+    val index2It =
+      if (blockIndexType == INDEX_TYPE_TWO_LEVEL) // TODO(ariels): == or & ?
+        indexIt.flatMap((data) => {
+          val it = data.value.iterator
+          val bh = BlockParser.readBlockHandle(it)
+          BlockParser.readEnd(it)
 
-        val bytes = in.readBlock(bh.offset, bh.size + BlockParser.blockTrailerLen)
-        val block = BlockParser.startBlockParse(bytes)
-        BlockParser.parseDataBlock(block)
-      })
-    else
-      indexIt
+          val bytes = in.readBlock(bh.offset, bh.size + BlockParser.blockTrailerLen)
+          val block = BlockParser.startBlockParse(bytes)
+          BlockParser.parseDataBlock(block)
+        })
+      else
+        indexIt
 
     val entryIt = index2It.flatMap((data) => {
       // Ignore separating key: for iterating over all the value, only the
