@@ -27,7 +27,7 @@ If you already have a database, take note of the connection string and skip to t
 1. Follow the official [Azure documentation](https://docs.microsoft.com/en-us/azure/postgresql/quickstart-create-server-database-portal){: target="_blank" } on how to create a PostgreSQL instance and connect to it.
    Make sure you're using PostgreSQL version >= 11.
 1. Once your Azure Database for PostgreSQL server is set up and the server is in `Available` state, take note of the endpoint and username.
-   ![Azure postgres Connection String](../assets/img/azure_postgres_conn.png)
+   ![Azure postgres Connection String]({{ site.baseurl }}/assets/img/azure_postgres_conn.png)
 1. Make sure your Access control roles allow you to connect to the database instance.
 
 ## Installation Options

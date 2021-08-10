@@ -72,13 +72,13 @@ func (d *dbTx) Select(results interface{}, query string, args ...interface{}) er
 
 func (d *dbTx) Get(dest interface{}, query string, args ...interface{}) error {
 	start := time.Now()
+	err := pgxscan.Get(d.ctx, d.tx, dest, query, args...)
 	log := d.logger.WithFields(logging.Fields{
 		"type":  "get",
 		"args":  args,
 		"query": queryToString(query),
 		"took":  time.Since(start),
 	})
-	err := pgxscan.Get(d.ctx, d.tx, dest, query, args...)
 	if pgxscan.NotFound(err) {
 		// This err comes directly from scany, not directly from pgx, so *must* use
 		// pgxscan.NotFound.
@@ -96,14 +96,14 @@ func (d *dbTx) Get(dest interface{}, query string, args ...interface{}) error {
 
 func (d *dbTx) GetPrimitive(dest interface{}, query string, args ...interface{}) error {
 	start := time.Now()
+	row := d.tx.QueryRow(d.ctx, query, args...)
+	err := row.Scan(dest)
 	log := d.logger.WithFields(logging.Fields{
 		"type":  "get",
 		"args":  args,
 		"query": queryToString(query),
 		"took":  time.Since(start),
 	})
-	row := d.tx.QueryRow(d.ctx, query, args...)
-	err := row.Scan(dest)
 	if errors.Is(err, pgx.ErrNoRows) {
 		log.Trace("SQL query returned no results")
 		return ErrNotFound

@@ -27,7 +27,7 @@ The server itself is stateless, meaning you can easily add more instances to han
 
 lakeFS stores data in an underlying [S3 bucket](https://aws.amazon.com/s3/){:target="_blank"} with some of its metadata stored in [PostgreSQL](https://www.postgresql.org/){:target="_blank"}. (see [Data Model](data-model.md))
 
-![Architecture](../assets/img/arch.png)
+![Architecture]({{ site.baseurl }}/assets/img/arch.png)
 
 ## lakeFS Components
 

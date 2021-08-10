@@ -18,22 +18,22 @@ Once we have a repository created, we can start [copying and modifying objects](
 
 1. Open [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup){:target="_blank"} in your web browser to set up an initial admin user, used to login and send API requests.
 
-   ![Setup](../assets/img/setup.png)
+   ![Setup]({{ site.baseurl }}/assets/img/setup.png)
 
 1. Follow the steps to create an initial administrator user. Save the credentials you've received somewhere safe, you won't be able to see them again!
 
-   ![Setup Done](../assets/img/setup_done.png)
+   ![Setup Done]({{ site.baseurl }}/assets/img/setup_done.png)
 
 1. Follow the link and go to the login screen
 
-   ![Login Screen](../assets/img/login.png)
+   ![Login Screen]({{ site.baseurl }}/assets/img/login.png)
 
 ## Create the repository 
 
 1. Use the credentials from step #2 to login as an administrator
 1. Click `Create Repository`
     
-   ![Create Repository](../assets/img/create_repo_local.png)
+   ![Create Repository]({{ site.baseurl }}/assets/img/create_repo_local.png)
 
    A [repository](../understand/branching-model.md#repositories) is lakeFS's basic namespace, akin to S3's Bucket (read more about the data model [here](../understand/branching-model.md)).
    Since we're using the `local` block adapter, the value used for `Storage Namespace` should be a static `local://`.
