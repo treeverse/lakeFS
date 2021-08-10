@@ -217,9 +217,20 @@ class BlockParserSpec extends AnyFunSpec with Matchers {
             })
           }
 
+          it("dumps properties") {
+            withSSTable(sstFilename, (in: BlockReadable) => {
+              val bytes = in.iterate(in.length - BlockParser.footerLength, BlockParser.footerLength)
+              val footer = BlockParser.readFooter(bytes)
+
+              val props = BlockParser.readProperties(in, footer)
+
+              Console.out.println(s"[DEBUG] Index type ${Binary.readable(props("rocksdb.block.based.table.index.type".getBytes))}")
+            })
+          }
+
           it("reads everything") {
             withSSTable(sstFilename, (in: BlockReadable) => {
-              val it = new EntryIterator(in)
+              val it = BlockParser.entryIterator(in)
               val actual = it.map((entry) =>
                 (new String(entry.key), new String(entry.value).toInt)).toMap
 
