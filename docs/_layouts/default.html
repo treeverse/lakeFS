@@ -92,11 +92,14 @@ layout: table_wrappers
                 </select>
             </div>
             <script async>
-                (async function () {
+                window.addEventListener("load",  async () => {
                     const pathFirstLevel = location.pathname.split('/')[1];
                     const selectedVersion = pathFirstLevel.startsWith('v') && pathFirstLevel || '';
                     const selectVersionElm = document.getElementById('selectversion');
                     const response = await fetch('/versions.json');
+                    if (!response.ok) {
+                        return
+                    }
                     const versions = await response.json();
                     for (let [key, value] of Object.entries(versions)) {
                         const el = document.createElement("option");
@@ -107,7 +110,7 @@ layout: table_wrappers
                         }
                         selectVersionElm.append(el);
                     }
-                })();
+                });
             </script>
 
             {% include nav.html pages=site.html_pages %}
