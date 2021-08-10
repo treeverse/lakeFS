@@ -1,2 +1,5 @@
 java/**		linguist-generated
 python/**	linguist-generated
+python/Gemfile linguist-generated=false
+python/Gemfile.lock linguist-generated=false
+python/_config.yml linguist-generated=false
