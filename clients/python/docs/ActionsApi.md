@@ -20,6 +20,7 @@ get a run
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import lakefs_client
@@ -94,6 +95,7 @@ Name | Type | Description  | Notes
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | action run result |  -  |
@@ -113,6 +115,7 @@ get run hook output
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import lakefs_client
@@ -188,6 +191,7 @@ Name | Type | Description  | Notes
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | run hook output |  -  |
@@ -207,6 +211,7 @@ list runs
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import lakefs_client
@@ -296,6 +301,7 @@ Name | Type | Description  | Notes
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | list action runs |  -  |
@@ -315,6 +321,7 @@ list run hooks
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import lakefs_client
@@ -402,6 +409,7 @@ Name | Type | Description  | Notes
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | list specific run hooks |  -  |

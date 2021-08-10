@@ -23,6 +23,7 @@ delete object
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import lakefs_client
@@ -97,6 +98,7 @@ void (empty response body)
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | object deleted successfully |  -  |
@@ -116,6 +118,7 @@ get object content
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import lakefs_client
@@ -191,6 +194,7 @@ Name | Type | Description  | Notes
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | object content |  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  * Content-Disposition -  <br>  |
@@ -211,6 +215,7 @@ get object properties on underlying storage
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import lakefs_client
@@ -287,6 +292,7 @@ Name | Type | Description  | Notes
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | object metadata on underlying storage |  -  |
@@ -306,6 +312,7 @@ list objects under a given prefix
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import lakefs_client
@@ -397,6 +404,7 @@ Name | Type | Description  | Notes
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | object listing |  -  |
@@ -416,6 +424,7 @@ stage an object\"s metadata for the given branch
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import lakefs_client
@@ -503,6 +512,7 @@ Name | Type | Description  | Notes
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | object metadata |  -  |
@@ -523,6 +533,7 @@ get object metadata
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import lakefs_client
@@ -599,6 +610,7 @@ Name | Type | Description  | Notes
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | object metadata |  -  |
@@ -619,6 +631,7 @@ Name | Type | Description  | Notes
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import lakefs_client
@@ -708,6 +721,7 @@ Name | Type | Description  | Notes
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | object metadata |  -  |

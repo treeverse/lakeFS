@@ -19,6 +19,7 @@ creates symlink files corresponding to the given directory
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import lakefs_client
@@ -104,6 +105,7 @@ Name | Type | Description  | Notes
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | location created |  -  |
@@ -123,6 +125,7 @@ return URI to a meta-range file
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import lakefs_client
@@ -197,6 +200,7 @@ Name | Type | Description  | Notes
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | meta-range URI |  * Location - redirect to S3 <br>  |
@@ -216,6 +220,7 @@ return URI to a range file
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import lakefs_client
@@ -290,6 +295,7 @@ Name | Type | Description  | Notes
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | range URI |  * Location - redirect to S3 <br>  |

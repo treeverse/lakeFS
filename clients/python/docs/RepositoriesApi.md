@@ -20,6 +20,7 @@ create repository
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import lakefs_client
@@ -108,6 +109,7 @@ Name | Type | Description  | Notes
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | repository |  -  |
@@ -128,6 +130,7 @@ delete repository
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import lakefs_client
@@ -198,6 +201,7 @@ void (empty response body)
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | repository deleted successfully |  -  |
@@ -217,6 +221,7 @@ get repository
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import lakefs_client
@@ -289,6 +294,7 @@ Name | Type | Description  | Notes
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | repository |  -  |
@@ -308,6 +314,7 @@ list repositories
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import lakefs_client
@@ -385,6 +392,7 @@ Name | Type | Description  | Notes
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | repository list |  -  |
