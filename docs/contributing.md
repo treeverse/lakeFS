@@ -12,7 +12,7 @@ Thank you for your interest in contributing to our project. Whether it's a bug r
 
 Please read through this document before submitting any issues or pull requests to ensure we have all the necessary information to effectively respond to your bug report or contribution.
 
-Don't know where to start? [Join our community on Slack](https://lakefs.io/slack) and we will help you get started. We also recommend this [free series](https://app.egghead.io/playlists/how-to-contribute-to-an-open-source-project-on-github){:target="_blank"} about contributing to OSS projects.
+Don't know where to start? Reach out on the #dev channel on [our Slack](https://lakefs.io/slack) and we will help you get started. We also recommend this [free series](https://app.egghead.io/playlists/how-to-contribute-to-an-open-source-project-on-github){:target="_blank"} about contributing to OSS projects.
 {: .note .note-info }
 
 ## Getting Started
@@ -22,7 +22,7 @@ Before you get started, we ask that you:
 * Check out the [code of conduct](https://github.com/treeverse/lakeFS/blob/master/CODE_OF_CONDUCT.md).
 * Sign the [lakeFS CLA](https://cla-assistant.io/treeverse/lakeFS) when making your first pull request (individual / corporate)
 * Submit any security issues directly to [security@treeverse.io](mailto:security@treeverse.io).
-* Contributions should have an associated [Github issue](https://github.com/treeverse/lakeFS/issues/). 
+* Contributions should have an associated [GitHub issue](https://github.com/treeverse/lakeFS/issues/). 
 * Before making major contributions, please reach out to us on the #dev channel on [Slack](https://lakefs.io/slack).
   We will make sure no one else is working on the same feature. 
 
