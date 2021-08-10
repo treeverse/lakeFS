@@ -6,10 +6,12 @@ on:
     branches:
       - master
   pull_request:
+  workflow_dispatch:
 jobs:
   spark-metadata-client:
     name: Test Spark metadata client
     runs-on: ubuntu-20.04
+    environment: Treeverse signing
     steps:
       - name: Check-out code
         uses: actions/checkout@v2
@@ -24,4 +26,3 @@ jobs:
       - name: package
         working-directory: clients/spark
         run: sbt package
-
