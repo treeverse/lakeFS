@@ -1,10 +1,10 @@
-name: Spark metadata client
+name: Publish Spark metadata client
 on:
-  pull_request: // TODO remove
+  pull_request: # TODO remove
   workflow_dispatch:
 jobs:
-  spark-metadata-client:
-    name: Test Spark metadata client
+  publish-spark-metadata-client:
+    name: Publish Spark metadata client
     runs-on: ubuntu-20.04
     environment: Treeverse signing
     steps:
