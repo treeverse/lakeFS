@@ -2508,6 +2508,46 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 	writeResponse(w, code, objStat)
 }
 
+func (c *Controller) GetObjectUserMetadata(w http.ResponseWriter, r *http.Request, repository string, ref string, params GetObjectUserMetadataParams) {
+	if !c.authorize(w, r, []permissions.Permission{
+		{
+			Action:   permissions.ReadObjectAction,
+			Resource: permissions.ObjectArn(repository, params.Path),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "object_user_metadata")
+
+	repo, err := c.Catalog.GetRepository(ctx, repository)
+	if handleAPIError(w, err) {
+		return
+	}
+
+	entry, err := c.Catalog.GetEntry(ctx, repository, ref, params.Path, catalog.GetEntryParams{ReturnExpired: true})
+	if handleAPIError(w, err) {
+		return
+	}
+
+	_, err = block.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress, entry.AddressType.ToIdentifierType())
+	if handleAPIError(w, err) {
+		return
+	}
+
+	objUserMetadata := ObjectUserMetadata{
+		AdditionalProperties: map[string]string(entry.Metadata),
+	}
+	code := http.StatusOK
+	if entry.Metadata == nil {
+		code = http.StatusNoContent
+	}
+	if entry.Expired {
+		code = http.StatusGone
+	}
+	writeResponse(w, code, objUserMetadata)
+}
+
 func (c *Controller) GetUnderlyingProperties(w http.ResponseWriter, r *http.Request, repository string, ref string, params GetUnderlyingPropertiesParams) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
