@@ -11,7 +11,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/arn"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/cloud/aws/s3inventory"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -23,35 +22,35 @@ type Manifest struct {
 	URL                string          `json:"-"`
 	InventoryBucketArn string          `json:"destinationBucket"`
 	SourceBucket       string          `json:"sourceBucket"`
-	Files              []inventoryFile `json:"files"` // inventory list files, each contains a list of objects
+	Files              []InventoryFile `json:"files"` // inventory list files, each contains a list of objects
 	Format             string          `json:"fileFormat"`
 	CreationTimestamp  string          `json:"creationTimestamp"`
 	inventoryBucket    string
 }
 
-type inventoryFile struct {
+type InventoryFile struct {
 	Key      string `json:"key"` // an s3 key for an inventory list file
 	firstKey string
 	lastKey  string
 }
 
 func (a *Adapter) GenerateInventory(ctx context.Context, logger logging.Logger, manifestURL string, shouldSort bool, prefixes []string) (block.Inventory, error) {
-	return GenerateInventory(logger, manifestURL, a.s3, s3inventory.NewReader(ctx, a.s3, logger), shouldSort, prefixes)
+	m, err := a.loadManifest(ctx, manifestURL)
+	if err != nil {
+		return nil, err
+	}
+	svc := a.clients.Get(ctx, m.inventoryBucket)
+	return GenerateInventory(logger, m, s3inventory.NewReader(ctx, svc, logger), shouldSort, prefixes)
 }
 
-func GenerateInventory(logger logging.Logger, manifestURL string, s3 s3iface.S3API, inventoryReader s3inventory.IReader, shouldSort bool, prefixes []string) (block.Inventory, error) {
+func GenerateInventory(logger logging.Logger, m *Manifest, inventoryReader s3inventory.IReader, shouldSort bool, prefixes []string) (block.Inventory, error) {
 	if logger == nil {
 		logger = logging.Default()
 	}
-	m, err := loadManifest(manifestURL, s3)
-	if err != nil {
-		return nil, err
-	}
 	if shouldSort || len(prefixes) > 0 {
-		err = sortManifest(m, logger, inventoryReader)
-	}
-	if err != nil {
-		return nil, err
+		if err := sortManifest(m, logger, inventoryReader); err != nil {
+			return nil, err
+		}
 	}
 	if len(prefixes) > 0 {
 		manifestFileCount := len(m.Files)
@@ -81,12 +80,12 @@ func (inv *Inventory) InventoryURL() string {
 	return inv.Manifest.URL
 }
 
-func loadManifest(manifestURL string, s3svc s3iface.S3API) (*Manifest, error) {
+func (a *Adapter) loadManifest(ctx context.Context, manifestURL string) (*Manifest, error) {
 	u, err := url.Parse(manifestURL)
 	if err != nil {
 		return nil, err
 	}
-	output, err := s3svc.GetObject(&s3.GetObjectInput{Bucket: &u.Host, Key: &u.Path})
+	output, err := a.clients.Get(ctx, u.Host).GetObject(&s3.GetObjectInput{Bucket: &u.Host, Key: &u.Path})
 	if err != nil {
 		return nil, fmt.Errorf("%w: failed to read manifest.json from %s", err, manifestURL)
 	}
@@ -107,10 +106,10 @@ func loadManifest(manifestURL string, s3svc s3iface.S3API) (*Manifest, error) {
 	return &m, nil
 }
 
-func filterFiles(files []inventoryFile, prefixes []string) []inventoryFile {
+func filterFiles(files []InventoryFile, prefixes []string) []InventoryFile {
 	sort.Strings(prefixes)
 	currentPrefixIdx := 0
-	filteredFiles := make([]inventoryFile, 0)
+	filteredFiles := make([]InventoryFile, 0)
 	for i := 0; i < len(files); i++ {
 		for {
 			// find a prefix that may have suitable keys in the current file

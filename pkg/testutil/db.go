@@ -13,7 +13,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4/pgxpool"
 	_ "github.com/jackc/pgx/v4/stdlib"
@@ -238,8 +237,7 @@ func NewBlockAdapterByType(t testing.TB, translator block.UploadIDTranslator, bl
 			cfg.Credentials = credentials.NewSharedCredentials("", "default")
 		}
 		sess := session.Must(session.NewSession(cfg))
-		svc := s3.New(sess)
-		return lakefsS3.NewAdapter(svc, lakefsS3.WithTranslator(translator))
+		return lakefsS3.NewAdapter(sess, lakefsS3.WithTranslator(translator))
 
 	default:
 		return mem.New(mem.WithTranslator(translator))
