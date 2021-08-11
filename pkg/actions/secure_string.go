@@ -1,13 +1,16 @@
 package actions
 
 import (
+	"fmt"
 	"os"
+	"strings"
+
 	"regexp"
 )
 
-// SecureString is a string tha may or may not contain a secret.
-// Secret is considered any value that was read from an environment variable, in the following syntax:
-// "{{ ENV.VAR_KEY }}"
+// SecureString is a string that may be populated from an environment variable.
+// If constructed with a string of the form {{ ENV.EXAMPLE_VARIABLE }}, the value is populated from EXAMPLE_VARIABLE and
+// is considered a secret. Otherwise the value is taken from the string as-is, and is not considered a secret.
 type SecureString struct {
 	val    string
 	secret bool
@@ -21,19 +24,37 @@ func (s SecureString) String() string {
 	return s.val
 }
 
-var envVarRegex = regexp.MustCompile(`{{ ENV\.(.*) }}`)
+var envVarRegex = regexp.MustCompile(`{{ ?ENV\..*? ?}}`)
 
 // Creates a new SecureString, reading env var if needed.
-func NewFromString(s string) (SecureString, error) {
-	matches := envVarRegex.FindStringSubmatch(s)
-	if len(matches) == 0 {
+func NewSecureString(s string) (SecureString, error) {
+	matches := 0
+	var err error
+	ret := envVarRegex.ReplaceAllStringFunc(s, func(origin string) string {
+		if err != nil {
+			return ""
+		}
+		matches++
+		raw := strings.Trim(origin, "{} ")
+		parts := strings.SplitN(raw, ".", 2)
+		if len(parts) != 2 || parts[0] != "ENV" {
+			return s
+		}
+
+		envVarName := parts[1]
+		val, ok := os.LookupEnv(envVarName)
+		if !ok {
+			err = fmt.Errorf("%s not found: %w", envVarName, errMissingEnvVar)
+			return ""
+		}
+		return val
+	})
+	if err != nil {
+		return SecureString{}, err
+	}
+	if matches == 0 {
 		return SecureString{val: s, secret: false}, nil
 	}
-	envVarName := s[len("{{ ENV.") : len(s)-len(" }}")]
-	val, ok := os.LookupEnv(envVarName)
-	if !ok {
-		return SecureString{}, errMissingEnvVar
-	}
 
-	return SecureString{val: val, secret: true}, nil
+	return SecureString{val: ret, secret: true}, nil
 }

@@ -177,7 +177,7 @@ func extractQueryParams(props map[string]interface{}) (map[string][]SecureString
 					return nil, fmt.Errorf("query params array should contains only strings: %w", errWebhookWrongFormat)
 				}
 
-				avs, err := NewFromString(av)
+				avs, err := NewSecureString(av)
 				if err != nil {
 					return nil, fmt.Errorf("reading query param: %w", err)
 				}
@@ -190,7 +190,7 @@ func extractQueryParams(props map[string]interface{}) (map[string][]SecureString
 			return nil, fmt.Errorf("query params single value should be of type string: %w", errWebhookWrongFormat)
 		}
 
-		avs, err := NewFromString(av)
+		avs, err := NewSecureString(av)
 		if err != nil {
 			return nil, fmt.Errorf("reading query param: %w", err)
 		}
@@ -218,7 +218,7 @@ func extractHeaders(props map[string]interface{}) (map[string]SecureString, erro
 			return nil, fmt.Errorf("headers array should contains only strings: %w", errWebhookWrongFormat)
 		}
 
-		vss, err := NewFromString(vs)
+		vss, err := NewSecureString(vs)
 		if err != nil {
 			return nil, fmt.Errorf("reading header: %w", err)
 		}

@@ -61,7 +61,7 @@ func NewAirflowHook(h ActionHook, action *Action) (Hook, error) {
 	if err != nil {
 		return nil, fmt.Errorf("airflow hook password property: %w", err)
 	}
-	airflowHook.Password, err = NewFromString(rawPass)
+	airflowHook.Password, err = NewSecureString(rawPass)
 	if err != nil {
 		return nil, fmt.Errorf("airflow hook password property: %w", err)
 	}
