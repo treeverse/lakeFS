@@ -45,7 +45,7 @@ This reference uses `.` to denote the nesting of values.
 * `blockstore.azure.storage_account` `(string : )` - If specified, will be used as the Azure storage account
 * `blockstore.azure.storage_access_key` `(string : )` - If specified, will be used as the Azure storage access key
 * `blockstore.azure.auth_method` `(one of ["msi", "access-key"]: "access-key" )` - Authentication method to use (msi is used for Azure AD authentication). 
-* `blockstore.s3.region` `(string : "us-east-1")` - When using the S3 block adapter, AWS region to use
+* `blockstore.s3.region` `(string : "us-east-1")` - Default region for lakeFS to use when interacting with S3.
 * `blockstore.s3.profile` `(string : )` - If specified, will be used as a [named credentials profile](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html)
 * `blockstore.s3.credentials_file` `(string : )` - If specified, will be used as a [credentials file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
 * `blockstore.s3.credentials.access_key_id` `(string : )` - If specified, will be used as a static set of credential
