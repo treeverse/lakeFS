@@ -18,12 +18,11 @@ case class IndexBlockHandles(metaIndex: BlockHandle, index: BlockHandle)
 
 class BadFileFormatException(msg: String) extends IOException(msg)
 
-/**
- * A wrapper for Iterator that counts calls to next.
+/** A wrapper for Iterator that counts calls to next.
  *
- * Iterator.zipWithIndex is not a good substitute, because it requires an
- * extra call to Iterator.next -- which fails if the iterator is done and
- * will also prevent the next parser from running..
+ *  Iterator.zipWithIndex is not a good substitute, because it requires an
+ *  extra call to Iterator.next -- which fails if the iterator is done and
+ *  will also prevent the next parser from running..
  */
 class CountedIterator[T](it: Iterator[T]) extends Iterator[T] {
   var count = 0
@@ -52,7 +51,8 @@ class DebuggingIterator(it: Iterator[Byte]) extends Iterator[Byte] {
 object Binary {
   def readable(bytes: Seq[Byte]): String =
     bytes.foldLeft("")((s: String, b: Byte) =>
-      s + (if (32 <= b && b < 127) b.toChar.toString else f"\\x$b%02x"))
+      s + (if (32 <= b && b < 127) b.toChar.toString else f"\\x$b%02x")
+    )
 }
 
 case class Entry(key: Array[Byte], value: Array[Byte]) {
@@ -60,9 +60,8 @@ case class Entry(key: Array[Byte], value: Array[Byte]) {
   override def toString() = s"${readable(key)} -> ${readable(value)}"
 }
 
-/**
- * Iterator over elements of an index block.  No "random" (O(log n)) access
- * provided, just iteration over keys and values.
+/** Iterator over elements of an index block.  No "random" (O(log n)) access
+ *  provided, just iteration over keys and values.
  */
 class DataBlockIterator(private val it: Iterator[Byte]) extends Iterator[Entry] {
   // Format is documented in the source code,
@@ -124,7 +123,8 @@ object BlockParser {
 
   def readMagic(bytes: Iterator[Byte]) = {
     val magic = bytes.take(footerMagic.length).toArray
-    val isMatch = magic.zip(BlockParser.footerMagic)
+    val isMatch = magic
+      .zip(BlockParser.footerMagic)
       .filter({ case ((a, b)) => a != b })
       .isEmpty
     if (!isMatch) {
@@ -140,10 +140,8 @@ object BlockParser {
     // Int 0xFF.  That widens to Int but prevents sign extension.  Languages
     // without unsigned integer types are so much fun.)
     ((bytes.next() & 0xff) + 256L * (
-      (bytes.next() & 0xff) + 256L * (
-        (bytes.next() & 0xff) + 256L * (bytes.next() & 0xff))
-      )
-    ).toInt
+      (bytes.next() & 0xff) + 256L * ((bytes.next() & 0xff) + 256L * (bytes.next() & 0xff))
+    )).toInt
 
   def readUnsignedVarLong(bytes: Iterator[Byte]) = {
     val (continuedBytes, rest) = bytes.span((b: Byte) => (b & 0x80L) != 0)
@@ -156,13 +154,13 @@ object BlockParser {
   }
 
   def readSignedVarLong(bytes: Iterator[Byte]): Long = {
-      val raw = readUnsignedVarLong(bytes)
-      // This undoes the trick in writeSignedVarLong()
-      val temp = (((raw << 63) >> 63) ^ raw) >> 1
-      // This extra step lets us deal with the largest signed values by treating
-      // negative results from read unsigned methods as like unsigned values
-      // Must re-flip the top bit if the original read value had it set.
-      temp ^ (raw & (1L << 63))
+    val raw = readUnsignedVarLong(bytes)
+    // This undoes the trick in writeSignedVarLong()
+    val temp = (((raw << 63) >> 63) ^ raw) >> 1
+    // This extra step lets us deal with the largest signed values by treating
+    // negative results from read unsigned methods as like unsigned values
+    // Must re-flip the top bit if the original read value had it set.
+    temp ^ (raw & (1L << 63))
   }
 
   // BUG(ariels): no support for Long sizes.  Not very useful in an SSTable (but possible).
@@ -186,41 +184,40 @@ object BlockParser {
     ret
   }
 
-  /**
-   * Return an int32 with (fixed-width, 4 byte) little-endian encoding from bytes.
+  /** Return an int32 with (fixed-width, 4 byte) little-endian encoding from bytes.
    */
   def readFixedInt(bytes: Iterator[Byte]): Int =
-    (bytes.next() & 0xff) + 256 * (
-      (bytes.next() & 0xff) + 256 * (
-        (bytes.next() & 0xff) + 256 * (bytes.next() & 0xff)))
+    (bytes.next() & 0xff) + 256 * ((bytes
+      .next() & 0xff) + 256 * ((bytes.next() & 0xff) + 256 * (bytes.next() & 0xff)))
 
-  /**
-   * Mix bits of CRC32C to match its use in RocksDB SSTables.  (That format
-   * includes CRCs inside checksummed data, meaning further CRCs of that
-   * block can fail to detect anything; defining this mixing protects that
-   * protocol.  We need to follow the format regardless of whether or not
-   * using CRCs like this is justified!)
+  /** Mix bits of CRC32C to match its use in RocksDB SSTables.  (That format
+   *  includes CRCs inside checksummed data, meaning further CRCs of that
+   *  block can fail to detect anything; defining this mixing protects that
+   *  protocol.  We need to follow the format regardless of whether or not
+   *  using CRCs like this is justified!)
    */
-  def fixupCRC(crc: Int): Int = (crc>>>15|crc<<17) + 0xa282ead8
+  def fixupCRC(crc: Int): Int = (crc >>> 15 | crc << 17) + 0xa282ead8
 
-  /**
-   * Verify the block checksum and return the sequence of its contents.
-   * block should be the entire contents of a BlockHandle plus
-   * blockTrailerLen (5) bytes.
+  /** Verify the block checksum and return the sequence of its contents.
+   *  block should be the entire contents of a BlockHandle plus
+   *  blockTrailerLen (5) bytes.
    *
-   * Uses a ByteBuffer so we can use whatever efficient CRC32C
-   * implementation is available on the JVM.
+   *  Uses a ByteBuffer so we can use whatever efficient CRC32C
+   *  implementation is available on the JVM.
    *
-   * TODO(ariels): decompression.
+   *  TODO(ariels): decompression.
    */
   def startBlockParse(block: IndexedBytes): IndexedBytes = {
     val crc = new CRC32C()
     update(crc, block.toByteBuffer, 0, block.size - blockTrailerLen + 1)
     val computedCRC = fixupCRC(crc.getValue().toInt)
-    val expectedCRC = readFixedInt(block.slice(block.size - blockTrailerLen + 1, block.size).iterator)
+    val expectedCRC = readFixedInt(
+      block.slice(block.size - blockTrailerLen + 1, block.size).iterator
+    )
     if (computedCRC != expectedCRC) {
       throw new BadFileFormatException(
-        "Bad CRC got %08x != stored %08x".format(computedCRC, expectedCRC))
+        "Bad CRC got %08x != stored %08x".format(computedCRC, expectedCRC)
+      )
     }
     val compressionType = block(block.size - blockTrailerLen)
     val data = block.slice(0, block.size - blockTrailerLen)
@@ -255,10 +252,9 @@ object BlockParser {
   }
 }
 
-/**
- * Iterator over all SSTable entries
+/** Iterator over all SSTable entries
  *
- * BUG(ariels): No support for 2-level indexes!
+ *  BUG(ariels): No support for 2-level indexes!
  */
 class EntryIterator(val in: BlockReadable) extends Iterator[Entry] {
   private val bytes = in.iterate(in.length - BlockParser.footerLength, BlockParser.footerLength)
