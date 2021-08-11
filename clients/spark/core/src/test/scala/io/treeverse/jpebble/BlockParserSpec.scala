@@ -158,7 +158,9 @@ class BlockParserSpec extends AnyFunSpec with Matchers {
 
   describe("read RocksDB SSTable") {
     // Load source data
-    val hTxt = Source.fromResource("pebble-testdata/h.txt")
+    val hTxt = Source.fromInputStream(
+      // Source.fromResource in Scala >= 2.12 but need to support 2.11.
+      getClass.getClassLoader.getResourceAsStream("pebble-testdata/h.txt"))
     val histRe = " *(\\d+) *(\\w+) *$".r
     val expected = hTxt.getLines().map((line) =>
       line match {
@@ -178,7 +180,7 @@ class BlockParserSpec extends AnyFunSpec with Matchers {
       "h.no-compression.two_level_index.sst",
       "h.table-bloom.no-compression.prefix_extractor.no_whole_key_filter.sst",
       "h.table-bloom.no-compression.sst",
-      "h.table-bloom.sst",
+      "h.table-bloom.sst"
     )
 
     /**
