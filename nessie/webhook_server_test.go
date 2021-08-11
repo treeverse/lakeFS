@@ -13,9 +13,10 @@ import (
 )
 
 type hookResponse struct {
-	path string
-	err  error
-	data []byte
+	path        string
+	err         error
+	data        []byte
+	queryParams map[string][]string
 }
 
 type webhookServer struct {
@@ -95,7 +96,8 @@ func hookHandlerFunc(respCh chan hookResponse) func(http.ResponseWriter, *http.R
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		respCh <- hookResponse{path: request.URL.Path, data: data}
+
+		respCh <- hookResponse{path: request.URL.Path, data: data, queryParams: request.URL.Query()}
 		_, _ = io.WriteString(writer, "OK")
 		writer.WriteHeader(http.StatusOK)
 	}
