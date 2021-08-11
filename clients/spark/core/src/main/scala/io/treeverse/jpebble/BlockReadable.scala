@@ -2,23 +2,20 @@ package io.treeverse.jpebble
 
 import java.nio.channels.FileChannel
 
-/**
- * Interface for reading blocks.  This is for reading storage with some
- * random-access capabilities.
+/** Interface for reading blocks.  This is for reading storage with some
+ *  random-access capabilities.
  */
 trait BlockReadable {
   def length: Long
 
-  /**
-   * Return a new block.
+  /** Return a new block.
    *
-   * @param offset from start.
-   * @param buffer to read into.
+   *  @param offset from start.
+   *  @param buffer to read into.
    */
   def readBlock(offset: Long, size: Long): IndexedBytes
 
-  /**
-   * Return an iterator on a block.
+  /** Return an iterator on a block.
    */
   def iterate(offset: Long, size: Long): Iterator[Byte] =
     readBlock(offset, size).iterator

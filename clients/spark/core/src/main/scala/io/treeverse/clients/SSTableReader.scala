@@ -21,7 +21,8 @@ private object local {
 }
 
 class SSTableIterator[Proto <: GeneratedMessage with scalapb.Message[Proto]](
-    val it: EntryIterator, companion: GeneratedMessageCompanion[Proto]
+    val it: EntryIterator,
+    companion: GeneratedMessageCompanion[Proto]
 ) extends Iterator[Item[Proto]] {
   // TODO(ariels): explicitly make it closeable, and figure out how to close it when used by
   //     Spark.

@@ -12,11 +12,12 @@ trait IndexedBytes {
   def slice(offset: Int, size: Int): IndexedBytes
   def iterator: Iterator[Byte]
   def apply(i: Int): Byte
-  def toByteBuffer: ByteBuffer = throw new UnsupportedOperationException("toByteBuffer not implemented")
+  def toByteBuffer: ByteBuffer = throw new UnsupportedOperationException(
+    "toByteBuffer not implemented"
+  )
 }
 
-/**
- * Iterator over a ByteByffer.
+/** Iterator over a ByteByffer.
  */
 class ByteBufferIterator(private val buf: ByteBufferIndexedBytes) extends Iterator[Byte] {
   var index = 0
@@ -28,11 +29,10 @@ class ByteBufferIterator(private val buf: ByteBufferIndexedBytes) extends Iterat
   }
 }
 
-/**
- * IndexedBytes running on an immutable ("owned") ByteBufffer.  After
- * calling, change *nothing* in buf, not even its position or limit.  (Or
- * slice() it first to create a shallow copy, then you can change position
- * and limit...)
+/** IndexedBytes running on an immutable ("owned") ByteBufffer.  After
+ *  calling, change *nothing* in buf, not even its position or limit.  (Or
+ *  slice() it first to create a shallow copy, then you can change position
+ *  and limit...)
  */
 class ByteBufferIndexedBytes(private val buf: ByteBuffer) extends IndexedBytes {
   override def size = buf.limit() - buf.position()
@@ -45,11 +45,13 @@ class ByteBufferIndexedBytes(private val buf: ByteBuffer) extends IndexedBytes {
     // Buffer.limit.  Cast around that.
     //
     // Ref: https://stackoverflow.com/a/51223234/192263
-    buf.slice()
+    buf
+      .slice()
       .asInstanceOf[Buffer]
       .limit(end)
       .position(start)
-      .asInstanceOf[ByteBuffer])
+      .asInstanceOf[ByteBuffer]
+  )
 
   override def iterator = new ByteBufferIterator(this)
 
