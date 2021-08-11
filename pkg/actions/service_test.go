@@ -114,6 +114,8 @@ hooks:
       query_params:
         prefix: public/
         disallow: ["user_", "{{ ENV.PRIVATE }}"]
+      headers:
+        user: admin
   - id: ` + airflowHookID + `
     type: airflow
     properties:
