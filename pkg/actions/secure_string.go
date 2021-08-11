@@ -38,7 +38,7 @@ func NewSecureString(s string) (SecureString, error) {
 		raw := strings.Trim(origin, "{} ")
 		parts := strings.SplitN(raw, ".", 2)
 		if len(parts) != 2 || parts[0] != "ENV" {
-			return s
+			return origin
 		}
 
 		envVarName := parts[1]

@@ -45,6 +45,12 @@ func TestSecureString(t *testing.T) {
 			expectedOut: SecureString{val: "let me count: one, two, three", secret: true},
 		},
 		{
+			name:        "not an env var",
+			input:       "{{ NV.NOT_AN_ENV_VAR }}",
+			envVarToSet: map[string]string{"NOT_AN_ENV_VAR": "one"},
+			expectedOut: SecureString{val: "{{ NV.NOT_AN_ENV_VAR }}", secret: false},
+		},
+		{
 			name:        "missing env var",
 			input:       "{{ ENV.MISSING_FIRST }}",
 			envVarToSet: map[string]string{"SIMPLE_FIRST": "some value"},
