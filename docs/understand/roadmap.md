@@ -63,6 +63,26 @@ Additionally, for CD use cases, it will allow a merge operation to introduce Hiv
 [Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/1846){: target="_blank" class="btn" }
 
 
+### Support Delta Lake merges and diffs across branches <span>Requires Discussion</span>{: .label .label-yellow }
+
+New data formats ([Apache Hudi](https://hudi.apache.org/){: target="_blank" }, [Apache Iceberg](https://iceberg.apache.org/){: target="_blank" } and most notably, [Delta Lake](https://delta.io/){: target="_blank" }) don't rely simply on a hierarchical directory structure - they are usually accompanied by metadata files.
+These files contain information about changes made, partition and indexing information, as well as represent small deltas to be applied to the larger, typically columnar data objects.
+
+For Delta Lake in particular, these metadata files represent a [logical transaction log that relies on numerical ordering](https://github.com/delta-io/delta/blob/master/PROTOCOL.md#delta-log-entries).
+
+Currently, if trying to modify a Delta table from 2 different branches, lakeFS would correctly recognize that there's a conflict: this log diverged into 2 different copies, representing different changes.
+Users would then have to forgo one of the change sets, by either retaining the destination branch's set of changes, or the source branch's.
+
+A much better user experience would be to allow merging this log into a new, unified set of changes, representing changes made in both merges, as a new set of log files (and potentially, data files too!).
+
+While beneficial for Delta Lake users, this is a departure from the un-opinionated nature of lakeFS, that is kept simple by treating objects as opaque blobs.
+We're still gathering information on the use cases and access patterns where this is beneficial - please let us know if this is something you'd find interesting
+
+
+[Contact us, we'd love to talk about it!](mailto:hello@treeverse.io?subject=using+lakeFS+with+Delta+Lake){: target="_blank" class="btn" }
+
+
+
 ### Hooks: usability improvements <span>High Priority</span>{: .label }
 
 While hooks are an immensely useful tool that provides strong guarantees to data consumers, we want to make them more useful but also easier to implement:
