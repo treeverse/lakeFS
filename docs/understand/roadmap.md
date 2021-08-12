@@ -71,7 +71,7 @@ These files contain information about changes made, partition and indexing infor
 For Delta Lake in particular, these metadata files represent a [logical transaction log that relies on numerical ordering](https://github.com/delta-io/delta/blob/master/PROTOCOL.md#delta-log-entries).
 
 Currently, when trying to modify a Delta table from 2 different branches, lakeFS would correctly recognize a conflict: this log diverged into 2 different copies, representing different changes.
-Users would then have to forgo one of the change sets, by either retaining the destination branch's set of changes, or the source branch's.
+Users would then have to forgo one of the change sets, by either retaining the destination's branch set of changes, or the source's branch.
 
 A much better user experience would be to allow merging this log into a new, unified set of changes, representing changes made in both merges, as a new set of log files (and potentially, data files too!).
 
