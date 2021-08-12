@@ -73,7 +73,7 @@ For Delta Lake in particular, these metadata files represent a [logical transact
 Currently, when trying to modify a Delta table from 2 different branches, lakeFS would correctly recognize a conflict: this log diverged into 2 different copies, representing different changes.
 Users would then have to forgo one of the change sets, by either retaining the destination's branch set of changes, or the source's branch.
 
-A much better user experience would be to allow merging this log into a new, unified set of changes, representing changes made in both merges, as a new set of log files (and potentially, data files too!).
+A much better user experience would be to allow merging this log into a new unified set of changes, representing changes made in both branches as a new set of log files (and potentially, data files too!).
 
 While beneficial for Delta Lake users, this is a departure from the un-opinionated nature of lakeFS, that is kept simple by treating objects as opaque blobs.
 We're still gathering information on the use cases and access patterns where this is beneficial - please let us know if this is something you'd find interesting
