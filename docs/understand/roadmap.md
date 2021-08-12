@@ -63,6 +63,26 @@ Additionally, for CD use cases, it will allow a merge operation to introduce Hiv
 [Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/1846){: target="_blank" class="btn" }
 
 
+### Support Delta Lake merges and diffs across branches <span>Requires Discussion</span>{: .label .label-yellow }
+
+New data formats ([Apache Hudi](https://hudi.apache.org/){: target="_blank" }, [Apache Iceberg](https://iceberg.apache.org/){: target="_blank" } and most notably, [Delta Lake](https://delta.io/){: target="_blank" }) don't rely simply on a hierarchical directory structure - they are usually accompanied by metadata files.
+These files contain information about changes made, partition and indexing information, as well as represent small deltas to be applied to the larger, typically columnar data objects.
+
+For Delta Lake in particular, these metadata files represent a [logical transaction log that relies on numerical ordering](https://github.com/delta-io/delta/blob/master/PROTOCOL.md#delta-log-entries).
+
+Currently, when trying to modify a Delta table from 2 different branches, lakeFS would correctly recognize a conflict: this log diverged into 2 different copies, representing different changes.
+Users would then have to forgo one of the change sets, by either retaining the destination's branch set of changes, or the source's branch.
+
+A much better user experience would be to allow merging this log into a new unified set of changes, representing changes made in both branches as a new set of log files (and potentially, data files too!).
+
+While beneficial for Delta Lake users, this is a departure from the un-opinionated nature of lakeFS, that is kept simple by treating objects as opaque blobs.
+We're still gathering information on the use cases and access patterns where this is beneficial - please let us know if this is something you'd find interesting
+
+
+[Contact us, we'd love to talk about it!](mailto:hello@treeverse.io?subject=using+lakeFS+with+Delta+Lake){: target="_blank" class="btn" }
+
+
+
 ### Hooks: usability improvements <span>High Priority</span>{: .label }
 
 While hooks are an immensely useful tool that provides strong guarantees to data consumers, we want to make them more useful but also easier to implement:
@@ -168,3 +188,39 @@ Each job will use its native job ID as (part of) a branch name for isolation, wi
 - Traceability: Attaching metadata to each commit means we get quite a lot of information on where data is coming from, how it's generated, etc. This allows building reproducible pipelines in an easier way.
 
 [Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/2042){: target="_blank" class="btn" }
+
+
+### Native connector: Trino
+
+Currently, the Trino integration works well using the [lakeFS s3 Gateway](architecture.md#s3-gateway). 
+
+While easy to integrate and useful out of the box, due to the S3 protocol, it means that the data itself must pass through the lakeFS server.
+
+For larger installations, a native integration where lakeFS handles metadata, returning locations in the underlying object store that Trino can then access directly, would allow reducing the operational overhead and increasing the scalability of lakeFS.
+This would be done in a similar way to the [Native Spark integration](../integrations/spark.md) using the [Hadoop Filesystem implementation](../integrations/spark.md#access-lakefs-using-the-lakefs-specific-hadoop-filesystem).
+
+[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/2357){: target="_blank" class="btn" }
+
+
+
+### Improved streaming support for Apache Kafka
+
+Committing (along with attaching useful information to the commit) makes a lot of sense for batch workloads: 
+- run a job or a pipeline on a separate branch and commit 
+- record information such as the git hash of the code executed, the versions of frameworks used, and information about the data artifacts
+- once the pipeline has completed successfully, commit and attach the recorded information as metadata
+
+
+For streaming however, this is currently less clear: There's no obvious point in time to commit, as things never actually "finish successfully".
+[The recommended pattern](../usecases/production.md#example-1-rollback---data-ingested-from-a-kafka-stream) would be to ingest from a stream on a separate branch, periodically committing - storing not only the data added since last commit but also capturing the offset read from the stream, for reproducibility.
+These commits can then be merged into a main branch given they pass all relevant quality checks and other validations using hooks, exposing consumers to validated, clean data.
+
+In practice, implementing such a workflow is a little challenging. Users need to:
+
+1. Orchestrate the commits and merge operations.
+2. figure out how to attach the correct offset read from the stream broker
+3. Handle writes coming in while the commit is taking place
+
+Ideally, lakeFS should provide tools to automate this, with native support for [Apache Kafka](https://kafka.apache.org/){: target="_blank" }.
+
+[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/2358){: target="_blank" class="btn" }
