@@ -217,6 +217,6 @@ In practice, implementing such a workflow is a little challenging. Users need to
 2. figure out how to attach the correct offset read from the stream broker
 3. Handle writes coming in while the commit is taking place
 
-Ideally, lakeFS should provide the tools to automate this, with native support for [Apache Kafka](https://kafka.apache.org/){: target="_blank" }.
+Ideally, lakeFS should provide tools to automate this, with native support for [Apache Kafka](https://kafka.apache.org/){: target="_blank" }.
 
 [Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/2358){: target="_blank" class="btn" }
