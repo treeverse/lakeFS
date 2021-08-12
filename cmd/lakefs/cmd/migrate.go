@@ -46,18 +46,6 @@ var upCmd = &cobra.Command{
 	},
 }
 
-var downCmd = &cobra.Command{
-	Use:   "down",
-	Short: "Apply all down migrations",
-	Run: func(cmd *cobra.Command, args []string) {
-		err := db.MigrateDown(cfg.GetDatabaseParams())
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-	},
-}
-
 var gotoCmd = &cobra.Command{
 	Use:   "goto",
 	Short: "Migrate to version V.",
@@ -83,7 +71,6 @@ func init() {
 	rootCmd.AddCommand(migrateCmd)
 	migrateCmd.AddCommand(versionCmd)
 	migrateCmd.AddCommand(upCmd)
-	migrateCmd.AddCommand(downCmd)
 	migrateCmd.AddCommand(gotoCmd)
 	_ = gotoCmd.Flags().Uint("version", 0, "version number")
 	_ = gotoCmd.MarkFlagRequired("version")
