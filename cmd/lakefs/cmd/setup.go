@@ -22,15 +22,16 @@ var setupCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 
-		migrator := db.NewDatabaseMigrator(cfg.GetDatabaseParams())
+		dbParams := cfg.GetDatabaseParams()
+		dbPool := db.BuildDatabaseConnection(ctx, dbParams)
+		defer dbPool.Close()
+
+		migrator := db.NewDatabaseMigrator(dbParams)
 		err := migrator.Migrate(ctx)
 		if err != nil {
 			fmt.Printf("Failed to setup DB: %s\n", err)
 			os.Exit(1)
 		}
-
-		dbPool := db.BuildDatabaseConnection(ctx, cfg.GetDatabaseParams())
-		defer dbPool.Close()
 
 		userName, err := cmd.Flags().GetString("user-name")
 		if err != nil {
