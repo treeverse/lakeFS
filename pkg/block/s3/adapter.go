@@ -23,8 +23,6 @@ import (
 )
 
 const (
-	BlockstoreType = "s3"
-
 	DefaultStreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
 	DefaultStreamingChunkTimeout = time.Second * 1 // if we haven't read DefaultStreamingChunkSize by this duration, write whatever we have as a chunk
 
@@ -634,11 +632,11 @@ func (a *Adapter) ValidateConfiguration(ctx context.Context, storageNamespace st
 }
 
 func (a *Adapter) BlockstoreType() string {
-	return BlockstoreType
+	return block.BlockstoreTypeS3
 }
 
 func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
-	return block.DefaultStorageNamespaceInfo(BlockstoreType)
+	return block.DefaultStorageNamespaceInfo(block.BlockstoreTypeS3)
 }
 
 func (a *Adapter) RuntimeStats() map[string]string {

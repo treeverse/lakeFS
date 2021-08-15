@@ -23,7 +23,6 @@ var (
 )
 
 const (
-	BlockstoreType          = "azure"
 	sizeSuffix              = "_size"
 	idSuffix                = "_id"
 	_1MiB                   = 1024 * 1024
@@ -410,7 +409,7 @@ func (a *Adapter) ValidateConfiguration(ctx context.Context, _ string) error {
 }
 
 func (a *Adapter) BlockstoreType() string {
-	return BlockstoreType
+	return block.BlockstoreTypeAzure
 }
 
 func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectPointer, _ string, multipartList *block.MultipartUploadCompletion) (*string, int64, error) {

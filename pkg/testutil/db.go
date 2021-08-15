@@ -213,7 +213,7 @@ func MustDo(t testing.TB, what string, err error) {
 
 func NewBlockAdapterByType(t testing.TB, translator block.UploadIDTranslator, blockstoreType string) block.Adapter {
 	switch blockstoreType {
-	case gs.BlockstoreType:
+	case block.BlockstoreTypeGS:
 		ctx := context.Background()
 		client, err := storage.NewClient(ctx)
 		if err != nil {
@@ -221,7 +221,7 @@ func NewBlockAdapterByType(t testing.TB, translator block.UploadIDTranslator, bl
 		}
 		return gs.NewAdapter(client, gs.WithTranslator(translator))
 
-	case lakefsS3.BlockstoreType:
+	case block.BlockstoreTypeS3:
 		awsRegion, regionOk := os.LookupEnv(envKeyAwsRegion)
 		if !regionOk {
 			awsRegion = "us-east-1"

@@ -19,7 +19,6 @@ import (
 	authmodel "github.com/treeverse/lakefs/pkg/auth/model"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/block/mem"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
@@ -76,9 +75,9 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 		blockstoreType = os.Getenv(testutil.EnvKeyUseBlockAdapter)
 	}
 	if blockstoreType == "" {
-		blockstoreType = mem.BlockstoreType
+		blockstoreType = block.BlockstoreTypeMem
 	}
-	viper.Set(config.BlockstoreTypeKey, mem.BlockstoreType)
+	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
 	cfg, err := config.NewConfig()
 	testutil.MustDo(t, "config", err)
 	c, err := catalog.New(ctx, catalog.Config{
