@@ -17,7 +17,6 @@ import (
 )
 
 const (
-	BlockstoreType      = "gs"
 	MaxMultipartObjects = 10000
 
 	delimiter    = "/"
@@ -555,11 +554,11 @@ func (a *Adapter) Close() error {
 }
 
 func (a *Adapter) BlockstoreType() string {
-	return BlockstoreType
+	return block.BlockstoreTypeGS
 }
 
 func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
-	return block.DefaultStorageNamespaceInfo(BlockstoreType)
+	return block.DefaultStorageNamespaceInfo(block.BlockstoreTypeGS)
 }
 
 func (a *Adapter) RuntimeStats() map[string]string {
