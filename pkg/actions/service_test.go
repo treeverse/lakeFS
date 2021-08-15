@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -99,6 +100,8 @@ func TestServiceRun(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	require.NoError(t, os.Setenv("PRIVATE", "private_"))
+	require.NoError(t, os.Setenv("AIRFLOW_PASSWORD", "some_password"))
 	actionContent := `name: ` + actionName + `
 on:
   pre-commit: {}
@@ -110,14 +113,16 @@ hooks:
       timeout: 2m30s
       query_params:
         prefix: public/
-        disallow: ["user_", "private_"]
+        disallow: ["user_", "{{ ENV.PRIVATE }}"]
+      headers:
+        user: admin
   - id: ` + airflowHookID + `
     type: airflow
     properties:
       url: "` + ts.URL + `/airflow"
       dag_id: "some_dag_id"
       username: "some_username" 
-      password: "some_password"
+      password: "{{ ENV.AIRFLOW_PASSWORD }}"
       dag_conf:
         some: "additional_conf"
 `
@@ -278,4 +283,57 @@ func checkEvent(t *testing.T, record graveler.HookRecord, event actions.EventInf
 	if diff := deep.Equal(event.CommitMetadata, map[string]string(record.Commit.Metadata)); diff != nil {
 		t.Errorf("Webhook post Metadata diff=%s", diff)
 	}
+}
+
+func TestMissingEnvVar(t *testing.T) {
+	conn, _ := testutil.GetDB(t, databaseURI)
+
+	record := graveler.HookRecord{
+		RunID:            graveler.NewRunID(),
+		EventType:        graveler.EventTypePreCommit,
+		StorageNamespace: "storageNamespace",
+		RepositoryID:     "repoID",
+		BranchID:         "branchID",
+		SourceRef:        "sourceRef",
+		Commit: graveler.Commit{
+			Message:   "commitMessage",
+			Committer: "committer",
+			Metadata:  map[string]string{"key": "value"},
+		},
+	}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	actionContent := `name: test action
+on:
+  pre-commit: {}
+hooks:
+  - id: airflow_hook_id
+    type: airflow
+    properties:
+      url: "http://wontsendrequesthere/airflow"
+      dag_id: "some_dag_id"
+      username: "some_username"
+      password: "{{ ENV.NEW_AIRFLOW_PASSWORD }}"
+      dag_conf:
+        some: "additional_conf"
+`
+
+	ctx := context.Background()
+	testOutputWriter := mock.NewMockOutputWriter(ctrl)
+
+	testSource := mock.NewMockSource(ctrl)
+	testSource.EXPECT().
+		List(ctx, record).
+		Return([]string{"act.yaml"}, nil)
+	testSource.EXPECT().
+		Load(ctx, record, "act.yaml").
+		Return([]byte(actionContent), nil)
+
+	// run actions
+	actionsService := actions.NewService(ctx, conn, testSource, testOutputWriter)
+	defer actionsService.Stop()
+
+	require.Error(t, actionsService.Run(ctx, record))
 }

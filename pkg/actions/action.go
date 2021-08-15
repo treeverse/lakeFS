@@ -32,6 +32,7 @@ type ActionOn struct {
 
 var (
 	errMissingKey     = errors.New("missing key in properties")
+	errMissingEnvVar  = errors.New("missing env var")
 	errWrongValueType = errors.New("wrong value type")
 )
 
