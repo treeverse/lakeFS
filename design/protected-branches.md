@@ -8,7 +8,10 @@
 
 ## Where to save the model
 
-The data regarding which branch is protected needs to be saved somewhere. It needs to be fetched at runtime, probably before a commit is performed.
+The data regarding which branch is protected needs to be saved somewhere.
+It needs to be fetched at runtime, probably before a commit is performed.
+
+Here are two suggested options, feel free to add your own:
 
 ### Option 1: branches table in postgres
 
