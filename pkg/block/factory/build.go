@@ -89,8 +89,7 @@ func buildS3Adapter(params params.S3) (*s3a.Adapter, error) {
 		return nil, err
 	}
 	sess.ClientConfig(s3.ServiceName)
-	svc := s3.New(sess)
-	adapter := s3a.NewAdapter(svc,
+	adapter := s3a.NewAdapter(sess,
 		s3a.WithStreamingChunkSize(params.StreamingChunkSize),
 		s3a.WithStreamingChunkTimeout(params.StreamingChunkTimeout),
 	)

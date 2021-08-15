@@ -169,6 +169,11 @@ client.refs.diff_refs(repository='example-repo', left_ref='experiment-aggregatio
 # []
 ```
 
+## Python client documentation
+
+For the documentation of lakeFS’s python package, see [https://pydocs.lakefs.io](https://pydocs.lakefs.io)
+
+
 ## Full API reference
 
 For a full reference of the lakeFS API, see [lakeFS API](../reference/api.md)
