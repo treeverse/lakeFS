@@ -22,6 +22,8 @@ const (
 	BlockstoreTypeTransient = "transient"
 )
 
+type contextKey string
+
 const (
 	// Deprecated: indicates that the identifier might be relative or full.
 	IdentifierTypeUnknownDeprecated IdentifierType = 0
@@ -34,7 +36,7 @@ const (
 	// For example: "s3://bucket/foo/bar"
 	IdentifierTypeFull IdentifierType = 2
 
-	ContextKeyStatsCollector = "stats_collector"
+	ContextKeyStatsCollector contextKey = "stats_collector"
 )
 
 // ObjectPointer is a unique identifier of an object in the object
