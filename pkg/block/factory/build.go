@@ -48,7 +48,7 @@ func BuildBlockAdapter(ctx context.Context, c params.AdapterConfig) (block.Adapt
 		if err != nil {
 			return nil, err
 		}
-		return buildS3Adapter(p)
+		return buildS3Adapter(ctx, p)
 	case block.BlockstoreTypeMem, "memory":
 		return mem.New(), nil
 	case block.BlockstoreTypeTransient:
@@ -83,13 +83,13 @@ func buildLocalAdapter(params params.Local) (*local.Adapter, error) {
 	return adapter, nil
 }
 
-func buildS3Adapter(params params.S3) (*s3a.Adapter, error) {
+func buildS3Adapter(ctx context.Context, params params.S3) (*s3a.Adapter, error) {
 	sess, err := session.NewSession(params.AwsConfig)
 	if err != nil {
 		return nil, err
 	}
 	sess.ClientConfig(s3.ServiceName)
-	adapter := s3a.NewAdapter(sess,
+	adapter := s3a.NewAdapter(ctx, sess,
 		s3a.WithStreamingChunkSize(params.StreamingChunkSize),
 		s3a.WithStreamingChunkTimeout(params.StreamingChunkTimeout),
 	)

@@ -55,7 +55,7 @@ func TestClientCache(t *testing.T) {
 			expectedClientsCreated := make(map[string]bool)
 			actualRegionFetch := make(map[string]bool)
 			expectedRegionFetch := make(map[string]bool)
-			c := s3.NewClientCache(sess)
+			c := s3.NewClientCache(sess, nil)
 
 			c = c.WithClientFactory(func(sess *session.Session, cfgs ...*aws.Config) s3iface.S3API {
 				region := sess.Config.Region

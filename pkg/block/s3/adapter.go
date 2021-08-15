@@ -11,6 +11,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/stats"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/request"
@@ -93,14 +95,20 @@ func WithTranslator(t block.UploadIDTranslator) func(a *Adapter) {
 	}
 }
 
-func NewAdapter(awsSession *session.Session, opts ...func(a *Adapter)) *Adapter {
+func NewAdapter(ctx context.Context, awsSession *session.Session, opts ...func(a *Adapter)) *Adapter {
+	var statsCollector stats.Collector
+	collector := ctx.Value(block.ContextKeyStatsCollector)
+	if collector != nil {
+		statsCollector = collector.(stats.Collector)
+	}
 	a := &Adapter{
-		clients:               NewClientCache(awsSession),
+		clients:               NewClientCache(awsSession, statsCollector),
 		httpClient:            http.DefaultClient,
 		uploadIDTranslator:    &block.NoOpTranslator{},
 		streamingChunkSize:    DefaultStreamingChunkSize,
 		streamingChunkTimeout: DefaultStreamingChunkTimeout,
 	}
+
 	for _, opt := range opts {
 		opt(a)
 	}
