@@ -93,12 +93,6 @@ var runCmd = &cobra.Command{
 
 		multipartsTracker := multiparts.NewTracker(dbPool)
 
-		// init block store
-		blockStore, err := factory.BuildBlockAdapter(ctx, cfg)
-		if err != nil {
-			logger.WithError(err).Fatal("Failed to create block adapter")
-		}
-
 		// init authentication
 		authService := auth.NewDBAuthService(
 			dbPool,
@@ -113,8 +107,13 @@ var runCmd = &cobra.Command{
 				Error("Block adapter NOT SUPPORTED for production use")
 		}
 		metadata := stats.NewMetadata(ctx, logger, blockstoreType, authMetadataManager, cloudMetadataProvider)
-		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, blockStore.RuntimeStats, cfg)
-
+		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, cfg)
+		// init block store
+		blockStore, err := factory.BuildBlockAdapter(context.WithValue(ctx, block.ContextKeyStatsCollector, bufferedCollector), cfg)
+		if err != nil {
+			logger.WithError(err).Fatal("Failed to create block adapter")
+		}
+		bufferedCollector.SetRuntimeCollector(blockStore.RuntimeStats)
 		// send metadata
 		bufferedCollector.CollectMetadata(metadata)
 

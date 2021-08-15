@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/block"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	_ "github.com/jackc/pgx/v4/stdlib"
@@ -17,7 +19,6 @@ import (
 	"github.com/spf13/viper"
 
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
-	"github.com/treeverse/lakefs/pkg/block/factory"
 	blockparams "github.com/treeverse/lakefs/pkg/block/params"
 	dbparams "github.com/treeverse/lakefs/pkg/db/params"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
@@ -356,11 +357,7 @@ const floatSumTolerance = 1e-6
 
 // GetCommittedTierFSParams returns parameters for building a tierFS.  Caller must separately
 // build and populate Adapter.
-func (c *Config) GetCommittedTierFSParams(ctx context.Context) (*pyramidparams.ExtParams, error) {
-	adapter, err := factory.BuildBlockAdapter(ctx, c)
-	if err != nil {
-		return nil, fmt.Errorf("build block adapter: %w", err)
-	}
+func (c *Config) GetCommittedTierFSParams(ctx context.Context, adapter block.Adapter) (*pyramidparams.ExtParams, error) {
 	rangePro := c.values.Committed.LocalCache.RangeProportion
 	metaRangePro := c.values.Committed.LocalCache.MetaRangeProportion
 

@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -131,8 +132,12 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	}
 
 	ctx, cancelFn := context.WithCancel(ctx)
-
-	tierFSParams, err := cfg.Config.GetCommittedTierFSParams(ctx)
+	adapter, err := factory.BuildBlockAdapter(ctx, cfg.Config)
+	if err != nil {
+		cancelFn()
+		return nil, fmt.Errorf("build block adapter: %w", err)
+	}
+	tierFSParams, err := cfg.Config.GetCommittedTierFSParams(ctx, adapter)
 	if err != nil {
 		cancelFn()
 		return nil, fmt.Errorf("configure tiered FS for committed: %w", err)
