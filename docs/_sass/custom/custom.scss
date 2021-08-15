@@ -109,11 +109,12 @@ body {
 		font-weight: 600;
 		font-family: GalanoGrotesque-Bold;
 	}
-	h4,
-	.text-delta {
-		text-transform: none;
-		width: 100%;
-	    max-width: 264px;
+	.text-delta{
+		display: none;
+	}
+	h4{
+	    text-transform: none;
+	    width: 100%;
 	    display: block;
 	    background-color: $teal-green;
 	    color: $white;
@@ -124,13 +125,29 @@ body {
 	.text-delta + ul{
 		background-color: $whitegrey;
 	    width: 100%;
-	    max-width: 264px;
+	    display: table-cell;
 	    border: none;
 	    margin-top: 0;
 	    border-radius: 0;
 	    position: relative;
 	    top: -3px;
-	    padding: 15px 25px 15px 25px;
+	    padding: 50px 25px 15px 25px;
+	    &:before{
+	    	content: "\0000a0\0000a0\0000a0\0000a0Table of contents";
+		    text-transform: none;
+		    width: 100%;
+		    display: block;
+		    background-color: #279890;
+		    color: #ffffff;
+		    border-radius: 2px 2px 0 0;
+		    font-size: 14px !important;
+		    padding: 10px 0px 8px 0px;
+		    position: absolute;
+		    left: 0;
+		    top: 0;
+		    font-family: GalanoGrotesque-Medium;
+		    font-weight: 400;
+	     }
 	    li{
 	    	text-decoration: underline;
 	    	&::before {
@@ -147,13 +164,29 @@ body {
 	#markdown-toc {
 		background-color: $whitegrey;
 	    width: 100%;
-	    max-width: 264px;
+	    display: table-cell;
 	    border: none;
 	    margin-top: 0;
 	    border-radius: 0;
 	    position: relative;
 	    top: -3px;
-	    padding: 15px 25px 15px 25px;
+	    padding: 50px 25px 15px 25px;
+	    &:before{
+	    	content: "\0000a0\0000a0\0000a0\0000a0Table of contents";
+		    text-transform: none;
+		    width: 100%;
+		    display: block;
+		    background-color: #279890;
+		    color: #ffffff;
+		    border-radius: 2px 2px 0 0;
+		    font-size: 14px !important;
+		    padding: 10px 0px 8px 0px;
+		    position: absolute;
+		    left: 0;
+		    top: 0;
+		    font-family: GalanoGrotesque-Medium;
+		    font-weight: 400;
+	     }
 		li {
 			text-decoration: underline;
 			&::before {
@@ -183,7 +216,7 @@ body {
 
 	pre code {
 		background-color: $darkblack;
-    	border: 0px solid $lightgreen;
+    		border: 0px solid $lightgreen;
 	}
 
 	.btn {
@@ -885,5 +918,17 @@ div.highlighter-rouge{
 	}
 	button.copy-code-button{
 		color: $light-blue-grey;
+	}
+}
+@media (max-width:767px){
+	.text-delta + ul, #markdown-toc{
+		li, li a{
+			margin-bottom: 12px;
+		    font-size: 12px !important;
+		    display: block;
+		}
+		li a span{
+			font-size: 8px!important;
+		}
 	}
 }
