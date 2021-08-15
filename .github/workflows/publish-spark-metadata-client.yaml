@@ -1,6 +1,5 @@
 name: Publish Spark metadata client
 on:
-  pull_request: # TODO remove
   workflow_dispatch:
 jobs:
   publish-spark-metadata-client:
