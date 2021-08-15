@@ -15,8 +15,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-const BlockstoreType = "transient"
-
 var ErrInventoryNotImplemented = errors.New("inventory feature not implemented for transient storage adapter")
 
 type Adapter struct{}
@@ -135,11 +133,11 @@ func (a *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ strin
 }
 
 func (a *Adapter) BlockstoreType() string {
-	return BlockstoreType
+	return block.BlockstoreTypeTransient
 }
 
 func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
-	return block.DefaultStorageNamespaceInfo(BlockstoreType)
+	return block.DefaultStorageNamespaceInfo(block.BlockstoreTypeTransient)
 }
 
 func (a *Adapter) RuntimeStats() map[string]string {

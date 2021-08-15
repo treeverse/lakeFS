@@ -37,29 +37,29 @@ func BuildBlockAdapter(ctx context.Context, c params.AdapterConfig) (block.Adapt
 		WithField("type", blockstore).
 		Info("initialize blockstore adapter")
 	switch blockstore {
-	case local.BlockstoreType:
+	case block.BlockstoreTypeLocal:
 		p, err := c.GetBlockAdapterLocalParams()
 		if err != nil {
 			return nil, err
 		}
 		return buildLocalAdapter(p)
-	case s3a.BlockstoreType:
+	case block.BlockstoreTypeS3:
 		p, err := c.GetBlockAdapterS3Params()
 		if err != nil {
 			return nil, err
 		}
 		return buildS3Adapter(p)
-	case mem.BlockstoreType, "memory":
+	case block.BlockstoreTypeMem, "memory":
 		return mem.New(), nil
-	case transient.BlockstoreType:
+	case block.BlockstoreTypeTransient:
 		return transient.New(), nil
-	case gs.BlockstoreType:
+	case block.BlockstoreTypeGS:
 		p, err := c.GetBlockAdapterGSParams()
 		if err != nil {
 			return nil, err
 		}
 		return buildGSAdapter(ctx, p)
-	case azure.BlockstoreType:
+	case block.BlockstoreTypeAzure:
 		p, err := c.GetBlockAdapterAzureParams()
 		if err != nil {
 			return nil, err
@@ -67,7 +67,7 @@ func BuildBlockAdapter(ctx context.Context, c params.AdapterConfig) (block.Adapt
 		return buildAzureAdapter(p)
 	default:
 		return nil, fmt.Errorf("%w '%s' please choose one of %s",
-			ErrInvalidBlockStoreType, blockstore, []string{local.BlockstoreType, s3a.BlockstoreType, azure.BlockstoreType, mem.BlockstoreType, transient.BlockstoreType, gs.BlockstoreType})
+			ErrInvalidBlockStoreType, blockstore, []string{block.BlockstoreTypeLocal, block.BlockstoreTypeS3, block.BlockstoreTypeAzure, block.BlockstoreTypeMem, block.BlockstoreTypeTransient, block.BlockstoreTypeGS})
 	}
 }
 

@@ -23,8 +23,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-const BlockstoreType = "local"
-
 type Adapter struct {
 	path               string
 	uploadIDTranslator block.UploadIDTranslator
@@ -473,11 +471,11 @@ func (l *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ strin
 }
 
 func (l *Adapter) BlockstoreType() string {
-	return BlockstoreType
+	return block.BlockstoreTypeLocal
 }
 
 func (l *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
-	return block.DefaultStorageNamespaceInfo(BlockstoreType)
+	return block.DefaultStorageNamespaceInfo(block.BlockstoreTypeLocal)
 }
 
 func (l *Adapter) RuntimeStats() map[string]string {
