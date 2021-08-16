@@ -174,7 +174,7 @@ public class LakeFSFileSystem extends FileSystem {
         try {
             ObjectLocation objectLoc = pathToObjectLocation(path);
             return createDataOutputStream(
-                    (fs, fp) -> fs.create(fp, overwrite, bufferSize, replication, blockSize, progress),
+                    (fs, fp) -> fs.create(fp, true, bufferSize, replication, blockSize, progress),
                     objectLoc);
         } catch (io.lakefs.clients.api.ApiException e) {
             throw new IOException("staging.getPhysicalAddress: " + e.getResponseBody(), e);
