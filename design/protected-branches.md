@@ -22,6 +22,7 @@ Pros:
 - no overhead: branch is anyway fetched from the database before a commit.
 
 Cons:
+- a boolean is probably not enough for the long run: we will want other constraints, not just limiting commits.
 - yet another dependency on postgres
 - no pattern rules - every branch needs to marked as protected separately.
 
@@ -33,6 +34,6 @@ Pros:
 - rules can be patterns and not just concrete branches, similar to GitHub's protected branches.
 - native to the storage
 
-cons:
+Cons:
 - UI will probably be a multiline textbox where you can edit the json, otherwise consistency problems.
 - CLI will also need to get the full JSON, or we need to do some locking on the server-side to add/remove protection rules.
