@@ -7,7 +7,7 @@
    1. (either) they cannot be directly committed to. Only merges are allowed.
    1. (or) their staging area is blocked - cannot directly make any changes.
 1. Forbidden actions to protected branches should fail with a meaningful error message.
-1. The implmenetation should be flexible to adding more constraint types in the future (example: require PR before merging).
+1. The implementation should be flexible to adding more constraint types in the future (example: require PR before merging).
 1. Force options - blocked operations should have a reasonable way to be forced. In the future, the extent to which they can be forced may also be configurable (similarly to GitHub).
 
 ## Where to save the model
