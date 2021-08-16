@@ -6,6 +6,7 @@
  - Support multiple AWS regions for underlying buckets (#2245, #2325, #2326)
  - Actions secrets support with env vars (#2333)
  - Reduce the number of database connections used on startup
+ - Validate required configuration keys blockstore.type, auth.encrypt.secret_key.  This *breaks* existing configurations that assume a default blockstore.type of "local".  But no such configuration may be production.
 
 ## v0.47.0 - 2021-07-28
 
