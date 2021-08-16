@@ -11,7 +11,10 @@
 1. Force options - blocked operations should have a reasonable way to be forced. In the future, the extent to which they can be forced may also be configurable (similarly to GitHub).
 
 ## Where to save the model
-Suggestion: save protection rules as a JSON object under the repository's _lakefs_. This is similar to what we do with retention rules.
+
+### Suggestion 1 (@johnnyaug)
+
+Save protection rules as a JSON object under the repository's __lakefs_. This is similar to what we do with retention rules.
 
 Pros:
 - rules can be patterns and not just concrete branches, similar to GitHub's protected branches.
@@ -22,8 +25,21 @@ Cons:
 - UI will probably be a multiline textbox where you can edit the json, otherwise consistency problems.
 - CLI will also need to get the full JSON, or we need to do some locking on the server-side to add/remove protection rules.
 
+### Suggestion 2 (@ariels)
 
-## Implementation
+Branch protection rules are part of the repository data, saved under __lakefs_, similar to GitHub's (and our) Actions.
+
+Pros:
+- Reuse the Hooks mechanism for enforcement.
+- Use lakeFS IAM to give permissions to editing protection rules.
+
+Cons:
+- Changing protection rules is a commit visible in the log
+- As a repository owner, I need to manage rules in multiple branches. For example, if I want to add rules to existing branches, I need to merge these rules to all of my developer's branches.
+
+Pro/con:
+- Changing protection rules is a commit visible in the log
+## Implementation - Suggestion 1
 
 ### Example Branch Protection JSON
 
@@ -56,4 +72,3 @@ The enforcement of the protection depends on the constraint type:
 * In Graveler, before every Staging Manager write operation (Set, Drop, DropKey) - fetch the rules.
 * If the branch name matches a rule, fail the operation with a dedicated error type.
 * Each of these operations should allow a force flag.
-
