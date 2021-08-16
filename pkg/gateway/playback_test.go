@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"context"
 	"encoding/json"
+	"github.com/spf13/viper"
 	"io"
 	"io/ioutil"
 	"log"
@@ -115,7 +116,8 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 		T:          t,
 	}
 
-	conf, err := config.NewConfig()
+	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
+	conf, err := config.NewConfigIncompleteForTesting()
 	testutil.MustDo(t, "config", err)
 
 	conn, _ := testutil.GetDB(t, databaseURI)

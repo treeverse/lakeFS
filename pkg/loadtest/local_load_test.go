@@ -2,6 +2,7 @@ package loadtest
 
 import (
 	"context"
+	"github.com/spf13/viper"
 	"log"
 	"math"
 	"net/http/httptest"
@@ -57,7 +58,8 @@ func TestLocalLoad(t *testing.T) {
 		t.Skip("Skipping loadtest tests in short mode")
 	}
 	ctx := context.Background()
-	conf, err := config.NewConfig()
+	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeLocal)
+	conf, err := config.NewConfigIncompleteForTesting()
 	testutil.MustDo(t, "config", err)
 	conn, _ := testutil.GetDB(t, databaseURI)
 	blockstoreType, _ := os.LookupEnv(testutil.EnvKeyUseBlockAdapter)

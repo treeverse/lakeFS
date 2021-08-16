@@ -78,7 +78,7 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 		blockstoreType = block.BlockstoreTypeMem
 	}
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
-	cfg, err := config.NewConfig()
+	cfg, err := config.NewConfigIncompleteForTesting()
 	testutil.MustDo(t, "config", err)
 	c, err := catalog.New(ctx, catalog.Config{
 		Config: cfg,
