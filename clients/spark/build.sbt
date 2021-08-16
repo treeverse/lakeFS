@@ -59,8 +59,8 @@ def generateCoreProject(buildType: BuildType) =
 
         "org.scalactic" %% "scalactic" % "3.2.9",
         "org.scalatest" %% "scalatest" % "3.2.9" % "test",
-        "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.37.0" % "test",
-        "com.dimafeng" %% "testcontainers-scala-munit" % "0.37.0" % "test",
+        "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.39.5" % "test",
+        "com.dimafeng" %% "testcontainers-scala-munit" % "0.39.5" % "test",
       ),
       Test / logBuffered := false,
       // Uncomment to get (very) full stacktraces in test:

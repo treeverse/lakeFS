@@ -271,16 +271,13 @@ class CountedIteratorSpec extends AnyFunSpec with Matchers {
 class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
 
   override val container: GenericContainer = GenericContainer("golang:1.16.2-alpine",
-//    classpathResourceMapping = Seq(("/parser-test/sst_files_generator.go", "/local", BindMode.READ_WRITE)),
-    command = Seq("go", "run", "local/sst_files_generator.go"))
+    classpathResourceMapping = Seq(("parser-test/sst_files_generator.go", "/local/sst_files_generator.go", BindMode.READ_WRITE)),
+    command = Seq("go", "run", "/local/sst_files_generator.go"))
 
-  //TODO: make sure this is available
-//    imagePullPolicy = new AlwaysPullPolicy(new DockerImageName("quay.io/testcontainers/ryuk", "0.2.3"))
-
-  describe("check if mount was successful") {
-    it("file is copied") {
-      container.copyFileFromContainer("local/sst_files_generator.go", ".")
-    }
-  }
-
+  
+//  describe("check if mount was successful") {
+//    it("file is copied") {
+//      container.copyFileFromContainer("/local/sst_files_generator.go", "./foo.x")
+//    }
+//  }
 }
