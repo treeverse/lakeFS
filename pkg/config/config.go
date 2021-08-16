@@ -24,7 +24,6 @@ import (
 )
 
 const (
-	DefaultBlockStoreType                    = "local"
 	DefaultBlockStoreLocalPath               = "~/data/lakefs/block"
 	DefaultBlockStoreS3Region                = "us-east-1"
 	DefaultBlockStoreS3StreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
@@ -62,10 +61,11 @@ const (
 )
 
 var (
-	ErrBadConfiguration  = errors.New("bad configuration")
-	ErrMissingSecretKey  = fmt.Errorf("%w: auth.encrypt.secret_key cannot be empty", ErrBadConfiguration)
-	ErrInvalidProportion = fmt.Errorf("%w: total proportion isn't 1.0", ErrBadConfiguration)
-	ErrBadDomainNames    = fmt.Errorf("%w: domain names are prefixes", ErrBadConfiguration)
+	ErrBadConfiguration    = errors.New("bad configuration")
+	ErrMissingSecretKey    = fmt.Errorf("%w: auth.encrypt.secret_key cannot be empty", ErrBadConfiguration)
+	ErrInvalidProportion   = fmt.Errorf("%w: total proportion isn't 1.0", ErrBadConfiguration)
+	ErrBadDomainNames      = fmt.Errorf("%w: domain names are prefixes", ErrBadConfiguration)
+	ErrMissingRequiredKeys = fmt.Errorf("%w: missing required keys", ErrBadConfiguration)
 )
 
 type Config struct {
@@ -93,6 +93,11 @@ func NewConfig() (*Config, error) {
 	err = c.validateDomainNames()
 	if err != nil {
 		return nil, err
+	}
+
+	missingKeys := GetMissingRequiredKeys(c.values, "mapstructure", "squash", "required")
+	if len(missingKeys) > 0 {
+		return nil, fmt.Errorf("%w: %v", ErrMissingRequiredKeys, missingKeys)
 	}
 	return c, err
 }
@@ -155,7 +160,6 @@ func setDefaults() {
 	viper.SetDefault(AuthCacheTTLKey, DefaultAuthCacheTTL)
 	viper.SetDefault(AuthCacheJitterKey, DefaultAuthCacheJitter)
 
-	viper.SetDefault(BlockstoreTypeKey, DefaultBlockStoreType)
 	viper.SetDefault(BlockstoreLocalPathKey, DefaultBlockStoreLocalPath)
 	viper.SetDefault(BlockstoreS3RegionKey, DefaultBlockStoreS3Region)
 	viper.SetDefault(BlockstoreS3StreamingChunkSizeKey, DefaultBlockStoreS3StreamingChunkSize)

@@ -114,6 +114,7 @@ func appendStructKeysIfZero(value reflect.Value, typ reflect.Type, tag, squashVa
 		} else {
 			name = fieldType.Name
 		}
+		name = strings.ToLower(name)
 		if _, ok = fieldType.Tag.Lookup(requiredTag); ok {
 			if fieldValue.IsZero() {
 				keys = append(keys, strings.Join(append(prefix, name), sep))
