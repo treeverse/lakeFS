@@ -27,7 +27,7 @@ Cons:
 
 The implementation depends on the constraint type we want to enforce.
 
-### Constarint type: block commits
+### Constraint type: block commits
 
 * When performing a commit, the protection rules of the repository will be fetched from the storage.
 * Right before executing the pre-commit hooks, check whether the branch name matches any of the protection rules.
