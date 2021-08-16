@@ -408,6 +408,20 @@ public class LakeFSFileSystemTest {
         verifyObjDeletion(new ObjectLocation("lakefs", "repo", "main", "sub1/sub2/"));
     }
 
+    @Test(expected = FileAlreadyExistsException.class)
+    public void testCreateExistingDirectory() throws ApiException, IOException {
+        ObjectLocation dir = new ObjectLocation("lakefs", "repo", "main", "sub1/sub2/create.me");
+        mockExistingDirPath(dir, Collections.emptyList());
+        fs.create(new Path("lakefs://repo/main/sub1/sub2/create.me"), false);
+    }
+
+    @Test(expected = FileAlreadyExistsException.class)
+    public void testCreateExistingFile() throws ApiException, IOException {
+        ObjectLocation dir = new ObjectLocation("lakefs", "repo", "main", "sub1/sub2");
+        mockExistingDirPath(dir, ImmutableList.of(new ObjectLocation("lakefs", "repo", "main", "sub1/sub2/create.me")));
+        fs.create(new Path("lakefs://repo/main/sub1/sub2/create.me"), false);
+    }
+
     @Test
     public void testMkdirs() throws ApiException, IOException {
         // setup empty folder checks

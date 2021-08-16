@@ -162,16 +162,16 @@ public class LakeFSFileSystem extends FileSystem {
                                      Progressable progress) throws IOException {
         OPERATIONS_LOG.trace("create({})", path);
         try {
-            try {
-                LakeFSFileStatus status = getFileStatus(path);
-                if (status.isDirectory()) {
-                    throw new FileAlreadyExistsException(path + " is a directory");
-                }
-                if (!overwrite) {
-                    throw new FileAlreadyExistsException(path + " already exists");
-                }
-            } catch (FileNotFoundException ignored) {
+            LakeFSFileStatus status = getFileStatus(path);
+            if (status.isDirectory()) {
+                throw new FileAlreadyExistsException(path + " is a directory");
             }
+            if (!overwrite) {
+                throw new FileAlreadyExistsException(path + " already exists");
+            }
+        } catch (FileNotFoundException ignored) {
+        }
+        try {
             ObjectLocation objectLoc = pathToObjectLocation(path);
             return createDataOutputStream(
                     (fs, fp) -> fs.create(fp, overwrite, bufferSize, replication, blockSize, progress),
