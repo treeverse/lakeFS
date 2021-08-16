@@ -59,6 +59,8 @@ def generateCoreProject(buildType: BuildType) =
 
         "org.scalactic" %% "scalactic" % "3.2.9",
         "org.scalatest" %% "scalatest" % "3.2.9" % "test",
+        "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.37.0" % "test",
+        "com.dimafeng" %% "testcontainers-scala-munit" % "0.37.0" % "test",
       ),
       Test / logBuffered := false,
       // Uncomment to get (very) full stacktraces in test:
@@ -82,7 +84,7 @@ def generateExamplesProject(buildType: BuildType) =
       ),
       assembly / mainClass := Some("io.treeverse.examples.List"),
       target := file(s"target/examples-${buildType.name}/"),
-      run / fork := false, // https://stackoverflow.com/questions/44298847/sbt-spark-fork-in-run
+      run / fork := false, // https://stackoverflow.com/questions/44298847/sbt-spark-fork-in-run //TODO: may nee to change this to true to accomodate https://github.com/testcontainers/testcontainers-scala
     )
 
 lazy val spark2Type = new BuildType("247", scala211Version, "2.4.7", "0.9.8", "2.7.7")

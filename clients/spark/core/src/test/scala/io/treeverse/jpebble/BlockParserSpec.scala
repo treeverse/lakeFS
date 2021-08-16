@@ -3,13 +3,17 @@ package io.treeverse.jpebble
 import org.scalatest._
 import matchers.should._
 import funspec._
+import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
 
 import java.io.File
 import org.apache.commons.io.IOUtils
+import org.testcontainers.containers.BindMode
+
 import scala.io.Source
 
 class BlockParserSpec extends AnyFunSpec with Matchers {
   val magicBytes = BlockParser.footerMagic
+
 
   describe("readMagic") {
     it("can read magic exactly") {
@@ -262,4 +266,21 @@ class CountedIteratorSpec extends AnyFunSpec with Matchers {
       ci.count should be (base.length)
     }
   }
+}
+
+class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
+
+  override val container: GenericContainer = GenericContainer("golang:1.16.2-alpine",
+//    classpathResourceMapping = Seq(("/parser-test/sst_files_generator.go", "/local", BindMode.READ_WRITE)),
+    command = Seq("go", "run", "local/sst_files_generator.go"))
+
+  //TODO: make sure this is available
+//    imagePullPolicy = new AlwaysPullPolicy(new DockerImageName("quay.io/testcontainers/ryuk", "0.2.3"))
+
+  describe("check if mount was successful") {
+    it("file is copied") {
+      container.copyFileFromContainer("local/sst_files_generator.go", ".")
+    }
+  }
+
 }
