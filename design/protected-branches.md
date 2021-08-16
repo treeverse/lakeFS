@@ -3,7 +3,7 @@
 ## Requirements
 
 1. As a lakeFS user, I should be able to mark branches as "protected" - from the UI, CLI and API.
-1. Descision: Protected branches will be subject to one of the following constraints:
+1. [Descision Required]: Protected branches will be subject to one of the following constraints:
    1. (either) they cannot be directly committed to. Only merges are allowed.
    1. (or) their staging area is blocked - cannot directly make any changes.
 1. Forbidden actions to protected branches should fail with a meaningful error message.
