@@ -72,7 +72,7 @@ type Config struct {
 	values configuration
 }
 
-func NewConfig() (*Config, error) {
+func newConfigInternal() (*Config, error) {
 	c := &Config{}
 
 	// Inform viper of all expected fields.  Otherwise it fails to deserialize from the
@@ -95,11 +95,23 @@ func NewConfig() (*Config, error) {
 		return nil, err
 	}
 
+	return c, nil
+}
+
+func NewConfig() (*Config, error) {
+	c, err := newConfigInternal()
+	if err != nil {
+		return nil, err
+	}
 	missingKeys := GetMissingRequiredKeys(c.values, "mapstructure", "squash", "required")
 	if len(missingKeys) > 0 {
 		return nil, fmt.Errorf("%w: %v", ErrMissingRequiredKeys, missingKeys)
 	}
-	return c, err
+	return c, nil
+}
+
+func NewConfigIncompleteForTesting() (*Config, error) {
+	return newConfigInternal()
 }
 
 // Default flag keys

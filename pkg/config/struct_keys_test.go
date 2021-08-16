@@ -121,16 +121,16 @@ func TestGetMissingRequired_SimpleRequired(t *testing.T) {
 	}
 
 	keys := config.GetMissingRequiredKeys(s{}, tagName, squashTagValue, requiredTagName)
-	if diffs := deep.Equal(keys, []string{"A", "B", "C", "D"}); diffs != nil {
+	if diffs := deep.Equal(keys, []string{"a", "b", "c", "d"}); diffs != nil {
 		t.Error("wrong keys for struct: ", diffs)
 	}
 	keys = config.GetMissingRequiredKeys(&s{}, tagName, squashTagValue, requiredTagName)
-	if diffs := deep.Equal(keys, []string{"A", "B", "C", "D"}); diffs != nil {
+	if diffs := deep.Equal(keys, []string{"a", "b", "c", "d"}); diffs != nil {
 		t.Error("wrong keys for pointer to struct: ", diffs)
 	}
 	ps := &s{}
 	keys = config.GetMissingRequiredKeys(&ps, tagName, squashTagValue, requiredTagName)
-	if diffs := deep.Equal(keys, []string{"A", "B", "C", "D"}); diffs != nil {
+	if diffs := deep.Equal(keys, []string{"a", "b", "c", "d"}); diffs != nil {
 		t.Error("wrong keys for pointer to pointer to struct: ", diffs)
 	}
 }
@@ -152,8 +152,8 @@ func TestGetMissingRequired_SimpleNotMissing(t *testing.T) {
 		Value           s
 		MissingRequired []string
 	}{
-		{s{A: 2, C: &c}, []string{"B", "D"}},
-		{s{AA: 22, B: "foo", D: []rune{'a', 'b', 'c'}}, []string{"A", "C"}},
+		{s{A: 2, C: &c}, []string{"b", "d"}},
+		{s{AA: 22, B: "foo", D: []rune{'a', 'b', 'c'}}, []string{"a", "c"}},
 	}
 
 	for _, c := range cases {
@@ -177,7 +177,7 @@ func TestGetMissingRequired_Nested(t *testing.T) {
 	}
 
 	keys := config.GetMissingRequiredKeys(s{}, tagName, squashTagValue, requiredTagName)
-	if diffs := deep.Equal(keys, []string{"A.Y", "B.Z"}); diffs != nil {
+	if diffs := deep.Equal(keys, []string{"a.y", "b.z"}); diffs != nil {
 		t.Error("wrong keys for struct: ", diffs)
 	}
 }
@@ -204,10 +204,10 @@ func TestGetMissingRequired_NestedNotMissing(t *testing.T) {
 		Value           s
 		MissingRequired []string
 	}{
-		{s{A: A{Y: 7}, B: ptr3(B{})}, []string{"B.Z"}},
-		{s{B: ptr3(B{Z: 1.23})}, []string{"A.Y"}},
-		{s{A: A{Y: 7}, B: ptr1(nil)}, []string{"B.Z"}},
-		{s{A: A{Y: 7}, B: ptr2(nil)}, []string{"B.Z"}},
+		{s{A: A{Y: 7}, B: ptr3(B{})}, []string{"b.z"}},
+		{s{B: ptr3(B{Z: 1.23})}, []string{"a.y"}},
+		{s{A: A{Y: 7}, B: ptr1(nil)}, []string{"b.z"}},
+		{s{A: A{Y: 7}, B: ptr2(nil)}, []string{"b.z"}},
 	}
 
 	for _, c := range cases {
@@ -226,7 +226,7 @@ func TestGetMissingRequired_SimpleTagged(t *testing.T) {
 	}
 
 	keys := config.GetMissingRequiredKeys(s{}, tagName, squashTagValue, requiredTagName)
-	if diffs := deep.Equal(keys, []string{"Aaa", "B", "ccc"}); diffs != nil {
+	if diffs := deep.Equal(keys, []string{"aaa", "b", "ccc"}); diffs != nil {
 		t.Error("wrong keys for struct: ", diffs)
 	}
 }
@@ -244,7 +244,7 @@ func TestGetMissingRequired_NestedTagged(t *testing.T) {
 	}
 
 	keys := config.GetMissingRequiredKeys(s{}, tagName, squashTagValue, requiredTagName)
-	if diffs := deep.Equal(keys, []string{"aaa.eks", "aaa.BE", "B.Gamma", "B.dee"}); diffs != nil {
+	if diffs := deep.Equal(keys, []string{"aaa.eks", "aaa.be", "b.gamma", "b.dee"}); diffs != nil {
 		t.Error("wrong keys for struct: ", diffs)
 	}
 }
@@ -264,7 +264,7 @@ func TestGetMissingRequired_Squash(t *testing.T) {
 	}
 
 	keys := config.GetMissingRequiredKeys(s{}, tagName, squashTagValue, requiredTagName)
-	if diffs := deep.Equal(keys, []string{"A", "B", "C", "D"}); diffs != nil {
+	if diffs := deep.Equal(keys, []string{"a", "b", "c", "d"}); diffs != nil {
 		t.Error("wrong keys for struct: ", diffs)
 	}
 }

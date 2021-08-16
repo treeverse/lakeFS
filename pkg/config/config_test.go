@@ -32,7 +32,7 @@ func newConfigFromFile(fn string) (*config.Config, error) {
 
 func TestConfig_Setup(t *testing.T) {
 	// test defaults
-	c, err := config.NewConfig()
+	c, err := config.NewConfigIncompleteForTesting()
 	testutil.Must(t, err)
 	if c.GetListenAddress() != config.DefaultListenAddr {
 		t.Fatalf("expected listen addr %s, got %s", config.DefaultListenAddr, c.GetListenAddress())
