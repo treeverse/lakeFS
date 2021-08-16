@@ -3,36 +3,20 @@
 ## Requirements
 
 1. As a lakeFS user, I should be able to mark branches as "protected" - from the UI, CLI and API.
-1. Protected branches cannot be directly committed to. Only merges are allowed into protected branches.
-1. Commits to protected branches should fail with a meaningful error message.
+1. Descision: Protected branches will be subject to one of the following constraints:
+   1. (either) they cannot be directly committed to. Only merges are allowed.
+   1. (or) their staging area is blocked - cannot directly make any changes.
+1. Forbidden actions to protected branches should fail with a meaningful error message.
+1. The implmenetation should be flexible to adding more constraint types in the future (example: require PR before merging).
+1. Force options - blocked operations should have a reasonable way to be forced. In the future, the extent to which they can be forced may also be configurable (similarly to GitHub).
 
 ## Where to save the model
-
-The data regarding which branch is protected needs to be saved somewhere.
-It needs to be fetched at runtime, probably before a commit is performed.
-
-Here are two suggested options, feel free to add your own:
-
-### Option 1: branches table in postgres
-
-Add a boolean column to the branches table, denoting whether the branch is protected.
-
-Pros:
-- no consistency problems
-- no overhead: branch is anyway fetched from the database before a commit.
-
-Cons:
-- a boolean is probably not enough for the long run: we will want other constraints, not just limiting commits.
-- yet another dependency on postgres
-- no pattern rules - every branch needs to marked as protected separately.
-
-Option 2: save it as a JSON array in the storage
-
-Add it as a file under the repository's _lakefs directory.
+Suggestion: save protection rules as a JSON object under the repository's _lakefs_. This is similar to what we do with retention rules.
 
 Pros:
 - rules can be patterns and not just concrete branches, similar to GitHub's protected branches.
 - native to the storage
+- flexible: structure can easily change to accommodate for more complex constraints. 
 
 Cons:
 - UI will probably be a multiline textbox where you can edit the json, otherwise consistency problems.
