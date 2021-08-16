@@ -21,3 +21,19 @@ Pros:
 Cons:
 - UI will probably be a multiline textbox where you can edit the json, otherwise consistency problems.
 - CLI will also need to get the full JSON, or we need to do some locking on the server-side to add/remove protection rules.
+
+
+## Implementation
+
+The implementation depends on the constraint type we want to enforce.
+
+### Constarint type: block commits
+
+* When performing a commit, the protection rules of the repository will be fetched from the storage.
+* Right before executing the pre-commit hooks, check whether the branch name matches any of the protection rules.
+* If so, the commit will fail with a dedicated error type.
+* A force flag will be optionally included, allowing the commit even if the branch is protected.
+
+### Constraint type: block staging area
+
+TBD
