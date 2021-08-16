@@ -373,6 +373,8 @@ public class LakeFSFileSystemTest {
         String contents = "The quick brown fox jumps over the lazy dog.";
         Path p = new Path("lakefs://repo/main/sub1/sub2/create.me");
 
+        mockNonExistingPath(new ObjectLocation("lakefs", "repo", "main", "sub1/sub2/create.me"));
+
         StagingLocation stagingLocation = new StagingLocation().token("foo").physicalAddress(s3Url("/repo-base/create"));
         when(stagingApi.getPhysicalAddress("repo", "main", "sub1/sub2/create.me"))
                 .thenReturn(stagingLocation);
