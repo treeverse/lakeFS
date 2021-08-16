@@ -31,7 +31,7 @@ Branch protection rules are part of the repository data, saved under __lakefs_, 
 
 Pros:
 - Reuse the Hooks mechanism for enforcement.
-- Use lakeFS IAM to give permissions to editing protection rules.
+- Use lakeFS IAM to give permissions to edit protection rules.
 
 Cons:
 - Changing protection rules is a commit visible in the log
