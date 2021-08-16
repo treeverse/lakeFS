@@ -137,7 +137,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		cancelFn()
 		return nil, fmt.Errorf("build block adapter: %w", err)
 	}
-	tierFSParams, err := cfg.Config.GetCommittedTierFSParams(ctx, adapter)
+	tierFSParams, err := cfg.Config.GetCommittedTierFSParams(adapter)
 	if err != nil {
 		cancelFn()
 		return nil, fmt.Errorf("configure tiered FS for committed: %w", err)
