@@ -30,7 +30,7 @@ Cons:
 ```json
 [
 	{
-		"branch_name_pattern": "stable/*",
+		"branch_name_pattern": "main",
 		"constraints": ["merge_only"]
 	},
 	{
