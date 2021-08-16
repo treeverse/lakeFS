@@ -27,7 +27,7 @@ Cons:
 
 ### Suggestion 2 (@ariels)
 
-Branch protection rules are part of the repository data, saved under __lakefs_, similar to GitHub's (and our) Actions.
+Branch protection rules are part of the repository data, saved under a dedicated lakeFS directory, similar to GitHub's (and our) Actions.
 
 Pros:
 - Reuse the Hooks mechanism for enforcement.
