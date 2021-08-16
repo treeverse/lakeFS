@@ -36,4 +36,7 @@ The implementation depends on the constraint type we want to enforce.
 
 ### Constraint type: block staging area
 
-TBD
+* In Graveler, before every Staging Manager write operation (Set, Drop, DropKey) - fetch the rules.
+* If the branch name matches a rule, fail the operation with a dedicated error type.
+* Each of these operations should allow a force flag.
+
