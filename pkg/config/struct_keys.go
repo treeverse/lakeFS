@@ -1,26 +1,30 @@
 package config
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 )
 
 const sep = "."
 
-// GetStructKeys returns all keys in a nested struct, taking the name from the tag name or the
-// field name.  It handles an additional suffix squashValue like mapstructure does: if present
-// on an embedded struct, name components for that embedded struct should not be included.  It
-// does not handle maps, does chase pointers, but does not check for loops in nesting.
+// GetStructKeys returns all keys in a nested struct type, taking the name from the tag name or
+// the field name.  It handles an additional suffix squashValue like mapstructure does: if
+// present on an embedded struct, name components for that embedded struct should not be
+// included.  It does not handle maps, does chase pointers, but does not check for loops in
+// nesting.
 func GetStructKeys(typ reflect.Type, tag, squashValue string) []string {
-	return appendStructKeys(typ, tag, ","+squashValue, nil, nil, nil)
+	return appendStructKeys(typ, tag, ","+squashValue, nil, nil)
 }
 
-func appendStructKeys(typ reflect.Type, tag, squashValue string, prefix []string, keys []string, tagPredicate func(t reflect.StructTag) bool) []string {
-	// finite loop: Go types are well-founded.
+// appendStructKeys recursively appends to keys all keys of nested struct type typ, taking tag
+// and squashValue from GetStructKeys.  prefix holds all components of the path from the typ
+// passed to GetStructKeys down to this typ.
+func appendStructKeys(typ reflect.Type, tag, squashValue string, prefix []string, keys []string) []string {
+	// Dereference any pointers.  This is a finite loop: Go types are well-founded.
 	for ; typ.Kind() == reflect.Ptr; typ = typ.Elem() {
 	}
 
+	// Handle only struct containers; terminate the recursion on anything else.
 	if typ.Kind() != reflect.Struct {
 		return append(keys, strings.Join(prefix, sep))
 	}
@@ -28,35 +32,37 @@ func appendStructKeys(typ reflect.Type, tag, squashValue string, prefix []string
 	for i := 0; i < typ.NumField(); i++ {
 		fieldType := typ.Field(i)
 		var (
-			name   string
+			// fieldName is the name to use for the field.
+			fieldName string
+			// If squash is true, squash the sub-struct no additional accessor.
 			squash bool
 			ok     bool
 		)
-		if tagPredicate != nil && !tagPredicate(fieldType.Tag) {
-			continue
-		}
-		if name, ok = fieldType.Tag.Lookup(tag); ok {
-			if strings.HasSuffix(name, squashValue) {
+		if fieldName, ok = fieldType.Tag.Lookup(tag); ok {
+			if strings.HasSuffix(fieldName, squashValue) {
 				squash = true
-				name = strings.TrimSuffix(name, squashValue)
+				fieldName = strings.TrimSuffix(fieldName, squashValue)
 			}
 		} else {
-			name = fieldType.Name
+			fieldName = strings.ToLower(fieldType.Name)
 		}
-		key := make([]string, len(prefix))
-		copy(key, prefix)
+		// Update prefix to recurse into this field.
 		if !squash {
-			key = append(key, name)
+			prefix = append(prefix, fieldName)
 		}
-		keys = appendStructKeys(fieldType.Type, tag, squashValue, key, keys, tagPredicate)
+		keys = appendStructKeys(fieldType.Type, tag, squashValue, prefix, keys)
+		// Restore prefix.
+		if !squash {
+			prefix = prefix[:len(prefix)-1]
+		}
 	}
 	return keys
 }
 
-// GetMissingRequiredKeys returns all keys of value in GetStructKeys format that have
-// an additional required tag set but are unset.
+// ValidateMissingRequiredKeys returns all keys of value in GetStructKeys format that have an
+// additional required tag set but are unset.
 func ValidateMissingRequiredKeys(value interface{}, tag, squashValue string) []string {
-	return appendStructKeysIfZero(reflect.ValueOf(value), reflect.TypeOf(value), tag, ","+squashValue, "validate", "required", nil, nil)
+	return appendStructKeysIfZero(reflect.ValueOf(value), tag, ","+squashValue, "validate", "required", nil, nil)
 }
 
 // isScalar returns true if kind is "scalar", i.e. has no Elem().  This
@@ -74,63 +80,70 @@ func isScalar(kind reflect.Kind) bool {
 	return true
 }
 
-func appendStructKeysIfZero(value reflect.Value, typ reflect.Type, tag, squashValue, validateTag, requiredValue string, prefix []string, keys []string) []string {
+func appendStructKeysIfZero(value reflect.Value, tag, squashValue, validateTag, requiredValue string, prefix []string, keys []string) []string {
 	// finite loop: Go types are well-founded.
-	for ; typ.Kind() == reflect.Ptr; typ = typ.Elem() {
+	for value.Kind() == reflect.Ptr {
 		if value.IsZero() { // If required, would already have errored out.
 			return keys
 		}
 		value = value.Elem()
 	}
 
-	if !isScalar(typ.Kind()) {
-		if !isScalar(typ.Elem().Kind()) {
+	if !isScalar(value.Kind()) {
+		// Why use Type().Elem() when reflect.Value provides a perfectly good Elem()
+		// method?  The two are *not* the same, e.g. for nil pointers value.Elem() is
+		// invalid and has no Kind().  (See https://play.golang.org/p/M3ZV19AZAW0)
+		if !isScalar(value.Type().Elem().Kind()) {
 			// TODO(ariels): Possible to add, but need to define the semantics.  One
 			//     way might be to validate each field according to its type.
 			panic("No support for detecting required keys inside " + value.Kind().String() + " of structs")
 		}
 	}
 
-	if typ.Kind() != reflect.Struct {
+	// Handle only struct containers; terminate the recursion on anything else.
+	if value.Kind() != reflect.Struct {
 		return keys
 	}
 
-	for i := 0; i < typ.NumField(); i++ {
-		fieldType := typ.Field(i)
-		var fieldValue reflect.Value = value
-		if !value.IsZero() {
-			fieldValue = value.Field(i)
-		}
+	for i := 0; i < value.NumField(); i++ {
+		fieldType := value.Type().Field(i)
+		fieldValue := value.Field(i)
 
 		var (
-			name   string
+			// fieldName is the name to use for the field.
+			fieldName string
+			// If squash is true, squash the sub-struct no additional accessor.
 			squash bool
 			ok     bool
 		)
-		if name, ok = fieldType.Tag.Lookup(tag); ok {
-			if strings.HasSuffix(name, squashValue) {
+		if fieldName, ok = fieldType.Tag.Lookup(tag); ok {
+			if strings.HasSuffix(fieldName, squashValue) {
 				squash = true
-				name = strings.TrimSuffix(name, squashValue)
+				fieldName = strings.TrimSuffix(fieldName, squashValue)
 			}
 		} else {
-			name = fieldType.Name
+			fieldName = strings.ToLower(fieldType.Name)
 		}
-		name = strings.ToLower(name)
+
+		// Perform any needed validations.
 		if validationsString, ok := fieldType.Tag.Lookup(validateTag); ok {
 			for _, validation := range strings.Split(validationsString, ",") {
-				fmt.Printf("[DEBUG] validation: %s\n", validation)
+				// Validate "required" field.
 				if validation == requiredValue && fieldValue.IsZero() {
-					keys = append(keys, strings.Join(append(prefix, name), sep))
+					keys = append(keys, strings.Join(append(prefix, fieldName), sep))
 				}
 			}
 		}
 
-		key := make([]string, len(prefix))
-		copy(key, prefix)
+		// Update prefix to recurse into this field.
 		if !squash {
-			key = append(key, name)
+			prefix = append(prefix, fieldName)
 		}
-		keys = appendStructKeysIfZero(fieldValue, fieldType.Type, tag, squashValue, validateTag, requiredValue, key, keys)
+		keys = appendStructKeysIfZero(fieldValue, tag, squashValue, validateTag, requiredValue, prefix, keys)
+		// Restore prefix.
+		if !squash {
+			prefix = prefix[:len(prefix)-1]
+		}
 	}
 	return keys
 }
