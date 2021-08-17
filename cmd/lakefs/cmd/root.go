@@ -83,7 +83,7 @@ func initConfig() {
 			viper.SetConfigFile(fallbackCfgFile)
 			logger = logger.WithField("file", viper.ConfigFileUsed()) // should be called after SetConfigFile
 			err = viper.ReadInConfig()
-			if err != nil && !errors.As(err, &errFileNotFound) {
+			if err != nil && os.IsNotExist(err) {
 				logger.WithError(err).Fatal("Failed to read config file")
 			}
 		}
