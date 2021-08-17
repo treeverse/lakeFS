@@ -215,7 +215,7 @@ func checkForeignRepos(ctx context.Context, logger logging.Logger, authMetadataM
 	if !initialized {
 		logger.Debug("lakeFS isn't initialized, skipping mismatched adapter checks")
 	} else {
-		logger.Debug("lakeFS is initialized, checking repositories for mismatched adapter(%s)", blockStore.BlockstoreType())
+		logger.Debugf("lakeFS is initialized, checking repositories for mismatched adapter(%s)", blockStore.BlockstoreType())
 		hasMore := true
 		next := ""
 
