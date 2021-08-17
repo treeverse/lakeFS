@@ -117,8 +117,9 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 	}
 
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
-	conf, err := config.NewConfigIncompleteForTesting()
+	conf, err := config.NewConfig()
 	testutil.MustDo(t, "config", err)
+	// Do not validate invalid config (missing required fields).
 
 	conn, _ := testutil.GetDB(t, databaseURI)
 	c, err := catalog.New(ctx, catalog.Config{

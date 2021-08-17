@@ -73,7 +73,7 @@ type Config struct {
 	values configuration
 }
 
-func newConfigInternal() (*Config, error) {
+func NewConfig() (*Config, error) {
 	c := &Config{}
 
 	// Inform viper of all expected fields.  Otherwise it fails to deserialize from the
@@ -99,22 +99,6 @@ func newConfigInternal() (*Config, error) {
 	}
 
 	return c, nil
-}
-
-func NewConfig() (*Config, error) {
-	c, err := newConfigInternal()
-	if err != nil {
-		return nil, err
-	}
-	missingKeys := ValidateMissingRequiredKeys(c.values, "mapstructure", "squash")
-	if len(missingKeys) > 0 {
-		return nil, fmt.Errorf("%w: %v", ErrMissingRequiredKeys, missingKeys)
-	}
-	return c, nil
-}
-
-func NewConfigIncompleteForTesting() (*Config, error) {
-	return newConfigInternal()
 }
 
 // Default flag keys
@@ -231,6 +215,15 @@ func (c *Config) validateDomainNames() error {
 			return fmt.Errorf("%w: %s, %s", ErrBadDomainNames, domainNames[i], domainNames[i+1])
 		}
 	}
+	return nil
+}
+
+func (c *Config) Validate() error {
+	missingKeys := ValidateMissingRequiredKeys(c.values, "mapstructure", "squash")
+	if len(missingKeys) > 0 {
+		return fmt.Errorf("%w: %v", ErrMissingRequiredKeys, missingKeys)
+	}
+
 	return nil
 }
 

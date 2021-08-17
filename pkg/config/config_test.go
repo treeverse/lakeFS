@@ -27,13 +27,19 @@ func newConfigFromFile(fn string) (*config.Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	return config.NewConfig()
+	cfg, err := config.NewConfig()
+	if err != nil {
+		return nil, err
+	}
+	err = cfg.Validate()
+	return cfg, err
 }
 
 func TestConfig_Setup(t *testing.T) {
 	// test defaults
-	c, err := config.NewConfigIncompleteForTesting()
+	c, err := config.NewConfig()
 	testutil.Must(t, err)
+	// Don't validate, some tested configs don't have all required fields.
 	if c.GetListenAddress() != config.DefaultListenAddr {
 		t.Fatalf("expected listen addr %s, got %s", config.DefaultListenAddr, c.GetListenAddress())
 	}
@@ -111,8 +117,7 @@ func TestConfig_BuildBlockAdapter(t *testing.T) {
 	})
 
 	t.Run("s3 block adapter", func(t *testing.T) {
-		newConfigFromFile("testdata/valid_s3_adapter_config.yaml")
-		c, err := config.NewConfig()
+		c, err := newConfigFromFile("testdata/valid_s3_adapter_config.yaml")
 		testutil.Must(t, err)
 		adapter, err := factory.BuildBlockAdapter(ctx, nil, c)
 		testutil.Must(t, err)
@@ -122,8 +127,7 @@ func TestConfig_BuildBlockAdapter(t *testing.T) {
 	})
 
 	t.Run("gs block adapter", func(t *testing.T) {
-		newConfigFromFile("testdata/valid_gs_adapter_config.yaml")
-		c, err := config.NewConfig()
+		c, err := newConfigFromFile("testdata/valid_gs_adapter_config.yaml")
 		testutil.Must(t, err)
 		adapter, err := factory.BuildBlockAdapter(ctx, nil, c)
 		testutil.Must(t, err)

@@ -58,6 +58,10 @@ var entryCmd = &cobra.Command{
 		if err != nil {
 			fmt.Printf("config: %s\n", err)
 		}
+		err = conf.Validate()
+		if err != nil {
+			fmt.Printf("invalid config: %s\n", err)
+		}
 		c, err := catalog.New(ctx, catalog.Config{
 			Config: conf,
 			DB:     database,
