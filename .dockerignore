@@ -14,3 +14,7 @@ cmd/lakectl/lakefs
 webui/
 golangci.yaml
 gateway/testdata/
+test/
+clients/
+docs/
+design/
