@@ -195,6 +195,7 @@ jobs:
         working-directory: test/lakefsfs_contract
         run: docker-compose up -d
       - name: Wait for lakeFS
+        working-directory: clients/hadoopfs
         run: docker-compose run --rm --entrypoint "/app/wait-for lakefs:8000" --no-deps lakefs-setup
       - name: Build and test hadoopfs
         working-directory: clients/hadoopfs
