@@ -70,11 +70,11 @@ type configuration struct {
 			Jitter  time.Duration
 		}
 		Encrypt struct {
-			SecretKey string `mapstructure:"secret_key" required:"yes"`
+			SecretKey string `mapstructure:"secret_key" validate:"required"`
 		}
 	}
 	Blockstore struct {
-		Type  string `required:"yes"`
+		Type  string `validate:"required"`
 		Local *struct {
 			Path string
 		}

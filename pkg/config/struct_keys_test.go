@@ -9,9 +9,8 @@ import (
 )
 
 const (
-	tagName         = "test"
-	squashTagValue  = "squash"
-	requiredTagName = "required"
+	tagName        = "test"
+	squashTagValue = "squash"
 )
 
 func TestStructKeys_Simple(t *testing.T) {
@@ -108,42 +107,42 @@ func TestStructKeys_Squash(t *testing.T) {
 	}
 }
 
-func TestGetMissingRequired_SimpleRequired(t *testing.T) {
+func TestValidateMissingRequired_SimpleRequired(t *testing.T) {
 	type s struct {
-		A  int `required:"yes"`
+		A  int `validate:"required"`
 		AA int
-		B  string `required:"no (is actually yes)"`
-		BB string
-		C  *float64 `required:"yup"`
-		CC *float64
-		D  []rune `required:""`
+		B  string   `validate:"x,required,y"`
+		BB string   `validate:"unrequired"`
+		C  *float64 `validate:"0,required"`
+		CC *float64 `validate:"unrequired,1,2,3"`
+		D  []rune   `validate:"required,2"`
 		DD []rune
 	}
 
-	keys := config.GetMissingRequiredKeys(s{}, tagName, squashTagValue, requiredTagName)
+	keys := config.ValidateMissingRequiredKeys(s{}, tagName, squashTagValue)
 	if diffs := deep.Equal(keys, []string{"a", "b", "c", "d"}); diffs != nil {
-		t.Error("wrong keys for struct: ", diffs)
+		t.Error("wrong missing keys for struct: ", diffs)
 	}
-	keys = config.GetMissingRequiredKeys(&s{}, tagName, squashTagValue, requiredTagName)
+	keys = config.ValidateMissingRequiredKeys(&s{}, tagName, squashTagValue)
 	if diffs := deep.Equal(keys, []string{"a", "b", "c", "d"}); diffs != nil {
-		t.Error("wrong keys for pointer to struct: ", diffs)
+		t.Error("wrong missing keys for pointer to struct: ", diffs)
 	}
 	ps := &s{}
-	keys = config.GetMissingRequiredKeys(&ps, tagName, squashTagValue, requiredTagName)
+	keys = config.ValidateMissingRequiredKeys(&ps, tagName, squashTagValue)
 	if diffs := deep.Equal(keys, []string{"a", "b", "c", "d"}); diffs != nil {
-		t.Error("wrong keys for pointer to pointer to struct: ", diffs)
+		t.Error("wrong missing keys for pointer to pointer to struct: ", diffs)
 	}
 }
 
-func TestGetMissingRequired_SimpleNotMissing(t *testing.T) {
+func TestValidateMissingRequired_SimpleNotMissing(t *testing.T) {
 	type s struct {
-		A  int `required:"yes"`
+		A  int `validate:"required"`
 		AA int
-		B  string `required:"no (is actually yes)"`
-		BB string
-		C  *float64 `required:"yup"`
-		CC *float64
-		D  []rune `required:""`
+		B  string   `validate:"x,required,y"`
+		BB string   `validate:"unrequired"`
+		C  *float64 `validate:"0,required"`
+		CC *float64 `validate:"unrequired,1,2,3"`
+		D  []rune   `validate:"required,2"`
 		DD []rune
 	}
 
@@ -157,43 +156,52 @@ func TestGetMissingRequired_SimpleNotMissing(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		keys := config.GetMissingRequiredKeys(c.Value, tagName, squashTagValue, requiredTagName)
+		keys := config.ValidateMissingRequiredKeys(c.Value, tagName, squashTagValue)
 		if diffs := deep.Equal(keys, c.MissingRequired); diffs != nil {
-			t.Errorf("wrong keys for %+v: %s", c.Value, diffs)
+			t.Errorf("wrong missing keys for %+v: %s", c.Value, diffs)
 		}
 	}
 }
 
-func TestGetMissingRequired_Nested(t *testing.T) {
+func TestValidateMissingRequired_Nested(t *testing.T) {
+	type B struct {
+		Z float32 `validate:"required"`
+		W float64
+	}
 	type s struct {
 		A struct {
 			X string
-			Y int `required:"yes"`
+			Y int `validate:"required"`
 		}
-		B ***struct {
-			Z float32 `required:"yes"`
-			W float64
-		}
+		B ***B `validate:"required"`
 	}
 
-	keys := config.GetMissingRequiredKeys(s{}, tagName, squashTagValue, requiredTagName)
+	keys := config.ValidateMissingRequiredKeys(s{}, tagName, squashTagValue)
+	if diffs := deep.Equal(keys, []string{"a.y", "b"}); diffs != nil {
+		t.Error("wrong missing keys for empty struct: ", diffs)
+	}
+
+	b := B{}
+	pb := &b
+	ppb := &pb
+	keys = config.ValidateMissingRequiredKeys(&s{B: &ppb}, tagName, squashTagValue)
 	if diffs := deep.Equal(keys, []string{"a.y", "b.z"}); diffs != nil {
-		t.Error("wrong keys for struct: ", diffs)
+		t.Error("wrong missing keys for struct with empty optional: ", diffs)
 	}
 }
 
-func TestGetMissingRequired_NestedNotMissing(t *testing.T) {
+func TestValidateMissingRequired_NestedNotMissing(t *testing.T) {
 	type A struct {
 		X string
-		Y int `required:"yes"`
+		Y int `validate:"required"`
 	}
 	type B struct {
-		Z float32 `required:"yes"`
+		Z float32 `validate:"required"`
 		W float64
 	}
 	type s struct {
 		A A
-		B ***B
+		B ***B `validate:"required"`
 	}
 
 	ptr3 := func(b B) ***B { pb := &b; ppb := &pb; return &ppb }
@@ -201,70 +209,81 @@ func TestGetMissingRequired_NestedNotMissing(t *testing.T) {
 	ptr1 := func(b **B) ***B { return &b }
 
 	cases := []struct {
+		Name            string
 		Value           s
 		MissingRequired []string
 	}{
-		{s{A: A{Y: 7}, B: ptr3(B{})}, []string{"b.z"}},
-		{s{B: ptr3(B{Z: 1.23})}, []string{"a.y"}},
-		{s{A: A{Y: 7}, B: ptr1(nil)}, []string{"b.z"}},
-		{s{A: A{Y: 7}, B: ptr2(nil)}, []string{"b.z"}},
+		{"s{}", s{}, []string{"a.y", "b"}},
+		{"s{A: A{Y: 7}, B: &&&B{}}", s{A: A{Y: 7}, B: ptr3(B{})}, []string{"b.z"}},
+		{"s{B: &&&B{Z: 1.23}}", s{B: ptr3(B{Z: 1.23})}, []string{"a.y"}},
+		// Required field B is present but leads nowhere: all good(!).
+		{"s{A: A{Y: 7}, B: &nil", s{A: A{Y: 7}, B: ptr1(nil)}, nil},
+		// Required field B is present but leads nowhere: all good(!).
+		{"s{A: A{Y: 7}, B: &&nil}", s{A: A{Y: 7}, B: ptr2(nil)}, nil},
 	}
 
 	for _, c := range cases {
-		keys := config.GetMissingRequiredKeys(c.Value, tagName, squashTagValue, requiredTagName)
+		keys := config.ValidateMissingRequiredKeys(c.Value, tagName, squashTagValue)
 		if diffs := deep.Equal(keys, c.MissingRequired); diffs != nil {
-			t.Errorf("wrong keys for %+v: %s", c.Value, diffs)
+			t.Errorf("%s: wrong keys for %+v: %s", c.Name, c.Value, diffs)
 		}
 	}
 }
 
-func TestGetMissingRequired_SimpleTagged(t *testing.T) {
+func TestValidateMissingRequired_SimpleTagged(t *testing.T) {
 	type s struct {
-		A int `test:"Aaa" required:"yes"`
-		B int `toast:"bee" required:"yes"`
-		c int `test:"ccc" toast:"sea" required:"yes"`
+		A int `test:"Aaa" validate:"required"`
+		B int `toast:"bee" validate:"required"`
+		c int `test:"ccc" toast:"sea" validate:"required"`
 	}
 
-	keys := config.GetMissingRequiredKeys(s{}, tagName, squashTagValue, requiredTagName)
+	keys := config.ValidateMissingRequiredKeys(s{}, tagName, squashTagValue)
 	if diffs := deep.Equal(keys, []string{"aaa", "b", "ccc"}); diffs != nil {
 		t.Error("wrong keys for struct: ", diffs)
 	}
 }
 
-func TestGetMissingRequired_NestedTagged(t *testing.T) {
+func TestValidateMissingRequired_NestedTagged(t *testing.T) {
+	type B struct {
+		Gamma int32 `validate:"required"`
+		Delta uint8 `test:"dee" validate:"required"`
+	}
 	type s struct {
 		A struct {
-			X  int    `test:"eks" required:"yes"`
-			BE string `required:"yes"`
+			X  int    `test:"eks" validate:"required"`
+			BE string `validate:"required"`
 		} `test:"aaa"`
-		B **struct {
-			Gamma int32 `required:"yes"`
-			Delta uint8 `test:"dee" required:"yes"`
-		}
+		B *B
 	}
 
-	keys := config.GetMissingRequiredKeys(s{}, tagName, squashTagValue, requiredTagName)
+	keys := config.ValidateMissingRequiredKeys(s{}, tagName, squashTagValue)
+	if diffs := deep.Equal(keys, []string{"aaa.eks", "aaa.be"}); diffs != nil {
+		t.Error("wrong missing keys for missing optional: ", diffs)
+	}
+
+	b := B{}
+	keys = config.ValidateMissingRequiredKeys(s{B: &b}, tagName, squashTagValue)
 	if diffs := deep.Equal(keys, []string{"aaa.eks", "aaa.be", "b.gamma", "b.dee"}); diffs != nil {
-		t.Error("wrong keys for struct: ", diffs)
+		t.Error("wrong missing keys for present optional missing fields: ", diffs)
 	}
 }
 
-func TestGetMissingRequired_Squash(t *testing.T) {
+func TestValidateMissingRequired_Squash(t *testing.T) {
 	type I struct {
-		A int `required:"yes"`
-		B int `required:"yes"`
+		A int `validate:"required"`
+		B int `validate:"required"`
 	}
 	type J struct {
-		C uint `required:"yes"`
-		D uint `required:"yes"`
+		C uint `validate:"required"`
+		D uint `validate:"required"`
 	}
 	type s struct {
 		I `test:",squash"`
 		J `test:"ignore,squash"`
 	}
 
-	keys := config.GetMissingRequiredKeys(s{}, tagName, squashTagValue, requiredTagName)
+	keys := config.ValidateMissingRequiredKeys(s{}, tagName, squashTagValue)
 	if diffs := deep.Equal(keys, []string{"a", "b", "c", "d"}); diffs != nil {
-		t.Error("wrong keys for struct: ", diffs)
+		t.Error("wrong missing keys for struct: ", diffs)
 	}
 }

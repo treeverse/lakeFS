@@ -106,7 +106,7 @@ func NewConfig() (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	missingKeys := GetMissingRequiredKeys(c.values, "mapstructure", "squash", "required")
+	missingKeys := ValidateMissingRequiredKeys(c.values, "mapstructure", "squash")
 	if len(missingKeys) > 0 {
 		return nil, fmt.Errorf("%w: %v", ErrMissingRequiredKeys, missingKeys)
 	}

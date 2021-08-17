@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 )
@@ -54,8 +55,8 @@ func appendStructKeys(typ reflect.Type, tag, squashValue string, prefix []string
 
 // GetMissingRequiredKeys returns all keys of value in GetStructKeys format that have
 // an additional required tag set but are unset.
-func GetMissingRequiredKeys(value interface{}, tag, squashValue, requiredTag string) []string {
-	return appendStructKeysIfZero(reflect.ValueOf(value), reflect.TypeOf(value), tag, ","+squashValue, requiredTag, nil, nil)
+func ValidateMissingRequiredKeys(value interface{}, tag, squashValue string) []string {
+	return appendStructKeysIfZero(reflect.ValueOf(value), reflect.TypeOf(value), tag, ","+squashValue, "validate", "required", nil, nil)
 }
 
 // isScalar returns true if kind is "scalar", i.e. has no Elem().  This
@@ -73,19 +74,19 @@ func isScalar(kind reflect.Kind) bool {
 	return true
 }
 
-func appendStructKeysIfZero(value reflect.Value, typ reflect.Type, tag, squashValue, requiredTag string, prefix []string, keys []string) []string {
+func appendStructKeysIfZero(value reflect.Value, typ reflect.Type, tag, squashValue, validateTag, requiredValue string, prefix []string, keys []string) []string {
 	// finite loop: Go types are well-founded.
 	for ; typ.Kind() == reflect.Ptr; typ = typ.Elem() {
-		if !value.IsZero() {
-			// Keep going on zero values (nil pointers) so we
-			// can report that all their required sub-fields are
-			// missing.
-			value = value.Elem()
+		if value.IsZero() { // If required, would already have errored out.
+			return keys
 		}
+		value = value.Elem()
 	}
 
 	if !isScalar(typ.Kind()) {
 		if !isScalar(typ.Elem().Kind()) {
+			// TODO(ariels): Possible to add, but need to define the semantics.  One
+			//     way might be to validate each field according to its type.
 			panic("No support for detecting required keys inside " + value.Kind().String() + " of structs")
 		}
 	}
@@ -115,9 +116,12 @@ func appendStructKeysIfZero(value reflect.Value, typ reflect.Type, tag, squashVa
 			name = fieldType.Name
 		}
 		name = strings.ToLower(name)
-		if _, ok = fieldType.Tag.Lookup(requiredTag); ok {
-			if fieldValue.IsZero() {
-				keys = append(keys, strings.Join(append(prefix, name), sep))
+		if validationsString, ok := fieldType.Tag.Lookup(validateTag); ok {
+			for _, validation := range strings.Split(validationsString, ",") {
+				fmt.Printf("[DEBUG] validation: %s\n", validation)
+				if validation == requiredValue && fieldValue.IsZero() {
+					keys = append(keys, strings.Join(append(prefix, name), sep))
+				}
 			}
 		}
 
@@ -126,7 +130,7 @@ func appendStructKeysIfZero(value reflect.Value, typ reflect.Type, tag, squashVa
 		if !squash {
 			key = append(key, name)
 		}
-		keys = appendStructKeysIfZero(fieldValue, fieldType.Type, tag, squashValue, requiredTag, key, keys)
+		keys = appendStructKeysIfZero(fieldValue, fieldType.Type, tag, squashValue, validateTag, requiredValue, key, keys)
 	}
 	return keys
 }
