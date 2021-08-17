@@ -75,7 +75,7 @@ services:
       - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY=minio123
       - LAKEFS_BLOCKSTORE_S3_ENDPOINT=http://s3.local.lakefs.io:9000
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "sh", "-c",
-      "lakefs setup --user-name docker --access-key-id AKIAIOSFODNN7EXAMPLE --secret-access-key wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY && lakectl repo create lakefs://example s3://example"
+      "lakefs setup --user-name docker --access-key-id AKIAIOSFODNN7EXAMPLE --secret-access-key wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY && lakectl repo create lakefs://lakefsfs-contract-test s3://contract-test"
       ]
 
   minio-setup:
@@ -87,7 +87,7 @@ services:
         - MC_HOST_lakefs=http://minioadmin:minioadmin@minio:9000
     depends_on:
       - minio
-    command: ["mb", "lakefs/example"]
+    command: ["mb", "lakefs/contract-test"]
 
 networks:
   default:
