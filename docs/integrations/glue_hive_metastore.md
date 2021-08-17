@@ -8,11 +8,7 @@ has_children: false
 redirect_from: ../using/glue_hive_metastore.html
 ---
 
-# Table of contents
-{: .no_toc .text-delta }
-
-1. TOC
-{:toc}
+{% include toc.html %}
 
 # Glue / Hive Metastore Intro
 This part contains a brief explanation about how Glue/Hive metastore work with lakeFS

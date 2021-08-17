@@ -24,11 +24,7 @@ Possible use-cases:
 1. You want to experiment with lakeFS as a side-by-side installation first.
 1. Create copies of your data lake in other regions (taking into account read pricing).
 
-## Table of contents
-{: .no_toc .text-delta }
-
-1. TOC
-{:toc}
+{% include toc.html %}
 
 ## How to use
 

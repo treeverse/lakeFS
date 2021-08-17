@@ -12,11 +12,7 @@ redirect_from: ../using/sagemaker.html
 {: .no_toc }
 [Amazon SageMaker](https://aws.amazon.com/sagemaker/) helps prepare, build, train and deploy ML models quickly by bringing together a broad set of capabilities purpose-built for ML.
 
-## Table of contents
-{: .no_toc .text-delta }
-
-1. TOC
-{:toc}
+{% include toc.html %}
 
 ## Initializing session and client
 

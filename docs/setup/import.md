@@ -13,11 +13,7 @@ This page describes importing from versions >= v0.24.0. For ealier versions, see
 # Import data into lakeFS
 {: .no_toc }
 
-## Table of contents
-{: .no_toc .text-delta }
-
-1. TOC
-{:toc}
+{% include toc.html %}
 
 ## Copying using external tools
 

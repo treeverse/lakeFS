@@ -15,11 +15,7 @@ redirect_from:
 
 At its core, lakeFS uses a Git-like branching model.
 
-## Table of contents
-{: .no_toc .text-delta }
-
-1. TOC
-{:toc}
+{% include toc.html %}
 
 ### Repositories
 

@@ -14,11 +14,7 @@ redirect_from: ../using/spark.html
 
 {: .pb-5 }
 
-## Table of contents
-{: .no_toc .text-delta }
-
-1. TOC
-{:toc}
+{% include toc.html %}
 
 **Note** In all following examples we set AWS and lakeFS credentials at runtime, for
 clarity. In production, properties defining AWS credentials should be set using one of
