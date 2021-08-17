@@ -36,7 +36,8 @@ Pros:
 Cons:
 - Changing protection rules is a commit visible in the log
 - As a repository owner, I need to manage rules in multiple branches. For example, if I want to add rules to existing branches, I need to merge these rules to all of my developer's branches.
-
+- Can currently only be used to block commits, and not the staging area.
+- 
 Pro/con:
 - Changing protection rules is a commit visible in the log
 ## Implementation - Suggestion 1
