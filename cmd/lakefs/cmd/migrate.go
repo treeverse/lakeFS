@@ -19,7 +19,10 @@ var versionCmd = &cobra.Command{
 	Short: "Print current migration version and available version",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
-		version, _, err := db.MigrateVersion(ctx, cfg.GetDatabaseParams())
+		dbParams := cfg.GetDatabaseParams()
+		dbPool := db.BuildDatabaseConnection(ctx, dbParams)
+		defer dbPool.Close()
+		version, _, err := db.MigrateVersion(ctx, dbPool, dbParams)
 		if err != nil {
 			fmt.Printf("Failed to get info for schema: %s\n", err)
 			return
