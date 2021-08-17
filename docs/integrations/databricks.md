@@ -13,11 +13,7 @@ redirect_from: ../using/databricks.html
 
 [Databricks](https://databricks.com/) is an Apache Spark-based analytics platform.  
 
-## Table of contents
-{: .no_toc .text-delta }
-
-1. TOC
-{:toc}
+{% include toc.html %}
 
 ## Configuration
 

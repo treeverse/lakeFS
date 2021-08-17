@@ -12,11 +12,7 @@ has_children: false
 
 {% include learn_only.html %} 
 
-## Table of Contents
-{: .no_toc .text-delta }
-
-1. TOC
-{:toc}
+{% include toc.html %}
 
 ## Docker on Windows
 
