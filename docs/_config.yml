@@ -62,7 +62,7 @@ footer_bottom_links:
     - 'https://lakefs.io/terms-of-use/'
   'Privacy Policy':
     - 'https://lakefs.io/privacy-policy/'
-    
+    a
 image: '/assets/img/shared-image.png'
 
 plugins:
