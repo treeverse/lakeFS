@@ -159,7 +159,7 @@ Class | Method | HTTP request | Description
 *ObjectsApi* | [**get_object**](docs/ObjectsApi.md#get_object) | **GET** /repositories/{repository}/refs/{ref}/objects | get object content
 *ObjectsApi* | [**get_underlying_properties**](docs/ObjectsApi.md#get_underlying_properties) | **GET** /repositories/{repository}/refs/{ref}/objects/underlyingProperties | get object properties on underlying storage
 *ObjectsApi* | [**list_objects**](docs/ObjectsApi.md#list_objects) | **GET** /repositories/{repository}/refs/{ref}/objects/ls | list objects under a given prefix
-*ObjectsApi* | [**stage_object**](docs/ObjectsApi.md#stage_object) | **PUT** /repositories/{repository}/branches/{branch}/objects | stage an object\&quot;s metadata for the given branch
+*ObjectsApi* | [**stage_object**](docs/ObjectsApi.md#stage_object) | **PUT** /repositories/{repository}/branches/{branch}/objects | stage an object&#39;s metadata for the given branch
 *ObjectsApi* | [**stat_object**](docs/ObjectsApi.md#stat_object) | **GET** /repositories/{repository}/refs/{ref}/objects/stat | get object metadata
 *ObjectsApi* | [**upload_object**](docs/ObjectsApi.md#upload_object) | **POST** /repositories/{repository}/branches/{branch}/objects | 
 *RefsApi* | [**diff_refs**](docs/RefsApi.md#diff_refs) | **GET** /repositories/{repository}/refs/{leftRef}/diff/{rightRef} | diff references
@@ -215,6 +215,7 @@ Class | Method | HTTP request | Description
  - [ObjectStageCreation](docs/ObjectStageCreation.md)
  - [ObjectStats](docs/ObjectStats.md)
  - [ObjectStatsList](docs/ObjectStatsList.md)
+ - [ObjectUserMetadata](docs/ObjectUserMetadata.md)
  - [Pagination](docs/Pagination.md)
  - [Policy](docs/Policy.md)
  - [PolicyList](docs/PolicyList.md)

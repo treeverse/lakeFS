@@ -8,7 +8,7 @@ Method | HTTP request | Description
 [**getObject**](ObjectsApi.md#getObject) | **GET** /repositories/{repository}/refs/{ref}/objects | get object content
 [**getUnderlyingProperties**](ObjectsApi.md#getUnderlyingProperties) | **GET** /repositories/{repository}/refs/{ref}/objects/underlyingProperties | get object properties on underlying storage
 [**listObjects**](ObjectsApi.md#listObjects) | **GET** /repositories/{repository}/refs/{ref}/objects/ls | list objects under a given prefix
-[**stageObject**](ObjectsApi.md#stageObject) | **PUT** /repositories/{repository}/branches/{branch}/objects | stage an object\&quot;s metadata for the given branch
+[**stageObject**](ObjectsApi.md#stageObject) | **PUT** /repositories/{repository}/branches/{branch}/objects | stage an object&#39;s metadata for the given branch
 [**statObject**](ObjectsApi.md#statObject) | **GET** /repositories/{repository}/refs/{ref}/objects/stat | get object metadata
 [**uploadObject**](ObjectsApi.md#uploadObject) | **POST** /repositories/{repository}/branches/{branch}/objects | 
 
@@ -264,7 +264,7 @@ Name | Type | Description  | Notes
 
 <a name="listObjects"></a>
 # **listObjects**
-> ObjectStatsList listObjects(repository, ref, after, amount, delimiter, prefix)
+> ObjectStatsList listObjects(repository, ref, userMetadata, after, amount, delimiter, prefix)
 
 list objects under a given prefix
 
@@ -301,12 +301,13 @@ public class Example {
     ObjectsApi apiInstance = new ObjectsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String ref = "ref_example"; // String | a reference (could be either a branch or a commit ID)
+    Boolean userMetadata = true; // Boolean | 
     String after = "after_example"; // String | return items after this value
     Integer amount = 100; // Integer | how many items to return
     String delimiter = "delimiter_example"; // String | delimiter used to group common prefixes by
     String prefix = "prefix_example"; // String | return items prefixed with this value
     try {
-      ObjectStatsList result = apiInstance.listObjects(repository, ref, after, amount, delimiter, prefix);
+      ObjectStatsList result = apiInstance.listObjects(repository, ref, userMetadata, after, amount, delimiter, prefix);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ObjectsApi#listObjects");
@@ -325,6 +326,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **String**|  |
  **ref** | **String**| a reference (could be either a branch or a commit ID) |
+ **userMetadata** | **Boolean**|  | [optional] [default to true]
  **after** | **String**| return items after this value | [optional]
  **amount** | **Integer**| how many items to return | [optional] [default to 100]
  **delimiter** | **String**| delimiter used to group common prefixes by | [optional]
@@ -355,7 +357,7 @@ Name | Type | Description  | Notes
 # **stageObject**
 > ObjectStats stageObject(repository, branch, path, objectStageCreation)
 
-stage an object\&quot;s metadata for the given branch
+stage an object&#39;s metadata for the given branch
 
 ### Example
 ```java
@@ -439,7 +441,7 @@ Name | Type | Description  | Notes
 
 <a name="statObject"></a>
 # **statObject**
-> ObjectStats statObject(repository, ref, path)
+> ObjectStats statObject(repository, ref, path, userMetadata)
 
 get object metadata
 
@@ -477,8 +479,9 @@ public class Example {
     String repository = "repository_example"; // String | 
     String ref = "ref_example"; // String | a reference (could be either a branch or a commit ID)
     String path = "path_example"; // String | 
+    Boolean userMetadata = false; // Boolean | 
     try {
-      ObjectStats result = apiInstance.statObject(repository, ref, path);
+      ObjectStats result = apiInstance.statObject(repository, ref, path, userMetadata);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ObjectsApi#statObject");
@@ -498,6 +501,7 @@ Name | Type | Description  | Notes
  **repository** | **String**|  |
  **ref** | **String**| a reference (could be either a branch or a commit ID) |
  **path** | **String**|  |
+ **userMetadata** | **Boolean**|  | [optional] [default to false]
 
 ### Return type
 

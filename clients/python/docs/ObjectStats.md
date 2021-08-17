@@ -10,6 +10,7 @@ Name | Type | Description | Notes
 **checksum** | **str** |  | 
 **mtime** | **int** | Unix Epoch in seconds | 
 **size_bytes** | **int** |  | [optional] 
+**metadata** | [**ObjectUserMetadata**](ObjectUserMetadata.md) |  | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

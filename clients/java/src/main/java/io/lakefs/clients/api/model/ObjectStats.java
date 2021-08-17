@@ -23,6 +23,9 @@ import com.google.gson.stream.JsonWriter;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * ObjectStats
@@ -92,13 +95,17 @@ public class ObjectStats {
   @SerializedName(SERIALIZED_NAME_CHECKSUM)
   private String checksum;
 
+  public static final String SERIALIZED_NAME_SIZE_BYTES = "size_bytes";
+  @SerializedName(SERIALIZED_NAME_SIZE_BYTES)
+  private Long sizeBytes;
+
   public static final String SERIALIZED_NAME_MTIME = "mtime";
   @SerializedName(SERIALIZED_NAME_MTIME)
   private Long mtime;
 
-  public static final String SERIALIZED_NAME_SIZE_BYTES = "size_bytes";
-  @SerializedName(SERIALIZED_NAME_SIZE_BYTES)
-  private Long sizeBytes;
+  public static final String SERIALIZED_NAME_METADATA = "metadata";
+  @SerializedName(SERIALIZED_NAME_METADATA)
+  private Map<String, String> metadata = null;
 
 
   public ObjectStats path(String path) {
@@ -189,28 +196,6 @@ public class ObjectStats {
   }
 
 
-  public ObjectStats mtime(Long mtime) {
-    
-    this.mtime = mtime;
-    return this;
-  }
-
-   /**
-   * Unix Epoch in seconds
-   * @return mtime
-  **/
-  @ApiModelProperty(required = true, value = "Unix Epoch in seconds")
-
-  public Long getMtime() {
-    return mtime;
-  }
-
-
-  public void setMtime(Long mtime) {
-    this.mtime = mtime;
-  }
-
-
   public ObjectStats sizeBytes(Long sizeBytes) {
     
     this.sizeBytes = sizeBytes;
@@ -234,6 +219,59 @@ public class ObjectStats {
   }
 
 
+  public ObjectStats mtime(Long mtime) {
+    
+    this.mtime = mtime;
+    return this;
+  }
+
+   /**
+   * Unix Epoch in seconds
+   * @return mtime
+  **/
+  @ApiModelProperty(required = true, value = "Unix Epoch in seconds")
+
+  public Long getMtime() {
+    return mtime;
+  }
+
+
+  public void setMtime(Long mtime) {
+    this.mtime = mtime;
+  }
+
+
+  public ObjectStats metadata(Map<String, String> metadata) {
+    
+    this.metadata = metadata;
+    return this;
+  }
+
+  public ObjectStats putMetadataItem(String key, String metadataItem) {
+    if (this.metadata == null) {
+      this.metadata = new HashMap<String, String>();
+    }
+    this.metadata.put(key, metadataItem);
+    return this;
+  }
+
+   /**
+   * Get metadata
+   * @return metadata
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+
+  public Map<String, String> getMetadata() {
+    return metadata;
+  }
+
+
+  public void setMetadata(Map<String, String> metadata) {
+    this.metadata = metadata;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -247,13 +285,14 @@ public class ObjectStats {
         Objects.equals(this.pathType, objectStats.pathType) &&
         Objects.equals(this.physicalAddress, objectStats.physicalAddress) &&
         Objects.equals(this.checksum, objectStats.checksum) &&
+        Objects.equals(this.sizeBytes, objectStats.sizeBytes) &&
         Objects.equals(this.mtime, objectStats.mtime) &&
-        Objects.equals(this.sizeBytes, objectStats.sizeBytes);
+        Objects.equals(this.metadata, objectStats.metadata);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(path, pathType, physicalAddress, checksum, mtime, sizeBytes);
+    return Objects.hash(path, pathType, physicalAddress, checksum, sizeBytes, mtime, metadata);
   }
 
   @Override
@@ -264,8 +303,9 @@ public class ObjectStats {
     sb.append("    pathType: ").append(toIndentedString(pathType)).append("\n");
     sb.append("    physicalAddress: ").append(toIndentedString(physicalAddress)).append("\n");
     sb.append("    checksum: ").append(toIndentedString(checksum)).append("\n");
-    sb.append("    mtime: ").append(toIndentedString(mtime)).append("\n");
     sb.append("    sizeBytes: ").append(toIndentedString(sizeBytes)).append("\n");
+    sb.append("    mtime: ").append(toIndentedString(mtime)).append("\n");
+    sb.append("    metadata: ").append(toIndentedString(metadata)).append("\n");
     sb.append("}");
     return sb.toString();
   }

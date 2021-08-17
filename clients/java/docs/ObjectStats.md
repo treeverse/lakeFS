@@ -11,8 +11,9 @@ Name | Type | Description | Notes
 **pathType** | [**PathTypeEnum**](#PathTypeEnum) |  | 
 **physicalAddress** | **String** |  | 
 **checksum** | **String** |  | 
-**mtime** | **Long** | Unix Epoch in seconds | 
 **sizeBytes** | **Long** |  |  [optional]
+**mtime** | **Long** | Unix Epoch in seconds | 
+**metadata** | **Map&lt;String, String&gt;** |  |  [optional]
 
 
 
