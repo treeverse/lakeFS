@@ -15,11 +15,7 @@ lakeFS requires a PostgreSQL database to synchronize actions on your repositorie
 This section assumes you already have a PostgreSQL database accessible from where you intend to install lakeFS.
 Instructions for creating the database can be found on the deployment instructions for [AWS](./aws.md#creating-the-database-on-aws-rds), [Azure](./azure.md#creating-the-database-on-azure-database) and [GCP](./gcp.md#creating-the-database-on-gcp-sql).
 
-## Table of contents
-{: .no_toc .text-delta }
-
-1. TOC 
-{:toc}
+{% include toc.html %}
 
 {% include_relative includes/prerequisites.md %}
 

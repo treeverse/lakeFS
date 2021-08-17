@@ -15,11 +15,7 @@ redirect_from:
 {: .no_toc }
 Expected deployment time: 25min
 
-## Table of contents
-{: .no_toc .text-delta }
-
-1. TOC
-{:toc}
+{% include toc.html %}
 
 {% include_relative includes/prerequisites.md %}
 

@@ -74,4 +74,7 @@ exclude:
   - vendor
   - CNAME
 
-baseurl: 
+baseurl:
+
+kramdown:
+  parse_block_html: true

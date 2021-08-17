@@ -10,11 +10,7 @@ has_children: false
 # Configuration Reference
 {: .no_toc }
 
-## Table of contents
-{: .no_toc .text-delta }
-
-1. TOC
-{:toc}
+{% include toc.html %}
 
 Configuring lakeFS is done using a yaml configuration file.
 This reference uses `.` to denote the nesting of values.

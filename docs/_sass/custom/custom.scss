@@ -107,13 +107,19 @@ body {
 		margin-top: 25px !important;
 		font-size: 18px;
 		font-weight: 600;
-		font-family: GalanoGrotesque-Bold;
+		font-family: GalanoGrotesque-Medium;
 	}
-	h4,
+
+	h4 {
+		margin-top: 25px !important;
+		font-size: 16px;
+		font-weight: 600;
+		font-family: GalanoGrotesque-Medium;
+	}
+
 	.text-delta {
 		text-transform: none;
 		width: 100%;
-	    max-width: 264px;
 	    display: block;
 	    background-color: $teal-green;
 	    color: $white;
@@ -124,7 +130,6 @@ body {
 	.text-delta + ul{
 		background-color: $whitegrey;
 	    width: 100%;
-	    max-width: 264px;
 	    border: none;
 	    margin-top: 0;
 	    border-radius: 0;
@@ -147,7 +152,6 @@ body {
 	#markdown-toc {
 		background-color: $whitegrey;
 	    width: 100%;
-	    max-width: 264px;
 	    border: none;
 	    margin-top: 0;
 	    border-radius: 0;
@@ -247,6 +251,9 @@ body {
 					}
 				}
 			}
+		}
+		.toc-block {
+			display: table-cell;
 		}
 	}
 }
