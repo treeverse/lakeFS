@@ -54,16 +54,15 @@ var runCmd = &cobra.Command{
 
 		// validate service names and turn on the right flags
 		dbParams := cfg.GetDatabaseParams()
-
-		if err := db.ValidateSchemaUpToDate(ctx, dbParams); errors.Is(err, db.ErrSchemaNotCompatible) {
+		dbPool := db.BuildDatabaseConnection(ctx, dbParams)
+		defer dbPool.Close()
+		if err := db.ValidateSchemaUpToDate(ctx, dbPool, dbParams); errors.Is(err, db.ErrSchemaNotCompatible) {
 			logger.WithError(err).Fatal("Migration version mismatch, for more information see https://docs.lakefs.io/deploying-aws/upgrade.html")
 		} else if errors.Is(err, migrate.ErrNilVersion) {
 			logger.Debug("No migration, setup required")
 		} else if err != nil {
 			logger.WithError(err).Warn("Failed on schema validation")
 		}
-		dbPool := db.BuildDatabaseConnection(ctx, dbParams)
-		defer dbPool.Close()
 
 		lockdbPool := db.BuildDatabaseConnection(ctx, dbParams)
 		defer lockdbPool.Close()

@@ -15,7 +15,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/cmdutils"
-	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -68,12 +67,11 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	baseCommit, _ := flags.GetString(BaseCommitFlagName)
 
 	ctx := cmd.Context()
-	conf, err := config.NewConfig()
-	if err != nil {
-		fmt.Printf("config: %s\n", err)
-		return 1
-	}
-	err = db.ValidateSchemaUpToDate(ctx, conf.GetDatabaseParams())
+	dbParams := cfg.GetDatabaseParams()
+	dbPool := db.BuildDatabaseConnection(ctx, dbParams)
+	defer dbPool.Close()
+
+	err := db.ValidateSchemaUpToDate(ctx, dbPool, dbParams)
 	if errors.Is(err, db.ErrSchemaNotCompatible) {
 		fmt.Println("Migration version mismatch, for more information see https://docs.lakefs.io/deploying-aws/upgrade.html")
 		return 1
@@ -83,8 +81,6 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 		return 1
 	}
 	logger := logging.FromContext(ctx)
-	dbPool := db.BuildDatabaseConnection(ctx, cfg.GetDatabaseParams())
-	defer dbPool.Close()
 
 	catalogCfg := catalog.Config{
 		Config: cfg,
