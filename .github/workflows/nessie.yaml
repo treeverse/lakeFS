@@ -117,6 +117,10 @@ jobs:
         run: echo "::set-output name=tag::sha-$(git rev-parse --short HEAD | sed s/^v//g)"
         id: version
 
+      - name: Extract db schema version from ddl migration files
+        run: echo "::set-output name=dbschema_version::$( (cd pkg/ddl/ && ls -d *.up.sql) | sed -nE '$s/^0*([0-9]+).*/\1/p' )"
+        id: schema
+
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
@@ -151,6 +155,7 @@ jobs:
           docker build . \
               ${ghr_ref_tag} ${ghr_build_tag} ${ecr_tag} \
               --build-arg VERSION=${{ steps.version.outputs.tag }} \
+              --label db-schema-version=${{ steps.schema.outputs.dbschema_version }} \
               --cache-from=${ghr}
           docker push ${ghr_build_tag#-t }
           if [[ -n ${ghr_ref_tag} ]]; then docker push ${ghr_ref_tag#-t }; fi
