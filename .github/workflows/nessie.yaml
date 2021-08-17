@@ -194,14 +194,8 @@ jobs:
           LAKEFS_BLOCKSTORE_S3_ENDPOINT: "http://s3.local.lakefs.io:9000"
         working-directory: test/lakefsfs_contract
         run: docker-compose up -d
-      - name: Setup contract tests
-        working-directory: test/lakefsfs_contract
-        run: ./setup-test.sh
-        env:
-          AWS_ACCESS_KEY_ID: minio
-          AWS_SECRET_ACCESS_KEY: minio123
-          STORAGE_NAMESPACE: s3://test-bucket/data
-          REPOSITORY: lakefsfs-contract-test
+      - name: Wait for lakeFS
+        run: docker-compose run --rm --entrypoint "/app/wait-for lakefs:8000" --no-deps lakefs-setup
       - name: Build and test hadoopfs
         working-directory: clients/hadoopfs
         run: mvn --quiet --batch-mode --update-snapshots -P'!treeverse-signing',contract-tests verify
