@@ -42,7 +42,6 @@ var (
 )
 
 type handler struct {
-	BareDomains        []string
 	sc                 *ServerContext
 	ServerErrorHandler http.Handler
 	operationHandlers  map[operations.OperationID]http.Handler
@@ -95,7 +94,6 @@ func NewHandler(
 	// setup routes
 	var h http.Handler
 	h = &handler{
-		BareDomains:        bareDomains,
 		sc:                 sc,
 		ServerErrorHandler: nil,
 		operationHandlers: map[operations.OperationID]http.Handler{

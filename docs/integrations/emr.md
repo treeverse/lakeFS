@@ -37,77 +37,87 @@ There are 2 options for configuring an EMR cluster to work with lakeFS:
 
 Use the below configuration when creating the cluster. You may delete any app configuration which is not suitable for your use-case.
 ```json
-[
-  {
-    "Classification": "presto-connector-hive",
-    "Properties": {
+[{
+   "Classification": "presto-connector-hive",
+   "Properties": {
       "hive.s3.aws-access-key": "AKIAIOSFODNN7EXAMPLE",
       "hive.s3.aws-secret-key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-      "hive.s3.endpoint": "https://s3.lakefs.example.com",
+      "hive.s3.endpoint": "https://lakefs.example.com",
+      "hive.s3.path-style-access": "true",
       "hive.s3-file-system-type": "PRESTO"
-    }
-  },
-  {
-    "Classification": "hive-site",
-    "Properties": {
-      "fs.s3.access.key": "AKIAIOSFODNN7EXAMPLE",
-      "fs.s3.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-      "fs.s3.endpoint": "https://s3.lakefs.example.com",
-      "fs.s3a.access.key": "AKIAIOSFODNN7EXAMPLE",
-      "fs.s3a.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-      "fs.s3a.endpoint": "https://s3.lakefs.example.com"
-    }
-  },
-  {
-    "Classification": "hdfs-site",
-    "Properties": {
-      "fs.s3.access.key": "AKIAIOSFODNN7EXAMPLE",
-      "fs.s3.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-      "fs.s3.endpoint": "https://s3.lakefs.example.com",
-      "fs.s3a.access.key": "AKIAIOSFODNN7EXAMPLE",
-      "fs.s3a.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-      "fs.s3a.endpoint": "https://s3.lakefs.example.com"
-    }
-  },
-  {
-    "Classification": "core-site",
-    "Properties": {
-      "fs.s3.access.key": "AKIAIOSFODNN7EXAMPLE",
-      "fs.s3.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-      "fs.s3.endpoint": "https://s3.lakefs.example.com",
-      "fs.s3a.access.key": "AKIAIOSFODNN7EXAMPLE",
-      "fs.s3a.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-      "fs.s3a.endpoint": "https://s3.lakefs.example.com"
-    }
-  },
-  {
-    "Classification": "emrfs-site",
-    "Properties": {
-      "fs.s3.access.key": "AKIAIOSFODNN7EXAMPLE",
-      "fs.s3.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-      "fs.s3.endpoint": "https://s3.lakefs.example.com",
-      "fs.s3a.access.key": "AKIAIOSFODNN7EXAMPLE",
-      "fs.s3a.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-      "fs.s3a.endpoint": "https://s3.lakefs.example.com"
-    }
-  },
-  {
-    "Classification": "mapred-site",
-    "Properties": {
-      "fs.s3.access.key": "AKIAIOSFODNN7EXAMPLE",
-      "fs.s3.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-      "fs.s3.endpoint": "https://s3.lakefs.example.com",
-      "fs.s3a.access.key": "AKIAIOSFODNN7EXAMPLE",
-      "fs.s3a.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-      "fs.s3a.endpoint": "https://s3.lakefs.example.com"
-    }
-  },
-  {
-    "Classification": "spark-defaults",
-    "Properties": {
-      "spark.sql.catalogImplementation": "hive"
-    }
-  }
+   }
+},
+   {
+      "Classification": "hive-site",
+      "Properties": {
+         "fs.s3.access.key": "AKIAIOSFODNN7EXAMPLE",
+         "fs.s3.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+         "fs.s3.endpoint": "https://lakefs.example.com",
+         "fs.s3.path.style.access": "true",
+         "fs.s3a.access.key": "AKIAIOSFODNN7EXAMPLE",
+         "fs.s3a.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+         "fs.s3a.endpoint": "https://lakefs.example.com",
+         "fs.s3a.path.style.access": "true"
+      }
+   },
+   {
+      "Classification": "hdfs-site",
+      "Properties": {
+         "fs.s3.access.key": "AKIAIOSFODNN7EXAMPLE",
+         "fs.s3.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+         "fs.s3.endpoint": "https://lakefs.example.com",
+         "fs.s3.path.style.access": "true",
+         "fs.s3a.access.key": "AKIAIOSFODNN7EXAMPLE",
+         "fs.s3a.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+         "fs.s3a.endpoint": "https://lakefs.example.com",
+         "fs.s3a.path.style.access": "true"
+      }
+   },
+   {
+      "Classification": "core-site",
+      "Properties": {
+         "fs.s3.access.key": "AKIAIOSFODNN7EXAMPLE",
+         "fs.s3.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+         "fs.s3.endpoint": "https://lakefs.example.com",
+         "fs.s3.path.style.access": "true",
+         "fs.s3a.access.key": "AKIAIOSFODNN7EXAMPLE",
+         "fs.s3a.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+         "fs.s3a.endpoint": "https://lakefs.example.com",
+         "fs.s3a.path.style.access": "true"
+      }
+   },
+   {
+      "Classification": "emrfs-site",
+      "Properties": {
+         "fs.s3.access.key": "AKIAIOSFODNN7EXAMPLE",
+         "fs.s3.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+         "fs.s3.endpoint": "https://lakefs.example.com",
+         "fs.s3.path.style.access": "true",
+         "fs.s3a.access.key": "AKIAIOSFODNN7EXAMPLE",
+         "fs.s3a.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+         "fs.s3a.endpoint": "https://lakefs.example.com",
+         "fs.s3a.path.style.access": "true"
+      }
+   },
+   {
+      "Classification": "mapred-site",
+      "Properties": {
+         "fs.s3.access.key": "AKIAIOSFODNN7EXAMPLE",
+         "fs.s3.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+         "fs.s3.endpoint": "https://lakefs.example.com",
+         "fs.s3.path.style.access": "true",
+         "fs.s3a.access.key": "AKIAIOSFODNN7EXAMPLE",
+         "fs.s3a.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+         "fs.s3a.endpoint": "https://lakefs.example.com",
+         "fs.s3a.path.style.access": "true"
+      }
+   },
+   {
+      "Classification": "spark-defaults",
+      "Properties": {
+         "spark.sql.catalogImplementation": "hive"
+      }
+   }
 ]
 ```
 
@@ -122,11 +132,11 @@ aws emr add-steps --cluster-id j-197B3AEGQ9XE4 \
   --steps="Type=Spark,Name=SparkApplication,ActionOnFailure=CONTINUE, \
   Args=[--conf,spark.hadoop.fs.s3a.access.key=AKIAIOSFODNN7EXAMPLE, \
   --conf,spark.hadoop.fs.s3a.secret.key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY, \
-  --conf,spark.hadoop.fs.s3a.endpoint=https://s3.lakefs.example.com, \
+  --conf,spark.hadoop.fs.s3a.endpoint=https://lakefs.example.com, \
+  --conf,spark.hadoop.fs.s3a.path.style.access=true, \
   s3a://<lakefs-repo>/<lakefs-branch>/path/to/jar]"
 ```
 
 The Spark context in the running job will already be initialized to use the provided lakeFS configuration.
 There's no need to repeat the configuration steps mentioned in [Using lakeFS with Spark](spark.md#Configuration)
 {: .note}
-

@@ -54,12 +54,9 @@ When accessing objects in s3 we will need to use the lakeFS path convention
 After configuring the credentials, This is how a command should look:
 ```shell 
 aws s3 --profile lakefs \
-  --endpoint-url https://s3.lakefs.example.com \
+  --endpoint-url https://lakefs.example.com \
   ls s3://example-repo/main/example-directory
 ```
-
-Where endpoint-url should be the same value [configured](../reference/configuration.md#reference)
-for ```gateways.s3.domain_name```.
 
 We could use an [alias](aws_cli.md#adding-an-alias) to make it shorter and more convenient.
 
@@ -69,7 +66,7 @@ We could use an [alias](aws_cli.md#adding-an-alias) to make it shorter and more 
 
 ```shell 
 aws --profile lakefs \
-  --endpoint-url https://s3.lakefs.example.com \
+  --endpoint-url https://lakefs.example.com \
   s3 ls s3://example-repo/main/example-directory
 ```
 
@@ -77,33 +74,33 @@ aws --profile lakefs \
 
 ```shell
 aws --profile lakefs \
-  --endpoint-url https://s3.lakefs.example.com \
+  --endpoint-url https://lakefs.example.com \
   s3 cp s3://example-repo/main/example-file-1 s3://example-repo/main/example-file-2
 ```
 
 ### Copy from lakeFS to a local path
 ```shell
 aws --profile lakefs \
-  --endpoint-url https://s3.lakefs.example.com \
+  --endpoint-url https://lakefs.example.com \
   s3 cp s3://example-repo/main/example-file-1 /path/to/local/file
 ```
 ### Copy from a local path to lakeFS
 ```shell
 aws --profile lakefs \
-  --endpoint-url https://s3.lakefs.example.com \
+  --endpoint-url https://lakefs.example.com \
   s3 cp /path/to/local/file s3://example-repo/main/example-file-1
 ```
 ### Delete file 
 ```shell 
 aws --profile lakefs \
-  --endpoint-url https://s3.lakefs.example.com \
+  --endpoint-url https://lakefs.example.com \
   s3 rm s3://example-repo/main/example-directory/example-file
 ```
 
 ### Delete directory
 ```shell 
 aws --profile lakefs \
-  --endpoint-url https://s3.lakefs.example.com \
+  --endpoint-url https://lakefs.example.com \
   s3 rm s3://example-repo/main/example-directory/ --recursive
 ```
 
@@ -112,7 +109,7 @@ aws --profile lakefs \
 In order to make the command shorter and more convenient we can create an alias:
 
 ```shell
-alias awslfs='aws --endpoint https://s3.lakefs.example.com --profile lakefs'
+alias awslfs='aws --endpoint https://lakefs.example.com --profile lakefs'
 ```
 
 Now, the ls command using the alias will be:

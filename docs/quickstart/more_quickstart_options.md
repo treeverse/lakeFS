@@ -64,9 +64,6 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
    auth:
      encrypt:
        secret_key: "a random string that should be kept secret"
-   gateways:
-     s3:
-       domain_name: s3.local.lakefs.io:8000
    ```
 
 1. Create a local directory to store objects:

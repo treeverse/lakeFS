@@ -46,7 +46,11 @@ For example, we could add the configurations to the file ``` hdfs-site.xml```:
     </property>
     <property>
         <name>fs.s3a.endpoint</name>
-        <value>https://s3.lakefs.example.com</value>
+        <value>https://lakefs.example.com</value>
+    </property>
+    <property>
+       <name>fs.s3a.path.style.access</name>
+       <value>true</value>
     </property>
 </configuration>
 ```

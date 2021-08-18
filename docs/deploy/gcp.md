@@ -47,10 +47,6 @@ For example, if you install lakeFS on GKE, you need to deploy the SQL Auth Proxy
       # Uncomment the following lines to give lakeFS access to your buckets using a service account:
       # gs:
       #   credentials_json: [YOUR SERVICE ACCOUNT JSON STRING]
-   gateways:
-     s3:
-         # replace this with the host you will use for the lakeFS S3-compatible endpoint:
-        domain_name: [S3_GATEWAY_DOMAIN]
    ```
    
 1. [Download the binary](../index.md#downloads) to the GCE instance.
@@ -71,7 +67,6 @@ docker run \
   -e LAKEFS_DATABASE_CONNECTION_STRING="[DATABASE_CONNECTION_STRING]" \
   -e LAKEFS_AUTH_ENCRYPT_SECRET_KEY="[ENCRYPTION_SECRET_KEY]" \
   -e LAKEFS_BLOCKSTORE_TYPE="gs" \
-  -e LAKEFS_GATEWAYS_S3_DOMAIN_NAME="[S3_GATEWAY_DOMAIN]" \
   treeverse/lakefs:latest run
 ```
 
@@ -84,14 +79,5 @@ See [Kubernetes Deployment](./k8s.md).
 Depending on how you chose to install lakeFS, you should have a load balancer direct requests to the lakeFS server.  
 By default, lakeFS operates on port 8000, and exposes a `/_health` endpoint which you can use for health checks.
 
-## DNS
-As mentioned above, you should create 3 DNS records for lakeFS:
-1. One record for the lakeFS API: `lakefs.example.com`
-1. Two records for the S3-compatible API: `s3.lakefs.example.com` and `*.s3.lakefs.example.com`.
-
-Depending on your DNS provider, refer to the documentation on how to add CNAME records.
-
 ## Next Steps
 Your next step is to [prepare your storage](../setup/storage/index.md). If you already have a storage bucket/container, you are ready to [create your first lakeFS repository](../setup/create-repo.md).
-
-{% include_relative includes/why-dns.md %}

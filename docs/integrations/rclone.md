@@ -33,7 +33,7 @@ To add the remote to Rclone, choose one of the following options:
     # [lakefs]
     # type = s3
     # provider = AWS
-    # endpoint = https://s3.lakefs.example.com
+    # endpoint = https://lakefs.example.com
     #
     # EOT
     ```
@@ -49,7 +49,7 @@ To add the remote to Rclone, choose one of the following options:
     # env_auth = false
     # access_key_id = AKIAIOSFODNN7EXAMPLE
     # secret_access_key = wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-    # endpoint = https://s3.lakefs.example.com
+    # endpoint = https://lakefs.example.com
     # EOT
     ```
 

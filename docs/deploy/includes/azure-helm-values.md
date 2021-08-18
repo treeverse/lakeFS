@@ -12,8 +12,4 @@ lakefsConfig: |
      #  In case you chose to authenticate via access key unmark the following rows and insert the values from the previous step 
      #  storage_account: [your storage account]
      #  storage_access_key: [your access key]
-    gateways:
-      s3:
-        # replace this with the host you will use for the lakeFS S3-compatible endpoint:
-        domain_name: s3.lakefs.example.com
 ```
