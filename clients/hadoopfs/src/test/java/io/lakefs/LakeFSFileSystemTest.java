@@ -373,6 +373,8 @@ public class LakeFSFileSystemTest {
         String contents = "The quick brown fox jumps over the lazy dog.";
         Path p = new Path("lakefs://repo/main/sub1/sub2/create.me");
 
+        mockNonExistingPath(new ObjectLocation("lakefs", "repo", "main", "sub1/sub2/create.me"));
+
         StagingLocation stagingLocation = new StagingLocation().token("foo").physicalAddress(s3Url("/repo-base/create"));
         when(stagingApi.getPhysicalAddress("repo", "main", "sub1/sub2/create.me"))
                 .thenReturn(stagingLocation);
@@ -404,6 +406,20 @@ public class LakeFSFileSystemTest {
 
         // expected to delete the empty dir marker
         verifyObjDeletion(new ObjectLocation("lakefs", "repo", "main", "sub1/sub2/"));
+    }
+
+    @Test(expected = FileAlreadyExistsException.class)
+    public void testCreateExistingDirectory() throws ApiException, IOException {
+        ObjectLocation dir = new ObjectLocation("lakefs", "repo", "main", "sub1/sub2/create.me");
+        mockExistingDirPath(dir, Collections.emptyList());
+        fs.create(new Path("lakefs://repo/main/sub1/sub2/create.me"), false);
+    }
+
+    @Test(expected = FileAlreadyExistsException.class)
+    public void testCreateExistingFile() throws ApiException, IOException {
+        ObjectLocation dir = new ObjectLocation("lakefs", "repo", "main", "sub1/sub2");
+        mockExistingDirPath(dir, ImmutableList.of(new ObjectLocation("lakefs", "repo", "main", "sub1/sub2/create.me")));
+        fs.create(new Path("lakefs://repo/main/sub1/sub2/create.me"), false);
     }
 
     @Test
