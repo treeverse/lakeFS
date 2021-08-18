@@ -49,7 +49,7 @@ func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c pa
 		if err != nil {
 			return nil, err
 		}
-		return buildS3Adapter(ctx, statsCollector, p)
+		return buildS3Adapter(statsCollector, p)
 	case block.BlockstoreTypeMem, "memory":
 		return mem.New(), nil
 	case block.BlockstoreTypeTransient:
@@ -84,7 +84,7 @@ func buildLocalAdapter(params params.Local) (*local.Adapter, error) {
 	return adapter, nil
 }
 
-func buildS3Adapter(ctx context.Context, statsCollector stats.Collector, params params.S3) (*s3a.Adapter, error) {
+func buildS3Adapter(statsCollector stats.Collector, params params.S3) (*s3a.Adapter, error) {
 	sess, err := session.NewSession(params.AwsConfig)
 	if err != nil {
 		return nil, err
