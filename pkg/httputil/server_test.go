@@ -58,6 +58,7 @@ func TestHostMatches(t *testing.T) {
 		host string
 		want bool
 	}{
+		{name: "empty", args: args{v: []string{}}, host: "s3", want: false},
 		{name: "short", args: args{v: []string{"s3.local.io"}}, host: "s3", want: false},
 		{name: "short many", args: args{v: []string{"s3.local.io", "s3.dev.invalid"}}, host: "s3", want: false},
 		{name: "extract", args: args{v: []string{"s3.local.io"}}, host: "s3.local.io", want: true},
