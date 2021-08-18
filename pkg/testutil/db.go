@@ -237,7 +237,7 @@ func NewBlockAdapterByType(t testing.TB, translator block.UploadIDTranslator, bl
 			cfg.Credentials = credentials.NewSharedCredentials("", "default")
 		}
 		sess := session.Must(session.NewSession(cfg))
-		return lakefsS3.NewAdapter(context.Background(), sess, lakefsS3.WithTranslator(translator))
+		return lakefsS3.NewAdapter(sess, lakefsS3.WithTranslator(translator))
 
 	default:
 		return mem.New(mem.WithTranslator(translator))
