@@ -62,7 +62,7 @@ var superuserCmd = &cobra.Command{
 		}
 
 		ctx, cancelFn := context.WithCancel(ctx)
-		stats := stats.NewBufferedCollector(metadata.InstallationID, nil, cfg)
+		stats := stats.NewBufferedCollector(metadata.InstallationID, cfg)
 		go stats.Run(ctx)
 		stats.CollectMetadata(metadata)
 		stats.CollectEvent("global", "superuser")

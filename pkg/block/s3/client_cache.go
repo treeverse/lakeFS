@@ -2,6 +2,7 @@ package s3
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -11,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/stats"
 )
 
 type clientFactory func(awsSession *session.Session, cfgs ...*aws.Config) s3iface.S3API
@@ -23,6 +25,7 @@ type ClientCache struct {
 
 	clientFactory  clientFactory
 	s3RegionGetter s3RegionGetter
+	collector      stats.Collector
 }
 
 func getBucketRegionFromS3(ctx context.Context, sess *session.Session, bucket string) (string, error) {
@@ -34,12 +37,11 @@ func newS3Client(sess *session.Session, cfgs ...*aws.Config) s3iface.S3API {
 }
 
 func NewClientCache(awsSession *session.Session) *ClientCache {
-	cc := &ClientCache{
+	return &ClientCache{
 		awsSession:     awsSession,
 		clientFactory:  newS3Client,
 		s3RegionGetter: getBucketRegionFromS3,
 	}
-	return cc
 }
 
 func (c *ClientCache) WithClientFactory(clientFactory clientFactory) *ClientCache {
@@ -49,6 +51,11 @@ func (c *ClientCache) WithClientFactory(clientFactory clientFactory) *ClientCach
 
 func (c *ClientCache) WithS3RegionGetter(s3RegionGetter s3RegionGetter) *ClientCache {
 	c.s3RegionGetter = s3RegionGetter
+	return c
+}
+
+func (c *ClientCache) WithStatsCollector(statsCollector stats.Collector) *ClientCache {
+	c.collector = statsCollector
 	return c
 }
 
@@ -73,6 +80,9 @@ func (c *ClientCache) Get(ctx context.Context, bucket string) s3iface.S3API {
 		logging.FromContext(ctx).WithField("bucket", bucket).WithField("region", region).Debug("creating client for region")
 		svc := c.clientFactory(c.awsSession, &aws.Config{Region: swag.String(region)})
 		c.regionToS3Client.Store(region, svc)
+		if c.collector != nil {
+			c.collector.CollectEvent("s3_block_adapter", fmt.Sprintf("created_aws_client_%s", region))
+		}
 		return svc
 	}
 	svc, _ := c.regionToS3Client.Load(region)

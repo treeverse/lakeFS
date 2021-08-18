@@ -20,6 +20,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/adapter"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/stats"
 )
 
 const (
@@ -90,6 +91,12 @@ func WithStreamingChunkTimeout(d time.Duration) func(a *Adapter) {
 func WithTranslator(t block.UploadIDTranslator) func(a *Adapter) {
 	return func(a *Adapter) {
 		a.uploadIDTranslator = t
+	}
+}
+
+func WithStatsCollector(s stats.Collector) func(a *Adapter) {
+	return func(a *Adapter) {
+		a.clients = a.clients.WithStatsCollector(s)
 	}
 }
 

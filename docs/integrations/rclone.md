@@ -29,28 +29,25 @@ To add the remote to Rclone, choose one of the following options:
 
     ```shell
     cat <<EOT >> /home/myuser/.config/rclone/rclone.conf
-    # output:
-    # [lakefs]
-    # type = s3
-    # provider = AWS
-    # endpoint = https://lakefs.example.com
-    #
-    # EOT
+    [lakefs]
+    type = s3
+    provider = AWS
+    endpoint = https://lakefs.example.com
+    EOT
     ```
 
 *   Otherwise, also include your lakeFS access key pair in the Rclone configuration file:
 
     ```shell
     cat <<EOT >> /home/myuser/.config/rclone/rclone.conf
-    # output:
-    # [lakefs]
-    # type = s3
-    # provider = AWS
-    # env_auth = false
-    # access_key_id = AKIAIOSFODNN7EXAMPLE
-    # secret_access_key = wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-    # endpoint = https://lakefs.example.com
-    # EOT
+    [lakefs]
+    type = s3
+    provider = AWS
+    env_auth = false
+    access_key_id = AKIAIOSFODNN7EXAMPLE
+    secret_access_key = wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+    endpoint = https://lakefs.example.com
+    EOT
     ```
 
 ### Option 2: use Rclone interactive config command
