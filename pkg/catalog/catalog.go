@@ -132,7 +132,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	}
 
 	ctx, cancelFn := context.WithCancel(ctx)
-	adapter, err := factory.BuildBlockAdapter(ctx, cfg.Config)
+	adapter, err := factory.BuildBlockAdapter(ctx, nil, cfg.Config)
 	if err != nil {
 		cancelFn()
 		return nil, fmt.Errorf("build block adapter: %w", err)

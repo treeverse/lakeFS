@@ -95,14 +95,15 @@ func WithTranslator(t block.UploadIDTranslator) func(a *Adapter) {
 	}
 }
 
-func NewAdapter(ctx context.Context, awsSession *session.Session, opts ...func(a *Adapter)) *Adapter {
-	var statsCollector stats.Collector
-	collector := ctx.Value(block.ContextKeyStatsCollector)
-	if collector != nil {
-		statsCollector = collector.(stats.Collector)
+func WithStatsCollector(s stats.Collector) func(a *Adapter) {
+	return func(a *Adapter) {
+		a.clients = a.clients.WithStatsCollector(s)
 	}
+}
+
+func NewAdapter(ctx context.Context, awsSession *session.Session, opts ...func(a *Adapter)) *Adapter {
 	a := &Adapter{
-		clients:               NewClientCache(awsSession, statsCollector),
+		clients:               NewClientCache(awsSession),
 		httpClient:            http.DefaultClient,
 		uploadIDTranslator:    &block.NoOpTranslator{},
 		streamingChunkSize:    DefaultStreamingChunkSize,

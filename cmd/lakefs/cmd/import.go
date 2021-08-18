@@ -113,7 +113,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 		return 1
 	}
 
-	blockStore, err := factory.BuildBlockAdapter(ctx, cfg)
+	blockStore, err := factory.BuildBlockAdapter(ctx, nil, cfg)
 	if err != nil {
 		fmt.Printf("Failed to create block adapter: %s\n", err)
 		return 1

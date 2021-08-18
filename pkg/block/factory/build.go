@@ -21,6 +21,7 @@ import (
 	s3a "github.com/treeverse/lakefs/pkg/block/s3"
 	"github.com/treeverse/lakefs/pkg/block/transient"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/stats"
 )
 
 // googleAuthCloudPlatform - Cloud Storage authentication https://cloud.google.com/storage/docs/authentication
@@ -31,13 +32,13 @@ var (
 	ErrAuthMethodNotSupported = errors.New("authentication method not supported")
 )
 
-func BuildBlockAdapter(ctx context.Context, c params.AdapterConfig) (block.Adapter, error) {
+func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c params.AdapterConfig) (block.Adapter, error) {
 	blockstore := c.GetBlockstoreType()
 	logging.Default().
 		WithField("type", blockstore).
 		Info("initialize blockstore adapter")
 	switch blockstore {
-	case block.BlockstoreTypeLocal:
+	case block.BlockstoreTypeLocal:.NewClientCache
 		p, err := c.GetBlockAdapterLocalParams()
 		if err != nil {
 			return nil, err
@@ -48,7 +49,7 @@ func BuildBlockAdapter(ctx context.Context, c params.AdapterConfig) (block.Adapt
 		if err != nil {
 			return nil, err
 		}
-		return buildS3Adapter(ctx, p)
+		return buildS3Adapter(ctx, statsCollector, p)
 	case block.BlockstoreTypeMem, "memory":
 		return mem.New(), nil
 	case block.BlockstoreTypeTransient:
@@ -83,7 +84,7 @@ func buildLocalAdapter(params params.Local) (*local.Adapter, error) {
 	return adapter, nil
 }
 
-func buildS3Adapter(ctx context.Context, params params.S3) (*s3a.Adapter, error) {
+func buildS3Adapter(ctx context.Context, statsCollector stats.Collector, params params.S3) (*s3a.Adapter, error) {
 	sess, err := session.NewSession(params.AwsConfig)
 	if err != nil {
 		return nil, err
@@ -92,6 +93,7 @@ func buildS3Adapter(ctx context.Context, params params.S3) (*s3a.Adapter, error)
 	adapter := s3a.NewAdapter(ctx, sess,
 		s3a.WithStreamingChunkSize(params.StreamingChunkSize),
 		s3a.WithStreamingChunkTimeout(params.StreamingChunkTimeout),
+		s3a.WithStatsCollector(statsCollector),
 	)
 	logging.Default().WithField("type", "s3").Info("initialized blockstore adapter")
 	return adapter, nil

@@ -21,7 +21,7 @@ var diagnosticsCmd = &cobra.Command{
 
 		dbPool := db.BuildDatabaseConnection(ctx, cfg.GetDatabaseParams())
 		defer dbPool.Close()
-		adapter, err := factory.BuildBlockAdapter(ctx, cfg)
+		adapter, err := factory.BuildBlockAdapter(ctx, nil, cfg)
 		if err != nil {
 			log.Printf("Failed to create block adapter: %s", err)
 		}

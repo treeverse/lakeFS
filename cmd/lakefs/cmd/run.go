@@ -109,7 +109,7 @@ var runCmd = &cobra.Command{
 		metadata := stats.NewMetadata(ctx, logger, blockstoreType, authMetadataManager, cloudMetadataProvider)
 		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, cfg)
 		// init block store
-		blockStore, err := factory.BuildBlockAdapter(context.WithValue(ctx, block.ContextKeyStatsCollector, bufferedCollector), cfg)
+		blockStore, err := factory.BuildBlockAdapter(ctx, bufferedCollector, cfg)
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to create block adapter")
 		}

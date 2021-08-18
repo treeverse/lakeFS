@@ -18,7 +18,7 @@ var diagnoseCmd = &cobra.Command{
 		ctx := cmd.Context()
 		logger := logging.Default().WithContext(ctx)
 		dbPool := db.BuildDatabaseConnection(ctx, cfg.GetDatabaseParams())
-		adapter, err := factory.BuildBlockAdapter(ctx, cfg)
+		adapter, err := factory.BuildBlockAdapter(ctx, nil, cfg)
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to create block adapter")
 		}

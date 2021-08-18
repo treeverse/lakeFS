@@ -36,9 +36,8 @@ func newS3Client(sess *session.Session, cfgs ...*aws.Config) s3iface.S3API {
 	return s3.New(sess, cfgs...)
 }
 
-func NewClientCache(awsSession *session.Session, collector stats.Collector) *ClientCache {
+func NewClientCache(awsSession *session.Session) *ClientCache {
 	return &ClientCache{
-		collector:      collector,
 		awsSession:     awsSession,
 		clientFactory:  newS3Client,
 		s3RegionGetter: getBucketRegionFromS3,
@@ -52,6 +51,11 @@ func (c *ClientCache) WithClientFactory(clientFactory clientFactory) *ClientCach
 
 func (c *ClientCache) WithS3RegionGetter(s3RegionGetter s3RegionGetter) *ClientCache {
 	c.s3RegionGetter = s3RegionGetter
+	return c
+}
+
+func (c *ClientCache) WithStatsCollector(statsCollector stats.Collector) *ClientCache {
+	c.collector = statsCollector
 	return c
 }
 
