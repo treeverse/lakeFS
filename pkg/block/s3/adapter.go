@@ -11,8 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/stats"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/request"
@@ -22,6 +20,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/adapter"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/stats"
 )
 
 const (
@@ -101,7 +100,7 @@ func WithStatsCollector(s stats.Collector) func(a *Adapter) {
 	}
 }
 
-func NewAdapter(ctx context.Context, awsSession *session.Session, opts ...func(a *Adapter)) *Adapter {
+func NewAdapter(_ context.Context, awsSession *session.Session, opts ...func(a *Adapter)) *Adapter {
 	a := &Adapter{
 		clients:               NewClientCache(awsSession),
 		httpClient:            http.DefaultClient,
@@ -109,7 +108,6 @@ func NewAdapter(ctx context.Context, awsSession *session.Session, opts ...func(a
 		streamingChunkSize:    DefaultStreamingChunkSize,
 		streamingChunkTimeout: DefaultStreamingChunkTimeout,
 	}
-
 	for _, opt := range opts {
 		opt(a)
 	}

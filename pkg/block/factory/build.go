@@ -38,7 +38,7 @@ func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c pa
 		WithField("type", blockstore).
 		Info("initialize blockstore adapter")
 	switch blockstore {
-	case block.BlockstoreTypeLocal:.NewClientCache
+	case block.BlockstoreTypeLocal:
 		p, err := c.GetBlockAdapterLocalParams()
 		if err != nil {
 			return nil, err
