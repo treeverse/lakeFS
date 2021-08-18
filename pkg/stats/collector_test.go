@@ -2,10 +2,10 @@ package stats_test
 
 import (
 	"context"
-	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/stats"
 )
 
@@ -44,13 +44,13 @@ func TestCallHomeCollector_Collect(t *testing.T) {
 	sender := &mockSender{metrics: make(chan []stats.Metric, 10), metadata: make(chan stats.Metadata, 10)}
 	ticker := &mockTicker{tc: make(chan time.Time)}
 	ctx, cancelFn := context.WithCancel(context.Background())
-	collector := stats.NewBufferedCollector("installation_id",
-		func() map[string]string {
-			return map[string]string{"runtime": "stat"}
-		}, nil,
+	collector := stats.NewBufferedCollector("installation_id", nil,
 		stats.WithSender(sender),
 		stats.WithTicker(ticker),
 		stats.WithWriteBufferSize(0))
+	collector.SetRuntimeCollector(func() map[string]string {
+		return map[string]string{"runtime": "stat"}
+	})
 	go collector.Run(ctx)
 
 	// add metrics

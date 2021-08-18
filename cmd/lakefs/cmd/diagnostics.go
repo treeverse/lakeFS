@@ -21,7 +21,7 @@ var diagnosticsCmd = &cobra.Command{
 
 		dbPool := db.BuildDatabaseConnection(ctx, cfg.GetDatabaseParams())
 		defer dbPool.Close()
-		adapter, err := factory.BuildBlockAdapter(ctx, cfg)
+		adapter, err := factory.BuildBlockAdapter(ctx, nil, cfg)
 		if err != nil {
 			log.Printf("Failed to create block adapter: %s", err)
 		}
@@ -33,8 +33,7 @@ var diagnosticsCmd = &cobra.Command{
 			log.Printf("Failed to create c: %s", err)
 		}
 		defer func() { _ = c.Close() }()
-
-		pyrmaidParams, err := cfg.GetCommittedTierFSParams(ctx)
+		pyrmaidParams, err := cfg.GetCommittedTierFSParams(adapter)
 		if err != nil {
 			log.Printf("Failed to get pyramid params: %s", err)
 		}
