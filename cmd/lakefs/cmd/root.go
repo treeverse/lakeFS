@@ -58,9 +58,9 @@ func initConfig() {
 	} else {
 		viper.SetConfigType("yaml")
 		viper.SetConfigName("config")
-		viper.AddConfigPath("/etc/lakefs")
-		viper.AddConfigPath(path.Join(getHomeDir(), ".lakefs"))
 		viper.AddConfigPath(".")
+		viper.AddConfigPath(path.Join(getHomeDir(), ".lakefs"))
+		viper.AddConfigPath("/etc/lakefs")
 	}
 
 	viper.SetEnvPrefix("LAKEFS")
