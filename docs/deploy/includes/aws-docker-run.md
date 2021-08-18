@@ -1,5 +1,5 @@
 ```sh
-`docker run \
+docker run \
   --name lakefs \
   -p 8000:8000 \
   -e LAKEFS_DATABASE_CONNECTION_STRING="[DATABASE_CONNECTION_STRING]" \

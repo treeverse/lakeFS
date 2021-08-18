@@ -37,7 +37,7 @@ This could be done using either an environment variable:
 LAKEFS_GATEWAYS_S3_DOMAIN_NAME="s3.lakefs.example.com"
 ```
 
-Or by adding the `gateways.s3.domain_name` setting to the `lakefs.yaml` config file:
+Or by adding the `gateways.s3.domain_name` setting to the lakeFS `config.yaml` file:
 
 ```yaml
 ---

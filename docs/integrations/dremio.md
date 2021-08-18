@@ -20,11 +20,10 @@ Suppose you already have both lakeFS and Dremio deployed, and want to utilize Dr
 You can follow below steps to configure on Dremio UI:
 
 1. click `Add Data Lake`.
-2. Under `File Stores`, choose `Amazon S3`.
-3. Under `Advanced Options`, check `Enable compatibility mode (experimental)`.
-4. Under `Advanced Options` > `Connection Properties`, add `fs.s3a.path.style.access` and set the value to true.
-5. Under `Advanced Options` > `Connection Properties`, add `fs.s3a.endpoint` and set lakeFS S3 endpoint to the value.
-6. 1. Under `Advanced Options` > `Connection Properties`, add `fs.s3a.path.style.access` and set to `true`
-7. Under the `General` tab, specify the `access_key_id` and `secret_access_key` provided by lakeFS server.
-8. Click `Save`, and now you should be able to browse lakeFS repositories on Dremio.
-
+1. Under `File Stores`, choose `Amazon S3`.
+1. Under `Advanced Options`, check `Enable compatibility mode (experimental)`.
+1. Under `Advanced Options` > `Connection Properties`, add `fs.s3a.path.style.access` and set the value to true.
+1. Under `Advanced Options` > `Connection Properties`, add `fs.s3a.endpoint` and set lakeFS S3 endpoint to the value. 
+1. Under `Advanced Options` > `Connection Properties`, add `fs.s3a.path.style.access` and set to `true`
+1. Under the `General` tab, specify the `access_key_id` and `secret_access_key` provided by lakeFS server.
+1. Click `Save`, and now you should be able to browse lakeFS repositories on Dremio.

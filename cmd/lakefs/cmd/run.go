@@ -12,8 +12,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/gateway/sig"
-
 	"github.com/dlmiddlecote/sqlstats"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/prometheus/client_golang/prometheus"
@@ -28,6 +26,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/gateway"
 	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
+	"github.com/treeverse/lakefs/pkg/gateway/sig"
 	"github.com/treeverse/lakefs/pkg/gateway/simulator"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
