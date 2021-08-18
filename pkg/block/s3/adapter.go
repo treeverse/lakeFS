@@ -100,7 +100,7 @@ func WithStatsCollector(s stats.Collector) func(a *Adapter) {
 	}
 }
 
-func NewAdapter(_ context.Context, awsSession *session.Session, opts ...func(a *Adapter)) *Adapter {
+func NewAdapter(awsSession *session.Session, opts ...func(a *Adapter)) *Adapter {
 	a := &Adapter{
 		clients:               NewClientCache(awsSession),
 		httpClient:            http.DefaultClient,
