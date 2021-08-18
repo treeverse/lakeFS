@@ -14,11 +14,6 @@ public class TestLakeFSContractCreate extends AbstractContractCreateTest {
 
   @Override
   public void testOverwriteEmptyDirectory() throws Throwable {
-    ContractTestUtils.skip(
-        "blobstores can't distinguish empty directories from files");
-  }
-  public void testCreateFileOverExistingFileNoOverwrite() throws Throwable {
-    ContractTestUtils.skip("test needs to be fixed");
-    // TODO make this test green and remove override
+    ContractTestUtils.skip("blobstores can't distinguish empty directories from files");
   }
 }

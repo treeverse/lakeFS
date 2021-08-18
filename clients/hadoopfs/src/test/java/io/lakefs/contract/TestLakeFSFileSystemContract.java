@@ -126,11 +126,6 @@ public class TestLakeFSFileSystemContract extends FileSystemContractBaseTest {
   }
 
   @Override
-  public void testOverwrite() throws IOException {
-    // TODO make this test green and remove override
-  }
-
-  @Override
   public void testRenameDirectoryAsExistingFile() throws Exception {
     // TODO make this test green and remove override
   }
