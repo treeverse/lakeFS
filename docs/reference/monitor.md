@@ -13,11 +13,7 @@ redirect_from: ../deploying-aws/monitor.md
 
 {: .pb-3 }
 
-## Table of contents
-{: .no_toc .text-delta }
-
-1. TOC
-{:toc}
+{% include toc.html %}
 
 ## Example prometheus.yml
 lakeFS exposes metrics through the same port used by the lakeFS service, using the standard `/metrics` path.

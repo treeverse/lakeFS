@@ -5,6 +5,7 @@
  - Fix blank screen bug in UI (#1908)
  - Support multiple AWS regions for underlying buckets (#2245, #2325, #2326)
  - Actions secrets support with env vars (#2333)
+ - Reduce the number of database connections used on startup
 
 ## v0.47.0 - 2021-07-28
 

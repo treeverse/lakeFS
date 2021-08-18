@@ -11,11 +11,7 @@ redirect_from: ../using/boto.html
 # Using lakeFS with Boto (Python)
 {: .no_toc }
 
-## Table of contents
-{: .no_toc .text-delta }
-
-1. TOC
-{:toc}
+{% include toc.html %}
 
 ## Creating a Boto client
 

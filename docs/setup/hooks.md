@@ -11,11 +11,7 @@ redirect_from: ../hooks.html
 # Configurable Hooks
 {: .no_toc }
 
-## Table of contents
-{: .no_toc .text-delta }
-
-1. TOC
-{:toc}
+{% include toc.html %}
 
 Like other version control systems, lakeFS allows the configuration of `Actions` to trigger when predefined events occur.
 
