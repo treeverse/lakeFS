@@ -839,7 +839,7 @@ public class ObjectsApi {
      * @param repository  (required)
      * @param ref a reference (could be either a branch or a commit ID) (required)
      * @param path  (required)
-     * @param userMetadata  (optional, default to false)
+     * @param userMetadata  (optional, default to true)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -923,7 +923,7 @@ public class ObjectsApi {
      * @param repository  (required)
      * @param ref a reference (could be either a branch or a commit ID) (required)
      * @param path  (required)
-     * @param userMetadata  (optional, default to false)
+     * @param userMetadata  (optional, default to true)
      * @return ObjectStats
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -947,7 +947,7 @@ public class ObjectsApi {
      * @param repository  (required)
      * @param ref a reference (could be either a branch or a commit ID) (required)
      * @param path  (required)
-     * @param userMetadata  (optional, default to false)
+     * @param userMetadata  (optional, default to true)
      * @return ApiResponse&lt;ObjectStats&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -972,7 +972,7 @@ public class ObjectsApi {
      * @param repository  (required)
      * @param ref a reference (could be either a branch or a commit ID) (required)
      * @param path  (required)
-     * @param userMetadata  (optional, default to false)
+     * @param userMetadata  (optional, default to true)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object

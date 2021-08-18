@@ -479,7 +479,7 @@ public class Example {
     String repository = "repository_example"; // String | 
     String ref = "ref_example"; // String | a reference (could be either a branch or a commit ID)
     String path = "path_example"; // String | 
-    Boolean userMetadata = false; // Boolean | 
+    Boolean userMetadata = true; // Boolean | 
     try {
       ObjectStats result = apiInstance.statObject(repository, ref, path, userMetadata);
       System.out.println(result);
@@ -501,7 +501,7 @@ Name | Type | Description  | Notes
  **repository** | **String**|  |
  **ref** | **String**| a reference (could be either a branch or a commit ID) |
  **path** | **String**|  |
- **userMetadata** | **Boolean**|  | [optional] [default to false]
+ **userMetadata** | **Boolean**|  | [optional] [default to true]
 
 ### Return type
 

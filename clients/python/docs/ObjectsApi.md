@@ -567,7 +567,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     repository = "repository_example" # str | 
     ref = "ref_example" # str | a reference (could be either a branch or a commit ID)
     path = "path_example" # str | 
-    user_metadata = False # bool |  (optional) if omitted the server will use the default value of False
+    user_metadata = True # bool |  (optional) if omitted the server will use the default value of True
 
     # example passing only required values which don't have defaults set
     try:
@@ -595,7 +595,7 @@ Name | Type | Description  | Notes
  **repository** | **str**|  |
  **ref** | **str**| a reference (could be either a branch or a commit ID) |
  **path** | **str**|  |
- **user_metadata** | **bool**|  | [optional] if omitted the server will use the default value of False
+ **user_metadata** | **bool**|  | [optional] if omitted the server will use the default value of True
 
 ### Return type
 

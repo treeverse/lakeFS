@@ -3170,7 +3170,7 @@ paths:
         name: user_metadata
         required: false
         schema:
-          default: false
+          default: true
           type: boolean
         style: form
       responses:
