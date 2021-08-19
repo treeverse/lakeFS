@@ -7,8 +7,10 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
@@ -52,7 +54,8 @@ var adapterFactory = AdapterFactory{
 const s3Scheme = "s3"
 
 type s3Adapter struct {
-	svc *s3.S3
+	svc  *s3.S3
+	sess client.ConfigProvider
 }
 
 func newS3Adapter() (ClientAdapter, error) {
@@ -63,15 +66,16 @@ func newS3Adapter() (ClientAdapter, error) {
 		return nil, fmt.Errorf("connect to S3 session: %w", err)
 	}
 	sess.ClientConfig(s3.ServiceName)
-	return &s3Adapter{svc: s3.New(sess)}, nil
+	return &s3Adapter{sess: sess, svc: s3.New(sess)}, nil
 }
 
 func (s *s3Adapter) Upload(ctx context.Context, physicalAddress *url.URL, contents io.ReadSeeker) (ObjectStats, error) {
 	if physicalAddress.Scheme != s3Scheme {
 		return ObjectStats{}, fmt.Errorf("%s: %w", s3Scheme, ErrUnsupportedProtocol)
 	}
-	// TODO(ariels): Allow customization of request
-	putObjectResponse, err := s.svc.PutObjectWithContext(ctx, &s3.PutObjectInput{
+
+	manager := s3manager.NewUploader(s.sess)
+	out, err := manager.UploadWithContext(ctx, &s3manager.UploadInput{
 		Body:   contents,
 		Bucket: api.StringPtr(physicalAddress.Hostname()),
 		Key:    &physicalAddress.Path,
@@ -85,8 +89,8 @@ func (s *s3Adapter) Upload(ctx context.Context, physicalAddress *url.URL, conten
 	}
 	return ObjectStats{
 		Size: size,
-		ETag: api.StringValue(putObjectResponse.ETag),
-		// S3 PutObject does not return creation time.
+		ETag: api.StringValue(out.ETag),
+		// S3Manager Upload does not return creation time.
 	}, nil
 }
 
