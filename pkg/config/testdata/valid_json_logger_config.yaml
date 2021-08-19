@@ -4,6 +4,10 @@ logging:
   level: DEBUG
   output: "/tmp/lakefs_json_logger_test.log"
 
+auth:
+  encrypt:
+    secret_key: "required in config"
+
 blockstore:
   type: local
   local:

@@ -80,6 +80,7 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
 	cfg, err := config.NewConfig()
 	testutil.MustDo(t, "config", err)
+	// Do not validate invalid config (missing required fields).
 	c, err := catalog.New(ctx, catalog.Config{
 		Config: cfg,
 		DB:     conn,

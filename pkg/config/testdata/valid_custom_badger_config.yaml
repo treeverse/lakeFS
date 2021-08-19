@@ -10,6 +10,10 @@ metadata:
     badger:
       path: /does/not/exist
 
+auth:
+  encrypt:
+    secret_key: "required in config"
+
 blockstore:
   type: local
   local:

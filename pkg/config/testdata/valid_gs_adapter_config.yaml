@@ -4,6 +4,10 @@ logging:
   level: NONE
   output: "-"
 
+auth:
+  encrypt:
+    secret_key: "required in config"
+
 blockstore:
   type: gs
   gs:
