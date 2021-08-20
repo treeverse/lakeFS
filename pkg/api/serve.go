@@ -33,6 +33,8 @@ const (
 	extensionValidationExcludeBody = "x-validation-exclude-body"
 )
 
+var ErrInvalidAPIEndpoint = errors.New("invalid API endpoint")
+
 type responseError struct {
 	Message string `json:"message"`
 }
@@ -85,6 +87,7 @@ func Serve(
 	r.Mount("/_pprof/", httputil.ServePPROF("/_pprof/"))
 	r.Mount("/swagger.json", http.HandlerFunc(swaggerSpecHandler))
 	r.Mount("/", uiHandler)
+	r.Mount(BaseURL, http.HandlerFunc(InvalidAPIEndpointHandler))
 	return r
 }
 
@@ -161,4 +164,11 @@ func validateRequest(r *http.Request, router routers.Router, options *openapi3fi
 		return http.StatusInternalServerError, err
 	}
 	return http.StatusOK, nil
+}
+
+// InvalidAPIEndpointHandler returns ErrInvalidAPIEndpoint, and is currently being used to ensure
+// that routes under the pattern it is used with in chi.Router.Mount (i.e. /api/v1) are
+// not accessible.
+func InvalidAPIEndpointHandler(w http.ResponseWriter, _ *http.Request) {
+	writeError(w, http.StatusInternalServerError, ErrInvalidAPIEndpoint)
 }

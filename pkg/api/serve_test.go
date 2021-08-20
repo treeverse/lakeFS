@@ -179,3 +179,34 @@ func setupClientWithAdmin(t testing.TB, blockstoreType string, opts ...testutil.
 	clt = setupClientByEndpoint(t, server.URL, cred.AccessKeyID, cred.SecretAccessKey)
 	return clt, deps
 }
+
+func TestInvalidRoute(t *testing.T) {
+	handler, _ := setupHandler(t, "")
+	server := setupServer(t, handler)
+	clt := setupClientByEndpoint(t, server.URL, "", "")
+	cred := createDefaultAdminUser(t, clt)
+
+	// setup client with invalid endpoint base url
+	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(cred.AccessKeyID, cred.SecretAccessKey)
+	if err != nil {
+		t.Fatal("basic auth security provider", err)
+	}
+	clt, err = api.NewClientWithResponses(server.URL+api.BaseURL+"//", api.WithRequestEditorFn(basicAuthProvider.Intercept))
+	if err != nil {
+		t.Fatal("failed to create api client:", err)
+	}
+
+	ctx := context.Background()
+	resp, err := clt.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
+	if err != nil {
+		t.Fatalf("failed to get lakefs server version")
+	}
+	if resp.JSONDefault == nil {
+		t.Fatalf("client api call expected default error, got nil")
+	}
+	expectedErrMsg := api.ErrInvalidAPIEndpoint.Error()
+	errMsg := resp.JSONDefault.Message
+	if errMsg != expectedErrMsg {
+		t.Fatalf("client response error message: %s, expected: %s", errMsg, expectedErrMsg)
+	}
+}
