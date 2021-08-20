@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"path"
 	"strings"
 	"sync"
 
@@ -50,22 +52,15 @@ func init() {
 func initConfig() {
 	logger := logging.Default().WithField("phase", "startup")
 	if cfgFile != "" {
-		logger.WithField("file", cfgFile).Info("configuration file")
+		logger.WithField("file", cfgFile).Info("Configuration file")
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
 	} else {
-		logger.Info("search for configuration file .lakefs")
-		// Find home directory.
-		home, err := homedir.Dir()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		// Search config in home directory with name ".lakefs" (without extension).
-		viper.AddConfigPath(home)
 		viper.SetConfigType("yaml")
-		viper.SetConfigName(".lakefs")
+		viper.SetConfigName("config")
+		viper.AddConfigPath("/etc/lakefs")
+		viper.AddConfigPath(path.Join(getHomeDir(), ".lakefs"))
+		viper.AddConfigPath(".")
 	}
 
 	viper.SetEnvPrefix("LAKEFS")
@@ -73,23 +68,46 @@ func initConfig() {
 	// read in environment variables
 	viper.AutomaticEnv()
 
-	// If a config file is found, read it in.
+	// read configuration file
 	err := viper.ReadInConfig()
-	logger = logger.WithField("file", viper.ConfigFileUsed())
-
-	if err == nil {
-		logger.Info("loaded configuration from file")
-	} else if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-		logger.WithError(err).Fatal("failed to read config file")
+	logger = logger.WithField("file", viper.ConfigFileUsed()) // should be called after SetConfigFile
+	var errFileNotFound viper.ConfigFileNotFoundError
+	if err != nil && !errors.As(err, &errFileNotFound) {
+		logger.WithError(err).Fatal("Failed to read config file")
+	}
+	// fallback - try to load the previous supported $HOME/.lakefs.yaml
+	//   if err is set it will be file-not-found based on previous check
+	if err != nil {
+		fallbackCfgFile := path.Join(getHomeDir(), ".lakefs.yaml")
+		if cfgFile != fallbackCfgFile {
+			viper.SetConfigFile(fallbackCfgFile)
+			logger = logger.WithField("file", viper.ConfigFileUsed()) // should be called after SetConfigFile
+			err = viper.ReadInConfig()
+			if err != nil && !errors.As(err, &errFileNotFound) {
+				logger.WithError(err).Fatal("Failed to read config file")
+			}
+		}
 	}
 
 	// setup config used by the executed command
 	cfg, err = config.NewConfig()
 	if err != nil {
-		logger.WithError(err).Fatal("load config")
+		logger.WithError(err).Fatal("Load config")
+	} else {
+		logger.Info("Config loaded")
 	}
 	err = cfg.Validate()
 	if err != nil {
-		logger.WithError(err).Fatal("invalid config")
+		logger.WithError(err).Fatal("Invalid config")
 	}
+}
+
+// getHomeDir find and return the home directory
+func getHomeDir() string {
+	home, err := homedir.Dir()
+	if err != nil {
+		fmt.Println("Get home directory -", err)
+		os.Exit(1)
+	}
+	return home
 }
