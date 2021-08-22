@@ -87,7 +87,9 @@ func getBareDomain(hostname string, bareDomains []string) string {
 			return bd
 		}
 	}
-	return bareDomains[0]
+	// if no matching bare domain found, assume no gateways.s3.domain_name setting existing,
+	//  and we're using path-based routing, with whichever domain our Host header specifies.
+	return hostname
 }
 
 var trailingPortRegexp = regexp.MustCompile(`:\d+$`)
