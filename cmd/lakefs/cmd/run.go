@@ -26,6 +26,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/gateway"
 	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
+	"github.com/treeverse/lakefs/pkg/gateway/sig"
 	"github.com/treeverse/lakefs/pkg/gateway/simulator"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -174,12 +175,18 @@ var runCmd = &cobra.Command{
 		logging.Default().WithField("listen_address", cfg.GetListenAddress()).Info("starting HTTP server")
 		server := &http.Server{
 			Addr: cfg.GetListenAddress(),
-			Handler: httputil.HostMux(
-				httputil.HostHandler(apiHandler).Default(), // api as default handler
-				httputil.HostHandler(s3gatewayHandler, // s3 gateway for its bare domain and sub-domains of that
-					httputil.Exact(cfg.GetS3GatewayDomainNames()),
-					httputil.SubdomainsOf(cfg.GetS3GatewayDomainNames())),
-			),
+			Handler: http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+				// If the request has the S3 GW domain (exact or subdomain) - or carries an AWS sig, serve S3GW
+				if httputil.HostMatches(request, cfg.GetS3GatewayDomainNames()) ||
+					httputil.HostSubdomainOf(request, cfg.GetS3GatewayDomainNames()) ||
+					sig.IsAWSSignedRequest(request) {
+					s3gatewayHandler.ServeHTTP(writer, request)
+					return
+				}
+
+				// Otherwise, serve the API handler
+				apiHandler.ServeHTTP(writer, request)
+			}),
 		}
 
 		go func() {

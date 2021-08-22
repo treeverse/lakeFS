@@ -53,11 +53,12 @@ changes we need to consider are:
 
 In order to configure Spark to work with lakeFS, we set S3 Hadoop configuration to the lakeFS endpoint and credentials:
 
-| Hadoop Configuration | Value                                        |
-|----------------------|----------------------------------------------|
-| `fs.s3a.access.key`  | Set to the lakeFS access key                 |
-| `fs.s3a.secret.key`  | Set to the lakeFS secret key                 |
-| `fs.s3a.endpoint`    | Set to the lakeFS S3-compatible API endpoint |
+| Hadoop Configuration          | Value                                        |
+|-------------------------------|----------------------------------------------|
+| `fs.s3a.access.key`           | Set to the lakeFS access key                 |
+| `fs.s3a.secret.key`           | Set to the lakeFS secret key                 |
+| `fs.s3a.endpoint`             | Set to the lakeFS S3-compatible API endpoint |
+| `fs.s3a.path.style.access`    | Set to `true`                                |
 
 Here is how to do it:
 <div class="tabs">
@@ -70,14 +71,16 @@ Here is how to do it:
 ```shell
 spark-shell --conf spark.hadoop.fs.s3a.access.key='AKIAlakefs12345EXAMPLE' \
               --conf spark.hadoop.fs.s3a.secret.key='abc/lakefs/1234567bPxRfiCYEXAMPLEKEY' \
-              --conf spark.hadoop.fs.s3a.endpoint='https://s3.lakefs.example.com' ...
+              --conf spark.hadoop.fs.s3a.path.style.access=true \
+              --conf spark.hadoop.fs.s3a.endpoint='https://lakefs.example.com' ...
 ```
   </div>
   <div markdown="1" id="s3-config-tabs-code">
 ```scala
 spark.sparkContext.hadoopConfiguration.set("fs.s3a.access.key", "AKIAlakefs12345EXAMPLE")
 spark.sparkContext.hadoopConfiguration.set("fs.s3a.secret.key", "abc/lakefs/1234567bPxRfiCYEXAMPLEKEY")
-spark.sparkContext.hadoopConfiguration.set("fs.s3a.endpoint", "https://s3.lakefs.example.com")
+spark.sparkContext.hadoopConfiguration.set("fs.s3a.endpoint", "https://lakefs.example.com")
+spark.sparkContext.hadoopConfiguration.set("fs.s3a.path.style.access", "true")
 ```
   </div>
   <div markdown="1" id="s3-config-tabs-xml">
@@ -95,7 +98,11 @@ Add these into a configuration file, e.g. `$SPARK_HOME/conf/hdfs-site.xml`:
     </property>
     <property>
         <name>fs.s3a.endpoint</name>
-        <value>https://s3.lakefs.example.com</value>
+        <value>https://lakefs.example.com</value>
+    </property>
+    <property>
+        <name>fs.s3a.path.style.access</name>
+        <value>true</value>
     </property>
 </configuration>
 ```
@@ -117,14 +124,16 @@ For example, to configure only `example-repo` to use lakeFS, set the following c
 ```sh
 spark-shell --conf spark.hadoop.fs.s3a.bucket.example-repo.access.key='AKIAlakefs12345EXAMPLE' \
               --conf spark.hadoop.fs.s3a.bucket.example-repo.secret.key='abc/lakefs/1234567bPxRfiCYEXAMPLEKEY' \
-              --conf spark.hadoop.fs.s3a.bucket.example-repo.endpoint='https://s3.lakefs.example.com'
+              --conf spark.hadoop.fs.s3a.bucket.example-repo.endpoint='https://lakefs.example.com' \
+              --conf spark.hadoop.fs.s3a.path.style.access=true
 ```
   </div>
   <div markdown="1" id="s3-bucket-config-tabs-code">
 ```scala
 spark.sparkContext.hadoopConfiguration.set("fs.s3a.bucket.example-repo.access.key", "AKIAlakefs12345EXAMPLE")
 spark.sparkContext.hadoopConfiguration.set("fs.s3a.bucket.example-repo.secret.key", "abc/lakefs/1234567bPxRfiCYEXAMPLEKEY")
-spark.sparkContext.hadoopConfiguration.set("fs.s3a.bucket.example-repo.endpoint", "https://s3.lakefs.example.com")
+spark.sparkContext.hadoopConfiguration.set("fs.s3a.bucket.example-repo.endpoint", "https://lakefs.example.com")
+spark.sparkContext.hadoopConfiguration.set("fs.s3a.path.style.access", "true")
 ```
   </div>
   <div markdown="1" id="s3-bucket-config-tabs-xml">
@@ -142,7 +151,11 @@ Add these into a configuration file, e.g. `$SPARK_HOME/conf/hdfs-site.xml`:
     </property>
     <property>
         <name>fs.s3a.bucket.example-repo.endpoint</name>
-        <value>https://s3.lakefs.example.com</value>
+        <value>https://lakefs.example.com</value>
+    </property>
+    <property>
+        <name>fs.s3a.path.style.access</name>
+        <value>true</value>
     </property>
 </configuration>
 ```

@@ -10,8 +10,4 @@ lakefsConfig: |
       type: s3
       s3:
         region: us-east-1
-    gateways:
-      s3:
-        # replace this with the host you will use for the lakeFS S3-compatible endpoint:
-        domain_name: [S3_GATEWAY_DOMAIN]
 ```

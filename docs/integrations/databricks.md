@@ -28,7 +28,8 @@ For Databricks to work with lakeFS, set the S3 Hadoop configuration to the lakeF
 ```
 spark.hadoop.fs.s3a.bucket.<repo-name>.access.key AKIAIOSFODNN7EXAMPLE
 spark.hadoop.fs.s3a.bucket.<repo-name>.secret.key wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-spark.hadoop.fs.s3a.bucket.<repo-name>.endpoint https://s3.lakefs.example.com
+spark.hadoop.fs.s3a.bucket.<repo-name>.endpoint https://lakefs.example.com
+spark.hadoop.fs.s3a.path.style.access true
 ```
 
 When using DeltaLake tables, the following is also needed in some versions of Databricks:

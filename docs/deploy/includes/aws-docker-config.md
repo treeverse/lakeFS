@@ -6,7 +6,4 @@ auth:
     secret_key: "[ENCRYPTION_SECRET_KEY]"
 blockstore:
   type: s3
-gateways:
-  s3:
-    domain_name: "[S3_GATEWAY_DOMAIN]"
 ```

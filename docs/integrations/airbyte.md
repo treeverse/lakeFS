@@ -39,7 +39,7 @@ Set the following parameters when creating a new Destination of type S3:
 
 | Name             | Value                                                        | Example                                                                                                             |
 |------------------|--------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------|
-| Endpoint         | The lakeFS S3 gateway URL                                    | `http://s3.lakefs.example.com`                                                                                       |
+| Endpoint         | The lakeFS S3 gateway URL                                    | `http://lakefs.example.com`                                                                                       |
 | S3 Bucket Name   | The lakeFS repository where the data will be written         | `example-repo`                                                                                                      |
 | S3 Bucket Path   | The branch and the path where the data will be written       | `main/data/from/airbyte` Where `main` is the branch name, and `data/from/airbyte` is the path under the branch. |
 | S3 Bucket Region | Not applicable to lakeFS, use `us-east-1`                    | `us-east-1`                                                                                                         |
