@@ -50,10 +50,6 @@ If you already have a database, take note of the connection string and skip to t
      type: s3
      s3:
        region: us-east-1
-   gateways:
-     s3:
-        # replace this with the host you will use for the lakeFS S3-compatible endpoint:
-        domain_name: [S3_GATEWAY_DOMAIN]
    ```
 
 1. [Download the binary](../index.md#downloads) to the EC2 instance.
@@ -74,7 +70,6 @@ docker run \
   -e LAKEFS_DATABASE_CONNECTION_STRING="[DATABASE_CONNECTION_STRING]" \
   -e LAKEFS_AUTH_ENCRYPT_SECRET_KEY="[ENCRYPTION_SECRET_KEY]" \
   -e LAKEFS_BLOCKSTORE_TYPE="s3" \
-  -e LAKEFS_GATEWAYS_S3_DOMAIN_NAME="[S3_GATEWAY_DOMAIN]" \
   treeverse/lakefs:latest run
 ```
 
@@ -92,21 +87,8 @@ By default, lakeFS operates on port 8000, and exposes a `/_health` endpoint whic
 
 1. Your security groups should allow the load balancer to access the lakeFS server.
 1. Create a target group with a listener for port 8000.
-1. Setup TLS termination using the domain names you wish to use for both endpoints (e.g. `s3.lakefs.example.com`, `*.s3.lakefs.example.com`, `lakefs.example.com`).
+1. Setup TLS termination using the domain names you wish to use (e.g. `lakefs.example.com` and potentially `s3.lakefs.example.com`, `*.s3.lakefs.example.com` if using [virtual-host addressing](https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html)).
 1. Configure the health-check to use the exposed `/_health` URL
-
-## DNS on AWS Route53
-As mentioned above, you should create 3 DNS records for lakeFS:
-1. One record for the lakeFS API: `lakefs.example.com`
-1. Two records for the S3-compatible API: `s3.lakefs.example.com` and `*.s3.lakefs.example.com`.
-
-For an AWS load balancer with Route53 DNS, create a simple record, and choose *Alias to Application and Classic Load Balancer* with an `A` record type.
-
-![Configuring a simple record in Route53]({{ site.baseurl }}/assets/img/route53.png)
-
-For other DNS providers, refer to the documentation on how to add CNAME records.
 
 ## Next Steps
 Your next step is to [prepare your storage](../setup/storage/index.md). If you already have a storage bucket/container, you are ready to [create your first lakeFS repository](../setup/create-repo.md).
-
-{% include_relative includes/why-dns.md %}

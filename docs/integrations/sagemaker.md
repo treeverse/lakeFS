@@ -21,7 +21,7 @@ Initialize a Sagemaker session and an s3 client with lakeFS as the endpoint:
 import sagemaker
 import boto3
 
-endpoint_url = '<LAKEFS_S3_GATEWAY_ENDPOINT>'
+endpoint_url = '<LAKEFS_ENDPOINT>'
 aws_access_key_id = '<LAKEFS_ACCESS_KEY_ID>'
 aws_secret_access_key = '<LAKEFS_SECRET_ACCESS_KEY>'
 repo = 'example-repo'

@@ -2,6 +2,7 @@
 # Changelog
 
 ## Unreleased - XXXX-XX-XX
+ - Make S3 Gateway DNS settings optional
  - Fix blank screen bug in UI (#1908)
  - Support multiple AWS regions for underlying buckets (#2245, #2325, #2326)
  - Actions secrets support with env vars (#2333)

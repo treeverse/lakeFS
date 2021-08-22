@@ -24,7 +24,7 @@ Add the following to `connector.properties` file for lakeFS support:
 s3.bucket.name=example-repo
 
 # Your lakeFS S3 endpoint and credentials
-store.url=https://s3.lakefs.example.com
+store.url=https://lakefs.example.com
 aws.access.key.id=AKIAIOSFODNN7EXAMPLE
 aws.secret.access.key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 

@@ -11,10 +11,7 @@ lakefsConfig: |
     # Uncomment the following lines to give lakeFS access to your buckets using a service account:
     # gs:
     #   credentials_json: [YOUR SERVICE ACCOUNT JSON STRING]
-    gateways:
-      s3:
-        # replace this with the host you will use for the lakeFS S3-compatible endpoint:
-        domain_name: [S3_GATEWAY_DOMAIN]
+
 ```
    **Notes for running lakeFS on GKE**
    * To connect to your database, you need to use one of the ways of [connecting GKE to Cloud SQL](https://cloud.google.com/sql/docs/mysql/connect-kubernetes-engine#cloud-sql-auth-proxy-with-workload-identity).

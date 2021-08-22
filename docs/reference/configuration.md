@@ -83,7 +83,7 @@ This reference uses `.` to denote the nesting of values.
 * `gateways.s3.domain_name` `(string : "s3.local.lakefs.io")` - a FQDN
   representing the S3 endpoint used by S3 clients to call this server
   (`*.s3.local.lakefs.io` always resolves to 127.0.0.1, useful for
-  local development
+  local development, if using [virtual-host addressing](https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html).
 * `gateways.s3.region` `(string : "us-east-1")` - AWS region we're pretending to be. Should match the region configuration used in AWS SDK clients
 * `gateways.s3.fallback_url` `(string)` - If specified, requests with a non-existing repository will be forwarded to this url. This can be useful for using lakeFS side-by-side with S3, with the URL pointing at an [S3Proxy](https://github.com/gaul/s3proxy) instance.
 * `stats.enabled` `(boolean : true)` - Whether or not to periodically collect anonymous usage statistics
@@ -122,7 +122,6 @@ blockstore:
 
 gateways:
   s3:
-    domain_name: s3.local.lakefs.io
     region: us-east-1
 ```
 
@@ -150,10 +149,6 @@ blockstore:
     credentials_file: /secrets/aws/credentials
     profile: default
 
-gateways:
-  s3:
-    domain_name: s3.my-company.com
-    region: us-east-1
 ```
 
 [aws-s3-batch-permissions]: https://docs.aws.amazon.com/AmazonS3/latest/dev/batch-ops-iam-role-policies.html
@@ -180,10 +175,6 @@ blockstore:
   gs:
     credentials_file: /secrets/lakefs-service-account.json
 
-gateways:
-  s3:
-    domain_name: s3.my-company.com
-    region: us-east-1
 ```
 
 ## Example: MinIO
@@ -212,10 +203,6 @@ blockstore:
       access_key_id: minioadmin
       secret_access_key: minioadmin
 
-gateways:
-  s3:
-    domain_name: s3.my-company.com
-    region: us-east-1
 ```
 ## Example: Azure blob storage
 
@@ -240,9 +227,5 @@ blockstore:
     storage_account: exampleStorageAcount
     storage_access_key: ExampleAcessKeyMD7nkPOWgV7d4BUjzLw==
 
-gateways:
-  s3:
-    domain_name: s3.my-company.com
-    region: us-east-1
 ```
 

@@ -4,8 +4,6 @@ services:
   lakefs-setup:
     image: treeverse/lakefs:latest
     container_name: lakefs-setup
-    networks:
-      - lakefs-network
     depends_on:
       - postgres
       - minio-setup
@@ -22,8 +20,6 @@ services:
   minio-setup:
     image: minio/mc
     container_name: minio-setup
-    networks:
-      - lakefs-network
     environment:
         - MC_HOST_lakefs=http://minioadmin:minioadmin@minio:9000
     depends_on:
@@ -33,8 +29,6 @@ services:
   minio:
     image: minio/minio
     container_name: minio
-    networks:
-      - lakefs-network
     ports:
       - 9000:9000
       - 9001:9001
@@ -43,8 +37,6 @@ services:
   lakefs:
     image: treeverse/lakefs:latest
     container_name: lakefs
-    networks:
-      - lakefs-network
     ports:
       - 8000:8000
     depends_on:
@@ -57,7 +49,6 @@ services:
       - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY=minioadmin
       - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=some random secret string
       - LAKEFS_DATABASE_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
-      - LAKEFS_GATEWAYS_S3_DOMAIN_NAME=s3.docker.lakefs.io:8000
       - LAKEFS_STATS_ENABLED=false
       - LAKEFS_LOGGING_LEVEL
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
@@ -65,8 +56,6 @@ services:
   postgres:
     image: postgres:11
     container_name: postgres
-    networks:
-      - lakefs-network
     environment:
       POSTGRES_USER: lakefs
       POSTGRES_PASSWORD: lakefs
@@ -74,8 +63,6 @@ services:
   mariadb:
     image: mariadb:10
     container_name: mariadb
-    networks:
-      - lakefs-network
     environment:
       MYSQL_ROOT_PASSWORD: admin
       MYSQL_USER: admin
@@ -85,8 +72,6 @@ services:
   hive-metastore:
     build: hive
     container_name: hive
-    networks:
-      - lakefs-network
     depends_on:
       - mariadb
     ports:
@@ -96,13 +81,11 @@ services:
     volumes:
       - ./etc/hive-site.xml:/opt/apache-hive-bin/conf/hive-site.xml
     links:
-      - lakefs:s3.docker.lakefs.io
+      - lakefs
 
   hive-server:
     build: hive
     container_name: hiveserver2
-    networks:
-      - lakefs-network
     depends_on:
       - hive-metastore
     environment:
@@ -110,30 +93,24 @@ services:
     volumes:
       - ./etc/hive-site.xml:/opt/apache-hive-bin/conf/hive-site.xml
     links:
-      - lakefs:s3.docker.lakefs.io
+      - lakefs
     entrypoint: ["hive", "--service", "hiveserver2", "--hiveconf", "hive.root.logger=INFO,console"]
   
   hive-client:
     build: hive
-    networks:
-      - lakefs-network
     profiles: ["client"]
     entrypoint: ["beeline", "-u", "jdbc:hive2://hiveserver2:10000"]
   
   trino:
     image: trinodb/trino:358
     container_name: trino
-    networks:
-      - lakefs-network
     links:
-      - lakefs:s3.docker.lakefs.io
+      - lakefs
     volumes:
       - ./etc/s3.properties:/etc/trino/catalog/s3.properties
 
   trino-client:
     image: trinodb/trino:358
-    networks:
-      - lakefs-network
     profiles: ["client"]
     entrypoint: ["trino", "--server", "trino:8080", "--catalog", "s3", "--schema", "default"]
 
@@ -148,12 +125,10 @@ services:
       - SPARK_SSL_ENABLED=no
     ports:
       - 18080:8080
-    networks:
-      - lakefs-network
     volumes:
       - ./etc/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml
     links:
-      - lakefs:s3.docker.lakefs.io
+      - lakefs
 
   spark-worker:
     image: docker.io/bitnami/spark:3
@@ -168,14 +143,12 @@ services:
       - SPARK_RPC_ENCRYPTION_ENABLED=no
       - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
       - SPARK_SSL_ENABLED=no
-    networks:
-      - lakefs-network
     deploy:
       replicas: 3
     volumes:
       - ./etc/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml
     links:
-      - lakefs:s3.docker.lakefs.io
+      - lakefs
 
   spark-submit:
     image: docker.io/bitnami/spark:3
@@ -193,10 +166,8 @@ services:
     volumes:
       - ./:/local
       - ./etc/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml
-    networks:
-      - lakefs-network
     links:
-      - lakefs:s3.docker.lakefs.io
+      - lakefs
 
   spark-sql:
     image: docker.io/bitnami/spark:3
@@ -214,11 +185,5 @@ services:
       - ./:/local
       - ./etc/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml
     command: ["spark-sql", "--master", "spark://spark:7077"]
-    networks:
-      - lakefs-network
     links:
-      - lakefs:s3.docker.lakefs.io
-
-networks:
-  lakefs-network:
-    name: lakefs
+      - lakefs
