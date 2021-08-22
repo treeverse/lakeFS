@@ -83,11 +83,13 @@ func EnrichWithParts(bareDomains []string, next http.Handler) http.Handler {
 
 func getBareDomain(hostname string, bareDomains []string) string {
 	for _, bd := range bareDomains {
-		if hostname == bd || strings.HasSuffix(hostname, "."+bd) {
+		if hostname == stripPort(bd) || strings.HasSuffix(hostname, "."+stripPort(bd)) {
 			return bd
 		}
 	}
-	return bareDomains[0]
+	// If no matching bare domain found, assume no gateways.s3.domain_name setting existing,
+	//  and we're using path-based routing, with whichever domain our Host header specifies.
+	return hostname
 }
 
 var trailingPortRegexp = regexp.MustCompile(`:\d+$`)
