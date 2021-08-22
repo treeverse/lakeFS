@@ -110,7 +110,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 	}
 
 	scheme := httputil.RequestScheme(req)
-	location := fmt.Sprintf("%s://%s.%s/%s/%s", scheme, o.Repository, o.FQDN, o.Reference, o.Path)
+	location := fmt.Sprintf("%s://%s/%s/%s/%s", scheme, o.FQDN, o.Repository.Name, o.Reference, o.Path)
 	o.EncodeResponse(w, req, &serde.CompleteMultipartUploadResult{
 		Location: location,
 		Bucket:   o.Repository.Name,
