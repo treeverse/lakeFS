@@ -28,7 +28,7 @@ Here is a minimal example, but you can see the [reference](../reference/configur
   <li><a href="#docker-tabs-2">Google Cloud</a></li>
   <li><a href="#docker-tabs-3">Microsoft Azure</a></li>
 </ul>
-<div markdown="1" id="docker-tabs-1">      
+<div markdown="1" id="docker-tabs-1">
 {% include_relative includes/aws-docker-config.md %}
 </div>
 <div markdown="1" id="docker-tabs-2">
@@ -45,8 +45,8 @@ Save the configuration file locally as `lakefs-config.yaml` and run the followin
 docker run \
   --name lakefs \
   -p 8000:8000 \
-  -v $(pwd)/lakefs-config.yaml:/home/lakefs/.lakefs.yaml \
-  treeverse/lakefs:latest run
+  -v $(pwd)/lakefs-config.yaml:/etc/lakefs/config.yaml \
+  treeverse/lakefs:latest run --config /etc/lakefs/config.yaml
 ```
 
 ## Load balancing
