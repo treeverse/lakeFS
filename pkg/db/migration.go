@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source"
 	"github.com/golang-migrate/migrate/v4/source/httpfs"
@@ -107,9 +108,6 @@ func getMigrate(params params.Database) (*migrate.Migrate, error) {
 		_ = src.Close()
 	}()
 	connectionString := params.ConnectionString
-	if connectionString == "" {
-		connectionString = "postgres://:/"
-	}
 	m, err := tryNewWithSourceInstance("httpfs", src, connectionString)
 	if err != nil {
 		return nil, err
@@ -117,12 +115,29 @@ func getMigrate(params params.Database) (*migrate.Migrate, error) {
 	return m, nil
 }
 
+// getMigrateDatabaseDriver returns a database name and a (migrate)
+// database.Driver for use in migration.  Use it to prevent
+// migrate.NewWithSourceInstance from applying defaults when databaseURL is
+// empty -- those defaults will be different from the ones in pg/pgx.
+func getMigrateDatabaseDriver(databaseURL string) (string, database.Driver, error) {
+	driver, err := (&postgres.Postgres{}).Open(databaseURL)
+	return "postgres", driver, err
+}
+
 func tryNewWithSourceInstance(sourceName string, sourceInstance source.Driver, databaseURL string) (*migrate.Migrate, error) {
 	strategy := params.DatabaseRetryStrategy
 	var m *migrate.Migrate
 	var err error
 	for a := retry.Start(strategy, nil); a.Next(); {
-		m, err = migrate.NewWithSourceInstance(sourceName, sourceInstance, databaseURL)
+		var (
+			dbName   string
+			dbDriver database.Driver
+		)
+		dbName, dbDriver, err = getMigrateDatabaseDriver(databaseURL)
+		if err != nil {
+			return nil, fmt.Errorf("get migrate database driver: %w", err)
+		}
+		m, err = migrate.NewWithInstance(sourceName, sourceInstance, dbName, dbDriver)
 		if err == nil {
 			return m, nil
 		}
