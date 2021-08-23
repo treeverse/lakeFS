@@ -3,6 +3,7 @@
 
 ## Unreleased - XXXX-XX-XX
 
+ - lakeFS starts configuration load non-hidden config files first (#2355)
 
 ## v0.48.0 - 2021-08-22
 
