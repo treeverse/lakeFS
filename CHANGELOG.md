@@ -2,13 +2,21 @@
 # Changelog
 
 ## Unreleased - XXXX-XX-XX
- - Make S3 Gateway DNS settings optional
- - Fix blank screen bug in UI (#1908)
- - Support multiple AWS regions for underlying buckets (#2245, #2325, #2326)
- - Actions secrets support with env vars (#2333)
- - Reduce the number of database connections used on startup
- - Validate required configuration keys blockstore.type, auth.encrypt.secret_key.  This *breaks* existing configurations that assume a default blockstore.type of "local".  But no such configuration may be production.
 
+
+## v0.48.0 - 2021-08-22
+
+- Support multiple AWS regions for underlying buckets (#2245, #2325, #2326)
+- Make S3 Gateway DNS settings optional
+- Fix lakectl upload fails on big uploads (#2280)
+- Fix blank screen bug in UI (#1908)
+- Actions secrets support with env vars (#2333)
+- Reduce the number of database connections used on startup
+- Validate required configuration keys blockstore.type, auth.encrypt.secret_key. This breaks existing configurations that assume a default blockstore.type of "local". But no such configuration may be for production.
+- Fix incorrect time logged on DB get operations (#2341) thanks @holajiawei
+- API with an unknown path should return an error (#2190) thanks @DataDavD
+- Retry DB connection on Migration (#2017)
+- 
 ## v0.47.0 - 2021-07-28
 
  - Hooks: support triggering Airflow DAGs (#2266)
