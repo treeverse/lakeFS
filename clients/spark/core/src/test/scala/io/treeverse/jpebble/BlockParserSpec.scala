@@ -5,10 +5,12 @@ import matchers.should._
 import funspec._
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
 
-import java.io.File
+import java.io.{File, FileInputStream}
 import org.apache.commons.io.IOUtils
 import org.testcontainers.containers.BindMode
+import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy
 
+import java.nio.file.Paths
 import scala.io.Source
 
 class BlockParserSpec extends AnyFunSpec with Matchers {
@@ -189,7 +191,7 @@ class BlockParserSpec extends AnyFunSpec with Matchers {
 
     /**
      * Lightweight fixture for running particular tests with an SSTable and
-     * recovering its handle aafter running.  See
+     * recovering its handle after running.  See
      * https://www.scalatest.org/scaladoc/1.8/org/scalatest/FlatSpec.html
      * ("Providing different fixtures to different tests") for how this works.
      */
@@ -271,8 +273,59 @@ class CountedIteratorSpec extends AnyFunSpec with Matchers {
 class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
 
   override val container: GenericContainer = GenericContainer("golang:1.16.2-alpine",
-    classpathResourceMapping = Seq(("parser-test/sst_files_generator.go", "/local/sst_files_generator.go", BindMode.READ_WRITE)),
-    command = Seq("go", "run", "/local/sst_files_generator.go"))
+    classpathResourceMapping = Seq(
+      ("parser-test/generate-sst.sh", "/local/generate-sst.sh", BindMode.READ_WRITE),
+      ("parser-test/sst_files_generator.go", "/local/sst_files_generator.go", BindMode.READ_WRITE),
+      ("parser-test/go.mod", "/local/go.mod", BindMode.READ_WRITE),
+      ("parser-test/go.sum", "/local/go.sum", BindMode.READ_WRITE)),
+    command = Seq("/local/generate-sst.sh"),
+    waitStrategy = new LogMessageWaitStrategy().withRegEx("done\\n")
+  );
+
+//  describe("parse 2-level index sstable") {
+//
+//  }
+
+  describe("parse large sstables") {
+
+//      describe("check if mount was successful") {
+//          it("file is copied") {
+//          container.copyFileFromContainer("/local/sst_files_generator.go", "./foo.x")
+//          }
+//      }
+
+      it("file is parsed successfully") {
+
+          val testFile = "/local/large.file.20971520-bytes.sst"
+          val dst = "./tal.sst"
+
+          container.copyFileFromContainer(testFile, dst)
+
+          // Copy SSTable to a readable file
+//          val sstContents = new FileInputStream(dst)
+//
+//          //            this.getClass.getClassLoader.getResourceAsStream("/local/" + testFile)
+//
+//          val tempFile = File.createTempFile("test-block-parser.", ".sst")
+//          tempFile.deleteOnExit()
+//          val out = new java.io.FileOutputStream(tempFile)
+//          IOUtils.copy(sstContents, out)
+//          sstContents.close()
+//          out.close()
+//
+//          val in = new BlockReadableFileChannel(new java.io.FileInputStream(tempFile).getChannel)
+//
+//          in.close()
+
+//          try {
+//            test(in)
+//          } finally {
+//            in.close()
+//          }
+
+//          container.copyFileFromContainer("/local/sst_files_generator.go", "./foo.x")
+        }
+  }
 
   
 //  describe("check if mount was successful") {
