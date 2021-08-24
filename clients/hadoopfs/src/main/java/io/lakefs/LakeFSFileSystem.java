@@ -749,6 +749,7 @@ public class LakeFSFileSystem extends FileSystem {
         }
         // use listing to check if directory exists
         ListingIterator iterator = new ListingIterator(path, true, 1);
+        iterator.setRemoveDirectory(false);
         return iterator.hasNext();
     }
 
