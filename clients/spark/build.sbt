@@ -45,6 +45,7 @@ def generateCoreProject(buildType: BuildType) =
         "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
         "org.apache.hadoop" % "hadoop-aws" % buildType.hadoopVersion,
         "org.apache.hadoop" % "hadoop-common" % buildType.hadoopVersion,
+        "com.google.cloud.bigdataoss" % "gcs-connector" % buildType.gcpConnectorVersion,
         "org.scalaj" %% "scalaj-http" % "2.4.2",
         "org.json4s" %% "json4s-native" % "3.7.0-M8",
         "com.google.guava" % "guava" % "16.0.1",
@@ -81,8 +82,8 @@ def generateExamplesProject(buildType: BuildType) =
       run / fork := true, // https://stackoverflow.com/questions/44298847/sbt-spark-fork-in-run
     )
 
-lazy val spark2Type = new BuildType("247", scala211Version, "2.4.7", "0.9.8", "2.7.7")
-lazy val spark3Type = new BuildType("301", scala212Version, "3.0.1", "0.10.11", "2.7.7")
+lazy val spark2Type = new BuildType("247", scala211Version, "2.4.7", "0.9.8", "2.7.7", "hadoop2-2.0.1")
+lazy val spark3Type = new BuildType("301", scala212Version, "3.0.1", "0.10.11", "2.7.7", "hadoop2-2.0.1")
 
 lazy val core2 = generateCoreProject(spark2Type)
 lazy val core3 = generateCoreProject(spark3Type)
