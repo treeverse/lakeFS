@@ -10,75 +10,74 @@ import (
 )
 
 const (
-	KeyLength = 100
-	MbToBytes = 1024 * 1024
+	DefaultKeySizeBytes = 100
+	MbToBytes           = 1024 * 1024
 	// The max file size that can be written by graveler (pkg/config/config.go)
 	DefaultCommittedPermanentMaxRangeSizeMb = 20
 )
 
 func main() {
 
-	generateTwoLevelIdxSst()
+	writeTwoLevelIdxSst(10 * MbToBytes)
 
-	inputSizesBytes := []int{DefaultCommittedPermanentMaxRangeSizeMb}
-	//inputSizesBytes := []int{1, 3, DefaultCommittedPermanentMaxRangeSizeMb}
-	for _, size := range inputSizesBytes {
-		sizeBytes := size * MbToBytes
-		sortedWords := generateSortedSlice(sizeBytes)
-		writePebbleSst(sortedWords, sizeBytes)
-	}
-
-	// This is useful when there are very large index blocks, which generally occurs
-	// with the usage of large keys. With large index blocks, the index blocks fight
-	// the data blocks for block cache space and the index blocks are likely to be
-	// re-read many times from the disk. The top level index, which has a much
-	// smaller memory footprint, can be used to prevent the entire index block from
-	// being loaded into the block cache.
-	//twoLevelIndex bool
+	// Test max sst file size
+	//inputSizesBytes := []int{DefaultCommittedPermanentMaxRangeSizeMb}
+	////inputSizesBytes := []int{1, 3, DefaultCommittedPermanentMaxRangeSizeMb}
+	//for _, size := range inputSizesBytes {
+	//	sizeBytes := size * MbToBytes
+	//	sortedWords := generateSortedSlice(sizeBytes)
+	//	writePebbleSst(sortedWords, sizeBytes, "max-size-file.sst")
+	//}
 }
 
-func generateTwoLevelIdxSst() {
-	//keys := generateStringsSlice(1 * MbToBytes)
-
-}
-
-func generateStringsSlice(size int) []string {
-
+func writeTwoLevelIdxSst(sizeBytes int) {
+	keys := generateSortedSlice(sizeBytes)
+	writePebbleSst(keys, sizeBytes, "2-level-idx.sst", true)
 }
 
 func generateSortedSlice(size int) []string {
-	numLines := size / KeyLength
+	numLines := size / DefaultKeySizeBytes
 	slice := make([]string, 0, numLines)
 	for i := 0; i < numLines; i++ {
 		// Generate a name.
-		key, err := nanoid.New(KeyLength)
+		key, err := nanoid.New(DefaultKeySizeBytes)
 		if err != nil {
 			panic(err) //TODO: is this what I need to do here?
 		}
 		slice = append(slice, key)
 	}
+	//slice := generateStringsSlice(size, DefaultKeySizeBytes)
 	sort.Strings(slice)
 	return slice
 }
 
-func writePebbleSst(data []string, size int) {
-	fileName := fmt.Sprintf("large.file.%d-bytes.sst", size)
-	fmt.Printf("Generate %s...\n", fileName)
-	file, err := os.Create(fileName)
+func writePebbleSst(data []string, size int, name string, twoLevelIdx bool) {
+	fmt.Printf("Generate %s...\n", name)
+	file, err := os.Create(name)
 	if err != nil {
 		panic(err)
 	}
 
+	idxBlockSize := 4096 // Default index block size
+	// https://github.com/cockroachdb/pebble/blob/2aba043dd4a270dfdd7731fedf99817164476618/sstable/options.go#L196
+	if twoLevelIdx {
+		// setting the index block size target to a small number to make 2-level index get enabled
+		idxBlockSize = 100
+	}
 	writer := sstable.NewWriter(file, sstable.WriterOptions{
-		Compression: sstable.SnappyCompression,
+		Compression:    sstable.SnappyCompression,
+		IndexBlockSize: idxBlockSize,
 		//TODO: confirm that I don't need those properties
 		//TablePropertyCollectors: []func() sstable.TablePropertyCollector{NewStaticCollector(props)},
 	})
+
 	defer func() {
-		metadata, _ := writer.Metadata()
-		//idxType :=
-		fmt.Printf("index type = %d", idxType)
 		_ = writer.Close()
+		metadata, _ := writer.Metadata()
+		idxType := metadata.Properties.IndexType
+		if twoLevelIdx && idxType != 2 || !twoLevelIdx && idxType == 2 {
+			fmt.Printf("Unexpected index type, is 2-level index=%v but index type = %d", twoLevelIdx, idxType)
+		}
 	}()
 
 	for _, v := range data {
