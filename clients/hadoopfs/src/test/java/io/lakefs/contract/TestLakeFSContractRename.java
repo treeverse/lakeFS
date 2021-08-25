@@ -1,12 +1,10 @@
 package io.lakefs.contract;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.contract.AbstractContractRenameTest;
-import org.apache.hadoop.fs.contract.AbstractFSContract;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.contract.ContractTestUtils;
-import org.junit.Test;
+import org.apache.hadoop.fs.contract.AbstractContractRenameTest;
+import org.apache.hadoop.fs.contract.AbstractFSContract;
 
 import static org.apache.hadoop.fs.contract.ContractTestUtils.dataset;
 import static org.apache.hadoop.fs.contract.ContractTestUtils.writeDataset;
@@ -41,15 +39,4 @@ public class TestLakeFSContractRename extends AbstractContractRenameTest {
     assertFalse("s3a doesn't support rename to non-empty directory", rename);
   }
 
-  @Override
-  public void testRenameFileNonexistentDir() throws Throwable {
-    ContractTestUtils.skip("test needs to be fixed");
-    // TODO make this test green and remove override
-  }
-
-  @Override
-  public void testRenameNonexistentFile() throws Throwable {
-    ContractTestUtils.skip("test needs to be fixed");
-    // TODO make this test green and remove override
-  }
 }
