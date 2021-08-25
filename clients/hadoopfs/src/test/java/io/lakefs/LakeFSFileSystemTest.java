@@ -546,7 +546,7 @@ public class LakeFSFileSystemTest {
         Assert.assertArrayEquals(expectedFileStatuses, fileStatuses);
     }
 
-    @Test
+    @Test(expected = FileNotFoundException.class)
     public void testListStatusNotFound() throws ApiException, IOException {
         when(objectsApi.statObject("repo", "main", "status/file"))
                 .thenThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "no such file"));
@@ -555,10 +555,7 @@ public class LakeFSFileSystemTest {
                 .thenReturn(new ObjectStatsList().results(Collections.emptyList()).pagination(new Pagination().hasMore(false)));
 
         Path p = new Path("lakefs://repo/main/status/file");
-        FileStatus[] fileStatuses = fs.listStatus(p);
-        // don't expect to find anything - because we don't have the concept of directory
-        // we do not throw FileNotFoundException
-        Assert.assertArrayEquals(new FileStatus[]{}, fileStatuses);
+        fs.listStatus(p);
     }
 
     @Test
