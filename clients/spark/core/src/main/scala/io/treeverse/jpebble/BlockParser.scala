@@ -49,6 +49,10 @@ class DebuggingIterator(it: Iterator[Byte]) extends Iterator[Byte] {
 }
 
 object Binary {
+  /**
+   * @return a readable string for bytes: keeps ASCII bytes, turns
+   *     everything else into a hex escapes "\xab".
+   */
   def readable(bytes: Seq[Byte]): String =
     bytes.foldLeft("")((s: String, b: Byte) =>
       s + (if (32 <= b && b < 127) b.toChar.toString else f"\\x$b%02x")
@@ -294,6 +298,15 @@ class EntryIterator(val in: BlockReadable) extends Iterator[Entry] {
 
   advanceToEntry() // Move to first entry
 
+  /**
+   * RocksDB adds 8 bytes at the end of the key of every user item of data.
+   * These bytes indicate a version number and a tombstone, both used to
+   * mutate SSTables.  lakeFS uses PebbleDB SSTables for purely immutable
+   * storage, so these 8 bytes are not needed.  Just strip them away to
+   * retain the existing user key.
+   *
+   * @return entry with its "internal" key stripped to become a user key.
+   */
   private def stripInternalKey(entry: Entry) =
     new Entry(entry.key.slice(0, entry.key.length - 8), entry.value)
 

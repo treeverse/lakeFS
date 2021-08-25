@@ -41,5 +41,25 @@ class ByteBufferIndexedBytesSpec extends AnyFunSpec with Matchers {
           bytesSeq.view(indices._1, indices._2))
       }
     }
+
+    describe("exceptions") {
+      it("should throw IndexOutOfBoundsException when applied out of bounds") {
+        val buffer = IndexedBytes.create(ByteBuffer.wrap(bytesSeq))
+        intercept[IndexOutOfBoundsException] {
+          buffer(-1)
+        }
+        intercept[IndexOutOfBoundsException] {
+          buffer(bytesSeq.length)
+        }
+      }
+
+      it("iterators should throw NoSuchElementException after end") {
+        val iterator = IndexedBytes.create(ByteBuffer.wrap(bytesSeq)).iterator
+        while (iterator.hasNext) {
+          iterator.next()
+        }
+        intercept[java.util.NoSuchElementException](iterator.next())
+      }
+    }
   }
 }
