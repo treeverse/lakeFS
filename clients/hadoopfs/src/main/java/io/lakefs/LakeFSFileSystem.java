@@ -554,6 +554,9 @@ public class LakeFSFileSystem extends FileSystem {
             LocatedFileStatus fileStatus = iterator.next();
             fileStatuses.add(((LakeFSLocatedFileStatus)fileStatus).toLakeFSFileStatus());
         }
+        if (fileStatuses.isEmpty()) {
+            throw new FileNotFoundException("No such file or directory: " + path);
+        }
         return fileStatuses.toArray(new FileStatus[0]);
     }
 
