@@ -56,7 +56,7 @@ object SSTableReader {
     val fs = p.getFileSystem(configuration)
     val localFile = File.createTempFile("lakefs.", ".sstable")
     localFile.deleteOnExit()
-    // TODO(ariels): Implement a BlockReadable on top of AWS
+    // TODO(#2403): Implement a BlockReadable on top of AWS
     //     FSDataInputStream, use that.
     fs.copyToLocalFile(p, new Path(localFile.getAbsolutePath))
     localFile
