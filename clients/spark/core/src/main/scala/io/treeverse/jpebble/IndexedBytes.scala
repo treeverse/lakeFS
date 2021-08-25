@@ -23,12 +23,13 @@ class ByteBufferIterator(private val buf: ByteBufferIndexedBytes) extends Iterat
   var index = 0
   override def hasNext = index < buf.size
   override def next(): Byte = {
-    val ret = try {
-      buf(index)
-    } catch {
-      case e: (IndexOutOfBoundsException) =>
-        throw new java.util.NoSuchElementException().initCause(e)
-    }
+    val ret =
+      try {
+        buf(index)
+      } catch {
+        case e: (IndexOutOfBoundsException) =>
+          throw new java.util.NoSuchElementException().initCause(e)
+      }
     index += 1
     ret
   }
