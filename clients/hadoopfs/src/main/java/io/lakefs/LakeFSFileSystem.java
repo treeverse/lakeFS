@@ -827,6 +827,7 @@ public class LakeFSFileSystem extends FileSystem {
         }
 
         private void readNextChunk() throws IOException {
+            String listingPath = this.objectLocation.getPath();
             do {
                 try {
                     ObjectsApi objectsApi = lfsClient.getObjects();
@@ -845,6 +846,8 @@ public class LakeFSFileSystem extends FileSystem {
                 if (this.removeDirectory) {
                     chunk = chunk.stream().filter(item -> !isDirectory(item)).collect(Collectors.toList());
                 }
+                // filter out the directory marker
+                chunk = chunk.stream().filter(item -> !item.getPath().equals(listingPath)).collect(Collectors.toList());
                 // loop until we have something or last chunk
             } while (chunk.isEmpty() && !last);
         }
