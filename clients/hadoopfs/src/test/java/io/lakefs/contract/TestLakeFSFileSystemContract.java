@@ -1,10 +1,8 @@
 package io.lakefs.contract;
 
-import java.io.IOException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystemContractBaseTest;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.contract.ContractTestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -117,11 +115,6 @@ public class TestLakeFSFileSystemContract extends FileSystemContractBaseTest {
 
   @Override
   public void testRenameFileAsExistingDirectory() throws Exception {
-    // TODO make this test green and remove override
-  }
-
-  @Override
-  public void testListStatusThrowsExceptionForNonExistentFile() throws Exception {
     // TODO make this test green and remove override
   }
 
