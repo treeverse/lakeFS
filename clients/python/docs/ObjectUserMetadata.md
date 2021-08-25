@@ -1,14 +1,10 @@
-# ObjectStageCreation
+# ObjectUserMetadata
 
 
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**physical_address** | **str** |  | 
-**checksum** | **str** |  | 
-**size_bytes** | **int** |  | 
-**mtime** | **int** | Unix Epoch in seconds | [optional] 
-**metadata** | [**ObjectUserMetadata**](ObjectUserMetadata.md) |  | [optional] 
+**any string name** | **str** | any string name can be used but the value must be the correct type | [optional]
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 
