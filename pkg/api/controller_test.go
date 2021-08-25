@@ -871,7 +871,7 @@ func TestController_ObjectsStatObjectHandler(t *testing.T) {
 			CreationDate:    time.Now(),
 			Size:            666,
 			Checksum:        "this_is_a_checksum",
-			Metadata:        nil,
+			Metadata:        catalog.Metadata{"additionalProperty1": "testing get object stats"},
 		}
 		testutil.Must(t,
 			deps.catalog.CreateEntry(ctx, "repo1", "main", entry))
@@ -891,6 +891,17 @@ func TestController_ObjectsStatObjectHandler(t *testing.T) {
 		if objectStats.PhysicalAddress != onBlock(deps, "some-bucket/")+entry.PhysicalAddress {
 			t.Fatalf("expected correct PhysicalAddress, got %s", objectStats.PhysicalAddress)
 		}
+		if objectStats.Metadata == nil {
+			t.Fatalf("expected to get back user-defined metadata, got nothing")
+		}
+
+		getUserMetadata := false
+		resp, err = clt.StatObjectWithResponse(ctx, "repo1", "main", &api.StatObjectParams{Path: "foo/bar", UserMetadata: &getUserMetadata})
+		verifyResponseOK(t, resp, err)
+		objectStatsNoMetadata := resp.JSON200
+		if objectStatsNoMetadata.Metadata != nil {
+			t.Fatalf("expected to not get back user-defined metadata, got %+v", objectStatsNoMetadata.Metadata.AdditionalProperties)
+		}
 	})
 }
 
@@ -907,6 +918,7 @@ func TestController_ObjectsListObjectsHandler(t *testing.T) {
 			CreationDate:    time.Now(),
 			Size:            666,
 			Checksum:        "this_is_a_checksum",
+			Metadata:        catalog.Metadata{"additionalProperty1": "1"},
 		},
 		{
 			Path:            "foo/quuux",
@@ -915,6 +927,7 @@ func TestController_ObjectsListObjectsHandler(t *testing.T) {
 			Size:            9999999,
 			Checksum:        "quux_checksum",
 			Expired:         true,
+			Metadata:        catalog.Metadata{"additionalProperty1": "2"},
 		},
 		{
 			Path:            "foo/baz",
@@ -922,6 +935,7 @@ func TestController_ObjectsListObjectsHandler(t *testing.T) {
 			CreationDate:    time.Now(),
 			Size:            666,
 			Checksum:        "baz_checksum",
+			Metadata:        catalog.Metadata{"additionalProperty1": "3"},
 		},
 		{
 			Path:            "foo/a_dir/baz",
@@ -929,6 +943,7 @@ func TestController_ObjectsListObjectsHandler(t *testing.T) {
 			CreationDate:    time.Now(),
 			Size:            666,
 			Checksum:        "baz_checksum",
+			Metadata:        catalog.Metadata{"additionalProperty1": "4"},
 		},
 	}
 	for _, entry := range dbEntries {
@@ -945,6 +960,22 @@ func TestController_ObjectsListObjectsHandler(t *testing.T) {
 		results := resp.JSON200.Results
 		if len(results) != 4 {
 			t.Fatalf("expected 4 entries, got back %d", len(results))
+		}
+	})
+
+	t.Run("get object list without user-defined metadata", func(t *testing.T) {
+		prefix := api.PaginationPrefix("foo/")
+		getUserMetadata := false
+		resp, err := clt.ListObjectsWithResponse(ctx, "repo1", "main", &api.ListObjectsParams{
+			Prefix:       &prefix,
+			UserMetadata: &getUserMetadata,
+		})
+		verifyResponseOK(t, resp, err)
+		results := resp.JSON200.Results
+		for _, obj := range results {
+			if obj.Metadata != nil {
+				t.Fatalf("expected no user-defined metadata, got %+v", obj.Metadata.AdditionalProperties)
+			}
 		}
 	})
 

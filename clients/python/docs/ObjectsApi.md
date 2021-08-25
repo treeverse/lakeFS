@@ -8,7 +8,7 @@ Method | HTTP request | Description
 [**get_object**](ObjectsApi.md#get_object) | **GET** /repositories/{repository}/refs/{ref}/objects | get object content
 [**get_underlying_properties**](ObjectsApi.md#get_underlying_properties) | **GET** /repositories/{repository}/refs/{ref}/objects/underlyingProperties | get object properties on underlying storage
 [**list_objects**](ObjectsApi.md#list_objects) | **GET** /repositories/{repository}/refs/{ref}/objects/ls | list objects under a given prefix
-[**stage_object**](ObjectsApi.md#stage_object) | **PUT** /repositories/{repository}/branches/{branch}/objects | stage an object\&quot;s metadata for the given branch
+[**stage_object**](ObjectsApi.md#stage_object) | **PUT** /repositories/{repository}/branches/{branch}/objects | stage an object&#39;s metadata for the given branch
 [**stat_object**](ObjectsApi.md#stat_object) | **GET** /repositories/{repository}/refs/{ref}/objects/stat | get object metadata
 [**upload_object**](ObjectsApi.md#upload_object) | **POST** /repositories/{repository}/branches/{branch}/objects | 
 
@@ -354,6 +354,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     api_instance = objects_api.ObjectsApi(api_client)
     repository = "repository_example" # str | 
     ref = "ref_example" # str | a reference (could be either a branch or a commit ID)
+    user_metadata = True # bool |  (optional) if omitted the server will use the default value of True
     after = "after_example" # str | return items after this value (optional)
     amount = 100 # int | how many items to return (optional) if omitted the server will use the default value of 100
     delimiter = "delimiter_example" # str | delimiter used to group common prefixes by (optional)
@@ -371,7 +372,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # and optional values
     try:
         # list objects under a given prefix
-        api_response = api_instance.list_objects(repository, ref, after=after, amount=amount, delimiter=delimiter, prefix=prefix)
+        api_response = api_instance.list_objects(repository, ref, user_metadata=user_metadata, after=after, amount=amount, delimiter=delimiter, prefix=prefix)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling ObjectsApi->list_objects: %s\n" % e)
@@ -384,6 +385,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
  **ref** | **str**| a reference (could be either a branch or a commit ID) |
+ **user_metadata** | **bool**|  | [optional] if omitted the server will use the default value of True
  **after** | **str**| return items after this value | [optional]
  **amount** | **int**| how many items to return | [optional] if omitted the server will use the default value of 100
  **delimiter** | **str**| delimiter used to group common prefixes by | [optional]
@@ -417,7 +419,7 @@ Name | Type | Description  | Notes
 # **stage_object**
 > ObjectStats stage_object(repository, branch, path, object_stage_creation)
 
-stage an object\"s metadata for the given branch
+stage an object's metadata for the given branch
 
 ### Example
 
@@ -473,14 +475,14 @@ with lakefs_client.ApiClient(configuration) as api_client:
         checksum="checksum_example",
         size_bytes=1,
         mtime=1,
-        metadata={
-            "key": "key_example",
-        },
+        metadata=ObjectUserMetadata(
+            key="key_example",
+        ),
     ) # ObjectStageCreation | 
 
     # example passing only required values which don't have defaults set
     try:
-        # stage an object\"s metadata for the given branch
+        # stage an object's metadata for the given branch
         api_response = api_instance.stage_object(repository, branch, path, object_stage_creation)
         pprint(api_response)
     except lakefs_client.ApiException as e:
@@ -576,11 +578,21 @@ with lakefs_client.ApiClient(configuration) as api_client:
     repository = "repository_example" # str | 
     ref = "ref_example" # str | a reference (could be either a branch or a commit ID)
     path = "path_example" # str | 
+    user_metadata = True # bool |  (optional) if omitted the server will use the default value of True
 
     # example passing only required values which don't have defaults set
     try:
         # get object metadata
         api_response = api_instance.stat_object(repository, ref, path)
+        pprint(api_response)
+    except lakefs_client.ApiException as e:
+        print("Exception when calling ObjectsApi->stat_object: %s\n" % e)
+
+    # example passing only required values which don't have defaults set
+    # and optional values
+    try:
+        # get object metadata
+        api_response = api_instance.stat_object(repository, ref, path, user_metadata=user_metadata)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling ObjectsApi->stat_object: %s\n" % e)
@@ -594,6 +606,7 @@ Name | Type | Description  | Notes
  **repository** | **str**|  |
  **ref** | **str**| a reference (could be either a branch or a commit ID) |
  **path** | **str**|  |
+ **user_metadata** | **bool**|  | [optional] if omitted the server will use the default value of True
 
 ### Return type
 

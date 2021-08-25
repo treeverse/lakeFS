@@ -216,13 +216,15 @@ components:
           type: string
         checksum:
           type: string
+        size_bytes:
+          type: integer
+          format: int64
         mtime:
           type: integer
           format: int64
           description: Unix Epoch in seconds
-        size_bytes:
-          type: integer
-          format: int64
+        metadata:
+          $ref: "#/components/schemas/ObjectUserMetadata"
 
     ObjectStatsList:
       type: object
@@ -256,9 +258,12 @@ components:
           format: int64
           description: Unix Epoch in seconds
         metadata:
-          type: object
-          additionalProperties:
-            type: string
+          $ref: "#/components/schemas/ObjectUserMetadata"
+
+    ObjectUserMetadata:
+      type: object
+      additionalProperties:
+        type: string
 
     UnderlyingObjectProperties:
       type: object
@@ -2439,7 +2444,7 @@ paths:
       tags:
         - objects
       operationId: stageObject
-      summary: stage an object"s metadata for the given branch
+      summary: stage an object's metadata for the given branch
       requestBody:
         required: true
         content:
@@ -2541,6 +2546,12 @@ paths:
         required: true
         schema:
           type: string
+      - in: query
+        name: user_metadata
+        required: false
+        schema: 
+          type: boolean
+          default: false
     get:
       tags:
         - objects
@@ -2612,6 +2623,12 @@ paths:
         schema:
           type: string
         description: a reference (could be either a branch or a commit ID)
+      - in: query
+        name: user_metadata
+        required: false
+        schema: 
+          type: boolean
+          default: true
       - $ref: "#/components/parameters/PaginationAfter"
       - $ref: "#/components/parameters/PaginationAmount"
       - $ref: "#/components/parameters/PaginationDelimiter"

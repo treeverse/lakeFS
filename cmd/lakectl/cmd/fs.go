@@ -256,7 +256,7 @@ var fsStageCmd = &cobra.Command{
 			SizeBytes:       size,
 		}
 		if metaErr == nil {
-			metadata := api.ObjectStageCreation_Metadata{
+			metadata := api.ObjectUserMetadata{
 				AdditionalProperties: meta,
 			}
 			obj.Metadata = &metadata

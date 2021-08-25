@@ -40,6 +40,7 @@ from lakefs_client.model.merge_result_summary import MergeResultSummary
 from lakefs_client.model.object_stage_creation import ObjectStageCreation
 from lakefs_client.model.object_stats import ObjectStats
 from lakefs_client.model.object_stats_list import ObjectStatsList
+from lakefs_client.model.object_user_metadata import ObjectUserMetadata
 from lakefs_client.model.pagination import Pagination
 from lakefs_client.model.policy import Policy
 from lakefs_client.model.policy_list import PolicyList

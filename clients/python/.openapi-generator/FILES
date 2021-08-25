@@ -39,6 +39,7 @@ docs/MetadataApi.md
 docs/ObjectStageCreation.md
 docs/ObjectStats.md
 docs/ObjectStatsList.md
+docs/ObjectUserMetadata.md
 docs/ObjectsApi.md
 docs/Pagination.md
 docs/Policy.md
@@ -119,6 +120,7 @@ lakefs_client/model/merge_result_summary.py
 lakefs_client/model/object_stage_creation.py
 lakefs_client/model/object_stats.py
 lakefs_client/model/object_stats_list.py
+lakefs_client/model/object_user_metadata.py
 lakefs_client/model/pagination.py
 lakefs_client/model/policy.py
 lakefs_client/model/policy_list.py
