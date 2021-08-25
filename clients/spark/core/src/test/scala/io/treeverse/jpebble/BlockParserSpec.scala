@@ -185,7 +185,7 @@ class BlockParserSpec extends AnyFunSpec with Matchers {
 
     /**
      * Lightweight fixture for running particular tests with an SSTable and
-     * recovering its handle aafter running.  See
+     * recovering its handle after running.  See
      * https://www.scalatest.org/scaladoc/1.8/org/scalatest/FlatSpec.html
      * ("Providing different fixtures to different tests") for how this works.
      */
