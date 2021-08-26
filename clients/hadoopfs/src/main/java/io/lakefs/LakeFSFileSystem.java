@@ -538,8 +538,8 @@ public class LakeFSFileSystem extends FileSystem {
     public FileStatus[] listStatus(Path path) throws FileNotFoundException, IOException {
         OPERATIONS_LOG.trace("list_status({})", path);
         ObjectLocation objectLoc = pathToObjectLocation(path);
+        ObjectsApi objectsApi = lfsClient.getObjects();
         try {
-            ObjectsApi objectsApi = lfsClient.getObjects();
             ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
             LakeFSFileStatus fileStatus = convertObjectStatsToFileStatus(objectLoc, objectStat);
             return new FileStatus[]{fileStatus};
@@ -548,16 +548,29 @@ public class LakeFSFileSystem extends FileSystem {
                 throw new IOException("statObject", e);
             }
         }
+        // list directory content
         List<FileStatus> fileStatuses = new ArrayList<>();
         ListingIterator iterator = new ListingIterator(path, false, listAmount);
         while (iterator.hasNext()) {
             LocatedFileStatus fileStatus = iterator.next();
             fileStatuses.add(((LakeFSLocatedFileStatus)fileStatus).toLakeFSFileStatus());
         }
-        if (fileStatuses.isEmpty()) {
-            throw new FileNotFoundException("No such file or directory: " + path);
+        if (!fileStatuses.isEmpty()) {
+            return fileStatuses.toArray(new FileStatus[0]);
         }
-        return fileStatuses.toArray(new FileStatus[0]);
+        // nothing to list - check if it is an empty directory marker
+        try {
+            ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath() + SEPARATOR);
+            LakeFSFileStatus fileStatus = convertObjectStatsToFileStatus(objectLoc, objectStat);
+            if (fileStatus.isEmptyDirectory()) {
+                return new FileStatus[0];
+            }
+        } catch (ApiException e) {
+            if (e.getCode() != HttpStatus.SC_NOT_FOUND) {
+                throw new IOException("statObject", e);
+            }
+        }
+        throw new FileNotFoundException("No such file or directory: " + path);
     }
 
     @Override
@@ -827,6 +840,7 @@ public class LakeFSFileSystem extends FileSystem {
         }
 
         private void readNextChunk() throws IOException {
+            String listingPath = this.objectLocation.getPath();
             do {
                 try {
                     ObjectsApi objectsApi = lfsClient.getObjects();
@@ -841,10 +855,14 @@ public class LakeFSFileSystem extends FileSystem {
                 } catch (ApiException e) {
                     throw new IOException("listObjects", e);
                 }
-                // filter objects in recursive mode
-                if (this.removeDirectory) {
-                    chunk = chunk.stream().filter(item -> !isDirectory(item)).collect(Collectors.toList());
-                }
+                chunk = chunk.stream().filter(item -> {
+                    // filter directories if needed
+                    if (this.removeDirectory && isDirectory(item)) {
+                        return false;
+                    }
+                    // filter out the marker object of the path we list
+                    return !item.getPath().equals(listingPath);
+                }).collect(Collectors.toList());
                 // loop until we have something or last chunk
             } while (chunk.isEmpty() && !last);
         }

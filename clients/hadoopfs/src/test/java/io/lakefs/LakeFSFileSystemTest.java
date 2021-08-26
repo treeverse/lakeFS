@@ -550,10 +550,11 @@ public class LakeFSFileSystemTest {
     public void testListStatusNotFound() throws ApiException, IOException {
         when(objectsApi.statObject("repo", "main", "status/file"))
                 .thenThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "no such file"));
+        when(objectsApi.statObject("repo", "main", "status/file/"))
+                .thenThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "no such file"));
         when(objectsApi.listObjects(eq("repo"), eq("main"), eq("status/file/"), eq(""),
                 any(), eq("/")))
                 .thenReturn(new ObjectStatsList().results(Collections.emptyList()).pagination(new Pagination().hasMore(false)));
-
         Path p = new Path("lakefs://repo/main/status/file");
         fs.listStatus(p);
     }
