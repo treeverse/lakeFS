@@ -286,10 +286,10 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
   describe("A block parser") {
     it("should successfully parse 2-level index sstable") {
       val fileName = "two.level.idx"
-      withTestFiles(fileName, (in: BlockReadable, expected: Map[String, String]) => {
+      withTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)]) => {
         val it = BlockParser.entryIterator(in)
         val actual = it.map((entry) =>
-          (new String(entry.key), new String(entry.value))).toMap
+          (new String(entry.key), new String(entry.value))).toSeq.sortBy(_._1)
 
         actual should contain theSameElementsAs expected
       })
@@ -320,7 +320,7 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
    * https://www.scalatest.org/scaladoc/1.8/org/scalatest/FlatSpec.html
    * ("Providing different fixtures to different tests") for how this works.
    */
-  def withTestFiles(filename: String, test: (BlockReadable, Map[String, String]) => Any) = {
+  def withTestFiles(filename: String, test: (BlockReadable, Seq[(String, String)]) => Any) = {
 
     val tmpSstFile = copyTestFile(filename, ".sst")
     val tmpJsonFile = copyTestFile(filename, ".json")
@@ -329,7 +329,7 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
 
     val jsonString = os.read(os.Path(tmpJsonFile.getAbsolutePath))
     val data = ujson.read(jsonString)
-    val expected = data.arr.map(e => (e("Key").str, e("Value").str)).toMap
+    val expected = data.arr.map(e => (e("Key").str, e("Value").str)).toSeq.sortBy(_._1)
 
     try {
       test(in, expected)

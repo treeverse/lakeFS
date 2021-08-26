@@ -84,7 +84,7 @@ func writePebbleSst(keys []string, size int, name string, twoLevelIdx bool) {
 		metadata, _ := writer.Metadata()
 		idxType := metadata.Properties.IndexType
 		if twoLevelIdx && idxType != 2 || !twoLevelIdx && idxType == 2 {
-			fmt.Printf("Unexpected index type, is 2-level index=%v but index type = %d", twoLevelIdx, idxType)
+			fmt.Printf("Unexpected index type, is 2-level index=%v but index type = %d\n", twoLevelIdx, idxType)
 		}
 	}()
 
