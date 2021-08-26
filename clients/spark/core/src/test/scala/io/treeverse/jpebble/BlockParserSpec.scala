@@ -5,12 +5,13 @@ import matchers.should._
 import funspec._
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
 
-import java.io.{File, FileInputStream}
+import java.io.File
 import org.apache.commons.io.IOUtils
 import org.testcontainers.containers.BindMode
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy
+import org.scalatest.matchers.must.Matchers.contain
+import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 
-import java.nio.file.Paths
 import scala.io.Source
 
 class BlockParserSpec extends AnyFunSpec with Matchers {
@@ -282,55 +283,58 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
     waitStrategy = new LogMessageWaitStrategy().withRegEx("done\\n")
   );
 
-//  describe("parse 2-level index sstable") {
-//
-//  }
+  describe("A block parser") {
+    it("should successfully parse 2-level index sstable") {
+      val fileName = "two.level.idx"
+      withTestFiles(fileName, (in: BlockReadable, expected: Map[String, String]) => {
+        val it = BlockParser.entryIterator(in)
+        val actual = it.map((entry) =>
+          (new String(entry.key), new String(entry.value))).toMap
 
-  describe("parse large sstables") {
+        actual should contain theSameElementsAs expected
+      })
+    }
 
-//      describe("check if mount was successful") {
-//          it("file is copied") {
-//          container.copyFileFromContainer("/local/sst_files_generator.go", "./foo.x")
-//          }
-//      }
+//    it("should successfully parse sstable of max size supported by lakeFS") {
+//      ignore
+//    }
 
-      it("file is parsed successfully") {
-
-          val testFile = "/local/large.file.20971520-bytes.sst"
-          val dst = "./tal.sst"
-
-          container.copyFileFromContainer(testFile, dst)
-
-          // Copy SSTable to a readable file
-//          val sstContents = new FileInputStream(dst)
-//
-//          //            this.getClass.getClassLoader.getResourceAsStream("/local/" + testFile)
-//
-//          val tempFile = File.createTempFile("test-block-parser.", ".sst")
-//          tempFile.deleteOnExit()
-//          val out = new java.io.FileOutputStream(tempFile)
-//          IOUtils.copy(sstContents, out)
-//          sstContents.close()
-//          out.close()
-//
-//          val in = new BlockReadableFileChannel(new java.io.FileInputStream(tempFile).getChannel)
-//
-//          in.close()
-
-//          try {
-//            test(in)
-//          } finally {
-//            in.close()
-//          }
-
-//          container.copyFileFromContainer("/local/sst_files_generator.go", "./foo.x")
-        }
   }
 
-  
-//  describe("check if mount was successful") {
-//    it("file is copied") {
-//      container.copyFileFromContainer("/local/sst_files_generator.go", "./foo.x")
-//    }
-//  }
+
+  def copyTestFile(fileName: String, suffix: String) : File =
+    container.copyFileFromContainer("/local/" + fileName + suffix, in => {
+      val tempOutFile = File.createTempFile("test-block-parser.", suffix)
+      tempOutFile.deleteOnExit()
+      val out = new java.io.FileOutputStream(tempOutFile)
+      IOUtils.copy(in, out)
+      in.close()
+      out.close()
+      return tempOutFile
+    })
+
+
+  /**
+   * Lightweight fixture for running particular tests with an SSTable and
+   * recovering its handle after running.  See
+   * https://www.scalatest.org/scaladoc/1.8/org/scalatest/FlatSpec.html
+   * ("Providing different fixtures to different tests") for how this works.
+   */
+  def withTestFiles(filename: String, test: (BlockReadable, Map[String, String]) => Any) = {
+
+    val tmpSstFile = copyTestFile(filename, ".sst")
+    val tmpJsonFile = copyTestFile(filename, ".json")
+
+    val in = new BlockReadableFileChannel(new java.io.FileInputStream(tmpSstFile).getChannel)
+
+    val jsonString = os.read(os.Path(tmpJsonFile.getAbsolutePath))
+    val data = ujson.read(jsonString)
+    val expected = data.arr.map(e => (e("Key").str, e("Value").str)).toMap
+
+    try {
+      test(in, expected)
+    } finally {
+      in.close()
+    }
+  }
 }

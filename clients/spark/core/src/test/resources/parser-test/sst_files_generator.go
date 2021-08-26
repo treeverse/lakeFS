@@ -44,7 +44,8 @@ func writeTwoLevelIdxSst(sizeBytes int) {
 }
 
 func generateSortedSlice(size int) []string {
-	numLines := size / DefaultKeySizeBytes
+	//numLines := size / DefaultKeySizeBytes
+	numLines := 10
 	slice := make([]string, 0, numLines)
 	for i := 0; i < numLines; i++ {
 		key, err := nanoid.New(DefaultKeySizeBytes)
@@ -105,5 +106,6 @@ func writePebbleSst(keys []string, size int, name string, twoLevelIdx bool) {
 
 func saveExpectedContentsToDisk(contents []Entry, name string) {
 	j, _ := json.Marshal(contents)
+
 	ioutil.WriteFile(name+".json", j, os.ModePerm)
 }
