@@ -117,8 +117,4 @@ public class TestLakeFSFileSystemContract extends FileSystemContractBaseTest {
     // TODO make this test green and remove override
   }
 
-  @Override
-  public void testRenameFileMoveToNonExistentDirectory() throws Exception {
-    // TODO make this test green and remove override
-  }
 }

@@ -377,6 +377,19 @@ public class LakeFSFileSystem extends FileSystem {
         } catch (FileNotFoundException e) {
             LOG.debug("renameFile: dst does not exist, renaming src {} to a file called dst {}",
                     srcStatus.getPath(), dst);
+            // Parent must exist
+            Path dstPath = dst.getParent();
+            ObjectLocation dstParent = pathToObjectLocation(dstPath);
+            if (dstParent.isValidPath()) {
+                try {
+                    LakeFSFileStatus dstParentStatus = getFileStatus(dstPath);
+                    if (!dstParentStatus.isDirectory()) {
+                        return false;
+                    }
+                } catch (FileNotFoundException e2) {
+                    return false;
+                }
+            }
         }
         return renameObject(srcStatus, dst);
     }
