@@ -558,7 +558,7 @@ public class LakeFSFileSystem extends FileSystem {
         if (!fileStatuses.isEmpty()) {
             return fileStatuses.toArray(new FileStatus[0]);
         }
-        // in case nothing found check if an empty directory marker
+        // nothing to list - check if it is an empty directory marker
         try {
             ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath() + SEPARATOR);
             LakeFSFileStatus fileStatus = convertObjectStatsToFileStatus(objectLoc, objectStat);
@@ -855,12 +855,14 @@ public class LakeFSFileSystem extends FileSystem {
                 } catch (ApiException e) {
                     throw new IOException("listObjects", e);
                 }
-                // filter objects in recursive mode
-                if (this.removeDirectory) {
-                    chunk = chunk.stream().filter(item -> !isDirectory(item)).collect(Collectors.toList());
-                }
-                // filter out the directory marker
-                chunk = chunk.stream().filter(item -> !item.getPath().equals(listingPath)).collect(Collectors.toList());
+                chunk = chunk.stream().filter(item -> {
+                    // filter directories if needed
+                    if (this.removeDirectory && isDirectory(item)) {
+                        return false;
+                    }
+                    // filter out the marker object of the path we list
+                    return !item.getPath().equals(listingPath);
+                }).collect(Collectors.toList());
                 // loop until we have something or last chunk
             } while (chunk.isEmpty() && !last);
         }
