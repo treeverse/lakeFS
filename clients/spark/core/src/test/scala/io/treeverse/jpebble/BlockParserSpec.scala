@@ -291,7 +291,14 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
         val actual = it.map((entry) =>
           (new String(entry.key), new String(entry.value))).toSeq.sortBy(_._1)
 
+        val t4 = System.nanoTime
+
         actual should contain theSameElementsAs expected
+
+        val duration4 = (System.nanoTime - t4) / 1e9d
+        println("comparison time:")
+        println(duration4)
+
       })
     }
 
@@ -322,13 +329,32 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
    */
   def withTestFiles(filename: String, test: (BlockReadable, Seq[(String, String)]) => Any) = {
 
+    val t1 = System.nanoTime
+
     val tmpSstFile = copyTestFile(filename, ".sst")
     val tmpJsonFile = copyTestFile(filename, ".json")
 
+    val duration1 = (System.nanoTime - t1) / 1e9d
+    println("input copy:")
+    println(duration1)
+
+    val t2 = System.nanoTime
+
     val in = new BlockReadableFileChannel(new java.io.FileInputStream(tmpSstFile).getChannel)
+
+    val duration2 = (System.nanoTime - t2) / 1e9d
+    println("parsing time:")
+    println(duration2)
+
+    val t3 = System.nanoTime
 
     val jsonString = os.read(os.Path(tmpJsonFile.getAbsolutePath))
     val data = ujson.read(jsonString)
+
+    val duration3 = (System.nanoTime - t3) / 1e9d
+    println("json read time:")
+    println(duration3)
+
     val expected = data.arr.map(e => (e("Key").str, e("Value").str)).toSeq.sortBy(_._1)
 
     try {

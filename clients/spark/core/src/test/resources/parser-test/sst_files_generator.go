@@ -15,6 +15,7 @@ const (
 	DefaultKeySizeBytes   = 100
 	DefaultValueSizeBytes = 5
 	MbToBytes             = 1024 * 1024
+	KbToBytes             = 1024
 	// The max file size that can be written by graveler (pkg/config/config.go)
 	DefaultCommittedPermanentMaxRangeSizeMb = 20
 )
@@ -26,7 +27,7 @@ type Entry struct {
 
 func main() {
 
-	writeTwoLevelIdxSst(10 * MbToBytes)
+	writeTwoLevelIdxSst(10 * KbToBytes)
 
 	// Test max sst file size
 	//inputSizesBytes := []int{DefaultCommittedPermanentMaxRangeSizeMb}
@@ -44,8 +45,7 @@ func writeTwoLevelIdxSst(sizeBytes int) {
 }
 
 func generateSortedSlice(size int) []string {
-	//numLines := size / DefaultKeySizeBytes
-	numLines := 10
+	numLines := size / DefaultKeySizeBytes
 	slice := make([]string, 0, numLines)
 	for i := 0; i < numLines; i++ {
 		key, err := nanoid.New(DefaultKeySizeBytes)
@@ -70,7 +70,7 @@ func writePebbleSst(keys []string, size int, name string, twoLevelIdx bool) {
 	// https://github.com/cockroachdb/pebble/blob/2aba043dd4a270dfdd7731fedf99817164476618/sstable/options.go#L196
 	if twoLevelIdx {
 		// setting the index block size target to a small number to make 2-level index get enabled
-		idxBlockSize = 100
+		idxBlockSize = 5
 	}
 	writer := sstable.NewWriter(sstFile, sstable.WriterOptions{
 		Compression:    sstable.SnappyCompression,
