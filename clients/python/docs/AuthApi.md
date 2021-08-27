@@ -520,6 +520,7 @@ create policy
 import time
 import lakefs_client
 from lakefs_client.api import auth_api
+from lakefs_client.model.statement import Statement
 from lakefs_client.model.policy import Policy
 from lakefs_client.model.error import Error
 from pprint import pprint
