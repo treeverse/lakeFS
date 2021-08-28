@@ -1,10 +1,7 @@
 package io.lakefs;
 
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.ObjectsApi;
-import io.lakefs.clients.api.RepositoriesApi;
-import io.lakefs.clients.api.StagingApi;
+import io.lakefs.clients.api.*;
 import io.lakefs.clients.api.model.*;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
@@ -374,8 +371,9 @@ public class LakeFSFileSystem extends FileSystem {
      * lakefs://repo/main/dir2/dir1/file1.txt
      */
     private Path buildObjPathOnExistingDestinationDir(Path renamedObj, Path dstDir) {
-        ObjectLocation renamedObjLoc = pathToObjectLocation(renamedObj);
-        return new Path(dstDir + SEPARATOR + renamedObjLoc.getPath());
+        Path srcParent = renamedObj.getParent();
+        String filename = renamedObj.toString().substring(srcParent.toString().length()+1);
+        return new Path(dstDir + SEPARATOR + filename);
     }
 
     private boolean renameFile(LakeFSFileStatus srcStatus, Path dst) throws IOException {
@@ -674,6 +672,12 @@ public class LakeFSFileSystem extends FileSystem {
     public LakeFSFileStatus getFileStatus(Path path) throws IOException {
         OPERATIONS_LOG.trace("get_file_status({})", path);
         ObjectLocation objectLoc = pathToObjectLocation(path);
+        if (objectLoc.getPath().isEmpty()) {
+            if (isBranchExists(objectLoc.getRepository(), objectLoc.getRef())) {
+                return new LakeFSFileStatus.Builder(path).isdir(true).build();
+            }
+            throw new FileNotFoundException(path + " not found");
+        }
         ObjectsApi objectsApi = lfsClient.getObjects();
         // get object status on path
         try {
@@ -759,9 +763,14 @@ public class LakeFSFileSystem extends FileSystem {
     @Override
     public boolean exists(Path path) throws IOException {
         OPERATIONS_LOG.trace("exists({})", path);
-        ObjectsApi objects = lfsClient.getObjects();
         ObjectLocation objectLoc = pathToObjectLocation(path);
+        // no path - check if branch exists
+        if (objectLoc.getPath().isEmpty()) {
+            return isBranchExists(objectLoc.getRepository(), objectLoc.getRef());
+        }
+
         // check if file exists
+        ObjectsApi objects = lfsClient.getObjects();
         try {
             objects.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
             return true;
@@ -770,6 +779,7 @@ public class LakeFSFileSystem extends FileSystem {
                 throw new IOException("statObject", e);
             }
         }
+
         // check if directory marker directory exists
         try {
             objects.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath() + SEPARATOR);
@@ -779,10 +789,24 @@ public class LakeFSFileSystem extends FileSystem {
                 throw new IOException("statObject", e);
             }
         }
+
         // use listing to check if directory exists
         ListingIterator iterator = new ListingIterator(path, true, 1);
         iterator.setRemoveDirectory(false);
         return iterator.hasNext();
+    }
+
+    private boolean isBranchExists(String repository, String branch) throws IOException {
+        try {
+            BranchesApi branches = lfsClient.getBranches();
+            branches.getBranch(repository, branch);
+            return true;
+        } catch (ApiException e) {
+            if (e.getCode() != HttpStatus.SC_NOT_FOUND) {
+                throw new IOException("getBranch", e);
+            }
+            return false;
+        }
     }
 
     /**
