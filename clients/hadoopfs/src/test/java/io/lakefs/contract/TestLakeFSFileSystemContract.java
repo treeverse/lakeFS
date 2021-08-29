@@ -84,16 +84,6 @@ public class TestLakeFSFileSystemContract extends FileSystemContractBaseTest {
   }
 
   @Override
-  public void testRenameDirectoryMoveToNonExistentDirectory() throws Exception {
-    // skip("does not fail");
-  }
-
-  @Override
-  public void testRenameFileMoveToNonExistentDirectory() throws Exception {
-    // skip("does not fail");
-  }
-
-  @Override
   public void testRenameDirectoryAsExistingFile() throws Exception {
     assumeTrue(renameSupported());
 
