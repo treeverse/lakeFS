@@ -10,10 +10,7 @@ import com.amazonaws.services.s3.model.*;
 import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.ObjectsApi;
-import io.lakefs.clients.api.RepositoriesApi;
-import io.lakefs.clients.api.StagingApi;
+import io.lakefs.clients.api.*;
 import io.lakefs.clients.api.model.*;
 import io.lakefs.clients.api.model.ObjectStats.PathTypeEnum;
 import org.apache.commons.io.IOUtils;
@@ -59,6 +56,7 @@ public class LakeFSFileSystemTest {
 
     protected LakeFSClient lfsClient;
     protected ObjectsApi objectsApi;
+    protected BranchesApi branchesApi;
     protected RepositoriesApi repositoriesApi;
     protected StagingApi stagingApi;
 
@@ -135,6 +133,8 @@ public class LakeFSFileSystemTest {
         lfsClient = mock(LakeFSClient.class);
         objectsApi = mock(ObjectsApi.class, Answers.RETURNS_SMART_NULLS);
         when(lfsClient.getObjects()).thenReturn(objectsApi);
+        branchesApi = mock(BranchesApi.class, Answers.RETURNS_SMART_NULLS);
+        when(lfsClient.getBranches()).thenReturn(branchesApi);
         repositoriesApi = mock(RepositoriesApi.class, Answers.RETURNS_SMART_NULLS);
         when(lfsClient.getRepositories()).thenReturn(repositoriesApi);
         stagingApi = mock(StagingApi.class, Answers.RETURNS_SMART_NULLS);
@@ -707,7 +707,7 @@ public class LakeFSFileSystemTest {
     }
 
     /**
-     * rename(src.txt, non-existing-dst) -> non-existing-dst, non-existing-dst is a file
+     * rename(src.txt, non-existing-dst) -> non-existing/new - unsupported, should fail with false
      */
     @Test
     public void testRename_existingFileToNonExistingDst() throws IOException, ApiException {
@@ -715,14 +715,13 @@ public class LakeFSFileSystemTest {
         ObjectLocation srcObjLoc = fs.pathToObjectLocation(src);
         mockExistingFilePath(srcObjLoc);
 
-        Path dst = new Path("lakefs://repo/main/non-existing.dst");
+        Path dst = new Path("lakefs://repo/main/non-existing/new");
         ObjectLocation dstObjLoc = fs.pathToObjectLocation(dst);
         mockNonExistingPath(dstObjLoc);
+        mockNonExistingPath(fs.pathToObjectLocation(dst.getParent()));
 
         boolean renamed = fs.rename(src, dst);
-        Assert.assertTrue(renamed);
-        Assert.assertTrue(dstPathLinkedToSrcPhysicalAddress(srcObjLoc, dstObjLoc));
-        verifyObjDeletion(srcObjLoc);
+        Assert.assertFalse(renamed);
     }
 
     @Test(expected = FileAlreadyExistsException.class)
@@ -769,11 +768,14 @@ public class LakeFSFileSystemTest {
         mockExistingDirPath(dstObjLoc, ImmutableList.of(fileObjLoc));
 
         boolean renamed = fs.rename(src, dst);
-        Assert.assertFalse(renamed);
+        Assert.assertTrue(renamed);
+        Path expectedDstPath = new Path("lakefs://repo/main/existing-dir2/existing-dir1/existing.src");
+        Assert.assertTrue(dstPathLinkedToSrcPhysicalAddress(srcObjLoc, fs.pathToObjectLocation(expectedDstPath)));
+        verifyObjDeletion(srcObjLoc);
     }
 
     /**
-     * rename(srcDir(containing srcDir/a.txt, srcDir/b.txt), non-existing-dstdir) -> non-existing-dstdir/a.txt, non-existing-dstdir/b.txt
+     * rename(srcDir(containing srcDir/a.txt, srcDir/b.txt), non-existing-dir/new) -> unsupported, rename should fail by returning false
      */
     @Test
     public void testRename_existingDirToNonExistingDirName() throws ApiException, IOException {
@@ -782,11 +784,10 @@ public class LakeFSFileSystemTest {
         Path srcDir = new Path("lakefs://repo/main/existing-dir");
         ObjectLocation srcDirObjLoc = fs.pathToObjectLocation(srcDir);
         mockExistingDirPath(srcDirObjLoc, ImmutableList.of(fileObjLoc));
+        mockNonExistingPath(new ObjectLocation("lakefs", "repo", "main", "non-existing-dir"));
+        mockNonExistingPath(new ObjectLocation("lakefs", "repo", "main", "non-existing-dir/new"));
 
-        Path dst = new Path("lakefs://repo/main/non-existing-dir");
-        ObjectLocation dstObjLoc = fs.pathToObjectLocation(dst);
-        mockNonExistingPath(dstObjLoc);
-
+        Path dst = new Path("lakefs://repo/main/non-existing-dir/new");
         boolean renamed = fs.rename(srcDir, dst);
         Assert.assertFalse(renamed);
     }

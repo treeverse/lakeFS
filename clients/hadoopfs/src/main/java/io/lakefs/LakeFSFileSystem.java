@@ -375,7 +375,7 @@ public class LakeFSFileSystem extends FileSystem {
      */
     private Path buildObjPathOnExistingDestinationDir(Path renamedObj, Path dstDir) {
         Path srcParent = renamedObj.getParent();
-        String filename = renamedObj.toString().substring(srcParent.toString().length()+1);
+        String filename = renamedObj.toString().substring(srcParent.toString().length() + SEPARATOR.length());
         return new Path(dstDir + SEPARATOR + filename);
     }
 
