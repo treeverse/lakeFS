@@ -770,7 +770,7 @@ public class LakeFSFileSystemTest {
 
         boolean renamed = fs.rename(src, dst);
         Assert.assertTrue(renamed);
-        Path expectedDstPath = new Path("lakefs://repo/main/existing-dir2/existing-dir1/existing.src");
+        Path expectedDstPath = new Path("lakefs://repo/main/existing-dir2/existing.src");
         Assert.assertTrue(dstPathLinkedToSrcPhysicalAddress(srcObjLoc, fs.pathToObjectLocation(expectedDstPath)));
         verifyObjDeletion(srcObjLoc);
     }
