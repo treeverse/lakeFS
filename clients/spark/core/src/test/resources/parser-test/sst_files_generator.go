@@ -36,14 +36,14 @@ func main() {
 
 	//generateSstsWithContentsFuzzing()
 
-	generateSstsWithWriterOptionsFuzzing()
+	//generateSstsWithWriterOptionsFuzzing()
 
 	//generateLargeSsts() //TODO: accelerate the scala test using large file as an input
 
 }
 
 func generateSstsWithWriterOptionsFuzzing() {
-	keys := generateSortedSlice(50 * KbToBytes)
+	//keys := generateSortedSlice(50 * KbToBytes)
 
 	//// BlockRestartInterval is the number of keys between restart points
 	//// for delta encoding of keys.
@@ -144,12 +144,18 @@ func generateSstsWithContentsFuzzing() {
 		sizeBytes := size
 		testFileName := fmt.Sprintf("fuzz.contents.%d", sizeBytes)
 		keys := generateSortedSliceWithFuzzing(sizeBytes)
+
+		writerOptions := sstable.WriterOptions{
+			Compression: sstable.SnappyCompression,
+			//TODO: confirm that I don't need those properties
+			//TablePropertyCollectors: []func() sstable.TablePropertyCollector{NewStaticCollector(props)},
+		}
 		writeTestInputFiles(keys, func() (string, error) {
 			f := fuzz.NewWithSeed(FuzzerSeed) //TODO: this is inefficient to keep generating a fuzzer on each value creation
 			var val string
 			f.Fuzz(&val)
 			return val, nil
-		}, sizeBytes, testFileName, false)
+		}, sizeBytes, testFileName, false, writerOptions)
 	}
 }
 
@@ -173,7 +179,15 @@ func generateSortedSliceWithFuzzing(size int) []string {
 
 func generateTwoLevelIdxSst(sizeBytes int) {
 	keys := generateSortedSlice(sizeBytes)
-	writeTestInputFiles(keys, func() (string, error) { return nanoid.New(DefaultValueSizeBytes) }, sizeBytes, "two.level.idx", true)
+
+	writerOptions := sstable.WriterOptions{
+		Compression:    sstable.SnappyCompression,
+		IndexBlockSize: 5, // setting the index block size target to a small number to make 2-level index get enabled
+		//TODO: confirm that I don't need those properties
+		//TablePropertyCollectors: []func() sstable.TablePropertyCollector{NewStaticCollector(props)},
+	}
+	writeTestInputFiles(keys, func() (string, error) { return nanoid.New(DefaultValueSizeBytes) }, sizeBytes,
+		"two.level.idx", true, writerOptions)
 }
 
 func generateSortedSlice(size int) []string {
@@ -192,34 +206,25 @@ func generateSortedSlice(size int) []string {
 
 // Writes sst and json files that will be used to unit test the sst parser.
 // The sst file is the test input, and the json file encapsulates the expected parser output.
-func writeTestInputFiles(keys []string, genValue func() (string, error), size int, name string, twoLevelIdx bool) {
+func writeTestInputFiles(keys []string, genValue func() (string, error), size int, name string,
+	twoLevelIdx bool, writerOptions sstable.WriterOptions) {
 	fmt.Printf("Generate %s...\n", name)
 	sstFile, err := os.Create(name + ".sst")
 	if err != nil {
 		panic(err)
 	}
+
 	expectedContents := make([]Entry, 0, len(keys))
 
-	idxBlockSize := 4096 // Default index block size
-	// https://github.com/cockroachdb/pebble/blob/2aba043dd4a270dfdd7731fedf99817164476618/sstable/options.go#L196
-	if twoLevelIdx {
-		// setting the index block size target to a small number to make 2-level index get enabled
-		idxBlockSize = 5
-	}
-	writer := sstable.NewWriter(sstFile, sstable.WriterOptions{
-		Compression:    sstable.SnappyCompression,
-		IndexBlockSize: idxBlockSize,
-		//TODO: confirm that I don't need those properties
-		//TablePropertyCollectors: []func() sstable.TablePropertyCollector{NewStaticCollector(props)},
-	})
-
+	writer := sstable.NewWriter(sstFile, writerOptions)
 	defer func() {
 		_ = writer.Close()
-		metadata, _ := writer.Metadata()
-		idxType := metadata.Properties.IndexType
-		if twoLevelIdx && idxType != TwoLevelIndexType || !twoLevelIdx && idxType == TwoLevelIndexType {
-			fmt.Printf("Unexpected index type, is 2-level index=%v but index type = %d\n", twoLevelIdx, idxType)
-		}
+		//TODO: clean this up
+		//metadata, _ := writer.Metadata()
+		//idxType := metadata.Properties.IndexType
+		//if twoLevelIdx && idxType != TwoLevelIndexType || !twoLevelIdx && idxType == TwoLevelIndexType {
+		//	fmt.Printf("Unexpected index type, is 2-level index=%v but index type = %d\n", twoLevelIdx, idxType)
+		//}
 	}()
 
 	for _, k := range keys {
