@@ -99,4 +99,5 @@ public class TestLakeFSFileSystemContract extends FileSystemContractBaseTest {
   public void testRenameNonExistentPath() throws Exception {
     intercept(FileNotFoundException.class, super::testRenameNonExistentPath);
   }
+
 }
