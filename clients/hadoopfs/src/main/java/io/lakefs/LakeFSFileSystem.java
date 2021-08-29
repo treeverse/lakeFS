@@ -232,16 +232,13 @@ public class LakeFSFileSystem extends FileSystem {
      * Rename, behaving similarly to the POSIX "mv" command, but non-atomically.
      * 1. Rename is only supported for uncommitted data on the same branch.
      * 2. The following rename scenarios are supported:
-     * * file -> existing-file-name: rename(src.txt, existing-dst.txt) -> existing-dst.txt, existing-dst.txt is overridden
-     * * file -> existing-directory-name: rename(src.txt, existing-dstdir) -> existing-dstdir/src.txt
-     * * file -> non-existing dst: in case of non-existing rename target, the src file is renamed to a file with the
-     * destination name. rename(src.txt, non-existing-dst) -> non-existing-dst, nonexisting-dst is a file.
-     * * directory -> non-existing directory:
-     * rename(srcDir(containing srcDir/a.txt), non-existing-dstdir) -> non-existing-dstdir/a.txt
-     * * directory -> existing directory:
-     * rename(srcDir(containing srcDir/a.txt), existing-dstdir) -> existing-dstdir/srcDir/a.txt
-     * 3. The rename dst  path can be an uncommitted file, that will be overridden as a result of the rename operation.
-     * 4. The mtime of the src object is not preserved.
+     *   file -> existing-file-name: rename(src.txt, existing-dst.txt) -> existing-dst.txt, existing-dst.txt is overridden
+     *   file -> existing-directory-name: rename(src.txt, existing-dstdir) -> existing-dstdir/src.txt
+     *   file -> non-existing dst: in case of non-existing rename target, false is return. note that empty directory is
+     *     an existing directory and rename will move the directory/file into that folder.
+     *   directory -> existing directory: rename(srcDir(containing srcDir/a.txt), existing-dstdir) -> existing-dstdir/a.txt
+     * 3. Rename dst path can be an uncommitted file, that will be overridden as a result of the rename operation.
+     * 4. The 'mtime' of the src object is not preserved.
      *
      * @throws IOException
      */
