@@ -302,6 +302,7 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
       })
     }
 
+    //TODO: make sure to print the values that are randomly generated from the scala tests
 //    it("should successfully parse sstable of max size supported by lakeFS") {
 //      ignore
 //    }
