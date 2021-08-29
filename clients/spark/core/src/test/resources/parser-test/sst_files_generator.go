@@ -31,114 +31,90 @@ type Entry struct {
 }
 
 func main() {
-
-	//generateTwoLevelIdxSst(10 * KbToBytes)
-
-	//generateSstsWithContentsFuzzing()
-
-	//generateSstsWithWriterOptionsFuzzing()
-
-	//generateLargeSsts() //TODO: accelerate the scala test using large file as an input
-
+	generateTwoLevelIdxSst(10 * KbToBytes)
+	fuzzSstContents()
+	fuzzWriterOptions()
+	sstsWithUnsupportedWriterOptions()
+	generateLargeSsts() //TODO: accelerate the scala test using large file as an input
 }
 
-func generateSstsWithWriterOptionsFuzzing() {
-	//keys := generateSortedSlice(50 * KbToBytes)
+func sstsWithUnsupportedWriterOptions() {
+	sizeBytes := 10 * KbToBytes
+	keys := generateSortedSlice(sizeBytes)
 
-	//// BlockRestartInterval is the number of keys between restart points
-	//// for delta encoding of keys.
-	////
-	//// The default value is 16.
-	//BlockRestartInterval int
-	//
-	//// BlockSize is the target uncompressed size in bytes of each table block.
-	////
-	//// The default value is 4096.
-	//BlockSize int
-	//
-	//// BlockSizeThreshold finishes a block if the block size is larger than the
-	//// specified percentage of the target block size and adding the next entry
-	//// would cause the block to be larger than the target block size.
-	////
-	//// The default value is 90
-	//BlockSizeThreshold int
-	//
-	//// Cache is used to cache uncompressed blocks from sstables.
-	////
-	//// The default is a nil cache.
-	//Cache *cache.Cache
-	//
-	//// Comparer defines a total ordering over the space of []byte keys: a 'less
-	//// than' relationship. The same comparison algorithm must be used for reads
-	//// and writes over the lifetime of the DB.
-	////
-	//// The default value uses the same ordering as bytes.Compare.
-	//Comparer *Comparer
-	//
-	//// Compression defines the per-block compression to use.
-	////
-	//// The default value (DefaultCompression) uses snappy compression.
-	//Compression Compression
-	//
-	//// FilterPolicy defines a filter algorithm (such as a Bloom filter) that can
-	//// reduce disk reads for Get calls.
-	////
-	//// One such implementation is bloom.FilterPolicy(10) from the pebble/bloom
-	//// package.
-	////
-	//// The default value means to use no filter.
-	//FilterPolicy FilterPolicy
-	//
-	//// FilterType defines whether an existing filter policy is applied at a
-	//// block-level or table-level. Block-level filters use less memory to create,
-	//// but are slower to access as a check for the key in the index must first be
-	//// performed to locate the filter block. A table-level filter will require
-	//// memory proportional to the number of keys in an sstable to create, but
-	//// avoids the index lookup when determining if a key is present. Table-level
-	//// filters should be preferred except under constrained memory situations.
-	//FilterType FilterType
-	//
-	//// IndexBlockSize is the target uncompressed size in bytes of each index
-	//// block. When the index block size is larger than this target, two-level
-	//// indexes are automatically enabled. Setting this option to a large value
-	//// (such as math.MaxInt32) disables the automatic creation of two-level
-	//// indexes.
-	////
-	//// The default value is the value of BlockSize.
-	//IndexBlockSize int
-	//
-	//// Merger defines the associative merge operation to use for merging values
-	//// written with {Batch,DB}.Merge. The MergerName is checked for consistency
-	//// with the value stored in the sstable when it was written.
-	//MergerName string
-	//
+	// Checksum specifies which checksum to use. lakeFS supports parsing sstables with crc checksum.
+	// ChecksumTypeXXHash and ChecksumTypeNone are unsupported and therefore not tested.
+	writerOptions := sstable.WriterOptions{
+		Compression: sstable.SnappyCompression,
+		Checksum:    sstable.ChecksumTypeXXHash64,
+	}
+	writeTestInputFiles(keys, func() (string, error) { return nanoid.New(DefaultValueSizeBytes) }, sizeBytes,
+		"checksum.type.xxHash64", writerOptions)
+
 	//// TableFormat specifies the format version for writing sstables. The default
-	//// is TableFormatRocksDBv2 which creates RocksDB compatible sstables. Use
-	//// TableFormatLevelDB to create LevelDB compatible sstable which can be used
-	//// by a wider range of tools and libraries.
-	//TableFormat TableFormat
+	//// is TableFormatRocksDBv2 which creates RocksDB compatible sstables. this is the only format supported by lakeFS.
+	writerOptions = sstable.WriterOptions{
+		Compression: sstable.SnappyCompression,
+		TableFormat: sstable.TableFormatLevelDB,
+	}
+	writeTestInputFiles(keys, func() (string, error) { return nanoid.New(DefaultValueSizeBytes) }, sizeBytes,
+		"table.format.leveldb", writerOptions)
+}
+
+func fuzzWriterOptions() {
+	sizeBytes := 50 * KbToBytes
+	keys := generateSortedSlice(sizeBytes)
+
+	// BlockRestartInterval is the number of keys between restart points
+	// for delta encoding of keys.
+	// The default value is 16.
+	blockRestartInterval := rand.Intn(100)
+	writerOptions := sstable.WriterOptions{
+		Compression:          sstable.SnappyCompression,
+		BlockRestartInterval: blockRestartInterval,
+	}
+	fmt.Printf("BlockRestartInterval %d...\n", blockRestartInterval)
+	writeTestInputFiles(keys, func() (string, error) { return nanoid.New(DefaultValueSizeBytes) }, sizeBytes,
+		"fuzz.block.restart.interval", writerOptions)
+
+	// BlockSize is the target uncompressed size in bytes of each table block.
+	// The default value is 4096.
+	blockSize := rand.Intn(9000)
+	writerOptions = sstable.WriterOptions{
+		Compression: sstable.SnappyCompression,
+		BlockSize:   blockSize,
+	}
+	fmt.Printf("BlockSize %d...\n", blockSize)
+	writeTestInputFiles(keys, func() (string, error) { return nanoid.New(DefaultValueSizeBytes) }, sizeBytes,
+		"fuzz.block.size", writerOptions)
+
+	//go func() {
+	// BlockSizeThreshold finishes a block if the block size is larger than the
+	// specified percentage of the target block size and adding the next entry
+	// would cause the block to be larger than the target block size.
 	//
-	//// TablePropertyCollectors is a list of TablePropertyCollector creation
-	//// functions. A new TablePropertyCollector is created for each sstable built
-	//// and lives for the lifetime of the table.
-	//TablePropertyCollectors []func() TablePropertyCollector
-	//
-	//// Checksum specifies which checksum to use.
-	//Checksum ChecksumType
+	// The default value is 90
+	blockSizeThreshold := rand.Intn(100)
+	writerOptions = sstable.WriterOptions{
+		Compression:        sstable.SnappyCompression,
+		BlockSizeThreshold: blockSizeThreshold,
+	}
+	fmt.Printf("BlockSizeThreshold %d...\n", blockSizeThreshold)
+	writeTestInputFiles(keys, func() (string, error) { return nanoid.New(DefaultValueSizeBytes) }, sizeBytes,
+		"fuzz.block.size.threshold", writerOptions)
 }
 
 func generateLargeSsts() {
-	// Test max sst file size
-	//inputSizesBytes := []int{DefaultCommittedPermanentMaxRangeSizeMb}
-	////inputSizesBytes := []int{1, 3, DefaultCommittedPermanentMaxRangeSizeMb}
-	//for _, size := range inputSizesBytes {
-	//	sizeBytes := size * MbToBytes
-	//	sortedWords := generateSortedSlice(sizeBytes)
-	//	writeTestInputFiles(sortedWords, sizeBytes, "max-size-file.sst")
-	//}
+	sizeBytes := DefaultCommittedPermanentMaxRangeSizeMb * MbToBytes
+	keys := generateSortedSlice(sizeBytes)
+	writerOptions := sstable.WriterOptions{
+		Compression: sstable.SnappyCompression,
+	}
+	writeTestInputFiles(keys, func() (string, error) { return nanoid.New(DefaultValueSizeBytes) }, sizeBytes,
+		"max.size.lakefs.file", writerOptions)
 }
 
-func generateSstsWithContentsFuzzing() {
+func fuzzSstContents() {
 	fileSizes := []int{KbToBytes, 2 * KbToBytes, 5 * KbToBytes, 8 * KbToBytes}
 	for _, size := range fileSizes {
 		sizeBytes := size
@@ -155,7 +131,7 @@ func generateSstsWithContentsFuzzing() {
 			var val string
 			f.Fuzz(&val)
 			return val, nil
-		}, sizeBytes, testFileName, false, writerOptions)
+		}, sizeBytes, testFileName, writerOptions)
 	}
 }
 
@@ -187,7 +163,7 @@ func generateTwoLevelIdxSst(sizeBytes int) {
 		//TablePropertyCollectors: []func() sstable.TablePropertyCollector{NewStaticCollector(props)},
 	}
 	writeTestInputFiles(keys, func() (string, error) { return nanoid.New(DefaultValueSizeBytes) }, sizeBytes,
-		"two.level.idx", true, writerOptions)
+		"two.level.idx", writerOptions)
 }
 
 func generateSortedSlice(size int) []string {
@@ -207,7 +183,7 @@ func generateSortedSlice(size int) []string {
 // Writes sst and json files that will be used to unit test the sst parser.
 // The sst file is the test input, and the json file encapsulates the expected parser output.
 func writeTestInputFiles(keys []string, genValue func() (string, error), size int, name string,
-	twoLevelIdx bool, writerOptions sstable.WriterOptions) {
+	writerOptions sstable.WriterOptions) {
 	fmt.Printf("Generate %s...\n", name)
 	sstFile, err := os.Create(name + ".sst")
 	if err != nil {
