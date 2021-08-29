@@ -89,6 +89,11 @@ public class TestLakeFSFileSystemContract extends FileSystemContractBaseTest {
   }
 
   @Override
+  public void testRenameFileMoveToNonExistentDirectory() throws Exception {
+    // skip("does not fail");
+  }
+
+  @Override
   public void testRenameDirectoryAsExistingFile() throws Exception {
     assumeTrue(renameSupported());
 
@@ -103,10 +108,5 @@ public class TestLakeFSFileSystemContract extends FileSystemContractBaseTest {
   @Override
   public void testRenameNonExistentPath() throws Exception {
     intercept(FileNotFoundException.class, super::testRenameNonExistentPath);
-  }
-
-  @Override
-  public void testRenameFileMoveToNonExistentDirectory() throws Exception {
-    // skip("does not fail");
   }
 }
