@@ -9,7 +9,7 @@ import java.io.File
 import org.apache.commons.io.IOUtils
 import org.testcontainers.containers.BindMode
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy
-import org.scalatest.matchers.must.Matchers.contain
+import org.scalatest.matchers.must.Matchers.{contain, have}
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 
 import scala.io.Source
@@ -174,7 +174,7 @@ class BlockParserSpec extends AnyFunSpec with Matchers {
         case histRe(count, word) => (word, count.toInt)
         case _ => throw new RuntimeException(s"Bad format h.txt line ${line}")
       }
-    ).toMap
+    ).toSeq
 
     it("internal: load h.txt") {
       expected should not be empty
@@ -241,9 +241,9 @@ class BlockParserSpec extends AnyFunSpec with Matchers {
             withSSTable(sstFilename, (in: BlockReadable) => {
               val it = BlockParser.entryIterator(in)
               val actual = it.map((entry) =>
-                (new String(entry.key), new String(entry.value).toInt)).toMap
+                (new String(entry.key), new String(entry.value).toInt)).toSeq
 
-              actual should contain theSameElementsAs expected
+              actual should contain theSameElementsInOrderAs expected
             })
           }
         }
@@ -284,31 +284,78 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
   );
 
   describe("A block parser") {
-    it("should successfully parse 2-level index sstable") {
-      val fileName = "two.level.idx"
-      withTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)]) => {
-        val it = BlockParser.entryIterator(in)
-        val actual = it.map((entry) =>
-          (new String(entry.key), new String(entry.value))).toSeq.sortBy(_._1)
+    describe("2-level index sstable") {
+      it("should parse successfully") {
+        val fileName = "two.level.idx"
+        withGeneratedTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)], sstSize: Long, fileName: String) => {
+          val it = BlockParser.entryIterator(in)
+          val actual = it.map((entry) =>
+            (new String(entry.key), new String(entry.value))).toSeq
 
-        val t4 = System.nanoTime
-
-        actual should contain theSameElementsAs expected
-
-        val duration4 = (System.nanoTime - t4) / 1e9d
-        println("comparison time:")
-        println(duration4)
-
-      })
+          actual should contain theSameElementsInOrderAs expected
+        })
+      }
     }
 
-    //TODO: make sure to print the values that are randomly generated from the scala tests
-//    it("should successfully parse sstable of max size supported by lakeFS") {
-//      ignore
-//    }
+    val testFiles = Seq(
+      "fuzz.contents.0",
+      "fuzz.contents.1",
+      "fuzz.contents.2",
+      "fuzz.contents.3",
+      "fuzz.contents.4",
+      "fuzz.contents.5"
+    )
 
+    testFiles.foreach(fileName =>
+      describe(fileName) {
+        it("should parse multi-sized with fuzzed contents successfuly") {
+            withGeneratedTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)], sstSize: Long, fileName: String) => {
+              println("[DEBUG] size of generated test file (bytes)=" + sstSize)
+              val it = BlockParser.entryIterator(in)
+              val actual = it.map((entry) =>
+                (new String(entry.key), new String(entry.value))).toSeq
+
+              actual should contain theSameElementsInOrderAs expected
+            }
+          )
+        }
+      })
+
+    describe("sstable with xxHash64 checksum") {
+      it("should fail parsing") {
+        val fileName = "checksum.type.xxHash64"
+        withGeneratedTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)], sstSize: Long, fileName: String) => {
+          assertThrows[BadFileFormatException]{
+            val it = BlockParser.entryIterator(in)
+          }
+        })
+      }
+    }
+
+    describe("sstable with levelDB table format") {
+      it("should fail parsing") {
+        val fileName = "table.format.leveldb"
+        withGeneratedTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)], sstSize: Long, fileName: String) => {
+          assertThrows[BadFileFormatException]{
+            val it = BlockParser.entryIterator(in)
+          }
+        })
+      }
+    }
+
+    describe("max sized sstable supported by lakeFS") {
+      it("should parse successfully") {
+        val fileName = "max.size.lakefs.file"
+        withGeneratedTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)], sstSize: Long, fileName: String) => {
+          val it = BlockParser.entryIterator(in)
+          val actual = it.map((entry) =>
+            (new String(entry.key), new String(entry.value))).toSeq
+
+          actual should contain theSameElementsInOrderAs expected
+        })
+      }
+    }
   }
-
 
   def copyTestFile(fileName: String, suffix: String) : File =
     container.copyFileFromContainer("/local/" + fileName + suffix, in => {
@@ -323,43 +370,20 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
 
 
   /**
-   * Lightweight fixture for running particular tests with an SSTable and
-   * recovering its handle after running.  See
-   * https://www.scalatest.org/scaladoc/1.8/org/scalatest/FlatSpec.html
-   * ("Providing different fixtures to different tests") for how this works.
+   * Lightweight fixture for running particular tests with SSTables and Json fules generated by a go application on
+   * test startup. The fixture uses sstables as the parser input, and the json as the source of the expected output of
+   * the parsing operation.
    */
-  def withTestFiles(filename: String, test: (BlockReadable, Seq[(String, String)]) => Any) = {
-
-//    val t1 = System.nanoTime
-
+  def withGeneratedTestFiles(filename: String, test: (BlockReadable, Seq[(String, String)], Long, String) => Any) = {
     val tmpSstFile = copyTestFile(filename, ".sst")
     val tmpJsonFile = copyTestFile(filename, ".json")
 
-//    val duration1 = (System.nanoTime - t1) / 1e9d
-//    println("input copy:")
-//    println(duration1)
-
-//    val t2 = System.nanoTime
-
     val in = new BlockReadableFileChannel(new java.io.FileInputStream(tmpSstFile).getChannel)
-
-//    val duration2 = (System.nanoTime - t2) / 1e9d
-//    println("parsing time:")
-//    println(duration2)
-
-//    val t3 = System.nanoTime
-
     val jsonString = os.read(os.Path(tmpJsonFile.getAbsolutePath))
     val data = ujson.read(jsonString)
-
-//    val duration3 = (System.nanoTime - t3) / 1e9d
-//    println("json read time:")
-//    println(duration3)
-
-    val expected = data.arr.map(e => (e("Key").str, e("Value").str)).toSeq.sortBy(_._1)
-
+    val expected = data.arr.map(e => (e("Key").str, e("Value").str))
     try {
-      test(in, expected)
+      test(in, expected, tmpSstFile.length(), filename)
     } finally {
       in.close()
     }

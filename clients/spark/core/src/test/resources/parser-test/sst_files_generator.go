@@ -35,7 +35,7 @@ func main() {
 	fuzzSstContents()
 	fuzzWriterOptions()
 	sstsWithUnsupportedWriterOptions()
-	generateLargeSsts() //TODO: accelerate the scala test using large file as an input
+	generateLargeSsts()
 }
 
 func sstsWithUnsupportedWriterOptions() {
@@ -115,10 +115,19 @@ func generateLargeSsts() {
 }
 
 func fuzzSstContents() {
-	fileSizes := []int{KbToBytes, 2 * KbToBytes, 5 * KbToBytes, 8 * KbToBytes}
-	for _, size := range fileSizes {
+	fileSizes := []int{}
+	for i := 0; i < 3; i++ {
+		curMb := rand.Intn(20)
+		curKb := rand.Intn(30)
+		fileSizes = append(fileSizes, curMb*MbToBytes)
+		fmt.Printf("writing sstable of %d mb\n", curMb)
+		fileSizes = append(fileSizes, curKb*KbToBytes)
+		fmt.Printf("writing sstable of %d kb\n", curKb)
+	}
+
+	for i, size := range fileSizes {
 		sizeBytes := size
-		testFileName := fmt.Sprintf("fuzz.contents.%d", sizeBytes)
+		testFileName := fmt.Sprintf("fuzz.contents.%d", i)
 		keys := generateSortedSliceWithFuzzing(sizeBytes)
 
 		writerOptions := sstable.WriterOptions{
