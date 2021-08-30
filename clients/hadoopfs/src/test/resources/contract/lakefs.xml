@@ -24,7 +24,7 @@
 
     <property>
         <name>fs.contract.test.root-tests-enabled</name>
-        <value>false</value>
+        <value>true</value>
     </property>
 
     <property>
@@ -44,7 +44,7 @@
 
     <property>
         <name>fs.contract.rename-returns-false-if-source-missing</name>
-        <value>false</value>
+        <value>true</value>
     </property>
 
     <property>

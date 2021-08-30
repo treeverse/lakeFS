@@ -247,12 +247,11 @@ public class LakeFSFileSystem extends FileSystem {
         OPERATIONS_LOG.trace("rename {} to {}", src, dst);
         ObjectLocation srcObjectLoc = pathToObjectLocation(src);
         ObjectLocation dstObjectLoc = pathToObjectLocation(dst);
-        // Same as s3a https://github.com/apache/hadoop/blob/2960d83c255a00a549f8809882cd3b73a6266b6d/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L1498
+        // Same as s3a https://github.com/apache/hadoop/blob/branch-2.7/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L460
         if (srcObjectLoc.getPath().isEmpty()) {
             LOG.error("rename: src {} is root directory", src);
             return false;
         }
-        // Same as s3a does in https://github.com/apache/hadoop/blob/2960d83c255a00a549f8809882cd3b73a6266b6d/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L1501
         if (dstObjectLoc.getPath().isEmpty()) {
             LOG.error("rename: dst {} is root directory", dst);
             return false;
@@ -269,10 +268,14 @@ public class LakeFSFileSystem extends FileSystem {
             return false;
         }
 
-        // Throws FileNotFoundException when src does not exist. mimics s3a's behaviour in
-        // https://github.com/apache/hadoop/blob/2960d83c255a00a549f8809882cd3b73a6266b6d/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L1505
+        // Return false when src does not exist. mimics s3a's behaviour in
+        // https://github.com/apache/hadoop/blob/branch-2.7/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L468
         LakeFSFileStatus srcStatus;
-        srcStatus = getFileStatus(src);
+        try {
+            srcStatus = getFileStatus(src);
+        } catch (FileNotFoundException ignored) {
+            return false;
+        }
         boolean result;
         if (srcStatus.isDirectory()) {
             result = renameDirectory(src, dst);
@@ -297,22 +300,22 @@ public class LakeFSFileSystem extends FileSystem {
             // May be unnecessary with https://github.com/treeverse/lakeFS/issues/1691
             LakeFSFileStatus dstFileStatus = getFileStatus(dst);
             if (!dstFileStatus.isDirectory()) {
-                // Same as https://github.com/apache/hadoop/blob/2960d83c255a00a549f8809882cd3b73a6266b6d/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L1527
-                throw new FileAlreadyExistsException("Failed rename " + src + " to " + dst
-                        + "; source is a directory and dest is a file");
+                // Same as https://github.com/apache/hadoop/blob/branch-2.7/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L482
+                LOG.debug("renameDirectory: rename src {} to dst {}: src is a directory and dst is a file", src, dst);
+                return false;
             }
             // lakefsFs only has non-empty directories. Therefore, if the destination is an existing directory we consider
-            // it to be non-empty. The behaviour is same as https://github.com/apache/hadoop/blob/2960d83c255a00a549f8809882cd3b73a6266b6d/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L1530
+            // it to be non-empty. The behaviour is same as https://github.com/apache/hadoop/blob/branch-2.7/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L482
             if (!dstFileStatus.isEmptyDirectory()) {
-                LOG.error("renameDirectory: rename src {} to dst {}: dst is a non-empty directory.", src, dst);
+                LOG.debug("renameDirectory: rename src {} to dst {}: dst is a non-empty directory.", src, dst);
                 return false;
             }
             // delete empty directory marker from destination
-            // based on the same behaviour https://github.com/apache/hadoop/blob/2960d83c255a00a549f8809882cd3b73a6266b6d/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/impl/RenameOperation.java#L403
+            // based on the same behaviour https://github.com/apache/hadoop/blob/branch-2.7/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L549
             deleteHelper(pathToObjectLocation(dst).toDirectory());
         } catch (FileNotFoundException e) {
             LOG.debug("renameDirectory: dst {} does not exist", dst);
-            if (!isParentDirectoryExists(dst)) {
+            if (missParentDirectory(dst)) {
                 return false;
             }
         }
@@ -359,20 +362,20 @@ public class LakeFSFileSystem extends FileSystem {
     /**
      * Sample input and output
      * input:
-     * renamedObj: lakefs://repo/main/file1.txt
+     * srcObj: lakefs://repo/main/file1.txt
      * dstDir: lakefs://repo/main/dir1
      * output:
      * lakefs://repo/main/dir1/file1.txt
      * <p>
      * input:
-     * renamedObj: lakefs://repo/main/dir1/file1.txt
+     * srcObj: lakefs://repo/main/dir1/file1.txt
      * dstDir: lakefs://repo/main/dir2
      * output:
      * lakefs://repo/main/dir2/dir1/file1.txt
      */
-    private Path buildObjPathOnExistingDestinationDir(Path renamedObj, Path dstDir) {
-        Path srcParent = renamedObj.getParent();
-        String filename = renamedObj.toString().substring(srcParent.toString().length() + SEPARATOR.length());
+    private Path buildObjPathOnExistingDestinationDir(Path srcObj, Path dstDir) {
+        Path srcParent = srcObj.getParent();
+        String filename = srcObj.toString().substring(srcParent.toString().length() + SEPARATOR.length());
         return new Path(dstDir + SEPARATOR + filename);
     }
 
@@ -383,28 +386,24 @@ public class LakeFSFileSystem extends FileSystem {
             LOG.debug("renameFile: dst {} exists and is a {}", dst, dstFileStatus.isDirectory() ? "directory" : "file");
             if (dstFileStatus.isDirectory()) {
                 dst = buildObjPathOnExistingDestinationDir(srcStatus.getPath(), dst);
-            } else {
-                // Same as https://github.com/apache/hadoop/blob/2960d83c255a00a549f8809882cd3b73a6266b6d/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L1539
-                throw new FileAlreadyExistsException("Failed rename " + srcStatus.getPath() + " to " + dst
-                        + "; destination file already exists.");
             }
         } catch (FileNotFoundException e) {
             LOG.debug("renameFile: dst does not exist, renaming src {} to a file called dst {}",
                     srcStatus.getPath(), dst);
-            if (!isParentDirectoryExists(dst)) {
+            if (missParentDirectory(dst)) {
                 return false;
             }
         }
         return renameObject(srcStatus, dst);
     }
 
-    private boolean isParentDirectoryExists(Path dst) throws IOException {
+    private boolean missParentDirectory(Path dst) throws IOException {
         try {
             Path dstPath = dst.getParent();
             LakeFSFileStatus dstParentStatus = getFileStatus(dstPath);
-            return dstParentStatus.isDirectory();
+            return !dstParentStatus.isDirectory();
         } catch (FileNotFoundException ignored) {
-            return false;
+            return true;
         }
     }
 
@@ -509,7 +508,7 @@ public class LakeFSFileSystem extends FileSystem {
             ObjectsApi objectsApi = lfsClient.getObjects();
             objectsApi.deleteObject(loc.getRepository(), loc.getRef(), loc.getPath());
         } catch (ApiException e) {
-            // This condition mimics s3a behaviour in https://github.com/apache/hadoop/blob/7f93349ee74da5f35276b7535781714501ab2457/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L2741
+            // This condition mimics s3a behaviour in https://github.com/apache/hadoop/blob/branch-2.7/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L619
             if (e.getCode() == HttpStatus.SC_NOT_FOUND) {
                 LOG.error("Could not delete: {}, reason: {}", loc, e.getResponseBody());
                 return false;

@@ -1,12 +1,8 @@
 package io.lakefs.contract;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.*;
-
-import java.io.FileNotFoundException;
-
-import static io.lakefs.contract.LakeFSTestUtils.intercept;
-import static org.junit.Assume.assumeTrue;
+import org.apache.hadoop.fs.FileSystemContractBaseTest;
+import org.apache.hadoop.fs.Path;
 
 /**
  *  Tests a live S3 system. If your keys and bucket aren't specified, all tests
@@ -51,7 +47,15 @@ public class TestLakeFSFileSystemContract extends FileSystemContractBaseTest {
   }
 
   public void testRenameFileAsExistingFile() throws Exception {
-    intercept(FileAlreadyExistsException.class, super::testRenameFileAsExistingFile);
+    if (!renameSupported()) return;
+
+    Path src = path("/test/hadoop/file");
+    createFile(src);
+    Path dst = path("/test/new/newfile");
+    createFile(dst);
+    // s3 doesn't support rename option
+    // rename-overwrites-dest is always allowed.
+    rename(src, dst, true, false, true);
   }
 
   @Override
@@ -81,23 +85,6 @@ public class TestLakeFSFileSystemContract extends FileSystemContractBaseTest {
   @Override
   public void testWorkingDirectory() throws Exception {
     // TODO make this test green and remove override
-  }
-
-  @Override
-  public void testRenameDirectoryAsExistingFile() throws Exception {
-    assumeTrue(renameSupported());
-
-    Path src = path("/testRenameDirectoryAsExistingFile/dir");
-    fs.mkdirs(src);
-    Path dst = path("/testRenameDirectoryAsExistingFileNew/newfile");
-    createFile(dst);
-    intercept(FileAlreadyExistsException.class,
-            () -> rename(src, dst, false, true, true));
-  }
-
-  @Override
-  public void testRenameNonExistentPath() throws Exception {
-    intercept(FileNotFoundException.class, super::testRenameNonExistentPath);
   }
 
 }
