@@ -198,13 +198,14 @@ The data is now created in lakeFS as new changes in your branch. You can now com
 
 To use this mode you configure the Spark application to perform metadata operations on the
 lakeFS server, and all data operations directly through the same underlying object store that
-lakeFS uses.  The lakeFS FileSystem currently supports using only the S3A Hadoop FileSystem
+lakeFS uses.  The lakeFS FileSystem currently supports Spark with Hadoop Apache 2.7 using only the S3A Hadoop FileSystem
 for data access.  In this mode the Spark application will directly read and write from the
 underlying object store, significantly increasing application scalability and performance by
 reducing the load on the lakeFS server.
 
 Accessing data in lakeFS from Spark is the same as accessing S3 data from Spark.  The only
 changes we need to perform are:
+
 1. Configure Spark to access lakeFS for metadata and S3 or a compatible underlying object
    store to access data.
 1. Use `lakefs://repo/ref/path/to/data` URIs to read and write data on lakeFS, rather than
