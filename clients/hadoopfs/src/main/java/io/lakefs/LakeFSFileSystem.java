@@ -57,7 +57,7 @@ public class LakeFSFileSystem extends FileSystem {
                 return new URI("s3a", uri.getUserInfo(), uri.getHost(), uri.getPort(), uri.getPath(), uri.getQuery(),
                         uri.getFragment());
             default:
-                throw new RuntimeException(String.format("unsupported URI scheme %s", uri.getScheme()));
+                throw new RuntimeException(String.format("unsupported URI scheme %s, lakeFS FileSystem currently supports translating s3 => s3a only", uri.getScheme()));
         }
     }
 
