@@ -160,10 +160,9 @@ public class LakeFSFileSystem extends FileSystem {
             @Override
             public LocatedFileStatus next() throws IOException {
                 LakeFSFileStatus status = iterator.next();
-                BlockLocation[] locations = new BlockLocation[0];
-                if (status.isFile()) {
-                    locations = getFileBlockLocations(status, 0, status.getLen());
-                }
+                BlockLocation[] locations = status.isFile()
+                        ? getFileBlockLocations(status, 0, status.getLen())
+                        : new BlockLocation[0];
                 return new LocatedFileStatus(status, locations);
             }
         };
