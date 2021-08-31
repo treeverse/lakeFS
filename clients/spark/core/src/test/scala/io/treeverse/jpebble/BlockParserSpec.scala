@@ -9,7 +9,7 @@ import java.io.File
 import org.apache.commons.io.IOUtils
 import org.testcontainers.containers.BindMode
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy
-import org.scalatest.matchers.must.Matchers.{contain, have}
+import org.scalatest.matchers.must.Matchers.{contain}
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 
 import scala.io.Source
@@ -284,7 +284,7 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
   );
 
   describe("A block parser") {
-    describe("2-level index sstable") {
+    describe("with 2-level index sstable") {
       it("should parse successfully") {
         val fileName = "two.level.idx"
         withGeneratedTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)], sstSize: Long, fileName: String) => {
@@ -306,22 +306,37 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
       "fuzz.contents.5"
     )
 
-    testFiles.foreach(fileName =>
-      describe(fileName) {
-        it("should parse multi-sized with fuzzed contents successfuly") {
-            withGeneratedTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)], sstSize: Long, fileName: String) => {
-              println("[DEBUG] size of generated test file (bytes)=" + sstSize)
-              val it = BlockParser.entryIterator(in)
-              val actual = it.map((entry) =>
-                (new String(entry.key), new String(entry.value))).toSeq
+    describe("with multi-sized sstables") {
+      testFiles.foreach(fileName =>
+        describe(fileName) {
+          it("should parse successfuly") {
+              withGeneratedTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)], sstSize: Long, fileName: String) => {
+                println("[DEBUG] size of generated test file (bytes)=" + sstSize)
+                val it = BlockParser.entryIterator(in)
+                val actual = it.map((entry) =>
+                  (new String(entry.key), new String(entry.value))).toSeq
 
-              actual should contain theSameElementsInOrderAs expected
-            }
-          )
-        }
-      })
+                actual should contain theSameElementsInOrderAs expected
+              }
+            )
+          }
+        })
+    }
 
-    describe("sstable with xxHash64 checksum") {
+    describe("with random table user properties") {
+      it("should parse successfully") {
+        val fileName = "fuzz.table.properties"
+        withGeneratedTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)], sstSize: Long, fileName: String) => {
+          val it = BlockParser.entryIterator(in)
+          val actual = it.map((entry) =>
+            (new String(entry.key), new String(entry.value))).toSeq
+
+          actual should contain theSameElementsInOrderAs expected
+        })
+      }
+    }
+
+    describe("with sstable with xxHash64 checksum") {
       it("should fail parsing") {
         val fileName = "checksum.type.xxHash64"
         withGeneratedTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)], sstSize: Long, fileName: String) => {
@@ -332,7 +347,7 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
       }
     }
 
-    describe("sstable with levelDB table format") {
+    describe("with sstable with levelDB table format") {
       it("should fail parsing") {
         val fileName = "table.format.leveldb"
         withGeneratedTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)], sstSize: Long, fileName: String) => {
@@ -343,7 +358,7 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
       }
     }
 
-    describe("max sized sstable supported by lakeFS") {
+    describe("with max sized sstable supported by lakeFS") {
       it("should parse successfully") {
         val fileName = "max.size.lakefs.file"
         withGeneratedTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)], sstSize: Long, fileName: String) => {

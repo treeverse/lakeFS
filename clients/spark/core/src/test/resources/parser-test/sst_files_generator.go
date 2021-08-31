@@ -19,11 +19,17 @@ const (
 	DefaultValueSizeBytes = 5
 	MbToBytes             = 1024 * 1024
 	KbToBytes             = 1024
-	TwoLevelIndexType     = 2
 	FuzzerSeed            = 20
 	// The max file size that can be written by graveler (pkg/config/config.go)
 	DefaultCommittedPermanentMaxRangeSizeMb = 20
 )
+
+func getDefaultUserProperties() map[string]string {
+	return map[string]string{
+		"user_prop_1": "val1",
+		"user_prop_2": "val2",
+	}
+}
 
 type Entry struct {
 	Key   string
@@ -51,8 +57,8 @@ func sstsWithUnsupportedWriterOptions() {
 	writeTestInputFiles(keys, func() (string, error) { return nanoid.New(DefaultValueSizeBytes) }, sizeBytes,
 		"checksum.type.xxHash64", writerOptions)
 
-	//// TableFormat specifies the format version for writing sstables. The default
-	//// is TableFormatRocksDBv2 which creates RocksDB compatible sstables. this is the only format supported by lakeFS.
+	// TableFormat specifies the format version for writing sstables. The default
+	// is TableFormatRocksDBv2 which creates RocksDB compatible sstables. this is the only format supported by lakeFS.
 	writerOptions = sstable.WriterOptions{
 		Compression: sstable.SnappyCompression,
 		TableFormat: sstable.TableFormatLevelDB,
@@ -65,13 +71,31 @@ func fuzzWriterOptions() {
 	sizeBytes := 50 * KbToBytes
 	keys := generateSortedSlice(sizeBytes)
 
+	f := fuzz.NewWithSeed(FuzzerSeed)
+	userProps := map[string]string{}
+	for i := 1; i <= 20; i++ {
+		var propKey string
+		var propVal string
+		f.Fuzz(&propKey)
+		f.Fuzz(&propVal)
+		userProps[propKey] = propVal
+		fmt.Printf("user property %d, key=%s, val=%s\n", i, propKey, propVal)
+	}
+	writerOptions := sstable.WriterOptions{
+		Compression:             sstable.SnappyCompression,
+		TablePropertyCollectors: []func() sstable.TablePropertyCollector{NewStaticCollector(userProps)},
+	}
+	writeTestInputFiles(keys, func() (string, error) { return nanoid.New(DefaultValueSizeBytes) }, sizeBytes,
+		"fuzz.table.properties", writerOptions)
+
 	// BlockRestartInterval is the number of keys between restart points
 	// for delta encoding of keys.
 	// The default value is 16.
 	blockRestartInterval := rand.Intn(100)
-	writerOptions := sstable.WriterOptions{
-		Compression:          sstable.SnappyCompression,
-		BlockRestartInterval: blockRestartInterval,
+	writerOptions = sstable.WriterOptions{
+		Compression:             sstable.SnappyCompression,
+		TablePropertyCollectors: []func() sstable.TablePropertyCollector{NewStaticCollector(getDefaultUserProperties())},
+		BlockRestartInterval:    blockRestartInterval,
 	}
 	fmt.Printf("BlockRestartInterval %d...\n", blockRestartInterval)
 	writeTestInputFiles(keys, func() (string, error) { return nanoid.New(DefaultValueSizeBytes) }, sizeBytes,
@@ -81,8 +105,9 @@ func fuzzWriterOptions() {
 	// The default value is 4096.
 	blockSize := rand.Intn(9000)
 	writerOptions = sstable.WriterOptions{
-		Compression: sstable.SnappyCompression,
-		BlockSize:   blockSize,
+		Compression:             sstable.SnappyCompression,
+		TablePropertyCollectors: []func() sstable.TablePropertyCollector{NewStaticCollector(getDefaultUserProperties())},
+		BlockSize:               blockSize,
 	}
 	fmt.Printf("BlockSize %d...\n", blockSize)
 	writeTestInputFiles(keys, func() (string, error) { return nanoid.New(DefaultValueSizeBytes) }, sizeBytes,
@@ -96,8 +121,9 @@ func fuzzWriterOptions() {
 	// The default value is 90
 	blockSizeThreshold := rand.Intn(100)
 	writerOptions = sstable.WriterOptions{
-		Compression:        sstable.SnappyCompression,
-		BlockSizeThreshold: blockSizeThreshold,
+		Compression:             sstable.SnappyCompression,
+		TablePropertyCollectors: []func() sstable.TablePropertyCollector{NewStaticCollector(getDefaultUserProperties())},
+		BlockSizeThreshold:      blockSizeThreshold,
 	}
 	fmt.Printf("BlockSizeThreshold %d...\n", blockSizeThreshold)
 	writeTestInputFiles(keys, func() (string, error) { return nanoid.New(DefaultValueSizeBytes) }, sizeBytes,
@@ -108,7 +134,8 @@ func generateLargeSsts() {
 	sizeBytes := DefaultCommittedPermanentMaxRangeSizeMb * MbToBytes
 	keys := generateSortedSlice(sizeBytes)
 	writerOptions := sstable.WriterOptions{
-		Compression: sstable.SnappyCompression,
+		Compression:             sstable.SnappyCompression,
+		TablePropertyCollectors: []func() sstable.TablePropertyCollector{NewStaticCollector(getDefaultUserProperties())},
 	}
 	writeTestInputFiles(keys, func() (string, error) { return nanoid.New(DefaultValueSizeBytes) }, sizeBytes,
 		"max.size.lakefs.file", writerOptions)
@@ -117,8 +144,8 @@ func generateLargeSsts() {
 func fuzzSstContents() {
 	fileSizes := []int{}
 	for i := 0; i < 3; i++ {
-		curMb := rand.Intn(20)
-		curKb := rand.Intn(30)
+		curMb := rand.Intn(DefaultCommittedPermanentMaxRangeSizeMb)
+		curKb := rand.Intn(100)
 		fileSizes = append(fileSizes, curMb*MbToBytes)
 		fmt.Printf("writing sstable of %d mb\n", curMb)
 		fileSizes = append(fileSizes, curKb*KbToBytes)
@@ -131,9 +158,8 @@ func fuzzSstContents() {
 		keys := generateSortedSliceWithFuzzing(sizeBytes)
 
 		writerOptions := sstable.WriterOptions{
-			Compression: sstable.SnappyCompression,
-			//TODO: confirm that I don't need those properties
-			//TablePropertyCollectors: []func() sstable.TablePropertyCollector{NewStaticCollector(props)},
+			Compression:             sstable.SnappyCompression,
+			TablePropertyCollectors: []func() sstable.TablePropertyCollector{NewStaticCollector(getDefaultUserProperties())},
 		}
 		writeTestInputFiles(keys, func() (string, error) {
 			f := fuzz.NewWithSeed(FuzzerSeed) //TODO: this is inefficient to keep generating a fuzzer on each value creation
@@ -166,10 +192,9 @@ func generateTwoLevelIdxSst(sizeBytes int) {
 	keys := generateSortedSlice(sizeBytes)
 
 	writerOptions := sstable.WriterOptions{
-		Compression:    sstable.SnappyCompression,
-		IndexBlockSize: 5, // setting the index block size target to a small number to make 2-level index get enabled
-		//TODO: confirm that I don't need those properties
-		//TablePropertyCollectors: []func() sstable.TablePropertyCollector{NewStaticCollector(props)},
+		Compression:             sstable.SnappyCompression,
+		IndexBlockSize:          5, // setting the index block size target to a small number to make 2-level index get enabled
+		TablePropertyCollectors: []func() sstable.TablePropertyCollector{NewStaticCollector(getDefaultUserProperties())},
 	}
 	writeTestInputFiles(keys, func() (string, error) { return nanoid.New(DefaultValueSizeBytes) }, sizeBytes,
 		"two.level.idx", writerOptions)
@@ -204,12 +229,6 @@ func writeTestInputFiles(keys []string, genValue func() (string, error), size in
 	writer := sstable.NewWriter(sstFile, writerOptions)
 	defer func() {
 		_ = writer.Close()
-		//TODO: clean this up
-		//metadata, _ := writer.Metadata()
-		//idxType := metadata.Properties.IndexType
-		//if twoLevelIdx && idxType != TwoLevelIndexType || !twoLevelIdx && idxType == TwoLevelIndexType {
-		//	fmt.Printf("Unexpected index type, is 2-level index=%v but index type = %d\n", twoLevelIdx, idxType)
-		//}
 	}()
 
 	for _, k := range keys {
@@ -231,4 +250,33 @@ func writeTestInputFiles(keys []string, genValue func() (string, error), size in
 func saveExpectedContentsAsJson(contents []Entry, name string) {
 	j, _ := json.Marshal(contents)
 	ioutil.WriteFile(name+".json", j, os.ModePerm)
+}
+
+// Copied from pkg/graveler/sstable/collectors.go. lakeFS populates the following user properties for each sstable
+// graveler writes: type (range/metarange), min_key, max_key, count, estimated_size_bytes
+// staticCollector is an sstable.TablePropertyCollector that adds a map's values to the user
+// property map.
+type staticCollector struct {
+	m map[string]string
+}
+
+func (*staticCollector) Add(key sstable.InternalKey, value []byte) error {
+	return nil
+}
+
+func (*staticCollector) Name() string {
+	return "static"
+}
+
+func (s *staticCollector) Finish(userProps map[string]string) error {
+	for k, v := range s.m {
+		userProps[k] = v
+	}
+	return nil
+}
+
+// NewStaticCollector returns an SSTable collector that will add the properties in m when
+// writing ends.
+func NewStaticCollector(m map[string]string) func() sstable.TablePropertyCollector {
+	return func() sstable.TablePropertyCollector { return &staticCollector{m} }
 }
