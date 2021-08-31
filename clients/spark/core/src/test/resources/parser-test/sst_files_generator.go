@@ -71,6 +71,7 @@ func fuzzWriterOptions() {
 	sizeBytes := 50 * KbToBytes
 	keys := generateSortedSlice(sizeBytes)
 
+	// Use fuzzing to define sstable user properties.
 	f := fuzz.NewWithSeed(FuzzerSeed)
 	userProps := map[string]string{}
 	for i := 1; i <= 20; i++ {
