@@ -315,7 +315,8 @@ public class LakeFSFileSystem extends FileSystem {
             deleteHelper(pathToObjectLocation(dst).toDirectory());
         } catch (FileNotFoundException e) {
             LOG.debug("renameDirectory: dst {} does not exist", dst);
-            if (missParentDirectory(dst)) {
+            // Ensure parent directory exists
+            if (!isDirectory(dst.getParent())) {
                 return false;
             }
         }
@@ -390,21 +391,12 @@ public class LakeFSFileSystem extends FileSystem {
         } catch (FileNotFoundException e) {
             LOG.debug("renameFile: dst does not exist, renaming src {} to a file called dst {}",
                     srcStatus.getPath(), dst);
-            if (missParentDirectory(dst)) {
+            // Ensure parent directory exists
+            if (!isDirectory(dst.getParent())) {
                 return false;
             }
         }
         return renameObject(srcStatus, dst);
-    }
-
-    private boolean missParentDirectory(Path dst) throws IOException {
-        try {
-            Path dstPath = dst.getParent();
-            LakeFSFileStatus dstParentStatus = getFileStatus(dstPath);
-            return !dstParentStatus.isDirectory();
-        } catch (FileNotFoundException ignored) {
-            return true;
-        }
     }
 
     /**
