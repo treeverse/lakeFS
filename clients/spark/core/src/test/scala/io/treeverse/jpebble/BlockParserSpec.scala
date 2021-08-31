@@ -225,8 +225,6 @@ class BlockParserSpec extends AnyFunSpec with Matchers {
               val footer = BlockParser.readFooter(bytes)
 
               val props = BlockParser.readProperties(in, footer)
-
-              Console.out.println(s"[DEBUG] Index type ${Binary.readable(props("rocksdb.block.based.table.index.type".getBytes))}")
             })
           }
 
