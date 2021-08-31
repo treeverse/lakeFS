@@ -87,16 +87,3 @@ spark-submit --conf spark.hadoop.lakefs.api.url=https://lakefs.example.com/api/v
 --class io.treeverse.clients.Main export-app example-repo s3://example-bucket/exported-data/ \
 --branch=main
 ```
-
-### Getting Graveler ranges on an Amazon EMR notebook
-
-Install the client on an EMR notebook:
-```
-%%configure -f
-{
-    "conf": {
-        "spark.jars.packages": "io.lakefs:lakefs-spark-client-247_2.11:0.1.5"
-    }
-}
-```
-
