@@ -149,7 +149,23 @@ public class LakeFSFileSystem extends FileSystem {
     @Override
     public RemoteIterator<LocatedFileStatus> listFiles(Path f, boolean recursive) throws FileNotFoundException, IOException {
         OPERATIONS_LOG.trace("list_files({}), recursive={}", f, recursive);
-        return toLocatedFileStatusIterator(new ListingIterator(f, recursive, listAmount));
+        return new RemoteIterator<LocatedFileStatus>() {
+            private final ListingIterator iterator = new ListingIterator(f, recursive, listAmount);
+
+            @Override
+            public boolean hasNext() throws IOException {
+                return iterator.hasNext();
+            }
+
+            @Override
+            public LocatedFileStatus next() throws IOException {
+                LakeFSFileStatus status = iterator.next();
+                BlockLocation[] locations = status.isFile()
+                        ? getFileBlockLocations(status, 0, status.getLen())
+                        : new BlockLocation[0];
+                return new LocatedFileStatus(status, locations);
+            }
+        };
     }
 
     /**
@@ -308,10 +324,10 @@ public class LakeFSFileSystem extends FileSystem {
         iterator.setRemoveDirectory(false);
         while (iterator.hasNext()) {
             // TODO (Tals): parallelize objects rename process.
-            LakeFSLocatedFileStatus locatedFileStatus = iterator.next();
-            Path objDst = buildObjPathOnNonExistingDestinationDir(locatedFileStatus.getPath(), src, dst);
+            LakeFSFileStatus fileStatus = iterator.next();
+            Path objDst = buildObjPathOnNonExistingDestinationDir(fileStatus.getPath(), src, dst);
             try {
-                renameObject(locatedFileStatus.toLakeFSFileStatus(), objDst);
+                renameObject(fileStatus, objDst);
             } catch (IOException e) {
                 // Rename dir operation in non-transactional. if one object rename failed we will end up in an
                 // intermediate state. TODO: consider adding a cleanup similar to
@@ -461,7 +477,7 @@ public class LakeFSFileSystem extends FileSystem {
                 ListingIterator iterator = new ListingIterator(path, true, listAmount);
                 iterator.setRemoveDirectory(false);
                 while (iterator.hasNext()) {
-                    LocatedFileStatus fileStatus = iterator.next();
+                    LakeFSFileStatus fileStatus = iterator.next();
                     ObjectLocation fileLoc = pathToObjectLocation(fileStatus.getPath());
                     if (fileStatus.isDirectory()) {
                         fileLoc = fileLoc.toDirectory();
@@ -552,8 +568,8 @@ public class LakeFSFileSystem extends FileSystem {
         List<FileStatus> fileStatuses = new ArrayList<>();
         ListingIterator iterator = new ListingIterator(path, false, listAmount);
         while (iterator.hasNext()) {
-            LocatedFileStatus fileStatus = iterator.next();
-            fileStatuses.add(((LakeFSLocatedFileStatus)fileStatus).toLakeFSFileStatus());
+            LakeFSFileStatus fileStatus = iterator.next();
+            fileStatuses.add(fileStatus);
         }
         if (!fileStatuses.isEmpty()) {
             return fileStatuses.toArray(new FileStatus[0]);
@@ -798,7 +814,7 @@ public class LakeFSFileSystem extends FileSystem {
         return loc;
     }
 
-    class ListingIterator implements RemoteIterator<LakeFSLocatedFileStatus> {
+    class ListingIterator implements RemoteIterator<LakeFSFileStatus> {
         private final ObjectLocation objectLocation;
         private final String delimiter;
         private final int amount;
@@ -876,38 +892,18 @@ public class LakeFSFileSystem extends FileSystem {
         }
 
         @Override
-        public LakeFSLocatedFileStatus next() throws IOException {
+        public LakeFSFileStatus next() throws IOException {
             if (!hasNext()) {
                 throw new NoSuchElementException("No more entries");
             }
             ObjectStats objectStats = chunk.get(pos++);
-            LakeFSFileStatus fileStatus = convertObjectStatsToFileStatus(
+            return convertObjectStatsToFileStatus(
                     objectLocation,
                     objectStats);
-            return toLakeFSLocatedFileStatus(fileStatus);
         }
-    }
-
-    /**
-     * Build a {@link LakeFSLocatedFileStatus} from a {@link LakeFSFileStatus} instance.
-     *
-     * @param status lakeFS file status
-     * @return a located status with block locations
-     * @throws IOException IO Problems.
-     */
-    private LakeFSLocatedFileStatus toLakeFSLocatedFileStatus(LakeFSFileStatus status) throws IOException {
-        BlockLocation[] blockLocations = status.isFile()
-                ? getFileBlockLocations(status, 0, status.getLen())
-                : null;
-        return new LakeFSLocatedFileStatus(status, blockLocations);
     }
 
     private static boolean isDirectory(ObjectStats stat) {
         return stat.getPath().endsWith(SEPARATOR) || stat.getPathType() == ObjectStats.PathTypeEnum.COMMON_PREFIX;
-    }
-
-    public static RemoteIterator<LocatedFileStatus> toLocatedFileStatusIterator(
-            RemoteIterator<? extends LocatedFileStatus> iterator) {
-        return (RemoteIterator<LocatedFileStatus>) iterator;
     }
 }
