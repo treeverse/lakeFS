@@ -340,7 +340,7 @@ Policy:
 
 ### Additional Policies
 
-The following examples can be used to create additional policies to further limit user accesses:
+The following examples can be used to create additional policies to further limit user access. Use the web UI or the [lakectl auth](./commands.md#lakectl-auth-policies-create) command to create policies.
 
 ##### ReadWriteAccessForSpecificRepository
 
