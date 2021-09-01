@@ -780,7 +780,7 @@ public class LakeFSFileSystemTest {
      * rename(srcDir(containing srcDir/a.txt, srcDir/b.txt), non-existing-dir/new) -> unsupported, rename should fail by returning false
      */
     @Test
-    public void testRename_existingDirToNonExistingDirName() throws ApiException, IOException {
+    public void testRename_existingDirToNonExistingDirWithoutParent() throws ApiException, IOException {
         Path fileInSrcDir = new Path("lakefs://repo/main/existing-dir/existing.src");
         ObjectLocation fileObjLoc = fs.pathToObjectLocation(fileInSrcDir);
         Path srcDir = new Path("lakefs://repo/main/existing-dir");
@@ -792,6 +792,23 @@ public class LakeFSFileSystemTest {
         Path dst = new Path("lakefs://repo/main/non-existing-dir/new");
         boolean renamed = fs.rename(srcDir, dst);
         Assert.assertFalse(renamed);
+    }
+
+    /**
+     * rename(srcDir(containing srcDir/a.txt, srcDir/b.txt), non-existing-dir/new) -> unsupported, rename should fail by returning false
+     */
+    @Test
+    public void testRename_existingDirToNonExistingDirWithParent() throws ApiException, IOException {
+        Path fileInSrcDir = new Path("lakefs://repo/main/existing-dir/existing.src");
+        ObjectLocation fileObjLoc = fs.pathToObjectLocation(fileInSrcDir);
+        Path srcDir = new Path("lakefs://repo/main/existing-dir");
+        ObjectLocation srcDirObjLoc = fs.pathToObjectLocation(srcDir);
+        mockExistingDirPath(srcDirObjLoc, ImmutableList.of(fileObjLoc));
+        mockExistingDirPath(new ObjectLocation("lakefs", "repo", "main", "existing-dir2/new"), Collections.emptyList());
+
+        Path dst = new Path("lakefs://repo/main/existing-dir2/new");
+        boolean renamed = fs.rename(srcDir, dst);
+        Assert.assertTrue(renamed);
     }
 
     /**

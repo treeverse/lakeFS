@@ -370,9 +370,9 @@ public class LakeFSFileSystem extends FileSystem {
      * <p>
      * input:
      * srcObj: lakefs://repo/main/dir1/file1.txt
-     * dstDir: lakefs://repo/main/dir2
+     * dstDir: lakefs://repo/main/dir2/file2.txt
      * output:
-     * lakefs://repo/main/dir2/dir1/file1.txt
+     * lakefs://repo/main/dir2/file2.txt
      */
     private Path buildObjPathOnExistingDestinationDir(Path srcObj, Path dstDir) {
         Path srcParent = srcObj.getParent();
