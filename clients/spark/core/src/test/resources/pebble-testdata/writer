@@ -1,0 +1,285 @@
+build
+a.SET.1:a
+----
+point:   [a#1,1,a#1,1]
+range:   [#0,0,#0,0]
+seqnums: [1,1]
+
+scan
+----
+a#1,1:a
+
+scan-range-del
+----
+
+build
+a.SET.1:a
+b.DEL.2:b
+c.MERGE.3:c
+d.RANGEDEL.4:e
+f.SET.5:f
+g.DEL.6:g
+h.MERGE.7:h
+i.RANGEDEL.8:j
+----
+point:   [a#1,1,h#7,2]
+range:   [d#4,15,j#72057594037927935,15]
+seqnums: [1,8]
+
+build
+a.SET.1:a
+b.DEL.2:b
+c.MERGE.3:c
+d.RANGEDEL.4:e
+f.SET.5:f
+g.DEL.6:g
+h.MERGE.7:h
+i.RANGEDEL.8:j
+----
+point:   [a#1,1,h#7,2]
+range:   [d#4,15,j#72057594037927935,15]
+seqnums: [1,8]
+
+scan
+----
+a#1,1:a
+b#2,0:b
+c#3,2:c
+f#5,1:f
+g#6,0:g
+h#7,2:h
+
+scan-range-del
+----
+d#4,15:e
+i#8,15:j
+
+# 3: a-----------m
+# 2:      f------------s
+# 1:          j---------------z
+
+build
+a.RANGEDEL.3:m
+f.RANGEDEL.2:s
+j.RANGEDEL.1:z
+----
+point:   [#0,0,#0,0]
+range:   [a#3,15,z#72057594037927935,15]
+seqnums: [1,3]
+
+scan
+----
+
+scan-range-del
+----
+a#3,15:f
+f#3,15:j
+f#2,15:j
+j#3,15:m
+j#2,15:m
+j#1,15:m
+m#2,15:s
+m#1,15:s
+s#1,15:z
+
+# The range tombstone upper bound is exclusive, so a point operation
+# on that same key will be the actual boundary.
+
+build
+a.RANGEDEL.3:b
+b.SET.4:c
+----
+point:   [b#4,1,b#4,1]
+range:   [a#3,15,b#72057594037927935,15]
+seqnums: [3,4]
+
+build
+a.RANGEDEL.3:b
+b.SET.2:c
+----
+point:   [b#2,1,b#2,1]
+range:   [a#3,15,b#72057594037927935,15]
+seqnums: [2,3]
+
+build
+a.RANGEDEL.3:c
+b.SET.2:c
+----
+point:   [b#2,1,b#2,1]
+range:   [a#3,15,c#72057594037927935,15]
+seqnums: [2,3]
+
+# Keys must be added in order.
+
+build
+a.SET.1:b
+a.SET.2:c
+----
+pebble: keys must be added in order: a#1,SET, a#2,SET
+
+build
+b.SET.1:a
+a.SET.2:b
+----
+pebble: keys must be added in order: b#1,SET, a#2,SET
+
+build
+b.RANGEDEL.1:c
+a.RANGEDEL.2:b
+----
+pebble: keys must be added in order: b#1,RANGEDEL > a#2,RANGEDEL
+
+build-raw
+.RANGEDEL.1:b
+----
+point:   [#0,0,#0,0]
+range:   [#1,15,b#72057594037927935,15]
+seqnums: [1,1]
+
+build-raw
+a.RANGEDEL.1:c
+a.RANGEDEL.2:c
+----
+pebble: keys must be added in order: a#1,RANGEDEL, a#2,RANGEDEL
+
+build-raw
+a.RANGEDEL.1:c
+b.RANGEDEL.2:d
+----
+pebble: overlapping tombstones must be fragmented: a-c#1 vs b-d#2
+
+build-raw
+a.RANGEDEL.2:c
+a.RANGEDEL.1:d
+----
+pebble: overlapping tombstones must be fragmented: a-c#2 vs a-d#1
+
+build-raw
+a.RANGEDEL.1:c
+c.RANGEDEL.2:d
+----
+point:   [#0,0,#0,0]
+range:   [a#1,15,d#72057594037927935,15]
+seqnums: [1,2]
+
+# The range-del-v1 format supports unfragmented and unsorted range
+# tombstones.
+
+build-raw range-del-v1
+a.RANGEDEL.1:c
+a.RANGEDEL.2:c
+----
+point:   [#0,0,#0,0]
+range:   [a#2,15,c#72057594037927935,15]
+seqnums: [1,2]
+
+scan-range-del
+----
+a#2,15:c
+a#1,15:c
+
+build-raw range-del-v1
+a.RANGEDEL.1:c
+b.RANGEDEL.2:d
+----
+point:   [#0,0,#0,0]
+range:   [a#1,15,d#72057594037927935,15]
+seqnums: [1,2]
+
+scan-range-del
+----
+a#1,15:b
+b#2,15:c
+b#1,15:c
+c#2,15:d
+
+build-raw range-del-v1
+a.RANGEDEL.2:c
+a.RANGEDEL.1:d
+----
+point:   [#0,0,#0,0]
+range:   [a#2,15,d#72057594037927935,15]
+seqnums: [1,2]
+
+scan-range-del
+----
+a#2,15:c
+a#1,15:c
+c#1,15:d
+
+# This matches an early test case, except we're passing overlapping
+# range tombstones to the sstable writer and requiring them to be
+# fragmented at read time.
+
+build-raw range-del-v1
+j.RANGEDEL.1:z
+f.RANGEDEL.2:s
+a.RANGEDEL.3:m
+----
+point:   [#0,0,#0,0]
+range:   [a#3,15,z#72057594037927935,15]
+seqnums: [1,3]
+
+scan-range-del
+----
+a#3,15:f
+f#3,15:j
+f#2,15:j
+j#3,15:m
+j#2,15:m
+j#1,15:m
+m#2,15:s
+m#1,15:s
+s#1,15:z
+
+# Setting a very small index-block-size results in a two-level index.
+
+build block-size=1 index-block-size=1
+a.SET.1:a
+b.SET.1:b
+c.SET.1:c
+----
+point:   [a#1,1,c#1,1]
+range:   [#0,0,#0,0]
+seqnums: [1,1]
+
+layout
+----
+         0  data (21)
+        26  data (21)
+        52  data (21)
+        78  index (22)
+       105  index (22)
+       132  index (22)
+       159  top-index (50)
+       214  properties (717)
+       936  meta-index (33)
+       974  footer (53)
+
+scan
+----
+a#1,1:a
+b#1,1:b
+c#1,1:c
+
+# Enabling leveldb format disables the creation of a two-level index
+# (the input data here mirrors the test case above).
+
+build leveldb block-size=1 index-block-size=1
+a.SET.1:a
+b.SET.1:b
+c.SET.1:c
+----
+point:   [a#1,1,c#1,1]
+range:   [#0,0,#0,0]
+seqnums: [1,1]
+
+layout
+----
+         0  data (21)
+        26  data (21)
+        52  data (21)
+        78  index (47)
+       130  properties (678)
+       813  meta-index (33)
+       851  leveldb-footer (48)
