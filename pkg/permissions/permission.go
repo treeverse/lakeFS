@@ -1,7 +1,7 @@
 package permissions
 
 const (
-	fSArnPrefix   = "arn:lakefs:fs:::"
+	fsArnPrefix   = "arn:lakefs:fs:::"
 	authArnPrefix = "arn:lakefs:auth:::"
 
 	All = "*"
@@ -13,19 +13,23 @@ type Permission struct {
 }
 
 func RepoArn(repoID string) string {
-	return fSArnPrefix + "repository/" + repoID
+	return fsArnPrefix + "repository/" + repoID
+}
+
+func StorageNamespace(namespace string) string {
+	return fsArnPrefix + "namespace/" + namespace
 }
 
 func ObjectArn(repoID, key string) string {
-	return fSArnPrefix + "repository/" + repoID + "/object/" + key
+	return fsArnPrefix + "repository/" + repoID + "/object/" + key
 }
 
 func BranchArn(repoID, branchID string) string {
-	return fSArnPrefix + "repository/" + repoID + "/branch/" + branchID
+	return fsArnPrefix + "repository/" + repoID + "/branch/" + branchID
 }
 
 func TagArn(repoID, tagID string) string {
-	return fSArnPrefix + "repository/" + repoID + "/tag/" + tagID
+	return fsArnPrefix + "repository/" + repoID + "/tag/" + tagID
 }
 
 func UserArn(userID string) string {

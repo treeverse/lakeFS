@@ -1072,6 +1072,10 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 			Action:   permissions.CreateRepositoryAction,
 			Resource: permissions.RepoArn(body.Name),
 		},
+		{
+			Action:   permissions.AttachStorageNamespace,
+			Resource: permissions.StorageNamespace(body.StorageNamespace),
+		},
 	}) {
 		return
 	}
