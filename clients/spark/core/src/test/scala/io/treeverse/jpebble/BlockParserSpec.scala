@@ -3,10 +3,15 @@ package io.treeverse.jpebble
 import org.scalatest._
 import matchers.should._
 import funspec._
+import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
 
 import java.io.File
 import org.apache.commons.io.IOUtils
 import scala.io.Source
+import org.testcontainers.containers.BindMode
+import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy
+import org.scalatest.matchers.must.Matchers.{contain}
+import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 
 class BlockParserSpec extends AnyFunSpec with Matchers {
   val magicBytes = BlockParser.footerMagic
@@ -167,7 +172,7 @@ class BlockParserSpec extends AnyFunSpec with Matchers {
         case histRe(count, word) => (word, count.toInt)
         case _ => throw new RuntimeException(s"Bad format h.txt line ${line}")
       }
-    ).toMap
+    ).toSeq
 
     it("internal: load h.txt") {
       expected should not be empty
@@ -232,9 +237,9 @@ class BlockParserSpec extends AnyFunSpec with Matchers {
             withSSTable(sstFilename, (in: BlockReadable) => {
               val it = BlockParser.entryIterator(in)
               val actual = it.map((entry) =>
-                (new String(entry.key), new String(entry.value).toInt)).toMap
+                (new String(entry.key), new String(entry.value).toInt)).toSeq
 
-              actual should contain theSameElementsAs expected
+              actual should contain theSameElementsInOrderAs expected
             })
           }
         }
@@ -258,6 +263,178 @@ class CountedIteratorSpec extends AnyFunSpec with Matchers {
       ci.count should be (1)
       ci.foreach((_) => Unit)
       ci.count should be (base.length)
+    }
+  }
+}
+
+class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
+
+  override val container: GenericContainer = GenericContainer("golang:1.16.2-alpine",
+    classpathResourceMapping = Seq(
+      ("parser-test/generate-sst.sh", "/local/generate-sst.sh", BindMode.READ_WRITE),
+      ("parser-test/sst_files_generator.go", "/local/sst_files_generator.go", BindMode.READ_WRITE),
+      ("parser-test/go.mod", "/local/go.mod", BindMode.READ_WRITE),
+      ("parser-test/go.sum", "/local/go.sum", BindMode.READ_WRITE)),
+    command = Seq("/local/generate-sst.sh"),
+    waitStrategy = new LogMessageWaitStrategy().withRegEx("done\\n")
+  );
+
+  describe("A block parser") {
+    describe("with 2-level index sstable") {
+      it("should parse successfully") {
+        val fileName = "two.level.idx"
+        withGeneratedTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)], sstSize: Long) => {
+          val it = BlockParser.entryIterator(in)
+          val actual = it.map((entry) =>
+            (new String(entry.key), new String(entry.value))).toSeq
+
+          actual should contain theSameElementsInOrderAs expected
+        })
+      }
+    }
+
+    val testFiles = Seq(
+      "fuzz.contents.0",
+      "fuzz.contents.1",
+      "fuzz.contents.2",
+      "fuzz.contents.3",
+      "fuzz.contents.4",
+      "fuzz.contents.5"
+    )
+
+    describe("with multi-sized sstables") {
+      testFiles.foreach(fileName =>
+        describe(fileName) {
+          it("should parse successfully") {
+            withGeneratedTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)], sstSize: Long) => {
+              val it = BlockParser.entryIterator(in)
+              val actual = it.map((entry) =>
+                (new String(entry.key), new String(entry.value))).toSeq
+
+              actual should contain theSameElementsInOrderAs expected
+            }
+            )
+          }
+        })
+    }
+
+    describe("with random table user properties") {
+      it("should parse successfully") {
+        val fileName = "fuzz.table.properties"
+        withGeneratedTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)], sstSize: Long) => {
+          val it = BlockParser.entryIterator(in)
+          val actual = it.map((entry) =>
+            (new String(entry.key), new String(entry.value))).toSeq
+
+          actual should contain theSameElementsInOrderAs expected
+        })
+      }
+    }
+
+    describe("with sstable with xxHash64 checksum") {
+      it("should fail parsing") {
+        val fileName = "checksum.type.xxHash64"
+        withGeneratedTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)], sstSize: Long) => {
+          assertThrows[BadFileFormatException]{
+            val it = BlockParser.entryIterator(in)
+          }
+        })
+      }
+    }
+
+    describe("with sstable with levelDB table format") {
+      it("should fail parsing") {
+        val fileName = "table.format.leveldb"
+        withGeneratedTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)], sstSize: Long) => {
+          assertThrows[BadFileFormatException]{
+            val it = BlockParser.entryIterator(in)
+          }
+        })
+      }
+    }
+
+    describe("with max size sstable supported by lakeFS") {
+      it("should parse successfully") {
+        val fileName = "max.size.lakefs.file"
+        withGeneratedTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)], sstSize: Long) => {
+          val it = BlockParser.entryIterator(in)
+          val actual = it.map((entry) =>
+            (new String(entry.key), new String(entry.value))).toSeq
+
+          actual should contain theSameElementsInOrderAs expected
+        })
+      }
+    }
+
+    describe("with random restart interval") {
+      it("should parse successfully") {
+        val fileName = "fuzz.block.restart.interval"
+        withGeneratedTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)], sstSize: Long) => {
+          val it = BlockParser.entryIterator(in)
+          val actual = it.map((entry) =>
+            (new String(entry.key), new String(entry.value))).toSeq
+
+          actual should contain theSameElementsInOrderAs expected
+        })
+      }
+    }
+
+    describe("with random block size") {
+      it("should parse successfully") {
+        val fileName = "fuzz.block.size"
+        withGeneratedTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)], sstSize: Long) => {
+          val it = BlockParser.entryIterator(in)
+          val actual = it.map((entry) =>
+            (new String(entry.key), new String(entry.value))).toSeq
+
+          actual should contain theSameElementsInOrderAs expected
+        })
+      }
+    }
+
+    describe("with random blocksize threshold") {
+      it("should parse successfully") {
+        val fileName = "fuzz.block.size.threshold"
+        withGeneratedTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)], sstSize: Long) => {
+          val it = BlockParser.entryIterator(in)
+          val actual = it.map((entry) =>
+            (new String(entry.key), new String(entry.value))).toSeq
+
+          actual should contain theSameElementsInOrderAs expected
+        })
+      }
+    }
+  }
+
+  def copyTestFile(fileName: String, suffix: String) : File =
+    container.copyFileFromContainer("/local/" + fileName + suffix, in => {
+      val tempOutFile = File.createTempFile("test-block-parser.", suffix)
+      tempOutFile.deleteOnExit()
+      val out = new java.io.FileOutputStream(tempOutFile)
+      IOUtils.copy(in, out)
+      in.close()
+      out.close()
+      return tempOutFile
+    })
+
+
+  /**
+   * Lightweight fixture for running particular tests with SSTables and Json fules generated by a go application on
+   * test startup. The fixture uses sstables as the parser input, and the json as the source of the expected output of
+   * the parsing operation.
+   */
+  def withGeneratedTestFiles(filename: String, test: (BlockReadable, Seq[(String, String)], Long) => Any) = {
+    val tmpSstFile = copyTestFile(filename, ".sst")
+    val tmpJsonFile = copyTestFile(filename, ".json")
+
+    val in = new BlockReadableFileChannel(new java.io.FileInputStream(tmpSstFile).getChannel)
+    val jsonString = os.read(os.Path(tmpJsonFile.getAbsolutePath))
+    val data = ujson.read(jsonString)
+    val expected = data.arr.map(e => (e("Key").str, e("Value").str))
+    try {
+      test(in, expected, tmpSstFile.length())
+    } finally {
+      in.close()
     }
   }
 }
