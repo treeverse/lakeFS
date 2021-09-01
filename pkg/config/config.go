@@ -76,7 +76,7 @@ type Config struct {
 func NewConfig() (*Config, error) {
 	c := &Config{}
 
-	// Inform viper of all expected fields.  Otherwise it fails to deserialize from the
+	// Inform viper of all expected fields.  Otherwise, it fails to deserialize from the
 	// environment.
 	keys := GetStructKeys(reflect.TypeOf(c.values), "mapstructure", "squash")
 	for _, key := range keys {
@@ -411,4 +411,8 @@ func (c *Config) GetFixedInstallationID() string {
 
 func (c *Config) GetCommittedBlockStoragePrefix() string {
 	return c.values.Committed.BlockStoragePrefix
+}
+
+func (c *Config) ToLoggerFields() logging.Fields {
+	return MapLoggingFields(c.values)
 }

@@ -33,13 +33,13 @@ type S3AuthInfo struct {
 	CredentialsFile string `mapstructure:"credentials_file"`
 	Profile         string
 	Credentials     *struct {
-		AccessKeyID string `mapstructure:"access_key_id"`
+		AccessKeyID string `mapstructure:"access_key_id" validate:"secret"`
 		// AccessSecretKey is the old name for SecretAccessKey.
 		//
 		// Deprecated: use SecretAccessKey instead.
-		AccessSecretKey string `mapstructure:"access_secret_key"`
-		SecretAccessKey string `mapstructure:"secret_access_key"`
-		SessionToken    string `mapstructure:"session_token"`
+		AccessSecretKey string `mapstructure:"access_secret_key" validate:"secret"`
+		SecretAccessKey string `mapstructure:"secret_access_key" validate:"secret"`
+		SessionToken    string `mapstructure:"session_token" validate:"secret"`
 	}
 }
 
@@ -56,7 +56,7 @@ type configuration struct {
 	}
 
 	Database struct {
-		ConnectionString      string        `mapstructure:"connection_string"`
+		ConnectionString      string        `mapstructure:"connection_string" validate:"secret"`
 		MaxOpenConnections    int32         `mapstructure:"max_open_connections"`
 		MaxIdleConnections    int32         `mapstructure:"max_idle_connections"`
 		ConnectionMaxLifetime time.Duration `mapstructure:"connection_max_lifetime"`
@@ -70,7 +70,7 @@ type configuration struct {
 			Jitter  time.Duration
 		}
 		Encrypt struct {
-			SecretKey string `mapstructure:"secret_key" validate:"required"`
+			SecretKey string `mapstructure:"secret_key" validate:"required,secret"`
 		}
 	}
 	Blockstore struct {

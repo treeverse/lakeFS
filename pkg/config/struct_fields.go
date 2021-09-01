@@ -1,0 +1,92 @@
+package config
+
+import (
+	"reflect"
+	"strings"
+
+	"github.com/treeverse/lakefs/pkg/logging"
+)
+
+const (
+	FieldMaskedValue   = "******"
+	FieldMaskedNoValue = "------"
+)
+
+// MapLoggingFields returns all logging.Fields withe formatted based on our configuration struct 'dot.name.key' with
+// the associated value. Support squash and secret to skip print out of secrets.
+func MapLoggingFields(value interface{}) logging.Fields {
+	fields := make(logging.Fields)
+	structFieldsFunc(reflect.ValueOf(value), "mapstructure", ",squash", "validate", "secret", nil, func(key string, value interface{}) {
+		fields[key] = value
+	})
+	return fields
+}
+
+func structFieldsFunc(value reflect.Value, tag, squashValue, validateTag, secretValue string, prefix []string, cb func(key string, value interface{})) {
+	// finite loop: Go types are well-founded.
+	for value.Kind() == reflect.Ptr {
+		if value.IsZero() {
+			// If required, would already have errored out.
+			return
+		}
+		value = value.Elem()
+	}
+
+	// Got to a value we like to call 'cb' with the key/value information
+	if value.Kind() != reflect.Struct {
+		key := strings.Join(prefix, sep)
+		cb(key, value)
+		return
+	}
+
+	// Scan the struct and
+	for i := 0; i < value.NumField(); i++ {
+		fieldType := value.Type().Field(i)
+		var (
+			// fieldName is the name to use for the field
+			fieldName string
+			// squash the sub-struct no additional accessor when true
+			squash bool
+			// secret do not print out value when true
+			secret bool
+			ok     bool
+		)
+		if fieldName, ok = fieldType.Tag.Lookup(tag); ok {
+			if strings.HasSuffix(fieldName, squashValue) {
+				squash = true
+				fieldName = strings.TrimSuffix(fieldName, squashValue)
+			}
+		} else {
+			fieldName = strings.ToLower(fieldType.Name)
+		}
+		// Lookup if field marked as secret
+		if validationsString, ok := fieldType.Tag.Lookup(validateTag); ok {
+			for _, validation := range strings.Split(validationsString, ",") {
+				if validation == secretValue {
+					secret = true
+					break
+				}
+			}
+		}
+		// Update prefix to recurse into this field.
+		if !squash {
+			prefix = append(prefix, fieldName)
+		}
+		fieldValue := value.Field(i)
+		// Do not print or dive into secrets
+		if secret {
+			key := strings.Join(prefix, sep)
+			val := FieldMaskedValue
+			if fieldValue.IsZero() {
+				val = FieldMaskedNoValue
+			}
+			cb(key, val)
+		} else {
+			structFieldsFunc(fieldValue, tag, squashValue, validateTag, secretValue, prefix, cb)
+		}
+		// Restore prefix
+		if !squash {
+			prefix = prefix[:len(prefix)-1]
+		}
+	}
+}
