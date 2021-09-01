@@ -47,23 +47,16 @@ public class TestLakeFSFileSystemContract extends FileSystemContractBaseTest {
   }
 
   public void testRenameFileAsExistingFile() throws Exception {
-    if (!renameSupported()) return;
-
     Path src = path("/test/hadoop/file");
     createFile(src);
     Path dst = path("/test/new/newfile");
     createFile(dst);
-    // s3 doesn't support rename option
-    // rename-overwrites-dest is always allowed.
+
     rename(src, dst, true, false, true);
   }
 
   @Override
   public void testRenameDirectoryAsExistingDirectory() throws Exception {
-    if (!renameSupported()) {
-      return;
-    }
-
     Path src = path("/test/hadoop/dir");
     fs.mkdirs(src);
     createFile(path("/test/hadoop/dir/file1"));
