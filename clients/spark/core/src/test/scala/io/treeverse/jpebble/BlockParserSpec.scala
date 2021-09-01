@@ -287,7 +287,7 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
     describe("with 2-level index sstable") {
       it("should parse successfully") {
         val fileName = "two.level.idx"
-        withGeneratedTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)], sstSize: Long, fileName: String) => {
+        withGeneratedTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)], sstSize: Long) => {
           val it = BlockParser.entryIterator(in)
           val actual = it.map((entry) =>
             (new String(entry.key), new String(entry.value))).toSeq
@@ -309,8 +309,8 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
     describe("with multi-sized sstables") {
       testFiles.foreach(fileName =>
         describe(fileName) {
-          it("should parse successfuly") {
-              withGeneratedTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)], sstSize: Long, fileName: String) => {
+          it("should parse successfully") {
+              withGeneratedTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)], sstSize: Long) => {
                 println("[DEBUG] size of generated test file (bytes)=" + sstSize)
                 val it = BlockParser.entryIterator(in)
                 val actual = it.map((entry) =>
@@ -326,7 +326,7 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
     describe("with random table user properties") {
       it("should parse successfully") {
         val fileName = "fuzz.table.properties"
-        withGeneratedTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)], sstSize: Long, fileName: String) => {
+        withGeneratedTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)], sstSize: Long) => {
           val it = BlockParser.entryIterator(in)
           val actual = it.map((entry) =>
             (new String(entry.key), new String(entry.value))).toSeq
@@ -339,7 +339,7 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
     describe("with sstable with xxHash64 checksum") {
       it("should fail parsing") {
         val fileName = "checksum.type.xxHash64"
-        withGeneratedTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)], sstSize: Long, fileName: String) => {
+        withGeneratedTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)], sstSize: Long) => {
           assertThrows[BadFileFormatException]{
             val it = BlockParser.entryIterator(in)
           }
@@ -350,7 +350,7 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
     describe("with sstable with levelDB table format") {
       it("should fail parsing") {
         val fileName = "table.format.leveldb"
-        withGeneratedTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)], sstSize: Long, fileName: String) => {
+        withGeneratedTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)], sstSize: Long) => {
           assertThrows[BadFileFormatException]{
             val it = BlockParser.entryIterator(in)
           }
@@ -361,7 +361,7 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
     describe("with max sized sstable supported by lakeFS") {
       it("should parse successfully") {
         val fileName = "max.size.lakefs.file"
-        withGeneratedTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)], sstSize: Long, fileName: String) => {
+        withGeneratedTestFiles(fileName, (in: BlockReadable, expected: Seq[(String, String)], sstSize: Long) => {
           val it = BlockParser.entryIterator(in)
           val actual = it.map((entry) =>
             (new String(entry.key), new String(entry.value))).toSeq
@@ -389,7 +389,7 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
    * test startup. The fixture uses sstables as the parser input, and the json as the source of the expected output of
    * the parsing operation.
    */
-  def withGeneratedTestFiles(filename: String, test: (BlockReadable, Seq[(String, String)], Long, String) => Any) = {
+  def withGeneratedTestFiles(filename: String, test: (BlockReadable, Seq[(String, String)], Long) => Any) = {
     val tmpSstFile = copyTestFile(filename, ".sst")
     val tmpJsonFile = copyTestFile(filename, ".json")
 
@@ -398,7 +398,8 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
     val data = ujson.read(jsonString)
     val expected = data.arr.map(e => (e("Key").str, e("Value").str))
     try {
-      test(in, expected, tmpSstFile.length(), filename)
+//      test(in, expected, tmpSstFile.length(), filename)
+      test(in, expected, tmpSstFile.length())
     } finally {
       in.close()
     }
