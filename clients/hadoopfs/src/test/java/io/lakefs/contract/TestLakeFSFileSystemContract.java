@@ -15,6 +15,7 @@ import org.apache.hadoop.fs.Path;
  **/
 public class TestLakeFSFileSystemContract extends FileSystemContractBaseTest {
   public static final String TEST_FS_LAKEFS_NAME = "test.fs.lakefs.name";
+
   private String pathPrefix;
 
   @Override
@@ -37,7 +38,7 @@ public class TestLakeFSFileSystemContract extends FileSystemContractBaseTest {
 
   @Override
   public void testMkdirsWithUmask() throws Exception {
-    // not supported
+    // skip("Not supported");
   }
 
   @Override
@@ -46,23 +47,16 @@ public class TestLakeFSFileSystemContract extends FileSystemContractBaseTest {
   }
 
   public void testRenameFileAsExistingFile() throws Exception {
-    // TODO make this test green and uncomment
-    if (!renameSupported()) return;
-//    Path src = path("/test/hadoop/file");
-//    createFile(src);
-//    Path dst = path("/test/new/newfile");
-//    createFile(dst);
-//    // s3 doesn't support rename option
-//    // rename-overwrites-dest is always allowed.
-//    rename(src, dst, true, false, true);
+    Path src = path("/test/hadoop/file");
+    createFile(src);
+    Path dst = path("/test/new/newfile");
+    createFile(dst);
+
+    rename(src, dst, true, false, true);
   }
 
   @Override
   public void testRenameDirectoryAsExistingDirectory() throws Exception {
-    if (!renameSupported()) {
-      return;
-    }
-
     Path src = path("/test/hadoop/dir");
     fs.mkdirs(src);
     createFile(path("/test/hadoop/dir/file1"));
@@ -81,44 +75,9 @@ public class TestLakeFSFileSystemContract extends FileSystemContractBaseTest {
         fs.exists(path("/test/new/newdir/subdir/file2")));
   }
 
-  //  @Override
-  public void testMoveDirUnderParent() throws Throwable {
-    // not support because
-    // Fails if dst is a directory that is not empty.
-  }
-
-  @Override
-  public void testMkdirs() throws Exception {
-    // TODO make this test green and remove override
-  }
-
   @Override
   public void testWorkingDirectory() throws Exception {
     // TODO make this test green and remove override
   }
-  
-  @Override
-  public void testRenameDirectoryMoveToNonExistentDirectory() throws Exception {
-    // TODO make this test green and remove override
-  }
 
-  @Override
-  public void testRenameFileAsExistingDirectory() throws Exception {
-    // TODO make this test green and remove override
-  }
-
-  @Override
-  public void testRenameDirectoryAsExistingFile() throws Exception {
-    // TODO make this test green and remove override
-  }
-
-  @Override
-  public void testRenameNonExistentPath() throws Exception {
-    // TODO make this test green and remove override
-  }
-
-  @Override
-  public void testRenameFileMoveToNonExistentDirectory() throws Exception {
-    // TODO make this test green and remove override
-  }
 }

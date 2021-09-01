@@ -24,7 +24,7 @@
 
     <property>
         <name>fs.contract.test.root-tests-enabled</name>
-        <value>false</value>
+        <value>true</value>
     </property>
 
     <property>
@@ -44,7 +44,7 @@
 
     <property>
         <name>fs.contract.rename-returns-false-if-source-missing</name>
-        <value>false</value>
+        <value>true</value>
     </property>
 
     <property>
@@ -107,8 +107,9 @@
         <value>true</value>
     </property>
 
-    <property>
-        <name>fs.contract.rename-creates-dest-dirs</name>
-        <value>true</value>
-    </property>
+<!-- s3a v3.1.1 supports rename creation of dest dirs -->
+<!--    <property>-->
+<!--        <name>fs.contract.rename-creates-dest-dirs</name>-->
+<!--        <value>true</value>-->
+<!--    </property>-->
 </configuration>
