@@ -19,7 +19,7 @@ const (
 	DefaultValueSizeBytes = 5
 	MbToBytes             = 1024 * 1024
 	KbToBytes             = 1024
-	FuzzerSeed            = 20
+	FuzzerSeed            = 50
 	// The max file size that can be written by graveler (pkg/config/config.go)
 	DefaultCommittedPermanentMaxRangeSizeMb = 20
 )
@@ -37,7 +37,7 @@ type Entry struct {
 }
 
 func main() {
-	generateTwoLevelIdxSst(10 * KbToBytes)
+	generateTwoLevelIdxSst()
 	fuzzSstContents()
 	fuzzWriterOptions()
 	sstsWithUnsupportedWriterOptions()
@@ -114,7 +114,6 @@ func fuzzWriterOptions() {
 	writeTestInputFiles(keys, func() (string, error) { return nanoid.New(DefaultValueSizeBytes) }, sizeBytes,
 		"fuzz.block.size", writerOptions)
 
-	//go func() {
 	// BlockSizeThreshold finishes a block if the block size is larger than the
 	// specified percentage of the target block size and adding the next entry
 	// would cause the block to be larger than the target block size.
@@ -142,15 +141,17 @@ func generateLargeSsts() {
 		"max.size.lakefs.file", writerOptions)
 }
 
+// Generates sstables on multiple sizes and uses a fuzzer to generate their contents.
 func fuzzSstContents() {
 	fileSizes := []int{}
 	for i := 0; i < 3; i++ {
 		curMb := rand.Intn(DefaultCommittedPermanentMaxRangeSizeMb)
 		curKb := rand.Intn(100)
+		if curMb == 0 || curKb == 0 {
+			continue
+		}
 		fileSizes = append(fileSizes, curMb*MbToBytes)
-		fmt.Printf("writing sstable of %d mb\n", curMb)
 		fileSizes = append(fileSizes, curKb*KbToBytes)
-		fmt.Printf("writing sstable of %d kb\n", curKb)
 	}
 
 	for i, size := range fileSizes {
@@ -172,24 +173,26 @@ func fuzzSstContents() {
 }
 
 func generateSortedSliceWithFuzzing(size int) []string {
-	numRecords := size / rand.Intn(size/10)
-	fmt.Printf("numRecords %d...\n", numRecords)
-
-	slice := make([]string, 0, numRecords)
+	var generatedDataBytes int
+	var slice []string
 	f := fuzz.NewWithSeed(FuzzerSeed)
-	for i := 0; i < numRecords; i++ {
+	// Keep generating keys until we reach the desired file size. This guarantees that the sstable writer will have
+	// enough data to write an sstable of the desired size.
+	for generatedDataBytes < size {
 		var key string
 		f.Fuzz(&key)
 		if key == "" { // TODO: (Tals) remove after resolving https://github.com/treeverse/lakeFS/issues/2419
 			continue
 		}
+		generatedDataBytes += len(key)
 		slice = append(slice, key)
 	}
 	sort.Strings(slice)
 	return slice
 }
 
-func generateTwoLevelIdxSst(sizeBytes int) {
+func generateTwoLevelIdxSst() {
+	sizeBytes := 10 * KbToBytes
 	keys := generateSortedSlice(sizeBytes)
 
 	writerOptions := sstable.WriterOptions{
@@ -215,18 +218,17 @@ func generateSortedSlice(size int) []string {
 	return slice
 }
 
-// Writes sst and json files that will be used to unit test the sst parser.
+// Writes sst and json files that will be used to unit test the sst block parser (clients/spark/core/src/main/scala/io/treeverse/jpebble/BlockParser.scala)
 // The sst file is the test input, and the json file encapsulates the expected parser output.
 func writeTestInputFiles(keys []string, genValue func() (string, error), size int, name string,
 	writerOptions sstable.WriterOptions) {
-	fmt.Printf("Generate %s...\n", name)
+	fmt.Printf("Generate %s of size %d bytes\n", name, size)
 	sstFile, err := os.Create(name + ".sst")
 	if err != nil {
 		panic(err)
 	}
 
 	expectedContents := make([]Entry, 0, len(keys))
-
 	writer := sstable.NewWriter(sstFile, writerOptions)
 	defer func() {
 		_ = writer.Close()
