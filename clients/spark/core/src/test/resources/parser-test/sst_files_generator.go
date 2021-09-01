@@ -20,7 +20,7 @@ const (
 	MbToBytes             = 1024 * 1024
 	KbToBytes             = 1024
 	FuzzerSeed            = 50
-	// The max file size that can be written by graveler (pkg/config/config.go)
+	// DefaultCommittedPermanentMaxRangeSizeMb - the max file size that can be written by graveler (pkg/config/config.go)
 	DefaultCommittedPermanentMaxRangeSizeMb = 20
 )
 
@@ -143,7 +143,7 @@ func generateLargeSsts() {
 
 // Generates sstables on multiple sizes and uses a fuzzer to generate their contents.
 func fuzzSstContents() {
-	fileSizes := []int{}
+	var fileSizes []int
 	for i := 0; i < 3; i++ {
 		curMb := rand.Intn(DefaultCommittedPermanentMaxRangeSizeMb)
 		curKb := rand.Intn(100)
