@@ -9,23 +9,23 @@ import (
 )
 
 type BranchIterator struct {
-	db            db.Database
-	ctx           context.Context
-	repositoryID  graveler.RepositoryID
-	value         *graveler.BranchRecord
-	buf           []*graveler.BranchRecord
-	offset        string
-	fetchSize     int
-	err           error
-	state         iteratorState
-	orderByColumn string
+	db              db.Database
+	ctx             context.Context
+	repositoryID    graveler.RepositoryID
+	value           *graveler.BranchRecord
+	buf             []*graveler.BranchRecord
+	offset          string
+	fetchSize       int
+	err             error
+	state           iteratorState
+	orderByCommitID bool
 }
 
 type BranchIteratorOption func(bi *BranchIterator)
 
-func WithOrderBy(orderByColumn string) BranchIteratorOption {
+func WithOrderByCommitID() BranchIteratorOption {
 	return func(bi *BranchIterator) {
-		bi.orderByColumn = orderByColumn
+		bi.orderByCommitID = true
 	}
 }
 
@@ -37,12 +37,12 @@ type branchRecord struct {
 
 func NewBranchIterator(ctx context.Context, db db.Database, repositoryID graveler.RepositoryID, prefetchSize int, opts ...BranchIteratorOption) *BranchIterator {
 	res := &BranchIterator{
-		db:            db,
-		ctx:           ctx,
-		repositoryID:  repositoryID,
-		fetchSize:     prefetchSize,
-		buf:           make([]*graveler.BranchRecord, 0, prefetchSize),
-		orderByColumn: "id",
+		db:              db,
+		ctx:             ctx,
+		repositoryID:    repositoryID,
+		fetchSize:       prefetchSize,
+		buf:             make([]*graveler.BranchRecord, 0, prefetchSize),
+		orderByCommitID: false,
 	}
 	for _, opt := range opts {
 		opt(res)
@@ -88,8 +88,8 @@ func (ri *BranchIterator) maybeFetch() {
 			FROM graveler_branches
 			WHERE repository_id = $1
 			AND id `+offsetCondition+` $2
-			ORDER BY $3 ASC
-			LIMIT $4`, ri.repositoryID, ri.offset, ri.orderByColumn, ri.fetchSize)
+			ORDER BY `+ri.getOrderBy()+`  ASC
+			LIMIT $3`, ri.repositoryID, ri.offset, ri.fetchSize)
 	if err != nil {
 		ri.err = err
 		return
@@ -134,4 +134,11 @@ func (ri *BranchIterator) Err() error {
 func (ri *BranchIterator) Close() {
 	ri.err = ErrIteratorClosed
 	ri.buf = nil
+}
+
+func (ri *BranchIterator) getOrderBy() string {
+	if ri.orderByCommitID {
+		return "commit_id"
+	}
+	return "id"
 }
