@@ -98,6 +98,11 @@ class DataBlockIterator(private val it: Iterator[Byte]) extends Iterator[Entry] 
     lastKey = (keySharedPrefix ++ keyUnshared).toArray
     Entry(lastKey, value)
   }
+
+  /** Convert (remainder of iterator) to a Map.  Arrays are great for
+   *  entries, less so for Map keys -- use Seq keys to allow value lookups.
+   */
+  def toMap: Map[Seq[Byte], Array[Byte]] = this.map({ case Entry(k, v) => (k.toSeq, v) }).toMap
 }
 
 object BlockParser {
@@ -112,6 +117,9 @@ object BlockParser {
 
   val COMPRESSION_BLOCK_TYPE_NONE = 0
   val COMPRESSION_BLOCK_TYPE_SNAPPY = 1
+
+  val INDEX_TYPE_KEY = "rocksdb.block.based.table.index.type".getBytes
+  val INDEX_TYPE_TWO_LEVEL = 2
 
   def update(checksum: Checksum, buf: ByteBuffer, offset: Int, length: Int) {
     if (buf.hasArray()) {
@@ -240,7 +248,7 @@ object BlockParser {
     }
   }
 
-  def parseDataBlock(block: IndexedBytes): Iterator[Entry] = {
+  def parseDataBlock(block: IndexedBytes): DataBlockIterator = {
     // Ignore block trailer, documented in the source code
     // https://github.com/facebook/rocksdb/blob/74b7c0d24997e12482105c09b47c7223e7b75b96/table/block_based/block_builder.cc#L29-L32
     //
@@ -254,49 +262,78 @@ object BlockParser {
     val blockWithoutTrailer = block.slice(0, block.size - 4 * (numRestarts + 1))
     new DataBlockIterator(blockWithoutTrailer.iterator)
   }
-}
 
-/** Iterator over all SSTable entries
- *
- *  BUG(ariels): No support for 2-level indexes!
- */
-class EntryIterator(val in: BlockReadable) extends Iterator[Entry] {
-  private val bytes = in.iterate(in.length - BlockParser.footerLength, BlockParser.footerLength)
-  private val footer = BlockParser.readFooter(bytes)
-  if (bytes.hasNext) {
-    throw new BadFileFormatException("Parsed footer too short")
+  def readProperties(
+      file: BlockReadable,
+      footer: IndexBlockHandles
+  ): Map[Seq[Byte], Array[Byte]] = {
+    val metaIndex = {
+      val bytes =
+        file.readBlock(footer.metaIndex.offset, footer.metaIndex.size + BlockParser.blockTrailerLen)
+      val block = BlockParser.startBlockParse(bytes)
+      BlockParser.parseDataBlock(block).toMap
+    }
+
+    val propBHIt = metaIndex("rocksdb.properties".getBytes).iterator
+    val propBH = readBlockHandle(propBHIt)
+    readEnd(propBHIt)
+
+    {
+      val bytes = file.readBlock(propBH.offset, propBH.size + BlockParser.blockTrailerLen)
+      val block = BlockParser.startBlockParse(bytes)
+      BlockParser.parseDataBlock(block).toMap
+    }
   }
 
-  private val indexIt = {
-    val bytes = in.readBlock(footer.index.offset, footer.index.size + BlockParser.blockTrailerLen)
-    val block = BlockParser.startBlockParse(bytes)
-    BlockParser.parseDataBlock(block)
-  }
+  /** @return Iterator over all SSTable entries
+   */
+  def entryIterator(in: BlockReadable): Iterator[Entry] = {
+    val bytes = in.iterate(in.length - BlockParser.footerLength, BlockParser.footerLength)
+    val footer = BlockParser.readFooter(bytes)
+    BlockParser.readEnd(bytes)
 
-  private var entryIt: Iterator[Entry] = null
+    val blockIndexType = {
+      val props = BlockParser.readProperties(in, footer)
+      val typeIt = props(BlockParser.INDEX_TYPE_KEY).iterator
+      val typ = BlockParser.readFixedInt(typeIt)
+      BlockParser.readEnd(typeIt)
+      typ
+    }
 
-  private def advanceToEntry(): Boolean = {
-    while (entryIt == null || !entryIt.hasNext) {
-      if (!indexIt.hasNext) {
-        return false
-      }
-      val data = indexIt.next()
+    val indexIt = {
+      val bytes = in.readBlock(footer.index.offset, footer.index.size + BlockParser.blockTrailerLen)
+      val block = BlockParser.startBlockParse(bytes)
+      BlockParser.parseDataBlock(block)
+    }
+
+    val index2It =
+      if (blockIndexType == INDEX_TYPE_TWO_LEVEL) // TODO(ariels): == or & ?
+        indexIt.flatMap((data) => {
+          val it = data.value.iterator
+          val bh = BlockParser.readBlockHandle(it)
+          BlockParser.readEnd(it)
+
+          val bytes = in.readBlock(bh.offset, bh.size + BlockParser.blockTrailerLen)
+          val block = BlockParser.startBlockParse(bytes)
+          BlockParser.parseDataBlock(block)
+        })
+      else
+        indexIt
+
+    val entryIt = index2It.flatMap((data) => {
       // Ignore separating key: for iterating over all the value, only the
       // blockhandle in the value is important.
       val it = data.value.iterator
       val bh = BlockParser.readBlockHandle(it)
-      if (it.hasNext) {
-        throw new BadFileFormatException("Parsed blockhandle too short")
-      }
+      BlockParser.readEnd(it)
 
       val bytes = in.readBlock(bh.offset, bh.size + BlockParser.blockTrailerLen)
       val block = BlockParser.startBlockParse(bytes)
-      entryIt = BlockParser.parseDataBlock(block)
-    }
-    return true
-  }
+      BlockParser.parseDataBlock(block)
+    })
 
-  advanceToEntry() // Move to first entry
+    entryIt.map(stripInternalKey)
+  }
 
   /** RocksDB adds 8 bytes at the end of the key of every user item of data.
    *  These bytes indicate a version number and a tombstone, both used to
@@ -308,8 +345,4 @@ class EntryIterator(val in: BlockReadable) extends Iterator[Entry] {
    */
   private def stripInternalKey(entry: Entry) =
     new Entry(entry.key.slice(0, entry.key.length - 8), entry.value)
-
-  def hasNext = advanceToEntry()
-
-  def next(): Entry = stripInternalKey(entryIt.next)
 }

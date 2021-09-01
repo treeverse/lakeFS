@@ -1,6 +1,6 @@
 package io.treeverse.clients
 
-import io.treeverse.jpebble.{EntryIterator, BlockReadableFileChannel}
+import io.treeverse.jpebble.{BlockParser, BlockReadableFileChannel, Entry => PebbleEntry}
 import com.google.protobuf.CodedInputStream
 import io.treeverse.lakefs.catalog.Entry
 import io.treeverse.lakefs.graveler.committed.RangeData
@@ -21,7 +21,7 @@ private object local {
 }
 
 class SSTableIterator[Proto <: GeneratedMessage with scalapb.Message[Proto]](
-    val it: EntryIterator,
+    val it: Iterator[PebbleEntry],
     companion: GeneratedMessageCompanion[Proto]
 ) extends Iterator[Item[Proto]] {
   // TODO(ariels): explicitly make it closeable, and figure out how to close it when used by
@@ -91,7 +91,7 @@ class SSTableReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
   }
 
   def newIterator(): SSTableIterator[Proto] = {
-    val it = new EntryIterator(reader)
+    val it = BlockParser.entryIterator(reader)
     new SSTableIterator(it, companion)
   }
 }

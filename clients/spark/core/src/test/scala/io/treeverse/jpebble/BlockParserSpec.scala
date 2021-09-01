@@ -6,6 +6,7 @@ import funspec._
 
 import java.io.File
 import org.apache.commons.io.IOUtils
+import scala.io.Source
 
 class BlockParserSpec extends AnyFunSpec with Matchers {
   val magicBytes = BlockParser.footerMagic
@@ -156,68 +157,88 @@ class BlockParserSpec extends AnyFunSpec with Matchers {
   }
 
   describe("read RocksDB SSTable") {
-    // Copy SSTable to a readable file
-    val sstContents = this.getClass.getClassLoader.getResourceAsStream("sstable/range.sst")
-    val tempFile = File.createTempFile("test-block-parser.", ".sst")
-    tempFile.deleteOnExit()
-    val out = new java.io.FileOutputStream(tempFile)
-    IOUtils.copy(sstContents, out)
-    sstContents.close()
-    out.close()
+    // Load source data
+    val hTxt = Source.fromInputStream(
+      // Source.fromResource in Scala >= 2.12 but need to support 2.11.
+      getClass.getClassLoader.getResourceAsStream("pebble-testdata/h.txt"))
+    val histRe = " *(\\d+) *(\\w+) *$".r
+    val expected = hTxt.getLines().map((line) =>
+      line match {
+        case histRe(count, word) => (word, count.toInt)
+        case _ => throw new RuntimeException(s"Bad format h.txt line ${line}")
+      }
+    ).toMap
 
-    val in = new BlockReadableFileChannel(new java.io.FileInputStream(tempFile).getChannel)
-
-    // TODO(ariels): Close after test.
-
-    it("reads footer") {
-      val bytes = in.iterate(tempFile.length - BlockParser.footerLength, BlockParser.footerLength)
-      val footer = BlockParser.readFooter(bytes)
-      bytes.hasNext should be (false)
+    it("internal: load h.txt") {
+      expected should not be empty
     }
 
-    it("reads metaindex block") {
-      // Read handles from footer
-      val footerBytes = in.iterate(tempFile.length - BlockParser.footerLength, BlockParser.footerLength)
-      val footer = BlockParser.readFooter(footerBytes)
+    val testFiles = Seq(
+      "h.sst",
+      "h.block-bloom.no-compression.sst",
+      "h.no-compression.sst",
+      "h.no-compression.two_level_index.sst",
+      "h.table-bloom.no-compression.prefix_extractor.no_whole_key_filter.sst",
+      "h.table-bloom.no-compression.sst",
+      "h.table-bloom.sst"
+    )
 
-      val bh = footer.metaIndex
-      Console.out.println("[metaindex] " +
-        f"${bh.offset}%08x (${bh.offset}) -> ${bh.size}%08x (${bh.size}%d)")
+    /**
+     * Lightweight fixture for running particular tests with an SSTable and
+     * recovering its handle after running.  See
+     * https://www.scalatest.org/scaladoc/1.8/org/scalatest/FlatSpec.html
+     * ("Providing different fixtures to different tests") for how this works.
+     */
+    def withSSTable(sstFilename: String, test: BlockReadable => Any) = {
+      // Copy SSTable to a readable file
+      val sstContents =
+        this.getClass.getClassLoader.getResourceAsStream("pebble-testdata/" + sstFilename)
+      val tempFile = File.createTempFile("test-block-parser.", ".sst")
+      tempFile.deleteOnExit()
+      val out = new java.io.FileOutputStream(tempFile)
+      IOUtils.copy(sstContents, out)
+      sstContents.close()
+      out.close()
 
-      val bytes = in.readBlock(bh.offset, bh.size + BlockParser.blockTrailerLen)
-      val block = BlockParser.startBlockParse(bytes)
-      val blockIt = BlockParser.parseDataBlock(block)
-      for (entry <- blockIt) {
-        Console.out.println(s"[metaindex]      ${entry}")
+      val in = new BlockReadableFileChannel(new java.io.FileInputStream(tempFile).getChannel)
+      try {
+        test(in)
+      } finally {
+        in.close()
       }
     }
 
-    it("reads index block") {
-      val footerBytes = in.iterate(tempFile.length - BlockParser.footerLength, BlockParser.footerLength)
-      val footer = BlockParser.readFooter(footerBytes)
+    testFiles.foreach(
+      (sstFilename) => {
+        describe(sstFilename) {
+          it("reads footer") {
+            withSSTable(sstFilename, (in: BlockReadable) => {
+              val bytes = in.iterate(in.length - BlockParser.footerLength, BlockParser.footerLength)
+              val footer = BlockParser.readFooter(bytes)
+              bytes.hasNext should be (false)
+            })
+          }
 
-      val bh = footer.index
-      Console.out.println("[index] " +
-        f"${bh.offset}%08x (${bh.offset}) -> ${bh.size}%08x (${bh.size}%d)")
+          it("dumps properties") {
+            withSSTable(sstFilename, (in: BlockReadable) => {
+              val bytes = in.iterate(in.length - BlockParser.footerLength, BlockParser.footerLength)
+              val footer = BlockParser.readFooter(bytes)
 
-      val bytes = in.readBlock(bh.offset, bh.size + BlockParser.blockTrailerLen)
-      val block = BlockParser.startBlockParse(bytes)
-      val blockIt = BlockParser.parseDataBlock(block)
-      for (entry <- blockIt) {
-        val bhIt = entry.value.iterator
-        val bh = BlockParser.readBlockHandle(bhIt)
-        bhIt.hasNext should be (false)
-        Console.out.println(s"[index]      ${Binary.readable(entry.key)} -> ${bh}")
-      }
-    }
+              val props = BlockParser.readProperties(in, footer)
+            })
+          }
 
-    it("reads everything") {
-      val it = new EntryIterator(in)
+          it("reads everything") {
+            withSSTable(sstFilename, (in: BlockReadable) => {
+              val it = BlockParser.entryIterator(in)
+              val actual = it.map((entry) =>
+                (new String(entry.key), new String(entry.value).toInt)).toMap
 
-      for (entry <- it) {
-        Console.out.println(s"[entry] ${entry}")
-      }
-    }
+              actual should contain theSameElementsAs expected
+            })
+          }
+        }
+      })
   }
 }
 
