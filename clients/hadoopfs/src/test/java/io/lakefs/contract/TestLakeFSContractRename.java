@@ -38,5 +38,4 @@ public class TestLakeFSContractRename extends AbstractContractRenameTest {
     boolean rename = fs.rename(srcDir, destDir);
     assertFalse("s3a doesn't support rename to non-empty directory", rename);
   }
-
 }
