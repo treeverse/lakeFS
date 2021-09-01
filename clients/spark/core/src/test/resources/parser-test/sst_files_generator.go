@@ -163,8 +163,9 @@ func fuzzSstContents() {
 			Compression:             sstable.SnappyCompression,
 			TablePropertyCollectors: []func() sstable.TablePropertyCollector{NewStaticCollector(getDefaultUserProperties())},
 		}
+
+		f := fuzz.NewWithSeed(FuzzerSeed)
 		writeTestInputFiles(keys, func() (string, error) {
-			f := fuzz.NewWithSeed(FuzzerSeed) //TODO: this is inefficient to keep generating a fuzzer on each value creation
 			var val string
 			f.Fuzz(&val)
 			return val, nil
@@ -173,18 +174,18 @@ func fuzzSstContents() {
 }
 
 func generateSortedSliceWithFuzzing(size int) []string {
-	var generatedDataBytes int
+	var keySumBytes int
 	var slice []string
 	f := fuzz.NewWithSeed(FuzzerSeed)
-	// Keep generating keys until we reach the desired file size. This guarantees that the sstable writer will have
+	// Keep generating keys until we reach the desired slice size. This guarantees that the sstable writer will have
 	// enough data to write an sstable of the desired size.
-	for generatedDataBytes < size {
+	for keySumBytes < size {
 		var key string
 		f.Fuzz(&key)
 		if key == "" { // TODO: (Tals) remove after resolving https://github.com/treeverse/lakeFS/issues/2419
 			continue
 		}
-		generatedDataBytes += len(key)
+		keySumBytes += len(key)
 		slice = append(slice, key)
 	}
 	sort.Strings(slice)
