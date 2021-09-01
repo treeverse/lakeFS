@@ -1,0 +1,495 @@
+build
+a.SET.1:A
+b.SET.2:B
+c.SET.3:C
+d.SET.4:D
+----
+
+iter
+first
+next
+next
+next
+next
+----
+<a:1>
+<b:2>
+<c:3>
+<d:4>
+.
+
+iter
+seek-ge a
+next
+next
+next
+next
+----
+<a:1>
+<b:2>
+<c:3>
+<d:4>
+.
+
+iter
+seek-ge b
+next
+next
+next
+----
+<b:2>
+<c:3>
+<d:4>
+.
+
+iter
+seek-ge c
+next
+next
+----
+<c:3>
+<d:4>
+.
+
+iter
+seek-ge d
+next
+----
+<d:4>
+.
+
+iter
+seek-ge e
+----
+.
+
+iter
+seek-ge d
+seek-ge z
+----
+<d:4>
+.
+
+iter
+seek-ge b
+seek-ge c
+seek-ge d
+seek-ge e
+----
+<b:2>
+<c:3>
+<d:4>
+.
+
+iter
+last
+prev
+prev
+prev
+prev
+----
+<d:4>
+<c:3>
+<b:2>
+<a:1>
+.
+
+iter
+seek-lt e
+prev
+prev
+prev
+prev
+----
+<d:4>
+<c:3>
+<b:2>
+<a:1>
+.
+
+iter
+seek-lt d
+prev
+prev
+prev
+----
+<c:3>
+<b:2>
+<a:1>
+.
+
+iter
+seek-lt c
+prev
+prev
+----
+<b:2>
+<a:1>
+.
+
+iter
+seek-lt b
+prev
+----
+<a:1>
+.
+
+iter
+seek-lt a
+----
+.
+
+iter
+seek-lt d
+seek-lt c
+seek-lt b
+seek-lt a
+----
+<c:3>
+<b:2>
+<a:1>
+.
+
+iter globalSeqNum=1
+first
+next
+next
+next
+next
+----
+<a:1>
+<b:1>
+<c:1>
+<d:1>
+.
+
+iter globalSeqNum=10
+first
+next
+next
+next
+next
+----
+<a:10>
+<b:10>
+<c:10>
+<d:10>
+.
+
+iter globalSeqNum=0
+seek-lt x
+----
+<d:4>
+
+get
+b
+a
+f
+d
+c
+----
+B
+A
+<err: pebble: not found>
+D
+C
+
+# Verify that clearing the bounds on an iterator also clears
+# previously set block{Lower,Upper}.
+
+iter
+seek-ge c
+seek-lt b
+set-bounds lower=b upper=c
+seek-ge c
+seek-lt b
+set-bounds lower= upper=
+seek-ge c
+seek-lt b
+----
+<c:3>
+<a:1>
+.
+.
+.
+.
+<c:3>
+<a:1>
+
+# Verify that seeking past the end of the sstable leaves the iterator
+# in a state where prev returns the last key in the table.
+
+iter
+seek-lt d
+seek-ge f
+prev
+----
+<c:3>
+.
+<d:4>
+
+# Verify that seeking before the beginning of the sstable leaves the
+# iterator in a state where next returns the first key in the table.
+
+iter
+seek-ge b
+seek-lt a
+next
+----
+<b:2>
+.
+<a:1>
+
+# Verify that iteration from before the beginning or after the end of
+# the sstable does not "wrap around". A bug previously allowed this to
+# happen by letting the data block iterator and index iterator get out
+# of sync.
+
+build
+a.SET.1:a
+----
+
+iter
+first
+prev
+next
+next
+next
+----
+<a:1>
+.
+<a:1>
+.
+.
+
+iter
+last
+next
+prev
+prev
+prev
+----
+<a:1>
+.
+<a:1>
+.
+.
+
+# Build a sufficiently large SST to enable two-level indexes.
+
+build
+a.SET.1:A
+aae.SET.1:E
+aaf.SET.1:F
+aag.SET.1:G
+aah.SET.1:H
+aai.SET.1:I
+aaj.SET.1:J
+aak.SET.1:K
+aal.SET.1:L
+aam.SET.1:M
+aan.SET.1:N
+aao.SET.1:O
+aap.SET.1:P
+aaq.SET.1:Q
+aar.SET.1:R
+aas.SET.1:S
+aat.SET.1:T
+aau.SET.1:U
+aav.SET.1:V
+aaw.SET.1:W
+aax.SET.1:X
+aay.SET.1:Y
+aaz.SET.1:Z
+b.SET.2:B
+bbe.SET.2:E
+bbf.SET.2:F
+bbg.SET.2:G
+bbh.SET.2:H
+bbi.SET.2:I
+bbj.SET.2:J
+bbk.SET.2:K
+bbl.SET.2:L
+bbm.SET.2:M
+bbn.SET.2:N
+bbo.SET.2:O
+bbp.SET.2:P
+bbq.SET.2:Q
+bbr.SET.2:R
+bbs.SET.2:S
+bbt.SET.2:T
+bbu.SET.2:U
+bbv.SET.2:V
+bbw.SET.2:W
+bbx.SET.2:X
+bby.SET.2:Y
+bbz.SET.2:Z
+c.SET.3:C
+cc.RANGEDEL.3:ccc
+cce.SET.3:E
+ccf.SET.3:F
+ccg.SET.3:G
+cch.SET.3:H
+cci.SET.3:I
+ccj.SET.3:J
+cck.SET.3:K
+ccl.SET.3:L
+ccm.SET.3:M
+ccn.SET.3:N
+cco.SET.3:O
+ccp.SET.3:P
+ccq.SET.3:Q
+ccr.SET.3:R
+ccs.SET.3:S
+cct.SET.3:T
+ccu.SET.3:U
+ccv.SET.3:V
+ccw.SET.3:W
+ccx.SET.3:X
+ccy.SET.3:Y
+ccz.SET.3:Z
+d.SET.4:D
+dd.RANGEDEL.4:ddd
+dde.SET.4:E
+ddf.SET.4:F
+ddg.SET.4:G
+ddh.SET.4:H
+ddi.SET.4:I
+ddj.SET.4:J
+ddk.SET.4:K
+ddl.SET.4:L
+ddm.SET.4:M
+ddn.SET.4:N
+ddo.SET.4:O
+ddp.SET.4:P
+ddq.SET.4:Q
+ddr.SET.4:R
+dds.SET.4:S
+ddt.SET.4:T
+ddu.SET.4:U
+ddv.SET.4:V
+ddw.SET.4:W
+ddx.SET.4:X
+ddy.SET.4:Y
+ddz.SET.4:Z
+----
+
+iter
+first
+prev
+next
+next
+next
+next
+next
+----
+<a:1>
+.
+<a:1>
+<aae:1>
+<aaf:1>
+<aag:1>
+<aah:1>
+
+iter
+last
+next
+prev
+prev
+prev
+----
+<ddz:4>
+.
+<ddz:4>
+<ddy:4>
+<ddx:4>
+
+iter
+first
+prev
+next
+next
+seek-ge x
+prev
+prev
+----
+<a:1>
+.
+<a:1>
+<aae:1>
+.
+<ddz:4>
+<ddy:4>
+
+iter
+first
+prev
+next
+next
+seek-prefix-ge x
+prev
+prev
+----
+<a:1>
+.
+<a:1>
+<aae:1>
+.
+.
+.
+
+iter
+last
+next
+prev
+prev
+seek-lt a
+next
+next
+----
+<ddz:4>
+.
+<ddz:4>
+<ddy:4>
+.
+<a:1>
+<aae:1>
+
+# Test that SeekPrefixGE does not position the iterator far outside the iterator bounds.
+# Doing so would break the subsequent SeekGE that is utilizing the next instead of seek
+# optimization.
+iter
+set-bounds lower=a upper=aae
+seek-ge a
+seek-prefix-ge aad
+set-bounds lower=aae upper=b
+seek-ge aae
+next
+----
+.
+<a:1>
+.
+.
+<aae:1>
+<aaf:1>
+
+# Test that using Next does not mislead a twoLevelIterator into believing that the
+# iterator has been positioned based on the latest iterator bounds. The Next call
+# immediately after SetBounds has a non-deterministic result, hence we use
+# next-ignore-result.
+iter
+set-bounds lower=bbq upper=d
+seek-ge bbq
+set-bounds lower=b upper=bbf
+next-ignore-result
+set-bounds lower=bbf upper=c
+seek-ge bbf
+next
+----
+.
+<bbq:2>
+.
+.
+.
+<bbf:2>
+<bbg:2>

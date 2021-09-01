@@ -80,7 +80,7 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
 
   override def getCurrentValue = new WithIdentifier(item.id, item.message)
 
-  override def close(): Unit = it.close()
+  override def close() = Unit
 
   override def getProgress: Float = {
     0 // TODO(johnnyaug) complete

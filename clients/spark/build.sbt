@@ -39,7 +39,6 @@ def generateCoreProject(buildType: BuildType) =
       ),
       libraryDependencies ++= Seq(
         "io.lakefs" % "api-client" % "0.44.0",
-        "org.rocksdb" % "rocksdbjni" % "6.6.4",
         "commons-codec" % "commons-codec" % "1.15",
         "org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
         "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
@@ -52,14 +51,19 @@ def generateCoreProject(buildType: BuildType) =
         "com.google.guava" % "failureaccess" % "1.0.1",
         "org.rogach" %% "scallop" % "4.0.3",
         "software.amazon.awssdk" % "s3" % "2.15.15",
-        "org.ow2.asm" % "asm" % "9.2",
-        "org.ow2.asm" % "asm-util" % "9.2",
+        // Snappy is JNI :-(.  However it does claim to work with
+        // ClassLoaders, and (even more importantly!) using a preloaded JNI
+        // version will probably continue to work because the C language API
+        // is quite stable.  Take the version documented in DataBricks
+        // Runtime 7.6, and note that it changes in 8.3 :-(
+        "org.xerial.snappy" % "snappy-java" % "1.1.7.5",
 
         "org.scalactic" %% "scalactic" % "3.2.9",
         "org.scalatest" %% "scalatest" % "3.2.9" % "test",
       ),
       Test / logBuffered := false,
-      Test / testOptions += Tests.Argument("-oF"),
+      // Uncomment to get (very) full stacktraces in test:
+      //      Test / testOptions += Tests.Argument("-oF"),
       target := file(s"target/core-${buildType.name}/")
     ).enablePlugins(S3Plugin)
 
@@ -79,7 +83,7 @@ def generateExamplesProject(buildType: BuildType) =
       ),
       assembly / mainClass := Some("io.treeverse.examples.List"),
       target := file(s"target/examples-${buildType.name}/"),
-      run / fork := true, // https://stackoverflow.com/questions/44298847/sbt-spark-fork-in-run
+      run / fork := false, // https://stackoverflow.com/questions/44298847/sbt-spark-fork-in-run
     )
 
 lazy val spark2Type = new BuildType("247", scala211Version, "2.4.7", "0.9.8", "2.7.7", "hadoop2-2.0.1")
