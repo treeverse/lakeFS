@@ -15,7 +15,7 @@ Two versions are available for the client, compatible with the following Spark/S
 
 ## Publishing a new version
 We publish the client to Sonatype, and an Uber-Jar of the client to S3.
-To do it, use the [GitHub Action](https://github.com/treeverse/lakeFS/actions/workflows/publish-spark-metadata-client.yaml).
+To do it, you should trigger the [GitHub Action](https://github.com/treeverse/lakeFS/actions/workflows/publish-spark-metadata-client.yaml).
 
 ### Manual publish
 
@@ -49,18 +49,21 @@ Otherwise, the client can be included using Maven coordinates:
 
 For Spark 2.4.7:
 ```
-io.lakefs:lakefs-spark-client-247_2.11:0.1.5
+io.lakefs:lakefs-spark-client-247_2.11:<version>
 ```
-
+[See available versions](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client-247_2.11).
 For Spark 3.0.1:
 ```
-io.lakefs:lakefs-spark-client-301_2.12:0.1.5
+io.lakefs:lakefs-spark-client-301_2.12:<version>
 ```
+[See available versions](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client-301_2.12).
 
 ## Usage Examples
 ### Export using spark-submit
+
+Replace `<version>` below with the latest version available. See available versions for [Spark 2](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client-247_2.11) or [Spark 3](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client-301_2.12).
 ```
-CLIENT_VERSION=0.1.5
+CLIENT_VERSION=<version>
 SPARK_VERSION=301 # or 247
 SCALA_VERSION=2.12 # or 2.11
 spark-submit --conf spark.hadoop.lakefs.api.url=https://lakefs.example.com/api/v1 \
@@ -74,6 +77,8 @@ spark-submit --conf spark.hadoop.lakefs.api.url=https://lakefs.example.com/api/v
 ```
 
 ### Export using spark-submit (uber-jar)
+
+Replace `<version>` below with the latest version available. See available versions for [Spark 2](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client-247_2.11) or [Spark 3](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client-301_2.12).
 ```
 CLIENT_VERSION=0.1.5
 SPARK_VERSION=301 # or 247
