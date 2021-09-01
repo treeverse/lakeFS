@@ -20,6 +20,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileAlreadyExistsException;
 import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.http.HttpStatus;
 import org.junit.Assert;
@@ -581,7 +582,7 @@ public class LakeFSFileSystemTest {
 
         Path dir = new Path("lakefs://repo/main/status");
         FileStatus[] fileStatuses = fs.listStatus(dir);
-        FileStatus[] expectedFileStatuses = new LakeFSLocatedFileStatus[totalObjectsCount];
+        FileStatus[] expectedFileStatuses = new LocatedFileStatus[totalObjectsCount];
         for (int i = 0; i < totalObjectsCount; i++) {
             Path p = new Path(dir + "/file" + i);
             LakeFSFileStatus fileStatus = new LakeFSFileStatus.Builder(p)
@@ -591,7 +592,7 @@ public class LakeFSFileSystemTest {
                     .blockSize(Constants.DEFAULT_BLOCK_SIZE)
                     .physicalAddress(s3Url("/repo-base/status" + i))
                     .build();
-            expectedFileStatuses[i] = new LakeFSLocatedFileStatus(fileStatus, null);
+            expectedFileStatuses[i] = new LocatedFileStatus(fileStatus, null);
         }
         Assert.assertArrayEquals(expectedFileStatuses, fileStatuses);
     }
