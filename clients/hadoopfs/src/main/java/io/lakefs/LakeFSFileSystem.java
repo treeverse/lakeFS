@@ -235,7 +235,7 @@ public class LakeFSFileSystem extends FileSystem {
      *   file -> existing-file-name: rename(src.txt, existing-dst.txt) -> existing-dst.txt, existing-dst.txt is overridden
      *   file -> existing-directory-name: rename(src.txt, existing-dstdir) -> existing-dstdir/src.txt
      *   file -> non-existing dst: in case of non-existing rename target, false is return. note that empty directory is
-     *     an existing directory and rename will move the directory/file into that folder.
+     *   considered an existing directory and rename will move the directory/file into that folder.
      *   directory -> existing directory: rename(srcDir(containing srcDir/a.txt), existing-dstdir) -> existing-dstdir/a.txt
      * 3. Rename dst path can be an uncommitted file, that will be overridden as a result of the rename operation.
      * 4. The 'mtime' of the src object is not preserved.
