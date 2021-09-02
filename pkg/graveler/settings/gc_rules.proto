@@ -1,0 +1,7 @@
+syntax = "proto3";
+option go_package = "github.com/treeverse/lakefs/graveler/settings";
+
+message GarbageCollectionRules {
+  int32 default_retention_days = 1;
+  map<string, int32> branch_retention_days = 2;
+}
