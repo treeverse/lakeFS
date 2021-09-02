@@ -24,7 +24,7 @@ const (
 	fieldIndexAccount
 	fieldIndexResource
 
-	fieldIndexLast = fieldIndexResource
+	numFieldIndexes
 )
 
 func arnParseField(arn *Arn, field string, fieldIndex int) error {
@@ -57,33 +57,30 @@ func arnParseField(arn *Arn, field string, fieldIndex int) error {
 }
 
 func ParseARN(arnString string) (*Arn, error) {
-	a := &Arn{}
-	var buf strings.Builder
-	currField := 0
-	for _, ch := range arnString {
-		if ch == ':' || currField == 4 && ch == '/' {
-			// collect buffer into current field
-			err := arnParseField(a, buf.String(), currField)
-			if err != nil {
-				return a, err
-			}
-			// reset and move on
-			buf.Reset()
-			currField++
-		} else {
-			buf.WriteRune(ch)
-		}
-	}
-	if buf.Len() > 0 {
-		err := arnParseField(a, buf.String(), currField)
-		if err != nil {
-			return a, err
-		}
-	}
-	if currField < fieldIndexLast {
+	// BUG(ozkatz): This parser does not handle resource types.  Handling resource types is
+	//    subtle: they may be separated from resource IDs by a colon OR by a slash.  For an
+	//    example of a resource type, see ECS[1] (uses only slash separators).  That colons
+	//    are an acceptable separator appears in [2], so a workaround to this limitation is
+	//    to use a slash.
+	//
+	//    [1] https://docs.aws.amazon.com/AmazonECS/latest/developerguide/security_iam_service-with-iam.html#security_iam_service-with-iam-id-based-policies-resources
+	//    [2] https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html#arns-syntax
+	parts := strings.SplitN(arnString, ":", numFieldIndexes)
+
+	if len(parts) < numFieldIndexes {
 		return nil, ErrInvalidArn
 	}
-	return a, nil
+
+	arn := &Arn{}
+
+	for currField, part := range parts {
+		err := arnParseField(arn, part, currField)
+		if err != nil {
+			return arn, err
+		}
+	}
+
+	return arn, nil
 }
 
 func ArnMatch(src, dst string) bool {
