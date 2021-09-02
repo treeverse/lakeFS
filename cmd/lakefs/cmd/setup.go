@@ -63,7 +63,7 @@ var setupCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		if initialized {
-			fmt.Printf("lakeFS already initialized.")
+			fmt.Printf("Setup is already complete.")
 			os.Exit(1)
 		}
 
