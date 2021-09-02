@@ -123,7 +123,7 @@ var runCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		if !allowForeign {
-			checkForeignRepos(ctx, logger, authMetadataManager, blockStore, c)
+			checkRepos(ctx, logger, authMetadataManager, blockStore, c)
 		}
 
 		// update health info with installation ID
@@ -207,7 +207,7 @@ var runCmd = &cobra.Command{
 // A foreign repo is a repository which namespace doesn't match the current block adapter.
 // A foreign repo might exists if the lakeFS instance configuration changed after a repository was
 // already created. The behaviour of lakeFS for foreign repos is undefined and should be blocked.
-func checkForeignRepos(ctx context.Context, logger logging.Logger, authMetadataManager *auth.DBMetadataManager, blockStore block.Adapter, c *catalog.Catalog) {
+func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager *auth.DBMetadataManager, blockStore block.Adapter, c *catalog.Catalog) {
 	initialized, err := authMetadataManager.IsInitialized(ctx)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to check if lakeFS is initialized")
@@ -240,14 +240,34 @@ func checkForeignRepos(ctx context.Context, logger logging.Logger, authMetadataM
 					logger.WithError(err).Fatalf("Failed to parse to parse storage type '%s'", nsURL)
 				}
 
-				if adapterStorageType != repoStorageType.BlockstoreType() {
-					logger.Fatalf("Mismatched adapter detected. lakeFS started with adapter of type '%s', but repository '%s' is of type '%s'",
-						adapterStorageType, repo.Name, repoStorageType.BlockstoreType())
-				}
+				checkForeignRepo(repoStorageType, logger, adapterStorageType, repo.Name)
+				checkMetadataPrefix(ctx, repo, logger, blockStore, repoStorageType)
 
 				next = repo.Name
 			}
 		}
+	}
+}
+
+func checkMetadataPrefix(ctx context.Context, repo *catalog.Repository, logger logging.Logger, adapter block.Adapter, repoStorageType block.StorageType) {
+	if repoStorageType != block.StorageTypeGS &&
+		repoStorageType != block.StorageTypeAzure {
+		return
+	}
+
+	dummyFile := "dummy"
+	if _, err := adapter.Get(ctx, block.ObjectPointer{
+		StorageNamespace: repo.StorageNamespace,
+		Identifier:       dummyFile,
+	}, -1); err != nil {
+		logger.Fatalf("Can't find dummy (path: %s) file in storage namespace (%s), did you run the migration? (LINK)", dummyFile, repo.StorageNamespace)
+	}
+}
+
+func checkForeignRepo(repoStorageType block.StorageType, logger logging.Logger, adapterStorageType, repoName string) {
+	if adapterStorageType != repoStorageType.BlockstoreType() {
+		logger.Fatalf("Mismatched adapter detected. lakeFS started with adapter of type '%s', but repository '%s' is of type '%s'",
+			adapterStorageType, repoName, repoStorageType.BlockstoreType())
 	}
 }
 
