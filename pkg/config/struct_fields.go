@@ -12,8 +12,8 @@ const (
 	FieldMaskedNoValue = "------"
 )
 
-// MapLoggingFields returns all logging.Fields withe formatted based on our configuration struct 'dot.name.key' with
-// the associated value. Support squash and secret to skip print out of secrets.
+// MapLoggingFields returns all logging.Fields formatted based on our configuration keys 'dot.name.key' with
+// associated values. Supports squash, and secret to skip printing out secrets.
 func MapLoggingFields(value interface{}) logging.Fields {
 	fields := make(logging.Fields)
 	structFieldsFunc(reflect.ValueOf(value), "mapstructure", ",squash", "validate", "secret", nil, func(key string, value interface{}) {
