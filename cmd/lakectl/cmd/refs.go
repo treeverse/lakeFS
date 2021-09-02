@@ -23,7 +23,7 @@ var refsRestoreCmd = &cobra.Command{
 
 This command is expected to run on a bare repository (i.e. one created with 'lakectl repo create-bare').
 Since a bare repo is expected, in case of transient failure, delete the repository and recreate it as bare and retry.`,
-	Example: "aws s3 cp s3://bucket/_lakefs/refs_manifest.json - | lakectl refs-load lakefs://my-bare-repository --manifest -",
+	Example: "aws s3 cp s3://bucket/_lakefs/refs_manifest.json - | lakectl refs-restore lakefs://my-bare-repository --manifest -",
 	Hidden:  true,
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
