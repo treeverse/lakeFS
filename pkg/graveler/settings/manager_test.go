@@ -6,17 +6,14 @@ import (
 	"sync"
 	"testing"
 
-	"google.golang.org/protobuf/proto"
-
-	"github.com/treeverse/lakefs/pkg/block"
-
 	"github.com/go-test/deep"
-
 	"github.com/golang/mock/gomock"
+	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/mem"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/mock"
 	"github.com/treeverse/lakefs/pkg/testutil"
+	"google.golang.org/protobuf/proto"
 )
 
 func TestSaveAndGet(t *testing.T) {
