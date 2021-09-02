@@ -184,7 +184,7 @@ func TestFormatQualifiedKey(t *testing.T) {
 			QualifiedKey: block.QualifiedKey{
 				StorageType:      block.StorageTypeS3,
 				StorageNamespace: "some-bucket/",
-				Key:              "/path/to/file",
+				Key:              "path/to/file",
 			},
 			Expected: "s3://some-bucket/path/to/file",
 		},
@@ -193,16 +193,34 @@ func TestFormatQualifiedKey(t *testing.T) {
 			QualifiedKey: block.QualifiedKey{
 				StorageType:      block.StorageTypeS3,
 				StorageNamespace: "some-bucket/prefix/",
-				Key:              "/path/to/file",
+				Key:              "path/to/file",
 			},
 			Expected: "s3://some-bucket/prefix/path/to/file",
+		},
+		{
+			Name: "path_with_prefix_leading_slash",
+			QualifiedKey: block.QualifiedKey{
+				StorageType:      block.StorageTypeS3,
+				StorageNamespace: "some-bucket",
+				Key:              "/path/to/file",
+			},
+			Expected: "s3://some-bucket//path/to/file",
+		},
+		{
+			Name: "bucket_with_prefix_leading_slash",
+			QualifiedKey: block.QualifiedKey{
+				StorageType:      block.StorageTypeS3,
+				StorageNamespace: "some-bucket/prefix",
+				Key:              "/path/to/file",
+			},
+			Expected: "s3://some-bucket/prefix//path/to/file",
 		},
 		{
 			Name: "dont_eliminate_dots",
 			QualifiedKey: block.QualifiedKey{
 				StorageType:      block.StorageTypeS3,
 				StorageNamespace: "some-bucket/prefix/",
-				Key:              "/path/to/../file",
+				Key:              "path/to/../file",
 			},
 			Expected: "s3://some-bucket/prefix/path/to/../file",
 		},
