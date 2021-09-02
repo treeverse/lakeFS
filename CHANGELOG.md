@@ -4,6 +4,7 @@
 ## Unreleased - XXXX-XX-XX
 
  - Add search locations to load lakeFS configuration. More information on https://docs.lakefs.io/reference/configuration (#2355)
+ - Fix ARNs parsing confusion when the account-ID field contained a slash or the resource-ID a colon.
 
 ## v0.48.0 - 2021-08-22
 
