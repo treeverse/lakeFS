@@ -260,7 +260,8 @@ func checkMetadataPrefix(ctx context.Context, repo *catalog.Repository, logger l
 		StorageNamespace: repo.StorageNamespace,
 		Identifier:       dummyFile,
 	}, -1); err != nil {
-		logger.Fatalf("Can't find dummy (path: %s) file in storage namespace (%s), did you run the migration? (LINK)", dummyFile, repo.StorageNamespace)
+		logger.Fatalf("Can't find dummy (path: %s) file in storage namespace (%s), did you run the migration? "+
+			"(http://docs.lakefs.io/reference/upgrade.html#data-migration-for-version-v0490)", dummyFile, repo.StorageNamespace)
 	}
 }
 

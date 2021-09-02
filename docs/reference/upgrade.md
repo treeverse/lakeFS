@@ -66,3 +66,58 @@ To do so, add the following to your configuration (relevant **only** for 0.30.0)
 cataloger:
   type: rocks
 ```
+
+## Data Migration for Version v0.49.0
+We discovered a bug in the way lakeFS is storing objects in the underlying object store.
+It affects azure and gcp repositories and only some of those. 
+[Issue #2397](https://github.com/treeverse/lakeFS/issues/2397#issuecomment-908397229) describes the repository storage namespaces patterns 
+which are affected by this bug.
+
+In order to upgrade to any version which higher (or equal) than v0.49.0, you must follow these steps:
+1. Stop lakeFS.
+1. Perform a data-migration (details below)
+1. Start lakeFS with the new version.
+1. After a successful run of the new version, and after validating the objects are accessible, you can delete the old data prefix.
+
+### Data migration
+The following patterns have been impacted by the bug:
+
+| Type  | Storage Namespace pattern                                 | Copy From                                                  | Copy To                                                    |
+|-------|-----------------------------------------------------------|------------------------------------------------------------|------------------------------------------------------------|
+| gs    | gs://bucket/prefix                                        | gs://bucket//prefix/*                                      | gs://bucket/prefix/*                                       |
+| gs    | gs://bucket/prefix/                                       | gs://bucket//prefix/*                                      | gs://bucket/prefix/*                                       |
+| azure | https://account.blob.core.windows.net/containerid         | https://account.blob.core.windows.net/containerid//*       | https://account.blob.core.windows.net/containerid/*        |
+| azure | https://account.blob.core.windows.net/containerid/        | https://account.blob.core.windows.net/containerid//*       | https://account.blob.core.windows.net/containerid/*        |
+| azure | https://account.blob.core.windows.net/containerid/prefix/ | https://account.blob.core.windows.net/containerid/prefix// | https://account.blob.core.windows.net/containerid/prefix/* |
+
+#### Migrating Google Storage data with gsutil
+[gsutil](https://cloud.google.com/storage/docs/gsutil) is a Python application that lets you access Cloud Storage from the command line.
+We can use it for copying the data between the prefixes in the Google bucket, and later on removing it.
+
+Copy the data with:
+```shell
+gsutil -m cp -r gs://<BUCKET>//<PREFIX>/ gs://<BUCKET>/
+```
+
+#### Migrating Azure Blob Storage data with AzCopy
+[AzCopy](https://docs.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10) is a command-line utility that you can use to copy blobs or files to or from a storage account.
+We can use it for copying the data between the prefixes in the Azure storage account container, and later on removing it.
+
+First, you need to acquire an [Account SAS](https://docs.microsoft.com/en-us/azure/storage/common/storage-sas-overview#account-sas).
+Using the Azure CLI:
+```shell
+az storage container generate-sas \
+    --account-name <ACCOUNT> \
+    --name <CONTAINER> \
+    --permissions cdrw \
+    --auth-mode key \
+    --expiry 2021-09-05
+```
+
+With the resulted SAS, use AzCopy to copy the files:
+```shell
+azcopy copy \
+"https://<ACCOUNT>.blob.core.windows.net/<CONTAINER>/<PREFIX>//?<SAS_TOKEN>" \
+"https://<ACCOUNT>.blob.core.windows.net/<CONTAINER>?<SAS_TOKEN>" \
+--recursive=true
+```
