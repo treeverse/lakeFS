@@ -3,8 +3,16 @@
 
 ## Unreleased - XXXX-XX-XX
 
- - Add search locations to load lakeFS configuration. More information on https://docs.lakefs.io/reference/configuration (#2355)
- - Fix ARNs parsing confusion when the account-ID field contained a slash or the resource-ID a colon.
+## v0.49.0 - 2021-09-02
+
+- Add search locations to load lakeFS configuration. More information on
+  https://docs.lakefs.io/reference/configuration (#2355)
+- Fix ARNs parsing confusion when the account-ID field contained a slash or
+  the resource-ID a colon.  Configurations (incorrectly) using a slash "`/`"
+  to separate account from resource in the ARN will need to switch to use a
+  colon "`:`".  However such configurations are probably incorrect, as
+  lakeFS does not currently set account fields.  And configurations using
+  resources containing a colon will now work correctly.
 
 ## v0.48.0 - 2021-08-22
 
