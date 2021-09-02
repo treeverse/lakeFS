@@ -20,12 +20,6 @@ func TestParseARN(t *testing.T) {
 			Region:     "a",
 			AccountID:  "b",
 			ResourceID: "myrepo"}},
-		{Input: "arn:lakefs:repos:a:b/myrepo", Arn: auth.Arn{
-			Partition:  "lakefs",
-			Service:    "repos",
-			Region:     "a",
-			AccountID:  "b",
-			ResourceID: "myrepo"}},
 		{Input: "arn:lakefs:repos:a::myrepo", Arn: auth.Arn{
 			Partition:  "lakefs",
 			Service:    "repos",
@@ -38,12 +32,18 @@ func TestParseARN(t *testing.T) {
 			Region:     "",
 			AccountID:  "b",
 			ResourceID: "myrepo"}},
-		{Input: "arn:lakefs:repos::/myrepo", Arn: auth.Arn{
+		{Input: "arn:lakefs:repos:::myrepo", Arn: auth.Arn{
 			Partition:  "lakefs",
 			Service:    "repos",
 			Region:     "",
 			AccountID:  "",
 			ResourceID: "myrepo"}},
+		{Input: "arn:lakefs:fs:::myrepo/branch/file:with:colon", Arn: auth.Arn{
+			Partition:  "lakefs",
+			Service:    "fs",
+			Region:     "",
+			AccountID:  "",
+			ResourceID: "myrepo/branch/file:with:colon"}},
 	}
 
 	for _, c := range cases {
@@ -82,8 +82,7 @@ func TestArnMatch(t *testing.T) {
 		{"arn:lakefs:repos::b:myrepo", "arn:lakefs:repos::b:myrepo", true},
 		{"arn:lakefs:repos::b:*", "arn:lakefs:repos::b:myrepo", true},
 		{"arn:lakefs:repos::b:myrepo", "arn:lakefs:repos::b:*", false},
-		{"arn:lakefs:repos::b/myrepo", "arn:lakefs:repos::b/*", false},
-		{"arn:lakefs:repos::b/*", "arn:lakefs:repos::b/myrepo", true},
+		{"arn:lakefs:repo:::*", "arn:lakefs:repo:::*", true},
 		{"arn:lakefs:repo", "arn:lakefs:repo", false},
 	}
 
