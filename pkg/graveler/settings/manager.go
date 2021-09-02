@@ -6,11 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/adapter"
-	"github.com/treeverse/lakefs/pkg/block/mem"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"google.golang.org/protobuf/proto"
 )
@@ -88,34 +86,4 @@ func (m *Manager) UpdateWithLock(ctx context.Context, repositoryID graveler.Repo
 		return nil, nil
 	})
 	return err
-}
-
-func main() {
-	m := &Manager{
-		blockAdapter:                mem.New(),
-		committedBlockStoragePrefix: "",
-	}
-	rules := &graveler.GarbageCollectionRules{
-		DefaultRetentionDays: 1231,
-		BranchRetentionDays:  map[string]int32{"boo": -11},
-	}
-	err := m.Save(context.Background(), "", "rules", rules)
-	if err != nil {
-		log.Fatalf("got error: %v", err)
-	}
-	outRules := &graveler.GarbageCollectionRules{}
-	err = m.Get(context.Background(), "", "rules", outRules)
-	if err != nil {
-		log.Fatalf("got error: %v", err)
-	}
-	fmt.Printf("%d\n", outRules.BranchRetentionDays["boo"])
-	outRules2 := &graveler.GarbageCollectionRules{}
-	err = m.UpdateWithLock(context.Background(), "", "rules", outRules2, func() {
-		outRules2.DefaultRetentionDays = 341
-		outRules2.BranchRetentionDays["loo"] = -341
-	})
-	if err != nil {
-		log.Fatalf("got error: %v", err)
-	}
-	fmt.Printf("%d\n", outRules2.BranchRetentionDays["loo"])
 }
