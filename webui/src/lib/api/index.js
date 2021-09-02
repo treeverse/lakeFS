@@ -651,7 +651,7 @@ class Setup {
             case 200:
                 return response.json();
             case 409:
-                throw new Error('lakeFs already initialized.');
+                throw new Error('Setup is already complete.');
             default:
                 throw new Error('Unknown');
         }
