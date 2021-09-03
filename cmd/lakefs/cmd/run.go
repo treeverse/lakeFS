@@ -204,9 +204,7 @@ var runCmd = &cobra.Command{
 	},
 }
 
-// A foreign repo is a repository which namespace doesn't match the current block adapter.
-// A foreign repo might exists if the lakeFS instance configuration changed after a repository was
-// already created. The behaviour of lakeFS for foreign repos is undefined and should be blocked.
+// checkRepos iterates on all repos and validates that their settings is correct.
 func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager *auth.DBMetadataManager, blockStore block.Adapter, c *catalog.Catalog) {
 	initialized, err := authMetadataManager.IsInitialized(ctx)
 	if err != nil {
@@ -249,22 +247,30 @@ func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager 
 	}
 }
 
+// checkMetadataPrefix checks for non-migrated repos of issue #2397 (https://github.com/treeverse/lakeFS/issues/2397)
 func checkMetadataPrefix(ctx context.Context, repo *catalog.Repository, logger logging.Logger, adapter block.Adapter, repoStorageType block.StorageType) {
 	if repoStorageType != block.StorageTypeGS &&
 		repoStorageType != block.StorageTypeAzure {
 		return
 	}
 
-	dummyFile := "dummy"
+	const dummyFile = "dummy"
 	if _, err := adapter.Get(ctx, block.ObjectPointer{
 		StorageNamespace: repo.StorageNamespace,
 		Identifier:       dummyFile,
 	}, -1); err != nil {
-		logger.Fatalf("Can't find dummy (path: %s) file in storage namespace (%s), did you run the migration? "+
-			"(http://docs.lakefs.io/reference/upgrade.html#data-migration-for-version-v0490)", dummyFile, repo.StorageNamespace)
+		logger.WithFields(logging.Fields{
+			"path":              dummyFile,
+			"storage_namespace": repo.StorageNamespace,
+		}).Fatal("Can't find dummy file in storage namespace, did you run the migration? " +
+			"(http://docs.lakefs.io/reference/upgrade.html#data-migration-for-version-v0490)")
 	}
 }
 
+// checkForeignRepo checks whether a repo storage namespace matches the block adapter.
+// A foreign repo is a repository which namespace doesn't match the current block adapter.
+// A foreign repo might exists if the lakeFS instance configuration changed after a repository was
+// already created. The behaviour of lakeFS for foreign repos is undefined and should be blocked.
 func checkForeignRepo(repoStorageType block.StorageType, logger logging.Logger, adapterStorageType, repoName string) {
 	if adapterStorageType != repoStorageType.BlockstoreType() {
 		logger.Fatalf("Mismatched adapter detected. lakeFS started with adapter of type '%s', but repository '%s' is of type '%s'",

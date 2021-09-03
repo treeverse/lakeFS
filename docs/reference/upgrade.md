@@ -68,6 +68,7 @@ cataloger:
 ```
 
 ## Data Migration for Version v0.49.0
+
 We discovered a bug in the way lakeFS is storing objects in the underlying object store.
 It affects azure and gcp repositories and only some of those. 
 [Issue #2397](https://github.com/treeverse/lakeFS/issues/2397#issuecomment-908397229) describes the repository storage namespaces patterns 
@@ -80,6 +81,7 @@ In order to upgrade to any version which higher (or equal) than v0.49.0, you mus
 1. After a successful run of the new version, and after validating the objects are accessible, you can delete the old data prefix.
 
 ### Data migration
+
 The following patterns have been impacted by the bug:
 
 | Type  | Storage Namespace pattern                                 | Copy From                                                  | Copy To                                                    |
@@ -91,6 +93,7 @@ The following patterns have been impacted by the bug:
 | azure | https://account.blob.core.windows.net/containerid/prefix/ | https://account.blob.core.windows.net/containerid/prefix// | https://account.blob.core.windows.net/containerid/prefix/* |
 
 #### Migrating Google Storage data with gsutil
+
 [gsutil](https://cloud.google.com/storage/docs/gsutil) is a Python application that lets you access Cloud Storage from the command line.
 We can use it for copying the data between the prefixes in the Google bucket, and later on removing it.
 
@@ -100,6 +103,7 @@ gsutil -m cp -r gs://<BUCKET>//<PREFIX>/ gs://<BUCKET>/
 ```
 
 #### Migrating Azure Blob Storage data with AzCopy
+
 [AzCopy](https://docs.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10) is a command-line utility that you can use to copy blobs or files to or from a storage account.
 We can use it for copying the data between the prefixes in the Azure storage account container, and later on removing it.
 
