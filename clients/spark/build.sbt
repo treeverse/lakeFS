@@ -62,8 +62,8 @@ def generateCoreProject(buildType: BuildType) =
         "org.scalatest" %% "scalatest" % "3.2.9" % "test",
         "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.39.5" % "test",
         "com.dimafeng" %% "testcontainers-scala-munit" % "0.39.5" % "test",
-        "com.lihaoyi" %% "upickle" % "1.4.0",
-        "com.lihaoyi" %% "os-lib" % "0.7.8",
+        "com.lihaoyi" %% "upickle" % "1.4.0" % "test",
+        "com.lihaoyi" %% "os-lib" % "0.7.8" % "test",
       ),
       Test / logBuffered := false,
       // Uncomment to get (very) full stacktraces in test:
