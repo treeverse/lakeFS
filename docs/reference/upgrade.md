@@ -132,10 +132,20 @@ az storage container generate-sas \
     --expiry 2021-12-31
 ```
 
-With the resulted SAS, use AzCopy to copy the files:
+With the resulted SAS, use AzCopy to copy the files.
+If a prefix exists after the container:
 ```shell
 azcopy copy \
 "https://<ACCOUNT>.blob.core.windows.net/<CONTAINER>/<PREFIX>//?<SAS_TOKEN>" \
 "https://<ACCOUNT>.blob.core.windows.net/<CONTAINER>?<SAS_TOKEN>" \
+--recursive=true
+```
+
+Or when using the container without a prefix:
+
+```shell
+azcopy copy \
+"https://<ACCOUNT>.blob.core.windows.net/<CONTAINER>//?<SAS_TOKEN>" \
+"https://<ACCOUNT>.blob.core.windows.net/<CONTAINER>/./?<SAS_TOKEN>" \
 --recursive=true
 ```
