@@ -89,10 +89,9 @@ func GetStorageType(namespaceURL *url.URL) (StorageType, error) {
 }
 
 func formatPathWithNamespace(namespacePath, keyPath string) string {
-	namespacePath = strings.TrimSuffix(namespacePath, "/")
-	keyPath = strings.TrimPrefix(keyPath, "/")
+	namespacePath = strings.Trim(namespacePath, "/")
 	if len(namespacePath) == 0 {
-		return keyPath
+		return strings.TrimPrefix(keyPath, "/")
 	}
 	return namespacePath + "/" + keyPath
 }
