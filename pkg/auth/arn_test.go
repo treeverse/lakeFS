@@ -81,6 +81,10 @@ func TestArnMatch(t *testing.T) {
 	}{
 		{"arn:lakefs:repos::b:myrepo", "arn:lakefs:repos::b:myrepo", true},
 		{"arn:lakefs:repos::b:*", "arn:lakefs:repos::b:myrepo", true},
+		{"arn:lakefs:repos::b:my*", "arn:lakefs:repos::b:myrepo", true},
+		{"arn:lakefs:repos::b:my*po", "arn:lakefs:repos::b:myrepo", true},
+		{"arn:lakefs:repos::b:our*", "arn:lakefs:repos::b:myrepo", false},
+		{"arn:lakefs:repos::b:my*own", "arn:lakefs:repos::b:myrepo", false},
 		{"arn:lakefs:repos::b:myrepo", "arn:lakefs:repos::b:*", false},
 		{"arn:lakefs:repo:::*", "arn:lakefs:repo:::*", true},
 		{"arn:lakefs:repo", "arn:lakefs:repo", false},
