@@ -280,8 +280,10 @@ func pathBasedOperationID(method string) operations.OperationID {
 
 func repositoryBasedOperationID(method string) operations.OperationID {
 	switch method {
-	case http.MethodDelete, http.MethodPut:
+	case http.MethodDelete:
 		return operations.OperationIDUnsupportedOperation
+	case http.MethodPut:
+		return operations.OperationIDPutBucket
 	case http.MethodHead:
 		return operations.OperationIDHeadBucket
 	case http.MethodPost:

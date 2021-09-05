@@ -33,6 +33,7 @@ const (
 	OperationIDListObjects   OperationID = "list_objects"
 	OperationIDPostObject    OperationID = "post_object"
 	OperationIDPutObject     OperationID = "put_object"
+	OperationIDPutBucket     OperationID = "put_bucket"
 
 	OperationIDUnsupportedOperation OperationID = "unsupported"
 	OperationIDOperationNotFound    OperationID = "not_found"
