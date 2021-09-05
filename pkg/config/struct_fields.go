@@ -16,13 +16,13 @@ const (
 // the associated value. Support squash and secret to skip print out of secrets.
 func MapLoggingFields(value interface{}) logging.Fields {
 	fields := make(logging.Fields)
-	structFieldsFunc(reflect.ValueOf(value), "mapstructure", ",squash", "validate", "secret", nil, func(key string, value interface{}) {
+	structFieldsFunc(reflect.ValueOf(value), "mapstructure", ",squash", nil, func(key string, value interface{}) {
 		fields[key] = value
 	})
 	return fields
 }
 
-func structFieldsFunc(value reflect.Value, tag, squashValue, validateTag, secretValue string, prefix []string, cb func(key string, value interface{})) {
+func structFieldsFunc(value reflect.Value, tag, squashValue string, prefix []string, cb func(key string, value interface{})) {
 	// finite loop: Go types are well-founded.
 	for value.Kind() == reflect.Ptr {
 		if value.IsZero() {
@@ -47,8 +47,6 @@ func structFieldsFunc(value reflect.Value, tag, squashValue, validateTag, secret
 			fieldName string
 			// squash the sub-struct no additional accessor when true
 			squash bool
-			// secret do not print out value when true
-			secret bool
 			ok     bool
 		)
 		if fieldName, ok = fieldType.Tag.Lookup(tag); ok {
@@ -59,30 +57,23 @@ func structFieldsFunc(value reflect.Value, tag, squashValue, validateTag, secret
 		} else {
 			fieldName = strings.ToLower(fieldType.Name)
 		}
-		// Lookup if field marked as secret
-		if validationsString, ok := fieldType.Tag.Lookup(validateTag); ok {
-			for _, validation := range strings.Split(validationsString, ",") {
-				if validation == secretValue {
-					secret = true
-					break
-				}
-			}
-		}
 		// Update prefix to recurse into this field.
 		if !squash {
 			prefix = append(prefix, fieldName)
 		}
 		fieldValue := value.Field(i)
-		// Do not print or dive into secrets
-		if secret {
+
+		switch fieldValue.Interface().(type) {
+		case SecureString:
+			// don't pass value of SecureString
 			key := strings.Join(prefix, sep)
 			val := FieldMaskedValue
 			if fieldValue.IsZero() {
 				val = FieldMaskedNoValue
 			}
 			cb(key, val)
-		} else {
-			structFieldsFunc(fieldValue, tag, squashValue, validateTag, secretValue, prefix, cb)
+		default:
+			structFieldsFunc(fieldValue, tag, squashValue, prefix, cb)
 		}
 		// Restore prefix
 		if !squash {

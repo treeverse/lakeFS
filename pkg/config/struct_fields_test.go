@@ -46,15 +46,8 @@ func TestMapLoggingFields(t *testing.T) {
 				E bool
 			} `mapstructure:"squash"`
 		}
-		EE1 string `validate:"secret"`
-		EE2 string `validate:"secret"`
-		FF  struct {
-			A int
-			B string
-			C *float64
-			D []rune
-			E bool
-		} `validate:"secret"`
+		EE1 config.SecureString
+		EE2 config.SecureString
 	}{
 		A: 1,
 		B: "2",
@@ -113,19 +106,6 @@ func TestMapLoggingFields(t *testing.T) {
 		},
 		EE1: "ee1ee1ee1",
 		EE2: "",
-		FF: struct {
-			A int
-			B string
-			C *float64
-			D []rune
-			E bool
-		}{
-			A: 1,
-			B: "2",
-			C: &f,
-			D: []rune{1, 2},
-			E: true,
-		},
 	}
 	expected := logging.Fields{
 		"a":           "1",
@@ -150,7 +130,6 @@ func TestMapLoggingFields(t *testing.T) {
 		"e":           "true",
 		"ee1":         config.FieldMaskedValue,
 		"ee2":         config.FieldMaskedNoValue,
-		"ff":          config.FieldMaskedValue,
 	}
 
 	fields := config.MapLoggingFields(value)
