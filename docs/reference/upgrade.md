@@ -74,7 +74,7 @@ It affects only repositories on Azure and GCP, and not all of these.
 [Issue #2397](https://github.com/treeverse/lakeFS/issues/2397#issuecomment-908397229) describes the repository storage namespaces patterns 
 which are affected by this bug.
 
-In order to upgrade to any version which higher (or equal) than v0.49.0, you must follow these steps:
+In order to upgrade to any version which higher (or equal) than v0.50.0, you must follow these steps:
 1. Stop lakeFS.
 1. Perform a data-migration (details below)
 1. Start lakeFS with the new version.
