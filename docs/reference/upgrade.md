@@ -102,15 +102,19 @@ You can find the repositories storage namespaces with:
 lakectl repo list
 ```
 
+Or the settings tab in the UI.
+
 #### Migrating Google Storage data with gsutil
 
 [gsutil](https://cloud.google.com/storage/docs/gsutil) is a Python application that lets you access Cloud Storage from the command line.
 We can use it for copying the data between the prefixes in the Google bucket, and later on removing it.
 
-Copy the data with:
+For every affected repository, copy its data with:
 ```shell
 gsutil -m cp -r gs://<BUCKET>//<PREFIX>/ gs://<BUCKET>/
 ```
+
+Note the double slash after the bucket name.
 
 #### Migrating Azure Blob Storage data with AzCopy
 
