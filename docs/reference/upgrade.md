@@ -80,6 +80,10 @@ In order to upgrade to any version which higher (or equal) than v0.50.0, you mus
 1. Start lakeFS with the new version.
 1. After a successful run of the new version, and after validating the objects are accessible, you can delete the old data prefix.
 
+Note: Migrating data is a delicate procedure. The lakeFS team is here to help, reach out to us on Slack.
+We'll be happy to walk you through the process.  
+{: .note .pb-3 }
+
 ### Data migration
 
 The following patterns have been impacted by the bug:
@@ -91,6 +95,12 @@ The following patterns have been impacted by the bug:
 | azure | https://account.blob.core.windows.net/containerid         | https://account.blob.core.windows.net/containerid//*       | https://account.blob.core.windows.net/containerid/*        |
 | azure | https://account.blob.core.windows.net/containerid/        | https://account.blob.core.windows.net/containerid//*       | https://account.blob.core.windows.net/containerid/*        |
 | azure | https://account.blob.core.windows.net/containerid/prefix/ | https://account.blob.core.windows.net/containerid/prefix// | https://account.blob.core.windows.net/containerid/prefix/* |
+
+You can find the repositories storage namespaces with:
+
+```shell
+lakectl repo list
+```
 
 #### Migrating Google Storage data with gsutil
 
