@@ -3,6 +3,8 @@
 
 ## Unreleased - XXXX-XX-XX
 
+## v0.50.0 - 2021-09-05
+
 - Fix double slash bug in storage namespace (#2397)
 
 ## v0.49.0 - 2021-09-02
