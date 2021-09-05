@@ -38,7 +38,6 @@ func (m *Manager) Save(ctx context.Context, repositoryID graveler.RepositoryID, 
 		Identifier:       fmt.Sprintf(settingsSuffixTemplate, m.committedBlockStoragePrefix, key),
 		IdentifierType:   block.IdentifierTypeRelative,
 	}, int64(len(messageBytes)), bytes.NewReader(messageBytes), block.PutOpts{})
-
 }
 
 func (m *Manager) Get(ctx context.Context, repositoryID graveler.RepositoryID, key string, message proto.Message) error {
