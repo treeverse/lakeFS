@@ -15,7 +15,10 @@ type PutBucket struct{}
 func (controller *PutBucket) RequiredPermissions(_ *http.Request, repoID string) ([]permissions.Permission, error) {
 	return []permissions.Permission{
 		{
-			Action:   permissions.ReadRepositoryAction,
+			// Mimic S3, which requires s3:CreateBucket to call
+			// create-bucket, even if we only want to receive
+			// 409.
+			Action:   permissions.CreateRepositoryAction,
 			Resource: permissions.RepoArn(repoID),
 		},
 	}, nil
