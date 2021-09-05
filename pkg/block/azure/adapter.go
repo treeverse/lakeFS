@@ -72,7 +72,7 @@ func resolveBlobURLInfoFromURL(pathURL *url.URL) (BlobURLInfo, error) {
 		return qk, block.ErrInvalidNamespace
 	}
 	// In azure the first part of the path is part of the storage namespace
-	trimmedPath := strings.TrimLeft(pathURL.Path, "/")
+	trimmedPath := strings.Trim(pathURL.Path, "/")
 	parts := strings.Split(trimmedPath, "/")
 	if len(parts) == 0 {
 		return qk, block.ErrInvalidNamespace
@@ -100,10 +100,15 @@ func resolveBlobURLInfo(obj block.ObjectPointer) (BlobURLInfo, error) {
 		if err != nil {
 			return qk, err
 		}
-		return BlobURLInfo{
+		info := BlobURLInfo{
 			ContainerURL: qp.ContainerURL,
 			BlobURL:      qp.BlobURL + "/" + key,
-		}, nil
+		}
+		if qp.BlobURL == "" {
+			info.BlobURL = key
+		}
+
+		return info, nil
 	}
 	return resolveBlobURLInfoFromURL(parsedKey)
 }
