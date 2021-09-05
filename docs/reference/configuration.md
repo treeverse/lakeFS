@@ -20,7 +20,7 @@ The configuration file location can be set with the '--config' flag. If not spec
 1. `$HOME`/.lakefs.yaml
 
 Configuration items can each be controlled by an environment variable. The variable name will have a prefix of *LAKEFS_*, followed by the name of the configuration, replacing every '.' with a '_'.
-Example: `LAKEFS_LOGGING_LEVEL` controls `logging.format`.
+Example: `LAKEFS_LOGGING_LEVEL` controls `logging.level`.
 
 This reference uses `.` to denote the nesting of values.
 
