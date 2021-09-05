@@ -22,7 +22,7 @@ const (
 	DefaultCommittedPermanentMaxRangeSizeBytes = 20 * MiBToBytes
 	DefaultSstSizeBytes                        = 50 * KiBToBytes
 	DefaultTwoLevelSstSizeBytes                = 10 * KiBToBytes
-	DefaultMaxSizeKb                           = 100
+	DefaultMaxSizeKib                          = 100
 )
 
 var DefaultUserProperties = map[string]string{
@@ -75,8 +75,8 @@ func writeSstsWithUnsupportedWriterOptions() {
 		Compression: sstable.SnappyCompression,
 		TableFormat: sstable.TableFormatLevelDB,
 	}
-	createTestInputFiles(keys, generateNanoid, sizeBytes,
-		"table.format.leveldb", writerOptions)
+	createTestInputFiles(keys, generateNanoid, sizeBytes, "table.format.leveldb",
+		writerOptions)
 }
 
 func writeSstsWithWriterOptionsFuzzing() {
@@ -102,7 +102,8 @@ func writeSstsWithWriterOptionsFuzzing() {
 	// BlockRestartInterval is the number of keys between restart points
 	// for delta encoding of keys.
 	// The default value is 16.
-	blockRestartInterval := 1 + rand.Intn(100)
+	src1 := rand.NewSource(5092021)
+	blockRestartInterval := 1 + rand.New(src1).Intn(100)
 	writerOptions = sstable.WriterOptions{
 		Compression:             sstable.SnappyCompression,
 		TablePropertyCollectors: []func() sstable.TablePropertyCollector{NewStaticCollector(DefaultUserProperties)},
@@ -113,7 +114,8 @@ func writeSstsWithWriterOptionsFuzzing() {
 
 	// BlockSize is the target uncompressed size in bytes of each table block.
 	// The default value is 4096.
-	blockSize := 1 + rand.Intn(9000)
+	src2 := rand.NewSource(881989)
+	blockSize := 1 + rand.New(src2).Intn(9000)
 	writerOptions = sstable.WriterOptions{
 		Compression:             sstable.SnappyCompression,
 		TablePropertyCollectors: []func() sstable.TablePropertyCollector{NewStaticCollector(DefaultUserProperties)},
@@ -127,7 +129,8 @@ func writeSstsWithWriterOptionsFuzzing() {
 	// would cause the block to be larger than the target block size.
 	//
 	// The default value is 90
-	blockSizeThreshold := 1 + rand.Intn(100)
+	src3 := rand.NewSource(123432)
+	blockSizeThreshold := 1 + rand.New(src3).Intn(100)
 	writerOptions = sstable.WriterOptions{
 		Compression:             sstable.SnappyCompression,
 		TablePropertyCollectors: getDefaultTablePropertyCollectors(DefaultUserProperties),
@@ -149,12 +152,14 @@ func writeLargeSsts() {
 
 func writeMultiSizedSstsWithContentsFuzzing() {
 	const numOfFilesToGenerate = 6
+	src := rand.NewSource(980433)
+	r := rand.New(src)
 	for i := 0; i < numOfFilesToGenerate; i++ {
 		var curSize int
 		if i%2 == 0 {
-			curSize = 1 + rand.Intn(DefaultCommittedPermanentMaxRangeSizeBytes/MiBToBytes)*MiBToBytes
+			curSize = 1 + r.Intn(DefaultCommittedPermanentMaxRangeSizeBytes/MiBToBytes)*MiBToBytes
 		} else {
-			curSize = 1 + rand.Intn(DefaultMaxSizeKb)*KiBToBytes
+			curSize = 1 + r.Intn(DefaultMaxSizeKib)*KiBToBytes
 		}
 
 		testFileName := fmt.Sprintf("fuzz.contents.%d", i)

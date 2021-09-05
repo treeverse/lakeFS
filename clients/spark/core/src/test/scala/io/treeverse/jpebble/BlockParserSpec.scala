@@ -3,15 +3,17 @@ package io.treeverse.jpebble
 import org.scalatest._
 import matchers.should._
 import funspec._
-import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
+import com.dimafeng.testcontainers.{DockerComposeContainer, ForAllTestContainer, GenericContainer}
 
 import java.io.File
 import org.apache.commons.io.IOUtils
+
 import scala.io.Source
 import org.testcontainers.containers.BindMode
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy
-import org.scalatest.matchers.must.Matchers.{contain}
+import org.scalatest.matchers.must.Matchers.contain
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
+import org.testcontainers.containers.startupcheck.IndefiniteWaitOneShotStartupCheckStrategy
 
 class BlockParserSpec extends AnyFunSpec with Matchers {
   val magicBytes = BlockParser.footerMagic
@@ -276,7 +278,7 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
       ("parser-test/go.sum", "/local/go.sum", BindMode.READ_WRITE)),
     command = Seq("/bin/sh", "-c", "cd /local && CGO_ENABLED=0 go run sst_files_generator.go && echo \"done\""),
     waitStrategy = new LogMessageWaitStrategy().withRegEx("done\\n")
-  );
+  )
 
   describe("A block parser") {
     describe("with 2-level index sstable") {
