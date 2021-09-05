@@ -63,7 +63,7 @@ var setupCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		if initialized {
-			fmt.Printf("Setup is already complete.")
+			fmt.Printf("Setup is already complete.\n")
 			os.Exit(1)
 		}
 
