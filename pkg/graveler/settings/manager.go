@@ -10,6 +10,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/adapter"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/logging"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -38,11 +40,23 @@ func (m *Manager) Save(ctx context.Context, repositoryID graveler.RepositoryID, 
 	if err != nil {
 		return err
 	}
-	return m.blockAdapter.Put(ctx, block.ObjectPointer{
+	err = m.blockAdapter.Put(ctx, block.ObjectPointer{
 		StorageNamespace: string(repo.StorageNamespace),
 		Identifier:       fmt.Sprintf(settingsSuffixTemplate, m.committedBlockStoragePrefix, key),
 		IdentifierType:   block.IdentifierTypeRelative,
 	}, int64(len(messageBytes)), bytes.NewReader(messageBytes), block.PutOpts{})
+	if err != nil {
+		return err
+	}
+	logger := logging.FromContext(ctx)
+	if logger.IsTracing() {
+		logger.
+			WithField("repo", repositoryID).
+			WithField("key", key).
+			WithField("setting", protojson.Format(message)).
+			Trace("saving repository-level setting")
+	}
+	return nil
 }
 
 // Get fetches the configuration under the given repository and key.
@@ -71,7 +85,19 @@ func (m *Manager) Get(ctx context.Context, repositoryID graveler.RepositoryID, k
 	if err != nil {
 		return err
 	}
-	return proto.Unmarshal(messageBytes, message)
+	err = proto.Unmarshal(messageBytes, message)
+	if err != nil {
+		return err
+	}
+	logger := logging.FromContext(ctx)
+	if logger.IsTracing() {
+		logger.
+			WithField("repo", repositoryID).
+			WithField("key", key).
+			WithField("setting", protojson.Format(message)).
+			Trace("got repository-level setting")
+	}
+	return nil
 }
 
 // UpdateWithLock atomically performs the following sequence:
