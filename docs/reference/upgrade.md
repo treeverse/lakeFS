@@ -67,10 +67,10 @@ cataloger:
   type: rocks
 ```
 
-## Data Migration for Version v0.49.0
+## Data Migration for Version v0.50.0
 
 We discovered a bug in the way lakeFS is storing objects in the underlying object store.
-It affects azure and gcp repositories and only some of those. 
+It affects only repositories on Azure and GCP, and not all of these.
 [Issue #2397](https://github.com/treeverse/lakeFS/issues/2397#issuecomment-908397229) describes the repository storage namespaces patterns 
 which are affected by this bug.
 
@@ -115,7 +115,7 @@ az storage container generate-sas \
     --name <CONTAINER> \
     --permissions cdrw \
     --auth-mode key \
-    --expiry 2021-09-05
+    --expiry 2021-12-31
 ```
 
 With the resulted SAS, use AzCopy to copy the files:

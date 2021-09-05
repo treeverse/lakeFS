@@ -204,7 +204,7 @@ var runCmd = &cobra.Command{
 	},
 }
 
-// checkRepos iterates on all repos and validates that their settings is correct.
+// checkRepos iterates on all repos and validates that their settings are correct.
 func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager *auth.DBMetadataManager, blockStore block.Adapter, c *catalog.Catalog) {
 	initialized, err := authMetadataManager.IsInitialized(ctx)
 	if err != nil {
@@ -263,7 +263,7 @@ func checkMetadataPrefix(ctx context.Context, repo *catalog.Repository, logger l
 			"path":              dummyFile,
 			"storage_namespace": repo.StorageNamespace,
 		}).Fatal("Can't find dummy file in storage namespace, did you run the migration? " +
-			"(http://docs.lakefs.io/reference/upgrade.html#data-migration-for-version-v0490)")
+			"(http://docs.lakefs.io/reference/upgrade.html#data-migration-for-version-v0500)")
 	}
 }
 
