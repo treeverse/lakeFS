@@ -100,6 +100,8 @@ func initConfig() {
 	if err != nil {
 		logger.WithError(err).Fatal("Invalid config")
 	}
+
+	logger.WithFields(cfg.ToLoggerFields()).Info("Config")
 }
 
 // getHomeDir find and return the home directory

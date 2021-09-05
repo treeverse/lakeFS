@@ -10,16 +10,14 @@ import com.amazonaws.services.s3.model.*;
 import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.ObjectsApi;
-import io.lakefs.clients.api.RepositoriesApi;
-import io.lakefs.clients.api.StagingApi;
+import io.lakefs.clients.api.*;
 import io.lakefs.clients.api.model.*;
 import io.lakefs.clients.api.model.ObjectStats.PathTypeEnum;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileAlreadyExistsException;
 import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.http.HttpStatus;
 import org.junit.Assert;
@@ -58,6 +56,7 @@ public class LakeFSFileSystemTest {
 
     protected LakeFSClient lfsClient;
     protected ObjectsApi objectsApi;
+    protected BranchesApi branchesApi;
     protected RepositoriesApi repositoriesApi;
     protected StagingApi stagingApi;
 
@@ -134,6 +133,8 @@ public class LakeFSFileSystemTest {
         lfsClient = mock(LakeFSClient.class);
         objectsApi = mock(ObjectsApi.class, Answers.RETURNS_SMART_NULLS);
         when(lfsClient.getObjects()).thenReturn(objectsApi);
+        branchesApi = mock(BranchesApi.class, Answers.RETURNS_SMART_NULLS);
+        when(lfsClient.getBranches()).thenReturn(branchesApi);
         repositoriesApi = mock(RepositoriesApi.class, Answers.RETURNS_SMART_NULLS);
         when(lfsClient.getRepositories()).thenReturn(repositoriesApi);
         stagingApi = mock(StagingApi.class, Answers.RETURNS_SMART_NULLS);
@@ -550,10 +551,11 @@ public class LakeFSFileSystemTest {
     public void testListStatusNotFound() throws ApiException, IOException {
         when(objectsApi.statObject("repo", "main", "status/file"))
                 .thenThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "no such file"));
+        when(objectsApi.statObject("repo", "main", "status/file/"))
+                .thenThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "no such file"));
         when(objectsApi.listObjects(eq("repo"), eq("main"), eq("status/file/"), eq(""),
                 any(), eq("/")))
                 .thenReturn(new ObjectStatsList().results(Collections.emptyList()).pagination(new Pagination().hasMore(false)));
-
         Path p = new Path("lakefs://repo/main/status/file");
         fs.listStatus(p);
     }
@@ -580,7 +582,7 @@ public class LakeFSFileSystemTest {
 
         Path dir = new Path("lakefs://repo/main/status");
         FileStatus[] fileStatuses = fs.listStatus(dir);
-        FileStatus[] expectedFileStatuses = new LakeFSLocatedFileStatus[totalObjectsCount];
+        FileStatus[] expectedFileStatuses = new LocatedFileStatus[totalObjectsCount];
         for (int i = 0; i < totalObjectsCount; i++) {
             Path p = new Path(dir + "/file" + i);
             LakeFSFileStatus fileStatus = new LakeFSFileStatus.Builder(p)
@@ -590,7 +592,7 @@ public class LakeFSFileSystemTest {
                     .blockSize(Constants.DEFAULT_BLOCK_SIZE)
                     .physicalAddress(s3Url("/repo-base/status" + i))
                     .build();
-            expectedFileStatuses[i] = new LakeFSLocatedFileStatus(fileStatus, null);
+            expectedFileStatuses[i] = new LocatedFileStatus(fileStatus, null);
         }
         Assert.assertArrayEquals(expectedFileStatuses, fileStatuses);
     }
@@ -705,7 +707,7 @@ public class LakeFSFileSystemTest {
     }
 
     /**
-     * rename(src.txt, non-existing-dst) -> non-existing-dst, non-existing-dst is a file
+     * rename(src.txt, non-existing-dst) -> non-existing/new - unsupported, should fail with false
      */
     @Test
     public void testRename_existingFileToNonExistingDst() throws IOException, ApiException {
@@ -713,17 +715,16 @@ public class LakeFSFileSystemTest {
         ObjectLocation srcObjLoc = fs.pathToObjectLocation(src);
         mockExistingFilePath(srcObjLoc);
 
-        Path dst = new Path("lakefs://repo/main/non-existing.dst");
+        Path dst = new Path("lakefs://repo/main/non-existing/new");
         ObjectLocation dstObjLoc = fs.pathToObjectLocation(dst);
         mockNonExistingPath(dstObjLoc);
+        mockNonExistingPath(fs.pathToObjectLocation(dst.getParent()));
 
         boolean renamed = fs.rename(src, dst);
-        Assert.assertTrue(renamed);
-        Assert.assertTrue(dstPathLinkedToSrcPhysicalAddress(srcObjLoc, dstObjLoc));
-        verifyObjDeletion(srcObjLoc);
+        Assert.assertFalse(renamed);
     }
 
-    @Test(expected = FileAlreadyExistsException.class)
+    @Test
     public void testRename_existingFileToExistingFileName() throws ApiException, IOException {
         Path src = new Path("lakefs://repo/main/existing.src");
         ObjectLocation srcObjLoc = fs.pathToObjectLocation(src);
@@ -733,10 +734,11 @@ public class LakeFSFileSystemTest {
         ObjectLocation dstObjLoc = fs.pathToObjectLocation(dst);
         mockExistingFilePath(dstObjLoc);
 
-        fs.rename(src, dst);
+        boolean success = fs.rename(src, dst);
+        Assert.assertTrue(success);
     }
 
-    @Test(expected = FileAlreadyExistsException.class)
+    @Test
     public void testRename_existingDirToExistingFileName() throws ApiException, IOException {
         Path fileInSrcDir = new Path("lakefs://repo/main/existing-dir/existing.src");
         ObjectLocation fileObjLoc = fs.pathToObjectLocation(fileInSrcDir);
@@ -748,7 +750,8 @@ public class LakeFSFileSystemTest {
         ObjectLocation dstObjLoc = fs.pathToObjectLocation(dst);
         mockExistingFilePath(dstObjLoc);
 
-        fs.rename(srcDir, dst);
+        boolean success = fs.rename(srcDir, dst);
+        Assert.assertFalse(success);
     }
 
     /**
@@ -768,31 +771,44 @@ public class LakeFSFileSystemTest {
 
         boolean renamed = fs.rename(src, dst);
         Assert.assertTrue(renamed);
-        Path expectedDstPath = new Path("lakefs://repo/main/existing-dir2/existing-dir1/existing.src");
+        Path expectedDstPath = new Path("lakefs://repo/main/existing-dir2/existing.src");
         Assert.assertTrue(dstPathLinkedToSrcPhysicalAddress(srcObjLoc, fs.pathToObjectLocation(expectedDstPath)));
         verifyObjDeletion(srcObjLoc);
     }
 
     /**
-     * rename(srcDir(containing srcDir/a.txt, srcDir/b.txt), non-existing-dstdir) -> non-existing-dstdir/a.txt, non-existing-dstdir/b.txt
+     * rename(srcDir(containing srcDir/a.txt, srcDir/b.txt), non-existing-dir/new) -> unsupported, rename should fail by returning false
      */
     @Test
-    public void testRename_existingDirToNonExistingDirName() throws ApiException, IOException {
+    public void testRename_existingDirToNonExistingDirWithoutParent() throws ApiException, IOException {
         Path fileInSrcDir = new Path("lakefs://repo/main/existing-dir/existing.src");
         ObjectLocation fileObjLoc = fs.pathToObjectLocation(fileInSrcDir);
         Path srcDir = new Path("lakefs://repo/main/existing-dir");
         ObjectLocation srcDirObjLoc = fs.pathToObjectLocation(srcDir);
         mockExistingDirPath(srcDirObjLoc, ImmutableList.of(fileObjLoc));
+        mockNonExistingPath(new ObjectLocation("lakefs", "repo", "main", "non-existing-dir"));
+        mockNonExistingPath(new ObjectLocation("lakefs", "repo", "main", "non-existing-dir/new"));
 
-        Path dst = new Path("lakefs://repo/main/non-existing-dir");
-        ObjectLocation dstObjLoc = fs.pathToObjectLocation(dst);
-        mockNonExistingPath(dstObjLoc);
+        Path dst = new Path("lakefs://repo/main/non-existing-dir/new");
+        boolean renamed = fs.rename(srcDir, dst);
+        Assert.assertFalse(renamed);
+    }
 
+    /**
+     * rename(srcDir(containing srcDir/a.txt, srcDir/b.txt), non-existing-dir/new) -> unsupported, rename should fail by returning false
+     */
+    @Test
+    public void testRename_existingDirToNonExistingDirWithParent() throws ApiException, IOException {
+        Path fileInSrcDir = new Path("lakefs://repo/main/existing-dir/existing.src");
+        ObjectLocation fileObjLoc = fs.pathToObjectLocation(fileInSrcDir);
+        Path srcDir = new Path("lakefs://repo/main/existing-dir");
+        ObjectLocation srcDirObjLoc = fs.pathToObjectLocation(srcDir);
+        mockExistingDirPath(srcDirObjLoc, ImmutableList.of(fileObjLoc));
+        mockExistingDirPath(new ObjectLocation("lakefs", "repo", "main", "existing-dir2/new"), Collections.emptyList());
+
+        Path dst = new Path("lakefs://repo/main/existing-dir2/new");
         boolean renamed = fs.rename(srcDir, dst);
         Assert.assertTrue(renamed);
-        Path expectedDstPath = new Path("lakefs://repo/main/non-existing-dir/existing.src");
-        Assert.assertTrue(dstPathLinkedToSrcPhysicalAddress(fileObjLoc, fs.pathToObjectLocation(expectedDstPath)));
-        verifyObjDeletion(fileObjLoc);
     }
 
     /**
@@ -844,7 +860,7 @@ public class LakeFSFileSystemTest {
         Mockito.verify(objectsApi, never()).deleteObject(any(), any(), any());
     }
 
-    @Test(expected = FileNotFoundException.class)
+    @Test
     public void testRename_nonExistingSrcFile() throws ApiException, IOException {
         Path src = new Path("lakefs://repo/main/non-existing.src");
         ObjectLocation srcObjLoc = fs.pathToObjectLocation(src);
@@ -854,6 +870,7 @@ public class LakeFSFileSystemTest {
         ObjectLocation dstObjLoc = fs.pathToObjectLocation(dst);
         mockExistingFilePath(dstObjLoc);
 
-        fs.rename(src, dst);
+        boolean success = fs.rename(src, dst);
+        Assert.assertFalse(success);
     }
 }

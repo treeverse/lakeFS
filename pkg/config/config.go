@@ -76,7 +76,7 @@ type Config struct {
 func NewConfig() (*Config, error) {
 	c := &Config{}
 
-	// Inform viper of all expected fields.  Otherwise it fails to deserialize from the
+	// Inform viper of all expected fields.  Otherwise, it fails to deserialize from the
 	// environment.
 	keys := GetStructKeys(reflect.TypeOf(c.values), "mapstructure", "squash")
 	for _, key := range keys {
@@ -229,7 +229,7 @@ func (c *Config) Validate() error {
 
 func (c *Config) GetDatabaseParams() dbparams.Database {
 	return dbparams.Database{
-		ConnectionString:      c.values.Database.ConnectionString,
+		ConnectionString:      c.values.Database.ConnectionString.String(),
 		MaxOpenConnections:    c.values.Database.MaxOpenConnections,
 		MaxIdleConnections:    c.values.Database.MaxIdleConnections,
 		ConnectionMaxLifetime: c.values.Database.ConnectionMaxLifetime,
@@ -259,9 +259,9 @@ func (c *Config) GetAwsConfig() *aws.Config {
 			secretAccessKey = c.values.Blockstore.S3.Credentials.AccessSecretKey
 		}
 		cfg.Credentials = credentials.NewStaticCredentials(
-			c.values.Blockstore.S3.Credentials.AccessKeyID,
-			secretAccessKey,
-			c.values.Blockstore.S3.Credentials.SessionToken,
+			c.values.Blockstore.S3.Credentials.AccessKeyID.String(),
+			secretAccessKey.String(),
+			c.values.Blockstore.S3.Credentials.SessionToken.String(),
 		)
 	}
 
@@ -411,4 +411,8 @@ func (c *Config) GetFixedInstallationID() string {
 
 func (c *Config) GetCommittedBlockStoragePrefix() string {
 	return c.values.Committed.BlockStoragePrefix
+}
+
+func (c *Config) ToLoggerFields() logging.Fields {
+	return MapLoggingFields(c.values)
 }

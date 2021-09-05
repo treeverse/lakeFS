@@ -28,18 +28,24 @@ func DecodeStrings(fromValue reflect.Value, toValue reflect.Value) (interface{},
 	return fromValue.Interface(), nil
 }
 
+type SecureString string
+
+func (s *SecureString) String() string {
+	return string(*s)
+}
+
 // S3AuthInfo holds S3-style authentication.
 type S3AuthInfo struct {
 	CredentialsFile string `mapstructure:"credentials_file"`
 	Profile         string
 	Credentials     *struct {
-		AccessKeyID string `mapstructure:"access_key_id"`
+		AccessKeyID SecureString `mapstructure:"access_key_id"`
 		// AccessSecretKey is the old name for SecretAccessKey.
 		//
 		// Deprecated: use SecretAccessKey instead.
-		AccessSecretKey string `mapstructure:"access_secret_key"`
-		SecretAccessKey string `mapstructure:"secret_access_key"`
-		SessionToken    string `mapstructure:"session_token"`
+		AccessSecretKey SecureString `mapstructure:"access_secret_key"`
+		SecretAccessKey SecureString `mapstructure:"secret_access_key"`
+		SessionToken    SecureString `mapstructure:"session_token"`
 	}
 }
 
@@ -56,7 +62,7 @@ type configuration struct {
 	}
 
 	Database struct {
-		ConnectionString      string        `mapstructure:"connection_string"`
+		ConnectionString      SecureString  `mapstructure:"connection_string"`
 		MaxOpenConnections    int32         `mapstructure:"max_open_connections"`
 		MaxIdleConnections    int32         `mapstructure:"max_idle_connections"`
 		ConnectionMaxLifetime time.Duration `mapstructure:"connection_max_lifetime"`
@@ -70,7 +76,7 @@ type configuration struct {
 			Jitter  time.Duration
 		}
 		Encrypt struct {
-			SecretKey string `mapstructure:"secret_key" validate:"required"`
+			SecretKey SecureString `mapstructure:"secret_key" validate:"required"`
 		}
 	}
 	Blockstore struct {

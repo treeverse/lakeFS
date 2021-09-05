@@ -103,17 +103,18 @@ public class ObjectsApiTest {
     public void listObjectsTest() throws ApiException {
         String repository = null;
         String ref = null;
+        Boolean userMetadata = null;
         String after = null;
         Integer amount = null;
         String delimiter = null;
         String prefix = null;
-        ObjectStatsList response = api.listObjects(repository, ref, after, amount, delimiter, prefix);
+        ObjectStatsList response = api.listObjects(repository, ref, userMetadata, after, amount, delimiter, prefix);
 
         // TODO: test validations
     }
     
     /**
-     * stage an object\&quot;s metadata for the given branch
+     * stage an object&#39;s metadata for the given branch
      *
      * 
      *
@@ -144,7 +145,8 @@ public class ObjectsApiTest {
         String repository = null;
         String ref = null;
         String path = null;
-        ObjectStats response = api.statObject(repository, ref, path);
+        Boolean userMetadata = null;
+        ObjectStats response = api.statObject(repository, ref, path, userMetadata);
 
         // TODO: test validations
     }
