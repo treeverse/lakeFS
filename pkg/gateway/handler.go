@@ -100,6 +100,7 @@ func NewHandler(
 			operations.OperationIDDeleteObject:         PathOperationHandler(sc, &operations.DeleteObject{}),
 			operations.OperationIDDeleteObjects:        RepoOperationHandler(sc, &operations.DeleteObjects{}),
 			operations.OperationIDGetObject:            PathOperationHandler(sc, &operations.GetObject{}),
+			operations.OperationIDPutBucket:            RepoOperationHandler(sc, &operations.PutBucket{}),
 			operations.OperationIDHeadBucket:           RepoOperationHandler(sc, &operations.HeadBucket{}),
 			operations.OperationIDHeadObject:           PathOperationHandler(sc, &operations.HeadObject{}),
 			operations.OperationIDListBuckets:          OperationHandler(sc, &operations.ListBuckets{}),
