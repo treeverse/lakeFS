@@ -3,10 +3,16 @@ package io.treeverse.jpebble
 import org.scalatest._
 import matchers.should._
 import funspec._
+import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
 
 import java.io.File
 import org.apache.commons.io.IOUtils
+
 import scala.io.Source
+import org.testcontainers.containers.BindMode
+import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy
+import org.scalatest.matchers.must.Matchers.contain
+import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 
 class BlockParserSpec extends AnyFunSpec with Matchers {
   val magicBytes = BlockParser.footerMagic
@@ -167,7 +173,7 @@ class BlockParserSpec extends AnyFunSpec with Matchers {
         case histRe(count, word) => (word, count.toInt)
         case _ => throw new RuntimeException(s"Bad format h.txt line ${line}")
       }
-    ).toMap
+    ).toSeq
 
     it("internal: load h.txt") {
       expected should not be empty
@@ -232,9 +238,9 @@ class BlockParserSpec extends AnyFunSpec with Matchers {
             withSSTable(sstFilename, (in: BlockReadable) => {
               val it = BlockParser.entryIterator(in)
               val actual = it.map((entry) =>
-                (new String(entry.key), new String(entry.value).toInt)).toMap
+                (new String(entry.key), new String(entry.value).toInt)).toSeq
 
-              actual should contain theSameElementsAs expected
+              actual should contain theSameElementsInOrderAs expected
             })
           }
         }
@@ -259,5 +265,136 @@ class CountedIteratorSpec extends AnyFunSpec with Matchers {
       ci.foreach((_) => Unit)
       ci.count should be (base.length)
     }
+  }
+}
+
+class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
+
+  override val container: GenericContainer = GenericContainer("golang:1.16.2-alpine",
+    classpathResourceMapping = Seq(
+      ("parser-test/sst_files_generator.go", "/local/sst_files_generator.go", BindMode.READ_WRITE),
+      ("parser-test/go.mod", "/local/go.mod", BindMode.READ_WRITE),
+      ("parser-test/go.sum", "/local/go.sum", BindMode.READ_WRITE)),
+    command = Seq("/bin/sh", "-c", "cd /local && CGO_ENABLED=0 go run sst_files_generator.go && echo \"done\""),
+    waitStrategy = new LogMessageWaitStrategy().withRegEx("done\\n") // TODO(Tals): use startupCheckStrategy instead of waitStrategy (https://github.com/treeverse/lakeFS/issues/2455)
+  )
+
+  describe("A block parser") {
+    describe("with 2-level index sstable") {
+      it("should parse successfully") {
+        withGeneratedTestFiles("two.level.idx", verifyBlockParserOutput)
+      }
+    }
+
+    describe("with multi-sized sstables") {
+      val testFiles = Seq(
+        "fuzz.contents.0",
+        "fuzz.contents.1",
+        "fuzz.contents.2",
+        "fuzz.contents.3",
+        "fuzz.contents.4",
+        "fuzz.contents.5"
+      )
+
+      testFiles.foreach(fileName =>
+        describe(fileName) {
+          it("should parse successfully") {
+            withGeneratedTestFiles(fileName, verifyBlockParserOutput)
+          }
+        })
+    }
+
+    describe("with random table user properties") {
+      it("should parse successfully") {
+        withGeneratedTestFiles("fuzz.table.properties", verifyBlockParserOutput)
+      }
+    }
+
+    describe("with sstable with xxHash64 checksum") {
+      it("should fail parsing") {
+        assertThrows[BadFileFormatException]{
+          withGeneratedTestFiles("checksum.type.xxHash64", verifyBlockParserOutput)
+        }
+      }
+    }
+
+    describe("with sstable with levelDB table format") {
+      it("should fail parsing") {
+        assertThrows[BadFileFormatException]{
+          withGeneratedTestFiles("table.format.leveldb", verifyBlockParserOutput)
+        }
+      }
+    }
+
+    describe("with max size sstable supported by lakeFS") {
+      it("should parse successfully") {
+        withGeneratedTestFiles("max.size.lakefs.file", verifyBlockParserOutput)
+      }
+    }
+
+    describe("with random restart interval") {
+      it("should parse successfully") {
+        withGeneratedTestFiles("fuzz.block.restart.interval", verifyBlockParserOutput)
+      }
+    }
+
+    describe("with random block size") {
+      it("should parse successfully") {
+        withGeneratedTestFiles("fuzz.block.size", verifyBlockParserOutput)
+      }
+    }
+
+    describe("with random blocksize threshold") {
+      it("should parse successfully") {
+        withGeneratedTestFiles("fuzz.block.size.threshold", verifyBlockParserOutput)
+      }
+    }
+  }
+
+  /**
+   * Copies data from a file inside the test container to a temporary file.
+   * @param baseFileName the file name without a suffix of the files to copy from within the container
+   * @param suffix of the file to copy from the container
+   * @return
+   */
+  def copyTestFile(baseFileName: String, suffix: String) : File =
+    container.copyFileFromContainer("/local/" + baseFileName + suffix, in => {
+      val tempOutFile = File.createTempFile("test-block-parser.", suffix)
+      tempOutFile.deleteOnExit()
+      val out = new java.io.FileOutputStream(tempOutFile)
+      try {
+        IOUtils.copy(in, out)
+      } finally {
+        out.close()
+      }
+      return tempOutFile
+    })
+
+  /**
+   * Lightweight fixture for running particular tests with SSTables and JSON fules generated by a go application on
+   * test startup. The fixture uses sstables as the parser input, and the json as the source of the expected output of
+   * the parsing operation.
+   */
+  def withGeneratedTestFiles(baseFileName: String, test: (BlockReadable, Seq[(String, String)], Long) => Any) = {
+    val tmpSstFile = copyTestFile(baseFileName, ".sst")
+    val tmpJsonFile = copyTestFile(baseFileName, ".json")
+
+    val in = new BlockReadableFileChannel(new java.io.FileInputStream(tmpSstFile).getChannel)
+    try {
+      val jsonString = os.read(os.Path(tmpJsonFile.getAbsolutePath))
+      val data = ujson.read(jsonString)
+      val expected = data.arr.map(e => (e("Key").str, e("Value").str))
+      test(in, expected, tmpSstFile.length())
+    } finally {
+      in.close()
+    }
+  }
+
+  def verifyBlockParserOutput(in: BlockReadable, expected: Seq[(String, String)], sstSize: Long): Unit = {
+    val it = BlockParser.entryIterator(in)
+    val actual = it.map((entry) =>
+      (new String(entry.key), new String(entry.value))).toSeq
+
+    actual should contain theSameElementsInOrderAs expected
   }
 }
