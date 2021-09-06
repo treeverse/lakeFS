@@ -154,9 +154,9 @@ func writeMultiSizedSstsWithContentsFuzzing() {
 	for i := 0; i < numOfFilesToGenerate; i++ {
 		var curSize int
 		if i%2 == 0 {
-			curSize = 1 + r.Intn(DefaultCommittedPermanentMaxRangeSizeBytes/MiBToBytes)*MiBToBytes
+			curSize = (1 + r.Intn(DefaultCommittedPermanentMaxRangeSizeBytes/MiBToBytes)) * MiBToBytes
 		} else {
-			curSize = 1 + r.Intn(DefaultMaxSizeKiB)*KiBToBytes
+			curSize = (1 + r.Intn(DefaultMaxSizeKiB)) * KiBToBytes
 		}
 
 		testFileName := fmt.Sprintf("fuzz.contents.%d", i)
