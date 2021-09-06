@@ -3,7 +3,7 @@ package io.treeverse.jpebble
 import org.scalatest._
 import matchers.should._
 import funspec._
-import com.dimafeng.testcontainers.{DockerComposeContainer, ForAllTestContainer, GenericContainer}
+import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
 
 import java.io.File
 import org.apache.commons.io.IOUtils
@@ -13,7 +13,6 @@ import org.testcontainers.containers.BindMode
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy
 import org.scalatest.matchers.must.Matchers.contain
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
-import org.testcontainers.containers.startupcheck.IndefiniteWaitOneShotStartupCheckStrategy
 
 class BlockParserSpec extends AnyFunSpec with Matchers {
   val magicBytes = BlockParser.footerMagic
@@ -277,7 +276,7 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
       ("parser-test/go.mod", "/local/go.mod", BindMode.READ_WRITE),
       ("parser-test/go.sum", "/local/go.sum", BindMode.READ_WRITE)),
     command = Seq("/bin/sh", "-c", "cd /local && CGO_ENABLED=0 go run sst_files_generator.go && echo \"done\""),
-    waitStrategy = new LogMessageWaitStrategy().withRegEx("done\\n")
+    waitStrategy = new LogMessageWaitStrategy().withRegEx("done\\n") // TODO(Tals): use startupCheckStrategy instead of waitStrategy (https://github.com/treeverse/lakeFS/issues/2455)
   )
 
   describe("A block parser") {

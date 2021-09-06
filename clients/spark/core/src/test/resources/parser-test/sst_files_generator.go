@@ -22,12 +22,19 @@ const (
 	DefaultCommittedPermanentMaxRangeSizeBytes = 20 * MiBToBytes
 	DefaultSstSizeBytes                        = 50 * KiBToBytes
 	DefaultTwoLevelSstSizeBytes                = 10 * KiBToBytes
-	DefaultMaxSizeKib                          = 100
+	DefaultMaxSizeKiB                          = 100
 )
 
 var DefaultUserProperties = map[string]string{
 	"user_prop_1": "val1",
 	"user_prop_2": "val2",
+}
+
+func newDefaultWriterOptions() sstable.WriterOptions {
+	return sstable.WriterOptions{
+		Compression:             sstable.SnappyCompression,
+		TablePropertyCollectors: getDefaultTablePropertyCollectors(DefaultUserProperties),
+	}
 }
 
 type Entry struct {
@@ -43,8 +50,10 @@ func main() {
 	writeLargeSsts()
 }
 
-func generateNanoid() (string, error) {
-	return nanoid.New(DefaultValueSizeBytes)
+func newGenerateNanoid(size int) func() (string, error) {
+	return func() (string, error) {
+		return nanoid.New(size)
+	}
 }
 
 func newGenerateFuzz() func() (string, error) {
@@ -58,30 +67,29 @@ func newGenerateFuzz() func() (string, error) {
 
 func writeSstsWithUnsupportedWriterOptions() {
 	sizeBytes := DefaultSstSizeBytes
-	keys := prepareSortedSliceWithNanoid(sizeBytes)
+	generateNanoidKey := newGenerateNanoid(DefaultKeySizeBytes)
+	keys := prepareSortedSlice(sizeBytes, generateNanoidKey)
 
 	// Checksum specifies which checksum to use. lakeFS supports parsing sstables with crc checksum.
 	// ChecksumTypeXXHash and ChecksumTypeNone are unsupported and therefore not tested.
-	writerOptions := sstable.WriterOptions{
-		Compression: sstable.SnappyCompression,
-		Checksum:    sstable.ChecksumTypeXXHash64,
-	}
-	createTestInputFiles(keys, generateNanoid, sizeBytes,
+	writerOptions := newDefaultWriterOptions()
+	writerOptions.Checksum = sstable.ChecksumTypeXXHash64
+	generateNanoidValue := newGenerateNanoid(DefaultValueSizeBytes)
+	createTestInputFiles(keys, generateNanoidValue, sizeBytes,
 		"checksum.type.xxHash64", writerOptions)
 
 	// TableFormat specifies the format version for writing sstables. The default
 	// is TableFormatRocksDBv2 which creates RocksDB compatible sstables. this is the only format supported by lakeFS.
-	writerOptions = sstable.WriterOptions{
-		Compression: sstable.SnappyCompression,
-		TableFormat: sstable.TableFormatLevelDB,
-	}
-	createTestInputFiles(keys, generateNanoid, sizeBytes, "table.format.leveldb",
+	writerOptions = newDefaultWriterOptions()
+	writerOptions.TableFormat = sstable.TableFormatLevelDB
+	createTestInputFiles(keys, generateNanoidValue, sizeBytes, "table.format.leveldb",
 		writerOptions)
 }
 
 func writeSstsWithWriterOptionsFuzzing() {
 	sizeBytes := DefaultSstSizeBytes
-	keys := prepareSortedSliceWithNanoid(sizeBytes)
+	generateNanoidKey := newGenerateNanoid(DefaultKeySizeBytes)
+	keys := prepareSortedSlice(sizeBytes, generateNanoidKey)
 
 	// Use fuzzing to define sstable user properties.
 	generateFuzz := newGenerateFuzz()
@@ -93,36 +101,29 @@ func writeSstsWithWriterOptionsFuzzing() {
 		userProps[propKey] = propVal
 		fmt.Printf("user property %d, key=%s, val=%s\n", i, propKey, propVal)
 	}
-	writerOptions := sstable.WriterOptions{
-		Compression:             sstable.SnappyCompression,
-		TablePropertyCollectors: []func() sstable.TablePropertyCollector{NewStaticCollector(userProps)},
-	}
-	createTestInputFiles(keys, generateNanoid, sizeBytes, "fuzz.table.properties", writerOptions)
+	writerOptions := newDefaultWriterOptions()
+	writerOptions.TablePropertyCollectors = []func() sstable.TablePropertyCollector{NewStaticCollector(userProps)}
+	generateNanoidValue := newGenerateNanoid(DefaultValueSizeBytes)
+	createTestInputFiles(keys, generateNanoidValue, sizeBytes, "fuzz.table.properties", writerOptions)
 
 	// BlockRestartInterval is the number of keys between restart points
 	// for delta encoding of keys.
 	// The default value is 16.
 	src1 := rand.NewSource(5092021)
 	blockRestartInterval := 1 + rand.New(src1).Intn(100)
-	writerOptions = sstable.WriterOptions{
-		Compression:             sstable.SnappyCompression,
-		TablePropertyCollectors: []func() sstable.TablePropertyCollector{NewStaticCollector(DefaultUserProperties)},
-		BlockRestartInterval:    blockRestartInterval,
-	}
+	writerOptions = newDefaultWriterOptions()
+	writerOptions.BlockRestartInterval = blockRestartInterval
 	fmt.Printf("BlockRestartInterval %d...\n", blockRestartInterval)
-	createTestInputFiles(keys, generateNanoid, sizeBytes, "fuzz.block.restart.interval", writerOptions)
+	createTestInputFiles(keys, generateNanoidValue, sizeBytes, "fuzz.block.restart.interval", writerOptions)
 
 	// BlockSize is the target uncompressed size in bytes of each table block.
 	// The default value is 4096.
 	src2 := rand.NewSource(881989)
 	blockSize := 1 + rand.New(src2).Intn(9000)
-	writerOptions = sstable.WriterOptions{
-		Compression:             sstable.SnappyCompression,
-		TablePropertyCollectors: []func() sstable.TablePropertyCollector{NewStaticCollector(DefaultUserProperties)},
-		BlockSize:               blockSize,
-	}
+	writerOptions = newDefaultWriterOptions()
+	writerOptions.BlockSize = blockSize
 	fmt.Printf("BlockSize %d...\n", blockSize)
-	createTestInputFiles(keys, generateNanoid, sizeBytes, "fuzz.block.size", writerOptions)
+	createTestInputFiles(keys, generateNanoidValue, sizeBytes, "fuzz.block.size", writerOptions)
 
 	// BlockSizeThreshold finishes a block if the block size is larger than the
 	// specified percentage of the target block size and adding the next entry
@@ -131,23 +132,19 @@ func writeSstsWithWriterOptionsFuzzing() {
 	// The default value is 90
 	src3 := rand.NewSource(123432)
 	blockSizeThreshold := 1 + rand.New(src3).Intn(100)
-	writerOptions = sstable.WriterOptions{
-		Compression:             sstable.SnappyCompression,
-		TablePropertyCollectors: getDefaultTablePropertyCollectors(DefaultUserProperties),
-		BlockSizeThreshold:      blockSizeThreshold,
-	}
+	writerOptions = newDefaultWriterOptions()
+	writerOptions.BlockSizeThreshold = blockSizeThreshold
 	fmt.Printf("BlockSizeThreshold %d...\n", blockSizeThreshold)
-	createTestInputFiles(keys, generateNanoid, sizeBytes, "fuzz.block.size.threshold", writerOptions)
+	createTestInputFiles(keys, generateNanoidValue, sizeBytes, "fuzz.block.size.threshold", writerOptions)
 }
 
 func writeLargeSsts() {
 	sizeBytes := DefaultCommittedPermanentMaxRangeSizeBytes
-	keys := prepareSortedSliceWithNanoid(sizeBytes)
-	writerOptions := sstable.WriterOptions{
-		Compression:             sstable.SnappyCompression,
-		TablePropertyCollectors: getDefaultTablePropertyCollectors(DefaultUserProperties),
-	}
-	createTestInputFiles(keys, generateNanoid, sizeBytes, "max.size.lakefs.file", writerOptions)
+	generateNanoidKey := newGenerateNanoid(DefaultKeySizeBytes)
+	keys := prepareSortedSlice(sizeBytes, generateNanoidKey)
+	writerOptions := newDefaultWriterOptions()
+	generateNanoidValue := newGenerateNanoid(DefaultValueSizeBytes)
+	createTestInputFiles(keys, generateNanoidValue, sizeBytes, "max.size.lakefs.file", writerOptions)
 }
 
 func writeMultiSizedSstsWithContentsFuzzing() {
@@ -159,58 +156,39 @@ func writeMultiSizedSstsWithContentsFuzzing() {
 		if i%2 == 0 {
 			curSize = 1 + r.Intn(DefaultCommittedPermanentMaxRangeSizeBytes/MiBToBytes)*MiBToBytes
 		} else {
-			curSize = 1 + r.Intn(DefaultMaxSizeKib)*KiBToBytes
+			curSize = 1 + r.Intn(DefaultMaxSizeKiB)*KiBToBytes
 		}
 
 		testFileName := fmt.Sprintf("fuzz.contents.%d", i)
-		keys := prepareSortedSliceWithFuzzing(curSize)
-
-		writerOptions := sstable.WriterOptions{
-			Compression:             sstable.SnappyCompression,
-			TablePropertyCollectors: getDefaultTablePropertyCollectors(DefaultUserProperties),
-		}
+		fuzzFunc := newGenerateFuzz()
+		keys := prepareSortedSlice(curSize, fuzzFunc)
+		writerOptions := newDefaultWriterOptions()
 		createTestInputFiles(keys, newGenerateFuzz(), curSize, testFileName, writerOptions)
 	}
 }
 
-func prepareSortedSliceWithFuzzing(size int) []string {
+func writeTwoLevelIdxSst() {
+	sizeBytes := DefaultTwoLevelSstSizeBytes
+	generateNanoidKey := newGenerateNanoid(DefaultKeySizeBytes)
+	keys := prepareSortedSlice(sizeBytes, generateNanoidKey)
+
+	writerOptions := newDefaultWriterOptions()
+	writerOptions.IndexBlockSize = 5 // setting the index block size target to a small number to make 2-level index get enabled
+	generateNanoidValue := newGenerateNanoid(DefaultValueSizeBytes)
+	createTestInputFiles(keys, generateNanoidValue, sizeBytes, "two.level.idx", writerOptions)
+}
+
+func prepareSortedSlice(size int, genKey func() (string, error)) []string {
 	var keySumBytes int
 	var slice []string
-	generateFuzz := newGenerateFuzz()
 	// Keep generating keys until we reach the desired slice size. This guarantees that the sstable writer will have
 	// enough data to write an sstable of the desired size.
 	for keySumBytes < size {
-		key, _ := generateFuzz()
+		key, _ := genKey()
 		if key == "" { // TODO(Tals): remove after resolving https://github.com/treeverse/lakeFS/issues/2419
 			continue
 		}
 		keySumBytes += len(key)
-		slice = append(slice, key)
-	}
-	sort.Strings(slice)
-	return slice
-}
-
-func writeTwoLevelIdxSst() {
-	sizeBytes := DefaultTwoLevelSstSizeBytes
-	keys := prepareSortedSliceWithNanoid(sizeBytes)
-
-	writerOptions := sstable.WriterOptions{
-		Compression:             sstable.SnappyCompression,
-		IndexBlockSize:          5, // setting the index block size target to a small number to make 2-level index get enabled
-		TablePropertyCollectors: getDefaultTablePropertyCollectors(DefaultUserProperties),
-	}
-	createTestInputFiles(keys, generateNanoid, sizeBytes, "two.level.idx", writerOptions)
-}
-
-func prepareSortedSliceWithNanoid(size int) []string {
-	numLines := size / DefaultKeySizeBytes
-	slice := make([]string, 0, numLines)
-	for i := 0; i < numLines; i++ {
-		key, err := nanoid.New(DefaultKeySizeBytes)
-		if err != nil {
-			panic(err)
-		}
 		slice = append(slice, key)
 	}
 	sort.Strings(slice)
