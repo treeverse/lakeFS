@@ -14,9 +14,6 @@ import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy
 import org.scalatest.matchers.must.Matchers.contain
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 
-import java.nio.channels.FileChannel
-import java.nio.file.{StandardOpenOption}
-
 class BlockParserSpec extends AnyFunSpec with Matchers {
   val magicBytes = BlockParser.footerMagic
 
