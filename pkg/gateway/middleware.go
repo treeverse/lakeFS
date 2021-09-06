@@ -22,7 +22,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/permissions"
 )
 
-func AuthenticationHandler(authService simulator.GatewayAuthService, bareDomains []string, next http.Handler) http.Handler {
+func AuthenticationHandler(authService simulator.GatewayAuthService, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
@@ -72,10 +72,11 @@ func AuthenticationHandler(authService simulator.GatewayAuthService, bareDomains
 func EnrichWithParts(bareDomains []string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
-		repo, ref, pth := Parts(req.Host, req.URL.Path, bareDomains)
-		ctx = context.WithValue(ctx, ContextKeyRepositoryID, repo)
-		ctx = context.WithValue(ctx, ContextKeyRef, ref)
-		ctx = context.WithValue(ctx, ContextKeyPath, pth)
+		parts := ParseRequestParts(req.Host, req.URL.Path, bareDomains)
+		ctx = context.WithValue(ctx, ContextKeyRepositoryID, parts.Repository)
+		ctx = context.WithValue(ctx, ContextKeyRef, parts.Ref)
+		ctx = context.WithValue(ctx, ContextKeyPath, parts.Path)
+		ctx = context.WithValue(ctx, ContextKeyMatchedHost, parts.MatchedHost)
 		req = req.WithContext(ctx)
 		next.ServeHTTP(w, req)
 	})
@@ -209,12 +210,19 @@ func memberFold(a string, bs []string) bool {
 	return false
 }
 
-// Parts returns the repo id, ref and path according to whether the request is path-style or virtual-host-style.
-func Parts(host string, urlPath string, bareDomains []string) (repo string, ref string, pth string) {
+type RequestParts struct {
+	Repository  string
+	Ref         string
+	Path        string
+	MatchedHost bool
+}
+
+// ParseRequestParts returns the repo id, ref and path according to whether the request is path-style or virtual-host-style.
+func ParseRequestParts(host string, urlPath string, bareDomains []string) RequestParts {
+	var parts RequestParts
 	urlPath = strings.TrimPrefix(urlPath, path.Separator)
 	var p []string
 	ourHosts := httputil.HostsOnly(bareDomains)
-	matchedHost := false
 	// we need to check using this order:
 	// 1. if exact hosts, path based
 	// 2. if suffixes, virtual host
@@ -222,43 +230,43 @@ func Parts(host string, urlPath string, bareDomains []string) (repo string, ref 
 	if memberFold(httputil.HostOnly(host), ourHosts) {
 		// path style: extract repo from first part
 		p = strings.SplitN(urlPath, path.Separator, 3)
-		repo = p[0]
+		parts.Repository = p[0]
 		if len(p) >= 1 {
 			p = p[1:]
 		}
-		matchedHost = true
+		parts.MatchedHost = true
 	} else {
 		// virtual host style: extract repo from subdomain
 		host := httputil.HostOnly(host)
-		repo = ""
 		for _, ourHost := range ourHosts {
 			if strings.HasSuffix(host, ourHost) {
-				repo = strings.TrimSuffix(host, "."+ourHost)
-				matchedHost = true
+				parts.Repository = strings.TrimSuffix(host, "."+ourHost)
+				parts.MatchedHost = true
 				break
 			}
 		}
-		if matchedHost {
+		if parts.MatchedHost {
 			p = strings.SplitN(urlPath, path.Separator, 2)
 		}
 	}
 
-	if !matchedHost {
+	if !parts.MatchedHost {
 		// assume path based for domains we don't explicitly know
 		p = strings.SplitN(urlPath, path.Separator, 3)
-		repo = p[0]
+		parts.Repository = p[0]
 		if len(p) >= 1 {
 			p = p[1:]
 		}
 	}
+
 	// extract ref and path from remaining parts
-	if len(p) == 0 {
-		return repo, "", ""
+	if len(p) > 0 {
+		parts.Ref = p[0]
 	}
-	if len(p) == 1 {
-		return repo, p[0], ""
+	if len(p) > 1 {
+		parts.Path = p[1]
 	}
-	return repo, p[0], p[1]
+	return parts
 }
 
 func pathBasedOperationID(method string) operations.OperationID {
