@@ -17,7 +17,7 @@ services:
       - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=some random secret string
       - LAKEFS_DATABASE_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
       - LAKEFS_BLOCKSTORE_LOCAL_PATH=/home/lakefs
-      - LAKEFS_GATEWAYS_S3_DOMAIN_NAME=s3.local.lakefs.io:8000
+      - LAKEFS_GATEWAYS_S3_DOMAIN_NAME
       - LAKEFS_STATS_ENABLED
       - LAKEFS_LOGGING_LEVEL
       - LAKEFS_COMMITTED_LOCAL_CACHE_DIR=/home/lakefs/.local_tier

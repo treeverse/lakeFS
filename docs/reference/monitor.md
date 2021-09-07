@@ -13,11 +13,7 @@ redirect_from: ../deploying-aws/monitor.md
 
 {: .pb-3 }
 
-## Table of contents
-{: .no_toc .text-delta }
-
-1. TOC
-{:toc}
+{% include toc.html %}
 
 ## Example prometheus.yml
 lakeFS exposes metrics through the same port used by the lakeFS service, using the standard `/metrics` path.
@@ -77,4 +73,4 @@ go_sql_stats_connections_open
 
 ### Example Grafana dashboard
 
-[![Grafana dashboard example](../assets/img/grafana.png)](../assets/img/grafana.png){: target="_blank" }
+[![Grafana dashboard example]({{ site.baseurl }}/assets/img/grafana.png)]({{ site.baseurl }}/assets/img/grafana.png){: target="_blank" }

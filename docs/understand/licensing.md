@@ -21,7 +21,7 @@ We believe small organizations should be able to use cutting edge technologies f
 
 As a commercial organization, we intend to use an open core model.
 
-![Open Core Model](../assets/img/open_core.png)
+![Open Core Model]({{ site.baseurl }}/assets/img/open_core.png)
 
 ***What is our commitment to open source?***
 

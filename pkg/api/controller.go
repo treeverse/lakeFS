@@ -2441,14 +2441,18 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 			if !entry.CreationDate.IsZero() {
 				mtime = entry.CreationDate.Unix()
 			}
-			objList = append(objList, ObjectStats{
+			objStat := ObjectStats{
 				Checksum:        entry.Checksum,
 				Mtime:           mtime,
 				Path:            entry.Path,
 				PhysicalAddress: qk.Format(),
 				PathType:        entryTypeObject,
 				SizeBytes:       Int64Ptr(entry.Size),
-			})
+			}
+			if (params.UserMetadata == nil || *params.UserMetadata) && entry.Metadata != nil {
+				objStat.Metadata = &ObjectUserMetadata{AdditionalProperties: entry.Metadata}
+			}
+			objList = append(objList, objStat)
 		}
 	}
 	response := ObjectStatsList{
@@ -2500,6 +2504,9 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 		PathType:        entryTypeObject,
 		PhysicalAddress: qk.Format(),
 		SizeBytes:       Int64Ptr(entry.Size),
+	}
+	if (params.UserMetadata == nil || *params.UserMetadata) && entry.Metadata != nil {
+		objStat.Metadata = &ObjectUserMetadata{AdditionalProperties: entry.Metadata}
 	}
 	code := http.StatusOK
 	if entry.Expired {

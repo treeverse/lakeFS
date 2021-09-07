@@ -4,6 +4,7 @@ import (
 	"crypto/hmac"
 	"encoding/hex"
 	"fmt"
+	"net/http"
 	"regexp"
 	"strings"
 	"unicode/utf8"
@@ -117,4 +118,33 @@ func (c *chainedAuthenticator) String() string {
 		return "chained authenticator"
 	}
 	return fmt.Sprintf("%s", c.chosen)
+}
+
+func IsAWSSignedRequest(req *http.Request) bool {
+	// headers first
+	headers := req.Header
+	v4Value := headers.Get(v4SignatureHeader)
+	if len(v4Value) > 0 {
+		return true
+	}
+	v4AuthHeader := headers.Get(V4authHeaderName)
+	if strings.HasPrefix(v4AuthHeader, "AWS4") {
+		return true
+	}
+	v2Value := headers.Get(v2authHeaderName)
+	if strings.HasPrefix(v2Value, "AWS ") {
+		return true
+	}
+
+	// then request params
+	queryParams := req.URL.Query()
+	// sigv2: https://docs.aws.amazon.com/general/latest/gr/signature-version-2.html
+	if len(queryParams.Get("AWSAccessKeyId")) > 0 {
+		return true
+	}
+	// sigv4: https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html
+	if len(queryParams.Get("X-Amz-Credential")) > 0 {
+		return true
+	}
+	return false
 }

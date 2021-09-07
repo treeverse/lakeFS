@@ -8,7 +8,7 @@ Name | Type | Description | Notes
 **checksum** | **str** |  | 
 **size_bytes** | **int** |  | 
 **mtime** | **int** | Unix Epoch in seconds | [optional] 
-**metadata** | **{str: (str,)}** |  | [optional] 
+**metadata** | [**ObjectUserMetadata**](ObjectUserMetadata.md) |  | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

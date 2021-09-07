@@ -4,17 +4,17 @@ import io.lakefs.LakeFSFileSystem;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.s3a.Constants;
-import org.junit.internal.AssumptionViolatedException;
+import org.junit.AssumptionViolatedException;
 
 import java.io.IOException;
 import java.net.URI;
 
 public class LakeFSTestUtils {
 
-  public static LakeFSFileSystem createTestFileSystem(Configuration conf) throws
-      IOException {
-    String fsname = conf.getTrimmed(TestLakeFSFileSystemContract.TEST_FS_LAKEFS_NAME, "");
+  public static final String NULL_RESULT = "(null)";
 
+  public static LakeFSFileSystem createTestFileSystem(Configuration conf) throws IOException {
+    String fsname = conf.getTrimmed(TestLakeFSFileSystemContract.TEST_FS_LAKEFS_NAME, "");
 
     boolean liveTest = !StringUtils.isEmpty(fsname);
     URI testURI = null;
@@ -35,4 +35,5 @@ public class LakeFSTestUtils {
     fs1.initialize(testURI, conf);
     return fs1;
   }
+
 }

@@ -15,7 +15,7 @@ With lakeFS you can build repeatable, atomic and versioned data lake operations 
 
 lakeFS supports AWS S3, Azure Blob Storage and Google Cloud Storage (GCS) as its underlying storage service. It is [API compatible with S3](reference/s3.md) and works seamlessly with all modern data frameworks such as Spark, Hive, AWS Athena, Presto, etc.
 
-<img src="assets/img/wrapper.png" alt="lakeFS" width="650px"/>
+<img src="{{ site.baseurl }}/assets/img/wrapper.png" alt="lakeFS" width="650px"/>
 
 
 {: .pb-5 }
@@ -28,7 +28,7 @@ This branching model makes your data lake ACID compliant by allowing changes to 
 
 Since lakeFS is compatible with the S3 API, all popular applications will work without modification, by simply adding the branch name to the object path:
 
-<img src="assets/img/s3_branch.png" alt="lakeFS s3 addressing" width="60%" height="60%" />
+<img src="{{ site.baseurl }}/assets/img/s3_branch.png" alt="lakeFS s3 addressing" width="60%" height="60%" />
 
 ## Use-cases:
 

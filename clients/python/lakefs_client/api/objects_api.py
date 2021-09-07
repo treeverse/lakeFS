@@ -481,6 +481,7 @@ class ObjectsApi(object):
                 ref (str): a reference (could be either a branch or a commit ID)
 
             Keyword Args:
+                user_metadata (bool): [optional] if omitted the server will use the default value of True
                 after (str): return items after this value. [optional]
                 amount (int): how many items to return. [optional] if omitted the server will use the default value of 100
                 delimiter (str): delimiter used to group common prefixes by. [optional]
@@ -552,6 +553,7 @@ class ObjectsApi(object):
                 'all': [
                     'repository',
                     'ref',
+                    'user_metadata',
                     'after',
                     'amount',
                     'delimiter',
@@ -584,6 +586,8 @@ class ObjectsApi(object):
                         (str,),
                     'ref':
                         (str,),
+                    'user_metadata':
+                        (bool,),
                     'after':
                         (str,),
                     'amount':
@@ -596,6 +600,7 @@ class ObjectsApi(object):
                 'attribute_map': {
                     'repository': 'repository',
                     'ref': 'ref',
+                    'user_metadata': 'user_metadata',
                     'after': 'after',
                     'amount': 'amount',
                     'delimiter': 'delimiter',
@@ -604,6 +609,7 @@ class ObjectsApi(object):
                 'location_map': {
                     'repository': 'path',
                     'ref': 'path',
+                    'user_metadata': 'query',
                     'after': 'query',
                     'amount': 'query',
                     'delimiter': 'query',
@@ -630,7 +636,7 @@ class ObjectsApi(object):
             object_stage_creation,
             **kwargs
         ):
-            """stage an object\"s metadata for the given branch  # noqa: E501
+            """stage an object's metadata for the given branch  # noqa: E501
 
             This method makes a synchronous HTTP request by default. To make an
             asynchronous HTTP request, please pass async_req=True
@@ -794,6 +800,7 @@ class ObjectsApi(object):
                 path (str):
 
             Keyword Args:
+                user_metadata (bool): [optional] if omitted the server will use the default value of True
                 _return_http_data_only (bool): response data without head status
                     code and headers. Default is True.
                 _preload_content (bool): if False, the urllib3.HTTPResponse object
@@ -864,6 +871,7 @@ class ObjectsApi(object):
                     'repository',
                     'ref',
                     'path',
+                    'user_metadata',
                 ],
                 'required': [
                     'repository',
@@ -889,16 +897,20 @@ class ObjectsApi(object):
                         (str,),
                     'path':
                         (str,),
+                    'user_metadata':
+                        (bool,),
                 },
                 'attribute_map': {
                     'repository': 'repository',
                     'ref': 'ref',
                     'path': 'path',
+                    'user_metadata': 'user_metadata',
                 },
                 'location_map': {
                     'repository': 'path',
                     'ref': 'path',
                     'path': 'query',
+                    'user_metadata': 'query',
                 },
                 'collection_format_map': {
                 }

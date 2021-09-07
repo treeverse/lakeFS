@@ -18,11 +18,7 @@ lakeFS is format-agnostic, so you can save data in Delta format within a lakeFS 
 1. [CI/CD hooks](../setup/hooks.md) can validate Delta table contents, schema, or even referential integrity.
 1. lakeFS supports zero-copy branching for quick experimentation with full isolation.
 
-## Table of contents
-{: .no_toc .text-delta }
-
-1. TOC
-{:toc}
+{% include toc.html %}
 
 
 ## Configuration
@@ -32,9 +28,10 @@ Most commonly Delta tables are interacted with in a Spark environment given the 
 To configure a Spark environment to read from and write to a Delta table within a lakeFS repository, we need to set the proper credentials and endpoint in the S3 Hadoop configuration, like we do with any [Spark](./spark.md#configuration) script.
 
 ```scala
+ sc.hadoopConfiguration.set("spark.hadoop.fs.s3a.path.style.access", "true")
  sc.hadoopConfiguration.set("spark.hadoop.fs.s3a.bucket.<repo-name>.access.key", "AKIAIOSFODNN7EXAMPLE")
  sc.hadoopConfiguration.set("spark.hadoop.fs.s3a.bucket.<repo-name>.secret.key", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY")
- sc.hadoopConfiguration.set("spark.hadoop.fs.s3a.bucket.<repo-name>.endpoint", "https://s3.lakefs.example.com")
+ sc.hadoopConfiguration.set("spark.hadoop.fs.s3a.bucket.<repo-name>.endpoint", "https://lakefs.example.com")
 ```
 
 Once set, you can now interact with Delta tables using regular Spark path URIs. Make sure you include the lakeFS repository and branch name:

@@ -11,11 +11,7 @@ has_children: false
 # Importing data from S3
 {: .no_toc }
 
-## Table of contents
-{: .no_toc .text-delta }
-
-1. TOC
-{:toc}
+{% include toc.html %}
 
 ## Copying using external tools
 

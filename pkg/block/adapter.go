@@ -14,6 +14,15 @@ type MultipartUploadCompletion struct{ Part []*s3.CompletedPart }
 type IdentifierType int32
 
 const (
+	BlockstoreTypeS3        = "s3"
+	BlockstoreTypeGS        = "gs"
+	BlockstoreTypeAzure     = "azure"
+	BlockstoreTypeLocal     = "local"
+	BlockstoreTypeMem       = "mem"
+	BlockstoreTypeTransient = "transient"
+)
+
+const (
 	// Deprecated: indicates that the identifier might be relative or full.
 	IdentifierTypeUnknownDeprecated IdentifierType = 0
 

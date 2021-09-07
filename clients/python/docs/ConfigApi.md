@@ -21,6 +21,7 @@ get version of lakeFS server
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import lakefs_client
@@ -88,6 +89,7 @@ This endpoint does not need any parameter.
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | lakeFS version |  -  |
@@ -107,6 +109,7 @@ retrieve lakeFS storage configuration
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import lakefs_client
@@ -174,6 +177,7 @@ This endpoint does not need any parameter.
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | lakeFS storage configuration |  -  |
@@ -187,6 +191,7 @@ This endpoint does not need any parameter.
 setup lakeFS and create a first user
 
 ### Example
+
 
 ```python
 import time
@@ -246,6 +251,7 @@ No authorization required
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | user created successfully |  -  |

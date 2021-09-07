@@ -42,7 +42,6 @@ var (
 )
 
 type handler struct {
-	BareDomains        []string
 	sc                 *ServerContext
 	ServerErrorHandler http.Handler
 	operationHandlers  map[operations.OperationID]http.Handler
@@ -95,13 +94,13 @@ func NewHandler(
 	// setup routes
 	var h http.Handler
 	h = &handler{
-		BareDomains:        bareDomains,
 		sc:                 sc,
 		ServerErrorHandler: nil,
 		operationHandlers: map[operations.OperationID]http.Handler{
 			operations.OperationIDDeleteObject:         PathOperationHandler(sc, &operations.DeleteObject{}),
 			operations.OperationIDDeleteObjects:        RepoOperationHandler(sc, &operations.DeleteObjects{}),
 			operations.OperationIDGetObject:            PathOperationHandler(sc, &operations.GetObject{}),
+			operations.OperationIDPutBucket:            RepoOperationHandler(sc, &operations.PutBucket{}),
 			operations.OperationIDHeadBucket:           RepoOperationHandler(sc, &operations.HeadBucket{}),
 			operations.OperationIDHeadObject:           PathOperationHandler(sc, &operations.HeadObject{}),
 			operations.OperationIDListBuckets:          OperationHandler(sc, &operations.ListBuckets{}),

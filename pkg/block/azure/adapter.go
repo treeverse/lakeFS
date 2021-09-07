@@ -23,7 +23,6 @@ var (
 )
 
 const (
-	BlockstoreType          = "azure"
 	sizeSuffix              = "_size"
 	idSuffix                = "_id"
 	_1MiB                   = 1024 * 1024
@@ -73,7 +72,7 @@ func resolveBlobURLInfoFromURL(pathURL *url.URL) (BlobURLInfo, error) {
 		return qk, block.ErrInvalidNamespace
 	}
 	// In azure the first part of the path is part of the storage namespace
-	trimmedPath := strings.TrimLeft(pathURL.Path, "/")
+	trimmedPath := strings.Trim(pathURL.Path, "/")
 	parts := strings.Split(trimmedPath, "/")
 	if len(parts) == 0 {
 		return qk, block.ErrInvalidNamespace
@@ -101,10 +100,15 @@ func resolveBlobURLInfo(obj block.ObjectPointer) (BlobURLInfo, error) {
 		if err != nil {
 			return qk, err
 		}
-		return BlobURLInfo{
+		info := BlobURLInfo{
 			ContainerURL: qp.ContainerURL,
 			BlobURL:      qp.BlobURL + "/" + key,
-		}, nil
+		}
+		if qp.BlobURL == "" {
+			info.BlobURL = key
+		}
+
+		return info, nil
 	}
 	return resolveBlobURLInfoFromURL(parsedKey)
 }
@@ -410,7 +414,7 @@ func (a *Adapter) ValidateConfiguration(ctx context.Context, _ string) error {
 }
 
 func (a *Adapter) BlockstoreType() string {
-	return BlockstoreType
+	return block.BlockstoreTypeAzure
 }
 
 func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectPointer, _ string, multipartList *block.MultipartUploadCompletion) (*string, int64, error) {

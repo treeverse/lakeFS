@@ -21,6 +21,9 @@ import com.google.gson.stream.JsonWriter;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -73,6 +76,14 @@ public class ObjectStatsTest {
     }
 
     /**
+     * Test the property 'sizeBytes'
+     */
+    @Test
+    public void sizeBytesTest() {
+        // TODO: test sizeBytes
+    }
+
+    /**
      * Test the property 'mtime'
      */
     @Test
@@ -81,11 +92,11 @@ public class ObjectStatsTest {
     }
 
     /**
-     * Test the property 'sizeBytes'
+     * Test the property 'metadata'
      */
     @Test
-    public void sizeBytesTest() {
-        // TODO: test sizeBytes
+    public void metadataTest() {
+        // TODO: test metadata
     }
 
 }

@@ -20,8 +20,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-const BlockstoreType = "mem"
-
 var (
 	ErrNoDataForKey            = fmt.Errorf("no data for key: %w", adapter.ErrDataNotFound)
 	ErrMultiPartNotFound       = fmt.Errorf("multipart ID not found")
@@ -300,11 +298,11 @@ func (a *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ strin
 }
 
 func (a *Adapter) BlockstoreType() string {
-	return BlockstoreType
+	return block.BlockstoreTypeMem
 }
 
 func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
-	return block.DefaultStorageNamespaceInfo(BlockstoreType)
+	return block.DefaultStorageNamespaceInfo(block.BlockstoreTypeMem)
 }
 
 func (a *Adapter) RuntimeStats() map[string]string {

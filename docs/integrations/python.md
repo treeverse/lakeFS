@@ -16,11 +16,7 @@ The [lakeFS API](../reference/api.md){: target="_blank" } is OpenAPI 3.0 complia
 For Python, this example uses [lakeFS's python package](https://pypi.org/project/lakefs-client/){: target="_blank" }.
 The lakefs-client pacakge was created by [OpenAPI Generator](https://openapi-generator.tech){: target="_blank" } using our OpenAPI definition served by a lakeFS server.
 
-## Table of contents
-{: .no_toc .text-delta }
-
-1. TOC
-{:toc}
+{% include toc.html %}
 
 ## Install lakeFS Python Client API
 
@@ -168,6 +164,11 @@ client.refs.diff_refs(repository='example-repo', left_ref='experiment-aggregatio
 # output:
 # []
 ```
+
+## Python client documentation
+
+For the documentation of lakeFS’s python package, see [https://pydocs.lakefs.io](https://pydocs.lakefs.io)
+
 
 ## Full API reference
 

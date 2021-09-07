@@ -21,6 +21,7 @@ import (
 	s3a "github.com/treeverse/lakefs/pkg/block/s3"
 	"github.com/treeverse/lakefs/pkg/block/transient"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/stats"
 )
 
 // googleAuthCloudPlatform - Cloud Storage authentication https://cloud.google.com/storage/docs/authentication
@@ -31,35 +32,35 @@ var (
 	ErrAuthMethodNotSupported = errors.New("authentication method not supported")
 )
 
-func BuildBlockAdapter(ctx context.Context, c params.AdapterConfig) (block.Adapter, error) {
+func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c params.AdapterConfig) (block.Adapter, error) {
 	blockstore := c.GetBlockstoreType()
 	logging.Default().
 		WithField("type", blockstore).
 		Info("initialize blockstore adapter")
 	switch blockstore {
-	case local.BlockstoreType:
+	case block.BlockstoreTypeLocal:
 		p, err := c.GetBlockAdapterLocalParams()
 		if err != nil {
 			return nil, err
 		}
 		return buildLocalAdapter(p)
-	case s3a.BlockstoreType:
+	case block.BlockstoreTypeS3:
 		p, err := c.GetBlockAdapterS3Params()
 		if err != nil {
 			return nil, err
 		}
-		return buildS3Adapter(p)
-	case mem.BlockstoreType, "memory":
+		return buildS3Adapter(statsCollector, p)
+	case block.BlockstoreTypeMem, "memory":
 		return mem.New(), nil
-	case transient.BlockstoreType:
+	case block.BlockstoreTypeTransient:
 		return transient.New(), nil
-	case gs.BlockstoreType:
+	case block.BlockstoreTypeGS:
 		p, err := c.GetBlockAdapterGSParams()
 		if err != nil {
 			return nil, err
 		}
 		return buildGSAdapter(ctx, p)
-	case azure.BlockstoreType:
+	case block.BlockstoreTypeAzure:
 		p, err := c.GetBlockAdapterAzureParams()
 		if err != nil {
 			return nil, err
@@ -67,7 +68,7 @@ func BuildBlockAdapter(ctx context.Context, c params.AdapterConfig) (block.Adapt
 		return buildAzureAdapter(p)
 	default:
 		return nil, fmt.Errorf("%w '%s' please choose one of %s",
-			ErrInvalidBlockStoreType, blockstore, []string{local.BlockstoreType, s3a.BlockstoreType, azure.BlockstoreType, mem.BlockstoreType, transient.BlockstoreType, gs.BlockstoreType})
+			ErrInvalidBlockStoreType, blockstore, []string{block.BlockstoreTypeLocal, block.BlockstoreTypeS3, block.BlockstoreTypeAzure, block.BlockstoreTypeMem, block.BlockstoreTypeTransient, block.BlockstoreTypeGS})
 	}
 }
 
@@ -83,16 +84,16 @@ func buildLocalAdapter(params params.Local) (*local.Adapter, error) {
 	return adapter, nil
 }
 
-func buildS3Adapter(params params.S3) (*s3a.Adapter, error) {
+func buildS3Adapter(statsCollector stats.Collector, params params.S3) (*s3a.Adapter, error) {
 	sess, err := session.NewSession(params.AwsConfig)
 	if err != nil {
 		return nil, err
 	}
 	sess.ClientConfig(s3.ServiceName)
-	svc := s3.New(sess)
-	adapter := s3a.NewAdapter(svc,
+	adapter := s3a.NewAdapter(sess,
 		s3a.WithStreamingChunkSize(params.StreamingChunkSize),
 		s3a.WithStreamingChunkTimeout(params.StreamingChunkTimeout),
+		s3a.WithStatsCollector(statsCollector),
 	)
 	logging.Default().WithField("type", "s3").Info("initialized blockstore adapter")
 	return adapter, nil

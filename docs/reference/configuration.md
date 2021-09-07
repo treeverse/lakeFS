@@ -10,13 +10,18 @@ has_children: false
 # Configuration Reference
 {: .no_toc }
 
-## Table of contents
-{: .no_toc .text-delta }
+{% include toc.html %}
 
-1. TOC
-{:toc}
+Configuring lakeFS is done using a yaml configuration file and/or environment variable.
+The configuration file location can be set with the '--config' flag. If not specified, the the first file found in the following order will be used:
+1. ./config.yaml
+1. `$HOME`/lakefs/config.yaml
+1. /etc/lakefs/config.yaml
+1. `$HOME`/.lakefs.yaml
 
-Configuring lakeFS is done using a yaml configuration file.
+Configuration items can each be controlled by an environment variable. The variable name will have a prefix of *LAKEFS_*, followed by the name of the configuration, replacing every '.' with a '_'.
+Example: `LAKEFS_LOGGING_LEVEL` controls `logging.level`.
+
 This reference uses `.` to denote the nesting of values.
 
 ## Reference
@@ -38,14 +43,14 @@ This reference uses `.` to denote the nesting of values.
    **Note:** It is best to keep this somewhere safe such as KMS or Hashicorp Vault, and provide it to the system at run time
    {: .note }
 
-* `blockstore.type` `(one of ["local", "s3", "gs", "azure", "mem"]: "mem")` - Block adapter to use. This controls where the underlying data will be stored
+* `blockstore.type` `(one of ["local", "s3", "gs", "azure", "mem"] : required)`.  Block adapter to use. This controls where the underlying data will be stored
 * `blockstore.local.path` `(string: "~/lakefs/data")` - When using the local Block Adapter, which directory to store files in
 * `blockstore.gs.credentials_file` `(string : )` - If specified will be used as a file path of the JSON file that contains your Google service account key
 * `blockstore.gs.credentials_json` `(string : )` - If specified will be used as JSON string that contains your Google service account key (when credentials_file is not set)
 * `blockstore.azure.storage_account` `(string : )` - If specified, will be used as the Azure storage account
 * `blockstore.azure.storage_access_key` `(string : )` - If specified, will be used as the Azure storage access key
 * `blockstore.azure.auth_method` `(one of ["msi", "access-key"]: "access-key" )` - Authentication method to use (msi is used for Azure AD authentication). 
-* `blockstore.s3.region` `(string : "us-east-1")` - When using the S3 block adapter, AWS region to use
+* `blockstore.s3.region` `(string : "us-east-1")` - Default region for lakeFS to use when interacting with S3.
 * `blockstore.s3.profile` `(string : )` - If specified, will be used as a [named credentials profile](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html)
 * `blockstore.s3.credentials_file` `(string : )` - If specified, will be used as a [credentials file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
 * `blockstore.s3.credentials.access_key_id` `(string : )` - If specified, will be used as a static set of credential
@@ -87,7 +92,7 @@ This reference uses `.` to denote the nesting of values.
 * `gateways.s3.domain_name` `(string : "s3.local.lakefs.io")` - a FQDN
   representing the S3 endpoint used by S3 clients to call this server
   (`*.s3.local.lakefs.io` always resolves to 127.0.0.1, useful for
-  local development
+  local development, if using [virtual-host addressing](https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html).
 * `gateways.s3.region` `(string : "us-east-1")` - AWS region we're pretending to be. Should match the region configuration used in AWS SDK clients
 * `gateways.s3.fallback_url` `(string)` - If specified, requests with a non-existing repository will be forwarded to this url. This can be useful for using lakeFS side-by-side with S3, with the URL pointing at an [S3Proxy](https://github.com/gaul/s3proxy) instance.
 * `stats.enabled` `(boolean : true)` - Whether or not to periodically collect anonymous usage statistics
@@ -126,7 +131,6 @@ blockstore:
 
 gateways:
   s3:
-    domain_name: s3.local.lakefs.io
     region: us-east-1
 ```
 
@@ -154,10 +158,6 @@ blockstore:
     credentials_file: /secrets/aws/credentials
     profile: default
 
-gateways:
-  s3:
-    domain_name: s3.my-company.com
-    region: us-east-1
 ```
 
 [aws-s3-batch-permissions]: https://docs.aws.amazon.com/AmazonS3/latest/dev/batch-ops-iam-role-policies.html
@@ -184,10 +184,6 @@ blockstore:
   gs:
     credentials_file: /secrets/lakefs-service-account.json
 
-gateways:
-  s3:
-    domain_name: s3.my-company.com
-    region: us-east-1
 ```
 
 ## Example: MinIO
@@ -216,10 +212,6 @@ blockstore:
       access_key_id: minioadmin
       secret_access_key: minioadmin
 
-gateways:
-  s3:
-    domain_name: s3.my-company.com
-    region: us-east-1
 ```
 ## Example: Azure blob storage
 
@@ -244,9 +236,5 @@ blockstore:
     storage_account: exampleStorageAcount
     storage_access_key: ExampleAcessKeyMD7nkPOWgV7d4BUjzLw==
 
-gateways:
-  s3:
-    domain_name: s3.my-company.com
-    region: us-east-1
 ```
 

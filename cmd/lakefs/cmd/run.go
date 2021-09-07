@@ -26,6 +26,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/gateway"
 	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
+	"github.com/treeverse/lakefs/pkg/gateway/sig"
 	"github.com/treeverse/lakefs/pkg/gateway/simulator"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -54,16 +55,15 @@ var runCmd = &cobra.Command{
 
 		// validate service names and turn on the right flags
 		dbParams := cfg.GetDatabaseParams()
-
-		if err := db.ValidateSchemaUpToDate(ctx, dbParams); errors.Is(err, db.ErrSchemaNotCompatible) {
+		dbPool := db.BuildDatabaseConnection(ctx, dbParams)
+		defer dbPool.Close()
+		if err := db.ValidateSchemaUpToDate(ctx, dbPool, dbParams); errors.Is(err, db.ErrSchemaNotCompatible) {
 			logger.WithError(err).Fatal("Migration version mismatch, for more information see https://docs.lakefs.io/deploying-aws/upgrade.html")
 		} else if errors.Is(err, migrate.ErrNilVersion) {
 			logger.Debug("No migration, setup required")
 		} else if err != nil {
 			logger.WithError(err).Warn("Failed on schema validation")
 		}
-		dbPool := db.BuildDatabaseConnection(ctx, dbParams)
-		defer dbPool.Close()
 
 		lockdbPool := db.BuildDatabaseConnection(ctx, dbParams)
 		defer lockdbPool.Close()
@@ -93,12 +93,6 @@ var runCmd = &cobra.Command{
 
 		multipartsTracker := multiparts.NewTracker(dbPool)
 
-		// init block store
-		blockStore, err := factory.BuildBlockAdapter(ctx, cfg)
-		if err != nil {
-			logger.WithError(err).Fatal("Failed to create block adapter")
-		}
-
 		// init authentication
 		authService := auth.NewDBAuthService(
 			dbPool,
@@ -113,8 +107,13 @@ var runCmd = &cobra.Command{
 				Error("Block adapter NOT SUPPORTED for production use")
 		}
 		metadata := stats.NewMetadata(ctx, logger, blockstoreType, authMetadataManager, cloudMetadataProvider)
-		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, blockStore.RuntimeStats, cfg)
-
+		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, cfg)
+		// init block store
+		blockStore, err := factory.BuildBlockAdapter(ctx, bufferedCollector, cfg)
+		if err != nil {
+			logger.WithError(err).Fatal("Failed to create block adapter")
+		}
+		bufferedCollector.SetRuntimeCollector(blockStore.RuntimeStats)
 		// send metadata
 		bufferedCollector.CollectMetadata(metadata)
 
@@ -124,7 +123,7 @@ var runCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		if !allowForeign {
-			checkForeignRepos(ctx, logger, authMetadataManager, blockStore, c)
+			checkRepos(ctx, logger, authMetadataManager, blockStore, c)
 		}
 
 		// update health info with installation ID
@@ -176,12 +175,18 @@ var runCmd = &cobra.Command{
 		logging.Default().WithField("listen_address", cfg.GetListenAddress()).Info("starting HTTP server")
 		server := &http.Server{
 			Addr: cfg.GetListenAddress(),
-			Handler: httputil.HostMux(
-				httputil.HostHandler(apiHandler).Default(), // api as default handler
-				httputil.HostHandler(s3gatewayHandler, // s3 gateway for its bare domain and sub-domains of that
-					httputil.Exact(cfg.GetS3GatewayDomainNames()),
-					httputil.SubdomainsOf(cfg.GetS3GatewayDomainNames())),
-			),
+			Handler: http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+				// If the request has the S3 GW domain (exact or subdomain) - or carries an AWS sig, serve S3GW
+				if httputil.HostMatches(request, cfg.GetS3GatewayDomainNames()) ||
+					httputil.HostSubdomainOf(request, cfg.GetS3GatewayDomainNames()) ||
+					sig.IsAWSSignedRequest(request) {
+					s3gatewayHandler.ServeHTTP(writer, request)
+					return
+				}
+
+				// Otherwise, serve the API handler
+				apiHandler.ServeHTTP(writer, request)
+			}),
 		}
 
 		go func() {
@@ -199,10 +204,8 @@ var runCmd = &cobra.Command{
 	},
 }
 
-// A foreign repo is a repository which namespace doesn't match the current block adapter.
-// A foreign repo might exists if the lakeFS instance configuration changed after a repository was
-// already created. The behaviour of lakeFS for foreign repos is undefined and should be blocked.
-func checkForeignRepos(ctx context.Context, logger logging.Logger, authMetadataManager *auth.DBMetadataManager, blockStore block.Adapter, c *catalog.Catalog) {
+// checkRepos iterates on all repos and validates that their settings are correct.
+func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager *auth.DBMetadataManager, blockStore block.Adapter, c *catalog.Catalog) {
 	initialized, err := authMetadataManager.IsInitialized(ctx)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to check if lakeFS is initialized")
@@ -210,7 +213,9 @@ func checkForeignRepos(ctx context.Context, logger logging.Logger, authMetadataM
 	if !initialized {
 		logger.Debug("lakeFS isn't initialized, skipping mismatched adapter checks")
 	} else {
-		logger.Debug("lakeFS is initialized, checking repositories for mismatched adapter(%s)", blockStore.BlockstoreType())
+		logger.
+			WithField("adapter_type", blockStore.BlockstoreType()).
+			Debug("lakeFS is initialized, checking repositories for mismatched adapter")
 		hasMore := true
 		next := ""
 
@@ -233,14 +238,43 @@ func checkForeignRepos(ctx context.Context, logger logging.Logger, authMetadataM
 					logger.WithError(err).Fatalf("Failed to parse to parse storage type '%s'", nsURL)
 				}
 
-				if adapterStorageType != repoStorageType.BlockstoreType() {
-					logger.Fatalf("Mismatched adapter detected. lakeFS started with adapter of type '%s', but repository '%s' is of type '%s'",
-						adapterStorageType, repo.Name, repoStorageType.BlockstoreType())
-				}
+				checkForeignRepo(repoStorageType, logger, adapterStorageType, repo.Name)
+				checkMetadataPrefix(ctx, repo, logger, blockStore, repoStorageType)
 
 				next = repo.Name
 			}
 		}
+	}
+}
+
+// checkMetadataPrefix checks for non-migrated repos of issue #2397 (https://github.com/treeverse/lakeFS/issues/2397)
+func checkMetadataPrefix(ctx context.Context, repo *catalog.Repository, logger logging.Logger, adapter block.Adapter, repoStorageType block.StorageType) {
+	if repoStorageType != block.StorageTypeGS &&
+		repoStorageType != block.StorageTypeAzure {
+		return
+	}
+
+	const dummyFile = "dummy"
+	if _, err := adapter.Get(ctx, block.ObjectPointer{
+		StorageNamespace: repo.StorageNamespace,
+		Identifier:       dummyFile,
+	}, -1); err != nil {
+		logger.WithFields(logging.Fields{
+			"path":              dummyFile,
+			"storage_namespace": repo.StorageNamespace,
+		}).Fatal("Can't find dummy file in storage namespace, did you run the migration? " +
+			"(http://docs.lakefs.io/reference/upgrade.html#data-migration-for-version-v0500)")
+	}
+}
+
+// checkForeignRepo checks whether a repo storage namespace matches the block adapter.
+// A foreign repo is a repository which namespace doesn't match the current block adapter.
+// A foreign repo might exists if the lakeFS instance configuration changed after a repository was
+// already created. The behaviour of lakeFS for foreign repos is undefined and should be blocked.
+func checkForeignRepo(repoStorageType block.StorageType, logger logging.Logger, adapterStorageType, repoName string) {
+	if adapterStorageType != repoStorageType.BlockstoreType() {
+		logger.Fatalf("Mismatched adapter detected. lakeFS started with adapter of type '%s', but repository '%s' is of type '%s'",
+			adapterStorageType, repoName, repoStorageType.BlockstoreType())
 	}
 }
 

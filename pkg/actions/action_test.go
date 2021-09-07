@@ -22,6 +22,7 @@ func TestAction_ReadAction(t *testing.T) {
 		wantErr  bool
 	}{
 		{name: "full", filename: "action_full.yaml", wantErr: false},
+		{name: "secrets", filename: "action_secrets.yaml", wantErr: false},
 		{name: "required", filename: "action_required.yaml", wantErr: false},
 		{name: "duplicate id", filename: "action_duplicate_id.yaml", wantErr: true},
 		{name: "invalid id", filename: "action_invalid_id.yaml", wantErr: true},

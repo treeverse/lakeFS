@@ -83,11 +83,13 @@ func EnrichWithParts(bareDomains []string, next http.Handler) http.Handler {
 
 func getBareDomain(hostname string, bareDomains []string) string {
 	for _, bd := range bareDomains {
-		if hostname == bd || strings.HasSuffix(hostname, "."+bd) {
+		if hostname == stripPort(bd) || strings.HasSuffix(hostname, "."+stripPort(bd)) {
 			return bd
 		}
 	}
-	return bareDomains[0]
+	// If no matching bare domain found, assume no gateways.s3.domain_name setting existing,
+	//  and we're using path-based routing, with whichever domain our Host header specifies.
+	return hostname
 }
 
 var trailingPortRegexp = regexp.MustCompile(`:\d+$`)
@@ -212,6 +214,11 @@ func Parts(host string, urlPath string, bareDomains []string) (repo string, ref 
 	urlPath = strings.TrimPrefix(urlPath, path.Separator)
 	var p []string
 	ourHosts := httputil.HostsOnly(bareDomains)
+	matchedHost := false
+	// we need to check using this order:
+	// 1. if exact hosts, path based
+	// 2. if suffixes, virtual host
+	// 3. none of the above, path based
 	if memberFold(httputil.HostOnly(host), ourHosts) {
 		// path style: extract repo from first part
 		p = strings.SplitN(urlPath, path.Separator, 3)
@@ -219,6 +226,7 @@ func Parts(host string, urlPath string, bareDomains []string) (repo string, ref 
 		if len(p) >= 1 {
 			p = p[1:]
 		}
+		matchedHost = true
 	} else {
 		// virtual host style: extract repo from subdomain
 		host := httputil.HostOnly(host)
@@ -226,10 +234,22 @@ func Parts(host string, urlPath string, bareDomains []string) (repo string, ref 
 		for _, ourHost := range ourHosts {
 			if strings.HasSuffix(host, ourHost) {
 				repo = strings.TrimSuffix(host, "."+ourHost)
+				matchedHost = true
 				break
 			}
 		}
-		p = strings.SplitN(urlPath, path.Separator, 2)
+		if matchedHost {
+			p = strings.SplitN(urlPath, path.Separator, 2)
+		}
+	}
+
+	if !matchedHost {
+		// assume path based for domains we don't explicitly know
+		p = strings.SplitN(urlPath, path.Separator, 3)
+		repo = p[0]
+		if len(p) >= 1 {
+			p = p[1:]
+		}
 	}
 	// extract ref and path from remaining parts
 	if len(p) == 0 {
@@ -260,8 +280,10 @@ func pathBasedOperationID(method string) operations.OperationID {
 
 func repositoryBasedOperationID(method string) operations.OperationID {
 	switch method {
-	case http.MethodDelete, http.MethodPut:
+	case http.MethodDelete:
 		return operations.OperationIDUnsupportedOperation
+	case http.MethodPut:
+		return operations.OperationIDPutBucket
 	case http.MethodHead:
 		return operations.OperationIDHeadBucket
 	case http.MethodPost:

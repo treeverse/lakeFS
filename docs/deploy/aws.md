@@ -15,11 +15,7 @@ redirect_from:
 {: .no_toc }
 Expected deployment time: 25min
 
-## Table of contents
-{: .no_toc .text-delta }
-
-1. TOC
-{:toc}
+{% include toc.html %}
 
 {% include_relative includes/prerequisites.md %}
 
@@ -29,11 +25,11 @@ We will show you how to create a database on AWS RDS, but you can use any Postgr
 
 If you already have a database, take note of the connection string and skip to the [next step](#install-lakefs-on-ec2)
 
-1. Follow the official [AWS documentation](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_GettingStarted.CreatingConnecting.PostgreSQL.html){: target="_blank" } on how to create a PostgreSQL instance and connect to it.  
+1. Follow the official [AWS documentation](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_GettingStarted.CreatingConnecting.PostgreSQL.html){: target="_blank" } on how to create a PostgreSQL instance and connect to it.
    You may use the default PostgreSQL engine, or [Aurora PostgreSQL](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Aurora.AuroraPostgreSQL.html){: target="_blank" }. Make sure you're using PostgreSQL version >= 11.
 2. Once your RDS is set up and the server is in `Available` state, take note of the endpoint and port.
 
-   ![RDS Connection String](../assets/img/rds_conn.png)
+   ![RDS Connection String]({{ site.baseurl }}/assets/img/rds_conn.png)
 
 3. Make sure your security group rules allow you to connect to the database instance.
 
@@ -54,10 +50,6 @@ If you already have a database, take note of the connection string and skip to t
      type: s3
      s3:
        region: us-east-1
-   gateways:
-     s3:
-        # replace this with the host you will use for the lakeFS S3-compatible endpoint:
-        domain_name: [S3_GATEWAY_DOMAIN]
    ```
 
 1. [Download the binary](../index.md#downloads) to the EC2 instance.
@@ -78,7 +70,6 @@ docker run \
   -e LAKEFS_DATABASE_CONNECTION_STRING="[DATABASE_CONNECTION_STRING]" \
   -e LAKEFS_AUTH_ENCRYPT_SECRET_KEY="[ENCRYPTION_SECRET_KEY]" \
   -e LAKEFS_BLOCKSTORE_TYPE="s3" \
-  -e LAKEFS_GATEWAYS_S3_DOMAIN_NAME="[S3_GATEWAY_DOMAIN]" \
   treeverse/lakefs:latest run
 ```
 
@@ -96,21 +87,8 @@ By default, lakeFS operates on port 8000, and exposes a `/_health` endpoint whic
 
 1. Your security groups should allow the load balancer to access the lakeFS server.
 1. Create a target group with a listener for port 8000.
-1. Setup TLS termination using the domain names you wish to use for both endpoints (e.g. `s3.lakefs.example.com`, `*.s3.lakefs.example.com`, `lakefs.example.com`).
+1. Setup TLS termination using the domain names you wish to use (e.g. `lakefs.example.com` and potentially `s3.lakefs.example.com`, `*.s3.lakefs.example.com` if using [virtual-host addressing](https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html)).
 1. Configure the health-check to use the exposed `/_health` URL
-
-## DNS on AWS Route53
-As mentioned above, you should create 3 DNS records for lakeFS:
-1. One record for the lakeFS API: `lakefs.example.com`
-1. Two records for the S3-compatible API: `s3.lakefs.example.com` and `*.s3.lakefs.example.com`.
-
-For an AWS load balancer with Route53 DNS, create a simple record, and choose *Alias to Application and Classic Load Balancer* with an `A` record type.
-
-![Configuring a simple record in Route53](../assets/img/route53.png)
-
-For other DNS providers, refer to the documentation on how to add CNAME records.
 
 ## Next Steps
 Your next step is to [prepare your storage](../setup/storage/index.md). If you already have a storage bucket/container, you are ready to [create your first lakeFS repository](../setup/create-repo.md).
-
-{% include_relative includes/why-dns.md %}

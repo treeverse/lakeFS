@@ -11,11 +11,7 @@ redirect_from: ../hooks.html
 # Configurable Hooks
 {: .no_toc }
 
-## Table of contents
-{: .no_toc .text-delta }
-
-1. TOC
-{:toc}
+{% include toc.html %}
 
 Like other version control systems, lakeFS allows the configuration of `Actions` to trigger when predefined events occur.
 
@@ -151,11 +147,18 @@ Moreover, the branch is locked during the execution of `pre_*` hooks, so the web
 
 #### Action file Webhook properties
 
-|Property          |Description                                            |Data Type                                                                                |Required |Default Value
-|------------------|-------------------------------------------------------|-----------------------------------------------------------------------------------------|---------|--------------------------------------|
-|url               |The URL address of the request                         |String                                                                                   |true     |
-|timeout           |Time to wait for response before failing the hook      |String (golang's [Duration](https://golang.org/pkg/time/#Duration.String) representation)|false    | 1m
-|query_params      |List of query params that will be added to the request |Dictionary(String:String or String:List(String)                                          |false    |
+|Property          |Description                                            |Data Type                                                                                |Required |Default Value|Env Vars Support|
+|------------------|-------------------------------------------------------|-----------------------------------------------------------------------------------------|---------|-------------|----------------|
+|url               |The URL address of the request                         |String                                                                                   |true     |             |no
+|timeout           |Time to wait for response before failing the hook      |String (golang's [Duration](https://golang.org/pkg/time/#Duration.String) representation)|false    | 1m          |no
+|query_params      |List of query params that will be added to the request |Dictionary(String:String or String:List(String)                                          |false    |             |yes
+|headers           |List of query params that will be added to the request |Dictionary(String:String)                                                                |false    |             |yes
+
+**Secrets & Environment Variables**<br/>
+lakeFS Actions supports secrets by using environment variables.
+The following format `{% raw %}{{{% endraw %} ENV.SOME_ENV_VAR {% raw %}}}{% endraw %}` will be replaced with the value of `SOME_ENV_VAR`
+during the execution of the action. If that environment variable doesn't exist in the lakeFS server environment, the action run will fail.
+{: .note }
 
 Example:
 
@@ -171,6 +174,8 @@ hooks:
       query_params:
         disallow: ["user_", "private_"]
         prefix: public/
+      headers:
+        secret_header: "{% raw %}{{{% endraw %} ENV.MY_SECRET {% raw %}}}{% endraw %}"
 ...
 ```
 
@@ -215,13 +220,13 @@ The hook run succeeds if the DAG was triggered, and fails otherwise.
 #### Action file Airflow hook properties
 
 
-| Property | Description                                             | Data Type | Example                 | Required |
-|----------|---------------------------------------------------------|-----------|-------------------------|----------|
-| url      | The URL of the Airflow instance                         | String    | "http://localhost:8080" | true     |
-| dag_id   | The DAG to trigger                                      | String    | "example_dag"           | true     |
-| username | The name of the Airflow user performing the request     | String    | "admin"                 | true     |
-| password | The password of the Airflow user performing the request | String    | "admin"                 | true     |
-| dag_conf | DAG run configuration that will be passed as is         | JSON      |                         | false    |
+| Property | Description                                             | Data Type | Example                 | Required |Env Vars Support|
+|----------|---------------------------------------------------------|-----------|-------------------------|----------|----------------|
+| url      | The URL of the Airflow instance                         | String    | "http://localhost:8080" | true     |no
+| dag_id   | The DAG to trigger                                      | String    | "example_dag"           | true     |no
+| username | The name of the Airflow user performing the request     | String    | "admin"                 | true     |no
+| password | The password of the Airflow user performing the request | String    | "admin"                 | true     |yes
+| dag_conf | DAG run configuration that will be passed as is         | JSON      |                         | false    |no
 
 
 Example:
@@ -235,7 +240,7 @@ hooks:
        url: "http://localhost:8000"
        dag_id: "example_dag"
        username: "admin"
-       password: "admin"
+       password: "{% raw %}{{{% endraw %} ENV.AIRFLOW_SECRET {% raw %}}}{% endraw %}"
        dag_conf:
           some: "additional_conf"
 ...
@@ -245,6 +250,7 @@ hooks:
 lakeFS will add an entry to the Airflow request configuration property (`conf`) with the event that triggered the action.
 
 The key of the record will be `lakeFS_event` and the value will match the one described [here](#request-body-schema)
+
 
 ## Experimentation
 
@@ -292,4 +298,4 @@ It should look like `https://api.relay.svix.com/api/v1/play/receive/<Random_Gen_
 1. Every time you commit or merge to a branch, the relevant `pre_*` and `post_*` requests will be available
 in the Svix endpoint you provided. You can also check the `Actions` tab in the lakeFS UI for more details.
 
-![Setup](../assets/img/svix_play.png)
+![Setup]({{ site.baseurl }}/assets/img/svix_play.png)

@@ -17,11 +17,7 @@ lakeFS requires a PostgreSQL database to synchronize actions on your repositorie
 This section assumes you already have a PostgreSQL database accessible from your Kubernetes cluster.
 Instructions for creating the database can be found on the deployment instructions for [AWS](./aws.md#creating-the-database-on-aws-rds), [Azure](./azure.md#creating-the-database-on-azure-database) and [GCP](./gcp.md#creating-the-database-on-gcp-sql).
 
-## Table of contents
-{: .no_toc .text-delta }
-
-1. TOC
-{:toc}
+{% include toc.html %}
 
 {% include_relative includes/prerequisites.md %}
 
@@ -72,14 +68,6 @@ You should have a load balancer direct requests to the lakeFS server.
 Options to do so include a Kubernetes Service of type `LoadBalancer`, or a Kubernetes Ingress.
 By default, lakeFS operates on port 8000, and exposes a `/_health` endpoint which you can use for health checks.
 
-## DNS
-As mentioned above, you should create 3 DNS records for lakeFS:
-1. One record for the lakeFS API: `lakefs.example.com`
-1. Two records for the S3-compatible API: `s3.lakefs.example.com` and `*.s3.lakefs.example.com`.
-
-All records should point to your Load Balancer, preferably with a short TTL value.
 
 ## Next Steps
 Your next step is to [prepare your storage](../setup/storage/index.md). If you already have a storage bucket/container, you are ready to [create your first lakeFS repository](../setup/create-repo.md).
-
-{% include_relative includes/why-dns.md %}

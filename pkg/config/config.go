@@ -1,7 +1,6 @@
 package config
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"math"
@@ -14,10 +13,10 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/mitchellh/go-homedir"
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
-
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
-	"github.com/treeverse/lakefs/pkg/block/factory"
+	"github.com/treeverse/lakefs/pkg/block"
 	blockparams "github.com/treeverse/lakefs/pkg/block/params"
 	dbparams "github.com/treeverse/lakefs/pkg/db/params"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
@@ -26,7 +25,6 @@ import (
 )
 
 const (
-	DefaultBlockStoreType                    = "local"
 	DefaultBlockStoreLocalPath               = "~/data/lakefs/block"
 	DefaultBlockStoreS3Region                = "us-east-1"
 	DefaultBlockStoreS3StreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
@@ -64,10 +62,11 @@ const (
 )
 
 var (
-	ErrBadConfiguration  = errors.New("bad configuration")
-	ErrMissingSecretKey  = fmt.Errorf("%w: auth.encrypt.secret_key cannot be empty", ErrBadConfiguration)
-	ErrInvalidProportion = fmt.Errorf("%w: total proportion isn't 1.0", ErrBadConfiguration)
-	ErrBadDomainNames    = fmt.Errorf("%w: domain names are prefixes", ErrBadConfiguration)
+	ErrBadConfiguration    = errors.New("bad configuration")
+	ErrMissingSecretKey    = fmt.Errorf("%w: auth.encrypt.secret_key cannot be empty", ErrBadConfiguration)
+	ErrInvalidProportion   = fmt.Errorf("%w: total proportion isn't 1.0", ErrBadConfiguration)
+	ErrBadDomainNames      = fmt.Errorf("%w: domain names are prefixes", ErrBadConfiguration)
+	ErrMissingRequiredKeys = fmt.Errorf("%w: missing required keys", ErrBadConfiguration)
 )
 
 type Config struct {
@@ -77,7 +76,7 @@ type Config struct {
 func NewConfig() (*Config, error) {
 	c := &Config{}
 
-	// Inform viper of all expected fields.  Otherwise it fails to deserialize from the
+	// Inform viper of all expected fields.  Otherwise, it fails to deserialize from the
 	// environment.
 	keys := GetStructKeys(reflect.TypeOf(c.values), "mapstructure", "squash")
 	for _, key := range keys {
@@ -87,7 +86,9 @@ func NewConfig() (*Config, error) {
 	setDefaults()
 	setupLogger()
 
-	err := viper.UnmarshalExact(&c.values)
+	err := viper.UnmarshalExact(&c.values, viper.DecodeHook(
+		mapstructure.ComposeDecodeHookFunc(
+			DecodeStrings, mapstructure.StringToTimeDurationHookFunc())))
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +97,8 @@ func NewConfig() (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	return c, err
+
+	return c, nil
 }
 
 // Default flag keys
@@ -157,7 +159,6 @@ func setDefaults() {
 	viper.SetDefault(AuthCacheTTLKey, DefaultAuthCacheTTL)
 	viper.SetDefault(AuthCacheJitterKey, DefaultAuthCacheJitter)
 
-	viper.SetDefault(BlockstoreTypeKey, DefaultBlockStoreType)
 	viper.SetDefault(BlockstoreLocalPathKey, DefaultBlockStoreLocalPath)
 	viper.SetDefault(BlockstoreS3RegionKey, DefaultBlockStoreS3Region)
 	viper.SetDefault(BlockstoreS3StreamingChunkSizeKey, DefaultBlockStoreS3StreamingChunkSize)
@@ -217,9 +218,18 @@ func (c *Config) validateDomainNames() error {
 	return nil
 }
 
+func (c *Config) Validate() error {
+	missingKeys := ValidateMissingRequiredKeys(c.values, "mapstructure", "squash")
+	if len(missingKeys) > 0 {
+		return fmt.Errorf("%w: %v", ErrMissingRequiredKeys, missingKeys)
+	}
+
+	return nil
+}
+
 func (c *Config) GetDatabaseParams() dbparams.Database {
 	return dbparams.Database{
-		ConnectionString:      c.values.Database.ConnectionString,
+		ConnectionString:      c.values.Database.ConnectionString.String(),
 		MaxOpenConnections:    c.values.Database.MaxOpenConnections,
 		MaxIdleConnections:    c.values.Database.MaxIdleConnections,
 		ConnectionMaxLifetime: c.values.Database.ConnectionMaxLifetime,
@@ -249,9 +259,9 @@ func (c *Config) GetAwsConfig() *aws.Config {
 			secretAccessKey = c.values.Blockstore.S3.Credentials.AccessSecretKey
 		}
 		cfg.Credentials = credentials.NewStaticCredentials(
-			c.values.Blockstore.S3.Credentials.AccessKeyID,
-			secretAccessKey,
-			c.values.Blockstore.S3.Credentials.SessionToken,
+			c.values.Blockstore.S3.Credentials.AccessKeyID.String(),
+			secretAccessKey.String(),
+			c.values.Blockstore.S3.Credentials.SessionToken.String(),
 		)
 	}
 
@@ -356,11 +366,7 @@ const floatSumTolerance = 1e-6
 
 // GetCommittedTierFSParams returns parameters for building a tierFS.  Caller must separately
 // build and populate Adapter.
-func (c *Config) GetCommittedTierFSParams(ctx context.Context) (*pyramidparams.ExtParams, error) {
-	adapter, err := factory.BuildBlockAdapter(ctx, c)
-	if err != nil {
-		return nil, fmt.Errorf("build block adapter: %w", err)
-	}
+func (c *Config) GetCommittedTierFSParams(adapter block.Adapter) (*pyramidparams.ExtParams, error) {
 	rangePro := c.values.Committed.LocalCache.RangeProportion
 	metaRangePro := c.values.Committed.LocalCache.MetaRangeProportion
 
@@ -405,4 +411,8 @@ func (c *Config) GetFixedInstallationID() string {
 
 func (c *Config) GetCommittedBlockStoragePrefix() string {
 	return c.values.Committed.BlockStoragePrefix
+}
+
+func (c *Config) ToLoggerFields() logging.Fields {
+	return MapLoggingFields(c.values)
 }

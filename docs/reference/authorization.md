@@ -10,11 +10,7 @@ has_children: false
 # Authentication & Authorization
 {: .no_toc }
 
-## Table of contents
-{: .no_toc .text-delta }
-
-1. TOC
-{:toc}
+{% include toc.html %}
 
 ## Authentication
 
@@ -337,6 +333,66 @@ Policy:
             ],
             "effect": "allow",
             "resource": "*"
+        }
+    ]
+}
+```
+
+### Additional Policies
+
+The following examples can be used to create additional policies to further limit user access. Use the web UI or the [lakectl auth](./commands.md#lakectl-auth-policies-create) command to create policies.
+
+#### Read/write access for a specific repository
+
+Policy: 
+```json
+{
+    "statement": [
+        {
+            "action": [
+                "fs:ReadRepository",
+                "fs:ReadCommit",
+                "fs:ListBranches",
+                "fs:ListTags",
+                "fs:ListObjects"
+            ],
+            "effect": "allow",
+            "resource": "arn:lakefs:fs:::repository/<repository-name>"
+        },
+        {
+            "action": [
+                "fs:RevertBranch",
+                "fs:ReadBranch",
+                "fs:CreateBranch",
+                "fs:DeleteBranch",
+                "fs:CreateCommit"
+            ],
+            "effect": "allow",
+            "resource": "arn:lakefs:fs:::repository/<repository-name>/branch/*"
+        },
+                {
+            "action": [
+                "fs:ListObjects",
+                "fs:ReadObject",
+                "fs:WriteObject",
+                "fs:DeleteObject",
+            ],
+            "effect": "allow",
+            "resource": "arn:lakefs:fs:::repository/<repository-name>/object/*"
+        },
+                {
+            "action": [
+                "fs:ReadTag",
+                "fs:CreateTag",
+                "fs:DeleteTag"
+            ],
+            "effect": "allow",
+            "resource": "arn:lakefs:fs:::repository/<repository-name>/tag/*"
+        },
+        {
+        	"action": ["fs:ReadConfig"],
+        	"effect": "allow",
+        	"resource": "*"
         }
     ]
 }

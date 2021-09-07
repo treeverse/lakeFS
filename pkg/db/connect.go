@@ -51,7 +51,7 @@ func ConnectDBPool(ctx context.Context, p params.Database) (*pgxpool.Pool, error
 		"max_idle_conns":    p.MaxIdleConnections,
 		"conn_max_lifetime": p.ConnectionMaxLifetime,
 	})
-	log.Info("connecting to the DB")
+	log.Info("Connecting to the DB")
 	config, err := pgxpool.ParseConfig(p.ConnectionString)
 	if err != nil {
 		return nil, fmt.Errorf("parse connection string: %w", err)
@@ -71,7 +71,7 @@ func ConnectDBPool(ctx context.Context, p params.Database) (*pgxpool.Pool, error
 		return nil, err
 	}
 
-	log.Info("initialized DB connection")
+	log.Info("DB connection established")
 	return pool, err
 }
 

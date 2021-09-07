@@ -16,7 +16,8 @@ type Webhook struct {
 	HookBase
 	URL         string
 	Timeout     time.Duration
-	QueryParams map[string][]string
+	QueryParams map[string][]SecureString
+	Headers     map[string]SecureString
 }
 
 const (
@@ -24,6 +25,7 @@ const (
 	webhookTimeoutPropertyKey   = "timeout"
 	webhookURLPropertyKey       = "url"
 	queryParamsPropertyKey      = "query_params"
+	HeadersPropertyKey          = "headers"
 )
 
 var (
@@ -46,6 +48,11 @@ func NewWebhook(h ActionHook, action *Action) (Hook, error) {
 		return nil, fmt.Errorf("extracting query params: %w", err)
 	}
 
+	headers, err := extractHeaders(h.Properties)
+	if err != nil {
+		return nil, fmt.Errorf("extracting headers: %w", err)
+	}
+
 	requestTimeout := webhookClientDefaultTimeout
 	if timeoutDuration, ok := h.Properties[webhookTimeoutPropertyKey]; ok {
 		if timeout, ok := timeoutDuration.(string); ok && len(timeout) > 0 {
@@ -65,6 +72,7 @@ func NewWebhook(h ActionHook, action *Action) (Hook, error) {
 		Timeout:     requestTimeout,
 		URL:         webhookURL,
 		QueryParams: queryParams,
+		Headers:     headers,
 	}, nil
 }
 
@@ -76,20 +84,33 @@ func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, writer *H
 	}
 
 	reqReader := bytes.NewReader(eventData)
+	buf := bytes.NewBufferString(fmt.Sprintf("Request:\nPOST %s\n", w.URL))
+
 	req, err := http.NewRequest(http.MethodPost, w.URL, reqReader)
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Content-Type", "application/json")
+	w.Headers["Content-Type"] = SecureString{val: "application/json"}
 
+	buf.WriteString("Query Params:\n")
 	q := req.URL.Query()
 	for k, vals := range w.QueryParams {
 		for _, v := range vals {
-			q.Add(k, v)
+			q.Add(k, v.val)
+			buf.WriteString(fmt.Sprintf("%s: %s\n", k, v.String()))
 		}
 	}
+
+	buf.WriteString("Headers:\n")
+	for k, v := range w.Headers {
+		req.Header.Add(k, v.val)
+		buf.WriteString(fmt.Sprintf("%s: %s\n", k, v.String()))
+	}
 	req.URL.RawQuery = q.Encode()
-	statusCode, err := executeAndLogHTTP(ctx, req, writer, w.Timeout)
+
+	buf.WriteString(fmt.Sprintf("Request Body:\n%s\n\n", eventData))
+
+	statusCode, err := executeAndLogResponse(ctx, req, buf, writer, w.Timeout)
 	if err != nil {
 		return err
 	}
@@ -101,7 +122,7 @@ func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, writer *H
 	return nil
 }
 
-func executeAndLogHTTP(ctx context.Context, req *http.Request, writer *HookOutputWriter, timeout time.Duration) (n int, err error) {
+func executeAndLogResponse(ctx context.Context, req *http.Request, buf *bytes.Buffer, writer *HookOutputWriter, timeout time.Duration) (n int, err error) {
 	req = req.WithContext(ctx)
 
 	client := &http.Client{
@@ -109,19 +130,12 @@ func executeAndLogHTTP(ctx context.Context, req *http.Request, writer *HookOutpu
 	}
 	start := time.Now()
 
-	buf := bytes.NewBufferString("Request:\n")
 	defer func() {
 		err2 := writer.OutputWrite(ctx, buf, int64(buf.Len()))
 		if err == nil {
 			err = err2
 		}
 	}()
-
-	if dumpReq, err := httputil.DumpRequestOut(req, true); err == nil {
-		buf.Write(dumpReq)
-	} else {
-		buf.WriteString(fmt.Sprintf("Failed dumping request: %s", err))
-	}
 
 	resp, err := client.Do(req)
 	elapsed := time.Since(start)
@@ -143,7 +157,7 @@ func executeAndLogHTTP(ctx context.Context, req *http.Request, writer *HookOutpu
 	return resp.StatusCode, nil
 }
 
-func extractQueryParams(props map[string]interface{}) (map[string][]string, error) {
+func extractQueryParams(props map[string]interface{}) (map[string][]SecureString, error) {
 	params, ok := props[queryParamsPropertyKey]
 	if !ok {
 		return nil, nil
@@ -154,7 +168,7 @@ func extractQueryParams(props map[string]interface{}) (map[string][]string, erro
 		return nil, fmt.Errorf("unsupported query params: %w", errWebhookWrongFormat)
 	}
 
-	res := map[string][]string{}
+	res := map[string][]SecureString{}
 	for k, v := range paramsMap {
 		if ar, ok := v.([]interface{}); ok {
 			for _, v := range ar {
@@ -163,7 +177,11 @@ func extractQueryParams(props map[string]interface{}) (map[string][]string, erro
 					return nil, fmt.Errorf("query params array should contains only strings: %w", errWebhookWrongFormat)
 				}
 
-				res[k] = append(res[k], av)
+				avs, err := NewSecureString(av)
+				if err != nil {
+					return nil, fmt.Errorf("reading query param: %w", err)
+				}
+				res[k] = append(res[k], avs)
 			}
 			continue
 		}
@@ -171,7 +189,40 @@ func extractQueryParams(props map[string]interface{}) (map[string][]string, erro
 		if !ok {
 			return nil, fmt.Errorf("query params single value should be of type string: %w", errWebhookWrongFormat)
 		}
-		res[k] = []string{av}
+
+		avs, err := NewSecureString(av)
+		if err != nil {
+			return nil, fmt.Errorf("reading query param: %w", err)
+		}
+		res[k] = []SecureString{avs}
+	}
+
+	return res, nil
+}
+
+func extractHeaders(props map[string]interface{}) (map[string]SecureString, error) {
+	params, ok := props[HeadersPropertyKey]
+	if !ok {
+		return map[string]SecureString{}, nil
+	}
+
+	paramsMap, ok := params.(Properties)
+	if !ok {
+		return nil, fmt.Errorf("unsupported headers: %w", errWebhookWrongFormat)
+	}
+
+	res := map[string]SecureString{}
+	for k, v := range paramsMap {
+		vs, ok := v.(string)
+		if !ok {
+			return nil, fmt.Errorf("headers array should contains only strings: %w", errWebhookWrongFormat)
+		}
+
+		vss, err := NewSecureString(vs)
+		if err != nil {
+			return nil, fmt.Errorf("reading header: %w", err)
+		}
+		res[k] = vss
 	}
 
 	return res, nil

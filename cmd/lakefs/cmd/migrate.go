@@ -19,7 +19,10 @@ var versionCmd = &cobra.Command{
 	Short: "Print current migration version and available version",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
-		version, _, err := db.MigrateVersion(ctx, cfg.GetDatabaseParams())
+		dbParams := cfg.GetDatabaseParams()
+		dbPool := db.BuildDatabaseConnection(ctx, dbParams)
+		defer dbPool.Close()
+		version, _, err := db.MigrateVersion(ctx, dbPool, dbParams)
 		if err != nil {
 			fmt.Printf("Failed to get info for schema: %s\n", err)
 			return
@@ -43,18 +46,6 @@ var upCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-	},
-}
-
-var downCmd = &cobra.Command{
-	Use:   "down",
-	Short: "Apply all down migrations",
-	Run: func(cmd *cobra.Command, args []string) {
-		err := db.MigrateDown(cfg.GetDatabaseParams())
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
 	},
 }
 
@@ -83,7 +74,6 @@ func init() {
 	rootCmd.AddCommand(migrateCmd)
 	migrateCmd.AddCommand(versionCmd)
 	migrateCmd.AddCommand(upCmd)
-	migrateCmd.AddCommand(downCmd)
 	migrateCmd.AddCommand(gotoCmd)
 	_ = gotoCmd.Flags().Uint("version", 0, "version number")
 	_ = gotoCmd.MarkFlagRequired("version")

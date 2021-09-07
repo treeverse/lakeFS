@@ -113,20 +113,19 @@ func WithSendTimeout(d time.Duration) BufferedCollectorOpts {
 	}
 }
 
-func NewBufferedCollector(installationID string, runtimeCollector func() map[string]string, c *config.Config, opts ...BufferedCollectorOpts) *BufferedCollector {
+func NewBufferedCollector(installationID string, c *config.Config, opts ...BufferedCollectorOpts) *BufferedCollector {
 	processID, moreOpts := getBufferedCollectorArgs(c)
 	opts = append(opts, moreOpts...)
 	s := &BufferedCollector{
-		cache:            make(keyIndex),
-		writes:           make(chan primaryKey, collectorEventBufferSize),
-		done:             make(chan bool),
-		sender:           NewDummySender(),
-		sendTimeout:      sendTimeout,
-		runtimeCollector: runtimeCollector,
-		runtimeStats:     map[string]string{},
-		flushTicker:      &TimeTicker{ticker: time.NewTicker(flushInterval)},
-		installationID:   installationID,
-		processID:        processID,
+		cache:          make(keyIndex),
+		writes:         make(chan primaryKey, collectorEventBufferSize),
+		done:           make(chan bool),
+		sender:         NewDummySender(),
+		sendTimeout:    sendTimeout,
+		runtimeStats:   map[string]string{},
+		flushTicker:    &TimeTicker{ticker: time.NewTicker(flushInterval)},
+		installationID: installationID,
+		processID:      processID,
 	}
 	for _, opt := range opts {
 		opt(s)
@@ -227,6 +226,10 @@ func (s *BufferedCollector) collectHeartbeat(ctx context.Context) {
 
 func (s *BufferedCollector) SetInstallationID(installationID string) {
 	s.installationID = installationID
+}
+
+func (s *BufferedCollector) SetRuntimeCollector(runtimeCollector func() map[string]string) {
+	s.runtimeCollector = runtimeCollector
 }
 
 func (s *BufferedCollector) handleRuntimeStats() {

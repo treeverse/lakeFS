@@ -11,11 +11,7 @@ redirect_from: ../using/boto.html
 # Using lakeFS with Boto (Python)
 {: .no_toc }
 
-## Table of contents
-{: .no_toc .text-delta }
-
-1. TOC
-{:toc}
+{% include toc.html %}
 
 ## Creating a Boto client
 
@@ -23,7 +19,7 @@ Create a Boto3 S3 client with your lakeFS endpoint and key-pair:
 ```python
 import boto3
 s3 = boto3.client('s3',
-    endpoint_url='https://s3.lakefs.example.com',
+    endpoint_url='https://lakefs.example.com',
     aws_access_key_id='AKIAIOSFODNN7EXAMPLE',
     aws_secret_access_key='wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY')
 ```

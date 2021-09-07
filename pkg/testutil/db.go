@@ -13,7 +13,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4/pgxpool"
 	_ "github.com/jackc/pgx/v4/stdlib"
@@ -214,7 +213,7 @@ func MustDo(t testing.TB, what string, err error) {
 
 func NewBlockAdapterByType(t testing.TB, translator block.UploadIDTranslator, blockstoreType string) block.Adapter {
 	switch blockstoreType {
-	case gs.BlockstoreType:
+	case block.BlockstoreTypeGS:
 		ctx := context.Background()
 		client, err := storage.NewClient(ctx)
 		if err != nil {
@@ -222,7 +221,7 @@ func NewBlockAdapterByType(t testing.TB, translator block.UploadIDTranslator, bl
 		}
 		return gs.NewAdapter(client, gs.WithTranslator(translator))
 
-	case lakefsS3.BlockstoreType:
+	case block.BlockstoreTypeS3:
 		awsRegion, regionOk := os.LookupEnv(envKeyAwsRegion)
 		if !regionOk {
 			awsRegion = "us-east-1"
@@ -238,8 +237,7 @@ func NewBlockAdapterByType(t testing.TB, translator block.UploadIDTranslator, bl
 			cfg.Credentials = credentials.NewSharedCredentials("", "default")
 		}
 		sess := session.Must(session.NewSession(cfg))
-		svc := s3.New(sess)
-		return lakefsS3.NewAdapter(svc, lakefsS3.WithTranslator(translator))
+		return lakefsS3.NewAdapter(sess, lakefsS3.WithTranslator(translator))
 
 	default:
 		return mem.New(mem.WithTranslator(translator))

@@ -27,13 +27,19 @@ func newConfigFromFile(fn string) (*config.Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	return config.NewConfig()
+	cfg, err := config.NewConfig()
+	if err != nil {
+		return nil, err
+	}
+	err = cfg.Validate()
+	return cfg, err
 }
 
 func TestConfig_Setup(t *testing.T) {
 	// test defaults
 	c, err := config.NewConfig()
 	testutil.Must(t, err)
+	// Don't validate, some tested configs don't have all required fields.
 	if c.GetListenAddress() != config.DefaultListenAddr {
 		t.Fatalf("expected listen addr %s, got %s", config.DefaultListenAddr, c.GetListenAddress())
 	}
@@ -103,7 +109,7 @@ func TestConfig_BuildBlockAdapter(t *testing.T) {
 	t.Run("local block adapter", func(t *testing.T) {
 		c, err := newConfigFromFile("testdata/valid_config.yaml")
 		testutil.Must(t, err)
-		adapter, err := factory.BuildBlockAdapter(ctx, c)
+		adapter, err := factory.BuildBlockAdapter(ctx, nil, c)
 		testutil.Must(t, err)
 		if _, ok := adapter.(*local.Adapter); !ok {
 			t.Fatalf("expected a local block adapter, got something else instead")
@@ -111,10 +117,9 @@ func TestConfig_BuildBlockAdapter(t *testing.T) {
 	})
 
 	t.Run("s3 block adapter", func(t *testing.T) {
-		newConfigFromFile("testdata/valid_s3_adapter_config.yaml")
-		c, err := config.NewConfig()
+		c, err := newConfigFromFile("testdata/valid_s3_adapter_config.yaml")
 		testutil.Must(t, err)
-		adapter, err := factory.BuildBlockAdapter(ctx, c)
+		adapter, err := factory.BuildBlockAdapter(ctx, nil, c)
 		testutil.Must(t, err)
 		if _, ok := adapter.(*s3a.Adapter); !ok {
 			t.Fatalf("expected an s3 block adapter, got something else instead")
@@ -122,10 +127,9 @@ func TestConfig_BuildBlockAdapter(t *testing.T) {
 	})
 
 	t.Run("gs block adapter", func(t *testing.T) {
-		newConfigFromFile("testdata/valid_gs_adapter_config.yaml")
-		c, err := config.NewConfig()
+		c, err := newConfigFromFile("testdata/valid_gs_adapter_config.yaml")
 		testutil.Must(t, err)
-		adapter, err := factory.BuildBlockAdapter(ctx, c)
+		adapter, err := factory.BuildBlockAdapter(ctx, nil, c)
 		testutil.Must(t, err)
 		if _, ok := adapter.(*gs.Adapter); !ok {
 			t.Fatalf("expected an gs block adapter, got something else instead")

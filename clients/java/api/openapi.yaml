@@ -3134,7 +3134,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      summary: stage an object"s metadata for the given branch
+      summary: stage an object's metadata for the given branch
       tags:
       - objects
       x-contentType: application/json
@@ -3164,6 +3164,14 @@ paths:
         required: true
         schema:
           type: string
+        style: form
+      - explode: true
+        in: query
+        name: user_metadata
+        required: false
+        schema:
+          default: true
+          type: boolean
         style: form
       responses:
         "200":
@@ -3270,6 +3278,14 @@ paths:
         schema:
           type: string
         style: simple
+      - explode: true
+        in: query
+        name: user_metadata
+        required: false
+        schema:
+          default: true
+          type: boolean
+        style: form
       - description: return items after this value
         explode: true
         in: query
@@ -4120,10 +4136,12 @@ components:
       example:
         physical_address: physical_address
         path: path
-        size_bytes: 6
+        metadata:
+          key: metadata
+        size_bytes: 0
         checksum: checksum
         path_type: common_prefix
-        mtime: 0
+        mtime: 6
       properties:
         path:
           type: string
@@ -4136,13 +4154,17 @@ components:
           type: string
         checksum:
           type: string
+        size_bytes:
+          format: int64
+          type: integer
         mtime:
           description: Unix Epoch in seconds
           format: int64
           type: integer
-        size_bytes:
-          format: int64
-          type: integer
+        metadata:
+          additionalProperties:
+            type: string
+          type: object
       required:
       - checksum
       - mtime
@@ -4160,16 +4182,20 @@ components:
         results:
         - physical_address: physical_address
           path: path
-          size_bytes: 6
+          metadata:
+            key: metadata
+          size_bytes: 0
           checksum: checksum
           path_type: common_prefix
-          mtime: 0
+          mtime: 6
         - physical_address: physical_address
           path: path
-          size_bytes: 6
+          metadata:
+            key: metadata
+          size_bytes: 0
           checksum: checksum
           path_type: common_prefix
-          mtime: 0
+          mtime: 6
       properties:
         pagination:
           $ref: '#/components/schemas/Pagination'
@@ -4209,6 +4235,10 @@ components:
       - checksum
       - physical_address
       - size_bytes
+      type: object
+    ObjectUserMetadata:
+      additionalProperties:
+        type: string
       type: object
     UnderlyingObjectProperties:
       example:

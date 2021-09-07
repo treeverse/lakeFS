@@ -14,17 +14,16 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/request"
+	"github.com/aws/aws-sdk-go/aws/session"
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/adapter"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/stats"
 )
 
 const (
-	BlockstoreType = "s3"
-
 	DefaultStreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
 	DefaultStreamingChunkTimeout = time.Second * 1 // if we haven't read DefaultStreamingChunkSize by this duration, write whatever we have as a chunk
 
@@ -62,7 +61,7 @@ func resolveNamespacePrefix(opts block.WalkOpts) (block.QualifiedPrefix, error) 
 }
 
 type Adapter struct {
-	s3                    s3iface.S3API
+	clients               *ClientCache
 	httpClient            *http.Client
 	uploadIDTranslator    block.UploadIDTranslator
 	streamingChunkSize    int
@@ -95,9 +94,15 @@ func WithTranslator(t block.UploadIDTranslator) func(a *Adapter) {
 	}
 }
 
-func NewAdapter(s3 s3iface.S3API, opts ...func(a *Adapter)) *Adapter {
+func WithStatsCollector(s stats.Collector) func(a *Adapter) {
+	return func(a *Adapter) {
+		a.clients = a.clients.WithStatsCollector(s)
+	}
+}
+
+func NewAdapter(awsSession *session.Session, opts ...func(a *Adapter)) *Adapter {
 	a := &Adapter{
-		s3:                    s3,
+		clients:               NewClientCache(awsSession),
 		httpClient:            http.DefaultClient,
 		uploadIDTranslator:    &block.NoOpTranslator{},
 		streamingChunkSize:    DefaultStreamingChunkSize,
@@ -126,7 +131,7 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 		Key:          aws.String(qualifiedKey.Key),
 		StorageClass: opts.StorageClass,
 	}
-	sdkRequest, _ := a.s3.PutObjectRequest(&putObject)
+	sdkRequest, _ := a.clients.Get(ctx, qualifiedKey.StorageNamespace).PutObjectRequest(&putObject)
 	_, err = a.streamToS3(ctx, sdkRequest, sizeBytes, reader)
 	return err
 }
@@ -145,7 +150,7 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeB
 		PartNumber: aws.Int64(partNumber),
 		UploadId:   aws.String(uploadID),
 	}
-	sdkRequest, _ := a.s3.UploadPartRequest(&uploadPartObject)
+	sdkRequest, _ := a.clients.Get(ctx, qualifiedKey.StorageNamespace).UploadPartRequest(&uploadPartObject)
 	etag, err := a.streamToS3(ctx, sdkRequest, sizeBytes, reader)
 
 	if err != nil {
@@ -257,7 +262,7 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 		Bucket: aws.String(qualifiedKey.StorageNamespace),
 		Key:    aws.String(qualifiedKey.Key),
 	}
-	objectOutput, err := a.s3.GetObjectWithContext(ctx, &getObjectInput)
+	objectOutput, err := a.clients.Get(ctx, qualifiedKey.StorageNamespace).GetObjectWithContext(ctx, &getObjectInput)
 	if isErrNotFound(err) {
 		return nil, adapter.ErrDataNotFound
 	}
@@ -281,7 +286,7 @@ func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, er
 		Bucket: aws.String(qualifiedKey.StorageNamespace),
 		Key:    aws.String(qualifiedKey.Key),
 	}
-	_, err = a.s3.HeadObjectWithContext(ctx, &input)
+	_, err = a.clients.Get(ctx, qualifiedKey.StorageNamespace).HeadObjectWithContext(ctx, &input)
 	if isErrNotFound(err) {
 		return false, nil
 	}
@@ -306,7 +311,7 @@ func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPo
 		Key:    aws.String(qualifiedKey.Key),
 		Range:  aws.String(fmt.Sprintf("bytes=%d-%d", startPosition, endPosition)),
 	}
-	objectOutput, err := a.s3.GetObjectWithContext(ctx, &getObjectInput)
+	objectOutput, err := a.clients.Get(ctx, qualifiedKey.StorageNamespace).GetObjectWithContext(ctx, &getObjectInput)
 	if isErrNotFound(err) {
 		return nil, adapter.ErrDataNotFound
 	}
@@ -338,7 +343,7 @@ func (a *Adapter) Walk(ctx context.Context, walkOpt block.WalkOpts, walkFn block
 	}
 
 	for {
-		listOutput, err := a.s3.ListObjectsWithContext(ctx, &listObjectInput)
+		listOutput, err := a.clients.Get(ctx, qualifiedPrefix.StorageNamespace).ListObjectsWithContext(ctx, &listObjectInput)
 		if err != nil {
 			log.WithError(err).WithFields(logging.Fields{
 				"bucket": qualifiedPrefix.StorageNamespace,
@@ -375,7 +380,7 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 		Bucket: aws.String(qualifiedKey.StorageNamespace),
 		Key:    aws.String(qualifiedKey.Key),
 	}
-	s3Props, err := a.s3.HeadObjectWithContext(ctx, headObjectParams)
+	s3Props, err := a.clients.Get(ctx, qualifiedKey.StorageNamespace).HeadObjectWithContext(ctx, headObjectParams)
 	if err != nil {
 		return block.Properties{}, err
 	}
@@ -393,12 +398,13 @@ func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {
 		Bucket: aws.String(qualifiedKey.StorageNamespace),
 		Key:    aws.String(qualifiedKey.Key),
 	}
-	_, err = a.s3.DeleteObjectWithContext(ctx, deleteObjectParams)
+	svc := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
+	_, err = svc.DeleteObjectWithContext(ctx, deleteObjectParams)
 	if err != nil {
 		a.log(ctx).WithError(err).Error("failed to delete S3 object")
 		return err
 	}
-	err = a.s3.WaitUntilObjectNotExistsWithContext(ctx, &s3.HeadObjectInput{
+	err = svc.WaitUntilObjectNotExistsWithContext(ctx, &s3.HeadObjectInput{
 		Bucket: aws.String(qualifiedKey.StorageNamespace),
 		Key:    aws.String(qualifiedKey.Key),
 	})
@@ -426,8 +432,7 @@ func (a *Adapter) copyPart(ctx context.Context, sourceObj, destinationObj block.
 	if byteRange != nil {
 		uploadPartCopyObject.CopySourceRange = byteRange
 	}
-
-	resp, err := a.s3.UploadPartCopyWithContext(ctx, &uploadPartCopyObject)
+	resp, err := a.clients.Get(ctx, qualifiedKey.StorageNamespace).UploadPartCopyWithContext(ctx, &uploadPartCopyObject)
 	if err != nil {
 		return "", err
 	}
@@ -476,7 +481,7 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 		Key:        aws.String(qualifiedDestinationKey.Key),
 		CopySource: aws.String(qualifiedSourceKey.StorageNamespace + "/" + qualifiedSourceKey.Key),
 	}
-	_, err = a.s3.CopyObjectWithContext(ctx, copyObjectParams)
+	_, err = a.clients.Get(ctx, qualifiedDestinationKey.StorageNamespace).CopyObjectWithContext(ctx, copyObjectParams)
 	if err != nil {
 		a.log(ctx).WithError(err).Error("failed to copy S3 object")
 	}
@@ -496,7 +501,7 @@ func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPoi
 		ContentType:  aws.String(""),
 		StorageClass: opts.StorageClass,
 	}
-	resp, err := a.s3.CreateMultipartUploadWithContext(ctx, input)
+	resp, err := a.clients.Get(ctx, qualifiedKey.StorageNamespace).CreateMultipartUploadWithContext(ctx, input)
 	if err != nil {
 		return "", err
 	}
@@ -525,7 +530,7 @@ func (a *Adapter) AbortMultiPartUpload(ctx context.Context, obj block.ObjectPoin
 		Key:      aws.String(qualifiedKey.Key),
 		UploadId: aws.String(uploadID),
 	}
-	_, err = a.s3.AbortMultipartUploadWithContext(ctx, input)
+	_, err = a.clients.Get(ctx, qualifiedKey.StorageNamespace).AbortMultipartUploadWithContext(ctx, input)
 	a.uploadIDTranslator.RemoveUploadID(uploadID)
 	a.log(ctx).WithFields(logging.Fields{
 		"upload_id":     uploadID,
@@ -558,7 +563,8 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 		"qualified_key":        qualifiedKey.Key,
 		"key":                  obj.Identifier,
 	})
-	resp, err := a.s3.CompleteMultipartUploadWithContext(ctx, input)
+	svc := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
+	resp, err := svc.CompleteMultipartUploadWithContext(ctx, input)
 
 	if err != nil {
 		lg.WithError(err).Error("CompleteMultipartUpload failed")
@@ -567,7 +573,7 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 	lg.Debug("completed multipart upload")
 	a.uploadIDTranslator.RemoveUploadID(translatedUploadID)
 	headInput := &s3.HeadObjectInput{Bucket: &qualifiedKey.StorageNamespace, Key: &qualifiedKey.Key}
-	headResp, err := a.s3.HeadObjectWithContext(ctx, headInput)
+	headResp, err := svc.HeadObjectWithContext(ctx, headInput)
 	if err != nil {
 		return nil, -1, err
 	} else {
@@ -605,7 +611,7 @@ func isExpirationRule(rule s3.LifecycleRule) bool {
 // nonzero).
 func (a *Adapter) ValidateConfiguration(ctx context.Context, storageNamespace string) error {
 	getLifecycleConfigInput := &s3.GetBucketLifecycleConfigurationInput{Bucket: &storageNamespace}
-	config, err := a.s3.GetBucketLifecycleConfigurationWithContext(ctx, getLifecycleConfigInput)
+	config, err := a.clients.Get(ctx, storageNamespace).GetBucketLifecycleConfigurationWithContext(ctx, getLifecycleConfigInput)
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == "NoSuchLifecycleConfiguration" {
 			return fmt.Errorf("%w: bucket %s has no lifecycle configuration", ErrS3, storageNamespace)
@@ -633,11 +639,11 @@ func (a *Adapter) ValidateConfiguration(ctx context.Context, storageNamespace st
 }
 
 func (a *Adapter) BlockstoreType() string {
-	return BlockstoreType
+	return block.BlockstoreTypeS3
 }
 
 func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
-	return block.DefaultStorageNamespaceInfo(BlockstoreType)
+	return block.DefaultStorageNamespaceInfo(block.BlockstoreTypeS3)
 }
 
 func (a *Adapter) RuntimeStats() map[string]string {

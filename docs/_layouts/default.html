@@ -85,9 +85,38 @@ layout: table_wrappers
             </div>
             {% endif %}
 
-            {% include nav.html %}
+            <div class="nav-category nav-version">
+                <label for="selectversion">Version:</label>
+                <select id="selectversion" name="version" onchange="javascript:location.href = '/' + this.value;">
+                    <option value="" selected>Latest</option>
+                </select>
+            </div>
+            <script async>
+                window.addEventListener("load",  async () => {
+                    const pathFirstLevel = location.pathname.split('/')[1];
+                    const selectedVersion = pathFirstLevel.startsWith('v') && pathFirstLevel || '';
+                    const selectVersionElm = document.getElementById('selectversion');
+                    const response = await fetch('/versions.json');
+                    if (!response.ok) {
+                        return
+                    }
+                    const versions = await response.json();
+                    for (let [key, value] of Object.entries(versions)) {
+                        const el = document.createElement("option");
+                        el.value = key;
+                        el.textContent = value;
+                        if (key === selectedVersion) {
+                            el.selected = true;
+                        }
+                        selectVersionElm.append(el);
+                    }
+                });
+            </script>
+
+            {% include nav.html pages=site.html_pages %}
             <div class="mobile-menu">
-                {% include header_menu.html %}</div>
+                {% include header_menu.html %}
+            </div>
         </nav>
 
     </div>
@@ -124,16 +153,18 @@ layout: table_wrappers
 
                 {% if page.has_children == true and page.has_toc != false %}
                 <hr>
-                <h2 class="text-delta">Table of contents</h2>
-                <ul>
-                    {%- assign children_list = pages_list | where: "parent", page.title | where: "grand_parent", page.parent -%}
-                    {% for child in children_list %}
-                    <li>
-                        <a href="{{ child.url | absolute_url }}">{{ child.title }}</a>{% if child.summary %} -
-                        {{ child.summary }}{% endif %}
-                    </li>
-                    {% endfor %}
-                </ul>
+                <div class="toc-block">
+                    <h2 class="text-delta">Table of contents</h2>
+                    <ul>
+                        {%- assign children_list = pages_list | where: "parent", page.title | where: "grand_parent", page.parent -%}
+                        {% for child in children_list %}
+                        <li>
+                            <a href="{{ child.url | absolute_url }}">{{ child.title }}</a>{% if child.summary %} -
+                            {{ child.summary }}{% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
                 {% endif %}
 
 

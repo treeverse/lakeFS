@@ -55,6 +55,42 @@ func TestResolveNamespace(t *testing.T) {
 			},
 		},
 		{
+			Name:             "valid_namespace_with_prefix_and_trailing_slash",
+			DefaultNamespace: "gs://foo/bla/",
+			Key:              "bar/baz",
+			Type:             block.IdentifierTypeRelative,
+			ExpectedErr:      nil,
+			Expected: block.QualifiedKey{
+				StorageType:      block.StorageTypeGS,
+				StorageNamespace: "foo",
+				Key:              "bla/bar/baz",
+			},
+		},
+		{
+			Name:             "valid_namespace_with_prefix_and_no_trailing_slash",
+			DefaultNamespace: "gs://foo/bla",
+			Key:              "bar/baz",
+			Type:             block.IdentifierTypeRelative,
+			ExpectedErr:      nil,
+			Expected: block.QualifiedKey{
+				StorageType:      block.StorageTypeGS,
+				StorageNamespace: "foo",
+				Key:              "bla/bar/baz",
+			},
+		},
+		{
+			Name:             "valid_namespace_with_prefix_and_leading_key_slash",
+			DefaultNamespace: "gs://foo/bla",
+			Key:              "/bar/baz",
+			Type:             block.IdentifierTypeRelative,
+			ExpectedErr:      nil,
+			Expected: block.QualifiedKey{
+				StorageType:      block.StorageTypeGS,
+				StorageNamespace: "foo",
+				Key:              "bla//bar/baz",
+			},
+		},
+		{
 			Name:             "valid_fq_key",
 			DefaultNamespace: "mem://foo/",
 			Key:              "s3://example/bar/baz",
@@ -148,7 +184,7 @@ func TestFormatQualifiedKey(t *testing.T) {
 			QualifiedKey: block.QualifiedKey{
 				StorageType:      block.StorageTypeS3,
 				StorageNamespace: "some-bucket/",
-				Key:              "/path/to/file",
+				Key:              "path/to/file",
 			},
 			Expected: "s3://some-bucket/path/to/file",
 		},
@@ -157,16 +193,34 @@ func TestFormatQualifiedKey(t *testing.T) {
 			QualifiedKey: block.QualifiedKey{
 				StorageType:      block.StorageTypeS3,
 				StorageNamespace: "some-bucket/prefix/",
-				Key:              "/path/to/file",
+				Key:              "path/to/file",
 			},
 			Expected: "s3://some-bucket/prefix/path/to/file",
+		},
+		{
+			Name: "path_with_prefix_leading_slash",
+			QualifiedKey: block.QualifiedKey{
+				StorageType:      block.StorageTypeS3,
+				StorageNamespace: "some-bucket",
+				Key:              "/path/to/file",
+			},
+			Expected: "s3://some-bucket//path/to/file",
+		},
+		{
+			Name: "bucket_with_prefix_leading_slash",
+			QualifiedKey: block.QualifiedKey{
+				StorageType:      block.StorageTypeS3,
+				StorageNamespace: "some-bucket/prefix",
+				Key:              "/path/to/file",
+			},
+			Expected: "s3://some-bucket/prefix//path/to/file",
 		},
 		{
 			Name: "dont_eliminate_dots",
 			QualifiedKey: block.QualifiedKey{
 				StorageType:      block.StorageTypeS3,
 				StorageNamespace: "some-bucket/prefix/",
-				Key:              "/path/to/../file",
+				Key:              "path/to/../file",
 			},
 			Expected: "s3://some-bucket/prefix/path/to/../file",
 		},

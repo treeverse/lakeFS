@@ -2,8 +2,35 @@
 # Changelog
 
 ## Unreleased - XXXX-XX-XX
- - Fix blank screen bug in UI (#1908)
 
+## v0.50.0 - 2021-09-05
+
+- Fix double slash bug in storage namespace (#2397)
+
+## v0.49.0 - 2021-09-02
+
+- Add search locations to load lakeFS configuration. More information on
+  https://docs.lakefs.io/reference/configuration (#2355)
+- Fix ARNs parsing confusion when the account-ID field contained a slash or
+  the resource-ID a colon.  Configurations (incorrectly) using a slash "`/`"
+  to separate account from resource in the ARN will need to switch to use a
+  colon "`:`".  However such configurations are probably incorrect, as
+  lakeFS does not currently set account fields.  And configurations using
+  resources containing a colon will now work correctly.
+
+## v0.48.0 - 2021-08-22
+
+- Support multiple AWS regions for underlying buckets (#2245, #2325, #2326)
+- Make S3 Gateway DNS settings optional
+- Fix lakectl upload fails on big uploads (#2280)
+- Fix blank screen bug in UI (#1908)
+- Actions secrets support with env vars (#2333)
+- Reduce the number of database connections used on startup
+- Validate required configuration keys blockstore.type, auth.encrypt.secret_key. This breaks existing configurations that assume a default blockstore.type of "local". But no such configuration may be for production.
+- Fix incorrect time logged on DB get operations (#2341) thanks @holajiawei
+- API with an unknown path should return an error (#2190) thanks @DataDavD
+- Retry DB connection on Migration (#2017)
+- 
 ## v0.47.0 - 2021-07-28
 
  - Hooks: support triggering Airflow DAGs (#2266)
