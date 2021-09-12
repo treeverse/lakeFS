@@ -49,7 +49,6 @@ func WithCacheExpiry(expiry time.Duration) ManagerOption {
 }
 
 func NewManager(refManager graveler.RefManager, branchLock graveler.BranchLocker, blockAdapter block.Adapter, committedBlockStoragePrefix string, options ...ManagerOption) *Manager {
-
 	m := &Manager{
 		refManager:                  refManager,
 		branchLock:                  branchLock,
