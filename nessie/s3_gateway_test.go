@@ -6,6 +6,7 @@ import (
 	"io"
 	"math/rand"
 	"strings"
+	"sync"
 	"testing"
 	"unicode/utf8"
 
@@ -23,9 +24,8 @@ var sigs = []struct {
 }
 
 const (
-	numUploads = 1000
-	//
-	randomDataPathLength = 250
+	numUploads           = 100
+	randomDataPathLength = 1020
 )
 
 // randomRune returns a random Unicode rune from rand, weighting at least
@@ -57,6 +57,8 @@ func randomString(rand *rand.Rand, size int) string {
 }
 
 func TestS3UploadAndDownload(t *testing.T) {
+	const parallelism = 10
+
 	ctx, _, repo := setupTest(t)
 
 	accessKeyID := viper.GetString("access_key_id")
@@ -78,32 +80,53 @@ func TestS3UploadAndDownload(t *testing.T) {
 				t.Error(fmt.Sprintf("minio.New: %s", err))
 			}
 
-			for i := 0; i < numUploads; i++ {
-				objContent := randomString(rand, randomDataContentLength)
-				// lakeFS supports _any_ path, even if its
-				// byte sequence is not legal UTF-8 string.
-				objPath := "main/data/" + randomString(rand, randomDataPathLength)
-				_, err := client.PutObject(
-					ctx, repo, objPath, strings.NewReader(objContent), int64(len(objContent)), opts)
-				if err != nil {
-					t.Error(fmt.Sprintf("minio.Client.PutObject(%s): %s", objPath, err))
-				}
+			type Object struct {
+				Path, Content string
+			}
 
-				download, err := client.GetObject(
-					ctx, repo, objPath, minio.GetObjectOptions{})
-				if err != nil {
-					t.Error(fmt.Sprintf("minio.Client.GetObject(%s): %s", objPath, err))
-				}
-				contents := bytes.NewBuffer(nil)
-				_, err = io.Copy(contents, download)
-				if err != nil {
-					t.Errorf(fmt.Sprintf("download %s: %s", objPath, err))
-				}
-				if strings.Compare(contents.String(), objContent) != 0 {
-					t.Error(fmt.Sprintf(
-						"Downloaded bytes %v from uploaded bytes %v", contents.Bytes(), objContent))
+			var (
+				wg      sync.WaitGroup
+				objects = make(chan Object, parallelism*2)
+			)
+
+			for i := 0; i < parallelism; i++ {
+				wg.Add(1)
+				go func() {
+					for o := range objects {
+						_, err := client.PutObject(
+							ctx, repo, o.Path, strings.NewReader(o.Content), int64(len(o.Content)), opts)
+						if err != nil {
+							t.Error(fmt.Sprintf("minio.Client.PutObject(%s): %s", o.Path, err))
+						}
+
+						download, err := client.GetObject(
+							ctx, repo, o.Path, minio.GetObjectOptions{})
+						if err != nil {
+							t.Error(fmt.Sprintf("minio.Client.GetObject(%s): %s", o.Path, err))
+						}
+						contents := bytes.NewBuffer(nil)
+						_, err = io.Copy(contents, download)
+						if err != nil {
+							t.Errorf(fmt.Sprintf("download %s: %s", o.Path, err))
+						}
+						if strings.Compare(contents.String(), o.Content) != 0 {
+							t.Error(fmt.Sprintf(
+								"Downloaded bytes %v from uploaded bytes %v", contents.Bytes(), o.Content))
+						}
+					}
+					wg.Done()
+				}()
+			}
+
+			for i := 0; i < numUploads; i++ {
+				objects <- Object{
+					Content: randomString(rand, randomDataContentLength),
+					// lakeFS supports _any_ path, even if its
+					// byte sequence is not legal UTF-8 string.
+					Path: "main/data/" + randomString(rand, randomDataPathLength),
 				}
 			}
+			wg.Wait()
 		})
 	}
 }
