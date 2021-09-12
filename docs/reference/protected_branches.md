@@ -1,0 +1,37 @@
+---
+layout: default
+title: Protected Branches
+description: Branch protection rules prevent direct changes on your important branches
+parent: Reference
+nav_order: 4
+has_children: false
+---
+
+# Branch Protection Rules
+
+Define branch protection rules to prevent direct changes and commits to specific branches.
+Only merges are allowed into protected branches. Together with the power of pre-merge [hooks](../setup/hooks.md#),
+you can run validations on your data before it reaches your important branches and is exposed to consumers.
+
+You can create rules for a specific branch, or to any branch that matches a name pattern you specify with [glob](https://en.wikipedia.org/wiki/Glob_(programming)) syntax (supporting `?` and `*` wildcards).
+
+## Managing branch protection rules
+
+This section explains how to use the lakeFS UI to manage rules. You can also use the [command line](./commands.md#lakectl-branch-protect).
+
+### Reaching the branch protection rules page 
+
+1. On lakeFS, navigate to the main page of the repository.
+2. Click on the _Settings_ tab.
+3. In the left menu, click _Branches_.
+
+### Adding a rule
+
+To add a new rule, click the _Add_ button. In the dialog, enter the branch name pattern and then click _Create_.
+
+![Adding a branch protection rule](../assets/img/add_branch_protection_rule.png)
+
+### Deleting a rule
+To delete a rule, click the _Delete_ button next to it.
+
+![Deleting a branch protection rule](../assets/img/delete_branch_protection_rule.png)

@@ -8,13 +8,14 @@ import (
 	"strings"
 	"time"
 
-	ghttp "github.com/treeverse/lakefs/pkg/gateway/http"
-
+	goerrors "github.com/pkg/errors"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/gateway/errors"
+	ghttp "github.com/treeverse/lakefs/pkg/gateway/http"
 	"github.com/treeverse/lakefs/pkg/gateway/path"
 	"github.com/treeverse/lakefs/pkg/gateway/serde"
+	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
@@ -226,6 +227,10 @@ func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 
 	// write metadata
 	err = o.finishUpload(req, blob.Checksum, blob.PhysicalAddress, blob.Size, true)
+	if goerrors.Is(err, graveler.ErrWriteToProtectedBranch) {
+		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrAccessDenied))
+		return
+	}
 	if err != nil {
 		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return

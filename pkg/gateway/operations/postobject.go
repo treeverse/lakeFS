@@ -9,6 +9,9 @@ import (
 	"strings"
 	"time"
 
+	goerrors "github.com/pkg/errors"
+	"github.com/treeverse/lakefs/pkg/graveler"
+
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/gateway/errors"
@@ -100,6 +103,10 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 	ch := trimQuotes(*etag)
 	checksum := strings.Split(ch, "-")[0]
 	err = o.finishUpload(req, checksum, objName, size, true)
+	if goerrors.Is(err, graveler.ErrWriteToProtectedBranch) {
+		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrAccessDenied))
+		return
+	}
 	if err != nil {
 		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return

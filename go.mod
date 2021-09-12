@@ -33,6 +33,7 @@ require (
 	github.com/go-openapi/strfmt v0.20.0 // indirect
 	github.com/go-openapi/swag v0.19.14
 	github.com/go-test/deep v1.0.7
+	github.com/gobwas/glob v0.2.3
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-migrate/migrate/v4 v4.14.1

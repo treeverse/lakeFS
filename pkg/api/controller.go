@@ -1988,6 +1988,95 @@ func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *h
 	})
 }
 
+func (c *Controller) GetBranchProtectionRules(w http.ResponseWriter, r *http.Request, repository string) {
+	if !c.authorize(w, r, []permissions.Permission{
+		{
+			Action:   permissions.GetBranchProtectionRulesAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	rules, err := c.Catalog.GetBranchProtectionRules(ctx, repository)
+	if handleAPIError(w, err) {
+		return
+	}
+	resp := make([]*BranchProtectionRule, 0, len(rules.BranchPatternToConstraints))
+	for pattern, constraints := range rules.BranchPatternToConstraints {
+		val := constraints.GetValue()
+		resp = append(resp, &BranchProtectionRule{
+			Pattern:     pattern,
+			Constraints: &val,
+		})
+	}
+	writeResponse(w, http.StatusOK, resp)
+}
+func (c *Controller) SetBranchProtectionRules(w http.ResponseWriter, r *http.Request, body SetBranchProtectionRulesJSONRequestBody, repository string) {
+	if !c.authorize(w, r, []permissions.Permission{
+		{
+			Action:   permissions.SetBranchProtectionRulesAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	rules := &graveler.BranchProtectionRules{
+		BranchPatternToConstraints: make(map[string]*graveler.BranchProtectionConstraints),
+	}
+	for _, rule := range body {
+		constraints := []string{graveler.StagingBlockedConstraint, graveler.CommitBlockedConstraint}
+		if rule.Constraints != nil {
+			constraints = *rule.Constraints
+		}
+		rules.BranchPatternToConstraints[rule.Pattern] = &graveler.BranchProtectionConstraints{Value: constraints}
+	}
+	err := c.Catalog.SetBranchProtectionRules(ctx, repository, rules)
+	if handleAPIError(w, err) {
+		return
+	}
+	writeResponse(w, http.StatusNoContent, nil)
+}
+
+func (c *Controller) DeleteBranchProtectionRule(w http.ResponseWriter, r *http.Request, body DeleteBranchProtectionRuleJSONRequestBody, repository string) {
+	if !c.authorize(w, r, []permissions.Permission{
+		{
+			Action:   permissions.SetBranchProtectionRulesAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	err := c.Catalog.DeleteBranchProtectionRule(ctx, repository, body.Pattern)
+	if handleAPIError(w, err) {
+		return
+	}
+	writeResponse(w, http.StatusNoContent, nil)
+}
+
+func (c *Controller) CreateBranchProtectionRule(w http.ResponseWriter, r *http.Request, body CreateBranchProtectionRuleJSONRequestBody, repository string) {
+	if !c.authorize(w, r, []permissions.Permission{
+		{
+			Action:   permissions.SetBranchProtectionRulesAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	constraints := []string{graveler.StagingBlockedConstraint, graveler.CommitBlockedConstraint}
+	if body.Constraints != nil {
+		constraints = *body.Constraints
+	}
+	err := c.Catalog.CreateBranchProtectionRule(ctx, repository, body.Pattern, &graveler.BranchProtectionConstraints{Value: constraints})
+	if handleAPIError(w, err) {
+		return
+	}
+	writeResponse(w, http.StatusNoContent, nil)
+}
+
 func (c *Controller) GetMetaRange(w http.ResponseWriter, r *http.Request, repository string, metaRange string) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{

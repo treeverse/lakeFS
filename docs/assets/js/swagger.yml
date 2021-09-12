@@ -874,6 +874,17 @@ components:
         - default_retention_days
         - branches
 
+    BranchProtectionRule:
+      type: object
+      properties:
+        pattern:
+          type: string
+        constraints:
+          type: array
+          items:
+            type: string
+      required:
+        - pattern
 paths:
   /setup_lakefs:
     post:
@@ -2966,6 +2977,104 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GarbageCollectionPrepareResponse"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+  /repositories/{repository}/branch_protection:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - repositories
+      operationId: getBranchProtectionRules
+      summary: get branch protection rules
+      responses:
+        200:
+          description: branch protection rules
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BranchProtectionRule"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+    post:
+      tags:
+        - repositories
+      operationId: set branch protection rules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/BranchProtectionRule"
+      responses:
+        204:
+          description: set branch protection rules successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+  /repositories/{repository}/branch_protection/rule:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - repositories
+      operationId: create branch protection rule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BranchProtectionRule"
+      responses:
+        204:
+          description: branch protection rule created successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+    delete:
+      tags:
+        - repositories
+      operationId: delete branch protection rule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pattern:
+                  type: string
+              required:
+                - pattern
+      responses:
+        204:
+          description: branch protection rule deleted successfully
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
