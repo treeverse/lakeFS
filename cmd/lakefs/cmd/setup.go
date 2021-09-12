@@ -57,6 +57,16 @@ var setupCmd = &cobra.Command{
 		cloudMetadataProvider := stats.BuildMetadataProvider(logging.Default(), cfg)
 		metadata := stats.NewMetadata(ctx, logging.Default(), cfg.GetBlockstoreType(), metadataManager, cloudMetadataProvider)
 
+		initialized, err := metadataManager.IsInitialized(ctx)
+		if err != nil {
+			fmt.Printf("Setup failed: %s\n", err)
+			os.Exit(1)
+		}
+		if initialized {
+			fmt.Printf("Setup is already complete.\n")
+			os.Exit(1)
+		}
+
 		credentials, err := auth.CreateInitialAdminUserWithKeys(ctx, authService, metadataManager, userName, &accessKeyID, &secretAccessKey)
 		if err != nil {
 			fmt.Printf("Failed to setup admin user: %s\n", err)
