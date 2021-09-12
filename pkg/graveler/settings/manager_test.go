@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
@@ -19,10 +20,24 @@ import (
 func TestSaveAndGet(t *testing.T) {
 	ctx := context.Background()
 	m := prepareTest(t, ctx)
+	now := time.Now()
+	m.timeGetter = func() time.Time {
+		return now
+	}
 	expectedSettings := &ExampleSettings{ExampleInt: 5, ExampleStr: "hello", ExampleMap: map[string]int32{"boo": 6}}
 	err := m.Save(ctx, "example-repo", "settingKey", expectedSettings)
 	testutil.Must(t, err)
 	gotSettings := &ExampleSettings{}
+	err = m.Get(ctx, "example-repo", "settingKey", gotSettings)
+	testutil.Must(t, err)
+	if diff := deep.Equal(expectedSettings, gotSettings); diff != nil {
+		t.Fatal("got unexpected settings:", diff)
+	}
+	expectedSettings = &ExampleSettings{ExampleInt: 15, ExampleStr: "hi", ExampleMap: map[string]int32{"boo": 16}}
+	err = m.Save(ctx, "example-repo", "settingKey", expectedSettings)
+	testutil.Must(t, err)
+	gotSettings = &ExampleSettings{}
+	now = now.Add(3 * time.Second)
 	err = m.Get(ctx, "example-repo", "settingKey", gotSettings)
 	testutil.Must(t, err)
 	if diff := deep.Equal(expectedSettings, gotSettings); diff != nil {
@@ -82,7 +97,7 @@ func TestStoredSettings(t *testing.T) {
 	testutil.Must(t, err)
 	reader, err := m.blockAdapter.Get(ctx, block.ObjectPointer{
 		StorageNamespace: "mem://my-storage",
-		Identifier:       "/_lakefs/settings/settingKey.json",
+		Identifier:       "_lakefs/settings/settingKey.json",
 		IdentifierType:   block.IdentifierTypeRelative,
 	}, -1)
 	testutil.Must(t, err)
@@ -104,12 +119,7 @@ func prepareTest(t *testing.T, ctx context.Context) *Manager {
 	}
 	blockAdapter := mem.New()
 	branchLock := mock.NewMockBranchLocker(ctrl)
-	m := &Manager{
-		refManager:                  refManager,
-		branchLock:                  branchLock,
-		blockAdapter:                blockAdapter,
-		committedBlockStoragePrefix: "_lakefs",
-	}
+	m := NewManager(refManager, branchLock, blockAdapter, "_lakefs")
 	refManager.EXPECT().GetRepository(ctx, gomock.Eq(graveler.RepositoryID("example-repo"))).AnyTimes().Return(repo, nil)
 	return m
 }
