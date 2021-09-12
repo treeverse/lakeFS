@@ -24,23 +24,31 @@ func TestSaveAndGet(t *testing.T) {
 	m.timeGetter = func() time.Time {
 		return now
 	}
-	expectedSettings := &ExampleSettings{ExampleInt: 5, ExampleStr: "hello", ExampleMap: map[string]int32{"boo": 6}}
-	err := m.Save(ctx, "example-repo", "settingKey", expectedSettings)
+	firstSettings := &ExampleSettings{ExampleInt: 5, ExampleStr: "hello", ExampleMap: map[string]int32{"boo": 6}}
+	err := m.Save(ctx, "example-repo", "settingKey", firstSettings)
 	testutil.Must(t, err)
 	gotSettings := &ExampleSettings{}
 	err = m.Get(ctx, "example-repo", "settingKey", gotSettings)
 	testutil.Must(t, err)
-	if diff := deep.Equal(expectedSettings, gotSettings); diff != nil {
+	if diff := deep.Equal(firstSettings, gotSettings); diff != nil {
 		t.Fatal("got unexpected settings:", diff)
 	}
-	expectedSettings = &ExampleSettings{ExampleInt: 15, ExampleStr: "hi", ExampleMap: map[string]int32{"boo": 16}}
-	err = m.Save(ctx, "example-repo", "settingKey", expectedSettings)
+	secondSettings := &ExampleSettings{ExampleInt: 15, ExampleStr: "hi", ExampleMap: map[string]int32{"boo": 16}}
+	err = m.Save(ctx, "example-repo", "settingKey", secondSettings)
 	testutil.Must(t, err)
+	gotSettings = &ExampleSettings{}
+	// without changing the time, the result should be cached and we should get the first settings:
+	err = m.Get(ctx, "example-repo", "settingKey", gotSettings)
+	testutil.Must(t, err)
+	if diff := deep.Equal(firstSettings, gotSettings); diff != nil {
+		t.Fatal("got unexpected settings:", diff)
+	}
+	// after changing the time, we should get the new settings:
 	gotSettings = &ExampleSettings{}
 	now = now.Add(3 * time.Second)
 	err = m.Get(ctx, "example-repo", "settingKey", gotSettings)
 	testutil.Must(t, err)
-	if diff := deep.Equal(expectedSettings, gotSettings); diff != nil {
+	if diff := deep.Equal(secondSettings, gotSettings); diff != nil {
 		t.Fatal("got unexpected settings:", diff)
 	}
 }
