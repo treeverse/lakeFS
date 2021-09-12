@@ -152,7 +152,7 @@ func (m *Manager) getFromStore(ctx context.Context, repositoryID graveler.Reposi
 }
 
 // UpdateWithLock atomically performs the following sequence:
-// 1. Fetch the setting under the given repository and key, and place it in message.
+// 1. Fetch the setting under the given repository and key, and place it in message (if the setting doesn't exist, message is left as is).
 // 2. Call the given update function (which should presumably update the message).
 // 3. Persist message to the store.
 func (m *Manager) UpdateWithLock(ctx context.Context, repositoryID graveler.RepositoryID, key string, message proto.Message, update func()) error {
@@ -162,13 +162,15 @@ func (m *Manager) UpdateWithLock(ctx context.Context, repositoryID graveler.Repo
 	}
 	_, err = m.branchLock.MetadataUpdater(ctx, repositoryID, repo.DefaultBranchID, func() (interface{}, error) {
 		messageBytes, err := m.getFromStore(ctx, repositoryID, key)
-		if err != nil {
+		if err == nil {
+			err = proto.Unmarshal(messageBytes, message)
+			if err != nil {
+				return nil, err
+			}
+		} else if !errors.Is(err, graveler.ErrNotFound) {
 			return nil, err
 		}
-		err = proto.Unmarshal(messageBytes, message)
-		if err != nil {
-			return nil, err
-		}
+
 		logSetting(logging.FromContext(ctx), repositoryID, key, message)
 		update()
 		err = m.Save(ctx, repositoryID, key, message)

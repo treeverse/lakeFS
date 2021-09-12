@@ -113,6 +113,31 @@ func TestStoredSettings(t *testing.T) {
 		t.Fatal("got unexpected settings:", diff)
 	}
 }
+func TestEmpty(t *testing.T) {
+	ctx := context.Background()
+	m := prepareTest(t, ctx)
+	gotSettings := &ExampleSettings{
+		ExampleMap: make(map[string]int32),
+	}
+	err := m.Get(ctx, "example-repo", "settingKey", gotSettings)
+	if err != graveler.ErrNotFound {
+		t.Fatalf("expected error %v, got %v", graveler.ErrNotFound, err)
+	}
+	mockBranchLocker := m.branchLock.(*mock.MockBranchLocker)
+	mockBranchLocker.EXPECT().MetadataUpdater(ctx, gomock.Eq(graveler.RepositoryID("example-repo")), graveler.BranchID("main"), gomock.Any()).DoAndReturn(func(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID, f func() (interface{}, error)) (interface{}, error) {
+		return f()
+	})
+	err = m.UpdateWithLock(ctx, "example-repo", "settingKey", gotSettings, func() {
+		gotSettings.ExampleInt++
+		gotSettings.ExampleMap["boo"]++
+	})
+	testutil.Must(t, err)
+	expectedSettings := &ExampleSettings{ExampleInt: 1, ExampleMap: map[string]int32{"boo": 1}}
+	if diff := deep.Equal(expectedSettings, gotSettings); diff != nil {
+		t.Fatal("got unexpected settings:", diff)
+	}
+
+}
 
 func prepareTest(t *testing.T, ctx context.Context) *Manager {
 	ctrl := gomock.NewController(t)
