@@ -20,10 +20,6 @@ import (
 func TestSaveAndGet(t *testing.T) {
 	ctx := context.Background()
 	m := prepareTest(t, ctx)
-	now := time.Now()
-	m.timeGetter = func() time.Time {
-		return now
-	}
 	firstSettings := &ExampleSettings{ExampleInt: 5, ExampleStr: "hello", ExampleMap: map[string]int32{"boo": 6}}
 	err := m.Save(ctx, "example-repo", "settingKey", firstSettings)
 	testutil.Must(t, err)
@@ -37,15 +33,15 @@ func TestSaveAndGet(t *testing.T) {
 	err = m.Save(ctx, "example-repo", "settingKey", secondSettings)
 	testutil.Must(t, err)
 	gotSettings = &ExampleSettings{}
-	// without changing the time, the result should be cached and we should get the first settings:
+	// the result should be cached and we should get the first settings:
 	err = m.Get(ctx, "example-repo", "settingKey", gotSettings)
 	testutil.Must(t, err)
 	if diff := deep.Equal(firstSettings, gotSettings); diff != nil {
 		t.Fatal("got unexpected settings:", diff)
 	}
-	// after changing the time, we should get the new settings:
+	// after sleeping, we should get the new settings:
 	gotSettings = &ExampleSettings{}
-	now = now.Add(3 * time.Second)
+	time.Sleep(50 * time.Millisecond)
 	err = m.Get(ctx, "example-repo", "settingKey", gotSettings)
 	testutil.Must(t, err)
 	if diff := deep.Equal(secondSettings, gotSettings); diff != nil {
@@ -127,7 +123,7 @@ func prepareTest(t *testing.T, ctx context.Context) *Manager {
 	}
 	blockAdapter := mem.New()
 	branchLock := mock.NewMockBranchLocker(ctrl)
-	m := NewManager(refManager, branchLock, blockAdapter, "_lakefs")
+	m := NewManager(refManager, branchLock, blockAdapter, "_lakefs", WithCacheExpiry(50*time.Millisecond))
 	refManager.EXPECT().GetRepository(ctx, gomock.Eq(graveler.RepositoryID("example-repo"))).AnyTimes().Return(repo, nil)
 	return m
 }
