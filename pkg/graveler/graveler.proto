@@ -37,8 +37,3 @@ message GarbageCollectionRunMetadata {
   string Commits_csv_location = 2;
   string Address_location = 3;
 }
-
-message BranchProtectionRule {
-  string branch_name_pattern = 1;
-  repeated string constraints = 2;
-}
