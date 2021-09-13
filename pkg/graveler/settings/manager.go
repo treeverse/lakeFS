@@ -9,10 +9,9 @@ import (
 	"io"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/cache"
-
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/adapter"
+	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -45,6 +44,7 @@ type ManagerOption func(m *Manager)
 func WithCacheExpiry(expiry time.Duration) ManagerOption {
 	return func(m *Manager) {
 		m.cache.SetExpiry(expiry)
+		m.cache.SetJitterFn(cache.NewJitterFn(expiry))
 	}
 }
 
@@ -54,9 +54,7 @@ func NewManager(refManager graveler.RefManager, branchLock graveler.BranchLocker
 		branchLock:                  branchLock,
 		blockAdapter:                blockAdapter,
 		committedBlockStoragePrefix: committedBlockStoragePrefix,
-		cache: cache.NewCache(cacheSize, defaultCacheExpiry, func() time.Duration {
-			return 0
-		}),
+		cache:                       cache.NewCache(cacheSize, defaultCacheExpiry, cache.NewJitterFn(defaultCacheExpiry)),
 	}
 	for _, o := range options {
 		o(m)
@@ -96,26 +94,27 @@ func (m *Manager) Save(ctx context.Context, repositoryID graveler.RepositoryID, 
 // Get fetches the setting under the given repository and key.
 // The result is placed in message.
 // The result is eventually consistent: it is not guaranteed to be the most up-to-date setting. The cache expiry period is 1 second.
-func (m *Manager) Get(ctx context.Context, repositoryID graveler.RepositoryID, key string, message proto.Message) error {
+func (m *Manager) Get(ctx context.Context, repositoryID graveler.RepositoryID, key string, emptyMessage proto.Message) (proto.Message, error) {
 	qualifiedKey, err := json.Marshal(cacheKey{
 		RepositoryID: repositoryID,
 		Key:          key,
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 	messageBytes, err := m.cache.GetOrSet(string(qualifiedKey), func() (v interface{}, err error) {
 		return m.getFromStore(ctx, repositoryID, key)
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
+	message := proto.Clone(emptyMessage)
 	err = proto.Unmarshal(messageBytes.([]byte), message)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	logSetting(logging.FromContext(ctx), repositoryID, key, message)
-	return nil
+	return message, nil
 }
 
 func logSetting(logger logging.Logger, repositoryID graveler.RepositoryID, key string, message proto.Message) {
@@ -155,12 +154,13 @@ func (m *Manager) getFromStore(ctx context.Context, repositoryID graveler.Reposi
 // 1. Fetch the setting under the given repository and key, and place it in message (if the setting doesn't exist, message is left as is).
 // 2. Call the given update function (which should presumably update the message).
 // 3. Persist message to the store.
-func (m *Manager) UpdateWithLock(ctx context.Context, repositoryID graveler.RepositoryID, key string, message proto.Message, update func()) error {
+func (m *Manager) UpdateWithLock(ctx context.Context, repositoryID graveler.RepositoryID, key string, emptyMessage proto.Message, update func(message proto.Message)) error {
 	repo, err := m.refManager.GetRepository(ctx, repositoryID)
 	if err != nil {
 		return err
 	}
 	_, err = m.branchLock.MetadataUpdater(ctx, repositoryID, repo.DefaultBranchID, func() (interface{}, error) {
+		message := proto.Clone(emptyMessage)
 		messageBytes, err := m.getFromStore(ctx, repositoryID, key)
 		if err == nil {
 			err = proto.Unmarshal(messageBytes, message)
@@ -172,7 +172,7 @@ func (m *Manager) UpdateWithLock(ctx context.Context, repositoryID graveler.Repo
 		}
 
 		logSetting(logging.FromContext(ctx), repositoryID, key, message)
-		update()
+		update(message)
 		err = m.Save(ctx, repositoryID, key, message)
 		if err != nil {
 			return nil, err
