@@ -277,6 +277,7 @@ func (ctx *verificationCtx) getAmzDate() (string, error) {
 	// parse signature date
 	sigTS, err := time.Parse(v4shortTimeFormat, ctx.AuthValue.Date)
 	if err != nil {
+		fmt.Printf("[DEBUG] failed to parse auth-date %s by %s: %s\n", ctx.AuthValue.Date, v4shortTimeFormat, err)
 		return "", errors.ErrMalformedCredentialDate
 	}
 

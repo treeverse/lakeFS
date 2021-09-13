@@ -8,11 +8,11 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"unicode/utf8"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/spf13/viper"
+	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
 var sigs = []struct {
@@ -27,34 +27,6 @@ const (
 	numUploads           = 100
 	randomDataPathLength = 1020
 )
-
-// randomRune returns a random Unicode rune from rand, weighting at least
-// num out of den runes to be ASCII.
-func randomRune(rand *rand.Rand, num, den int) rune {
-	if rand.Intn(den) < num {
-		return rune(rand.Intn(utf8.RuneSelf))
-	}
-	for {
-		r := rune(rand.Intn(utf8.MaxRune))
-		// Almost all chars are legal, so this usually
-		// returns immediately.
-		if utf8.ValidRune(r) {
-			return r
-		}
-	}
-}
-
-// randomString returns a random UTF-8 string of size or almost size bytes
-// from rand.  It is weighted towards using many ASCII characters.
-func randomString(rand *rand.Rand, size int) string {
-	sb := strings.Builder{}
-	for sb.Len() <= size {
-		sb.WriteRune(randomRune(rand, 2, 5))
-	}
-	ret := sb.String()
-	_, lastRuneSize := utf8.DecodeLastRuneInString(ret)
-	return ret[0 : len(ret)-lastRuneSize]
-}
 
 func TestS3UploadAndDownload(t *testing.T) {
 	const parallelism = 10
@@ -120,10 +92,10 @@ func TestS3UploadAndDownload(t *testing.T) {
 
 			for i := 0; i < numUploads; i++ {
 				objects <- Object{
-					Content: randomString(rand, randomDataContentLength),
+					Content: testutil.RandomString(rand, randomDataContentLength),
 					// lakeFS supports _any_ path, even if its
 					// byte sequence is not legal UTF-8 string.
-					Path: "main/data/" + randomString(rand, randomDataPathLength),
+					Path: "main/data/" + testutil.RandomString(rand, randomDataPathLength),
 				}
 			}
 			wg.Wait()
