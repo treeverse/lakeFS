@@ -102,19 +102,20 @@ func (m *Manager) Get(ctx context.Context, repositoryID graveler.RepositoryID, k
 	if err != nil {
 		return nil, err
 	}
-	messageBytes, err := m.cache.GetOrSet(string(qualifiedKey), func() (v interface{}, err error) {
-		return m.getFromStore(ctx, repositoryID, key)
+	message, err := m.cache.GetOrSet(string(qualifiedKey), func() (v interface{}, err error) {
+		messageBytes, err := m.getFromStore(ctx, repositoryID, key)
+		if err != nil {
+			return nil, err
+		}
+		message := proto.Clone(emptyMessage)
+		err = proto.Unmarshal(messageBytes, message)
+		return message, nil
 	})
 	if err != nil {
 		return nil, err
 	}
-	message := proto.Clone(emptyMessage)
-	err = proto.Unmarshal(messageBytes.([]byte), message)
-	if err != nil {
-		return nil, err
-	}
-	logSetting(logging.FromContext(ctx), repositoryID, key, message)
-	return message, nil
+	logSetting(logging.FromContext(ctx), repositoryID, key, message.(proto.Message))
+	return message.(proto.Message), nil
 }
 
 func logSetting(logger logging.Logger, repositoryID graveler.RepositoryID, key string, message proto.Message) {
