@@ -58,6 +58,7 @@ require (
 	github.com/magiconair/properties v1.8.4 // indirect
 	github.com/manifoldco/promptui v0.8.0
 	github.com/matoous/go-nanoid/v2 v2.0.0
+	github.com/minio/minio-go/v7 v7.0.13 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/ory/dockertest/v3 v3.6.3
