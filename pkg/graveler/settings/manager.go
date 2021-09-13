@@ -110,18 +110,8 @@ func (m *Manager) Get(ctx context.Context, repositoryID graveler.RepositoryID, k
 	if err != nil {
 		return nil, err
 	}
-	logSetting(logging.FromContext(ctx), repositoryID, key, message.(proto.Message))
+	logFetchedSetting(logging.FromContext(ctx), repositoryID, key, message.(proto.Message))
 	return message.(proto.Message), nil
-}
-
-func logSetting(logger logging.Logger, repositoryID graveler.RepositoryID, key string, message proto.Message) {
-	if logger.IsTracing() {
-		logger.
-			WithField("repo", repositoryID).
-			WithField("key", key).
-			WithField("setting", protojson.Format(message)).
-			Trace("got repository-level setting")
-	}
 }
 
 func (m *Manager) getFromStore(ctx context.Context, repositoryID graveler.RepositoryID, key string) ([]byte, error) {
@@ -164,7 +154,7 @@ func (m *Manager) UpdateWithLock(ctx context.Context, repositoryID graveler.Repo
 		} else if !errors.Is(err, graveler.ErrNotFound) {
 			return nil, err
 		}
-		logSetting(logging.FromContext(ctx), repositoryID, key, message)
+		logFetchedSetting(logging.FromContext(ctx), repositoryID, key, message)
 		update(message)
 		err = m.Save(ctx, repositoryID, key, message)
 		if err != nil {
@@ -173,4 +163,14 @@ func (m *Manager) UpdateWithLock(ctx context.Context, repositoryID graveler.Repo
 		return nil, nil
 	})
 	return err
+}
+
+func logFetchedSetting(logger logging.Logger, repositoryID graveler.RepositoryID, key string, message proto.Message) {
+	if logger.IsTracing() {
+		logger.
+			WithField("repo", repositoryID).
+			WithField("key", key).
+			WithField("setting", protojson.Format(message)).
+			Trace("got repository-level setting")
+	}
 }

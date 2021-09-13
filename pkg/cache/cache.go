@@ -23,6 +23,7 @@ type GetSetCache struct {
 	baseExpiry   time.Duration
 }
 
+// SetExpiry changes the base expiration period for all future inserts to the cache.
 func (c *GetSetCache) SetExpiry(baseExpiry time.Duration) {
 	c.baseExpiry = baseExpiry
 }
