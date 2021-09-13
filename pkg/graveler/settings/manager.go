@@ -105,6 +105,9 @@ func (m *Manager) Get(ctx context.Context, repositoryID graveler.RepositoryID, k
 		}
 		message := proto.Clone(emptyMessage)
 		err = proto.Unmarshal(messageBytes, message)
+		if err != nil {
+			return nil, err
+		}
 		return message, nil
 	})
 	if err != nil {
