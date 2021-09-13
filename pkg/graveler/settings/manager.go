@@ -3,7 +3,6 @@ package settings
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -95,14 +94,11 @@ func (m *Manager) Save(ctx context.Context, repositoryID graveler.RepositoryID, 
 // Get fetches the setting under the given repository and key, and returns the result.
 // The result is eventually consistent: it is not guaranteed to be the most up-to-date setting. The cache expiry period is 1 second.
 func (m *Manager) Get(ctx context.Context, repositoryID graveler.RepositoryID, key string, emptyMessage proto.Message) (proto.Message, error) {
-	qualifiedKey, err := json.Marshal(cacheKey{
+	k := cacheKey{
 		RepositoryID: repositoryID,
 		Key:          key,
-	})
-	if err != nil {
-		return nil, err
 	}
-	message, err := m.cache.GetOrSet(string(qualifiedKey), func() (v interface{}, err error) {
+	message, err := m.cache.GetOrSet(k, func() (v interface{}, err error) {
 		messageBytes, err := m.getFromStore(ctx, repositoryID, key)
 		if err != nil {
 			return nil, err
