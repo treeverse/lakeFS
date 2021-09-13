@@ -30,7 +30,8 @@ type cacheKey struct {
 }
 
 // Manager is a key-value store for Graveler repository-level settings.
-// Each setting is stored under a key, and it can be any proto.Message.
+// Each setting is stored under a key, and can be any proto.Message.
+// Fetched settings are cached using cache.Cache with a default expiry time of 1 second. Hence, the store is eventually consistent.
 type Manager struct {
 	refManager                  graveler.RefManager
 	branchLock                  graveler.BranchLocker
@@ -91,8 +92,7 @@ func (m *Manager) Save(ctx context.Context, repositoryID graveler.RepositoryID, 
 	return nil
 }
 
-// Get fetches the setting under the given repository and key.
-// The result is placed in message.
+// Get fetches the setting under the given repository and key, and returns the result.
 // The result is eventually consistent: it is not guaranteed to be the most up-to-date setting. The cache expiry period is 1 second.
 func (m *Manager) Get(ctx context.Context, repositoryID graveler.RepositoryID, key string, emptyMessage proto.Message) (proto.Message, error) {
 	qualifiedKey, err := json.Marshal(cacheKey{
@@ -150,10 +150,7 @@ func (m *Manager) getFromStore(ctx context.Context, repositoryID graveler.Reposi
 	return io.ReadAll(reader)
 }
 
-// UpdateWithLock atomically performs the following sequence:
-// 1. Fetch the setting under the given repository and key, and place it in message (if the setting doesn't exist, message is left as is).
-// 2. Call the given update function (which should presumably update the message).
-// 3. Persist message to the store.
+// UpdateWithLock atomically gets a setting, performs the update function, and persists the setting to the store.
 func (m *Manager) UpdateWithLock(ctx context.Context, repositoryID graveler.RepositoryID, key string, emptyMessage proto.Message, update func(message proto.Message)) error {
 	repo, err := m.refManager.GetRepository(ctx, repositoryID)
 	if err != nil {
@@ -170,7 +167,6 @@ func (m *Manager) UpdateWithLock(ctx context.Context, repositoryID graveler.Repo
 		} else if !errors.Is(err, graveler.ErrNotFound) {
 			return nil, err
 		}
-
 		logSetting(logging.FromContext(ctx), repositoryID, key, message)
 		update(message)
 		err = m.Save(ctx, repositoryID, key, message)
