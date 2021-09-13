@@ -42,6 +42,7 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
         setFormValid(isBranchValid && storageNamespaceValid && repoValid);
     };
 
+    const storageType = config.blockstore_type
     const storageNamespaceValidityRegexStr = config ? config.blockstore_namespace_ValidityRegex : DEFAULT_BLOCKSTORE_VALIDITY_REGEX;
     const storageNamespaceValidityRegex = RegExp(storageNamespaceValidityRegexStr);
     const storageNamespaceExample = config ? config.blockstore_namespace_example : DEFAULT_BLOCKSTORE_EXAMPLE;
@@ -77,7 +78,7 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
                     <Form.Control type="text" ref={storageNamespaceField} placeholder={storageNamespaceExample} onChange={checkStorageNamespaceValidity}/>
                     {!storageNamespaceValid &&
                     <Form.Text className="text-danger">
-                        Invalid Storage Namespace.
+                        {"Can only create repository with storage type: " + storageType}
                     </Form.Text>
                     }
                 </Col>
