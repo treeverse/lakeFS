@@ -651,7 +651,7 @@ class Setup {
             case 200:
                 return response.json();
             case 409:
-                throw new Error('Conflict');
+                throw new Error('Setup is already complete.');
             default:
                 throw new Error('Unknown');
         }
