@@ -18,9 +18,9 @@ import (
 )
 
 const (
-	settingsSuffixTemplate = "%s/settings/%s.json"
-	cacheSize              = 100_000
-	defaultCacheExpiry     = 1 * time.Second
+	settingsRelativeKey = "%s/settings/%s.json" // where the settings are saved relative to the storage namespace
+	cacheSize           = 100_000
+	defaultCacheExpiry  = 1 * time.Second
 )
 
 type cacheKey struct {
@@ -74,25 +74,19 @@ func (m *Manager) Save(ctx context.Context, repositoryID graveler.RepositoryID, 
 	}
 	err = m.blockAdapter.Put(ctx, block.ObjectPointer{
 		StorageNamespace: string(repo.StorageNamespace),
-		Identifier:       fmt.Sprintf(settingsSuffixTemplate, m.committedBlockStoragePrefix, key),
+		Identifier:       fmt.Sprintf(settingsRelativeKey, m.committedBlockStoragePrefix, key),
 		IdentifierType:   block.IdentifierTypeRelative,
 	}, int64(len(messageBytes)), bytes.NewReader(messageBytes), block.PutOpts{})
 	if err != nil {
 		return err
 	}
-	logger := logging.FromContext(ctx)
-	if logger.IsTracing() {
-		logger.
-			WithField("repo", repositoryID).
-			WithField("key", key).
-			WithField("setting", protojson.Format(message)).
-			Trace("saving repository-level setting")
-	}
+	logSetting(logging.FromContext(ctx), repositoryID, key, message, "saving repository-level setting")
 	return nil
 }
 
 // Get fetches the setting under the given repository and key, and returns the result.
 // The result is eventually consistent: it is not guaranteed to be the most up-to-date setting. The cache expiry period is 1 second.
+// The emptyMessage parameter is used to determine the returned type.
 func (m *Manager) Get(ctx context.Context, repositoryID graveler.RepositoryID, key string, emptyMessage proto.Message) (proto.Message, error) {
 	k := cacheKey{
 		RepositoryID: repositoryID,
@@ -113,7 +107,7 @@ func (m *Manager) Get(ctx context.Context, repositoryID graveler.RepositoryID, k
 	if err != nil {
 		return nil, err
 	}
-	logFetchedSetting(logging.FromContext(ctx), repositoryID, key, message.(proto.Message))
+	logSetting(logging.FromContext(ctx), repositoryID, key, message.(proto.Message), "got repository-level setting")
 	return message.(proto.Message), nil
 }
 
@@ -124,7 +118,7 @@ func (m *Manager) getFromStore(ctx context.Context, repositoryID graveler.Reposi
 	}
 	objectPointer := block.ObjectPointer{
 		StorageNamespace: string(repo.StorageNamespace),
-		Identifier:       fmt.Sprintf(settingsSuffixTemplate, m.committedBlockStoragePrefix, key),
+		Identifier:       fmt.Sprintf(settingsRelativeKey, m.committedBlockStoragePrefix, key),
 		IdentifierType:   block.IdentifierTypeRelative,
 	}
 	reader, err := m.blockAdapter.Get(ctx, objectPointer, -1)
@@ -141,6 +135,7 @@ func (m *Manager) getFromStore(ctx context.Context, repositoryID graveler.Reposi
 }
 
 // UpdateWithLock atomically gets a setting, performs the update function, and persists the setting to the store.
+// The emptyMessage parameter is used to determine the type passed to the update function.
 func (m *Manager) UpdateWithLock(ctx context.Context, repositoryID graveler.RepositoryID, key string, emptyMessage proto.Message, update func(message proto.Message)) error {
 	repo, err := m.refManager.GetRepository(ctx, repositoryID)
 	if err != nil {
@@ -157,7 +152,7 @@ func (m *Manager) UpdateWithLock(ctx context.Context, repositoryID graveler.Repo
 		} else if !errors.Is(err, graveler.ErrNotFound) {
 			return nil, err
 		}
-		logFetchedSetting(logging.FromContext(ctx), repositoryID, key, message)
+		logSetting(logging.FromContext(ctx), repositoryID, key, message, "got repository-level setting")
 		update(message)
 		err = m.Save(ctx, repositoryID, key, message)
 		if err != nil {
@@ -168,12 +163,12 @@ func (m *Manager) UpdateWithLock(ctx context.Context, repositoryID graveler.Repo
 	return err
 }
 
-func logFetchedSetting(logger logging.Logger, repositoryID graveler.RepositoryID, key string, message proto.Message) {
+func logSetting(logger logging.Logger, repositoryID graveler.RepositoryID, key string, protoMessage proto.Message, logMsg string) {
 	if logger.IsTracing() {
 		logger.
 			WithField("repo", repositoryID).
 			WithField("key", key).
-			WithField("setting", protojson.Format(message)).
-			Trace("got repository-level setting")
+			WithField("setting", protojson.Format(protoMessage)).
+			Trace(logMsg)
 	}
 }
