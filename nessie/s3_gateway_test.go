@@ -45,13 +45,6 @@ func TestS3UploadAndDownload(t *testing.T) {
 			rand := rand.New(rand.NewSource(17))
 
 			creds := sig.GetCredentials(accessKeyID, secretAccessKey, "")
-			client, err := minio.New(endpoint, &minio.Options{
-				Creds:  creds,
-				Secure: false,
-			})
-			if err != nil {
-				t.Error(fmt.Sprintf("minio.New: %s", err))
-			}
 
 			type Object struct {
 				Path, Content string
@@ -65,6 +58,14 @@ func TestS3UploadAndDownload(t *testing.T) {
 			for i := 0; i < parallelism; i++ {
 				wg.Add(1)
 				go func() {
+					client, err := minio.New(endpoint, &minio.Options{
+						Creds:  creds,
+						Secure: false,
+					})
+					if err != nil {
+						t.Error(fmt.Sprintf("minio.New: %s", err))
+					}
+
 					for o := range objects {
 						_, err := client.PutObject(
 							ctx, repo, o.Path, strings.NewReader(o.Content), int64(len(o.Content)), opts)
@@ -99,6 +100,7 @@ func TestS3UploadAndDownload(t *testing.T) {
 					Path: prefix + testutil.RandomString(rand, randomDataPathLength-len(prefix)),
 				}
 			}
+			close(objects)
 			wg.Wait()
 		})
 	}
