@@ -1119,8 +1119,8 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		writeError(w, http.StatusBadRequest, "error creating repository: storage type is not valid.")
 		return
 	}
-	if relStorageType:= c.BlockAdapter.BlockstoreType(); relStorageType != storageType.BlockstoreType(){
-		writeError(w, http.StatusBadRequest, "error creating repository: can only create repository with storage type: " + relStorageType)
+	if relStorageType := c.BlockAdapter.BlockstoreType(); relStorageType != storageType.BlockstoreType() {
+		writeError(w, http.StatusBadRequest, "error creating repository: can only create repository with storage type: "+relStorageType)
 		return
 	}
 
