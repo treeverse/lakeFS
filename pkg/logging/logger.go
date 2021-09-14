@@ -235,8 +235,8 @@ func (l *logrusEntryWrapper) Panicf(format string, args ...interface{}) {
 	l.e.Panicf(format, args...)
 }
 
-func (*logrusEntryWrapper) IsTracing() bool {
-	return logrus.IsLevelEnabled(logrus.TraceLevel)
+func (l *logrusEntryWrapper) IsTracing() bool {
+	return l.e.Logger.Level >= logrus.TraceLevel
 }
 
 type logrusCallerFormatter struct {
