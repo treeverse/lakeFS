@@ -25,6 +25,16 @@ CREATE OR REPLACE FUNCTION pg_temp.jsonb_string(j JSONB) RETURNS TEXT LANGUAGE s
     SELECT j ->> 0
 $$;
 
+-- statement_has_action returns T if statement (of the JSON type stored in
+-- auth_policies) mentions action.
+CREATE OR REPLACE FUNCTION pg_temp.statement_has_action(statement JSONB, action VARCHAR)
+RETURNS BOOLEAN LANGUAGE sql IMMUTABLE AS $$
+    SELECT action IN (
+        SELECT jsonb_array_elements_text(value->'Action')
+	FROM jsonb_array_elements(statement)
+    );
+$$;
+
 UPDATE auth_policies
 SET statement = statement || '[{"Action": ["fs:AttachStorageNamespace"], "Effect": "allow", "Resource": "*"}]'::jsonb
 WHERE id IN (
@@ -36,7 +46,7 @@ WHERE id IN (
 	    -- AttachStorageNamespace.  So downgrade can do nothing, and
 	    -- re-upgrading will not re-add an existing statement or harm
 	    -- pre-existing policies.
-	    WHERE NOT jsonb_path_exists(statement, 'strict $[*].Action[*] ? (@ == "fs:AttachStorageNamespace")')
+	    WHERE NOT pg_temp.statement_has_action(statement, 'fs:AttachStorageNamespace')
 	) y
     ) x
     WHERE effect = 'allow' AND pg_temp.wild_stars(pg_temp.jsonb_string(action), 'fs:CreateRepository')
