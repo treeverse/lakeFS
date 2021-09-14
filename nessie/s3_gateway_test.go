@@ -26,6 +26,7 @@ var sigs = []struct {
 const (
 	numUploads           = 100
 	randomDataPathLength = 1020
+	prefix               = "main/data/"
 )
 
 func TestS3UploadAndDownload(t *testing.T) {
@@ -95,7 +96,7 @@ func TestS3UploadAndDownload(t *testing.T) {
 					Content: testutil.RandomString(rand, randomDataContentLength),
 					// lakeFS supports _any_ path, even if its
 					// byte sequence is not legal UTF-8 string.
-					Path: "main/data/" + testutil.RandomString(rand, randomDataPathLength),
+					Path: prefix + testutil.RandomString(rand, randomDataPathLength-len(prefix)),
 				}
 			}
 			wg.Wait()
