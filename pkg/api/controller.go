@@ -1072,6 +1072,11 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 			Action:   permissions.CreateRepositoryAction,
 			Resource: permissions.RepoArn(body.Name),
 		},
+	}) || !c.authorize(w, r, []permissions.Permission{
+		{
+			Action:   permissions.AttachStorageNamespace,
+			Resource: permissions.StorageNamespace(body.StorageNamespace),
+		},
 	}) {
 		return
 	}
