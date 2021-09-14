@@ -146,9 +146,15 @@ var signatures = []SignCase{
 		Verifier: MakeV2Verifier(keyID, secretKey, domain),
 		Style:    "path",
 	}, {
-		Name:     "V4",
+		Name:     "V4Host",
 		Signer:   MakeV4Signer(keyID, secretKey, location),
 		Verifier: MakeV4Verifier(keyID, secretKey, domain),
+		Style:    "host",
+	}, {
+		Name:     "V4Path",
+		Signer:   MakeV4Signer(keyID, secretKey, location),
+		Verifier: MakeV4Verifier(keyID, secretKey, domain),
+		Style:    "path",
 	},
 }
 
