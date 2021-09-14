@@ -115,6 +115,7 @@ For the full list of actions and their required permissions see the following ta
 |Create Commit                     |`fs:CreateCommit`                          |`arn:lakefs:fs:::repository/{repositoryId}/branch/{branchId}`           |POST /repositories/{repositoryId}/branches/{branchId}/commits                      |-                                                                    |
 |Get Commit log                    |`fs:ReadBranch`                            |`arn:lakefs:fs:::repository/{repositoryId}/branch/{branchId}`           |GET /repositories/{repositoryId}/branches/{branchId}/commits                       |-                                                                    |
 |Create Repository                 |`fs:CreateRepository`                      |`arn:lakefs:fs:::repository/{repositoryId}`                             |POST /repositories                                                                 |-                                                                    |
+| Namespace Attach to Repository   |`fs:AttachStorageNamespace`                |`arn:lakefs:fs:::namespace/{storageNamespace}`                          |POST /repositories                                                                 |-                                                                    |
 |Delete Repository                 |`fs:DeleteRepository`                      |`arn:lakefs:fs:::repository/{repositoryId}`                             |DELETE /repositories/{repositoryId}                                                |-                                                                    |
 |List Branches                     |`fs:ListBranches`                          |`arn:lakefs:fs:::repository/{repositoryId}`                             |GET /repositories/{repositoryId}/branches                                          |ListObjects/ListObjectsV2 (with delimiter = `/` and empty prefix)    |
 |Get Branch                        |`fs:ReadBranch`                            |`arn:lakefs:fs:::repository/{repositoryId}/branch/{branchId}`           |GET /repositories/{repositoryId}/branches/{branchId}                               |-                                                                    |
@@ -160,6 +161,11 @@ For the full list of actions and their required permissions see the following ta
 |Get Garbage Collection Rules      |`retention:GetGarbageCollectionRules`      |`arn:lakefs:fs:::repository/{repositoryId}`                             |GET /repositories/{repositoryId}/gc/rules                                          |-                                                                    |
 |Set Garbage Collection Rules      |`retention:SetGarbageCollectionRules`      |`arn:lakefs:fs:::repository/{repositoryId}`                             |POST /repositories/{repositoryId}/gc/rules                                         |-                                                                    |
 |Prepare Garbage Collection Commits|`retention:PrepareGarbageCollectionCommits`|`arn:lakefs:fs:::repository/{repositoryId}`                             |POST /repositories/{repositoryId}/gc/prepare_commits                               |-                                                                    |
+
+Some APIs may require more than one action.  For instance, in order to
+create a repository (`POST /repositories`) you need permission to
+`fs:CreateRepository` for the _name_ of the repository and also
+`fs:AttachStorageNamespace` for the _storage namespace_ used.
 
 ### Preconfigured Policies
 
