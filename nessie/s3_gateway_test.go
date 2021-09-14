@@ -2,7 +2,6 @@ package nessie
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"math/rand"
 	"strings"
@@ -56,36 +55,36 @@ func TestS3UploadAndDownload(t *testing.T) {
 			)
 
 			for i := 0; i < parallelism; i++ {
+				client, err := minio.New(endpoint, &minio.Options{
+					Creds:  creds,
+					Secure: false,
+				})
+				if err != nil {
+					t.Fatalf("minio.New: %s", err)
+				}
+
 				wg.Add(1)
 				go func() {
-					client, err := minio.New(endpoint, &minio.Options{
-						Creds:  creds,
-						Secure: false,
-					})
-					if err != nil {
-						t.Error(fmt.Sprintf("minio.New: %s", err))
-					}
-
 					for o := range objects {
 						_, err := client.PutObject(
 							ctx, repo, o.Path, strings.NewReader(o.Content), int64(len(o.Content)), opts)
 						if err != nil {
-							t.Error(fmt.Sprintf("minio.Client.PutObject(%s): %s", o.Path, err))
+							t.Errorf("minio.Client.PutObject(%s): %s", o.Path, err)
 						}
 
 						download, err := client.GetObject(
 							ctx, repo, o.Path, minio.GetObjectOptions{})
 						if err != nil {
-							t.Error(fmt.Sprintf("minio.Client.GetObject(%s): %s", o.Path, err))
+							t.Errorf("minio.Client.GetObject(%s): %s", o.Path, err)
 						}
 						contents := bytes.NewBuffer(nil)
 						_, err = io.Copy(contents, download)
 						if err != nil {
-							t.Errorf(fmt.Sprintf("download %s: %s", o.Path, err))
+							t.Errorf("download %s: %s", o.Path, err)
 						}
 						if strings.Compare(contents.String(), o.Content) != 0 {
-							t.Error(fmt.Sprintf(
-								"Downloaded bytes %v from uploaded bytes %v", contents.Bytes(), o.Content))
+							t.Errorf(
+								"Downloaded bytes %v from uploaded bytes %v", contents.Bytes(), o.Content)
 						}
 					}
 					wg.Done()
