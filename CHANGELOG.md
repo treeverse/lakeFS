@@ -3,9 +3,12 @@
 
 ## Unreleased - XXXX-XX-XX
 
+## v0.51.0 - 2021-09-19
+  
 - Add new "AttachStorageNamespace" IAM action.  Controls users' ability to
   create repositories with particular storage namespaces (bucket names).
   (#2220)
+- Fix path encoding when checking sigV2 signatures in the S3 gateway.
 
 ## v0.50.0 - 2021-09-05
 
