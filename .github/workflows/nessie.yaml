@@ -138,13 +138,13 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Pull last built docker image cache
         run: |
-          docker pull ghcr.io/${GITHUB_REPOSITORY,,}/build-cache:${{ steps.version.outputs.tag }} || \
-          docker pull ghcr.io/${GITHUB_REPOSITORY,,}/build-cache || \
+          docker pull ghcr.io/${GITHUB_REPOSITORY,,}/build-cache-2:${{ steps.version.outputs.tag }} || \
+          docker pull ghcr.io/${GITHUB_REPOSITORY,,}/build-cache-2 || \
           true
       - name: Build Docker image with cache and push
         run: |
           set -ex
-          ghr=ghcr.io/${GITHUB_REPOSITORY,,}/build-cache
+          ghr=ghcr.io/${GITHUB_REPOSITORY,,}/build-cache-2
           ghr_build_tag="-t ${ghr}:${{ steps.version.outputs.tag }}"
           if [[ -n $GITHUB_REF ]]; then
               ghr_ref_tag="-t ${ghr}:${GITHUB_REF##*/}"
