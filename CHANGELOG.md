@@ -3,6 +3,10 @@
 
 ## Unreleased - XXXX-XX-XX
 
+- Add new "AttachStorageNamespace" IAM action.  Controls users' ability to
+  create repositories with particular storage namespaces (bucket names).
+  (#2220)
+
 ## v0.50.0 - 2021-09-05
 
 - Fix double slash bug in storage namespace (#2397)
