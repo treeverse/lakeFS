@@ -144,9 +144,9 @@ func TestEmpty(t *testing.T) {
 	mockBranchLocker.EXPECT().MetadataUpdater(ctx, gomock.Eq(graveler.RepositoryID("example-repo")), graveler.BranchID("main"), gomock.Any()).DoAndReturn(func(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID, f func() (interface{}, error)) (interface{}, error) {
 		return f()
 	})
-	// when using UpdateWithLock on an unset key, the update function gets an empty message object to operate on
-	err = m.UpdateWithLock(ctx, "example-repo", "settingKey", emptySettings, func(message proto.Message) {
-		settings := message.(*ExampleSettings)
+	// when using UpdateWithLock on an unset key, the update function gets an empty setting object to operate on
+	err = m.UpdateWithLock(ctx, "example-repo", "settingKey", emptySettings, func(setting proto.Message) {
+		settings := setting.(*ExampleSettings)
 		if settings.ExampleMap == nil {
 			settings.ExampleMap = make(map[string]int32)
 		}
