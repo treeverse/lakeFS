@@ -41,10 +41,9 @@ type Manager struct {
 
 type ManagerOption func(m *Manager)
 
-func WithCacheExpiry(expiry time.Duration) ManagerOption {
+func WithCache(cache cache.Cache) ManagerOption {
 	return func(m *Manager) {
-		m.cache.SetExpiry(expiry)
-		m.cache.SetJitterFn(cache.NewJitterFn(expiry))
+		m.cache = cache
 	}
 }
 

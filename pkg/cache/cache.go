@@ -12,8 +12,6 @@ type SetFn func() (v interface{}, err error)
 
 type Cache interface {
 	GetOrSet(k interface{}, setFn SetFn) (v interface{}, err error)
-	SetExpiry(baseExpiry time.Duration)
-	SetJitterFn(jitterFn JitterFn)
 }
 
 type GetSetCache struct {
@@ -21,15 +19,6 @@ type GetSetCache struct {
 	computations *ChanOnlyOne
 	jitterFn     JitterFn
 	baseExpiry   time.Duration
-}
-
-// SetExpiry changes the base expiration period for all future inserts to the cache.
-func (c *GetSetCache) SetExpiry(baseExpiry time.Duration) {
-	c.baseExpiry = baseExpiry
-}
-
-func (c *GetSetCache) SetJitterFn(jitterFn JitterFn) {
-	c.jitterFn = jitterFn
 }
 
 func NewCache(size int, expiry time.Duration, jitterFn JitterFn) *GetSetCache {
