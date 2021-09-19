@@ -9,6 +9,7 @@
   create repositories with particular storage namespaces (bucket names).
   (#2220)
 - Fix path encoding when checking sigV2 signatures in the S3 gateway.
+- [S3 gateway] Return HTTP 409 (Conflict) when creating existing repo (#2451)
 
 ## v0.50.0 - 2021-09-05
 
