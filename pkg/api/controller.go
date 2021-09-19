@@ -1109,18 +1109,18 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		return
 	}
 
-	parsedNs, err := url.ParseRequestURI(body.StorageNamespace)
+	parsedNamespace, err := url.ParseRequestURI(body.StorageNamespace)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "error parsing storage namespace. Please enter valid repository url.")
+		writeError(w, http.StatusBadRequest, "error parsing storage namespace. Please enter a valid repository url.")
 		return
 	}
-	storageType, err := block.GetStorageType(parsedNs)
+	namespaceStorageType, err := block.GetStorageType(parsedNamespace)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "error creating repository: storage type is not valid.")
+		writeError(w, http.StatusBadRequest, "error creating repository: invalid storage type.")
 		return
 	}
-	if relStorageType := c.BlockAdapter.BlockstoreType(); relStorageType != storageType.BlockstoreType() {
-		writeError(w, http.StatusBadRequest, "error creating repository: can only create repository with storage type: "+relStorageType)
+	if adapterStorageType := c.BlockAdapter.BlockstoreType(); adapterStorageType != namespaceStorageType.BlockstoreType() {
+		writeError(w, http.StatusBadRequest, "error creating repository: can only create repository with storage type: "+adapterStorageType)
 		return
 	}
 
