@@ -27,6 +27,43 @@ We also detail how lakeFS operates on top of this abstraction, instead of relyin
 
 At the heart of the design, is a simple Key/Value interface, used for all mutable metadata management.
 
+### Semantics
+
+Order operations by a "happens before" operation: operation A happened before operation B if A
+finished before B started.  If operation A happened before B then we also say that B happened
+after A.  (As usual, these are not a total ordering!)
+
+#### Consistency guarantees
+
+* If a write succeeds, successive reads and listings will return the contents of either that
+  write or of some other write that did not happen before it.
+
+* A succesful read returns the contents of some write that did not happen after it.
+
+* A listing returns the contents of some writes that did not happen after it.
+
+* A successful commit holds the contents of some listing of the entire keyspace.
+
+* Mutating operations (commits and writes) may succeed or fail.  When they fail, their contents
+  might still be visible.
+
+#### Consistency **non**-guarantees
+
+These guarantees do *not* give linearizability of any kind.  In particular, these are some
+possible behaviours.
+
+1. **Impossible ordering by application logic (the "1-3-2 problem"):** I write an application
+   that reads a number from a file, increments it, and writes back the same file (this
+   application performs an unsafe increment).  I start with the file containing "1", and run the
+   application twice concurrently.  An observer (some process that repeatedly reads the file)
+   may observe the value sequence "1", "3", "2".  If the observer commits each version, it can
+   create a **history** of these values in this order.
+2. **Non-monotonicity (the "B-A-N-A-N-A-N-A-... problem :banana:"):** A file has contents "B".
+   I start a continuous committer (some process that repeatedly commits).  Now I run two
+   concurrent updates: one updates the file contents to "N", the other updates the file contents
+   to "A".  Different orderings can cause histories that look like "B", "A", "N", "A", "N", "A",
+   "N", ... to any length.
+
 ### Key/Value Store interface
 
 This is roughly the API:
