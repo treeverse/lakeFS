@@ -23,24 +23,40 @@ export const PolicyEditor = ({ show, onHide, onSubmit, policy = null, noID = fal
     const [body, setBody] = useState('')
     useEffect(() => {
         if (policy !== null) {
-            setBody(JSON.stringify(policy, null, 4));
+	    const newBody = JSON.stringify(policy, null, 4);
+            setBody(newBody);
+	    setSavedBody(newBody);
         }
     }, [policy]);
+
+    const [savedBody, setSavedBody] = useState(null);
 
     const submit = () => {
         const statement = bodyField.current.value;
         try {
             JSON.parse(statement);
         } catch (error) {
-            setError(error)
-            return false
+            setError(error);
+	    return false;
         }
         const promise = (policy === null) ? onSubmit(idField.current.value, statement) : onSubmit(statement)
-        return promise.catch(err => setError(err));
+        return promise
+	    .then((res) => {
+		setSavedBody(statement);
+		setError(null);
+		return res;
+	    })
+	    .catch((err) => {
+		setError(err);
+		return null;
+	    });
     };
 
     const hide = () => {
         setError(null);
+	if (savedBody !== null) {
+	    setBody(savedBody);
+	}
         onHide();
     };
     const actionName = policy === null || isCreate ? 'Create' : 'Edit'
