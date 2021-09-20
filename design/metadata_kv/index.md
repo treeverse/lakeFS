@@ -42,14 +42,23 @@ type Store interface {
     // Delete will delete the key/value at key, if any
     Delete(key []byte) error
     // SetIf returns an ErrPredicateFailed error if the valuePredicate passed
-    //  doesn't match the currently stored value.
+    //  doesn't match the currently stored value. SetIf is a simple compare-and-swap operator:
+    //  valuePredicate is either the existing value, or an opaque value representing it (hash, index, etc).
+    //  this is intentianally simplistic: we can model a better abstraction on top, keeping this interface simple for implementors
     SetIf(key, value, valuePredicate []byte) error
 }
 ```
 
-Note: This API is roughly the one needed and is subject to change/tweaking. It is meant to illustrate the required capabilities in order to build a functioning lakeFS system on top.
+Note: This API is roughly the one needed and is subject to change/tweaking. 
+It is meant to illustrate the required capabilities in order to build a functioning lakeFS system on top.
 
-Writing a complete implementation of this API with the required guarantees is possible for a myriad of different database engines, such as:
+#### KV requirements
+
+- read-after-write consistency: a read that follows a successful write should return the written value or newer
+- keys could be enumerated lexicographically, in ascending byte order
+- supports a key-level conditional operation based on a current value - or essentially, allow modeling a CAS operator
+
+#### Databases that meet these requirements (Examples):
 
 - PostgreSQL
 - MySQL
@@ -144,30 +153,45 @@ This is what the proposed implementation will look like:
 We add an additional field to each `Branch` object: In addition to the existing `staging_token`, we add an array of strings named `sealed_tokens`.
 
 1. get branch, find current `staging_token`
-1. use `SetIf()` to update the branch (if not modified by another process): push existing `staging_token` into `sealed_tokens`, set new uuid as `staging_token`.
+1. use `SetIf()` to update the branch (if not modified by another process): push existing `staging_token` into `sealed_tokens`, set new uuid as `staging_token`. The branch is assuming to be represented by a single key/value pair that contains the `staging_token`, `sealed_tokens` and `commit_id` fields.
 1. take the list of sealed tokens, and using the [`CombinedIterator()`](https://github.com/treeverse/lakeFS/blob/master/pkg/graveler/combined_iterator.go#L11), turn them into a single iterator to be applied on top of the existing commit
-1. Once the commit has been persisted (metaranges and ranges stored in object store, commit itself stored to KV using `Set()`), perform another `SetIf()` that updates the branch again: replacing its commit ID with the new value, and clearing `sealed_tokens`, as these have materialized into the new commit.
-1. If `SetIf()` fails, this means another commit is happenning/has happened on the same branch. Can either retry or let the caller know.
+1. Once the commit has been persisted (metaranges and ranges stored in object store, commit itself stored to KV using `Set()`), perform another `SetIf()` that updates the branch key/value pair again: replacing its commit ID with the new value, and clearing `sealed_tokens`, as these have materialized into the new commit.
+1. If `SetIf()` fails, this means another commit is happening/has happened on the same branch. Can either retry or let the caller know.
 
 An important property here is delegating safety vs liveness to a single optimistic `SetIf()` operation: if a commit fails somewhere along the process, a subsequent commit would simply pick up where the failed one left off,
 adding the current staging_token into the set of changes to apply. In an environment where there aren't many concurrent commits on the same branch, and that commits mostly succeed - the size of `sealed_tokens` would be relatively small. As an optimization, compaction strategies could be added to merge tokens together, but this *might not be necessary*, at least not for use cases we're familiar with.
+This assumption must be tested - we should expose good metrics and log this information: how many `sealed_tokens` each branch holds. If we do see cases where this grows big, we might have to prioritize compaction.
+
+*Note: for branches that receive many frequent commits (i.e. streaming use cases) we can actually recognize contention: if we have a retry loop where we try to commit and fail because `SetIf()` returns an error, we can add some exponential backoff within the internal retry loop noted above. This could be helpful to help prevent "retry storms" where high contention results in even higher contention.*
 
 ![Committer Flow](./committer_flow.png)
 
+#### Caching branch pointers and amortized reads
+
+In the current design, for each read/write operation we add a single amortized read of the branch record as well.
+Let's define an "amortized read" as the act of batching requests for the same branch for a short duration, thus amortizing the DB lookup cost across those requests.
+
+For this design, we don't want to change this, at least for most requests: Add 1 additional wait time for a KV lookup that could be amortized across requests for the same branch.
+
+To do this, we introduce a small in-memory cache (can utilize the same caching mechanism that already exists for IAM).
+Please note: this *does not violate consistency*, see the [Read flow](#reader-flow) and [Writer flow](writer-flow) below to understand how.
+
 #### Writer flow
 
-1. Read the branch's existing staging token: currently, we batch requests for a short duration and amortize the cost across requests.
-1. Write to the staging token received
-1. Read the branch's existing staging token **again**. If it's the same - great, no commit has *started while writing* the record, return success to the user. For a system with low contention between writes and commits, this will be the usual case.
-1. If the staging token has changed - **retry the operation**. If the previous write made it in time to be included in the commit, we'll end up writing a record with the same identity - an idempotent operation.
+1. Read the branch's existing staging token: if branch exists in the cache, use it! Otherwise, do an amortized read (see [above](#caching-branch-pointers-and-amortized-reads)) and cache the result for a very short duration.
+1. Write to the staging token received - this is another key/value record (e.g. `"graveler/staging/${repoId}/${stagingToken}/${path}"`)
+1. Read the branch's existing staging token **again**. This is always an amortized read, not a cache read. If we get the same `staging_token` - great, no commit has *started while writing* the record, return success to the user. For a system with low contention between writes and commits, this will be the usual case.
+1. If the `staging_token` *has* changed - **retry the operation**. If the previous write made it in time to be included in the commit, we'll end up writing a record with the same identity - an idempotent operation.
 
 ![Writer Flow](./writer_flow.png)
 
 #### Reading/Listing flow
 
-1. Read the branch's existing staging token: currently, we batch requests for a short duration and amortize the cost across requests. Additionally, let's also pick up the `sealed_tokens` list.
-1. The length of `sealed_list` will typically be *empty* or very small, as noted above.
+1. Read the branch's existing staging token(s): if branch exists in the cache, use it! Otherwise, do an amortized read (see [above](#caching-branch-pointers-and-amortized-reads)) and cache the result for a very short duration.
+1. The length of `sealed_list` will typically be *empty* or very small, see ((above)[#committer-flow])
 1. We now use the existing `CombinedIterator` to read through all staging tokens and underlying commit.
+1. Read the branch's existing staging token(s) **again**. This is always an amortized read, not a cache read. If it hasn't changed - great, no commit has *started while reading* the record, return success to the user. For a system with low contention between writes and commits, this will be the usual case.
+1. If it has changed, we're reading from a stale set of staging tokens. A committer might have already deleted records from it. Retry the process.
 
 ![Reader Flow](./reader_flow.png)
 
@@ -176,9 +200,8 @@ adding the current staging_token into the set of changes to apply. In an environ
 It is important to understand that the current pessimistic approach locks the branch for the entire duration of the commit. 
 This takes time proportional to the amount of changes to be committted and is unbounded. All writes to a branch are blocked for that period of time.
 
-With the optimistic version, writes are retried for a bounded period of time: the time between committer's initial branch read, and the first SetIf() that replaces the `staging_token`. 
-In practice this should take milliseconds. All writes that start after the initial `SetIf()` are safe to continue regardless of the state of the committer, as they'll write to the new `staging_token`.
-
+With the optimistic version, readers and writers end up retrying in during exactly 2 "constant time" operations during a commit: during the initial update with a new `staging_token`, and again when clearing `sealed_tokens`.
+The duration of these operations is of course, not constant - it is (well, should be) very short, and not proportional to the size of the commit in any way.
 ### Open Questions
 
 1. Complexity cost - How complex is the system after implementing this? What would a real API look like? Serialization?
