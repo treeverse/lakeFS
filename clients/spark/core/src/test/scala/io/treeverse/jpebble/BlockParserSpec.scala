@@ -6,6 +6,7 @@ import funspec._
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
 
 import java.io.File
+import java.nio.charset.StandardCharsets
 import org.apache.commons.io.IOUtils
 
 import scala.io.Source
@@ -13,6 +14,10 @@ import org.testcontainers.containers.BindMode
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy
 import org.scalatest.matchers.must.Matchers.contain
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
+
+object BlockParserSpec {
+  def str(bytes: Array[Byte]): String = new String(bytes, StandardCharsets.UTF_8)
+}
 
 class BlockParserSpec extends AnyFunSpec with Matchers {
   val magicBytes = BlockParser.footerMagic
@@ -238,7 +243,7 @@ class BlockParserSpec extends AnyFunSpec with Matchers {
             withSSTable(sstFilename, (in: BlockReadable) => {
               val it = BlockParser.entryIterator(in)
               val actual = it.map((entry) =>
-                (new String(entry.key), new String(entry.value).toInt)).toSeq
+                (BlockParserSpec.str(entry.key), BlockParserSpec.str(entry.value).toInt)).toSeq
 
               actual should contain theSameElementsInOrderAs expected
             })
@@ -393,7 +398,7 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
   def verifyBlockParserOutput(in: BlockReadable, expected: Seq[(String, String)], sstSize: Long): Unit = {
     val it = BlockParser.entryIterator(in)
     val actual = it.map((entry) =>
-      (new String(entry.key), new String(entry.value))).toSeq
+      (BlockParserSpec.str(entry.key), BlockParserSpec.str(entry.value))).toSeq
 
     actual should contain theSameElementsInOrderAs expected
   }
