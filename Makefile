@@ -195,6 +195,7 @@ validate-proto: proto  ## build proto and check if diff found
 	git diff --quiet -- pkg/catalog/catalog.pb.go
 	git diff --quiet -- pkg/graveler/committed/committed.pb.go
 	git diff --quiet -- pkg/graveler/graveler.pb.go
+	git diff --quiet -- pkg/graveler/settings/test_settings.pb.go
 
 validate-client-python:
 	git diff --quiet -- clients/python/lakefs_client/api
@@ -226,6 +227,7 @@ proto: ## Build proto (Protocol Buffers) files
 	$(PROTOC) --proto_path=pkg/catalog --go_out=pkg/catalog --go_opt=paths=source_relative catalog.proto
 	$(PROTOC) --proto_path=pkg/graveler/committed --go_out=pkg/graveler/committed --go_opt=paths=source_relative committed.proto
 	$(PROTOC) --proto_path=pkg/graveler --go_out=pkg/graveler --go_opt=paths=source_relative graveler.proto
+	$(PROTOC) --proto_path=pkg/graveler/settings --go_out=pkg/graveler/settings --go_opt=paths=source_relative test_settings.proto
 
 publish-scala: ## sbt publish spark client jars to nexus and s3 bucket
 	cd clients/spark && sbt assembly && sbt s3Upload && sbt publishSigned
