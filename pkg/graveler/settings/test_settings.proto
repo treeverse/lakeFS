@@ -1,0 +1,8 @@
+syntax = "proto3";
+option go_package = "github.com/treeverse/lakefs/graveler/settings";
+
+message ExampleSettings {
+  int32 example_int = 1;
+  string example_str = 2;
+  map<string, int32> example_map = 3;
+}
