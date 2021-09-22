@@ -16,7 +16,7 @@ import org.scalatest.matchers.must.Matchers.contain
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 
 object BlockParserSpec {
-  private def str(bytes: Array[Byte]): String = new String(bytes, StandardCharsets.UTF_8)
+  def str(bytes: Array[Byte]): String = new String(bytes, StandardCharsets.UTF_8)
 }
 
 class BlockParserSpec extends AnyFunSpec with Matchers {
@@ -398,7 +398,7 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
   def verifyBlockParserOutput(in: BlockReadable, expected: Seq[(String, String)], sstSize: Long): Unit = {
     val it = BlockParser.entryIterator(in)
     val actual = it.map((entry) =>
-      (new String(entry.key, StandardCharsets.UTF_8), new String(entry.value, StandardCharsets.UTF_8))).toSeq
+      (BlockParserSpec.str(entry.key), BlockParserSpec.str(entry.value))).toSeq
 
     actual should contain theSameElementsInOrderAs expected
   }
