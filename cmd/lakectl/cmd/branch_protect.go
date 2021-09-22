@@ -39,7 +39,7 @@ var branchProtectAddCmd = &cobra.Command{
 	Use:     "add <repo uri> <pattern>",
 	Short:   "Add a branch protection rule",
 	Long:    "Add a branch protection rule for a given branch pattern name",
-	Example: "add lakefs://<repository> stable/*",
+	Example: "lakectl add lakefs://<repository> stable/*",
 	Args:    cobra.ExactArgs(branchProtectAddCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
@@ -55,7 +55,7 @@ var branchProtectDeleteCmd = &cobra.Command{
 	Use:     "delete <repo uri> <pattern>",
 	Short:   "Delete a branch protection rule",
 	Long:    "Delete a branch protection rule for a given branch pattern name",
-	Example: "delete lakefs://<repository> stable/*",
+	Example: "lakectl delete lakefs://<repository> stable/*",
 	Args:    cobra.ExactArgs(branchProtectAddCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()

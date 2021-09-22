@@ -10,7 +10,7 @@ has_children: false
 # Branch Protection Rules
 
 Define branch protection rules to prevent direct changes and commits to specific branches.
-Only merges are allowed into protected branches. Together with the power of pre-merge [hooks](../setup/hooks.md#),
+Only merges are allowed into protected branches. Together with the power of pre-merge [hooks](../setup/hooks.md),
 you can run validations on your data before it reaches your important branches and is exposed to consumers.
 
 You can create rules for a specific branch, or to any branch that matches a name pattern you specify with [glob](https://en.wikipedia.org/wiki/Glob_(programming)) syntax (supporting `?` and `*` wildcards).
