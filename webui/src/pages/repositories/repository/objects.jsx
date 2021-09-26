@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from "react";
+import React, {useRef, useState} from "react";
 
 import {UploadIcon} from "@primer/octicons-react";
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
