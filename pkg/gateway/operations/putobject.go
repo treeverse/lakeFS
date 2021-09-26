@@ -102,8 +102,8 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 	}
 
 	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{
-		"part_number": partNumber,
-		"upload_id":   uploadID,
+		logging.PartNumberFieldKey: partNumber,
+		logging.UploadIDFieldKey:   uploadID,
 	}))
 
 	// handle the upload/copy itself

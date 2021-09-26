@@ -89,7 +89,9 @@ func (controller *ListObjects) serializeBranches(branches []*catalog.Branch) ([]
 }
 
 func (controller *ListObjects) ListV2(w http.ResponseWriter, req *http.Request, o *RepoOperation) {
-	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{"list_type": "v2"}))
+	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{
+		logging.ListTypeFieldKey: "v2",
+	}))
 	params := req.URL.Query()
 	delimiter := params.Get("delimiter")
 	startAfter := params.Get("start-after")
@@ -229,7 +231,7 @@ func (controller *ListObjects) ListV2(w http.ResponseWriter, req *http.Request, 
 
 func (controller *ListObjects) ListV1(w http.ResponseWriter, req *http.Request, o *RepoOperation) {
 	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{
-		"list_type": "v1",
+		logging.ListTypeFieldKey: "v1",
 	}))
 	// handle ListObjects (v1)
 	params := req.URL.Query()

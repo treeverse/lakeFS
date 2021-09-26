@@ -61,7 +61,7 @@ func AuthenticationHandler(authService simulator.GatewayAuthService, next http.H
 			_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
 			return
 		}
-		ctx = logging.AddFields(ctx, logging.Fields{"user": user.Username})
+		ctx = logging.AddFields(ctx, logging.Fields{logging.UserFieldKey: user.Username})
 		ctx = context.WithValue(ctx, ContextKeyUser, user)
 		ctx = context.WithValue(ctx, ContextKeyAuthContext, authContext)
 		req = req.WithContext(ctx)
