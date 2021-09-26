@@ -1,6 +1,6 @@
 import React, {useRef, useState} from "react";
 import {RepositoryPageLayout} from "../../../../lib/components/repository/layout";
-import {ActionGroup, ActionsBar, Error, Loading, RefreshButton} from "../../../../lib/components/controls";
+import {Error, Loading, RefreshButton} from "../../../../lib/components/controls";
 import {RefContextProvider, useRefs} from "../../../../lib/hooks/repo";
 import Card from "react-bootstrap/Card";
 import {SettingsLayout} from "./layout";
