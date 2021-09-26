@@ -343,9 +343,10 @@ func TestGraveler_Commit(t *testing.T) {
 	expectedRangeID := graveler.MetaRangeID("expectedRangeID")
 	values := testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: nil, Value: nil}})
 	type fields struct {
-		CommittedManager *testutil.CommittedFake
-		StagingManager   *testutil.StagingFake
-		RefManager       *testutil.RefsFake
+		CommittedManager         *testutil.CommittedFake
+		StagingManager           *testutil.StagingFake
+		RefManager               *testutil.RefsFake
+		ProtectedBranchesManager *testutil.ProtectedBranchesManagerFake
 	}
 	type args struct {
 		ctx          context.Context
@@ -463,15 +464,38 @@ func TestGraveler_Commit(t *testing.T) {
 			want:        expectedCommitID,
 			expectedErr: nil,
 		},
+		{
+			name: "fail on protected branch",
+			fields: fields{
+				CommittedManager: &testutil.CommittedFake{MetaRangeID: expectedRangeID},
+				StagingManager:   &testutil.StagingFake{ValueIterator: values},
+				RefManager: &testutil.RefsFake{CommitID: expectedCommitID,
+					Branch:  &graveler.Branch{CommitID: expectedCommitID},
+					Commits: map[graveler.CommitID]*graveler.Commit{expectedCommitID: {MetaRangeID: expectedRangeID}}},
+				ProtectedBranchesManager: testutil.NewProtectedBranchesManagerFake("branch"),
+			},
+			args: args{
+				ctx:          nil,
+				repositoryID: "repo",
+				branchID:     "branch",
+				committer:    "committer",
+				message:      "a message",
+				metadata:     graveler.Metadata{},
+			},
+			expectedErr: graveler.ErrWriteToProtectedBranch,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			expectedCommitID := graveler.CommitID("expectedCommitId")
 			expectedRangeID := graveler.MetaRangeID("expectedRangeID")
 			values := testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: nil, Value: nil}})
-			g := graveler.NewGraveler(branchLocker, tt.fields.CommittedManager, tt.fields.StagingManager, tt.fields.RefManager, nil, testutil.NewProtectedBranchesManagerFake())
+			if tt.fields.ProtectedBranchesManager == nil {
+				tt.fields.ProtectedBranchesManager = testutil.NewProtectedBranchesManagerFake()
+			}
+			g := graveler.NewGraveler(branchLocker, tt.fields.CommittedManager, tt.fields.StagingManager, tt.fields.RefManager, nil, tt.fields.ProtectedBranchesManager)
 
-			got, err := g.Commit(context.Background(), "", "", graveler.CommitParams{
+			got, err := g.Commit(context.Background(), tt.args.repositoryID, tt.args.branchID, graveler.CommitParams{
 				Committer: tt.args.committer,
 				Message:   tt.args.message,
 				Metadata:  tt.args.metadata,
