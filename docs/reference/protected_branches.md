@@ -35,3 +35,13 @@ To add a new rule, click the _Add_ button. In the dialog, enter the branch name 
 To delete a rule, click the _Delete_ button next to it.
 
 ![Deleting a branch protection rule](../assets/img/delete_branch_protection_rule.png)
+
+
+## How it works
+
+Once a branch is protected, the following operations on the branch will fail:
+1. Object write operations: upload and delete objects.
+1. Branch operations: commit and revert changes.
+
+To operate on a protected branch, you can merge commits from other branches. Use pre-merge [hooks](../setup/hooks.md)
+to validate the changes before they are merged.

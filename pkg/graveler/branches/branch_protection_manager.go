@@ -72,7 +72,7 @@ func (m *BranchProtectionManager) SetAll(ctx context.Context, repositoryID grave
 
 func (m *BranchProtectionManager) GetAll(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.BranchProtectionRules, error) {
 	rules, err := m.settingManager.GetLatest(ctx, repositoryID, BranchProtectionSettingKey, &graveler.BranchProtectionRules{})
-	if err == graveler.ErrNotFound {
+	if errors.Is(err, graveler.ErrNotFound) {
 		return &graveler.BranchProtectionRules{}, nil
 	}
 	if err != nil {
