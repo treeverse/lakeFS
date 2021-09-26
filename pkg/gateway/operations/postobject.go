@@ -9,14 +9,13 @@ import (
 	"strings"
 	"time"
 
-	goerrors "github.com/pkg/errors"
-	"github.com/treeverse/lakefs/pkg/graveler"
-
 	"github.com/google/uuid"
+	goerrors "github.com/pkg/errors"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/gateway/path"
 	"github.com/treeverse/lakefs/pkg/gateway/serde"
+	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
