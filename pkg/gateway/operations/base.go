@@ -50,6 +50,7 @@ type Operation struct {
 	BlockStore        block.Adapter
 	Auth              simulator.GatewayAuthService
 	Incr              ActionIncr
+	MatchedHost       bool
 }
 
 func StorageClassFromHeader(header http.Header) *string {
@@ -157,7 +158,8 @@ type AuthorizedOperation struct {
 
 type RepoOperation struct {
 	*AuthorizedOperation
-	Repository *catalog.Repository
+	Repository  *catalog.Repository
+	MatchedHost bool
 }
 
 func (o *RepoOperation) EncodeError(w http.ResponseWriter, req *http.Request, err errors.APIError) *http.Request {

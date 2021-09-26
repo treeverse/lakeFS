@@ -84,14 +84,14 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
-	var MultipartList block.MultipartUploadCompletion
-	err = xml.Unmarshal(xmlMultipartComplete, &MultipartList)
+	var multipartList block.MultipartUploadCompletion
+	err = xml.Unmarshal(xmlMultipartComplete, &multipartList)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not parse multipart XML on complete multipart")
 		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
-	etag, size, err = o.BlockStore.CompleteMultiPartUpload(req.Context(), block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: objName}, uploadID, &MultipartList)
+	etag, size, err = o.BlockStore.CompleteMultiPartUpload(req.Context(), block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: objName}, uploadID, &multipartList)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not complete multipart upload")
 		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
@@ -110,7 +110,12 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 	}
 
 	scheme := httputil.RequestScheme(req)
-	location := fmt.Sprintf("%s://%s/%s/%s/%s", scheme, o.FQDN, o.Repository.Name, o.Reference, o.Path)
+	var location string
+	if o.MatchedHost {
+		location = fmt.Sprintf("%s://%s/%s/%s", scheme, req.Host, o.Reference, o.Path)
+	} else {
+		location = fmt.Sprintf("%s://%s/%s/%s/%s", scheme, req.Host, o.Repository.Name, o.Reference, o.Path)
+	}
 	o.EncodeResponse(w, req, &serde.CompleteMultipartUploadResult{
 		Location: location,
 		Bucket:   o.Repository.Name,

@@ -32,6 +32,7 @@ const (
 	ContextKeyOperation    contextKey = "operation"
 	ContextKeyRef          contextKey = "ref"
 	ContextKeyPath         contextKey = "path"
+	ContextKeyMatchedHost  contextKey = "matched_host"
 )
 
 var commaSeparator = regexp.MustCompile(`,\s*`)
@@ -114,11 +115,10 @@ func NewHandler(
 	h = simulator.RegisterRecorder(loggingMiddleware(h), authService, region, bareDomains)
 	h = EnrichWithOperation(sc,
 		DurationHandler(
-			AuthenticationHandler(authService, bareDomains,
-				EnrichWithParts(bareDomains,
-					EnrichWithRepositoryOrFallback(catalog, authService, fallbackHandler,
-						OperationLookupHandler(
-							h))))))
+			AuthenticationHandler(authService, EnrichWithParts(bareDomains,
+				EnrichWithRepositoryOrFallback(catalog, authService, fallbackHandler,
+					OperationLookupHandler(
+						h))))))
 	logging.Default().WithFields(logging.Fields{
 		"s3_bare_domain": bareDomains,
 		"s3_region":      region,
@@ -168,6 +168,7 @@ func RepoOperationHandler(sc *ServerContext, handler operations.RepoOperationHan
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		repo := ctx.Value(ContextKeyRepository).(*catalog.Repository)
+		matchedHost := ctx.Value(ContextKeyMatchedHost).(bool)
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		perms, err := handler.RequiredPermissions(req, repo.Name)
 		if err != nil {
@@ -181,9 +182,11 @@ func RepoOperationHandler(sc *ServerContext, handler operations.RepoOperationHan
 		repoOperation := &operations.RepoOperation{
 			AuthorizedOperation: authOp,
 			Repository:          repo,
+			MatchedHost:         matchedHost,
 		}
 		req = req.WithContext(logging.AddFields(ctx, logging.Fields{
-			"repository": repo.Name,
+			"repository":   repo.Name,
+			"matched_host": matchedHost,
 		}))
 		handler.Handle(w, req, repoOperation)
 	})
@@ -195,6 +198,7 @@ func PathOperationHandler(sc *ServerContext, handler operations.PathOperationHan
 		repo := ctx.Value(ContextKeyRepository).(*catalog.Repository)
 		refID := ctx.Value(ContextKeyRef).(string)
 		path := ctx.Value(ContextKeyPath).(string)
+		matchedHost := ctx.Value(ContextKeyMatchedHost).(bool)
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		perms, err := handler.RequiredPermissions(req, repo.Name, refID, path)
 		if err != nil {
@@ -211,15 +215,17 @@ func PathOperationHandler(sc *ServerContext, handler operations.PathOperationHan
 				RepoOperation: &operations.RepoOperation{
 					AuthorizedOperation: authOp,
 					Repository:          repo,
+					MatchedHost:         matchedHost,
 				},
 				Reference: refID,
 			},
 			Path: path,
 		}
 		req = req.WithContext(logging.AddFields(ctx, logging.Fields{
-			"repository": repo.Name,
-			"ref":        refID,
-			"path":       path,
+			"repository":   repo.Name,
+			"ref":          refID,
+			"path":         path,
+			"matched_host": matchedHost,
 		}))
 		handler.Handle(w, req, operation)
 	})
