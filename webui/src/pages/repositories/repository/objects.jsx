@@ -153,7 +153,7 @@ const TreeContainer = ({ repo, reference, path, after, onPaginate, onRefresh, on
                             setDeleteState({...initialState, error: error})
                             throw error
                         })
-                        .then( onRefresh)
+                        .then(onRefresh)
                 }}
             /></>
     );
