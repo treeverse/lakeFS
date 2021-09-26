@@ -744,3 +744,34 @@ func (m *FakeCommitIterator) Err() error {
 }
 
 func (m *FakeCommitIterator) Close() {}
+
+type ProtectedBranchesManagerFake struct {
+}
+
+func NewProtectedBranchesManagerFake() *ProtectedBranchesManagerFake {
+	return &ProtectedBranchesManagerFake{}
+}
+
+func (p ProtectedBranchesManagerFake) Add(ctx context.Context, repositoryID graveler.RepositoryID, branchNamePattern string, constraints *graveler.BranchProtectionConstraints) error {
+	panic("implement me")
+}
+
+func (p ProtectedBranchesManagerFake) Set(ctx context.Context, repositoryID graveler.RepositoryID, branchNamePattern string, constraints *graveler.BranchProtectionConstraints) error {
+	panic("implement me")
+}
+
+func (p ProtectedBranchesManagerFake) Get(ctx context.Context, repositoryID graveler.RepositoryID, branchNamePattern string) (*graveler.BranchProtectionConstraints, error) {
+	panic("implement me")
+}
+
+func (p ProtectedBranchesManagerFake) SetAll(ctx context.Context, repositoryID graveler.RepositoryID, rules *graveler.BranchProtectionRules) error {
+	panic("implement me")
+}
+
+func (p ProtectedBranchesManagerFake) GetAll(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.BranchProtectionRules, error) {
+	panic("implement me")
+}
+
+func (p ProtectedBranchesManagerFake) HasConstraint(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, constraint string) (bool, error) {
+	return false, nil
+}

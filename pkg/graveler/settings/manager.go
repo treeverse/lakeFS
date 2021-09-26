@@ -47,6 +47,12 @@ func WithCache(cache cache.Cache) ManagerOption {
 	}
 }
 
+func WithBranchLock(branchLock graveler.BranchLocker) ManagerOption {
+	return func(m *Manager) {
+		m.branchLock = branchLock
+	}
+}
+
 func NewManager(refManager graveler.RefManager, branchLock graveler.BranchLocker, blockAdapter block.Adapter, committedBlockStoragePrefix string, options ...ManagerOption) *Manager {
 	m := &Manager{
 		refManager:                  refManager,

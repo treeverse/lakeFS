@@ -3922,49 +3922,6 @@ paths:
       tags:
       - repositories
       x-accepts: application/json
-    post:
-      operationId: set branch protection rules
-      parameters:
-      - explode: false
-        in: path
-        name: repository
-        required: true
-        schema:
-          type: string
-        style: simple
-      requestBody:
-        content:
-          application/json:
-            schema:
-              items:
-                $ref: '#/components/schemas/BranchProtectionRule'
-              type: array
-        required: true
-      responses:
-        "204":
-          description: set branch protection rules successfully
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Unauthorized
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Resource Not Found
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Internal Server Error
-      tags:
-      - repositories
-      x-contentType: application/json
-      x-accepts: application/json
   /repositories/{repository}/branch_protection/rule:
     delete:
       operationId: delete branch protection rule

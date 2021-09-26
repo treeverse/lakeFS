@@ -1189,10 +1189,6 @@ func (c *Catalog) GetBranchProtectionRules(ctx context.Context, repositoryID str
 	return c.Store.GetBranchProtectionRules(ctx, graveler.RepositoryID(repositoryID))
 }
 
-func (c *Catalog) SetBranchProtectionRules(ctx context.Context, repositoryID string, rules *graveler.BranchProtectionRules) error {
-	return c.Store.SetBranchProtectionRules(ctx, graveler.RepositoryID(repositoryID), rules)
-}
-
 func (c *Catalog) DeleteBranchProtectionRule(ctx context.Context, repositoryID string, pattern string) error {
 	return c.Store.DeleteBranchProtectionRule(ctx, graveler.RepositoryID(repositoryID), pattern)
 }

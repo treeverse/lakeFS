@@ -2012,32 +2012,6 @@ func (c *Controller) GetBranchProtectionRules(w http.ResponseWriter, r *http.Req
 	}
 	writeResponse(w, http.StatusOK, resp)
 }
-func (c *Controller) SetBranchProtectionRules(w http.ResponseWriter, r *http.Request, body SetBranchProtectionRulesJSONRequestBody, repository string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
-			Action:   permissions.SetBranchProtectionRulesAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
-		return
-	}
-	ctx := r.Context()
-	rules := &graveler.BranchProtectionRules{
-		BranchPatternToConstraints: make(map[string]*graveler.BranchProtectionConstraints),
-	}
-	for _, rule := range body {
-		constraints := []string{graveler.StagingBlockedConstraint, graveler.CommitBlockedConstraint}
-		if rule.Constraints != nil {
-			constraints = *rule.Constraints
-		}
-		rules.BranchPatternToConstraints[rule.Pattern] = &graveler.BranchProtectionConstraints{Value: constraints}
-	}
-	err := c.Catalog.SetBranchProtectionRules(ctx, repository, rules)
-	if handleAPIError(w, err) {
-		return
-	}
-	writeResponse(w, http.StatusNoContent, nil)
-}
 
 func (c *Controller) DeleteBranchProtectionRule(w http.ResponseWriter, r *http.Request, body DeleteBranchProtectionRuleJSONRequestBody, repository string) {
 	if !c.authorize(w, r, []permissions.Permission{

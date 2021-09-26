@@ -437,8 +437,6 @@ type VersionController interface {
 
 	GetBranchProtectionRules(ctx context.Context, repositoryID RepositoryID) (*BranchProtectionRules, error)
 
-	SetBranchProtectionRules(ctx context.Context, repositoryID RepositoryID, rules *BranchProtectionRules) error
-
 	DeleteBranchProtectionRule(ctx context.Context, repositoryID RepositoryID, pattern string) error
 
 	CreateBranchProtectionRule(ctx context.Context, repositoryID RepositoryID, pattern string, constraints *BranchProtectionConstraints) error
@@ -998,10 +996,6 @@ func (g *Graveler) SaveGarbageCollectionCommits(ctx context.Context, repositoryI
 
 func (g *Graveler) GetBranchProtectionRules(ctx context.Context, repositoryID RepositoryID) (*BranchProtectionRules, error) {
 	return g.protectedBranchesManager.GetAll(ctx, repositoryID)
-}
-
-func (g *Graveler) SetBranchProtectionRules(ctx context.Context, repositoryID RepositoryID, rules *BranchProtectionRules) error {
-	return g.protectedBranchesManager.SetAll(ctx, repositoryID, rules)
 }
 
 func (g *Graveler) DeleteBranchProtectionRule(ctx context.Context, repositoryID RepositoryID, pattern string) error {
