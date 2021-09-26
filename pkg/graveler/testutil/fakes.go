@@ -746,10 +746,11 @@ func (m *FakeCommitIterator) Err() error {
 func (m *FakeCommitIterator) Close() {}
 
 type ProtectedBranchesManagerFake struct {
+	protectedBranches []string
 }
 
-func NewProtectedBranchesManagerFake() *ProtectedBranchesManagerFake {
-	return &ProtectedBranchesManagerFake{}
+func NewProtectedBranchesManagerFake(protectedBranches ...string) *ProtectedBranchesManagerFake {
+	return &ProtectedBranchesManagerFake{protectedBranches: protectedBranches}
 }
 
 func (p ProtectedBranchesManagerFake) Add(ctx context.Context, repositoryID graveler.RepositoryID, branchNamePattern string, constraints *graveler.BranchProtectionConstraints) error {
@@ -773,5 +774,10 @@ func (p ProtectedBranchesManagerFake) GetAll(ctx context.Context, repositoryID g
 }
 
 func (p ProtectedBranchesManagerFake) HasConstraint(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, constraint string) (bool, error) {
+	for _, branch := range p.protectedBranches {
+		if branch == string(branchID) {
+			return true, nil
+		}
+	}
 	return false, nil
 }
