@@ -3,6 +3,8 @@
 
 ## Unreleased - XXXX-XX-XX
 
+- Fix filter dialog unsearchable bug (#2460)
+
 ## v0.51.0 - 2021-09-19
   
 - Add new "AttachStorageNamespace" IAM action.  Controls users' ability to
