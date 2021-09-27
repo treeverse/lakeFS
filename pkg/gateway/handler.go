@@ -185,8 +185,8 @@ func RepoOperationHandler(sc *ServerContext, handler operations.RepoOperationHan
 			MatchedHost:         matchedHost,
 		}
 		req = req.WithContext(logging.AddFields(ctx, logging.Fields{
-			"repository":   repo.Name,
-			"matched_host": matchedHost,
+			logging.RepositoryFieldKey:  repo.Name,
+			logging.MatchedHostFieldKey: matchedHost,
 		}))
 		handler.Handle(w, req, repoOperation)
 	})
@@ -222,10 +222,10 @@ func PathOperationHandler(sc *ServerContext, handler operations.PathOperationHan
 			Path: path,
 		}
 		req = req.WithContext(logging.AddFields(ctx, logging.Fields{
-			"repository":   repo.Name,
-			"ref":          refID,
-			"path":         path,
-			"matched_host": matchedHost,
+			logging.RepositoryFieldKey:  repo.Name,
+			logging.RefHostFieldKey:     refID,
+			logging.PathFieldKey:        path,
+			logging.MatchedHostFieldKey: matchedHost,
 		}))
 		handler.Handle(w, req, operation)
 	})

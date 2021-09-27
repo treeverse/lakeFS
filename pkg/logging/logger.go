@@ -23,6 +23,36 @@ const (
 	ModuleName           = "github.com/treeverse/lakefs"
 )
 
+// log_fields keys
+const (
+	// RepositoryFieldKey repository name (string)
+	RepositoryFieldKey = "repository"
+	// MatchedHostFieldKey matched host (bool) true when domain extracted from host
+	MatchedHostFieldKey = "matched_host"
+	// RefHostFieldKey reference id (string)
+	RefHostFieldKey = "ref"
+	// PathFieldKey path / request URI (string)
+	PathFieldKey = "path"
+	// UploadIDFieldKey s3 multipart upload ID (string) "upload_id"
+	UploadIDFieldKey = "upload_id"
+	// ListTypeFieldKey s3 list type version (string, ex: v1 or v2)
+	ListTypeFieldKey = "list_type"
+	// PhysicalAddressFieldKey object physical address (string)
+	PhysicalAddressFieldKey = "physical_address"
+	// PartNumberFieldKey s3 multipart upload part number (string)
+	PartNumberFieldKey = "part_number"
+	// RequestIDFieldKey request ID (string) based on the request ID found on context
+	RequestIDFieldKey = "request_id"
+	// HostFieldKey request's host (string)
+	HostFieldKey = "host"
+	// MethodFieldKey request's method (string)
+	MethodFieldKey = "method"
+	// UserFieldKey user's name associated with the request (string)
+	UserFieldKey = "user"
+	// ServiceNameFieldKey service name (string, ex: rest_api)
+	ServiceNameFieldKey = "service_name"
+)
+
 var (
 	formatterInitOnce sync.Once
 	defaultLogger     = logrus.New()
