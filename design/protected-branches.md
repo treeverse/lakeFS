@@ -63,17 +63,16 @@ After a meeting discussing the matter, we decided to go with suggestion #1, but 
 
 ### Runtime
 
-The enforcement of the protection depends on the constraint type:
+The enforcement of the protection depends on the constraint type.
+In the future we may want to add an option to force these operations.
 
 #### Constraint type: block commits
 
 * When performing a commit, the protection rules of the repository will be fetched from the storage.
 * Right before executing the pre-commit hooks, check whether the branch name matches any of the protection rules.
 * If so, the commit will fail with a dedicated error type.
-* A force flag will be optionally included, allowing the commit even if the branch is protected.
 
 #### Constraint type: block staging area
 
 * In Graveler, before every Staging Manager write operation (Set, Drop, DropKey) - fetch the rules.
 * If the branch name matches a rule, fail the operation with a dedicated error type.
-* Each of these operations should allow a force flag.
