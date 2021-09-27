@@ -40,7 +40,7 @@ Cons:
 Pro/con:
 - Changing protection rules is a commit visible in the log
 
-### Descision
+### Decision
 
 After a meeting discussing the matter, we decided to go with suggestion #1, but to add a repository-level settings feature to be used in order to store the branch protection rules. See the [issue](https://github.com/treeverse/lakeFS/issues/2406).
 
