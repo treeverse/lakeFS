@@ -26,7 +26,7 @@ func (controller *DeleteObject) HandleAbortMultipartUpload(w http.ResponseWriter
 	o.Incr("abort_mpu")
 	query := req.URL.Query()
 	uploadID := query.Get(QueryParamUploadID)
-	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{"upload_id": uploadID}))
+	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{logging.UploadIDFieldKey: uploadID}))
 	err := o.BlockStore.AbortMultiPartUpload(req.Context(), block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: o.Path}, uploadID)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not abort multipart upload")

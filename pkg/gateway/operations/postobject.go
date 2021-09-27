@@ -69,7 +69,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 	var size int64
 	o.Incr("complete_mpu")
 	uploadID := req.URL.Query().Get(CompleteMultipartUploadQueryParam)
-	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{"upload_id": uploadID}))
+	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{logging.UploadIDFieldKey: uploadID}))
 	multiPart, err := o.MultipartsTracker.Get(req.Context(), uploadID)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not read multipart record")
@@ -77,7 +77,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 		return
 	}
 	objName := multiPart.PhysicalAddress
-	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{"physical_address": objName}))
+	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{logging.PhysicalAddressFieldKey: objName}))
 	xmlMultipartComplete, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not read request body")
