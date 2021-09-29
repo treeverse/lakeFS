@@ -879,10 +879,12 @@ components:
       properties:
         pattern:
           type: string
+          example: "stable/*"
         blocked_actions:
           type: array
           items:
             type: string
+            example: staging_write
       required:
         - pattern
 paths:
@@ -3020,7 +3022,7 @@ paths:
     post:
       tags:
         - repositories
-      operationId: create branch protection rule
+      operationId: createBranchProtectionRule
       requestBody:
         required: true
         content:
@@ -3039,7 +3041,7 @@ paths:
     delete:
       tags:
         - repositories
-      operationId: delete branch protection rule
+      operationId: deleteBranchProtectionRule
       requestBody:
         required: true
         content:
