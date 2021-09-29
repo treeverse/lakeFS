@@ -52,14 +52,20 @@ After a meeting discussing the matter, we decided to go with suggestion #1, but 
 [
 	{
 		"branch_name_pattern": "main",
-		"constraints": ["merge_only"]
+		"blocked_actions": ["staging_write", "commit"]
 	},
 	{
 		"branch_name_pattern": "stable/*",
-		"constraints": ["merge_only"]
+		"blocked_actions": ["staging_write", "commit"]
 	}
 ]
 ```
+
+When a branch matches a protection rule, the operations described in the rule's `blocked_actions` will be blocked. 
+Blocked actions can be:
+1. `write`: any write operation on the staging area, including: upload, delete, revert changes.
+2. `commit`: a simple commit, not including merges and reverts.
+
 
 ### Runtime
 
