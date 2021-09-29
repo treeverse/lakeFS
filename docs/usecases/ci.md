@@ -18,7 +18,7 @@ Every day we introduce new data to the lake. And even if the code and infra does
 
 lakeFS enable CI/CD-inspired workflows to help validate expectations and assumptions about the data before it goes live in production or lands in the data environment.
 
-### Example 1: Version Control - CI/CD deployment
+### Example 1: Data update safety
 
 Continuous deployment of existing data we expect to consume, flowing from ingest-pipelines into the lake. We merge data from an ingest branch (“events-data”), which allows us to create tests using data analysis tools or data quality services (e.g. [Great Expectations](https://greatexpectations.io/){: target="_blank" }, [Monte Carlo](https://www.montecarlodata.com/){: target="_blank" }) to ensure reliability of the data we merge to the main branch. Since merge is atomic, no performance issue will be introduced by using lakeFS, but your main branch will only include quality data. 
 
