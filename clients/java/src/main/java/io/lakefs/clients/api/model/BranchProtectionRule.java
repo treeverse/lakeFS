@@ -50,7 +50,7 @@ public class BranchProtectionRule {
    * Get pattern
    * @return pattern
   **/
-  @ApiModelProperty(required = true, value = "")
+  @ApiModelProperty(example = "stable/_*", required = true, value = "")
 
   public String getPattern() {
     return pattern;

@@ -3924,7 +3924,7 @@ paths:
       x-accepts: application/json
   /repositories/{repository}/branch_protection/rule:
     delete:
-      operationId: delete branch protection rule
+      operationId: deleteBranchProtectionRule
       parameters:
       - explode: false
         in: path
@@ -3971,7 +3971,7 @@ paths:
       x-contentType: application/json
       x-accepts: application/json
     post:
-      operationId: create branch protection rule
+      operationId: createBranchProtectionRule
       parameters:
       - explode: false
         in: path
@@ -5272,14 +5272,16 @@ components:
     BranchProtectionRule:
       example:
         blocked_actions:
-        - blocked_actions
-        - blocked_actions
-        pattern: pattern
+        - staging_write
+        - staging_write
+        pattern: stable/*
       properties:
         pattern:
+          example: stable/*
           type: string
         blocked_actions:
           items:
+            example: staging_write
             type: string
           type: array
       required:
