@@ -153,7 +153,7 @@ const CreateBranchButton = ({ repo, variant = "success", onCreate = null, childr
 
     return (
         <>
-            <Modal show={show} onHide={hide}>
+            <Modal show={show} onHide={hide} enforceFocus={false}>
                 <Modal.Header closeButton>
                     Create Branch
                 </Modal.Header>

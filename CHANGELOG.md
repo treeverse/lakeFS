@@ -6,6 +6,8 @@
 Only merges are allowed into protected branches.
 Combine these with pre-merge hooks to validate your data before it is on your production branches.  
 
+- Fix filter dialog unsearchable bug (#2460)
+
 ## v0.51.0 - 2021-09-19
   
 - Add new "AttachStorageNamespace" IAM action.  Controls users' ability to
