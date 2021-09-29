@@ -79,7 +79,7 @@ public class RepositoriesApi {
         Object localVarPostBody = branchProtectionRule;
 
         // create path and map variables
-        String localVarPath = "/repositories/{repository}/branch_protection/rule"
+        String localVarPath = "/repositories/{repository}/branch_protection"
             .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
@@ -343,7 +343,7 @@ public class RepositoriesApi {
         Object localVarPostBody = inlineObject1;
 
         // create path and map variables
-        String localVarPath = "/repositories/{repository}/branch_protection/rule"
+        String localVarPath = "/repositories/{repository}/branch_protection"
             .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();

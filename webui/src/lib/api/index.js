@@ -702,13 +702,13 @@ class BranchProtectionRules {
         return response.json();
     }
     async createRule(repoID, pattern) {
-        const response = await apiRequest(`/repositories/${repoID}/branch_protection/rule`, {method: 'POST', body: JSON.stringify({pattern: pattern})});
+        const response = await apiRequest(`/repositories/${repoID}/branch_protection`, {method: 'POST', body: JSON.stringify({pattern: pattern})});
         if (response.status !== 204) {
             throw new Error(`could not create protection rule: ${await extractError(response)}`);
         }
     }
     async deleteRule(repoID, pattern) {
-        const response = await apiRequest(`/repositories/${repoID}/branch_protection/rule`, {method: 'DELETE', body: JSON.stringify({pattern: pattern})});
+        const response = await apiRequest(`/repositories/${repoID}/branch_protection`, {method: 'DELETE', body: JSON.stringify({pattern: pattern})});
         if (response.status === 404) {
             throw new NotFoundError('branch protection rule not found')
         }

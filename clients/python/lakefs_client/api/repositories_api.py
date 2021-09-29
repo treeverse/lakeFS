@@ -119,7 +119,7 @@ class RepositoriesApi(object):
                     'cookie_auth',
                     'jwt_token'
                 ],
-                'endpoint_path': '/repositories/{repository}/branch_protection/rule',
+                'endpoint_path': '/repositories/{repository}/branch_protection',
                 'operation_id': 'create_branch_protection_rule',
                 'http_method': 'POST',
                 'servers': None,
@@ -377,7 +377,7 @@ class RepositoriesApi(object):
                     'cookie_auth',
                     'jwt_token'
                 ],
-                'endpoint_path': '/repositories/{repository}/branch_protection/rule',
+                'endpoint_path': '/repositories/{repository}/branch_protection',
                 'operation_id': 'delete_branch_protection_rule',
                 'http_method': 'DELETE',
                 'servers': None,

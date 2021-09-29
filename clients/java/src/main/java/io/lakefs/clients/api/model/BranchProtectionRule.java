@@ -23,8 +23,6 @@ import com.google.gson.stream.JsonWriter;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * BranchProtectionRule
@@ -34,10 +32,6 @@ public class BranchProtectionRule {
   public static final String SERIALIZED_NAME_PATTERN = "pattern";
   @SerializedName(SERIALIZED_NAME_PATTERN)
   private String pattern;
-
-  public static final String SERIALIZED_NAME_BLOCKED_ACTIONS = "blocked_actions";
-  @SerializedName(SERIALIZED_NAME_BLOCKED_ACTIONS)
-  private List<String> blockedActions = null;
 
 
   public BranchProtectionRule pattern(String pattern) {
@@ -62,37 +56,6 @@ public class BranchProtectionRule {
   }
 
 
-  public BranchProtectionRule blockedActions(List<String> blockedActions) {
-    
-    this.blockedActions = blockedActions;
-    return this;
-  }
-
-  public BranchProtectionRule addBlockedActionsItem(String blockedActionsItem) {
-    if (this.blockedActions == null) {
-      this.blockedActions = new ArrayList<String>();
-    }
-    this.blockedActions.add(blockedActionsItem);
-    return this;
-  }
-
-   /**
-   * Get blockedActions
-   * @return blockedActions
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-
-  public List<String> getBlockedActions() {
-    return blockedActions;
-  }
-
-
-  public void setBlockedActions(List<String> blockedActions) {
-    this.blockedActions = blockedActions;
-  }
-
-
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -102,13 +65,12 @@ public class BranchProtectionRule {
       return false;
     }
     BranchProtectionRule branchProtectionRule = (BranchProtectionRule) o;
-    return Objects.equals(this.pattern, branchProtectionRule.pattern) &&
-        Objects.equals(this.blockedActions, branchProtectionRule.blockedActions);
+    return Objects.equals(this.pattern, branchProtectionRule.pattern);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(pattern, blockedActions);
+    return Objects.hash(pattern);
   }
 
   @Override
@@ -116,7 +78,6 @@ public class BranchProtectionRule {
     StringBuilder sb = new StringBuilder();
     sb.append("class BranchProtectionRule {\n");
     sb.append("    pattern: ").append(toIndentedString(pattern)).append("\n");
-    sb.append("    blockedActions: ").append(toIndentedString(blockedActions)).append("\n");
     sb.append("}");
     return sb.toString();
   }

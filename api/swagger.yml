@@ -880,11 +880,6 @@ components:
         pattern:
           type: string
           example: "stable/*"
-        blocked_actions:
-          type: array
-          items:
-            type: string
-            example: staging_write
       required:
         - pattern
 paths:
@@ -3012,13 +3007,6 @@ paths:
           $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
-  /repositories/{repository}/branch_protection/rule:
-    parameters:
-      - in: path
-        name: repository
-        required: true
-        schema:
-          type: string
     post:
       tags:
         - repositories

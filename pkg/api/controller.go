@@ -2003,11 +2003,9 @@ func (c *Controller) GetBranchProtectionRules(w http.ResponseWriter, r *http.Req
 		return
 	}
 	resp := make([]*BranchProtectionRule, 0, len(rules.BranchPatternToBlockedActions))
-	for pattern, blockedActions := range rules.BranchPatternToBlockedActions {
-		val := blockedActions.GetValue()
+	for pattern := range rules.BranchPatternToBlockedActions {
 		resp = append(resp, &BranchProtectionRule{
-			Pattern:        pattern,
-			BlockedActions: &val,
+			Pattern: pattern,
 		})
 	}
 	writeResponse(w, http.StatusOK, resp)
@@ -2041,9 +2039,6 @@ func (c *Controller) CreateBranchProtectionRule(w http.ResponseWriter, r *http.R
 	}
 	ctx := r.Context()
 	blockedActions := []string{graveler.BlockedActionStagingWrite, graveler.BlockedActionCommit}
-	if body.BlockedActions != nil {
-		blockedActions = *body.BlockedActions
-	}
 	err := c.Catalog.CreateBranchProtectionRule(ctx, repository, body.Pattern, &graveler.BranchProtectionBlockedActions{Value: blockedActions})
 	if handleAPIError(w, err) {
 		return

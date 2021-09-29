@@ -4,9 +4,9 @@ All URIs are relative to *http://localhost/api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**create_branch_protection_rule**](RepositoriesApi.md#create_branch_protection_rule) | **POST** /repositories/{repository}/branch_protection/rule | 
+[**create_branch_protection_rule**](RepositoriesApi.md#create_branch_protection_rule) | **POST** /repositories/{repository}/branch_protection | 
 [**create_repository**](RepositoriesApi.md#create_repository) | **POST** /repositories | create repository
-[**delete_branch_protection_rule**](RepositoriesApi.md#delete_branch_protection_rule) | **DELETE** /repositories/{repository}/branch_protection/rule | 
+[**delete_branch_protection_rule**](RepositoriesApi.md#delete_branch_protection_rule) | **DELETE** /repositories/{repository}/branch_protection | 
 [**delete_repository**](RepositoriesApi.md#delete_repository) | **DELETE** /repositories/{repository} | delete repository
 [**get_branch_protection_rules**](RepositoriesApi.md#get_branch_protection_rules) | **GET** /repositories/{repository}/branch_protection | get branch protection rules
 [**get_repository**](RepositoriesApi.md#get_repository) | **GET** /repositories/{repository} | get repository
@@ -65,10 +65,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     api_instance = repositories_api.RepositoriesApi(api_client)
     repository = "repository_example" # str | 
     branch_protection_rule = BranchProtectionRule(
-        pattern="pattern_example",
-        blocked_actions=[
-            "blocked_actions_example",
-        ],
+        pattern="stable/*",
     ) # BranchProtectionRule | 
 
     # example passing only required values which don't have defaults set

@@ -879,10 +879,7 @@ components:
       properties:
         pattern:
           type: string
-        blocked_actions:
-          type: array
-          items:
-            type: string
+          example: "stable/*"
       required:
         - pattern
 paths:
@@ -3010,17 +3007,10 @@ paths:
           $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
-  /repositories/{repository}/branch_protection/rule:
-    parameters:
-      - in: path
-        name: repository
-        required: true
-        schema:
-          type: string
     post:
       tags:
         - repositories
-      operationId: create branch protection rule
+      operationId: createBranchProtectionRule
       requestBody:
         required: true
         content:
@@ -3039,7 +3029,7 @@ paths:
     delete:
       tags:
         - repositories
-      operationId: delete branch protection rule
+      operationId: deleteBranchProtectionRule
       requestBody:
         required: true
         content:

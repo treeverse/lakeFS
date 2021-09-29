@@ -4,9 +4,9 @@ All URIs are relative to *http://localhost/api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**createBranchProtectionRule**](RepositoriesApi.md#createBranchProtectionRule) | **POST** /repositories/{repository}/branch_protection/rule | 
+[**createBranchProtectionRule**](RepositoriesApi.md#createBranchProtectionRule) | **POST** /repositories/{repository}/branch_protection | 
 [**createRepository**](RepositoriesApi.md#createRepository) | **POST** /repositories | create repository
-[**deleteBranchProtectionRule**](RepositoriesApi.md#deleteBranchProtectionRule) | **DELETE** /repositories/{repository}/branch_protection/rule | 
+[**deleteBranchProtectionRule**](RepositoriesApi.md#deleteBranchProtectionRule) | **DELETE** /repositories/{repository}/branch_protection | 
 [**deleteRepository**](RepositoriesApi.md#deleteRepository) | **DELETE** /repositories/{repository} | delete repository
 [**getBranchProtectionRules**](RepositoriesApi.md#getBranchProtectionRules) | **GET** /repositories/{repository}/branch_protection | get branch protection rules
 [**getRepository**](RepositoriesApi.md#getRepository) | **GET** /repositories/{repository} | get repository
