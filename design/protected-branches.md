@@ -3,12 +3,9 @@
 ## Requirements
 
 1. As a lakeFS user, I should be able to mark branches as "protected" - from the UI, CLI and API.
-1. [Descision Required]: Protected branches will be subject to one of the following constraints:
-   1. (either) they cannot be directly committed to. Only merges are allowed.
-   1. (or) their staging area is blocked - cannot directly make any changes.
+1. Writes and commits on protected branches will be blocked.
 1. Forbidden actions to protected branches should fail with a meaningful error message.
 1. The implementation should be flexible to adding more constraint types in the future (example: require PR before merging).
-1. Force options - blocked operations should have a reasonable way to be forced. In the future, the extent to which they can be forced may also be configurable (similarly to GitHub).
 
 ## Where to save the model
 
@@ -63,9 +60,10 @@ After a meeting discussing the matter, we decided to go with suggestion #1, but 
 
 When a branch matches a protection rule, the operations described in the rule's `blocked_actions` will be blocked. 
 Blocked actions can be:
-1. `write`: any write operation on the staging area, including: upload, delete, revert changes.
+1. `staging_write`: any write operation on the staging area, including: upload, delete, revert changes.
 2. `commit`: a simple commit, not including merges and reverts.
 
+For now, we will always add both blocked actions for all rules. In the future we will allow more flexibility.
 
 ### Runtime
 
