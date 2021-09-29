@@ -102,6 +102,7 @@ func (m *BranchProtectionManager) IsBlocked(ctx context.Context, repositoryID gr
 		return false, err
 	}
 	for pattern, blockedActions := range rules.(*graveler.BranchProtectionRules).BranchPatternToBlockedActions {
+		pattern := pattern
 		matcher, err := m.matchers.GetOrSet(pattern, func() (v interface{}, err error) {
 			return glob.Compile(pattern)
 		})
