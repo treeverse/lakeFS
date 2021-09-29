@@ -27,6 +27,11 @@ Required support for S3 API means some AAA features must be identical to
 those in S3. Our users are almost all S3 users so their familiarity with
 other features means we prefer to support those features too.
 
+We should provide support for users with other identity providers.  Most
+important of these are Active Directory (and other LDAP) sources.  These
+might also serve as a model for possible future integrations but that is
+out of scope of this redesign.
+
 ### Identity
 
 S3 supports users and roles.  Users are typically human-shaped, machines
@@ -84,3 +89,70 @@ A usable audit log would require at least:
 1. Identities linked to actions.
 1. Explicit authentication events linking identities to credentials used
    to authenticate.
+
+## Active Directory and LDAP support
+
+Issue #2058 is to support Active Directory.  This splits naturally along
+the 3 A's: use Active Directory to _authenticate_, to _authorize_, or to
+receive _audit_ logs of user operations.
+
+### Authentication
+
+This section will initially apply to GUI clients.  We will have to allow
+users to request access keys (or short-term tokens) to allow them to run
+programs that use AWS S3 or the lakeFS API.
+
+We may authenticate using an LDAP server directly or using some external
+application.
+
+* To authenticate directly, the lakeFS web server should use SASL.  That
+  may also allow other methods in future.
+  
+  The advantage here is that *all* LDAP capabilities can be used as long
+  as lakeFS understands them.  This probably helps most in enterprises.
+
+* To use external applications, the lakeFS web server should use OAuth2.
+
+  The advantage here is that other OAuth2 providers can be used: GitHub,
+  Google Suites, and many others.  LDAP users can still use bridges such
+  as Dex to authenticate over OAuth2.  The [Microsoft Connector][dex-ms]
+  connector gives an example.
+
+#### Decision
+
+Add OAuth2 support, as it provides easier integration with more identity
+providers by using bridges.  Allow users who authenticate in this way to
+create access keys for their accounts, allowing them to use applications
+over both the S3 gateway and the lakeFS API.
+
+The lakeFS web UI will (optionally) authenticate users using OAuth2, and
+place the result on their JWT.  Selecting between OAuth2 or internal can
+be done once during the initial login.  After that the web app can reuse
+that method.
+
+### Authorization
+
+There is room for business login when authorizing.  Typically users have
+properties attached during authentication, which some business logic can
+connect to attached policies.  This can be quite complex, but we already
+have a groups mechanism in place which we might re-use.
+
+When do we attach policies do these groups?  Configuration changes apply
+at different times depending on this decision.  Authenticated users will
+see only changes in mappings that are attached before the change.
+
+#### Decision
+
+lakeFS shall receive groups from OAuth2 and encode them as claims on the
+JWT.  The remaining logic can proceed as today.
+
+This business logic is quite simple.
+
+### Audit
+
+OAuth2 has no audit mechanism and currently there is no request to allow
+such an audit.  Accordingly we shall not currently add audit logs.
+
+# References
+
+[dex-ms]: https://dexidp.io/docs/connectors/microsoft/
