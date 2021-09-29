@@ -51,11 +51,11 @@ public class BranchProtectionRuleTest {
     }
 
     /**
-     * Test the property 'constraints'
+     * Test the property 'blockedActions'
      */
     @Test
-    public void constraintsTest() {
-        // TODO: test constraints
+    public void blockedActionsTest() {
+        // TODO: test blockedActions
     }
 
 }

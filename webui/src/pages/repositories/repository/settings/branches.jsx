@@ -19,7 +19,6 @@ const SettingsContainer = () => {
     const [deleteButtonDisabled, setDeleteButtonDisabled] = useState(false)
 
     const {response: rules, error: rulesError, loading: rulesLoading} = useAPI(async () => {
-        // return [{"constraints":["block_staging"],"pattern":"de*"},{"constraints":["block_staging"],"pattern":"main"}]
         return branchProtectionRules.getRules(repo.id)
     }, [repo, refresh])
     if (!!error) return <Error error={error}/>;

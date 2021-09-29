@@ -122,7 +122,7 @@ type Interface interface {
 
 	GetBranchProtectionRules(ctx context.Context, repositoryID string) (*graveler.BranchProtectionRules, error)
 	DeleteBranchProtectionRule(ctx context.Context, repositoryID string, pattern string) error
-	CreateBranchProtectionRule(ctx context.Context, repositoryID string, pattern string, constraints *graveler.BranchProtectionBlockedActions) error
+	CreateBranchProtectionRule(ctx context.Context, repositoryID string, pattern string, blockedActions *graveler.BranchProtectionBlockedActions) error
 
 	io.Closer
 }

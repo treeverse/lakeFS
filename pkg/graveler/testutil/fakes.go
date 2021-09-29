@@ -753,11 +753,11 @@ func NewProtectedBranchesManagerFake(protectedBranches ...string) *ProtectedBran
 	return &ProtectedBranchesManagerFake{protectedBranches: protectedBranches}
 }
 
-func (p ProtectedBranchesManagerFake) Add(ctx context.Context, repositoryID graveler.RepositoryID, branchNamePattern string, constraints *graveler.BranchProtectionBlockedActions) error {
+func (p ProtectedBranchesManagerFake) Add(ctx context.Context, repositoryID graveler.RepositoryID, branchNamePattern string, blockedActions *graveler.BranchProtectionBlockedActions) error {
 	panic("implement me")
 }
 
-func (p ProtectedBranchesManagerFake) Set(ctx context.Context, repositoryID graveler.RepositoryID, branchNamePattern string, constraints *graveler.BranchProtectionBlockedActions) error {
+func (p ProtectedBranchesManagerFake) Set(ctx context.Context, repositoryID graveler.RepositoryID, branchNamePattern string, blockedActions *graveler.BranchProtectionBlockedActions) error {
 	panic("implement me")
 }
 
@@ -773,7 +773,7 @@ func (p ProtectedBranchesManagerFake) GetAll(ctx context.Context, repositoryID g
 	panic("implement me")
 }
 
-func (p ProtectedBranchesManagerFake) HasConstraint(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, constraint string) (bool, error) {
+func (p ProtectedBranchesManagerFake) IsBlocked(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, action string) (bool, error) {
 	for _, branch := range p.protectedBranches {
 		if branch == string(branchID) {
 			return true, nil

@@ -879,7 +879,7 @@ components:
       properties:
         pattern:
           type: string
-        constraints:
+        blocked_actions:
           type: array
           items:
             type: string
@@ -3004,27 +3004,6 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/BranchProtectionRule"
-        401:
-          $ref: "#/components/responses/Unauthorized"
-        404:
-          $ref: "#/components/responses/NotFound"
-        default:
-          $ref: "#/components/responses/ServerError"
-    post:
-      tags:
-        - repositories
-      operationId: set branch protection rules
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: array
-              items:
-                $ref: "#/components/schemas/BranchProtectionRule"
-      responses:
-        204:
-          description: set branch protection rules successfully
         401:
           $ref: "#/components/responses/Unauthorized"
         404:

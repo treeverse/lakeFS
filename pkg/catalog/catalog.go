@@ -1193,8 +1193,8 @@ func (c *Catalog) DeleteBranchProtectionRule(ctx context.Context, repositoryID s
 	return c.Store.DeleteBranchProtectionRule(ctx, graveler.RepositoryID(repositoryID), pattern)
 }
 
-func (c *Catalog) CreateBranchProtectionRule(ctx context.Context, repositoryID string, pattern string, constraints *graveler.BranchProtectionBlockedActions) error {
-	return c.Store.CreateBranchProtectionRule(ctx, graveler.RepositoryID(repositoryID), pattern, constraints)
+func (c *Catalog) CreateBranchProtectionRule(ctx context.Context, repositoryID string, pattern string, blockedActions *graveler.BranchProtectionBlockedActions) error {
+	return c.Store.CreateBranchProtectionRule(ctx, graveler.RepositoryID(repositoryID), pattern, blockedActions)
 }
 
 func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repository string, previousRunID string) (*graveler.GarbageCollectionRunMetadata, error) {

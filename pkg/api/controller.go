@@ -2040,7 +2040,7 @@ func (c *Controller) CreateBranchProtectionRule(w http.ResponseWriter, r *http.R
 		return
 	}
 	ctx := r.Context()
-	blockedActions := []string{graveler.StagingBlockedConstraint, graveler.CommitBlockedConstraint}
+	blockedActions := []string{graveler.BlockedActionStagingWrite, graveler.BlockedActionCommit}
 	if body.BlockedActions != nil {
 		blockedActions = *body.BlockedActions
 	}
