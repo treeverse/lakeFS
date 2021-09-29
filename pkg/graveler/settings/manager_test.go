@@ -173,7 +173,7 @@ func prepareTest(t *testing.T, ctx context.Context, cache cache.Cache, branchLoc
 	if branchLockCallback != nil {
 		cb = branchLockCallback
 	}
-	opts := []settings.ManagerOption{settings.WithBranchLock(branchLock)}
+	var opts []settings.ManagerOption
 	if cache != nil {
 		opts = append(opts, settings.WithCache(cache))
 	}
