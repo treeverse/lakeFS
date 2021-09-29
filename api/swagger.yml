@@ -879,7 +879,7 @@ components:
       properties:
         pattern:
           type: string
-        constraints:
+        blocked_actions:
           type: array
           items:
             type: string

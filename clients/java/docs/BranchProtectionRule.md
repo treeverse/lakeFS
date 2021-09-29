@@ -8,7 +8,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **pattern** | **String** |  | 
-**constraints** | **List&lt;String&gt;** |  |  [optional]
+**blockedActions** | **List&lt;String&gt;** |  |  [optional]
 
 
 

@@ -2002,12 +2002,12 @@ func (c *Controller) GetBranchProtectionRules(w http.ResponseWriter, r *http.Req
 	if handleAPIError(w, err) {
 		return
 	}
-	resp := make([]*BranchProtectionRule, 0, len(rules.BranchPatternToConstraints))
-	for pattern, constraints := range rules.BranchPatternToConstraints {
-		val := constraints.GetValue()
+	resp := make([]*BranchProtectionRule, 0, len(rules.BranchPatternToBlockedActions))
+	for pattern, blockedActions := range rules.BranchPatternToBlockedActions {
+		val := blockedActions.GetValue()
 		resp = append(resp, &BranchProtectionRule{
-			Pattern:     pattern,
-			Constraints: &val,
+			Pattern:        pattern,
+			BlockedActions: &val,
 		})
 	}
 	writeResponse(w, http.StatusOK, resp)
@@ -2040,11 +2040,11 @@ func (c *Controller) CreateBranchProtectionRule(w http.ResponseWriter, r *http.R
 		return
 	}
 	ctx := r.Context()
-	constraints := []string{graveler.StagingBlockedConstraint, graveler.CommitBlockedConstraint}
-	if body.Constraints != nil {
-		constraints = *body.Constraints
+	blockedActions := []string{graveler.StagingBlockedConstraint, graveler.CommitBlockedConstraint}
+	if body.BlockedActions != nil {
+		blockedActions = *body.BlockedActions
 	}
-	err := c.Catalog.CreateBranchProtectionRule(ctx, repository, body.Pattern, &graveler.BranchProtectionConstraints{Value: constraints})
+	err := c.Catalog.CreateBranchProtectionRule(ctx, repository, body.Pattern, &graveler.BranchProtectionBlockedActions{Value: blockedActions})
 	if handleAPIError(w, err) {
 		return
 	}

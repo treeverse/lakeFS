@@ -38,10 +38,10 @@ message GarbageCollectionRunMetadata {
   string Address_location = 3;
 }
 
-message BranchProtectionConstraints {
+message BranchProtectionBlockedActions {
   repeated string value = 1;
 }
 
 message BranchProtectionRules {
-  map<string, BranchProtectionConstraints> branch_pattern_to_constraints = 1;
+  map<string, BranchProtectionBlockedActions> branch_pattern_to_blocked_actions = 1;
 }

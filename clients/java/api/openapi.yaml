@@ -5271,14 +5271,14 @@ components:
       type: object
     BranchProtectionRule:
       example:
+        blocked_actions:
+        - blocked_actions
+        - blocked_actions
         pattern: pattern
-        constraints:
-        - constraints
-        - constraints
       properties:
         pattern:
           type: string
-        constraints:
+        blocked_actions:
           items:
             type: string
           type: array

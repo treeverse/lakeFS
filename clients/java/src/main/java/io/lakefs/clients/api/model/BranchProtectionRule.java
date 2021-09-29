@@ -35,9 +35,9 @@ public class BranchProtectionRule {
   @SerializedName(SERIALIZED_NAME_PATTERN)
   private String pattern;
 
-  public static final String SERIALIZED_NAME_CONSTRAINTS = "constraints";
-  @SerializedName(SERIALIZED_NAME_CONSTRAINTS)
-  private List<String> constraints = null;
+  public static final String SERIALIZED_NAME_BLOCKED_ACTIONS = "blocked_actions";
+  @SerializedName(SERIALIZED_NAME_BLOCKED_ACTIONS)
+  private List<String> blockedActions = null;
 
 
   public BranchProtectionRule pattern(String pattern) {
@@ -62,34 +62,34 @@ public class BranchProtectionRule {
   }
 
 
-  public BranchProtectionRule constraints(List<String> constraints) {
+  public BranchProtectionRule blockedActions(List<String> blockedActions) {
     
-    this.constraints = constraints;
+    this.blockedActions = blockedActions;
     return this;
   }
 
-  public BranchProtectionRule addConstraintsItem(String constraintsItem) {
-    if (this.constraints == null) {
-      this.constraints = new ArrayList<String>();
+  public BranchProtectionRule addBlockedActionsItem(String blockedActionsItem) {
+    if (this.blockedActions == null) {
+      this.blockedActions = new ArrayList<String>();
     }
-    this.constraints.add(constraintsItem);
+    this.blockedActions.add(blockedActionsItem);
     return this;
   }
 
    /**
-   * Get constraints
-   * @return constraints
+   * Get blockedActions
+   * @return blockedActions
   **/
   @javax.annotation.Nullable
   @ApiModelProperty(value = "")
 
-  public List<String> getConstraints() {
-    return constraints;
+  public List<String> getBlockedActions() {
+    return blockedActions;
   }
 
 
-  public void setConstraints(List<String> constraints) {
-    this.constraints = constraints;
+  public void setBlockedActions(List<String> blockedActions) {
+    this.blockedActions = blockedActions;
   }
 
 
@@ -103,12 +103,12 @@ public class BranchProtectionRule {
     }
     BranchProtectionRule branchProtectionRule = (BranchProtectionRule) o;
     return Objects.equals(this.pattern, branchProtectionRule.pattern) &&
-        Objects.equals(this.constraints, branchProtectionRule.constraints);
+        Objects.equals(this.blockedActions, branchProtectionRule.blockedActions);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(pattern, constraints);
+    return Objects.hash(pattern, blockedActions);
   }
 
   @Override
@@ -116,7 +116,7 @@ public class BranchProtectionRule {
     StringBuilder sb = new StringBuilder();
     sb.append("class BranchProtectionRule {\n");
     sb.append("    pattern: ").append(toIndentedString(pattern)).append("\n");
-    sb.append("    constraints: ").append(toIndentedString(constraints)).append("\n");
+    sb.append("    blockedActions: ").append(toIndentedString(blockedActions)).append("\n");
     sb.append("}");
     return sb.toString();
   }

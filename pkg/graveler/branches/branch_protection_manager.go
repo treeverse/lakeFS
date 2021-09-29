@@ -22,18 +22,18 @@ func NewBranchProtectionManager(settingManager *settings.Manager) *BranchProtect
 	return &BranchProtectionManager{settingManager: settingManager}
 }
 
-func (m *BranchProtectionManager) Add(ctx context.Context, repositoryID graveler.RepositoryID, branchNamePattern string, constraints *graveler.BranchProtectionConstraints) error {
+func (m *BranchProtectionManager) Add(ctx context.Context, repositoryID graveler.RepositoryID, branchNamePattern string, constraints *graveler.BranchProtectionBlockedActions) error {
 	alreadyExists := false
 	err := m.settingManager.UpdateWithLock(ctx, repositoryID, BranchProtectionSettingKey, &graveler.BranchProtectionRules{}, func(message proto.Message) {
 		rules := message.(*graveler.BranchProtectionRules)
-		if rules.BranchPatternToConstraints == nil {
-			rules.BranchPatternToConstraints = make(map[string]*graveler.BranchProtectionConstraints)
+		if rules.BranchPatternToBlockedActions == nil {
+			rules.BranchPatternToBlockedActions = make(map[string]*graveler.BranchProtectionBlockedActions)
 		}
-		if _, ok := rules.BranchPatternToConstraints[branchNamePattern]; ok {
+		if _, ok := rules.BranchPatternToBlockedActions[branchNamePattern]; ok {
 			alreadyExists = true
 			return
 		}
-		rules.BranchPatternToConstraints[branchNamePattern] = constraints
+		rules.BranchPatternToBlockedActions[branchNamePattern] = constraints
 	})
 	if err != nil {
 		return err
@@ -44,26 +44,26 @@ func (m *BranchProtectionManager) Add(ctx context.Context, repositoryID graveler
 	return nil
 }
 
-func (m *BranchProtectionManager) Set(ctx context.Context, repositoryID graveler.RepositoryID, branchNamePattern string, constraints *graveler.BranchProtectionConstraints) error {
+func (m *BranchProtectionManager) Set(ctx context.Context, repositoryID graveler.RepositoryID, branchNamePattern string, constraints *graveler.BranchProtectionBlockedActions) error {
 	return m.settingManager.UpdateWithLock(ctx, repositoryID, BranchProtectionSettingKey, &graveler.BranchProtectionRules{}, func(message proto.Message) {
 		rules := message.(*graveler.BranchProtectionRules)
-		if rules.BranchPatternToConstraints == nil {
-			rules.BranchPatternToConstraints = make(map[string]*graveler.BranchProtectionConstraints)
+		if rules.BranchPatternToBlockedActions == nil {
+			rules.BranchPatternToBlockedActions = make(map[string]*graveler.BranchProtectionBlockedActions)
 		}
 		if len(constraints.GetValue()) == 0 {
-			delete(rules.BranchPatternToConstraints, branchNamePattern)
+			delete(rules.BranchPatternToBlockedActions, branchNamePattern)
 		} else {
-			rules.BranchPatternToConstraints[branchNamePattern] = constraints
+			rules.BranchPatternToBlockedActions[branchNamePattern] = constraints
 		}
 	})
 }
 
-func (m *BranchProtectionManager) Get(ctx context.Context, repositoryID graveler.RepositoryID, branchNamePattern string) (*graveler.BranchProtectionConstraints, error) {
+func (m *BranchProtectionManager) Get(ctx context.Context, repositoryID graveler.RepositoryID, branchNamePattern string) (*graveler.BranchProtectionBlockedActions, error) {
 	rules, err := m.settingManager.GetLatest(ctx, repositoryID, BranchProtectionSettingKey, &graveler.BranchProtectionRules{})
 	if err != nil {
 		return nil, err
 	}
-	return rules.(*graveler.BranchProtectionRules).BranchPatternToConstraints[branchNamePattern], nil
+	return rules.(*graveler.BranchProtectionRules).BranchPatternToBlockedActions[branchNamePattern], nil
 }
 
 func (m *BranchProtectionManager) SetAll(ctx context.Context, repositoryID graveler.RepositoryID, rules *graveler.BranchProtectionRules) error {
@@ -81,7 +81,7 @@ func (m *BranchProtectionManager) GetAll(ctx context.Context, repositoryID grave
 	return rules.(*graveler.BranchProtectionRules), nil
 }
 
-func (m *BranchProtectionManager) HasConstraint(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, constraint string) (bool, error) {
+func (m *BranchProtectionManager) HasConstraint(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, action string) (bool, error) {
 	rules, err := m.settingManager.Get(ctx, repositoryID, BranchProtectionSettingKey, &graveler.BranchProtectionRules{})
 	if errors.Is(err, graveler.ErrNotFound) {
 		return false, nil
@@ -89,13 +89,13 @@ func (m *BranchProtectionManager) HasConstraint(ctx context.Context, repositoryI
 	if err != nil {
 		return false, err
 	}
-	for pattern, constraints := range rules.(*graveler.BranchProtectionRules).BranchPatternToConstraints {
+	for pattern, blockedActions := range rules.(*graveler.BranchProtectionRules).BranchPatternToBlockedActions {
 		matcher := glob.MustCompile(pattern)
 		if !matcher.Match(string(branchID)) {
 			continue
 		}
-		for _, c := range constraints.GetValue() {
-			if c == constraint {
+		for _, c := range blockedActions.GetValue() {
+			if c == action {
 				return true, nil
 			}
 		}

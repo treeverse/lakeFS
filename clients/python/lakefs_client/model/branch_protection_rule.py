@@ -74,7 +74,7 @@ class BranchProtectionRule(ModelNormal):
         """
         return {
             'pattern': (str,),  # noqa: E501
-            'constraints': ([str],),  # noqa: E501
+            'blocked_actions': ([str],),  # noqa: E501
         }
 
     @cached_property
@@ -84,7 +84,7 @@ class BranchProtectionRule(ModelNormal):
 
     attribute_map = {
         'pattern': 'pattern',  # noqa: E501
-        'constraints': 'constraints',  # noqa: E501
+        'blocked_actions': 'blocked_actions',  # noqa: E501
     }
 
     _composed_schemas = {}
@@ -136,7 +136,7 @@ class BranchProtectionRule(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            constraints ([str]): [optional]  # noqa: E501
+            blocked_actions ([str]): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

@@ -439,7 +439,7 @@ type VersionController interface {
 
 	DeleteBranchProtectionRule(ctx context.Context, repositoryID RepositoryID, pattern string) error
 
-	CreateBranchProtectionRule(ctx context.Context, repositoryID RepositoryID, pattern string, constraints *BranchProtectionConstraints) error
+	CreateBranchProtectionRule(ctx context.Context, repositoryID RepositoryID, pattern string, constraints *BranchProtectionBlockedActions) error
 }
 
 // Plumbing includes commands for fiddling more directly with graveler implementation
@@ -1002,7 +1002,7 @@ func (g *Graveler) DeleteBranchProtectionRule(ctx context.Context, repositoryID 
 	return g.protectedBranchesManager.Set(ctx, repositoryID, pattern, nil)
 }
 
-func (g *Graveler) CreateBranchProtectionRule(ctx context.Context, repositoryID RepositoryID, pattern string, constraints *BranchProtectionConstraints) error {
+func (g *Graveler) CreateBranchProtectionRule(ctx context.Context, repositoryID RepositoryID, pattern string, constraints *BranchProtectionBlockedActions) error {
 	return g.protectedBranchesManager.Add(ctx, repositoryID, pattern, constraints)
 }
 
@@ -2186,9 +2186,9 @@ type GarbageCollectionManager interface {
 }
 
 type ProtectedBranchesManager interface {
-	Add(ctx context.Context, repositoryID RepositoryID, branchNamePattern string, constraints *BranchProtectionConstraints) error
-	Set(ctx context.Context, repositoryID RepositoryID, branchNamePattern string, constraints *BranchProtectionConstraints) error
-	Get(ctx context.Context, repositoryID RepositoryID, branchNamePattern string) (*BranchProtectionConstraints, error)
+	Add(ctx context.Context, repositoryID RepositoryID, branchNamePattern string, constraints *BranchProtectionBlockedActions) error
+	Set(ctx context.Context, repositoryID RepositoryID, branchNamePattern string, constraints *BranchProtectionBlockedActions) error
+	Get(ctx context.Context, repositoryID RepositoryID, branchNamePattern string) (*BranchProtectionBlockedActions, error)
 	SetAll(ctx context.Context, repositoryID RepositoryID, rules *BranchProtectionRules) error
 	GetAll(ctx context.Context, repositoryID RepositoryID) (*BranchProtectionRules, error)
 	HasConstraint(ctx context.Context, repositoryID RepositoryID, branchID BranchID, constraint string) (bool, error)

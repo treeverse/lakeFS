@@ -753,15 +753,15 @@ func NewProtectedBranchesManagerFake(protectedBranches ...string) *ProtectedBran
 	return &ProtectedBranchesManagerFake{protectedBranches: protectedBranches}
 }
 
-func (p ProtectedBranchesManagerFake) Add(ctx context.Context, repositoryID graveler.RepositoryID, branchNamePattern string, constraints *graveler.BranchProtectionConstraints) error {
+func (p ProtectedBranchesManagerFake) Add(ctx context.Context, repositoryID graveler.RepositoryID, branchNamePattern string, constraints *graveler.BranchProtectionBlockedActions) error {
 	panic("implement me")
 }
 
-func (p ProtectedBranchesManagerFake) Set(ctx context.Context, repositoryID graveler.RepositoryID, branchNamePattern string, constraints *graveler.BranchProtectionConstraints) error {
+func (p ProtectedBranchesManagerFake) Set(ctx context.Context, repositoryID graveler.RepositoryID, branchNamePattern string, constraints *graveler.BranchProtectionBlockedActions) error {
 	panic("implement me")
 }
 
-func (p ProtectedBranchesManagerFake) Get(ctx context.Context, repositoryID graveler.RepositoryID, branchNamePattern string) (*graveler.BranchProtectionConstraints, error) {
+func (p ProtectedBranchesManagerFake) Get(ctx context.Context, repositoryID graveler.RepositoryID, branchNamePattern string) (*graveler.BranchProtectionBlockedActions, error) {
 	panic("implement me")
 }
 
