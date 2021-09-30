@@ -41,10 +41,10 @@ public class BranchProtectionRule {
   }
 
    /**
-   * Get pattern
+   * A glob pattern for the branch name
    * @return pattern
   **/
-  @ApiModelProperty(example = "stable/_*", required = true, value = "")
+  @ApiModelProperty(example = "stable/_*", required = true, value = "A glob pattern for the branch name")
 
   public String getPattern() {
     return pattern;

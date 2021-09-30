@@ -765,10 +765,6 @@ func (p ProtectedBranchesManagerFake) Get(ctx context.Context, repositoryID grav
 	panic("implement me")
 }
 
-func (p ProtectedBranchesManagerFake) SetAll(ctx context.Context, repositoryID graveler.RepositoryID, rules *graveler.BranchProtectionRules) error {
-	panic("implement me")
-}
-
 func (p ProtectedBranchesManagerFake) GetAll(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.BranchProtectionRules, error) {
 	panic("implement me")
 }

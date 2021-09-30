@@ -56,6 +56,9 @@ class BranchProtectionRule(ModelNormal):
     }
 
     validations = {
+        ('pattern',): {
+            'min_length': 1,
+        },
     }
 
     additional_properties_type = None
@@ -101,7 +104,7 @@ class BranchProtectionRule(ModelNormal):
         """BranchProtectionRule - a model defined in OpenAPI
 
         Args:
-            pattern (str):
+            pattern (str): A glob pattern for the branch name
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types

@@ -7,7 +7,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**pattern** | **String** |  | 
+**pattern** | **String** | A glob pattern for the branch name | 
 
 
 

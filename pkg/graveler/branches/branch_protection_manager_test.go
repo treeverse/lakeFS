@@ -2,6 +2,7 @@ package branches_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/go-test/deep"
@@ -32,6 +33,16 @@ func TestGet(t *testing.T) {
 	testutil.Must(t, err)
 	if rule != nil {
 		t.Fatalf("expected nil rule, got %v", rule)
+	}
+}
+
+func TestAddAlreadyExists(t *testing.T) {
+	ctx := context.Background()
+	bpm := prepareTest(t, ctx)
+	testutil.Must(t, bpm.Add(ctx, "example-repo", "main*", &graveler.BranchProtectionBlockedActions{Value: []string{"example-blocked-action"}}))
+	err := bpm.Add(ctx, "example-repo", "main*", &graveler.BranchProtectionBlockedActions{Value: []string{"example-blocked-action2"}})
+	if !errors.Is(err, branches.ErrorRuleAlreadyExists) {
+		t.Fatalf("expected ErrorRuleAlreadyExists, got %v", err)
 	}
 }
 

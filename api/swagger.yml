@@ -879,7 +879,9 @@ components:
       properties:
         pattern:
           type: string
+          description: A glob pattern for the branch name
           example: "stable/*"
+          minLength: 1
       required:
         - pattern
 paths:

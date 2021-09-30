@@ -5273,7 +5273,9 @@ components:
         pattern: stable/*
       properties:
         pattern:
+          description: A glob pattern for the branch name
           example: stable/*
+          minLength: 1
           type: string
       required:
       - pattern

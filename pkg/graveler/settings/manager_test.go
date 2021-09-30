@@ -86,9 +86,10 @@ func TestUpdateWithLock(t *testing.T) {
 	expectedSettings := &settings.ExampleSettings{ExampleInt: 5, ExampleStr: "hello", ExampleMap: map[string]int32{"boo": 6}}
 	err := m.Save(ctx, "example-repo", "settingKey", expectedSettings)
 	testutil.Must(t, err)
-	update := func(settingsToEdit proto.Message) {
+	update := func(settingsToEdit proto.Message) error {
 		settingsToEdit.(*settings.ExampleSettings).ExampleInt++
 		settingsToEdit.(*settings.ExampleSettings).ExampleMap["boo"]++
+		return nil
 	}
 	var wg sync.WaitGroup
 	wg.Add(IncrementCount)
@@ -141,13 +142,14 @@ func TestEmpty(t *testing.T) {
 		t.Fatalf("expected error %v, got %v", graveler.ErrNotFound, err)
 	}
 	// when using UpdateWithLock on an unset key, the update function gets an empty setting object to operate on
-	err = m.UpdateWithLock(ctx, "example-repo", "settingKey", emptySettings, func(setting proto.Message) {
+	err = m.UpdateWithLock(ctx, "example-repo", "settingKey", emptySettings, func(setting proto.Message) error {
 		s := setting.(*settings.ExampleSettings)
 		if s.ExampleMap == nil {
 			s.ExampleMap = make(map[string]int32)
 		}
 		s.ExampleInt++
 		s.ExampleMap["boo"]++
+		return nil
 	})
 	testutil.Must(t, err)
 	gotSettings, err = m.Get(ctx, "example-repo", "settingKey", emptySettings)

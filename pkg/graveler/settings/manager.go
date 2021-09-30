@@ -139,7 +139,7 @@ func (m *Manager) getFromStore(ctx context.Context, repositoryID graveler.Reposi
 
 // UpdateWithLock atomically gets a setting, performs the update function, and persists the setting to the store.
 // The settingTemplate parameter is used to determine the type passed to the update function.
-func (m *Manager) UpdateWithLock(ctx context.Context, repositoryID graveler.RepositoryID, key string, settingTemplate proto.Message, update func(proto.Message)) error {
+func (m *Manager) UpdateWithLock(ctx context.Context, repositoryID graveler.RepositoryID, key string, settingTemplate proto.Message, update func(proto.Message) error) error {
 	repo, err := m.refManager.GetRepository(ctx, repositoryID)
 	if err != nil {
 		return err
@@ -152,7 +152,10 @@ func (m *Manager) UpdateWithLock(ctx context.Context, repositoryID graveler.Repo
 			return nil, err
 		}
 		logSetting(logging.FromContext(ctx), repositoryID, key, setting, "got repository-level setting")
-		update(setting)
+		err = update(setting)
+		if err != nil {
+			return nil, err
+		}
 		return nil, m.Save(ctx, repositoryID, key, setting)
 	})
 	return err

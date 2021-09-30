@@ -2189,7 +2189,6 @@ type ProtectedBranchesManager interface {
 	Add(ctx context.Context, repositoryID RepositoryID, branchNamePattern string, blockedActions *BranchProtectionBlockedActions) error
 	Set(ctx context.Context, repositoryID RepositoryID, branchNamePattern string, blockedActions *BranchProtectionBlockedActions) error
 	Get(ctx context.Context, repositoryID RepositoryID, branchNamePattern string) (*BranchProtectionBlockedActions, error)
-	SetAll(ctx context.Context, repositoryID RepositoryID, rules *BranchProtectionRules) error
 	GetAll(ctx context.Context, repositoryID RepositoryID) (*BranchProtectionRules, error)
 	IsBlocked(ctx context.Context, repositoryID RepositoryID, branchID BranchID, action string) (bool, error)
 }
