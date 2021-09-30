@@ -20,7 +20,10 @@ const (
 	matcherCacheJitter = 1 * time.Minute
 )
 
-var ErrorRuleAlreadyExists = errors.New("branch protection rule already exists")
+var (
+	ErrRuleAlreadyExists = errors.New("branch protection rule already exists")
+	ErrRuleNotExists     = errors.New("branch protection rule does not exist")
+)
 
 type ProtectionManager struct {
 	settingManager *settings.Manager
@@ -38,24 +41,23 @@ func (m *ProtectionManager) Add(ctx context.Context, repositoryID graveler.Repos
 			rules.BranchPatternToBlockedActions = make(map[string]*graveler.BranchProtectionBlockedActions)
 		}
 		if _, ok := rules.BranchPatternToBlockedActions[branchNamePattern]; ok {
-			return ErrorRuleAlreadyExists
+			return ErrRuleAlreadyExists
 		}
 		rules.BranchPatternToBlockedActions[branchNamePattern] = &graveler.BranchProtectionBlockedActions{Value: blockedActions}
 		return nil
 	})
 }
 
-func (m *ProtectionManager) Set(ctx context.Context, repositoryID graveler.RepositoryID, branchNamePattern string, blockedActions []graveler.BranchProtectionBlockedAction) error {
+func (m *ProtectionManager) Delete(ctx context.Context, repositoryID graveler.RepositoryID, branchNamePattern string) error {
 	return m.settingManager.UpdateWithLock(ctx, repositoryID, ProtectionSettingKey, &graveler.BranchProtectionRules{}, func(message proto.Message) error {
 		rules := message.(*graveler.BranchProtectionRules)
 		if rules.BranchPatternToBlockedActions == nil {
 			rules.BranchPatternToBlockedActions = make(map[string]*graveler.BranchProtectionBlockedActions)
 		}
-		if len(blockedActions) == 0 {
-			delete(rules.BranchPatternToBlockedActions, branchNamePattern)
-		} else {
-			rules.BranchPatternToBlockedActions[branchNamePattern] = &graveler.BranchProtectionBlockedActions{Value: blockedActions}
+		if _, ok := rules.BranchPatternToBlockedActions[branchNamePattern]; !ok {
+			return ErrRuleNotExists
 		}
+		delete(rules.BranchPatternToBlockedActions, branchNamePattern)
 		return nil
 	})
 }

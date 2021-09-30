@@ -41,8 +41,30 @@ func TestAddAlreadyExists(t *testing.T) {
 	bpm := prepareTest(t, ctx)
 	testutil.Must(t, bpm.Add(ctx, "example-repo", "main*", []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_STAGING_WRITE}))
 	err := bpm.Add(ctx, "example-repo", "main*", []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_COMMIT})
-	if !errors.Is(err, branch.ErrorRuleAlreadyExists) {
-		t.Fatalf("expected ErrorRuleAlreadyExists, got %v", err)
+	if !errors.Is(err, branch.ErrRuleAlreadyExists) {
+		t.Fatalf("expected ErrRuleAlreadyExists, got %v", err)
+	}
+}
+
+func TestDelete(t *testing.T) {
+	ctx := context.Background()
+	bpm := prepareTest(t, ctx)
+	err := bpm.Delete(ctx, "example-repo", "main*")
+	if !errors.Is(err, branch.ErrRuleNotExists) {
+		t.Fatalf("expected ErrRuleNotExists, got %v", err)
+	}
+	testutil.Must(t, bpm.Add(ctx, "example-repo", "main*", []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_STAGING_WRITE}))
+	rule, err := bpm.Get(ctx, "example-repo", "main*")
+	testutil.Must(t, err)
+	if diff := deep.Equal([]graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_STAGING_WRITE}, rule); diff != nil {
+		t.Fatalf("got unexpected blocked actions. diff=%s", diff)
+	}
+	testutil.Must(t, bpm.Delete(ctx, "example-repo", "main*"))
+
+	rule, err = bpm.Get(ctx, "example-repo", "main*")
+	testutil.Must(t, err)
+	if rule != nil {
+		t.Fatalf("expected nil rule after delete, got %v", rule)
 	}
 }
 

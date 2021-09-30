@@ -994,7 +994,7 @@ func (g *Graveler) GetBranchProtectionRules(ctx context.Context, repositoryID Re
 }
 
 func (g *Graveler) DeleteBranchProtectionRule(ctx context.Context, repositoryID RepositoryID, pattern string) error {
-	return g.protectedBranchesManager.Set(ctx, repositoryID, pattern, nil)
+	return g.protectedBranchesManager.Delete(ctx, repositoryID, pattern)
 }
 
 func (g *Graveler) CreateBranchProtectionRule(ctx context.Context, repositoryID RepositoryID, pattern string, blockedActions []BranchProtectionBlockedAction) error {
@@ -2181,9 +2181,15 @@ type GarbageCollectionManager interface {
 }
 
 type ProtectedBranchesManager interface {
+	// Add creates a rule for the given name pattern, blocking the given actions.
+	// Returns ErrRuleAlreadyExists if there is already a rule for the given pattern.
 	Add(ctx context.Context, repositoryID RepositoryID, branchNamePattern string, blockedActions []BranchProtectionBlockedAction) error
-	Set(ctx context.Context, repositoryID RepositoryID, branchNamePattern string, blockedActions []BranchProtectionBlockedAction) error
+	// Delete deletes the rule for the given name pattern, or returns ErrRuleNotExists if there is no such rule.
+	Delete(ctx context.Context, repositoryID RepositoryID, branchNamePattern string) error
+	// Get returns the list of blocked actions for the given name pattern, or nil if no rule was defined for the pattern.
 	Get(ctx context.Context, repositoryID RepositoryID, branchNamePattern string) ([]BranchProtectionBlockedAction, error)
+	// GetAll returns all branch protection rules for the repository
 	GetAll(ctx context.Context, repositoryID RepositoryID) (*BranchProtectionRules, error)
+	// IsBlocked returns whether the action is blocked by any branch protection rule matching the given branch.
 	IsBlocked(ctx context.Context, repositoryID RepositoryID, branchID BranchID, action BranchProtectionBlockedAction) (bool, error)
 }
