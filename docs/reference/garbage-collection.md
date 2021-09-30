@@ -15,7 +15,7 @@ However, sometimes you may want to hard-delete your objects, namely delete them 
 Reasons for this include cost-reduction and privacy policies.
 
 Garbage collection rules in lakeFS define for how long to retain objects after they have been deleted (see more information [below](#considerations)).
-After running a GC job, objects that have been deleted prior to the retention period are hard-deleted.
+lakeFS provides a Spark program to hard-delete objects that have been deleted and whose retention period has ended according to the GC rules.
 The GC job does not remove any commits: you will still be able to use commits containing hard-deleted objects,
 but trying to read these objects from lakeFS will result in a `410 Gone` HTTP status.
 
@@ -59,6 +59,9 @@ lakectl gc set-config lakefs://example-repo -f example_repo_gc_rules.json
 ```
 
 ## Running the GC job
+
+The GC job is a Spark program that can be run using `spark-submit` (or using your preferred method of running Spark programs).
+The job will hard-delete objects that were deleted and whose retention period has ended according to the GC rules.
 
 ```bash
 spark-submit --class io.treeverse.clients.GarbageCollector \
