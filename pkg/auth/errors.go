@@ -13,4 +13,5 @@ var (
 	ErrInsufficientPermissions = errors.New("insufficient permissions")
 	ErrNoField                 = errors.New("no field tagged in struct")
 	ErrInvalidAccessKeyID      = errors.New("invalid access key ID")
+	ErrInvalidSecretAccessKey  = errors.New("invalid secret access key")
 )

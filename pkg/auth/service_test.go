@@ -15,11 +15,10 @@ import (
 	"github.com/go-test/deep"
 	"github.com/google/uuid"
 	"github.com/ory/dockertest/v3"
-	authparams "github.com/treeverse/lakefs/pkg/auth/params"
-
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/model"
+	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/testutil"
@@ -627,32 +626,45 @@ func TestDbAuthService_AddCredentials(t *testing.T) {
 		t.Fatalf("CreateUser(%s): %s", userName, err)
 	}
 
+	const (
+		validKey    = "AKIAIOSFODNN7EXAMPLE"
+		validSecret = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+	)
 	tests := []struct {
 		Name      string
 		Key       string
+		Secret    string
 		ExpectErr bool
 	}{
 		{
 			Name:      "empty",
 			Key:       "",
+			Secret:    "",
 			ExpectErr: true,
 		},
 		{
-			Name:      "invalid",
+			Name:      "invalid key",
 			Key:       "foo",
+			Secret:    validSecret,
+			ExpectErr: true,
+		},
+		{
+			Name:      "invalid secret",
+			Key:       validKey,
+			Secret:    "boo",
 			ExpectErr: true,
 		},
 		{
 			Name:      "valid",
-			Key:       "AKIAIOSFODNN7EXAMPLE",
+			Key:       validKey,
+			Secret:    validSecret,
 			ExpectErr: false,
 		},
 	}
 
-	const secret = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
-			_, err := s.AddCredentials(ctx, userName, test.Key, secret)
+			_, err := s.AddCredentials(ctx, userName, test.Key, test.Secret)
 			if test.ExpectErr != (err != nil) {
 				t.Errorf("AddCredentials with key (%s) expect err=%t, got=%v", test.Key, test.ExpectErr, err)
 			}
