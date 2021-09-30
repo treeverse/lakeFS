@@ -1329,6 +1329,10 @@ func TestController_ConfigHandlers(t *testing.T) {
 }
 
 func TestController_SetupLakeFSHandler(t *testing.T) {
+	const (
+		validAccessKeyID     = "AKIAIOSFODNN7EXAMPLE"
+		validSecretAccessKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+	)
 	cases := []struct {
 		name               string
 		key                *api.AccessKeyCredentials
@@ -1341,22 +1345,22 @@ func TestController_SetupLakeFSHandler(t *testing.T) {
 		{
 			name: "accessKeyAndSecret",
 			key: &api.AccessKeyCredentials{
-				AccessKeyId:     "IKEAsneakers",
-				SecretAccessKey: "cetec astronomy",
+				AccessKeyId:     validAccessKeyID,
+				SecretAccessKey: validSecretAccessKey,
 			},
 			expectedStatusCode: http.StatusOK,
 		},
 		{
 			name: "emptyAccessKeyId",
 			key: &api.AccessKeyCredentials{
-				SecretAccessKey: "cetec astronomy",
+				SecretAccessKey: validSecretAccessKey,
 			},
 			expectedStatusCode: http.StatusBadRequest,
 		},
 		{
 			name: "emptySecretKey",
 			key: &api.AccessKeyCredentials{
-				AccessKeyId: "IKEAsneakers",
+				AccessKeyId: validAccessKeyID,
 			},
 			expectedStatusCode: http.StatusBadRequest,
 		},
