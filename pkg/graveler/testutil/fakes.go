@@ -746,6 +746,7 @@ func (m *FakeCommitIterator) Err() error {
 func (m *FakeCommitIterator) Close() {}
 
 type ProtectedBranchesManagerFake struct {
+	graveler.ProtectedBranchesManager
 	protectedBranches []string
 }
 
@@ -753,23 +754,7 @@ func NewProtectedBranchesManagerFake(protectedBranches ...string) *ProtectedBran
 	return &ProtectedBranchesManagerFake{protectedBranches: protectedBranches}
 }
 
-func (p ProtectedBranchesManagerFake) Add(ctx context.Context, repositoryID graveler.RepositoryID, branchNamePattern string, blockedActions *graveler.BranchProtectionBlockedActions) error {
-	panic("implement me")
-}
-
-func (p ProtectedBranchesManagerFake) Set(ctx context.Context, repositoryID graveler.RepositoryID, branchNamePattern string, blockedActions *graveler.BranchProtectionBlockedActions) error {
-	panic("implement me")
-}
-
-func (p ProtectedBranchesManagerFake) Get(ctx context.Context, repositoryID graveler.RepositoryID, branchNamePattern string) (*graveler.BranchProtectionBlockedActions, error) {
-	panic("implement me")
-}
-
-func (p ProtectedBranchesManagerFake) GetAll(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.BranchProtectionRules, error) {
-	panic("implement me")
-}
-
-func (p ProtectedBranchesManagerFake) IsBlocked(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, action string) (bool, error) {
+func (p ProtectedBranchesManagerFake) IsBlocked(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, action graveler.BranchProtectionBlockedAction) (bool, error) {
 	for _, branch := range p.protectedBranches {
 		if branch == string(branchID) {
 			return true, nil

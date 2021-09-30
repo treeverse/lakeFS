@@ -38,8 +38,13 @@ message GarbageCollectionRunMetadata {
   string Address_location = 3;
 }
 
+enum BranchProtectionBlockedAction {
+  STAGING_WRITE = 0;
+  COMMIT = 1;
+}
+
 message BranchProtectionBlockedActions {
-  repeated string value = 1;
+  repeated BranchProtectionBlockedAction value = 1;
 }
 
 message BranchProtectionRules {

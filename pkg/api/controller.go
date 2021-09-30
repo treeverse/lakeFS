@@ -2038,8 +2038,8 @@ func (c *Controller) CreateBranchProtectionRule(w http.ResponseWriter, r *http.R
 		return
 	}
 	ctx := r.Context()
-	blockedActions := []string{graveler.BlockedActionStagingWrite, graveler.BlockedActionCommit}
-	err := c.Catalog.CreateBranchProtectionRule(ctx, repository, body.Pattern, &graveler.BranchProtectionBlockedActions{Value: blockedActions})
+	blockedActions := []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_STAGING_WRITE, graveler.BranchProtectionBlockedAction_COMMIT}
+	err := c.Catalog.CreateBranchProtectionRule(ctx, repository, body.Pattern, blockedActions)
 	if handleAPIError(w, err) {
 		return
 	}

@@ -1193,7 +1193,7 @@ func (c *Catalog) DeleteBranchProtectionRule(ctx context.Context, repositoryID s
 	return c.Store.DeleteBranchProtectionRule(ctx, graveler.RepositoryID(repositoryID), pattern)
 }
 
-func (c *Catalog) CreateBranchProtectionRule(ctx context.Context, repositoryID string, pattern string, blockedActions *graveler.BranchProtectionBlockedActions) error {
+func (c *Catalog) CreateBranchProtectionRule(ctx context.Context, repositoryID string, pattern string, blockedActions []graveler.BranchProtectionBlockedAction) error {
 	return c.Store.CreateBranchProtectionRule(ctx, graveler.RepositoryID(repositoryID), pattern, blockedActions)
 }
 

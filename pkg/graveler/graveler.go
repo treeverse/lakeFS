@@ -28,11 +28,6 @@ const (
 	DiffTypeConflict
 )
 
-const (
-	BlockedActionStagingWrite = "staging_write"
-	BlockedActionCommit       = "commit"
-)
-
 type RefModType rune
 
 const (
@@ -439,7 +434,7 @@ type VersionController interface {
 
 	DeleteBranchProtectionRule(ctx context.Context, repositoryID RepositoryID, pattern string) error
 
-	CreateBranchProtectionRule(ctx context.Context, repositoryID RepositoryID, pattern string, blockedActions *BranchProtectionBlockedActions) error
+	CreateBranchProtectionRule(ctx context.Context, repositoryID RepositoryID, pattern string, blockedActions []BranchProtectionBlockedAction) error
 }
 
 // Plumbing includes commands for fiddling more directly with graveler implementation
@@ -1002,7 +997,7 @@ func (g *Graveler) DeleteBranchProtectionRule(ctx context.Context, repositoryID 
 	return g.protectedBranchesManager.Set(ctx, repositoryID, pattern, nil)
 }
 
-func (g *Graveler) CreateBranchProtectionRule(ctx context.Context, repositoryID RepositoryID, pattern string, blockedActions *BranchProtectionBlockedActions) error {
+func (g *Graveler) CreateBranchProtectionRule(ctx context.Context, repositoryID RepositoryID, pattern string, blockedActions []BranchProtectionBlockedAction) error {
 	return g.protectedBranchesManager.Add(ctx, repositoryID, pattern, blockedActions)
 }
 
@@ -1039,7 +1034,7 @@ func (g *Graveler) Get(ctx context.Context, repositoryID RepositoryID, ref Ref, 
 
 func (g *Graveler) Set(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key, value Value, writeConditions ...WriteConditionOption) error {
 	_, err := g.branchLocker.Writer(ctx, repositoryID, branchID, func() (interface{}, error) {
-		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BlockedActionStagingWrite)
+		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
 		if err != nil {
 			return nil, err
 		}
@@ -1087,7 +1082,7 @@ func isStagedTombstone(ctx context.Context, manager StagingManager, token Stagin
 
 func (g *Graveler) Delete(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
 	_, err := g.branchLocker.Writer(ctx, repositoryID, branchID, func() (interface{}, error) {
-		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BlockedActionStagingWrite)
+		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
 		if err != nil {
 			return nil, err
 		}
@@ -1176,7 +1171,7 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 	var commit Commit
 	var storageNamespace StorageNamespace
 	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
-		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BlockedActionCommit)
+		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_COMMIT)
 		if err != nil {
 			return nil, err
 		}
@@ -1433,7 +1428,7 @@ func (g *Graveler) stagingEmpty(ctx context.Context, branch *Branch) (bool, erro
 
 func (g *Graveler) Reset(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error {
 	_, err := g.branchLocker.Writer(ctx, repositoryID, branchID, func() (interface{}, error) {
-		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BlockedActionStagingWrite)
+		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
 		if err != nil {
 			return nil, err
 		}
@@ -1451,7 +1446,7 @@ func (g *Graveler) Reset(ctx context.Context, repositoryID RepositoryID, branchI
 
 func (g *Graveler) ResetKey(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
 	_, err := g.branchLocker.Writer(ctx, repositoryID, branchID, func() (interface{}, error) {
-		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BlockedActionStagingWrite)
+		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
 		if err != nil {
 			return nil, err
 		}
@@ -1469,7 +1464,7 @@ func (g *Graveler) ResetKey(ctx context.Context, repositoryID RepositoryID, bran
 
 func (g *Graveler) ResetPrefix(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
 	_, err := g.branchLocker.Writer(ctx, repositoryID, branchID, func() (interface{}, error) {
-		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BlockedActionStagingWrite)
+		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
 		if err != nil {
 			return nil, err
 		}
@@ -2186,9 +2181,9 @@ type GarbageCollectionManager interface {
 }
 
 type ProtectedBranchesManager interface {
-	Add(ctx context.Context, repositoryID RepositoryID, branchNamePattern string, blockedActions *BranchProtectionBlockedActions) error
-	Set(ctx context.Context, repositoryID RepositoryID, branchNamePattern string, blockedActions *BranchProtectionBlockedActions) error
-	Get(ctx context.Context, repositoryID RepositoryID, branchNamePattern string) (*BranchProtectionBlockedActions, error)
+	Add(ctx context.Context, repositoryID RepositoryID, branchNamePattern string, blockedActions []BranchProtectionBlockedAction) error
+	Set(ctx context.Context, repositoryID RepositoryID, branchNamePattern string, blockedActions []BranchProtectionBlockedAction) error
+	Get(ctx context.Context, repositoryID RepositoryID, branchNamePattern string) ([]BranchProtectionBlockedAction, error)
 	GetAll(ctx context.Context, repositoryID RepositoryID) (*BranchProtectionRules, error)
-	IsBlocked(ctx context.Context, repositoryID RepositoryID, branchID BranchID, action string) (bool, error)
+	IsBlocked(ctx context.Context, repositoryID RepositoryID, branchID BranchID, action BranchProtectionBlockedAction) (bool, error)
 }

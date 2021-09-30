@@ -23,10 +23,10 @@ func TestGet(t *testing.T) {
 	if rule != nil {
 		t.Fatalf("expected nil rule, got %v", rule)
 	}
-	testutil.Must(t, bpm.Add(ctx, "example-repo", "main*", &graveler.BranchProtectionBlockedActions{Value: []string{"example-blocked-action"}}))
+	testutil.Must(t, bpm.Add(ctx, "example-repo", "main*", []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_STAGING_WRITE}))
 	rule, err = bpm.Get(ctx, "example-repo", "main*")
 	testutil.Must(t, err)
-	if diff := deep.Equal([]string{"example-blocked-action"}, rule.GetValue()); diff != nil {
+	if diff := deep.Equal([]graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_STAGING_WRITE}, rule); diff != nil {
 		t.Fatalf("got unexpected blocked actions. diff=%s", diff)
 	}
 	rule, err = bpm.Get(ctx, "example-repo", "otherpattern")
@@ -39,8 +39,8 @@ func TestGet(t *testing.T) {
 func TestAddAlreadyExists(t *testing.T) {
 	ctx := context.Background()
 	bpm := prepareTest(t, ctx)
-	testutil.Must(t, bpm.Add(ctx, "example-repo", "main*", &graveler.BranchProtectionBlockedActions{Value: []string{"example-blocked-action"}}))
-	err := bpm.Add(ctx, "example-repo", "main*", &graveler.BranchProtectionBlockedActions{Value: []string{"example-blocked-action2"}})
+	testutil.Must(t, bpm.Add(ctx, "example-repo", "main*", []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_STAGING_WRITE}))
+	err := bpm.Add(ctx, "example-repo", "main*", []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_COMMIT})
 	if !errors.Is(err, branches.ErrorRuleAlreadyExists) {
 		t.Fatalf("expected ErrorRuleAlreadyExists, got %v", err)
 	}
@@ -48,35 +48,41 @@ func TestAddAlreadyExists(t *testing.T) {
 
 func TestIsBlocked(t *testing.T) {
 	ctx := context.Background()
+	const (
+		action1 = graveler.BranchProtectionBlockedAction_STAGING_WRITE
+		action2 = graveler.BranchProtectionBlockedAction_COMMIT
+		action3 = 2
+		action4 = 3
+	)
 	tests := map[string]struct {
-		patternToBlockedActions map[string][]string
-		expectedBlockedActions  map[string][]string
-		expectedAllowedActions  map[string][]string
+		patternToBlockedActions map[string][]graveler.BranchProtectionBlockedAction
+		expectedBlockedActions  map[string][]graveler.BranchProtectionBlockedAction
+		expectedAllowedActions  map[string][]graveler.BranchProtectionBlockedAction
 	}{
 		"two_rules": {
-			patternToBlockedActions: map[string][]string{"main*": {"action1"}, "dev": {"action2"}},
-			expectedBlockedActions:  map[string][]string{"main": {"action1"}, "main2": {"action1"}, "dev": {"action2"}},
-			expectedAllowedActions:  map[string][]string{"main": {"action2"}, "main2": {"action2"}, "dev": {"action1"}, "dev1": {"action1", "action2"}},
+			patternToBlockedActions: map[string][]graveler.BranchProtectionBlockedAction{"main*": {action1}, "dev": {action2}},
+			expectedBlockedActions:  map[string][]graveler.BranchProtectionBlockedAction{"main": {action1}, "main2": {action1}, "dev": {action2}},
+			expectedAllowedActions:  map[string][]graveler.BranchProtectionBlockedAction{"main": {action2}, "main2": {action2}, "dev": {action1}, "dev1": {action1, action2}},
 		},
 		"multiple_blocked": {
-			patternToBlockedActions: map[string][]string{"main*": {"action1", "action2", "action3"}, "stable/*": {"action3", "action4"}},
-			expectedBlockedActions:  map[string][]string{"main": {"action1", "action2", "action3"}, "main2": {"action1", "action2", "action3"}, "stable/branch": {"action3", "action4"}},
-			expectedAllowedActions:  map[string][]string{"main": {"action4"}, "main2": {"action4"}, "stable/branch": {"action1", "action2"}},
+			patternToBlockedActions: map[string][]graveler.BranchProtectionBlockedAction{"main*": {action1, action2, action3}, "stable/*": {action3, action4}},
+			expectedBlockedActions:  map[string][]graveler.BranchProtectionBlockedAction{"main": {action1, action2, action3}, "main2": {action1, action2, action3}, "stable/branch": {action3, action4}},
+			expectedAllowedActions:  map[string][]graveler.BranchProtectionBlockedAction{"main": {action4}, "main2": {action4}, "stable/branch": {action1, action2}},
 		},
 		"overlapping_patterns": {
-			patternToBlockedActions: map[string][]string{"main*": {"action1"}, "mai*": {"action2"}, "ma*": {"action2", "action3"}},
-			expectedBlockedActions:  map[string][]string{"main": {"action1", "action2", "action3"}},
-			expectedAllowedActions:  map[string][]string{"main": {"action4"}},
+			patternToBlockedActions: map[string][]graveler.BranchProtectionBlockedAction{"main*": {action1}, "mai*": {action2}, "ma*": {action2, action3}},
+			expectedBlockedActions:  map[string][]graveler.BranchProtectionBlockedAction{"main": {action1, action2, action3}},
+			expectedAllowedActions:  map[string][]graveler.BranchProtectionBlockedAction{"main": {action4}},
 		},
 		"no_rules": {
-			expectedAllowedActions: map[string][]string{"main": {"action1", "action2"}},
+			expectedAllowedActions: map[string][]graveler.BranchProtectionBlockedAction{"main": {action1, action2}},
 		},
 	}
 	for name, tst := range tests {
 		t.Run(name, func(t *testing.T) {
 			bpm := prepareTest(t, ctx)
 			for pattern, blockedActions := range tst.patternToBlockedActions {
-				testutil.Must(t, bpm.Add(ctx, "example-repo", pattern, &graveler.BranchProtectionBlockedActions{Value: blockedActions}))
+				testutil.Must(t, bpm.Add(ctx, "example-repo", pattern, blockedActions))
 			}
 			for branchID, expectedBlockedActions := range tst.expectedBlockedActions {
 				for _, action := range expectedBlockedActions {
