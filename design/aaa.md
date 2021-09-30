@@ -134,7 +134,7 @@ application.
   The advantage here is that other OAuth2 providers can be used: GitHub,
   Google Suites, and many others.  LDAP users can still use bridges such
   as Dex to authenticate over OAuth2.  The [Microsoft Connector][dex-ms]
-  connector gives an example.
+  gives an example.
 
 #### Decision
 
@@ -171,6 +171,5 @@ This business logic is quite simple.
 OAuth2 has no audit mechanism and currently there is no request to allow
 such an audit.  Accordingly we shall not currently add audit logs.
 
-# References
-
+<!-- references -->
 [dex-ms]: https://dexidp.io/docs/connectors/microsoft/
