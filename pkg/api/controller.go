@@ -1109,28 +1109,13 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		return
 	}
 
-	parsedNamespace, err := url.ParseRequestURI(body.StorageNamespace)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "error parsing storage namespace. Please enter a valid repository url.")
-		return
-	}
-	namespaceStorageType, err := block.GetStorageType(parsedNamespace)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "error creating repository: invalid storage type.")
-		return
-	}
-	if adapterStorageType := c.BlockAdapter.BlockstoreType(); adapterStorageType != namespaceStorageType.BlockstoreType() {
-		writeError(w, http.StatusBadRequest, "error creating repository: can only create repository with storage type: "+adapterStorageType)
-		return
-	}
-
-	err = ensureStorageNamespaceRW(ctx, c.BlockAdapter, body.StorageNamespace)
+	err := ensureStorageNamespace(ctx, c.BlockAdapter, body.StorageNamespace)
 	if err != nil {
 		c.Logger.
 			WithError(err).
 			WithField("storage_namespace", body.StorageNamespace).
 			Warn("Could not access storage namespace")
-		writeError(w, http.StatusBadRequest, "error creating repository: could not access storage namespace")
+		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -1149,7 +1134,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 	writeResponse(w, http.StatusCreated, response)
 }
 
-func ensureStorageNamespaceRW(ctx context.Context, adapter block.Adapter, storageNamespace string) error {
+func ensureStorageNamespace(ctx context.Context, adapter block.Adapter, storageNamespace string) error {
 	const (
 		dummyKey  = "dummy"
 		dummyData = "this is dummy data - created by lakeFS in order to check accessibility"
@@ -1159,10 +1144,20 @@ func ensureStorageNamespaceRW(ctx context.Context, adapter block.Adapter, storag
 	objLen := int64(len(dummyData))
 	err := adapter.Put(ctx, obj, objLen, strings.NewReader(dummyData), block.PutOpts{})
 	if err != nil {
-		return err
+		if errors.Is(err, block.ErrInvalidNamespace) {
+			return fmt.Errorf("error creating repository: can only create repository with storage type: %v \n", adapter.BlockstoreType())
+		}
+		var e *url.Error
+		if errors.As(err, &e) && e.Op == "parse" {
+			return fmt.Errorf("error creating repository: %v \n", err.Error())
+		}
+		return fmt.Errorf("error creating repository: failed to ensure access to the storage. \n ")
 	}
 
 	_, err = adapter.Get(ctx, obj, objLen)
+	if err != nil {
+		return fmt.Errorf("error creating repository: failed to ensure access to the storage. \n ")
+	}
 	return err
 }
 
