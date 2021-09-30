@@ -430,10 +430,13 @@ type VersionController interface {
 	// Note: Ancestors of previously expired commits may still be considered if they can be reached from a non-expired commit.
 	SaveGarbageCollectionCommits(ctx context.Context, repositoryID RepositoryID, previousRunID string) (garbageCollectionRunMetadata *GarbageCollectionRunMetadata, err error)
 
+	// GetBranchProtectionRules return all branch protection rules for the repository
 	GetBranchProtectionRules(ctx context.Context, repositoryID RepositoryID) (*BranchProtectionRules, error)
-
+	// DeleteBranchProtectionRule deletes the branch protection rule for the given pattern,
+	// or return ErrRuleNotExists if no such rule exists.
 	DeleteBranchProtectionRule(ctx context.Context, repositoryID RepositoryID, pattern string) error
-
+	// CreateBranchProtectionRule creates a rule for the given name pattern,
+	// or returns ErrRuleAlreadyExists if there is already a rule for the pattern.
 	CreateBranchProtectionRule(ctx context.Context, repositoryID RepositoryID, pattern string, blockedActions []BranchProtectionBlockedAction) error
 }
 
