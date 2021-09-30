@@ -1,5 +1,23 @@
 # Identity, Authentication, Authorization (and Audit)
 
+## tl;dr.
+
+Here is what we shall implement initially.  For definitions, the current
+state, and rationale for why we choose this starting point, see the rest
+of the document.
+
+We shall add an external authentication flow that uses an OAuth2 server,
+using standard flows. When configured with an identity provider, clients
+will be able to identify against the provider to get a token that claims
+some `groups`.  These groups will be identified as regular groups in the
+current system, allowing every operation by the user to be verified with
+the policies of those groups.
+
+Externally-discovered users will be added to the internal tables so that
+they will be able to create access keys.  Memberships of such users only
+update on user login -- using the access key continues to use all groups
+available to that user when they last logged in.
+
 ## IAAA defined
 
 In a system, every operation is performed by some *thing*.  We care what
