@@ -616,6 +616,50 @@ func TestDbAuthService_GetUser(t *testing.T) {
 	}
 }
 
+func TestDbAuthService_AddCredentials(t *testing.T) {
+	s := setupService(t)
+	ctx := context.Background()
+	const userName = "foo"
+	// Time should *not* have nanoseconds - otherwise we are comparing accuracy of golang
+	// and Postgres time storage.
+	ts := time.Date(2222, 2, 22, 22, 22, 22, 0, time.UTC)
+	if err := s.CreateUser(ctx, &model.User{Username: userName, ID: -22, CreatedAt: ts}); err != nil {
+		t.Fatalf("CreateUser(%s): %s", userName, err)
+	}
+
+	tests := []struct {
+		Name      string
+		Key       string
+		ExpectErr bool
+	}{
+		{
+			Name:      "empty",
+			Key:       "",
+			ExpectErr: true,
+		},
+		{
+			Name:      "invalid",
+			Key:       "foo",
+			ExpectErr: true,
+		},
+		{
+			Name:      "valid",
+			Key:       "AKIAIOSFODNN7EXAMPLE",
+			ExpectErr: false,
+		},
+	}
+
+	const secret = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			_, err := s.AddCredentials(ctx, userName, test.Key, secret)
+			if test.ExpectErr != (err != nil) {
+				t.Errorf("AddCredentials with key (%s) expect err=%t, got=%v", test.Key, test.ExpectErr, err)
+			}
+		})
+	}
+}
+
 func TestDbAuthService_GetUserById(t *testing.T) {
 	s := setupService(t)
 	ctx := context.Background()

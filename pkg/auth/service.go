@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"regexp"
 	"strings"
 	"time"
 
@@ -80,7 +81,11 @@ type Service interface {
 	Authorize(ctx context.Context, req *AuthorizationRequest) (*AuthorizationResponse, error)
 }
 
-var psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
+var (
+	psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
+
+	reValidAccessKeyID = regexp.MustCompile(`^[A-Z0-9]{20}$`)
+)
 
 // fieldNameByTag returns the name of the field of t that is tagged tag on key, or an empty string.
 func fieldByTag(t reflect.Type, key, tag string) string {
@@ -698,6 +703,9 @@ func (s *DBAuthService) CreateCredentials(ctx context.Context, username string) 
 }
 
 func (s *DBAuthService) AddCredentials(ctx context.Context, username, accessKeyID, secretAccessKey string) (*model.Credential, error) {
+	if !reValidAccessKeyID.MatchString(accessKeyID) {
+		return nil, ErrInvalidAccessKeyID
+	}
 	now := time.Now()
 	encryptedKey, err := s.encryptSecret(secretAccessKey)
 	if err != nil {
