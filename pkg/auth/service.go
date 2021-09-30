@@ -85,7 +85,7 @@ var (
 	psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 
 	reValidAccessKeyID     = regexp.MustCompile(`^[A-Z0-9]{20}$`)
-	reValidSecretAccessKey = regexp.MustCompile(`[A-Za-z0-9/+=]{40}`)
+	reValidSecretAccessKey = regexp.MustCompile(`^[A-Za-z0-9/+=]{40}$`)
 )
 
 // fieldNameByTag returns the name of the field of t that is tagged tag on key, or an empty string.
