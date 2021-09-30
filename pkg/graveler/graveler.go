@@ -1176,7 +1176,7 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 			return nil, err
 		}
 		if isProtected {
-			return nil, ErrWriteToProtectedBranch
+			return nil, ErrCommitToProtectedBranch
 		}
 		repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 		if err != nil {

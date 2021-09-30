@@ -482,7 +482,7 @@ func TestGraveler_Commit(t *testing.T) {
 				message:      "a message",
 				metadata:     graveler.Metadata{},
 			},
-			expectedErr: graveler.ErrWriteToProtectedBranch,
+			expectedErr: graveler.ErrCommitToProtectedBranch,
 		},
 	}
 	for _, tt := range tests {
