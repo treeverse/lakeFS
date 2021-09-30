@@ -17,7 +17,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
-	protected_branches "github.com/treeverse/lakefs/pkg/graveler/branches"
+	"github.com/treeverse/lakefs/pkg/graveler/branch"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/graveler/retention"
@@ -189,7 +189,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	gcManager := retention.NewGarbageCollectionManager(cfg.DB, tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
 	stagingManager := staging.NewManager(cfg.DB)
 	settingManager := settings.NewManager(refManager, branchLocker, adapter, cfg.Config.GetCommittedBlockStoragePrefix())
-	protectedBranchesManager := protected_branches.NewBranchProtectionManager(settingManager)
+	protectedBranchesManager := branch.NewProtectionManager(settingManager)
 	store := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
 
 	return &Catalog{

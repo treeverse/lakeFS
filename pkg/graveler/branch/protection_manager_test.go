@@ -1,4 +1,4 @@
-package branches_test
+package branch_test
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/treeverse/lakefs/pkg/block/mem"
 	"github.com/treeverse/lakefs/pkg/graveler"
-	"github.com/treeverse/lakefs/pkg/graveler/branches"
+	"github.com/treeverse/lakefs/pkg/graveler/branch"
 	"github.com/treeverse/lakefs/pkg/graveler/mock"
 	"github.com/treeverse/lakefs/pkg/graveler/settings"
 	"github.com/treeverse/lakefs/pkg/testutil"
@@ -41,7 +41,7 @@ func TestAddAlreadyExists(t *testing.T) {
 	bpm := prepareTest(t, ctx)
 	testutil.Must(t, bpm.Add(ctx, "example-repo", "main*", []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_STAGING_WRITE}))
 	err := bpm.Add(ctx, "example-repo", "main*", []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_COMMIT})
-	if !errors.Is(err, branches.ErrorRuleAlreadyExists) {
+	if !errors.Is(err, branch.ErrorRuleAlreadyExists) {
 		t.Fatalf("expected ErrorRuleAlreadyExists, got %v", err)
 	}
 }
@@ -107,7 +107,7 @@ func TestIsBlocked(t *testing.T) {
 
 }
 
-func prepareTest(t *testing.T, ctx context.Context) *branches.BranchProtectionManager {
+func prepareTest(t *testing.T, ctx context.Context) *branch.ProtectionManager {
 	ctrl := gomock.NewController(t)
 	refManager := mock.NewMockRefManager(ctrl)
 	blockAdapter := mem.New()
@@ -121,5 +121,5 @@ func prepareTest(t *testing.T, ctx context.Context) *branches.BranchProtectionMa
 		DefaultBranchID:  "main",
 	}, nil)
 	m := settings.NewManager(refManager, branchLock, blockAdapter, "_lakefs")
-	return branches.NewBranchProtectionManager(m)
+	return branch.NewProtectionManager(m)
 }

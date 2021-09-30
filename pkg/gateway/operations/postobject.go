@@ -103,7 +103,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 	checksum := strings.Split(ch, "-")[0]
 	err = o.finishUpload(req, checksum, objName, size, true)
 	if errors.Is(err, graveler.ErrWriteToProtectedBranch) {
-		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrAccessDenied))
+		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrWriteToProtectedBranch))
 		return
 	}
 	if err != nil {

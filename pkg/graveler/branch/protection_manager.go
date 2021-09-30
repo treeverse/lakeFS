@@ -1,4 +1,4 @@
-package branches
+package branch
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-const BranchProtectionSettingKey = "protected_branches"
+const ProtectionSettingKey = "protected_branches"
 
 const (
 	matcherCacheSize   = 100_000
@@ -22,17 +22,17 @@ const (
 
 var ErrorRuleAlreadyExists = errors.New("branch protection rule already exists")
 
-type BranchProtectionManager struct {
+type ProtectionManager struct {
 	settingManager *settings.Manager
 	matchers       cache.Cache
 }
 
-func NewBranchProtectionManager(settingManager *settings.Manager) *BranchProtectionManager {
-	return &BranchProtectionManager{settingManager: settingManager, matchers: cache.NewCache(matcherCacheSize, matcherCacheExpiry, cache.NewJitterFn(matcherCacheJitter))}
+func NewProtectionManager(settingManager *settings.Manager) *ProtectionManager {
+	return &ProtectionManager{settingManager: settingManager, matchers: cache.NewCache(matcherCacheSize, matcherCacheExpiry, cache.NewJitterFn(matcherCacheJitter))}
 }
 
-func (m *BranchProtectionManager) Add(ctx context.Context, repositoryID graveler.RepositoryID, branchNamePattern string, blockedActions []graveler.BranchProtectionBlockedAction) error {
-	return m.settingManager.UpdateWithLock(ctx, repositoryID, BranchProtectionSettingKey, &graveler.BranchProtectionRules{}, func(message proto.Message) error {
+func (m *ProtectionManager) Add(ctx context.Context, repositoryID graveler.RepositoryID, branchNamePattern string, blockedActions []graveler.BranchProtectionBlockedAction) error {
+	return m.settingManager.UpdateWithLock(ctx, repositoryID, ProtectionSettingKey, &graveler.BranchProtectionRules{}, func(message proto.Message) error {
 		rules := message.(*graveler.BranchProtectionRules)
 		if rules.BranchPatternToBlockedActions == nil {
 			rules.BranchPatternToBlockedActions = make(map[string]*graveler.BranchProtectionBlockedActions)
@@ -45,8 +45,8 @@ func (m *BranchProtectionManager) Add(ctx context.Context, repositoryID graveler
 	})
 }
 
-func (m *BranchProtectionManager) Set(ctx context.Context, repositoryID graveler.RepositoryID, branchNamePattern string, blockedActions []graveler.BranchProtectionBlockedAction) error {
-	return m.settingManager.UpdateWithLock(ctx, repositoryID, BranchProtectionSettingKey, &graveler.BranchProtectionRules{}, func(message proto.Message) error {
+func (m *ProtectionManager) Set(ctx context.Context, repositoryID graveler.RepositoryID, branchNamePattern string, blockedActions []graveler.BranchProtectionBlockedAction) error {
+	return m.settingManager.UpdateWithLock(ctx, repositoryID, ProtectionSettingKey, &graveler.BranchProtectionRules{}, func(message proto.Message) error {
 		rules := message.(*graveler.BranchProtectionRules)
 		if rules.BranchPatternToBlockedActions == nil {
 			rules.BranchPatternToBlockedActions = make(map[string]*graveler.BranchProtectionBlockedActions)
@@ -60,8 +60,8 @@ func (m *BranchProtectionManager) Set(ctx context.Context, repositoryID graveler
 	})
 }
 
-func (m *BranchProtectionManager) Get(ctx context.Context, repositoryID graveler.RepositoryID, branchNamePattern string) ([]graveler.BranchProtectionBlockedAction, error) {
-	rules, err := m.settingManager.GetLatest(ctx, repositoryID, BranchProtectionSettingKey, &graveler.BranchProtectionRules{})
+func (m *ProtectionManager) Get(ctx context.Context, repositoryID graveler.RepositoryID, branchNamePattern string) ([]graveler.BranchProtectionBlockedAction, error) {
+	rules, err := m.settingManager.GetLatest(ctx, repositoryID, ProtectionSettingKey, &graveler.BranchProtectionRules{})
 	if errors.Is(err, graveler.ErrNotFound) {
 		return nil, nil
 	}
@@ -75,8 +75,8 @@ func (m *BranchProtectionManager) Get(ctx context.Context, repositoryID graveler
 	return actions.GetValue(), nil
 }
 
-func (m *BranchProtectionManager) GetAll(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.BranchProtectionRules, error) {
-	rules, err := m.settingManager.GetLatest(ctx, repositoryID, BranchProtectionSettingKey, &graveler.BranchProtectionRules{})
+func (m *ProtectionManager) GetAll(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.BranchProtectionRules, error) {
+	rules, err := m.settingManager.GetLatest(ctx, repositoryID, ProtectionSettingKey, &graveler.BranchProtectionRules{})
 	if errors.Is(err, graveler.ErrNotFound) {
 		return &graveler.BranchProtectionRules{}, nil
 	}
@@ -86,8 +86,8 @@ func (m *BranchProtectionManager) GetAll(ctx context.Context, repositoryID grave
 	return rules.(*graveler.BranchProtectionRules), nil
 }
 
-func (m *BranchProtectionManager) IsBlocked(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, action graveler.BranchProtectionBlockedAction) (bool, error) {
-	rules, err := m.settingManager.Get(ctx, repositoryID, BranchProtectionSettingKey, &graveler.BranchProtectionRules{})
+func (m *ProtectionManager) IsBlocked(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, action graveler.BranchProtectionBlockedAction) (bool, error) {
+	rules, err := m.settingManager.Get(ctx, repositoryID, ProtectionSettingKey, &graveler.BranchProtectionRules{})
 	if errors.Is(err, graveler.ErrNotFound) {
 		return false, nil
 	}
