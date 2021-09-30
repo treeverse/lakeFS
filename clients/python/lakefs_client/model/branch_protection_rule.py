@@ -104,7 +104,7 @@ class BranchProtectionRule(ModelNormal):
         """BranchProtectionRule - a model defined in OpenAPI
 
         Args:
-            pattern (str): A glob pattern for the branch name
+            pattern (str): fnmatch pattern for the branch name, supporting * and ? wildcards
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types

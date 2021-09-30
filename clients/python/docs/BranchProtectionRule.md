@@ -4,7 +4,7 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**pattern** | **str** | A glob pattern for the branch name | 
+**pattern** | **str** | fnmatch pattern for the branch name, supporting * and ? wildcards | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

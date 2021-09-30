@@ -5270,11 +5270,11 @@ components:
       type: object
     BranchProtectionRule:
       example:
-        pattern: stable/*
+        pattern: stable_*
       properties:
         pattern:
-          description: A glob pattern for the branch name
-          example: stable/*
+          description: fnmatch pattern for the branch name, supporting * and ? wildcards
+          example: stable_*
           minLength: 1
           type: string
       required:

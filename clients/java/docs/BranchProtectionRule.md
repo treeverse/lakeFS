@@ -7,7 +7,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**pattern** | **String** | A glob pattern for the branch name | 
+**pattern** | **String** | fnmatch pattern for the branch name, supporting * and ? wildcards | 
 
 
 

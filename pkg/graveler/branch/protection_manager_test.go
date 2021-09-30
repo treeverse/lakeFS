@@ -87,9 +87,9 @@ func TestIsBlocked(t *testing.T) {
 			expectedAllowedActions:  map[string][]graveler.BranchProtectionBlockedAction{"main": {action2}, "main2": {action2}, "dev": {action1}, "dev1": {action1, action2}},
 		},
 		"multiple_blocked": {
-			patternToBlockedActions: map[string][]graveler.BranchProtectionBlockedAction{"main*": {action1, action2, action3}, "stable/*": {action3, action4}},
-			expectedBlockedActions:  map[string][]graveler.BranchProtectionBlockedAction{"main": {action1, action2, action3}, "main2": {action1, action2, action3}, "stable/branch": {action3, action4}},
-			expectedAllowedActions:  map[string][]graveler.BranchProtectionBlockedAction{"main": {action4}, "main2": {action4}, "stable/branch": {action1, action2}},
+			patternToBlockedActions: map[string][]graveler.BranchProtectionBlockedAction{"main*": {action1, action2, action3}, "stable_*": {action3, action4}},
+			expectedBlockedActions:  map[string][]graveler.BranchProtectionBlockedAction{"main": {action1, action2, action3}, "main2": {action1, action2, action3}, "stable_branch": {action3, action4}},
+			expectedAllowedActions:  map[string][]graveler.BranchProtectionBlockedAction{"main": {action4}, "main2": {action4}, "stable_branch": {action1, action2}},
 		},
 		"overlapping_patterns": {
 			patternToBlockedActions: map[string][]graveler.BranchProtectionBlockedAction{"main*": {action1}, "mai*": {action2}, "ma*": {action2, action3}},

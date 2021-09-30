@@ -65,7 +65,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     api_instance = repositories_api.RepositoriesApi(api_client)
     repository = "repository_example" # str | 
     branch_protection_rule = BranchProtectionRule(
-        pattern="stable/*",
+        pattern="stable_*",
     ) # BranchProtectionRule | 
 
     # example passing only required values which don't have defaults set

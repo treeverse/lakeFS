@@ -879,8 +879,8 @@ components:
       properties:
         pattern:
           type: string
-          description: A glob pattern for the branch name
-          example: "stable/*"
+          description: fnmatch pattern for the branch name, supporting * and ? wildcards
+          example: "stable_*"
           minLength: 1
       required:
         - pattern
