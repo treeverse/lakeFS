@@ -68,6 +68,4 @@ Official Docker images are available at [https://hub.docker.com/r/treeverse/lake
 
 ## Next steps
 
-Read about the [branching model](understand/branching-model.md) of lakeFS or run it locally and see how it works for yourself!
-
-Check out the [Quick Start Guide](quickstart/index.md)
+Get started and [set up lakeFS on your preferred cloud environemnt](https://docs.lakefs.io/deploy/)
