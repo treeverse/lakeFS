@@ -17,8 +17,7 @@ Mapped two issues that we currently do not address when we work with our S3 inte
 
 1. Content-Type - Not keeping the posted object content-type and do not set it back when we get the object.
     [Support Content-Type](https://github.com/treeverse/lakeFS/issues/2296)
-    We saw this issue when one of the clients used the value of the content type to identify a directory marker.
-    Assuming there are more use-cases where the content-type is set and/or used.
+    We saw this issue when one of the clients used the value of the content type to identify a directory marker. But this is one of the basic properties that evey object store manages.
 1. Additional metadata - when posting an object aws enables additional metadata to set. Currently we do not process these attributes. The object level metadata we currenly have on an object can be get/set only by our open api.
     [Store some per-file metadata (rclone multipart upload fails on unexpected ETag) #2486](https://github.com/treeverse/lakeFS/issues/2486)
 
@@ -30,8 +29,7 @@ The s3 gateway get object will map the metadata key/value back to "x-amz-meta-<n
 
 The content-type and the new metadata posted in multipart upload will be stored in our tracker. This information should be kept until the multipart complete is called and then the metadata is stored.
 
-In order to support content-type for all existing data, where there is no content-type set, our the gateway make sure that if nothing is set, the default content type will be used.  This will not be reflected on the object information, as the data is alreay committed, but any future commit that include the object will also update the content-type.
-
+In order to support content-type for all old entries, the loaded entries will be set with default content-type if found missing. This will not be reflected on entry until an update to entry will be made, as the data is alreay committed, but any future commit that include the object will also update the content-type.
 
 
 Content-type can be added in two ways:
@@ -44,7 +42,7 @@ Content-type can be added in two ways:
        "LastModified": "Tue, 28 Sep 2021 22:34:44 GMT",
        "ContentLength": 10485760,
        "ETag": "\"f962bf40d19fed2e80bcbaa33bd1dfe7\"",
-       "ContentType": "stam/data",
+       "ContentType": "example/data",
        "Metadata": {}
    }
    ```
