@@ -320,6 +320,25 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 			t.Fatalf("expected error creating duplicate repo")
 		}
 	})
+
+	t.Run("create repo with wrong storage type", func(t *testing.T) {
+		_, err := deps.catalog.CreateRepository(ctx, "repo3", onBlock(deps, "foo1"), "main")
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp, err := clt.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
+			DefaultBranch:    api.StringPtr("main"),
+			Name:             "repo2",
+			StorageNamespace: "s3://foo-bucket",
+		})
+		if resp == nil {
+			t.Fatal("CreateRepository missing response")
+		}
+		validationErrResp := resp.JSON409
+		if validationErrResp == nil {
+			t.Fatalf("expected error creating repo with wrong storage type")
+		}
+	})
 }
 
 func TestController_DeleteRepositoryHandler(t *testing.T) {
