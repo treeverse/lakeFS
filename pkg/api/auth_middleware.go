@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"crypto/subtle"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -15,11 +14,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"gopkg.in/dgrijalva/jwt-go.v3"
-)
-
-var (
-	ErrUnexpectedSigningMethod = errors.New("unexpected signing method")
-	ErrAuthenticationFailed    = errors.New("error authenticating request")
 )
 
 // extractSecurityRequirements using Swagger returns an array of security requirements set for the request.
