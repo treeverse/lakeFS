@@ -1145,18 +1145,18 @@ func ensureStorageNamespace(ctx context.Context, adapter block.Adapter, storageN
 	err := adapter.Put(ctx, obj, objLen, strings.NewReader(dummyData), block.PutOpts{})
 	if err != nil {
 		if errors.Is(err, block.ErrInvalidNamespace) {
-			return fmt.Errorf("error creating repository: can only create repository with storage type: %v \n", adapter.BlockstoreType())
+			return errors.New("error creating repository: can only create repository with storage type: " + adapter.BlockstoreType() + "\n")
 		}
 		var e *url.Error
 		if errors.As(err, &e) && e.Op == "parse" {
-			return fmt.Errorf("error creating repository: %v \n", err.Error())
+			return fmt.Errorf("error creating repository: %w \n", err)
 		}
-		return fmt.Errorf("error creating repository: failed to ensure access to the storage. \n ")
+		return errors.New("error creating repository: failed to ensure access to the storage. \n ")
 	}
 
 	_, err = adapter.Get(ctx, obj, objLen)
 	if err != nil {
-		return fmt.Errorf("error creating repository: failed to ensure access to the storage. \n ")
+		return errors.New("error creating repository: failed to ensure access to the storage. \n ")
 	}
 	return err
 }
