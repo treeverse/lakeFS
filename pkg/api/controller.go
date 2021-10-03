@@ -1140,8 +1140,6 @@ func ensureStorageNamespace(ctx context.Context, adapter block.Adapter, storageN
 		dummyData = "this is dummy data - created by lakeFS in order to check accessibility"
 	)
 
-	var ErrEnsureStorageNamespace = errors.New("failed to ensure access to the storage")
-
 	obj := block.ObjectPointer{StorageNamespace: storageNamespace, Identifier: dummyKey}
 	objLen := int64(len(dummyData))
 	err := adapter.Put(ctx, obj, objLen, strings.NewReader(dummyData), block.PutOpts{})
