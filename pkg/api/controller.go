@@ -1147,18 +1147,18 @@ func ensureStorageNamespace(ctx context.Context, adapter block.Adapter, storageN
 	err := adapter.Put(ctx, obj, objLen, strings.NewReader(dummyData), block.PutOpts{})
 	if err != nil {
 		if errors.Is(err, block.ErrInvalidNamespace) {
-			return fmt.Errorf("error creating repository: %w. Can only create repository with storage type: %v \n", ErrEnsureStorageNamespace, adapter.BlockstoreType())
+			return fmt.Errorf("error creating repository: %w. Can only create repository with storage type: %v", ErrEnsureStorageNamespace, adapter.BlockstoreType())
 		}
 		var e *url.Error
 		if errors.As(err, &e) && e.Op == "parse" {
-			return fmt.Errorf("error creating repository: %w \n", err)
+			return fmt.Errorf("error creating repository: %w", err)
 		}
-		return fmt.Errorf("error creating repository: %w \n", ErrEnsureStorageNamespace)
+		return fmt.Errorf("error creating repository: %w", ErrEnsureStorageNamespace)
 	}
 
 	_, err = adapter.Get(ctx, obj, objLen)
 	if err != nil {
-		return fmt.Errorf("error creating repository: %w \n", ErrEnsureStorageNamespace)
+		return fmt.Errorf("error creating repository: %w", ErrEnsureStorageNamespace)
 	}
 	return err
 }
