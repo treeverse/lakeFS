@@ -3,9 +3,11 @@ package branch
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/gobwas/glob"
+	"github.com/gobwas/glob/syntax"
 	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/settings"
@@ -35,6 +37,10 @@ func NewProtectionManager(settingManager *settings.Manager) *ProtectionManager {
 }
 
 func (m *ProtectionManager) Add(ctx context.Context, repositoryID graveler.RepositoryID, branchNamePattern string, blockedActions []graveler.BranchProtectionBlockedAction) error {
+	_, err := syntax.Parse(branchNamePattern)
+	if err != nil {
+		return fmt.Errorf("invalid branch pattern syntax: %w", err)
+	}
 	return m.settingManager.UpdateWithLock(ctx, repositoryID, ProtectionSettingKey, &graveler.BranchProtectionRules{}, func(message proto.Message) error {
 		rules := message.(*graveler.BranchProtectionRules)
 		if rules.BranchPatternToBlockedActions == nil {

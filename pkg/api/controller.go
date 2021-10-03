@@ -2038,6 +2038,7 @@ func (c *Controller) CreateBranchProtectionRule(w http.ResponseWriter, r *http.R
 		return
 	}
 	ctx := r.Context()
+	// For now, all protected branches use the same default set of blocked actions. In the future this set will be user configurable.
 	blockedActions := []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_STAGING_WRITE, graveler.BranchProtectionBlockedAction_COMMIT}
 	err := c.Catalog.CreateBranchProtectionRule(ctx, repository, body.Pattern, blockedActions)
 	if handleAPIError(w, err) {

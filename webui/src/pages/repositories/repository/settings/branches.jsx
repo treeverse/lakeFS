@@ -37,7 +37,7 @@ const SettingsContainer = () => {
             </div>
             <div>
                 Define branch protection rules to prevent direct changes.
-                Changes to protected branches can only be done by merging from other branches.
+                Changes to protected branches can only be done by merging from other branches. <a href="https://docs.lakefs.io/reference/protected_branches.md">Learn more.</a>
             </div>
             {loading || rulesLoading ? <div className={"mt-3 ml-1 pr-5"}><Loading/></div> :
                 <div className={"row mt-3 ml-1 pr-5"}>
@@ -110,16 +110,17 @@ const CreateRuleModal = ({show, hideFn, onSuccess, repoID}) => {
                     </Col>
                 </Form.Group>
             </Form>
-
+            {error && <Error error={error}/>}
         </Modal.Body>
-
         <Modal.Footer>
             <Button disabled={createButtonDisabled} onClick={() => createRule(patternField.current.value)}
                     variant="success">Create</Button>
-            <Button onClick={() => hideFn()} variant="secondary">Cancel</Button>
+            <Button onClick={() => {
+                setCreateButtonDisabled(true)
+                setError(null)
+                hideFn()
+            }} variant="secondary">Cancel</Button>
         </Modal.Footer>
-        {error && <Error error={error}/>}
-
     </Modal>
 }
 
