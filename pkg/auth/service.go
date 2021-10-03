@@ -84,8 +84,7 @@ type Service interface {
 var (
 	psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 
-	reValidAccessKeyID     = regexp.MustCompile(`^[A-Z0-9]{20}$`)
-	reValidSecretAccessKey = regexp.MustCompile(`^[A-Za-z0-9/+=]{40}$`)
+	reValidAccessKeyID = regexp.MustCompile(`^[0-9A-Za-z]{3,20}$`)
 )
 
 // fieldNameByTag returns the name of the field of t that is tagged tag on key, or an empty string.
@@ -707,7 +706,7 @@ func (s *DBAuthService) AddCredentials(ctx context.Context, username, accessKeyI
 	if !reValidAccessKeyID.MatchString(accessKeyID) {
 		return nil, ErrInvalidAccessKeyID
 	}
-	if !reValidSecretAccessKey.MatchString(secretAccessKey) {
+	if len(secretAccessKey) == 0 {
 		return nil, ErrInvalidSecretAccessKey
 	}
 	now := time.Now()

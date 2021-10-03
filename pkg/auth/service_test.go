@@ -626,10 +626,7 @@ func TestDbAuthService_AddCredentials(t *testing.T) {
 		t.Fatalf("CreateUser(%s): %s", userName, err)
 	}
 
-	const (
-		validKey    = "AKIAIOSFODNN7EXAMPLE"
-		validSecret = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
-	)
+	const validKeyID = "AKIAIOSFODNN7EXAMPLE"
 	tests := []struct {
 		Name      string
 		Key       string
@@ -644,20 +641,20 @@ func TestDbAuthService_AddCredentials(t *testing.T) {
 		},
 		{
 			Name:      "invalid key",
-			Key:       "foo",
-			Secret:    validSecret,
+			Key:       "invalid key",
+			Secret:    "secret",
 			ExpectErr: true,
 		},
 		{
 			Name:      "invalid secret",
-			Key:       validKey,
-			Secret:    "boo",
+			Key:       validKeyID,
+			Secret:    "",
 			ExpectErr: true,
 		},
 		{
 			Name:      "valid",
-			Key:       validKey,
-			Secret:    validSecret,
+			Key:       validKeyID,
+			Secret:    "secret",
 			ExpectErr: false,
 		},
 	}
