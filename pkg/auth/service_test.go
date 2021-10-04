@@ -641,7 +641,7 @@ func TestDbAuthService_AddCredentials(t *testing.T) {
 		},
 		{
 			Name:      "invalid key",
-			Key:       "invalid key",
+			Key:       "i",
 			Secret:    "secret",
 			ExpectErr: true,
 		},

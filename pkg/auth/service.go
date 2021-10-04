@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"regexp"
 	"strings"
 	"time"
 
@@ -81,11 +80,7 @@ type Service interface {
 	Authorize(ctx context.Context, req *AuthorizationRequest) (*AuthorizationResponse, error)
 }
 
-var (
-	psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
-
-	reValidAccessKeyID = regexp.MustCompile(`^[0-9A-Za-z]{3,20}$`)
-)
+var psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 
 // fieldNameByTag returns the name of the field of t that is tagged tag on key, or an empty string.
 func fieldByTag(t reflect.Type, key, tag string) string {
@@ -703,7 +698,7 @@ func (s *DBAuthService) CreateCredentials(ctx context.Context, username string) 
 }
 
 func (s *DBAuthService) AddCredentials(ctx context.Context, username, accessKeyID, secretAccessKey string) (*model.Credential, error) {
-	if !reValidAccessKeyID.MatchString(accessKeyID) {
+	if !IsValidAccessKeyID(accessKeyID) {
 		return nil, ErrInvalidAccessKeyID
 	}
 	if len(secretAccessKey) == 0 {
@@ -740,6 +735,11 @@ func (s *DBAuthService) AddCredentials(ctx context.Context, username, accessKeyI
 		return nil, err
 	}
 	return credentials.(*model.Credential), err
+}
+
+func IsValidAccessKeyID(key string) bool {
+	l := len(key)
+	return l >= 3 && l <= 20
 }
 
 func (s *DBAuthService) DeleteCredentials(ctx context.Context, username, accessKeyID string) error {
