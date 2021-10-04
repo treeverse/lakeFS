@@ -1343,14 +1343,14 @@ func TestController_SetupLakeFSHandler(t *testing.T) {
 			name: "accessKeyAndSecret",
 			key: &api.AccessKeyCredentials{
 				AccessKeyId:     validAccessKeyID,
-				SecretAccessKey: "secret",
+				SecretAccessKey: "cetec astronomy",
 			},
 			expectedStatusCode: http.StatusOK,
 		},
 		{
 			name: "emptyAccessKeyId",
 			key: &api.AccessKeyCredentials{
-				SecretAccessKey: "secret",
+				SecretAccessKey: "cetec astronomy",
 			},
 			expectedStatusCode: http.StatusBadRequest,
 		},
