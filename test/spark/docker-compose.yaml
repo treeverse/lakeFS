@@ -23,10 +23,12 @@ services:
       - LAKEFS_GATEWAYS_S3_DOMAIN_NAME=s3.docker.lakefs.io
       - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=some random secret string
       - LAKEFS_DATABASE_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
-      - LAKEFS_LOGGING_LEVEL=DEBUG
+      - LAKEFS_LOGGING_LEVEL=trace # TODO change to DEBUG
       - LAKEFS_STATS_ENABLED=false
       - LAKEFS_BLOCKSTORE_LOCAL_PATH=/home/lakefs
       - LAKEFS_BLOCKSTORE_TYPE
+#      - AWS_SECRET_ACCESS_KEY
+#      - AWS_ACCESS_KEY_ID
       - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID
       - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY
       - LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON
@@ -44,6 +46,12 @@ services:
       - SPARK_RPC_ENCRYPTION_ENABLED=no
       - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
       - SPARK_SSL_ENABLED=no
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - METACLIENT_JAR
+      - EXPORT_LOCATION
+    env_file:
+        - tester.env
     ports:
       - 18080:8080
     extra_hosts:
@@ -73,6 +81,7 @@ services:
       replicas: 3
     extra_hosts:
       - "s3.docker.lakefs.io:10.5.0.55"
+      - "docker.lakefs.io:10.5.0.55"
       - "example.s3.docker.lakefs.io:10.5.0.55"
       - "gateway-test.s3.docker.lakefs.io:10.5.0.55"
       - "thick-client-test.s3.docker.lakefs.io:10.5.0.55"
@@ -89,12 +98,15 @@ services:
       - s3input
       - s3output
       - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID
+      - CLIENT_JAR
+      - EXPORT_LOCATION
       - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
       - AWS_REGION
     extra_hosts:
       - "s3.docker.lakefs.io:10.5.0.55"
+      - "docker.lakefs.io:10.5.0.55"
       - "example.s3.docker.lakefs.io:10.5.0.55"
       - "gateway-test.s3.docker.lakefs.io:10.5.0.55"
       - "thick-client-test.s3.docker.lakefs.io:10.5.0.55"
