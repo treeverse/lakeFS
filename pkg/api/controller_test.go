@@ -321,7 +321,7 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 		}
 	})
 
-	t.Run("create repo with wrong storage type", func(t *testing.T) {
+	t.Run("create repo with conflicting storage type", func(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, "repo3", onBlock(deps, "foo1"), "main")
 		if err != nil {
 			t.Fatal(err)
