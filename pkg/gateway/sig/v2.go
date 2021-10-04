@@ -22,7 +22,7 @@ const (
 )
 
 var (
-	V2AuthHeaderRegexp = regexp.MustCompile(`AWS (?P<AccessKeyId>[A-Z0-9]{20}):(?P<Signature>[A-Za-z0-9+/=]+)`)
+	V2AuthHeaderRegexp = regexp.MustCompile(`AWS (?P<AccessKeyId>.{3,20}):(?P<Signature>[A-Za-z0-9+/=]+)`)
 	// Both "interesting" arrays are sorted. so once we extract relevant items by looping on them = the result is sorted
 	interestingHeaders   = [...]string{"content-md5", "content-type", "date"}
 	interestingResources []string // initialized and sorted by the init function

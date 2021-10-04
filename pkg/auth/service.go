@@ -698,6 +698,12 @@ func (s *DBAuthService) CreateCredentials(ctx context.Context, username string) 
 }
 
 func (s *DBAuthService) AddCredentials(ctx context.Context, username, accessKeyID, secretAccessKey string) (*model.Credential, error) {
+	if !IsValidAccessKeyID(accessKeyID) {
+		return nil, ErrInvalidAccessKeyID
+	}
+	if len(secretAccessKey) == 0 {
+		return nil, ErrInvalidSecretAccessKey
+	}
 	now := time.Now()
 	encryptedKey, err := s.encryptSecret(secretAccessKey)
 	if err != nil {
@@ -729,6 +735,11 @@ func (s *DBAuthService) AddCredentials(ctx context.Context, username, accessKeyI
 		return nil, err
 	}
 	return credentials.(*model.Credential), err
+}
+
+func IsValidAccessKeyID(key string) bool {
+	l := len(key)
+	return l >= 3 && l <= 20
 }
 
 func (s *DBAuthService) DeleteCredentials(ctx context.Context, username, accessKeyID string) error {
