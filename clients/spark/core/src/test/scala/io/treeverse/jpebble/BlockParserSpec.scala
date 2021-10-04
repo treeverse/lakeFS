@@ -376,10 +376,10 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
       }
     }
 
-    describe("with non-sst file of size 0") {
+    describe("with empty file") {
       ignore("should fail parsing") {
         assertThrows[BadFileFormatException]{ //TODO: make this test pass, and enable it
-          withGeneratedNonSstTestFiles("empty.non.sst.file", verifyBlockParserOutput)
+          withGeneratedEmptyTestFile("empty.sfile", verifyBlockParserOutput)
         }
       }
     }
@@ -438,7 +438,7 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
     }
   }
 
-  def withGeneratedNonSstTestFiles(baseFileName: String, test: (BlockReadable, Seq[(String, String)], Long) => Any) = {
+  def withGeneratedEmptyTestFile(baseFileName: String, test: (BlockReadable, Seq[(String, String)], Long) => Any) = {
     val tmpFile = copyTestFile(baseFileName, "")
     val in = new BlockReadableFileChannel(new java.io.FileInputStream(tmpFile).getChannel)
     try {

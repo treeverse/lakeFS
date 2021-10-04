@@ -51,7 +51,7 @@ func main() {
 	writeSstsWithUnsupportedWriterOptions()
 	writeLargeSsts()
 	writeZeroRecordSst()
-	writeNonSstFile()
+	writeEmptyFile()
 	writeSstWithBadMagic()
 }
 
@@ -68,8 +68,8 @@ func writeSstWithBadMagic() {
 	os.Truncate(testFileName+".sst", fi.Size()-MagicLengthBytes/2)
 }
 
-func writeNonSstFile() {
-	writer, err := os.Create("empty.non.sst.file")
+func writeEmptyFile() {
+	writer, err := os.Create("empty.file")
 	if err != nil {
 		panic(err)
 	}
@@ -98,7 +98,23 @@ func newGenerateFuzzWithSharedPrefixes(sharedPrefix string) func() (string, erro
 	return func() (string, error) {
 		var suffix string
 		f.Fuzz(&suffix)
-		return sharedPrefix + suffix, nil
+		// play with the length of the shared prefix trying to create noisier input
+		curPrefixLen := len(sharedPrefix)
+		suffixLen := len(suffix)
+		newPrefixLen := 0
+		subtractFromPref := suffixLen
+		if curPrefixLen != 0 {
+			if suffixLen > curPrefixLen {
+				for {
+					subtractFromPref /= 2
+					if subtractFromPref < curPrefixLen {
+						break
+					}
+				}
+			}
+			newPrefixLen = curPrefixLen - subtractFromPref
+		}
+		return sharedPrefix[:newPrefixLen] + suffix, nil
 	}
 }
 
