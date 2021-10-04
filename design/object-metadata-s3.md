@@ -31,20 +31,18 @@ The content-type and the new metadata posted in multipart upload will be stored 
 
 In order to support content-type for all old entries, the loaded entries will be set with default content-type if found missing. This will not be reflected on entry until an update to entry will be made, as the data is alreay committed, but any future commit that include the object will also update the content-type.
 
+Content-type will be managed as part of the entry's Metadata field. The catalog will make sure the default is set in case no value or empty value is set.
 
-Content-type can be added in two ways:
+Example of how head request on object with content-type will look like:
 
-1. Maintain a specific field for Content-Type as part of the object metadata. Will be use to set the content-type header when we return the object or HEAD information, example:
+```json
+{
+   "AcceptRanges": "bytes",
+   "LastModified": "Tue, 28 Sep 2021 22:34:44 GMT",
+   "ContentLength": 10485760,
+   "ETag": "\"f962bf40d19fed2e80bcbaa33bd1dfe7\"",
+   "ContentType": "example/data",
+   "Metadata": {}
+}
+```
 
-   ```json
-   {
-       "AcceptRanges": "bytes",
-       "LastModified": "Tue, 28 Sep 2021 22:34:44 GMT",
-       "ContentLength": 10485760,
-       "ETag": "\"f962bf40d19fed2e80bcbaa33bd1dfe7\"",
-       "ContentType": "example/data",
-       "Metadata": {}
-   }
-   ```
-
-1. Use specific entry 'Content-Metadata' in the object's metadata map. The same map used in our open api. This header will have specific treatment, as we need to map it in a different way on get object. We will not enable the user to delete it and always set default value in case it is not set or set to empty string.
