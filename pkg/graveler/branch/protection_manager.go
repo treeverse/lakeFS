@@ -83,7 +83,7 @@ func (m *ProtectionManager) Get(ctx context.Context, repositoryID graveler.Repos
 	return actions.GetValue(), nil
 }
 
-func (m *ProtectionManager) GetAll(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.BranchProtectionRules, error) {
+func (m *ProtectionManager) GetRules(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.BranchProtectionRules, error) {
 	rules, err := m.settingManager.GetLatest(ctx, repositoryID, ProtectionSettingKey, &graveler.BranchProtectionRules{})
 	if errors.Is(err, graveler.ErrNotFound) {
 		return &graveler.BranchProtectionRules{}, nil
