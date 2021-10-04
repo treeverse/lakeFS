@@ -3,7 +3,7 @@ import React, {useRef, useState} from "react";
 import {UploadIcon} from "@primer/octicons-react";
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
-import {ActionGroup, ActionsBar, Loading, RefreshButton} from "../../../lib/components/controls";
+import {ActionGroup, ActionsBar, Error, Loading, RefreshButton, Warnings} from "../../../lib/components/controls";
 import Button from "react-bootstrap/Button";
 import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
@@ -11,7 +11,6 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 
 import {Tree} from "../../../lib/components/repository/tree";
-import {Error, Warnings} from "../../../lib/components/controls";
 import {config, objects} from "../../../lib/api";
 import {useAPI, useAPIWithPagination} from "../../../lib/hooks/api";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
@@ -48,6 +47,7 @@ const UploadButton = ({ config, repo, reference, path, onDone, variant = "succes
             onDone()
         } catch (error) {
             setUploadState({...initialState, error})
+            throw error
         }
         onHide();
     }
@@ -123,28 +123,39 @@ const TreeContainer = ({ repo, reference, path, after, onPaginate, onRefresh, on
     const { results, error, loading, nextPage } = useAPIWithPagination( () => {
         return objects.list(repo.id, reference.id, path, after)
     },[repo.id, reference.id, path, after, refreshToken]);
+    const initialState = {
+        inProgress: false,
+        error: null,
+        done: false
+    }
+    const [deleteState, setDeleteState] = useState(initialState)
 
     if (loading) return <Loading/>;
     if (!!error) return <Error error={error}/>;
 
     return (
-	<Tree
-            repo={repo}
-            reference={reference}
-            path={(!!path) ? path : ""}
-            showActions={true}
-            results={results}
-            after={after}
-            nextPage={nextPage}
-            onPaginate={onPaginate}
-            onUpload={onUpload}
-            onDelete={entry => {
-                objects
-                    .delete(repo.id, reference.id, entry.path)
-                    .catch(error => console.log(error))
-                    .then(onRefresh)
-            }}
-        />
+        <>
+            {deleteState.error && <Error error={deleteState.error} onDismiss={() => setDeleteState(initialState)}/>}
+            <Tree
+                repo={repo}
+                reference={reference}
+                path={(!!path) ? path : ""}
+                showActions={true}
+                results={results}
+                after={after}
+                nextPage={nextPage}
+                onPaginate={onPaginate}
+                onUpload={onUpload}
+                onDelete={entry => {
+                    objects
+                        .delete(repo.id, reference.id, entry.path)
+                        .catch(error => {
+                            setDeleteState({...initialState, error: error})
+                            throw error
+                        })
+                        .then(onRefresh)
+                }}
+            /></>
     );
 }
 

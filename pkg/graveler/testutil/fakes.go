@@ -744,3 +744,21 @@ func (m *FakeCommitIterator) Err() error {
 }
 
 func (m *FakeCommitIterator) Close() {}
+
+type ProtectedBranchesManagerFake struct {
+	graveler.ProtectedBranchesManager
+	protectedBranches []string
+}
+
+func NewProtectedBranchesManagerFake(protectedBranches ...string) *ProtectedBranchesManagerFake {
+	return &ProtectedBranchesManagerFake{protectedBranches: protectedBranches}
+}
+
+func (p ProtectedBranchesManagerFake) IsBlocked(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, action graveler.BranchProtectionBlockedAction) (bool, error) {
+	for _, branch := range p.protectedBranches {
+		if branch == string(branchID) {
+			return true, nil
+		}
+	}
+	return false, nil
+}

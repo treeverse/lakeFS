@@ -2,6 +2,9 @@
 # Changelog
 
 ## Unreleased - XXXX-XX-XX
+- Protected Branches (#2181): define rules to prevent direct changes on some of your branches. 
+Only merges are allowed into protected branches.
+Combine these with pre-merge hooks to validate your data before it is on your production branches.  
 
 - Fix filter dialog unsearchable bug (#2460)
 

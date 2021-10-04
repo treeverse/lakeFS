@@ -170,6 +170,7 @@ const (
 	// Lakefs errors
 	ERRLakeFSNotSupported
 	ERRLakeFSWrongEndpoint
+	ErrWriteToProtectedBranch
 )
 
 type errorCodeMap map[APIErrorCode]APIError
@@ -750,5 +751,10 @@ var Codes = errorCodeMap{
 		Code:           "ERRLakeFSWrongEndpoint",
 		Description:    "S3 request received in UI handler, did you forget to set your s3 gateway domain name?",
 		HTTPStatusCode: http.StatusNotFound,
+	},
+	ErrWriteToProtectedBranch: {
+		Code:           "ErrWriteToProtectedBranch",
+		Description:    "Attempted to write to a protected branch",
+		HTTPStatusCode: http.StatusForbidden,
 	},
 }

@@ -83,6 +83,19 @@ func (m *Manager) Save(ctx context.Context, repositoryID graveler.RepositoryID, 
 	return nil
 }
 
+func (m *Manager) GetLatest(ctx context.Context, repositoryID graveler.RepositoryID, key string, settingTemplate proto.Message) (proto.Message, error) {
+	messageBytes, err := m.getFromStore(ctx, repositoryID, key)
+	if err != nil {
+		return nil, err
+	}
+	setting := proto.Clone(settingTemplate)
+	err = proto.Unmarshal(messageBytes, setting)
+	if err != nil {
+		return nil, err
+	}
+	return setting, nil
+}
+
 // Get fetches the setting under the given repository and key, and returns the result.
 // The result is eventually consistent: it is not guaranteed to be the most up-to-date setting. The cache expiry period is 1 second.
 // The settingTemplate parameter is used to determine the returned type.
@@ -92,16 +105,7 @@ func (m *Manager) Get(ctx context.Context, repositoryID graveler.RepositoryID, k
 		Key:          key,
 	}
 	setting, err := m.cache.GetOrSet(k, func() (v interface{}, err error) {
-		messageBytes, err := m.getFromStore(ctx, repositoryID, key)
-		if err != nil {
-			return nil, err
-		}
-		setting := proto.Clone(settingTemplate)
-		err = proto.Unmarshal(messageBytes, setting)
-		if err != nil {
-			return nil, err
-		}
-		return setting, nil
+		return m.GetLatest(ctx, repositoryID, key, settingTemplate)
 	})
 	if err != nil {
 		return nil, err
@@ -134,30 +138,25 @@ func (m *Manager) getFromStore(ctx context.Context, repositoryID graveler.Reposi
 }
 
 // UpdateWithLock atomically gets a setting, performs the update function, and persists the setting to the store.
-// The emptySetting parameter is used to determine the type passed to the update function.
-func (m *Manager) UpdateWithLock(ctx context.Context, repositoryID graveler.RepositoryID, key string, emptySetting proto.Message, update func(setting proto.Message)) error {
+// The settingTemplate parameter is used to determine the type passed to the update function.
+func (m *Manager) UpdateWithLock(ctx context.Context, repositoryID graveler.RepositoryID, key string, settingTemplate proto.Message, update func(proto.Message) error) error {
 	repo, err := m.refManager.GetRepository(ctx, repositoryID)
 	if err != nil {
 		return err
 	}
 	_, err = m.branchLock.MetadataUpdater(ctx, repositoryID, repo.DefaultBranchID, func() (interface{}, error) {
-		setting := proto.Clone(emptySetting)
-		messageBytes, err := m.getFromStore(ctx, repositoryID, key)
-		if err == nil {
-			err = proto.Unmarshal(messageBytes, setting)
-			if err != nil {
-				return nil, err
-			}
-		} else if !errors.Is(err, graveler.ErrNotFound) {
+		setting, err := m.GetLatest(ctx, repositoryID, key, settingTemplate)
+		if errors.Is(err, graveler.ErrNotFound) {
+			setting = proto.Clone(settingTemplate)
+		} else if err != nil {
 			return nil, err
 		}
 		logSetting(logging.FromContext(ctx), repositoryID, key, setting, "got repository-level setting")
-		update(setting)
-		err = m.Save(ctx, repositoryID, key, setting)
+		err = update(setting)
 		if err != nil {
 			return nil, err
 		}
-		return nil, nil
+		return nil, m.Save(ctx, repositoryID, key, setting)
 	})
 	return err
 }

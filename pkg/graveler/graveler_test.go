@@ -77,7 +77,7 @@ func TestGraveler_List(t *testing.T) {
 			name: "one committed one staged no paths",
 			r: graveler.NewGraveler(branchLocker, &testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo"), Value: &graveler.Value{}}})},
 				&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("bar"), Value: &graveler.Value{}}})},
-				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch, StagingToken: "token", Commits: map[graveler.CommitID]*graveler.Commit{"": {}}}, nil,
+				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch, StagingToken: "token", Commits: map[graveler.CommitID]*graveler.Commit{"": {}}}, nil, testutil.NewProtectedBranchesManagerFake(),
 			),
 			expected: []*graveler.ValueRecord{{Key: graveler.Key("bar"), Value: &graveler.Value{}}, {Key: graveler.Key("foo"), Value: &graveler.Value{}}},
 		},
@@ -85,7 +85,7 @@ func TestGraveler_List(t *testing.T) {
 			name: "same path different file",
 			r: graveler.NewGraveler(branchLocker, &testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo"), Value: &graveler.Value{Identity: []byte("original")}}})},
 				&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo"), Value: &graveler.Value{Identity: []byte("other")}}})},
-				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch, StagingToken: "token", Commits: map[graveler.CommitID]*graveler.Commit{"": {}}}, nil,
+				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch, StagingToken: "token", Commits: map[graveler.CommitID]*graveler.Commit{"": {}}}, nil, testutil.NewProtectedBranchesManagerFake(),
 			),
 			expected: []*graveler.ValueRecord{{Key: graveler.Key("foo"), Value: &graveler.Value{Identity: []byte("other")}}},
 		},
@@ -93,7 +93,7 @@ func TestGraveler_List(t *testing.T) {
 			name: "one committed one staged no paths - with prefix",
 			r: graveler.NewGraveler(branchLocker, &testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("prefix/foo"), Value: &graveler.Value{}}})},
 				&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("prefix/bar"), Value: &graveler.Value{}}})},
-				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch, StagingToken: "token", Commits: map[graveler.CommitID]*graveler.Commit{"": {}}}, nil,
+				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch, StagingToken: "token", Commits: map[graveler.CommitID]*graveler.Commit{"": {}}}, nil, testutil.NewProtectedBranchesManagerFake(),
 			),
 			expected: []*graveler.ValueRecord{{Key: graveler.Key("prefix/bar"), Value: &graveler.Value{}}, {Key: graveler.Key("prefix/foo"), Value: &graveler.Value{}}},
 		},
@@ -133,54 +133,54 @@ func TestGraveler_Get(t *testing.T) {
 		{
 			name: "commit - exists",
 			r: graveler.NewGraveler(branchLocker, &testutil.CommittedFake{ValuesByKey: map[string]*graveler.Value{"key": {Identity: []byte("committed")}}}, nil,
-				&testutil.RefsFake{RefType: graveler.ReferenceTypeCommit, Commits: map[graveler.CommitID]*graveler.Commit{"": {}}}, nil,
+				&testutil.RefsFake{RefType: graveler.ReferenceTypeCommit, Commits: map[graveler.CommitID]*graveler.Commit{"": {}}}, nil, testutil.NewProtectedBranchesManagerFake(),
 			),
 			expectedValueResult: graveler.Value{Identity: []byte("committed")},
 		},
 		{
 			name: "commit - not found",
 			r: graveler.NewGraveler(branchLocker, &testutil.CommittedFake{Err: graveler.ErrNotFound}, nil,
-				&testutil.RefsFake{RefType: graveler.ReferenceTypeCommit, Commits: map[graveler.CommitID]*graveler.Commit{"": {}}}, nil,
+				&testutil.RefsFake{RefType: graveler.ReferenceTypeCommit, Commits: map[graveler.CommitID]*graveler.Commit{"": {}}}, nil, testutil.NewProtectedBranchesManagerFake(),
 			), expectedErr: graveler.ErrNotFound,
 		},
 		{
 			name: "commit - error",
 			r: graveler.NewGraveler(branchLocker, &testutil.CommittedFake{Err: errTest}, nil,
-				&testutil.RefsFake{RefType: graveler.ReferenceTypeCommit, Commits: map[graveler.CommitID]*graveler.Commit{"": {}}}, nil,
+				&testutil.RefsFake{RefType: graveler.ReferenceTypeCommit, Commits: map[graveler.CommitID]*graveler.Commit{"": {}}}, nil, testutil.NewProtectedBranchesManagerFake(),
 			), expectedErr: errTest,
 		},
 		{
 			name: "branch - only staged",
 			r: graveler.NewGraveler(branchLocker, &testutil.CommittedFake{Err: graveler.ErrNotFound}, &testutil.StagingFake{Value: &graveler.Value{Identity: []byte("staged")}},
-				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch, StagingToken: "token1", Commits: map[graveler.CommitID]*graveler.Commit{"": {}}}, nil,
+				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch, StagingToken: "token1", Commits: map[graveler.CommitID]*graveler.Commit{"": {}}}, nil, testutil.NewProtectedBranchesManagerFake(),
 			),
 			expectedValueResult: graveler.Value{Identity: []byte("staged")},
 		},
 		{
 			name: "branch - committed and staged",
 			r: graveler.NewGraveler(branchLocker, &testutil.CommittedFake{ValuesByKey: map[string]*graveler.Value{"key": {Identity: []byte("committed")}}}, &testutil.StagingFake{Value: &graveler.Value{Identity: []byte("staged")}},
-				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch, StagingToken: "token1", Commits: map[graveler.CommitID]*graveler.Commit{"": {}}}, nil,
+				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch, StagingToken: "token1", Commits: map[graveler.CommitID]*graveler.Commit{"": {}}}, nil, testutil.NewProtectedBranchesManagerFake(),
 			),
 			expectedValueResult: graveler.Value{Identity: []byte("staged")},
 		},
 		{
 			name: "branch - only committed",
 			r: graveler.NewGraveler(branchLocker, &testutil.CommittedFake{ValuesByKey: map[string]*graveler.Value{"key": {Identity: []byte("committed")}}}, &testutil.StagingFake{Err: graveler.ErrNotFound},
-				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch, Commits: map[graveler.CommitID]*graveler.Commit{"": {}}}, nil,
+				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch, Commits: map[graveler.CommitID]*graveler.Commit{"": {}}}, nil, testutil.NewProtectedBranchesManagerFake(),
 			),
 			expectedValueResult: graveler.Value{Identity: []byte("committed")},
 		},
 		{
 			name: "branch - tombstone",
 			r: graveler.NewGraveler(branchLocker, &testutil.CommittedFake{ValuesByKey: map[string]*graveler.Value{"key": {Identity: []byte("committed")}}}, &testutil.StagingFake{Value: nil},
-				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch, StagingToken: "token1", Commits: map[graveler.CommitID]*graveler.Commit{"": {}}}, nil,
+				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch, StagingToken: "token1", Commits: map[graveler.CommitID]*graveler.Commit{"": {}}}, nil, testutil.NewProtectedBranchesManagerFake(),
 			),
 			expectedErr: graveler.ErrNotFound,
 		},
 		{
 			name: "branch - staged return error",
 			r: graveler.NewGraveler(branchLocker, &testutil.CommittedFake{}, &testutil.StagingFake{Err: errTest},
-				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch, StagingToken: "token1", Commits: map[graveler.CommitID]*graveler.Commit{"": {}}}, nil,
+				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch, StagingToken: "token1", Commits: map[graveler.CommitID]*graveler.Commit{"": {}}}, nil, testutil.NewProtectedBranchesManagerFake(),
 			),
 			expectedErr: errTest,
 		},
@@ -216,7 +216,7 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 			name: "no changes",
 			r: graveler.NewGraveler(branchLocker, &testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
 				&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{})},
-				&testutil.RefsFake{Branch: &graveler.Branch{CommitID: "c1"}, Commits: map[graveler.CommitID]*graveler.Commit{"c1": {MetaRangeID: "mri1"}}}, nil,
+				&testutil.RefsFake{Branch: &graveler.Branch{CommitID: "c1"}, Commits: map[graveler.CommitID]*graveler.Commit{"c1": {MetaRangeID: "mri1"}}}, nil, testutil.NewProtectedBranchesManagerFake(),
 			),
 			amount:       10,
 			expectedDiff: testutil.NewDiffIter([]graveler.Diff{}),
@@ -225,7 +225,7 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 			name: "added one",
 			r: graveler.NewGraveler(branchLocker, &testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{})},
 				&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
-				&testutil.RefsFake{Branch: &graveler.Branch{CommitID: "c1"}, Commits: map[graveler.CommitID]*graveler.Commit{"c1": {MetaRangeID: "mri1"}}}, nil,
+				&testutil.RefsFake{Branch: &graveler.Branch{CommitID: "c1"}, Commits: map[graveler.CommitID]*graveler.Commit{"c1": {MetaRangeID: "mri1"}}}, nil, testutil.NewProtectedBranchesManagerFake(),
 			),
 			amount: 10,
 			expectedDiff: testutil.NewDiffIter([]graveler.Diff{{
@@ -238,7 +238,7 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 			name: "changed one",
 			r: graveler.NewGraveler(branchLocker, &testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{Identity: []byte("one")}}}), ValuesByKey: map[string]*graveler.Value{"foo/one": {Identity: []byte("one")}}},
 				&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{Identity: []byte("one_changed")}}})},
-				&testutil.RefsFake{Branch: &graveler.Branch{CommitID: "c1"}, Commits: map[graveler.CommitID]*graveler.Commit{"c1": {MetaRangeID: "mri1"}}}, nil,
+				&testutil.RefsFake{Branch: &graveler.Branch{CommitID: "c1"}, Commits: map[graveler.CommitID]*graveler.Commit{"c1": {MetaRangeID: "mri1"}}}, nil, testutil.NewProtectedBranchesManagerFake(),
 			),
 			amount: 10,
 			expectedDiff: testutil.NewDiffIter([]graveler.Diff{{
@@ -251,7 +251,7 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 			name: "removed one",
 			r: graveler.NewGraveler(branchLocker, &testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
 				&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: nil}})},
-				&testutil.RefsFake{Branch: &graveler.Branch{CommitID: "c1"}, Commits: map[graveler.CommitID]*graveler.Commit{"c1": {MetaRangeID: "mri1"}}}, nil,
+				&testutil.RefsFake{Branch: &graveler.Branch{CommitID: "c1"}, Commits: map[graveler.CommitID]*graveler.Commit{"c1": {MetaRangeID: "mri1"}}}, nil, testutil.NewProtectedBranchesManagerFake(),
 			),
 			amount: 10,
 			expectedDiff: testutil.NewDiffIter([]graveler.Diff{{
@@ -296,7 +296,7 @@ func TestGraveler_CreateBranch(t *testing.T) {
 		&testutil.RefsFake{
 			Err:      graveler.ErrNotFound,
 			CommitID: "8888888798e3aeface8e62d1c7072a965314b4",
-		}, nil,
+		}, nil, nil,
 	)
 	_, err := gravel.CreateBranch(context.Background(), "", "", "")
 	if err != nil {
@@ -307,7 +307,7 @@ func TestGraveler_CreateBranch(t *testing.T) {
 		nil,
 		&testutil.RefsFake{
 			Branch: &graveler.Branch{},
-		}, nil,
+		}, nil, nil,
 	)
 	_, err = gravel.CreateBranch(context.Background(), "", "", "")
 	if !errors.Is(err, graveler.ErrBranchExists) {
@@ -320,7 +320,7 @@ func TestGraveler_UpdateBranch(t *testing.T) {
 	branchLocker := ref.NewBranchLocker(conn)
 	gravel := graveler.NewGraveler(branchLocker, nil,
 		&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
-		&testutil.RefsFake{Branch: &graveler.Branch{}}, nil,
+		&testutil.RefsFake{Branch: &graveler.Branch{}}, nil, nil,
 	)
 	_, err := gravel.UpdateBranch(context.Background(), "", "", "")
 	if !errors.Is(err, graveler.ErrConflictFound) {
@@ -328,7 +328,7 @@ func TestGraveler_UpdateBranch(t *testing.T) {
 	}
 	gravel = graveler.NewGraveler(branchLocker, nil,
 		&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{})},
-		&testutil.RefsFake{Branch: &graveler.Branch{}}, nil,
+		&testutil.RefsFake{Branch: &graveler.Branch{}}, nil, nil,
 	)
 	_, err = gravel.UpdateBranch(context.Background(), "", "", "")
 	if err != nil {
@@ -343,9 +343,10 @@ func TestGraveler_Commit(t *testing.T) {
 	expectedRangeID := graveler.MetaRangeID("expectedRangeID")
 	values := testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: nil, Value: nil}})
 	type fields struct {
-		CommittedManager *testutil.CommittedFake
-		StagingManager   *testutil.StagingFake
-		RefManager       *testutil.RefsFake
+		CommittedManager         *testutil.CommittedFake
+		StagingManager           *testutil.StagingFake
+		RefManager               *testutil.RefsFake
+		ProtectedBranchesManager *testutil.ProtectedBranchesManagerFake
 	}
 	type args struct {
 		ctx          context.Context
@@ -463,15 +464,38 @@ func TestGraveler_Commit(t *testing.T) {
 			want:        expectedCommitID,
 			expectedErr: nil,
 		},
+		{
+			name: "fail on protected branch",
+			fields: fields{
+				CommittedManager: &testutil.CommittedFake{MetaRangeID: expectedRangeID},
+				StagingManager:   &testutil.StagingFake{ValueIterator: values},
+				RefManager: &testutil.RefsFake{CommitID: expectedCommitID,
+					Branch:  &graveler.Branch{CommitID: expectedCommitID},
+					Commits: map[graveler.CommitID]*graveler.Commit{expectedCommitID: {MetaRangeID: expectedRangeID}}},
+				ProtectedBranchesManager: testutil.NewProtectedBranchesManagerFake("branch"),
+			},
+			args: args{
+				ctx:          nil,
+				repositoryID: "repo",
+				branchID:     "branch",
+				committer:    "committer",
+				message:      "a message",
+				metadata:     graveler.Metadata{},
+			},
+			expectedErr: graveler.ErrCommitToProtectedBranch,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			expectedCommitID := graveler.CommitID("expectedCommitId")
 			expectedRangeID := graveler.MetaRangeID("expectedRangeID")
 			values := testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: nil, Value: nil}})
-			g := graveler.NewGraveler(branchLocker, tt.fields.CommittedManager, tt.fields.StagingManager, tt.fields.RefManager, nil)
+			if tt.fields.ProtectedBranchesManager == nil {
+				tt.fields.ProtectedBranchesManager = testutil.NewProtectedBranchesManagerFake()
+			}
+			g := graveler.NewGraveler(branchLocker, tt.fields.CommittedManager, tt.fields.StagingManager, tt.fields.RefManager, nil, tt.fields.ProtectedBranchesManager)
 
-			got, err := g.Commit(context.Background(), "", "", graveler.CommitParams{
+			got, err := g.Commit(context.Background(), tt.args.repositoryID, tt.args.branchID, graveler.CommitParams{
 				Committer: tt.args.committer,
 				Message:   tt.args.message,
 				Metadata:  tt.args.metadata,
@@ -554,7 +578,7 @@ func TestGraveler_PreCommitHook(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// setup
 			ctx := context.Background()
-			g := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager, nil)
+			g := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager, nil, testutil.NewProtectedBranchesManagerFake())
 			h := &Hooks{Err: tt.err}
 			if tt.hook {
 				g.SetHooksHandler(h)
@@ -651,7 +675,7 @@ func TestGraveler_PreMergeHook(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// setup
 			ctx := context.Background()
-			g := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager, nil)
+			g := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager, nil, testutil.NewProtectedBranchesManagerFake())
 			h := &Hooks{Err: tt.err}
 			if tt.hook {
 				g.SetHooksHandler(h)
@@ -825,7 +849,7 @@ func TestGraveler_AddCommitToBranchHead(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := graveler.NewGraveler(branchLocker, tt.fields.CommittedManager, tt.fields.StagingManager, tt.fields.RefManager, nil)
+			g := graveler.NewGraveler(branchLocker, tt.fields.CommittedManager, tt.fields.StagingManager, tt.fields.RefManager, nil, testutil.NewProtectedBranchesManagerFake())
 			got, err := g.AddCommitToBranchHead(context.Background(), expectedRepositoryID, expectedBranchID, graveler.Commit{
 				Committer:   tt.args.committer,
 				Message:     tt.args.message,
@@ -973,7 +997,7 @@ func TestGraveler_AddCommit(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := graveler.NewGraveler(branchLocker, tt.fields.CommittedManager, tt.fields.StagingManager, tt.fields.RefManager, nil)
+			g := graveler.NewGraveler(branchLocker, tt.fields.CommittedManager, tt.fields.StagingManager, tt.fields.RefManager, nil, testutil.NewProtectedBranchesManagerFake())
 			commit := graveler.Commit{
 				Committer:   tt.args.committer,
 				Message:     tt.args.message,
@@ -1153,7 +1177,7 @@ func TestGraveler_Delete(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			g := graveler.NewGraveler(branchLocker, tt.fields.CommittedManager, tt.fields.StagingManager, tt.fields.RefManager, nil)
+			g := graveler.NewGraveler(branchLocker, tt.fields.CommittedManager, tt.fields.StagingManager, tt.fields.RefManager, nil, testutil.NewProtectedBranchesManagerFake())
 			if err := g.Delete(ctx, tt.args.repositoryID, tt.args.branchID, tt.args.key); !errors.Is(err, tt.expectedErr) {
 				t.Errorf("Delete() returned unexpected error. got = %v, expected %v", err, tt.expectedErr)
 			}

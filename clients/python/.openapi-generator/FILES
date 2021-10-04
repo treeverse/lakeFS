@@ -8,6 +8,7 @@ docs/ActionsApi.md
 docs/AuthApi.md
 docs/AuthenticationToken.md
 docs/BranchCreation.md
+docs/BranchProtectionRule.md
 docs/BranchesApi.md
 docs/Commit.md
 docs/CommitCreation.md
@@ -31,6 +32,7 @@ docs/GroupList.md
 docs/HealthCheckApi.md
 docs/HookRun.md
 docs/HookRunList.md
+docs/InlineObject1.md
 docs/LoginInformation.md
 docs/Merge.md
 docs/MergeResult.md
@@ -94,6 +96,7 @@ lakefs_client/model/action_run.py
 lakefs_client/model/action_run_list.py
 lakefs_client/model/authentication_token.py
 lakefs_client/model/branch_creation.py
+lakefs_client/model/branch_protection_rule.py
 lakefs_client/model/commit.py
 lakefs_client/model/commit_creation.py
 lakefs_client/model/commit_list.py
@@ -113,6 +116,7 @@ lakefs_client/model/group_creation.py
 lakefs_client/model/group_list.py
 lakefs_client/model/hook_run.py
 lakefs_client/model/hook_run_list.py
+lakefs_client/model/inline_object1.py
 lakefs_client/model/login_information.py
 lakefs_client/model/merge.py
 lakefs_client/model/merge_result.py

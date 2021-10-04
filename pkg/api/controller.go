@@ -1988,6 +1988,65 @@ func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *h
 	})
 }
 
+func (c *Controller) GetBranchProtectionRules(w http.ResponseWriter, r *http.Request, repository string) {
+	if !c.authorize(w, r, []permissions.Permission{
+		{
+			Action:   permissions.GetBranchProtectionRulesAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	rules, err := c.Catalog.GetBranchProtectionRules(ctx, repository)
+	if handleAPIError(w, err) {
+		return
+	}
+	resp := make([]*BranchProtectionRule, 0, len(rules.BranchPatternToBlockedActions))
+	for pattern := range rules.BranchPatternToBlockedActions {
+		resp = append(resp, &BranchProtectionRule{
+			Pattern: pattern,
+		})
+	}
+	writeResponse(w, http.StatusOK, resp)
+}
+
+func (c *Controller) DeleteBranchProtectionRule(w http.ResponseWriter, r *http.Request, body DeleteBranchProtectionRuleJSONRequestBody, repository string) {
+	if !c.authorize(w, r, []permissions.Permission{
+		{
+			Action:   permissions.SetBranchProtectionRulesAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	err := c.Catalog.DeleteBranchProtectionRule(ctx, repository, body.Pattern)
+	if handleAPIError(w, err) {
+		return
+	}
+	writeResponse(w, http.StatusNoContent, nil)
+}
+
+func (c *Controller) CreateBranchProtectionRule(w http.ResponseWriter, r *http.Request, body CreateBranchProtectionRuleJSONRequestBody, repository string) {
+	if !c.authorize(w, r, []permissions.Permission{
+		{
+			Action:   permissions.SetBranchProtectionRulesAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	// For now, all protected branches use the same default set of blocked actions. In the future this set will be user configurable.
+	blockedActions := []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_STAGING_WRITE, graveler.BranchProtectionBlockedAction_COMMIT}
+	err := c.Catalog.CreateBranchProtectionRule(ctx, repository, body.Pattern, blockedActions)
+	if handleAPIError(w, err) {
+		return
+	}
+	writeResponse(w, http.StatusNoContent, nil)
+}
+
 func (c *Controller) GetMetaRange(w http.ResponseWriter, r *http.Request, repository string, metaRange string) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{

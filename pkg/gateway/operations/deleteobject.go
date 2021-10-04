@@ -7,6 +7,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
+	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 )
@@ -52,6 +53,8 @@ func (controller *DeleteObject) Handle(w http.ResponseWriter, req *http.Request,
 	switch {
 	case errors.Is(err, catalog.ErrNotFound):
 		lg.WithError(err).Debug("could not delete object, it doesn't exist")
+	case errors.Is(err, graveler.ErrWriteToProtectedBranch):
+		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrWriteToProtectedBranch))
 	case err != nil:
 		lg.WithError(err).Error("could not delete object")
 		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
