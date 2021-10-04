@@ -30,7 +30,7 @@ jobs:
       - name: Publish to docs repository
         uses: dmnemec/copy_file_to_another_repo_action@v1.1.1
         env:
-          API_TOKEN_GITHUB: ${{ secrets.PERSONAL_TOKEN }}
+          API_TOKEN_GITHUB: ${{ secrets.GITHUB_TOKEN }}
         with:
           source_file: docs/_site/.
           destination_repo: treeverse/docs-lakeFS

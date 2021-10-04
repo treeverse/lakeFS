@@ -39,7 +39,7 @@ jobs:
 
       - name: Update published version
         env:
-          API_TOKEN_GITHUB: ${{ secrets.PERSONAL_TOKEN }}
+          API_TOKEN_GITHUB: ${{ secrets.GITHUB_TOKEN }}
         run: >
             curl -s https://${API_TOKEN_GITHUB}@raw.githubusercontent.com/treeverse/docs-lakeFS/main/versions.json |
             jq '."${{ steps.version.outputs.tag}}" = "${{ steps.version.outputs.tag}}"' > docs/_site/versions.json
@@ -54,4 +54,4 @@ jobs:
           destination_folder: /
           user_email: 'support@treeverse.io'
           user_name: 'nopcoder'
-
+TH
