@@ -90,31 +90,30 @@ func newGenerateNanoid(size int) func() (string, error) {
 }
 
 func newGenerateFuzz() func() (string, error) {
-	return newGenerateFuzzWithSharedPrefixes(EmptyPrefix)
+	f := fuzz.NewWithSeed(FuzzerSeed)
+	return func() (string, error) {
+		var val string
+		f.Fuzz(&val)
+		return val, nil
+	}
 }
 
-func newGenerateFuzzWithSharedPrefixes(sharedPrefix string) func() (string, error) {
+func newGenerateFuzzWithSharedPrefixes() func() (string, error) {
 	f := fuzz.NewWithSeed(FuzzerSeed)
+	src := rand.NewSource(041021)
+	r := rand.New(src)
+	prefixBaseLen := 1 + r.Intn(100)
+	sharedPrefixBase, err := nanoid.New(prefixBaseLen)
+	if err != nil {
+		panic(err)
+	}
+	l := len(sharedPrefixBase)
 	return func() (string, error) {
 		var suffix string
 		f.Fuzz(&suffix)
 		// play with the length of the shared prefix trying to create noisier input
-		curPrefixLen := len(sharedPrefix)
-		suffixLen := len(suffix)
-		newPrefixLen := 0
-		subtractFromPref := suffixLen
-		if curPrefixLen != 0 {
-			if suffixLen > curPrefixLen {
-				for {
-					subtractFromPref /= 2
-					if subtractFromPref < curPrefixLen {
-						break
-					}
-				}
-			}
-			newPrefixLen = curPrefixLen - subtractFromPref
-		}
-		return sharedPrefix[:newPrefixLen] + suffix, nil
+		p := sharedPrefixBase[0:r.Intn(l/2)+r.Intn(l-l/2)] + suffix
+		return p, nil
 	}
 }
 
@@ -217,12 +216,7 @@ func writeMultiSizedSstsWithContentsFuzzing() {
 		if i%2 == 0 {
 			curSize = (1 + r.Intn(DefaultCommittedPermanentMaxRangeSizeBytes/MiBToBytes)) * MiBToBytes
 			testFileName += ".with.shared.prefix"
-			prefixLen := 1 + r.Intn(100)
-			sharedPrefix, err := newGenerateNanoid(prefixLen)()
-			if err != nil {
-				panic(err)
-			}
-			keyFuzzFunc = newGenerateFuzzWithSharedPrefixes(sharedPrefix)
+			keyFuzzFunc = newGenerateFuzzWithSharedPrefixes()
 		} else {
 			curSize = (1 + r.Intn(DefaultMaxSizeKiB)) * KiBToBytes
 			keyFuzzFunc = newGenerateFuzz()
