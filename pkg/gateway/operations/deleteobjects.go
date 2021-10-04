@@ -10,6 +10,7 @@ import (
 	gerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/gateway/path"
 	"github.com/treeverse/lakefs/pkg/gateway/serde"
+	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/permissions"
 )
 
@@ -63,6 +64,8 @@ func (controller *DeleteObjects) Handle(w http.ResponseWriter, req *http.Request
 		switch {
 		case errors.Is(err, catalog.ErrNotFound):
 			lg.Debug("tried to delete a non-existent object")
+		case errors.Is(err, graveler.ErrWriteToProtectedBranch):
+			_ = o.EncodeError(w, req, gerrors.Codes.ToAPIErr(gerrors.ErrWriteToProtectedBranch))
 		case errors.Is(err, catalog.ErrPathRequiredValue):
 			// issue #1706 - https://github.com/treeverse/lakeFS/issues/1706
 			// Spark trying to delete the path "main/", which we map to branch "main" with an empty path.

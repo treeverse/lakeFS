@@ -1259,6 +1259,129 @@ lakectl branch show <branch uri> [flags]
 
 
 
+### lakectl branch-protect
+
+Create and manage branch protection rules
+
+#### Synopsis
+{:.no_toc}
+
+Define branch protection rules to prevent direct changes. Changes to protected branches can only be done by merging from other branches.
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for branch-protect
+```
+
+
+
+### lakectl branch-protect add
+
+Add a branch protection rule
+
+#### Synopsis
+{:.no_toc}
+
+Add a branch protection rule for a given branch pattern name
+
+```
+lakectl branch-protect add <repo uri> <pattern> [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+add lakefs://<repository> stable/*
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for add
+```
+
+
+
+### lakectl branch-protect delete
+
+Delete a branch protection rule
+
+#### Synopsis
+{:.no_toc}
+
+Delete a branch protection rule for a given branch pattern name
+
+```
+lakectl branch-protect delete <repo uri> <pattern> [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+delete lakefs://<repository> stable/*
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for delete
+```
+
+
+
+### lakectl branch-protect help
+
+Help about any command
+
+#### Synopsis
+{:.no_toc}
+
+Help provides help for any command in the application.
+Simply type branch-protect help [path to command] for full details.
+
+```
+lakectl branch-protect help [command] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl branch-protect list
+
+List all branch protection rules
+
+```
+lakectl branch-protect list <repo uri> [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+list lakefs://<repository>
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for list
+```
+
+
+
 ### lakectl cat-hook-output
 
 **note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
@@ -2042,7 +2165,7 @@ lakectl refs-restore <repository uri> [flags]
 {:.no_toc}
 
 ```
-aws s3 cp s3://bucket/_lakefs/refs_manifest.json - | lakectl refs-load lakefs://my-bare-repository --manifest -
+aws s3 cp s3://bucket/_lakefs/refs_manifest.json - | lakectl refs-restore lakefs://my-bare-repository --manifest -
 ```
 
 #### Options
