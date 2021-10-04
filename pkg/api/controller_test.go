@@ -1329,6 +1329,7 @@ func TestController_ConfigHandlers(t *testing.T) {
 }
 
 func TestController_SetupLakeFSHandler(t *testing.T) {
+	const validAccessKeyID = "AKIAIOSFODNN7EXAMPLE"
 	cases := []struct {
 		name               string
 		key                *api.AccessKeyCredentials
@@ -1341,7 +1342,7 @@ func TestController_SetupLakeFSHandler(t *testing.T) {
 		{
 			name: "accessKeyAndSecret",
 			key: &api.AccessKeyCredentials{
-				AccessKeyId:     "IKEAsneakers",
+				AccessKeyId:     validAccessKeyID,
 				SecretAccessKey: "cetec astronomy",
 			},
 			expectedStatusCode: http.StatusOK,
@@ -1356,7 +1357,7 @@ func TestController_SetupLakeFSHandler(t *testing.T) {
 		{
 			name: "emptySecretKey",
 			key: &api.AccessKeyCredentials{
-				AccessKeyId: "IKEAsneakers",
+				AccessKeyId: validAccessKeyID,
 			},
 			expectedStatusCode: http.StatusBadRequest,
 		},
@@ -1367,83 +1368,78 @@ func TestController_SetupLakeFSHandler(t *testing.T) {
 			server := setupServer(t, handler)
 			clt := setupClientByEndpoint(t, server.URL, "", "")
 
-			t.Run("fresh start", func(t *testing.T) {
+			ctx := context.Background()
+			resp, err := clt.SetupWithResponse(ctx, api.SetupJSONRequestBody{
+				Username: "admin",
+				Key:      c.key,
+			})
+			testutil.Must(t, err)
+			if resp.HTTPResponse.StatusCode != c.expectedStatusCode {
+				t.Fatalf("got status code %d, expected %d", resp.HTTPResponse.StatusCode, c.expectedStatusCode)
+			}
+			if resp.JSON200 == nil {
+				return
+			}
+
+			creds := resp.JSON200
+			if len(creds.AccessKeyId) == 0 {
+				t.Fatal("Credential key id is missing")
+			}
+
+			if c.key != nil && c.key.AccessKeyId != creds.AccessKeyId {
+				t.Errorf("got access key ID %s != %s", creds.AccessKeyId, c.key.AccessKeyId)
+			}
+			if c.key != nil && c.key.SecretAccessKey != creds.SecretAccessKey {
+				t.Errorf("got secret access key %s != %s", creds.SecretAccessKey, c.key.SecretAccessKey)
+			}
+
+			clt = setupClientByEndpoint(t, server.URL, creds.AccessKeyId, creds.SecretAccessKey)
+			getCredResp, err := clt.GetCredentialsWithResponse(ctx, "admin", creds.AccessKeyId)
+			verifyResponseOK(t, getCredResp, err)
+			if err != nil {
+				t.Fatal("Get API credentials key id for created access key", err)
+			}
+			foundCreds := getCredResp.JSON200
+			if foundCreds == nil {
+				t.Fatal("Get API credentials secret key for created access key")
+			}
+			if foundCreds.AccessKeyId != creds.AccessKeyId {
+				t.Fatalf("Access key ID '%s', expected '%s'", foundCreds.AccessKeyId, creds.AccessKeyId)
+			}
+			if len(deps.collector.metadata) != 1 {
+				t.Fatal("Failed to collect metadata")
+			}
+			if deps.collector.metadata[0].InstallationID == "" {
+				t.Fatal("Empty installationID")
+			}
+			if len(deps.collector.metadata[0].Entries) < 5 {
+				t.Fatalf("There should be at least 5 metadata entries: %s", deps.collector.metadata[0].Entries)
+			}
+
+			hasBlockStoreType := false
+			for _, ent := range deps.collector.metadata[0].Entries {
+				if ent.Name == stats.BlockstoreTypeKey {
+					hasBlockStoreType = true
+					if ent.Value == "" {
+						t.Fatalf("Blockstorage key exists but with empty value: %s", deps.collector.metadata[0].Entries)
+					}
+					break
+				}
+			}
+			if !hasBlockStoreType {
+				t.Fatalf("missing blockstorage key: %s", deps.collector.metadata[0].Entries)
+			}
+
+			// on successful setup - make sure we can't re-setup
+			if c.expectedStatusCode == http.StatusOK {
 				ctx := context.Background()
-				resp, err := clt.SetupWithResponse(ctx, api.SetupJSONRequestBody{
+				res, err := clt.SetupWithResponse(ctx, api.SetupJSONRequestBody{
 					Username: "admin",
-					Key:      c.key,
 				})
 				testutil.Must(t, err)
-				if resp.HTTPResponse.StatusCode != c.expectedStatusCode {
-					t.Fatalf("got status code %d, expected %d", resp.HTTPResponse.StatusCode, c.expectedStatusCode)
+				if res.JSON409 == nil {
+					t.Error("re-setup didn't got conflict response")
 				}
-				if resp.JSON200 == nil {
-					return
-				}
-
-				creds := resp.JSON200
-				if len(creds.AccessKeyId) == 0 {
-					t.Fatal("Credential key id is missing")
-				}
-
-				if c.key != nil && c.key.AccessKeyId != creds.AccessKeyId {
-					t.Errorf("got access key ID %s != %s", creds.AccessKeyId, c.key.AccessKeyId)
-				}
-				if c.key != nil && c.key.SecretAccessKey != creds.SecretAccessKey {
-					t.Errorf("got secret access key %s != %s", creds.SecretAccessKey, c.key.SecretAccessKey)
-				}
-
-				clt = setupClientByEndpoint(t, server.URL, creds.AccessKeyId, creds.SecretAccessKey)
-				getCredResp, err := clt.GetCredentialsWithResponse(ctx, "admin", creds.AccessKeyId)
-				verifyResponseOK(t, getCredResp, err)
-				if err != nil {
-					t.Fatal("Get API credentials key id for created access key", err)
-				}
-				foundCreds := getCredResp.JSON200
-				if foundCreds == nil {
-					t.Fatal("Get API credentials secret key for created access key")
-				}
-				if foundCreds.AccessKeyId != creds.AccessKeyId {
-					t.Fatalf("Access key ID '%s', expected '%s'", foundCreds.AccessKeyId, creds.AccessKeyId)
-				}
-				if len(deps.collector.metadata) != 1 {
-					t.Fatal("Failed to collect metadata")
-				}
-				if deps.collector.metadata[0].InstallationID == "" {
-					t.Fatal("Empty installationID")
-				}
-				if len(deps.collector.metadata[0].Entries) < 5 {
-					t.Fatalf("There should be at least 5 metadata entries: %s", deps.collector.metadata[0].Entries)
-				}
-
-				hasBlockStoreType := false
-				for _, ent := range deps.collector.metadata[0].Entries {
-					if ent.Name == stats.BlockstoreTypeKey {
-						hasBlockStoreType = true
-						if ent.Value == "" {
-							t.Fatalf("Blockstorage key exists but with empty value: %s", deps.collector.metadata[0].Entries)
-						}
-						break
-					}
-				}
-				if !hasBlockStoreType {
-					t.Fatalf("missing blockstorage key: %s", deps.collector.metadata[0].Entries)
-				}
-			})
-
-			if c.expectedStatusCode == http.StatusOK {
-				// now we ask again - should get status conflict
-				t.Run("existing setup", func(t *testing.T) {
-					// request to setup
-					ctx := context.Background()
-					res, err := clt.SetupWithResponse(ctx, api.SetupJSONRequestBody{
-						Username: "admin",
-					})
-					testutil.Must(t, err)
-					if res.JSON409 == nil {
-						t.Error("repeated setup didn't got conflict response")
-					}
-				})
 			}
 		})
 	}
