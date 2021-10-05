@@ -148,7 +148,7 @@ func userByAuth(ctx context.Context, logger logging.Logger, authService auth.Ser
 	}
 	user, err := authService.GetUserByID(ctx, cred.UserID)
 	if err != nil {
-		logger.WithFields(logging.Fields{"user_id": cred.UserID}).Debug("could not find user id by credentials")
+		logger.WithError(err).WithFields(logging.Fields{"user_id": cred.UserID}).Debug("could not find user id by credentials")
 		return nil, ErrAuthenticatingRequest
 	}
 	return user, nil
