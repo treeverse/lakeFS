@@ -6,17 +6,30 @@ Here is what we shall implement initially.  For definitions, the current
 state, and rationale for why we choose this starting point, see the rest
 of the document.
 
-We shall add an external authentication flow that uses an OAuth2 server,
-using standard flows. When configured with an identity provider, clients
-will be able to identify against the provider to get a token that claims
-some `groups`.  These groups will be identified as regular groups in the
-current system, allowing every operation by the user to be verified with
-the policies of those groups.
+We shall add an authentication flow that uses an LDAP server.  The first
+versions will do only that, creating a user upon authentication.  A user
+thus added will automatically be added as a member of some default group
+(configurably).  These are regular users apart from being members of the
+group.  Administrators will be able to add them to other groups by using
+the existing mechanisms.
 
-Externally-discovered users will be added to the internal tables so that
-they will be able to create access keys.  Memberships of such users only
-update on user login -- using the access key continues to use all groups
-available to that user when they last logged in.
+Only Simple Authentication (username + password) will be supported.  All
+other authentication forms (including 2FA and change password flows) may
+be added later, as required.
+
+These users will be able to create access keys if they have the required
+IAM privileges.  The user and access key continue to work, until deleted
+by an administrator.
+
+Synchronizing LDAP and lakeFS users and groups will be performed at some
+later point, using the lakeFS API.  This will allow many use-cases, such
+as:
+
+* *Propagate* user deletions from LDAP to their access keys.
+* *Synchronize* group memberships for lakeFS groups: populate members of
+  lakeFS groups from LDAP groups.
+* *Synchronize* LDAP groups: ensure exactly LDAP groups matching a query
+  exist on lakeFS and are populated from LDAP.
 
 ## IAAA defined
 
@@ -114,62 +127,63 @@ Issue #2058 is to support Active Directory.  This splits naturally along
 the 3 A's: use Active Directory to _authenticate_, to _authorize_, or to
 receive _audit_ logs of user operations.
 
+This initial design is for authentication (only).
+
 ### Authentication
 
 This section will initially apply to GUI clients.  We will have to allow
 users to request access keys (or short-term tokens) to allow them to run
 programs that use AWS S3 or the lakeFS API.
 
-We may authenticate using an LDAP server directly or using some external
-application.
-
-* To authenticate directly, the lakeFS web server should use SASL.  That
-  may also allow other methods in future.
-  
-  The advantage here is that *all* LDAP capabilities can be used as long
-  as lakeFS understands them.  This probably helps most in enterprises.
-
-* To use external applications, the lakeFS web server should use OAuth2.
-
-  The advantage here is that other OAuth2 providers can be used: GitHub,
-  Google Suites, and many others.  LDAP users can still use bridges such
-  as Dex to authenticate over OAuth2.  The [Microsoft Connector][dex-ms]
-  gives an example.
-
 #### Decision
 
-Add OAuth2 support, as it provides easier integration with more identity
-providers by using bridges.  Allow users who authenticate in this way to
-create access keys for their accounts, allowing them to use applications
-over both the S3 gateway and the lakeFS API.
+The initial version will support (only) Simple Authentication on an LDAP
+server.  This does not require developing new login screens.
 
-The lakeFS web UI will (optionally) authenticate users using OAuth2, and
-place the result on their JWT.  Selecting between OAuth2 or internal can
-be done once during the initial login.  After that the web app can reuse
-that method.
+When configured the lakeFS web UI will optionally authenticate users via
+Simple Authentication on an LDAP server.  On success it shall ensure the
+user exists; if the user does not exist it will create the user, mark as
+created via LDAP, and place them in a configured group.  The user gets a
+JWT and the flow continues as today.  Selecting between LDAP or internal
+login can be done once during the initial login.  After that the web app
+can reuse that method, providing a toggle to use the other one.  That is
+important to avoid being locked out!
 
 ### Authorization
 
-There is room for business login when authorizing.  Typically users have
+There is room for business logic when authorizing.  Typically users have
 properties attached during authentication, which some business logic can
 connect to attached policies.  This can be quite complex, but we already
 have a groups mechanism in place which we might re-use.
 
-When do we attach policies do these groups?  Configuration changes apply
-at different times depending on this decision.  Authenticated users will
-see only changes in mappings that are attached before the change.
+Confusingly, LDAP offers multiple ways to query group membership.  While
+many installations offer the `memberOf` attribute on users, there may be
+limitations on what exactly it contains.  Microsoft Active Directory has
+support [with limitations][ms-ad-memberof].  OpenLDAP supports it, if an
+appropriate [overlay][open-ldap-memberof] is configured.  In the reverse
+direction, if we are willing to perform operations in advance then _all_
+LDAP servers should support reading groups.
+
+In practice `memberOf` is less useful than it seems: group membership at
+authentication time is not necessarily up-to-date.  Consider a user with
+group memberships at authentication time who creates and starts using an
+S3 access key, but never logs in again.  If LDAP is a source of truth of
+group memberships then refreshes will be required.
 
 #### Decision
 
-lakeFS shall receive groups from OAuth2 and encode them as claims on the
-JWT.  The remaining logic can proceed as today.
+lakeFS shall use locally-configured groups.  Existing IAM shall continue
+to work.
 
-This business logic is quite simple.
+In future we may add external facilities to synchronize groups from LDAP
+servers into lakeFS, or to query group memberships for groups defined on
+lakeFS.  Which we add will depend on user requirements.
 
 ### Audit
 
-OAuth2 has no audit mechanism and currently there is no request to allow
-such an audit.  Accordingly we shall not currently add audit logs.
+We currently have no requirements to audit API key usage in any way.  We
+can add these on user request -- not at this time.
 
 <!-- references -->
-[dex-ms]: https://dexidp.io/docs/connectors/microsoft/
+[ms-ad-memberof]: https://ldapwiki.com/wiki/MemberOf#section-MemberOf-BewareOfMemberOf
+[open-ldap-memberof]: https://www.openldap.org/doc/admin24/overlays.html#Reverse%20Group%20Membership%20Maintenance
