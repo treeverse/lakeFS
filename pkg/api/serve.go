@@ -33,8 +33,6 @@ const (
 	extensionValidationExcludeBody = "x-validation-exclude-body"
 )
 
-var ErrInvalidAPIEndpoint = errors.New("invalid API endpoint")
-
 type responseError struct {
 	Message string `json:"message"`
 }

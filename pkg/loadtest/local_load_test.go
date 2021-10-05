@@ -123,7 +123,7 @@ func TestLocalLoad(t *testing.T) {
 		KeepRepo:         false,
 		Credentials:      *credentials,
 		ServerAddress:    ts.URL,
-		StorageNamespace: "s3://local/test/",
+		StorageNamespace: "mem://local/test/",
 	}
 	loader := NewLoader(testConfig)
 	err = loader.Run()

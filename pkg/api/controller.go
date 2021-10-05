@@ -9,6 +9,7 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -87,7 +88,7 @@ func (c *Controller) Logout(w http.ResponseWriter, r *http.Request) {
 func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSONRequestBody) {
 	ctx := r.Context()
 	_, err := userByAuth(ctx, c.Logger, c.Auth, body.AccessKeyId, body.SecretAccessKey)
-	if errors.Is(err, ErrAuthenticationFailed) {
+	if errors.Is(err, ErrAuthenticatingRequest) {
 		writeResponse(w, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
 		return
 	}
@@ -1108,13 +1109,23 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		return
 	}
 
-	err := ensureStorageNamespaceRW(ctx, c.BlockAdapter, body.StorageNamespace)
+	err := ensureStorageNamespace(ctx, c.BlockAdapter, body.StorageNamespace)
 	if err != nil {
+		var retErr error
+		var urlErr *url.Error
+		switch {
+		case errors.As(err, &urlErr) && urlErr.Op == "parse":
+			retErr = err
+		case errors.Is(err, block.ErrInvalidNamespace):
+			retErr = fmt.Errorf("%w, must match: %s", err, c.BlockAdapter.BlockstoreType())
+		default:
+			retErr = ErrFailedToAccessStorage
+		}
 		c.Logger.
 			WithError(err).
 			WithField("storage_namespace", body.StorageNamespace).
 			Warn("Could not access storage namespace")
-		writeError(w, http.StatusBadRequest, "error creating repository: could not access storage namespace")
+		writeError(w, http.StatusBadRequest, fmt.Errorf("failed to create repository: %w", retErr))
 		return
 	}
 
@@ -1133,7 +1144,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 	writeResponse(w, http.StatusCreated, response)
 }
 
-func ensureStorageNamespaceRW(ctx context.Context, adapter block.Adapter, storageNamespace string) error {
+func ensureStorageNamespace(ctx context.Context, adapter block.Adapter, storageNamespace string) error {
 	const (
 		dummyKey  = "dummy"
 		dummyData = "this is dummy data - created by lakeFS in order to check accessibility"
@@ -1145,7 +1156,6 @@ func ensureStorageNamespaceRW(ctx context.Context, adapter block.Adapter, storag
 	if err != nil {
 		return err
 	}
-
 	_, err = adapter.Get(ctx, obj, objLen)
 	return err
 }
@@ -2841,7 +2851,7 @@ func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user, ok := ctx.Value(UserContextKey).(*model.User)
 	if !ok || user == nil {
-		writeError(w, http.StatusUnauthorized, ErrAuthenticationFailed)
+		writeError(w, http.StatusUnauthorized, ErrAuthenticatingRequest)
 		return
 	}
 	writeResponse(w, http.StatusOK, VersionConfig{Version: swag.String(version.Version)})
@@ -2998,7 +3008,7 @@ func (c *Controller) authorize(w http.ResponseWriter, r *http.Request, perms []p
 	ctx := r.Context()
 	user, ok := ctx.Value(UserContextKey).(*model.User)
 	if !ok || user == nil {
-		writeError(w, http.StatusUnauthorized, ErrAuthenticationFailed)
+		writeError(w, http.StatusUnauthorized, ErrAuthenticatingRequest)
 		return false
 	}
 	resp, err := c.Auth.Authorize(ctx, &auth.AuthorizationRequest{

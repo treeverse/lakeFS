@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"crypto/subtle"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -15,11 +14,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"gopkg.in/dgrijalva/jwt-go.v3"
-)
-
-var (
-	ErrUnexpectedSigningMethod = errors.New("unexpected signing method")
-	ErrAuthenticationFailed    = errors.New("error authenticating request")
 )
 
 // extractSecurityRequirements using Swagger returns an array of security requirements set for the request.
@@ -98,7 +92,7 @@ func checkSecurityRequirements(r *http.Request, securityRequirements openapi3.Se
 			default:
 				// unknown security requirement to check
 				logger.WithField("provider", provider).Error("Authentication middleware unknown security requirement provider")
-				return nil, ErrAuthenticationFailed
+				return nil, ErrAuthenticatingRequest
 			}
 			if err != nil {
 				return nil, err
@@ -120,16 +114,16 @@ func userByToken(ctx context.Context, logger logging.Logger, authService auth.Se
 		return authService.SecretStore().SharedSecret(), nil
 	})
 	if err != nil {
-		return nil, ErrAuthenticationFailed
+		return nil, ErrAuthenticatingRequest
 	}
 	claims, ok := token.Claims.(*jwt.StandardClaims)
 	if !ok || !token.Valid {
-		return nil, ErrAuthenticationFailed
+		return nil, ErrAuthenticatingRequest
 	}
 	cred, err := authService.GetCredentials(ctx, claims.Subject)
 	if err != nil {
 		logger.WithField("subject", claims.Subject).Info("could not find credentials for token")
-		return nil, ErrAuthenticationFailed
+		return nil, ErrAuthenticatingRequest
 	}
 	userData, err := authService.GetUserByID(ctx, cred.UserID)
 	if err != nil {
@@ -137,7 +131,7 @@ func userByToken(ctx context.Context, logger logging.Logger, authService auth.Se
 			"user_id": cred.UserID,
 			"subject": claims.Subject,
 		}).Debug("could not find user id by credentials")
-		return nil, ErrAuthenticationFailed
+		return nil, ErrAuthenticatingRequest
 	}
 	return userData, nil
 }
@@ -146,16 +140,16 @@ func userByAuth(ctx context.Context, logger logging.Logger, authService auth.Ser
 	cred, err := authService.GetCredentials(ctx, accessKey)
 	if err != nil {
 		logger.WithError(err).Error("failed getting credentials for key")
-		return nil, ErrAuthenticationFailed
+		return nil, ErrAuthenticatingRequest
 	}
 	if subtle.ConstantTimeCompare([]byte(secretKey), []byte(cred.SecretAccessKey)) != 1 {
 		logger.Debug("access key secret does not match")
-		return nil, ErrAuthenticationFailed
+		return nil, ErrAuthenticatingRequest
 	}
 	user, err := authService.GetUserByID(ctx, cred.UserID)
 	if err != nil {
-		logger.WithFields(logging.Fields{"user_id": cred.UserID}).Debug("could not find user id by credentials")
-		return nil, ErrAuthenticationFailed
+		logger.WithError(err).WithFields(logging.Fields{"user_id": cred.UserID}).Debug("could not find user id by credentials")
+		return nil, ErrAuthenticatingRequest
 	}
 	return user, nil
 }

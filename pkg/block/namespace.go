@@ -126,7 +126,7 @@ func ResolveNamespace(defaultNamespace, key string, identifierType IdentifierTyp
 func resolveFull(key string) (QualifiedKey, error) {
 	parsedKey, err := url.ParseRequestURI(key)
 	if err != nil {
-		return QualifiedKey{}, fmt.Errorf("key isn't a valid address: %w", err)
+		return QualifiedKey{}, fmt.Errorf("could not parse URI: %w", err)
 	}
 	// extract its scheme
 	storageType, err := GetStorageType(parsedKey)
