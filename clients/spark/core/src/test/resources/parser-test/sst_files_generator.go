@@ -103,14 +103,13 @@ func newGenerateFuzzWithSharedPrefixes() func() (string, error) {
 	var sharedPrefixBaseBytes [SharedPrefixBaseSize]byte
 	f.Fuzz(&sharedPrefixBaseBytes)
 	sharedPrefixBase := string(sharedPrefixBaseBytes[:])
-	l := len(sharedPrefixBase)
 	src := rand.NewSource(20211004)
 	r := rand.New(src)
 	return func() (string, error) {
 		var suffix string
 		f.Fuzz(&suffix)
 		// play with the length of the shared prefix trying to create noisier input
-		p := sharedPrefixBase[0:r.Intn(l/2)+r.Intn(l-l/2)] + suffix
+		p := sharedPrefixBase[0:r.Intn(SharedPrefixBaseSize/2)+r.Intn(SharedPrefixBaseSize-SharedPrefixBaseSize/2)] + suffix
 		return p, nil
 	}
 }
