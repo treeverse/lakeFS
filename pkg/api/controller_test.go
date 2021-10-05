@@ -320,6 +320,21 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 			t.Fatalf("expected error creating duplicate repo")
 		}
 	})
+
+	t.Run("create repo with conflicting storage type", func(t *testing.T) {
+		resp, _ := clt.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
+			DefaultBranch:    api.StringPtr("main"),
+			Name:             "repo2",
+			StorageNamespace: "s3://foo-bucket",
+		})
+		if resp == nil {
+			t.Fatal("CreateRepository missing response")
+		}
+		validationErrResp := resp.JSON409
+		if validationErrResp == nil {
+			t.Fatal("expected error creating repo with conflicting storage type")
+		}
+	})
 }
 
 func TestController_DeleteRepositoryHandler(t *testing.T) {
