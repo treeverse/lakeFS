@@ -23,6 +23,8 @@ const (
 	DefaultSstSizeBytes                        = 50 * KiBToBytes
 	DefaultTwoLevelSstSizeBytes                = 10 * KiBToBytes
 	DefaultMaxSizeKiB                          = 100
+	MagicLengthBytes                           = 8
+	SharedPrefixBaseSize                       = 10
 )
 
 var DefaultUserProperties = map[string]string{
@@ -48,6 +50,37 @@ func main() {
 	writeSstsWithWriterOptionsFuzzing()
 	writeSstsWithUnsupportedWriterOptions()
 	writeLargeSsts()
+	writeZeroRecordSst()
+	writeEmptyFile()
+	writeSstWithBadMagic()
+}
+
+func writeSstWithBadMagic() {
+	testFileName := "bad.magic.mark"
+	writerOptions := newDefaultWriterOptions()
+	createTestInputFiles([]string{}, newGenerateFuzz(), 0, testFileName, writerOptions)
+	// after creating a valid Pebble sstable that includes a correct magic, remove part of the bytes that compose the
+	// magic to simulate an sstable with a bad magic.
+	fi, err := os.Stat(testFileName + ".sst")
+	if err != nil {
+		panic(err)
+	}
+	os.Truncate(testFileName+".sst", fi.Size()-MagicLengthBytes/2)
+}
+
+func writeEmptyFile() {
+	writer, err := os.Create("empty.file")
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		writer.Close()
+	}()
+}
+
+func writeZeroRecordSst() {
+	writerOptions := newDefaultWriterOptions()
+	createTestInputFiles([]string{}, newGenerateFuzz(), 0, "zero.records.sst", writerOptions)
 }
 
 func newGenerateNanoid(size int) func() (string, error) {
@@ -62,6 +95,22 @@ func newGenerateFuzz() func() (string, error) {
 		var val string
 		f.Fuzz(&val)
 		return val, nil
+	}
+}
+
+func newGenerateFuzzWithSharedPrefixes() func() (string, error) {
+	f := fuzz.NewWithSeed(FuzzerSeed)
+	var sharedPrefixBaseBytes [SharedPrefixBaseSize]byte
+	f.Fuzz(&sharedPrefixBaseBytes)
+	sharedPrefixBase := string(sharedPrefixBaseBytes[:])
+	src := rand.NewSource(20211004)
+	r := rand.New(src)
+	return func() (string, error) {
+		var suffix string
+		f.Fuzz(&suffix)
+		// play with the length of the shared prefix trying to create noisier input
+		p := sharedPrefixBase[0:r.Intn(SharedPrefixBaseSize/2)+r.Intn(SharedPrefixBaseSize-SharedPrefixBaseSize/2)] + suffix
+		return p, nil
 	}
 }
 
@@ -83,6 +132,12 @@ func writeSstsWithUnsupportedWriterOptions() {
 	writerOptions = newDefaultWriterOptions()
 	writerOptions.TableFormat = sstable.TableFormatLevelDB
 	createTestInputFiles(keys, generateNanoidValue, sizeBytes, "table.format.leveldb",
+		writerOptions)
+
+	// Compression defines the per-block compression to use. lakeFS support Snappy or no compression.
+	writerOptions = newDefaultWriterOptions()
+	writerOptions.Compression = sstable.ZstdCompression
+	createTestInputFiles(keys, generateNanoidValue, sizeBytes, "compression.type.zstd",
 		writerOptions)
 }
 
@@ -153,15 +208,18 @@ func writeMultiSizedSstsWithContentsFuzzing() {
 	r := rand.New(src)
 	for i := 0; i < numOfFilesToGenerate; i++ {
 		var curSize int
+		var keyFuzzFunc func() (string, error)
+		testFileName := fmt.Sprintf("fuzz.contents.%d", i)
 		if i%2 == 0 {
 			curSize = (1 + r.Intn(DefaultCommittedPermanentMaxRangeSizeBytes/MiBToBytes)) * MiBToBytes
+			testFileName += ".with.shared.prefix"
+			keyFuzzFunc = newGenerateFuzzWithSharedPrefixes()
 		} else {
 			curSize = (1 + r.Intn(DefaultMaxSizeKiB)) * KiBToBytes
+			keyFuzzFunc = newGenerateFuzz()
 		}
 
-		testFileName := fmt.Sprintf("fuzz.contents.%d", i)
-		fuzzFunc := newGenerateFuzz()
-		keys := prepareSortedSlice(curSize, fuzzFunc)
+		keys := prepareSortedSlice(curSize, keyFuzzFunc)
 		writerOptions := newDefaultWriterOptions()
 		createTestInputFiles(keys, newGenerateFuzz(), curSize, testFileName, writerOptions)
 	}
