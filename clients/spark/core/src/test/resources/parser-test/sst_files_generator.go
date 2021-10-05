@@ -23,8 +23,8 @@ const (
 	DefaultSstSizeBytes                        = 50 * KiBToBytes
 	DefaultTwoLevelSstSizeBytes                = 10 * KiBToBytes
 	DefaultMaxSizeKiB                          = 100
-	EmptyPrefix                                = ""
 	MagicLengthBytes                           = 8
+	SharedPrefixBaseSize                       = 10
 )
 
 var DefaultUserProperties = map[string]string{
@@ -100,13 +100,12 @@ func newGenerateFuzz() func() (string, error) {
 
 func newGenerateFuzzWithSharedPrefixes() func() (string, error) {
 	f := fuzz.NewWithSeed(FuzzerSeed)
-	src := rand.NewSource(20211004)
-	r := rand.New(src)
-	prefixBaseLen := 1 + r.Intn(10)
-	sharedPrefixBaseBytes := make([]byte, prefixBaseLen)
+	var sharedPrefixBaseBytes [SharedPrefixBaseSize]byte
 	f.Fuzz(&sharedPrefixBaseBytes)
 	sharedPrefixBase := string(sharedPrefixBaseBytes[:])
 	l := len(sharedPrefixBase)
+	src := rand.NewSource(20211004)
+	r := rand.New(src)
 	return func() (string, error) {
 		var suffix string
 		f.Fuzz(&suffix)
