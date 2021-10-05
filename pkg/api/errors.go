@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	ErrFailedToAccessStorage = errors.New(" failed to access storage")
+	ErrFailedToAccessStorage = errors.New("failed to access storage")
 
 	ErrUnexpectedSigningMethod = errors.New("unexpected signing method")
 
