@@ -378,7 +378,7 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
 
     describe("with empty file") {
       ignore("should fail parsing") {
-        assertThrows[BadFileFormatException]{ //TODO: make this test pass, and enable it
+        assertThrows[BadFileFormatException]{ //TODO (Tals): enable the test after closing https://github.com/treeverse/lakeFS/issues/2508
           withGeneratedEmptyTestFile("empty.sfile", verifyBlockParserOutput)
         }
       }

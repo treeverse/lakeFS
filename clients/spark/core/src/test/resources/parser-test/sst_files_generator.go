@@ -100,13 +100,12 @@ func newGenerateFuzz() func() (string, error) {
 
 func newGenerateFuzzWithSharedPrefixes() func() (string, error) {
 	f := fuzz.NewWithSeed(FuzzerSeed)
-	src := rand.NewSource(041021)
+	src := rand.NewSource(20211004)
 	r := rand.New(src)
-	prefixBaseLen := 1 + r.Intn(100)
-	sharedPrefixBase, err := nanoid.New(prefixBaseLen)
-	if err != nil {
-		panic(err)
-	}
+	prefixBaseLen := 1 + r.Intn(10)
+	sharedPrefixBaseBytes := make([]byte, prefixBaseLen)
+	f.Fuzz(&sharedPrefixBaseBytes)
+	sharedPrefixBase := string(sharedPrefixBaseBytes[:])
 	l := len(sharedPrefixBase)
 	return func() (string, error) {
 		var suffix string
