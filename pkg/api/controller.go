@@ -1111,19 +1111,21 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 
 	err := ensureStorageNamespace(ctx, c.BlockAdapter, body.StorageNamespace)
 	if err != nil {
-		var errorMessage = "failed to access the storage"
-		if errors.Is(err, block.ErrInvalidNamespace) {
-			errorMessage = "Can only create repository with storage type: " + c.BlockAdapter.BlockstoreType()
-		}
-		var e *url.Error
-		if errors.As(err, &e) && e.Op == "parse" {
-			errorMessage = err.Error()
+		var retErr error
+		var urlErr *url.Error
+		switch {
+		case errors.As(err, &urlErr) && urlErr.Op == "parse":
+			retErr = err
+		case errors.Is(err, block.ErrInvalidNamespace):
+			retErr = fmt.Errorf("%w, must match: %s", err, c.BlockAdapter.BlockstoreType())
+		default:
+			retErr = ErrFailedToAccessStorage
 		}
 		c.Logger.
 			WithError(err).
 			WithField("storage_namespace", body.StorageNamespace).
 			Warn("Could not access storage namespace")
-		writeError(w, http.StatusBadRequest, "error creating repository: "+errorMessage)
+		writeError(w, http.StatusBadRequest, fmt.Errorf("failed to create repository: %w", retErr))
 		return
 	}
 
