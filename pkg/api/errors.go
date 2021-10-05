@@ -11,7 +11,7 @@ var (
 
 	ErrUnexpectedSigningMethod = errors.New("unexpected signing method")
 
-	ErrAuthenticationFailed = errors.New("error authenticating request")
+	ErrAuthenticatingRequest = errors.New("error authenticating request")
 
 	ErrInvalidAPIEndpoint = errors.New("invalid API endpoint")
 )
