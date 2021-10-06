@@ -11,6 +11,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
@@ -296,17 +297,79 @@ var fsStageCmd = &cobra.Command{
 	},
 }
 
+func initDeleteWorkerPool(ctx context.Context, client api.ClientWithResponsesInterface, paths chan string, numWorkers int, wg *sync.WaitGroup) {
+	for i := 0; i < numWorkers; i++ {
+		go deleteObjectWorker(ctx, client, paths, wg)
+	}
+}
+
+func deleteObjectWorker(ctx context.Context, client api.ClientWithResponsesInterface, paths <-chan string, wg *sync.WaitGroup) {
+	for path := range paths {
+		pathURI := MustParsePathURI("path", path)
+		deleteObject(ctx, client, pathURI)
+		wg.Done()
+	}
+}
+
+func deleteObject(ctx context.Context, client api.ClientWithResponsesInterface, pathURI *uri.URI) {
+	resp, err := client.DeleteObjectWithResponse(ctx, pathURI.Repository, pathURI.Ref, &api.DeleteObjectParams{
+		Path: *pathURI.Path,
+	})
+	DieOnResponseError(resp, err)
+}
+
 var fsRmCmd = &cobra.Command{
 	Use:   "rm <path uri>",
 	Short: "Delete object",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		recursive, _ := cmd.Flags().GetBool("recursive")
 		pathURI := MustParsePathURI("path", args[0])
 		client := getClient()
-		resp, err := client.DeleteObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.DeleteObjectParams{
-			Path: *pathURI.Path,
-		})
-		DieOnResponseError(resp, err)
+		if !recursive {
+			// Delete single object in the main thread
+			deleteObject(cmd.Context(), client, pathURI)
+		} else {
+			// Recursive delete of (possibly) many objects.
+			const numWorkers = 50
+			var wg sync.WaitGroup
+			paths := make(chan string)
+			initDeleteWorkerPool(cmd.Context(), client, paths, numWorkers, &wg)
+
+			prefix := *pathURI.Path
+			const delimiter = "/"
+			var trimPrefix string
+			if idx := strings.LastIndex(prefix, delimiter); idx != -1 {
+				trimPrefix = prefix[:idx+1]
+			}
+			var paramsDelimiter api.PaginationDelimiter = ""
+			var from string
+			for {
+				pfx := api.PaginationPrefix(prefix)
+				params := &api.ListObjectsParams{
+					Prefix:    &pfx,
+					After:     api.PaginationAfterPtr(from),
+					Delimiter: &paramsDelimiter,
+				}
+				resp, err := client.ListObjectsWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, params)
+				DieOnResponseError(resp, err)
+
+				results := resp.JSON200.Results
+				for _, result := range results {
+					wg.Add(1)
+					currPath := pathURI.String() + strings.TrimPrefix(result.Path, trimPrefix)
+					paths <- currPath
+				}
+
+				pagination := resp.JSON200.Pagination
+				if !pagination.HasMore {
+					break
+				}
+				from = pagination.NextOffset
+			}
+			close(paths)
+			wg.Wait()
+		}
 	},
 }
 
@@ -345,4 +408,6 @@ func init() {
 	_ = fsStageCmd.MarkFlagRequired("checksum")
 
 	fsListCmd.Flags().Bool("recursive", false, "list all objects under the specified prefix")
+
+	fsRmCmd.Flags().Bool("recursive", false, "recursively delete all objects under the specified path")
 }
