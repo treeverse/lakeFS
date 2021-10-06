@@ -1,6 +1,7 @@
 package s3
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -61,13 +62,14 @@ func resolveNamespacePrefix(opts block.WalkOpts) (block.QualifiedPrefix, error) 
 }
 
 type Adapter struct {
-	clients               *ClientCache
-	httpClient            *http.Client
-	uploadIDTranslator    block.UploadIDTranslator
-	streamingChunkSize    int
-	streamingChunkTimeout time.Duration
-	respServer            string
-	respServerLock        sync.Mutex
+	clients                *ClientCache
+	httpClient             *http.Client
+	uploadIDTranslator     block.UploadIDTranslator
+	streamingChunkSize     int
+	streamingChunkTimeout  time.Duration
+	respServer             string
+	respServerLock         sync.Mutex
+	disableChunkedEncoding bool
 }
 
 func WithHTTPClient(c *http.Client) func(a *Adapter) {
@@ -85,6 +87,12 @@ func WithStreamingChunkSize(sz int) func(a *Adapter) {
 func WithStreamingChunkTimeout(d time.Duration) func(a *Adapter) {
 	return func(a *Adapter) {
 		a.streamingChunkTimeout = d
+	}
+}
+
+func WithDisableChunkedEncoding(b bool) func(*Adapter) {
+	return func(a *Adapter) {
+		a.disableChunkedEncoding = b
 	}
 }
 
@@ -131,9 +139,30 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 		Key:          aws.String(qualifiedKey.Key),
 		StorageClass: opts.StorageClass,
 	}
-	sdkRequest, _ := a.clients.Get(ctx, qualifiedKey.StorageNamespace).PutObjectRequest(&putObject)
-	_, err = a.streamToS3(ctx, sdkRequest, sizeBytes, reader)
+
+	s3client := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
+	sdkRequest, _ := s3client.PutObjectRequest(&putObject)
+	if a.disableChunkedEncoding {
+		// upload without chunked encoding
+		putObject.Body, err = readerToReadSeeker(reader)
+		err = sdkRequest.Send()
+	} else {
+		// by default, we stream the content
+		_, err = a.streamToS3(ctx, sdkRequest, sizeBytes, reader)
+	}
 	return err
+}
+
+func readerToReadSeeker(reader io.Reader) (io.ReadSeeker, error) {
+	if readSeeker, ok := reader.(io.ReadSeeker); ok {
+		return readSeeker, nil
+	}
+	// read the content and wrap it with seek reader
+	content, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return nil, err
+	}
+	return bytes.NewReader(content), nil
 }
 
 func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (string, error) {
@@ -150,9 +179,18 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeB
 		PartNumber: aws.Int64(partNumber),
 		UploadId:   aws.String(uploadID),
 	}
-	sdkRequest, _ := a.clients.Get(ctx, qualifiedKey.StorageNamespace).UploadPartRequest(&uploadPartObject)
-	etag, err := a.streamToS3(ctx, sdkRequest, sizeBytes, reader)
-
+	s3Client := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
+	sdkRequest, sdkResponse := s3Client.UploadPartRequest(&uploadPartObject)
+	var etag string
+	if a.disableChunkedEncoding {
+		// upload without chunked encoding
+		uploadPartObject.Body, err = readerToReadSeeker(reader)
+		err = sdkRequest.Send()
+		etag = aws.StringValue(sdkResponse.ETag)
+	} else {
+		// by default, we stream the content
+		etag, err = a.streamToS3(ctx, sdkRequest, sizeBytes, reader)
+	}
 	if err != nil {
 		return "", err
 	}

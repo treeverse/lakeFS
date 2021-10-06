@@ -60,6 +60,7 @@ This reference uses `.` to denote the nesting of values.
 * `blockstore.s3.force_path_style` `(boolean : false)` - When true, use path-style S3 URLs (https://<host>/<bucket> instead of https://<bucket>.<host>)
 * `blockstore.s3.streaming_chunk_size` `(int : 1048576)` - Object chunk size to buffer before streaming to blockstore (use a lower value for less reliable networks). Minimum is 8192.
 * `blockstore.s3.streaming_chunk_timeout` `(time duration : "60s")` - Per object chunk timeout for blockstore streaming operations (use a larger value for less reliable networks).
+* `blockstore.s3.disable_chunked_encoding` `(boolean : false)` - When true, read the complete object content before upload the content to S3
 * `committed.local_cache` - an object describing the local (on-disk) cache of metadata from
   permanent storage:
   + `committed.local_cache.size_bytes` (`int` : `1073741824`) - bytes for local cache to use on disk.  The cache may use more storage for short periods of time.

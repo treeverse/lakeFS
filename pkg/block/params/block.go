@@ -22,9 +22,10 @@ type Local struct {
 }
 
 type S3 struct {
-	AwsConfig             *aws.Config
-	StreamingChunkSize    int
-	StreamingChunkTimeout time.Duration
+	AwsConfig              *aws.Config
+	StreamingChunkSize     int
+	StreamingChunkTimeout  time.Duration
+	DisableChunkedEncoding bool
 }
 
 type GS struct {

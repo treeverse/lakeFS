@@ -285,9 +285,10 @@ func (c *Config) GetBlockAdapterS3Params() (blockparams.S3, error) {
 	cfg := c.GetAwsConfig()
 
 	return blockparams.S3{
-		AwsConfig:             cfg,
-		StreamingChunkSize:    c.values.Blockstore.S3.StreamingChunkSize,
-		StreamingChunkTimeout: c.values.Blockstore.S3.StreamingChunkTimeout,
+		AwsConfig:              cfg,
+		StreamingChunkSize:     c.values.Blockstore.S3.StreamingChunkSize,
+		StreamingChunkTimeout:  c.values.Blockstore.S3.StreamingChunkTimeout,
+		DisableChunkedEncoding: c.values.Blockstore.S3.DisableChunkedEncoding,
 	}, nil
 }
 
