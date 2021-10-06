@@ -19,7 +19,6 @@ import Form from "react-bootstrap/Form";
 
 
 const CompareList = ({ repo, reference, compareReference, after, delimiter, prefix, onSelectRef, onSelectCompare, onPaginate }) => {
-    if (compareReference === null) compareReference = reference
     const [internalRefresh, setInternalRefresh] = useState(true);
     const [mergeError, setMergeError] = useState(null);
     const [merging, setMerging] = useState(false);
