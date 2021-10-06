@@ -182,8 +182,8 @@ const ObjectsBrowser = ({ config, configError }) => {
                         withWorkspace={true}
                         selectRef={ref => router.push({
                             pathname: `/repositories/:repoId/objects`,
-                            params: {repoId: repo.id, path:path},
-                            query: {ref: ref.id, path: path}
+                            params: {repoId: repo.id, path: path === undefined ? '' : path},
+                            query: {ref: ref.id, path:  path === undefined ? '' : path}
                         })}
                     />
                 </ActionGroup>
