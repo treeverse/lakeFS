@@ -40,6 +40,7 @@ type responseError struct {
 func Serve(
 	cfg *config.Config,
 	catalog catalog.Interface,
+	authenticator auth.Authenticator,
 	authService auth.Service,
 	blockAdapter block.Adapter,
 	metadataManager auth.MetadataManager,
@@ -60,7 +61,7 @@ func Serve(
 		OapiRequestValidatorWithOptions(swagger, &openapi3filter.Options{
 			AuthenticationFunc: openapi3filter.NoopAuthenticationFunc,
 		}),
-		AuthMiddleware(logger, swagger, authService),
+		AuthMiddleware(logger, swagger, authenticator, authService),
 		httputil.LoggingMiddleware(RequestIDHeaderName, logging.Fields{logging.ServiceNameFieldKey: LoggerServiceName}),
 		MetricsMiddleware(swagger),
 	)

@@ -62,6 +62,7 @@ type actionsHandler interface {
 type Controller struct {
 	Config                *config.Config
 	Catalog               catalog.Interface
+	Authenticator         auth.Authenticator
 	Auth                  auth.Service
 	BlockAdapter          block.Adapter
 	MetadataManager       auth.MetadataManager
@@ -87,7 +88,7 @@ func (c *Controller) Logout(w http.ResponseWriter, r *http.Request) {
 
 func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSONRequestBody) {
 	ctx := r.Context()
-	_, err := userByAuth(ctx, c.Logger, c.Auth, body.AccessKeyId, body.SecretAccessKey)
+	_, err := userByAuth(ctx, c.Logger, c.Authenticator, c.Auth, body.AccessKeyId, body.SecretAccessKey)
 	if errors.Is(err, ErrAuthenticatingRequest) {
 		writeResponse(w, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
 		return
@@ -2963,6 +2964,7 @@ func NewController(
 	return &Controller{
 		Config:                cfg,
 		Catalog:               catalog,
+		Authenticator:         auth.NewBuiltinAuthenticator(authService),
 		Auth:                  authService,
 		BlockAdapter:          blockAdapter,
 		MetadataManager:       metadataManager,

@@ -98,6 +98,7 @@ var runCmd = &cobra.Command{
 			dbPool,
 			crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
 			cfg.GetAuthCacheConfig())
+		authenticator := auth.NewBuiltinAuthenticator(authService)
 		authMetadataManager := auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
 		blockstoreType := cfg.GetBlockstoreType()
@@ -137,6 +138,7 @@ var runCmd = &cobra.Command{
 		apiHandler := api.Serve(
 			cfg,
 			c,
+			authenticator,
 			authService,
 			blockStore,
 			authMetadataManager,

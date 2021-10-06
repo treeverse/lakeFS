@@ -99,6 +99,7 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
 		Enabled: false,
 	})
+	authenticator := auth.NewBuiltinAuthenticator(authService)
 	meta := auth.NewDBMetadataManager("dev", cfg.GetFixedInstallationID(), conn)
 	migrator := db.NewDatabaseMigrator(dbparams.Database{ConnectionString: handlerDatabaseURI})
 
@@ -111,6 +112,7 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 	handler := api.Serve(
 		cfg,
 		c,
+		authenticator,
 		authService,
 		c.BlockAdapter,
 		meta,
