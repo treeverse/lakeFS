@@ -3,15 +3,18 @@
 
 ## Unreleased - XXXX-XX-XX
 
+- Allow more charaters and different length of key/secret for user authorizations (#2501)
+
 ## v0.52.0 - 2021-10-04
 
 - Protected Branches (#2181): define rules to prevent direct changes on some of your branches. 
   Only merges are allowed into protected branches.
-  Combine these with pre-merge hooks to validate your data before it is on your production branches.  
+  Combine these with pre-merge hooks to validate your data before it is on your production branches.
 - Fix filter dialog unsearchable bug (#2460)
+- Fix s3 multipart upload location url (#1779)
 
 ## v0.51.0 - 2021-09-19
-  
+
 - Add new "AttachStorageNamespace" IAM action.  Controls users' ability to
   create repositories with particular storage namespaces (bucket names).
   (#2220)
