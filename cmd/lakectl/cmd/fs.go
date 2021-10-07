@@ -329,47 +329,47 @@ var fsRmCmd = &cobra.Command{
 		if !recursive {
 			// Delete single object in the main thread
 			deleteObject(cmd.Context(), client, pathURI)
-		} else {
-			// Recursive delete of (possibly) many objects.
-			const numWorkers = 50
-			var wg sync.WaitGroup
-			paths := make(chan string)
-			initDeleteWorkerPool(cmd.Context(), client, paths, numWorkers, &wg)
-
-			prefix := *pathURI.Path
-			const delimiter = "/"
-			var trimPrefix string
-			if idx := strings.LastIndex(prefix, delimiter); idx != -1 {
-				trimPrefix = prefix[:idx+1]
-			}
-			var paramsDelimiter api.PaginationDelimiter = ""
-			var from string
-			for {
-				pfx := api.PaginationPrefix(prefix)
-				params := &api.ListObjectsParams{
-					Prefix:    &pfx,
-					After:     api.PaginationAfterPtr(from),
-					Delimiter: &paramsDelimiter,
-				}
-				resp, err := client.ListObjectsWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, params)
-				DieOnResponseError(resp, err)
-
-				results := resp.JSON200.Results
-				for _, result := range results {
-					wg.Add(1)
-					currPath := pathURI.String() + strings.TrimPrefix(result.Path, trimPrefix)
-					paths <- currPath
-				}
-
-				pagination := resp.JSON200.Pagination
-				if !pagination.HasMore {
-					break
-				}
-				from = pagination.NextOffset
-			}
-			close(paths)
-			wg.Wait()
+			return
 		}
+		// Recursive delete of (possibly) many objects.
+		const numWorkers = 50
+		var wg sync.WaitGroup
+		paths := make(chan string)
+		initDeleteWorkerPool(cmd.Context(), client, paths, numWorkers, &wg)
+
+		prefix := *pathURI.Path
+		const delimiter = "/"
+		var trimPrefix string
+		if idx := strings.LastIndex(prefix, delimiter); idx != -1 {
+			trimPrefix = prefix[:idx+1]
+		}
+		var paramsDelimiter api.PaginationDelimiter = ""
+		var from string
+		for {
+			pfx := api.PaginationPrefix(prefix)
+			params := &api.ListObjectsParams{
+				Prefix:    &pfx,
+				After:     api.PaginationAfterPtr(from),
+				Delimiter: &paramsDelimiter,
+			}
+			resp, err := client.ListObjectsWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, params)
+			DieOnResponseError(resp, err)
+
+			results := resp.JSON200.Results
+			for _, result := range results {
+				wg.Add(1)
+				currPath := pathURI.String() + strings.TrimPrefix(result.Path, trimPrefix)
+				paths <- currPath
+			}
+
+			pagination := resp.JSON200.Pagination
+			if !pagination.HasMore {
+				break
+			}
+			from = pagination.NextOffset
+		}
+		close(paths)
+		wg.Wait()
 	},
 }
 
