@@ -299,6 +299,7 @@ var fsStageCmd = &cobra.Command{
 
 func initDeleteWorkerPool(ctx context.Context, client api.ClientWithResponsesInterface, paths chan string, numWorkers int, wg *sync.WaitGroup) {
 	for i := 0; i < numWorkers; i++ {
+		wg.Add(1)
 		go deleteObjectWorker(ctx, client, paths, wg)
 	}
 }
@@ -307,8 +308,8 @@ func deleteObjectWorker(ctx context.Context, client api.ClientWithResponsesInter
 	for path := range paths {
 		pathURI := MustParsePathURI("path", path)
 		deleteObject(ctx, client, pathURI)
-		wg.Done()
 	}
+	defer wg.Done()
 }
 
 func deleteObject(ctx context.Context, client api.ClientWithResponsesInterface, pathURI *uri.URI) {
@@ -357,7 +358,6 @@ var fsRmCmd = &cobra.Command{
 
 			results := resp.JSON200.Results
 			for _, result := range results {
-				wg.Add(1)
 				currPath := pathURI.String() + strings.TrimPrefix(result.Path, trimPrefix)
 				paths <- currPath
 			}
