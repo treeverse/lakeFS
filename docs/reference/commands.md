@@ -1697,7 +1697,8 @@ lakectl fs rm <path uri> [flags]
 {:.no_toc}
 
 ```
-  -h, --help   help for rm
+  -h, --help        help for rm
+      --recursive   recursively delete all objects under the specified path
 ```
 
 
