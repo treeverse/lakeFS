@@ -346,8 +346,8 @@ var fsRmCmd = &cobra.Command{
 		}
 		var paramsDelimiter api.PaginationDelimiter = ""
 		var from string
+		pfx := api.PaginationPrefix(prefix)
 		for {
-			pfx := api.PaginationPrefix(prefix)
 			params := &api.ListObjectsParams{
 				Prefix:    &pfx,
 				After:     api.PaginationAfterPtr(from),
