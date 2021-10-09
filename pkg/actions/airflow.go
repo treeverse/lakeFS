@@ -41,7 +41,6 @@ func NewAirflowHook(h ActionHook, action *Action) (Hook, error) {
 		HookBase: HookBase{
 			ID:         h.ID,
 			ActionName: action.Name,
-                        DAGConf:    map[string]interface{},
 		},
 	}
 	var err error
@@ -67,6 +66,7 @@ func NewAirflowHook(h ActionHook, action *Action) (Hook, error) {
 		return nil, fmt.Errorf("airflow hook password property: %w", err)
 	}
 
+	airflowHook.DAGConf = map[string]interface{}{}
 	conf, ok := h.Properties[airflowConf]
 	if ok {
 		airflowHook.DAGConf, ok = conf.(Properties)
