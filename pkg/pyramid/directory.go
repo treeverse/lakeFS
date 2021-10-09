@@ -75,10 +75,14 @@ func (d *directory) createFile(path string) (*os.File, error) {
 }
 
 // renameFile will move the src file to dst location and creates all parent dirs if missing.
+//   In case destination exists, we will just remove the source.
 func (d *directory) renameFile(src, dst string) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
+	if _, err := os.Stat(dst); err == nil {
+		return os.Remove(src)
+	}
 	if err := d.ensureParentDir(dst); err != nil {
 		return err
 	}
