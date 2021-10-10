@@ -106,6 +106,6 @@ Documentation site customizations should be performed in accordance with the [Ju
 
 ### CHANGELOG.md
 
-Any user-facing change should be included in the CHANGELOG.md file, under the "Unreleased" section at the top.
+Any user-facing change should be included in the `CHANGELOG.md` file, under the "Unreleased" section at the top.
 When we publish a new version of lakeFS, we will move this to the relevant version section.
 The changelog entry should contain a concise description of the feature or fix, along with the GitHub issue number.
