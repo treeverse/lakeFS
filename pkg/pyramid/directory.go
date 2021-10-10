@@ -86,6 +86,10 @@ func (d *directory) renameFile(src, dst string) error {
 	}
 	err = os.Rename(src, dst)
 	if err != nil {
+		// in case of an error we like to check if destination already exists and just remove the source.
+		// this is usually relevant for cases where merge between two branches will have the same result as the source branch.
+		// on Windows the destination file will be locked by one of the iterators that reading the left side of the merge and the
+		// writer will try to store the result we are trying to rename.
 		if _, err := os.Stat(dst); err == nil {
 			return os.Remove(src)
 		}
