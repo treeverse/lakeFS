@@ -75,14 +75,26 @@ func (d *directory) createFile(path string) (*os.File, error) {
 }
 
 // renameFile will move the src file to dst location and creates all parent dirs if missing.
+//   If we fail, we check if the destination exists, as it is content addressable, and remove the source.
 func (d *directory) renameFile(src, dst string) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	if err := d.ensureParentDir(dst); err != nil {
+	err := d.ensureParentDir(dst)
+	if err != nil {
 		return err
 	}
-	return os.Rename(src, dst)
+	err = os.Rename(src, dst)
+	if err != nil {
+		// in case of an error we like to check if destination already exists and just remove the source.
+		// this is usually relevant for cases where merge between two branches will have the same result as the source branch.
+		// on Windows the destination file will be locked by one of the iterators that reading the left side of the merge and the
+		// writer will try to store the result we are trying to rename.
+		if _, err := os.Stat(dst); err == nil {
+			return os.Remove(src)
+		}
+	}
+	return err
 }
 
 func (d *directory) ensureParentDir(path string) error {
