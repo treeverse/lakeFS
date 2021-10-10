@@ -3,8 +3,14 @@
 
 ## Unreleased - XXXX-XX-XX
 
-- Allow more charaters and different length of key/secret for user authorizations (#2501)
+## v0.52.1 - 2021-10-10
 - Fix nil panic for missing configuration of Airflow hook (#2533)
+- Allow more characters and different length of key/secret for user authorizations (#2501)
+- Fix nil panic for missing configuration of Airflow hook (#2533)
+- Fix failed to merge branch running on Windows locally - access is denied (#2531)
+- Fix UI failed to load on Windows - invalid mime type (#2537)
+- Fix UI path reset on branch change bug in object view (#2441)
+- Fix UI changing the base-branch changes the compared-branch bug (#2440)
 
 ## v0.52.0 - 2021-10-04
 
