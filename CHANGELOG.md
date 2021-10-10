@@ -4,6 +4,7 @@
 ## Unreleased - XXXX-XX-XX
 
 - Allow more charaters and different length of key/secret for user authorizations (#2501)
+- Fix nil panic for missing configuration of Airflow hook (#2533)
 
 ## v0.52.0 - 2021-10-04
 
