@@ -42,6 +42,7 @@ func NewAirflowHook(h ActionHook, action *Action) (Hook, error) {
 			ID:         h.ID,
 			ActionName: action.Name,
 		},
+		DAGConf: map[string]interface{}{},
 	}
 	var err error
 	airflowHook.URL, err = h.Properties.getRequiredProperty(airflowURLPropertyKey)
