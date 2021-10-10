@@ -71,7 +71,7 @@ Our [Go release workflow](https://github.com/treeverse/lakeFS/blob/master/.githu
 1. If you're adding new functionality, create a new branch named `feature/<DESCRIPTIVE NAME>`
 1. If you're fixing a bug, create a new branch named `fix/<DESCRIPTIVE NAME>-<ISSUE NUMBER>`
 
-## Creating a pull request
+## Testing your change
 
 Once you've made the necessary changes to the code, make sure tests pass:
 
@@ -87,16 +87,25 @@ make checks-validator
 
 lakeFS uses [go fmt](https://golang.org/cmd/gofmt/) as a style guide for Go code.
 
+## Submitting a pull request
 
-## After submitting your pull request
+Open a GitHub pull request with your change. The PR description should include a brief explanation of your change.
+You should also mention the related GitHub issue. If the issue should be automatically closed after the merge, please [link it to the PR](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword).
 
 After submitting your pull request, [GitHub Actions](https://github.com/treeverse/lakeFS/actions) will automatically run tests on your changes and make sure that your updated code builds and runs on Go 1.16.2.
 
 Check back shortly after submitting your pull request to make sure that your code passes these checks. If any of the checks come back with a red X, then do your best to address the errors.
 
+A developer from our team will review your pull request, and may request some changes to it. After the request is approved, it will be merged to our main branch.
 
 ## Documentation
 
 Documentation of features and changes in behaviour should be included in the pull-request.
 You can create separate pull requests for documentation changes only.
 Documentation site customizations should be performed in accordance with the [Just The Docs Customization](https://pmarsceill.github.io/just-the-docs/docs/customization/) guide, which is applied during the site creation process.
+
+### CHANGELOG.md
+
+Any user-facing change should be included in the `CHANGELOG.md` file, under the "Unreleased" section at the top.
+When we publish a new version of lakeFS, we will move this to the relevant version section.
+The changelog entry should contain a concise description of the feature or fix, along with the GitHub issue number.
