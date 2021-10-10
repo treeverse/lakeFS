@@ -5,9 +5,11 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
+	gomime "github.com/cubewise-code/go-mime"
 	"github.com/rakyll/statik/fs"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/gateway/errors"
@@ -79,6 +81,11 @@ func NewHandlerWithDefault(root http.FileSystem, handler http.Handler, defaultPa
 		_, err := root.Open(path.Clean(urlPath))
 		if err != nil && os.IsNotExist(err) {
 			r.URL.Path = defaultPath
+		}
+		// consistent content-type
+		contentType := gomime.TypeByExtension(filepath.Ext(r.URL.Path))
+		if contentType != "" {
+			w.Header().Set("Content-Type", contentType)
 		}
 		handler.ServeHTTP(w, r)
 	})
