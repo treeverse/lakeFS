@@ -96,6 +96,7 @@ After submitting your pull request, [GitHub Actions](https://github.com/treevers
 
 Check back shortly after submitting your pull request to make sure that your code passes these checks. If any of the checks come back with a red X, then do your best to address the errors.
 
+A developer from our team we will review your pull request, and may request some changes to it. After the request is approved, it will be merged to our main branch.
 
 ## Documentation
 
