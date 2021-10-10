@@ -42,6 +42,7 @@ func TestServiceRun(t *testing.T) {
 	const actionName = "test action"
 	const webhookID = "webhook_id"
 	const airflowHookID = "airflow_hook_id"
+	const airflowHookIDNoConf = "airflow_hook_id_no_conf"
 	hookResponse := "OK"
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -70,9 +71,19 @@ func TestServiceRun(t *testing.T) {
 			checkEvent(t, record, eventInfo, actionName, webhookID)
 		} else if r.URL.Path == "/airflow/api/v1/dags/some_dag_id/dagRuns" {
 			var req actions.DagRunReq
+
+			withConf := r.URL.Query().Get("conf") == "true"
+			expectedID := airflowHookID
+			if !withConf {
+				expectedID = airflowHookIDNoConf
+			}
+
 			require.NoError(t, json.Unmarshal(data, &req))
-			require.True(t, strings.HasPrefix(req.DagRunID, "lakeFS_hook_"+airflowHookID))
-			require.Equal(t, req.Conf["some"], "additional_conf")
+			require.True(t, strings.HasPrefix(req.DagRunID, "lakeFS_hook_"+expectedID))
+
+			if withConf {
+				require.Equal(t, req.Conf["some"], "additional_conf")
+			}
 
 			username, pass, ok := r.BasicAuth()
 			require.True(t, ok)
@@ -87,7 +98,7 @@ func TestServiceRun(t *testing.T) {
 			var event actions.EventInfo
 			require.NoError(t, json.Unmarshal(b, &event))
 
-			checkEvent(t, record, event, actionName, airflowHookID)
+			checkEvent(t, record, event, actionName, expectedID)
 		} else {
 			w.WriteHeader(http.StatusNotFound)
 			return
@@ -119,18 +130,26 @@ hooks:
   - id: ` + airflowHookID + `
     type: airflow
     properties:
-      url: "` + ts.URL + `/airflow"
+      url: "` + ts.URL + `/airflow?conf=true"
       dag_id: "some_dag_id"
       username: "some_username" 
       password: "{{ ENV.AIRFLOW_PASSWORD }}"
       dag_conf:
         some: "additional_conf"
+  - id: ` + airflowHookIDNoConf + `
+    type: airflow
+    properties:
+      url: "` + ts.URL + `/airflow?conf=false"
+      dag_id: "some_dag_id"
+      username: "some_username" 
+      password: "{{ ENV.AIRFLOW_PASSWORD }}"
 `
 
 	ctx := context.Background()
 	testOutputWriter := mock.NewMockOutputWriter(ctrl)
 	expectedWebhookRunID := actions.NewHookRunID(0, 0)
-	expectedAirflowHookRunID := actions.NewHookRunID(0, 1)
+	expectedAirflowHookRunIDWithConf := actions.NewHookRunID(0, 1)
+	expectedAirflowHookRunIDWithoutConf := actions.NewHookRunID(0, 2)
 	var lastManifest *actions.RunManifest
 	var writerBytes []byte
 	testOutputWriter.EXPECT().
@@ -142,7 +161,15 @@ hooks:
 			return err
 		})
 	testOutputWriter.EXPECT().
-		OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatHookOutputPath(record.RunID, expectedAirflowHookRunID), gomock.Any(), gomock.Any()).
+		OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatHookOutputPath(record.RunID, expectedAirflowHookRunIDWithConf), gomock.Any(), gomock.Any()).
+		Return(nil).
+		DoAndReturn(func(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
+			var err error
+			writerBytes, err = ioutil.ReadAll(reader)
+			return err
+		})
+	testOutputWriter.EXPECT().
+		OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatHookOutputPath(record.RunID, expectedAirflowHookRunIDWithoutConf), gomock.Any(), gomock.Any()).
 		Return(nil).
 		DoAndReturn(func(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
 			var err error
