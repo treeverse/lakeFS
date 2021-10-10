@@ -273,7 +273,7 @@ jobs:
         run: mvn -Passembly -Djar.finalName=client --batch-mode --update-snapshots package
 
       - name: Test lakeFS S3 with Spark 2.x thick client
-        timeout-minutes: 4
+        timeout-minutes: 8
         env:
           JARS: clients/hadoopfs/
           STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-spark2-client
@@ -354,7 +354,7 @@ jobs:
         run: mvn -Passembly -Djar.finalName=client --batch-mode --update-snapshots package
 
       - name: Test lakeFS S3 with Spark 3.x thick client
-        timeout-minutes: 4
+        timeout-minutes: 8
         env:
           JARS: clients/hadoopfs/
           STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-spark3-client
