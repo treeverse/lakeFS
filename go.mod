@@ -19,6 +19,7 @@ require (
 	github.com/cockroachdb/pebble v0.0.0-20210308135031-3c37882d2ac8
 	github.com/cockroachdb/redact v1.0.9 // indirect
 	github.com/containerd/continuity v0.0.0-20201208142359-180525291bb7 // indirect
+	github.com/cubewise-code/go-mime v0.0.0-20200519001935-8c5762b177d8 // indirect
 	github.com/cznic/mathutil v0.0.0-20180504122225-ca4c9f2c1369
 	github.com/davecgh/go-spew v1.1.1
 	github.com/deepmap/oapi-codegen v1.5.6
