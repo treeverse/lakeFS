@@ -11,29 +11,25 @@ lakeFS keeps the following metadata per object:
 1. Metadata
 1. Address type (relative / full)
 
+
 ### What is missing?
 
-Mapped two issues that we currently do not address when we work with our S3 interface:
+The following two issues are currently not addressed by our S3 interface:
 
-1. Content-Type - Not keeping the posted object content-type and do not set it back when we get the object.
-    [Support Content-Type](https://github.com/treeverse/lakeFS/issues/2296)
-    We saw this issue when one of the clients used the value of the content type to identify a directory marker. But this is one of the basic properties that evey object store manages.
-1. Additional metadata - when posting an object aws enables additional metadata to set. Currently we do not process these attributes. The object level metadata we currenly have on an object can be get/set only by our open api.
-    [Store some per-file metadata (rclone multipart upload fails on unexpected ETag) #2486](https://github.com/treeverse/lakeFS/issues/2486)
+1. Content-Type - The content-type header sent part of put object and multipart upload is not kept, we expect get object to return the same content type. [Support Content-Type](https://github.com/treeverse/lakeFS/issues/2296)
+1. User-defined metadata - when posting an object AWS enables additional metadata by passing x-amz-meta-* headers. Do do not process these headers and by passing them to our metadata on put/get, we will enable better integration S3 compatability and integration with tools like Rsync . 
 
 
 ### Solution
 
+The catalog entity will include ContentType as additional metadata field. The field will be added to the entntry identity calculation (unless it is empty for backward support).
+On read of a previous committed entry without ContentType will be retuned with the default content-type.
+On write a new entry we be set with the ContentType used to post the data. In case nothing is set, a default will be set on the object.
+Our API (open api) will pass the content-type as additional field in any location we pass the object metadata.
 AWS metadata posted with an object will be added to the object's metadata. We will map "x-amz-meta-<name>" to name/value in our metadata. The equivalent to create entry metadata using our open api.
-The s3 gateway get object will map the metadata key/value back to "x-amz-meta-<name>" headers.
+The S3 gateway get object will map the metadata key/value back to "x-amz-meta-<name>" headers.
 
-The content-type and the new metadata posted in multipart upload will be stored in our tracker. This information should be kept until the multipart complete is called and then the metadata is stored.
-
-In order to support content-type for all old entries, the loaded entries will be set with default content-type if found missing. This will not be reflected on entry until an update to entry will be made, as the data is alreay committed, but any future commit that include the object will also update the content-type.
-
-Content-type will be managed as part of the entry's Metadata field. The catalog will make sure the default is set in case no value or empty value is set.
-
-Example of how head request on object with content-type will look like:
+Example of S3 head request on object with content-type will look like:
 
 ```json
 {
@@ -42,7 +38,12 @@ Example of how head request on object with content-type will look like:
    "ContentLength": 10485760,
    "ETag": "\"f962bf40d19fed2e80bcbaa33bd1dfe7\"",
    "ContentType": "example/data",
-   "Metadata": {}
+   "Metadata": {
+        "x-amz-meta-author": "barak"
+   }
 }
 ```
 
+Supporting AWS user-metadata will be implemented by passing them into our entry's `Metadata` field.
+While using the S3 gateway,  put or multipart upload will store the `x-amz-meta-*` request headers into the object metadata. On get we will the `x-amz-meta-*` metadata keys as headers.
+Our current metadata field will continue to be used, so no changes to the OpenAPI will be required.
