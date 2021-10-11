@@ -99,7 +99,7 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSO
 	secret := c.Auth.SecretStore().SharedSecret()
 	// user.Username will be different from username/access_key_id on
 	// LDAP login.  Use the stored value.
-	tokenString, err := GenerateJWT(secret, user.Username, loginTime, expires)
+	tokenString, err := GenerateJWT(secret, user.ID, loginTime, expires)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return

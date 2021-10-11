@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -119,15 +120,15 @@ func userByToken(ctx context.Context, logger logging.Logger, authService auth.Se
 	if !ok || !token.Valid {
 		return nil, ErrAuthenticatingRequest
 	}
-	cred, err := authService.GetCredentials(ctx, claims.Subject)
+	id, err := strconv.ParseInt(claims.Subject, 10, 32)
 	if err != nil {
-		logger.WithField("subject", claims.Subject).Info("could not find credentials for token")
+		logger.WithField("subject", claims.Subject).Info("could not parse user ID on token")
 		return nil, ErrAuthenticatingRequest
 	}
-	userData, err := authService.GetUserByID(ctx, cred.UserID)
+	userData, err := authService.GetUserByID(ctx, int(id))
 	if err != nil {
 		logger.WithFields(logging.Fields{
-			"user_id": cred.UserID,
+			"user_id": id,
 			"subject": claims.Subject,
 		}).Debug("could not find user id by credentials")
 		return nil, ErrAuthenticatingRequest

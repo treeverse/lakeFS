@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -20,9 +21,9 @@ const (
 	JWTCookieName          = "access_token"
 )
 
-func GenerateJWT(secret []byte, accessKeyID string, issuedAt, expiresAt time.Time) (string, error) {
+func GenerateJWT(secret []byte, userID int, issuedAt, expiresAt time.Time) (string, error) {
 	claims := &jwt.StandardClaims{
-		Subject:   accessKeyID,
+		Subject:   fmt.Sprint(userID),
 		IssuedAt:  issuedAt.Unix(),
 		ExpiresAt: expiresAt.Unix(),
 	}
