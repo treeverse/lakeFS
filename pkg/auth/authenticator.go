@@ -115,6 +115,9 @@ func (la *LDAPAuthenticator) getControlConnection(ctx context.Context) (*ldap.Co
 // enclosed in brackets if it does not start with open brackets.
 func inBrackets(filter string) string {
 	filter = strings.TrimPrefix(filter, " \t\n\r")
+	if filter == "" {
+		return filter
+	}
 	if filter[0] == '(' {
 		return filter
 	}

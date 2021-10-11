@@ -67,7 +67,7 @@ func makeLDAPAuthenticator(cfg *config.LDAP, service auth.Service) *auth.LDAPAut
 		},
 		BaseSearchRequest: &ldap.SearchRequest{
 			BaseDN:     cfg.UserBaseDN,
-			Scope:      ldap.ScopeSingleLevel,
+			Scope:      ldap.ScopeWholeSubtree,
 			Filter:     cfg.UserFilter,
 			Attributes: []string{cfg.UsernameAttribute},
 		},
