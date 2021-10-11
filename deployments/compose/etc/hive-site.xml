@@ -38,7 +38,7 @@
     </property>
     <property>
         <name>fs.s3a.endpoint</name>
-        <value>http:/lakefs:8000</value>
+        <value>http://lakefs:8000</value>
     </property>
     <property>
         <name>fs.s3a.access.key</name>
