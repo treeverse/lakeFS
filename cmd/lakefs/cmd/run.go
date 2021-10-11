@@ -47,11 +47,15 @@ type Shutter interface {
 }
 
 func makeLDAPAuthenticator(cfg *config.LDAP, service auth.Service) *auth.LDAPAuthenticator {
+	group := cfg.DefaultUserGroup
+	if group == "" {
+		group = auth.ViewersGroup
+	}
 	return &auth.LDAPAuthenticator{
 		AuthService:       service,
 		BindDN:            cfg.BindDN,
 		BindPassword:      cfg.BindPassword,
-		DefaultUserGroup:  cfg.DefaultUserGroup,
+		DefaultUserGroup:  group,
 		UsernameAttribute: cfg.UsernameAttribute,
 		MakeLDAPConn: func(_ context.Context) (*ldap.Conn, error) {
 			c, err := ldap.DialURL(cfg.ServerEndpoint)
