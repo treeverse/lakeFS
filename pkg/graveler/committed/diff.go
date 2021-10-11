@@ -1,30 +1,33 @@
-package diff
+package committed
 
 import (
 	"bytes"
 	"context"
+	"errors"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
-	"github.com/treeverse/lakefs/pkg/graveler/committed"
 )
 
 type iteratorValue struct {
-	rng    *committed.Range
+	rng    *Range
 	record *graveler.ValueRecord
 	err    error
 }
 
+// ErrNoRange occurs when calling nextRange while not in a range, could happen when the diff is currently comparing keys in two different ranges
+var ErrNoRange = errors.New("diff is not currently in a range")
+
 // currentRangeData holds state of the current RangeDiff
 type currentRangeData struct {
-	iter             committed.Iterator
+	iter             Iterator
 	value            *iteratorValue
-	currentRangeDiff *committed.RangeDiff
+	currentRangeDiff *RangeDiff
 }
 
 type diffIterator struct {
 	ctx          context.Context
-	left         committed.Iterator
-	right        committed.Iterator
+	left         Iterator
+	right        Iterator
 	leftValue    iteratorValue
 	rightValue   iteratorValue
 	currentRange currentRangeData
@@ -66,7 +69,7 @@ const (
 	diffItCompareResultLeftRangeBeforeRight
 )
 
-func NewDiffIterator(ctx context.Context, left committed.Iterator, right committed.Iterator) committed.DiffIterator {
+func NewDiffIterator(ctx context.Context, left Iterator, right Iterator) DiffIterator {
 	return &diffIterator{
 		ctx:   ctx,
 		left:  left,
@@ -74,7 +77,7 @@ func NewDiffIterator(ctx context.Context, left committed.Iterator, right committ
 	}
 }
 
-func diffIteratorNextValue(it committed.Iterator) (*graveler.ValueRecord, *committed.Range, error) {
+func diffIteratorNextValue(it Iterator) (*graveler.ValueRecord, *Range, error) {
 	if it.Next() {
 		rec, rng := it.Value()
 		return rec, rng, nil
@@ -82,7 +85,7 @@ func diffIteratorNextValue(it committed.Iterator) (*graveler.ValueRecord, *commi
 	return nil, nil, it.Err()
 }
 
-func diffIteratorNextRange(it committed.Iterator) (*graveler.ValueRecord, *committed.Range, error) {
+func diffIteratorNextRange(it Iterator) (*graveler.ValueRecord, *Range, error) {
 	if it.NextRange() {
 		val, rng := it.Value()
 		return val, rng, nil
@@ -93,7 +96,7 @@ func diffIteratorNextRange(it committed.Iterator) (*graveler.ValueRecord, *commi
 func (d *diffIterator) setCurrentRangeRight() {
 	d.currentRange.iter = d.right
 	d.currentRange.value = &d.rightValue
-	d.currentRange.currentRangeDiff = &committed.RangeDiff{
+	d.currentRange.currentRangeDiff = &RangeDiff{
 		Type:  graveler.DiffTypeAdded,
 		Range: d.rightValue.rng.Copy(),
 	}
@@ -103,7 +106,7 @@ func (d *diffIterator) setCurrentRangeRight() {
 func (d *diffIterator) setCurrentRangeLeft() {
 	d.currentRange.iter = d.left
 	d.currentRange.value = &d.leftValue
-	d.currentRange.currentRangeDiff = &committed.RangeDiff{
+	d.currentRange.currentRangeDiff = &RangeDiff{
 		Type:  graveler.DiffTypeRemoved,
 		Range: d.leftValue.rng.Copy(),
 	}
@@ -254,7 +257,7 @@ func (d *diffIterator) Next() bool {
 
 func (d *diffIterator) NextRange() bool {
 	if d.currentRange.iter == nil {
-		d.err = committed.ErrNoRange
+		d.err = ErrNoRange
 		return false
 	}
 	d.currentRange.value.record, d.currentRange.value.rng, d.currentRange.value.err = diffIteratorNextRange(d.currentRange.iter)
@@ -272,7 +275,7 @@ func (d *diffIterator) SeekGE(id graveler.Key) {
 	d.state = diffIteratorStatePreInit
 }
 
-func (d *diffIterator) Value() (*graveler.Diff, *committed.RangeDiff) {
+func (d *diffIterator) Value() (*graveler.Diff, *RangeDiff) {
 	return d.currentDiff, d.currentRange.currentRangeDiff
 }
 
@@ -288,7 +291,7 @@ func (d *diffIterator) Close() {
 	d.state = diffIteratorStateClosed
 }
 
-func getCurrentKey(it committed.Iterator) []byte {
+func getCurrentKey(it Iterator) []byte {
 	val, rng := it.Value()
 	if val == nil {
 		return rng.MinKey

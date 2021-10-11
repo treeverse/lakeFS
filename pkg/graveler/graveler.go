@@ -625,6 +625,14 @@ type CommittedManager interface {
 	// List takes a given tree and returns an ValueIterator
 	List(ctx context.Context, ns StorageNamespace, rangeID MetaRangeID) (ValueIterator, error)
 
+	// Diff receives two metaRanges and returns a DiffIterator describing all differences between them.
+	// This is similar to a two-dot diff in git (left..right)
+	Diff(ctx context.Context, ns StorageNamespace, left, right MetaRangeID) (DiffIterator, error)
+
+	// Compare returns the difference between 'source' and 'destination', relative to a merge base 'base'.
+	// This is similar to a three-dot diff in git.
+	Compare(ctx context.Context, ns StorageNamespace, destination, source, base MetaRangeID) (DiffIterator, error)
+
 	// Merge applies changes from 'source' to 'destination', relative to a merge base 'base' and
 	// returns the ID of the new metarange and a summary of diffs.  This is similar to a
 	// git merge operation. The resulting tree is expected to be immediately addressable.
@@ -639,16 +647,6 @@ type CommittedManager interface {
 	GetMetaRange(ctx context.Context, ns StorageNamespace, metaRangeID MetaRangeID) (MetaRangeInfo, error)
 	// GetRange returns information where rangeID is stored.
 	GetRange(ctx context.Context, ns StorageNamespace, rangeID RangeID) (RangeInfo, error)
-}
-
-type DiffManager interface {
-	// Diff receives two metaRanges and returns a DiffIterator describing all differences between them.
-	// This is similar to a two-dot diff in git (left..right)
-	Diff(ctx context.Context, ns StorageNamespace, left, right MetaRangeID) (DiffIterator, error)
-
-	// Compare returns the difference between 'source' and 'destination', relative to a merge base 'base'.
-	// This is similar to a three-dot diff in git.
-	Compare(ctx context.Context, ns StorageNamespace, destination, source, base MetaRangeID) (DiffIterator, error)
 }
 
 // StagingManager manages entries in a staging area, denoted by a staging token
@@ -724,7 +722,6 @@ func (id TagID) String() string {
 
 type Graveler struct {
 	CommittedManager         CommittedManager
-	DiffManager              DiffManager
 	StagingManager           StagingManager
 	RefManager               RefManager
 	branchLocker             BranchLocker
@@ -734,10 +731,9 @@ type Graveler struct {
 	log                      logging.Logger
 }
 
-func NewGraveler(branchLocker BranchLocker, committedManager CommittedManager, diffManager DiffManager, stagingManager StagingManager, refManager RefManager, gcManager GarbageCollectionManager, protectedBranchesManager ProtectedBranchesManager) *Graveler {
+func NewGraveler(branchLocker BranchLocker, committedManager CommittedManager, stagingManager StagingManager, refManager RefManager, gcManager GarbageCollectionManager, protectedBranchesManager ProtectedBranchesManager) *Graveler {
 	return &Graveler{
 		CommittedManager:         committedManager,
-		DiffManager:              diffManager,
 		StagingManager:           stagingManager,
 		RefManager:               refManager,
 		branchLocker:             branchLocker,
@@ -1741,7 +1737,7 @@ func (g *Graveler) Diff(ctx context.Context, repositoryID RepositoryID, left, ri
 		return nil, err
 	}
 
-	return g.DiffManager.Diff(ctx, repo.StorageNamespace, leftCommit.MetaRangeID, rightCommit.MetaRangeID)
+	return g.CommittedManager.Diff(ctx, repo.StorageNamespace, leftCommit.MetaRangeID, rightCommit.MetaRangeID)
 }
 
 func (g *Graveler) Compare(ctx context.Context, repositoryID RepositoryID, from, to Ref) (DiffIterator, error) {
@@ -1753,7 +1749,7 @@ func (g *Graveler) Compare(ctx context.Context, repositoryID RepositoryID, from,
 	if err != nil {
 		return nil, err
 	}
-	return g.DiffManager.Compare(ctx, repo.StorageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID)
+	return g.CommittedManager.Compare(ctx, repo.StorageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID)
 }
 
 func (g *Graveler) SetHooksHandler(handler HooksHandler) {

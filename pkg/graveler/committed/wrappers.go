@@ -1,13 +1,6 @@
 package committed
 
-import (
-	"errors"
-
-	"github.com/treeverse/lakefs/pkg/graveler"
-)
-
-// ErrNoRange occurs when calling nextRange while not in a range, could happen when the diff is currently comparing keys in two different ranges
-var ErrNoRange = errors.New("diff is not currently in a range")
+import "github.com/treeverse/lakefs/pkg/graveler"
 
 func NewIteratorWrapper(iter graveler.ValueIterator) Iterator {
 	return &IteratorWrapper{ValueIterator: iter}

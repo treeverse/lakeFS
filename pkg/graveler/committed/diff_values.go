@@ -1,19 +1,17 @@
-package diff
+package committed
 
 import (
 	"context"
-
-	"github.com/treeverse/lakefs/pkg/graveler/committed"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
 )
 
 // diffValuesIterator wraps a diffIterator in order to return only values
 type diffValuesIterator struct {
-	rangeDiffIter committed.DiffIterator
+	rangeDiffIter DiffIterator
 }
 
-func NewDiffValueIterator(ctx context.Context, left committed.Iterator, right committed.Iterator) graveler.DiffIterator {
+func NewDiffValueIterator(ctx context.Context, left Iterator, right Iterator) graveler.DiffIterator {
 	return &diffValuesIterator{
 		rangeDiffIter: NewDiffIterator(ctx, left, right),
 	}

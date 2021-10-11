@@ -19,7 +19,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/branch"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
-	"github.com/treeverse/lakefs/pkg/graveler/diff"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/graveler/retention"
 	"github.com/treeverse/lakefs/pkg/graveler/settings"
@@ -180,8 +179,8 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		cancelFn()
 		return nil, fmt.Errorf("create SSTable-based metarange manager: %w", err)
 	}
-	diffManager := diff.NewManager(sstableMetaRangeManager)
-	committedManager := committed.NewCommittedManager(sstableMetaRangeManager, diffManager)
+	committedManager := committed.NewCommittedManager(sstableMetaRangeManager)
+
 	executor := batch.NewExecutor(logging.Default())
 	go executor.Run(ctx)
 
@@ -191,7 +190,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	stagingManager := staging.NewManager(cfg.DB)
 	settingManager := settings.NewManager(refManager, branchLocker, adapter, cfg.Config.GetCommittedBlockStoragePrefix())
 	protectedBranchesManager := branch.NewProtectionManager(settingManager)
-	store := graveler.NewGraveler(branchLocker, committedManager, diffManager, stagingManager, refManager, gcManager, protectedBranchesManager)
+	store := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
 
 	return &Catalog{
 		BlockAdapter: tierFSParams.Adapter,
