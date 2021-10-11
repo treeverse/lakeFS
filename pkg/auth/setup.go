@@ -231,7 +231,7 @@ func AddAdminUser(ctx context.Context, authService Service, user *model.Superuse
 	}
 
 	// create admin user
-	err = authService.CreateUser(ctx, &user.User)
+	_, err = authService.CreateUser(ctx, &user.User)
 	if err != nil {
 		return nil, fmt.Errorf("create user - %w", err)
 	}

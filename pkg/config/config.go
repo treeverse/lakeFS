@@ -236,6 +236,10 @@ func (c *Config) GetDatabaseParams() dbparams.Database {
 	}
 }
 
+func (c *Config) GetLDAPConfiguration() *LDAP {
+	return c.values.Auth.LDAP
+}
+
 func (c *Config) GetAwsConfig() *aws.Config {
 	logger := logging.Default().WithField("sdk", "aws")
 	cfg := &aws.Config{

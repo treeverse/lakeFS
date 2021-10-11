@@ -88,7 +88,7 @@ func (c *Controller) Logout(w http.ResponseWriter, r *http.Request) {
 
 func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSONRequestBody) {
 	ctx := r.Context()
-	_, err := userByAuth(ctx, c.Logger, c.Authenticator, c.Auth, body.AccessKeyId, body.SecretAccessKey)
+	user, err := userByAuth(ctx, c.Logger, c.Authenticator, c.Auth, body.AccessKeyId, body.SecretAccessKey)
 	if errors.Is(err, ErrAuthenticatingRequest) {
 		writeResponse(w, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
 		return
@@ -97,7 +97,9 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSO
 	loginTime := time.Now()
 	expires := loginTime.Add(DefaultLoginExpiration)
 	secret := c.Auth.SecretStore().SharedSecret()
-	tokenString, err := GenerateJWT(secret, body.AccessKeyId, loginTime, expires)
+	// user.Username will be different from username/access_key_id on
+	// LDAP login.  Use the stored value.
+	tokenString, err := GenerateJWT(secret, user.Username, loginTime, expires)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
@@ -725,7 +727,7 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body Cre
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "create_user")
-	err := c.Auth.CreateUser(ctx, u)
+	_, err := c.Auth.CreateUser(ctx, u)
 	if handleAPIError(w, err) {
 		return
 	}
@@ -2952,6 +2954,7 @@ func paginationAmount(v *PaginationAmount) int {
 func NewController(
 	cfg *config.Config,
 	catalog catalog.Interface,
+	authenticator auth.Authenticator,
 	authService auth.Service,
 	blockAdapter block.Adapter,
 	metadataManager auth.MetadataManager,
@@ -2964,7 +2967,7 @@ func NewController(
 	return &Controller{
 		Config:                cfg,
 		Catalog:               catalog,
-		Authenticator:         auth.NewBuiltinAuthenticator(authService),
+		Authenticator:         authenticator,
 		Auth:                  authService,
 		BlockAdapter:          blockAdapter,
 		MetadataManager:       metadataManager,

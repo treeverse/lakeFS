@@ -69,6 +69,7 @@ func Serve(
 	controller := NewController(
 		cfg,
 		catalog,
+		authenticator,
 		authService,
 		blockAdapter,
 		metadataManager,
