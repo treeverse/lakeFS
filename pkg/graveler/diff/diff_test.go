@@ -1,4 +1,4 @@
-package committed_test
+package diff_test
 
 import (
 	"bytes"
@@ -11,6 +11,7 @@ import (
 	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
+	"github.com/treeverse/lakefs/pkg/graveler/diff"
 	"github.com/treeverse/lakefs/pkg/graveler/testutil"
 )
 
@@ -221,7 +222,7 @@ func TestDiff(t *testing.T) {
 			fakeLeft := newFakeMetaRangeIterator(tst.leftKeys, tst.leftIdentities)
 			fakeRight := newFakeMetaRangeIterator(tst.rightKeys, tst.rightIdentities)
 			ctx := context.Background()
-			it := committed.NewDiffIterator(ctx, fakeLeft, fakeRight)
+			it := diff.NewDiffIterator(ctx, fakeLeft, fakeRight)
 			defer it.Close()
 			var diffs []*graveler.Diff
 			actualDiffKeys := make([]string, 0)
@@ -266,7 +267,7 @@ func TestDiffCancelContext(t *testing.T) {
 	right := newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"v1", "v2"}})
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	it := committed.NewDiffValueIterator(ctx, left, right)
+	it := diff.NewDiffValueIterator(ctx, left, right)
 	defer it.Close()
 	if it.Next() {
 		t.Fatal("Next() should return false")
@@ -277,7 +278,7 @@ func TestDiffCancelContext(t *testing.T) {
 }
 func TestNextRange(t *testing.T) {
 	ctx := context.Background()
-	it := committed.NewDiffIterator(ctx,
+	it := diff.NewDiffIterator(ctx,
 		newFakeMetaRangeIterator([][]string{{"k1", "k2"}, {"k3", "k4"}}, [][]string{{"i1", "i2"}, {"i3", "i4"}}),
 		newFakeMetaRangeIterator([][]string{{"k3", "k4"}, {"k5", "k6"}}, [][]string{{"i3a", "i4a"}, {"i5", "i6"}}))
 
@@ -353,7 +354,7 @@ func TestNextRange(t *testing.T) {
 
 func TestNextErr(t *testing.T) {
 	ctx := context.Background()
-	it := committed.NewDiffIterator(ctx,
+	it := diff.NewDiffIterator(ctx,
 		newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"i1", "i2"}}),
 		newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"i1a", "i2a"}}))
 	if !it.Next() {
@@ -381,7 +382,7 @@ func TestDiffSeek(t *testing.T) {
 	diffTypeByKey := map[string]graveler.DiffType{"k2": removed, "k3a": added, "k3b": added, "k3": added, "k7": changed}
 	diffIdentityByKey := map[string]string{"k2": "i2", "k3a": "i2a", "k3b": "i2b", "k3": "i3", "k7": "i7a"}
 	ctx := context.Background()
-	it := committed.NewDiffIterator(ctx, newFakeMetaRangeIterator(left, leftIdentities), newFakeMetaRangeIterator(right, rightIdentities))
+	it := diff.NewDiffIterator(ctx, newFakeMetaRangeIterator(left, leftIdentities), newFakeMetaRangeIterator(right, rightIdentities))
 	defer it.Close()
 
 	tests := []struct {
@@ -449,7 +450,7 @@ func TestDiffSeek(t *testing.T) {
 
 func TestNextOnClose(t *testing.T) {
 	ctx := context.Background()
-	it := committed.NewDiffIterator(ctx, newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"i1", "i2"}}), newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"i1a", "i2a"}}))
+	it := diff.NewDiffIterator(ctx, newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"i1", "i2"}}), newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"i1a", "i2a"}}))
 	if !it.Next() {
 		t.Fatal("expected iterator to have value")
 	}
@@ -465,7 +466,7 @@ func TestDiffErr(t *testing.T) {
 	leftIt.SetErr(leftErr)
 	rightIt := newFakeMetaRangeIterator([][]string{{"k2"}}, [][]string{{"i2a"}})
 	ctx := context.Background()
-	it := committed.NewDiffIterator(ctx, leftIt, rightIt)
+	it := diff.NewDiffIterator(ctx, leftIt, rightIt)
 	defer it.Close()
 	if it.Next() {
 		t.Fatalf("expected false from iterator with error")

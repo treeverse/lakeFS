@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/treeverse/lakefs/pkg/graveler/diff"
+
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -597,7 +599,8 @@ func Test_merge(t *testing.T) {
 			writer.EXPECT().Abort()
 			metaRangeId := graveler.MetaRangeID("merge")
 			writer.EXPECT().Close().Return(&metaRangeId, nil).AnyTimes()
-			committedManager := committed.NewCommittedManager(metaRangeManager)
+			diffManager := diff.NewManager(metaRangeManager)
+			committedManager := committed.NewCommittedManager(metaRangeManager, diffManager)
 			_, summary, err := committedManager.Merge(ctx, "ns", "dest", "source", "base")
 			if err != tst.expectedErr {
 				t.Fatal(err)
