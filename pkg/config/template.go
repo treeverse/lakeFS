@@ -39,6 +39,7 @@ type LDAP struct {
 	ServerEndpoint    string `mapstructure:"server_endpoint"`
 	BindDN            string `mapstructure:"bind_dn"`
 	BindPassword      string `mapstructure:"bind_password"`
+	DefaultUserGroup  string `mapstructure:"default_user_group"`
 	UsernameAttribute string `mapstructure:"username_attribute"`
 	UserBaseDN        string `mapstructure:"user_base_dn"`
 	UserFilter        string `mapstructure:"user_filter"`

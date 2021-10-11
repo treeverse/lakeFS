@@ -51,6 +51,7 @@ func makeLDAPAuthenticator(cfg *config.LDAP, service auth.Service) *auth.LDAPAut
 		AuthService:       service,
 		BindDN:            cfg.BindDN,
 		BindPassword:      cfg.BindPassword,
+		DefaultUserGroup:  cfg.DefaultUserGroup,
 		UsernameAttribute: cfg.UsernameAttribute,
 		MakeLDAPConn: func(_ context.Context) (*ldap.Conn, error) {
 			c, err := ldap.DialURL(cfg.ServerEndpoint)

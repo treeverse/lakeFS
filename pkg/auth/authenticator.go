@@ -83,6 +83,7 @@ type LDAPAuthenticator struct {
 	BindPassword      string
 	BaseSearchRequest *ldap.SearchRequest
 	UsernameAttribute string
+	DefaultUserGroup  string
 
 	// control is bound to the operator (BindDN) and is used to query
 	// LDAP about users.
@@ -187,11 +188,16 @@ func (la *LDAPAuthenticator) AuthenticateUser(ctx context.Context, username, pas
 	}
 	id, err := la.AuthService.CreateUser(ctx, user)
 	if err != nil {
-		return InvalidUserID, fmt.Errorf("Create backing user for LDAP: %w", err)
+		return InvalidUserID, fmt.Errorf("Create backing user for LDAP user %s: %w", dn, err)
 	}
 	_, err = la.AuthService.CreateCredentials(ctx, dn)
 	if err != nil {
-		return InvalidUserID, fmt.Errorf("Create credentials for LDAP: %w", err)
+		return InvalidUserID, fmt.Errorf("Create credentials for LDAP user %s: %w", dn, err)
+	}
+
+	err = la.AuthService.AddUserToGroup(ctx, dn, la.DefaultUserGroup)
+	if err != nil {
+		return InvalidUserID, fmt.Errorf("Add newly created LDAP user %s to %s: %s", dn, la.DefaultUserGroup, err)
 	}
 	return id, nil
 }
