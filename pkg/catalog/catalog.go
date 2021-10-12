@@ -681,15 +681,6 @@ func (c *Catalog) CreateEntry(ctx context.Context, repository string, branch str
 	return c.Store.Set(ctx, repositoryID, branchID, key, *value, writeConditions...)
 }
 
-func (c *Catalog) CreateEntries(ctx context.Context, repository string, branch string, entries []DBEntry) error {
-	for _, entry := range entries {
-		if err := c.CreateEntry(ctx, repository, branch, entry); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func (c *Catalog) DeleteEntry(ctx context.Context, repository string, branch string, path string) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
