@@ -22,8 +22,6 @@ docker-compose run  -v  $PWD/../../clients/spark/target/:/target/ -T --no-deps -
 
 # Validate Garbage Collection
 for f in \
-    lakefs://test-data/697297df0c01d17/commits/commit-ten \
-    lakefs://test-data/651a755f7f5b1a4/commits/commit-three \
     lakefs://test-data/09d9016a12777fe/commits/commit-four \
     lakefs://test-data/18c9a1fe4695109/commits/commit-two \
     lakefs://test-data/efb14f67a2a3c38/commits/commit-one \
@@ -35,3 +33,12 @@ do
     fi
 done
 
+for f in \
+    lakefs://test-data/697297df0c01d17/commits/commit-ten \
+    lakefs://test-data/651a755f7f5b1a4/commits/commit-three
+do
+    if ! docker-compose exec -T lakefs lakectl fs cat $f > /dev/null; then
+      echo "expected $f to exist"
+      exit 1
+    fi
+done
