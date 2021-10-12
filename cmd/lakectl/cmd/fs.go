@@ -298,10 +298,10 @@ var fsStageCmd = &cobra.Command{
 }
 
 func deleteObjectWorker(ctx context.Context, client api.ClientWithResponsesInterface, paths <-chan *uri.URI, wg *sync.WaitGroup) {
+	defer wg.Done()
 	for pathURI := range paths {
 		deleteObject(ctx, client, pathURI)
 	}
-	defer wg.Done()
 }
 
 func deleteObject(ctx context.Context, client api.ClientWithResponsesInterface, pathURI *uri.URI) {
