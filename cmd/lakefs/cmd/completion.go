@@ -25,7 +25,7 @@ Linux:
 $ lakefs completion bash > /etc/bash_completion.d/lakefs
 ` + "```" + `
 
-MacOS:s
+MacOS:
 
 ` + "```" + `sh
 $ lakefs completion bash > /usr/local/etc/bash_completion.d/lakefs
