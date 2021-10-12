@@ -23,7 +23,7 @@ The following two issues are currently not addressed by our S3 interface:
 ### Solution
 
 The catalog entity will include ContentType as additional metadata field. The field will be added to the entntry identity calculation (unless it is empty for backward support).
-On read of a previous committed entry without ContentType will be retuned with the default content-type.
+On read of a previous committed entry without ContentType, default content-type will be returned.
 On write a new entry we be set with the ContentType used to post the data. In case nothing is set, a default will be set on the object.
 Our API (open api) will pass the content-type as additional field in any location we pass the object metadata.
 AWS metadata posted with an object will be added to the object's metadata. We will map "x-amz-meta-<name>" to name/value in our metadata. The equivalent to create entry metadata using our open api.
