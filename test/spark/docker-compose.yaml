@@ -44,6 +44,12 @@ services:
       - SPARK_RPC_ENCRYPTION_ENABLED=no
       - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
       - SPARK_SSL_ENABLED=no
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - METACLIENT_JAR
+      - EXPORT_LOCATION
+    env_file:
+        - tester.env
     ports:
       - 18080:8080
     extra_hosts:
@@ -73,6 +79,7 @@ services:
       replicas: 3
     extra_hosts:
       - "s3.docker.lakefs.io:10.5.0.55"
+      - "docker.lakefs.io:10.5.0.55"
       - "example.s3.docker.lakefs.io:10.5.0.55"
       - "gateway-test.s3.docker.lakefs.io:10.5.0.55"
       - "thick-client-test.s3.docker.lakefs.io:10.5.0.55"
@@ -89,12 +96,15 @@ services:
       - s3input
       - s3output
       - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID
+      - CLIENT_JAR
+      - EXPORT_LOCATION
       - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
       - AWS_REGION
     extra_hosts:
       - "s3.docker.lakefs.io:10.5.0.55"
+      - "docker.lakefs.io:10.5.0.55"
       - "example.s3.docker.lakefs.io:10.5.0.55"
       - "gateway-test.s3.docker.lakefs.io:10.5.0.55"
       - "thick-client-test.s3.docker.lakefs.io:10.5.0.55"
