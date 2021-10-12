@@ -297,13 +297,6 @@ var fsStageCmd = &cobra.Command{
 	},
 }
 
-func initDeleteWorkerPool(ctx context.Context, client api.ClientWithResponsesInterface, paths chan string, numWorkers int, wg *sync.WaitGroup) {
-	for i := 0; i < numWorkers; i++ {
-		wg.Add(1)
-		go deleteObjectWorker(ctx, client, paths, wg)
-	}
-}
-
 func deleteObjectWorker(ctx context.Context, client api.ClientWithResponsesInterface, paths <-chan string, wg *sync.WaitGroup) {
 	for path := range paths {
 		pathURI := MustParsePathURI("path", path)
@@ -336,7 +329,10 @@ var fsRmCmd = &cobra.Command{
 		const numWorkers = 50
 		var wg sync.WaitGroup
 		paths := make(chan string)
-		initDeleteWorkerPool(cmd.Context(), client, paths, numWorkers, &wg)
+		for i := 0; i < numWorkers; i++ {
+			wg.Add(1)
+			go deleteObjectWorker(cmd.Context(), client, paths, &wg)
+		}
 
 		prefix := *pathURI.Path
 		const delimiter = "/"
