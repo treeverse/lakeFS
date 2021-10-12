@@ -297,9 +297,8 @@ var fsStageCmd = &cobra.Command{
 	},
 }
 
-func deleteObjectWorker(ctx context.Context, client api.ClientWithResponsesInterface, paths <-chan string, wg *sync.WaitGroup) {
-	for path := range paths {
-		pathURI := MustParsePathURI("path", path)
+func deleteObjectWorker(ctx context.Context, client api.ClientWithResponsesInterface, paths <-chan *uri.URI, wg *sync.WaitGroup) {
+	for pathURI := range paths {
 		deleteObject(ctx, client, pathURI)
 	}
 	defer wg.Done()
@@ -328,18 +327,13 @@ var fsRmCmd = &cobra.Command{
 		// Recursive delete of (possibly) many objects.
 		const numWorkers = 50
 		var wg sync.WaitGroup
-		paths := make(chan string)
+		paths := make(chan *uri.URI)
 		for i := 0; i < numWorkers; i++ {
 			wg.Add(1)
 			go deleteObjectWorker(cmd.Context(), client, paths, &wg)
 		}
 
 		prefix := *pathURI.Path
-		const delimiter = "/"
-		var trimPrefix string
-		if idx := strings.LastIndex(prefix, delimiter); idx != -1 {
-			trimPrefix = prefix[:idx+1]
-		}
 		var paramsDelimiter api.PaginationDelimiter = ""
 		var from string
 		pfx := api.PaginationPrefix(prefix)
@@ -353,9 +347,13 @@ var fsRmCmd = &cobra.Command{
 			DieOnResponseError(resp, err)
 
 			results := resp.JSON200.Results
-			for _, result := range results {
-				currPath := pathURI.String() + strings.TrimPrefix(result.Path, trimPrefix)
-				paths <- currPath
+			for i := range results {
+				destURI := uri.URI{
+					Repository: pathURI.Repository,
+					Ref:        pathURI.Ref,
+					Path:       &results[i].Path,
+				}
+				paths <- &destURI
 			}
 
 			pagination := resp.JSON200.Pagination
