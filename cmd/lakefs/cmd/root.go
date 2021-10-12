@@ -48,7 +48,8 @@ func loadConfig() *config.Config {
 	initOnce.Do(initConfig)
 	cfg, err := config.NewConfig()
 	if err != nil {
-		panic(err)
+		fmt.Println("Failed to load config file", err)
+		os.Exit(1)
 	}
 	return cfg
 }
