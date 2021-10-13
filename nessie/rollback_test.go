@@ -229,7 +229,7 @@ func TestRevert(t *testing.T) {
 	require.NoErrorf(t, verifyResponse(revertResp.HTTPResponse, revertResp.Body),
 		"failed to revert commit %s repo %s branch %s", commitId, repo, mainBranch)
 
-	// assert file1 doesn't exists
+	// assert file1 doesn't exist
 	f, err = found(ctx, repo, mainBranch, objPath1)
 	require.NoError(t, err)
 	require.False(t, f, "object not found")
