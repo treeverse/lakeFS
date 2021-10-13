@@ -15,7 +15,7 @@ import (
 // ClientUpload uploads contents as a file using client-side ("direct") access to underlying
 // storage.  It requires credentials both to lakeFS and to underlying storage, but
 // considerably reduces the load on the lakeFS server.
-func ClientUpload(ctx context.Context, client api.ClientWithResponsesInterface, repoID, branchID, filePath string, metadata map[string]string, contents io.ReadSeeker) (*api.ObjectStats, error) {
+func ClientUpload(ctx context.Context, client api.ClientWithResponsesInterface, repoID, branchID, filePath string, metadata map[string]string, contentType string, contents io.ReadSeeker) (*api.ObjectStats, error) {
 	resp, err := client.GetPhysicalAddressWithResponse(ctx, repoID, branchID, &api.GetPhysicalAddressParams{
 		Path: filePath,
 	})
@@ -56,6 +56,7 @@ func ClientUpload(ctx context.Context, client api.ClientWithResponsesInterface, 
 			UserMetadata: &api.StagingMetadata_UserMetadata{
 				AdditionalProperties: metadata,
 			},
+			ContentType: api.StringPtr(contentType),
 		})
 		if err != nil {
 			return nil, fmt.Errorf("link object to backing store: %w", err)
@@ -70,6 +71,8 @@ func ClientUpload(ctx context.Context, client api.ClientWithResponsesInterface, 
 				PathType:        "object",
 				PhysicalAddress: physicalAddress,
 				SizeBytes:       &stats.Size,
+				// TODO(barak): handle content type by caller (client in this case)
+				ContentType: api.StringPtr(contentType),
 			}, nil
 		}
 		if resp.JSON409 == nil {

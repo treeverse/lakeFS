@@ -72,7 +72,7 @@ type Controller struct {
 	Logger                logging.Logger
 }
 
-func (c *Controller) Logout(w http.ResponseWriter, r *http.Request) {
+func (c *Controller) Logout(w http.ResponseWriter, _ *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     JWTCookieName,
 		Value:    "",
@@ -227,6 +227,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		Size:            body.SizeBytes,
 		Checksum:        body.Checksum,
 		Metadata:        metadata,
+		ContentType:     StringValue(body.ContentType),
 	}
 
 	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry)
@@ -1748,6 +1749,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		return
 	}
 	defer func() { _ = file.Close() }()
+	contentType := handler.Header.Get("Content-Type")
 	blob, err := upload.WriteBlob(ctx, c.BlockAdapter, repo.StorageNamespace, file, handler.Size, block.PutOpts{StorageClass: params.StorageClass})
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
@@ -1768,6 +1770,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		CreationDate:    writeTime,
 		Size:            blob.Size,
 		Checksum:        blob.Checksum,
+		ContentType:     contentType,
 	}
 
 	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, graveler.IfAbsent(!allowOverwrite))
@@ -1797,6 +1800,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		PathType:        entryTypeObject,
 		PhysicalAddress: qk.Format(),
 		SizeBytes:       Int64Ptr(blob.Size),
+		ContentType:     StringPtr(contentType),
 	}
 	writeResponse(w, http.StatusCreated, response)
 }
@@ -1847,6 +1851,7 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body St
 		CreationDate:    writeTime,
 		Size:            body.SizeBytes,
 		Checksum:        body.Checksum,
+		ContentType:     StringValue(body.ContentType),
 	}
 	if body.Metadata != nil {
 		entry.Metadata = body.Metadata.AdditionalProperties
@@ -1863,6 +1868,7 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body St
 		PathType:        entryTypeObject,
 		PhysicalAddress: qk.Format(),
 		SizeBytes:       Int64Ptr(entry.Size),
+		ContentType:     StringPtr(entry.ContentType),
 	}
 	writeResponse(w, http.StatusCreated, response)
 }
@@ -2522,6 +2528,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 				PhysicalAddress: qk.Format(),
 				PathType:        entryTypeObject,
 				SizeBytes:       Int64Ptr(entry.Size),
+				ContentType:     StringPtr(entry.ContentType),
 			}
 			if (params.UserMetadata == nil || *params.UserMetadata) && entry.Metadata != nil {
 				objStat.Metadata = &ObjectUserMetadata{AdditionalProperties: entry.Metadata}
@@ -2578,6 +2585,7 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 		PathType:        entryTypeObject,
 		PhysicalAddress: qk.Format(),
 		SizeBytes:       Int64Ptr(entry.Size),
+		ContentType:     StringPtr(entry.ContentType),
 	}
 	if (params.UserMetadata == nil || *params.UserMetadata) && entry.Metadata != nil {
 		objStat.Metadata = &ObjectUserMetadata{AdditionalProperties: entry.Metadata}

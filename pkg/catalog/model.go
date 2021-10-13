@@ -10,8 +10,7 @@ import (
 )
 
 const (
-	DBEntryFieldChecksum        = "checksum"
-	DBEntryFieldPhysicalAddress = "physical_address"
+	DefaultContentType = "application/octet-stream"
 )
 
 type Metadata map[string]string
@@ -33,6 +32,7 @@ type DBEntry struct {
 	Metadata        Metadata    `db:"metadata"`
 	Expired         bool        `db:"is_expired"`
 	AddressType     AddressType `db:"address_type"`
+	ContentType     string      `db:"content_type"`
 }
 
 type CommitLog struct {

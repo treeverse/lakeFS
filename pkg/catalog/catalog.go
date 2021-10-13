@@ -624,15 +624,21 @@ func (c *Catalog) GetEntry(ctx context.Context, repository string, reference str
 	return &catalogEntry, nil
 }
 
-func EntryFromCatalogEntry(entry DBEntry) *Entry {
-	return &Entry{
+func newEntryFromCatalogEntry(entry DBEntry) *Entry {
+	ent := &Entry{
 		Address:      entry.PhysicalAddress,
 		AddressType:  addressTypeToProto(entry.AddressType),
 		Metadata:     entry.Metadata,
 		LastModified: timestamppb.New(entry.CreationDate),
 		ETag:         entry.Checksum,
 		Size:         entry.Size,
+		ContentType:  entry.ContentType,
 	}
+	// set default content type if needed
+	if ent.ContentType == "" {
+		ent.ContentType = DefaultContentType
+	}
+	return ent
 }
 
 func addressTypeToProto(t AddressType) Entry_AddressType {
@@ -664,7 +670,7 @@ func addressTypeToCatalog(t Entry_AddressType) AddressType {
 func (c *Catalog) CreateEntry(ctx context.Context, repository string, branch string, entry DBEntry, writeConditions ...graveler.WriteConditionOption) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
-	ent := EntryFromCatalogEntry(entry)
+	ent := newEntryFromCatalogEntry(entry)
 	path := Path(entry.Path)
 	if err := Validate([]ValidateArg{
 		{"repositoryID", repositoryID, ValidateRepositoryID},
@@ -1247,6 +1253,12 @@ func newCatalogEntryFromEntry(commonPrefix bool, path string, ent *Entry) DBEntr
 		catEnt.Metadata = ent.Metadata
 		catEnt.Expired = false
 		catEnt.AddressType = addressTypeToCatalog(ent.AddressType)
+		// set content type if missing
+		if ent.ContentType == "" {
+			catEnt.ContentType = DefaultContentType
+		} else {
+			catEnt.ContentType = ent.ContentType
+		}
 	}
 	return catEnt
 }
