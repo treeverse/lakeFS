@@ -18,7 +18,6 @@ import (
 
 var (
 	cfgFile string
-	cfg     *config.Config
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -41,11 +40,18 @@ var initOnce sync.Once
 
 //nolint:gochecknoinits
 func init() {
-	cobra.OnInitialize(func() {
-		initOnce.Do(initConfig)
-	})
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.lakefs.yaml)")
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
+
+func loadConfig() *config.Config {
+	initOnce.Do(initConfig)
+	cfg, err := config.NewConfig()
+	if err != nil {
+		fmt.Println("Failed to load config file", err)
+		os.Exit(1)
+	}
+	return cfg
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -90,7 +96,7 @@ func initConfig() {
 	}
 
 	// setup config used by the executed command
-	cfg, err = config.NewConfig()
+	cfg, err := config.NewConfig()
 	if err != nil {
 		logger.WithError(err).Fatal("Load config")
 	} else {

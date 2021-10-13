@@ -50,6 +50,7 @@ var runCmd = &cobra.Command{
 	Short: "Run lakeFS",
 	Run: func(cmd *cobra.Command, args []string) {
 		logger := logging.Default()
+		cfg := loadConfig()
 		ctx := cmd.Context()
 		logger.WithField("version", version.Version).Info("lakeFS run")
 
