@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"crypto/subtle"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -164,7 +165,7 @@ func (la *LDAPAuthenticator) AuthenticateUser(ctx context.Context, username, pas
 	userConn, err := la.MakeLDAPConn(ctx)
 	if err != nil {
 		logger.WithError(err).Error("Open per-user LDAP connection")
-		return InvalidUserID, fmt.Errorf("LDAP connect for user auth: %w", err)
+		return InvalidUserID, fmt.Errorf("LDAP connect for user auth: %w", err) //nolint:stylecheck
 	}
 	defer userConn.Close()
 	err = userConn.Bind(dn, password)
@@ -181,7 +182,7 @@ func (la *LDAPAuthenticator) AuthenticateUser(ctx context.Context, username, pas
 		return user.ID, nil
 	}
 
-	if err != ErrNotFound {
+	if !errors.Is(err, ErrNotFound) {
 		logger.WithError(err).Info("Could not get user; create them")
 	}
 
@@ -193,16 +194,16 @@ func (la *LDAPAuthenticator) AuthenticateUser(ctx context.Context, username, pas
 	}
 	id, err := la.AuthService.CreateUser(ctx, user)
 	if err != nil {
-		return InvalidUserID, fmt.Errorf("Create backing user for LDAP user %s: %w", dn, err)
+		return InvalidUserID, fmt.Errorf("create backing user for LDAP user %s: %w", dn, err)
 	}
 	_, err = la.AuthService.CreateCredentials(ctx, dn)
 	if err != nil {
-		return InvalidUserID, fmt.Errorf("Create credentials for LDAP user %s: %w", dn, err)
+		return InvalidUserID, fmt.Errorf("create credentials for LDAP user %s: %w", dn, err)
 	}
 
 	err = la.AuthService.AddUserToGroup(ctx, dn, la.DefaultUserGroup)
 	if err != nil {
-		return InvalidUserID, fmt.Errorf("Add newly created LDAP user %s to %s: %s", dn, la.DefaultUserGroup, err)
+		return InvalidUserID, fmt.Errorf("add newly created LDAP user %s to %s: %s", dn, la.DefaultUserGroup, err)
 	}
 	return id, nil
 }
