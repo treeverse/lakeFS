@@ -24,10 +24,12 @@ import {ActionGroup, ActionsBar, Error, Loading, RefreshButton} from "../../../l
 import RefDropdown from "../../../lib/components/repository/refDropdown";
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import {formatAlertText} from "../../../lib/components/repository/errors";
-import {ChangeEntryRow} from "../../../lib/components/repository/changes";
+import {ChangeEntryRow, TreeItem} from "../../../lib/components/repository/changes";
 import {Paginator} from "../../../lib/components/pagination";
 import {useRouter} from "../../../lib/hooks/router";
 import {URINavigator} from "../../../lib/components/repository/tree";
+import ButtonGroup from "react-bootstrap/ButtonGroup";
+import {ToggleButton} from "react-bootstrap";
 
 
 const CommitButton = ({ repo, onCommit, enabled = false }) => {
@@ -150,18 +152,80 @@ const RevertButton =({ onRevert, enabled = false }) => {
 const ChangesBrowser = ({ repo, reference, after, prefix, delimiter, onSelectRef, onPaginate }) => {
     const [actionError, setActionError] = useState(null);
     const [internalRefresh, setInternalRefresh] = useState(true);
+    const [radioValue, setRadioValue] = useState('1');
+    const [delimiterValue, setDelimiterValue] = useState(delimiter);
     const { push } = useRouter();
 
 
     const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
         if (!repo) return
-        return refs.changes(repo.id, reference.id, after, prefix, delimiter)
-    }, [repo.id, reference.id, internalRefresh, after, prefix, delimiter])
+        return refs.changes(repo.id, reference.id, after, prefix, delimiterValue)
+    }, [repo.id, reference.id, internalRefresh, after, prefix, delimiterValue])
 
     const refresh = () => setInternalRefresh(!internalRefresh)
 
     if (!!error) return <Error error={error}/>
     if (loading) return <Loading/>
+
+    const radios = [
+        { name: 'Flat', value: '1' },
+        { name: 'Directory', value: '2' },
+        { name: 'Tree', value: '3' },
+    ];
+
+    let onRevert = async (entry) => {
+        branches
+            .revert(repo.id, reference.id, {type: entry.path_type, path: entry.path})
+            .then(() => {
+                setInternalRefresh(!internalRefresh)
+            })
+            .catch(error => {
+                setActionError(error)
+            })
+    }
+
+    let tablebody;
+    if (radioValue == '3'){
+        tablebody =
+            <tbody>
+            {results.map(entry => (
+                <TreeItem entry={entry} repo={repo} reference={reference} internalReferesh={internalRefresh}
+                          onRevert={onRevert} delimiter={delimiterValue} after={after} relativeTo={""}/>
+            ))}
+        </tbody>
+    } else{
+        tablebody = <tbody>
+        {results.map(entry => (
+            <ChangeEntryRow
+                key={entry.path}
+                entry={entry}
+                relativeTo={prefix}
+                showActions={true}
+                onRevert={(entry) => {
+                    branches
+                        .revert(repo.id, reference.id, {type: entry.path_type, path: entry.path})
+                        .then(() => {
+                            setInternalRefresh(!internalRefresh)
+                        })
+                        .catch(error => {
+                            setActionError(error)
+                        })
+                }}
+                onNavigate={entry => {
+                    return {
+                        pathname: '/repositories/:repoId/changes',
+                        params: {repoId: repo.id},
+                        query: {
+                            delimiter: "/",
+                            prefix: entry.path,
+                            ref: reference.id
+                        }
+                    }
+                }}
+            />
+        ))}
+        </tbody>
+    }
 
     const actionErrorDisplay = (!!actionError) ?
         <Error error={actionError} onDismiss={() => setActionError(null)}/> : <></>
@@ -208,7 +272,7 @@ const ChangesBrowser = ({ repo, reference, after, prefix, delimiter, onSelectRef
                 <Card>
                     <Card.Header>
                         <span className="float-left">
-                            {(delimiter !== "") && (
+                            {(delimiterValue !== "") && (
                                 <URINavigator path={prefix} reference={reference} repo={repo} relativeTo={`${reference.id} workspace`} pathURLBuilder={(params, query) => {
                                     return {
                                         pathname: '/repositories/:repoId/changes',
@@ -220,68 +284,37 @@ const ChangesBrowser = ({ repo, reference, after, prefix, delimiter, onSelectRef
                         </span>
                         <span className="float-right">
                             <Form>
-                                <Form.Switch
-                                    label="Directory View"
-                                    id="changes-directory-view-toggle"
-                                    defaultChecked={(delimiter !== "")}
-                                    onChange={(e) => {
-                                        push({
-                                            pathname: '/repositories/:repoId/changes',
-                                            params: {repoId: repo.id},
-                                            query: {
-                                                ref: reference.id,
-                                                delimiter: (e.target.checked) ? "/" : "",
-                                            }
-                                        })
-                                    }}
-                                />
+                              <ButtonGroup>
+                                {radios.map((radio, idx) => (
+                                    <ToggleButton
+                                        id={`radio-${idx}`}
+                                        type="radio"
+                                        variant="outline-secondary"
+                                        name="radio"
+                                        value={radio.value}
+                                        checked={radioValue === radio.value}
+                                        onChange={(e) => {
+                                            setRadioValue(e.currentTarget.value);
+                                            setDelimiterValue(e.currentTarget.value == '1' ? "" : "/");
+                                        }}
+                                    >
+                                        {radio.name}
+                                    </ToggleButton>
+                                ))}
+                              </ButtonGroup>
                                 </Form>
                         </span>
                     </Card.Header>
                     <Card.Body>
+                        <Table borderless size="sm">
+                            {tablebody}
+                        </Table>
 
-                            <Table borderless size="sm">
-                                <tbody>
-                                {results.map(entry => (
-                                    <ChangeEntryRow
-                                        key={entry.path}
-                                        entry={entry}
-                                        relativeTo={prefix}
-                                        showActions={true}
-                                        onRevert={(entry) => {
-                                            branches
-                                                .revert(repo.id, reference.id, {type: entry.path_type, path: entry.path})
-                                                .then(() => {
-                                                    setInternalRefresh(!internalRefresh)
-                                                })
-                                                .catch(error => {
-                                                    setActionError(error)
-                                                })
-                                        }}
-                                        onNavigate={entry => {
-                                            return {
-                                                pathname: '/repositories/:repoId/changes',
-                                                params: {repoId: repo.id},
-                                                query: {
-                                                    delimiter: "/",
-                                                    prefix: entry.path,
-                                                    ref: reference.id
-                                                }
-                                            }
-                                        }}
-                                    />
-                                ))}
-                                </tbody>
-                            </Table>
-
-
-                            <Paginator onPaginate={onPaginate} nextPage={nextPage} after={after}/>
 
                     </Card.Body>
                 </Card>
                 )}
             </div>
-
         </>
     )
 }

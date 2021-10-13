@@ -183,7 +183,9 @@
   font-size: .9rem;
 }
 
-.diff-removed .tree-path, .diff-removed .tree-path .octicon, .diff-removed .diff-indicator .octicon {
+.diff-removed .tree-path,
+.diff-removed .tree-path .octicon,
+.diff-removed .diff-indicator .octicon {
   color: #808080;
 }
 
@@ -351,4 +353,8 @@ td .form-group {
   padding: 0;
   margin-top: 0;
   border-bottom-width: 0;
+}
+
+.tree-column{
+  width: 2px;
 }
