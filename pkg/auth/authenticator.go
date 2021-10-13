@@ -203,7 +203,7 @@ func (la *LDAPAuthenticator) AuthenticateUser(ctx context.Context, username, pas
 
 	err = la.AuthService.AddUserToGroup(ctx, dn, la.DefaultUserGroup)
 	if err != nil {
-		return InvalidUserID, fmt.Errorf("add newly created LDAP user %s to %s: %s", dn, la.DefaultUserGroup, err)
+		return InvalidUserID, fmt.Errorf("add newly created LDAP user %s to %s: %w", dn, la.DefaultUserGroup, err)
 	}
 	return id, nil
 }

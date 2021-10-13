@@ -20,9 +20,9 @@ const NavUserInfo = () => {
     if (!user || !!error) return (<></>);
     return (
         <Navbar.Collapse className="justify-content-end">
-            <NavDropdown title={user.id} className="navbar-username" alignRight>
+            <NavDropdown title={user.friendly_name || user.id} className="navbar-username" alignRight>
                 <NavDropdown.Header>
-                    Access Key ID: <code>{user.accessKeyId}</code>
+                    User: <code>{user.accessKeyId}</code>
                 </NavDropdown.Header>
 
                 <NavDropdown.Divider/>

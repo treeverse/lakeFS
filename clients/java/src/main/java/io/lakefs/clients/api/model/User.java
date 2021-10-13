@@ -37,6 +37,10 @@ public class User {
   @SerializedName(SERIALIZED_NAME_CREATION_DATE)
   private Long creationDate;
 
+  public static final String SERIALIZED_NAME_FRIENDLY_NAME = "friendly_name";
+  @SerializedName(SERIALIZED_NAME_FRIENDLY_NAME)
+  private String friendlyName;
+
 
   public User id(String id) {
     
@@ -82,6 +86,29 @@ public class User {
   }
 
 
+  public User friendlyName(String friendlyName) {
+    
+    this.friendlyName = friendlyName;
+    return this;
+  }
+
+   /**
+   * Get friendlyName
+   * @return friendlyName
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+
+  public String getFriendlyName() {
+    return friendlyName;
+  }
+
+
+  public void setFriendlyName(String friendlyName) {
+    this.friendlyName = friendlyName;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -92,12 +119,13 @@ public class User {
     }
     User user = (User) o;
     return Objects.equals(this.id, user.id) &&
-        Objects.equals(this.creationDate, user.creationDate);
+        Objects.equals(this.creationDate, user.creationDate) &&
+        Objects.equals(this.friendlyName, user.friendlyName);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, creationDate);
+    return Objects.hash(id, creationDate, friendlyName);
   }
 
   @Override
@@ -106,6 +134,7 @@ public class User {
     sb.append("class User {\n");
     sb.append("    id: ").append(toIndentedString(id)).append("\n");
     sb.append("    creationDate: ").append(toIndentedString(creationDate)).append("\n");
+    sb.append("    friendlyName: ").append(toIndentedString(friendlyName)).append("\n");
     sb.append("}");
     return sb.toString();
   }

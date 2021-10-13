@@ -484,6 +484,8 @@ components:
           type: integer
           format: int64
           description: Unix Epoch in seconds
+        friendly_name:
+          type: string
 
     CurrentUser:
       type: object

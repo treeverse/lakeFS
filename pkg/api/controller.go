@@ -2845,6 +2845,11 @@ func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 	if ok {
 		user.Id = u.Username
 		user.CreationDate = u.CreatedAt.Unix()
+		if u.FriendlyName != nil {
+			user.FriendlyName = u.FriendlyName
+		} else {
+			user.FriendlyName = &u.Username
+		}
 	}
 	response := CurrentUser{
 		User: user,
