@@ -4,7 +4,7 @@ import org.apache.log4j.Logger
 object Sonnets {
   val logger = Logger.getLogger(getClass.getName)
 
-  def main(args: Array[String]): Unit = {
+  def testSonnets(args: Array[String]): Unit = {
     val spark = SparkSession
       .builder()
       .appName("SonnetsApp")

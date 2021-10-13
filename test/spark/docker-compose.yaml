@@ -95,6 +95,7 @@ services:
       - output
       - s3input
       - s3output
+      - s3multipart
       - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID
       - CLIENT_JAR
       - EXPORT_LOCATION
