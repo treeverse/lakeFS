@@ -66,6 +66,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	prefixFile, _ := flags.GetString(PrefixesFileFlagName)
 	baseCommit, _ := flags.GetString(BaseCommitFlagName)
 
+	cfg := loadConfig()
 	ctx := cmd.Context()
 	dbParams := cfg.GetDatabaseParams()
 	dbPool := db.BuildDatabaseConnection(ctx, dbParams)

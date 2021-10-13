@@ -15,6 +15,7 @@ var diagnoseCmd = &cobra.Command{
 	Use:   "diagnose",
 	Short: "Diagnose underlying infrastructure configuration",
 	Run: func(cmd *cobra.Command, args []string) {
+		cfg := loadConfig()
 		ctx := cmd.Context()
 		logger := logging.Default().WithContext(ctx)
 		dbPool := db.BuildDatabaseConnection(ctx, cfg.GetDatabaseParams())

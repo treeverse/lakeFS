@@ -18,6 +18,7 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print current migration version and available version",
 	Run: func(cmd *cobra.Command, args []string) {
+		cfg := loadConfig()
 		ctx := cmd.Context()
 		dbParams := cfg.GetDatabaseParams()
 		dbPool := db.BuildDatabaseConnection(ctx, dbParams)
@@ -40,6 +41,7 @@ var upCmd = &cobra.Command{
 	Use:   "up",
 	Short: "Apply all up migrations",
 	Run: func(cmd *cobra.Command, args []string) {
+		cfg := loadConfig()
 		err := db.MigrateUp(cfg.GetDatabaseParams())
 		if err != nil {
 			fmt.Printf("Failed to setup DB: %s\n", err)
@@ -53,6 +55,7 @@ var gotoCmd = &cobra.Command{
 	Use:   "goto",
 	Short: "Migrate to version V.",
 	Run: func(cmd *cobra.Command, args []string) {
+		cfg := loadConfig()
 		ctx := cmd.Context()
 		version, err := cmd.Flags().GetUint("version")
 		if err != nil {
