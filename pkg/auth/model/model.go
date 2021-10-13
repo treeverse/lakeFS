@@ -25,9 +25,11 @@ type Paginator struct {
 }
 
 type User struct {
-	ID        int       `db:"id"`
-	CreatedAt time.Time `db:"created_at"`
-	Username  string    `db:"display_name" json:"display_name"`
+	ID           int       `db:"id"`
+	CreatedAt    time.Time `db:"created_at"`
+	Username     string    `db:"display_name" json:"display_name"`
+	FriendlyName *string   `db:"friendly_name" json:"friendly_name"`
+	Source       string
 }
 
 // SuperuserConfiguration requests a particular configuration for a superuser.

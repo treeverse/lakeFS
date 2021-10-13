@@ -722,8 +722,10 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body Cre
 		return
 	}
 	u := &model.User{
-		CreatedAt: time.Now().UTC(),
-		Username:  body.Id,
+		CreatedAt:    time.Now().UTC(),
+		Username:     body.Id,
+		FriendlyName: nil,
+		Source:       "internal",
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "create_user")

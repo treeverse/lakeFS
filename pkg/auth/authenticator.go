@@ -186,8 +186,10 @@ func (la *LDAPAuthenticator) AuthenticateUser(ctx context.Context, username, pas
 	}
 
 	user = &model.User{
-		CreatedAt: time.Now(),
-		Username:  dn,
+		CreatedAt:    time.Now(),
+		Username:     dn,
+		FriendlyName: &username,
+		Source:       "ldap",
 	}
 	id, err := la.AuthService.CreateUser(ctx, user)
 	if err != nil {
