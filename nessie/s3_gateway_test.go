@@ -153,7 +153,7 @@ func TestS3MultipartUploadAndDownload(t *testing.T) {
 		completedParts = make([]minio.CompletePart, 0, numParts)
 	)
 
-	for i := 0; i < numParts; i++ {
+	for i := 1; i <= numParts; i++ {
 		// Upload in parallel, to increase rate _and_ chance of confusion.
 		wg.Add(1)
 		go func() {
@@ -201,7 +201,7 @@ func TestS3MultipartUploadAndDownload(t *testing.T) {
 	}
 	defer d.Close()
 	download := bufio.NewReader(d)
-	for i := 0; i < numParts; i++ {
+	for i := 1; i <= numParts; i++ {
 		r := rand.New(rand.NewSource(int64(i)))
 		for j := 0; j < partSizeBytes; j++ {
 			b, err := download.ReadByte()
