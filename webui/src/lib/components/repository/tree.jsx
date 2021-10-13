@@ -23,6 +23,8 @@ import {linkToPath} from "../../api";
 import {ConfirmationModal} from "../modals";
 import {Paginator} from "../pagination";
 import {Link} from "../nav";
+import Form from "react-bootstrap/Form";
+import {useRouter} from "../../hooks/router";
 
 
 const humanSize = (bytes) => {
@@ -284,8 +286,8 @@ const GetStarted = ({ onUpload }) => {
     );
 };
 
-export const Tree = ({ repo, reference, results, after, onPaginate, nextPage, onUpload, onDelete, showActions = false, path = "" }) => {
-
+export const Tree = ({ repo, reference, results, after, onPaginate, nextPage, onUpload, onDelete, showActions = false, path = "", readUncommitted = true }) => {
+    const { push } = useRouter();
     let body;
     if (results.length === 0 && path === "") {
         // empty state!
@@ -317,6 +319,25 @@ export const Tree = ({ repo, reference, results, after, onPaginate, nextPage, on
             <Card>
                 <Card.Header>
                     <URINavigator path={path} repo={repo} reference={reference}/>
+                    {reference.type === 'branch' && <span className="float-right">
+                            <Form>
+                                <Form.Switch
+                                    label="Include uncommitted"
+                                    id="objects-include-uncommitted-toggle"
+                                    defaultChecked={readUncommitted}
+                                    onChange={(e) => {
+                                        push({
+                                            pathname: '/repositories/:repoId/objects',
+                                            params: {repoId: repo.id},
+                                            query: {
+                                                ref: reference.id,
+                                                withWorkspace: e.target.checked ? 1 : 0,
+                                            }
+                                        })
+                                    }}
+                                />
+                            </Form>
+                        </span>}
                 </Card.Header>
                 <Card.Body>
                     {body}

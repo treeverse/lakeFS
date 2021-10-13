@@ -5,11 +5,12 @@ import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
 import Badge from "react-bootstrap/Badge";
 import Overlay from "react-bootstrap/Overlay";
-import {ChevronDownIcon, ChevronRightIcon, ChevronUpIcon, XIcon} from "@primer/octicons-react";
+import {ChevronDownIcon, ChevronRightIcon, ChevronUpIcon, InfoIcon, XIcon} from "@primer/octicons-react";
 import Popover from "react-bootstrap/Popover";
 
 import {branches, commits} from '../../api';
-
+import Tooltip from "react-bootstrap/Tooltip";
+import {OverlayTrigger} from "react-bootstrap";
 
 const BranchSelector = ({ repo, selected, branches, listBranches, selectRef, withCommits, withWorkspace, amount = 300 }) => {
     // used for branch pagination
@@ -147,9 +148,12 @@ const BranchEntry = ({repo, branch, selectRef, selected, logCommits, withCommits
             <div className="actions">
                 {(branch === repo.default_branch) ? (<Badge variant="info">Default</Badge>) : <span/>}
                 {(withCommits) ? (
-                    <Button onClick={logCommits} size="sm" variant="link">
+                    <OverlayTrigger placement="bottom" overlay={<Tooltip id={"tooltip-view-commits"} style={{
+                        fontSize: "0.8rem"
+                    }}>Choose commit from history</Tooltip>}>
+                        <Button onClick={logCommits} size="sm" variant="link">
                         <ChevronRightIcon/>
-                    </Button>
+                    </Button></OverlayTrigger>
                 ) : (<span/>)}
             </div>
         </li>
@@ -203,7 +207,7 @@ const RefDropdown = ({ repo, selected, selectRef, onCancel, variant="light", pre
                         withCommits={withCommits}
                         listBranches={listBranches}
                         withWorkspace={withWorkspace}
-                        selected={selected}
+                        selected={selected.id}
                         selectRef={(ref) => {
                             selectRef(ref);
                             setShow(false);

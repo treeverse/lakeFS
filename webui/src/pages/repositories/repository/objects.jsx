@@ -11,7 +11,7 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 
 import {Tree} from "../../../lib/components/repository/tree";
-import {config, objects} from "../../../lib/api";
+import {config, DEFAULT_LISTING_AMOUNT, objects} from "../../../lib/api";
 import {useAPI, useAPIWithPagination} from "../../../lib/hooks/api";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import {useRouter} from "../../../lib/hooks/router";
@@ -120,9 +120,11 @@ const UploadButton = ({ config, repo, reference, path, onDone, variant = "succes
 }
 
 const TreeContainer = ({ repo, reference, path, after, onPaginate, onRefresh, onUpload, refreshToken }) => {
+    const router = useRouter();
+    const { withWorkspace } = router.query;
     const { results, error, loading, nextPage } = useAPIWithPagination( () => {
-        return objects.list(repo.id, reference.id, path, after)
-    },[repo.id, reference.id, path, after, refreshToken]);
+        return objects.list(repo.id, reference.id, path, after, DEFAULT_LISTING_AMOUNT, withWorkspace !== "0")
+    },[repo.id, reference.id, path, after, refreshToken, withWorkspace]);
     const initialState = {
         inProgress: false,
         error: null,
@@ -143,6 +145,7 @@ const TreeContainer = ({ repo, reference, path, after, onPaginate, onRefresh, on
                 showActions={true}
                 results={results}
                 after={after}
+                readUncommitted={withWorkspace !== "0"}
                 nextPage={nextPage}
                 onPaginate={onPaginate}
                 onUpload={onUpload}
