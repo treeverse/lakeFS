@@ -1,0 +1,2 @@
+-- Keep existing source, friendly_name columns: they may safely be re-used
+-- after we migrate back up.

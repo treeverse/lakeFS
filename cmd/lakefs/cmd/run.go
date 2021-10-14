@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/dlmiddlecote/sqlstats"
+	"github.com/go-ldap/ldap/v3"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/cobra"
@@ -23,6 +24,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/catalog"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/gateway"
 	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
@@ -42,6 +44,34 @@ const (
 
 type Shutter interface {
 	Shutdown(context.Context) error
+}
+
+func newLDAPAuthenticator(cfg *config.LDAP, service auth.Service) *auth.LDAPAuthenticator {
+	group := cfg.DefaultUserGroup
+	if group == "" {
+		group = auth.ViewersGroup
+	}
+	return &auth.LDAPAuthenticator{
+		AuthService:       service,
+		BindDN:            cfg.BindDN,
+		BindPassword:      cfg.BindPassword,
+		DefaultUserGroup:  group,
+		UsernameAttribute: cfg.UsernameAttribute,
+		MakeLDAPConn: func(_ context.Context) (*ldap.Conn, error) {
+			c, err := ldap.DialURL(cfg.ServerEndpoint)
+			if err != nil {
+				return nil, fmt.Errorf("dial %s: %w", cfg.ServerEndpoint, err)
+			}
+			// TODO(ariels): Support StartTLS (& other TLS configuration).
+			return c, nil
+		},
+		BaseSearchRequest: ldap.SearchRequest{
+			BaseDN:     cfg.UserBaseDN,
+			Scope:      ldap.ScopeWholeSubtree,
+			Filter:     cfg.UserFilter,
+			Attributes: []string{cfg.UsernameAttribute},
+		},
+	}
 }
 
 // runCmd represents the run command
@@ -99,6 +129,12 @@ var runCmd = &cobra.Command{
 			dbPool,
 			crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
 			cfg.GetAuthCacheConfig())
+		var authenticator auth.Authenticator = auth.NewBuiltinAuthenticator(authService)
+		ldapConfig := cfg.GetLDAPConfiguration()
+		if ldapConfig != nil {
+			ldapAuthenticator := newLDAPAuthenticator(ldapConfig, authService)
+			authenticator = auth.NewChainAuthenticator(authenticator, ldapAuthenticator)
+		}
 		authMetadataManager := auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
 		blockstoreType := cfg.GetBlockstoreType()
@@ -138,6 +174,7 @@ var runCmd = &cobra.Command{
 		apiHandler := api.Serve(
 			cfg,
 			c,
+			authenticator,
 			authService,
 			blockStore,
 			authMetadataManager,

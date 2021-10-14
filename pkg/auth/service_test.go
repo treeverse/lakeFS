@@ -77,7 +77,7 @@ func setupService(t testing.TB, opts ...testutil.GetDBOption) auth.Service {
 func userWithPolicies(t testing.TB, s auth.Service, policies []*model.Policy) string {
 	ctx := context.Background()
 	userName := uuid.New().String()
-	err := s.CreateUser(ctx, &model.User{
+	_, err := s.CreateUser(ctx, &model.User{
 		Username: userName,
 	})
 	if err != nil {
@@ -494,7 +494,7 @@ func TestDBAuthService_ListUsers(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			s := setupService(t)
 			for _, userName := range testCase.userNames {
-				if err := s.CreateUser(ctx, &model.User{Username: userName}); err != nil {
+				if _, err := s.CreateUser(ctx, &model.User{Username: userName}); err != nil {
 					t.Fatalf("CreateUser(%s): %s", userName, err)
 				}
 			}
@@ -519,7 +519,7 @@ func TestDBAuthService_ListUserCredentials(t *testing.T) {
 	const userName = "accredited"
 	s := setupService(t)
 	ctx := context.Background()
-	if err := s.CreateUser(ctx, &model.User{Username: userName}); err != nil {
+	if _, err := s.CreateUser(ctx, &model.User{Username: userName}); err != nil {
 		t.Fatalf("CreateUser(%s): %s", userName, err)
 	}
 	credential, err := s.CreateCredentials(ctx, userName)
@@ -597,7 +597,7 @@ func TestDbAuthService_GetUser(t *testing.T) {
 	// Time should *not* have nanoseconds - otherwise we are comparing accuracy of golang
 	// and Postgres time storage.
 	ts := time.Date(2222, 2, 22, 22, 22, 22, 0, time.UTC)
-	if err := s.CreateUser(ctx, &model.User{Username: userName, ID: -22, CreatedAt: ts}); err != nil {
+	if _, err := s.CreateUser(ctx, &model.User{Username: userName, ID: -22, CreatedAt: ts}); err != nil {
 		t.Fatalf("CreateUser(%s): %s", userName, err)
 	}
 	user, err := s.GetUser(ctx, userName)
@@ -622,7 +622,7 @@ func TestDbAuthService_AddCredentials(t *testing.T) {
 	// Time should *not* have nanoseconds - otherwise we are comparing accuracy of golang
 	// and Postgres time storage.
 	ts := time.Date(2222, 2, 22, 22, 22, 22, 0, time.UTC)
-	if err := s.CreateUser(ctx, &model.User{Username: userName, ID: -22, CreatedAt: ts}); err != nil {
+	if _, err := s.CreateUser(ctx, &model.User{Username: userName, ID: -22, CreatedAt: ts}); err != nil {
 		t.Fatalf("CreateUser(%s): %s", userName, err)
 	}
 
@@ -676,7 +676,7 @@ func TestDbAuthService_GetUserById(t *testing.T) {
 	// Time should *not* have nanoseconds - otherwise we are comparing accuracy of golang
 	// and Postgres time storage.
 	ts := time.Date(2222, 2, 22, 22, 22, 22, 0, time.UTC)
-	if err := s.CreateUser(ctx, &model.User{Username: userName, ID: -22, CreatedAt: ts}); err != nil {
+	if _, err := s.CreateUser(ctx, &model.User{Username: userName, ID: -22, CreatedAt: ts}); err != nil {
 		t.Fatalf("CreateUser(%s): %s", userName, err)
 	}
 	user, err := s.GetUser(ctx, userName)
@@ -696,7 +696,7 @@ func TestDBAuthService_DeleteUser(t *testing.T) {
 	s := setupService(t)
 	const userName = "foo"
 	ctx := context.Background()
-	if err := s.CreateUser(ctx, &model.User{Username: userName}); err != nil {
+	if _, err := s.CreateUser(ctx, &model.User{Username: userName}); err != nil {
 		t.Fatalf("CreateUser(%s): %s", userName, err)
 	}
 	_, err := s.GetUser(ctx, userName)
