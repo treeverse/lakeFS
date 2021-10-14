@@ -62,7 +62,6 @@ func ClientUpload(ctx context.Context, client api.ClientWithResponsesInterface, 
 		}
 		if resp.StatusCode() == http.StatusOK {
 			return resp.JSON200, nil
-
 		}
 		if resp.JSON409 == nil {
 			return nil, fmt.Errorf("link object to backing store: %w (status code %d)", ErrRequestFailed, resp.StatusCode())
