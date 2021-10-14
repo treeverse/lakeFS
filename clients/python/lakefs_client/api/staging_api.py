@@ -23,6 +23,7 @@ from lakefs_client.model_utils import (  # noqa: F401
     validate_and_convert_types
 )
 from lakefs_client.model.error import Error
+from lakefs_client.model.object_stats import ObjectStats
 from lakefs_client.model.staging_location import StagingLocation
 from lakefs_client.model.staging_metadata import StagingMetadata
 
@@ -224,7 +225,7 @@ class StagingApi(object):
                 async_req (bool): execute request asynchronously
 
             Returns:
-                None
+                ObjectStats
                     If the method is called asynchronously, returns the request
                     thread.
             """
@@ -259,7 +260,7 @@ class StagingApi(object):
 
         self.link_physical_address = _Endpoint(
             settings={
-                'response_type': None,
+                'response_type': (ObjectStats,),
                 'auth': [
                     'basic_auth',
                     'cookie_auth',

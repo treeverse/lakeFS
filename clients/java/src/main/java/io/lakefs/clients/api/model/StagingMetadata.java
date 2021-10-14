@@ -50,6 +50,10 @@ public class StagingMetadata {
   @SerializedName(SERIALIZED_NAME_USER_METADATA)
   private Map<String, String> userMetadata = null;
 
+  public static final String SERIALIZED_NAME_CONTENT_TYPE = "content_type";
+  @SerializedName(SERIALIZED_NAME_CONTENT_TYPE)
+  private String contentType;
+
 
   public StagingMetadata staging(StagingLocation staging) {
     
@@ -148,6 +152,29 @@ public class StagingMetadata {
   }
 
 
+  public StagingMetadata contentType(String contentType) {
+    
+    this.contentType = contentType;
+    return this;
+  }
+
+   /**
+   * Object media type
+   * @return contentType
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "Object media type")
+
+  public String getContentType() {
+    return contentType;
+  }
+
+
+  public void setContentType(String contentType) {
+    this.contentType = contentType;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -160,12 +187,13 @@ public class StagingMetadata {
     return Objects.equals(this.staging, stagingMetadata.staging) &&
         Objects.equals(this.checksum, stagingMetadata.checksum) &&
         Objects.equals(this.sizeBytes, stagingMetadata.sizeBytes) &&
-        Objects.equals(this.userMetadata, stagingMetadata.userMetadata);
+        Objects.equals(this.userMetadata, stagingMetadata.userMetadata) &&
+        Objects.equals(this.contentType, stagingMetadata.contentType);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(staging, checksum, sizeBytes, userMetadata);
+    return Objects.hash(staging, checksum, sizeBytes, userMetadata, contentType);
   }
 
   @Override
@@ -176,6 +204,7 @@ public class StagingMetadata {
     sb.append("    checksum: ").append(toIndentedString(checksum)).append("\n");
     sb.append("    sizeBytes: ").append(toIndentedString(sizeBytes)).append("\n");
     sb.append("    userMetadata: ").append(toIndentedString(userMetadata)).append("\n");
+    sb.append("    contentType: ").append(toIndentedString(contentType)).append("\n");
     sb.append("}");
     return sb.toString();
   }

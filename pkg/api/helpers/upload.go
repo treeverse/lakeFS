@@ -9,7 +9,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"time"
 )
 
 // ClientUpload uploads contents as a file using client-side ("direct") access to underlying
@@ -62,18 +61,8 @@ func ClientUpload(ctx context.Context, client api.ClientWithResponsesInterface, 
 			return nil, fmt.Errorf("link object to backing store: %w", err)
 		}
 		if resp.StatusCode() == http.StatusOK {
-			return &api.ObjectStats{
-				Checksum: stats.ETag,
-				// BUG(ariels): Unavailable on S3, remove this field entirely
-				//     OR add it to the server staging manager API.
-				Mtime:           time.Now().Unix(),
-				Path:            filePath,
-				PathType:        "object",
-				PhysicalAddress: physicalAddress,
-				SizeBytes:       &stats.Size,
-				// TODO(barak): handle content type by caller (client in this case)
-				ContentType: api.StringPtr(contentType),
-			}, nil
+			return resp.JSON200, nil
+
 		}
 		if resp.JSON409 == nil {
 			return nil, fmt.Errorf("link object to backing store: %w (status code %d)", ErrRequestFailed, resp.StatusCode())

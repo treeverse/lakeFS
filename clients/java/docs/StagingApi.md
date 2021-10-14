@@ -93,7 +93,7 @@ Name | Type | Description  | Notes
 
 <a name="linkPhysicalAddress"></a>
 # **linkPhysicalAddress**
-> linkPhysicalAddress(repository, branch, path, stagingMetadata)
+> ObjectStats linkPhysicalAddress(repository, branch, path, stagingMetadata)
 
 associate staging on this physical address with a path
 
@@ -135,7 +135,8 @@ public class Example {
     String path = "path_example"; // String | 
     StagingMetadata stagingMetadata = new StagingMetadata(); // StagingMetadata | 
     try {
-      apiInstance.linkPhysicalAddress(repository, branch, path, stagingMetadata);
+      ObjectStats result = apiInstance.linkPhysicalAddress(repository, branch, path, stagingMetadata);
+      System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling StagingApi#linkPhysicalAddress");
       System.err.println("Status code: " + e.getCode());
@@ -158,7 +159,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-null (empty response body)
+[**ObjectStats**](ObjectStats.md)
 
 ### Authorization
 
@@ -172,7 +173,7 @@ null (empty response body)
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**200** | successfully linked |  -  |
+**200** | object metadata |  -  |
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
 **404** | Internal Server Error |  -  |

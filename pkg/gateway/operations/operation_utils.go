@@ -33,23 +33,18 @@ func amzMetaWriteHeaders(w http.ResponseWriter, metadata catalog.Metadata) {
 }
 
 func (o *PathOperation) finishUpload(req *http.Request, checksum, physicalAddress string, size int64, relative bool, metadata map[string]string, contentType string) error {
-	addressType := catalog.AddressTypeRelative
-	if !relative {
-		addressType = catalog.AddressTypeFull
-	}
-
 	// write metadata
 	writeTime := time.Now()
-	entry := catalog.DBEntry{
-		Path:            o.Path,
-		PhysicalAddress: physicalAddress,
-		AddressType:     addressType,
-		Checksum:        checksum,
-		Metadata:        metadata,
-		Size:            size,
-		CreationDate:    writeTime,
-		ContentType:     contentType,
-	}
+	entry := catalog.NewDBEntryBuilder().
+		Path(o.Path).
+		RelativeAddress(relative).
+		PhysicalAddress(physicalAddress).
+		Checksum(checksum).
+		Metadata(metadata).
+		Size(size).
+		CreationDate(writeTime).
+		ContentType(contentType).
+		Build()
 
 	err := o.Catalog.CreateEntry(req.Context(), o.Repository.Name, o.Reference, entry)
 	if err != nil {

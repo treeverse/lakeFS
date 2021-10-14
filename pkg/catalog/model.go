@@ -108,3 +108,85 @@ func (j *Metadata) Scan(src interface{}) error {
 	}
 	return json.Unmarshal(data, j)
 }
+
+func ContentTypeOrDefault(ct string) string {
+	if ct == "" {
+		return DefaultContentType
+	}
+	return ct
+}
+
+// DBEntryBuilder DBEntry builder
+type DBEntryBuilder struct {
+	dbEntry DBEntry
+}
+
+func NewDBEntryBuilder() *DBEntryBuilder {
+	return &DBEntryBuilder{}
+}
+
+func (b *DBEntryBuilder) CommonLevel(commonLevel bool) *DBEntryBuilder {
+	b.dbEntry.CommonLevel = commonLevel
+	return b
+}
+
+func (b *DBEntryBuilder) Path(path string) *DBEntryBuilder {
+	b.dbEntry.Path = path
+	return b
+}
+
+func (b *DBEntryBuilder) RelativeAddress(relative bool) *DBEntryBuilder {
+	if relative {
+		b.dbEntry.AddressType = AddressTypeRelative
+	} else {
+		b.dbEntry.AddressType = AddressTypeFull
+	}
+	return b
+}
+
+func (b *DBEntryBuilder) PhysicalAddress(physicalAddress string) *DBEntryBuilder {
+	b.dbEntry.PhysicalAddress = physicalAddress
+	return b
+}
+
+func (b *DBEntryBuilder) CreationDate(creationDate time.Time) *DBEntryBuilder {
+	b.dbEntry.CreationDate = creationDate
+	return b
+}
+
+func (b *DBEntryBuilder) Size(size int64) *DBEntryBuilder {
+	b.dbEntry.Size = size
+	return b
+}
+
+func (b *DBEntryBuilder) Checksum(checksum string) *DBEntryBuilder {
+	b.dbEntry.Checksum = checksum
+	return b
+}
+
+func (b *DBEntryBuilder) Metadata(metadata Metadata) *DBEntryBuilder {
+	b.dbEntry.Metadata = metadata
+	return b
+}
+
+func (b *DBEntryBuilder) Expired(expired bool) *DBEntryBuilder {
+	b.dbEntry.Expired = expired
+	return b
+}
+
+func (b *DBEntryBuilder) AddressType(addressType AddressType) *DBEntryBuilder {
+	b.dbEntry.AddressType = addressType
+	return b
+}
+
+func (b *DBEntryBuilder) ContentType(contentType string) *DBEntryBuilder {
+	b.dbEntry.ContentType = contentType
+	return b
+}
+
+func (b *DBEntryBuilder) Build() DBEntry {
+	if !b.dbEntry.CommonLevel && b.dbEntry.ContentType == "" {
+		b.dbEntry.ContentType = DefaultContentType
+	}
+	return b.dbEntry
+}

@@ -214,21 +214,19 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	// Because CreateEntry tracks staging on a database with atomic operations,
 	// _ignore_ the staging token here: no harm done even if a race was lost
 	// against a commit.
-	var metadata catalog.Metadata
+	entryBuilder := catalog.NewDBEntryBuilder().
+		CommonLevel(false).
+		Path(params.Path).
+		PhysicalAddress(*body.Staging.PhysicalAddress).
+		AddressType(catalog.AddressTypeFull).
+		CreationDate(writeTime).
+		Size(body.SizeBytes).
+		Checksum(body.Checksum).
+		ContentType(StringValue(body.ContentType))
 	if body.UserMetadata != nil {
-		metadata = body.UserMetadata.AdditionalProperties
+		entryBuilder.Metadata(body.UserMetadata.AdditionalProperties)
 	}
-	entry := catalog.DBEntry{
-		CommonLevel:     false,
-		Path:            params.Path,
-		PhysicalAddress: *body.Staging.PhysicalAddress,
-		AddressType:     catalog.AddressTypeFull,
-		CreationDate:    writeTime,
-		Size:            body.SizeBytes,
-		Checksum:        body.Checksum,
-		Metadata:        metadata,
-		ContentType:     StringValue(body.ContentType),
-	}
+	entry := entryBuilder.Build()
 
 	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry)
 	if errors.Is(err, catalog.ErrNotFound) {
@@ -240,7 +238,19 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	writeResponse(w, http.StatusOK, nil)
+	metadata := ObjectUserMetadata{AdditionalProperties: entry.Metadata}
+	response := ObjectStats{
+		Checksum:        entry.Checksum,
+		ContentType:     StringPtr(entry.ContentType),
+		Metadata:        &metadata,
+		Mtime:           entry.CreationDate.Unix(),
+		Path:            entry.Path,
+		PathType:        entryTypeObject,
+		PhysicalAddress: entry.PhysicalAddress,
+		SizeBytes:       Int64Ptr(entry.Size),
+	}
+
+	writeResponse(w, http.StatusOK, response)
 }
 
 func (c *Controller) ListGroups(w http.ResponseWriter, r *http.Request, params ListGroupsParams) {
@@ -1756,22 +1766,21 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		return
 	}
 
-	addressType := catalog.AddressTypeFull
-	if blob.RelativePath {
-		addressType = catalog.AddressTypeRelative
-	}
-
 	// write metadata
 	writeTime := time.Now()
-	entry := catalog.DBEntry{
-		Path:            params.Path,
-		PhysicalAddress: blob.PhysicalAddress,
-		AddressType:     addressType,
-		CreationDate:    writeTime,
-		Size:            blob.Size,
-		Checksum:        blob.Checksum,
-		ContentType:     contentType,
+	entryBuilder := catalog.NewDBEntryBuilder().
+		Path(params.Path).
+		PhysicalAddress(blob.PhysicalAddress).
+		CreationDate(writeTime).
+		Size(blob.Size).
+		Checksum(blob.Checksum).
+		ContentType(contentType)
+	if blob.RelativePath {
+		entryBuilder.AddressType(catalog.AddressTypeRelative)
+	} else {
+		entryBuilder.AddressType(catalog.AddressTypeFull)
 	}
+	entry := entryBuilder.Build()
 
 	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, graveler.IfAbsent(!allowOverwrite))
 	if errors.Is(err, graveler.ErrPreconditionFailed) {
@@ -1843,19 +1852,19 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body St
 		writeTime = time.Unix(*body.Mtime, 0)
 	}
 
-	entry := catalog.DBEntry{
-		CommonLevel:     false,
-		Path:            params.Path,
-		PhysicalAddress: body.PhysicalAddress,
-		AddressType:     catalog.AddressTypeFull,
-		CreationDate:    writeTime,
-		Size:            body.SizeBytes,
-		Checksum:        body.Checksum,
-		ContentType:     StringValue(body.ContentType),
-	}
+	entryBuilder := catalog.NewDBEntryBuilder().
+		CommonLevel(false).
+		Path(params.Path).
+		PhysicalAddress(body.PhysicalAddress).
+		AddressType(catalog.AddressTypeFull).
+		CreationDate(writeTime).
+		Size(body.SizeBytes).
+		Checksum(body.Checksum).
+		ContentType(StringValue(body.ContentType))
 	if body.Metadata != nil {
-		entry.Metadata = body.Metadata.AdditionalProperties
+		entryBuilder.Metadata(body.Metadata.AdditionalProperties)
 	}
+	entry := entryBuilder.Build()
 
 	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry)
 	if handleAPIError(w, err) {
