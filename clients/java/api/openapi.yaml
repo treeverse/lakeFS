@@ -4680,6 +4680,7 @@ components:
       type: object
     User:
       example:
+        friendly_name: friendly_name
         id: id
         creation_date: 0
       properties:
@@ -4689,6 +4690,8 @@ components:
           description: Unix Epoch in seconds
           format: int64
           type: integer
+        friendly_name:
+          type: string
       required:
       - creation_date
       - id
@@ -4696,6 +4699,7 @@ components:
     CurrentUser:
       example:
         user:
+          friendly_name: friendly_name
           id: id
           creation_date: 0
       properties:
@@ -4850,9 +4854,11 @@ components:
           next_offset: next_offset
           results: 0
         results:
-        - id: id
+        - friendly_name: friendly_name
+          id: id
           creation_date: 0
-        - id: id
+        - friendly_name: friendly_name
+          id: id
           creation_date: 0
       properties:
         pagination:

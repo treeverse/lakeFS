@@ -10,6 +10,13 @@ import (
 	"github.com/treeverse/lakefs/pkg/permissions"
 )
 
+const (
+	AdminsGroup     = "Admins"
+	SuperUsersGroup = "SuperUsers"
+	DevelopersGroup = "Developers"
+	ViewersGroup    = "Viewers"
+)
+
 func createGroups(ctx context.Context, authService Service, groups []*model.Group) error {
 	for _, group := range groups {
 		err := authService.CreateGroup(ctx, group)
@@ -44,10 +51,10 @@ func SetupBaseGroups(ctx context.Context, authService Service, ts time.Time) err
 	var err error
 
 	err = createGroups(ctx, authService, []*model.Group{
-		{CreatedAt: ts, DisplayName: "Admins"},
-		{CreatedAt: ts, DisplayName: "SuperUsers"},
-		{CreatedAt: ts, DisplayName: "Developers"},
-		{CreatedAt: ts, DisplayName: "Viewers"},
+		{CreatedAt: ts, DisplayName: AdminsGroup},
+		{CreatedAt: ts, DisplayName: SuperUsersGroup},
+		{CreatedAt: ts, DisplayName: DevelopersGroup},
+		{CreatedAt: ts, DisplayName: ViewersGroup},
 	})
 	if err != nil {
 		return err
@@ -231,7 +238,8 @@ func AddAdminUser(ctx context.Context, authService Service, user *model.Superuse
 	}
 
 	// create admin user
-	err = authService.CreateUser(ctx, &user.User)
+	user.Source = "internal"
+	_, err = authService.CreateUser(ctx, &user.User)
 	if err != nil {
 		return nil, fmt.Errorf("create user - %w", err)
 	}

@@ -34,6 +34,17 @@ func (s *SecureString) String() string {
 	return string(*s)
 }
 
+// LDAP holds configuration for authenticating on an LDAP server.
+type LDAP struct {
+	ServerEndpoint    string `mapstructure:"server_endpoint"`
+	BindDN            string `mapstructure:"bind_dn"`
+	BindPassword      string `mapstructure:"bind_password"`
+	DefaultUserGroup  string `mapstructure:"default_user_group"`
+	UsernameAttribute string `mapstructure:"username_attribute"`
+	UserBaseDN        string `mapstructure:"user_base_dn"`
+	UserFilter        string `mapstructure:"user_filter"`
+}
+
 // S3AuthInfo holds S3-style authentication.
 type S3AuthInfo struct {
 	CredentialsFile string `mapstructure:"credentials_file"`
@@ -78,6 +89,8 @@ type configuration struct {
 		Encrypt struct {
 			SecretKey SecureString `mapstructure:"secret_key" validate:"required"`
 		}
+
+		LDAP *LDAP
 	}
 	Blockstore struct {
 		Type  string `validate:"required"`
