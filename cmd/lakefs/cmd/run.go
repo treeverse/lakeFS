@@ -46,7 +46,7 @@ type Shutter interface {
 	Shutdown(context.Context) error
 }
 
-func makeLDAPAuthenticator(cfg *config.LDAP, service auth.Service) *auth.LDAPAuthenticator {
+func newLDAPAuthenticator(cfg *config.LDAP, service auth.Service) *auth.LDAPAuthenticator {
 	group := cfg.DefaultUserGroup
 	if group == "" {
 		group = auth.ViewersGroup
@@ -65,7 +65,7 @@ func makeLDAPAuthenticator(cfg *config.LDAP, service auth.Service) *auth.LDAPAut
 			// TODO(ariels): Support StartTLS (& other TLS configuration).
 			return c, nil
 		},
-		BaseSearchRequest: &ldap.SearchRequest{
+		BaseSearchRequest: ldap.SearchRequest{
 			BaseDN:     cfg.UserBaseDN,
 			Scope:      ldap.ScopeWholeSubtree,
 			Filter:     cfg.UserFilter,
@@ -131,7 +131,7 @@ var runCmd = &cobra.Command{
 		var authenticator auth.Authenticator = auth.NewBuiltinAuthenticator(authService)
 		ldapConfig := cfg.GetLDAPConfiguration()
 		if ldapConfig != nil {
-			ldapAuthenticator := makeLDAPAuthenticator(ldapConfig, authService)
+			ldapAuthenticator := newLDAPAuthenticator(ldapConfig, authService)
 			authenticator = auth.NewChainAuthenticator(authenticator, ldapAuthenticator)
 		}
 		authMetadataManager := auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)

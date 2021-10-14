@@ -39,12 +39,15 @@ func NewChainAuthenticator(auth ...Authenticator) Authenticator {
 type ChainAuthenticator []Authenticator
 
 func (ca ChainAuthenticator) AuthenticateUser(ctx context.Context, username, password string) (int, error) {
-	var err error
+	var (
+		err error
+		id  int
+	)
 	logger := logging.FromContext(ctx).WithField("username", username)
 	for _, a := range ca {
-		id, err := a.AuthenticateUser(ctx, username, password)
+		id, err = a.AuthenticateUser(ctx, username, password)
 		if err == nil {
-			return id, err
+			return id, nil
 		}
 		// TODO(ariels): Add authenticator ID here.
 		logger.WithError(err).Info("Failed to authenticate user")
@@ -82,7 +85,7 @@ type LDAPAuthenticator struct {
 	MakeLDAPConn      func(ctx context.Context) (*ldap.Conn, error)
 	BindDN            string
 	BindPassword      string
-	BaseSearchRequest *ldap.SearchRequest
+	BaseSearchRequest ldap.SearchRequest
 	UsernameAttribute string
 	DefaultUserGroup  string
 
@@ -115,7 +118,7 @@ func (la *LDAPAuthenticator) getControlConnection(ctx context.Context) (*ldap.Co
 // inBrackets returns filter (which should already be properly escaped)
 // enclosed in brackets if it does not start with open brackets.
 func inBrackets(filter string) string {
-	filter = strings.TrimPrefix(filter, " \t\n\r")
+	filter = strings.TrimLeft(filter, " \t\n\r")
 	if filter == "" {
 		return filter
 	}
@@ -134,12 +137,12 @@ func (la *LDAPAuthenticator) AuthenticateUser(ctx context.Context, username, pas
 		return InvalidUserID, fmt.Errorf("LDAP bind control: %w", err)
 	}
 
-	searchRequest := *la.BaseSearchRequest
+	searchRequest := la.BaseSearchRequest
 	searchRequest.Filter = fmt.Sprintf("(&(%s=%s)%s)", la.UsernameAttribute, ldap.EscapeFilter(username), inBrackets(searchRequest.Filter))
 
 	res, err := controlConn.SearchWithPaging(&searchRequest, 2)
 	if err != nil {
-		logger.WithError(err).Warn("Failed to search for DN by username")
+		logger.WithError(err).Error("Failed to search for DN by username")
 		return InvalidUserID, fmt.Errorf("LDAP find user %s: %w", username, err)
 	}
 	if logger.IsTracing() {
@@ -148,7 +151,7 @@ func (la *LDAPAuthenticator) AuthenticateUser(ctx context.Context, username, pas
 		}
 	}
 	if len(res.Entries) == 0 {
-		logger.WithError(err).Warn("No users found")
+		logger.WithError(err).Debug("No users found")
 		return InvalidUserID, fmt.Errorf("LDAP find user %s: %w", username, ErrNotFound)
 	}
 	if len(res.Entries) > 1 {
@@ -170,7 +173,7 @@ func (la *LDAPAuthenticator) AuthenticateUser(ctx context.Context, username, pas
 	defer userConn.Close()
 	err = userConn.Bind(dn, password)
 	if err != nil {
-		logger.WithError(err).Warn("Failed to bind user")
+		logger.WithError(err).Debug("Failed to bind user")
 		return InvalidUserID, fmt.Errorf("user auth failed: %w", err)
 	}
 
