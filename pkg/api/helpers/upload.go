@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net/http"
 	"net/url"
 )
 
@@ -24,7 +23,7 @@ func ClientUpload(ctx context.Context, client api.ClientWithResponsesInterface, 
 	if resp.JSONDefault != nil {
 		return nil, fmt.Errorf("%w: %s", ErrRequestFailed, resp.JSONDefault.Message)
 	}
-	if resp.StatusCode() != http.StatusOK {
+	if resp.JSON200 == nil {
 		return nil, fmt.Errorf("%w: %s (status code %d)", ErrRequestFailed, resp.Status(), resp.StatusCode())
 	}
 
@@ -55,12 +54,12 @@ func ClientUpload(ctx context.Context, client api.ClientWithResponsesInterface, 
 			UserMetadata: &api.StagingMetadata_UserMetadata{
 				AdditionalProperties: metadata,
 			},
-			ContentType: api.StringPtr(contentType),
+			ContentType: &contentType,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("link object to backing store: %w", err)
 		}
-		if resp.StatusCode() == http.StatusOK {
+		if resp.JSON200 != nil {
 			return resp.JSON200, nil
 		}
 		if resp.JSON409 == nil {

@@ -1809,7 +1809,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		PathType:        entryTypeObject,
 		PhysicalAddress: qk.Format(),
 		SizeBytes:       Int64Ptr(blob.Size),
-		ContentType:     StringPtr(contentType),
+		ContentType:     &contentType,
 	}
 	writeResponse(w, http.StatusCreated, response)
 }
@@ -1877,7 +1877,7 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body St
 		PathType:        entryTypeObject,
 		PhysicalAddress: qk.Format(),
 		SizeBytes:       Int64Ptr(entry.Size),
-		ContentType:     StringPtr(entry.ContentType),
+		ContentType:     &entry.ContentType,
 	}
 	writeResponse(w, http.StatusCreated, response)
 }
@@ -2537,7 +2537,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 				PhysicalAddress: qk.Format(),
 				PathType:        entryTypeObject,
 				SizeBytes:       Int64Ptr(entry.Size),
-				ContentType:     StringPtr(entry.ContentType),
+				ContentType:     &entry.ContentType,
 			}
 			if (params.UserMetadata == nil || *params.UserMetadata) && entry.Metadata != nil {
 				objStat.Metadata = &ObjectUserMetadata{AdditionalProperties: entry.Metadata}
@@ -2594,7 +2594,7 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 		PathType:        entryTypeObject,
 		PhysicalAddress: qk.Format(),
 		SizeBytes:       Int64Ptr(entry.Size),
-		ContentType:     StringPtr(entry.ContentType),
+		ContentType:     &entry.ContentType,
 	}
 	if (params.UserMetadata == nil || *params.UserMetadata) && entry.Metadata != nil {
 		objStat.Metadata = &ObjectUserMetadata{AdditionalProperties: entry.Metadata}

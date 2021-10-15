@@ -279,7 +279,7 @@ var fsStageCmd = &cobra.Command{
 			Mtime:           mtime,
 			PhysicalAddress: location,
 			SizeBytes:       size,
-			ContentType:     api.StringPtr(contentType),
+			ContentType:     &contentType,
 		}
 		if metaErr == nil {
 			metadata := api.ObjectUserMetadata{
@@ -333,13 +333,13 @@ func init() {
 	fsUploadCmd.Flags().BoolP("recursive", "r", false, "recursively copy all files under local source")
 	fsUploadCmd.Flags().BoolP("direct", "d", false, "write directly to backing store (faster but requires more credentials)")
 	_ = fsUploadCmd.MarkFlagRequired("source")
-	fsUploadCmd.Flags().StringP("content-type", "", "", "MIME type describing the format of the contents")
+	fsUploadCmd.Flags().StringP("content-type", "", "", "MIME type of contents")
 
 	fsStageCmd.Flags().String("location", "", "fully qualified storage location (i.e. \"s3://bucket/path/to/object\")")
 	fsStageCmd.Flags().Int64("size", 0, "Object size in bytes")
 	fsStageCmd.Flags().String("checksum", "", "Object MD5 checksum as a hexadecimal string")
 	fsStageCmd.Flags().Int64("mtime", 0, "Object modified time (Unix Epoch in seconds). Defaults to current time")
-	fsStageCmd.Flags().String("content-type", "", "MIME type describing the format of the contents")
+	fsStageCmd.Flags().String("content-type", "", "MIME type of contents")
 	fsStageCmd.Flags().StringSlice("meta", []string{}, "key value pairs in the form of key=value")
 	_ = fsStageCmd.MarkFlagRequired("location")
 	_ = fsStageCmd.MarkFlagRequired("size")
