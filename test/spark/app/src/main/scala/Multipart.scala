@@ -1,4 +1,6 @@
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.rdd.RDD
+import org.apache.spark.sql._
+import org.apache.spark
 import org.apache.log4j.Logger
 
 object Multipart {
@@ -7,12 +9,25 @@ object Multipart {
 
   val logger = Logger.getLogger(getClass.getName)
 
+  def makeCountShards(shards: DataFrame, start: Int, end: Int, numShards: Int): DataFrame = {
+    // Generate a BIG dataframe.  Just (tenChars to
+    // tenChars+numElements).toDF will blow up allocating everything on the
+    // one driver, so generate it in shards.
+    implicit val enc: Encoder[Int] = Encoders.scalaInt
+    val num = end - start
+    def makeShard(n: Int): TraversableOnce[Int] = {
+      val s = num.toLong * n / numShards
+      val e = math.min(end, num.toLong * (n+1) / numShards)
+      (s.toInt to e.toInt)
+    }
+    shards.flatMap((row) => makeShard(row.getInt(0))).toDF
+  }
+
   def testMultipart(outputPath: String): Unit = {
     val spark = SparkSession
       .builder()
       .appName("MultipartApp")
       .getOrCreate()
-
     import spark.implicits._
 
     val sc = spark.sparkContext
@@ -21,8 +36,13 @@ object Multipart {
 
     val tenChars = 1000000000
     val numElements = 3*partSizeBytes
-    val count = tenChars to tenChars + numElements - 1 // Each such int is >= 11 chars in CSV
-    val df = count.toDF
+    val numShards = 10000
+    val numElementsPerShard = numElements / numShards
+
+    val start = tenChars
+    var end = tenChars + numElements - 1
+    val shards = (start to end by numShards).toDF
+    val df = makeCountShards(shards, start, end, numShards)
 
     df.repartition(3).write.format("csv").save(outputPath)
 
