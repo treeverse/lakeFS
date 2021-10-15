@@ -168,7 +168,7 @@ func uploadObject(ctx context.Context, client api.ClientWithResponsesInterface, 
 		const fieldName = "content"
 		var err error
 		var cw io.Writer
-		// when no content-type is specified we let 'CreateFromFile' to add the part with the default content type.
+		// when no content-type is specified we let 'CreateFromFile' add the part with the default content type.
 		// otherwise, we add a part and set the content-type.
 		if contentType != "" {
 			h := make(textproto.MIMEHeader)
