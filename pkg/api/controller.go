@@ -241,7 +241,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	metadata := ObjectUserMetadata{AdditionalProperties: entry.Metadata}
 	response := ObjectStats{
 		Checksum:        entry.Checksum,
-		ContentType:     StringPtr(entry.ContentType),
+		ContentType:     &entry.ContentType,
 		Metadata:        &metadata,
 		Mtime:           entry.CreationDate.Unix(),
 		Path:            entry.Path,
