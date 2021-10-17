@@ -4,6 +4,7 @@
 ## Unreleased - XXXX-XX-XX
 
 - Add support for LDAP authentication (#2058).
+- Support entry content-type (#2296).
 
 ## v0.52.2 - 2021-10-10
 - Fix nil panic for missing configuration of Airflow hook (#2533)
