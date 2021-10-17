@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"net/textproto"
 	"os"
 	"path"
 	"path/filepath"
@@ -24,12 +25,15 @@ Size: {{ .SizeBytes }} bytes
 Human Size: {{ .SizeBytes|human_bytes }}
 Physical Address: {{ .PhysicalAddress }}
 Checksum: {{ .Checksum }}
+Content-Type: {{ .ContentType }}
 `
 
 const fsRecursiveTemplate = `Files: {{.Count}}
 Total Size: {{.Bytes}} bytes
 Human Total Size: {{.Bytes|human_bytes}}
 `
+
+var quoteEscaper = strings.NewReplacer("\\", "\\\\", `"`, "\\\"")
 
 var fsStatCmd = &cobra.Command{
 	Use:   "stat <path uri>",
@@ -136,26 +140,44 @@ var fsCatCmd = &cobra.Command{
 	},
 }
 
-func upload(ctx context.Context, client api.ClientWithResponsesInterface, sourcePathname string, destURI *uri.URI, direct bool) (*api.ObjectStats, error) {
+func escapeQuotes(s string) string {
+	return quoteEscaper.Replace(s)
+}
+
+func upload(ctx context.Context, client api.ClientWithResponsesInterface, sourcePathname string, destURI *uri.URI, contentType string, direct bool) (*api.ObjectStats, error) {
 	fp := OpenByPath(sourcePathname)
 	defer func() {
 		_ = fp.Close()
 	}()
+	filePath := api.StringValue(destURI.Path)
 	if direct {
-		return helpers.ClientUpload(ctx, client, destURI.Repository, destURI.Ref, *destURI.Path, nil, fp)
+		return helpers.ClientUpload(ctx, client, destURI.Repository, destURI.Ref, filePath, nil, contentType, fp)
 	}
-	return uploadObject(ctx, client, destURI.Repository, destURI.Ref, *destURI.Path, fp)
+	return uploadObject(ctx, client, destURI.Repository, destURI.Ref, filePath, contentType, fp)
 }
 
-func uploadObject(ctx context.Context, client api.ClientWithResponsesInterface, repoID, branchID, filePath string, fp io.Reader) (*api.ObjectStats, error) {
+func uploadObject(ctx context.Context, client api.ClientWithResponsesInterface, repoID, branchID, filePath, contentType string, fp io.Reader) (*api.ObjectStats, error) {
 	pr, pw := io.Pipe()
 	mpw := multipart.NewWriter(pw)
-	contentType := mpw.FormDataContentType()
+	mpContentType := mpw.FormDataContentType()
 	go func() {
 		defer func() {
 			_ = pw.Close()
 		}()
-		cw, err := mpw.CreateFormFile("content", path.Base(filePath))
+		filename := path.Base(filePath)
+		const fieldName = "content"
+		var err error
+		var cw io.Writer
+		// when no content-type is specified we let 'CreateFromFile' add the part with the default content type.
+		// otherwise, we add a part and set the content-type.
+		if contentType != "" {
+			h := make(textproto.MIMEHeader)
+			h.Set("Content-Disposition", fmt.Sprintf(`form-data; name="%s"; filename="%s"`, fieldName, escapeQuotes(filename)))
+			h.Set("Content-Type", contentType)
+			cw, err = mpw.CreatePart(h)
+		} else {
+			cw, err = mpw.CreateFormFile(fieldName, filename)
+		}
 		if err != nil {
 			_ = pw.CloseWithError(err)
 			return
@@ -169,7 +191,7 @@ func uploadObject(ctx context.Context, client api.ClientWithResponsesInterface, 
 
 	resp, err := client.UploadObjectWithBodyWithResponse(ctx, repoID, branchID, &api.UploadObjectParams{
 		Path: filePath,
-	}, contentType, pr)
+	}, mpContentType, pr)
 	if err != nil {
 		return nil, err
 	}
@@ -189,8 +211,9 @@ var fsUploadCmd = &cobra.Command{
 		source, _ := cmd.Flags().GetString("source")
 		recursive, _ := cmd.Flags().GetBool("recursive")
 		direct, _ := cmd.Flags().GetBool("direct")
+		contentType, _ := cmd.Flags().GetString("content-type")
 		if !recursive {
-			stat, err := upload(cmd.Context(), client, source, pathURI, direct)
+			stat, err := upload(cmd.Context(), client, source, pathURI, contentType, direct)
 			if err != nil {
 				DieErr(err)
 			}
@@ -213,7 +236,7 @@ var fsUploadCmd = &cobra.Command{
 			uri := *pathURI
 			p := filepath.Join(*uri.Path, relPath)
 			uri.Path = &p
-			stat, err := upload(cmd.Context(), client, path, &uri, direct)
+			stat, err := upload(cmd.Context(), client, path, &uri, contentType, direct)
 			if err != nil {
 				return fmt.Errorf("upload %s: %w", path, err)
 			}
@@ -238,10 +261,12 @@ var fsStageCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		pathURI := MustParsePathURI("path", args[0])
-		size, _ := cmd.Flags().GetInt64("size")
-		mtimeSeconds, _ := cmd.Flags().GetInt64("mtime")
-		location, _ := cmd.Flags().GetString("location")
-		checksum, _ := cmd.Flags().GetString("checksum")
+		flags := cmd.Flags()
+		size, _ := flags.GetInt64("size")
+		mtimeSeconds, _ := flags.GetInt64("mtime")
+		location, _ := flags.GetString("location")
+		checksum, _ := flags.GetString("checksum")
+		contentType, _ := flags.GetString("content-type")
 		meta, metaErr := getKV(cmd, "meta")
 
 		var mtime *int64
@@ -254,6 +279,7 @@ var fsStageCmd = &cobra.Command{
 			Mtime:           mtime,
 			PhysicalAddress: location,
 			SizeBytes:       size,
+			ContentType:     &contentType,
 		}
 		if metaErr == nil {
 			metadata := api.ObjectUserMetadata{
@@ -307,11 +333,13 @@ func init() {
 	fsUploadCmd.Flags().BoolP("recursive", "r", false, "recursively copy all files under local source")
 	fsUploadCmd.Flags().BoolP("direct", "d", false, "write directly to backing store (faster but requires more credentials)")
 	_ = fsUploadCmd.MarkFlagRequired("source")
+	fsUploadCmd.Flags().StringP("content-type", "", "", "MIME type of contents")
 
 	fsStageCmd.Flags().String("location", "", "fully qualified storage location (i.e. \"s3://bucket/path/to/object\")")
 	fsStageCmd.Flags().Int64("size", 0, "Object size in bytes")
 	fsStageCmd.Flags().String("checksum", "", "Object MD5 checksum as a hexadecimal string")
 	fsStageCmd.Flags().Int64("mtime", 0, "Object modified time (Unix Epoch in seconds). Defaults to current time")
+	fsStageCmd.Flags().String("content-type", "", "MIME type of contents")
 	fsStageCmd.Flags().StringSlice("meta", []string{}, "key value pairs in the form of key=value")
 	_ = fsStageCmd.MarkFlagRequired("location")
 	_ = fsStageCmd.MarkFlagRequired("size")

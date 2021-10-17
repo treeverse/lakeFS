@@ -1284,7 +1284,7 @@ Add a branch protection rule
 #### Synopsis
 {:.no_toc}
 
-Add a branch protection rule for a given branch pattern name
+Add a branch protection rule for a given branch name pattern
 
 ```
 lakectl branch-protect add <repo uri> <pattern> [flags]
@@ -1294,7 +1294,7 @@ lakectl branch-protect add <repo uri> <pattern> [flags]
 {:.no_toc}
 
 ```
-add lakefs://<repository> stable/*
+lakectl add lakefs://<repository> 'stable_*'
 ```
 
 #### Options
@@ -1313,7 +1313,7 @@ Delete a branch protection rule
 #### Synopsis
 {:.no_toc}
 
-Delete a branch protection rule for a given branch pattern name
+Delete a branch protection rule for a given branch name pattern
 
 ```
 lakectl branch-protect delete <repo uri> <pattern> [flags]
@@ -1323,7 +1323,7 @@ lakectl branch-protect delete <repo uri> <pattern> [flags]
 {:.no_toc}
 
 ```
-delete lakefs://<repository> stable/*
+lakectl delete lakefs://<repository> stable_*
 ```
 
 #### Options
@@ -1370,7 +1370,7 @@ lakectl branch-protect list <repo uri> [flags]
 {:.no_toc}
 
 ```
-list lakefs://<repository>
+lakectl list lakefs://<repository>
 ```
 
 #### Options
@@ -1684,12 +1684,13 @@ lakectl fs stage <path uri> [flags]
 {:.no_toc}
 
 ```
-      --checksum string   Object MD5 checksum as a hexadecimal string
-  -h, --help              help for stage
-      --location string   fully qualified storage location (i.e. "s3://bucket/path/to/object")
-      --meta strings      key value pairs in the form of key=value
-      --mtime int         Object modified time (Unix Epoch in seconds). Defaults to current time
-      --size int          Object size in bytes
+      --checksum string       Object MD5 checksum as a hexadecimal string
+      --content-type string   MIME type describing the format of the contents
+  -h, --help                  help for stage
+      --location string       fully qualified storage location (i.e. "s3://bucket/path/to/object")
+      --meta strings          key value pairs in the form of key=value
+      --mtime int             Object modified time (Unix Epoch in seconds). Defaults to current time
+      --size int              Object size in bytes
 ```
 
 
@@ -1723,10 +1724,11 @@ lakectl fs upload <path uri> [flags]
 {:.no_toc}
 
 ```
-  -d, --direct          write directly to backing store (faster but requires more credentials)
-  -h, --help            help for upload
-  -r, --recursive       recursively copy all files under local source
-  -s, --source string   local file to upload, or "-" for stdin
+      --content-type string   MIME type describing the format of the contents
+  -d, --direct                write directly to backing store (faster but requires more credentials)
+  -h, --help                  help for upload
+  -r, --recursive             recursively copy all files under local source
+  -s, --source string         local file to upload, or "-" for stdin
 ```
 
 

@@ -563,11 +563,11 @@ func (c *Catalog) ListTags(ctx context.Context, repository string, limit int, af
 		if v.TagID == afterTagID {
 			continue
 		}
-		branch := &Tag{
+		tag := &Tag{
 			ID:       string(v.TagID),
 			CommitID: v.CommitID.String(),
 		}
-		tags = append(tags, branch)
+		tags = append(tags, tag)
 		if len(tags) >= limit+1 {
 			break
 		}
@@ -624,15 +624,17 @@ func (c *Catalog) GetEntry(ctx context.Context, repository string, reference str
 	return &catalogEntry, nil
 }
 
-func EntryFromCatalogEntry(entry DBEntry) *Entry {
-	return &Entry{
+func newEntryFromCatalogEntry(entry DBEntry) *Entry {
+	ent := &Entry{
 		Address:      entry.PhysicalAddress,
 		AddressType:  addressTypeToProto(entry.AddressType),
 		Metadata:     entry.Metadata,
 		LastModified: timestamppb.New(entry.CreationDate),
 		ETag:         entry.Checksum,
 		Size:         entry.Size,
+		ContentType:  ContentTypeOrDefault(entry.ContentType),
 	}
+	return ent
 }
 
 func addressTypeToProto(t AddressType) Entry_AddressType {
@@ -664,7 +666,7 @@ func addressTypeToCatalog(t Entry_AddressType) AddressType {
 func (c *Catalog) CreateEntry(ctx context.Context, repository string, branch string, entry DBEntry, writeConditions ...graveler.WriteConditionOption) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
-	ent := EntryFromCatalogEntry(entry)
+	ent := newEntryFromCatalogEntry(entry)
 	path := Path(entry.Path)
 	if err := Validate([]ValidateArg{
 		{"repositoryID", repositoryID, ValidateRepositoryID},
@@ -1039,10 +1041,7 @@ func listDiffHelper(it EntryDiffIterator, prefix, delimiter string, limit int, a
 				// a common prefix exists!
 				commonPrefix := prefix + parts[0] + delimiter
 				diffs = append(diffs, Difference{
-					DBEntry: DBEntry{
-						CommonLevel: true,
-						Path:        commonPrefix,
-					},
+					DBEntry: NewDBEntryBuilder().CommonLevel(true).Path(commonPrefix).Build(),
 					// We always return "changed" for common prefixes. Seeing if a common prefix is e.g. deleted is O(N)
 					Type: DifferenceTypeChanged,
 				})
@@ -1225,21 +1224,21 @@ func (c *Catalog) dereferenceCommitID(ctx context.Context, repositoryID graveler
 }
 
 func newCatalogEntryFromEntry(commonPrefix bool, path string, ent *Entry) DBEntry {
-	catEnt := DBEntry{
-		CommonLevel: commonPrefix,
-		Path:        path,
-	}
+	b := NewDBEntryBuilder().
+		CommonLevel(commonPrefix).
+		Path(path)
 	if ent != nil {
-		catEnt.PhysicalAddress = ent.Address
-		catEnt.AddressType = addressTypeToCatalog(ent.AddressType)
-		catEnt.CreationDate = ent.LastModified.AsTime()
-		catEnt.Size = ent.Size
-		catEnt.Checksum = ent.ETag
-		catEnt.Metadata = ent.Metadata
-		catEnt.Expired = false
-		catEnt.AddressType = addressTypeToCatalog(ent.AddressType)
+		b.PhysicalAddress(ent.Address)
+		b.AddressType(addressTypeToCatalog(ent.AddressType))
+		b.CreationDate(ent.LastModified.AsTime())
+		b.Size(ent.Size)
+		b.Checksum(ent.ETag)
+		b.Metadata(ent.Metadata)
+		b.Expired(false)
+		b.AddressType(addressTypeToCatalog(ent.AddressType))
+		b.ContentType(ContentTypeOrDefault(ent.ContentType))
 	}
-	return catEnt
+	return b.Build()
 }
 
 func catalogDiffType(typ graveler.DiffType) (DifferenceType, error) {

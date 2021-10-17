@@ -2,29 +2,49 @@ package operations
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-func (o *PathOperation) finishUpload(req *http.Request, checksum, physicalAddress string, size int64, relative bool) error {
-	addressType := catalog.AddressTypeRelative
-	if !relative {
-		addressType = catalog.AddressTypeFull
-	}
+const amzMetaHeaderPrefix = "X-Amz-Meta-"
 
+// amzMetaAsMetadata prepare metadata based on amazon user metadata request headers
+func amzMetaAsMetadata(req *http.Request) catalog.Metadata {
+	metadata := make(catalog.Metadata)
+	for k := range req.Header {
+		if strings.HasPrefix(k, amzMetaHeaderPrefix) {
+			metadata[k] = req.Header.Get(k)
+		}
+	}
+	return metadata
+}
+
+// amzMetaWriteHeaders set amazon user metadata on http response
+func amzMetaWriteHeaders(w http.ResponseWriter, metadata catalog.Metadata) {
+	h := w.Header()
+	for k, v := range metadata {
+		if strings.HasPrefix(k, amzMetaHeaderPrefix) {
+			h.Set(k, v)
+		}
+	}
+}
+
+func (o *PathOperation) finishUpload(req *http.Request, checksum, physicalAddress string, size int64, relative bool, metadata map[string]string, contentType string) error {
 	// write metadata
 	writeTime := time.Now()
-	entry := catalog.DBEntry{
-		Path:            o.Path,
-		PhysicalAddress: physicalAddress,
-		AddressType:     addressType,
-		Checksum:        checksum,
-		Metadata:        nil, // TODO: Read whatever metadata came from the request headers/params and add here
-		Size:            size,
-		CreationDate:    writeTime,
-	}
+	entry := catalog.NewDBEntryBuilder().
+		Path(o.Path).
+		RelativeAddress(relative).
+		PhysicalAddress(physicalAddress).
+		Checksum(checksum).
+		Metadata(metadata).
+		Size(size).
+		CreationDate(writeTime).
+		ContentType(contentType).
+		Build()
 
 	err := o.Catalog.CreateEntry(req.Context(), o.Repository.Name, o.Reference, entry)
 	if err != nil {

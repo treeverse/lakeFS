@@ -2892,7 +2892,11 @@ paths:
         required: true
       responses:
         "200":
-          description: successfully linked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjectStats'
+          description: object metadata
         "400":
           content:
             application/json:
@@ -4275,6 +4279,7 @@ components:
         metadata:
           key: metadata
         size_bytes: 0
+        content_type: content_type
         checksum: checksum
         path_type: common_prefix
         mtime: 6
@@ -4301,6 +4306,9 @@ components:
           additionalProperties:
             type: string
           type: object
+        content_type:
+          description: Object media type
+          type: string
       required:
       - checksum
       - mtime
@@ -4321,6 +4329,7 @@ components:
           metadata:
             key: metadata
           size_bytes: 0
+          content_type: content_type
           checksum: checksum
           path_type: common_prefix
           mtime: 6
@@ -4329,6 +4338,7 @@ components:
           metadata:
             key: metadata
           size_bytes: 0
+          content_type: content_type
           checksum: checksum
           path_type: common_prefix
           mtime: 6
@@ -4349,6 +4359,7 @@ components:
         metadata:
           key: metadata
         size_bytes: 0
+        content_type: content_type
         checksum: checksum
         mtime: 6
       properties:
@@ -4367,6 +4378,9 @@ components:
           additionalProperties:
             type: string
           type: object
+        content_type:
+          description: Object media type
+          type: string
       required:
       - checksum
       - physical_address
@@ -5185,6 +5199,7 @@ components:
         size_bytes: 0
         user_metadata:
           key: user_metadata
+        content_type: content_type
         checksum: checksum
         staging:
           physical_address: physical_address
@@ -5203,6 +5218,9 @@ components:
           additionalProperties:
             type: string
           type: object
+        content_type:
+          description: Object media type
+          type: string
       required:
       - checksum
       - size_bytes
