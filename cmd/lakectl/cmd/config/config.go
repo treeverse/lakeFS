@@ -69,7 +69,7 @@ func ReadConfig() (c *Config) {
 	logger := logging.Default().WithField("file", viper.ConfigFileUsed())
 
 	if c.err == nil {
-		logger.Info("loaded configuration from file")
+		logger.Debug("loaded configuration from file")
 	} else if _, ok := c.err.(viper.ConfigFileNotFoundError); !ok {
 		logger.WithError(c.err).Fatal("failed to read config file")
 	}
