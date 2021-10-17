@@ -93,28 +93,30 @@ var branchDeleteCmd = &cobra.Command{
 
 // lakectl branch revert lakefs://myrepo/main commitId
 var branchRevertCmd = &cobra.Command{
-	Use:   "revert <branch uri> <commit ref to revert>",
+	Use:   "revert <branch uri> <commits ref to revert>",
 	Short: "Given a commit, record a new commit to reverse the effect of this commit",
-	Args:  cobra.ExactArgs(branchRevertCmdArgs),
+	Args:  cobra.MinimumNArgs(branchRevertCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseRefURI("branch", args[0])
 		Fmt("Branch: %s\n", u.String())
-		commitRef := args[1]
-		clt := getClient()
-		hasParentNumber := cmd.Flags().Changed(ParentNumberFlagName)
-		parentNumber, _ := cmd.Flags().GetInt(ParentNumberFlagName)
-		if hasParentNumber && parentNumber <= 0 {
-			Die("parent number must be non-negative, if specified", 1)
+		for i := 1; i < len(args); i++ {
+			commitRef := args[i]
+			clt := getClient()
+			hasParentNumber := cmd.Flags().Changed(ParentNumberFlagName)
+			parentNumber, _ := cmd.Flags().GetInt(ParentNumberFlagName)
+			if hasParentNumber && parentNumber <= 0 {
+				Die("parent number must be non-negative, if specified", 1)
+			}
+			confirmation, err := Confirm(cmd.Flags(), fmt.Sprintf("Are you sure you want to revert the effect of commit %s", commitRef))
+			if err != nil || !confirmation {
+				Die("Revert aborted", 1)
+			}
+			resp, err := clt.RevertBranchWithResponse(cmd.Context(), u.Repository, u.Ref, api.RevertBranchJSONRequestBody{
+				ParentNumber: parentNumber,
+				Ref:          commitRef,
+			})
+			DieOnResponseError(resp, err)
 		}
-		confirmation, err := Confirm(cmd.Flags(), fmt.Sprintf("Are you sure you want to revert the effect of commit %s", commitRef))
-		if err != nil || !confirmation {
-			Die("Revert aborted", 1)
-		}
-		resp, err := clt.RevertBranchWithResponse(cmd.Context(), u.Repository, u.Ref, api.RevertBranchJSONRequestBody{
-			ParentNumber: parentNumber,
-			Ref:          commitRef,
-		})
-		DieOnResponseError(resp, err)
 	},
 }
 
