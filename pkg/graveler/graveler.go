@@ -408,7 +408,7 @@ type VersionController interface {
 
 	// Compare returns the difference between the commit where 'to' was last synced into 'from', and the most recent commit of `from`.
 	// This is similar to a three-dot (from...to) diff in git.
-	Compare(ctx context.Context, repositoryID RepositoryID, from, to Ref) (DiffIterator, error)
+	Compare(ctx context.Context, repositoryID RepositoryID, to, from Ref) (DiffIterator, error)
 
 	// SetHooksHandler set handler for all graveler hooks
 	SetHooksHandler(handler HooksHandler)
@@ -1762,7 +1762,7 @@ func (g *Graveler) Diff(ctx context.Context, repositoryID RepositoryID, left, ri
 	return NewCombinedDiffIterator(diff, leftValueIterator, stagingIterator), nil
 }
 
-func (g *Graveler) Compare(ctx context.Context, repositoryID RepositoryID, from, to Ref) (DiffIterator, error) {
+func (g *Graveler) Compare(ctx context.Context, repositoryID RepositoryID, to, from Ref) (DiffIterator, error) {
 	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, err

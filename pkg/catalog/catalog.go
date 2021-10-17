@@ -950,10 +950,10 @@ func (c *Catalog) Diff(ctx context.Context, repository string, leftReference str
 	return listDiffHelper(it, params.Prefix, params.Delimiter, params.Limit, params.After)
 }
 
-func (c *Catalog) Compare(ctx context.Context, repository, leftReference string, rightReference string, params DiffParams) (Differences, bool, error) {
+func (c *Catalog) Compare(ctx context.Context, repository, toReference string, fromReference string, params DiffParams) (Differences, bool, error) {
 	repositoryID := graveler.RepositoryID(repository)
-	from := graveler.Ref(leftReference)
-	to := graveler.Ref(rightReference)
+	from := graveler.Ref(fromReference)
+	to := graveler.Ref(toReference)
 	if err := Validate([]ValidateArg{
 		{"repositoryID", repositoryID, ValidateRepositoryID},
 		{"from", from, ValidateRef},
@@ -961,7 +961,7 @@ func (c *Catalog) Compare(ctx context.Context, repository, leftReference string,
 	}); err != nil {
 		return nil, false, err
 	}
-	iter, err := c.Store.Compare(ctx, repositoryID, from, to)
+	iter, err := c.Store.Compare(ctx, repositoryID, to, from)
 	if err != nil {
 		return nil, false, err
 	}

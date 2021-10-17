@@ -650,7 +650,7 @@ func TestController_CreateBranchHandler(t *testing.T) {
 		if _, err := deps.catalog.Commit(ctx, "repo1", "main2", "commit 1", "some_user", nil); err != nil {
 			t.Fatalf("failed to commit 'repo1': %s", err)
 		}
-		resp2, err := clt.DiffRefsWithResponse(ctx, "repo1", newBranchName, "main", &api.DiffRefsParams{})
+		resp2, err := clt.DiffRefsWithResponse(ctx, "repo1", "main", newBranchName, &api.DiffRefsParams{})
 		verifyResponseOK(t, resp2, err)
 		results := resp2.JSON200.Results
 		if len(results) != 1 {
@@ -1583,7 +1583,7 @@ func TestController_MergeDiffWithParent(t *testing.T) {
 	})
 	verifyResponseOK(t, mergeResp, err)
 
-	diffResp, err := clt.DiffRefsWithResponse(ctx, repoName, "main", "main~1", &api.DiffRefsParams{})
+	diffResp, err := clt.DiffRefsWithResponse(ctx, repoName, "main~1", "main", &api.DiffRefsParams{})
 	verifyResponseOK(t, diffResp, err)
 	var expectedSize = int64(len(content))
 	expectedResults := []api.Diff{
