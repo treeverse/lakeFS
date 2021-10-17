@@ -14,6 +14,7 @@ Name | Type | Description | Notes
 **sizeBytes** | **Long** |  |  [optional]
 **mtime** | **Long** | Unix Epoch in seconds | 
 **metadata** | **Map&lt;String, String&gt;** |  |  [optional]
+**contentType** | **String** | Object media type |  [optional]
 
 
 

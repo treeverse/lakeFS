@@ -225,6 +225,9 @@ components:
           description: Unix Epoch in seconds
         metadata:
           $ref: "#/components/schemas/ObjectUserMetadata"
+        content_type:
+          type: string
+          description: Object media type
 
     ObjectStatsList:
       type: object
@@ -259,6 +262,9 @@ components:
           description: Unix Epoch in seconds
         metadata:
           $ref: "#/components/schemas/ObjectUserMetadata"
+        content_type:
+          type: string
+          description: Object media type
 
     ObjectUserMetadata:
       type: object
@@ -819,6 +825,9 @@ components:
           type: object
           additionalProperties:
             type: string
+        content_type:
+          type: string
+          description: Object media type
       required:
         - staging
         - checksum
@@ -2419,7 +2428,11 @@ paths:
           # This actually violates HTTP, which requires returning 201 if a new object was
           # created or 200 if an existing object was modified,
           # https://tools.ietf.org/html/rfc7231#section-4.3.4
-          description: successfully linked
+          description: object metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObjectStats"
         400:
           $ref: "#/components/responses/ValidationError"
         401:

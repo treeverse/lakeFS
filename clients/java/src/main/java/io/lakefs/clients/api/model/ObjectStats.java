@@ -107,6 +107,10 @@ public class ObjectStats {
   @SerializedName(SERIALIZED_NAME_METADATA)
   private Map<String, String> metadata = null;
 
+  public static final String SERIALIZED_NAME_CONTENT_TYPE = "content_type";
+  @SerializedName(SERIALIZED_NAME_CONTENT_TYPE)
+  private String contentType;
+
 
   public ObjectStats path(String path) {
     
@@ -272,6 +276,29 @@ public class ObjectStats {
   }
 
 
+  public ObjectStats contentType(String contentType) {
+    
+    this.contentType = contentType;
+    return this;
+  }
+
+   /**
+   * Object media type
+   * @return contentType
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "Object media type")
+
+  public String getContentType() {
+    return contentType;
+  }
+
+
+  public void setContentType(String contentType) {
+    this.contentType = contentType;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -287,12 +314,13 @@ public class ObjectStats {
         Objects.equals(this.checksum, objectStats.checksum) &&
         Objects.equals(this.sizeBytes, objectStats.sizeBytes) &&
         Objects.equals(this.mtime, objectStats.mtime) &&
-        Objects.equals(this.metadata, objectStats.metadata);
+        Objects.equals(this.metadata, objectStats.metadata) &&
+        Objects.equals(this.contentType, objectStats.contentType);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(path, pathType, physicalAddress, checksum, sizeBytes, mtime, metadata);
+    return Objects.hash(path, pathType, physicalAddress, checksum, sizeBytes, mtime, metadata, contentType);
   }
 
   @Override
@@ -306,6 +334,7 @@ public class ObjectStats {
     sb.append("    sizeBytes: ").append(toIndentedString(sizeBytes)).append("\n");
     sb.append("    mtime: ").append(toIndentedString(mtime)).append("\n");
     sb.append("    metadata: ").append(toIndentedString(metadata)).append("\n");
+    sb.append("    contentType: ").append(toIndentedString(contentType)).append("\n");
     sb.append("}");
     return sb.toString();
   }

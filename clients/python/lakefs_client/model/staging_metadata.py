@@ -82,6 +82,7 @@ class StagingMetadata(ModelNormal):
             'checksum': (str,),  # noqa: E501
             'size_bytes': (int,),  # noqa: E501
             'user_metadata': ({str: (str,)},),  # noqa: E501
+            'content_type': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -94,6 +95,7 @@ class StagingMetadata(ModelNormal):
         'checksum': 'checksum',  # noqa: E501
         'size_bytes': 'size_bytes',  # noqa: E501
         'user_metadata': 'user_metadata',  # noqa: E501
+        'content_type': 'content_type',  # noqa: E501
     }
 
     _composed_schemas = {}
@@ -148,6 +150,7 @@ class StagingMetadata(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             user_metadata ({str: (str,)}): [optional]  # noqa: E501
+            content_type (str): Object media type. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

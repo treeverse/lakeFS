@@ -478,6 +478,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
         metadata=ObjectUserMetadata(
             key="key_example",
         ),
+        content_type="content_type_example",
     ) # ObjectStageCreation | 
 
     # example passing only required values which don't have defaults set

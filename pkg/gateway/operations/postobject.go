@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
+
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
 	gatewayErrors "github.com/treeverse/lakefs/pkg/gateway/errors"
@@ -49,7 +51,16 @@ func (controller *PostObject) HandleCreateMultipartUpload(w http.ResponseWriter,
 		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
-	err = o.MultipartsTracker.Create(req.Context(), uploadID, o.Path, objName, time.Now())
+	// uploadID, o.Path, objName, time.Now()
+	mpu := multiparts.MultipartUpload{
+		UploadID:        uploadID,
+		Path:            o.Path,
+		CreationDate:    time.Now(),
+		PhysicalAddress: objName,
+		Metadata:        map[string]string(amzMetaAsMetadata(req)),
+		ContentType:     req.Header.Get("Content-Type"),
+	}
+	err = o.MultipartsTracker.Create(req.Context(), mpu)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not write multipart upload to DB")
 		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
@@ -93,7 +104,10 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
-	etag, size, err = o.BlockStore.CompleteMultiPartUpload(req.Context(), block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: objName}, uploadID, &multipartList)
+	etag, size, err = o.BlockStore.CompleteMultiPartUpload(req.Context(),
+		block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: objName},
+		uploadID,
+		&multipartList)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not complete multipart upload")
 		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
@@ -101,7 +115,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 	}
 	ch := trimQuotes(*etag)
 	checksum := strings.Split(ch, "-")[0]
-	err = o.finishUpload(req, checksum, objName, size, true)
+	err = o.finishUpload(req, checksum, objName, size, true, multiPart.Metadata, multiPart.ContentType)
 	if errors.Is(err, graveler.ErrWriteToProtectedBranch) {
 		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrWriteToProtectedBranch))
 		return
