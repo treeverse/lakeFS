@@ -78,7 +78,6 @@ func (c *CombinedDiffIterator) Next() bool {
 				return true
 			}
 		}
-
 	}
 	return false
 }
@@ -91,7 +90,7 @@ func (c *CombinedDiffIterator) compareStagingWithLeft() bool {
 	var leftVal *ValueRecord
 	if c.leftIterator.Next() {
 		leftVal = c.leftIterator.Value()
-		if bytes.Compare(leftVal.Key, c.stagingValue.Key) != 0 {
+		if !bytes.Equal(leftVal.Key, c.stagingValue.Key) {
 			// key wasn't on left side
 			leftVal = nil
 		}
@@ -99,25 +98,26 @@ func (c *CombinedDiffIterator) compareStagingWithLeft() bool {
 		c.err = c.leftIterator.Err()
 		return false
 	}
-	typ := DiffTypeAdded
+	var typ DiffType
 	var leftIdentity []byte
 	value := c.stagingValue.Value
-	if leftVal == nil {
+	switch {
+	case leftVal == nil:
 		if c.stagingValue.IsTombstone() {
 			// not on left, deleted on staging - no diff
 			return false
 		}
 		// not on left, but is on staging
 		typ = DiffTypeAdded
-	} else if c.stagingValue.IsTombstone() {
+	case c.stagingValue.IsTombstone():
 		// found on left, deleted on staging
 		leftIdentity = leftVal.Identity
 		value = leftVal.Value
 		typ = DiffTypeRemoved
-	} else {
+	default:
 		// found on both sides
 		leftIdentity = leftVal.Identity
-		if bytes.Compare(c.stagingValue.Identity, leftVal.Identity) == 0 {
+		if bytes.Equal(c.stagingValue.Identity, leftVal.Identity) {
 			// identity not changed - no diff
 			return false
 		}
