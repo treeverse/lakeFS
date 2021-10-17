@@ -844,7 +844,7 @@ func (g *Graveler) updateBranchNoLock(ctx context.Context, repositoryID Reposito
 		return nil, err
 	}
 	if reference.ResolvedBranchModifier == ResolvedBranchModifierStaging {
-		return nil, fmt.Errorf("reference '%s': %w", ref, ErrCreateBranchNoCommit)
+		return nil, fmt.Errorf("reference '%s': %w", ref, ErrDereferenceCommitWithStaging)
 	}
 
 	curBranch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
@@ -1711,7 +1711,7 @@ func (g *Graveler) dereferenceCommit(ctx context.Context, repositoryID Repositor
 		return nil, err
 	}
 	if reference.ResolvedBranchModifier == ResolvedBranchModifierStaging {
-		return nil, fmt.Errorf("reference '%s': %w", ref, ErrCreateBranchNoCommit)
+		return nil, fmt.Errorf("reference '%s': %w", ref, ErrDereferenceCommitWithStaging)
 	}
 	commit, err := g.RefManager.GetCommit(ctx, repositoryID, reference.CommitID)
 	if err != nil {
@@ -1732,12 +1732,34 @@ func (g *Graveler) Diff(ctx context.Context, repositoryID RepositoryID, left, ri
 	if err != nil {
 		return nil, err
 	}
-	rightCommit, err := g.dereferenceCommit(ctx, repositoryID, right)
+	rightRawRef, err := g.Dereference(ctx, repositoryID, right)
 	if err != nil {
 		return nil, err
 	}
-
-	return g.CommittedManager.Diff(ctx, repo.StorageNamespace, leftCommit.MetaRangeID, rightCommit.MetaRangeID)
+	rightCommit, err := g.RefManager.GetCommit(ctx, repositoryID, rightRawRef.CommitID)
+	if err != nil {
+		return nil, err
+	}
+	diff, err := g.CommittedManager.Diff(ctx, repo.StorageNamespace, leftCommit.MetaRangeID, rightCommit.MetaRangeID)
+	if err != nil {
+		return nil, err
+	}
+	if rightRawRef.ResolvedBranchModifier != ResolvedBranchModifierStaging {
+		return diff, nil
+	}
+	leftValueIterator, err := g.CommittedManager.List(ctx, repo.StorageNamespace, leftCommit.MetaRangeID)
+	if err != nil {
+		return nil, err
+	}
+	rightBranch, err := g.RefManager.GetBranch(ctx, repositoryID, rightRawRef.BranchID)
+	if err != nil {
+		return nil, err
+	}
+	stagingIterator, err := g.StagingManager.List(ctx, rightBranch.StagingToken)
+	if err != nil {
+		return nil, err
+	}
+	return NewCombinedDiffIterator(diff, leftValueIterator, stagingIterator), nil
 }
 
 func (g *Graveler) Compare(ctx context.Context, repositoryID RepositoryID, from, to Ref) (DiffIterator, error) {
