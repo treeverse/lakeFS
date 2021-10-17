@@ -264,11 +264,15 @@ jobs:
         working-directory: test/spark/s3a-multipart
         run: docker-compose exec -T lakefs lakectl repo create "lakefs://${REPOSITORY}" ${STORAGE_NAMESPACE} -d main && sbt "run s3a://${REPOSITORY}/main/multipart.out"
 
-      - name: lakeFS Logs on Spark with gateway failure
+      - name: lakeFS logs on failure
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/spark
         run: docker-compose logs --tail=1000 lakefs
+
+      - name: Verify lakeFS performed a multipart upload
+        working-directory: test/spark
+        run: set -o pipefail && docker-compose logs --tail=5000 -- lakefs 2>&1 | fgrep CompleteMultiPartUpload
 
   spark2:
     name: Test lakeFS with Spark 2.x
