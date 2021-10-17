@@ -406,9 +406,9 @@ type VersionController interface {
 	// This is similar to a two-dot (left..right) diff in git.
 	Diff(ctx context.Context, repositoryID RepositoryID, left, right Ref) (DiffIterator, error)
 
-	// Compare returns the difference between the commit where 'to' was last synced into 'from', and the most recent commit of `from`.
+	// Compare returns the difference between the commit where 'left' was last synced into 'right', and the most recent commit of `right`.
 	// This is similar to a three-dot (from...to) diff in git.
-	Compare(ctx context.Context, repositoryID RepositoryID, to, from Ref) (DiffIterator, error)
+	Compare(ctx context.Context, repositoryID RepositoryID, left, right Ref) (DiffIterator, error)
 
 	// SetHooksHandler set handler for all graveler hooks
 	SetHooksHandler(handler HooksHandler)
@@ -1762,12 +1762,12 @@ func (g *Graveler) Diff(ctx context.Context, repositoryID RepositoryID, left, ri
 	return NewCombinedDiffIterator(diff, leftValueIterator, stagingIterator), nil
 }
 
-func (g *Graveler) Compare(ctx context.Context, repositoryID RepositoryID, to, from Ref) (DiffIterator, error) {
+func (g *Graveler) Compare(ctx context.Context, repositoryID RepositoryID, left, right Ref) (DiffIterator, error) {
 	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, err
 	}
-	fromCommit, toCommit, baseCommit, err := g.getCommitsForMerge(ctx, repositoryID, from, to)
+	fromCommit, toCommit, baseCommit, err := g.getCommitsForMerge(ctx, repositoryID, right, left)
 	if err != nil {
 		return nil, err
 	}

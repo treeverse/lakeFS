@@ -98,7 +98,7 @@ type Interface interface {
 	Revert(ctx context.Context, repository, branch string, params RevertParams) error
 
 	Diff(ctx context.Context, repository, leftReference string, rightReference string, params DiffParams) (Differences, bool, error)
-	Compare(ctx context.Context, repository, toReference string, fromReference string, params DiffParams) (Differences, bool, error)
+	Compare(ctx context.Context, repository, leftReference string, rightReference string, params DiffParams) (Differences, bool, error)
 	DiffUncommitted(ctx context.Context, repository, branch, prefix, delimiter string, limit int, after string) (Differences, bool, error)
 
 	Merge(ctx context.Context, repository, destinationBranch, sourceRef, committer, message string, metadata Metadata) (*MergeResult, error)
