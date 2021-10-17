@@ -19,7 +19,7 @@ const (
 
 var diffCmd = &cobra.Command{
 	Use:   "diff <ref uri> [other ref uri]",
-	Short: "Show changes between two commits, or the currently uncommitted changes.",
+	Short: "Show changes between two commits, or the currently uncommitted changes",
 	Example: `
 	lakectl diff lakefs://example-repo/example-branch
 		Show uncommitted changes in example-branch.
