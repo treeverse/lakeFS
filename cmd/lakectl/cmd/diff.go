@@ -19,9 +19,15 @@ const (
 
 var diffCmd = &cobra.Command{
 	Use:   "diff <ref uri> [other ref uri]",
-	Short: "diff between commits/hashes",
-	Long:  "see the list of paths added/changed/removed in a branch or between two references (could be either commit hash or branch name)",
-	Args:  cobra.RangeArgs(diffCmdMinArgs, diffCmdMaxArgs),
+	Short: "Show changes between two commits, or the currently uncommitted changes",
+	Example: `
+	lakectl diff lakefs://example-repo/example-branch
+		Show uncommitted changes in example-branch.
+	
+	lakectl diff lakefs://example-repo/commitA lakefs://example-repo/commitB
+		Show changes up to commitA (inclusive), starting from the common ancestor of commitA and commitB.
+		This is similar to the three-dot (...) syntax in git.`,
+	Args: cobra.RangeArgs(diffCmdMinArgs, diffCmdMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		if len(args) == diffCmdMaxArgs {
