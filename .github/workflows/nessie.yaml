@@ -264,7 +264,10 @@ jobs:
           REPOSITORY: s3a-mpu-test
           AWS_ACCESS_KEY_ID: ${{ secrets.TESTER_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.TESTER_SECRET_ACCESS_KEY }}
-          ENDPOINT: "http://s3.docker.lakefs.io:8000"
+          # TODO(ariels): This depends on an actual DNS lookup
+          #     (*.local.lakefs.io is 127.0.0.1) because it runs outside of
+          #     a Docker container.  Bypass this somehow.
+          ENDPOINT: "http://s3.local.lakefs.io:8000"
         working-directory: test/spark/s3a-multipart
         run: docker-compose exec -T lakefs lakectl repo create "lakefs://${REPOSITORY}" ${STORAGE_NAMESPACE} -d main && sbt "run s3a://${REPOSITORY}/main/multipart.out"
 

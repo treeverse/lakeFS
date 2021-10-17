@@ -2,6 +2,7 @@ package config
 
 import (
 	"reflect"
+	"strings"
 	"time"
 )
 
@@ -23,7 +24,7 @@ func DecodeStrings(fromValue reflect.Value, toValue reflect.Value) (interface{},
 		return Strings(fromValue.Interface().([]string)), nil
 	}
 	if fromValue.Type() == stringType {
-		return Strings{fromValue.String()}, nil
+		return Strings(strings.Split(fromValue.String(), ",")), nil
 	}
 	return fromValue.Interface(), nil
 }
