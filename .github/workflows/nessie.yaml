@@ -270,6 +270,9 @@ jobs:
         working-directory: test/spark
         run: docker-compose logs --tail=1000 lakefs
 
+      - name: Verify lakeFS performed a multipart upload
+        run: set -o pipefail && docker-compose logs lakefs 2>&1 | fgrep CompleteMultiPartUpload
+
   spark2:
     name: Test lakeFS with Spark 2.x
     needs: deploy-image
