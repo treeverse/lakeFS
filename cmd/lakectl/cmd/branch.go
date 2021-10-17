@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
@@ -93,29 +94,42 @@ var branchDeleteCmd = &cobra.Command{
 
 // lakectl branch revert lakefs://myrepo/main commitId
 var branchRevertCmd = &cobra.Command{
-	Use:   "revert <branch uri> <commits ref to revert>",
+	Use:   "revert <branch uri> <commit ref to revert> [<more commits>...]",
 	Short: "Given a commit, record a new commit to reverse the effect of this commit",
-	Args:  cobra.MinimumNArgs(branchRevertCmdArgs),
+	Long:  "The commits will be reverted in left-to-right order",
+	Example: `lakectl branch revert lakefs://example-repo/example-branch commitA
+	          Revert the changes done by commitA in example-branch
+		      branch revert lakefs://example-repo/example-branch HEAD~3 HEAD~2 HEAD~1
+		      Revert the changes done by the third last commit to the last commit in example-branch`,
+	Args: cobra.MinimumNArgs(branchRevertCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseRefURI("branch", args[0])
 		Fmt("Branch: %s\n", u.String())
+		hasParentNumber := cmd.Flags().Changed(ParentNumberFlagName)
+		parentNumber, _ := cmd.Flags().GetInt(ParentNumberFlagName)
+		if hasParentNumber && parentNumber <= 0 {
+			Die("parent number must be non-negative, if specified", 1)
+		}
+		var confirmation bool
+		var err error
+		numCommits := strconv.Itoa(len(args) - 1)
+		if len(args) == branchRevertCmdArgs {
+			confirmation, err = Confirm(cmd.Flags(), fmt.Sprintf("Are you sure you want to revert the effect of commit %s?", args[1]))
+		} else {
+			confirmation, err = Confirm(cmd.Flags(), fmt.Sprintf("Are you sure you want to revert the effect of %s commits?", numCommits))
+		}
+		if err != nil || !confirmation {
+			Die("Revert aborted", 1)
+		}
+		clt := getClient()
 		for i := 1; i < len(args); i++ {
 			commitRef := args[i]
-			clt := getClient()
-			hasParentNumber := cmd.Flags().Changed(ParentNumberFlagName)
-			parentNumber, _ := cmd.Flags().GetInt(ParentNumberFlagName)
-			if hasParentNumber && parentNumber <= 0 {
-				Die("parent number must be non-negative, if specified", 1)
-			}
-			confirmation, err := Confirm(cmd.Flags(), fmt.Sprintf("Are you sure you want to revert the effect of commit %s", commitRef))
-			if err != nil || !confirmation {
-				Die("Revert aborted", 1)
-			}
 			resp, err := clt.RevertBranchWithResponse(cmd.Context(), u.Repository, u.Ref, api.RevertBranchJSONRequestBody{
 				ParentNumber: parentNumber,
 				Ref:          commitRef,
 			})
 			DieOnResponseError(resp, err)
+			Fmt("commit %s successfully reverted\n", commitRef)
 		}
 	},
 }
