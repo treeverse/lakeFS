@@ -210,6 +210,7 @@ jobs:
       - name: Build and test hadoopfs
         working-directory: clients/hadoopfs
         run: mvn --quiet --batch-mode --update-snapshots -P'!treeverse-signing',contract-tests verify
+
   spark2:
     name: Test lakeFS with Spark 2.x
     needs: deploy-image
@@ -253,6 +254,19 @@ jobs:
       - name: Setup lakeFS for tests
         working-directory: test/spark
         run: ./setup-test.sh
+
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+
+      - name: Test lakeFS multipart upload with Hadoop S3A
+        env:
+          STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-s3a-mpu
+          REPOSITORY: s3a-mpu-test
+          AWS_ACCESS_KEY_ID: ${{ secrets.TESTER_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.TESTER_SECRET_ACCESS_KEY }}
+          ENDPOINT: "http://s3.docker.lakefs.io:8000"
+        working-directory: test/spark/s3a-multipart
+        run: docker-compose exec -T lakefs lakectl repo create "lakefs://${REPOSITORY}" ${STORAGE_NAMESPACE} -d main && sbt "run s3a://${REPOSITORY}/main/multipart.out"
 
       - name: Test lakeFS S3 with Spark 2.x
         env:
@@ -418,7 +432,6 @@ jobs:
           STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-spark3-metaclient
         working-directory: test/spark
         run: ./setup-client-test.sh
-
 
       - name: Test lakeFS S3 with Spark 3.x
         env:
