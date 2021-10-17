@@ -107,7 +107,7 @@ func TestSanityAPI(t *testing.T) {
 	require.EqualValues(t, pathsBranch1, mainPaths)
 
 	log.Debug("branch1 - diff changes with main")
-	diffResp, err := client.DiffRefsWithResponse(ctx, repo, "branch1", mainBranch, &api.DiffRefsParams{})
+	diffResp, err := client.DiffRefsWithResponse(ctx, repo, mainBranch, "branch1", &api.DiffRefsParams{})
 	require.NoError(t, err, "diff between branch1 and main")
 	require.Equal(t, http.StatusOK, diffResp.StatusCode())
 	require.Len(t, diffResp.JSON200.Results, 0, "no changes should be found as we didn't commit anything")
@@ -120,7 +120,7 @@ func TestSanityAPI(t *testing.T) {
 	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
 
 	log.Debug("branch1 - diff changes with main")
-	diffResp, err = client.DiffRefsWithResponse(ctx, repo, "branch1", mainBranch, &api.DiffRefsParams{
+	diffResp, err = client.DiffRefsWithResponse(ctx, repo, mainBranch, "branch1", &api.DiffRefsParams{
 		Amount: api.PaginationAmountPtr(-1),
 	})
 	require.NoError(t, err, "diff between branch1 and main")
@@ -139,13 +139,13 @@ func TestSanityAPI(t *testing.T) {
 	require.NotEmpty(t, mergeResp.JSON200.Reference, "merge should return a commit reference")
 
 	log.Debug("branch1 - diff after merge")
-	diffResp, err = client.DiffRefsWithResponse(ctx, repo, "branch1", mainBranch, &api.DiffRefsParams{})
+	diffResp, err = client.DiffRefsWithResponse(ctx, repo, mainBranch, "branch1", &api.DiffRefsParams{})
 	require.NoError(t, err, "diff between branch1 and main")
 	require.Equal(t, http.StatusOK, diffResp.StatusCode())
 	require.Len(t, diffResp.JSON200.Results, 0, "no diff between branch1 and main")
 
 	log.Debug("main - diff with branch1")
-	diffResp, err = client.DiffRefsWithResponse(ctx, repo, mainBranch, "branch1", &api.DiffRefsParams{})
+	diffResp, err = client.DiffRefsWithResponse(ctx, repo, "branch1", mainBranch, &api.DiffRefsParams{})
 	require.NoError(t, err, "diff between main and branch1")
 	require.Equal(t, http.StatusOK, diffResp.StatusCode())
 	require.Len(t, diffResp.JSON200.Results, 0, "no diff between main and branch1")
