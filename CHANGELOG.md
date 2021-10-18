@@ -9,7 +9,6 @@
 - `lakectl diff`: support two way diff.
 - `lakectl diff`: allow including uncommitted changes in the diff. 
 - Support rm --recursive (#2446).
-
 ## v0.52.2 - 2021-10-10
 - Fix nil panic for missing configuration of Airflow hook (#2533)
 - Allow more characters and different length of key/secret for user authorizations (#2501)
