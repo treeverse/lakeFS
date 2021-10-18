@@ -1558,11 +1558,7 @@ lakectl config [flags]
 Show changes between two commits, or the currently uncommitted changes
 
 ```
-<<<<<<< HEAD
 lakectl diff <ref uri> [ref uri] [flags]
-=======
-lakectl diff <ref uri> [other ref uri] [flags]
->>>>>>> update commands.md
 ```
 
 #### Examples
