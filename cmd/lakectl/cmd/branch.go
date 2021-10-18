@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
@@ -99,8 +99,8 @@ var branchRevertCmd = &cobra.Command{
 	Long:  "The commits will be reverted in left-to-right order",
 	Example: `lakectl branch revert lakefs://example-repo/example-branch commitA
 	          Revert the changes done by commitA in example-branch
-		      branch revert lakefs://example-repo/example-branch HEAD~3 HEAD~2 HEAD~1
-		      Revert the changes done by the third last commit to the last commit in example-branch`,
+		      branch revert lakefs://example-repo/example-branch HEAD~1 HEAD~2 HEAD~3
+		      Revert the changes done by the second last commit to the fourth last commit in example-branch`,
 	Args: cobra.MinimumNArgs(branchRevertCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseRefURI("branch", args[0])
@@ -110,14 +110,8 @@ var branchRevertCmd = &cobra.Command{
 		if hasParentNumber && parentNumber <= 0 {
 			Die("parent number must be non-negative, if specified", 1)
 		}
-		var confirmation bool
-		var err error
-		numCommits := strconv.Itoa(len(args) - 1)
-		if len(args) == branchRevertCmdArgs {
-			confirmation, err = Confirm(cmd.Flags(), fmt.Sprintf("Are you sure you want to revert the effect of commit %s?", args[1]))
-		} else {
-			confirmation, err = Confirm(cmd.Flags(), fmt.Sprintf("Are you sure you want to revert the effect of %s commits?", numCommits))
-		}
+		commits := strings.Join(args[1:], " ")
+		confirmation, err := Confirm(cmd.Flags(), fmt.Sprintf("Are you sure you want to revert the effect of commits %s", commits))
 		if err != nil || !confirmation {
 			Die("Revert aborted", 1)
 		}
