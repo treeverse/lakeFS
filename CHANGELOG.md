@@ -5,7 +5,7 @@
 
 - Add support for LDAP authentication (#2058).
 - Support object content-type and user metadata (#2296).
-
+- Support multiple commits in lakectl revert (#2345).
 ## v0.52.2 - 2021-10-10
 - Fix nil panic for missing configuration of Airflow hook (#2533)
 - Allow more characters and different length of key/secret for user authorizations (#2501)
