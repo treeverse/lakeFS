@@ -159,7 +159,7 @@ type APIError interface {
 	GetPayload() *api.Error
 }
 
-func DieErr(err error) {
+func generateErrorOutput(err error, w io.Writer) {
 	errData := struct{ Error string }{}
 	apiError, isAPIError := err.(APIError)
 	if isAPIError {
@@ -168,7 +168,11 @@ func DieErr(err error) {
 	if errData.Error == "" {
 		errData.Error = err.Error()
 	}
-	WriteTo(DeathMessage, errData, os.Stderr)
+	WriteTo(DeathMessage, errData, w)
+}
+
+func DieErr(err error) {
+	generateErrorOutput(err, os.Stderr)
 	os.Exit(1)
 }
 
@@ -176,14 +180,25 @@ type StatusCoder interface {
 	StatusCode() int
 }
 
+func DieOrContinueOnResponseError(response interface{}, err error, bDie bool) (int, string) {
+	if err == nil {
+		err = helpers.ResponseAsError(response)
+	}
+	if err == nil {
+		return 0, ""
+	}
+	// error detected
+	if bDie {
+		DieErr(err)
+	}
+
+	var buff bytes.Buffer
+	generateErrorOutput(err, &buff)
+	return 1, buff.String()
+}
+
 func DieOnResponseError(response interface{}, err error) {
-	if err != nil {
-		DieErr(err)
-	}
-	err = helpers.ResponseAsError(response)
-	if err != nil {
-		DieErr(err)
-	}
+	DieOrContinueOnResponseError(response, err, true)
 }
 
 func Fmt(msg string, args ...interface{}) {
