@@ -320,6 +320,7 @@ var fsRmCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		recursive, _ := cmd.Flags().GetBool("recursive")
+		concurrency := MustInt(cmd.Flags().GetInt("concurrency"))
 		pathURI := MustParsePathURI("path", args[0])
 		client := getClient()
 		if !recursive {
@@ -340,10 +341,9 @@ var fsRmCmd = &cobra.Command{
 			}
 		}()
 
-		const numWorkers = 50
 		var deleteWg sync.WaitGroup
 		paths := make(chan *uri.URI)
-		for i := 0; i < numWorkers; i++ {
+		for i := 0; i < concurrency; i++ {
 			deleteWg.Add(1)
 			go deleteObjectWorker(cmd.Context(), client, paths, errors, &deleteWg)
 		}
@@ -424,4 +424,5 @@ func init() {
 	fsListCmd.Flags().Bool("recursive", false, "list all objects under the specified prefix")
 
 	fsRmCmd.Flags().Bool("recursive", false, "recursively delete all objects under the specified path")
+	fsRmCmd.Flags().IntP("concurrency", "C", 50, "max concurrent single delete operations to send to the lakeFS server")
 }
