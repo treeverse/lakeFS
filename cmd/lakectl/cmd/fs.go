@@ -423,6 +423,6 @@ func init() {
 
 	fsListCmd.Flags().Bool("recursive", false, "list all objects under the specified prefix")
 
-	fsRmCmd.Flags().Bool("recursive", false, "recursively delete all objects under the specified path")
+	fsRmCmd.Flags().BoolP("recursive", "r", false, "recursively delete all objects under the specified path")
 	fsRmCmd.Flags().IntP("concurrency", "C", 50, "max concurrent single delete operations to send to the lakeFS server")
 }
