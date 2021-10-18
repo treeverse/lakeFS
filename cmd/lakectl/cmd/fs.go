@@ -297,18 +297,21 @@ var fsStageCmd = &cobra.Command{
 	},
 }
 
-func deleteObjectWorker(ctx context.Context, client api.ClientWithResponsesInterface, paths <-chan *uri.URI, wg *sync.WaitGroup) {
+func deleteObjectWorker(ctx context.Context, client api.ClientWithResponsesInterface, paths <-chan *uri.URI, errors chan<- string, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for pathURI := range paths {
-		deleteObject(ctx, client, pathURI)
+		retVal, errStr := deleteObject(ctx, client, pathURI, false)
+		if retVal != 0 {
+			errors <- fmt.Sprintf("rm %s - %s", pathURI.String(), errStr)
+		}
 	}
 }
 
-func deleteObject(ctx context.Context, client api.ClientWithResponsesInterface, pathURI *uri.URI) {
+func deleteObject(ctx context.Context, client api.ClientWithResponsesInterface, pathURI *uri.URI, bDieOnErr bool) (int, string) {
 	resp, err := client.DeleteObjectWithResponse(ctx, pathURI.Repository, pathURI.Ref, &api.DeleteObjectParams{
 		Path: *pathURI.Path,
 	})
-	DieOnResponseError(resp, err)
+	return DieOrContinueOnResponseError(resp, err, bDieOnErr)
 }
 
 var fsRmCmd = &cobra.Command{
@@ -321,16 +324,28 @@ var fsRmCmd = &cobra.Command{
 		client := getClient()
 		if !recursive {
 			// Delete single object in the main thread
-			deleteObject(cmd.Context(), client, pathURI)
+			deleteObject(cmd.Context(), client, pathURI, true)
 			return
 		}
 		// Recursive delete of (possibly) many objects.
+		success := true
+		var errorsWg sync.WaitGroup
+		errors := make(chan string)
+		errorsWg.Add(1)
+		go func() {
+			defer errorsWg.Done()
+			for errStr := range errors {
+				os.Stderr.WriteString(errStr)
+				success = false
+			}
+		}()
+
 		const numWorkers = 50
-		var wg sync.WaitGroup
+		var deleteWg sync.WaitGroup
 		paths := make(chan *uri.URI)
 		for i := 0; i < numWorkers; i++ {
-			wg.Add(1)
-			go deleteObjectWorker(cmd.Context(), client, paths, &wg)
+			deleteWg.Add(1)
+			go deleteObjectWorker(cmd.Context(), client, paths, errors, &deleteWg)
 		}
 
 		prefix := *pathURI.Path
@@ -363,7 +378,12 @@ var fsRmCmd = &cobra.Command{
 			from = pagination.NextOffset
 		}
 		close(paths)
-		wg.Wait()
+		deleteWg.Wait()
+		close(errors)
+		errorsWg.Wait()
+		if !success {
+			os.Exit(1)
+		}
 	},
 }
 
