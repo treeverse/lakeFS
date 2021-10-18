@@ -20,7 +20,7 @@ services:
       - ./lakectl-tester.yaml:/home/lakefs/.lakectl.yaml
       - .:/local
     environment:
-      - LAKEFS_GATEWAYS_S3_DOMAIN_NAME=s3.docker.lakefs.io
+      - LAKEFS_GATEWAYS_S3_DOMAIN_NAME=s3.docker.lakefs.io,s3.local.lakefs.io
       - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=some random secret string
       - LAKEFS_DATABASE_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
       - LAKEFS_LOGGING_LEVEL=DEBUG

@@ -210,6 +210,74 @@ jobs:
       - name: Build and test hadoopfs
         working-directory: clients/hadoopfs
         run: mvn --quiet --batch-mode --update-snapshots -P'!treeverse-signing',contract-tests verify
+
+  hadoopfs-s3a-mpu:
+    name: Test lakeFS multipart upload with Hadoop S3A
+    needs: deploy-image
+    runs-on: ubuntu-20.04
+    env:
+      TAG: ${{ needs.deploy-image.outputs.tag }}
+      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v2
+
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Start lakeFS S3
+        env:
+          LAKEFS_STATS_ENABLED: "false"
+          LAKEFS_BLOCKSTORE_TYPE: s3
+          LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.docker.lakefs.io:8000
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
+        working-directory: test/spark
+        run: docker-compose up -d postgres lakefs
+
+      - name: Setup lakeFS for tests
+        working-directory: test/spark
+        run: ./setup-test.sh
+
+      - name: Test lakeFS multipart upload with Hadoop S3A
+        env:
+          STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-s3a-mpu
+          REPOSITORY: s3a-mpu-test
+          AWS_ACCESS_KEY_ID: ${{ secrets.TESTER_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.TESTER_SECRET_ACCESS_KEY }}
+          # TODO(ariels): This depends on an actual DNS lookup
+          #     (*.local.lakefs.io is 127.0.0.1) because it runs outside of
+          #     a Docker container.  Bypass this somehow.
+          ENDPOINT: "http://s3.local.lakefs.io:8000"
+        working-directory: test/spark/s3a-multipart
+        run: docker-compose exec -T lakefs lakectl repo create "lakefs://${REPOSITORY}" ${STORAGE_NAMESPACE} -d main && sbt "run s3a://${REPOSITORY}/main/multipart.out"
+
+      - name: lakeFS logs on failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        working-directory: test/spark
+        run: docker-compose logs --tail=1000 lakefs
+
+      - name: DEBUG get logs
+        working-directory: test/spark
+        run: docker-compose logs --tail=5000 -- lakefs 2>&1
+
+      - name: Verify lakeFS performed a multipart upload
+        working-directory: test/spark
+        run: set -o pipefail && docker-compose logs --tail=5000 -- lakefs 2>&1 | fgrep CompleteMultiPartUpload
+
   spark2:
     name: Test lakeFS with Spark 2.x
     needs: deploy-image
@@ -418,7 +486,6 @@ jobs:
           STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-spark3-metaclient
         working-directory: test/spark
         run: ./setup-client-test.sh
-
 
       - name: Test lakeFS S3 with Spark 3.x
         env:
