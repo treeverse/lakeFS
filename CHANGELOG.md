@@ -6,9 +6,9 @@
 - Add support for LDAP authentication (#2058).
 - Support object content-type and user metadata (#2296).
 - Support multiple commits in lakectl revert (#2345).
-- Support rm --recursive (#2446): add support to recursive delete via lakectl
 - `lakectl diff`: support two way diff.
 - `lakectl diff`: allow including uncommitted changes in the diff. 
+- Support rm --recursive (#2446).
 
 ## v0.52.2 - 2021-10-10
 - Fix nil panic for missing configuration of Airflow hook (#2533)
