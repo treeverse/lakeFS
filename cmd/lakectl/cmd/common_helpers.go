@@ -180,7 +180,7 @@ type StatusCoder interface {
 	StatusCode() int
 }
 
-func DieOrContinueOnResponseError(response interface{}, err error, bDie bool) (int, string) {
+func DieOrContinueOnResponseError(response interface{}, err error, die bool) (int, string) {
 	if err == nil {
 		err = helpers.ResponseAsError(response)
 	}
@@ -188,7 +188,7 @@ func DieOrContinueOnResponseError(response interface{}, err error, bDie bool) (i
 		return 0, ""
 	}
 	// error detected
-	if bDie {
+	if die {
 		DieErr(err)
 	}
 

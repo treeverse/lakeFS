@@ -307,11 +307,11 @@ func deleteObjectWorker(ctx context.Context, client api.ClientWithResponsesInter
 	}
 }
 
-func deleteObject(ctx context.Context, client api.ClientWithResponsesInterface, pathURI *uri.URI, bDieOnErr bool) (int, string) {
+func deleteObject(ctx context.Context, client api.ClientWithResponsesInterface, pathURI *uri.URI, dieOnErr bool) (int, string) {
 	resp, err := client.DeleteObjectWithResponse(ctx, pathURI.Repository, pathURI.Ref, &api.DeleteObjectParams{
 		Path: *pathURI.Path,
 	})
-	return DieOrContinueOnResponseError(resp, err, bDieOnErr)
+	return DieOrContinueOnResponseError(resp, err, dieOnErr)
 }
 
 var fsRmCmd = &cobra.Command{
