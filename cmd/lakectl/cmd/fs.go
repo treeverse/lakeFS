@@ -343,8 +343,8 @@ var fsRmCmd = &cobra.Command{
 
 		var deleteWg sync.WaitGroup
 		paths := make(chan *uri.URI)
+		deleteWg.Add(concurrency)
 		for i := 0; i < concurrency; i++ {
-			deleteWg.Add(1)
 			go deleteObjectWorker(cmd.Context(), client, paths, errors, &deleteWg)
 		}
 
