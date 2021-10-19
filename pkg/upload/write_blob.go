@@ -36,3 +36,24 @@ func WriteBlob(ctx context.Context, adapter block.Adapter, bucketName string, bo
 		Size:            hashReader.CopiedSize,
 	}, nil
 }
+
+func CopyBlob(ctx context.Context, adapter block.Adapter, sourceBucketName string, destinationBucketName string, sourceAddress string, checksum string) (*Blob, error) {
+	uid := uuid.New()
+	destinationAddress := hex.EncodeToString(uid[:])
+
+	err := adapter.Copy(ctx, block.ObjectPointer{
+		StorageNamespace: sourceBucketName,
+		Identifier:       sourceAddress,
+	}, block.ObjectPointer{
+		StorageNamespace: destinationBucketName,
+		Identifier:       destinationAddress,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &Blob{
+		PhysicalAddress: destinationAddress,
+		RelativePath:    true,
+		Checksum:        checksum,
+	}, nil
+}

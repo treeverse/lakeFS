@@ -75,21 +75,51 @@ func extractEntryFromCopyReq(w http.ResponseWriter, req *http.Request, o *PathOp
 		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
 		return nil
 	}
-	// validate src and dst are in the same repository
-	if !strings.EqualFold(o.Repository.Name, p.Repo) {
-		o.Log(req).WithError(err).Error("cannot copy objects across repos")
-		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
-		return nil
-	}
 
-	// update metadata to refer to the source hash in the destination workspace
-	ent, err := o.Catalog.GetEntry(req.Context(), o.Repository.Name, p.Reference, p.Path, catalog.GetEntryParams{})
-	if err != nil {
-		o.Log(req).WithError(err).Error("could not read copy source")
-		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
-		return nil
+	// validate src and dst are in the same repository
+	if !strings.EqualFold(o.Repository.Name, p.Repo) { // create copy of the file
+		sourceRepo, err := o.Catalog.GetRepository(req.Context(), p.Repo)
+		if err != nil {
+			o.Log(req).WithError(err).Error("could not get copy source repository")
+			_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
+			return nil
+		}
+
+		sourceEntry, err := o.Catalog.GetEntry(req.Context(), sourceRepo.Name, p.Reference, p.Path, catalog.GetEntryParams{})
+		if err != nil {
+			o.Log(req).WithError(err).Error("could not get source entry")
+			_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
+			return nil
+		}
+
+		blob, err := upload.CopyBlob(req.Context(), o.BlockStore, sourceRepo.StorageNamespace, o.Repository.StorageNamespace, sourceEntry.PhysicalAddress, sourceEntry.Checksum)
+		if err != nil {
+			o.Log(req).WithError(err).Error("block adapter could not copy object")
+			_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
+			return nil
+		}
+
+		// write metadata
+		writeTime := time.Now()
+		entry := catalog.DBEntry{
+			Path:            o.Path,
+			PhysicalAddress: blob.PhysicalAddress,
+			AddressType:     catalog.AddressTypeRelative,
+			Checksum:        blob.Checksum,
+			Metadata:        nil,
+			Size:            blob.Size,
+			CreationDate:    writeTime,
+		}
+		return &entry
+	} else { // update metadata to refer to the source hash in the destination workspace
+		ent, err := o.Catalog.GetEntry(req.Context(), o.Repository.Name, p.Reference, p.Path, catalog.GetEntryParams{})
+		if err != nil {
+			o.Log(req).WithError(err).Error("could not read copy source")
+			_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
+			return nil
+		}
+		return ent
 	}
-	return ent
 }
 
 func handleCopy(w http.ResponseWriter, req *http.Request, o *PathOperation, copySource string) {
