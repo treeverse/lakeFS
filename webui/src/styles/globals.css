@@ -215,6 +215,15 @@
   display: inline-block;
 }
 
+.btn-group label {
+  margin-bottom: 0;
+  padding: 5px;
+  font-size: smaller;
+}
+
+[type='radio'] {
+  display: none;
+}
 
 .hook-logs {
   background: #222222;
@@ -250,13 +259,15 @@
 }
 
 .table .tree-row .tree-row-actions .btn,
+.table .tree-entry-row .tree-row-actions .btn,
 .actions-runs-list .table tbody tr td .clipboard-copy button,
 .actions-runs-list .table tbody tr td .run-filter .link {
   visibility: hidden;
   font-size: 0.7rem;
 }
 .table .tree-row:hover .tree-row-actions .btn,
-.table .tree-row:focus .tree-row-actions .btn,
+.table .tree-entry-row:hover .tree-row-actions .btn,
+.table .tree-entry-row:focus .tree-row-actions .btn,
 .actions-runs-list .table tbody tr:hover td .clipboard-copy button ,
 .actions-runs-list .table tbody tr:focus td .clipboard-copy button ,
 .actions-runs-list .table tbody tr:hover td .run-filter .link ,

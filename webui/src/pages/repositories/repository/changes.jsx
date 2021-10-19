@@ -30,6 +30,7 @@ import {useRouter} from "../../../lib/hooks/router";
 import {URINavigator} from "../../../lib/components/repository/tree";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import {ToggleButton} from "react-bootstrap";
+import {Link} from "../../../lib/components/nav";
 
 
 const CommitButton = ({ repo, onCommit, enabled = false }) => {
@@ -149,29 +150,46 @@ const RevertButton =({ onRevert, enabled = false }) => {
     );
 }
 
-const ChangesBrowser = ({ repo, reference, after, prefix, delimiter, onSelectRef, onPaginate }) => {
+const ChangesBrowser = ({ repo, reference, after, prefix, view, onSelectRef, onPaginate }) => {
     const [actionError, setActionError] = useState(null);
     const [internalRefresh, setInternalRefresh] = useState(true);
     const [radioValue, setRadioValue] = useState('1');
-    const [delimiterValue, setDelimiterValue] = useState(delimiter);
     const { push } = useRouter();
 
 
+    const radios = [
+        { name: 'Flat', value: 'flat' , selected:false},
+        { name: 'Directory', value: 'dir', selected:false },
+        { name: 'Tree', value: 'tree', selected:false },
+    ];
+
+    let delimiter = ""
+    switch (view){
+        case "dir":
+            delimiter = "/";
+            radios[1].selected = true;
+            break;
+        case "tree":
+            delimiter = "/";
+            radios[2].selected = true;
+            break;
+        default:
+            delimiter = "";
+            radios[0].selected = true;
+            break;
+    }
+
     const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
         if (!repo) return
-        return refs.changes(repo.id, reference.id, after, prefix, delimiterValue)
-    }, [repo.id, reference.id, internalRefresh, after, prefix, delimiterValue])
+        return refs.changes(repo.id, reference.id, after, prefix, delimiter)
+    }, [repo.id, reference.id, internalRefresh, after, prefix, delimiter])
 
     const refresh = () => setInternalRefresh(!internalRefresh)
 
     if (!!error) return <Error error={error}/>
     if (loading) return <Loading/>
 
-    const radios = [
-        { name: 'Flat', value: '1' },
-        { name: 'Directory', value: '2' },
-        { name: 'Tree', value: '3' },
-    ];
+
 
     let onRevert = async (entry) => {
         branches
@@ -185,15 +203,15 @@ const ChangesBrowser = ({ repo, reference, after, prefix, delimiter, onSelectRef
     }
 
     let tablebody;
-    if (radioValue == '3'){
+    if (view === 'tree'){
         tablebody =
             <tbody>
             {results.map(entry => (
-                <TreeItem entry={entry} repo={repo} reference={reference} internalReferesh={internalRefresh}
-                          onRevert={onRevert} delimiter={delimiterValue} after={after} relativeTo={""}/>
+                <TreeItem key={entry.path+"-item"} entry={entry} repo={repo} reference={reference} internalReferesh={internalRefresh}
+                          onRevert={onRevert} delimiter={delimiter} after={after} relativeTo={""}/>
             ))}
         </tbody>
-    } else{
+    } else {
         tablebody = <tbody>
         {results.map(entry => (
             <ChangeEntryRow
@@ -218,7 +236,8 @@ const ChangesBrowser = ({ repo, reference, after, prefix, delimiter, onSelectRef
                         query: {
                             delimiter: "/",
                             prefix: entry.path,
-                            ref: reference.id
+                            ref: reference.id,
+                            view: "dir"
                         }
                     }
                 }}
@@ -272,7 +291,7 @@ const ChangesBrowser = ({ repo, reference, after, prefix, delimiter, onSelectRef
                 <Card>
                     <Card.Header>
                         <span className="float-left">
-                            {(delimiterValue !== "") && (
+                            {(delimiter !== "") && (
                                 <URINavigator path={prefix} reference={reference} repo={repo} relativeTo={`${reference.id} workspace`} pathURLBuilder={(params, query) => {
                                     return {
                                         pathname: '/repositories/:repoId/changes',
@@ -286,20 +305,27 @@ const ChangesBrowser = ({ repo, reference, after, prefix, delimiter, onSelectRef
                             <Form>
                               <ButtonGroup>
                                 {radios.map((radio, idx) => (
-                                    <ToggleButton
-                                        id={`radio-${idx}`}
-                                        type="radio"
-                                        variant="outline-secondary"
-                                        name="radio"
-                                        value={radio.value}
-                                        checked={radioValue === radio.value}
-                                        onChange={(e) => {
-                                            setRadioValue(e.currentTarget.value);
-                                            setDelimiterValue(e.currentTarget.value == '1' ? "" : "/");
-                                        }}
-                                    >
-                                        {radio.name}
-                                    </ToggleButton>
+                                    <Link href={{
+                                        pathname: '/repositories/:repoId/changes',
+                                        params: {repoId: repo.id},
+                                        query: {
+                                            prefix: "",
+                                            ref: reference.id,
+                                            view: radio.value,
+                                    }
+                                    }}>
+                                        <ToggleButton
+                                            id={`radio-${idx}`}
+                                            key={`radio-${idx}`}
+                                            type="radio"
+                                            variant="secondary"
+                                            name="radio"
+                                            value={radio.value}
+                                            checked={radio.selected}>
+                                            {radio.name}
+                                        </ToggleButton>
+                                    </Link>
+
                                 ))}
                               </ButtonGroup>
                                 </Form>
@@ -314,6 +340,7 @@ const ChangesBrowser = ({ repo, reference, after, prefix, delimiter, onSelectRef
                     </Card.Body>
                 </Card>
                 )}
+                <Paginator onPaginate={onPaginate} nextPage={nextPage} after={after}/>
             </div>
         </>
     )
@@ -322,7 +349,7 @@ const ChangesBrowser = ({ repo, reference, after, prefix, delimiter, onSelectRef
 const ChangesContainer = () => {
     const router = useRouter();
     const { repo, reference, loading, error } = useRefs()
-    const { after, prefix, delimiter } = router.query
+    const { after, prefix, view } = router.query
 
     if (loading) return <Loading/>
     if (!!error) return <Error error={error}/>
@@ -331,7 +358,7 @@ const ChangesContainer = () => {
         <ChangesBrowser
             after={(!!after) ? after : ""}
             prefix={(!!prefix) ? prefix : ""}
-            delimiter={(!!delimiter) ? delimiter : ""}
+            view={(!!view) ? view : ""}
             repo={repo}
             reference={reference}
             onPaginate={after => router.push({
@@ -341,7 +368,7 @@ const ChangesContainer = () => {
                     ref: reference.id,
                     after: (!!after) ? after : "",
                     prefix: (!!prefix) ? prefix : "",
-                    delimiter: (!!delimiter) ? delimiter : "",
+                    view: (!!view) ? view : "",
                 }
             })}
             onSelectRef={ref => router.push({
@@ -349,7 +376,7 @@ const ChangesContainer = () => {
                 params: {repoId: repo.id},
                 query: {
                     ref: ref.id,
-                    delimiter: (delimiter) ? delimiter : "",
+                    delimiter: (view) ? view : "",
                 }
             })}
         />
