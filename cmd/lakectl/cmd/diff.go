@@ -23,14 +23,14 @@ const (
 )
 
 var diffCmd = &cobra.Command{
-	Use:   `diff <ref uri | branch uri> [ref uri]`,
+	Use:   `diff <ref uri> [ref uri]`,
 	Short: "Show changes between two commits, or the currently uncommitted changes",
 	Example: `
 	lakectl diff lakefs://example-repo/example-branch
 	Show uncommitted changes in example-branch.
 
 	lakectl diff lakefs://example-repo/main lakefs://example-repo/dev
-	Show changes that occurred on the dev branch since when it was branched or merged from main.
+	This shows the differences between master and dev starting at the last common commit.
 	This is similar to the three-dot (...) syntax in git.
 	Uncommitted changes are not shown.
 
@@ -67,12 +67,11 @@ var diffCmd = &cobra.Command{
 			}
 			printDiffRefs(cmd.Context(), client, leftRefURI.Repository, leftRefURI.Ref, rightRefURI.Ref, true)
 			return
-		} else {
-			// got one arg ref: uncommitted changes diff
-			branchURI := MustParseRefURI("ref", args[0])
-			Fmt("Ref: %s\n", branchURI.String())
-			printDiffBranch(cmd.Context(), client, branchURI.Repository, branchURI.Ref)
 		}
+		// got one arg ref: uncommitted changes diff
+		branchURI := MustParseRefURI("ref", args[0])
+		Fmt("Ref: %s\n", branchURI.String())
+		printDiffBranch(cmd.Context(), client, branchURI.Repository, branchURI.Ref)
 	},
 }
 
