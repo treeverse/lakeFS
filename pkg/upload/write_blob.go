@@ -37,7 +37,7 @@ func WriteBlob(ctx context.Context, adapter block.Adapter, bucketName string, bo
 	}, nil
 }
 
-func CopyBlob(ctx context.Context, adapter block.Adapter, sourceBucketName string, destinationBucketName string, sourceAddress string, checksum string) (*Blob, error) {
+func CopyBlob(ctx context.Context, adapter block.Adapter, sourceBucketName string, destinationBucketName string, sourceAddress string, checksum string, size int64) (*Blob, error) {
 	uid := uuid.New()
 	destinationAddress := hex.EncodeToString(uid[:])
 
@@ -55,5 +55,6 @@ func CopyBlob(ctx context.Context, adapter block.Adapter, sourceBucketName strin
 		PhysicalAddress: destinationAddress,
 		RelativePath:    true,
 		Checksum:        checksum,
+		Size:            size,
 	}, nil
 }
