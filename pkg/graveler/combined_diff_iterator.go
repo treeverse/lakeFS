@@ -47,36 +47,38 @@ func (c *CombinedDiffIterator) Next() bool {
 		c.loadNextStagingValue()
 		c.loadNextCommittedDiff()
 	}
-	for c.committedDiff == nil && c.stagingValue == nil {
-		return false
+	for c.committedDiff != nil || c.stagingValue != nil {
+		if c.err != nil {
+			return false
+		}
+		if c.stagingValue == nil {
+			// nothing on staging - return the original diff
+			c.val = c.committedDiff
+			c.loadNextCommittedDiff()
+			return true
+		}
+		committedStagingCompareResult := 1 // for the case where committedDiff == nil
+		if c.committedDiff != nil {
+			committedStagingCompareResult = bytes.Compare(c.committedDiff.Key, c.stagingValue.Key)
+		}
+		if committedStagingCompareResult < 0 {
+			// nothing on staging - return the original diff
+			c.val = c.committedDiff
+			c.loadNextCommittedDiff()
+			return true
+		}
+		// something on staging
+		compareStagingResult := c.compareStagingWithLeft()
+		c.loadNextStagingValue()
+		if committedStagingCompareResult == 0 {
+			// both sides had values - need to advance committed iterator
+			c.loadNextCommittedDiff()
+		}
+		if compareStagingResult {
+			return true
+		}
 	}
-	if c.err != nil {
-		return false
-	}
-	if c.stagingValue == nil {
-		// nothing on staging - return the original diff
-		c.val = c.committedDiff
-		c.loadNextCommittedDiff()
-		return true
-	}
-	committedStagingCompareResult := 1 // for the case where committedDiff == nil
-	if c.committedDiff != nil {
-		committedStagingCompareResult = bytes.Compare(c.committedDiff.Key, c.stagingValue.Key)
-	}
-	if committedStagingCompareResult < 0 {
-		// nothing on staging - return the original diff
-		c.val = c.committedDiff
-		c.loadNextCommittedDiff()
-		return true
-	}
-	// something on staging
-	compareStagingResult := c.compareStagingWithLeft()
-	c.loadNextStagingValue()
-	if committedStagingCompareResult == 0 {
-		// both sides had values - need to advance committed iterator
-		c.loadNextCommittedDiff()
-	}
-	return compareStagingResult
+	return false
 }
 
 // compareStagingWithLeft checks if there is a diff between the left side to the staging area.
