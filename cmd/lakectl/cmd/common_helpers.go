@@ -159,7 +159,7 @@ type APIError interface {
 	GetPayload() *api.Error
 }
 
-func PrepareErrorData(err error) interface{} {
+func DieErr(err error) {
 	errData := struct{ Error string }{}
 	apiError, isAPIError := err.(APIError)
 	if isAPIError {
@@ -168,11 +168,6 @@ func PrepareErrorData(err error) interface{} {
 	if errData.Error == "" {
 		errData.Error = err.Error()
 	}
-	return errData
-}
-
-func DieErr(err error) {
-	errData := PrepareErrorData(err)
 	WriteTo(DeathMessage, errData, os.Stderr)
 	os.Exit(1)
 }
