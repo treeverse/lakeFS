@@ -1558,7 +1558,11 @@ lakectl config [flags]
 Show changes between two commits, or the currently uncommitted changes
 
 ```
+<<<<<<< HEAD
 lakectl diff <ref uri> [ref uri] [flags]
+=======
+lakectl diff <ref uri> [other ref uri] [flags]
+>>>>>>> update commands.md
 ```
 
 #### Examples
@@ -1697,8 +1701,9 @@ lakectl fs rm <path uri> [flags]
 {:.no_toc}
 
 ```
-  -h, --help        help for rm
-      --recursive   recursively delete all objects under the specified path
+  -C, --concurrency int   max concurrent single delete operations to send to the lakeFS server (default 50)
+  -h, --help              help for rm
+  -r, --recursive         recursively delete all objects under the specified path
 ```
 
 
