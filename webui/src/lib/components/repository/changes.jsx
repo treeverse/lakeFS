@@ -48,18 +48,29 @@ const ChangeRowActions = ({ entry, onRevert }) => {
 
 export const TreeItem = ({ entry, repo, reference, internalRefresh, onRevert, delimiter, after, relativeTo, depth=0 }) => {
     const [expanded, setExpanded] = useState(false);
-    const [aa, setAa] = useState(after);
+    const [afterUpdated, setAfterUpdated] = useState(after);
+    const [realRes, setRealRes] = useState([]);
+    const [realPagin, setRealPagin] = useState({});
 
     const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
-        console.log("wow12")
         if (!expanded) return
         if (!repo) return
 
-        return refs.changes(repo.id, reference.id, aa, entry.path, delimiter)
-    }, [repo.id, reference.id, internalRefresh, aa, entry.path, delimiter, expanded])
+        if (realRes.length > 0 && realRes.at(-1).path > afterUpdated) {
+            // results already cached
+            console.log("wow123345", realRes.at(-1).path, afterUpdated)
+            return realRes, realPagin
+        }
+
+        let { results, pagination } = await refs.changes(repo.id, reference.id, afterUpdated, entry.path, delimiter)
+        setRealRes(realRes.concat(results))
+        setRealPagin(pagination)
+        return {results, pagination}
+    }, [repo.id, reference.id, internalRefresh, afterUpdated, entry.path, delimiter, expanded])
+
 
     if (!!error) return <Error error={error}/>
-    if (loading) return <TreeEntryRow key={entry.path} entry={entry} showActions={true} loading={true} relativeTo={relativeTo} depth={depth} onRevert={onRevert} />
+    if (realRes.length === 0 && loading) return <TreeEntryRow key={entry.path} entry={entry} showActions={true} loading={true} relativeTo={relativeTo} depth={depth} onRevert={onRevert} />
 
     if (!entry.path.endsWith(delimiter)){
         return  <>
@@ -68,14 +79,24 @@ export const TreeItem = ({ entry, repo, reference, internalRefresh, onRevert, de
     }
     return <>
             <TreeEntryRow key={entry.path} entry={entry} showActions={true} expanded={expanded} relativeTo={relativeTo} depth={depth} onClick={() => setExpanded(!expanded)} onRevert={onRevert} />
-            {expanded && results ?
-                results.map(child =>
-                    ( <TreeItem key={entry.path+"-item"} entry={child} repo={repo} reference={reference} onRevert={onRevert}
+            {expanded && realRes ?
+                realRes.map(child =>
+                    ( <TreeItem key={child.path+"-item"} entry={child} repo={repo} reference={reference} onRevert={onRevert}
                                 internalReferesh={internalRefresh} delimiter={delimiter} depth={depth+1} after={after} relativeTo={entry.path}/>)) : ""}
-            {!!nextPage && <tr><Button onClick={(event => {
-                console.log("wow", after, aa, nextPage)
-                setAa(nextPage)
-            })}>{("for more results")}</Button></tr>}
+            {!!nextPage &&
+            <tr className={"tree-entry-row diff-more"}
+                onClick={(event => {
+                    console.log("wow", after, afterUpdated, nextPage)
+                    setAfterUpdated(nextPage)
+            })}>
+                <td className="diff-indicator"/>
+                <td className="tree-path">
+                    <span style={{marginLeft:(depth+1)*10,color:"#007bff"}}>
+                        {`Load more results for prefix ${entry.path} ....`}
+                    </span>
+                </td>
+                <td/>
+            </tr>}
           </>
 }
 

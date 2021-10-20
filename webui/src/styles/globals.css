@@ -205,6 +205,10 @@
   background-color: #fff3cd;
 }
 
+.diff-more {
+  background-color: #ffffff;
+}
+
 .table tr .row-hover {
   visibility: hidden;
   font-size: 0.7em;
@@ -250,7 +254,7 @@
 }
 
 .hook-log-title .btn, .hook-log-title .btn.btn-link  {
-    color: #FBFBFB;
+    color: #fbfbfb;
 }
 
 .tree-row-actions {
