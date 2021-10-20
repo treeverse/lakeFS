@@ -8,6 +8,7 @@
 - Support multiple commits in lakectl revert (#2345).
 - `lakectl diff`: support two way diff.
 - `lakectl diff`: allow including uncommitted changes in the diff. 
+- Fix Trino AVRO format access via S3 gateway (#2429).
 
 ## v0.52.2 - 2021-10-10
 - Fix nil panic for missing configuration of Airflow hook (#2533)
