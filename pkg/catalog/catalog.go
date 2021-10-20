@@ -952,16 +952,16 @@ func (c *Catalog) Diff(ctx context.Context, repository string, leftReference str
 
 func (c *Catalog) Compare(ctx context.Context, repository, leftReference string, rightReference string, params DiffParams) (Differences, bool, error) {
 	repositoryID := graveler.RepositoryID(repository)
-	from := graveler.Ref(leftReference)
-	to := graveler.Ref(rightReference)
+	left := graveler.Ref(leftReference)
+	right := graveler.Ref(rightReference)
 	if err := Validate([]ValidateArg{
 		{"repositoryID", repositoryID, ValidateRepositoryID},
-		{"from", from, ValidateRef},
-		{"to", to, ValidateRef},
+		{"left", left, ValidateRef},
+		{"right", right, ValidateRef},
 	}); err != nil {
 		return nil, false, err
 	}
-	iter, err := c.Store.Compare(ctx, repositoryID, from, to)
+	iter, err := c.Store.Compare(ctx, repositoryID, left, right)
 	if err != nil {
 		return nil, false, err
 	}
