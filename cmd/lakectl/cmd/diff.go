@@ -15,35 +15,50 @@ const (
 
 	minDiffPageSize = 50
 	maxDiffPageSize = 100000
+
+	twoWayFlagName = "two-way"
+	diffTypeTwoDot = "two_dot"
 )
 
 var diffCmd = &cobra.Command{
-	Use:   "diff <ref uri> [other ref uri]",
+	Use:   `diff <ref uri> [ref uri]`,
 	Short: "Show changes between two commits, or the currently uncommitted changes",
 	Example: `
 	lakectl diff lakefs://example-repo/example-branch
-		Show uncommitted changes in example-branch.
-	
-	lakectl diff lakefs://example-repo/commitA lakefs://example-repo/commitB
-		Show changes up to commitA (inclusive), starting from the common ancestor of commitA and commitB.
-		This is similar to the three-dot (...) syntax in git.`,
+	Show uncommitted changes in example-branch.
+
+	lakectl diff lakefs://example-repo/main lakefs://example-repo/dev
+	This shows the differences between master and dev starting at the last common commit.
+	This is similar to the three-dot (...) syntax in git.
+	Uncommitted changes are not shown.
+
+	lakectl diff lakefs://example-repo/main..lakefs://example-repo/dev
+	Show changes between the tips of the main and dev branches.
+	This is similar to the two-dot (..) syntax in git.
+	Uncommitted changes are not shown.
+
+	lakectl diff lakefs://example-repo/main..lakefs://example-repo/dev$
+	Show changes between the tip of the main and the dev branch, including uncommitted changes on dev.`,
+
 	Args: cobra.RangeArgs(diffCmdMinArgs, diffCmdMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		if len(args) == diffCmdMaxArgs {
-			leftRefURI := MustParseRefURI("left ref", args[0])
-			rightRefURI := MustParseRefURI("right ref", args[1])
-			Fmt("Left ref: %s\nRight ref: %s\n", leftRefURI.String(), rightRefURI.String())
-
-			if leftRefURI.Repository != rightRefURI.Repository {
-				Die("both references must belong to the same repository", 1)
-			}
-			printDiffRefs(cmd.Context(), client, leftRefURI.Repository, leftRefURI.Ref, rightRefURI.Ref)
-		} else {
+		if len(args) == diffCmdMinArgs {
+			// got one arg ref: uncommitted changes diff
 			branchURI := MustParseRefURI("ref", args[0])
 			Fmt("Ref: %s\n", branchURI.String())
 			printDiffBranch(cmd.Context(), client, branchURI.Repository, branchURI.Ref)
+			return
 		}
+
+		twoWay, _ := cmd.Flags().GetBool(twoWayFlagName)
+		leftRefURI := MustParseRefURI("left ref", args[0])
+		rightRefURI := MustParseRefURI("right ref", args[1])
+		Fmt("Left ref: %s\nRight ref: %s\n", leftRefURI.String(), rightRefURI.String())
+		if leftRefURI.Repository != rightRefURI.Repository {
+			Die("both references must belong to the same repository", 1)
+		}
+		printDiffRefs(cmd.Context(), client, leftRefURI.Repository, leftRefURI.Ref, rightRefURI.Ref, twoWay)
 	},
 }
 
@@ -81,7 +96,11 @@ func printDiffBranch(ctx context.Context, client api.ClientWithResponsesInterfac
 	}
 }
 
-func printDiffRefs(ctx context.Context, client api.ClientWithResponsesInterface, repository string, leftRef string, rightRef string) {
+func printDiffRefs(ctx context.Context, client api.ClientWithResponsesInterface, repository string, leftRef string, rightRef string, twoDot bool) {
+	var diffType *string
+	if twoDot {
+		diffType = api.StringPtr(diffTypeTwoDot)
+	}
 	var after string
 	pageSize := pageSize(minDiffPageSize)
 	for {
@@ -89,6 +108,7 @@ func printDiffRefs(ctx context.Context, client api.ClientWithResponsesInterface,
 		resp, err := client.DiffRefsWithResponse(ctx, repository, leftRef, rightRef, &api.DiffRefsParams{
 			After:  api.PaginationAfterPtr(after),
 			Amount: api.PaginationAmountPtr(amount),
+			Type:   diffType,
 		})
 		DieOnResponseError(resp, err)
 
@@ -139,4 +159,5 @@ func FmtDiff(diff api.Diff, withDirection bool) {
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(diffCmd)
+	diffCmd.Flags().Bool(twoWayFlagName, false, "Use two way diff")
 }

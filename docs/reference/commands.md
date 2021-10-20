@@ -1227,8 +1227,23 @@ lakectl branch reset <branch uri> [flags]
 
 Given a commit, record a new commit to reverse the effect of this commit
 
+#### Synopsis
+{:.no_toc}
+
+The commits will be reverted in left-to-right order
+
 ```
-lakectl branch revert <branch uri> <commit ref to revert> [flags]
+lakectl branch revert <branch uri> <commit ref to revert> [<more commits>...] [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl branch revert lakefs://example-repo/example-branch commitA
+	          Revert the changes done by commitA in example-branch
+		      branch revert lakefs://example-repo/example-branch HEAD~1 HEAD~2 HEAD~3
+		      Revert the changes done by the second last commit to the fourth last commit in example-branch
 ```
 
 #### Options
@@ -1540,22 +1555,40 @@ lakectl config [flags]
 
 ### lakectl diff
 
-diff between commits/hashes
-
-#### Synopsis
-{:.no_toc}
-
-see the list of paths added/changed/removed in a branch or between two references (could be either commit hash or branch name)
+Show changes between two commits, or the currently uncommitted changes
 
 ```
-lakectl diff <ref uri> [other ref uri] [flags]
+lakectl diff <ref uri> [ref uri] [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+
+	lakectl diff lakefs://example-repo/example-branch
+	Show uncommitted changes in example-branch.
+
+	lakectl diff lakefs://example-repo/main lakefs://example-repo/dev
+	This shows the differences between master and dev starting at the last common commit.
+	This is similar to the three-dot (...) syntax in git.
+	Uncommitted changes are not shown.
+
+	lakectl diff lakefs://example-repo/main..lakefs://example-repo/dev
+	Show changes between the tips of the main and dev branches.
+	This is similar to the two-dot (..) syntax in git.
+	Uncommitted changes are not shown.
+
+	lakectl diff lakefs://example-repo/main..lakefs://example-repo/dev$
+	Show changes between the tip of the main and the dev branch, including uncommitted changes on dev.
 ```
 
 #### Options
 {:.no_toc}
 
 ```
-  -h, --help   help for diff
+  -h, --help      help for diff
+      --two-way   Use two way diff
 ```
 
 
@@ -1685,7 +1718,7 @@ lakectl fs stage <path uri> [flags]
 
 ```
       --checksum string       Object MD5 checksum as a hexadecimal string
-      --content-type string   MIME type describing the format of the contents
+      --content-type string   MIME type of contents
   -h, --help                  help for stage
       --location string       fully qualified storage location (i.e. "s3://bucket/path/to/object")
       --meta strings          key value pairs in the form of key=value
@@ -1724,7 +1757,7 @@ lakectl fs upload <path uri> [flags]
 {:.no_toc}
 
 ```
-      --content-type string   MIME type describing the format of the contents
+      --content-type string   MIME type of contents
   -d, --direct                write directly to backing store (faster but requires more credentials)
   -h, --help                  help for upload
   -r, --recursive             recursively copy all files under local source
