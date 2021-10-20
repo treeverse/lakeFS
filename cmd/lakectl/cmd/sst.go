@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"time"
 
@@ -23,7 +22,7 @@ func readStdin() (pebblesst.ReadableFile, error) {
 		return os.Stdin, nil
 	}
 	// not seekable - read it into a temp file
-	fh, err := ioutil.TempFile("", "cat-sst-*")
+	fh, err := os.CreateTemp("", "cat-sst-*")
 	if err != nil {
 		return nil, fmt.Errorf("error creating tempfile: %w", err)
 	}

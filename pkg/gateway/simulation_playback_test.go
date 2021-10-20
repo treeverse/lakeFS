@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -70,7 +69,7 @@ func DoTestRun(handler http.Handler, timed bool, speed float64, t *testing.T, pa
 }
 
 func regexpGlob(directory string, pattern *regexp.Regexp) []string {
-	dirList, err := ioutil.ReadDir(directory) //ReadDir returns files sorted by name. in the events time order
+	dirList, err := os.ReadDir(directory) // ReadDir returns files sorted by name. in the events time order
 	if err != nil {
 		logging.Default().WithError(err).Fatal("Directory read failed :" + directory)
 	}
@@ -97,7 +96,7 @@ func buildEventList(t *testing.T, params *PlaybackParams) []simulationEvent {
 		eventTimeStr := file[:baseNamePosition-6]               // time part of file name
 		evt.eventTime, _ = time.Parse("15-04-05", eventTimeStr) // add to function
 		fName := filepath.Join(params.RecordingDir, file)
-		event, err := ioutil.ReadFile(fName)
+		event, err := os.ReadFile(fName)
 		if err != nil {
 			t.Fatal("Recording file not found\n")
 		}
@@ -283,12 +282,12 @@ func compareFiles(t *testing.T, params *PlaybackParams, playbackFileName string,
 	playbackSize := playbackInfo.Size()
 	recordingSize := recordingInfo.Size()
 	if recordingSize < MaxTextResponse && playbackSize < MaxTextResponse {
-		playBytes, err := ioutil.ReadFile(playbackFileName)
+		playBytes, err := os.ReadFile(playbackFileName)
 		if err != nil {
 			t.Error("Couldn't read playback file", playbackFileName)
 			return false
 		}
-		recBytes, err := ioutil.ReadFile(recordingFileName)
+		recBytes, err := os.ReadFile(recordingFileName)
 		if err != nil {
 			t.Error("Couldn't read recording file", recordingFileName)
 			return false

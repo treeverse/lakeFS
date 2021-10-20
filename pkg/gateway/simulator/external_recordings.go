@@ -1,7 +1,6 @@
 package simulator
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -39,7 +38,7 @@ func getEtagFileName(path string) string {
 func getLocalEtag(path string) (string, error) {
 	// if etag exists return
 	etagFileName := getEtagFileName(path)
-	etag, err := ioutil.ReadFile(etagFileName)
+	etag, err := os.ReadFile(etagFileName)
 	if err == nil {
 		return string(etag), nil
 	}
@@ -91,6 +90,6 @@ func (d *externalRecordDownloader) DownloadRecording(bucket, key, destination st
 
 	// write the etag file
 	etagFileName := getEtagFileName(destination)
-	err = ioutil.WriteFile(etagFileName, []byte(s3Etag), 0644) //nolint:gosec
+	err = os.WriteFile(etagFileName, []byte(s3Etag), 0644) //nolint:gosec
 	return err
 }

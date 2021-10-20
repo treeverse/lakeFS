@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -24,7 +23,7 @@ func New() *Adapter {
 }
 
 func (a *Adapter) Put(_ context.Context, _ block.ObjectPointer, _ int64, reader io.Reader, _ block.PutOpts) error {
-	_, err := io.Copy(ioutil.Discard, reader)
+	_, err := io.Copy(io.Discard, reader)
 	return err
 }
 
@@ -32,7 +31,7 @@ func (a *Adapter) Get(_ context.Context, obj block.ObjectPointer, expectedSize i
 	if expectedSize < 0 {
 		return nil, io.ErrUnexpectedEOF
 	}
-	return ioutil.NopCloser(&io.LimitedReader{R: rand.Reader, N: expectedSize}), nil
+	return io.NopCloser(&io.LimitedReader{R: rand.Reader, N: expectedSize}), nil
 }
 
 func (a *Adapter) Exists(_ context.Context, obj block.ObjectPointer) (bool, error) {
@@ -48,7 +47,7 @@ func (a *Adapter) GetRange(_ context.Context, obj block.ObjectPointer, startPosi
 		R: rand.Reader,
 		N: n,
 	}
-	return ioutil.NopCloser(reader), nil
+	return io.NopCloser(reader), nil
 }
 
 func (a *Adapter) GetProperties(_ context.Context, _ block.ObjectPointer) (block.Properties, error) {
@@ -90,7 +89,7 @@ func (a *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPoint
 }
 
 func (a *Adapter) UploadPart(_ context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (string, error) {
-	data, err := ioutil.ReadAll(reader)
+	data, err := io.ReadAll(reader)
 	if err != nil {
 		return "", err
 	}
