@@ -297,21 +297,36 @@ var fsStageCmd = &cobra.Command{
 	},
 }
 
-func deleteObjectWorker(ctx context.Context, client api.ClientWithResponsesInterface, paths <-chan *uri.URI, errors chan<- string, wg *sync.WaitGroup) {
+type fsError struct {
+	op      string
+	pathURI *uri.URI
+	err     error
+}
+
+func (fsErr fsError) Error() string {
+	return fmt.Sprintf("%s %s - %s", fsErr.op, fsErr.pathURI.String(), fsErr.err.Error())
+}
+
+func deleteObjectWorker(ctx context.Context, client api.ClientWithResponsesInterface, paths <-chan *uri.URI, errors chan<- error, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for pathURI := range paths {
-		retVal, errStr := deleteObject(ctx, client, pathURI, false)
-		if retVal != 0 {
-			errors <- fmt.Sprintf("rm %s - %s", pathURI.String(), errStr)
+		err := deleteObject(ctx, client, pathURI, false)
+		if err != nil {
+			errors <- fmt.Errorf("rm %s - %v", pathURI.String(), err.Error())
 		}
 	}
 }
 
-func deleteObject(ctx context.Context, client api.ClientWithResponsesInterface, pathURI *uri.URI, dieOnErr bool) (int, string) {
+func deleteObject(ctx context.Context, client api.ClientWithResponsesInterface, pathURI *uri.URI, dieOnErr bool) error {
 	resp, err := client.DeleteObjectWithResponse(ctx, pathURI.Repository, pathURI.Ref, &api.DeleteObjectParams{
 		Path: *pathURI.Path,
 	})
-	return DieOrContinueOnResponseError(resp, err, dieOnErr)
+
+	retrievedErr := RetrieveError(resp, err)
+	if retrievedErr != nil && dieOnErr {
+		DieErr(err)
+	}
+	return retrievedErr
 }
 
 var fsRmCmd = &cobra.Command{
@@ -331,12 +346,12 @@ var fsRmCmd = &cobra.Command{
 		// Recursive delete of (possibly) many objects.
 		success := true
 		var errorsWg sync.WaitGroup
-		errors := make(chan string)
+		errors := make(chan error)
 		errorsWg.Add(1)
 		go func() {
 			defer errorsWg.Done()
-			for errStr := range errors {
-				os.Stderr.WriteString(errStr)
+			for err := range errors {
+				fmt.Fprintln(os.Stderr, err)
 				success = false
 			}
 		}()
