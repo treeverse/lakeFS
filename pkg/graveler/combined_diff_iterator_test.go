@@ -27,16 +27,16 @@ func val(key string, id string) *graveler.ValueRecord {
 	}
 }
 
-func diffVal(key string, leftId string, rightId string) *graveler.Diff {
-	valueId := []byte(rightId)
+func diffVal(key string, leftID string, rightID string) *graveler.Diff {
+	valueId := []byte(rightID)
 	typ := graveler.DiffTypeChanged
-	leftIdentity := []byte(leftId)
-	if leftId == "" {
+	leftIdentity := []byte(leftID)
+	if leftID == "" {
 		typ = graveler.DiffTypeAdded
 		leftIdentity = nil
-	} else if rightId == "" {
+	} else if rightID == "" {
 		typ = graveler.DiffTypeRemoved
-		valueId = []byte(leftId)
+		valueId = []byte(leftID)
 	}
 	return &graveler.Diff{
 		Type: typ,
@@ -62,7 +62,8 @@ func TestCombinedDiffIterator(t *testing.T) {
 		expectedDiffs []*graveler.Diff
 	}{
 		"staging_same_as_left": {
-			testValues: []testValue{{key: "a", leftValue: "a", rightValue: "a", stagingValue: swag.String("a")},
+			testValues: []testValue{
+				{key: "a", leftValue: "a", rightValue: "a", stagingValue: swag.String("a")},
 				{key: "b", leftValue: "b", rightValue: "b1", stagingValue: swag.String("b")},
 				{key: "c", leftValue: "c", rightValue: "", stagingValue: swag.String("c")},
 				{key: "d", leftValue: "", rightValue: "d", stagingValue: swag.String("")},
