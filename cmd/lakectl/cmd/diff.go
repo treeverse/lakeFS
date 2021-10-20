@@ -16,6 +16,7 @@ const (
 	minDiffPageSize = 50
 	maxDiffPageSize = 100000
 
+	twoWayFlagName = "two-way"
 	diffTypeTwoDot = "two_dot"
 )
 
@@ -50,14 +51,14 @@ var diffCmd = &cobra.Command{
 			return
 		}
 
-		twoDot, _ := cmd.Flags().GetBool(diffTypeTwoDot)
+		twoWay, _ := cmd.Flags().GetBool(twoWayFlagName)
 		leftRefURI := MustParseRefURI("left ref", args[0])
 		rightRefURI := MustParseRefURI("right ref", args[1])
 		Fmt("Left ref: %s\nRight ref: %s\n", leftRefURI.String(), rightRefURI.String())
 		if leftRefURI.Repository != rightRefURI.Repository {
 			Die("both references must belong to the same repository", 1)
 		}
-		printDiffRefs(cmd.Context(), client, leftRefURI.Repository, leftRefURI.Ref, rightRefURI.Ref, twoDot)
+		printDiffRefs(cmd.Context(), client, leftRefURI.Repository, leftRefURI.Ref, rightRefURI.Ref, twoWay)
 	},
 }
 
@@ -158,5 +159,5 @@ func FmtDiff(diff api.Diff, withDirection bool) {
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(diffCmd)
-	diffCmd.Flags().Bool(diffTypeTwoDot, false, "Use two_dot diff type")
+	diffCmd.Flags().Bool(twoWayFlagName, false, "Use two way diff")
 }
