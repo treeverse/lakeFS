@@ -8,6 +8,7 @@
 - Support multiple commits in lakectl revert (#2345).
 - `lakectl diff`: support two way diff.
 - `lakectl diff`: allow including uncommitted changes in the diff. 
+- Support lakectl fs rm --recursive (#2446).
 
 ## v0.52.2 - 2021-10-10
 - Fix nil panic for missing configuration of Airflow hook (#2533)

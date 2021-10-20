@@ -1697,7 +1697,9 @@ lakectl fs rm <path uri> [flags]
 {:.no_toc}
 
 ```
-  -h, --help   help for rm
+  -C, --concurrency int   max concurrent single delete operations to send to the lakeFS server (default 50)
+  -h, --help              help for rm
+  -r, --recursive         recursively delete all objects under the specified path
 ```
 
 
