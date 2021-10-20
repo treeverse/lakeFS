@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -56,7 +55,7 @@ func parquetSchema(fieldToRemove string) *schema.JSONSchemaItemType {
 }
 
 func generateParquet(t *testing.T, objs <-chan *TestObject, fieldToRemove string) *os.File {
-	f, err := ioutil.TempFile("", "parquettest")
+	f, err := os.CreateTemp("", "parquettest")
 	if err != nil {
 		t.Fatalf("failed to create temp file: %v", err)
 	}
@@ -152,7 +151,7 @@ func getOrcValues(o *TestObject, fieldToRemove string) []interface{} {
 }
 
 func generateOrc(t *testing.T, objs <-chan *TestObject, fieldToRemove string) *os.File {
-	f, err := ioutil.TempFile("", "orctest")
+	f, err := os.CreateTemp("", "orctest")
 	if err != nil {
 		t.Fatalf("failed to create temp file: %v", err)
 	}

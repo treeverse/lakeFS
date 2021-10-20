@@ -1,7 +1,6 @@
 package pyramid
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 	"strconv"
@@ -12,7 +11,7 @@ import (
 )
 
 func TestConcurrentCreateDeleteDir(t *testing.T) {
-	name, err := ioutil.TempDir("", "test-dir-")
+	name, err := os.MkdirTemp("", "test-dir-")
 	require.NoError(t, err)
 	defer os.RemoveAll(name) // clean up
 
@@ -47,7 +46,7 @@ func TestConcurrentCreateDeleteDir(t *testing.T) {
 }
 
 func TestConcurrentRenameDeleteDir(t *testing.T) {
-	name, err := ioutil.TempDir("", "test-dir-")
+	name, err := os.MkdirTemp("", "test-dir-")
 	require.NoError(t, err)
 	defer os.RemoveAll(name) // clean up
 
@@ -60,7 +59,7 @@ func TestConcurrentRenameDeleteDir(t *testing.T) {
 	for i := 0; i < concurrency; i++ {
 		// create and delete
 		originalPath := path.Join(name, strconv.Itoa(i))
-		require.NoError(t, ioutil.WriteFile(originalPath, []byte("some data"), os.ModePerm))
+		require.NoError(t, os.WriteFile(originalPath, []byte("some data"), os.ModePerm))
 
 		filepath := path.Join(pathDir, strconv.Itoa(i))
 		wg.Add(2)

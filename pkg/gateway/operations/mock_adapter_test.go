@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/treeverse/lakefs/pkg/block"
@@ -28,7 +27,7 @@ func newMockAdapter() *mockAdapter {
 }
 
 func (a *mockAdapter) Put(ctx context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, opts block.PutOpts) error {
-	data, err := ioutil.ReadAll(reader)
+	data, err := io.ReadAll(reader)
 	if err != nil {
 		return err
 	}

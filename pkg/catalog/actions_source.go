@@ -3,7 +3,7 @@ package catalog
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -66,7 +66,7 @@ func (s *ActionsSource) Load(ctx context.Context, record graveler.HookRecord, na
 	}()
 
 	// read action
-	bytes, err := ioutil.ReadAll(reader)
+	bytes, err := io.ReadAll(reader)
 	if err != nil {
 		return nil, fmt.Errorf("reading action file %s: %w", name, err)
 	}

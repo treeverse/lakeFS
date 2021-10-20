@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
@@ -312,7 +311,7 @@ func (l *Adapter) GetProperties(_ context.Context, obj block.ObjectPointer) (blo
 // force" method of creating s dummy file.  Will work in any OS.  speed is not an issue, as
 // this will be activated very few times during startup.
 func isDirectoryWritable(pth string) bool {
-	f, err := ioutil.TempFile(pth, "dummy")
+	f, err := os.CreateTemp(pth, "dummy")
 	if err != nil {
 		return false
 	}

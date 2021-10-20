@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"io/ioutil"
+	"io"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/actions"
@@ -23,7 +23,7 @@ var actionsValidateCmd = &cobra.Command{
 		reader := OpenByPath(file)
 		defer func() { _ = reader.Close() }()
 
-		bytes, err := ioutil.ReadAll(reader)
+		bytes, err := io.ReadAll(reader)
 		if err != nil {
 			DieErr(err)
 		}

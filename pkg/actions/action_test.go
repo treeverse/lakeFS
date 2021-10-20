@@ -3,7 +3,7 @@ package actions_test
 import (
 	"context"
 	"errors"
-	"io/ioutil"
+	"os"
 	"path"
 	"testing"
 
@@ -31,7 +31,7 @@ func TestAction_ReadAction(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			data, err := ioutil.ReadFile(path.Join("testdata", tt.filename))
+			data, err := os.ReadFile(path.Join("testdata", tt.filename))
 			if err != nil {
 				t.Fatalf("Failed to load testdata %s, err=%s", tt.filename, err)
 			}

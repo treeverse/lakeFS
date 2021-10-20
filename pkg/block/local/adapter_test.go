@@ -2,7 +2,7 @@ package local_test
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -21,7 +21,7 @@ const testStorageNamespace = "local://test"
 
 func makeAdapter(t *testing.T) *local.Adapter {
 	t.Helper()
-	dir, err := ioutil.TempDir("", "testing-local-adapter-*")
+	dir, err := os.MkdirTemp("", "testing-local-adapter-*")
 	testutil.MustDo(t, "TempDir", err)
 	testutil.MustDo(t, "NewAdapter", os.MkdirAll(dir, 0700))
 	a, err := local.NewAdapter(dir)
@@ -64,7 +64,7 @@ func TestLocalPutExistsGet(t *testing.T) {
 			}
 			reader, err := a.Get(ctx, makePointer(c.path), 0)
 			testutil.MustDo(t, "Get", err)
-			got, err := ioutil.ReadAll(reader)
+			got, err := io.ReadAll(reader)
 			testutil.MustDo(t, "ReadAll", err)
 			if string(got) != contents {
 				t.Errorf("expected to read \"%s\" as written, got \"%s\"", contents, string(got))
@@ -122,7 +122,7 @@ func TestLocalMultipartUpload(t *testing.T) {
 			testutil.MustDo(t, "CompleteMultiPartUpload", err)
 			reader, err := a.Get(ctx, pointer, 0)
 			testutil.MustDo(t, "Get", err)
-			got, err := ioutil.ReadAll(reader)
+			got, err := io.ReadAll(reader)
 			testutil.MustDo(t, "ReadAll", err)
 			expected := strings.Join(c.partData, "")
 			if string(got) != expected {
@@ -143,7 +143,7 @@ func TestLocalCopy(t *testing.T) {
 	testutil.MustDo(t, "Copy", a.Copy(ctx, makePointer("src"), makePointer("export/to/dst")))
 	reader, err := a.Get(ctx, makePointer("export/to/dst"), 0)
 	testutil.MustDo(t, "Get", err)
-	got, err := ioutil.ReadAll(reader)
+	got, err := io.ReadAll(reader)
 	testutil.MustDo(t, "ReadAll", err)
 	if string(got) != contents {
 		t.Errorf("expected to read \"%s\" as written, got \"%s\"", contents, string(got))

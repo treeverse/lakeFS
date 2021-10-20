@@ -5,16 +5,15 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
-
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
 	gatewayErrors "github.com/treeverse/lakefs/pkg/gateway/errors"
+	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
 	"github.com/treeverse/lakefs/pkg/gateway/path"
 	"github.com/treeverse/lakefs/pkg/gateway/serde"
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -91,7 +90,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 	}
 	objName := multiPart.PhysicalAddress
 	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{logging.PhysicalAddressFieldKey: objName}))
-	xmlMultipartComplete, err := ioutil.ReadAll(req.Body)
+	xmlMultipartComplete, err := io.ReadAll(req.Body)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not read request body")
 		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
