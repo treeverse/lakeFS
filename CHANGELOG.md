@@ -6,7 +6,7 @@
 - Add support for LDAP authentication (#2058).
 - Support object content-type and user metadata (#2296).
 - Support multiple commits in lakectl revert (#2345).
-- `lakectl diff`: support double-dot (..) diff.
+- `lakectl diff`: support two way diff.
 - `lakectl diff`: allow including uncommitted changes in the diff. 
 
 ## v0.52.2 - 2021-10-10
