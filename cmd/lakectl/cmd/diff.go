@@ -3,9 +3,7 @@ package cmd
 import (
 	"context"
 	"os"
-	"strings"
 
-	"github.com/go-openapi/swag"
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
@@ -18,8 +16,7 @@ const (
 	minDiffPageSize = 50
 	maxDiffPageSize = 100000
 
-	twoDotSeparator = ".."
-	diffTypeTwoDot  = "two_dot"
+	diffTypeTwoDot = "two_dot"
 )
 
 var diffCmd = &cobra.Command{
@@ -45,33 +42,22 @@ var diffCmd = &cobra.Command{
 	Args: cobra.RangeArgs(diffCmdMinArgs, diffCmdMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		if len(args) == diffCmdMaxArgs {
-			leftRefURI := MustParseRefURI("left ref", args[0])
-			rightRefURI := MustParseRefURI("right ref", args[1])
-			Fmt("Left ref: %s\nRight ref: %s\n", leftRefURI.String(), rightRefURI.String())
+		if len(args) == diffCmdMinArgs {
+			// got one arg ref: uncommitted changes diff
+			branchURI := MustParseRefURI("ref", args[0])
+			Fmt("Ref: %s\n", branchURI.String())
+			printDiffBranch(cmd.Context(), client, branchURI.Repository, branchURI.Ref)
+			return
+		}
 
-			if leftRefURI.Repository != rightRefURI.Repository {
-				Die("both references must belong to the same repository", 1)
-			}
-			printDiffRefs(cmd.Context(), client, leftRefURI.Repository, leftRefURI.Ref, rightRefURI.Ref, false)
-			return
+		twoDot, _ := cmd.Flags().GetBool(diffTypeTwoDot)
+		leftRefURI := MustParseRefURI("left ref", args[0])
+		rightRefURI := MustParseRefURI("right ref", args[1])
+		Fmt("Left ref: %s\nRight ref: %s\n", leftRefURI.String(), rightRefURI.String())
+		if leftRefURI.Repository != rightRefURI.Repository {
+			Die("both references must belong to the same repository", 1)
 		}
-		splitRef := strings.Split(args[0], twoDotSeparator)
-		// got one arg
-		if len(splitRef) > 1 {
-			// got two-dot syntax
-			leftRefURI := MustParseRefURI("left ref", splitRef[0])
-			rightRefURI := MustParseRefURI("right ref", splitRef[1])
-			if leftRefURI.Repository != rightRefURI.Repository {
-				Die("both references must belong to the same repository", 1)
-			}
-			printDiffRefs(cmd.Context(), client, leftRefURI.Repository, leftRefURI.Ref, rightRefURI.Ref, true)
-			return
-		}
-		// got one arg ref: uncommitted changes diff
-		branchURI := MustParseRefURI("ref", args[0])
-		Fmt("Ref: %s\n", branchURI.String())
-		printDiffBranch(cmd.Context(), client, branchURI.Repository, branchURI.Ref)
+		printDiffRefs(cmd.Context(), client, leftRefURI.Repository, leftRefURI.Ref, rightRefURI.Ref, twoDot)
 	},
 }
 
@@ -110,14 +96,14 @@ func printDiffBranch(ctx context.Context, client api.ClientWithResponsesInterfac
 }
 
 func printDiffRefs(ctx context.Context, client api.ClientWithResponsesInterface, repository string, leftRef string, rightRef string, twoDot bool) {
+	var diffType *string
+	if twoDot {
+		diffType = api.StringPtr(diffTypeTwoDot)
+	}
 	var after string
 	pageSize := pageSize(minDiffPageSize)
 	for {
 		amount := int(pageSize)
-		var diffType *string
-		if twoDot {
-			diffType = swag.String(diffTypeTwoDot)
-		}
 		resp, err := client.DiffRefsWithResponse(ctx, repository, leftRef, rightRef, &api.DiffRefsParams{
 			After:  api.PaginationAfterPtr(after),
 			Amount: api.PaginationAmountPtr(amount),
@@ -172,4 +158,5 @@ func FmtDiff(diff api.Diff, withDirection bool) {
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(diffCmd)
+	diffCmd.Flags().Bool(diffTypeTwoDot, false, "Use two_dot diff type")
 }
