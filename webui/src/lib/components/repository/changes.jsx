@@ -46,11 +46,13 @@ const ChangeRowActions = ({ entry, onRevert }) => {
     );
 };
 
-export const TreeItem = ({ entry, repo, reference, internalRefresh, onRevert, delimiter, after, relativeTo, depth=0 }) => {
+export const TreeItem = ({ entry, repo, reference, internalRefresh, onRevert, delimiter, after, relativeTo, getMore, depth=0 }) => {
     const [expanded, setExpanded] = useState(false);
     const [afterUpdated, setAfterUpdated] = useState(after);
     const [realRes, setRealRes] = useState([]);
     const [realPagin, setRealPagin] = useState({});
+
+    console.log("inTreeItem")
 
     const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
         if (!expanded) return
@@ -62,7 +64,7 @@ export const TreeItem = ({ entry, repo, reference, internalRefresh, onRevert, de
             return realRes, realPagin
         }
 
-        let { results, pagination } = await refs.changes(repo.id, reference.id, afterUpdated, entry.path, delimiter)
+        let { results, pagination } = await getMore(afterUpdated, entry.path)
         setRealRes(realRes.concat(results))
         setRealPagin(pagination)
         return {results, pagination}
@@ -82,7 +84,7 @@ export const TreeItem = ({ entry, repo, reference, internalRefresh, onRevert, de
             {expanded && realRes ?
                 realRes.map(child =>
                     ( <TreeItem key={child.path+"-item"} entry={child} repo={repo} reference={reference} onRevert={onRevert}
-                                internalReferesh={internalRefresh} delimiter={delimiter} depth={depth+1} after={after} relativeTo={entry.path}/>)) : ""}
+                                internalReferesh={internalRefresh} delimiter={delimiter} depth={depth+1} after={after} relativeTo={entry.path} getMore={getMore}/>)) : ""}
             {!!nextPage &&
             <tr className={"tree-entry-row diff-more"}
                 onClick={(event => {

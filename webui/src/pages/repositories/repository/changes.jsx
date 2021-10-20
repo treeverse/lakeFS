@@ -207,7 +207,8 @@ const ChangesBrowser = ({ repo, reference, after, prefix, view, onSelectRef, onP
             <tbody>
             {results.map(entry => (
                 <TreeItem key={entry.path+"-item"} entry={entry} repo={repo} reference={reference} internalReferesh={internalRefresh}
-                          onRevert={onRevert} delimiter={delimiter} after={after} relativeTo={""}/>
+                          onRevert={onRevert} delimiter={delimiter} after={after} relativeTo={""}
+                          getMore={(afterUpdated, path) => {return refs.changes(repo.id, reference.id, afterUpdated, path, delimiter)}}/>
             ))}
         </tbody>
     } else {
@@ -233,7 +234,6 @@ const ChangesBrowser = ({ repo, reference, after, prefix, view, onSelectRef, onP
                         pathname: '/repositories/:repoId/changes',
                         params: {repoId: repo.id},
                         query: {
-                            delimiter: "/",
                             prefix: entry.path,
                             ref: reference.id,
                             view: "dir"
@@ -327,15 +327,13 @@ const ChangesBrowser = ({ repo, reference, after, prefix, view, onSelectRef, onP
 
                                 ))}
                               </ButtonGroup>
-                                </Form>
+                            </Form>
                         </span>
                     </Card.Header>
                     <Card.Body>
                         <Table borderless size="sm">
                             {tablebody}
                         </Table>
-
-
                     </Card.Body>
                 </Card>
                 )}

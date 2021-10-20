@@ -6,19 +6,22 @@ import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
 import {ArrowLeftIcon, GitMergeIcon} from "@primer/octicons-react";
 import {useAPIWithPagination} from "../../../lib/hooks/api";
-import {refs} from "../../../lib/api";
+import {branches, refs} from "../../../lib/api";
 import Alert from "react-bootstrap/Alert";
 import Card from "react-bootstrap/Card";
 import Table from "react-bootstrap/Table";
-import {ChangeEntryRow} from "../../../lib/components/repository/changes";
+import {ChangeEntryRow, TreeItem} from "../../../lib/components/repository/changes";
 import {Paginator} from "../../../lib/components/pagination";
 import {ConfirmationButton} from "../../../lib/components/modals";
 import {useRouter} from "../../../lib/hooks/router";
 import {URINavigator} from "../../../lib/components/repository/tree";
 import Form from "react-bootstrap/Form";
+import ButtonGroup from "react-bootstrap/ButtonGroup";
+import {Link} from "../../../lib/components/nav";
+import {ToggleButton} from "react-bootstrap";
 
 
-const CompareList = ({ repo, reference, compareReference, after, delimiter, prefix, onSelectRef, onSelectCompare, onPaginate }) => {
+const CompareList = ({ repo, reference, compareReference, after, view, prefix, onSelectRef, onSelectCompare, onPaginate }) => {
     const [internalRefresh, setInternalRefresh] = useState(true);
     const [mergeError, setMergeError] = useState(null);
     const [merging, setMerging] = useState(false);
@@ -27,6 +30,28 @@ const CompareList = ({ repo, reference, compareReference, after, delimiter, pref
     const refresh = () => {
         setInternalRefresh(!internalRefresh)
         setMergeError(null)
+    }
+
+    const radios = [
+        { name: 'Flat', value: 'flat' , selected:false},
+        { name: 'Directory', value: 'dir', selected:false },
+        { name: 'Tree', value: 'tree', selected:false },
+    ];
+
+    let delimiter = ""
+    switch (view){
+        case "dir":
+            delimiter = "/";
+            radios[1].selected = true;
+            break;
+        case "tree":
+            delimiter = "/";
+            radios[2].selected = true;
+            break;
+        default:
+            delimiter = "";
+            radios[0].selected = true;
+            break;
     }
 
     const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
@@ -48,6 +73,42 @@ const CompareList = ({ repo, reference, compareReference, after, delimiter, pref
         }
 
         return `${fromId}...${toId}`
+    }
+
+    let tablebody;
+    if (view === 'tree'){
+        tablebody =
+            <tbody>
+            {results.map(entry => (
+                <TreeItem key={entry.path+"-item"} entry={entry} repo={repo} reference={reference} internalReferesh={internalRefresh}
+                          delimiter={delimiter} after={after} relativeTo={""}
+                          getmore={(afterUpdated) => refs.changes(repo.id, reference.id, afterUpdated, entry.path, delimiter)}
+                />
+            ))}
+            </tbody>
+    } else {
+        tablebody = <tbody>
+        {results.map(entry => (
+            <ChangeEntryRow
+                key={entry.path}
+                entry={entry}
+                relativeTo={prefix}
+                showActions={true}
+                onNavigate={entry => {
+                    return {
+                        pathname: '/repositories/:repoId/compare',
+                        params: {repoId: repo.id},
+                        query: {
+                            compare: compareReference === null ? "" : compareReference.id,
+                            ref: reference === null ? "" : reference.id,
+                            prefix: entry.path,
+                            view: "dir"
+                        }
+                    }
+                }}
+            />
+        ))}
+        </tbody>
     }
 
     if (loading) content = <Loading/>
@@ -86,54 +147,41 @@ const CompareList = ({ repo, reference, compareReference, after, delimiter, pref
                                 />
                             )}
                         </span>
-                            <span className="float-right">
+                        <span className="float-right">
                             <Form>
-                                <Form.Switch
-                                    label="Directory View"
-                                    id="changes-directory-view-toggle"
-                                    defaultChecked={(delimiter !== "")}
-                                    onChange={(e) => {
-                                        const query = {
-                                            delimiter: (e.target.checked) ? "/" : ""
-                                        };
-                                        if (compareReference) query.compare = compareReference.id;
-                                        if (reference) query.ref = reference.id;
-                                        push({
+                              <ButtonGroup>
+                                {radios.map((radio, idx) => (
+                                    <Link href={{
                                             pathname: '/repositories/:repoId/compare',
                                             params: {repoId: repo.id},
-                                            query,
-                                        });
-                                    }}
-                                />
-                                </Form>
+                                            query: {
+                                                compare: compareReference == null ? "" : compareReference.id,
+                                                ref: reference == null ? "" : reference.id,
+                                                view: radio.value,
+                                            }
+                                    }}>
+                                        <ToggleButton
+                                            id={`radio-${idx}`}
+                                            key={`radio-${idx}`}
+                                            type="radio"
+                                            variant="secondary"
+                                            name="radio"
+                                            value={radio.value}
+                                            checked={radio.selected}>
+                                            {radio.name}
+                                        </ToggleButton>
+                                    </Link>
+
+                                ))}
+                              </ButtonGroup>
+                            </Form>
                         </span>
                         </Card.Header>
                         <Card.Body>
                             <Table borderless size="sm">
-                                <tbody>
-                                {results.map(entry => (
-                                    <ChangeEntryRow
-                                        key={entry.path}
-                                        entry={entry}
-                                        showActions={false}
-                                        relativeTo={prefix}
-                                        onNavigate={entry => {
-                                            const query = {
-                                                prefix: entry.path,
-                                                delimiter: (delimiter) ? delimiter : "",
-
-                                            };
-                                            if (compareReference) query.compare = compareReference.id;
-                                            if (reference) query.ref = reference.id;
-                                            return {
-                                                pathname: '/repositories/:repoId/compare',
-                                                params: {repoId: repo.id},
-                                                query,
-                                            }
-                                        }}
-                                    />
-                                ))}
-                                </tbody>
+                                <Table borderless size="sm">
+                                    {tablebody}
+                                </Table>
                             </Table>
                         </Card.Body>
                     </Card>
@@ -210,21 +258,21 @@ const CompareContainer = () => {
     const router = useRouter();
     const { loading, error, repo, reference, compare } = useRefs();
 
-    const { after, prefix, delimiter } = router.query;
+    const { after, prefix, view } = router.query;
 
     if (loading) return <Loading/>;
     if (!!error) return <Error error={error}/>;
 
     const route = query => router.push({pathname: `/repositories/:repoId/compare`, params: {repoId: repo.id}, query: {
         ...query,
-        delimiter: (delimiter) ? delimiter : "",
+        view: (view) ? view : "",
     }});
 
     return (
         <CompareList
             repo={repo}
             after={(!!after) ? after : ""}
-            delimiter={(!!delimiter) ? delimiter : ""}
+            view={(!!view) ? view : ""}
             prefix={(!!prefix) ? prefix : ""}
             reference={reference}
             onSelectRef={reference => route(compare ? {ref: reference.id, compare: compare.id} : {ref: reference.id})}
@@ -234,7 +282,7 @@ const CompareContainer = () => {
                 const query = {
                     after: (after) ? after : "",
                     prefix: (prefix) ? prefix : "",
-                    delimiter: (delimiter) ? delimiter : ""
+                    view: (view) ? view : ""
                 };
                 if (compare) query.compare = compare.id;
                 if (reference) query.ref = reference.id;
