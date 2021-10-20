@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -47,7 +46,7 @@ func TestServiceRun(t *testing.T) {
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() { _ = r.Body.Close() }()
-		data, err := ioutil.ReadAll(r.Body)
+		data, err := io.ReadAll(r.Body)
 		if err != nil {
 			t.Error("Failed to read webhook post data", err)
 			return
@@ -157,7 +156,7 @@ hooks:
 		Return(nil).
 		DoAndReturn(func(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
 			var err error
-			writerBytes, err = ioutil.ReadAll(reader)
+			writerBytes, err = io.ReadAll(reader)
 			return err
 		})
 	testOutputWriter.EXPECT().
@@ -165,7 +164,7 @@ hooks:
 		Return(nil).
 		DoAndReturn(func(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
 			var err error
-			writerBytes, err = ioutil.ReadAll(reader)
+			writerBytes, err = io.ReadAll(reader)
 			return err
 		})
 	testOutputWriter.EXPECT().
@@ -173,13 +172,13 @@ hooks:
 		Return(nil).
 		DoAndReturn(func(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
 			var err error
-			writerBytes, err = ioutil.ReadAll(reader)
+			writerBytes, err = io.ReadAll(reader)
 			return err
 		})
 	testOutputWriter.EXPECT().
 		OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatRunManifestOutputPath(record.RunID), gomock.Any(), gomock.Any()).
 		DoAndReturn(func(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
-			data, err := ioutil.ReadAll(reader)
+			data, err := io.ReadAll(reader)
 			if err != nil {
 				return err
 			}

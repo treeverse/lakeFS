@@ -2,7 +2,7 @@ package settings_test
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"sync"
 	"testing"
 
@@ -122,7 +122,7 @@ func TestStoredSettings(t *testing.T) {
 		IdentifierType:   block.IdentifierTypeRelative,
 	}, -1)
 	testutil.Must(t, err)
-	bytes, err := ioutil.ReadAll(reader)
+	bytes, err := io.ReadAll(reader)
 	testutil.Must(t, err)
 	gotSettings := &settings.ExampleSettings{}
 	testutil.Must(t, proto.Unmarshal(bytes, gotSettings))

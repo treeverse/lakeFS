@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
@@ -125,7 +124,7 @@ var fsCatCmd = &cobra.Command{
 				DieErr(err)
 			}
 			defer body.Close()
-			contents, err = ioutil.ReadAll(body)
+			contents, err = io.ReadAll(body)
 			if err != nil {
 				DieErr(err)
 			}

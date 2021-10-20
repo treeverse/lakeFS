@@ -5,7 +5,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/treeverse/lakefs/pkg/auth"
@@ -100,7 +99,7 @@ func (o *Operation) EncodeResponse(w http.ResponseWriter, req *http.Request, ent
 
 func DecodeXMLBody(reader io.Reader, entity interface{}) error {
 	body := reader
-	content, err := ioutil.ReadAll(body)
+	content, err := io.ReadAll(body)
 	if err != nil {
 		return err
 	}

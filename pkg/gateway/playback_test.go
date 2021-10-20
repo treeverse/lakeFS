@@ -4,9 +4,7 @@ import (
 	"archive/zip"
 	"context"
 	"encoding/json"
-	"github.com/spf13/viper"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -16,6 +14,7 @@ import (
 	"testing"
 
 	"github.com/ory/dockertest/v3"
+	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
@@ -166,7 +165,7 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 func newGatewayAuthFromFile(t *testing.T, directory string) *simulator.PlayBackMockConf {
 	m := new(simulator.PlayBackMockConf)
 	fName := filepath.Join(directory, simulator.SimulationConfig)
-	confStr, err := ioutil.ReadFile(fName)
+	confStr, err := os.ReadFile(fName)
 	if err != nil {
 		t.Fatal(fName + " not found\n")
 	}
