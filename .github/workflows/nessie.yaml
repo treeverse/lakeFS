@@ -270,10 +270,6 @@ jobs:
         working-directory: test/spark
         run: docker-compose logs --tail=1000 lakefs
 
-      - name: DEBUG get logs
-        working-directory: test/spark
-        run: docker-compose logs --tail=5000 -- lakefs 2>&1
-
       - name: Verify lakeFS performed a multipart upload
         working-directory: test/spark
         run: set -o pipefail && docker-compose logs --tail=5000 -- lakefs 2>&1 | fgrep CompleteMultiPartUpload
