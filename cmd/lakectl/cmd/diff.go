@@ -26,20 +26,20 @@ var diffCmd = &cobra.Command{
 	Use:   `diff <ref uri | branch uri> [ref uri]`,
 	Short: "Show changes between two commits, or the currently uncommitted changes",
 	Example: `
-	lakectl diff lakefs: //example-repo/example-branch
+	lakectl diff lakefs://example-repo/example-branch
 	Show uncommitted changes in example-branch.
 
-	lakectl diff lakefs: //example-repo/main lakefs://example-repo/dev
-	Show changes that occurred on the dev branch since when it was created from main.
+	lakectl diff lakefs://example-repo/main lakefs://example-repo/dev
+	Show changes that occurred on the dev branch since when it was branched or merged from main.
 	This is similar to the three-dot (...) syntax in git.
 	Uncommitted changes are not shown.
 
-	lakectl diff lakefs: //example-repo/main..lakefs://example-repo/dev
+	lakectl diff lakefs://example-repo/main..lakefs://example-repo/dev
 	Show changes between the tips of the main and dev branches.
 	This is similar to the two-dot (..) syntax in git.
 	Uncommitted changes are not shown.
 
-	lakectl diff lakefs: //example-repo/main..lakefs://example-repo/dev$
+	lakectl diff lakefs://example-repo/main..lakefs://example-repo/dev$
 	Show changes between the tip of the main and the dev branch, including uncommitted changes on dev.`,
 
 	Args: cobra.RangeArgs(diffCmdMinArgs, diffCmdMaxArgs),
