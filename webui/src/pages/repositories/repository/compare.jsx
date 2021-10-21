@@ -82,7 +82,7 @@ const CompareList = ({ repo, reference, compareReference, after, view, prefix, o
             {results.map(entry => (
                 <TreeItem key={entry.path+"-item"} entry={entry} repo={repo} reference={reference} internalReferesh={internalRefresh}
                           delimiter={delimiter} after={after} relativeTo={""}
-                          getmore={(afterUpdated) => refs.changes(repo.id, reference.id, afterUpdated, entry.path, delimiter)}
+                          getMore={(afterUpdated, path) => refs.diff(repo.id, compareReference.id, reference.id, afterUpdated, path, delimiter)}
                 />
             ))}
             </tbody>
@@ -151,6 +151,7 @@ const CompareList = ({ repo, reference, compareReference, after, view, prefix, o
                             <Form>
                               <ButtonGroup>
                                 {radios.map((radio, idx) => (
+                                    <div key={idx}>
                                     <Link href={{
                                             pathname: '/repositories/:repoId/compare',
                                             params: {repoId: repo.id},
@@ -171,7 +172,7 @@ const CompareList = ({ repo, reference, compareReference, after, view, prefix, o
                                             {radio.name}
                                         </ToggleButton>
                                     </Link>
-
+                                    </div>
                                 ))}
                               </ButtonGroup>
                             </Form>
@@ -179,9 +180,7 @@ const CompareList = ({ repo, reference, compareReference, after, view, prefix, o
                         </Card.Header>
                         <Card.Body>
                             <Table borderless size="sm">
-                                <Table borderless size="sm">
-                                    {tablebody}
-                                </Table>
+                                {tablebody}
                             </Table>
                         </Card.Body>
                     </Card>

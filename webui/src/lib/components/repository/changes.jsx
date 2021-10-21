@@ -73,10 +73,9 @@ export const TreeItem = ({ entry, repo, reference, internalRefresh, onRevert, de
     if (realRes.length === 0 && loading)
         return <TreeEntryRow key={entry.path+"entry-row"} entry={entry} showActions={true} loading={true} relativeTo={relativeTo} depth={depth} onRevert={onRevert} />
 
-    if (!entry.path.endsWith(delimiter)){
+    if (!entry.path.endsWith(delimiter))
         return <TreeEntryRow key={entry.path+"entry-row"} entry={entry} showActions={true} leaf={true} relativeTo={relativeTo} depth={depth} onRevert={onRevert} />
 
-    }
     return <>
             <TreeEntryRow key={entry.path+"entry-row"} entry={entry} showActions={true} expanded={expanded} relativeTo={relativeTo} depth={depth} onClick={() => setExpanded(!expanded)} onRevert={onRevert} />
             {expanded && realRes &&
@@ -118,7 +117,10 @@ export const TreeEntryRow = ({ entry, showActions, relativeTo="", leaf=false, ex
                     {pathText}
                 </span>
             </td>
-            <td className={"tree-row-actions"}>{actions}</td>
+            { actions === null ?
+                <td/> :
+                <td className={"tree-row-actions"}>{actions}</td>
+            }
         </tr>
     );
 };
@@ -207,6 +209,9 @@ function diffIndicatorIcon(entry) {
 }
 
 function entryActions(showActions, entry, onRevert) {
+    if (!!!onRevert){
+        return null
+    }
     let actions;
     if (showActions) {
         actions = <ChangeRowActions
