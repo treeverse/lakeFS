@@ -8,6 +8,7 @@
 - Support multiple commits in lakectl revert (#2345).
 - `lakectl diff`: support two way diff.
 - `lakectl diff`: allow including uncommitted changes in the diff. 
+- Fix Trino AVRO format access via S3 gateway (#2429).
 - Support lakectl fs rm --recursive (#2446).
 - Fix UI list users pagination (#2581).
 
