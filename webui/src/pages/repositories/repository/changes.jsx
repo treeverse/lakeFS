@@ -204,9 +204,9 @@ const ChangesBrowser = ({ repo, reference, after, prefix, view, onSelectRef, onP
     let tablebody;
     if (view === 'tree'){
         tablebody =
-            <tbody>
+        <tbody>
             {results.map(entry => (
-                <TreeItem key={entry.path+"-item"} entry={entry} repo={repo} reference={reference} internalReferesh={internalRefresh}
+                <TreeItem key={entry.path+"-tree-item"} entry={entry} repo={repo} reference={reference} internalReferesh={internalRefresh}
                           onRevert={onRevert} delimiter={delimiter} after={after} relativeTo={""}
                           getMore={(afterUpdated, path) => {return refs.changes(repo.id, reference.id, afterUpdated, path, delimiter)}}/>
             ))}
@@ -215,7 +215,7 @@ const ChangesBrowser = ({ repo, reference, after, prefix, view, onSelectRef, onP
         tablebody = <tbody>
         {results.map(entry => (
             <ChangeEntryRow
-                key={entry.path}
+                key={entry.path+"-change-entry"}
                 entry={entry}
                 relativeTo={prefix}
                 showActions={true}
@@ -304,27 +304,28 @@ const ChangesBrowser = ({ repo, reference, after, prefix, view, onSelectRef, onP
                             <Form>
                               <ButtonGroup>
                                 {radios.map((radio, idx) => (
-                                    <Link href={{
-                                        pathname: '/repositories/:repoId/changes',
-                                        params: {repoId: repo.id},
-                                        query: {
-                                            prefix: "",
-                                            ref: reference.id,
-                                            view: radio.value,
-                                    }
-                                    }}>
-                                        <ToggleButton
-                                            id={`radio-${idx}`}
-                                            key={`radio-${idx}`}
-                                            type="radio"
-                                            variant="secondary"
-                                            name="radio"
-                                            value={radio.value}
-                                            checked={radio.selected}>
-                                            {radio.name}
-                                        </ToggleButton>
-                                    </Link>
-
+                                    <div key={idx}>
+                                        <Link href={{
+                                            pathname: '/repositories/:repoId/changes',
+                                            params: {repoId: repo.id},
+                                            query: {
+                                                prefix: "",
+                                                ref: reference.id,
+                                                view: radio.value,
+                                        }
+                                        }}>
+                                            <ToggleButton
+                                                id={`radio-${idx}`}
+                                                key={`radio-${idx}`}
+                                                type="radio"
+                                                variant="secondary"
+                                                name="radio"
+                                                value={radio.value}
+                                                checked={radio.selected}>
+                                                {radio.name}
+                                            </ToggleButton>
+                                        </Link>
+                                    </div>
                                 ))}
                               </ButtonGroup>
                             </Form>

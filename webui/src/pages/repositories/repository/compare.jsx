@@ -155,8 +155,8 @@ const CompareList = ({ repo, reference, compareReference, after, view, prefix, o
                                             pathname: '/repositories/:repoId/compare',
                                             params: {repoId: repo.id},
                                             query: {
-                                                compare: compareReference == null ? "" : compareReference.id,
-                                                ref: reference == null ? "" : reference.id,
+                                                compare: compareReference === null ? "" : compareReference.id,
+                                                ref: reference === null ? "" : reference.id,
                                                 view: radio.value,
                                             }
                                     }}>
