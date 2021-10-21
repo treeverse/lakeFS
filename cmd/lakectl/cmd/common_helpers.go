@@ -176,12 +176,16 @@ type StatusCoder interface {
 	StatusCode() int
 }
 
-func DieOnResponseError(response interface{}, err error) {
+func RetrieveError(response interface{}, err error) error {
 	if err != nil {
-		DieErr(err)
+		return err
 	}
-	err = helpers.ResponseAsError(response)
-	if err != nil {
+	return helpers.ResponseAsError(response)
+}
+
+func DieOnResponseError(response interface{}, err error) {
+	retrievedErr := RetrieveError(response, err)
+	if retrievedErr != nil {
 		DieErr(err)
 	}
 }
