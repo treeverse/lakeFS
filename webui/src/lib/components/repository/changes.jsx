@@ -1,25 +1,14 @@
 import React, {useState} from "react";
 
-import {OverlayTrigger, Tab, Tabs} from "react-bootstrap";
+import {OverlayTrigger} from "react-bootstrap";
 import Tooltip from "react-bootstrap/Tooltip";
 import Button from "react-bootstrap/Button";
-import {
-    ArrowRightIcon, ChevronDownIcon, ChevronRightIcon,
-    CircleSlashIcon, ClockIcon, CodeSquareIcon,
-    FileDirectoryIcon,
-    HistoryIcon,
-    PencilIcon,
-    PlusIcon,
-    SidebarExpandIcon,
-    TrashIcon
-} from "@primer/octicons-react";
+import { ChevronDownIcon, ChevronRightIcon, CircleSlashIcon, ClockIcon, HistoryIcon, PencilIcon, PlusIcon, TrashIcon } from "@primer/octicons-react";
 
 import {ConfirmationModal} from "../modals";
 import {Link} from "../nav";
 import {useAPIWithPagination} from "../../hooks/api";
-import {branches, DEFAULT_LISTING_AMOUNT, refs} from "../../api";
-import {Paginator} from "../pagination";
-import {Error, Loading} from "../controls";
+import {Error} from "../controls";
 
 
 const ChangeRowActions = ({ entry, onRevert }) => {

@@ -33,7 +33,7 @@ import {ToggleButton} from "react-bootstrap";
 import {Link} from "../../../lib/components/nav";
 
 
-const CommitButton = ({ repo, onCommit, enabled = false }) => {
+const CommitButton = ({repo, onCommit, enabled = false}) => {
 
     const textRef = useRef(null);
 
@@ -78,21 +78,23 @@ const CommitButton = ({ repo, onCommit, enabled = false }) => {
                                 <Form.Group controlId="message" key={`commit-metadata-field-${f.key}-${f.value}-${i}`}>
                                     <Row>
                                         <Col md={{span: 5}}>
-                                            <Form.Control type="text" placeholder="Key"  defaultValue={f.key} onChange={(e) => {
-                                                metadataFields[i].key = e.currentTarget.value;
-                                                setMetadataFields(metadataFields);
-                                            }}/>
+                                            <Form.Control type="text" placeholder="Key" defaultValue={f.key}
+                                                          onChange={(e) => {
+                                                              metadataFields[i].key = e.currentTarget.value;
+                                                              setMetadataFields(metadataFields);
+                                                          }}/>
                                         </Col>
-                                        <Col md={{ span: 5}}>
-                                            <Form.Control type="text" placeholder="Value"  defaultValue={f.value}  onChange={(e) => {
-                                                metadataFields[i].value = e.currentTarget.value;
-                                                setMetadataFields(metadataFields);
-                                            }}/>
+                                        <Col md={{span: 5}}>
+                                            <Form.Control type="text" placeholder="Value" defaultValue={f.value}
+                                                          onChange={(e) => {
+                                                              metadataFields[i].value = e.currentTarget.value;
+                                                              setMetadataFields(metadataFields);
+                                                          }}/>
                                         </Col>
-                                        <Col md={{ span: 1}}>
+                                        <Col md={{span: 1}}>
                                             <Form.Text>
                                                 <Button size="sm" variant="secondary" onClick={() => {
-                                                    setMetadataFields([...metadataFields.slice(0,i), ...metadataFields.slice(i+1)]);
+                                                    setMetadataFields([...metadataFields.slice(0, i), ...metadataFields.slice(i + 1)]);
                                                 }}>
                                                     <XIcon/>
                                                 </Button>
@@ -129,7 +131,7 @@ const CommitButton = ({ repo, onCommit, enabled = false }) => {
 }
 
 
-const RevertButton =({ onRevert, enabled = false }) => {
+const RevertButton = ({onRevert, enabled = false}) => {
     const [show, setShow] = useState(false)
     const hide = () => setShow(false)
 
@@ -142,7 +144,7 @@ const RevertButton =({ onRevert, enabled = false }) => {
                 onConfirm={() => {
                     onRevert()
                     hide()
-                }} />
+                }}/>
             <Button variant="light" disabled={!enabled} onClick={() => setShow(true)}>
                 <HistoryIcon/> Revert
             </Button>
@@ -150,20 +152,20 @@ const RevertButton =({ onRevert, enabled = false }) => {
     );
 }
 
-const ChangesBrowser = ({ repo, reference, after, prefix, view, onSelectRef, onPaginate }) => {
+const ChangesBrowser = ({repo, reference, after, prefix, view, onSelectRef, onPaginate}) => {
     const [actionError, setActionError] = useState(null);
     const [internalRefresh, setInternalRefresh] = useState(true);
-    const { push } = useRouter();
+    const {push} = useRouter();
 
 
     const radios = [
-        { name: 'Flat', value: 'flat' , selected:false},
-        { name: 'Directory', value: 'dir', selected:false },
-        { name: 'Tree', value: 'tree', selected:false },
+        {name: 'Flat', value: 'flat', selected: false},
+        {name: 'Directory', value: 'dir', selected: false},
+        {name: 'Tree', value: 'tree', selected: false},
     ];
 
     let delimiter = ""
-    switch (view){
+    switch (view) {
         case "dir":
             delimiter = "/";
             radios[1].selected = true;
@@ -178,7 +180,7 @@ const ChangesBrowser = ({ repo, reference, after, prefix, view, onSelectRef, onP
             break;
     }
 
-    const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
+    const {results, error, loading, nextPage} = useAPIWithPagination(async () => {
         if (!repo) return
         return refs.changes(repo.id, reference.id, after, prefix, delimiter)
     }, [repo.id, reference.id, internalRefresh, after, prefix, delimiter])
@@ -187,8 +189,6 @@ const ChangesBrowser = ({ repo, reference, after, prefix, view, onSelectRef, onP
 
     if (!!error) return <Error error={error}/>
     if (loading) return <Loading/>
-
-
 
     let onRevert = async (entry) => {
         branches
@@ -202,20 +202,23 @@ const ChangesBrowser = ({ repo, reference, after, prefix, view, onSelectRef, onP
     }
 
     let tablebody;
-    if (view === 'tree'){
+    if (view === 'tree') {
         tablebody =
-        <tbody>
+            <tbody>
             {results.map(entry => (
-                <TreeItem key={entry.path+"-tree-item"} entry={entry} repo={repo} reference={reference} internalReferesh={internalRefresh}
+                <TreeItem key={entry.path + "-tree-item"} entry={entry} repo={repo} reference={reference}
+                          internalReferesh={internalRefresh}
                           onRevert={onRevert} delimiter={delimiter} after={after} relativeTo={""}
-                          getMore={(afterUpdated, path) => {return refs.changes(repo.id, reference.id, afterUpdated, path, delimiter)}}/>
+                          getMore={(afterUpdated, path) => {
+                              return refs.changes(repo.id, reference.id, afterUpdated, path, delimiter)
+                          }}/>
             ))}
-        </tbody>
+            </tbody>
     } else {
         tablebody = <tbody>
         {results.map(entry => (
             <ChangeEntryRow
-                key={entry.path+"-change-entry"}
+                key={entry.path + "-change-entry"}
                 entry={entry}
                 relativeTo={prefix}
                 showActions={true}
@@ -287,20 +290,22 @@ const ChangesBrowser = ({ repo, reference, after, prefix, view, onSelectRef, onP
             {actionErrorDisplay}
             <div className="tree-container">
                 {(results.length === 0) ? <Alert variant="info">No changes</Alert> : (
-                <Card>
-                    <Card.Header>
+                    <Card>
+                        <Card.Header>
                         <span className="float-left">
                             {(delimiter !== "") && (
-                                <URINavigator path={prefix} reference={reference} repo={repo} relativeTo={`${reference.id} workspace`} pathURLBuilder={(params, query) => {
-                                    return {
-                                        pathname: '/repositories/:repoId/changes',
-                                        params: params,
-                                        query: {delimiter: "/", ref: reference.id},
-                                    }
-                                }}/>
+                                <URINavigator path={prefix} reference={reference} repo={repo}
+                                              relativeTo={`${reference.id} workspace`}
+                                              pathURLBuilder={(params, query) => {
+                                                  return {
+                                                      pathname: '/repositories/:repoId/changes',
+                                                      params: params,
+                                                      query: {delimiter: "/", ref: reference.id},
+                                                  }
+                                              }}/>
                             )}
                         </span>
-                        <span className="float-right">
+                            <span className="float-right">
                             <Form>
                               <ButtonGroup>
                                 {radios.map((radio, idx) => (
@@ -312,7 +317,7 @@ const ChangesBrowser = ({ repo, reference, after, prefix, view, onSelectRef, onP
                                                 prefix: "",
                                                 ref: reference.id,
                                                 view: radio.value,
-                                        }
+                                            }
                                         }}>
                                             <ToggleButton
                                                 id={`radio-${idx}`}
@@ -330,13 +335,13 @@ const ChangesBrowser = ({ repo, reference, after, prefix, view, onSelectRef, onP
                               </ButtonGroup>
                             </Form>
                         </span>
-                    </Card.Header>
-                    <Card.Body>
-                        <Table borderless size="sm">
-                            {tablebody}
-                        </Table>
-                    </Card.Body>
-                </Card>
+                        </Card.Header>
+                        <Card.Body>
+                            <Table borderless size="sm">
+                                {tablebody}
+                            </Table>
+                        </Card.Body>
+                    </Card>
                 )}
                 <Paginator onPaginate={onPaginate} nextPage={nextPage} after={after}/>
             </div>
@@ -346,8 +351,8 @@ const ChangesBrowser = ({ repo, reference, after, prefix, view, onSelectRef, onP
 
 const ChangesContainer = () => {
     const router = useRouter();
-    const { repo, reference, loading, error } = useRefs()
-    const { after, prefix, view } = router.query
+    const {repo, reference, loading, error} = useRefs()
+    const {after, prefix, view} = router.query
 
     if (loading) return <Loading/>
     if (!!error) return <Error error={error}/>
