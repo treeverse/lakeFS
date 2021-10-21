@@ -155,8 +155,6 @@ const RevertButton = ({onRevert, enabled = false}) => {
 const ChangesBrowser = ({repo, reference, after, prefix, view, onSelectRef, onPaginate}) => {
     const [actionError, setActionError] = useState(null);
     const [internalRefresh, setInternalRefresh] = useState(true);
-    const {push} = useRouter();
-
 
     const radios = [
         {name: 'Flat', value: 'flat', selected: false},

@@ -25,7 +25,6 @@ const CompareList = ({ repo, reference, compareReference, after, view, prefix, o
     const [internalRefresh, setInternalRefresh] = useState(true);
     const [mergeError, setMergeError] = useState(null);
     const [merging, setMerging] = useState(false);
-    const { push } = useRouter();
 
     const refresh = () => {
         setInternalRefresh(!internalRefresh)
