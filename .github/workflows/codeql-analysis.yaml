@@ -44,7 +44,7 @@ jobs:
         # Prefix the list here with "+" to use these queries and those in the config file.
         # queries: ./path/to/local/query, your-org/your-repo/queries@main
 
-    - run: make build
+    - run: make gen
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v1
