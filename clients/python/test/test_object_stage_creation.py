@@ -13,6 +13,8 @@ import sys
 import unittest
 
 import lakefs_client
+from lakefs_client.model.object_user_metadata import ObjectUserMetadata
+globals()['ObjectUserMetadata'] = ObjectUserMetadata
 from lakefs_client.model.object_stage_creation import ObjectStageCreation
 
 
