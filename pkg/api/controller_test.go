@@ -888,15 +888,13 @@ func TestController_ObjectsStatObjectHandler(t *testing.T) {
 			Checksum:        "this_is_a_checksum",
 			Metadata:        catalog.Metadata{"additionalProperty1": "testing get object stats"},
 		}
-		testutil.Must(t,
-			deps.catalog.CreateEntry(ctx, "repo1", "main", entry))
-		if err != nil {
-			t.Fatal(err)
-		}
+		testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo1", "main", entry))
 
 		resp, err := clt.StatObjectWithResponse(ctx, "repo1", "main", &api.StatObjectParams{Path: "foo/bar"})
 		verifyResponseOK(t, resp, err)
 		objectStats := resp.JSON200
+
+		// verify bar stat info
 		if objectStats.Path != entry.Path {
 			t.Fatalf("expected to get back our path, got %s", objectStats.Path)
 		}
@@ -906,16 +904,43 @@ func TestController_ObjectsStatObjectHandler(t *testing.T) {
 		if objectStats.PhysicalAddress != onBlock(deps, "some-bucket/")+entry.PhysicalAddress {
 			t.Fatalf("expected correct PhysicalAddress, got %s", objectStats.PhysicalAddress)
 		}
-		if objectStats.Metadata == nil {
-			t.Fatalf("expected to get back user-defined metadata, got nothing")
+		if diff := deep.Equal(objectStats.Metadata.AdditionalProperties, map[string]string(entry.Metadata)); diff != nil {
+			t.Fatalf("expected to get back user-defined metadata: %s", diff)
+		}
+		contentType := api.StringValue(objectStats.ContentType)
+		if contentType != catalog.DefaultContentType {
+			t.Fatalf("expected to get default content type, got: %s", contentType)
 		}
 
+		// verify get stat without metadata works
 		getUserMetadata := false
 		resp, err = clt.StatObjectWithResponse(ctx, "repo1", "main", &api.StatObjectParams{Path: "foo/bar", UserMetadata: &getUserMetadata})
 		verifyResponseOK(t, resp, err)
 		objectStatsNoMetadata := resp.JSON200
 		if objectStatsNoMetadata.Metadata != nil {
 			t.Fatalf("expected to not get back user-defined metadata, got %+v", objectStatsNoMetadata.Metadata.AdditionalProperties)
+		}
+	})
+
+	t.Run("get object stats content-type", func(t *testing.T) {
+		entry := catalog.DBEntry{
+			Path:            "foo/bar2",
+			PhysicalAddress: "this_is_bar2_address",
+			CreationDate:    time.Now(),
+			Size:            666,
+			Checksum:        "this_is_a_checksum",
+			ContentType:     "example/content",
+		}
+		testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo1", "main", entry))
+
+		resp, err := clt.StatObjectWithResponse(ctx, "repo1", "main", &api.StatObjectParams{Path: "foo/bar2"})
+		verifyResponseOK(t, resp, err)
+		objectStats := resp.JSON200
+
+		// verify stat custom content-type
+		contentType := api.StringValue(objectStats.ContentType)
+		if contentType != entry.ContentType {
+			t.Fatalf("expected to get entry content type, got: %s, expected: %s", contentType, entry.ContentType)
 		}
 	})
 }
