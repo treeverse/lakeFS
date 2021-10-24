@@ -147,12 +147,12 @@
   padding: 0 10px;
 }
 
-.table .tree-row {
+.table .change-entry-row {
   border-bottom: 1px solid rgba(0, 0, 0, 0.125);
   height: 45px;
 }
 
-.table .tree-row td,
+.table .change-entry-row td,
 .actions-runs-list .table td {
   padding-top: 10px;
   padding-bottom: 10px;
@@ -163,16 +163,16 @@
   margin-bottom: 20px;
 }
 
-.table .tree-row td:first-child {
+.table .change-entry-row td:first-child {
   padding-left: 20px;
 }
 
-.table .tree-row td:nth-child(4) {
+.table .change-entry-row td:nth-child(4) {
   padding-right: 20px;
   text-align: right;
 }
 
-.table .tree-row td:last-child {
+.table .change-entry-row td:last-child {
   padding-right: 10px;
   text-align: right;
 }
@@ -219,13 +219,13 @@
   display: inline-block;
 }
 
-.btn-group label {
+.view-options label {
   margin-bottom: 0;
   padding: 5px;
   font-size: smaller;
 }
 
-[type='radio'] {
+.view-options [type='radio'] {
   display: none;
 }
 
@@ -257,21 +257,21 @@
     color: #fbfbfb;
 }
 
-.tree-row-actions {
+.change-entry-row-actions {
   width: 30px;
   padding:0;
 }
 
-.table .tree-row .tree-row-actions .btn,
-.table .tree-entry-row .tree-row-actions .btn,
+.table .change-entry-row .change-entry-row-actions .btn,
+.table .tree-entry-row .change-entry-row-actions .btn,
 .actions-runs-list .table tbody tr td .clipboard-copy button,
 .actions-runs-list .table tbody tr td .run-filter .link {
   visibility: hidden;
   font-size: 0.7rem;
 }
-.table .tree-row:hover .tree-row-actions .btn,
-.table .tree-entry-row:hover .tree-row-actions .btn,
-.table .tree-entry-row:focus .tree-row-actions .btn,
+.table .change-entry-row:hover .change-entry-row-actions .btn,
+.table .tree-entry-row:hover .change-entry-row-actions .btn,
+.table .tree-entry-row:focus .change-entry-row-actions .btn,
 .actions-runs-list .table tbody tr:hover td .clipboard-copy button ,
 .actions-runs-list .table tbody tr:focus td .clipboard-copy button ,
 .actions-runs-list .table tbody tr:hover td .run-filter .link ,
@@ -329,7 +329,6 @@
   padding: 30px;
   background-color: #EEEEEE;
 }
-
 
 .auth-page .tab-content {
   padding: 20px 0;

@@ -1,16 +1,10 @@
 import React, {useState} from "react";
 import {RepositoryPageLayout} from "../../../../../lib/components/repository/layout";
-import {
-    ActionGroup,
-    ActionsBar,
-    ClipboardButton,
-    Error, LinkButton,
-    Loading, RefreshButton, ToggleSwitch
-} from "../../../../../lib/components/controls";
+import {ClipboardButton,Error, LinkButton, Loading} from "../../../../../lib/components/controls";
 import {RefContextProvider, useRefs} from "../../../../../lib/hooks/repo";
 import Card from "react-bootstrap/Card";
 import {useAPI, useAPIWithPagination} from "../../../../../lib/hooks/api";
-import {branches, commits, refs} from "../../../../../lib/api";
+import {commits, refs} from "../../../../../lib/api";
 import moment from "moment";
 import Table from "react-bootstrap/Table";
 import Alert from "react-bootstrap/Alert";
@@ -21,8 +15,6 @@ import {BrowserIcon, LinkIcon, PackageIcon, PlayIcon} from "@primer/octicons-rea
 import {Link} from "../../../../../lib/components/nav";
 import {useRouter} from "../../../../../lib/hooks/router";
 import {URINavigator} from "../../../../../lib/components/repository/tree";
-import {ChangesBrowser} from "../../changes";
-import RefDropdown from "../../../../../lib/components/repository/refDropdown";
 import Form from "react-bootstrap/Form";
 import {ToggleButton} from "react-bootstrap";
 
@@ -121,7 +113,7 @@ const ChangeList = ({ repo, commit, after, prefix, view, onPaginate }) => {
                         </span>
                             <span className="float-right">
                             <Form>
-                              <ButtonGroup>
+                              <ButtonGroup className={"view-options"}>
                                 {radios.map((radio, idx) => (
                                     <div key={idx}>
                                         <Link href={{
@@ -135,7 +127,7 @@ const ChangeList = ({ repo, commit, after, prefix, view, onPaginate }) => {
                                                 view: radio.value,
                                             }
                                         }}>
-                                            <ToggleButton
+                                            <ToggleButton className={"view-options"}
                                                 id={`radio-${idx}`}
                                                 key={`radio-${idx}`}
                                                 type="radio"

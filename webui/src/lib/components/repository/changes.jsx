@@ -35,31 +35,45 @@ const ChangeRowActions = ({ entry, onRevert }) => {
     );
 };
 
+/*
+    Tree item is a node in the tree view. It can be expanded to multiple TreeEntryRow:
+    1. A single TreeEntryRow for the current prefix (or entry for leaves).
+    2. Multiple TreeItem as children, each representing another tree node.
+    entry: The entry the TreeItem is representing, could be either an object or a prefix.
+    repo: Repository
+    reference: commitID / branch
+    internalRefresh: to be called when the page refreshes manually
+    onRevert: to be called when an object/prefix is requested to be reverted
+    delimiter: objects delimiter ('' or '/')
+    after: all entries must be greater than after
+    relativeTo: prefix of the parent item ('' for root elements)
+    getMore: callback to be called when more items need to be rendered
+    depth: the item's depth withing the tree
+ */
 export const TreeItem = ({ entry, repo, reference, internalRefresh, onRevert, delimiter, after, relativeTo, getMore, depth=0 }) => {
-    const [expanded, setExpanded] = useState(false);
-    const [afterUpdated, setAfterUpdated] = useState(after);
-    const [realRes, setRealRes] = useState([]);
-    const [realPagin, setRealPagin] = useState({});
+    const [expanded, setExpanded] = useState(false); // state of the item expansion
+    const [afterUpdated, setAfterUpdated] = useState(after); // state of pagination of the item's children
+    const [resultsState, setResultsState] = useState({results:[], pagination:{}}); // current retrieved children of the item
 
-    const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
+    const { error, loading, nextPage } = useAPIWithPagination(async () => {
         if (!expanded) return
         if (!repo) return
 
-        if (realRes.length > 0 && realRes.at(-1).path > afterUpdated) {
+        if (resultsState.results.length > 0 && resultsState.results.at(-1).path > afterUpdated) {
             // results already cached
-            return realRes, realPagin
+            return {results:resultsState.results, pagination: resultsState.pagination}
         }
 
-        let { results, pagination } = await getMore(afterUpdated, entry.path)
-        setRealRes(realRes.concat(results))
-        setRealPagin(pagination)
-        return {results, pagination}
+        const { results, pagination } =  await getMore(afterUpdated, entry.path)
+        setResultsState({results: resultsState.results.concat(results), pagination: pagination})
+        return {results:resultsState.results, pagination: pagination}
     }, [repo.id, reference.id, internalRefresh, afterUpdated, entry.path, delimiter, expanded])
 
-
+    const results = resultsState.results
     if (!!error)
         return <Error error={error}/>
-    if (realRes.length === 0 && loading)
+
+    if (loading && results.length === 0)
         return <TreeEntryRow key={entry.path+"entry-row"} entry={entry} showActions={true} loading={true} relativeTo={relativeTo} depth={depth} onRevert={onRevert} />
 
     if (!entry.path.endsWith(delimiter))
@@ -67,12 +81,12 @@ export const TreeItem = ({ entry, repo, reference, internalRefresh, onRevert, de
 
     return <>
             <TreeEntryRow key={entry.path+"entry-row"} entry={entry} showActions={true} expanded={expanded} relativeTo={relativeTo} depth={depth} onClick={() => setExpanded(!expanded)} onRevert={onRevert} />
-            {expanded && realRes &&
-                realRes.map(child =>
+            {expanded && results &&
+                results.map(child =>
                     ( <TreeItem key={child.path+"-item"} entry={child} repo={repo} reference={reference} onRevert={onRevert}
                                 internalReferesh={internalRefresh} delimiter={delimiter} depth={depth+1} after={after} relativeTo={entry.path} getMore={getMore}/>))}
-            {!!nextPage &&
-                <tr key={entry.path+"-row"}
+            {(!!nextPage || loading) &&
+                <tr key={"row-" + entry.path}
                     className={"tree-entry-row diff-more"}
                     onClick={(_ => {
                         setAfterUpdated(nextPage)
@@ -81,6 +95,7 @@ export const TreeItem = ({ entry, repo, reference, internalRefresh, onRevert, de
                     <td className="diff-indicator"/>
                     <td className="tree-path">
                         <span style={{marginLeft:(depth+1)*10,color:"#007bff"}}>
+                            {loading && <ClockIcon/>}
                             {`Load more results for prefix ${entry.path} ....`}
                         </span>
                     </td>
@@ -100,7 +115,7 @@ export const TreeEntryRow = ({ entry, showActions, relativeTo="", leaf=false, ex
         <tr className={rowClass} >
             <td className="diff-indicator">{diffIndicator}</td>
             <td onClick={onClick} className="tree-path">
-                <span style={{marginLeft:depth*10}}>
+                <span style={{marginLeft: depth * 10}}>
                     {leaf ? "" : expanded ? <ChevronDownIcon/>:<ChevronRightIcon/>}
                     {loading ? <ClockIcon/> : ""}
                     {pathText}
@@ -108,14 +123,14 @@ export const TreeEntryRow = ({ entry, showActions, relativeTo="", leaf=false, ex
             </td>
             { actions === null ?
                 <td/> :
-                <td className={"tree-row-actions"}>{actions}</td>
+                <td className={"change-entry-row-actions"}>{actions}</td>
             }
         </tr>
     );
 };
 
 export const ChangeEntryRow = ({ entry, showActions, relativeTo="", onNavigate, onRevert }) => {
-    let rowClass = 'tree-row ' + diffType(entry);
+    let rowClass = 'change-entry-row ' + diffType(entry);
     let pathText = extractPathText(entry, relativeTo);
     let diffIndicator = diffIndicatorIcon(entry);
     let actions = entryActions(showActions, entry, onRevert);
@@ -136,7 +151,7 @@ export const ChangeEntryRow = ({ entry, showActions, relativeTo="", onNavigate, 
                     <span>{pathText}</span>
                 )}
             </td>
-            <td className={"tree-row-actions"}>
+            <td className={"change-entry-row-actions"}>
                 {actions}
             </td>
         </tr>
@@ -146,7 +161,7 @@ export const ChangeEntryRow = ({ entry, showActions, relativeTo="", onNavigate, 
 function extractPathText(entry, relativeTo) {
     let pathText = entry.path;
     if (pathText.startsWith(relativeTo)) {
-        pathText = pathText.substr(relativeTo.length, pathText.length);
+        pathText = pathText.substr(relativeTo.length);
     }
     return pathText;
 }

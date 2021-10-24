@@ -38,7 +38,7 @@ const CompareList = ({ repo, reference, compareReference, after, view, prefix, o
     ];
 
     let delimiter = ""
-    switch (view){
+    switch (view) {
         case "dir":
             delimiter = "/";
             radios[1].selected = true;
@@ -148,7 +148,7 @@ const CompareList = ({ repo, reference, compareReference, after, view, prefix, o
                         </span>
                         <span className="float-right">
                             <Form>
-                              <ButtonGroup>
+                              <ButtonGroup className={"view-options"}>
                                 {radios.map((radio, idx) => (
                                     <div key={idx}>
                                     <Link href={{
@@ -160,7 +160,7 @@ const CompareList = ({ repo, reference, compareReference, after, view, prefix, o
                                                 view: radio.value,
                                             }
                                     }}>
-                                        <ToggleButton
+                                        <ToggleButton className={"view-options"}
                                             id={`radio-${idx}`}
                                             key={`radio-${idx}`}
                                             type="radio"

@@ -305,7 +305,7 @@ const ChangesBrowser = ({repo, reference, after, prefix, view, onSelectRef, onPa
                         </span>
                             <span className="float-right">
                             <Form>
-                              <ButtonGroup>
+                              <ButtonGroup className="view-options">
                                 {radios.map((radio, idx) => (
                                     <div key={idx}>
                                         <Link href={{
@@ -317,7 +317,7 @@ const ChangesBrowser = ({repo, reference, after, prefix, view, onSelectRef, onPa
                                                 view: radio.value,
                                             }
                                         }}>
-                                            <ToggleButton
+                                            <ToggleButton className="view-options"
                                                 id={`radio-${idx}`}
                                                 key={`radio-${idx}`}
                                                 type="radio"
