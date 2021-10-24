@@ -16,6 +16,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         # Extract the version to 'version' based on workflow_dispatch or triggered tag in the published event
+
       - name: Extract version
         shell: bash
         run: |
@@ -25,12 +26,18 @@ jobs:
             echo "::set-output name=tag::$(echo ${GITHUB_REF##*/} | sed s/^v//)"
           fi
         id: version
+
       - name: Java generate package
         run: make client-java PACKAGE_VERSION=${{ steps.version.outputs.tag }}
+
+      - name: Java client validate
+        run: make validate-client-java
+
       - name: Install secret key for signing
         run: |
           cat <(echo -e '${{ secrets.OSSRH_GPG_SECRET_KEY }}') | gpg --batch --import
           gpg --list-secret-keys --keyid-format LONG
+
       - name: Set up Java and Maven Central Repository
         uses: actions/setup-java@v2
         with:
@@ -39,6 +46,7 @@ jobs:
           server-id: ossrh
           server-username: MAVEN_USERNAME
           server-password: MAVEN_PASSWORD
+
       - name: Build and publish package
         working-directory: clients/java
         run: mvn --batch-mode deploy -Dgpg.executable="${GITHUB_WORKSPACE}/scripts/gpg_loopback.sh" --activate-profiles sign-artifacts

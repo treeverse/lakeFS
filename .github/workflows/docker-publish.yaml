@@ -23,8 +23,13 @@ jobs:
         id: go
 
       - name: Generate code
-        run: |
-          make gen
+        run: make gen
+
+      - name: Checks validator
+        run: make checks-validator
+        env:
+          GOLANGCI_LINT_FLAGS: --out-format github-actions
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
