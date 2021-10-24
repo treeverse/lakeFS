@@ -109,6 +109,7 @@ go-install: go-mod-download ## Install dependencies
 
 
 client-python: api/swagger.yml  ## Generate SDK for Python client
+	cd clients/python && find . -depth -name lakefs_client -prune -o ! -name client.py -delete
 	$(OPENAPI_GENERATOR) generate \
 		-i /mnt/$< \
 		-g python \
@@ -198,9 +199,7 @@ validate-proto: proto  ## build proto and check if diff found
 	git diff --quiet -- pkg/graveler/settings/test_settings.pb.go
 
 validate-client-python:
-	git diff --quiet -- clients/python/lakefs_client/api
-	git diff --quiet -- clients/python/lakefs_client/model
-	git diff --quiet -- clients/python/.openapi-generator/FILES
+	git diff --quiet -- clients/python
 
 validate-client-java:
 	git diff --quiet -- clients/java

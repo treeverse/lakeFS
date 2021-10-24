@@ -24,6 +24,12 @@ class TestRepositoriesApi(unittest.TestCase):
     def tearDown(self):
         pass
 
+    def test_create_branch_protection_rule(self):
+        """Test case for create_branch_protection_rule
+
+        """
+        pass
+
     def test_create_repository(self):
         """Test case for create_repository
 
@@ -31,10 +37,23 @@ class TestRepositoriesApi(unittest.TestCase):
         """
         pass
 
+    def test_delete_branch_protection_rule(self):
+        """Test case for delete_branch_protection_rule
+
+        """
+        pass
+
     def test_delete_repository(self):
         """Test case for delete_repository
 
         delete repository  # noqa: E501
+        """
+        pass
+
+    def test_get_branch_protection_rules(self):
+        """Test case for get_branch_protection_rules
+
+        get branch protection rules  # noqa: E501
         """
         pass
 
