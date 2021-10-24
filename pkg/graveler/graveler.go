@@ -1767,7 +1767,7 @@ func (g *Graveler) Compare(ctx context.Context, repositoryID RepositoryID, left,
 	if err != nil {
 		return nil, err
 	}
-	fromCommit, toCommit, baseCommit, err := g.getCommitsForMerge(ctx, repositoryID, right, left)
+	fromCommit, toCommit, baseCommit, err := g.getCommitsForMerge(ctx, repositoryID, left, right)
 	if err != nil {
 		return nil, err
 	}
