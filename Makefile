@@ -129,7 +129,8 @@ client-java: api/swagger.yml  ## Generate SDK for Java (and Scala) client
 clients: client-python client-java
 
 package-python: client-python
-	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python $(PYTHON_IMAGE) ./build-package.sh
+	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python $(PYTHON_IMAGE) /bin/bash -c \
+		"python -m pip install build --user && python -m build --sdist --wheel --outdir dist/"
 
 package: package-python
 
