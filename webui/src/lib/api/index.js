@@ -501,6 +501,38 @@ class Objects {
             throw new Error(await extractError(response));
         }
     }
+
+    async getWithSizeConstraint(repoId, ref, path, maxObjectSizeBytes) {
+        const response = await objects.get(repoId, ref, path);
+        const headers = response.headers;
+        if (headers.get("Content-length") > maxObjectSizeBytes) {
+            throw new Error(path + " is too big (> 20KB). To view its diff please download the objects and use an " +
+                "external diff tool.");
+        }
+        const content = await response.text();
+        return [content, headers];
+    }
+
+    async get(repoId, ref, path, additionalHeaders) {
+        const query = qs({path});
+        const response = await apiRequest(`/repositories/${repoId}/refs/${ref}/objects?${query}`, {
+            method: 'GET',
+            headers: new Headers(additionalHeaders)
+        });
+        if (response.status !== 200) {
+            throw new Error(await extractError(response));
+        }
+        return response
+    }
+
+    async getStat(repoId, ref, path) {
+        const query = qs({path});
+        const response = await apiRequest(`/repositories/${repoId}/refs/${ref}/objects/stat?${query}`);
+        if (response.status !== 200) {
+            throw new Error(await extractError(response));
+        }
+        return response.json()
+    }
 }
 
 class Commits {

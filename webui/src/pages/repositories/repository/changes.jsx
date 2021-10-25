@@ -272,7 +272,7 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
                                 <tbody>
                                 {results.map(entry => (
                                     <TreeItem key={entry.path + "-tree-item"} entry={entry} repo={repo} reference={reference}
-                                              internalReferesh={internalRefresh} onNavigate={onNavigate}
+                                              displayedAt={"changes"} internalReferesh={internalRefresh} onNavigate={onNavigate}
                                               onRevert={onRevert} delimiter={delimiter} relativeTo={prefix}
                                               getMore={(afterUpdated, path) => {
                                                   return refs.changes(repo.id, reference.id, afterUpdated, path, delimiter)
