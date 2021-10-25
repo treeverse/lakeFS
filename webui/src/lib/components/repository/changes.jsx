@@ -77,7 +77,7 @@ export const TreeItem = ({ entry, repo, reference, internalRefresh, onRevert, de
         return <TreeEntryRow key={entry.path+"entry-row"} entry={entry} showActions={true} loading={true} relativeTo={relativeTo} depth={depth} onRevert={onRevert} />
 
     if (!entry.path.endsWith(delimiter))
-        return <TreeEntryRow key={entry.path+"entry-row"} entry={entry} showActions={true} leaf={true} relativeTo={relativeTo} depth={depth} onRevert={onRevert} />
+        return <TreeEntryRow key={entry.path+"entry-row"} entry={entry} showActions={true} leaf={true} relativeTo={relativeTo} depth={depth === 0 ? 0 : depth + 1} onRevert={onRevert} />
 
     return <>
             <TreeEntryRow key={entry.path+"entry-row"} entry={entry} showActions={true} expanded={expanded} relativeTo={relativeTo} depth={depth} onClick={() => setExpanded(!expanded)} onRevert={onRevert} />
@@ -94,7 +94,7 @@ export const TreeItem = ({ entry, repo, reference, internalRefresh, onRevert, de
                 >
                     <td className="diff-indicator"/>
                     <td className="tree-path">
-                        <span style={{marginLeft: depth * 10 + "px",color:"#007bff"}}>
+                        <span style={{marginLeft: depth * 20 + "px",color:"#007bff"}}>
                             {loading && <ClockIcon/>}
                             {`Load more results for prefix ${entry.path} ....`}
                         </span>
@@ -115,7 +115,7 @@ export const TreeEntryRow = ({ entry, showActions, relativeTo="", leaf=false, ex
         <tr className={rowClass} >
             <td className="diff-indicator">{diffIndicator}</td>
             <td onClick={onClick} className="tree-path">
-                <span style={{marginLeft: depth * 10 + "px"}}>
+                <span style={{marginLeft: depth * 20 + "px"}}>
                     {leaf ? "" : expanded ? <ChevronDownIcon/>:<ChevronRightIcon/>}
                     {loading ? <ClockIcon/> : ""}
                     {pathText}
