@@ -11,6 +11,7 @@
 - Fix Trino AVRO format access via S3 gateway (#2429).
 - Support lakectl fs rm --recursive (#2446).
 - Fix UI list users pagination (#2581).
+- Add tree-view for uncommitted, compare and commit views (#2174)
 
 ## v0.52.2 - 2021-10-10
 - Fix nil panic for missing configuration of Airflow hook (#2533)
