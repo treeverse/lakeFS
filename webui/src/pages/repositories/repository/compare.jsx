@@ -55,7 +55,7 @@ const CompareList = ({ repo, reference, compareReference, after, view, prefix, o
 
     const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
         if (compareReference.id !== reference.id)
-            return refs.diff(repo.id, compareReference.id, reference.id, after, prefix, delimiter);
+            return refs.diff(repo.id, reference.id, compareReference.id, after, prefix, delimiter);
         return {pagination: {has_more: false}, results: []}; // nothing to compare here.
     }, [repo.id, reference.id, compareReference.id, internalRefresh, after, prefix, delimiter]);
 
@@ -81,7 +81,7 @@ const CompareList = ({ repo, reference, compareReference, after, view, prefix, o
             {results.map(entry => (
                 <TreeItem key={entry.path+"-item"} entry={entry} repo={repo} reference={reference} internalReferesh={internalRefresh}
                           delimiter={delimiter} after={after} relativeTo={""}
-                          getMore={(afterUpdated, path) => refs.diff(repo.id, compareReference.id, reference.id, afterUpdated, path, delimiter)}
+                          getMore={(afterUpdated, path) => refs.diff(repo.id, reference.id, compareReference.id, afterUpdated, path, delimiter)}
                 />
             ))}
             </tbody>
