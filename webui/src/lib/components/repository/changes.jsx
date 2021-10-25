@@ -3,7 +3,17 @@ import React, {useState} from "react";
 import {OverlayTrigger} from "react-bootstrap";
 import Tooltip from "react-bootstrap/Tooltip";
 import Button from "react-bootstrap/Button";
-import { ChevronDownIcon, ChevronRightIcon, CircleSlashIcon, ClockIcon, HistoryIcon, PencilIcon, PlusIcon, TrashIcon } from "@primer/octicons-react";
+import {
+    ChevronDownIcon,
+    ChevronRightIcon,
+    CircleSlashIcon,
+    ClockIcon,
+    FileDirectoryIcon,
+    HistoryIcon,
+    PencilIcon,
+    PlusIcon,
+    TrashIcon
+} from "@primer/octicons-react";
 
 import {ConfirmationModal} from "../modals";
 import {Link} from "../nav";
@@ -182,6 +192,14 @@ function diffType(entry) {
 }
 
 function diffIndicatorIcon(entry) {
+    if (entry.path_type === 'common_prefix') {
+        return <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-prefix"}>Prefix</Tooltip>)}>
+                        <span>
+                            <FileDirectoryIcon fill={"#d9b63e"}/>
+                        </span>
+               </OverlayTrigger>;
+    }
+
     switch (entry.type) {
         case 'removed':
             return <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-removed"}>Removed</Tooltip>)}>
