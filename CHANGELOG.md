@@ -3,6 +3,8 @@
 
 ## Unreleased - XXXX-XX-XX
 
+## v0.53.0 - 2021-10-25
+
 - Add support for LDAP authentication (#2058).
 - Support object content-type and user metadata (#2296).
 - Support multiple commits in lakectl revert (#2345).
