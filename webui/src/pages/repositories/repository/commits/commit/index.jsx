@@ -21,7 +21,6 @@ import {ToggleButton} from "react-bootstrap";
 
 const ChangeList = ({ repo, commit, after, prefix, view, onPaginate }) => {
     const [actionError, setActionError] = useState(null);
-    const [internalRefresh, setInternalRefresh] = useState(true);
 
     const radios = [
         {name: 'Flat', value: 'flat', selected: false},
@@ -59,7 +58,6 @@ const ChangeList = ({ repo, commit, after, prefix, view, onPaginate }) => {
             <tbody>
             {results.map(entry => (
                 <TreeItem key={entry.path + "-tree-item"} entry={entry} repo={repo} reference={commit}
-                          internalReferesh={internalRefresh}
                           delimiter={delimiter} after={after} relativeTo={""}
                           getMore={(afterUpdated, path) => {
                               return refs.diff(repo.id, commit.parents[0], commit.id, afterUpdated, path, delimiter)
