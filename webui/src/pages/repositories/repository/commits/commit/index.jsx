@@ -47,10 +47,8 @@ const ChangeList = ({ repo, commit, after, prefix, view, onPaginate }) => {
 
     const {results, loading, error, nextPage} = useAPIWithPagination(async() => {
         if (!commit.parents || commit.parents.length === 0) return {results: [], pagination: {has_more: false}};
-        return refs.diff(repo.id, commit.id, commit.parents[0], after, prefix, delimiter);
+        return refs.diff(repo.id, commit.parents[0], commit.id, after, prefix, delimiter);
     }, [repo.id, commit.id, after, prefix, delimiter]);
-
-    const refresh = () => setInternalRefresh(!internalRefresh)
 
     if (!!error) return <Error error={error}/>
     if (loading) return <Loading/>
@@ -64,7 +62,7 @@ const ChangeList = ({ repo, commit, after, prefix, view, onPaginate }) => {
                           internalReferesh={internalRefresh}
                           delimiter={delimiter} after={after} relativeTo={""}
                           getMore={(afterUpdated, path) => {
-                              return refs.diff(repo.id, commit.id, commit.parents[0], afterUpdated, path, delimiter)
+                              return refs.diff(repo.id, commit.parents[0], commit.id, afterUpdated, path, delimiter)
                           }}/>
             ))}
             </tbody>
