@@ -58,16 +58,7 @@ type ServerContext struct {
 	stats             stats.Collector
 }
 
-func NewHandler(
-	region string,
-	catalog catalog.Interface,
-	multipartsTracker multiparts.Tracker,
-	blockStore block.Adapter,
-	authService simulator.GatewayAuthService,
-	bareDomains []string,
-	stats stats.Collector,
-	fallbackURL *url.URL,
-) http.Handler {
+func NewHandler(region string, catalog catalog.Interface, multipartsTracker multiparts.Tracker, blockStore block.Adapter, authService simulator.GatewayAuthService, bareDomains []string, stats stats.Collector, fallbackURL *url.URL, traceRequestHeaders bool) http.Handler {
 	var fallbackHandler http.Handler
 	if fallbackURL != nil {
 		fallbackProxy := gohttputil.NewSingleHostReverseProxy(fallbackURL)
@@ -111,7 +102,10 @@ func NewHandler(
 			operations.OperationIDUnsupportedOperation: unsupportedOperationHandler(),
 		},
 	}
-	loggingMiddleware := httputil.LoggingMiddleware("X-Amz-Request-Id", logging.Fields{"service_name": "s3_gateway"})
+	loggingMiddleware := httputil.LoggingMiddleware(
+		"X-Amz-Request-Id",
+		logging.Fields{"service_name": "s3_gateway"},
+		traceRequestHeaders)
 	h = simulator.RegisterRecorder(loggingMiddleware(h), authService, region, bareDomains)
 	h = EnrichWithOperation(sc,
 		DurationHandler(

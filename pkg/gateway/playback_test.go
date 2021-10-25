@@ -144,16 +144,7 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 	_, err = c.CreateRepository(ctx, ReplayRepositoryName, storageNamespace, "master")
 	testutil.Must(t, err)
 
-	handler := gateway.NewHandler(
-		authService.Region,
-		c,
-		multipartsTracker,
-		blockAdapter,
-		authService,
-		[]string{authService.BareDomain},
-		&mockCollector{},
-		nil,
-	)
+	handler := gateway.NewHandler(authService.Region, c, multipartsTracker, blockAdapter, authService, []string{authService.BareDomain}, &mockCollector{}, nil, false)
 
 	return handler, &dependencies{
 		blocks:  blockAdapter,

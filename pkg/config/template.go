@@ -68,9 +68,11 @@ type configuration struct {
 	ListenAddress string `mapstructure:"listen_address"`
 
 	Logging struct {
-		Format string
-		Level  string
-		Output string
+		Format string `mapstructure:"format"`
+		Level  string `mapstructure:"level"`
+		Output string `mapstructure:"output"`
+		// TraceRequestHeaders work only on 'trace' level, default is false as it may log sensitive data to the log
+		TraceRequestHeaders bool `mapstructure:"trace_request_headers"`
 	}
 
 	Database struct {
