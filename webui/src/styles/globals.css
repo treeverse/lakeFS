@@ -147,12 +147,12 @@
   padding: 0 10px;
 }
 
-.table .tree-row {
+.table .change-entry-row {
   border-bottom: 1px solid rgba(0, 0, 0, 0.125);
   height: 45px;
 }
 
-.table .tree-row td,
+.table .change-entry-row td,
 .actions-runs-list .table td {
   padding-top: 10px;
   padding-bottom: 10px;
@@ -163,16 +163,16 @@
   margin-bottom: 20px;
 }
 
-.table .tree-row td:first-child {
+.table .change-entry-row td:first-child {
   padding-left: 20px;
 }
 
-.table .tree-row td:nth-child(4) {
+.table .change-entry-row td:nth-child(4) {
   padding-right: 20px;
   text-align: right;
 }
 
-.table .tree-row td:last-child {
+.table .change-entry-row td:last-child {
   padding-right: 10px;
   text-align: right;
 }
@@ -183,7 +183,9 @@
   font-size: .9rem;
 }
 
-.diff-removed .tree-path, .diff-removed .tree-path .octicon, .diff-removed .diff-indicator .octicon {
+.diff-removed .tree-path,
+.diff-removed .tree-path .octicon,
+.diff-removed .diff-indicator .octicon {
   color: #808080;
 }
 
@@ -203,6 +205,10 @@
   background-color: #fff3cd;
 }
 
+.diff-more {
+  background-color: #ffffff;
+}
+
 .table tr .row-hover {
   visibility: hidden;
   font-size: 0.7em;
@@ -213,6 +219,15 @@
   display: inline-block;
 }
 
+.view-options label {
+  margin-bottom: 0;
+  padding: 5px;
+  font-size: smaller;
+}
+
+.view-options [type='radio'] {
+  display: none;
+}
 
 .hook-logs {
   background: #222222;
@@ -239,22 +254,24 @@
 }
 
 .hook-log-title .btn, .hook-log-title .btn.btn-link  {
-    color: #FBFBFB;
+    color: #fbfbfb;
 }
 
-.tree-row-actions {
+.change-entry-row-actions {
   width: 30px;
   padding:0;
 }
 
-.table .tree-row .tree-row-actions .btn,
+.table .change-entry-row .change-entry-row-actions .btn,
+.table .tree-entry-row .change-entry-row-actions .btn,
 .actions-runs-list .table tbody tr td .clipboard-copy button,
 .actions-runs-list .table tbody tr td .run-filter .link {
   visibility: hidden;
   font-size: 0.7rem;
 }
-.table .tree-row:hover .tree-row-actions .btn,
-.table .tree-row:focus .tree-row-actions .btn,
+.table .change-entry-row:hover .change-entry-row-actions .btn,
+.table .tree-entry-row:hover .change-entry-row-actions .btn,
+.table .tree-entry-row:focus .change-entry-row-actions .btn,
 .actions-runs-list .table tbody tr:hover td .clipboard-copy button ,
 .actions-runs-list .table tbody tr:focus td .clipboard-copy button ,
 .actions-runs-list .table tbody tr:hover td .run-filter .link ,
@@ -313,7 +330,6 @@
   background-color: #EEEEEE;
 }
 
-
 .auth-page .tab-content {
   padding: 20px 0;
 }
@@ -351,4 +367,8 @@ td .form-group {
   padding: 0;
   margin-top: 0;
   border-bottom-width: 0;
+}
+
+.tree-column{
+  width: 2px;
 }

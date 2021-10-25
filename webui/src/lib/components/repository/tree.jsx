@@ -79,7 +79,7 @@ const PathLink = ({repoId, reference, path, children, as = null}) => {
 };
 
 const EntryRow = ({repo, reference, path, entry, onDelete, showActions}) => {
-    let rowClass = 'tree-row ';
+    let rowClass = 'change-entry-row ';
     switch (entry.diff_type) {
         case 'changed':
             rowClass += 'diff-changed';
@@ -185,7 +185,7 @@ const EntryRow = ({repo, reference, path, entry, onDelete, showActions}) => {
                 <td className="tree-modified">
                     {modified}
                 </td>
-                <td className={"tree-row-actions"}>
+                <td className={"change-entry-row-actions"}>
                     {entryActions}
                 </td>
             </tr>
