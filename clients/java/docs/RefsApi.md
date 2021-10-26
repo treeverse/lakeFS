@@ -188,7 +188,7 @@ Name | Type | Description  | Notes
 
 <a name="logCommits"></a>
 # **logCommits**
-> CommitList logCommits(repository, ref, after, amount)
+> CommitList logCommits(repository, ref, after, amount, objectList, prefixList)
 
 get commit log from ref
 
@@ -227,8 +227,10 @@ public class Example {
     String ref = "ref_example"; // String | 
     String after = "after_example"; // String | return items after this value
     Integer amount = 100; // Integer | how many items to return
+    List<String> objectList = Arrays.asList(); // List<String> | list of paths, each element is a path of a specific object
+    List<String> prefixList = Arrays.asList(); // List<String> | list of paths, each element is a path of a prefix
     try {
-      CommitList result = apiInstance.logCommits(repository, ref, after, amount);
+      CommitList result = apiInstance.logCommits(repository, ref, after, amount, objectList, prefixList);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling RefsApi#logCommits");
@@ -249,6 +251,8 @@ Name | Type | Description  | Notes
  **ref** | **String**|  |
  **after** | **String**| return items after this value | [optional]
  **amount** | **Integer**| how many items to return | [optional] [default to 100]
+ **objectList** | [**List&lt;String&gt;**](String.md)| list of paths, each element is a path of a specific object | [optional]
+ **prefixList** | [**List&lt;String&gt;**](String.md)| list of paths, each element is a path of a prefix | [optional]
 
 ### Return type
 

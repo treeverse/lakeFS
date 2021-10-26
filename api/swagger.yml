@@ -895,6 +895,7 @@ components:
           minLength: 1
       required:
         - pattern
+
 paths:
   /setup_lakefs:
     post:
@@ -1952,6 +1953,20 @@ paths:
       parameters:
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
+        - in: query
+          name: object_list
+          description: list of paths, each element is a path of a specific object
+          schema:
+            type: array
+            items:
+              type: string
+        - in: query
+          name: prefix_list
+          description: list of paths, each element is a path of a prefix
+          schema:
+            type: array
+            items:
+              type: string
       responses:
         200:
           description: commit log

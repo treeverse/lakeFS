@@ -277,6 +277,12 @@ with lakefs_client.ApiClient(configuration) as api_client:
     ref = "ref_example" # str | 
     after = "after_example" # str | return items after this value (optional)
     amount = 100 # int | how many items to return (optional) if omitted the server will use the default value of 100
+    object_list = [
+        "object_list_example",
+    ] # [str] | list of paths, each element is a path of a specific object (optional)
+    prefix_list = [
+        "prefix_list_example",
+    ] # [str] | list of paths, each element is a path of a prefix (optional)
 
     # example passing only required values which don't have defaults set
     try:
@@ -290,7 +296,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # and optional values
     try:
         # get commit log from ref
-        api_response = api_instance.log_commits(repository, ref, after=after, amount=amount)
+        api_response = api_instance.log_commits(repository, ref, after=after, amount=amount, object_list=object_list, prefix_list=prefix_list)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling RefsApi->log_commits: %s\n" % e)
@@ -305,6 +311,8 @@ Name | Type | Description  | Notes
  **ref** | **str**|  |
  **after** | **str**| return items after this value | [optional]
  **amount** | **int**| how many items to return | [optional] if omitted the server will use the default value of 100
+ **object_list** | **[str]**| list of paths, each element is a path of a specific object | [optional]
+ **prefix_list** | **[str]**| list of paths, each element is a path of a prefix | [optional]
 
 ### Return type
 

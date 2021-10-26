@@ -25,6 +25,17 @@ type RevertParams struct {
 	Committer    string
 }
 
+type PathRecord struct {
+	Path     Path
+	IsPrefix bool
+}
+
+type LogParams struct {
+	PathList      []PathRecord
+	FromReference string
+	Limit         int
+}
+
 type ExpireResult struct {
 	Repository        string
 	Branch            string
@@ -92,7 +103,7 @@ type Interface interface {
 
 	Commit(ctx context.Context, repository, branch string, message string, committer string, metadata Metadata) (*CommitLog, error)
 	GetCommit(ctx context.Context, repository, reference string) (*CommitLog, error)
-	ListCommits(ctx context.Context, repository, branch string, fromReference string, limit int) ([]*CommitLog, bool, error)
+	ListCommits(ctx context.Context, repository, branch string, params LogParams) ([]*CommitLog, bool, error)
 
 	// Revert creates a reverse patch to the given commit, and applies it as a new commit on the given branch.
 	Revert(ctx context.Context, repository, branch string, params RevertParams) error

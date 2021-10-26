@@ -371,6 +371,8 @@ class RefsApi(object):
             Keyword Args:
                 after (str): return items after this value. [optional]
                 amount (int): how many items to return. [optional] if omitted the server will use the default value of 100
+                object_list ([str]): list of paths, each element is a path of a specific object. [optional]
+                prefix_list ([str]): list of paths, each element is a path of a prefix. [optional]
                 _return_http_data_only (bool): response data without head status
                     code and headers. Default is True.
                 _preload_content (bool): if False, the urllib3.HTTPResponse object
@@ -440,6 +442,8 @@ class RefsApi(object):
                     'ref',
                     'after',
                     'amount',
+                    'object_list',
+                    'prefix_list',
                 ],
                 'required': [
                     'repository',
@@ -472,20 +476,30 @@ class RefsApi(object):
                         (str,),
                     'amount':
                         (int,),
+                    'object_list':
+                        ([str],),
+                    'prefix_list':
+                        ([str],),
                 },
                 'attribute_map': {
                     'repository': 'repository',
                     'ref': 'ref',
                     'after': 'after',
                     'amount': 'amount',
+                    'object_list': 'object_list',
+                    'prefix_list': 'prefix_list',
                 },
                 'location_map': {
                     'repository': 'path',
                     'ref': 'path',
                     'after': 'query',
                     'amount': 'query',
+                    'object_list': 'query',
+                    'prefix_list': 'query',
                 },
                 'collection_format_map': {
+                    'object_list': 'multi',
+                    'prefix_list': 'multi',
                 }
             },
             headers_map={
