@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -58,10 +59,14 @@ func newLDAPAuthenticator(cfg *config.LDAP, service auth.Service) *auth.LDAPAuth
 		DefaultUserGroup:  group,
 		UsernameAttribute: cfg.UsernameAttribute,
 		MakeLDAPConn: func(_ context.Context) (*ldap.Conn, error) {
-			c, err := ldap.DialURL(cfg.ServerEndpoint)
+			c, err := ldap.DialURL(
+				cfg.ServerEndpoint,
+				ldap.DialWithDialer(&net.Dialer{Timeout: 15 * time.Second}),
+			)
 			if err != nil {
 				return nil, fmt.Errorf("dial %s: %w", cfg.ServerEndpoint, err)
 			}
+			c.SetTimeout(7 * time.Second)
 			// TODO(ariels): Support StartTLS (& other TLS configuration).
 			return c, nil
 		},

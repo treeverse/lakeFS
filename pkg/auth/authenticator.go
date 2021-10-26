@@ -5,6 +5,7 @@ import (
 	"crypto/subtle"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -91,12 +92,12 @@ type LDAPAuthenticator struct {
 
 	// control is bound to the operator (BindDN) and is used to query
 	// LDAP about users.
-	// TODO(ariels): Should auto-reopen.
 	control *ldap.Conn
 }
 
 func (la *LDAPAuthenticator) getControlConnection(ctx context.Context) (*ldap.Conn, error) {
-	if la.control != nil {
+	// LDAP connections are "closing" even after they've closed.
+	if la.control != nil && !la.control.IsClosing() {
 		return la.control, nil
 	}
 	control, err := la.MakeLDAPConn(ctx)
@@ -113,6 +114,11 @@ func (la *LDAPAuthenticator) getControlConnection(ctx context.Context) (*ldap.Co
 	}
 	la.control = control
 	return la.control, nil
+}
+
+func (la *LDAPAuthenticator) resetControlConnection() {
+	go la.control.Close() // Don't wait for dead connection to shut itself down
+	la.control = nil
 }
 
 // inBrackets returns filter (which should already be properly escaped)
@@ -143,6 +149,9 @@ func (la *LDAPAuthenticator) AuthenticateUser(ctx context.Context, username, pas
 	res, err := controlConn.SearchWithPaging(&searchRequest, 2)
 	if err != nil {
 		logger.WithError(err).Error("Failed to search for DN by username")
+		if errors.Is(err, os.ErrDeadlineExceeded) {
+			la.resetControlConnection()
+		}
 		return InvalidUserID, fmt.Errorf("LDAP find user %s: %w", username, err)
 	}
 	if logger.IsTracing() {
