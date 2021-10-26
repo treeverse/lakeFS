@@ -29,7 +29,7 @@ jobs:
       run: make package-python PACKAGE_VERSION=${{ steps.version.outputs.tag }}
 
     - name: Python validate client
-      run: make validate-client-python
+      run: make validate-client-python PACKAGE_VERSION=${{ steps.version.outputs.tag }}
 
     - name: Python publish package
       uses: pypa/gh-action-pypi-publish@release/v1

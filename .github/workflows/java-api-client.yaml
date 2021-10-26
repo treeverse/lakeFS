@@ -31,7 +31,7 @@ jobs:
         run: make client-java PACKAGE_VERSION=${{ steps.version.outputs.tag }}
 
       - name: Java client validate
-        run: make validate-client-java
+        run: make validate-client-java PACKAGE_VERSION=${{ steps.version.outputs.tag }}
 
       - name: Install secret key for signing
         run: |
