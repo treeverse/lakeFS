@@ -204,6 +204,7 @@ var runCmd = &cobra.Command{
 			cfg.GetS3GatewayDomainNames(),
 			bufferedCollector,
 			s3FallbackURL,
+			cfg.GetLoggingTraceRequestHeaders(),
 		)
 		ctx, cancelFn := context.WithCancel(cmd.Context())
 		go bufferedCollector.Run(ctx)
