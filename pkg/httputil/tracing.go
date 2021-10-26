@@ -142,7 +142,7 @@ func TracingMiddleware(requestIDHeaderName string, fields logging.Fields, traceR
 				"response_headers": responseWriter.Header(),
 			}
 			if traceRequestHeaders {
-				fields["request_headers"] = r.Header
+				traceFields["request_headers"] = r.Header
 			}
 			logging.FromContext(r.Context()).
 				WithFields(traceFields).
