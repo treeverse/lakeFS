@@ -32,9 +32,38 @@ func isOK(statusCode int) bool {
 	return statusCode < minHTTPErrorStatusCode
 }
 
-// ResponseAsError returns a ErrRequestFailed wrapping a response from the server.  It
-// searches for a non-nil unsuccessful HTTPResponse field and uses its message, along with a
-// Body that it assumes is an api.Error.
+// APIFields are fields to use to format an HTTP error response that can be
+// shown to the user.
+type APIFields struct {
+	StatusCode int
+	Status     string
+	Message    string
+}
+
+// UserVisibleAPIError is an HTTP error response formatted to be shown to a
+// user.  It does _not_ update its message when wrapped so usually should
+// not be wrapped.
+type UserVisibleAPIError struct {
+	Err    error
+	Fields APIFields
+}
+
+func (e UserVisibleAPIError) Error() string {
+	wrapped := ""
+	if e.Err != nil {
+		wrapped = ": " + e.Err.Error()
+	}
+	return fmt.Sprintf("[%s] %s%s", e.Fields.Status, e.Fields.Message, wrapped)
+}
+
+func (e UserVisibleAPIError) Unwrap() error {
+	return e.Err
+}
+
+// ResponseAsError returns a UserVisibleAPIError wrapping an ErrRequestFailed
+// wrapping a response from the server.  It searches for a non-nil
+// unsuccessful HTTPResponse field and uses its message, along with a Body
+// that it assumes is an api.Error.
 func ResponseAsError(response interface{}) error {
 	r := reflect.Indirect(reflect.ValueOf(response))
 	if !r.IsValid() || r.Kind() != reflect.Struct {
@@ -53,19 +82,28 @@ func ResponseAsError(response interface{}) error {
 		return nil
 	}
 
-	message := http.StatusText(httpResponse.StatusCode)
-	if httpResponse.Status != "" {
-		message = httpResponse.Status
+	statusCode := httpResponse.StatusCode
+	statusText := httpResponse.Status
+	if statusText == "" {
+		statusText = http.StatusText(statusCode)
 	}
 
+	var message string
 	f = r.FieldByName("Body")
 	if f.IsValid() && f.Type().Kind() == reflect.Slice && f.Type().Elem().Kind() == reflect.Uint8 {
 		body := f.Bytes()
 		var apiError api.Error
 		if json.Unmarshal(body, &apiError) == nil && apiError.Message != "" {
-			message = fmt.Sprintf("[%s] %s", message, apiError.Message)
+			message = apiError.Message
 		}
 	}
 
-	return fmt.Errorf("%w: %s", ErrRequestFailed, message)
+	return UserVisibleAPIError{
+		Err: ErrRequestFailed,
+		Fields: APIFields{
+			StatusCode: statusCode,
+			Status:     statusText,
+			Message:    message,
+		},
+	}
 }
