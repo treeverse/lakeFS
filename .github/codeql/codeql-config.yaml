@@ -2,4 +2,3 @@ paths-ignore:
   - 'webui/node_modules'
   - 'webui/dist'
   - 'pkg/**/testdata/*.yaml'
-  - 'pkg/metastore/hive/gen-go'
