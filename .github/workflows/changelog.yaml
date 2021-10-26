@@ -8,7 +8,7 @@ jobs:
   enforce-label:
     runs-on: ubuntu-latest
     steps:
-      - uses: yogevbd/enforce-label-action@2.1.0
+      - uses: yogevbd/enforce-label-action@a3c219da6b8fa73f6ba62b68ff09c469b3a1c024 #tag 2.2.2
         with:
           REQUIRED_LABELS_ANY: "include-changelog,exclude-changelog"
-          REQUIRED_LABELS_ANY_DESCRIPTION: "Enforcing that a PR must have one of these labels to be merged"
+          REQUIRED_LABELS_ANY_DESCRIPTION: "Enforcing that a PR must have one of (include-changelog,exclude-changelog) labels to be merged"
