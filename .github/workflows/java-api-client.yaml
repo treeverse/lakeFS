@@ -30,9 +30,6 @@ jobs:
       - name: Java generate package
         run: make client-java PACKAGE_VERSION=${{ steps.version.outputs.tag }}
 
-      - name: Java client validate
-        run: make validate-client-java
-
       - name: Install secret key for signing
         run: |
           cat <(echo -e '${{ secrets.OSSRH_GPG_SECRET_KEY }}') | gpg --batch --import
