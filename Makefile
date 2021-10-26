@@ -109,6 +109,7 @@ go-install: go-mod-download ## Install dependencies
 
 
 client-python: api/swagger.yml  ## Generate SDK for Python client
+	# remove the build folder as it also holds lakefs_client folder which keeps because we skip it during find
 	rm -rf clients/python/build; cd clients/python && find . -depth -name lakefs_client -prune -o ! -name client.py -delete
 	$(OPENAPI_GENERATOR) generate \
 		-i /mnt/$< \
