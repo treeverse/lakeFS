@@ -65,8 +65,8 @@ func (e CallFailedError) Unwrap() error {
 // user.  It does _not_ update its message when wrapped so usually should
 // not be wrapped.
 type UserVisibleAPIError struct {
-	Err    error
-	Fields APIFields
+	APIFields
+	Err error
 }
 
 // space stringifies non-nil elements from s... and returns all the
@@ -85,11 +85,11 @@ func spaced(s ...interface{}) string {
 }
 
 func (e UserVisibleAPIError) Error() string {
-	message := spaced(e.Fields.Message, e.Err.Error())
+	message := spaced(e.Message, e.Err.Error())
 	if message != "" {
 		message = ": " + message
 	}
-	return fmt.Sprintf("[%s]%s", e.Fields.Status, message)
+	return fmt.Sprintf("[%s]%s", e.Status, message)
 }
 
 func (e UserVisibleAPIError) Unwrap() error {
@@ -139,7 +139,7 @@ func ResponseAsError(response interface{}) error {
 
 	return UserVisibleAPIError{
 		Err: ErrRequestFailed,
-		Fields: APIFields{
+		APIFields: APIFields{
 			StatusCode: statusCode,
 			Status:     statusText,
 			Message:    message,

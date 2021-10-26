@@ -172,7 +172,7 @@ func DieErr(err error) {
 	apiError, _ = err.(APIError)
 	switch {
 	case errors.As(err, &userVisibleError):
-		WriteTo(DeathMessageWithFields, userVisibleError.Fields, os.Stderr)
+		WriteTo(DeathMessageWithFields, userVisibleError.APIFields, os.Stderr)
 	case apiError != nil:
 		WriteTo(DeathMessage, ErrData{Error: apiError.GetPayload().Message}, os.Stderr)
 	default:
