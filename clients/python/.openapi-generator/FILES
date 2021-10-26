@@ -1,6 +1,4 @@
 .gitignore
-.gitlab-ci.yml
-.openapi-generator-ignore
 .travis.yml
 README.md
 docs/AccessKeyCredentials.md
@@ -73,7 +71,6 @@ docs/User.md
 docs/UserCreation.md
 docs/UserList.md
 docs/VersionConfig.md
-git_push.sh
 lakefs_client/__init__.py
 lakefs_client/api/__init__.py
 lakefs_client/api/actions_api.py
