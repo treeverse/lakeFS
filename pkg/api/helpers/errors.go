@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"strings"
 
 	"github.com/treeverse/lakefs/pkg/api"
 )
@@ -40,6 +41,26 @@ type APIFields struct {
 	Message    string
 }
 
+// CallFailedError is an error performing the HTTP request itself formatted
+// to be shown to a user.  It does _not_ update its message when wrapped so
+// usually should not be wrapped.
+type CallFailedError struct {
+	Err     error
+	Message string
+}
+
+func (e CallFailedError) Error() string {
+	wrapped := ""
+	if e.Err != nil {
+		wrapped = ": " + e.Err.Error()
+	}
+	return fmt.Sprintf("[%s]%s", e.Message, wrapped)
+}
+
+func (e CallFailedError) Unwrap() error {
+	return e.Err
+}
+
 // UserVisibleAPIError is an HTTP error response formatted to be shown to a
 // user.  It does _not_ update its message when wrapped so usually should
 // not be wrapped.
@@ -48,12 +69,27 @@ type UserVisibleAPIError struct {
 	Fields APIFields
 }
 
-func (e UserVisibleAPIError) Error() string {
-	wrapped := ""
-	if e.Err != nil {
-		wrapped = ": " + e.Err.Error()
+// space stringifies non-nil elements from s... and returns all the
+// non-empty resulting strings joined with spaces.
+func spaced(s ...interface{}) string {
+	ret := make([]string, 0, len(s))
+	for _, t := range s {
+		if t != nil {
+			r := fmt.Sprint(t)
+			if r != "" {
+				ret = append(ret, r)
+			}
+		}
 	}
-	return fmt.Sprintf("[%s] %s%s", e.Fields.Status, e.Fields.Message, wrapped)
+	return strings.Join(ret, " ")
+}
+
+func (e UserVisibleAPIError) Error() string {
+	message := spaced(e.Fields.Message, e.Err.Error())
+	if message != "" {
+		message = ": " + message
+	}
+	return fmt.Sprintf("[%s]%s", e.Fields.Status, message)
 }
 
 func (e UserVisibleAPIError) Unwrap() error {
@@ -67,12 +103,15 @@ func (e UserVisibleAPIError) Unwrap() error {
 func ResponseAsError(response interface{}) error {
 	r := reflect.Indirect(reflect.ValueOf(response))
 	if !r.IsValid() || r.Kind() != reflect.Struct {
-		return fmt.Errorf("%w: bad type %s: must reference a struct", ErrRequestFailed, r.Type().Name())
+		return CallFailedError{
+			Message: fmt.Sprintf("bad type %s: must reference a struct", r.Type().Name()),
+			Err:     ErrRequestFailed,
+		}
 	}
 
 	f := r.FieldByName("HTTPResponse")
 	if !f.IsValid() {
-		return fmt.Errorf("%w: no HTTPResponse", ErrRequestFailed)
+		return fmt.Errorf("[no HTTPResponse]: %w", ErrRequestFailed)
 	}
 	httpResponse, ok := f.Interface().(*http.Response)
 	if !ok {
