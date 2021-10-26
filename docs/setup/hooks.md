@@ -284,7 +284,7 @@ It should look like `https://api.relay.svix.com/api/v1/play/receive/<Random_Gen_
    by using:
 
    ```bash
-      lakectl fs upload lakefs://example-repo/main/_lakefs_action/test.yaml -s path/to/action/file
+      lakectl fs upload lakefs://example-repo/main/_lakefs_actions/test.yaml -s path/to/action/file
    ```
 
    or the UI.
