@@ -420,3 +420,7 @@ func (c *Config) GetCommittedBlockStoragePrefix() string {
 func (c *Config) ToLoggerFields() logging.Fields {
 	return MapLoggingFields(c.values)
 }
+
+func (c *Config) GetLoggingTraceRequestHeaders() bool {
+	return c.values.Logging.TraceRequestHeaders
+}

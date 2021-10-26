@@ -62,7 +62,10 @@ func Serve(
 			AuthenticationFunc: openapi3filter.NoopAuthenticationFunc,
 		}),
 		AuthMiddleware(logger, swagger, authenticator, authService),
-		httputil.LoggingMiddleware(RequestIDHeaderName, logging.Fields{logging.ServiceNameFieldKey: LoggerServiceName}),
+		httputil.LoggingMiddleware(
+			RequestIDHeaderName,
+			logging.Fields{logging.ServiceNameFieldKey: LoggerServiceName},
+			cfg.GetLoggingTraceRequestHeaders()),
 		MetricsMiddleware(swagger),
 	)
 
