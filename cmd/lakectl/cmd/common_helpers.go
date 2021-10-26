@@ -186,7 +186,7 @@ func RetrieveError(response interface{}, err error) error {
 func DieOnResponseError(response interface{}, err error) {
 	retrievedErr := RetrieveError(response, err)
 	if retrievedErr != nil {
-		DieErr(err)
+		DieErr(retrievedErr)
 	}
 }
 
