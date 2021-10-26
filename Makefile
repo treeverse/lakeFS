@@ -109,7 +109,7 @@ go-install: go-mod-download ## Install dependencies
 
 
 client-python: api/swagger.yml  ## Generate SDK for Python client
-	cd clients/python && find . -depth -name lakefs_client -prune -o ! -name client.py -delete
+	rm -rf clients/python/build; cd clients/python && find . -depth -name lakefs_client -prune -o ! -name client.py -delete
 	$(OPENAPI_GENERATOR) generate \
 		-i /mnt/$< \
 		-g python \
