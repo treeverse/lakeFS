@@ -2,6 +2,7 @@
 # Changelog
 
 ## Unreleased - XXXX-XX-XX
+- Add metric to track Hooks feature usage (#2053).
 
 ## v0.53.1 - 2021-10-21
 
