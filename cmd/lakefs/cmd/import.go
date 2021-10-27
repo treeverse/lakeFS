@@ -100,6 +100,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 		dbPool,
 		catalog.NewActionsSource(c),
 		catalog.NewActionsOutputWriter(c.BlockAdapter),
+		nil,
 	)
 	c.SetHooksHandler(actionsService)
 	defer actionsService.Stop()

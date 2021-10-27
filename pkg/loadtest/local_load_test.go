@@ -2,13 +2,14 @@ package loadtest
 
 import (
 	"context"
-	"github.com/spf13/viper"
 	"log"
 	"math"
 	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/spf13/viper"
 
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/pkg/actions"
@@ -80,6 +81,7 @@ func TestLocalLoad(t *testing.T) {
 		conn,
 		catalog.NewActionsSource(c),
 		catalog.NewActionsOutputWriter(c.BlockAdapter),
+		nil,
 	)
 	c.SetHooksHandler(actionsService)
 

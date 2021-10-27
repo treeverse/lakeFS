@@ -19,8 +19,22 @@ import (
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/actions/mock"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
+
+type ActionStatsMockCollector struct {
+	NumHits    int
+	LastAction string
+}
+
+func (c *ActionStatsMockCollector) CollectEvent(class, action string) {
+	c.NumHits++
+	c.LastAction = action
+}
+
+func (c *ActionStatsMockCollector) CollectMetadata(accountMetadata *stats.Metadata) {}
+func (c *ActionStatsMockCollector) SetInstallationID(installationID string)         {}
 
 func TestServiceRun(t *testing.T) {
 	conn, _ := testutil.GetDB(t, databaseURI)
@@ -202,7 +216,8 @@ hooks:
 
 	// run actions
 	now := time.Now()
-	actionsService := actions.NewService(ctx, conn, testSource, testOutputWriter)
+	mockStatsCollector := ActionStatsMockCollector{}
+	actionsService := actions.NewService(ctx, conn, testSource, testOutputWriter, &mockStatsCollector)
 	defer actionsService.Stop()
 
 	err := actionsService.Run(ctx, record)
@@ -266,6 +281,9 @@ hooks:
 	if runResult.CommitID != expectedCommitID {
 		t.Errorf("GetRunResult() result CommitID=%s, expect=%s", runResult.CommitID, expectedCommitID)
 	}
+
+	require.Equal(t, 3, mockStatsCollector.NumHits)
+	require.Equal(t, "pre-commit", mockStatsCollector.LastAction)
 
 	// get run - not found
 	runResult, err = actionsService.GetRunResult(ctx, record.RepositoryID.String(), "not-run-id")
@@ -358,8 +376,11 @@ hooks:
 		Return([]byte(actionContent), nil)
 
 	// run actions
-	actionsService := actions.NewService(ctx, conn, testSource, testOutputWriter)
+	mockStatsCollector := ActionStatsMockCollector{}
+	actionsService := actions.NewService(ctx, conn, testSource, testOutputWriter, &mockStatsCollector)
 	defer actionsService.Stop()
 
 	require.Error(t, actionsService.Run(ctx, record))
+	require.Equal(t, 0, mockStatsCollector.NumHits)
+	require.Equal(t, "", mockStatsCollector.LastAction)
 }
