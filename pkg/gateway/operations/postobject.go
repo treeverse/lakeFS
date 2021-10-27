@@ -30,7 +30,7 @@ const (
 
 type PostObject struct{}
 
-func (controller *PostObject) RequiredPermissions(_ *http.Request, repoID, _, path string) (auth.PermissionNode, error) {
+func (controller *PostObject) RequiredPermissions(_ *http.Request, repoID, _, path string) (auth.Permissioner, error) {
 	return &auth.OnePermission{
 		Action:   permissions.WriteObjectAction,
 		Resource: permissions.ObjectArn(repoID, path),

@@ -13,7 +13,7 @@ import (
 // create a new repo), but *does* detect whether the repo already exists.
 type PutBucket struct{}
 
-func (controller *PutBucket) RequiredPermissions(_ *http.Request, repoID string) (auth.PermissionNode, error) {
+func (controller *PutBucket) RequiredPermissions(_ *http.Request, repoID string) (auth.Permissioner, error) {
 	return &auth.OnePermission{
 		// Mimic S3, which requires s3:CreateBucket to call
 		// create-bucket, even if we only want to receive

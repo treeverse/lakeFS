@@ -12,7 +12,7 @@ import (
 
 type ListBuckets struct{}
 
-func (controller *ListBuckets) RequiredPermissions(_ *http.Request) (auth.PermissionNode, error) {
+func (controller *ListBuckets) RequiredPermissions(_ *http.Request) (auth.Permissioner, error) {
 	return &auth.OnePermission{
 		Action:   permissions.ListRepositoriesAction,
 		Resource: "*",

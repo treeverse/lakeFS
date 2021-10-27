@@ -232,7 +232,7 @@ func PathOperationHandler(sc *ServerContext, handler operations.PathOperationHan
 	})
 }
 
-func authorize(w http.ResponseWriter, req *http.Request, authService simulator.GatewayAuthService, perms auth.PermissionNode) *operations.AuthorizedOperation {
+func authorize(w http.ResponseWriter, req *http.Request, authService simulator.GatewayAuthService, perms auth.Permissioner) *operations.AuthorizedOperation {
 	ctx := req.Context()
 	o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 	username := ctx.Value(ContextKeyUser).(*model.User).Username

@@ -2893,7 +2893,7 @@ func paginationFor(hasMore bool, results interface{}, fieldName string) Paginati
 	return pagination
 }
 
-func (c *Controller) authorize(w http.ResponseWriter, r *http.Request, perms auth.PermissionNode) bool {
+func (c *Controller) authorize(w http.ResponseWriter, r *http.Request, perms auth.Permissioner) bool {
 	ctx := r.Context()
 	user, ok := ctx.Value(UserContextKey).(*model.User)
 	if !ok || user == nil {

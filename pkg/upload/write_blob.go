@@ -37,6 +37,7 @@ func WriteBlob(ctx context.Context, adapter block.Adapter, bucketName string, bo
 	}, nil
 }
 
+// CopyBlob copies file from sourceAddress to a generated UUID in sourceAddress
 func CopyBlob(ctx context.Context, adapter block.Adapter, sourceBucketName string, destinationBucketName string, sourceAddress string, checksum string, size int64) (*Blob, error) {
 	uid := uuid.New()
 	destinationAddress := hex.EncodeToString(uid[:])

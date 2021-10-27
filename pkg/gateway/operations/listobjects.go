@@ -22,7 +22,7 @@ const (
 
 type ListObjects struct{}
 
-func (controller *ListObjects) RequiredPermissions(req *http.Request, repoID string) (auth.PermissionNode, error) {
+func (controller *ListObjects) RequiredPermissions(req *http.Request, repoID string) (auth.Permissioner, error) {
 	// check if we're listing files in a branch, or listing branches
 	params := req.URL.Query()
 	delimiter := params.Get("delimiter")

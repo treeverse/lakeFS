@@ -21,7 +21,7 @@ import (
 
 type AuthorizationRequest struct {
 	Username            string
-	RequiredPermissions PermissionNode
+	RequiredPermissions Permissioner
 }
 
 type AuthorizationResponse struct {
@@ -852,22 +852,27 @@ func interpolateUser(resource string, username string) string {
 	return strings.ReplaceAll(resource, "${user}", username)
 }
 
+// CheckResult - the final result for the authorization is accepted only if it's CheckAllow
 type CheckResult int
 
 const (
-	CheckAllow   CheckResult = iota // Permission allowed
-	CheckNeutral                    // Permission neither allowed nor denied
-	CheckDeny                       // Permission denied
+	// CheckAllow Permission allowed
+	CheckAllow CheckResult = iota
+	// CheckNeutral Permission neither allowed nor denied
+	CheckNeutral
+	// CheckDeny Permission denied
+	CheckDeny
 )
 
-type PermissionNode interface {
+type Permissioner interface {
 	CheckPermissions(policies []*model.Policy, req *AuthorizationRequest) CheckResult
 }
 
 type OnePermission permissions.Permission
-type AndPermission []PermissionNode
-type OrPermission []PermissionNode
+type AndPermission []Permissioner
+type OrPermission []Permissioner
 
+// CheckPermissions One: check whether the permission is allowed, denied or natural (not allowed and not denied)
 func (p OnePermission) CheckPermissions(policies []*model.Policy, req *AuthorizationRequest) CheckResult {
 	allowed := CheckNeutral
 	for _, policy := range policies {
@@ -893,6 +898,7 @@ func (p OnePermission) CheckPermissions(policies []*model.Policy, req *Authoriza
 	return allowed
 }
 
+// CheckPermissions AND: if all the permissions are allowed- returns Allow, if one of the permissions is denied- returns Deny, else returns Natural
 func (p AndPermission) CheckPermissions(policies []*model.Policy, req *AuthorizationRequest) CheckResult {
 	for _, perm := range p {
 		result := perm.CheckPermissions(policies, req)
@@ -903,6 +909,7 @@ func (p AndPermission) CheckPermissions(policies []*model.Policy, req *Authoriza
 	return CheckAllow
 }
 
+// CheckPermissions OR: if at least one of the permissions is allowed and no one is denied- returns Allow, if one of the permissions is Deny- returns Denied, else return Natural
 func (p OrPermission) CheckPermissions(policies []*model.Policy, req *AuthorizationRequest) CheckResult {
 	allowed := CheckNeutral
 	for _, perm := range p {

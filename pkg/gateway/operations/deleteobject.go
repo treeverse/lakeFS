@@ -15,7 +15,7 @@ import (
 
 type DeleteObject struct{}
 
-func (controller *DeleteObject) RequiredPermissions(_ *http.Request, repoID, _, path string) (auth.PermissionNode, error) {
+func (controller *DeleteObject) RequiredPermissions(_ *http.Request, repoID, _, path string) (auth.Permissioner, error) {
 	return &auth.OnePermission{
 		Action:   permissions.DeleteObjectAction,
 		Resource: permissions.ObjectArn(repoID, path),

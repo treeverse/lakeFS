@@ -207,26 +207,26 @@ func (o *PathOperation) EncodeError(w http.ResponseWriter, req *http.Request, er
 }
 
 type OperationHandler interface {
-	RequiredPermissions(req *http.Request) (auth.PermissionNode, error)
+	RequiredPermissions(req *http.Request) (auth.Permissioner, error)
 	Handle(w http.ResponseWriter, req *http.Request, op *Operation)
 }
 
 type AuthenticatedOperationHandler interface {
-	RequiredPermissions(req *http.Request) (auth.PermissionNode, error)
+	RequiredPermissions(req *http.Request) (auth.Permissioner, error)
 	Handle(w http.ResponseWriter, req *http.Request, op *AuthorizedOperation)
 }
 
 type RepoOperationHandler interface {
-	RequiredPermissions(req *http.Request, repository string) (auth.PermissionNode, error)
+	RequiredPermissions(req *http.Request, repository string) (auth.Permissioner, error)
 	Handle(w http.ResponseWriter, req *http.Request, op *RepoOperation)
 }
 
 type BranchOperationHandler interface {
-	RequiredPermissions(req *http.Request, repository, branch string) (auth.PermissionNode, error)
+	RequiredPermissions(req *http.Request, repository, branch string) (auth.Permissioner, error)
 	Handle(w http.ResponseWriter, req *http.Request, op *RefOperation)
 }
 
 type PathOperationHandler interface {
-	RequiredPermissions(req *http.Request, repository, branch, path string) (auth.PermissionNode, error)
+	RequiredPermissions(req *http.Request, repository, branch, path string) (auth.Permissioner, error)
 	Handle(w http.ResponseWriter, req *http.Request, op *PathOperation)
 }

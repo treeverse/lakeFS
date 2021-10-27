@@ -16,7 +16,7 @@ import (
 
 type DeleteObjects struct{}
 
-func (controller *DeleteObjects) RequiredPermissions(_ *http.Request, _ string) (auth.PermissionNode, error) {
+func (controller *DeleteObjects) RequiredPermissions(_ *http.Request, _ string) (auth.Permissioner, error) {
 	return nil, nil
 }
 

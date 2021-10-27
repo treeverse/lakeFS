@@ -32,7 +32,7 @@ const (
 
 type PutObject struct{}
 
-func (controller *PutObject) RequiredPermissions(req *http.Request, repoID, _, destPath string) (auth.PermissionNode, error) {
+func (controller *PutObject) RequiredPermissions(req *http.Request, repoID, _, destPath string) (auth.Permissioner, error) {
 	// TODO(Eden): use the get copy source code and ResolveAbsolutePath function only once (extractEntryFromCopyReq)
 	copySource := req.Header.Get(CopySourceHeader)
 	copySourceDecoded, err := url.QueryUnescape(copySource)
@@ -75,43 +75,8 @@ func extractEntryFromCopyReq(w http.ResponseWriter, req *http.Request, o *PathOp
 		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
 		return nil
 	}
-
-	// validate src and dst are in the same repository
-	if !strings.EqualFold(o.Repository.Name, p.Repo) { // create copy of the file
-		sourceRepo, err := o.Catalog.GetRepository(req.Context(), p.Repo)
-		if err != nil {
-			o.Log(req).WithError(err).Error("could not get copy source repository")
-			_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
-			return nil
-		}
-
-		sourceEntry, err := o.Catalog.GetEntry(req.Context(), sourceRepo.Name, p.Reference, p.Path, catalog.GetEntryParams{})
-		if err != nil {
-			o.Log(req).WithError(err).Error("could not get source entry")
-			_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
-			return nil
-		}
-
-		blob, err := upload.CopyBlob(req.Context(), o.BlockStore, sourceRepo.StorageNamespace, o.Repository.StorageNamespace, sourceEntry.PhysicalAddress, sourceEntry.Checksum, sourceEntry.Size)
-		if err != nil {
-			o.Log(req).WithError(err).Error("block adapter could not copy object")
-			_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
-			return nil
-		}
-
-		// write metadata
-		writeTime := time.Now()
-		entry := catalog.DBEntry{
-			Path:            o.Path,
-			PhysicalAddress: blob.PhysicalAddress,
-			AddressType:     catalog.AddressTypeRelative,
-			Checksum:        blob.Checksum,
-			Metadata:        nil,
-			Size:            blob.Size,
-			CreationDate:    writeTime,
-		}
-		return &entry
-	} else { // update metadata to refer to the source hash in the destination workspace
+	// check if src and dst are in the same repository
+	if strings.EqualFold(o.Repository.Name, p.Repo) { // update metadata to refer to the source hash in the destination workspace
 		ent, err := o.Catalog.GetEntry(req.Context(), o.Repository.Name, p.Reference, p.Path, catalog.GetEntryParams{})
 		if err != nil {
 			o.Log(req).WithError(err).Error("could not read copy source")
@@ -120,6 +85,39 @@ func extractEntryFromCopyReq(w http.ResponseWriter, req *http.Request, o *PathOp
 		}
 		return ent
 	}
+
+	// create copy of the file
+	sourceRepo, err := o.Catalog.GetRepository(req.Context(), p.Repo)
+	if err != nil {
+		o.Log(req).WithError(err).Error("could not get copy source repository")
+		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
+		return nil
+	}
+	sourceEntry, err := o.Catalog.GetEntry(req.Context(), sourceRepo.Name, p.Reference, p.Path, catalog.GetEntryParams{})
+	if err != nil {
+		o.Log(req).WithError(err).Error("could not get source entry")
+		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
+		return nil
+	}
+	blob, err := upload.CopyBlob(req.Context(), o.BlockStore, sourceRepo.StorageNamespace, o.Repository.StorageNamespace, sourceEntry.PhysicalAddress, sourceEntry.Checksum, sourceEntry.Size)
+	if err != nil {
+		o.Log(req).WithError(err).Error("block adapter could not copy object")
+		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
+		return nil
+	}
+
+	// write metadata
+	writeTime := time.Now()
+	entry := catalog.DBEntry{
+		Path:            o.Path,
+		PhysicalAddress: blob.PhysicalAddress,
+		AddressType:     catalog.AddressTypeRelative,
+		Checksum:        blob.Checksum,
+		Metadata:        nil,
+		Size:            blob.Size,
+		CreationDate:    writeTime,
+	}
+	return &entry
 }
 
 func handleCopy(w http.ResponseWriter, req *http.Request, o *PathOperation, copySource string) {

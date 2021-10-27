@@ -19,7 +19,7 @@ import (
 
 type GetObject struct{}
 
-func (controller *GetObject) RequiredPermissions(_ *http.Request, repoID, _, path string) (auth.PermissionNode, error) {
+func (controller *GetObject) RequiredPermissions(_ *http.Request, repoID, _, path string) (auth.Permissioner, error) {
 	return &auth.OnePermission{
 		Action:   permissions.ReadObjectAction,
 		Resource: permissions.ObjectArn(repoID, path),
