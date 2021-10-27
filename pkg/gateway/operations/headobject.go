@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/httputil"
@@ -13,12 +14,10 @@ import (
 
 type HeadObject struct{}
 
-func (controller *HeadObject) RequiredPermissions(_ *http.Request, repoID, _, path string) ([]permissions.Permission, error) {
-	return []permissions.Permission{
-		{
-			Action:   permissions.ReadObjectAction,
-			Resource: permissions.ObjectArn(repoID, path),
-		},
+func (controller *HeadObject) RequiredPermissions(_ *http.Request, repoID, _, path string) (auth.PermissionNode, error) {
+	return &auth.OnePermission{
+		Action:   permissions.ReadObjectAction,
+		Resource: permissions.ObjectArn(repoID, path),
 	}, nil
 }
 

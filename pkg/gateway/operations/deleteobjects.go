@@ -16,7 +16,7 @@ import (
 
 type DeleteObjects struct{}
 
-func (controller *DeleteObjects) RequiredPermissions(_ *http.Request, _ string) ([]permissions.Permission, error) {
+func (controller *DeleteObjects) RequiredPermissions(_ *http.Request, _ string) (auth.PermissionNode, error) {
 	return nil, nil
 }
 
@@ -44,11 +44,9 @@ func (controller *DeleteObjects) Handle(w http.ResponseWriter, req *http.Request
 		// authorize this object deletion
 		authResp, err := o.Auth.Authorize(req.Context(), &auth.AuthorizationRequest{
 			Username: o.Principal,
-			RequiredPermissions: []permissions.Permission{
-				{
-					Action:   permissions.DeleteObjectAction,
-					Resource: permissions.ObjectArn(o.Repository.Name, resolvedPath.Path),
-				},
+			RequiredPermissions: &auth.OnePermission{
+				Action:   permissions.DeleteObjectAction,
+				Resource: permissions.ObjectArn(o.Repository.Name, resolvedPath.Path),
 			},
 		})
 		if err != nil || !authResp.Allowed {

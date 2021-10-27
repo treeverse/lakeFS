@@ -3,17 +3,16 @@ package operations
 import (
 	"net/http"
 
+	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/permissions"
 )
 
 type HeadBucket struct{}
 
-func (controller *HeadBucket) RequiredPermissions(_ *http.Request, repoID string) ([]permissions.Permission, error) {
-	return []permissions.Permission{
-		{
-			Action:   permissions.ReadRepositoryAction,
-			Resource: permissions.RepoArn(repoID),
-		},
+func (controller *HeadBucket) RequiredPermissions(_ *http.Request, repoID string) (auth.PermissionNode, error) {
+	return &auth.OnePermission{
+		Action:   permissions.ReadRepositoryAction,
+		Resource: permissions.RepoArn(repoID),
 	}, nil
 }
 

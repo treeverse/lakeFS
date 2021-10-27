@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	gatewayErrors "github.com/treeverse/lakefs/pkg/gateway/errors"
@@ -31,11 +32,34 @@ const (
 
 type PutObject struct{}
 
-func (controller *PutObject) RequiredPermissions(_ *http.Request, repoID, _, path string) ([]permissions.Permission, error) {
-	return []permissions.Permission{
-		{
+func (controller *PutObject) RequiredPermissions(req *http.Request, repoID, _, destPath string) (auth.PermissionNode, error) {
+	// TODO(Eden): use the get copy source code and ResolveAbsolutePath function only once (extractEntryFromCopyReq)
+	copySource := req.Header.Get(CopySourceHeader)
+	copySourceDecoded, err := url.QueryUnescape(copySource)
+	if err != nil {
+		copySourceDecoded = copySource
+	}
+
+	if len(copySourceDecoded) == 0 {
+		return &auth.OnePermission{
 			Action:   permissions.WriteObjectAction,
-			Resource: permissions.ObjectArn(repoID, path),
+			Resource: permissions.ObjectArn(repoID, destPath),
+		}, nil
+	}
+	// check this is a copy operation
+	p, err := path.ResolveAbsolutePath(copySourceDecoded)
+	if err != nil {
+		logging.Default().WithError(err).Error("could not parse copy source path")
+		return nil, gatewayErrors.ErrInvalidCopySource
+	}
+	return &auth.AndPermission{
+		&auth.OnePermission{
+			Action:   permissions.WriteObjectAction,
+			Resource: permissions.ObjectArn(repoID, destPath),
+		},
+		&auth.OnePermission{
+			Action:   permissions.ReadObjectAction,
+			Resource: permissions.ObjectArn(p.Repo, p.Path),
 		},
 	}, nil
 }

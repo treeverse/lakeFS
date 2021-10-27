@@ -21,7 +21,7 @@ import (
 
 type AuthorizationRequest struct {
 	Username            string
-	RequiredPermissions []permissions.Permission
+	RequiredPermissions PermissionNode
 }
 
 type AuthorizationResponse struct {
@@ -852,6 +852,71 @@ func interpolateUser(resource string, username string) string {
 	return strings.ReplaceAll(resource, "${user}", username)
 }
 
+type CheckResult int
+
+const (
+	CheckAllow   CheckResult = iota // Permission allowed
+	CheckNeutral                    // Permission neither allowed nor denied
+	CheckDeny                       // Permission denied
+)
+
+type PermissionNode interface {
+	CheckPermissions(policies []*model.Policy, req *AuthorizationRequest) CheckResult
+}
+
+type OnePermission permissions.Permission
+type AndPermission []PermissionNode
+type OrPermission []PermissionNode
+
+func (p OnePermission) CheckPermissions(policies []*model.Policy, req *AuthorizationRequest) CheckResult {
+	allowed := CheckNeutral
+	for _, policy := range policies {
+		for _, stmt := range policy.Statement {
+			resource := interpolateUser(stmt.Resource, req.Username)
+			if !ArnMatch(resource, p.Resource) {
+				continue
+			}
+			for _, action := range stmt.Action {
+				if !wildcard.Match(action, p.Action) {
+					continue // not a matching action
+				}
+
+				if stmt.Effect == model.StatementEffectDeny {
+					// this is a "Deny" and it takes precedence
+					return CheckDeny
+				}
+
+				allowed = CheckAllow
+			}
+		}
+	}
+	return allowed
+}
+
+func (p AndPermission) CheckPermissions(policies []*model.Policy, req *AuthorizationRequest) CheckResult {
+	for _, perm := range p {
+		result := perm.CheckPermissions(policies, req)
+		if result == CheckNeutral || result == CheckDeny {
+			return result
+		}
+	}
+	return CheckAllow
+}
+
+func (p OrPermission) CheckPermissions(policies []*model.Policy, req *AuthorizationRequest) CheckResult {
+	allowed := CheckNeutral
+	for _, perm := range p {
+		result := perm.CheckPermissions(policies, req)
+		if result == CheckDeny {
+			return CheckDeny
+		}
+		if allowed != CheckAllow {
+			allowed = result
+		}
+	}
+	return allowed
+}
+
 func (s *DBAuthService) Authorize(ctx context.Context, req *AuthorizationRequest) (*AuthorizationResponse, error) {
 	policies, _, err := s.ListEffectivePolicies(ctx, req.Username, &model.PaginationParams{
 		After:  "", // all
@@ -861,34 +926,10 @@ func (s *DBAuthService) Authorize(ctx context.Context, req *AuthorizationRequest
 	if err != nil {
 		return nil, err
 	}
-	allowed := false
-	for _, perm := range req.RequiredPermissions {
-		for _, policy := range policies {
-			for _, stmt := range policy.Statement {
-				resource := interpolateUser(stmt.Resource, req.Username)
-				if !ArnMatch(resource, perm.Resource) {
-					continue
-				}
-				for _, action := range stmt.Action {
-					if !wildcard.Match(action, perm.Action) {
-						continue // not a matching action
-					}
 
-					if stmt.Effect == model.StatementEffectDeny {
-						// this is a "Deny" and it takes precedence
-						return &AuthorizationResponse{
-							Allowed: false,
-							Error:   ErrInsufficientPermissions,
-						}, nil
-					}
+	allowed := req.RequiredPermissions.CheckPermissions(policies, req)
 
-					allowed = true
-				}
-			}
-		}
-	}
-
-	if !allowed {
+	if allowed != CheckAllow {
 		return &AuthorizationResponse{
 			Allowed: false,
 			Error:   ErrInsufficientPermissions,
