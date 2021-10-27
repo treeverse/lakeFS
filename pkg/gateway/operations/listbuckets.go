@@ -3,6 +3,7 @@ package operations
 import (
 	"net/http"
 
+	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/permissions"
 
 	"github.com/treeverse/lakefs/pkg/gateway/errors"
@@ -11,12 +12,10 @@ import (
 
 type ListBuckets struct{}
 
-func (controller *ListBuckets) RequiredPermissions(_ *http.Request) ([]permissions.Permission, error) {
-	return []permissions.Permission{
-		{
-			Action:   permissions.ListRepositoriesAction,
-			Resource: "*",
-		},
+func (controller *ListBuckets) RequiredPermissions(_ *http.Request) (auth.PermissionNode, error) {
+	return &auth.OnePermission{
+		Action:   permissions.ListRepositoriesAction,
+		Resource: "*",
 	}, nil
 }
 

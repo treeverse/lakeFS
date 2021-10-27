@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/block"
 	gatewayErrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
@@ -29,12 +30,10 @@ const (
 
 type PostObject struct{}
 
-func (controller *PostObject) RequiredPermissions(_ *http.Request, repoID, _, path string) ([]permissions.Permission, error) {
-	return []permissions.Permission{
-		{
-			Action:   permissions.WriteObjectAction,
-			Resource: permissions.ObjectArn(repoID, path),
-		},
+func (controller *PostObject) RequiredPermissions(_ *http.Request, repoID, _, path string) (auth.PermissionNode, error) {
+	return &auth.OnePermission{
+		Action:   permissions.WriteObjectAction,
+		Resource: permissions.ObjectArn(repoID, path),
 	}, nil
 }
 

@@ -3,6 +3,7 @@ package operations
 import (
 	"net/http"
 
+	"github.com/treeverse/lakefs/pkg/auth"
 	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/permissions"
 )
@@ -12,15 +13,13 @@ import (
 // create a new repo), but *does* detect whether the repo already exists.
 type PutBucket struct{}
 
-func (controller *PutBucket) RequiredPermissions(_ *http.Request, repoID string) ([]permissions.Permission, error) {
-	return []permissions.Permission{
-		{
-			// Mimic S3, which requires s3:CreateBucket to call
-			// create-bucket, even if we only want to receive
-			// 409.
-			Action:   permissions.CreateRepositoryAction,
-			Resource: permissions.RepoArn(repoID),
-		},
+func (controller *PutBucket) RequiredPermissions(_ *http.Request, repoID string) (auth.PermissionNode, error) {
+	return &auth.OnePermission{
+		// Mimic S3, which requires s3:CreateBucket to call
+		// create-bucket, even if we only want to receive
+		// 409.
+		Action:   permissions.CreateRepositoryAction,
+		Resource: permissions.RepoArn(repoID),
 	}, nil
 }
 
