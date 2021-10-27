@@ -10,10 +10,10 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/routers"
 	"github.com/getkin/kin-openapi/routers/legacy"
+	"github.com/golang-jwt/jwt"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/logging"
-	"gopkg.in/dgrijalva/jwt-go.v3"
 )
 
 // extractSecurityRequirements using Swagger returns an array of security requirements set for the request.

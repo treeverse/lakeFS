@@ -19,12 +19,11 @@ require (
 	github.com/cockroachdb/pebble v0.0.0-20210308135031-3c37882d2ac8
 	github.com/cockroachdb/redact v1.0.9 // indirect
 	github.com/containerd/continuity v0.0.0-20201208142359-180525291bb7 // indirect
-	github.com/cubewise-code/go-mime v0.0.0-20200519001935-8c5762b177d8 // indirect
+	github.com/cubewise-code/go-mime v0.0.0-20200519001935-8c5762b177d8
 	github.com/cznic/mathutil v0.0.0-20180504122225-ca4c9f2c1369
 	github.com/davecgh/go-spew v1.1.1
 	github.com/deepmap/oapi-codegen v1.5.6
 	github.com/dgraph-io/ristretto v0.0.4-0.20210108140656-b1486d8516f2
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/dgryski/go-gk v0.0.0-20200319235926-a69029f61654 // indirect
 	github.com/dlmiddlecote/sqlstats v1.0.2
 	github.com/georgysavva/scany v0.2.7
@@ -38,6 +37,7 @@ require (
 	github.com/gobwas/glob v0.2.3
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang-migrate/migrate/v4 v4.14.1
 	github.com/golang/mock v1.5.0
 	github.com/golang/protobuf v1.4.3
@@ -98,7 +98,6 @@ require (
 	gonum.org/v1/gonum v0.7.0 // indirect
 	google.golang.org/api v0.40.0
 	google.golang.org/protobuf v1.25.0
-	gopkg.in/dgrijalva/jwt-go.v3 v3.2.0
 	gopkg.in/ini.v1 v1.62.0 // indirect
 	gopkg.in/retry.v1 v1.0.3
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
