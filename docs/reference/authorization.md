@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Authentication & Authorization
-description: This section covers authorization (using AWS IAM) and Authentication of your lakeFS server. 
+description: This section covers authorization (using AWS IAM) and Authentication of your lakeFS server.
 parent: Reference
 nav_order: 60
 has_children: false
@@ -13,6 +13,66 @@ has_children: false
 {% include toc.html %}
 
 ## Authentication
+
+### User Authentication
+
+lakeFS authenticates users from a built-in authentication database, or
+optionally from a configured LDAP server.
+
+#### Built-in database
+
+The built-in authentication database is always present and active.  Use the
+Web UI at Administration / Users to create users.  Users have an access key
+`AKIA...` and an associated secret access key.  These credentials are valid
+to log into the Web UI, or to authenticate programmatic requests to the API
+Server, or for S3 Gateway Authentication.
+
+#### LDAP server
+
+Configure lakeFS to authenticate users on an LDAP server.  Once configured,
+users can additionally log into lakeFS using their credentials LDAP.  These
+users may then generate an access key and a secret access key on the Web UI
+at Administration / My Credentials.  lakeFS generates an internal user once
+logged in via the LDAP server.  Adding this internal user to a group allows
+assigning them a different policy.
+
+Configure the LDAP server using these [fields in
+`auth.ldap`](configuration.html#ldap):
+
+* `server_endpoint`: the `ldaps:` (or `ldap:`) URL of the LDAP server.
+* `bind_dn`, `bind_password`: Credentials for lakeFS to use to query the
+  LDAP server for users.  These must identify a user with Basic
+  Authentication, and are used to convert a user ID attribute to a full
+  user DN.
+* `default_user_group`: A group to add users the first time they log in
+  using LDAP.  Typically "`Viewers`" or "`Developers`".
+
+  Once logged in, LDAP users may be added as normal to any other group.
+* `username_attribute`: Attribute on LDAP user to identify user when
+  logging in.  Typically "`uid`" or "`cn`".
+* `user_base_dn`: DN of root of DAP tree containing users,
+  e.g. `ou=Users,dc=treeverse,dc=io`.
+* `user_filter`: An additional filter for users allowed to login,
+  e.g. `(objectClass=person)`.
+
+LDAP users log in using the following flow:
+
+1. Bind the lakeFS control connection to `server_endpoint` using `bind_dn`,
+   `bind_password`.
+1. Receive an LDAP user-ID (e.g. "joebloggs") and a password entered on the
+   Web UI login page.
+1. Attempt to log in as internally-defined users; fail.
+1. Search the LDAP server using the control connection for the user: out of
+   all users under `user_base_dn` that satisfy `user_filter`, there must be
+   a single user whose `username_attribute` was specified by the user.  Get
+   their DN.
+
+   In our example this might be `uid=joebloggs,ou=Users,dc=treeverse,dc=io`
+   (this entry must have `objectClass: person` because of `user_filter`).
+1. Attempt to bind the received DN on the LDAP server using the password.
+1. On success, the user is authenticated!
+1. Create a new internal user with that DN if needed.  When creating a user
+   add them to the internal group named `default_user_group`.
 
 ### API Server Authentication
 
@@ -73,7 +133,7 @@ When a user makes a request to perform that action, the following process takes 
 ### Policy Precedence
 
 Each policy attached to a user or a group has an `Effect` - either `allow` or `deny`.
-During evaluation of a request, `deny` would take precedence over any other `allow` policy. 
+During evaluation of a request, `deny` would take precedence over any other `allow` policy.
 
 This helps us compose policies together. For example, we could attach a very permissive policy to a user and use `deny` rules to then selectively restrict what that user can do.
 
@@ -97,7 +157,7 @@ arn:lakefs:fs:::repository/*
 arn:lakefs:fs:::*
 ```
 
-this allows us to create fine-grained policies affecting only a specific subset of resources. 
+this allows us to create fine-grained policies affecting only a specific subset of resources.
 
 See below for a full reference of ARNs and actions
 
@@ -184,7 +244,7 @@ Policy:
       ],
       "effect": "allow",
       "resource": "*"
-    }    
+    }
   ]
 }
 ```
@@ -350,7 +410,7 @@ The following examples can be used to create additional policies to further limi
 
 #### Read/write access for a specific repository
 
-Policy: 
+Policy:
 ```json
 {
     "statement": [
@@ -417,7 +477,7 @@ Policies: `["FSFullAccess", "AuthManageOwnCredentials", "RepoManagementReadAll"]
 ##### Developers
 
 Policies: `["FSReadWriteAll", "AuthManageOwnCredentials", "RepoManagementReadAll"]`
- 
+
 ##### Viewers
 
 Policies: `["FSReadAll", "AuthManageOwnCredentials"]`
