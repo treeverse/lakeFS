@@ -8,7 +8,7 @@
 - Fix ldap auth re-open control connection after it closes, and add timeouts (#2613)
 - Better format server error messages from lakectl (#2609)
 - Fix lakectl crash while reporting some server errors (#2608)
-- Fix Improper Access Control in S3 copy-object, and API restore-refs,dump-refs, get-range, get-metarange [GHSA-m836-gxwq-j2pm](https://github.com/treeverse/lakeFS/security/advisories/GHSA-m836-gxwq-j2pm)
+- Fix Improper Access Control in S3 copy-object, and API restore-refs,dump-refs, get-range, get-metarange ([GHSA-m836-gxwq-j2pm](https://github.com/treeverse/lakeFS/security/advisories/GHSA-m836-gxwq-j2pm))
 
 ## v0.53.0 - 2021-10-25
 
