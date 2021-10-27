@@ -42,7 +42,7 @@ This reference uses `.` to denote the nesting of values.
 
    **Note:** It is best to keep this somewhere safe such as KMS or Hashicorp Vault, and provide it to the system at run time
    {: .note }
-* `auth.ldap.server_endpoint` `(string : required)` - If specified, also authenticate users via this LDAP server
+* <a name="ldap"/>`auth.ldap.server_endpoint` `(string : required)` - If specified, also authenticate users via this LDAP server
 * `auth.ldap.bind_dn` `(string : required)` - Use this DN to bind lakeFS on the LDAP server for searching for users.
 * `auth.ldap.bind_password` `(string : )` - If set, use this password for binding `bind_dn`.
 * `auth.ldap.username_attribute` `(string : required)` - Attribute holding login username on LDAP users, e.g. `cn` or `uid`.
