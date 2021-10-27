@@ -48,6 +48,10 @@ type Shutter interface {
 }
 
 func newLDAPAuthenticator(cfg *config.LDAP, service auth.Service) *auth.LDAPAuthenticator {
+	const (
+		connectionTimeout = 15 * time.Second
+		requestTimeout    = 7 * time.Second
+	)
 	group := cfg.DefaultUserGroup
 	if group == "" {
 		group = auth.ViewersGroup
@@ -61,12 +65,12 @@ func newLDAPAuthenticator(cfg *config.LDAP, service auth.Service) *auth.LDAPAuth
 		MakeLDAPConn: func(_ context.Context) (*ldap.Conn, error) {
 			c, err := ldap.DialURL(
 				cfg.ServerEndpoint,
-				ldap.DialWithDialer(&net.Dialer{Timeout: 15 * time.Second}),
+				ldap.DialWithDialer(&net.Dialer{Timeout: connectionTimeout}),
 			)
 			if err != nil {
 				return nil, fmt.Errorf("dial %s: %w", cfg.ServerEndpoint, err)
 			}
-			c.SetTimeout(7 * time.Second)
+			c.SetTimeout(requestTimeout)
 			// TODO(ariels): Support StartTLS (& other TLS configuration).
 			return c, nil
 		},
