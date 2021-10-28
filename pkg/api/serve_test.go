@@ -87,12 +87,15 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 	})
 	testutil.MustDo(t, "build catalog", err)
 
+	collector := &nullCollector{}
+
 	// wire actions
 	actionsService := actions.NewService(
 		ctx,
 		conn,
 		catalog.NewActionsSource(c),
 		catalog.NewActionsOutputWriter(c.BlockAdapter),
+		collector,
 	)
 	c.SetHooksHandler(actionsService)
 
@@ -106,8 +109,6 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 	t.Cleanup(func() {
 		_ = c.Close()
 	})
-
-	collector := &nullCollector{}
 
 	handler := api.Serve(
 		cfg,

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 type Webhook struct {
@@ -78,6 +79,11 @@ func NewWebhook(h ActionHook, action *Action) (Hook, error) {
 
 func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, writer *HookOutputWriter) (err error) {
 	// post event information as json to webhook endpoint
+	logging.FromContext(ctx).
+		WithField("hook_type", "webhook").
+		WithField("event_type", record.EventType).
+		Debug("hook action executing")
+
 	eventData, err := marshalEventInformation(w.ActionName, w.ID, record)
 	if err != nil {
 		return err

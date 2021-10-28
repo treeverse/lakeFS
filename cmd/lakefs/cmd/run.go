@@ -121,16 +121,6 @@ var runCmd = &cobra.Command{
 		}
 		defer func() { _ = c.Close() }()
 
-		// wire actions
-		actionsService := actions.NewService(
-			ctx,
-			dbPool,
-			catalog.NewActionsSource(c),
-			catalog.NewActionsOutputWriter(c.BlockAdapter),
-		)
-		c.SetHooksHandler(actionsService)
-		defer actionsService.Stop()
-
 		multipartsTracker := multiparts.NewTracker(dbPool)
 
 		// init authentication
@@ -162,6 +152,17 @@ var runCmd = &cobra.Command{
 		bufferedCollector.SetRuntimeCollector(blockStore.RuntimeStats)
 		// send metadata
 		bufferedCollector.CollectMetadata(metadata)
+
+		// wire actions
+		actionsService := actions.NewService(
+			ctx,
+			dbPool,
+			catalog.NewActionsSource(c),
+			catalog.NewActionsOutputWriter(c.BlockAdapter),
+			bufferedCollector,
+		)
+		c.SetHooksHandler(actionsService)
+		defer actionsService.Stop()
 
 		allowForeign, err := cmd.Flags().GetBool(mismatchedReposFlagName)
 		if err != nil {

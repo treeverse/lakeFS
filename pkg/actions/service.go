@@ -15,6 +15,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/stats"
 )
 
 type Service struct {
@@ -24,6 +25,7 @@ type Service struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 	wg     sync.WaitGroup
+	stats  stats.Collector
 }
 
 type Task struct {
@@ -85,7 +87,7 @@ const defaultFetchSize = 1024
 
 var ErrNotFound = errors.New("not found")
 
-func NewService(ctx context.Context, db db.Database, source Source, writer OutputWriter) *Service {
+func NewService(ctx context.Context, db db.Database, source Source, writer OutputWriter, stats stats.Collector) *Service {
 	ctx, cancel := context.WithCancel(ctx)
 	return &Service{
 		DB:     db,
@@ -94,6 +96,7 @@ func NewService(ctx context.Context, db db.Database, source Source, writer Outpu
 		ctx:    ctx,
 		cancel: cancel,
 		wg:     sync.WaitGroup{},
+		stats:  stats,
 	}
 }
 
@@ -196,6 +199,8 @@ func (s *Service) runTasks(ctx context.Context, record graveler.HookRecord, task
 				task.StartTime = time.Now().UTC()
 				task.Err = task.Hook.Run(ctx, record, hookOutputWriter)
 				task.EndTime = time.Now().UTC()
+
+				s.stats.CollectEvent("actions_service", string(record.EventType))
 
 				if task.Err != nil {
 					// wrap error with more information and return
