@@ -200,11 +200,6 @@ func (s *Service) runTasks(ctx context.Context, record graveler.HookRecord, task
 				task.Err = task.Hook.Run(ctx, record, hookOutputWriter)
 				task.EndTime = time.Now().UTC()
 
-				logging.FromContext(ctx).
-					WithField("hook_type", fmt.Sprintf("%T", task.Hook)).
-					WithField("event_type", string(record.EventType)).
-					Debug("hook action performed")
-
 				s.stats.CollectEvent("actions_service", string(record.EventType))
 
 				if task.Err != nil {
