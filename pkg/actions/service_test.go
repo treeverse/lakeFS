@@ -24,15 +24,18 @@ import (
 )
 
 type ActionStatsMockCollector struct {
-	NumHits    int
-	LastAction string
+	Hits map[string]int
+}
+
+func NewActionStatsMockCollector() ActionStatsMockCollector {
+	return ActionStatsMockCollector{
+		Hits: make(map[string]int),
+	}
 }
 
 func (c *ActionStatsMockCollector) CollectEvent(class, action string) {
-	c.NumHits++
-	c.LastAction = action
+	c.Hits[action]++
 }
-
 func (c *ActionStatsMockCollector) CollectMetadata(accountMetadata *stats.Metadata) {}
 func (c *ActionStatsMockCollector) SetInstallationID(installationID string)         {}
 
@@ -216,7 +219,7 @@ hooks:
 
 	// run actions
 	now := time.Now()
-	mockStatsCollector := ActionStatsMockCollector{}
+	mockStatsCollector := NewActionStatsMockCollector()
 	actionsService := actions.NewService(ctx, conn, testSource, testOutputWriter, &mockStatsCollector)
 	defer actionsService.Stop()
 
@@ -282,8 +285,7 @@ hooks:
 		t.Errorf("GetRunResult() result CommitID=%s, expect=%s", runResult.CommitID, expectedCommitID)
 	}
 
-	require.Equal(t, 3, mockStatsCollector.NumHits)
-	require.Equal(t, "pre-commit", mockStatsCollector.LastAction)
+	require.Equal(t, 3, mockStatsCollector.Hits["pre-commit"])
 
 	// get run - not found
 	runResult, err = actionsService.GetRunResult(ctx, record.RepositoryID.String(), "not-run-id")
@@ -376,11 +378,10 @@ hooks:
 		Return([]byte(actionContent), nil)
 
 	// run actions
-	mockStatsCollector := ActionStatsMockCollector{}
+	mockStatsCollector := NewActionStatsMockCollector()
 	actionsService := actions.NewService(ctx, conn, testSource, testOutputWriter, &mockStatsCollector)
 	defer actionsService.Stop()
 
 	require.Error(t, actionsService.Run(ctx, record))
-	require.Equal(t, 0, mockStatsCollector.NumHits)
-	require.Equal(t, "", mockStatsCollector.LastAction)
+	require.Equal(t, 0, mockStatsCollector.Hits["pre-commit"])
 }
