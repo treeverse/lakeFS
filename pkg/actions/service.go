@@ -205,9 +205,7 @@ func (s *Service) runTasks(ctx context.Context, record graveler.HookRecord, task
 					WithField("event_type", string(record.EventType)).
 					Debug("hook action performed")
 
-				if s.stats != nil {
-					s.stats.CollectEvent("actions_service", string(record.EventType))
-				}
+				s.stats.CollectEvent("actions_service", string(record.EventType))
 
 				if task.Err != nil {
 					// wrap error with more information and return

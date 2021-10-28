@@ -80,7 +80,7 @@ func TestLocalLoad(t *testing.T) {
 		conn,
 		catalog.NewActionsSource(c),
 		catalog.NewActionsOutputWriter(c.BlockAdapter),
-		nil,
+		&nullCollector{},
 	)
 	c.SetHooksHandler(actionsService)
 
