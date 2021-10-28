@@ -57,7 +57,8 @@ If you already have a database, take note of the connection string and skip to t
    ```bash
    lakefs --config config.yaml run
    ```
-   **Note:** it is preferable to run the binary as a service using systemd or your operating system's facilities.
+
+**Note:** it is preferable to run the binary as a service using systemd or your operating system's facilities.
 
 ### On ECS
 To support container-based environments like AWS ECS, lakeFS can be configured using environment variables. Here is a `docker run` 
