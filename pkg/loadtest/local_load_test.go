@@ -2,7 +2,6 @@ package loadtest
 
 import (
 	"context"
-	"github.com/spf13/viper"
 	"log"
 	"math"
 	"net/http/httptest"
@@ -11,6 +10,7 @@ import (
 	"time"
 
 	"github.com/ory/dockertest/v3"
+	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
@@ -80,6 +80,7 @@ func TestLocalLoad(t *testing.T) {
 		conn,
 		catalog.NewActionsSource(c),
 		catalog.NewActionsOutputWriter(c.BlockAdapter),
+		&nullCollector{},
 	)
 	c.SetHooksHandler(actionsService)
 

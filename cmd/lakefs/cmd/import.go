@@ -19,6 +19,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/onboard"
+	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
@@ -94,16 +95,6 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	}
 	defer func() { _ = c.Close() }()
 
-	// wire actions into entry catalog
-	actionsService := actions.NewService(
-		ctx,
-		dbPool,
-		catalog.NewActionsSource(c),
-		catalog.NewActionsOutputWriter(c.BlockAdapter),
-	)
-	c.SetHooksHandler(actionsService)
-	defer actionsService.Stop()
-
 	u := uri.Must(uri.Parse(args[0]))
 	if !u.IsRepository() {
 		fmt.Printf("Invalid 'repository': %s\n", uri.ErrInvalidRefURI)
@@ -125,6 +116,20 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 		fmt.Printf("Invalid manifest url. expected format: %s\n", ManifestURLFormat)
 		return 1
 	}
+
+	bufferedCollector := stats.NewBufferedCollector(cfg.GetFixedInstallationID(), cfg)
+	bufferedCollector.SetRuntimeCollector(blockStore.RuntimeStats)
+
+	// wire actions into entry catalog
+	actionsService := actions.NewService(
+		ctx,
+		dbPool,
+		catalog.NewActionsSource(c),
+		catalog.NewActionsOutputWriter(c.BlockAdapter),
+		bufferedCollector,
+	)
+	c.SetHooksHandler(actionsService)
+	defer actionsService.Stop()
 
 	repo, err := getRepository(ctx, c, repoName)
 	if err != nil {
