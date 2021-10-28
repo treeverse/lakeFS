@@ -9,11 +9,12 @@ import (
 	"strings"
 	"time"
 
+	ghttp "github.com/treeverse/lakefs/pkg/gateway/http"
+
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	gatewayErrors "github.com/treeverse/lakefs/pkg/gateway/errors"
-	ghttp "github.com/treeverse/lakefs/pkg/gateway/http"
 	"github.com/treeverse/lakefs/pkg/gateway/path"
 	"github.com/treeverse/lakefs/pkg/gateway/serde"
 	"github.com/treeverse/lakefs/pkg/graveler"
