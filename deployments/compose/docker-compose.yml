@@ -81,8 +81,6 @@ services:
       - DB_URI=mariadb:3306
     volumes:
       - ./etc/hive-site.xml:/opt/apache-hive-bin/conf/hive-site.xml
-    links:
-      - lakefs
 
   hive-server:
     build: hive
@@ -93,8 +91,6 @@ services:
       - DB_URI=mariadb:3306
     volumes:
       - ./etc/hive-site.xml:/opt/apache-hive-bin/conf/hive-site.xml
-    links:
-      - lakefs
     entrypoint: ["hive", "--service", "hiveserver2", "--hiveconf", "hive.root.logger=INFO,console"]
   
   hive-client:
@@ -105,8 +101,6 @@ services:
   trino:
     image: trinodb/trino:358
     container_name: trino
-    links:
-      - lakefs
     volumes:
       - ./etc/s3.properties:/etc/trino/catalog/s3.properties
 
@@ -128,8 +122,6 @@ services:
       - 18080:8080
     volumes:
       - ./etc/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml
-    links:
-      - lakefs
 
   spark-worker:
     image: docker.io/bitnami/spark:3
@@ -148,8 +140,6 @@ services:
       replicas: 3
     volumes:
       - ./etc/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml
-    links:
-      - lakefs
 
   spark-submit:
     image: docker.io/bitnami/spark:3
@@ -167,8 +157,6 @@ services:
     volumes:
       - ./:/local
       - ./etc/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml
-    links:
-      - lakefs
 
   spark-sql:
     image: docker.io/bitnami/spark:3
@@ -186,5 +174,3 @@ services:
       - ./:/local
       - ./etc/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml
     command: ["spark-sql", "--master", "spark://spark:7077"]
-    links:
-      - lakefs
