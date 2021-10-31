@@ -24,7 +24,7 @@ import {ActionGroup, ActionsBar, Error, Loading, RefreshButton} from "../../../l
 import RefDropdown from "../../../lib/components/repository/refDropdown";
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import {formatAlertText} from "../../../lib/components/repository/errors";
-import {ChangeEntryRow, TreeItem} from "../../../lib/components/repository/changes";
+import {ChangeEntryRow, TreeEntryPaginator, TreeItem} from "../../../lib/components/repository/changes";
 import {Paginator} from "../../../lib/components/pagination";
 import {useRouter} from "../../../lib/hooks/router";
 import {URINavigator} from "../../../lib/components/repository/tree";
@@ -40,7 +40,6 @@ const CommitButton = ({repo, onCommit, enabled = false}) => {
     const [committing, setCommitting] = useState(false)
     const [show, setShow] = useState(false)
     const [metadataFields, setMetadataFields] = useState([])
-
     const hide = () => {
         if (committing) return;
         setShow(false)
@@ -152,36 +151,28 @@ const RevertButton = ({onRevert, enabled = false}) => {
     );
 }
 
-const ChangesBrowser = ({repo, reference, after, prefix, view, onSelectRef, onPaginate}) => {
+const ChangesBrowser = ({repo, reference, prefix, view, onSelectRef, }) => {
     const [actionError, setActionError] = useState(null);
     const [internalRefresh, setInternalRefresh] = useState(true);
+    const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
+    const [resultsState, setResultsState] = useState({results:[], pagination:{}}); // current retrieved children of the item
 
-    const radios = [
-        {name: 'Flat', value: 'flat', selected: false},
-        {name: 'Directory', value: 'dir', selected: false},
-        {name: 'Tree', value: 'tree', selected: false},
-    ];
+    const delimiter = '/'
 
-    let delimiter = ""
-    switch (view) {
-        case "dir":
-            delimiter = "/";
-            radios[1].selected = true;
-            break;
-        case "tree":
-            delimiter = "/";
-            radios[2].selected = true;
-            break;
-        default:
-            delimiter = "";
-            radios[0].selected = true;
-            break;
-    }
-
-    const {results, error, loading, nextPage} = useAPIWithPagination(async () => {
+    const { error, loading, nextPage } = useAPIWithPagination(async () => {
         if (!repo) return
-        return refs.changes(repo.id, reference.id, after, prefix, delimiter)
-    }, [repo.id, reference.id, internalRefresh, after, prefix, delimiter])
+        let resultsFiltered = resultsState.results.filter(entry => entry.path.startsWith(prefix) && entry.path != prefix)
+        if (resultsFiltered.length > 0 && resultsFiltered.at(-1).path > afterUpdated) {
+            // results already cached
+            return {results:resultsFiltered, pagination: resultsState.pagination}
+        }
+
+        const { results, pagination } = await refs.changes(repo.id, reference.id, afterUpdated, prefix, delimiter)
+        setResultsState({results: resultsFiltered.concat(results), pagination: pagination})
+        return {results:resultsState.results, pagination: pagination}
+    }, [repo.id, reference.id, internalRefresh, afterUpdated, delimiter, prefix])
+
+    const results = resultsState.results
 
     const refresh = () => setInternalRefresh(!internalRefresh)
 
@@ -199,54 +190,19 @@ const ChangesBrowser = ({repo, reference, after, prefix, view, onSelectRef, onPa
             })
     }
 
-    let tablebody;
-    if (view === 'tree') {
-        tablebody =
-            <tbody>
-            {results.map(entry => (
-                <TreeItem key={entry.path + "-tree-item"} entry={entry} repo={repo} reference={reference}
-                          internalReferesh={internalRefresh}
-                          onRevert={onRevert} delimiter={delimiter} after={after} relativeTo={""}
-                          getMore={(afterUpdated, path) => {
-                              return refs.changes(repo.id, reference.id, afterUpdated, path, delimiter)
-                          }}/>
-            ))}
-            </tbody>
-    } else {
-        tablebody = <tbody>
-        {results.map(entry => (
-            <ChangeEntryRow
-                key={entry.path + "-change-entry"}
-                entry={entry}
-                relativeTo={prefix}
-                showActions={true}
-                onRevert={(entry) => {
-                    branches
-                        .revert(repo.id, reference.id, {type: entry.path_type, path: entry.path})
-                        .then(() => {
-                            setInternalRefresh(!internalRefresh)
-                        })
-                        .catch(error => {
-                            setActionError(error)
-                        })
-                }}
-                onNavigate={entry => {
-                    return {
-                        pathname: '/repositories/:repoId/changes',
-                        params: {repoId: repo.id},
-                        query: {
-                            prefix: entry.path,
-                            ref: reference.id,
-                            view: "dir"
-                        }
-                    }
-                }}
-            />
-        ))}
-        </tbody>
+
+    let onNavigate = (entry) => {
+        return {
+            pathname: `/repositories/:repoId/changes`,
+            params: {repoId: repo.id},
+            query: {
+                ref: reference.id,
+                prefix: entry.path,
+            }
+        }
     }
 
-    const actionErrorDisplay = (!!actionError) ?
+   const actionErrorDisplay = (!!actionError) ?
         <Error error={actionError} onDismiss={() => setActionError(null)}/> : <></>
 
     return (
@@ -298,50 +254,31 @@ const ChangesBrowser = ({repo, reference, after, prefix, view, onSelectRef, onPa
                                                   return {
                                                       pathname: '/repositories/:repoId/changes',
                                                       params: params,
-                                                      query: {delimiter: "/", ref: reference.id},
+                                                      query: {delimiter: "/", ref: reference.id, prefix: query.prefix},
                                                   }
                                               }}/>
                             )}
                         </span>
-                            <span className="float-right">
-                            <Form>
-                              <ButtonGroup className="view-options">
-                                {radios.map((radio, idx) => (
-                                    <div key={idx}>
-                                        <Link href={{
-                                            pathname: '/repositories/:repoId/changes',
-                                            params: {repoId: repo.id},
-                                            query: {
-                                                prefix: "",
-                                                ref: reference.id,
-                                                view: radio.value,
-                                            }
-                                        }}>
-                                            <ToggleButton className="view-options"
-                                                id={`radio-${idx}`}
-                                                key={`radio-${idx}`}
-                                                type="radio"
-                                                variant="secondary"
-                                                name="radio"
-                                                value={radio.value}
-                                                checked={radio.selected}>
-                                                {radio.name}
-                                            </ToggleButton>
-                                        </Link>
-                                    </div>
-                                ))}
-                              </ButtonGroup>
-                            </Form>
-                        </span>
                         </Card.Header>
                         <Card.Body>
                             <Table borderless size="sm">
-                                {tablebody}
+                                <tbody>
+                                {results.map(entry => (
+                                    <TreeItem key={entry.path + "-tree-item"} entry={entry} repo={repo} reference={reference}
+                                              internalReferesh={internalRefresh} onNavigate={onNavigate}
+                                              onRevert={onRevert} delimiter={delimiter} after={""} relativeTo={prefix}
+                                              getMore={(afterUpdated, path) => {
+                                                  return refs.changes(repo.id, reference.id, afterUpdated, path, delimiter)
+                                              }}/>
+                                ))}
+                                { !!nextPage &&
+                                    <TreeEntryPaginator path={""} loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated}/>
+                                }
+                                </tbody>
                             </Table>
                         </Card.Body>
                     </Card>
                 )}
-                <Paginator onPaginate={onPaginate} nextPage={nextPage} after={after}/>
             </div>
         </>
     )

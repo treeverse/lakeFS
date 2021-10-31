@@ -60,7 +60,7 @@ const ChangeRowActions = ({ entry, onRevert }) => {
     getMore: callback to be called when more items need to be rendered
     depth: the item's depth withing the tree
  */
-export const TreeItem = ({ entry, repo, reference, internalRefresh, onRevert, delimiter, after, relativeTo, getMore, depth=0 }) => {
+export const TreeItem = ({ entry, repo, reference, internalRefresh, onRevert, onNavigate, delimiter, after, relativeTo, getMore, depth=0 }) => {
     const [expanded, setExpanded] = useState(false); // state of the item expansion
     const [afterUpdated, setAfterUpdated] = useState(after); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({results:[], pagination:{}}); // current retrieved children of the item
@@ -84,57 +84,74 @@ export const TreeItem = ({ entry, repo, reference, internalRefresh, onRevert, de
         return <Error error={error}/>
 
     if (loading && results.length === 0)
-        return <TreeEntryRow key={entry.path+"entry-row"} entry={entry} showActions={true} loading={true} relativeTo={relativeTo} depth={depth} onRevert={onRevert} />
+        return <TreeEntryRow key={entry.path+"entry-row"} entry={entry} showActions={true} loading={true} relativeTo={relativeTo} depth={depth} onRevert={onRevert} onNavigate={onNavigate}/>
 
     if (!entry.path.endsWith(delimiter))
-        return <TreeEntryRow key={entry.path+"entry-row"} entry={entry} showActions={true} leaf={true} relativeTo={relativeTo} depth={depth === 0 ? 0 : depth + 1} onRevert={onRevert} />
+        return <TreeEntryRow key={entry.path+"entry-row"} entry={entry} showActions={true} leaf={true} relativeTo={relativeTo} depth={depth === 0 ? 0 : depth + 1} onRevert={onRevert} onNavigate={onNavigate}/>
 
     return <>
-            <TreeEntryRow key={entry.path+"entry-row"} entry={entry} showActions={true} expanded={expanded} relativeTo={relativeTo} depth={depth} onClick={() => setExpanded(!expanded)} onRevert={onRevert} />
+            <TreeEntryRow key={entry.path+"entry-row"} entry={entry} showActions={true} expanded={expanded} relativeTo={relativeTo} depth={depth} onClick={() => setExpanded(!expanded)} onRevert={onRevert} onNavigate={onNavigate} />
             {expanded && results &&
                 results.map(child =>
-                    ( <TreeItem key={child.path+"-item"} entry={child} repo={repo} reference={reference} onRevert={onRevert}
+                    ( <TreeItem key={child.path+"-item"} entry={child} repo={repo} reference={reference} onRevert={onRevert} onNavigate={onNavigate}
                                 internalReferesh={internalRefresh} delimiter={delimiter} depth={depth+1} after={after} relativeTo={entry.path} getMore={getMore}/>))}
             {(!!nextPage || loading) &&
-                <tr key={"row-" + entry.path}
-                    className={"tree-entry-row diff-more"}
-                    onClick={(_ => {
-                        setAfterUpdated(nextPage)
-                    })}
-                >
-                    <td className="diff-indicator"/>
-                    <td className="tree-path">
-                        <span style={{marginLeft: depth * 20 + "px",color:"#007bff"}}>
-                            {loading && <ClockIcon/>}
-                            {`Load more results for prefix ${entry.path} ....`}
-                        </span>
-                    </td>
-                    <td/>
-                </tr>
+                <TreeEntryPaginator path={entry.path} depth={depth} loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated}/>
             }
           </>
 }
 
-export const TreeEntryRow = ({ entry, showActions, relativeTo="", leaf=false, expanded, depth=0, onClick, loading=false, onRevert }) => {
+export const TreeEntryRow = ({ entry, showActions, relativeTo="", leaf=false, expanded, depth=0, onClick, loading=false, onRevert, onNavigate }) => {
     let rowClass = 'tree-entry-row ' + diffType(entry);
-    let pathText = extractPathText(entry, relativeTo);
+    let pathSection = extractPathText(entry, relativeTo);
     let diffIndicator = diffIndicatorIcon(entry);
     let actions = entryActions(showActions, entry, onRevert);
 
+    if (entry.path_type === "common_prefix"){
+        pathSection = <Link href={onNavigate(entry)}>{pathSection}</Link>
+    }
     return (
         <tr className={rowClass} >
             <td className="diff-indicator">{diffIndicator}</td>
-            <td onClick={onClick} className="tree-path">
+            <td className="tree-path">
                 <span style={{marginLeft: depth * 20 + "px"}}>
-                    {leaf ? "" : expanded ? <ChevronDownIcon/>:<ChevronRightIcon/>}
+                    {leaf ? "" :
+                        <span onClick={onClick}>
+                            {expanded ? <ChevronDownIcon/>:<ChevronRightIcon/>}
+                        </span>
+                    }
                     {loading ? <ClockIcon/> : ""}
-                    {pathText}
+                    {pathSection}
                 </span>
             </td>
             { actions === null ?
                 <td/> :
                 <td className={"change-entry-row-actions"}>{actions}</td>
             }
+        </tr>
+    );
+};
+
+export const TreeEntryPaginator = ({ path, setAfterUpdated, nextPage, depth=0, loading=false }) => {
+    let pathText = "Load more results ...";
+    if (path !== ""){
+        pathText = `Load more results for prefix ${path} ....`
+    }
+    return (
+        <tr key={"row-" + path}
+            className={"tree-entry-row diff-more"}
+            onClick={(_ => {
+                setAfterUpdated(nextPage)
+            })}
+        >
+            <td className="diff-indicator"/>
+            <td className="tree-path">
+                <span style={{marginLeft: depth * 20 + "px",color:"#007bff"}}>
+                    {loading && <ClockIcon/>}
+                    {pathText}
+                </span>
+            </td>
+            <td/>
         </tr>
     );
 };
