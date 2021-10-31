@@ -1,7 +1,4 @@
-
 # Changelog
-
-## Unreleased - XXXX-XX-XX
 
 ## v0.53.1 - 2021-10-21
 
