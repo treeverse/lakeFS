@@ -6,7 +6,8 @@ To receive latest security and regular updates, users should stay up to date on 
 releases.  Prior to the release of a 1.0.0 version only the latest released version
 will receive all security updates.
 
-Feel free to contact us at ... if you need security updates for an earlier version.
+Please contact us at https://lakefs.io/contact-us/ if you need security updates for
+an earlier version.
 
 | Version | Supported          |
 | ------- | ------------------ |
@@ -26,7 +27,7 @@ disclosure guidelines.
 
 If you believe you’ve discovered a serious vulnerability, please report it to us by
 emailing security@treeverse.io.  Please **do _NOT_** open an issue as GitHub issues
-are publicly discoverable.  We acknowledge reports within 72 hours.  We will report
+are publicly discoverable.  We acknowledge reports within 24 hours.  We will report
 progress to the email used for reporting.
 
 We will evaluate your report and if necessary issue a fix and an advisory. We would
@@ -40,4 +41,4 @@ a fix well before then.
 
 [project-zero-policy]: https://googleprojectzero.blogspot.com/2021/04/policy-and-disclosure-2021-edition.html
 [slack-lakefs-releases]: https://lakefs.slack.com/archives/C017S6YFFSP
-[security-mailing-list]: https://googlegroups.X.Y.Z.
+[security-mailing-list]: https://groups.google.com/g/lakefs-security-announce
