@@ -64,7 +64,7 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
 		if cfg.Err() == nil {
 			logging.Default().
 				WithField("file", viper.ConfigFileUsed()).
-				Info("loaded configuration from file")
+				Debug("loaded configuration from file")
 		}
 
 		if errors.As(cfg.Err(), &viper.ConfigFileNotFoundError{}) {
