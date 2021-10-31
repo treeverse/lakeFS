@@ -106,6 +106,7 @@ Documentation site customizations should be performed in accordance with the [Ju
 
 ### CHANGELOG.md
 
-Any user-facing change should be included in the `CHANGELOG.md` file, under the "Unreleased" section at the top.
-When we publish a new version of lakeFS, we will move this to the relevant version section.
-The changelog entry should contain a concise description of the feature or fix, along with the GitHub issue number.
+Any user-facing change should be labeled with `include-changelog`.
+The PR title should contain a concise summary of the feature or fix, and the description should have the GitHub issue number.
+When we publish a new version of lakeFS, we will add this to the relevant version section of the changelog.
+If the change should not be included in the changelog, label it with `exclude-changelog`.
