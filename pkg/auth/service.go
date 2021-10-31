@@ -891,7 +891,10 @@ func checkPermissions(node permissions.Node, username string, policies []*model.
 		}
 
 	case permissions.NodeTypeOr:
-		// if at least one of the permissions is allowed and no one is denied- returns Allow, if one of the permissions is Deny- returns Denied, else return Natural
+		// returns:
+		// Allowed - at least one of the permissions is allowed and no one is denied
+		// Denied - one of the permissions is Deny
+		// Natural - otherwise
 		for _, node := range node.Nodes {
 			result := checkPermissions(node, username, policies)
 			if result == CheckDeny {
@@ -903,7 +906,10 @@ func checkPermissions(node permissions.Node, username string, policies []*model.
 		}
 
 	case permissions.NodeTypeAnd:
-		// if all the permissions are allowed- returns Allow, if one of the permissions is denied- returns Deny, else returns Natural
+		// returns:
+		// Allowed - all the permissions are allowed
+		// Denied - one of the permissions is Deny
+		// Natural - otherwise
 		for _, node := range node.Nodes {
 			result := checkPermissions(node, username, policies)
 			if result == CheckNeutral || result == CheckDeny {
@@ -913,7 +919,8 @@ func checkPermissions(node permissions.Node, username string, policies []*model.
 		return CheckAllow
 
 	default:
-		panic("unknown permission node type")
+		logging.Default().Error("unknown permission node type")
+		return CheckDeny
 	}
 	return allowed
 }

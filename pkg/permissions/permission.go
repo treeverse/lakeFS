@@ -15,7 +15,7 @@ type Permission struct {
 type NodeType int
 
 const (
-	NodeTypeNode = iota
+	NodeTypeNode NodeType = iota
 	NodeTypeOr
 	NodeTypeAnd
 )

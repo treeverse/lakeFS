@@ -9,11 +9,10 @@ import (
 	"strings"
 	"time"
 
-	ghttp "github.com/treeverse/lakefs/pkg/gateway/http"
-
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	gatewayErrors "github.com/treeverse/lakefs/pkg/gateway/errors"
+	ghttp "github.com/treeverse/lakefs/pkg/gateway/http"
 	"github.com/treeverse/lakefs/pkg/gateway/path"
 	"github.com/treeverse/lakefs/pkg/gateway/serde"
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -43,7 +42,7 @@ func (controller *PutObject) RequiredPermissions(req *http.Request, repoID, _, d
 		}, nil
 	}
 	// this is a copy operation
-	p, err := path.ResolveAbsolutePath(copySource)
+	p, err := getPathFromSource(copySource)
 	if err != nil {
 		logging.Default().WithError(err).Error("could not parse copy source path")
 		return permissions.Node{}, gatewayErrors.ErrInvalidCopySource
@@ -81,8 +80,8 @@ func extractEntryFromCopyReq(w http.ResponseWriter, req *http.Request, o *PathOp
 	return ent
 }
 
-// extractAndCopyEntryFromCopyReq: create copy of the file
-func extractAndCopyEntryFromCopyReq(w http.ResponseWriter, req *http.Request, o *PathOperation, copySource string) *catalog.DBEntry {
+// CopyFromEntry create copy of the file
+func CopyFromEntry(w http.ResponseWriter, req *http.Request, o *PathOperation, copySource string) *catalog.DBEntry {
 	p, err := getPathFromSource(copySource)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not parse copy source path")
@@ -108,7 +107,6 @@ func extractAndCopyEntryFromCopyReq(w http.ResponseWriter, req *http.Request, o 
 		return nil
 	}
 
-	// write metadata
 	writeTime := time.Now()
 	entry := catalog.DBEntry{
 		Path:            o.Path,
@@ -150,7 +148,7 @@ func handleCopy(w http.ResponseWriter, req *http.Request, o *PathOperation, copy
 			return // operation already failed
 		}
 	} else {
-		ent = extractAndCopyEntryFromCopyReq(w, req, o, copySource)
+		ent = CopyFromEntry(w, req, o, copySource)
 		if ent == nil {
 			return // operation already failed
 		}
