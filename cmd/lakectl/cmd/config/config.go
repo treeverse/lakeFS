@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"reflect"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -68,11 +69,10 @@ func ReadConfig() (c *Config) {
 	c.err = viper.ReadInConfig()
 	logger := logging.Default().WithField("file", viper.ConfigFileUsed())
 
-	if c.err == nil {
-		logger.Info("loaded configuration from file")
-	} else if _, ok := c.err.(viper.ConfigFileNotFoundError); !ok {
+	if errors.Is(c.err, viper.ConfigFileNotFoundError{}) {
 		logger.WithError(c.err).Fatal("failed to read config file")
 	}
+
 	return
 }
 
