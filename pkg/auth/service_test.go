@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/permissions"
+
 	sq "github.com/Masterminds/squirrel"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/go-test/deep"
@@ -189,9 +191,11 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
 					Username: userName,
-					RequiredPermissions: &auth.OnePermission{
-						Action:   "fs:WriteObject",
-						Resource: "arn:lakefs:fs:::repository/foo/object/bar",
+					RequiredPermissions: permissions.Node{
+						Permission: permissions.Permission{
+							Action:   "fs:WriteObject",
+							Resource: "arn:lakefs:fs:::repository/foo/object/bar",
+						},
 					},
 				}
 			},
@@ -214,9 +218,11 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
 					Username: userName,
-					RequiredPermissions: &auth.OnePermission{
-						Action:   "fs:WriteObject",
-						Resource: "arn:lakefs:fs:::repository/foo/object/bar",
+					RequiredPermissions: permissions.Node{
+						Permission: permissions.Permission{
+							Action:   "fs:WriteObject",
+							Resource: "arn:lakefs:fs:::repository/foo/object/bar",
+						},
 					},
 				}
 			},
@@ -239,9 +245,11 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
 					Username: userName,
-					RequiredPermissions: &auth.OnePermission{
-						Action:   "fs:WriteObject",
-						Resource: "arn:lakefs:fs:::repository/foo/object/bar",
+					RequiredPermissions: permissions.Node{
+						Permission: permissions.Permission{
+							Action:   "fs:WriteObject",
+							Resource: "arn:lakefs:fs:::repository/foo/object/bar",
+						},
 					},
 				}
 			},
@@ -264,9 +272,11 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
 					Username: userName,
-					RequiredPermissions: &auth.OnePermission{
-						Action:   "auth:CreateUser",
-						Resource: "arn:lakefs:auth:::user/foobar",
+					RequiredPermissions: permissions.Node{
+						Permission: permissions.Permission{
+							Action:   "auth:CreateUser",
+							Resource: "arn:lakefs:auth:::user/foobar",
+						},
 					},
 				}
 			},
@@ -289,9 +299,11 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
 					Username: userName,
-					RequiredPermissions: &auth.OnePermission{
-						Action:   "auth:CreateUser",
-						Resource: fmt.Sprintf("arn:lakefs:auth:::user/%s", userName),
+					RequiredPermissions: permissions.Node{
+						Permission: permissions.Permission{
+							Action:   "auth:CreateUser",
+							Resource: fmt.Sprintf("arn:lakefs:auth:::user/%s", userName),
+						},
 					},
 				}
 			},
@@ -314,9 +326,11 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
 					Username: userName,
-					RequiredPermissions: &auth.OnePermission{
-						Action:   "auth:CreateUser",
-						Resource: fmt.Sprintf("arn:lakefs:auth:::user/%sxxxx", userName),
+					RequiredPermissions: permissions.Node{
+						Permission: permissions.Permission{
+							Action:   "auth:CreateUser",
+							Resource: fmt.Sprintf("arn:lakefs:auth:::user/%sxxxx", userName),
+						},
 					},
 				}
 			},
@@ -339,9 +353,11 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
 					Username: userName,
-					RequiredPermissions: &auth.OnePermission{
-						Action:   "auth:CreateUser",
-						Resource: "arn:lakefs:auth:::user/foobar",
+					RequiredPermissions: permissions.Node{
+						Permission: permissions.Permission{
+							Action:   "auth:CreateUser",
+							Resource: "arn:lakefs:auth:::user/foobar",
+						},
 					},
 				}
 			},
@@ -364,9 +380,11 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
 					Username: userName,
-					RequiredPermissions: &auth.OnePermission{
-						Action:   "auth:CreateUser",
-						Resource: "arn:lakefs:auth:::user/foobar",
+					RequiredPermissions: permissions.Node{
+						Permission: permissions.Permission{
+							Action:   "auth:CreateUser",
+							Resource: "arn:lakefs:auth:::user/foobar",
+						},
 					},
 				}
 			},
@@ -389,9 +407,11 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
 					Username: userName,
-					RequiredPermissions: &auth.OnePermission{
-						Action:   "auth:DeleteUser",
-						Resource: "arn:lakefs:auth:::user/foobar",
+					RequiredPermissions: permissions.Node{
+						Permission: permissions.Permission{
+							Action:   "auth:DeleteUser",
+							Resource: "arn:lakefs:auth:::user/foobar",
+						},
 					},
 				}
 			},
@@ -423,9 +443,11 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
 					Username: userName,
-					RequiredPermissions: &auth.OnePermission{
-						Action:   "auth:DeleteUser",
-						Resource: "arn:lakefs:auth:::user/foobar",
+					RequiredPermissions: permissions.Node{
+						Permission: permissions.Permission{
+							Action:   "auth:DeleteUser",
+							Resource: "arn:lakefs:auth:::user/foobar",
+						},
 					},
 				}
 			},

@@ -21,7 +21,7 @@ import (
 
 type AuthorizationRequest struct {
 	Username            string
-	RequiredPermissions Permissioner
+	RequiredPermissions permissions.Node
 }
 
 type AuthorizationResponse struct {
@@ -864,62 +864,56 @@ const (
 	CheckDeny
 )
 
-type Permissioner interface {
-	CheckPermissions(policies []*model.Policy, req *AuthorizationRequest) CheckResult
-}
-
-type OnePermission permissions.Permission
-type AndPermission []Permissioner
-type OrPermission []Permissioner
-
-// CheckPermissions One: check whether the permission is allowed, denied or natural (not allowed and not denied)
-func (p OnePermission) CheckPermissions(policies []*model.Policy, req *AuthorizationRequest) CheckResult {
+func checkPermissions(node permissions.Node, username string, policies []*model.Policy) CheckResult {
 	allowed := CheckNeutral
-	for _, policy := range policies {
-		for _, stmt := range policy.Statement {
-			resource := interpolateUser(stmt.Resource, req.Username)
-			if !ArnMatch(resource, p.Resource) {
-				continue
-			}
-			for _, action := range stmt.Action {
-				if !wildcard.Match(action, p.Action) {
-					continue // not a matching action
+	switch node.Type {
+	case permissions.NodeTypeNode:
+		// check whether the permission is allowed, denied or natural (not allowed and not denied)
+		for _, policy := range policies {
+			for _, stmt := range policy.Statement {
+				resource := interpolateUser(stmt.Resource, username)
+				if !ArnMatch(resource, node.Permission.Resource) {
+					continue
 				}
+				for _, action := range stmt.Action {
+					if !wildcard.Match(action, node.Permission.Action) {
+						continue // not a matching action
+					}
 
-				if stmt.Effect == model.StatementEffectDeny {
-					// this is a "Deny" and it takes precedence
-					return CheckDeny
+					if stmt.Effect == model.StatementEffectDeny {
+						// this is a "Deny" and it takes precedence
+						return CheckDeny
+					}
+
+					allowed = CheckAllow
 				}
-
-				allowed = CheckAllow
 			}
 		}
-	}
-	return allowed
-}
 
-// CheckPermissions AND: if all the permissions are allowed- returns Allow, if one of the permissions is denied- returns Deny, else returns Natural
-func (p AndPermission) CheckPermissions(policies []*model.Policy, req *AuthorizationRequest) CheckResult {
-	for _, perm := range p {
-		result := perm.CheckPermissions(policies, req)
-		if result == CheckNeutral || result == CheckDeny {
-			return result
+	case permissions.NodeTypeOr:
+		// if at least one of the permissions is allowed and no one is denied- returns Allow, if one of the permissions is Deny- returns Denied, else return Natural
+		for _, node := range node.Nodes {
+			result := checkPermissions(node, username, policies)
+			if result == CheckDeny {
+				return CheckDeny
+			}
+			if allowed != CheckAllow {
+				allowed = result
+			}
 		}
-	}
-	return CheckAllow
-}
 
-// CheckPermissions OR: if at least one of the permissions is allowed and no one is denied- returns Allow, if one of the permissions is Deny- returns Denied, else return Natural
-func (p OrPermission) CheckPermissions(policies []*model.Policy, req *AuthorizationRequest) CheckResult {
-	allowed := CheckNeutral
-	for _, perm := range p {
-		result := perm.CheckPermissions(policies, req)
-		if result == CheckDeny {
-			return CheckDeny
+	case permissions.NodeTypeAnd:
+		// if all the permissions are allowed- returns Allow, if one of the permissions is denied- returns Deny, else returns Natural
+		for _, node := range node.Nodes {
+			result := checkPermissions(node, username, policies)
+			if result == CheckNeutral || result == CheckDeny {
+				return result
+			}
 		}
-		if allowed != CheckAllow {
-			allowed = result
-		}
+		return CheckAllow
+
+	default:
+		panic("unknown permission node type")
 	}
 	return allowed
 }
@@ -934,7 +928,7 @@ func (s *DBAuthService) Authorize(ctx context.Context, req *AuthorizationRequest
 		return nil, err
 	}
 
-	allowed := req.RequiredPermissions.CheckPermissions(policies, req)
+	allowed := checkPermissions(req.RequiredPermissions, req.Username, policies)
 
 	if allowed != CheckAllow {
 		return &AuthorizationResponse{
