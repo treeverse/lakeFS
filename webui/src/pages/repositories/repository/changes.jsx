@@ -151,24 +151,30 @@ const RevertButton = ({onRevert, enabled = false}) => {
     );
 }
 
-const ChangesBrowser = ({repo, reference, prefix, view, onSelectRef, }) => {
+const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
     const [actionError, setActionError] = useState(null);
     const [internalRefresh, setInternalRefresh] = useState(true);
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
-    const [resultsState, setResultsState] = useState({results:[], pagination:{}}); // current retrieved children of the item
+    const [resultsState, setResultsState] = useState({prefix: prefix, results:[], pagination:{}}); // current retrieved children of the item
 
     const delimiter = '/'
 
     const { error, loading, nextPage } = useAPIWithPagination(async () => {
         if (!repo) return
-        let resultsFiltered = resultsState.results.filter(entry => entry.path.startsWith(prefix) && entry.path != prefix)
+
+        let resultsFiltered = resultsState.results
+        if (resultsState.prefix !== prefix){
+            // prefix changed, need to delete previous results
+            resultsFiltered = []
+        }
+
         if (resultsFiltered.length > 0 && resultsFiltered.at(-1).path > afterUpdated) {
             // results already cached
-            return {results:resultsFiltered, pagination: resultsState.pagination}
+            return {prefix:prefix, results:resultsFiltered, pagination: resultsState.pagination}
         }
 
         const { results, pagination } = await refs.changes(repo.id, reference.id, afterUpdated, prefix, delimiter)
-        setResultsState({results: resultsFiltered.concat(results), pagination: pagination})
+        setResultsState({prefix:prefix, results: resultsFiltered.concat(results), pagination: pagination})
         return {results:resultsState.results, pagination: pagination}
     }, [repo.id, reference.id, internalRefresh, afterUpdated, delimiter, prefix])
 
@@ -189,7 +195,6 @@ const ChangesBrowser = ({repo, reference, prefix, view, onSelectRef, }) => {
                 setActionError(error)
             })
     }
-
 
     let onNavigate = (entry) => {
         return {
@@ -254,7 +259,7 @@ const ChangesBrowser = ({repo, reference, prefix, view, onSelectRef, }) => {
                                                   return {
                                                       pathname: '/repositories/:repoId/changes',
                                                       params: params,
-                                                      query: {delimiter: "/", ref: reference.id, prefix: query.prefix},
+                                                      query: {ref: reference.id, prefix: query.path ?? ""},
                                                   }
                                               }}/>
                             )}
