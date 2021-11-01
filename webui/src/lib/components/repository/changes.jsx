@@ -133,9 +133,9 @@ export const TreeEntryRow = ({ entry, showActions, relativeTo="", leaf=false, ex
 };
 
 export const TreeEntryPaginator = ({ path, setAfterUpdated, nextPage, depth=0, loading=false }) => {
-    let pathText = "Load more results ...";
+    let pathSectionText = "Load more results ...";
     if (path !== ""){
-        pathText = `Load more results for prefix ${path} ....`
+        pathSectionText = `Load more results for prefix ${path} ....`
     }
     return (
         <tr key={"row-" + path}
@@ -148,7 +148,7 @@ export const TreeEntryPaginator = ({ path, setAfterUpdated, nextPage, depth=0, l
             <td className="tree-path">
                 <span style={{marginLeft: depth * 20 + "px",color:"#007bff"}}>
                     {loading && <ClockIcon/>}
-                    {pathText}
+                    {pathSectionText}
                 </span>
             </td>
             <td/>
