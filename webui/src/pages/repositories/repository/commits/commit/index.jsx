@@ -8,81 +8,33 @@ import {commits, refs} from "../../../../../lib/api";
 import moment from "moment";
 import Table from "react-bootstrap/Table";
 import Alert from "react-bootstrap/Alert";
-import {ChangeEntryRow, TreeItem} from "../../../../../lib/components/repository/changes";
-import {Paginator} from "../../../../../lib/components/pagination";
+import {TreeEntryPaginator, TreeItem} from "../../../../../lib/components/repository/changes";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import {BrowserIcon, LinkIcon, PackageIcon, PlayIcon} from "@primer/octicons-react";
 import {Link} from "../../../../../lib/components/nav";
 import {useRouter} from "../../../../../lib/hooks/router";
 import {URINavigator} from "../../../../../lib/components/repository/tree";
-import Form from "react-bootstrap/Form";
-import {ToggleButton} from "react-bootstrap";
+import {appendMoreResults} from "../../changes";
 
-
-const ChangeList = ({ repo, commit, after, prefix, view, onPaginate }) => {
+const ChangeList = ({ repo, commit, prefix, onNavigate }) => {
     const [actionError, setActionError] = useState(null);
+    const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
+    const [resultsState, setResultsState] = useState({prefix: prefix, results:[], pagination:{}}); // current retrieved children of the item
 
-    const radios = [
-        {name: 'Flat', value: 'flat', selected: false},
-        {name: 'Directory', value: 'dir', selected: false},
-        {name: 'Tree', value: 'tree', selected: false},
-    ];
+    const delimiter = "/"
 
-    let delimiter = ""
-    switch (view) {
-        case "dir":
-            delimiter = "/";
-            radios[1].selected = true;
-            break;
-        case "tree":
-            delimiter = "/";
-            radios[2].selected = true;
-            break;
-        default:
-            delimiter = "";
-            radios[0].selected = true;
-            break;
-    }
-
-    const {results, loading, error, nextPage} = useAPIWithPagination(async() => {
+    const { error, loading, nextPage } = useAPIWithPagination(async () => {
+        if (!repo) return
         if (!commit.parents || commit.parents.length === 0) return {results: [], pagination: {has_more: false}};
-        return refs.diff(repo.id, commit.parents[0], commit.id, after, prefix, delimiter);
-    }, [repo.id, commit.id, after, prefix, delimiter]);
+
+        return await appendMoreResults(resultsState, prefix, afterUpdated, setResultsState,
+            () => refs.diff(repo.id, commit.parents[0], commit.id, afterUpdated, prefix, delimiter));
+    }, [repo.id, commit.id, afterUpdated, prefix])
+
+    const results = resultsState.results
 
     if (!!error) return <Error error={error}/>
     if (loading) return <Loading/>
-
-    let tablebody;
-    if (view === 'tree') {
-        tablebody =
-            <tbody>
-            {results.map(entry => (
-                <TreeItem key={entry.path + "-tree-item"} entry={entry} repo={repo} reference={commit}
-                          delimiter={delimiter} after={after} relativeTo={""}
-                          getMore={(afterUpdated, path) => {
-                              return refs.diff(repo.id, commit.parents[0], commit.id, afterUpdated, path, delimiter)
-                          }}/>
-            ))}
-            </tbody>
-    } else {
-        tablebody = <tbody>
-        {results.map(entry => (
-            <ChangeEntryRow
-                key={entry.path + "-change-entry"}
-                entry={entry}
-                relativeTo={prefix}
-                showActions={false}
-                onNavigate={entry => {
-                    return {
-                        pathname: '/repositories/:repoId/commits/:commitId',
-                        params: {repoId: repo.id, commitId: commit.id},
-                        query: {delimiter: "/", prefix: entry.path, view:view}
-                    }
-                }}
-            />
-        ))}
-        </tbody>
-    }
 
     const actionErrorDisplay = (!!actionError) ?
         <Error error={actionError} onDismiss={() => setActionError(null)}/> : <></>
@@ -102,52 +54,30 @@ const ChangeList = ({ repo, commit, after, prefix, view, onPaginate }) => {
                                                   return {
                                                       pathname: '/repositories/:repoId/commits/:commitId',
                                                       params: {repoId: repo.id, commitId: commit.id},
-                                                      query: {delimiter, prefix: query.path, view:view}
+                                                      query: {prefix: query.path}
                                                   }
                                               }}/>
                             )}
                         </span>
-                            <span className="float-right">
-                            <Form>
-                              <ButtonGroup className={"view-options"}>
-                                {radios.map((radio, idx) => (
-                                    <div key={idx}>
-                                        <Link href={{
-                                            pathname: '/repositories/:repoId/commits/:commitId',
-                                            params: {
-                                                repoId: repo.id,
-                                                commitId: commit.id,
-                                            },
-                                            query: {
-                                                prefix: "",
-                                                view: radio.value,
-                                            }
-                                        }}>
-                                            <ToggleButton className={"view-options"}
-                                                id={`radio-${idx}`}
-                                                key={`radio-${idx}`}
-                                                type="radio"
-                                                variant="secondary"
-                                                name="radio"
-                                                value={radio.value}
-                                                checked={radio.selected}>
-                                                {radio.name}
-                                            </ToggleButton>
-                                        </Link>
-                                    </div>
-                                ))}
-                              </ButtonGroup>
-                            </Form>
-                        </span>
                         </Card.Header>
                         <Card.Body>
                             <Table borderless size="sm">
-                                {tablebody}
+                                <tbody>
+                                {results.map(entry => (
+                                    <TreeItem key={entry.path + "-tree-item"} entry={entry} repo={repo} reference={commit}
+                                              delimiter={delimiter} after={afterUpdated} relativeTo={prefix} onNavigate={onNavigate}
+                                              getMore={(afterUpdated, path) => {
+                                                  return refs.diff(repo.id, commit.parents[0], commit.id, afterUpdated, path, delimiter)
+                                              }}/>
+                                ))}
+                                { !!nextPage &&
+                                <TreeEntryPaginator path={""} loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated}/>
+                                }
+                                </tbody>
                             </Table>
                         </Card.Body>
                     </Card>
                 )}
-                <Paginator onPaginate={onPaginate} nextPage={nextPage} after={after}/>
             </div>
         </>
     )
@@ -258,8 +188,7 @@ const CommitInfo = ({ repo, commit }) => {
     );
 };
 
-const CommitView = ({ repo, commitId, onPaginate, view, after, prefix }) => {
-
+const CommitView = ({ repo, commitId, onNavigate, view, prefix }) => {
     // pull commit itself
     const {response, loading, error} = useAPI(async () => {
         return await commits.get(repo.id, commitId);
@@ -292,12 +221,11 @@ const CommitView = ({ repo, commitId, onPaginate, view, after, prefix }) => {
 
             <div className="mt-4">
                 <ChangeList
-                    after={after}
                     prefix={prefix}
                     view={(!!view) ? view : ""}
                     repo={repo}
                     commit={commit}
-                    onPaginate={onPaginate}
+                    onNavigate={onNavigate}
                 />
             </div>
         </div>
@@ -307,7 +235,7 @@ const CommitView = ({ repo, commitId, onPaginate, view, after, prefix }) => {
 const CommitContainer = () => {
     const router = useRouter();
     const { repo, loading, error } = useRefs();
-    const { after, prefix, view } = router.query;
+    const { prefix } = router.query;
     const { commitId } = router.params;
 
     if (loading) return <Loading/>;
@@ -316,23 +244,20 @@ const CommitContainer = () => {
     return (
         <CommitView
             repo={repo}
-            after={(!!after) ? after : ""}
-            view={(!!view) ? view : ""}
             prefix={(!!prefix) ? prefix : ""}
             commitId={commitId}
-            onPaginate={after => router.push({
-                pathname: '/repositories/:repoId/commits/:commitId',
-                params: {repoId: repo.id, commitId},
-                query: {
-                    after: (after) ? after : "",
-                    prefix: (prefix) ? prefix : "",
-                    delimiter: (delimiter) ? delimiter : "",
+            onNavigate={(entry) => {
+                return {
+                    pathname: '/repositories/:repoId/commits/:commitId',
+                    params: {repoId: repo.id, commitId: commitId},
+                    query: {
+                        prefix: entry.path,
+                    }
                 }
-            })}
+            }}
         />
     )
 }
-
 
 const RepositoryCommitPage = () => {
     return (
