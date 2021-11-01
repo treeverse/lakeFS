@@ -24,13 +24,9 @@ import {ActionGroup, ActionsBar, Error, Loading, RefreshButton} from "../../../l
 import RefDropdown from "../../../lib/components/repository/refDropdown";
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import {formatAlertText} from "../../../lib/components/repository/errors";
-import {ChangeEntryRow, TreeEntryPaginator, TreeItem} from "../../../lib/components/repository/changes";
-import {Paginator} from "../../../lib/components/pagination";
+import {TreeEntryPaginator, TreeItem} from "../../../lib/components/repository/changes";
 import {useRouter} from "../../../lib/hooks/router";
 import {URINavigator} from "../../../lib/components/repository/tree";
-import ButtonGroup from "react-bootstrap/ButtonGroup";
-import {ToggleButton} from "react-bootstrap";
-import {Link} from "../../../lib/components/nav";
 
 
 const CommitButton = ({repo, onCommit, enabled = false}) => {
@@ -325,7 +321,6 @@ const ChangesContainer = () => {
         />
     )
 }
-
 
 const RepositoryChangesPage = () => {
     return (

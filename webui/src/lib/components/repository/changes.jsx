@@ -156,35 +156,6 @@ export const TreeEntryPaginator = ({ path, setAfterUpdated, nextPage, depth=0, l
     );
 };
 
-export const ChangeEntryRow = ({ entry, showActions, relativeTo="", onNavigate, onRevert }) => {
-    let rowClass = 'change-entry-row ' + diffType(entry);
-    let pathText = extractPathText(entry, relativeTo);
-    let diffIndicator = diffIndicatorIcon(entry);
-    let actions = entryActions(showActions, entry, onRevert);
-
-    return (
-        <tr className={rowClass}>
-            <td className="diff-indicator">
-                {diffIndicator}
-            </td>
-            <td className="tree-path">
-                {(entry.path_type === "common_prefix") ? (
-                    <span key={`link-${entry.path}`}>
-                        <Link href={onNavigate(entry)}>
-                            {pathText}
-                        </Link>
-                    </span>
-                ) : (
-                    <span>{pathText}</span>
-                )}
-            </td>
-            <td className={"change-entry-row-actions"}>
-                {actions}
-            </td>
-        </tr>
-    );
-};
-
 function extractPathText(entry, relativeTo) {
     let pathText = entry.path;
     if (pathText.startsWith(relativeTo)) {
