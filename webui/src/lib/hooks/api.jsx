@@ -76,19 +76,19 @@ export const useAPI = (promise, deps = []) => {
                 setRequest({
                     loading: false,
                     error: null,
-                    response
+                    response,
                 });
             } catch (error) {
                 if (error instanceof AuthenticationError) {
                     if (isMounted) {
                         setLogin(true);
                     }
-                    return 
+                    return;
                 }
                 setRequest({
                     loading: false,
                     error,
-                    response: null
+                    response: null,
                 });
             }
         };
