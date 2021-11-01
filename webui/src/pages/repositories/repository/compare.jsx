@@ -14,6 +14,7 @@ import {TreeEntryPaginator, TreeItem} from "../../../lib/components/repository/c
 import {ConfirmationButton} from "../../../lib/components/modals";
 import {useRouter} from "../../../lib/hooks/router";
 import {URINavigator} from "../../../lib/components/repository/tree";
+import {appendMoreResults} from "./changes";
 
 
 const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, onSelectCompare, onNavigate }) => {
@@ -35,20 +36,8 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
         if (compareReference.id === reference.id)
             return {pagination: {has_more: false}, results: []}; // nothing to compare here.
 
-        let resultsFiltered = resultsState.results
-        if (resultsState.prefix !== prefix){
-            // prefix changed, need to delete previous results
-            resultsFiltered = []
-        }
-
-        if (resultsFiltered.length > 0 && resultsFiltered.at(-1).path > afterUpdated) {
-            // results already cached
-            return {prefix:prefix, results:resultsFiltered, pagination: resultsState.pagination}
-        }
-
-        const { results, pagination } = await refs.diff(repo.id, reference.id, compareReference.id, afterUpdated, prefix, delimiter);
-        setResultsState({prefix:prefix, results: resultsFiltered.concat(results), pagination: pagination})
-        return {results:resultsState.results, pagination: pagination}
+        return await appendMoreResults(resultsState, prefix, afterUpdated, setResultsState,
+            () => refs.diff(repo.id, reference.id, compareReference.id, afterUpdated, prefix, delimiter));
     }, [repo.id, reference.id, internalRefresh, afterUpdated, delimiter, prefix])
 
     let results = resultsState.results

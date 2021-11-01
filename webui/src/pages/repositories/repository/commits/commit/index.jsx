@@ -14,6 +14,7 @@ import {BrowserIcon, LinkIcon, PackageIcon, PlayIcon} from "@primer/octicons-rea
 import {Link} from "../../../../../lib/components/nav";
 import {useRouter} from "../../../../../lib/hooks/router";
 import {URINavigator} from "../../../../../lib/components/repository/tree";
+import {appendMoreResults} from "../../changes";
 
 const ChangeList = ({ repo, commit, prefix, onNavigate }) => {
     const [actionError, setActionError] = useState(null);
@@ -26,20 +27,8 @@ const ChangeList = ({ repo, commit, prefix, onNavigate }) => {
         if (!repo) return
         if (!commit.parents || commit.parents.length === 0) return {results: [], pagination: {has_more: false}};
 
-        let resultsFiltered = resultsState.results
-        if (resultsState.prefix !== prefix){
-            // prefix changed, need to delete previous results
-            resultsFiltered = []
-        }
-
-        if (resultsFiltered.length > 0 && resultsFiltered.at(-1).path > afterUpdated) {
-            // results already cached
-            return {prefix:prefix, results:resultsFiltered, pagination: resultsState.pagination}
-        }
-
-        const { results, pagination } = await refs.diff(repo.id, commit.parents[0], commit.id, afterUpdated, prefix, delimiter);
-        setResultsState({prefix:prefix, results: resultsFiltered.concat(results), pagination: pagination})
-        return {results:resultsState.results, pagination: pagination}
+        return await appendMoreResults(resultsState, prefix, afterUpdated, setResultsState,
+            () => refs.diff(repo.id, commit.parents[0], commit.id, afterUpdated, prefix, delimiter));
     }, [repo.id, commit.id, afterUpdated, prefix])
 
     const results = resultsState.results

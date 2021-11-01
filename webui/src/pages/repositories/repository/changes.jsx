@@ -147,6 +147,23 @@ const RevertButton = ({onRevert, enabled = false}) => {
     );
 }
 
+export async function appendMoreResults(resultsState, prefix, afterUpdated, setResultsState, getMore) {
+    let resultsFiltered = resultsState.results
+    if (resultsState.prefix !== prefix) {
+        // prefix changed, need to delete previous results
+        resultsFiltered = []
+    }
+
+    if (resultsFiltered.length > 0 && resultsFiltered.at(-1).path > afterUpdated) {
+        // results already cached
+        return {prefix: prefix, results: resultsFiltered, pagination: resultsState.pagination}
+    }
+
+    const {results, pagination} = await getMore()
+    setResultsState({prefix: prefix, results: resultsFiltered.concat(results), pagination: pagination})
+    return {results: resultsState.results, pagination: pagination}
+}
+
 const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
     const [actionError, setActionError] = useState(null);
     const [internalRefresh, setInternalRefresh] = useState(true);
@@ -157,21 +174,8 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
 
     const { error, loading, nextPage } = useAPIWithPagination(async () => {
         if (!repo) return
-
-        let resultsFiltered = resultsState.results
-        if (resultsState.prefix !== prefix){
-            // prefix changed, need to delete previous results
-            resultsFiltered = []
-        }
-
-        if (resultsFiltered.length > 0 && resultsFiltered.at(-1).path > afterUpdated) {
-            // results already cached
-            return {prefix:prefix, results:resultsFiltered, pagination: resultsState.pagination}
-        }
-
-        const { results, pagination } = await refs.changes(repo.id, reference.id, afterUpdated, prefix, delimiter)
-        setResultsState({prefix:prefix, results: resultsFiltered.concat(results), pagination: pagination})
-        return {results:resultsState.results, pagination: pagination}
+        return await appendMoreResults(resultsState, prefix, afterUpdated, setResultsState,
+            () => refs.changes(repo.id, reference.id, afterUpdated, prefix, delimiter));
     }, [repo.id, reference.id, internalRefresh, afterUpdated, delimiter, prefix])
 
     const results = resultsState.results
