@@ -235,7 +235,7 @@ const CommitView = ({ repo, commitId, onNavigate, view, prefix }) => {
 const CommitContainer = () => {
     const router = useRouter();
     const { repo, loading, error } = useRefs();
-    const { after, prefix, view } = router.query;
+    const { prefix } = router.query;
     const { commitId } = router.params;
 
     if (loading) return <Loading/>;
@@ -244,7 +244,6 @@ const CommitContainer = () => {
     return (
         <CommitView
             repo={repo}
-            view={(!!view) ? view : ""}
             prefix={(!!prefix) ? prefix : ""}
             commitId={commitId}
             onNavigate={(entry) => {

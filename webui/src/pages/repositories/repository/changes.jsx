@@ -292,28 +292,16 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
 const ChangesContainer = () => {
     const router = useRouter();
     const {repo, reference, loading, error} = useRefs()
-    const {after, prefix, view} = router.query
+    const {prefix} = router.query
 
     if (loading) return <Loading/>
     if (!!error) return <Error error={error}/>
 
     return (
         <ChangesBrowser
-            after={(!!after) ? after : ""}
             prefix={(!!prefix) ? prefix : ""}
-            view={(!!view) ? view : ""}
             repo={repo}
             reference={reference}
-            onPaginate={after => router.push({
-                pathname: `/repositories/:repoId/changes`,
-                params: {repoId: repo.id},
-                query: {
-                    ref: reference.id,
-                    after: (!!after) ? after : "",
-                    prefix: (!!prefix) ? prefix : "",
-                    view: (!!view) ? view : "",
-                }
-            })}
             onSelectRef={ref => router.push({
                 pathname: `/repositories/:repoId/changes`,
                 params: {repoId: repo.id},
