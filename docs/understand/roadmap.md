@@ -39,13 +39,20 @@ Especially useful for reproducibility: By looking at a set of changes to the **d
 [Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/2073){: target="_blank" class="btn" }
 
 
-### Protected Branches
-A way to ensure certain branches (i.e. main) are only merged to, and are not being directly written to. In combination with [Webhook Support](../setup/hooks.md), this allows users to provide a set of quality guarantees about a given branch (i.e., reading from
-main ensures schema never breaks and all partitions are complete and tested)
-
-[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/2181){: target="_blank" class="btn" }
-
 ---
+
+### DBT Integration <span>High Priority</span>{: .label }
+
+Allow DBT users to gain isolation for running in production, as well as being able to create zero-copy test and dev environments:
+This is done by allowing the following:
+
+1. Create a DBT environment that is mapped to a lakeFS branch. Since branches are zero-copy, these environments are verifiably identical to production without having to copy any data
+2. Be able to run transformations on production data, with `dbt test` running before the data gets exposed to downstream consumers (via lakeFS merge)
+
+This is an item that was often requested by DBT users, and is currently actively worked on.
+
+[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/2530){: target="_blank" class="btn" }
+
 
 ### Native Metastore Integration <span>High Priority</span>{: .label }
 
@@ -105,12 +112,6 @@ Hooks require a YAML configuration file to describe the required functionality a
 
 [Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/2232){: target="_blank" class="btn" }
 
-#### Post-commit, Post-merge hooks
-
-For validation, testing and governance, pre-commit and pre-merge hooks provide strong guarantees about what we can or cannot expose to downstream consumers.
-However, in some cases we wish to run or notify another system when a commit or a merge occurs. The most common example would be registering changes in external systems: register new partitions in Hive Metastore, update last update date on data discovery tools, generate manifest files for e.g. AWS Athena and more.
-
-[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/2182){: target="_blank" class="btn" }
 
 #### One-click reusable hook installation
 
