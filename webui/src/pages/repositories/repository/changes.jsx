@@ -180,7 +180,10 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
 
     const results = resultsState.results
 
-    const refresh = () => setInternalRefresh(!internalRefresh)
+    const refresh = () => {
+        setResultsState({prefix: prefix, results:[], pagination:{}})
+        setInternalRefresh(!internalRefresh)
+    }
 
     if (!!error) return <Error error={error}/>
     if (loading) return <Loading/>
@@ -188,9 +191,7 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
     let onRevert = async (entry) => {
         branches
             .revert(repo.id, reference.id, {type: entry.path_type, path: entry.path})
-            .then(() => {
-                setInternalRefresh(!internalRefresh)
-            })
+            .then(refresh)
             .catch(error => {
                 setActionError(error)
             })
