@@ -23,20 +23,16 @@ const LoginForm = () => {
                 <Card className="login-widget">
                     <Card.Header>Login</Card.Header>
                     <Card.Body>
-                        <Form onSubmit={(e) => {
+                        <Form onSubmit={async (e) => {
                             e.preventDefault()
-                            auth
-                                .login(e.target.username.value, e.target.password.value)
-                                .then(user => {
-                                    setLoginError(null);
-                                    return router.push((!!next) ? next : '/');
-                                })
-                                .catch(err => {
-                                    setLoginError(err);
-                                })
-
+                            try {
+                                await auth.login(e.target.username.value, e.target.password.value)
+                                setLoginError(null);
+                                router.push(next ? next : '/');
+                            } catch(err) {
+                                setLoginError(err);
+                            }
                         }}>
-
                             <Form.Group controlId="username">
                                 <Form.Control type="text" placeholder="Access Key ID" autoFocus/>
                                 <Form.Text className="text-muted">
