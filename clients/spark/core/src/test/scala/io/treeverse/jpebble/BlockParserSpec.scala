@@ -15,6 +15,19 @@ import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy
 import org.scalatest.matchers.must.Matchers.contain
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 
+class BlockReadableSpec extends AnyFunSpec with Matchers {
+
+  describe("instantiate BlockReadableFileChannel") {
+    describe("with null file channel") {
+      it("should fail with a Null Pointer Exception") {
+        assertThrows[NullPointerException]{
+          new BlockReadableFileChannel(null)
+        }
+      }
+    }
+  }
+}
+
 object BlockParserSpec {
   def str(bytes: Array[Byte]): String = new String(bytes, StandardCharsets.UTF_8)
 }
@@ -287,38 +300,38 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
   describe("A block parser") {
     describe("with 2-level index sstable") {
       it("should parse successfully") {
-        withGeneratedTestFiles("two.level.idx", verifyBlockParserOutput)
+        withGeneratedSstTestFiles("two.level.idx", verifyBlockParserOutput)
       }
     }
 
     describe("with multi-sized sstables") {
       val testFiles = Seq(
-        "fuzz.contents.0",
+        "fuzz.contents.0.with.shared.prefix",
         "fuzz.contents.1",
-        "fuzz.contents.2",
+        "fuzz.contents.2.with.shared.prefix",
         "fuzz.contents.3",
-        "fuzz.contents.4",
+        "fuzz.contents.4.with.shared.prefix",
         "fuzz.contents.5"
       )
 
       testFiles.foreach(fileName =>
         describe(fileName) {
           it("should parse successfully") {
-            withGeneratedTestFiles(fileName, verifyBlockParserOutput)
+            withGeneratedSstTestFiles(fileName, verifyBlockParserOutput)
           }
         })
     }
 
     describe("with random table user properties") {
       it("should parse successfully") {
-        withGeneratedTestFiles("fuzz.table.properties", verifyBlockParserOutput)
+        withGeneratedSstTestFiles("fuzz.table.properties", verifyBlockParserOutput)
       }
     }
 
     describe("with sstable with xxHash64 checksum") {
       it("should fail parsing") {
         assertThrows[BadFileFormatException]{
-          withGeneratedTestFiles("checksum.type.xxHash64", verifyBlockParserOutput)
+          withGeneratedSstTestFiles("checksum.type.xxHash64", verifyBlockParserOutput)
         }
       }
     }
@@ -326,32 +339,62 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
     describe("with sstable with levelDB table format") {
       it("should fail parsing") {
         assertThrows[BadFileFormatException]{
-          withGeneratedTestFiles("table.format.leveldb", verifyBlockParserOutput)
+          withGeneratedSstTestFiles("table.format.leveldb", verifyBlockParserOutput)
+        }
+      }
+    }
+
+    describe("with sstable with Zstd compression") {
+      it("should fail parsing") {
+        assertThrows[BadFileFormatException]{
+          withGeneratedSstTestFiles("compression.type.zstd", verifyBlockParserOutput)
         }
       }
     }
 
     describe("with max size sstable supported by lakeFS") {
       it("should parse successfully") {
-        withGeneratedTestFiles("max.size.lakefs.file", verifyBlockParserOutput)
+        withGeneratedSstTestFiles("max.size.lakefs.file", verifyBlockParserOutput)
       }
     }
 
     describe("with random restart interval") {
       it("should parse successfully") {
-        withGeneratedTestFiles("fuzz.block.restart.interval", verifyBlockParserOutput)
+        withGeneratedSstTestFiles("fuzz.block.restart.interval", verifyBlockParserOutput)
       }
     }
 
     describe("with random block size") {
       it("should parse successfully") {
-        withGeneratedTestFiles("fuzz.block.size", verifyBlockParserOutput)
+        withGeneratedSstTestFiles("fuzz.block.size", verifyBlockParserOutput)
       }
     }
 
     describe("with random blocksize threshold") {
       it("should parse successfully") {
-        withGeneratedTestFiles("fuzz.block.size.threshold", verifyBlockParserOutput)
+        withGeneratedSstTestFiles("fuzz.block.size.threshold", verifyBlockParserOutput)
+      }
+    }
+
+    describe("with empty file") {
+      ignore("should fail parsing") {
+        assertThrows[BadFileFormatException]{ // TODO (tals): enable the test after closing https://github.com/treeverse/lakeFS/issues/2508
+          withGeneratedEmptyTestFile("empty.sfile", verifyBlockParserOutput)
+        }
+      }
+    }
+
+    describe("with sst file containing 0 records") {
+      it("should parse successfully") {
+        withGeneratedSstTestFiles("zero.records.sst", verifyBlockParserOutput)
+      }
+    }
+
+    describe("with sstable with a corrupted magic mark") {
+      it("should fail parsing") {
+        assertThrows[BadFileFormatException]{
+          withGeneratedSstTestFiles("bad.magic.mark", verifyBlockParserOutput)
+        }
       }
     }
   }
@@ -380,7 +423,7 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
    * test startup. The fixture uses sstables as the parser input, and the json as the source of the expected output of
    * the parsing operation.
    */
-  def withGeneratedTestFiles(baseFileName: String, test: (BlockReadable, Seq[(String, String)], Long) => Any) = {
+  def withGeneratedSstTestFiles(baseFileName: String, test: (BlockReadable, Seq[(String, String)], Long) => Any) = {
     val tmpSstFile = copyTestFile(baseFileName, ".sst")
     val tmpJsonFile = copyTestFile(baseFileName, ".json")
 
@@ -390,6 +433,16 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
       val data = ujson.read(jsonString)
       val expected = data.arr.map(e => (e("Key").str, e("Value").str))
       test(in, expected, tmpSstFile.length())
+    } finally {
+      in.close()
+    }
+  }
+
+  def withGeneratedEmptyTestFile(baseFileName: String, test: (BlockReadable, Seq[(String, String)], Long) => Any) = {
+    val tmpFile = copyTestFile(baseFileName, "")
+    val in = new BlockReadableFileChannel(new java.io.FileInputStream(tmpFile).getChannel)
+    try {
+      test(in, null, tmpFile.length())
     } finally {
       in.close()
     }

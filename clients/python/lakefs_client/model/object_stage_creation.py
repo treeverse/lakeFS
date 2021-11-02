@@ -83,6 +83,7 @@ class ObjectStageCreation(ModelNormal):
             'size_bytes': (int,),  # noqa: E501
             'mtime': (int,),  # noqa: E501
             'metadata': (ObjectUserMetadata,),  # noqa: E501
+            'content_type': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -96,6 +97,7 @@ class ObjectStageCreation(ModelNormal):
         'size_bytes': 'size_bytes',  # noqa: E501
         'mtime': 'mtime',  # noqa: E501
         'metadata': 'metadata',  # noqa: E501
+        'content_type': 'content_type',  # noqa: E501
     }
 
     _composed_schemas = {}
@@ -151,6 +153,7 @@ class ObjectStageCreation(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             mtime (int): Unix Epoch in seconds. [optional]  # noqa: E501
             metadata (ObjectUserMetadata): [optional]  # noqa: E501
+            content_type (str): Object media type. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

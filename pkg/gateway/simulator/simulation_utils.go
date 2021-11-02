@@ -3,17 +3,14 @@ package simulator
 import (
 	"context"
 	"encoding/json"
-	"time"
-
-	"github.com/treeverse/lakefs/pkg/logging"
-
-	"io/ioutil"
 	"net/http"
 	"os"
 	"regexp"
+	"time"
 
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 type PlayBackMockConf struct {
@@ -104,7 +101,7 @@ func (w *ResponseWriter) SaveHeaders(fName string) {
 		return
 	}
 	s, _ := json.Marshal(w.Headers)
-	err := ioutil.WriteFile(fName, s, 0600)
+	err := os.WriteFile(fName, s, 0600)
 	if err != nil {
 		logger.WithError(err).Fatal("failed crete file " + fName)
 	}

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"sync"
@@ -195,7 +194,7 @@ func (a *Adapter) streamToS3(ctx context.Context, sdkRequest *request.Request, s
 		return "", err
 	}
 
-	req.Body = ioutil.NopCloser(&StreamingReader{
+	req.Body = io.NopCloser(&StreamingReader{
 		Reader: reader,
 		Size:   int(sizeBytes),
 		Time:   sigTime,
@@ -221,7 +220,7 @@ func (a *Adapter) streamToS3(ctx context.Context, sdkRequest *request.Request, s
 	}()
 
 	if resp.StatusCode != http.StatusOK {
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			err = fmt.Errorf("%w: %d %s (unknown)", ErrS3, resp.StatusCode, resp.Status)
 		} else {

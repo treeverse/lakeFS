@@ -4,7 +4,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/pyramid/params"
 
 	"context"
-	"io/ioutil"
 	"os"
 	"path"
 	"testing"
@@ -18,7 +17,7 @@ func TestPyramidWriteFile(t *testing.T) {
 	ctx := context.Background()
 	filename := uuid.New().String()
 
-	fh, err := ioutil.TempFile("", filename)
+	fh, err := os.CreateTemp("", filename)
 	if err != nil {
 		t.Fatal("Failed to create temp file", err)
 	}
@@ -66,7 +65,7 @@ func TestPyramidWriteFile(t *testing.T) {
 func TestWriteValidate(t *testing.T) {
 	ctx := context.Background()
 	filename := uuid.New().String()
-	fh, err := ioutil.TempFile("", filename)
+	fh, err := os.CreateTemp("", filename)
 	if err != nil {
 		t.Fatal("Failed to create temp file", err)
 	}
@@ -99,7 +98,7 @@ func TestWriteValidate(t *testing.T) {
 func TestMultipleWriteCalls(t *testing.T) {
 	ctx := context.Background()
 	filename := uuid.New().String()
-	fh, err := ioutil.TempFile("", filename)
+	fh, err := os.CreateTemp("", filename)
 	if err != nil {
 		t.Fatal("Failed to create temp file", err)
 	}
@@ -132,7 +131,7 @@ func TestMultipleWriteCalls(t *testing.T) {
 func TestAbort(t *testing.T) {
 	ctx := context.Background()
 	filename := uuid.New().String()
-	fh, err := ioutil.TempFile("", filename)
+	fh, err := os.CreateTemp("", filename)
 	if err != nil {
 		t.Fatal("Failed to create temp file", err)
 	}
@@ -175,7 +174,7 @@ func TestPyramidReadFile(t *testing.T) {
 	filename := uuid.New().String()
 	filepath := path.Join("/tmp", filename)
 	content := "some content to write to file"
-	if err := ioutil.WriteFile(filepath, []byte(content), os.ModePerm); err != nil {
+	if err := os.WriteFile(filepath, []byte(content), os.ModePerm); err != nil {
 		t.Fatalf("Failed to write file %s: %s", filepath, err)
 	}
 	defer os.Remove(filepath)

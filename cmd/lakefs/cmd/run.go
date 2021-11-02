@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/dlmiddlecote/sqlstats"
+	"github.com/go-ldap/ldap/v3"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/cobra"
@@ -23,6 +25,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/catalog"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/gateway"
 	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
@@ -44,12 +47,49 @@ type Shutter interface {
 	Shutdown(context.Context) error
 }
 
+func newLDAPAuthenticator(cfg *config.LDAP, service auth.Service) *auth.LDAPAuthenticator {
+	const (
+		connectionTimeout = 15 * time.Second
+		requestTimeout    = 7 * time.Second
+	)
+	group := cfg.DefaultUserGroup
+	if group == "" {
+		group = auth.ViewersGroup
+	}
+	return &auth.LDAPAuthenticator{
+		AuthService:       service,
+		BindDN:            cfg.BindDN,
+		BindPassword:      cfg.BindPassword,
+		DefaultUserGroup:  group,
+		UsernameAttribute: cfg.UsernameAttribute,
+		MakeLDAPConn: func(_ context.Context) (*ldap.Conn, error) {
+			c, err := ldap.DialURL(
+				cfg.ServerEndpoint,
+				ldap.DialWithDialer(&net.Dialer{Timeout: connectionTimeout}),
+			)
+			if err != nil {
+				return nil, fmt.Errorf("dial %s: %w", cfg.ServerEndpoint, err)
+			}
+			c.SetTimeout(requestTimeout)
+			// TODO(ariels): Support StartTLS (& other TLS configuration).
+			return c, nil
+		},
+		BaseSearchRequest: ldap.SearchRequest{
+			BaseDN:     cfg.UserBaseDN,
+			Scope:      ldap.ScopeWholeSubtree,
+			Filter:     cfg.UserFilter,
+			Attributes: []string{cfg.UsernameAttribute},
+		},
+	}
+}
+
 // runCmd represents the run command
 var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run lakeFS",
 	Run: func(cmd *cobra.Command, args []string) {
 		logger := logging.Default()
+		cfg := loadConfig()
 		ctx := cmd.Context()
 		logger.WithField("version", version.Version).Info("lakeFS run")
 
@@ -81,16 +121,6 @@ var runCmd = &cobra.Command{
 		}
 		defer func() { _ = c.Close() }()
 
-		// wire actions
-		actionsService := actions.NewService(
-			ctx,
-			dbPool,
-			catalog.NewActionsSource(c),
-			catalog.NewActionsOutputWriter(c.BlockAdapter),
-		)
-		c.SetHooksHandler(actionsService)
-		defer actionsService.Stop()
-
 		multipartsTracker := multiparts.NewTracker(dbPool)
 
 		// init authentication
@@ -98,6 +128,12 @@ var runCmd = &cobra.Command{
 			dbPool,
 			crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
 			cfg.GetAuthCacheConfig())
+		var authenticator auth.Authenticator = auth.NewBuiltinAuthenticator(authService)
+		ldapConfig := cfg.GetLDAPConfiguration()
+		if ldapConfig != nil {
+			ldapAuthenticator := newLDAPAuthenticator(ldapConfig, authService)
+			authenticator = auth.NewChainAuthenticator(authenticator, ldapAuthenticator)
+		}
 		authMetadataManager := auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
 		blockstoreType := cfg.GetBlockstoreType()
@@ -116,6 +152,17 @@ var runCmd = &cobra.Command{
 		bufferedCollector.SetRuntimeCollector(blockStore.RuntimeStats)
 		// send metadata
 		bufferedCollector.CollectMetadata(metadata)
+
+		// wire actions
+		actionsService := actions.NewService(
+			ctx,
+			dbPool,
+			catalog.NewActionsSource(c),
+			catalog.NewActionsOutputWriter(c.BlockAdapter),
+			bufferedCollector,
+		)
+		c.SetHooksHandler(actionsService)
+		defer actionsService.Stop()
 
 		allowForeign, err := cmd.Flags().GetBool(mismatchedReposFlagName)
 		if err != nil {
@@ -137,6 +184,7 @@ var runCmd = &cobra.Command{
 		apiHandler := api.Serve(
 			cfg,
 			c,
+			authenticator,
 			authService,
 			blockStore,
 			authMetadataManager,
@@ -166,6 +214,7 @@ var runCmd = &cobra.Command{
 			cfg.GetS3GatewayDomainNames(),
 			bufferedCollector,
 			s3FallbackURL,
+			cfg.GetLoggingTraceRequestHeaders(),
 		)
 		ctx, cancelFn := context.WithCancel(cmd.Context())
 		go bufferedCollector.Run(ctx)

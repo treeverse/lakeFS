@@ -9,6 +9,7 @@ import (
 )
 
 type FakeGraveler struct {
+	graveler.VersionController
 	KeyValue                  map[string]*graveler.Value
 	Err                       error
 	ListIteratorFactory       func() graveler.ValueIterator

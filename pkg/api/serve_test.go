@@ -87,18 +87,22 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 	})
 	testutil.MustDo(t, "build catalog", err)
 
+	collector := &nullCollector{}
+
 	// wire actions
 	actionsService := actions.NewService(
 		ctx,
 		conn,
 		catalog.NewActionsSource(c),
 		catalog.NewActionsOutputWriter(c.BlockAdapter),
+		collector,
 	)
 	c.SetHooksHandler(actionsService)
 
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
 		Enabled: false,
 	})
+	authenticator := auth.NewBuiltinAuthenticator(authService)
 	meta := auth.NewDBMetadataManager("dev", cfg.GetFixedInstallationID(), conn)
 	migrator := db.NewDatabaseMigrator(dbparams.Database{ConnectionString: handlerDatabaseURI})
 
@@ -106,11 +110,10 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 		_ = c.Close()
 	})
 
-	collector := &nullCollector{}
-
 	handler := api.Serve(
 		cfg,
 		c,
+		authenticator,
 		authService,
 		c.BlockAdapter,
 		meta,

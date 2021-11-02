@@ -3,7 +3,7 @@ package logging
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"os/signal"
 	"runtime"
@@ -93,7 +93,7 @@ func SetLevel(level string) {
 		defaultLogger.SetLevel(logrus.PanicLevel)
 	case "null", "none":
 		defaultLogger.SetLevel(logrus.PanicLevel)
-		defaultLogger.SetOutput(ioutil.Discard)
+		defaultLogger.SetOutput(io.Discard)
 	}
 }
 
@@ -118,7 +118,7 @@ func SetOutput(output string) {
 		for {
 			<-sigChannel
 			defaultLogger.Info("SIGHUP received, rotating log file")
-			defaultLogger.SetOutput(ioutil.Discard)
+			defaultLogger.SetOutput(io.Discard)
 			_ = handle.Close()
 			handle, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0755)
 			if err != nil {

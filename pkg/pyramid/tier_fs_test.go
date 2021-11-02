@@ -3,7 +3,7 @@ package pyramid
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"os"
 	"path"
@@ -91,11 +91,11 @@ func TestStartup(t *testing.T) {
 
 	filename := "ThisShouldStay"
 	content := []byte("This Should Stay - I'm telling You!!!!")
-	if err := ioutil.WriteFile(path.Join(namespacePath, filename), content, os.ModePerm); err != nil {
+	if err := os.WriteFile(path.Join(namespacePath, filename), content, os.ModePerm); err != nil {
 		t.Fatal("write file", filename, err)
 	}
 
-	if err := ioutil.WriteFile(path.Join(workspacePath, "ThisShouldNotStay"), []byte("ThisShouldNotStay"), os.ModePerm); err != nil {
+	if err := os.WriteFile(path.Join(workspacePath, "ThisShouldNotStay"), []byte("ThisShouldNotStay"), os.ModePerm); err != nil {
 		t.Fatal("write file", err)
 	}
 
@@ -126,7 +126,7 @@ func TestStartup(t *testing.T) {
 	defer func() { _ = f.Close() }()
 	assert.NoError(t, err)
 
-	data, err := ioutil.ReadAll(f)
+	data, err := io.ReadAll(f)
 	assert.NoError(t, err)
 	assert.Equal(t, content, data)
 }
@@ -151,7 +151,7 @@ func testEviction(t *testing.T, namespaces ...string) {
 		f, err := fs.Open(ctx, namespaces[i%len(namespaces)], filename)
 		require.NoError(t, err)
 
-		_, err = ioutil.ReadAll(f)
+		_, err = io.ReadAll(f)
 		require.NoError(t, err)
 		require.NoError(t, f.Close())
 	}
@@ -218,7 +218,7 @@ func checkContent(t *testing.T, ctx context.Context, namespace string, filename 
 	}
 	defer f.Close()
 
-	data, err := ioutil.ReadAll(f)
+	data, err := io.ReadAll(f)
 	if err != nil {
 		t.Errorf("Failed to read all namespace:%s filename:%s - %s", namespace, filename, err)
 		return

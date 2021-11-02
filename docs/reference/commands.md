@@ -1227,8 +1227,23 @@ lakectl branch reset <branch uri> [flags]
 
 Given a commit, record a new commit to reverse the effect of this commit
 
+#### Synopsis
+{:.no_toc}
+
+The commits will be reverted in left-to-right order
+
 ```
-lakectl branch revert <branch uri> <commit ref to revert> [flags]
+lakectl branch revert <branch uri> <commit ref to revert> [<more commits>...] [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl branch revert lakefs://example-repo/example-branch commitA
+	          Revert the changes done by commitA in example-branch
+		      branch revert lakefs://example-repo/example-branch HEAD~1 HEAD~2 HEAD~3
+		      Revert the changes done by the second last commit to the fourth last commit in example-branch
 ```
 
 #### Options
@@ -1255,6 +1270,129 @@ lakectl branch show <branch uri> [flags]
 
 ```
   -h, --help   help for show
+```
+
+
+
+### lakectl branch-protect
+
+Create and manage branch protection rules
+
+#### Synopsis
+{:.no_toc}
+
+Define branch protection rules to prevent direct changes. Changes to protected branches can only be done by merging from other branches.
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for branch-protect
+```
+
+
+
+### lakectl branch-protect add
+
+Add a branch protection rule
+
+#### Synopsis
+{:.no_toc}
+
+Add a branch protection rule for a given branch name pattern
+
+```
+lakectl branch-protect add <repo uri> <pattern> [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl add lakefs://<repository> 'stable_*'
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for add
+```
+
+
+
+### lakectl branch-protect delete
+
+Delete a branch protection rule
+
+#### Synopsis
+{:.no_toc}
+
+Delete a branch protection rule for a given branch name pattern
+
+```
+lakectl branch-protect delete <repo uri> <pattern> [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl delete lakefs://<repository> stable_*
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for delete
+```
+
+
+
+### lakectl branch-protect help
+
+Help about any command
+
+#### Synopsis
+{:.no_toc}
+
+Help provides help for any command in the application.
+Simply type branch-protect help [path to command] for full details.
+
+```
+lakectl branch-protect help [command] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl branch-protect list
+
+List all branch protection rules
+
+```
+lakectl branch-protect list <repo uri> [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl list lakefs://<repository>
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for list
 ```
 
 
@@ -1417,22 +1555,40 @@ lakectl config [flags]
 
 ### lakectl diff
 
-diff between commits/hashes
-
-#### Synopsis
-{:.no_toc}
-
-see the list of paths added/changed/removed in a branch or between two references (could be either commit hash or branch name)
+Show changes between two commits, or the currently uncommitted changes
 
 ```
-lakectl diff <ref uri> [other ref uri] [flags]
+lakectl diff <ref uri> [ref uri] [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+
+	lakectl diff lakefs://example-repo/example-branch
+	Show uncommitted changes in example-branch.
+
+	lakectl diff lakefs://example-repo/main lakefs://example-repo/dev
+	This shows the differences between master and dev starting at the last common commit.
+	This is similar to the three-dot (...) syntax in git.
+	Uncommitted changes are not shown.
+
+	lakectl diff lakefs://example-repo/main..lakefs://example-repo/dev
+	Show changes between the tips of the main and dev branches.
+	This is similar to the two-dot (..) syntax in git.
+	Uncommitted changes are not shown.
+
+	lakectl diff lakefs://example-repo/main..lakefs://example-repo/dev$
+	Show changes between the tip of the main and the dev branch, including uncommitted changes on dev.
 ```
 
 #### Options
 {:.no_toc}
 
 ```
-  -h, --help   help for diff
+  -h, --help      help for diff
+      --two-way   Use two way diff
 ```
 
 
@@ -1541,7 +1697,9 @@ lakectl fs rm <path uri> [flags]
 {:.no_toc}
 
 ```
-  -h, --help   help for rm
+  -C, --concurrency int   max concurrent single delete operations to send to the lakeFS server (default 50)
+  -h, --help              help for rm
+  -r, --recursive         recursively delete all objects under the specified path
 ```
 
 
@@ -1561,12 +1719,13 @@ lakectl fs stage <path uri> [flags]
 {:.no_toc}
 
 ```
-      --checksum string   Object MD5 checksum as a hexadecimal string
-  -h, --help              help for stage
-      --location string   fully qualified storage location (i.e. "s3://bucket/path/to/object")
-      --meta strings      key value pairs in the form of key=value
-      --mtime int         Object modified time (Unix Epoch in seconds). Defaults to current time
-      --size int          Object size in bytes
+      --checksum string       Object MD5 checksum as a hexadecimal string
+      --content-type string   MIME type of contents
+  -h, --help                  help for stage
+      --location string       fully qualified storage location (i.e. "s3://bucket/path/to/object")
+      --meta strings          key value pairs in the form of key=value
+      --mtime int             Object modified time (Unix Epoch in seconds). Defaults to current time
+      --size int              Object size in bytes
 ```
 
 
@@ -1600,10 +1759,11 @@ lakectl fs upload <path uri> [flags]
 {:.no_toc}
 
 ```
-  -d, --direct          write directly to backing store (faster but requires more credentials)
-  -h, --help            help for upload
-  -r, --recursive       recursively copy all files under local source
-  -s, --source string   local file to upload, or "-" for stdin
+      --content-type string   MIME type of contents
+  -d, --direct                write directly to backing store (faster but requires more credentials)
+  -h, --help                  help for upload
+  -r, --recursive             recursively copy all files under local source
+  -s, --source string         local file to upload, or "-" for stdin
 ```
 
 
@@ -2042,7 +2202,7 @@ lakectl refs-restore <repository uri> [flags]
 {:.no_toc}
 
 ```
-aws s3 cp s3://bucket/_lakefs/refs_manifest.json - | lakectl refs-load lakefs://my-bare-repository --manifest -
+aws s3 cp s3://bucket/_lakefs/refs_manifest.json - | lakectl refs-restore lakefs://my-bare-repository --manifest -
 ```
 
 #### Options

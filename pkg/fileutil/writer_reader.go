@@ -3,7 +3,6 @@ package fileutil
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 )
 
@@ -33,7 +32,7 @@ type RewindableReader interface {
 type fileWriterThenReader struct{ file *os.File }
 
 func NewFileWriterThenReader(basename string) (WriterThenReader, error) {
-	file, err := ioutil.TempFile("", basename)
+	file, err := os.CreateTemp("", basename)
 	if err != nil {
 		return nil, fmt.Errorf("creating temporary file: %w", err)
 	}

@@ -44,7 +44,7 @@ func (m *MetadataProvider) GetMetadata() map[string]string {
 	stsClient := sts.New(sess)
 	identity, err := stsClient.GetCallerIdentity(&sts.GetCallerIdentityInput{})
 	if err != nil {
-		m.logger.WithError(err).Warn("%v: failed to get AWS account ID for BI")
+		m.logger.WithError(err).Warn("Failed to get AWS account ID for BI")
 		return nil
 	}
 	return map[string]string{

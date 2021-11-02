@@ -75,6 +75,7 @@ class User(ModelNormal):
         return {
             'id': (str,),  # noqa: E501
             'creation_date': (int,),  # noqa: E501
+            'friendly_name': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -85,6 +86,7 @@ class User(ModelNormal):
     attribute_map = {
         'id': 'id',  # noqa: E501
         'creation_date': 'creation_date',  # noqa: E501
+        'friendly_name': 'friendly_name',  # noqa: E501
     }
 
     _composed_schemas = {}
@@ -137,6 +139,7 @@ class User(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            friendly_name (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

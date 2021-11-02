@@ -52,6 +52,10 @@ public class ObjectStageCreation {
   @SerializedName(SERIALIZED_NAME_METADATA)
   private Map<String, String> metadata = null;
 
+  public static final String SERIALIZED_NAME_CONTENT_TYPE = "content_type";
+  @SerializedName(SERIALIZED_NAME_CONTENT_TYPE)
+  private String contentType;
+
 
   public ObjectStageCreation physicalAddress(String physicalAddress) {
     
@@ -173,6 +177,29 @@ public class ObjectStageCreation {
   }
 
 
+  public ObjectStageCreation contentType(String contentType) {
+    
+    this.contentType = contentType;
+    return this;
+  }
+
+   /**
+   * Object media type
+   * @return contentType
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "Object media type")
+
+  public String getContentType() {
+    return contentType;
+  }
+
+
+  public void setContentType(String contentType) {
+    this.contentType = contentType;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -186,12 +213,13 @@ public class ObjectStageCreation {
         Objects.equals(this.checksum, objectStageCreation.checksum) &&
         Objects.equals(this.sizeBytes, objectStageCreation.sizeBytes) &&
         Objects.equals(this.mtime, objectStageCreation.mtime) &&
-        Objects.equals(this.metadata, objectStageCreation.metadata);
+        Objects.equals(this.metadata, objectStageCreation.metadata) &&
+        Objects.equals(this.contentType, objectStageCreation.contentType);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(physicalAddress, checksum, sizeBytes, mtime, metadata);
+    return Objects.hash(physicalAddress, checksum, sizeBytes, mtime, metadata, contentType);
   }
 
   @Override
@@ -203,6 +231,7 @@ public class ObjectStageCreation {
     sb.append("    sizeBytes: ").append(toIndentedString(sizeBytes)).append("\n");
     sb.append("    mtime: ").append(toIndentedString(mtime)).append("\n");
     sb.append("    metadata: ").append(toIndentedString(metadata)).append("\n");
+    sb.append("    contentType: ").append(toIndentedString(contentType)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -55,7 +55,7 @@ class TestObjectsApi(unittest.TestCase):
     def test_stage_object(self):
         """Test case for stage_object
 
-        stage an object\"s metadata for the given branch  # noqa: E501
+        stage an object's metadata for the given branch  # noqa: E501
         """
         pass
 

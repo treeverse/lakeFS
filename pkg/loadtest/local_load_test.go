@@ -2,7 +2,6 @@ package loadtest
 
 import (
 	"context"
-	"github.com/spf13/viper"
 	"log"
 	"math"
 	"net/http/httptest"
@@ -11,6 +10,7 @@ import (
 	"time"
 
 	"github.com/ory/dockertest/v3"
+	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
@@ -80,10 +80,12 @@ func TestLocalLoad(t *testing.T) {
 		conn,
 		catalog.NewActionsSource(c),
 		catalog.NewActionsOutputWriter(c.BlockAdapter),
+		&nullCollector{},
 	)
 	c.SetHooksHandler(actionsService)
 
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{})
+	authenticator := auth.NewBuiltinAuthenticator(authService)
 	meta := auth.NewDBMetadataManager("dev", conf.GetFixedInstallationID(), conn)
 	migrator := db.NewDatabaseMigrator(dbparams.Database{ConnectionString: databaseURI})
 	t.Cleanup(func() {
@@ -93,6 +95,7 @@ func TestLocalLoad(t *testing.T) {
 	handler := api.Serve(
 		conf,
 		c,
+		authenticator,
 		authService,
 		blockAdapter,
 		meta,
@@ -123,7 +126,7 @@ func TestLocalLoad(t *testing.T) {
 		KeepRepo:         false,
 		Credentials:      *credentials,
 		ServerAddress:    ts.URL,
-		StorageNamespace: "s3://local/test/",
+		StorageNamespace: "mem://local/test/",
 	}
 	loader := NewLoader(testConfig)
 	err = loader.Run()

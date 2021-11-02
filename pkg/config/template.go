@@ -2,6 +2,7 @@ package config
 
 import (
 	"reflect"
+	"strings"
 	"time"
 )
 
@@ -23,7 +24,7 @@ func DecodeStrings(fromValue reflect.Value, toValue reflect.Value) (interface{},
 		return Strings(fromValue.Interface().([]string)), nil
 	}
 	if fromValue.Type() == stringType {
-		return Strings{fromValue.String()}, nil
+		return Strings(strings.Split(fromValue.String(), ",")), nil
 	}
 	return fromValue.Interface(), nil
 }
@@ -32,6 +33,17 @@ type SecureString string
 
 func (s *SecureString) String() string {
 	return string(*s)
+}
+
+// LDAP holds configuration for authenticating on an LDAP server.
+type LDAP struct {
+	ServerEndpoint    string `mapstructure:"server_endpoint"`
+	BindDN            string `mapstructure:"bind_dn"`
+	BindPassword      string `mapstructure:"bind_password"`
+	DefaultUserGroup  string `mapstructure:"default_user_group"`
+	UsernameAttribute string `mapstructure:"username_attribute"`
+	UserBaseDN        string `mapstructure:"user_base_dn"`
+	UserFilter        string `mapstructure:"user_filter"`
 }
 
 // S3AuthInfo holds S3-style authentication.
@@ -56,9 +68,11 @@ type configuration struct {
 	ListenAddress string `mapstructure:"listen_address"`
 
 	Logging struct {
-		Format string
-		Level  string
-		Output string
+		Format string `mapstructure:"format"`
+		Level  string `mapstructure:"level"`
+		Output string `mapstructure:"output"`
+		// TraceRequestHeaders work only on 'trace' level, default is false as it may log sensitive data to the log
+		TraceRequestHeaders bool `mapstructure:"trace_request_headers"`
 	}
 
 	Database struct {
@@ -78,6 +92,8 @@ type configuration struct {
 		Encrypt struct {
 			SecretKey SecureString `mapstructure:"secret_key" validate:"required"`
 		}
+
+		LDAP *LDAP
 	}
 	Blockstore struct {
 		Type  string `validate:"required"`

@@ -4,7 +4,7 @@ import (
 	"crypto/md5" //nolint:gosec
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"time"
@@ -48,7 +48,7 @@ func (m *MetadataProvider) GetMetadata() map[string]string {
 	defer func() {
 		_ = resp.Body.Close()
 	}()
-	responseBody, err := ioutil.ReadAll(resp.Body)
+	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		m.logger.WithError(err).Warn("Failed to get Azure subscription ID from instance metadata", err)
 		return nil

@@ -13,11 +13,11 @@ import sys
 import unittest
 
 import lakefs_client
-from lakefs_client.model.warnings import Warnings
+from lakefs_client.model.inline_object1 import InlineObject1
 
 
-class TestWarnings(unittest.TestCase):
-    """Warnings unit test stubs"""
+class TestInlineObject1(unittest.TestCase):
+    """InlineObject1 unit test stubs"""
 
     def setUp(self):
         pass
@@ -25,10 +25,10 @@ class TestWarnings(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def testWarnings(self):
-        """Test Warnings"""
+    def testInlineObject1(self):
+        """Test InlineObject1"""
         # FIXME: construct object with mandatory attributes with example values
-        # model = Warnings()  # noqa: E501
+        # model = InlineObject1()  # noqa: E501
         pass
 
 

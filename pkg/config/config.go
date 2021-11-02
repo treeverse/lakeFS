@@ -236,6 +236,10 @@ func (c *Config) GetDatabaseParams() dbparams.Database {
 	}
 }
 
+func (c *Config) GetLDAPConfiguration() *LDAP {
+	return c.values.Auth.LDAP
+}
+
 func (c *Config) GetAwsConfig() *aws.Config {
 	logger := logging.Default().WithField("sdk", "aws")
 	cfg := &aws.Config{
@@ -415,4 +419,8 @@ func (c *Config) GetCommittedBlockStoragePrefix() string {
 
 func (c *Config) ToLoggerFields() logging.Fields {
 	return MapLoggingFields(c.values)
+}
+
+func (c *Config) GetLoggingTraceRequestHeaders() bool {
+	return c.values.Logging.TraceRequestHeaders
 }

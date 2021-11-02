@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"errors"
 	"net/http"
 	gohttputil "net/http/httputil"
 	"net/url"
@@ -18,7 +19,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/gateway/simulator"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
-	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/stats"
 )
 
@@ -58,16 +58,7 @@ type ServerContext struct {
 	stats             stats.Collector
 }
 
-func NewHandler(
-	region string,
-	catalog catalog.Interface,
-	multipartsTracker multiparts.Tracker,
-	blockStore block.Adapter,
-	authService simulator.GatewayAuthService,
-	bareDomains []string,
-	stats stats.Collector,
-	fallbackURL *url.URL,
-) http.Handler {
+func NewHandler(region string, catalog catalog.Interface, multipartsTracker multiparts.Tracker, blockStore block.Adapter, authService simulator.GatewayAuthService, bareDomains []string, stats stats.Collector, fallbackURL *url.URL, traceRequestHeaders bool) http.Handler {
 	var fallbackHandler http.Handler
 	if fallbackURL != nil {
 		fallbackProxy := gohttputil.NewSingleHostReverseProxy(fallbackURL)
@@ -111,7 +102,10 @@ func NewHandler(
 			operations.OperationIDUnsupportedOperation: unsupportedOperationHandler(),
 		},
 	}
-	loggingMiddleware := httputil.LoggingMiddleware("X-Amz-Request-Id", logging.Fields{"service_name": "s3_gateway"})
+	loggingMiddleware := httputil.LoggingMiddleware(
+		"X-Amz-Request-Id",
+		logging.Fields{"service_name": "s3_gateway"},
+		traceRequestHeaders)
 	h = simulator.RegisterRecorder(loggingMiddleware(h), authService, region, bareDomains)
 	h = EnrichWithOperation(sc,
 		DurationHandler(
@@ -201,14 +195,21 @@ func PathOperationHandler(sc *ServerContext, handler operations.PathOperationHan
 		matchedHost := ctx.Value(ContextKeyMatchedHost).(bool)
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		perms, err := handler.RequiredPermissions(req, repo.Name, refID, path)
+
 		if err != nil {
-			_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
+			if errors.Is(err, gatewayerrors.ErrInvalidCopySource) {
+				_ = o.EncodeError(w, req, gatewayerrors.ErrInvalidCopySource.ToAPIErr())
+			} else {
+				_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
+			}
 			return
 		}
+
 		authOp := authorize(w, req, sc.authService, perms)
 		if authOp == nil {
 			return
 		}
+
 		// run callback
 		operation := &operations.PathOperation{
 			RefOperation: &operations.RefOperation{
@@ -231,14 +232,14 @@ func PathOperationHandler(sc *ServerContext, handler operations.PathOperationHan
 	})
 }
 
-func authorize(w http.ResponseWriter, req *http.Request, authService simulator.GatewayAuthService, perms []permissions.Permission) *operations.AuthorizedOperation {
+func authorize(w http.ResponseWriter, req *http.Request, authService simulator.GatewayAuthService, perms auth.PermissionNode) *operations.AuthorizedOperation {
 	ctx := req.Context()
 	o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 	username := ctx.Value(ContextKeyUser).(*model.User).Username
 	authContext := ctx.Value(ContextKeyAuthContext).(sig.SigContext)
 
-	if len(perms) == 0 {
-		// Either no permissions are required, or they will be checked later.
+	if perms == nil {
+		// has not provided required permissions
 		return &operations.AuthorizedOperation{
 			Operation: o,
 			Principal: username,

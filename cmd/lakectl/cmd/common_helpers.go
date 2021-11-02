@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -12,8 +13,8 @@ import (
 
 	"github.com/treeverse/lakefs/pkg/uri"
 
-	"github.com/jedib0t/go-pretty/table"
-	"github.com/jedib0t/go-pretty/text"
+	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"golang.org/x/term"
@@ -25,7 +26,8 @@ var noColorRequested = false
 const (
 	LakectlInteractive        = "LAKECTL_INTERACTIVE"
 	LakectlInteractiveDisable = "no"
-	DeathMessage              = "Error executing command: {{.Error|red}}\n"
+	DeathMessage              = "{{.Error|red}}\nError executing command.\n"
+	DeathMessageWithFields    = "{{.Message|red}}\n{{.Status}}\n"
 )
 
 const internalPageSize = 1000          // when retreiving all records, use this page size under the hood
@@ -160,15 +162,22 @@ type APIError interface {
 }
 
 func DieErr(err error) {
-	errData := struct{ Error string }{}
-	apiError, isAPIError := err.(APIError)
-	if isAPIError {
-		errData.Error = apiError.GetPayload().Message
+	type ErrData struct {
+		Error string
 	}
-	if errData.Error == "" {
-		errData.Error = err.Error()
+	var (
+		apiError         APIError
+		userVisibleError helpers.UserVisibleAPIError
+	)
+	apiError, _ = err.(APIError)
+	switch {
+	case errors.As(err, &userVisibleError):
+		WriteTo(DeathMessageWithFields, userVisibleError.APIFields, os.Stderr)
+	case apiError != nil:
+		WriteTo(DeathMessage, ErrData{Error: apiError.GetPayload().Message}, os.Stderr)
+	default:
+		WriteTo(DeathMessage, ErrData{Error: err.Error()}, os.Stderr)
 	}
-	WriteTo(DeathMessage, errData, os.Stderr)
 	os.Exit(1)
 }
 
@@ -176,13 +185,17 @@ type StatusCoder interface {
 	StatusCode() int
 }
 
-func DieOnResponseError(response interface{}, err error) {
+func RetrieveError(response interface{}, err error) error {
 	if err != nil {
-		DieErr(err)
+		return err
 	}
-	err = helpers.ResponseAsError(response)
-	if err != nil {
-		DieErr(err)
+	return helpers.ResponseAsError(response)
+}
+
+func DieOnResponseError(response interface{}, err error) {
+	retrievedErr := RetrieveError(response, err)
+	if retrievedErr != nil {
+		DieErr(retrievedErr)
 	}
 }
 

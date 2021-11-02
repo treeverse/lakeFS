@@ -13,11 +13,11 @@ import sys
 import unittest
 
 import lakefs_client
-from lakefs_client.model.config import Config
+from lakefs_client.model.branch_protection_rule import BranchProtectionRule
 
 
-class TestConfig(unittest.TestCase):
-    """Config unit test stubs"""
+class TestBranchProtectionRule(unittest.TestCase):
+    """BranchProtectionRule unit test stubs"""
 
     def setUp(self):
         pass
@@ -25,10 +25,10 @@ class TestConfig(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def testConfig(self):
-        """Test Config"""
+    def testBranchProtectionRule(self):
+        """Test BranchProtectionRule"""
         # FIXME: construct object with mandatory attributes with example values
-        # model = Config()  # noqa: E501
+        # model = BranchProtectionRule()  # noqa: E501
         pass
 
 

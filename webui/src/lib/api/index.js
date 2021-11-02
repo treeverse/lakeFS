@@ -690,6 +690,34 @@ class Config {
     }
 }
 
+class BranchProtectionRules {
+    async getRules(repoID) {
+        const response = await apiRequest(`/repositories/${repoID}/branch_protection`);
+        if (response.status === 404) {
+            throw new NotFoundError('branch protection rules not found')
+        }
+        if (response.status !== 200) {
+            throw new Error(`could not get branch protection rules: ${await extractError(response)}`);
+        }
+        return response.json();
+    }
+    async createRule(repoID, pattern) {
+        const response = await apiRequest(`/repositories/${repoID}/branch_protection`, {method: 'POST', body: JSON.stringify({pattern: pattern})});
+        if (response.status !== 204) {
+            throw new Error(`could not create protection rule: ${await extractError(response)}`);
+        }
+    }
+    async deleteRule(repoID, pattern) {
+        const response = await apiRequest(`/repositories/${repoID}/branch_protection`, {method: 'DELETE', body: JSON.stringify({pattern: pattern})});
+        if (response.status === 404) {
+            throw new NotFoundError('branch protection rule not found')
+        }
+        if (response.status !== 204) {
+            throw new Error(`could not delete protection rule: ${await extractError(response)}`);
+        }
+    }
+
+}
 export const repositories = new Repositories();
 export const branches = new Branches();
 export const objects = new Objects();
@@ -700,3 +728,4 @@ export const auth = new Auth();
 export const actions = new Actions();
 export const retention = new Retention();
 export const config = new Config();
+export const branchProtectionRules = new BranchProtectionRules();

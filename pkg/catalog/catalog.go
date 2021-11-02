@@ -17,9 +17,11 @@ import (
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/graveler/branch"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/graveler/retention"
+	"github.com/treeverse/lakefs/pkg/graveler/settings"
 	"github.com/treeverse/lakefs/pkg/graveler/sstable"
 	"github.com/treeverse/lakefs/pkg/graveler/staging"
 	"github.com/treeverse/lakefs/pkg/ident"
@@ -179,15 +181,16 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	}
 	committedManager := committed.NewCommittedManager(sstableMetaRangeManager)
 
-	stagingManager := staging.NewManager(cfg.DB)
-
 	executor := batch.NewExecutor(logging.Default())
 	go executor.Run(ctx)
 
 	refManager := ref.NewPGRefManager(executor, cfg.DB, ident.NewHexAddressProvider())
 	branchLocker := ref.NewBranchLocker(cfg.LockDB)
 	gcManager := retention.NewGarbageCollectionManager(cfg.DB, tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
-	store := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager)
+	stagingManager := staging.NewManager(cfg.DB)
+	settingManager := settings.NewManager(refManager, branchLocker, adapter, cfg.Config.GetCommittedBlockStoragePrefix())
+	protectedBranchesManager := branch.NewProtectionManager(settingManager)
+	store := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
 
 	return &Catalog{
 		BlockAdapter: tierFSParams.Adapter,
@@ -560,11 +563,11 @@ func (c *Catalog) ListTags(ctx context.Context, repository string, limit int, af
 		if v.TagID == afterTagID {
 			continue
 		}
-		branch := &Tag{
+		tag := &Tag{
 			ID:       string(v.TagID),
 			CommitID: v.CommitID.String(),
 		}
-		tags = append(tags, branch)
+		tags = append(tags, tag)
 		if len(tags) >= limit+1 {
 			break
 		}
@@ -621,15 +624,17 @@ func (c *Catalog) GetEntry(ctx context.Context, repository string, reference str
 	return &catalogEntry, nil
 }
 
-func EntryFromCatalogEntry(entry DBEntry) *Entry {
-	return &Entry{
+func newEntryFromCatalogEntry(entry DBEntry) *Entry {
+	ent := &Entry{
 		Address:      entry.PhysicalAddress,
 		AddressType:  addressTypeToProto(entry.AddressType),
 		Metadata:     entry.Metadata,
 		LastModified: timestamppb.New(entry.CreationDate),
 		ETag:         entry.Checksum,
 		Size:         entry.Size,
+		ContentType:  ContentTypeOrDefault(entry.ContentType),
 	}
+	return ent
 }
 
 func addressTypeToProto(t AddressType) Entry_AddressType {
@@ -661,7 +666,7 @@ func addressTypeToCatalog(t Entry_AddressType) AddressType {
 func (c *Catalog) CreateEntry(ctx context.Context, repository string, branch string, entry DBEntry, writeConditions ...graveler.WriteConditionOption) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
-	ent := EntryFromCatalogEntry(entry)
+	ent := newEntryFromCatalogEntry(entry)
 	path := Path(entry.Path)
 	if err := Validate([]ValidateArg{
 		{"repositoryID", repositoryID, ValidateRepositoryID},
@@ -676,15 +681,6 @@ func (c *Catalog) CreateEntry(ctx context.Context, repository string, branch str
 		return err
 	}
 	return c.Store.Set(ctx, repositoryID, branchID, key, *value, writeConditions...)
-}
-
-func (c *Catalog) CreateEntries(ctx context.Context, repository string, branch string, entries []DBEntry) error {
-	for _, entry := range entries {
-		if err := c.CreateEntry(ctx, repository, branch, entry); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (c *Catalog) DeleteEntry(ctx context.Context, repository string, branch string, path string) error {
@@ -956,16 +952,16 @@ func (c *Catalog) Diff(ctx context.Context, repository string, leftReference str
 
 func (c *Catalog) Compare(ctx context.Context, repository, leftReference string, rightReference string, params DiffParams) (Differences, bool, error) {
 	repositoryID := graveler.RepositoryID(repository)
-	from := graveler.Ref(leftReference)
-	to := graveler.Ref(rightReference)
+	left := graveler.Ref(leftReference)
+	right := graveler.Ref(rightReference)
 	if err := Validate([]ValidateArg{
 		{"repositoryID", repositoryID, ValidateRepositoryID},
-		{"from", from, ValidateRef},
-		{"to", to, ValidateRef},
+		{"left", left, ValidateRef},
+		{"right", right, ValidateRef},
 	}); err != nil {
 		return nil, false, err
 	}
-	iter, err := c.Store.Compare(ctx, repositoryID, from, to)
+	iter, err := c.Store.Compare(ctx, repositoryID, left, right)
 	if err != nil {
 		return nil, false, err
 	}
@@ -1045,10 +1041,7 @@ func listDiffHelper(it EntryDiffIterator, prefix, delimiter string, limit int, a
 				// a common prefix exists!
 				commonPrefix := prefix + parts[0] + delimiter
 				diffs = append(diffs, Difference{
-					DBEntry: DBEntry{
-						CommonLevel: true,
-						Path:        commonPrefix,
-					},
+					DBEntry: NewDBEntryBuilder().CommonLevel(true).Path(commonPrefix).Build(),
 					// We always return "changed" for common prefixes. Seeing if a common prefix is e.g. deleted is O(N)
 					Type: DifferenceTypeChanged,
 				})
@@ -1182,6 +1175,18 @@ func (c *Catalog) SetGarbageCollectionRules(ctx context.Context, repositoryID st
 	return c.Store.SetGarbageCollectionRules(ctx, graveler.RepositoryID(repositoryID), rules)
 }
 
+func (c *Catalog) GetBranchProtectionRules(ctx context.Context, repositoryID string) (*graveler.BranchProtectionRules, error) {
+	return c.Store.GetBranchProtectionRules(ctx, graveler.RepositoryID(repositoryID))
+}
+
+func (c *Catalog) DeleteBranchProtectionRule(ctx context.Context, repositoryID string, pattern string) error {
+	return c.Store.DeleteBranchProtectionRule(ctx, graveler.RepositoryID(repositoryID), pattern)
+}
+
+func (c *Catalog) CreateBranchProtectionRule(ctx context.Context, repositoryID string, pattern string, blockedActions []graveler.BranchProtectionBlockedAction) error {
+	return c.Store.CreateBranchProtectionRule(ctx, graveler.RepositoryID(repositoryID), pattern, blockedActions)
+}
+
 func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repository string, previousRunID string) (*graveler.GarbageCollectionRunMetadata, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	if err := Validate([]ValidateArg{
@@ -1219,21 +1224,21 @@ func (c *Catalog) dereferenceCommitID(ctx context.Context, repositoryID graveler
 }
 
 func newCatalogEntryFromEntry(commonPrefix bool, path string, ent *Entry) DBEntry {
-	catEnt := DBEntry{
-		CommonLevel: commonPrefix,
-		Path:        path,
-	}
+	b := NewDBEntryBuilder().
+		CommonLevel(commonPrefix).
+		Path(path)
 	if ent != nil {
-		catEnt.PhysicalAddress = ent.Address
-		catEnt.AddressType = addressTypeToCatalog(ent.AddressType)
-		catEnt.CreationDate = ent.LastModified.AsTime()
-		catEnt.Size = ent.Size
-		catEnt.Checksum = ent.ETag
-		catEnt.Metadata = ent.Metadata
-		catEnt.Expired = false
-		catEnt.AddressType = addressTypeToCatalog(ent.AddressType)
+		b.PhysicalAddress(ent.Address)
+		b.AddressType(addressTypeToCatalog(ent.AddressType))
+		b.CreationDate(ent.LastModified.AsTime())
+		b.Size(ent.Size)
+		b.Checksum(ent.ETag)
+		b.Metadata(ent.Metadata)
+		b.Expired(false)
+		b.AddressType(addressTypeToCatalog(ent.AddressType))
+		b.ContentType(ContentTypeOrDefault(ent.ContentType))
 	}
-	return catEnt
+	return b.Build()
 }
 
 func catalogDiffType(typ graveler.DiffType) (DifferenceType, error) {

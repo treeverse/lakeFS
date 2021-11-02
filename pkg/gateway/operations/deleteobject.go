@@ -4,21 +4,21 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
+	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 )
 
 type DeleteObject struct{}
 
-func (controller *DeleteObject) RequiredPermissions(_ *http.Request, repoID, _, path string) ([]permissions.Permission, error) {
-	return []permissions.Permission{
-		{
-			Action:   permissions.DeleteObjectAction,
-			Resource: permissions.ObjectArn(repoID, path),
-		},
+func (controller *DeleteObject) RequiredPermissions(_ *http.Request, repoID, _, path string) (auth.PermissionNode, error) {
+	return &auth.OnePermission{
+		Action:   permissions.DeleteObjectAction,
+		Resource: permissions.ObjectArn(repoID, path),
 	}, nil
 }
 
@@ -52,6 +52,8 @@ func (controller *DeleteObject) Handle(w http.ResponseWriter, req *http.Request,
 	switch {
 	case errors.Is(err, catalog.ErrNotFound):
 		lg.WithError(err).Debug("could not delete object, it doesn't exist")
+	case errors.Is(err, graveler.ErrWriteToProtectedBranch):
+		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrWriteToProtectedBranch))
 	case err != nil:
 		lg.WithError(err).Error("could not delete object")
 		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
