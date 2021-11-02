@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/jedib0t/go-pretty/text"
+	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/block/factory"
