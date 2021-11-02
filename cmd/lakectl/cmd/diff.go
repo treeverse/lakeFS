@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/jedib0t/go-pretty/text"
+	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
 )
