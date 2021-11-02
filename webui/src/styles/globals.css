@@ -352,3 +352,8 @@ td .form-group {
   margin-top: 0;
   border-bottom-width: 0;
 }
+
+.auth-learn-more {
+  margin-top: -20px;
+  margin-bottom: 20px;
+}
