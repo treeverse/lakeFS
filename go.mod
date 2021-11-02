@@ -30,8 +30,6 @@ require (
 	github.com/getkin/kin-openapi v0.53.0
 	github.com/go-chi/chi/v5 v5.0.0
 	github.com/go-ldap/ldap/v3 v3.4.1
-	github.com/go-openapi/errors v0.20.0 // indirect
-	github.com/go-openapi/strfmt v0.20.0 // indirect
 	github.com/go-openapi/swag v0.19.14
 	github.com/go-test/deep v1.0.7
 	github.com/gobwas/glob v0.2.3
@@ -53,7 +51,7 @@ require (
 	github.com/jackc/pgproto3/v2 v2.0.7
 	github.com/jackc/pgx/v4 v4.10.1
 	github.com/jamiealquiza/tachymeter v2.0.0+incompatible
-	github.com/jedib0t/go-pretty v4.3.0+incompatible
+	github.com/jedib0t/go-pretty/v6 v6.2.4
 	github.com/johannesboyne/gofakes3 v0.0.0-20210217223559-02ffa763be97
 	github.com/klauspost/compress v1.11.12 // indirect
 	github.com/kr/pretty v0.2.1 // indirect
@@ -83,12 +81,10 @@ require (
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.7.0
 	github.com/thanhpk/randstr v1.0.4
-	github.com/tidwall/pretty v1.0.1 // indirect
 	github.com/tsenart/vegeta/v12 v12.8.4
 	github.com/vbauerster/mpb/v5 v5.4.0
 	github.com/xitongsys/parquet-go v1.6.0
 	github.com/xitongsys/parquet-go-source v0.0.0-20201108113611-f372b7d813be
-	go.mongodb.org/mongo-driver v1.4.6 // indirect
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
 	golang.org/x/exp v0.0.0-20210220032938-85be41e4509f // indirect
 	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110 // indirect
