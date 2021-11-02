@@ -60,9 +60,9 @@ const ChangeRowActions = ({ entry, onRevert }) => {
     getMore: callback to be called when more items need to be rendered
     depth: the item's depth withing the tree
  */
-export const TreeItem = ({ entry, repo, reference, internalRefresh, onRevert, onNavigate, delimiter, after, relativeTo, getMore, depth=0 }) => {
+export const TreeItem = ({ entry, repo, reference, internalRefresh, onRevert, onNavigate, delimiter, relativeTo, getMore, depth=0 }) => {
     const [expanded, setExpanded] = useState(false); // state of the item expansion
-    const [afterUpdated, setAfterUpdated] = useState(after); // state of pagination of the item's children
+    const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({results:[], pagination:{}}); // current retrieved children of the item
 
     const { error, loading, nextPage } = useAPIWithPagination(async () => {
@@ -94,7 +94,7 @@ export const TreeItem = ({ entry, repo, reference, internalRefresh, onRevert, on
             {expanded && results &&
                 results.map(child =>
                     ( <TreeItem key={child.path+"-item"} entry={child} repo={repo} reference={reference} onRevert={onRevert} onNavigate={onNavigate}
-                                internalReferesh={internalRefresh} delimiter={delimiter} depth={depth+1} after={after} relativeTo={entry.path} getMore={getMore}/>))}
+                                internalReferesh={internalRefresh} delimiter={delimiter} depth={depth+1} relativeTo={entry.path} getMore={getMore}/>))}
             {(!!nextPage || loading) &&
                 <TreeEntryPaginator path={entry.path} depth={depth} loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated}/>
             }
