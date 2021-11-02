@@ -273,6 +273,7 @@ func (d *diffIterator) SeekGE(id graveler.Key) {
 	d.rightValue = iteratorValue{}
 	d.err = nil
 	d.state = diffIteratorStatePreInit
+	d.currentRange = currentRangeData{}
 }
 
 func (d *diffIterator) Value() (*graveler.Diff, *RangeDiff) {
