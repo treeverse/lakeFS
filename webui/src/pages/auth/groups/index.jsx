@@ -72,8 +72,7 @@ const GroupsContainer = () => {
                 </ActionGroup>
             </ActionsBar>
             <div className="auth-learn-more">
-                A group is a collection of users.
-                <a href="https://docs.lakefs.io/reference/authorization.html#authorization" target="_blank" rel="noopener noreferrer"> Learn more.</a>
+                A group is a collection of users. <a href="https://docs.lakefs.io/reference/authorization.html#authorization" target="_blank" rel="noopener noreferrer">Learn more.</a>
             </div>
 
 

@@ -56,8 +56,7 @@ const CredentialsContainer = () => {
                 </ActionGroup>
             </ActionsBar>
             <div className="auth-learn-more">
-                An access key-pair is the set of credentials used to access lakeFS.
-                <a href="https://docs.lakefs.io/reference/authorization.html#authentication" target="_blank" rel="noopener noreferrer"> Learn more.</a>
+                An access key-pair is the set of credentials used to access lakeFS. <a href="https://docs.lakefs.io/reference/authorization.html#authentication" target="_blank" rel="noopener noreferrer">Learn more.</a>
             </div>
 
             {(!!createError) && <Error error={createError}/>}

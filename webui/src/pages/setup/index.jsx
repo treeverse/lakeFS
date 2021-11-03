@@ -89,7 +89,7 @@ server:
                     <Card.Body>
                         <Card.Text>
                             This process will initialize the database schema and a first admin user to access the system.<br/>
-                            <div><a href="https://docs.lakefs.io/quickstart/repository.html#create-the-first-user" target="_blank" rel="noopener noreferrer"> Learn more.</a></div>
+                            <div><a href="https://docs.lakefs.io/quickstart/repository.html#create-the-first-user" target="_blank" rel="noopener noreferrer">Learn more.</a></div>
                         </Card.Text>
                         <Form onSubmit={e => {
                             onSubmit();
