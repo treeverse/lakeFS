@@ -6,9 +6,8 @@ import (
 	"testing"
 
 	"github.com/go-test/deep"
-
 	"github.com/treeverse/lakefs/pkg/metastore"
-
+	mserrors "github.com/treeverse/lakefs/pkg/metastore/errors"
 	"github.com/treeverse/lakefs/pkg/metastore/mock"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
@@ -64,6 +63,67 @@ func getLocation(repoLocation, branch, tableDir string) string {
 	return fmt.Sprintf("%s/%s/%s", repoLocation, branch, tableDir)
 }
 
+func TestMSClient_CopySchema(t *testing.T) {
+	tests := []struct {
+		TestName         string
+		SourceName       string
+		DestinationName  string
+		LocationURI      string
+		destBranch       string
+		ExpectedLocation string
+		ExpectedError    error
+	}{{
+		TestName:         "with location",
+		SourceName:       "source",
+		DestinationName:  "destination",
+		destBranch:       "branch1",
+		LocationURI:      "s3://example/main/path/to/schema/",
+		ExpectedLocation: "s3://example/branch1/path/to/schema/",
+	}, {
+		TestName:         "table exists",
+		SourceName:       "source",
+		DestinationName:  "source",
+		LocationURI:      "s3://example/path/to/schema/",
+		destBranch:       "branch1",
+		ExpectedLocation: "s3://example/branch1/path/to/schema/",
+		ExpectedError:    mserrors.ErrSchemaExists,
+	},
+		{
+			TestName:         "no location",
+			SourceName:       "source",
+			DestinationName:  "destination",
+			destBranch:       "branch1",
+			LocationURI:      "",
+			ExpectedLocation: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.TestName, func(t *testing.T) {
+			initialDatabases := make(map[string]*metastore.Database)
+
+			initialDatabases[tt.SourceName] = &metastore.Database{Name: tt.SourceName, LocationURI: tt.LocationURI}
+			client := mock.NewMSClient(t, initialDatabases, nil, nil)
+
+			err := metastore.CopyDB(nil, client, client, tt.SourceName, tt.DestinationName, tt.destBranch, "")
+
+			if err != tt.ExpectedError {
+				t.Fatalf("expected err:%s got:%v", tt.ExpectedError, err)
+			}
+			if tt.ExpectedError != nil {
+				return
+			}
+			destDB, err := client.GetDatabase(nil, tt.DestinationName)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if destDB.LocationURI != tt.ExpectedLocation {
+				t.Errorf("wrong location expected %s, got %v", tt.ExpectedLocation, destDB.LocationURI)
+			}
+		})
+	}
+
+}
+
 func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	tableName := "table"
 	dbName := "default"
@@ -86,8 +146,8 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	initialPartitions := getNPartitions(dbName, tableName, location, numOfPartitions)
 	table := make(map[string]*metastore.Table)
 	table[mock.GetKey(dbName, tableName)] = initialTable
-	clientFrom := mock.NewMSClient(t, table, initialPartitions)
-	clientTo := mock.NewMSClient(t, nil, nil)
+	clientFrom := mock.NewMSClient(t, nil, table, initialPartitions)
+	clientTo := mock.NewMSClient(t, nil, nil, nil)
 	ctx := context.Background()
 
 	toTableName := "copy_table"

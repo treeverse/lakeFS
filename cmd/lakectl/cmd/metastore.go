@@ -20,7 +20,7 @@ var metastoreCmd = &cobra.Command{
 var metastoreCopyCmd = &cobra.Command{
 	Use:   "copy",
 	Short: "Copy or merge table",
-	Long:  "copy or merge table. the destination table will point to the selected branch",
+	Long:  "Copy or merge table. the destination table will point to the selected branch",
 	Run: func(cmd *cobra.Command, args []string) {
 		fromClientType, _ := cmd.Flags().GetString("from-client-type")
 		fromDB, _ := cmd.Flags().GetString("from-schema")
@@ -59,6 +59,41 @@ var metastoreCopyCmd = &cobra.Command{
 		}).Info("Metadata copy or merge table")
 		fmt.Printf("copy %s.%s -> %s.%s\n", fromDB, fromTable, toDB, toTable)
 		err := metastore.CopyOrMerge(cmd.Context(), fromClient, toClient, fromDB, fromTable, toDB, toTable, toBranch, serde, partition, cfg.GetFixSparkPlaceholder(), dbfsLocation)
+		if err != nil {
+			DieErr(err)
+		}
+	},
+}
+
+var metastoreCopySchemaCmd = &cobra.Command{
+	Use:   "copy-schema",
+	Short: "Copy schema",
+	Long:  "Copy schema (without tables). the destination schema will point to the selected branch",
+	Run: func(cmd *cobra.Command, args []string) {
+		fromClientType, _ := cmd.Flags().GetString("from-client-type")
+		fromDB, _ := cmd.Flags().GetString("from-schema")
+		toClientType, _ := cmd.Flags().GetString("to-client-type")
+		toDB, _ := cmd.Flags().GetString("to-schema")
+		toBranch, _ := cmd.Flags().GetString("to-branch")
+		dbfsLocation, _ := cmd.Flags().GetString("dbfs-location")
+
+		fromClient, fromClientDeferFunc := getMetastoreClient(fromClientType, "")
+		defer fromClientDeferFunc()
+		toClient, toClientDeferFunc := getMetastoreClient(toClientType, "")
+		defer toClientDeferFunc()
+		if len(toDB) == 0 {
+			toDB = toBranch
+		}
+
+		logging.Default().WithFields(logging.Fields{
+			"form_client_type": fromClientType,
+			"from_db":          fromDB,
+			"to_client_type":   toClientType,
+			"to_schema":        toDB,
+			"to_branch":        toBranch,
+		}).Info("Metadata copy schema")
+		fmt.Printf("copy %s -> %s\n", fromDB, toDB)
+		err := metastore.CopyDB(cmd.Context(), fromClient, toClient, fromDB, toDB, toBranch, dbfsLocation)
 		if err != nil {
 			DieErr(err)
 		}
@@ -276,6 +311,19 @@ func init() {
 	_ = metastoreCopyCmd.Flags().String("serde", "", "serde to set copy to  [default is  to-table]")
 	_ = metastoreCopyCmd.Flags().StringSliceP("partition", "p", nil, "partition to copy")
 	_ = metastoreCopyCmd.Flags().String("dbfs-root", "", "dbfs location root will replace `dbfs:/` in the location before transforming")
+	metastoreCmd.AddCommand(metastoreCopySchemaCmd)
+	_ = metastoreCopySchemaCmd.Flags().String("from-client-type", "", "metastore type [hive, glue]")
+	_ = metastoreCopySchemaCmd.Flags().String("metastore-uri", "", "Hive metastore URI")
+	_ = viper.BindPFlag("metastore.hive.uri", metastoreCopySchemaCmd.Flag("metastore-uri"))
+	_ = metastoreCopySchemaCmd.Flags().String("catalog-id", "", "Glue catalog ID")
+	_ = viper.BindPFlag("metastore.glue.catalog_id", metastoreCopySchemaCmd.Flag("catalog-id"))
+	_ = metastoreCopySchemaCmd.Flags().String("from-schema", "", "source schema name")
+	_ = metastoreCopySchemaCmd.MarkFlagRequired("from-schema")
+	_ = metastoreCopySchemaCmd.Flags().String("to-client-type", "", "metastore type [hive, glue]")
+	_ = metastoreCopySchemaCmd.Flags().String("to-schema", "", "destination schema name [default is from-branch]")
+	_ = metastoreCopySchemaCmd.Flags().String("to-branch", "", "lakeFS branch name")
+	_ = metastoreCopySchemaCmd.MarkFlagRequired("to-branch")
+	_ = metastoreCopySchemaCmd.Flags().String("dbfs-root", "", "dbfs location root will replace `dbfs:/` in the location before transforming")
 	metastoreCmd.AddCommand(metastoreDiffCmd)
 	_ = metastoreDiffCmd.Flags().String("from-client-type", "", "metastore type [hive, glue]")
 	_ = metastoreDiffCmd.Flags().String("metastore-uri", "", "Hive metastore URI")

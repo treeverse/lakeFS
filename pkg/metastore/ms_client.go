@@ -2,11 +2,13 @@ package metastore
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/logging"
+	mserrors "github.com/treeverse/lakefs/pkg/metastore/errors"
 )
 
 const dbfsPrefix = "dbfs:/"
@@ -29,7 +31,7 @@ type WriteClient interface {
 	AlterPartition(ctx context.Context, dbName string, tableName string, partition *Partition) error
 	AddPartition(ctx context.Context, tableName string, dbName string, newPartition *Partition) error
 	DropPartition(ctx context.Context, dbName string, tableName string, values []string) error
-	CreateDatabaseIfNotExists(ctx context.Context, database *Database) error
+	CreateDatabase(ctx context.Context, database *Database) error
 	NormalizeDBName(name string) string // NormalizeDBName changes the db name to be a valid name for the client
 	GetDBLocation(dbName string) string // getDBLocation returns the expected locationURI of the database
 }
@@ -45,6 +47,30 @@ func CopyOrMerge(ctx context.Context, fromClient, toClient Client, fromDB, fromT
 		return ReplaceBranchName(location, toBranch)
 	}
 	return copyOrMergeWithTransformLocation(ctx, fromClient, toClient, fromDB, fromTable, toDB, toTable, serde, partition, transformLocation, fixSparkPlaceHolder)
+}
+
+func CopyDB(ctx context.Context, fromClient, toClient Client, fromDB, toDB, toBranch string, dbfsLocation string) error {
+	transformLocation := func(location string) (string, error) {
+		if location == "" {
+			return "", nil
+		}
+		location = HandleDBFSLocation(location, dbfsLocation)
+		return ReplaceBranchName(location, toBranch)
+	}
+	return copyDBWithTransformLocation(ctx, fromClient, toClient, fromDB, toDB, transformLocation)
+}
+
+func copyDBWithTransformLocation(ctx context.Context, fromClient, toClient Client, fromDB string, toDB string, transformLocation func(location string) (string, error)) error {
+	schema, err := fromClient.GetDatabase(ctx, fromDB)
+	if err != nil {
+		return err
+	}
+	schema.Name = toDB
+	schema.LocationURI, err = transformLocation(schema.LocationURI)
+	if err != nil {
+		return err
+	}
+	return toClient.CreateDatabase(ctx, schema)
 }
 
 func copyOrMergeWithTransformLocation(ctx context.Context, fromClient, toClient Client, fromDB, fromTable, toDB, toTable, serde string, partition []string, transformLocation func(location string) (string, error), fixSparkPlaceHolder bool) error {
@@ -141,10 +167,8 @@ func applyAll(ctx context.Context, fromClient Client, toClient Client, databases
 	for _, database := range databases {
 		fromDBName := database.Name
 		toDBName := toClient.NormalizeDBName(database.Name)
-		database.Name = toDBName
-		database.LocationURI = toClient.GetDBLocation(toDBName)
-		err := toClient.CreateDatabaseIfNotExists(ctx, database)
-		if err != nil {
+		err := copyDBWithTransformLocation(ctx, fromClient, toClient, fromDBName, toDBName, transformLocation)
+		if err != nil && !errors.Is(err, mserrors.ErrSchemaExists) {
 			return err
 		}
 		tables, err := fromClient.GetTables(ctx, fromDBName, tableFilter)
@@ -201,7 +225,7 @@ func Merge(ctx context.Context, table *Table, partitionIter Collection, toDB, to
 	err = DiffIterable(partitionIter, toPartitionIter, func(difference catalog.DifferenceType, value interface{}, _ string) error {
 		partition, ok := value.(*Partition)
 		if !ok {
-			return fmt.Errorf("%w in diffIterable call. expected to get * Partition, but got: %T", ErrExpectedType, value)
+			return fmt.Errorf("%w at diffIterable, got %T while expected  *Partition", mserrors.ErrExpectedType, value)
 		}
 		err = partition.Update(toDB, toTable, serde, transformLocation, isSparkSQLTable, fixSparkPlaceHolder)
 		if err != nil {
