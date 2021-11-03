@@ -63,7 +63,7 @@ func (controller *PutObject) RequiredPermissions(req *http.Request, repoID, _, d
 			}}}, nil
 }
 
-// extractEntryFromCopyReq: update metadata to refer to the source hash in the destination workspace
+// extractEntryFromCopyReq: get metadata from source file
 func extractEntryFromCopyReq(w http.ResponseWriter, req *http.Request, o *PathOperation, copySource string) *catalog.DBEntry {
 	p, err := getPathFromSource(copySource)
 	if err != nil {
