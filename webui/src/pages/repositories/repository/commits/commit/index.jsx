@@ -27,7 +27,7 @@ const ChangeList = ({ repo, commit, prefix, onNavigate }) => {
         if (!repo) return
         if (!commit.parents || commit.parents.length === 0) return {results: [], pagination: {has_more: false}};
 
-        return await appendMoreResults(resultsState, prefix, afterUpdated, setResultsState,
+        return await appendMoreResults(resultsState, prefix, afterUpdated, setAfterUpdated, setResultsState,
             () => refs.diff(repo.id, commit.parents[0], commit.id, afterUpdated, prefix, delimiter));
     }, [repo.id, commit.id, afterUpdated, prefix])
 
@@ -71,7 +71,7 @@ const ChangeList = ({ repo, commit, prefix, onNavigate }) => {
                                               }}/>
                                 ))}
                                 { !!nextPage &&
-                                <TreeEntryPaginator path={""} loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated}/>
+                                    <TreeEntryPaginator path={""} loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated}/>
                                 }
                                 </tbody>
                             </Table>

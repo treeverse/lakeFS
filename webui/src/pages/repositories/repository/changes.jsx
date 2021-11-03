@@ -147,10 +147,11 @@ const RevertButton = ({onRevert, enabled = false}) => {
     );
 }
 
-export async function appendMoreResults(resultsState, prefix, afterUpdated, setResultsState, getMore) {
+export async function appendMoreResults(resultsState, prefix, afterUpdated, setAfterUpdated, setResultsState, getMore) {
     let resultsFiltered = resultsState.results
     if (resultsState.prefix !== prefix) {
         // prefix changed, need to delete previous results
+        setAfterUpdated("")
         resultsFiltered = []
     }
 
@@ -174,7 +175,7 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
 
     const { error, loading, nextPage } = useAPIWithPagination(async () => {
         if (!repo) return
-        return await appendMoreResults(resultsState, prefix, afterUpdated, setResultsState,
+        return await appendMoreResults(resultsState, prefix, afterUpdated, setAfterUpdated, setResultsState,
             () => refs.changes(repo.id, reference.id, afterUpdated, prefix, delimiter));
     }, [repo.id, reference.id, internalRefresh, afterUpdated, delimiter, prefix])
 
@@ -272,7 +273,7 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
                                 {results.map(entry => (
                                     <TreeItem key={entry.path + "-tree-item"} entry={entry} repo={repo} reference={reference}
                                               internalReferesh={internalRefresh} onNavigate={onNavigate}
-                                              onRevert={onRevert} delimiter={delimiter} after={""} relativeTo={prefix}
+                                              onRevert={onRevert} delimiter={delimiter} relativeTo={prefix}
                                               getMore={(afterUpdated, path) => {
                                                   return refs.changes(repo.id, reference.id, afterUpdated, path, delimiter)
                                               }}/>
