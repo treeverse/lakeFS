@@ -36,7 +36,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
         if (compareReference.id === reference.id)
             return {pagination: {has_more: false}, results: []}; // nothing to compare here.
 
-        return await appendMoreResults(resultsState, prefix, afterUpdated, setResultsState,
+        return await appendMoreResults(resultsState, prefix, afterUpdated, setAfterUpdated, setResultsState,
             () => refs.diff(repo.id, reference.id, compareReference.id, afterUpdated, prefix, delimiter));
     }, [repo.id, reference.id, internalRefresh, afterUpdated, delimiter, prefix])
 
@@ -98,8 +98,8 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                                 <tbody>
                                 {results.map(entry => (
                                     <TreeItem key={entry.path+"-item"} entry={entry} repo={repo} reference={reference} internalReferesh={internalRefresh}
-                                              delimiter={delimiter} after={afterUpdated} relativeTo={prefix} onNavigate={onNavigate}
-                                              getMore={(afterUpdated, path) => refs.diff(repo.id, reference.id, compareReference.id, afterUpdated, path, delimiter)}
+                                              delimiter={delimiter} relativeTo={prefix} onNavigate={onNavigate}
+                                              getMore={(afterUpdatedChild, path) => refs.diff(repo.id, reference.id, compareReference.id, afterUpdatedChild, path, delimiter)}
                                     />
                                 ))}
                                 { !!nextPage &&
