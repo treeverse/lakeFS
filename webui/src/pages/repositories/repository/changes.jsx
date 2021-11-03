@@ -308,7 +308,6 @@ const ChangesContainer = () => {
                 params: {repoId: repo.id},
                 query: {
                     ref: ref.id,
-                    delimiter: (view) ? view : "",
                 }
             })}
         />
