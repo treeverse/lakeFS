@@ -924,12 +924,16 @@ func (c *Catalog) ListCommits(ctx context.Context, repository string, branch str
 }
 
 func (c *Catalog) pathInCommit(ctx context.Context, repositoryID graveler.RepositoryID, commit *graveler.CommitRecord, params LogParams) (bool, error) {
+	// this function checks whether the given commmit contains changes to a list of paths.
+	// it searches the path in the diff between the commit and it's parent, but do so only to commits
+	// that have single parent (not merge commits)
 	left := graveler.Ref(commit.Parents[0])
 	right := graveler.Ref(commit.CommitID)
 	diffIter, err := c.Store.Diff(ctx, repositoryID, left, right)
 	if err != nil {
 		return false, err
 	}
+	defer diffIter.Close()
 
 	for _, path := range params.PathList {
 		key := graveler.Key(path.Path)
