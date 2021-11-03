@@ -41,7 +41,7 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
         return (
             <Modal show={show} onHide={onCancel} size="lg">
                 <Modal.Header closeButton>
-                    <Modal.Title>Create A New Repository</Modal.Title>
+                    <ModalTitleContainer/>
                 </Modal.Header>
                 <Modal.Body>
                     <Loading/>
@@ -52,7 +52,7 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
     return (
         <Modal show={show} onHide={onCancel} size="lg">
             <Modal.Header closeButton>
-                <Modal.Title>Create A New Repository</Modal.Title>
+                <ModalTitleContainer/>
             </Modal.Header>
             <Modal.Body>
                 <RepositoryCreateForm config={response} error={showError} onSubmit={onSubmit} onCancel={onCancel}/>
@@ -203,6 +203,23 @@ const RepositoriesPage = () => {
         </Layout>
     );
 }
+
+const ModalTitleContainer = () => {
+    return (
+        <Container fluid="true" className="justify-content-start">
+            <Row>
+                <Col>
+                    <Modal.Title>Create A New Repository</Modal.Title>
+                </Col>
+            </Row>
+            <Row>
+                <Col>
+                    A repository contains all of your objects, including the revision history. <a href="https://docs.lakefs.io/quickstart/repository.html#create-the-repository" target="_blank" rel="noopener noreferrer">Learn more.</a>
+                </Col>
+            </Row>
+        </Container>
+    );
+};
 
 const RepositoriesIndex = () => {
     return (
