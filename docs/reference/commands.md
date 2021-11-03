@@ -1925,7 +1925,8 @@ Show log of commits
 #### Synopsis
 {:.no_toc}
 
-Show log of commits for a given branch
+Show log of commits for a given branch. 
+With objects or prefixes, show log of commits containing changes to at least one of the paths.
 
 ```
 lakectl log <branch uri> [flags]
@@ -1936,8 +1937,10 @@ lakectl log <branch uri> [flags]
 
 ```
       --after string         show results after this value (used for pagination)
-      --amount int           number of results to return. By default, all results are returned.
+      --amount int           number of results to return. By default, all results are returned
   -h, --help                 help for log
+      --objects strings      show results that contains changes to that list of objects. Use comma separator to pass all objects together
+      --prefixes strings     show results that contains changes to that list of prefixes. Use comma separator to pass all prefixes together
       --show-meta-range-id   also show meta range ID
 ```
 
