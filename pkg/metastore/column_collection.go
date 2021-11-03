@@ -3,7 +3,7 @@ package metastore
 import (
 	"fmt"
 
-	msErrors "github.com/treeverse/lakefs/pkg/metastore/errors"
+	mserrors "github.com/treeverse/lakefs/pkg/metastore/errors"
 )
 
 type ColumnCollection struct {
@@ -34,7 +34,7 @@ func (c *ColumnCollection) CompareWith(i int, v interface{}, j int) CompareResul
 	if otherIter, ok := v.(*ColumnCollection); ok {
 		return compareColumns(c.columns[i], otherIter.columns[j])
 	}
-	err := fmt.Errorf("%w ColumnCollection, got %T", msErrors.ErrExpectedType, v)
+	err := fmt.Errorf("%w ColumnCollection, got %T", mserrors.ErrExpectedType, v)
 	panic(err)
 }
 

@@ -87,11 +87,11 @@ var metastoreCopySchemaCmd = &cobra.Command{
 
 		logging.Default().WithFields(logging.Fields{
 			"form_client_type": fromClientType,
-			"from_DB":          fromDB,
+			"from_db":          fromDB,
 			"to_client_type":   toClientType,
 			"to_schema":        toDB,
 			"to_branch":        toBranch,
-		}).Info("Metadata copy or merge table")
+		}).Info("Metadata copy schema")
 		fmt.Printf("copy %s -> %s\n", fromDB, toDB)
 		err := metastore.CopyDB(cmd.Context(), fromClient, toClient, fromDB, toDB, toBranch, dbfsLocation)
 		if err != nil {

@@ -5,12 +5,9 @@ import (
 	"fmt"
 	"testing"
 
-	msErrors "github.com/treeverse/lakefs/pkg/metastore/errors"
-
 	"github.com/go-test/deep"
-
 	"github.com/treeverse/lakefs/pkg/metastore"
-
+	mserrors "github.com/treeverse/lakefs/pkg/metastore/errors"
 	"github.com/treeverse/lakefs/pkg/metastore/mock"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
@@ -89,7 +86,7 @@ func TestMSClient_CopySchema(t *testing.T) {
 		LocationURI:      "s3://example/path/to/schema/",
 		destBranch:       "branch1",
 		ExpectedLocation: "s3://example/branch1/path/to/schema/",
-		ExpectedError:    msErrors.ErrSchemaExists,
+		ExpectedError:    mserrors.ErrSchemaExists,
 	},
 		{
 			TestName:         "no location",
@@ -110,7 +107,7 @@ func TestMSClient_CopySchema(t *testing.T) {
 			err := metastore.CopyDB(nil, client, client, tt.SourceName, tt.DestinationName, tt.destBranch, "")
 
 			if err != tt.ExpectedError {
-				t.Fatalf("expected err:%s got:%s", tt.ExpectedError, err)
+				t.Fatalf("expected err:%s got:%v", tt.ExpectedError, err)
 			}
 			if tt.ExpectedError != nil {
 				return
@@ -120,7 +117,7 @@ func TestMSClient_CopySchema(t *testing.T) {
 				t.Fatal(err)
 			}
 			if destDB.LocationURI != tt.ExpectedLocation {
-				t.Errorf("wrong location expected %s, got %s", tt.ExpectedLocation, destDB.LocationURI)
+				t.Errorf("wrong location expected %s, got %v", tt.ExpectedLocation, destDB.LocationURI)
 			}
 		})
 	}

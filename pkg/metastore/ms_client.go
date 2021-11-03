@@ -8,7 +8,7 @@ import (
 
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/logging"
-	msErrors "github.com/treeverse/lakefs/pkg/metastore/errors"
+	mserrors "github.com/treeverse/lakefs/pkg/metastore/errors"
 )
 
 const dbfsPrefix = "dbfs:/"
@@ -48,6 +48,7 @@ func CopyOrMerge(ctx context.Context, fromClient, toClient Client, fromDB, fromT
 	}
 	return copyOrMergeWithTransformLocation(ctx, fromClient, toClient, fromDB, fromTable, toDB, toTable, serde, partition, transformLocation, fixSparkPlaceHolder)
 }
+
 func CopyDB(ctx context.Context, fromClient, toClient Client, fromDB, toDB, toBranch string, dbfsLocation string) error {
 	transformLocation := func(location string) (string, error) {
 		if location == "" {
@@ -167,7 +168,7 @@ func applyAll(ctx context.Context, fromClient Client, toClient Client, databases
 		fromDBName := database.Name
 		toDBName := toClient.NormalizeDBName(database.Name)
 		err := copyDBWithTransformLocation(ctx, fromClient, toClient, fromDBName, toDBName, transformLocation)
-		if err != nil && !errors.Is(err, msErrors.ErrSchemaExists) {
+		if err != nil && !errors.Is(err, mserrors.ErrSchemaExists) {
 			return err
 		}
 		tables, err := fromClient.GetTables(ctx, fromDBName, tableFilter)
@@ -224,7 +225,7 @@ func Merge(ctx context.Context, table *Table, partitionIter Collection, toDB, to
 	err = DiffIterable(partitionIter, toPartitionIter, func(difference catalog.DifferenceType, value interface{}, _ string) error {
 		partition, ok := value.(*Partition)
 		if !ok {
-			return fmt.Errorf("%w in diffIterable call. expected to get * Partition, but got: %T", msErrors.ErrExpectedType, value)
+			return fmt.Errorf("%w at diffIterable, got %T while expected  *Partition", mserrors.ErrExpectedType, value)
 		}
 		err = partition.Update(toDB, toTable, serde, transformLocation, isSparkSQLTable, fixSparkPlaceHolder)
 		if err != nil {

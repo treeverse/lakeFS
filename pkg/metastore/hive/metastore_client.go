@@ -9,7 +9,7 @@ import (
 
 	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/treeverse/lakefs/pkg/metastore"
-	msErrors "github.com/treeverse/lakefs/pkg/metastore/errors"
+	mserrors "github.com/treeverse/lakefs/pkg/metastore/errors"
 	"github.com/treeverse/lakefs/pkg/metastore/hive/gen-go/hive_metastore"
 )
 
@@ -204,7 +204,7 @@ func (h *MSClient) CreateDatabase(ctx context.Context, database *metastore.Datab
 	err := h.Client.CreateDatabase(ctx, hiveDatabase)
 	var ErrExists *hive_metastore.AlreadyExistsException
 	if errors.As(err, &ErrExists) {
-		return msErrors.ErrSchemaExists
+		return mserrors.ErrSchemaExists
 	}
 	return err
 }

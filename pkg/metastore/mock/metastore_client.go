@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/treeverse/lakefs/pkg/metastore"
-	msErrors "github.com/treeverse/lakefs/pkg/metastore/errors"
+	mserrors "github.com/treeverse/lakefs/pkg/metastore/errors"
 )
 
 var (
@@ -74,7 +74,6 @@ func (m *MSClient) GetPartition(_ context.Context, dbName string, tableName stri
 }
 
 func (m *MSClient) GetDatabase(_ context.Context, name string) (*metastore.Database, error) {
-	m.t.Helper()
 	db := m.Databases[name]
 	if db == nil {
 		return nil, ErrNotFound
@@ -165,7 +164,7 @@ func (m *MSClient) DropPartition(_ context.Context, dbName string, tableName str
 
 func (m *MSClient) CreateDatabase(_ context.Context, db *metastore.Database) error {
 	if _, ok := m.Databases[db.Name]; ok {
-		return msErrors.ErrSchemaExists
+		return mserrors.ErrSchemaExists
 	}
 	m.Databases[db.Name] = db
 	return nil

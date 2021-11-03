@@ -12,7 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/glue"
 	"github.com/aws/aws-sdk-go/service/glue/glueiface"
 	"github.com/treeverse/lakefs/pkg/metastore"
-	msErrors "github.com/treeverse/lakefs/pkg/metastore/errors"
+	mserrors "github.com/treeverse/lakefs/pkg/metastore/errors"
 )
 
 const MaxParts = 1000 // max possible 1000
@@ -165,7 +165,7 @@ func (g *MSClient) CreateDatabase(ctx context.Context, database *metastore.Datab
 	})
 	var ErrExists *glue.AlreadyExistsException
 	if errors.As(err, &ErrExists) {
-		return msErrors.ErrSchemaExists
+		return mserrors.ErrSchemaExists
 	}
 	return err
 }

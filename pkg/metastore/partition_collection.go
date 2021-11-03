@@ -3,7 +3,7 @@ package metastore
 import (
 	"fmt"
 
-	msErrors "github.com/treeverse/lakefs/pkg/metastore/errors"
+	mserrors "github.com/treeverse/lakefs/pkg/metastore/errors"
 )
 
 type PartitionCollection struct {
@@ -38,7 +38,7 @@ func (p *PartitionCollection) CompareWith(i int, v interface{}, j int) CompareRe
 	if otherIter, ok := v.(*PartitionCollection); ok {
 		return comparePartitions(p.partitions[i], otherIter.partitions[j])
 	}
-	err := fmt.Errorf("%w *PartitionCollection, got %T", msErrors.ErrExpectedType, v)
+	err := fmt.Errorf("%w *PartitionCollection, got %T", mserrors.ErrExpectedType, v)
 	panic(err)
 }
 
