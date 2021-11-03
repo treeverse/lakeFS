@@ -127,7 +127,6 @@ func TestS3CopyObject(t *testing.T) {
 		Creds:  creds,
 		Secure: false,
 	})
-
 	if err != nil {
 		t.Fatalf("minio.New: %s", err)
 	}
@@ -143,7 +142,7 @@ func TestS3CopyObject(t *testing.T) {
 	if err != nil {
 		t.Errorf("minio.Client.PutObject(%s): %s", o.SourcePath, err)
 	}
-	// copy object to the same repository
+	// copy object to the same repository- update metadata to refer to the source address
 	_, err = minioClient.CopyObject(ctx,
 		minio.CopyDestOptions{
 			Bucket: repo,
