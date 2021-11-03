@@ -89,14 +89,14 @@ server:
                     <Card.Body>
                         <Card.Text>
                             This process will initialize the database schema and a first admin user to access the system.<br/>
-                            Enter an admin username.
+                            <div><a href="https://docs.lakefs.io/quickstart/repository.html#create-the-first-user" target="_blank" rel="noopener noreferrer">Learn more.</a></div>
                         </Card.Text>
                         <Form onSubmit={e => {
                             onSubmit();
                             e.preventDefault();
                         }}>
                             <Form.Group controlId="user-name">
-                                <Form.Control type="text" placeholder="Username" ref={usernameRef} autoFocus/>
+                                <Form.Control type="text" placeholder="Admin Username" ref={usernameRef} autoFocus/>
                             </Form.Group>
 
                             {!!setupError && <Error error={setupError}/>}
