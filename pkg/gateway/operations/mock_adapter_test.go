@@ -61,14 +61,16 @@ func (a *mockAdapter) GetProperties(_ context.Context, _ block.ObjectPointer) (b
 func (a *mockAdapter) Remove(_ context.Context, _ block.ObjectPointer) error {
 	return errors.New("remove method not implemented in mock adapter")
 }
+
 func (a *mockAdapter) Copy(_ context.Context, _, _ block.ObjectPointer) error {
 	return errors.New("copy method not implemented in mock adapter")
 }
-func (a *mockAdapter) CreateMultiPartUpload(_ context.Context, _ block.ObjectPointer, r *http.Request, _ block.CreateMultiPartUploadOpts) (string, error) {
+
+func (a *mockAdapter) CreateMultiPartUpload(_ context.Context, _ block.ObjectPointer, r *http.Request, _ block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
 	panic("try to create multipart in mock adapter")
 }
 
-func (a *mockAdapter) UploadPart(_ context.Context, _ block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (string, error) {
+func (a *mockAdapter) UploadPart(_ context.Context, _ block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (*block.UploadPartResponse, error) {
 	panic("try to upload part in mock adapter")
 }
 
@@ -76,15 +78,15 @@ func (a *mockAdapter) AbortMultiPartUpload(_ context.Context, _ block.ObjectPoin
 	panic("try to abort multipart in mock adapter")
 }
 
-func (a *mockAdapter) CompleteMultiPartUpload(_ context.Context, _ block.ObjectPointer, uploadID string, multipartList *block.MultipartUploadCompletion) (*string, int64, error) {
+func (a *mockAdapter) CompleteMultiPartUpload(_ context.Context, _ block.ObjectPointer, uploadID string, multipartList *block.MultipartUploadCompletion) (*block.CompleteMultiPartUploadResponse, error) {
 	panic("try to complete multipart in mock adapter")
 }
 
-func (a *mockAdapter) UploadCopyPart(_ context.Context, _, _ block.ObjectPointer, _ string, _ int64) (string, error) {
+func (a *mockAdapter) UploadCopyPart(_ context.Context, _, _ block.ObjectPointer, _ string, _ int64) (*block.UploadPartResponse, error) {
 	panic("try to upload copy part in mock adapter")
 }
 
-func (a *mockAdapter) UploadCopyPartRange(_ context.Context, _, _ block.ObjectPointer, _ string, _, _, _ int64) (string, error) {
+func (a *mockAdapter) UploadCopyPartRange(_ context.Context, _, _ block.ObjectPointer, _ string, _, _, _ int64) (*block.UploadPartResponse, error) {
 	panic("try to upload copy part range in mock adapter")
 }
 
