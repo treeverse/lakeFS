@@ -119,10 +119,6 @@ func TestS3CopyObject(t *testing.T) {
 
 	creds := sigs[0].GetCredentials(accessKeyID, secretAccessKey, "")
 
-	type Object struct {
-		SourcePath, DestPath, Content string
-	}
-
 	minioClient, err := minio.New(endpoint, &minio.Options{
 		Creds:  creds,
 		Secure: false,
@@ -131,55 +127,53 @@ func TestS3CopyObject(t *testing.T) {
 		t.Fatalf("minio.New: %s", err)
 	}
 
-	o := Object{
-		Content:    testutil.RandomString(rand, randomDataContentLength),
-		SourcePath: prefix + "source-file",
-		DestPath:   prefix + "dest-file",
-	}
+	Content := testutil.RandomString(rand, randomDataContentLength)
+	SourcePath := prefix + "source-file"
+	DestPath := prefix + "dest-file"
 
 	_, err = minioClient.PutObject(
-		ctx, repo, o.SourcePath, strings.NewReader(o.Content), int64(len(o.Content)), opts)
+		ctx, repo, SourcePath, strings.NewReader(Content), int64(len(Content)), opts)
 	if err != nil {
-		t.Errorf("minio.Client.PutObject(%s): %s", o.SourcePath, err)
+		t.Errorf("minio.Client.PutObject(%s): %s", SourcePath, err)
 	}
-	// copy object to the same repository- update metadata to refer to the source address
+	// copy object to the same repository
 	_, err = minioClient.CopyObject(ctx,
 		minio.CopyDestOptions{
 			Bucket: repo,
-			Object: o.DestPath},
+			Object: DestPath},
 		minio.CopySrcOptions{
 			Bucket: repo,
-			Object: o.SourcePath})
+			Object: SourcePath})
 
 	if err != nil {
-		t.Errorf("minio.Client.CopyObjectFrom(%s)To(%s): %s", o.SourcePath, o.DestPath, err)
+		t.Errorf("minio.Client.CopyObjectFrom(%s)To(%s): %s", SourcePath, DestPath, err)
 	}
 
 	download, err := minioClient.GetObject(
-		ctx, repo, o.DestPath, minio.GetObjectOptions{})
+		ctx, repo, DestPath, minio.GetObjectOptions{})
 	if err != nil {
-		t.Errorf("minio.Client.GetObject(%s): %s", o.DestPath, err)
+		t.Errorf("minio.Client.GetObject(%s): %s", DestPath, err)
 	}
 	// compere files content
 	contents := bytes.NewBuffer(nil)
 	_, err = io.Copy(contents, download)
 	if err != nil {
-		t.Errorf("download %s: %s", o.DestPath, err)
+		t.Errorf("download %s: %s", DestPath, err)
 	}
-	if strings.Compare(contents.String(), o.Content) != 0 {
+	if strings.Compare(contents.String(), Content) != 0 {
 		t.Errorf(
-			"Downloaded bytes %v from uploaded bytes %v", contents.Bytes(), o.Content)
+			"Downloaded bytes %v from uploaded bytes %v", contents.Bytes(), Content)
 	}
 
 	resp, err := client.StatObjectWithResponse(ctx, repo, mainBranch, &api.StatObjectParams{Path: "data/source-file"})
 	if err != nil {
-		t.Errorf("client.StatObject(%s): %s", o.SourcePath, err)
+		t.Errorf("client.StatObject(%s): %s", SourcePath, err)
 	}
 	sourceObjectStats := resp.JSON200
 
 	resp, err = client.StatObjectWithResponse(ctx, repo, mainBranch, &api.StatObjectParams{Path: "data/dest-file"})
 	if err != nil {
-		t.Errorf("client.StatObject(%s): %s", o.DestPath, err)
+		t.Errorf("client.StatObject(%s): %s", DestPath, err)
 	}
 	destObjectStats := resp.JSON200
 
@@ -193,40 +187,40 @@ func TestS3CopyObject(t *testing.T) {
 	_, err = minioClient.CopyObject(ctx,
 		minio.CopyDestOptions{
 			Bucket: destRepo,
-			Object: o.DestPath},
+			Object: DestPath},
 		minio.CopySrcOptions{
 			Bucket: repo,
-			Object: o.SourcePath})
+			Object: SourcePath})
 
 	if err != nil {
-		t.Errorf("minio.Client.CopyObjectFrom(%s)To(%s): %s", o.SourcePath, o.DestPath, err)
+		t.Errorf("minio.Client.CopyObjectFrom(%s)To(%s): %s", SourcePath, DestPath, err)
 	}
 
 	download, err = minioClient.GetObject(
-		ctx, destRepo, o.DestPath, minio.GetObjectOptions{})
+		ctx, destRepo, DestPath, minio.GetObjectOptions{})
 	if err != nil {
-		t.Errorf("minio.Client.GetObject(%s): %s", o.DestPath, err)
+		t.Errorf("minio.Client.GetObject(%s): %s", DestPath, err)
 	}
 	contents = bytes.NewBuffer(nil)
 	_, err = io.Copy(contents, download)
 	if err != nil {
-		t.Errorf("download %s: %s", o.DestPath, err)
+		t.Errorf("download %s: %s", DestPath, err)
 	}
 	// compere files content
-	if strings.Compare(contents.String(), o.Content) != 0 {
+	if strings.Compare(contents.String(), Content) != 0 {
 		t.Errorf(
-			"Downloaded bytes %v from uploaded bytes %v", contents.Bytes(), o.Content)
+			"Downloaded bytes %v from uploaded bytes %v", contents.Bytes(), Content)
 	}
 
 	resp, err = client.StatObjectWithResponse(ctx, repo, mainBranch, &api.StatObjectParams{Path: "data/source-file"})
 	if err != nil {
-		t.Errorf("client.StatObject(%s): %s", o.SourcePath, err)
+		t.Errorf("client.StatObject(%s): %s", SourcePath, err)
 	}
 	sourceObjectStats = resp.JSON200
 
 	resp, err = client.StatObjectWithResponse(ctx, destRepo, mainBranch, &api.StatObjectParams{Path: "data/dest-file"})
 	if err != nil {
-		t.Errorf("client.StatObject(%s): %s", o.DestPath, err)
+		t.Errorf("client.StatObject(%s): %s", DestPath, err)
 	}
 	destObjectStats = resp.JSON200
 
