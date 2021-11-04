@@ -2046,7 +2046,7 @@ paths:
       - description: list of paths, each element is a path of a specific object
         explode: true
         in: query
-        name: object_list
+        name: objects
         required: false
         schema:
           items:
@@ -2056,7 +2056,7 @@ paths:
       - description: list of paths, each element is a path of a prefix
         explode: true
         in: query
-        name: prefix_list
+        name: prefixes
         required: false
         schema:
           items:
@@ -2088,7 +2088,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      summary: get commit log from ref
+      summary: get commit log from ref. If both objects and prefixes are empty, return
+        all commits.
       tags:
       - refs
       x-accepts: application/json

@@ -356,7 +356,7 @@ class RefsApi(object):
             ref,
             **kwargs
         ):
-            """get commit log from ref  # noqa: E501
+            """get commit log from ref. If both objects and prefixes are empty, return all commits.  # noqa: E501
 
             This method makes a synchronous HTTP request by default. To make an
             asynchronous HTTP request, please pass async_req=True
@@ -371,8 +371,8 @@ class RefsApi(object):
             Keyword Args:
                 after (str): return items after this value. [optional]
                 amount (int): how many items to return. [optional] if omitted the server will use the default value of 100
-                object_list ([str]): list of paths, each element is a path of a specific object. [optional]
-                prefix_list ([str]): list of paths, each element is a path of a prefix. [optional]
+                objects ([str]): list of paths, each element is a path of a specific object. [optional]
+                prefixes ([str]): list of paths, each element is a path of a prefix. [optional]
                 _return_http_data_only (bool): response data without head status
                     code and headers. Default is True.
                 _preload_content (bool): if False, the urllib3.HTTPResponse object
@@ -442,8 +442,8 @@ class RefsApi(object):
                     'ref',
                     'after',
                     'amount',
-                    'object_list',
-                    'prefix_list',
+                    'objects',
+                    'prefixes',
                 ],
                 'required': [
                     'repository',
@@ -476,9 +476,9 @@ class RefsApi(object):
                         (str,),
                     'amount':
                         (int,),
-                    'object_list':
+                    'objects':
                         ([str],),
-                    'prefix_list':
+                    'prefixes':
                         ([str],),
                 },
                 'attribute_map': {
@@ -486,20 +486,20 @@ class RefsApi(object):
                     'ref': 'ref',
                     'after': 'after',
                     'amount': 'amount',
-                    'object_list': 'object_list',
-                    'prefix_list': 'prefix_list',
+                    'objects': 'objects',
+                    'prefixes': 'prefixes',
                 },
                 'location_map': {
                     'repository': 'path',
                     'ref': 'path',
                     'after': 'query',
                     'amount': 'query',
-                    'object_list': 'query',
-                    'prefix_list': 'query',
+                    'objects': 'query',
+                    'prefixes': 'query',
                 },
                 'collection_format_map': {
-                    'object_list': 'multi',
-                    'prefix_list': 'multi',
+                    'objects': 'multi',
+                    'prefixes': 'multi',
                 }
             },
             headers_map={

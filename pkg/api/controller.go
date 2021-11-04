@@ -2432,7 +2432,7 @@ func (c *Controller) logCommitsHelper(w http.ResponseWriter, r *http.Request, re
 
 	// get commit log
 	commitLog, hasMore, err := c.Catalog.ListCommits(ctx, repository, ref, catalog.LogParams{
-		PathList:      resolvePathList(params.ObjectList, params.PrefixList),
+		PathList:      resolvePathList(params.Objects, params.Prefixes),
 		FromReference: paginationAfter(params.After),
 		Limit:         paginationAmount(params.Amount),
 	})

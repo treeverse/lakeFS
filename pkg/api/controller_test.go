@@ -413,7 +413,7 @@ func TestController_CommitsGetBranchCommitLogByPath(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			resp, err := clt.LogCommitsWithResponse(ctx, "repo3", "main", &api.LogCommitsParams{ObjectList: c.objectList, PrefixList: c.prefixList})
+			resp, err := clt.LogCommitsWithResponse(ctx, "repo3", "main", &api.LogCommitsParams{Objects: c.objectList, Prefixes: c.prefixList})
 			verifyResponseOK(t, resp, err)
 
 			commitsLog := resp.JSON200.Results
