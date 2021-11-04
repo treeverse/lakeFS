@@ -64,7 +64,28 @@ type WalkOpts struct {
 	Prefix           string
 }
 
-// CreateMultiPartOpts contains optional arguments for
+// CreateMultiPartUploadResponse multipart upload ID and additional headers (implementation specific) currently it targets s3
+// capabilities to enable encryption properties
+type CreateMultiPartUploadResponse struct {
+	UploadID string
+	Header   http.Header
+}
+
+// CompleteMultiPartUploadResponse complete multipart etag, content length and additional headers (implementation specific) currently it targets s3
+type CompleteMultiPartUploadResponse struct {
+	ETag          string
+	ContentLength int64
+	Header        http.Header
+}
+
+// UploadPartResponse upload part ETag and additional headers (implementation specific) currently it targets s3
+// capabilities to enable encryption properties
+type UploadPartResponse struct {
+	ETag   string
+	Header http.Header
+}
+
+// CreateMultiPartUploadOpts contains optional arguments for
 // CreateMultiPartUpload.  These should be analogous to options on
 // some underlying storage layer.  Missing arguments are mapped to the
 // default if a storage layer implements the option.
@@ -101,12 +122,12 @@ type Adapter interface {
 	GetProperties(ctx context.Context, obj ObjectPointer) (Properties, error)
 	Remove(ctx context.Context, obj ObjectPointer) error
 	Copy(ctx context.Context, sourceObj, destinationObj ObjectPointer) error
-	CreateMultiPartUpload(ctx context.Context, obj ObjectPointer, r *http.Request, opts CreateMultiPartUploadOpts) (string, error)
-	UploadPart(ctx context.Context, obj ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (string, error)
-	UploadCopyPart(ctx context.Context, sourceObj, destinationObj ObjectPointer, uploadID string, partNumber int64) (string, error)
-	UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj ObjectPointer, uploadID string, partNumber, startPosition, endPosition int64) (string, error)
+	CreateMultiPartUpload(ctx context.Context, obj ObjectPointer, r *http.Request, opts CreateMultiPartUploadOpts) (*CreateMultiPartUploadResponse, error)
+	UploadPart(ctx context.Context, obj ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (*UploadPartResponse, error)
+	UploadCopyPart(ctx context.Context, sourceObj, destinationObj ObjectPointer, uploadID string, partNumber int64) (*UploadPartResponse, error)
+	UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj ObjectPointer, uploadID string, partNumber, startPosition, endPosition int64) (*UploadPartResponse, error)
 	AbortMultiPartUpload(ctx context.Context, obj ObjectPointer, uploadID string) error
-	CompleteMultiPartUpload(ctx context.Context, obj ObjectPointer, uploadID string, multipartList *MultipartUploadCompletion) (*string, int64, error)
+	CompleteMultiPartUpload(ctx context.Context, obj ObjectPointer, uploadID string, multipartList *MultipartUploadCompletion) (*CompleteMultiPartUploadResponse, error)
 	// ValidateConfiguration validates an appropriate bucket
 	// configuration and returns a validation error or nil.
 	ValidateConfiguration(ctx context.Context, storageNamespace string) error

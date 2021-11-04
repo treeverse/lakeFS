@@ -148,7 +148,6 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 			return // operation already failed
 		}
 
-		var etag string
 		src := block.ObjectPointer{
 			StorageNamespace: o.Repository.StorageNamespace,
 			Identifier:       ent.PhysicalAddress,
@@ -159,18 +158,19 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 			Identifier:       multiPart.PhysicalAddress,
 		}
 
+		var resp *block.UploadPartResponse
 		if rang := req.Header.Get(CopySourceRangeHeader); rang != "" {
 			// if this is a copy part with a byte range:
 			parsedRange, parseErr := ghttp.ParseRange(rang, ent.Size)
 			if parseErr != nil {
 				// invalid range will silently fallback to copying the entire object. ¯\_(ツ)_/¯
-				etag, err = o.BlockStore.UploadCopyPart(req.Context(), src, dst, uploadID, partNumber)
+				resp, err = o.BlockStore.UploadCopyPart(req.Context(), src, dst, uploadID, partNumber)
 			} else {
-				etag, err = o.BlockStore.UploadCopyPartRange(req.Context(), src, dst, uploadID, partNumber, parsedRange.StartOffset, parsedRange.EndOffset)
+				resp, err = o.BlockStore.UploadCopyPartRange(req.Context(), src, dst, uploadID, partNumber, parsedRange.StartOffset, parsedRange.EndOffset)
 			}
 		} else {
 			// normal copy part that accepts another object and no byte range:
-			etag, err = o.BlockStore.UploadCopyPart(req.Context(), src, dst, uploadID, partNumber)
+			resp, err = o.BlockStore.UploadCopyPart(req.Context(), src, dst, uploadID, partNumber)
 		}
 
 		if err != nil {
@@ -181,20 +181,21 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 
 		o.EncodeResponse(w, req, &serde.CopyObjectResult{
 			LastModified: serde.Timestamp(time.Now()),
-			ETag:         fmt.Sprintf("\"%s\"", etag),
+			ETag:         fmt.Sprintf("\"%s\"", resp.ETag),
 		}, http.StatusOK)
 		return
 	}
 
 	byteSize := req.ContentLength
-	etag, err := o.BlockStore.UploadPart(req.Context(), block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: multiPart.PhysicalAddress},
+	resp, err := o.BlockStore.UploadPart(req.Context(), block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: multiPart.PhysicalAddress},
 		byteSize, req.Body, uploadID, partNumber)
 	if err != nil {
 		o.Log(req).WithError(err).Error("part " + partNumberStr + " upload failed")
 		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
-	o.SetHeader(w, "ETag", etag)
+	o.SetHeaders(w, resp.Header)
+	o.SetHeader(w, "ETag", resp.ETag)
 	w.WriteHeader(http.StatusOK)
 }
 
