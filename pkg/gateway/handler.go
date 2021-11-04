@@ -19,6 +19,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/gateway/simulator"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/stats"
 )
 
@@ -232,13 +233,13 @@ func PathOperationHandler(sc *ServerContext, handler operations.PathOperationHan
 	})
 }
 
-func authorize(w http.ResponseWriter, req *http.Request, authService simulator.GatewayAuthService, perms auth.PermissionNode) *operations.AuthorizedOperation {
+func authorize(w http.ResponseWriter, req *http.Request, authService simulator.GatewayAuthService, perms permissions.Node) *operations.AuthorizedOperation {
 	ctx := req.Context()
 	o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 	username := ctx.Value(ContextKeyUser).(*model.User).Username
 	authContext := ctx.Value(ContextKeyAuthContext).(sig.SigContext)
 
-	if perms == nil {
+	if len(perms.Nodes) == 0 && len(perms.Permission.Action) == 0 {
 		// has not provided required permissions
 		return &operations.AuthorizedOperation{
 			Operation: o,

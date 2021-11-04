@@ -15,6 +15,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/gateway/simulator"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/permissions"
 )
 
 const StorageClassHeader = "x-amz-storage-class"
@@ -207,26 +208,26 @@ func (o *PathOperation) EncodeError(w http.ResponseWriter, req *http.Request, er
 }
 
 type OperationHandler interface {
-	RequiredPermissions(req *http.Request) (auth.PermissionNode, error)
+	RequiredPermissions(req *http.Request) (permissions.Node, error)
 	Handle(w http.ResponseWriter, req *http.Request, op *Operation)
 }
 
 type AuthenticatedOperationHandler interface {
-	RequiredPermissions(req *http.Request) (auth.PermissionNode, error)
+	RequiredPermissions(req *http.Request) (permissions.Node, error)
 	Handle(w http.ResponseWriter, req *http.Request, op *AuthorizedOperation)
 }
 
 type RepoOperationHandler interface {
-	RequiredPermissions(req *http.Request, repository string) (auth.PermissionNode, error)
+	RequiredPermissions(req *http.Request, repository string) (permissions.Node, error)
 	Handle(w http.ResponseWriter, req *http.Request, op *RepoOperation)
 }
 
 type BranchOperationHandler interface {
-	RequiredPermissions(req *http.Request, repository, branch string) (auth.PermissionNode, error)
+	RequiredPermissions(req *http.Request, repository, branch string) (permissions.Node, error)
 	Handle(w http.ResponseWriter, req *http.Request, op *RefOperation)
 }
 
 type PathOperationHandler interface {
-	RequiredPermissions(req *http.Request, repository, branch, path string) (auth.PermissionNode, error)
+	RequiredPermissions(req *http.Request, repository, branch, path string) (permissions.Node, error)
 	Handle(w http.ResponseWriter, req *http.Request, op *PathOperation)
 }

@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
@@ -19,10 +18,11 @@ import (
 
 type GetObject struct{}
 
-func (controller *GetObject) RequiredPermissions(_ *http.Request, repoID, _, path string) (auth.PermissionNode, error) {
-	return &auth.OnePermission{
-		Action:   permissions.ReadObjectAction,
-		Resource: permissions.ObjectArn(repoID, path),
+func (controller *GetObject) RequiredPermissions(_ *http.Request, repoID, _, path string) (permissions.Node, error) {
+	return permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.ReadObjectAction,
+			Resource: permissions.ObjectArn(repoID, path)},
 	}, nil
 }
 
