@@ -39,12 +39,12 @@ type Statuser interface {
 }
 
 type commitEntriesParams struct {
-	repo       string
-	branch     string
-	seed       int
-	paths      []string
-	user       string
-	commitName string
+	repo         string
+	branch       string
+	filesVersion int64
+	paths        []string
+	user         string
+	commitName   string
 }
 
 func verifyResponseOK(t testing.TB, resp Statuser, err error) {
@@ -188,15 +188,14 @@ func TestController_GetRepoHandler(t *testing.T) {
 
 func testCommitEntries(t *testing.T, ctx context.Context, cat catalog.Interface, deps *dependencies, params commitEntriesParams) string {
 	t.Helper()
-	s := strconv.Itoa(params.seed)
 	for _, p := range params.paths {
 		err := cat.CreateEntry(ctx, params.repo, params.branch,
 			catalog.DBEntry{
 				Path:            p,
-				PhysicalAddress: onBlock(deps, "add"+s+"of:"+p),
+				PhysicalAddress: onBlock(deps, fmt.Sprintf("add_num_%v_of_%v", params.filesVersion, p)),
 				CreationDate:    time.Now(),
-				Size:            int64(params.seed),
-				Checksum:        "cksum" + s,
+				Size:            params.filesVersion,
+				Checksum:        fmt.Sprintf("cksum%v", params.filesVersion),
 			})
 		testutil.MustDo(t, "create entry "+p, err)
 	}
@@ -293,74 +292,74 @@ func TestController_CommitsGetBranchCommitLogByPath(t *testing.T) {
 
 	commitsMap := make(map[string]string)
 	commitsMap["commitA"] = testCommitEntries(t, ctx, deps.catalog, deps, commitEntriesParams{
-		repo:       "repo3",
-		branch:     "main",
-		seed:       1,
-		paths:      []string{"data/a/a.txt", "data/a/b.txt", "data/a/c.txt", "data/b/b.txt"},
-		user:       "user1",
-		commitName: "A",
+		repo:         "repo3",
+		branch:       "main",
+		filesVersion: 1,
+		paths:        []string{"data/a/a.txt", "data/a/b.txt", "data/a/c.txt", "data/b/b.txt"},
+		user:         "user1",
+		commitName:   "A",
 	})
 	commitsMap["commitB"] = testCommitEntries(t, ctx, deps.catalog, deps, commitEntriesParams{
-		repo:       "repo3",
-		branch:     "main",
-		seed:       1,
-		paths:      []string{"data/a/foo.txt", "data/b/bar.txt"},
-		user:       "user1",
-		commitName: "B",
+		repo:         "repo3",
+		branch:       "main",
+		filesVersion: 1,
+		paths:        []string{"data/a/foo.txt", "data/b/bar.txt"},
+		user:         "user1",
+		commitName:   "B",
 	})
 	commitsMap["commitC"] = testCommitEntries(t, ctx, deps.catalog, deps, commitEntriesParams{
-		repo:       "repo3",
-		branch:     "main",
-		seed:       2,
-		paths:      []string{"data/a/a.txt"},
-		user:       "user1",
-		commitName: "C",
+		repo:         "repo3",
+		branch:       "main",
+		filesVersion: 2,
+		paths:        []string{"data/a/a.txt"},
+		user:         "user1",
+		commitName:   "C",
 	})
 	deps.catalog.CreateBranch(ctx, "repo3", "branch-a", "main")
 	commitsMap["commitL"] = testCommitEntries(t, ctx, deps.catalog, deps, commitEntriesParams{
-		repo:       "repo3",
-		branch:     "branch-a",
-		seed:       2,
-		paths:      []string{"data/a/foo.txt", "data/b/bar.txt"},
-		user:       "user2",
-		commitName: "L",
+		repo:         "repo3",
+		branch:       "branch-a",
+		filesVersion: 2,
+		paths:        []string{"data/a/foo.txt", "data/b/bar.txt"},
+		user:         "user2",
+		commitName:   "L",
 	})
 	commitsMap["commitD"] = testCommitEntries(t, ctx, deps.catalog, deps, commitEntriesParams{
-		repo:       "repo3",
-		branch:     "main",
-		seed:       2,
-		paths:      []string{"data/b/b.txt"},
-		user:       "user1",
-		commitName: "D",
+		repo:         "repo3",
+		branch:       "main",
+		filesVersion: 2,
+		paths:        []string{"data/b/b.txt"},
+		user:         "user1",
+		commitName:   "D",
 	})
 	deps.catalog.CreateBranch(ctx, "repo3", "branch-b", "main")
 	commitsMap["commitP"] = testCommitEntries(t, ctx, deps.catalog, deps, commitEntriesParams{
-		repo:       "repo3",
-		branch:     "branch-b",
-		seed:       1,
-		paths:      []string{"data/c/banana.txt"},
-		user:       "user3",
-		commitName: "P",
+		repo:         "repo3",
+		branch:       "branch-b",
+		filesVersion: 1,
+		paths:        []string{"data/c/banana.txt"},
+		user:         "user3",
+		commitName:   "P",
 	})
 	mergeCommit, _ := deps.catalog.Merge(ctx, "repo3", "main", "branch-b", "user3", "commitR", nil)
 	commitsMap["commitR"] = mergeCommit.Reference
 	commitsMap["commitM"] = testCommitEntries(t, ctx, deps.catalog, deps, commitEntriesParams{
-		repo:       "repo3",
-		branch:     "branch-a",
-		seed:       1,
-		paths:      []string{"data/a/d.txt"},
-		user:       "user2",
-		commitName: "M",
+		repo:         "repo3",
+		branch:       "branch-a",
+		filesVersion: 1,
+		paths:        []string{"data/a/d.txt"},
+		user:         "user2",
+		commitName:   "M",
 	})
 	mergeCommit, _ = deps.catalog.Merge(ctx, "repo3", "main", "branch-a", "user2", "commitN", nil)
 	commitsMap["commitN"] = mergeCommit.Reference
 	commitsMap["commitX"] = testCommitEntries(t, ctx, deps.catalog, deps, commitEntriesParams{
-		repo:       "repo3",
-		branch:     "main",
-		seed:       3,
-		paths:      []string{"data/a/a.txt", "data/c/zebra.txt"},
-		user:       "user1",
-		commitName: "X",
+		repo:         "repo3",
+		branch:       "main",
+		filesVersion: 3,
+		paths:        []string{"data/a/a.txt", "data/c/zebra.txt"},
+		user:         "user1",
+		commitName:   "X",
 	})
 
 	cases := []struct {
