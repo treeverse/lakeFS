@@ -47,10 +47,10 @@ var logCmd = &cobra.Command{
 			Amount: api.PaginationAmountPtr(amountForPagination),
 		}
 		if len(objectsList) > 0 {
-			logCommitsParams.ObjectList = &objectsList
+			logCommitsParams.Objects = &objectsList
 		}
 		if len(prefixesList) > 0 {
-			logCommitsParams.PrefixList = &prefixesList
+			logCommitsParams.Prefixes = &prefixesList
 		}
 		for pagination.HasMore {
 			res, err := client.LogCommitsWithResponse(cmd.Context(), branchURI.Repository, branchURI.Ref, logCommitsParams)
