@@ -4,9 +4,12 @@ import (
 	"bytes"
 	"io"
 	"math/rand"
+	"net/http"
 	"strings"
 	"sync"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/treeverse/lakefs/pkg/api"
 
@@ -158,7 +161,7 @@ func TestS3CopyObject(t *testing.T) {
 	contents := bytes.NewBuffer(nil)
 	_, err = io.Copy(contents, download)
 	if err != nil {
-		t.Errorf("download %s: %s", DestPath, err)
+		t.Fatalf("download %s: %s", DestPath, err)
 	}
 	if strings.Compare(contents.String(), Content) != 0 {
 		t.Errorf(
@@ -167,15 +170,17 @@ func TestS3CopyObject(t *testing.T) {
 
 	resp, err := client.StatObjectWithResponse(ctx, repo, mainBranch, &api.StatObjectParams{Path: "data/source-file"})
 	if err != nil {
-		t.Errorf("client.StatObject(%s): %s", SourcePath, err)
+		t.Fatalf("client.StatObject(%s): %s", SourcePath, err)
 	}
 	sourceObjectStats := resp.JSON200
+	require.Equal(t, http.StatusOK, resp.StatusCode())
 
 	resp, err = client.StatObjectWithResponse(ctx, repo, mainBranch, &api.StatObjectParams{Path: "data/dest-file"})
 	if err != nil {
-		t.Errorf("client.StatObject(%s): %s", DestPath, err)
+		t.Fatalf("client.StatObject(%s): %s", DestPath, err)
 	}
 	destObjectStats := resp.JSON200
+	require.Equal(t, http.StatusOK, resp.StatusCode())
 
 	// assert that the physical addresses of the objects are the same
 	if strings.Compare(sourceObjectStats.PhysicalAddress, destObjectStats.PhysicalAddress) != 0 {
@@ -199,7 +204,7 @@ func TestS3CopyObject(t *testing.T) {
 	download, err = minioClient.GetObject(
 		ctx, destRepo, DestPath, minio.GetObjectOptions{})
 	if err != nil {
-		t.Errorf("minio.Client.GetObject(%s): %s", DestPath, err)
+		t.Fatalf("minio.Client.GetObject(%s): %s", DestPath, err)
 	}
 	contents = bytes.NewBuffer(nil)
 	_, err = io.Copy(contents, download)
@@ -214,15 +219,17 @@ func TestS3CopyObject(t *testing.T) {
 
 	resp, err = client.StatObjectWithResponse(ctx, repo, mainBranch, &api.StatObjectParams{Path: "data/source-file"})
 	if err != nil {
-		t.Errorf("client.StatObject(%s): %s", SourcePath, err)
+		t.Fatalf("client.StatObject(%s): %s", SourcePath, err)
 	}
 	sourceObjectStats = resp.JSON200
+	require.Equal(t, http.StatusOK, resp.StatusCode())
 
 	resp, err = client.StatObjectWithResponse(ctx, destRepo, mainBranch, &api.StatObjectParams{Path: "data/dest-file"})
 	if err != nil {
-		t.Errorf("client.StatObject(%s): %s", DestPath, err)
+		t.Fatalf("client.StatObject(%s): %s", DestPath, err)
 	}
 	destObjectStats = resp.JSON200
+	require.Equal(t, http.StatusOK, resp.StatusCode())
 
 	// assert that the physical addresses of the objects are not the same
 	if strings.Compare(sourceObjectStats.PhysicalAddress, destObjectStats.PhysicalAddress) == 0 {
