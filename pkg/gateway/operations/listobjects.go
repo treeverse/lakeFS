@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/gateway/path"
@@ -22,22 +21,24 @@ const (
 
 type ListObjects struct{}
 
-func (controller *ListObjects) RequiredPermissions(req *http.Request, repoID string) (auth.PermissionNode, error) {
+func (controller *ListObjects) RequiredPermissions(req *http.Request, repoID string) (permissions.Node, error) {
 	// check if we're listing files in a branch, or listing branches
 	params := req.URL.Query()
 	delimiter := params.Get("delimiter")
 	prefix := params.Get("prefix")
 	if delimiter == "/" && !strings.Contains(prefix, "/") {
-		return &auth.OnePermission{
-			Action:   permissions.ListBranchesAction,
-			Resource: permissions.RepoArn(repoID),
+		return permissions.Node{
+			Permission: permissions.Permission{
+				Action:   permissions.ListBranchesAction,
+				Resource: permissions.RepoArn(repoID)},
 		}, nil
 	}
 
 	// otherwise, we're listing objects within a branch
-	return &auth.OnePermission{
-		Action:   permissions.ListObjectsAction,
-		Resource: permissions.RepoArn(repoID),
+	return permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.ListObjectsAction,
+			Resource: permissions.RepoArn(repoID)},
 	}, nil
 }
 

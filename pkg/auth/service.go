@@ -21,7 +21,7 @@ import (
 
 type AuthorizationRequest struct {
 	Username            string
-	RequiredPermissions PermissionNode
+	RequiredPermissions permissions.Node
 }
 
 type AuthorizationResponse struct {
@@ -852,67 +852,75 @@ func interpolateUser(resource string, username string) string {
 	return strings.ReplaceAll(resource, "${user}", username)
 }
 
+// CheckResult - the final result for the authorization is accepted only if it's CheckAllow
 type CheckResult int
 
 const (
-	CheckAllow   CheckResult = iota // Permission allowed
-	CheckNeutral                    // Permission neither allowed nor denied
-	CheckDeny                       // Permission denied
+	// CheckAllow Permission allowed
+	CheckAllow CheckResult = iota
+	// CheckNeutral Permission neither allowed nor denied
+	CheckNeutral
+	// CheckDeny Permission denied
+	CheckDeny
 )
 
-type PermissionNode interface {
-	CheckPermissions(policies []*model.Policy, req *AuthorizationRequest) CheckResult
-}
-
-type OnePermission permissions.Permission
-type AndPermission []PermissionNode
-type OrPermission []PermissionNode
-
-func (p OnePermission) CheckPermissions(policies []*model.Policy, req *AuthorizationRequest) CheckResult {
+func checkPermissions(node permissions.Node, username string, policies []*model.Policy) CheckResult {
 	allowed := CheckNeutral
-	for _, policy := range policies {
-		for _, stmt := range policy.Statement {
-			resource := interpolateUser(stmt.Resource, req.Username)
-			if !ArnMatch(resource, p.Resource) {
-				continue
-			}
-			for _, action := range stmt.Action {
-				if !wildcard.Match(action, p.Action) {
-					continue // not a matching action
+	switch node.Type {
+	case permissions.NodeTypeNode:
+		// check whether the permission is allowed, denied or natural (not allowed and not denied)
+		for _, policy := range policies {
+			for _, stmt := range policy.Statement {
+				resource := interpolateUser(stmt.Resource, username)
+				if !ArnMatch(resource, node.Permission.Resource) {
+					continue
 				}
+				for _, action := range stmt.Action {
+					if !wildcard.Match(action, node.Permission.Action) {
+						continue // not a matching action
+					}
 
-				if stmt.Effect == model.StatementEffectDeny {
-					// this is a "Deny" and it takes precedence
-					return CheckDeny
+					if stmt.Effect == model.StatementEffectDeny {
+						// this is a "Deny" and it takes precedence
+						return CheckDeny
+					}
+
+					allowed = CheckAllow
 				}
-
-				allowed = CheckAllow
 			}
 		}
-	}
-	return allowed
-}
 
-func (p AndPermission) CheckPermissions(policies []*model.Policy, req *AuthorizationRequest) CheckResult {
-	for _, perm := range p {
-		result := perm.CheckPermissions(policies, req)
-		if result == CheckNeutral || result == CheckDeny {
-			return result
+	case permissions.NodeTypeOr:
+		// returns:
+		// Allowed - at least one of the permissions is allowed and no one is denied
+		// Denied - one of the permissions is Deny
+		// Natural - otherwise
+		for _, node := range node.Nodes {
+			result := checkPermissions(node, username, policies)
+			if result == CheckDeny {
+				return CheckDeny
+			}
+			if allowed != CheckAllow {
+				allowed = result
+			}
 		}
-	}
-	return CheckAllow
-}
 
-func (p OrPermission) CheckPermissions(policies []*model.Policy, req *AuthorizationRequest) CheckResult {
-	allowed := CheckNeutral
-	for _, perm := range p {
-		result := perm.CheckPermissions(policies, req)
-		if result == CheckDeny {
-			return CheckDeny
+	case permissions.NodeTypeAnd:
+		// returns:
+		// Allowed - all the permissions are allowed
+		// Denied - one of the permissions is Deny
+		// Natural - otherwise
+		for _, node := range node.Nodes {
+			result := checkPermissions(node, username, policies)
+			if result == CheckNeutral || result == CheckDeny {
+				return result
+			}
 		}
-		if allowed != CheckAllow {
-			allowed = result
-		}
+		return CheckAllow
+
+	default:
+		logging.Default().Error("unknown permission node type")
+		return CheckDeny
 	}
 	return allowed
 }
@@ -927,7 +935,7 @@ func (s *DBAuthService) Authorize(ctx context.Context, req *AuthorizationRequest
 		return nil, err
 	}
 
-	allowed := req.RequiredPermissions.CheckPermissions(policies, req)
+	allowed := checkPermissions(req.RequiredPermissions, req.Username, policies)
 
 	if allowed != CheckAllow {
 		return &AuthorizationResponse{

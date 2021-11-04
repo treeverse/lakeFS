@@ -12,6 +12,20 @@ type Permission struct {
 	Resource string
 }
 
+type NodeType int
+
+const (
+	NodeTypeNode NodeType = iota
+	NodeTypeOr
+	NodeTypeAnd
+)
+
+type Node struct {
+	Type       NodeType
+	Permission Permission
+	Nodes      []Node
+}
+
 func RepoArn(repoID string) string {
 	return fsArnPrefix + "repository/" + repoID
 }

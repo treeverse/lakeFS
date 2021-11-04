@@ -4,9 +4,14 @@ import (
 	"bytes"
 	"io"
 	"math/rand"
+	"net/http"
 	"strings"
 	"sync"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/treeverse/lakefs/pkg/api"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -102,5 +107,133 @@ func TestS3UploadAndDownload(t *testing.T) {
 			close(objects)
 			wg.Wait()
 		})
+	}
+}
+
+func TestS3CopyObject(t *testing.T) {
+	ctx, _, repo := setupTest(t)
+	destRepo := createRepositoryByName(ctx, t, "tests3copyobjectdest")
+
+	accessKeyID := viper.GetString("access_key_id")
+	secretAccessKey := viper.GetString("secret_access_key")
+	endpoint := viper.GetString("s3_endpoint")
+	opts := minio.PutObjectOptions{}
+	rand := rand.New(rand.NewSource(17))
+
+	creds := sigs[0].GetCredentials(accessKeyID, secretAccessKey, "")
+
+	minioClient, err := minio.New(endpoint, &minio.Options{
+		Creds:  creds,
+		Secure: false,
+	})
+	if err != nil {
+		t.Fatalf("minio.New: %s", err)
+	}
+
+	Content := testutil.RandomString(rand, randomDataContentLength)
+	SourcePath := prefix + "source-file"
+	DestPath := prefix + "dest-file"
+
+	_, err = minioClient.PutObject(
+		ctx, repo, SourcePath, strings.NewReader(Content), int64(len(Content)), opts)
+	if err != nil {
+		t.Errorf("minio.Client.PutObject(%s): %s", SourcePath, err)
+	}
+	// copy object to the same repository
+	_, err = minioClient.CopyObject(ctx,
+		minio.CopyDestOptions{
+			Bucket: repo,
+			Object: DestPath},
+		minio.CopySrcOptions{
+			Bucket: repo,
+			Object: SourcePath})
+
+	if err != nil {
+		t.Errorf("minio.Client.CopyObjectFrom(%s)To(%s): %s", SourcePath, DestPath, err)
+	}
+
+	download, err := minioClient.GetObject(
+		ctx, repo, DestPath, minio.GetObjectOptions{})
+	if err != nil {
+		t.Errorf("minio.Client.GetObject(%s): %s", DestPath, err)
+	}
+	// compere files content
+	contents := bytes.NewBuffer(nil)
+	_, err = io.Copy(contents, download)
+	if err != nil {
+		t.Fatalf("download %s: %s", DestPath, err)
+	}
+	if strings.Compare(contents.String(), Content) != 0 {
+		t.Errorf(
+			"Downloaded bytes %v from uploaded bytes %v", contents.Bytes(), Content)
+	}
+
+	resp, err := client.StatObjectWithResponse(ctx, repo, mainBranch, &api.StatObjectParams{Path: "data/source-file"})
+	if err != nil {
+		t.Fatalf("client.StatObject(%s): %s", SourcePath, err)
+	}
+	sourceObjectStats := resp.JSON200
+	require.Equal(t, http.StatusOK, resp.StatusCode())
+
+	resp, err = client.StatObjectWithResponse(ctx, repo, mainBranch, &api.StatObjectParams{Path: "data/dest-file"})
+	if err != nil {
+		t.Fatalf("client.StatObject(%s): %s", DestPath, err)
+	}
+	destObjectStats := resp.JSON200
+	require.Equal(t, http.StatusOK, resp.StatusCode())
+
+	// assert that the physical addresses of the objects are the same
+	if strings.Compare(sourceObjectStats.PhysicalAddress, destObjectStats.PhysicalAddress) != 0 {
+		t.Errorf(
+			"Source object address: %s Source destination address: %s", sourceObjectStats.PhysicalAddress, destObjectStats.PhysicalAddress)
+	}
+
+	// copy object to different repository- create another version of the file
+	_, err = minioClient.CopyObject(ctx,
+		minio.CopyDestOptions{
+			Bucket: destRepo,
+			Object: DestPath},
+		minio.CopySrcOptions{
+			Bucket: repo,
+			Object: SourcePath})
+
+	if err != nil {
+		t.Errorf("minio.Client.CopyObjectFrom(%s)To(%s): %s", SourcePath, DestPath, err)
+	}
+
+	download, err = minioClient.GetObject(
+		ctx, destRepo, DestPath, minio.GetObjectOptions{})
+	if err != nil {
+		t.Fatalf("minio.Client.GetObject(%s): %s", DestPath, err)
+	}
+	contents = bytes.NewBuffer(nil)
+	_, err = io.Copy(contents, download)
+	if err != nil {
+		t.Errorf("download %s: %s", DestPath, err)
+	}
+	// compere files content
+	if strings.Compare(contents.String(), Content) != 0 {
+		t.Errorf(
+			"Downloaded bytes %v from uploaded bytes %v", contents.Bytes(), Content)
+	}
+
+	resp, err = client.StatObjectWithResponse(ctx, repo, mainBranch, &api.StatObjectParams{Path: "data/source-file"})
+	if err != nil {
+		t.Fatalf("client.StatObject(%s): %s", SourcePath, err)
+	}
+	sourceObjectStats = resp.JSON200
+	require.Equal(t, http.StatusOK, resp.StatusCode())
+
+	resp, err = client.StatObjectWithResponse(ctx, destRepo, mainBranch, &api.StatObjectParams{Path: "data/dest-file"})
+	if err != nil {
+		t.Fatalf("client.StatObject(%s): %s", DestPath, err)
+	}
+	destObjectStats = resp.JSON200
+	require.Equal(t, http.StatusOK, resp.StatusCode())
+
+	// assert that the physical addresses of the objects are not the same
+	if strings.Compare(sourceObjectStats.PhysicalAddress, destObjectStats.PhysicalAddress) == 0 {
+		t.Errorf(
+			"Source object address: %s Source destination address: %s", sourceObjectStats.PhysicalAddress, destObjectStats.PhysicalAddress)
 	}
 }

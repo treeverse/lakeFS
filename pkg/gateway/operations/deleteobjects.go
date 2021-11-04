@@ -16,8 +16,8 @@ import (
 
 type DeleteObjects struct{}
 
-func (controller *DeleteObjects) RequiredPermissions(_ *http.Request, _ string) (auth.PermissionNode, error) {
-	return nil, nil
+func (controller *DeleteObjects) RequiredPermissions(_ *http.Request, _ string) (permissions.Node, error) {
+	return permissions.Node{}, nil
 }
 
 func (controller *DeleteObjects) Handle(w http.ResponseWriter, req *http.Request, o *RepoOperation) {
@@ -44,10 +44,11 @@ func (controller *DeleteObjects) Handle(w http.ResponseWriter, req *http.Request
 		// authorize this object deletion
 		authResp, err := o.Auth.Authorize(req.Context(), &auth.AuthorizationRequest{
 			Username: o.Principal,
-			RequiredPermissions: &auth.OnePermission{
-				Action:   permissions.DeleteObjectAction,
-				Resource: permissions.ObjectArn(o.Repository.Name, resolvedPath.Path),
-			},
+			RequiredPermissions: permissions.Node{
+				Permission: permissions.Permission{
+					Action:   permissions.DeleteObjectAction,
+					Resource: permissions.ObjectArn(o.Repository.Name, resolvedPath.Path),
+				}},
 		})
 		if err != nil || !authResp.Allowed {
 			errs = append(errs, serde.DeleteError{

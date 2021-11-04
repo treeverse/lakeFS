@@ -4,7 +4,6 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
@@ -15,10 +14,11 @@ import (
 
 type DeleteObject struct{}
 
-func (controller *DeleteObject) RequiredPermissions(_ *http.Request, repoID, _, path string) (auth.PermissionNode, error) {
-	return &auth.OnePermission{
-		Action:   permissions.DeleteObjectAction,
-		Resource: permissions.ObjectArn(repoID, path),
+func (controller *DeleteObject) RequiredPermissions(_ *http.Request, repoID, _, path string) (permissions.Node, error) {
+	return permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.DeleteObjectAction,
+			Resource: permissions.ObjectArn(repoID, path)},
 	}, nil
 }
 
