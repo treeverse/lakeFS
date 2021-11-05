@@ -67,22 +67,22 @@ type WalkOpts struct {
 // CreateMultiPartUploadResponse multipart upload ID and additional headers (implementation specific) currently it targets s3
 // capabilities to enable encryption properties
 type CreateMultiPartUploadResponse struct {
-	UploadID string
-	Header   http.Header
+	UploadID         string
+	ServerSideHeader http.Header
 }
 
 // CompleteMultiPartUploadResponse complete multipart etag, content length and additional headers (implementation specific) currently it targets s3
 type CompleteMultiPartUploadResponse struct {
-	ETag          string
-	ContentLength int64
-	Header        http.Header
+	ETag             string
+	ContentLength    int64
+	ServerSideHeader http.Header
 }
 
 // UploadPartResponse upload part ETag and additional headers (implementation specific) currently it targets s3
 // capabilities to enable encryption properties
 type UploadPartResponse struct {
-	ETag   string
-	Header http.Header
+	ETag             string
+	ServerSideHeader http.Header
 }
 
 // CreateMultiPartUploadOpts contains optional arguments for
@@ -149,7 +149,9 @@ type NoOpTranslator struct{}
 func (d *NoOpTranslator) SetUploadID(uploadID string) string {
 	return uploadID
 }
+
 func (d *NoOpTranslator) TranslateUploadID(uploadID string) string {
 	return uploadID
 }
+
 func (d *NoOpTranslator) RemoveUploadID(_ string) {}

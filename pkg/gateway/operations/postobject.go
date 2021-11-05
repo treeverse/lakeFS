@@ -63,7 +63,7 @@ func (controller *PostObject) HandleCreateMultipartUpload(w http.ResponseWriter,
 		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
-	o.SetHeaders(w, resp.Header)
+	o.SetHeaders(w, resp.ServerSideHeader)
 	o.EncodeResponse(w, req, &serde.InitiateMultipartUploadResult{
 		Bucket:   o.Repository.Name,
 		Key:      path.WithRef(o.Path, o.Reference),
@@ -127,7 +127,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 	} else {
 		location = fmt.Sprintf("%s://%s/%s/%s/%s", scheme, req.Host, o.Repository.Name, o.Reference, o.Path)
 	}
-	o.SetHeaders(w, resp.Header)
+	o.SetHeaders(w, resp.ServerSideHeader)
 	o.EncodeResponse(w, req, &serde.CompleteMultipartUploadResult{
 		Location: location,
 		Bucket:   o.Repository.Name,

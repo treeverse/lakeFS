@@ -168,8 +168,8 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeB
 		return nil, ErrMissingETag
 	}
 	return &block.UploadPartResponse{
-		ETag:   etag,
-		Header: extractAmzServerSideHeader(headers),
+		ETag:             etag,
+		ServerSideHeader: extractAmzServerSideHeader(headers),
 	}, nil
 }
 
@@ -460,8 +460,8 @@ func (a *Adapter) copyPart(ctx context.Context, sourceObj, destinationObj block.
 		}
 	}
 	return &block.UploadPartResponse{
-		ETag:   etag,
-		Header: headers,
+		ETag:             etag,
+		ServerSideHeader: headers,
 	}, nil
 }
 
@@ -533,8 +533,8 @@ func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPoi
 		"key":                  obj.Identifier,
 	}).Debug("created multipart upload")
 	return &block.CreateMultiPartUploadResponse{
-		UploadID: uploadID,
-		Header:   extractAmzServerSideHeader(req.HTTPResponse.Header),
+		UploadID:         uploadID,
+		ServerSideHeader: extractAmzServerSideHeader(req.HTTPResponse.Header),
 	}, err
 }
 
@@ -604,9 +604,9 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 	etag := strings.Trim(aws.StringValue(resp.ETag), `"`)
 	contentLength := aws.Int64Value(headResp.ContentLength)
 	return &block.CompleteMultiPartUploadResponse{
-		ETag:          etag,
-		ContentLength: contentLength,
-		Header:        extractAmzServerSideHeader(req.HTTPResponse.Header),
+		ETag:             etag,
+		ContentLength:    contentLength,
+		ServerSideHeader: extractAmzServerSideHeader(req.HTTPResponse.Header),
 	}, nil
 }
 

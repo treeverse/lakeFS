@@ -249,7 +249,7 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
-	o.SetHeaders(w, resp.Header)
+	o.SetHeaders(w, resp.ServerSideHeader)
 	o.SetHeader(w, "ETag", resp.ETag)
 	w.WriteHeader(http.StatusOK)
 }
