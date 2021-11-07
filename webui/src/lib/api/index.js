@@ -488,6 +488,15 @@ class Tags {
         return response.json();
     }
 
+    async delete(repoId, name) {
+        const response = await apiRequest(`/repositories/${repoId}/tags/${name}`, {
+            method: 'DELETE',
+        });
+        if (response.status !== 204) {
+            throw new Error(await extractError(response));
+        }
+    }
+
 }
 
 class Objects {

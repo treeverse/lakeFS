@@ -4,14 +4,14 @@ import {
     TagIcon,
     LinkIcon,
     PackageIcon,
-    SearchIcon
+    SearchIcon, TrashIcon
 } from "@primer/octicons-react";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import ListGroup from "react-bootstrap/ListGroup";
 
-import { tags } from "../../../lib/api";
+import {tags} from "../../../lib/api";
 
 import {
     ActionGroup,
@@ -28,9 +28,10 @@ import Form from "react-bootstrap/Form";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
 import { Link } from "../../../lib/components/nav";
 import { useRouter } from "../../../lib/hooks/router";
+import {ConfirmationButton} from "../../../lib/components/modals";
 
 
-const TagWidget = ({ repo, tag }) => {
+const TagWidget = ({ repo, tag, onDelete }) => {
 
     const buttonVariant = "outline-dark";
 
@@ -50,7 +51,20 @@ const TagWidget = ({ repo, tag }) => {
                 </div>
 
                 <div className="float-right">
-
+                    <ButtonGroup className="commit-actions">
+                        <ConfirmationButton
+                            variant="outline-danger"
+                            msg={`Are you sure you wish to delete tag ${tag.id}?`}
+                            tooltip="Delete tag"
+                            onConfirm={() => {
+                                tags.delete(repo.id, tag.id)
+                                    .catch(err => alert(err))
+                                    .then(() => onDelete(tag.id))
+                            }}
+                        >
+                            <TrashIcon/>
+                        </ConfirmationButton>
+                    </ButtonGroup>
                     <ButtonGroup className="branch-actions ml-2">
                         <LinkButton
                             href={{
@@ -77,10 +91,10 @@ const CreateTagButton = ({ repo, variant = "success", onCreate = null, children 
     const [disabled, setDisabled] = useState(false);
     const [error, setError] = useState(null);
     const textRef = useRef(null);
-    const defaultBranch = useMemo(
+    const defaultRef = useMemo(
         () => ({ id: repo.default_branch, type: "branch" }),
         [repo.default_branch]);
-    const [selectedBranch, setSelectedBranch] = useState(defaultBranch);
+    const [selectedRef, setSelectedRef] = useState(defaultRef);
 
     const hide = () => {
         if (disabled) return;
@@ -94,7 +108,7 @@ const CreateTagButton = ({ repo, variant = "success", onCreate = null, children 
     const onSubmit = () => {
         setDisabled(true);
         const tagId = textRef.current.value;
-        const sourceRef = selectedBranch.id;
+        const sourceRef = selectedRef.id;
         tags.create(repo.id, tagId, sourceRef)
             .catch(err => {
                 setError(err);
@@ -126,10 +140,11 @@ const CreateTagButton = ({ repo, variant = "success", onCreate = null, children 
                             <span className="ml-2 mr-2">@</span>
                             <RefDropdown
                                 repo={repo}
-                                emptyText={'Select Branch'}
-                                selected={selectedBranch}
+                                prefix={'From '}
+                                emptyText={'Select Source'}
+                                selected={selectedRef}
                                 selectRef={(refId) => {
-                                    setSelectedBranch(refId);
+                                    setSelectedRef(refId);
                                 }}
                                 withCommits={true}
                                 withWorkspace={false} />
@@ -167,7 +182,7 @@ const TagList = ({ repo, after, onPaginate }) => {
 
     if (loading) content = <Loading />;
     else if (!!error) content = <Error error={error} />;
-    else content = (
+    else content = ( results && !!results.length  &&
         <>
             <Card>
                 <ListGroup variant="flush">
@@ -194,6 +209,9 @@ const TagList = ({ repo, after, onPaginate }) => {
                     </ActionGroup>
                 </ActionsBar>
                 {content}
+                <div className={"mt-2"}>
+                    A tag is an immutable pointer to a single commit. <a href="https://docs.lakefs.io/reference/object-model.html#identifying-commits" target="_blank" rel="noopener noreferrer">Learn more.</a>
+                </div>
             </div>
         </>
     );
