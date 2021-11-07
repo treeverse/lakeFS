@@ -132,7 +132,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 		Location: location,
 		Bucket:   o.Repository.Name,
 		Key:      path.WithRef(o.Path, o.Reference),
-		ETag:     fmt.Sprintf("\"%s\"", resp.ETag),
+		ETag:     httputil.ETag(resp.ETag),
 	}, http.StatusOK)
 }
 

@@ -372,7 +372,7 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, _ int
 		return nil, err
 	}
 	return &block.UploadPartResponse{
-		ETag: multipartBlockWriter.etag,
+		ETag: strings.Trim(multipartBlockWriter.etag, `"`),
 	}, nil
 }
 
@@ -428,7 +428,7 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 		return nil, err
 	}
 	containerURL := a.getContainerURL(qualifiedKey.ContainerURL)
-	return CompleteMultipart(ctx, multipartList.Part, containerURL, qualifiedKey.BlobURL, a.configurations.retryReaderOptions)
+	return completeMultipart(ctx, multipartList.Part, containerURL, qualifiedKey.BlobURL, a.configurations.retryReaderOptions)
 }
 
 func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {

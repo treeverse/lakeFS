@@ -402,10 +402,7 @@ func (l *Adapter) CompleteMultiPartUpload(_ context.Context, obj block.ObjectPoi
 func computeETag(parts []*s3.CompletedPart) string {
 	var etagHex []string
 	for _, p := range parts {
-		e := *p.ETag
-		if strings.HasPrefix(e, "\"") && strings.HasSuffix(e, "\"") {
-			e = e[1 : len(e)-1]
-		}
+		e := strings.Trim(*p.ETag, `"`)
 		etagHex = append(etagHex, e)
 	}
 	s := strings.Join(etagHex, "")

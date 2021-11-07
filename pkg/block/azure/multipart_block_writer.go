@@ -60,7 +60,7 @@ func (m *MultipartBlockWriter) CommitBlockList(ctx context.Context, ids []string
 	return &azblob.BlockBlobCommitBlockListResponse{}, err
 }
 
-func CompleteMultipart(ctx context.Context, parts []*s3.CompletedPart, container azblob.ContainerURL, objName string, retryOptions azblob.RetryReaderOptions) (*block.CompleteMultiPartUploadResponse, error) {
+func completeMultipart(ctx context.Context, parts []*s3.CompletedPart, container azblob.ContainerURL, objName string, retryOptions azblob.RetryReaderOptions) (*block.CompleteMultiPartUploadResponse, error) {
 	sort.Slice(parts, func(i, j int) bool {
 		return *parts[i].PartNumber < *parts[j].PartNumber
 	})
@@ -182,7 +182,7 @@ func copyPartRange(ctx context.Context, destinationContainer azblob.ContainerURL
 	}
 
 	// stage size data
-	sizeData := strconv.Itoa(int(size)) + "\n"
+	sizeData := fmt.Sprintf("%d\n", size)
 	blobSizesURL := destinationContainer.NewBlockBlobURL(destinationObjName + sizeSuffix)
 	_, err = blobSizesURL.StageBlock(ctx, base64Etag, strings.NewReader(sizeData), azblob.LeaseAccessConditions{}, nil, azblob.ClientProvidedKeyOptions{})
 	if err != nil {
@@ -190,7 +190,7 @@ func copyPartRange(ctx context.Context, destinationContainer azblob.ContainerURL
 	}
 
 	return &block.UploadPartResponse{
-		ETag: etag,
+		ETag: strings.Trim(etag, `"`),
 	}, nil
 }
 

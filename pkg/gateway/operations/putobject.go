@@ -2,7 +2,6 @@ package operations
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -164,7 +163,7 @@ func handleCopy(w http.ResponseWriter, req *http.Request, o *PathOperation, copy
 
 	o.EncodeResponse(w, req, &serde.CopyObjectResult{
 		LastModified: serde.Timestamp(ent.CreationDate),
-		ETag:         fmt.Sprintf("\"%s\"", ent.Checksum),
+		ETag:         httputil.ETag(ent.Checksum),
 	}, http.StatusOK)
 }
 
@@ -236,7 +235,7 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 
 		o.EncodeResponse(w, req, &serde.CopyObjectResult{
 			LastModified: serde.Timestamp(time.Now()),
-			ETag:         fmt.Sprintf("\"%s\"", resp.ETag),
+			ETag:         httputil.ETag(resp.ETag),
 		}, http.StatusOK)
 		return
 	}
@@ -250,7 +249,7 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 		return
 	}
 	o.SetHeaders(w, resp.ServerSideHeader)
-	o.SetHeader(w, "ETag", resp.ETag)
+	o.SetHeader(w, "ETag", httputil.ETag(resp.ETag))
 	w.WriteHeader(http.StatusOK)
 }
 

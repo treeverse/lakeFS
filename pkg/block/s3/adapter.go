@@ -168,7 +168,7 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeB
 		return nil, ErrMissingETag
 	}
 	return &block.UploadPartResponse{
-		ETag:             etag,
+		ETag:             strings.Trim(etag, `"`),
 		ServerSideHeader: extractAmzServerSideHeader(headers),
 	}, nil
 }
@@ -451,7 +451,7 @@ func (a *Adapter) copyPart(ctx context.Context, sourceObj, destinationObj block.
 	if resp == nil || resp.CopyPartResult == nil || resp.CopyPartResult.ETag == nil {
 		return nil, ErrMissingETag
 	}
-	etag := strings.Trim(*resp.CopyPartResult.ETag, "\"")
+	etag := strings.Trim(*resp.CopyPartResult.ETag, `"`)
 	// x-amz-server-side-* headers
 	headers := make(http.Header)
 	for k, v := range req.HTTPResponse.Header {
