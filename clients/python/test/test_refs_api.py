@@ -41,7 +41,7 @@ class TestRefsApi(unittest.TestCase):
     def test_log_commits(self):
         """Test case for log_commits
 
-        get commit log from ref  # noqa: E501
+        get commit log from ref. If both objects and prefixes are empty, return all commits.  # noqa: E501
         """
         pass
 

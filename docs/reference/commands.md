@@ -1936,8 +1936,10 @@ lakectl log <branch uri> [flags]
 
 ```
       --after string         show results after this value (used for pagination)
-      --amount int           number of results to return. By default, all results are returned.
+      --amount int           number of results to return. By default, all results are returned
   -h, --help                 help for log
+      --objects strings      show results that contains changes to at least one path in that list of objects. Use comma separator to pass all objects together
+      --prefixes strings     show results that contains changes to at least one path in that list of prefixes. Use comma separator to pass all prefixes together
       --show-meta-range-id   also show meta range ID
 ```
 
@@ -1985,7 +1987,7 @@ Copy or merge table
 #### Synopsis
 {:.no_toc}
 
-copy or merge table. the destination table will point to the selected branch
+Copy or merge table. the destination table will point to the selected branch
 
 ```
 lakectl metastore copy [flags]
@@ -2039,6 +2041,36 @@ lakectl metastore copy-all [flags]
       --table-filter string       filter for tables to copy in metastore pattern (default ".*")
       --to-address string         destination metastore address
       --to-client-type string     metastore type [hive, glue]
+```
+
+
+
+### lakectl metastore copy-schema
+
+Copy schema
+
+#### Synopsis
+{:.no_toc}
+
+Copy schema (without tables). the destination schema will point to the selected branch
+
+```
+lakectl metastore copy-schema [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+      --catalog-id string         Glue catalog ID
+      --dbfs-root dbfs:/          dbfs location root will replace dbfs:/ in the location before transforming
+      --from-client-type string   metastore type [hive, glue]
+      --from-schema string        source schema name
+  -h, --help                      help for copy-schema
+      --metastore-uri string      Hive metastore URI
+      --to-branch string          lakeFS branch name
+      --to-client-type string     metastore type [hive, glue]
+      --to-schema string          destination schema name [default is from-branch]
 ```
 
 

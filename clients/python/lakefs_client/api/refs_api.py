@@ -356,7 +356,7 @@ class RefsApi(object):
             ref,
             **kwargs
         ):
-            """get commit log from ref  # noqa: E501
+            """get commit log from ref. If both objects and prefixes are empty, return all commits.  # noqa: E501
 
             This method makes a synchronous HTTP request by default. To make an
             asynchronous HTTP request, please pass async_req=True
@@ -371,6 +371,8 @@ class RefsApi(object):
             Keyword Args:
                 after (str): return items after this value. [optional]
                 amount (int): how many items to return. [optional] if omitted the server will use the default value of 100
+                objects ([str]): list of paths, each element is a path of a specific object. [optional]
+                prefixes ([str]): list of paths, each element is a path of a prefix. [optional]
                 _return_http_data_only (bool): response data without head status
                     code and headers. Default is True.
                 _preload_content (bool): if False, the urllib3.HTTPResponse object
@@ -440,6 +442,8 @@ class RefsApi(object):
                     'ref',
                     'after',
                     'amount',
+                    'objects',
+                    'prefixes',
                 ],
                 'required': [
                     'repository',
@@ -472,20 +476,30 @@ class RefsApi(object):
                         (str,),
                     'amount':
                         (int,),
+                    'objects':
+                        ([str],),
+                    'prefixes':
+                        ([str],),
                 },
                 'attribute_map': {
                     'repository': 'repository',
                     'ref': 'ref',
                     'after': 'after',
                     'amount': 'amount',
+                    'objects': 'objects',
+                    'prefixes': 'prefixes',
                 },
                 'location_map': {
                     'repository': 'path',
                     'ref': 'path',
                     'after': 'query',
                     'amount': 'query',
+                    'objects': 'query',
+                    'prefixes': 'query',
                 },
                 'collection_format_map': {
+                    'objects': 'multi',
+                    'prefixes': 'multi',
                 }
             },
             headers_map={

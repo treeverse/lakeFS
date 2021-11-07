@@ -2043,6 +2043,26 @@ paths:
           minimum: -1
           type: integer
         style: form
+      - description: list of paths, each element is a path of a specific object
+        explode: true
+        in: query
+        name: objects
+        required: false
+        schema:
+          items:
+            type: string
+          type: array
+        style: form
+      - description: list of paths, each element is a path of a prefix
+        explode: true
+        in: query
+        name: prefixes
+        required: false
+        schema:
+          items:
+            type: string
+          type: array
+        style: form
       responses:
         "200":
           content:
@@ -2068,7 +2088,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      summary: get commit log from ref
+      summary: get commit log from ref. If both objects and prefixes are empty, return
+        all commits.
       tags:
       - refs
       x-accepts: application/json

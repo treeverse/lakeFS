@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -35,6 +36,15 @@ const (
 
 type Statuser interface {
 	StatusCode() int
+}
+
+type commitEntriesParams struct {
+	repo         string
+	branch       string
+	filesVersion int64
+	paths        []string
+	user         string
+	commitName   string
 }
 
 func verifyResponseOK(t testing.TB, resp Statuser, err error) {
@@ -176,6 +186,24 @@ func TestController_GetRepoHandler(t *testing.T) {
 	})
 }
 
+func testCommitEntries(t *testing.T, ctx context.Context, cat catalog.Interface, deps *dependencies, params commitEntriesParams) string {
+	t.Helper()
+	for _, p := range params.paths {
+		err := cat.CreateEntry(ctx, params.repo, params.branch,
+			catalog.DBEntry{
+				Path:            p,
+				PhysicalAddress: onBlock(deps, fmt.Sprintf("add_num_%v_of_%v", params.filesVersion, p)),
+				CreationDate:    time.Now(),
+				Size:            params.filesVersion,
+				Checksum:        fmt.Sprintf("cksum%v", params.filesVersion),
+			})
+		testutil.MustDo(t, "create entry "+p, err)
+	}
+	commit, err := cat.Commit(ctx, params.repo, params.branch, "commit"+params.commitName, params.user, nil)
+	testutil.MustDo(t, "commit", err)
+	return commit.Reference
+}
+
 func TestController_CommitsGetBranchCommitLogHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t, "")
 	ctx := context.Background()
@@ -214,6 +242,189 @@ func TestController_CommitsGetBranchCommitLogHandler(t *testing.T) {
 			t.Fatalf("Log %d commits, expected %d", len(commitsLog), expectedCommits)
 		}
 	})
+}
+
+func TestController_CommitsGetBranchCommitLogByPath(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t, "")
+	ctx := context.Background()
+	/*
+			This is the tree we test on:
+
+		                      P              branch "branch-b"
+		                     / \
+		                   	/   \
+		 .---A---B---C-----D-----R---N---X-  branch "main"
+		              \             /
+		               \           /
+		                ---L---M---          branch "branch-a"
+
+				Commits content:
+				•	commit A
+					⁃	added data/a/a.txt
+					⁃	added data/a/b.txt
+					⁃	added data/a/c.txt
+					⁃	added data/b/b.txt
+				•	commit B
+					⁃	added data/a/foo.txt
+					⁃	added data/b/bar.txt
+				•	commit C
+					⁃	changed data/a/a.txt
+				•	commit D
+					⁃	changed data/b/b.txt
+				•	commit P
+					⁃	added data/c/banana.txt
+				•	commit R
+					⁃	merged branch-b to main
+				•	commit L
+					⁃	changed data/a/foo.txt
+					⁃	changed data/b/bar.txt
+				•	commit M
+					⁃	added data/a/d.txt
+				•	commit N
+					⁃	merged branch-a to main
+				•	commit x
+					⁃	changed data/a/a.txt
+					⁃	added data/c/zebra.txt
+	*/
+
+	_, err := deps.catalog.CreateRepository(ctx, "repo3", onBlock(deps, "ns1"), "main")
+	testutil.Must(t, err)
+
+	commitsMap := make(map[string]string)
+	commitsMap["commitA"] = testCommitEntries(t, ctx, deps.catalog, deps, commitEntriesParams{
+		repo:         "repo3",
+		branch:       "main",
+		filesVersion: 1,
+		paths:        []string{"data/a/a.txt", "data/a/b.txt", "data/a/c.txt", "data/b/b.txt"},
+		user:         "user1",
+		commitName:   "A",
+	})
+	commitsMap["commitB"] = testCommitEntries(t, ctx, deps.catalog, deps, commitEntriesParams{
+		repo:         "repo3",
+		branch:       "main",
+		filesVersion: 1,
+		paths:        []string{"data/a/foo.txt", "data/b/bar.txt"},
+		user:         "user1",
+		commitName:   "B",
+	})
+	commitsMap["commitC"] = testCommitEntries(t, ctx, deps.catalog, deps, commitEntriesParams{
+		repo:         "repo3",
+		branch:       "main",
+		filesVersion: 2,
+		paths:        []string{"data/a/a.txt"},
+		user:         "user1",
+		commitName:   "C",
+	})
+	deps.catalog.CreateBranch(ctx, "repo3", "branch-a", "main")
+	commitsMap["commitL"] = testCommitEntries(t, ctx, deps.catalog, deps, commitEntriesParams{
+		repo:         "repo3",
+		branch:       "branch-a",
+		filesVersion: 2,
+		paths:        []string{"data/a/foo.txt", "data/b/bar.txt"},
+		user:         "user2",
+		commitName:   "L",
+	})
+	commitsMap["commitD"] = testCommitEntries(t, ctx, deps.catalog, deps, commitEntriesParams{
+		repo:         "repo3",
+		branch:       "main",
+		filesVersion: 2,
+		paths:        []string{"data/b/b.txt"},
+		user:         "user1",
+		commitName:   "D",
+	})
+	deps.catalog.CreateBranch(ctx, "repo3", "branch-b", "main")
+	commitsMap["commitP"] = testCommitEntries(t, ctx, deps.catalog, deps, commitEntriesParams{
+		repo:         "repo3",
+		branch:       "branch-b",
+		filesVersion: 1,
+		paths:        []string{"data/c/banana.txt"},
+		user:         "user3",
+		commitName:   "P",
+	})
+	mergeCommit, _ := deps.catalog.Merge(ctx, "repo3", "main", "branch-b", "user3", "commitR", nil)
+	commitsMap["commitR"] = mergeCommit.Reference
+	commitsMap["commitM"] = testCommitEntries(t, ctx, deps.catalog, deps, commitEntriesParams{
+		repo:         "repo3",
+		branch:       "branch-a",
+		filesVersion: 1,
+		paths:        []string{"data/a/d.txt"},
+		user:         "user2",
+		commitName:   "M",
+	})
+	mergeCommit, _ = deps.catalog.Merge(ctx, "repo3", "main", "branch-a", "user2", "commitN", nil)
+	commitsMap["commitN"] = mergeCommit.Reference
+	commitsMap["commitX"] = testCommitEntries(t, ctx, deps.catalog, deps, commitEntriesParams{
+		repo:         "repo3",
+		branch:       "main",
+		filesVersion: 3,
+		paths:        []string{"data/a/a.txt", "data/c/zebra.txt"},
+		user:         "user1",
+		commitName:   "X",
+	})
+
+	cases := []struct {
+		name            string
+		objectList      *[]string
+		prefixList      *[]string
+		expectedCommits []string
+	}{
+		{
+			name:            "singleObjectWithOneCommit",
+			objectList:      &[]string{"data/a/d.txt"},
+			expectedCommits: []string{commitsMap["commitM"]},
+		},
+		{
+			name:            "simpleObjectWithMultipleCommits",
+			objectList:      &[]string{"data/a/a.txt"},
+			expectedCommits: []string{commitsMap["commitX"], commitsMap["commitC"], commitsMap["commitA"]},
+		},
+		{
+			name:            "simpleObjectLastFile",
+			objectList:      &[]string{"data/c/zebra.txt"},
+			expectedCommits: []string{commitsMap["commitX"]},
+		},
+		{
+			name:            "multipleObjects",
+			objectList:      &[]string{"data/a/foo.txt", "data/b/bar.txt", "data/b/b.txt", "data/c/banana.txt"},
+			expectedCommits: []string{commitsMap["commitP"], commitsMap["commitD"], commitsMap["commitL"], commitsMap["commitB"], commitsMap["commitA"]},
+		},
+		{
+			name:            "oneObjectOnePrefix",
+			objectList:      &[]string{"data/a/c.txt"},
+			prefixList:      &[]string{"data/b/"},
+			expectedCommits: []string{commitsMap["commitD"], commitsMap["commitL"], commitsMap["commitB"], commitsMap["commitA"]},
+		},
+		{
+			name:            "simplePrefix",
+			prefixList:      &[]string{"data/b/"},
+			expectedCommits: []string{commitsMap["commitD"], commitsMap["commitL"], commitsMap["commitB"], commitsMap["commitA"]},
+		},
+		{
+			name:            "twoPrefixs",
+			prefixList:      &[]string{"data/a/", "data/c/"},
+			expectedCommits: []string{commitsMap["commitX"], commitsMap["commitM"], commitsMap["commitP"], commitsMap["commitL"], commitsMap["commitC"], commitsMap["commitB"], commitsMap["commitA"]},
+		},
+		{
+			name:            "mainPrefix",
+			prefixList:      &[]string{"data/"},
+			expectedCommits: []string{commitsMap["commitX"], commitsMap["commitM"], commitsMap["commitP"], commitsMap["commitD"], commitsMap["commitL"], commitsMap["commitC"], commitsMap["commitB"], commitsMap["commitA"]},
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			resp, err := clt.LogCommitsWithResponse(ctx, "repo3", "main", &api.LogCommitsParams{Objects: c.objectList, Prefixes: c.prefixList})
+			verifyResponseOK(t, resp, err)
+
+			commitsLog := resp.JSON200.Results
+			commitsIds := make([]string, 0, len(commitsLog))
+			for _, commit := range commitsLog {
+				commitsIds = append(commitsIds, commit.Id)
+			}
+			if !reflect.DeepEqual(c.expectedCommits, commitsIds) {
+				t.Fatalf("Log commits is: %v, expected %v", commitsIds, c.expectedCommits)
+			}
+		})
+	}
 }
 
 func TestController_GetCommitHandler(t *testing.T) {
@@ -1724,6 +1935,7 @@ func TestController_CreateTag(t *testing.T) {
 		}
 	})
 }
+
 func testUniqueRepoName() string {
 	return "repo-" + nanoid.MustGenerate("abcdef1234567890", 8)
 }

@@ -1,6 +1,7 @@
 package catalog
 
 import (
+	"bytes"
 	"context"
 	"crypto"
 	_ "crypto/sha256"
@@ -35,6 +36,8 @@ import (
 // causes all old identifiers to change, so while existing installations will continue to
 // function they will be unable to re-use any existing objects.
 const hashAlg = crypto.SHA256
+
+const NumberOfParentsOfNonMergeCommit = 1
 
 type Path string
 
@@ -841,7 +844,7 @@ func (c *Catalog) GetCommit(ctx context.Context, repository string, reference st
 	return catalogCommitLog, nil
 }
 
-func (c *Catalog) ListCommits(ctx context.Context, repository string, branch string, fromReference string, limit int) ([]*CommitLog, bool, error) {
+func (c *Catalog) ListCommits(ctx context.Context, repository string, branch string, params LogParams) ([]*CommitLog, bool, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	branchRef := graveler.BranchID(branch)
 	if err := Validate([]ValidateArg{
@@ -860,8 +863,8 @@ func (c *Catalog) ListCommits(ctx context.Context, repository string, branch str
 	}
 	defer it.Close()
 	// skip until 'fromReference' if needed
-	if fromReference != "" {
-		fromCommitID, err := c.dereferenceCommitID(ctx, repositoryID, graveler.Ref(fromReference))
+	if params.FromReference != "" {
+		fromCommitID, err := c.dereferenceCommitID(ctx, repositoryID, graveler.Ref(params.FromReference))
 		if err != nil {
 			return nil, false, fmt.Errorf("from ref: %w", err)
 		}
@@ -877,6 +880,7 @@ func (c *Catalog) ListCommits(ctx context.Context, repository string, branch str
 
 	// collect commits
 	var commits []*CommitLog
+
 	for it.Next() {
 		v := it.Value()
 		commit := &CommitLog{
@@ -891,8 +895,22 @@ func (c *Catalog) ListCommits(ctx context.Context, repository string, branch str
 		for _, parent := range v.Parents {
 			commit.Parents = append(commit.Parents, parent.String())
 		}
-		commits = append(commits, commit)
-		if len(commits) >= limit+1 {
+
+		if len(params.PathList) != 0 && len(v.Parents) == NumberOfParentsOfNonMergeCommit {
+			// if path list isn't empty, and also the current commit isn't a merge commit -
+			// we check if the current commit contains changes to the paths
+			pathInCommit, err := c.pathInCommit(ctx, repositoryID, v, params)
+			if err != nil {
+				return nil, false, err
+			}
+			if pathInCommit {
+				commits = append(commits, commit)
+			}
+		} else if len(params.PathList) == 0 {
+			// if there is no specification of path - we will output all commits
+			commits = append(commits, commit)
+		}
+		if len(commits) >= params.Limit+1 {
 			break
 		}
 	}
@@ -900,11 +918,45 @@ func (c *Catalog) ListCommits(ctx context.Context, repository string, branch str
 		return nil, false, err
 	}
 	hasMore := false
-	if len(commits) > limit {
+	if len(commits) > params.Limit {
 		hasMore = true
-		commits = commits[:limit]
+		commits = commits[:params.Limit]
 	}
 	return commits, hasMore, nil
+}
+
+func (c *Catalog) pathInCommit(ctx context.Context, repositoryID graveler.RepositoryID, commit *graveler.CommitRecord, params LogParams) (bool, error) {
+	// this function checks whether the given commmit contains changes to a list of paths.
+	// it searches the path in the diff between the commit and it's parent, but do so only to commits
+	// that have single parent (not merge commits)
+	left := graveler.Ref(commit.Parents[0])
+	right := graveler.Ref(commit.CommitID)
+	diffIter, err := c.Store.Diff(ctx, repositoryID, left, right)
+	if err != nil {
+		return false, err
+	}
+	defer diffIter.Close()
+
+	for _, path := range params.PathList {
+		key := graveler.Key(path.Path)
+		diffIter.SeekGE(key)
+		if diffIter.Next() {
+			diffKey := diffIter.Value().Key
+			var result bool
+			if path.IsPrefix {
+				result = bytes.HasPrefix(diffKey, key)
+			} else {
+				result = bytes.Equal(diffKey, key)
+			}
+			if result {
+				return true, nil
+			}
+		}
+		if err := diffIter.Err(); err != nil {
+			return false, err
+		}
+	}
+	return false, nil
 }
 
 func (c *Catalog) Revert(ctx context.Context, repository string, branch string, params RevertParams) error {

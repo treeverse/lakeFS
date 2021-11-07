@@ -6,7 +6,7 @@ Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**diff_refs**](RefsApi.md#diff_refs) | **GET** /repositories/{repository}/refs/{leftRef}/diff/{rightRef} | diff references
 [**dump_refs**](RefsApi.md#dump_refs) | **PUT** /repositories/{repository}/refs/dump | Dump repository refs (tags, commits, branches) to object store
-[**log_commits**](RefsApi.md#log_commits) | **GET** /repositories/{repository}/refs/{ref}/commits | get commit log from ref
+[**log_commits**](RefsApi.md#log_commits) | **GET** /repositories/{repository}/refs/{ref}/commits | get commit log from ref. If both objects and prefixes are empty, return all commits.
 [**merge_into_branch**](RefsApi.md#merge_into_branch) | **POST** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch} | merge references
 [**restore_refs**](RefsApi.md#restore_refs) | **PUT** /repositories/{repository}/refs/restore | Restore repository refs (tags, commits, branches) from object store
 
@@ -226,7 +226,7 @@ Name | Type | Description  | Notes
 # **log_commits**
 > CommitList log_commits(repository, ref)
 
-get commit log from ref
+get commit log from ref. If both objects and prefixes are empty, return all commits.
 
 ### Example
 
@@ -277,10 +277,16 @@ with lakefs_client.ApiClient(configuration) as api_client:
     ref = "ref_example" # str | 
     after = "after_example" # str | return items after this value (optional)
     amount = 100 # int | how many items to return (optional) if omitted the server will use the default value of 100
+    objects = [
+        "objects_example",
+    ] # [str] | list of paths, each element is a path of a specific object (optional)
+    prefixes = [
+        "prefixes_example",
+    ] # [str] | list of paths, each element is a path of a prefix (optional)
 
     # example passing only required values which don't have defaults set
     try:
-        # get commit log from ref
+        # get commit log from ref. If both objects and prefixes are empty, return all commits.
         api_response = api_instance.log_commits(repository, ref)
         pprint(api_response)
     except lakefs_client.ApiException as e:
@@ -289,8 +295,8 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        # get commit log from ref
-        api_response = api_instance.log_commits(repository, ref, after=after, amount=amount)
+        # get commit log from ref. If both objects and prefixes are empty, return all commits.
+        api_response = api_instance.log_commits(repository, ref, after=after, amount=amount, objects=objects, prefixes=prefixes)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling RefsApi->log_commits: %s\n" % e)
@@ -305,6 +311,8 @@ Name | Type | Description  | Notes
  **ref** | **str**|  |
  **after** | **str**| return items after this value | [optional]
  **amount** | **int**| how many items to return | [optional] if omitted the server will use the default value of 100
+ **objects** | **[str]**| list of paths, each element is a path of a specific object | [optional]
+ **prefixes** | **[str]**| list of paths, each element is a path of a prefix | [optional]
 
 ### Return type
 
