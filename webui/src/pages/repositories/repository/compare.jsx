@@ -10,32 +10,37 @@ import {refs} from "../../../lib/api";
 import Alert from "react-bootstrap/Alert";
 import Card from "react-bootstrap/Card";
 import Table from "react-bootstrap/Table";
-import {ChangeEntryRow} from "../../../lib/components/repository/changes";
-import {Paginator} from "../../../lib/components/pagination";
+import {TreeEntryPaginator, TreeItem} from "../../../lib/components/repository/changes";
 import {ConfirmationButton} from "../../../lib/components/modals";
 import {useRouter} from "../../../lib/hooks/router";
 import {URINavigator} from "../../../lib/components/repository/tree";
-import Form from "react-bootstrap/Form";
+import {appendMoreResults} from "./changes";
 
 
-const CompareList = ({ repo, reference, compareReference, after, delimiter, prefix, onSelectRef, onSelectCompare, onPaginate }) => {
-    if (compareReference === null) compareReference = reference
+const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, onSelectCompare, onNavigate }) => {
     const [internalRefresh, setInternalRefresh] = useState(true);
     const [mergeError, setMergeError] = useState(null);
     const [merging, setMerging] = useState(false);
-    const { push } = useRouter();
+    const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
+    const [resultsState, setResultsState] = useState({prefix: prefix, results:[], pagination:{}}); // current retrieved children of the item
 
     const refresh = () => {
         setInternalRefresh(!internalRefresh)
         setMergeError(null)
     }
 
-    const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
-        if (compareReference.id !== reference.id)
-            return refs.diff(repo.id, compareReference.id, reference.id, after, prefix, delimiter);
-        return {pagination: {has_more: false}, results: []}; // nothing to compare here.
-    }, [repo.id, reference.id, compareReference.id, internalRefresh, after, prefix, delimiter]);
+    const delimiter = "/"
 
+    const { error, loading, nextPage } = useAPIWithPagination(async () => {
+        if (!repo) return
+        if (compareReference.id === reference.id)
+            return {pagination: {has_more: false}, results: []}; // nothing to compare here.
+
+        return await appendMoreResults(resultsState, prefix, afterUpdated, setAfterUpdated, setResultsState,
+            () => refs.diff(repo.id, reference.id, compareReference.id, afterUpdated, prefix, delimiter));
+    }, [repo.id, reference.id, internalRefresh, afterUpdated, delimiter, prefix])
+
+    let results = resultsState.results
     let content;
 
     const relativeTitle = (from, to) => {
@@ -87,60 +92,24 @@ const CompareList = ({ repo, reference, compareReference, after, delimiter, pref
                                 />
                             )}
                         </span>
-                            <span className="float-right">
-                            <Form>
-                                <Form.Switch
-                                    label="Directory View"
-                                    id="changes-directory-view-toggle"
-                                    defaultChecked={(delimiter !== "")}
-                                    onChange={(e) => {
-                                        const query = {
-                                            delimiter: (e.target.checked) ? "/" : ""
-                                        };
-                                        if (compareReference) query.compare = compareReference.id;
-                                        if (reference) query.ref = reference.id;
-                                        push({
-                                            pathname: '/repositories/:repoId/compare',
-                                            params: {repoId: repo.id},
-                                            query,
-                                        });
-                                    }}
-                                />
-                                </Form>
-                        </span>
                         </Card.Header>
                         <Card.Body>
                             <Table borderless size="sm">
                                 <tbody>
                                 {results.map(entry => (
-                                    <ChangeEntryRow
-                                        key={entry.path}
-                                        entry={entry}
-                                        showActions={false}
-                                        relativeTo={prefix}
-                                        onNavigate={entry => {
-                                            const query = {
-                                                prefix: entry.path,
-                                                delimiter: (delimiter) ? delimiter : "",
-
-                                            };
-                                            if (compareReference) query.compare = compareReference.id;
-                                            if (reference) query.ref = reference.id;
-                                            return {
-                                                pathname: '/repositories/:repoId/compare',
-                                                params: {repoId: repo.id},
-                                                query,
-                                            }
-                                        }}
+                                    <TreeItem key={entry.path+"-item"} entry={entry} repo={repo} reference={reference} internalReferesh={internalRefresh}
+                                              delimiter={delimiter} relativeTo={prefix} onNavigate={onNavigate}
+                                              getMore={(afterUpdatedChild, path) => refs.diff(repo.id, reference.id, compareReference.id, afterUpdatedChild, path, delimiter)}
                                     />
                                 ))}
+                                { !!nextPage &&
+                                <TreeEntryPaginator path={""} loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated}/>
+                                }
                                 </tbody>
                             </Table>
                         </Card.Body>
                     </Card>
                 )}
-
-                <Paginator onPaginate={onPaginate} nextPage={nextPage} after={after}/>
             </div>
     )
 
@@ -211,35 +180,33 @@ const CompareContainer = () => {
     const router = useRouter();
     const { loading, error, repo, reference, compare } = useRefs();
 
-    const { after, prefix, delimiter } = router.query;
+    const { prefix } = router.query;
 
     if (loading) return <Loading/>;
     if (!!error) return <Error error={error}/>;
 
     const route = query => router.push({pathname: `/repositories/:repoId/compare`, params: {repoId: repo.id}, query: {
         ...query,
-        delimiter: (delimiter) ? delimiter : "",
     }});
 
     return (
         <CompareList
             repo={repo}
-            after={(!!after) ? after : ""}
-            delimiter={(!!delimiter) ? delimiter : ""}
             prefix={(!!prefix) ? prefix : ""}
             reference={reference}
             onSelectRef={reference => route(compare ? {ref: reference.id, compare: compare.id} : {ref: reference.id})}
             compareReference={compare}
             onSelectCompare={compare => route(reference ? {ref: reference.id, compare: compare.id} : {compare: compare.id})}
-            onPaginate={after => {
-                const query = {
-                    after: (after) ? after : "",
-                    prefix: (prefix) ? prefix : "",
-                    delimiter: (delimiter) ? delimiter : ""
-                };
-                if (compare) query.compare = compare.id;
-                if (reference) query.ref = reference.id;
-                route(query);
+            onNavigate={entry => {
+                return {
+                    pathname: `/repositories/:repoId/compare`,
+                    params: {repoId: repo.id},
+                    query: {
+                        ref: reference.id,
+                        compare: compare.id,
+                        prefix: entry.path,
+                    }
+                }
             }}
         />
     );

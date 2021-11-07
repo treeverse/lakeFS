@@ -186,8 +186,11 @@ Class | Method | HTTP request | Description
 *RefsApi* | [**logCommits**](docs/RefsApi.md#logCommits) | **GET** /repositories/{repository}/refs/{ref}/commits | get commit log from ref
 *RefsApi* | [**mergeIntoBranch**](docs/RefsApi.md#mergeIntoBranch) | **POST** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch} | merge references
 *RefsApi* | [**restoreRefs**](docs/RefsApi.md#restoreRefs) | **PUT** /repositories/{repository}/refs/restore | Restore repository refs (tags, commits, branches) from object store
+*RepositoriesApi* | [**createBranchProtectionRule**](docs/RepositoriesApi.md#createBranchProtectionRule) | **POST** /repositories/{repository}/branch_protection | 
 *RepositoriesApi* | [**createRepository**](docs/RepositoriesApi.md#createRepository) | **POST** /repositories | create repository
+*RepositoriesApi* | [**deleteBranchProtectionRule**](docs/RepositoriesApi.md#deleteBranchProtectionRule) | **DELETE** /repositories/{repository}/branch_protection | 
 *RepositoriesApi* | [**deleteRepository**](docs/RepositoriesApi.md#deleteRepository) | **DELETE** /repositories/{repository} | delete repository
+*RepositoriesApi* | [**getBranchProtectionRules**](docs/RepositoriesApi.md#getBranchProtectionRules) | **GET** /repositories/{repository}/branch_protection | get branch protection rules
 *RepositoriesApi* | [**getRepository**](docs/RepositoriesApi.md#getRepository) | **GET** /repositories/{repository} | get repository
 *RepositoriesApi* | [**listRepositories**](docs/RepositoriesApi.md#listRepositories) | **GET** /repositories | list repositories
 *RetentionApi* | [**getGarbageCollectionRules**](docs/RetentionApi.md#getGarbageCollectionRules) | **GET** /repositories/{repository}/gc/rules | 
@@ -208,6 +211,7 @@ Class | Method | HTTP request | Description
  - [ActionRunList](docs/ActionRunList.md)
  - [AuthenticationToken](docs/AuthenticationToken.md)
  - [BranchCreation](docs/BranchCreation.md)
+ - [BranchProtectionRule](docs/BranchProtectionRule.md)
  - [Commit](docs/Commit.md)
  - [CommitCreation](docs/CommitCreation.md)
  - [CommitList](docs/CommitList.md)
@@ -227,6 +231,7 @@ Class | Method | HTTP request | Description
  - [GroupList](docs/GroupList.md)
  - [HookRun](docs/HookRun.md)
  - [HookRunList](docs/HookRunList.md)
+ - [InlineObject1](docs/InlineObject1.md)
  - [LoginInformation](docs/LoginInformation.md)
  - [Merge](docs/Merge.md)
  - [MergeResult](docs/MergeResult.md)

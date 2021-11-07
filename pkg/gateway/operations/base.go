@@ -5,7 +5,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/treeverse/lakefs/pkg/auth"
@@ -50,6 +49,7 @@ type Operation struct {
 	BlockStore        block.Adapter
 	Auth              simulator.GatewayAuthService
 	Incr              ActionIncr
+	MatchedHost       bool
 }
 
 func StorageClassFromHeader(header http.Header) *string {
@@ -99,7 +99,7 @@ func (o *Operation) EncodeResponse(w http.ResponseWriter, req *http.Request, ent
 
 func DecodeXMLBody(reader io.Reader, entity interface{}) error {
 	body := reader
-	content, err := ioutil.ReadAll(body)
+	content, err := io.ReadAll(body)
 	if err != nil {
 		return err
 	}
@@ -157,7 +157,8 @@ type AuthorizedOperation struct {
 
 type RepoOperation struct {
 	*AuthorizedOperation
-	Repository *catalog.Repository
+	Repository  *catalog.Repository
+	MatchedHost bool
 }
 
 func (o *RepoOperation) EncodeError(w http.ResponseWriter, req *http.Request, err errors.APIError) *http.Request {
@@ -207,25 +208,26 @@ func (o *PathOperation) EncodeError(w http.ResponseWriter, req *http.Request, er
 }
 
 type OperationHandler interface {
-	RequiredPermissions(req *http.Request) ([]permissions.Permission, error)
+	RequiredPermissions(req *http.Request) (permissions.Node, error)
 	Handle(w http.ResponseWriter, req *http.Request, op *Operation)
 }
 
 type AuthenticatedOperationHandler interface {
-	RequiredPermissions(req *http.Request) ([]permissions.Permission, error)
+	RequiredPermissions(req *http.Request) (permissions.Node, error)
 	Handle(w http.ResponseWriter, req *http.Request, op *AuthorizedOperation)
 }
 
 type RepoOperationHandler interface {
-	RequiredPermissions(req *http.Request, repository string) ([]permissions.Permission, error)
+	RequiredPermissions(req *http.Request, repository string) (permissions.Node, error)
 	Handle(w http.ResponseWriter, req *http.Request, op *RepoOperation)
 }
 
 type BranchOperationHandler interface {
-	RequiredPermissions(req *http.Request, repository, branch string) ([]permissions.Permission, error)
+	RequiredPermissions(req *http.Request, repository, branch string) (permissions.Node, error)
 	Handle(w http.ResponseWriter, req *http.Request, op *RefOperation)
 }
+
 type PathOperationHandler interface {
-	RequiredPermissions(req *http.Request, repository, branch, path string) ([]permissions.Permission, error)
+	RequiredPermissions(req *http.Request, repository, branch, path string) (permissions.Node, error)
 	Handle(w http.ResponseWriter, req *http.Request, op *PathOperation)
 }

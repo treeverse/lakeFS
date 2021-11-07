@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"os"
@@ -137,7 +136,7 @@ func logRequest(r *http.Request, uploadID []byte, nameBase string, statusCode in
 			Fatal("marshal event as json")
 	}
 	fName := filepath.Join(recordingDir, nameBase+RequestExtension)
-	err = ioutil.WriteFile(fName, jsonEvent, 0600)
+	err = os.WriteFile(fName, jsonEvent, 0600)
 	if err != nil {
 		logging.Default().
 			WithError(err).
@@ -179,7 +178,7 @@ func createConfFile(r *http.Request, authService GatewayAuthService, region stri
 			WithError(err).
 			Fatal("couldn't marshal configuration")
 	}
-	err = ioutil.WriteFile(filepath.Join(recordingDir, SimulationConfig), confByte, 0644) //nolint:gosec
+	err = os.WriteFile(filepath.Join(recordingDir, SimulationConfig), confByte, 0644) //nolint:gosec
 	if err != nil {
 		logging.Default().
 			WithError(err).
@@ -200,7 +199,7 @@ func compressRecordings(testName, recordingDir string) {
 	}()
 	// Create a new zip archive.
 	w := zip.NewWriter(zWriter)
-	dirList, err := ioutil.ReadDir(recordingDir)
+	dirList, err := os.ReadDir(recordingDir)
 	if err != nil {
 		logger.WithError(err).Error("Failed reading directory ")
 		return

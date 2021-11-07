@@ -34,6 +34,11 @@ export const SettingsLayout = ({ children, activeTab }) => {
                                         Retention
                                     </Link>
                                 </Nav>
+                                <Nav variant="pills" className="flex-column">
+                                    <Link component={Nav.Link} href={{pathname: '/repositories/:repoId/settings/branches', params: {repoId }}} active={activeTab === 'branches'}>
+                                        Branches
+                                    </Link>
+                                </Nav>
                             </Card.Body>
                         </Card>
                     </Col>

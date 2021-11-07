@@ -42,7 +42,7 @@ lakeFS enhances processing workflows at each step of the data lifecycle:
 [Learn more](./usecases/data-devenv.md){:id="user-content-learn-more-env"}
 
 ### During Deployment
-* **Version Control** - deploy data safely with CI/CD workflows borrowed from software engineering best practices. Ingest new data onto an isolated branch, perform data validations, then add to production through a merge operation.
+* **Version Control** - retain commits for a configurable duration, so readers are able to query data from the latest commit or any other point in time. Writers atomically introduce new data preventing inconsistent data views.
 * **Test** - define pre-merge and pre-commit hooks to run tests that enforce schema and validate properties of the data to catch issues before they reach production.
 
 [Learn more](./usecases/ci.md){:id="user-content-learn-more-int"}
@@ -68,6 +68,4 @@ Official Docker images are available at [https://hub.docker.com/r/treeverse/lake
 
 ## Next steps
 
-Read about the [branching model](understand/branching-model.md) of lakeFS or run it locally and see how it works for yourself!
-
-Check out the [Quick Start Guide](quickstart/index.md)
+Get started and [set up lakeFS on your preferred cloud environemnt](https://docs.lakefs.io/deploy/)

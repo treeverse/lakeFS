@@ -22,6 +22,17 @@ export const RepositoryNavTabs = ({ active }) => {
         return url;
     };
 
+    const withRefAndCompareContext = (url) => {
+        const params = new URLSearchParams();
+        if (!!reference) {
+            params.append('ref', reference.id)
+            params.append('compare', reference.id);
+        }
+        if (!!params.toString())
+            return `${url}?${params.toString()}`;
+        return url;
+    };
+
     const withBranchContext = (url) => {
         const params = new URLSearchParams();
         if (!!reference && reference.type === 'branch') params.append('ref', reference.id);
@@ -57,7 +68,7 @@ export const RepositoryNavTabs = ({ active }) => {
             <Link active={active === 'tags'} href={`/repositories/${repoId}/tags`} component={NavItem}>
                 <TagIcon/> Tags
             </Link>
-            <Link active={active === 'compare'} href={withRefContext(`/repositories/${repoId}/compare`)} component={NavItem}>
+            <Link active={active === 'compare'} href={withRefAndCompareContext(`/repositories/${repoId}/compare`)} component={NavItem}>
                 <GitCompareIcon/> Compare
             </Link>
             <Link active={active === 'actions'} href={`/repositories/${repoId}/actions`} component={NavItem}>

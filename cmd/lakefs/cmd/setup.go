@@ -20,6 +20,7 @@ var setupCmd = &cobra.Command{
 	Aliases: []string{"init"},
 	Short:   "Setup a new LakeFS instance with initial credentials",
 	Run: func(cmd *cobra.Command, args []string) {
+		cfg := loadConfig()
 		ctx := cmd.Context()
 
 		dbParams := cfg.GetDatabaseParams()
@@ -56,6 +57,16 @@ var setupCmd = &cobra.Command{
 		metadataManager := auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
 		cloudMetadataProvider := stats.BuildMetadataProvider(logging.Default(), cfg)
 		metadata := stats.NewMetadata(ctx, logging.Default(), cfg.GetBlockstoreType(), metadataManager, cloudMetadataProvider)
+
+		initialized, err := metadataManager.IsInitialized(ctx)
+		if err != nil {
+			fmt.Printf("Setup failed: %s\n", err)
+			os.Exit(1)
+		}
+		if initialized {
+			fmt.Printf("Setup is already complete.\n")
+			os.Exit(1)
+		}
 
 		credentials, err := auth.CreateInitialAdminUserWithKeys(ctx, authService, metadataManager, userName, &accessKeyID, &secretAccessKey)
 		if err != nil {

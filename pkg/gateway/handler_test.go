@@ -2,7 +2,6 @@ package gateway_test
 
 import (
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -33,7 +32,7 @@ func setupTest(t *testing.T, method, target string, body io.Reader) *http.Respon
 func TestPathWithTrailingSlash(t *testing.T) {
 	result := setupTest(t, http.MethodHead, "/example/", nil)
 	assert.Equal(t, 200, result.StatusCode)
-	bytes, err := ioutil.ReadAll(result.Body)
+	bytes, err := io.ReadAll(result.Body)
 	assert.NoError(t, err)
 	assert.Len(t, bytes, 0)
 	assert.Contains(t, result.Header, "X-Amz-Request-Id")

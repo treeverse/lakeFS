@@ -12,7 +12,7 @@ import (
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/google/uuid"
-	"github.com/jedib0t/go-pretty/text"
+	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/schollz/progressbar/v3"
 	vegeta "github.com/tsenart/vegeta/v12/lib"
 

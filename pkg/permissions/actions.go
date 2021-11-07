@@ -14,6 +14,7 @@ var (
 const (
 	ReadRepositoryAction     = "fs:ReadRepository"
 	CreateRepositoryAction   = "fs:CreateRepository"
+	AttachStorageNamespace   = "fs:AttachStorageNamespace"
 	DeleteRepositoryAction   = "fs:DeleteRepository"
 	ListRepositoriesAction   = "fs:ListRepositories"
 	ReadObjectAction         = "fs:ReadObject"
@@ -61,6 +62,9 @@ const (
 	PrepareGarbageCollectionCommitsAction = "retention:PrepareGarbageCollectionCommits"
 	GetGarbageCollectionRulesAction       = "retention:GetGarbageCollectionRules"
 	SetGarbageCollectionRulesAction       = "retention:SetGarbageCollectionRules"
+
+	GetBranchProtectionRulesAction = "branches:GetBranchProtectionRules"
+	SetBranchProtectionRulesAction = "branches:SetBranchProtectionRules"
 )
 
 var serviceSet = map[string]struct{}{
@@ -68,6 +72,7 @@ var serviceSet = map[string]struct{}{
 	"auth":      {},
 	"ci":        {},
 	"retention": {},
+	"branches":  {},
 }
 
 func IsValidAction(name string) error {

@@ -213,6 +213,20 @@ class TestAuthApi(unittest.TestCase):
         """
         pass
 
+    def test_login(self):
+        """Test case for login
+
+        perform a login  # noqa: E501
+        """
+        pass
+
+    def test_logout(self):
+        """Test case for logout
+
+        logs out a cookie-authenticated user  # noqa: E501
+        """
+        pass
+
     def test_update_policy(self):
         """Test case for update_policy
 

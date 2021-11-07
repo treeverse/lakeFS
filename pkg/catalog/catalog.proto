@@ -20,4 +20,5 @@ message Entry {
 		FULL = 2;
 	}
 	AddressType address_type = 6;
+	string content_type = 7;
 }

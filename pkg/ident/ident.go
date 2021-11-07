@@ -119,6 +119,13 @@ func (b *AddressWriter) MarshalString(v string) *AddressWriter {
 	return b
 }
 
+func (b *AddressWriter) MarshalStringOpt(v string) *AddressWriter {
+	if len(v) > 0 {
+		MarshalString(b, v)
+	}
+	return b
+}
+
 func (b *AddressWriter) MarshalInt64(v int64) *AddressWriter {
 	MarshalInt64(b, v)
 	return b

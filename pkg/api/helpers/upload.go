@@ -7,15 +7,13 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net/http"
 	"net/url"
-	"time"
 )
 
 // ClientUpload uploads contents as a file using client-side ("direct") access to underlying
 // storage.  It requires credentials both to lakeFS and to underlying storage, but
 // considerably reduces the load on the lakeFS server.
-func ClientUpload(ctx context.Context, client api.ClientWithResponsesInterface, repoID, branchID, filePath string, metadata map[string]string, contents io.ReadSeeker) (*api.ObjectStats, error) {
+func ClientUpload(ctx context.Context, client api.ClientWithResponsesInterface, repoID, branchID, filePath string, metadata map[string]string, contentType string, contents io.ReadSeeker) (*api.ObjectStats, error) {
 	resp, err := client.GetPhysicalAddressWithResponse(ctx, repoID, branchID, &api.GetPhysicalAddressParams{
 		Path: filePath,
 	})
@@ -25,7 +23,7 @@ func ClientUpload(ctx context.Context, client api.ClientWithResponsesInterface, 
 	if resp.JSONDefault != nil {
 		return nil, fmt.Errorf("%w: %s", ErrRequestFailed, resp.JSONDefault.Message)
 	}
-	if resp.StatusCode() != http.StatusOK {
+	if resp.JSON200 == nil {
 		return nil, fmt.Errorf("%w: %s (status code %d)", ErrRequestFailed, resp.Status(), resp.StatusCode())
 	}
 
@@ -56,21 +54,13 @@ func ClientUpload(ctx context.Context, client api.ClientWithResponsesInterface, 
 			UserMetadata: &api.StagingMetadata_UserMetadata{
 				AdditionalProperties: metadata,
 			},
+			ContentType: &contentType,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("link object to backing store: %w", err)
 		}
-		if resp.StatusCode() == http.StatusOK {
-			return &api.ObjectStats{
-				Checksum: stats.ETag,
-				// BUG(ariels): Unavailable on S3, remove this field entirely
-				//     OR add it to the server staging manager API.
-				Mtime:           time.Now().Unix(),
-				Path:            filePath,
-				PathType:        "object",
-				PhysicalAddress: physicalAddress,
-				SizeBytes:       &stats.Size,
-			}, nil
+		if resp.JSON200 != nil {
+			return resp.JSON200, nil
 		}
 		if resp.JSON409 == nil {
 			return nil, fmt.Errorf("link object to backing store: %w (status code %d)", ErrRequestFailed, resp.StatusCode())

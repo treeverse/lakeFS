@@ -1,7 +1,48 @@
-
 # Changelog
 
-## Unreleased - XXXX-XX-XX
+## v0.53.1 - 2021-10-21
+
+- Fix ldap auth re-open control connection after it closes, and add timeouts (#2613)
+- Better format server error messages from lakectl (#2609)
+- Fix lakectl crash while reporting some server errors (#2608)
+- Fix Improper Access Control in S3 copy-object, and API restore-refs,dump-refs, get-range, get-metarange ([GHSA-m836-gxwq-j2pm](https://github.com/treeverse/lakeFS/security/advisories/GHSA-m836-gxwq-j2pm))
+
+## v0.53.0 - 2021-10-25
+
+- Add support for LDAP authentication (#2058).
+- Support object content-type and user metadata (#2296).
+- Support multiple commits in lakectl revert (#2345).
+- `lakectl diff`: support two way diff.
+- `lakectl diff`: allow including uncommitted changes in the diff. 
+- Fix Trino AVRO format access via S3 gateway (#2429).
+- Support lakectl fs rm --recursive (#2446).
+- Fix UI list users pagination (#2581).
+- Add tree-view for uncommitted, compare and commit views (#2174)
+
+## v0.52.2 - 2021-10-10
+- Fix nil panic for missing configuration of Airflow hook (#2533)
+- Allow more characters and different length of key/secret for user authorizations (#2501)
+- Fix nil panic for missing configuration of Airflow hook (#2533)
+- Fix failed to merge branch running on Windows locally - access is denied (#2531)
+- Fix UI failed to load on Windows - invalid mime type (#2537)
+- Fix UI path reset on branch change bug in object view (#2441)
+- Fix UI changing the base-branch changes the compared-branch bug (#2440)
+
+## v0.52.0 - 2021-10-04
+
+- Protected Branches (#2181): define rules to prevent direct changes on some of your branches. 
+  Only merges are allowed into protected branches.
+  Combine these with pre-merge hooks to validate your data before it is on your production branches.
+- Fix filter dialog unsearchable bug (#2460)
+- Fix s3 multipart upload location url (#1779)
+
+## v0.51.0 - 2021-09-19
+
+- Add new "AttachStorageNamespace" IAM action.  Controls users' ability to
+  create repositories with particular storage namespaces (bucket names).
+  (#2220)
+- Fix path encoding when checking sigV2 signatures in the S3 gateway.
+- [S3 gateway] Return HTTP 409 (Conflict) when creating existing repo (#2451)
 
 ## v0.50.0 - 2021-09-05
 

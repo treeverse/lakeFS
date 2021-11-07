@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 
@@ -96,10 +96,10 @@ func TestS3StreamingReader_Read(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			r := ioutil.NopCloser(bytes.NewBuffer(cas.Input))
+			r := io.NopCloser(bytes.NewBuffer(cas.Input))
 			timeout := time.Second * 300
 			if cas.Delay {
-				r = ioutil.NopCloser(&delayReader{
+				r = io.NopCloser(&delayReader{
 					r:    bytes.NewBuffer(cas.Input),
 					wait: 2 * time.Millisecond,
 				})
@@ -115,7 +115,7 @@ func TestS3StreamingReader_Read(t *testing.T) {
 				ChunkTimeout: timeout,
 			}
 
-			out, err := ioutil.ReadAll(data)
+			out, err := io.ReadAll(data)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -128,7 +128,7 @@ func TestS3StreamingReader_Read(t *testing.T) {
 }
 
 func mustReadFile(t *testing.T, path string) []byte {
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 type Airflow struct {
@@ -42,6 +43,7 @@ func NewAirflowHook(h ActionHook, action *Action) (Hook, error) {
 			ID:         h.ID,
 			ActionName: action.Name,
 		},
+		DAGConf: map[string]interface{}{},
 	}
 	var err error
 	airflowHook.URL, err = h.Properties.getRequiredProperty(airflowURLPropertyKey)
@@ -86,6 +88,11 @@ type DagRunReq struct {
 }
 
 func (a *Airflow) Run(ctx context.Context, record graveler.HookRecord, writer *HookOutputWriter) error {
+	logging.FromContext(ctx).
+		WithField("hook_type", "airflow").
+		WithField("event_type", record.EventType).
+		Debug("hook action executing")
+
 	eventData, err := marshalEventInformation(a.ActionName, a.ID, record)
 	if err != nil {
 		return err

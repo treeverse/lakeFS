@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"sort"
 	"strings"
@@ -92,7 +91,7 @@ func getPrefix(lsOpts block.WalkOpts) string {
 func (a *Adapter) Put(_ context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) error {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
-	data, err := ioutil.ReadAll(reader)
+	data, err := io.ReadAll(reader)
 	if err != nil {
 		return err
 	}
@@ -109,7 +108,7 @@ func (a *Adapter) Get(_ context.Context, obj block.ObjectPointer, expectedSize i
 	if !ok {
 		return nil, ErrNoDataForKey
 	}
-	return ioutil.NopCloser(bytes.NewReader(data)), nil
+	return io.NopCloser(bytes.NewReader(data)), nil
 }
 
 func (a *Adapter) Exists(_ context.Context, obj block.ObjectPointer) (bool, error) {
@@ -126,7 +125,7 @@ func (a *Adapter) GetRange(_ context.Context, obj block.ObjectPointer, startPosi
 	if !ok {
 		return nil, ErrNoDataForKey
 	}
-	return ioutil.NopCloser(io.NewSectionReader(bytes.NewReader(data), startPosition, endPosition-startPosition+1)), nil
+	return io.NopCloser(io.NewSectionReader(bytes.NewReader(data), startPosition, endPosition-startPosition+1)), nil
 }
 
 func (a *Adapter) GetProperties(_ context.Context, obj block.ObjectPointer) (block.Properties, error) {
@@ -168,7 +167,7 @@ func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj 
 	if err != nil {
 		return "", err
 	}
-	data, err := ioutil.ReadAll(entry)
+	data, err := io.ReadAll(entry)
 	if err != nil {
 		return "", err
 	}
@@ -195,7 +194,7 @@ func (a *Adapter) UploadCopyPartRange(_ context.Context, sourceObj, _ block.Obje
 		return "", ErrNoDataForKey
 	}
 	reader := io.NewSectionReader(bytes.NewReader(data), startPosition, endPosition-startPosition+1)
-	data, err := ioutil.ReadAll(reader)
+	data, err := io.ReadAll(reader)
 	if err != nil {
 		return "", err
 	}
@@ -226,7 +225,7 @@ func (a *Adapter) UploadPart(_ context.Context, obj block.ObjectPointer, sizeByt
 	if !ok {
 		return "", ErrMultiPartNotFound
 	}
-	data, err := ioutil.ReadAll(reader)
+	data, err := io.ReadAll(reader)
 	if err != nil {
 		return "", err
 	}

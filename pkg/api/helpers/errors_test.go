@@ -18,33 +18,35 @@ type Body struct {
 }
 
 func TestResponseAsError(t *testing.T) {
+	expectedClean418 := fmt.Sprintf("[%s]: %s", http.StatusText(418), "request failed")
+
 	cases := []struct {
 		name     string
 		response interface{}
 		message  string // non-empty to match return error; empty to signal no error
 	}{
-		{"no HTTPResponse field", &struct{ A int }{17}, "no HTTPResponse"},
+		{"no_HTTPResponse_field", &struct{ A int }{17}, "[no HTTPResponse]: request failed"},
 		{"OK", &Response{&http.Response{StatusCode: 234}}, ""},
-		{"status code", &Response{&http.Response{StatusCode: 418}}, http.StatusText(418)},
+		{"status_code", &Response{&http.Response{StatusCode: 418}}, expectedClean418},
 		{
 			"status message",
 			&Response{&http.Response{StatusCode: 418, Status: "espresso"}},
-			"espresso",
+			"[espresso]: request failed",
 		},
 		{
 			"non-JSON body",
 			&Body{Response{&http.Response{StatusCode: 418}}, []byte("it's not JSON")},
-			http.StatusText(418),
+			expectedClean418,
 		},
 		{
 			"JSON body with no message",
 			&Body{Response{&http.Response{StatusCode: 418}}, []byte("{\"yes\": true}")},
-			http.StatusText(418),
+			expectedClean418,
 		},
 		{
 			"JSON body",
 			&Body{Response{&http.Response{StatusCode: 418}}, []byte("{\"message\": \"lemonade\"}")},
-			"[I'm a teapot] lemonade",
+			"[I'm a teapot]: lemonade request failed",
 		},
 	}
 
@@ -56,7 +58,7 @@ func TestResponseAsError(t *testing.T) {
 					t.Errorf("unexpected error %s", err)
 				}
 			} else {
-				if err == nil || err.Error() != fmt.Errorf("%w: %s", helpers.ErrRequestFailed, tt.message).Error() {
+				if err == nil || err.Error() != tt.message {
 					t.Errorf("got error \"%s\" but wanted \"%s\"", err, tt.message)
 				}
 			}

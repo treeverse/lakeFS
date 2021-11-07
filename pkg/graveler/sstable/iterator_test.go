@@ -1,7 +1,6 @@
 package sstable_test
 
 import (
-	"io/ioutil"
 	"os"
 	"sort"
 	"testing"
@@ -124,7 +123,7 @@ type fakeReader struct {
 
 // createSStableReader creates the table from keys, vals passed to it
 func createSStableReader(t *testing.T, keys []string, vals []string) fakeReader {
-	f, err := ioutil.TempFile(os.TempDir(), "test file")
+	f, err := os.CreateTemp(os.TempDir(), "test file")
 	require.NoError(t, err)
 	w := pebblesst.NewWriter(f, pebblesst.WriterOptions{
 		Compression: pebblesst.SnappyCompression,

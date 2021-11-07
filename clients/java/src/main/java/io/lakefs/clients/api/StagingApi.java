@@ -28,6 +28,7 @@ import java.io.IOException;
 
 
 import io.lakefs.clients.api.model.Error;
+import io.lakefs.clients.api.model.ObjectStats;
 import io.lakefs.clients.api.model.StagingLocation;
 import io.lakefs.clients.api.model.StagingMetadata;
 
@@ -215,7 +216,7 @@ public class StagingApi {
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> successfully linked </td><td>  -  </td></tr>
+        <tr><td> 200 </td><td> object metadata </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -295,11 +296,12 @@ public class StagingApi {
      * @param branch  (required)
      * @param path  (required)
      * @param stagingMetadata  (required)
+     * @return ObjectStats
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> successfully linked </td><td>  -  </td></tr>
+        <tr><td> 200 </td><td> object metadata </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -307,8 +309,9 @@ public class StagingApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public void linkPhysicalAddress(String repository, String branch, String path, StagingMetadata stagingMetadata) throws ApiException {
-        linkPhysicalAddressWithHttpInfo(repository, branch, path, stagingMetadata);
+    public ObjectStats linkPhysicalAddress(String repository, String branch, String path, StagingMetadata stagingMetadata) throws ApiException {
+        ApiResponse<ObjectStats> localVarResp = linkPhysicalAddressWithHttpInfo(repository, branch, path, stagingMetadata);
+        return localVarResp.getData();
     }
 
     /**
@@ -318,12 +321,12 @@ public class StagingApi {
      * @param branch  (required)
      * @param path  (required)
      * @param stagingMetadata  (required)
-     * @return ApiResponse&lt;Void&gt;
+     * @return ApiResponse&lt;ObjectStats&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> successfully linked </td><td>  -  </td></tr>
+        <tr><td> 200 </td><td> object metadata </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -331,9 +334,10 @@ public class StagingApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<Void> linkPhysicalAddressWithHttpInfo(String repository, String branch, String path, StagingMetadata stagingMetadata) throws ApiException {
+    public ApiResponse<ObjectStats> linkPhysicalAddressWithHttpInfo(String repository, String branch, String path, StagingMetadata stagingMetadata) throws ApiException {
         okhttp3.Call localVarCall = linkPhysicalAddressValidateBeforeCall(repository, branch, path, stagingMetadata, null);
-        return localVarApiClient.execute(localVarCall);
+        Type localVarReturnType = new TypeToken<ObjectStats>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
     /**
@@ -349,7 +353,7 @@ public class StagingApi {
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> successfully linked </td><td>  -  </td></tr>
+        <tr><td> 200 </td><td> object metadata </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -357,10 +361,11 @@ public class StagingApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call linkPhysicalAddressAsync(String repository, String branch, String path, StagingMetadata stagingMetadata, final ApiCallback<Void> _callback) throws ApiException {
+    public okhttp3.Call linkPhysicalAddressAsync(String repository, String branch, String path, StagingMetadata stagingMetadata, final ApiCallback<ObjectStats> _callback) throws ApiException {
 
         okhttp3.Call localVarCall = linkPhysicalAddressValidateBeforeCall(repository, branch, path, stagingMetadata, _callback);
-        localVarApiClient.executeAsync(localVarCall, _callback);
+        Type localVarReturnType = new TypeToken<ObjectStats>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
     }
 }

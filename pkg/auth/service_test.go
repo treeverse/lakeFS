@@ -10,18 +10,18 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/permissions"
+
 	sq "github.com/Masterminds/squirrel"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/go-test/deep"
 	"github.com/google/uuid"
 	"github.com/ory/dockertest/v3"
-	authparams "github.com/treeverse/lakefs/pkg/auth/params"
-
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/model"
+	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/logging"
-	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
@@ -78,7 +78,7 @@ func setupService(t testing.TB, opts ...testutil.GetDBOption) auth.Service {
 func userWithPolicies(t testing.TB, s auth.Service, policies []*model.Policy) string {
 	ctx := context.Background()
 	userName := uuid.New().String()
-	err := s.CreateUser(ctx, &model.User{
+	_, err := s.CreateUser(ctx, &model.User{
 		Username: userName,
 	})
 	if err != nil {
@@ -191,8 +191,8 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
 					Username: userName,
-					RequiredPermissions: []permissions.Permission{
-						{
+					RequiredPermissions: permissions.Node{
+						Permission: permissions.Permission{
 							Action:   "fs:WriteObject",
 							Resource: "arn:lakefs:fs:::repository/foo/object/bar",
 						},
@@ -218,8 +218,8 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
 					Username: userName,
-					RequiredPermissions: []permissions.Permission{
-						{
+					RequiredPermissions: permissions.Node{
+						Permission: permissions.Permission{
 							Action:   "fs:WriteObject",
 							Resource: "arn:lakefs:fs:::repository/foo/object/bar",
 						},
@@ -245,8 +245,8 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
 					Username: userName,
-					RequiredPermissions: []permissions.Permission{
-						{
+					RequiredPermissions: permissions.Node{
+						Permission: permissions.Permission{
 							Action:   "fs:WriteObject",
 							Resource: "arn:lakefs:fs:::repository/foo/object/bar",
 						},
@@ -272,8 +272,8 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
 					Username: userName,
-					RequiredPermissions: []permissions.Permission{
-						{
+					RequiredPermissions: permissions.Node{
+						Permission: permissions.Permission{
 							Action:   "auth:CreateUser",
 							Resource: "arn:lakefs:auth:::user/foobar",
 						},
@@ -299,8 +299,8 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
 					Username: userName,
-					RequiredPermissions: []permissions.Permission{
-						{
+					RequiredPermissions: permissions.Node{
+						Permission: permissions.Permission{
 							Action:   "auth:CreateUser",
 							Resource: fmt.Sprintf("arn:lakefs:auth:::user/%s", userName),
 						},
@@ -326,8 +326,8 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
 					Username: userName,
-					RequiredPermissions: []permissions.Permission{
-						{
+					RequiredPermissions: permissions.Node{
+						Permission: permissions.Permission{
 							Action:   "auth:CreateUser",
 							Resource: fmt.Sprintf("arn:lakefs:auth:::user/%sxxxx", userName),
 						},
@@ -353,8 +353,8 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
 					Username: userName,
-					RequiredPermissions: []permissions.Permission{
-						{
+					RequiredPermissions: permissions.Node{
+						Permission: permissions.Permission{
 							Action:   "auth:CreateUser",
 							Resource: "arn:lakefs:auth:::user/foobar",
 						},
@@ -380,8 +380,8 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
 					Username: userName,
-					RequiredPermissions: []permissions.Permission{
-						{
+					RequiredPermissions: permissions.Node{
+						Permission: permissions.Permission{
 							Action:   "auth:CreateUser",
 							Resource: "arn:lakefs:auth:::user/foobar",
 						},
@@ -407,8 +407,8 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
 					Username: userName,
-					RequiredPermissions: []permissions.Permission{
-						{
+					RequiredPermissions: permissions.Node{
+						Permission: permissions.Permission{
 							Action:   "auth:DeleteUser",
 							Resource: "arn:lakefs:auth:::user/foobar",
 						},
@@ -443,8 +443,8 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
 					Username: userName,
-					RequiredPermissions: []permissions.Permission{
-						{
+					RequiredPermissions: permissions.Node{
+						Permission: permissions.Permission{
 							Action:   "auth:DeleteUser",
 							Resource: "arn:lakefs:auth:::user/foobar",
 						},
@@ -495,7 +495,7 @@ func TestDBAuthService_ListUsers(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			s := setupService(t)
 			for _, userName := range testCase.userNames {
-				if err := s.CreateUser(ctx, &model.User{Username: userName}); err != nil {
+				if _, err := s.CreateUser(ctx, &model.User{Username: userName}); err != nil {
 					t.Fatalf("CreateUser(%s): %s", userName, err)
 				}
 			}
@@ -520,7 +520,7 @@ func TestDBAuthService_ListUserCredentials(t *testing.T) {
 	const userName = "accredited"
 	s := setupService(t)
 	ctx := context.Background()
-	if err := s.CreateUser(ctx, &model.User{Username: userName}); err != nil {
+	if _, err := s.CreateUser(ctx, &model.User{Username: userName}); err != nil {
 		t.Fatalf("CreateUser(%s): %s", userName, err)
 	}
 	credential, err := s.CreateCredentials(ctx, userName)
@@ -598,7 +598,7 @@ func TestDbAuthService_GetUser(t *testing.T) {
 	// Time should *not* have nanoseconds - otherwise we are comparing accuracy of golang
 	// and Postgres time storage.
 	ts := time.Date(2222, 2, 22, 22, 22, 22, 0, time.UTC)
-	if err := s.CreateUser(ctx, &model.User{Username: userName, ID: -22, CreatedAt: ts}); err != nil {
+	if _, err := s.CreateUser(ctx, &model.User{Username: userName, ID: -22, CreatedAt: ts}); err != nil {
 		t.Fatalf("CreateUser(%s): %s", userName, err)
 	}
 	user, err := s.GetUser(ctx, userName)
@@ -616,6 +616,60 @@ func TestDbAuthService_GetUser(t *testing.T) {
 	}
 }
 
+func TestDbAuthService_AddCredentials(t *testing.T) {
+	s := setupService(t)
+	ctx := context.Background()
+	const userName = "foo"
+	// Time should *not* have nanoseconds - otherwise we are comparing accuracy of golang
+	// and Postgres time storage.
+	ts := time.Date(2222, 2, 22, 22, 22, 22, 0, time.UTC)
+	if _, err := s.CreateUser(ctx, &model.User{Username: userName, ID: -22, CreatedAt: ts}); err != nil {
+		t.Fatalf("CreateUser(%s): %s", userName, err)
+	}
+
+	const validKeyID = "AKIAIOSFODNN7EXAMPLE"
+	tests := []struct {
+		Name      string
+		Key       string
+		Secret    string
+		ExpectErr bool
+	}{
+		{
+			Name:      "empty",
+			Key:       "",
+			Secret:    "",
+			ExpectErr: true,
+		},
+		{
+			Name:      "invalid key",
+			Key:       "i",
+			Secret:    "secret",
+			ExpectErr: true,
+		},
+		{
+			Name:      "invalid secret",
+			Key:       validKeyID,
+			Secret:    "",
+			ExpectErr: true,
+		},
+		{
+			Name:      "valid",
+			Key:       validKeyID,
+			Secret:    "secret",
+			ExpectErr: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			_, err := s.AddCredentials(ctx, userName, test.Key, test.Secret)
+			if test.ExpectErr != (err != nil) {
+				t.Errorf("AddCredentials with key (%s) expect err=%t, got=%v", test.Key, test.ExpectErr, err)
+			}
+		})
+	}
+}
+
 func TestDbAuthService_GetUserById(t *testing.T) {
 	s := setupService(t)
 	ctx := context.Background()
@@ -623,7 +677,7 @@ func TestDbAuthService_GetUserById(t *testing.T) {
 	// Time should *not* have nanoseconds - otherwise we are comparing accuracy of golang
 	// and Postgres time storage.
 	ts := time.Date(2222, 2, 22, 22, 22, 22, 0, time.UTC)
-	if err := s.CreateUser(ctx, &model.User{Username: userName, ID: -22, CreatedAt: ts}); err != nil {
+	if _, err := s.CreateUser(ctx, &model.User{Username: userName, ID: -22, CreatedAt: ts}); err != nil {
 		t.Fatalf("CreateUser(%s): %s", userName, err)
 	}
 	user, err := s.GetUser(ctx, userName)
@@ -643,7 +697,7 @@ func TestDBAuthService_DeleteUser(t *testing.T) {
 	s := setupService(t)
 	const userName = "foo"
 	ctx := context.Background()
-	if err := s.CreateUser(ctx, &model.User{Username: userName}); err != nil {
+	if _, err := s.CreateUser(ctx, &model.User{Username: userName}); err != nil {
 		t.Fatalf("CreateUser(%s): %s", userName, err)
 	}
 	_, err := s.GetUser(ctx, userName)

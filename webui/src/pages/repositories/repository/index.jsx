@@ -10,6 +10,7 @@ import RepositoryCommitsIndexPage from "./commits";
 import RepositoryActionsIndexPage from "./actions";
 import RepositoryGeneralSettingsPage from "./settings/general";
 import RepositoryRetentionPage from "./settings/retention";
+import RepositorySettingsBranchesPage from "./settings/branches";
 
 
 const RepositoryPage = () => {
@@ -47,6 +48,9 @@ const RepositoryPage = () => {
             </Route>
             <Route path="/repositories/:repoId/settings/retention">
                 <RepositoryRetentionPage/>
+            </Route>
+            <Route path="/repositories/:repoId/settings/branches">
+                <RepositorySettingsBranchesPage/>
             </Route>
         </Switch>
     )

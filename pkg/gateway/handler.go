@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"errors"
 	"net/http"
 	gohttputil "net/http/httputil"
 	"net/url"
@@ -32,6 +33,7 @@ const (
 	ContextKeyOperation    contextKey = "operation"
 	ContextKeyRef          contextKey = "ref"
 	ContextKeyPath         contextKey = "path"
+	ContextKeyMatchedHost  contextKey = "matched_host"
 )
 
 var commaSeparator = regexp.MustCompile(`,\s*`)
@@ -57,16 +59,7 @@ type ServerContext struct {
 	stats             stats.Collector
 }
 
-func NewHandler(
-	region string,
-	catalog catalog.Interface,
-	multipartsTracker multiparts.Tracker,
-	blockStore block.Adapter,
-	authService simulator.GatewayAuthService,
-	bareDomains []string,
-	stats stats.Collector,
-	fallbackURL *url.URL,
-) http.Handler {
+func NewHandler(region string, catalog catalog.Interface, multipartsTracker multiparts.Tracker, blockStore block.Adapter, authService simulator.GatewayAuthService, bareDomains []string, stats stats.Collector, fallbackURL *url.URL, traceRequestHeaders bool) http.Handler {
 	var fallbackHandler http.Handler
 	if fallbackURL != nil {
 		fallbackProxy := gohttputil.NewSingleHostReverseProxy(fallbackURL)
@@ -110,15 +103,17 @@ func NewHandler(
 			operations.OperationIDUnsupportedOperation: unsupportedOperationHandler(),
 		},
 	}
-	loggingMiddleware := httputil.LoggingMiddleware("X-Amz-Request-Id", logging.Fields{"service_name": "s3_gateway"})
+	loggingMiddleware := httputil.LoggingMiddleware(
+		"X-Amz-Request-Id",
+		logging.Fields{"service_name": "s3_gateway"},
+		traceRequestHeaders)
 	h = simulator.RegisterRecorder(loggingMiddleware(h), authService, region, bareDomains)
 	h = EnrichWithOperation(sc,
 		DurationHandler(
-			AuthenticationHandler(authService, bareDomains,
-				EnrichWithParts(bareDomains,
-					EnrichWithRepositoryOrFallback(catalog, authService, fallbackHandler,
-						OperationLookupHandler(
-							h))))))
+			AuthenticationHandler(authService, EnrichWithParts(bareDomains,
+				EnrichWithRepositoryOrFallback(catalog, authService, fallbackHandler,
+					OperationLookupHandler(
+						h))))))
 	logging.Default().WithFields(logging.Fields{
 		"s3_bare_domain": bareDomains,
 		"s3_region":      region,
@@ -168,6 +163,7 @@ func RepoOperationHandler(sc *ServerContext, handler operations.RepoOperationHan
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		repo := ctx.Value(ContextKeyRepository).(*catalog.Repository)
+		matchedHost := ctx.Value(ContextKeyMatchedHost).(bool)
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		perms, err := handler.RequiredPermissions(req, repo.Name)
 		if err != nil {
@@ -181,9 +177,11 @@ func RepoOperationHandler(sc *ServerContext, handler operations.RepoOperationHan
 		repoOperation := &operations.RepoOperation{
 			AuthorizedOperation: authOp,
 			Repository:          repo,
+			MatchedHost:         matchedHost,
 		}
 		req = req.WithContext(logging.AddFields(ctx, logging.Fields{
-			"repository": repo.Name,
+			logging.RepositoryFieldKey:  repo.Name,
+			logging.MatchedHostFieldKey: matchedHost,
 		}))
 		handler.Handle(w, req, repoOperation)
 	})
@@ -195,44 +193,54 @@ func PathOperationHandler(sc *ServerContext, handler operations.PathOperationHan
 		repo := ctx.Value(ContextKeyRepository).(*catalog.Repository)
 		refID := ctx.Value(ContextKeyRef).(string)
 		path := ctx.Value(ContextKeyPath).(string)
+		matchedHost := ctx.Value(ContextKeyMatchedHost).(bool)
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		perms, err := handler.RequiredPermissions(req, repo.Name, refID, path)
+
 		if err != nil {
-			_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
+			if errors.Is(err, gatewayerrors.ErrInvalidCopySource) {
+				_ = o.EncodeError(w, req, gatewayerrors.ErrInvalidCopySource.ToAPIErr())
+			} else {
+				_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
+			}
 			return
 		}
+
 		authOp := authorize(w, req, sc.authService, perms)
 		if authOp == nil {
 			return
 		}
+
 		// run callback
 		operation := &operations.PathOperation{
 			RefOperation: &operations.RefOperation{
 				RepoOperation: &operations.RepoOperation{
 					AuthorizedOperation: authOp,
 					Repository:          repo,
+					MatchedHost:         matchedHost,
 				},
 				Reference: refID,
 			},
 			Path: path,
 		}
 		req = req.WithContext(logging.AddFields(ctx, logging.Fields{
-			"repository": repo.Name,
-			"ref":        refID,
-			"path":       path,
+			logging.RepositoryFieldKey:  repo.Name,
+			logging.RefHostFieldKey:     refID,
+			logging.PathFieldKey:        path,
+			logging.MatchedHostFieldKey: matchedHost,
 		}))
 		handler.Handle(w, req, operation)
 	})
 }
 
-func authorize(w http.ResponseWriter, req *http.Request, authService simulator.GatewayAuthService, perms []permissions.Permission) *operations.AuthorizedOperation {
+func authorize(w http.ResponseWriter, req *http.Request, authService simulator.GatewayAuthService, perms permissions.Node) *operations.AuthorizedOperation {
 	ctx := req.Context()
 	o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 	username := ctx.Value(ContextKeyUser).(*model.User).Username
 	authContext := ctx.Value(ContextKeyAuthContext).(sig.SigContext)
 
-	if len(perms) == 0 {
-		// Either no permissions are required, or they will be checked later.
+	if len(perms.Nodes) == 0 && len(perms.Permission.Action) == 0 {
+		// has not provided required permissions
 		return &operations.AuthorizedOperation{
 			Operation: o,
 			Principal: username,

@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/treeverse/lakefs/pkg/metastore"
+	mserrors "github.com/treeverse/lakefs/pkg/metastore/errors"
 )
 
 var (
@@ -17,6 +18,7 @@ var (
 
 type MSClient struct {
 	t            *testing.T
+	Databases    map[string]*metastore.Database
 	Tables       map[string]*metastore.Table
 	partitionMap map[string]*metastore.Partition
 }
@@ -29,17 +31,22 @@ func (m *MSClient) NormalizeDBName(name string) string {
 	return name
 }
 
-func NewMSClient(t *testing.T, initialTable map[string]*metastore.Table, initialPartitions map[string]*metastore.Partition) *MSClient {
+func NewMSClient(t *testing.T, initialDatabases map[string]*metastore.Database, initialTables map[string]*metastore.Table, initialPartitions map[string]*metastore.Partition) *MSClient {
 	if initialPartitions == nil {
 		initialPartitions = make(map[string]*metastore.Partition)
 	}
-	if initialTable == nil {
-		initialTable = make(map[string]*metastore.Table)
+	if initialTables == nil {
+		initialTables = make(map[string]*metastore.Table)
 	}
+	if initialDatabases == nil {
+		initialDatabases = make(map[string]*metastore.Database)
+	}
+
 	return &MSClient{
 		t:            t,
-		Tables:       initialTable,
+		Tables:       initialTables,
 		partitionMap: initialPartitions,
+		Databases:    initialDatabases,
 	}
 }
 
@@ -66,11 +73,15 @@ func (m *MSClient) GetPartition(_ context.Context, dbName string, tableName stri
 	return m.partitionMap[GetPartitionKey(dbName, tableName, values)], nil
 }
 
-func (m *MSClient) GetDatabase(_ context.Context, _ string) (*metastore.Database, error) {
-	panic("implement me")
+func (m *MSClient) GetDatabase(_ context.Context, name string) (*metastore.Database, error) {
+	db := m.Databases[name]
+	if db == nil {
+		return nil, ErrNotFound
+	}
+	return db, nil
 }
 
-func (m *MSClient) GetDatabases(_ context.Context, _ string) ([]*metastore.Database, error) {
+func (m *MSClient) GetDatabases(_ context.Context, name string) ([]*metastore.Database, error) {
 	panic("implement me")
 }
 
@@ -151,8 +162,12 @@ func (m *MSClient) DropPartition(_ context.Context, dbName string, tableName str
 	return nil
 }
 
-func (m *MSClient) CreateDatabaseIfNotExists(_ context.Context, _ *metastore.Database) error {
-	panic("implement me")
+func (m *MSClient) CreateDatabase(_ context.Context, db *metastore.Database) error {
+	if _, ok := m.Databases[db.Name]; ok {
+		return mserrors.ErrSchemaExists
+	}
+	m.Databases[db.Name] = db
+	return nil
 }
 
 func PartitionsListToMap(partitions []*metastore.Partition) map[string]*metastore.Partition {

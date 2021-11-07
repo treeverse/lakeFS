@@ -109,6 +109,9 @@ go-install: go-mod-download ## Install dependencies
 
 
 client-python: api/swagger.yml  ## Generate SDK for Python client
+	# remove the build folder as it also holds lakefs_client folder which keeps because we skip it during find
+	rm -rf clients/python/build; cd clients/python && \
+		find . -depth -name lakefs_client -prune -o ! \( -name client.py -or -name Gemfile -or -name Gemfile.lock -or -name _config.yml -or -name .openapi-generator-ignore \) -delete
 	$(OPENAPI_GENERATOR) generate \
 		-i /mnt/$< \
 		-g python \
@@ -125,10 +128,12 @@ client-java: api/swagger.yml  ## Generate SDK for Java (and Scala) client
 		--additional-properties=hideGenerationTimestamp=true,artifactVersion=$(PACKAGE_VERSION),parentArtifactId=lakefs-parent,parentGroupId=io.lakefs,parentVersion=0,groupId=io.lakefs,artifactId='api-client',artifactDescription='lakeFS OpenAPI Java client',artifactUrl=https://github.com/treeverse/lakeFS/tree/master/clients,apiPackage=io.lakefs.clients.api,modelPackage=io.lakefs.clients.api.model,mainPackage=io.lakefs.clients.api,developerEmail=services@treeverse.io,developerName='Treeverse lakeFS dev',developerOrganization='lakefs.io',developerOrganizationUrl='https://lakefs.io',licenseName=apache2,licenseUrl=http://www.apache.org/licenses/,scmConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmDeveloperConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmUrl=https://github.com/treeverse/lakeFS \
 		-o /mnt/clients/java
 
+.PHONY: clients client-python client-java
 clients: client-python client-java
 
 package-python: client-python
-	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python $(PYTHON_IMAGE) ./build-package.sh
+	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python $(PYTHON_IMAGE) /bin/bash -c \
+		"python -m pip install build --user && python -m build --sdist --wheel --outdir dist/"
 
 package: package-python
 
@@ -195,11 +200,10 @@ validate-proto: proto  ## build proto and check if diff found
 	git diff --quiet -- pkg/catalog/catalog.pb.go
 	git diff --quiet -- pkg/graveler/committed/committed.pb.go
 	git diff --quiet -- pkg/graveler/graveler.pb.go
+	git diff --quiet -- pkg/graveler/settings/test_settings.pb.go
 
 validate-client-python:
-	git diff --quiet -- clients/python/lakefs_client/api
-	git diff --quiet -- clients/python/lakefs_client/model
-	git diff --quiet -- clients/python/.openapi-generator/FILES
+	git diff --quiet -- clients/python
 
 validate-client-java:
 	git diff --quiet -- clients/java
@@ -226,6 +230,7 @@ proto: ## Build proto (Protocol Buffers) files
 	$(PROTOC) --proto_path=pkg/catalog --go_out=pkg/catalog --go_opt=paths=source_relative catalog.proto
 	$(PROTOC) --proto_path=pkg/graveler/committed --go_out=pkg/graveler/committed --go_opt=paths=source_relative committed.proto
 	$(PROTOC) --proto_path=pkg/graveler --go_out=pkg/graveler --go_opt=paths=source_relative graveler.proto
+	$(PROTOC) --proto_path=pkg/graveler/settings --go_out=pkg/graveler/settings --go_opt=paths=source_relative test_settings.proto
 
 publish-scala: ## sbt publish spark client jars to nexus and s3 bucket
 	cd clients/spark && sbt assembly && sbt s3Upload && sbt publishSigned

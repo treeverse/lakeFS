@@ -11,12 +11,11 @@ import (
 
 type ListBuckets struct{}
 
-func (controller *ListBuckets) RequiredPermissions(_ *http.Request) ([]permissions.Permission, error) {
-	return []permissions.Permission{
-		{
+func (controller *ListBuckets) RequiredPermissions(_ *http.Request) (permissions.Node, error) {
+	return permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ListRepositoriesAction,
-			Resource: "*",
-		},
+			Resource: "*"},
 	}, nil
 }
 

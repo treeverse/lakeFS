@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
@@ -36,7 +36,7 @@ Since a bare repo is expected, in case of transient failure, delete the reposito
 		}()
 
 		// read and parse the JSON
-		data, err := ioutil.ReadAll(fp)
+		data, err := io.ReadAll(fp)
 		if err != nil {
 			DieErr(err)
 		}

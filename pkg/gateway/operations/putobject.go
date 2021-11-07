@@ -1,6 +1,7 @@
 package operations
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -8,13 +9,13 @@ import (
 	"strings"
 	"time"
 
-	ghttp "github.com/treeverse/lakefs/pkg/gateway/http"
-
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
-	"github.com/treeverse/lakefs/pkg/gateway/errors"
+	gatewayErrors "github.com/treeverse/lakefs/pkg/gateway/errors"
+	ghttp "github.com/treeverse/lakefs/pkg/gateway/http"
 	"github.com/treeverse/lakefs/pkg/gateway/path"
 	"github.com/treeverse/lakefs/pkg/gateway/serde"
+	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
@@ -30,55 +31,134 @@ const (
 
 type PutObject struct{}
 
-func (controller *PutObject) RequiredPermissions(_ *http.Request, repoID, _, path string) ([]permissions.Permission, error) {
-	return []permissions.Permission{
-		{
-			Action:   permissions.WriteObjectAction,
-			Resource: permissions.ObjectArn(repoID, path),
-		},
-	}, nil
+func (controller *PutObject) RequiredPermissions(req *http.Request, repoID, _, destPath string) (permissions.Node, error) {
+	copySource := req.Header.Get(CopySourceHeader)
+
+	if len(copySource) == 0 {
+		return permissions.Node{
+			Permission: permissions.Permission{
+				Action:   permissions.WriteObjectAction,
+				Resource: permissions.ObjectArn(repoID, destPath)},
+		}, nil
+	}
+	// this is a copy operation
+	p, err := getPathFromSource(copySource)
+	if err != nil {
+		logging.Default().WithError(err).Error("could not parse copy source path")
+		return permissions.Node{}, gatewayErrors.ErrInvalidCopySource
+	}
+
+	return permissions.Node{
+		Type: permissions.NodeTypeAnd,
+		Nodes: []permissions.Node{
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.WriteObjectAction,
+					Resource: permissions.ObjectArn(repoID, destPath)},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ReadObjectAction,
+					Resource: permissions.ObjectArn(p.Repo, p.Path)},
+			}}}, nil
 }
 
+// extractEntryFromCopyReq: get metadata from source file
 func extractEntryFromCopyReq(w http.ResponseWriter, req *http.Request, o *PathOperation, copySource string) *catalog.DBEntry {
+	p, err := getPathFromSource(copySource)
+	if err != nil {
+		o.Log(req).WithError(err).Error("could not parse copy source path")
+		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
+		return nil
+	}
+	ent, err := o.Catalog.GetEntry(req.Context(), o.Repository.Name, p.Reference, p.Path, catalog.GetEntryParams{})
+	if err != nil {
+		o.Log(req).WithError(err).Error("could not read copy source")
+		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
+		return nil
+	}
+	return ent
+}
+
+// CopyFromEntry create copy of the file
+func CopyFromEntry(w http.ResponseWriter, req *http.Request, o *PathOperation, copySource string) *catalog.DBEntry {
+	p, err := getPathFromSource(copySource)
+	if err != nil {
+		o.Log(req).WithError(err).Error("could not parse copy source path")
+		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
+		return nil
+	}
+	sourceRepo, err := o.Catalog.GetRepository(req.Context(), p.Repo)
+	if err != nil {
+		o.Log(req).WithError(err).Error("could not get copy source repository")
+		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
+		return nil
+	}
+	sourceEntry, err := o.Catalog.GetEntry(req.Context(), sourceRepo.Name, p.Reference, p.Path, catalog.GetEntryParams{})
+	if err != nil {
+		o.Log(req).WithError(err).Error("could not get source entry")
+		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
+		return nil
+	}
+	blob, err := upload.CopyBlob(req.Context(), o.BlockStore, sourceRepo.StorageNamespace, o.Repository.StorageNamespace, sourceEntry.PhysicalAddress, sourceEntry.Checksum, sourceEntry.Size)
+	if err != nil {
+		o.Log(req).WithError(err).Error("block adapter could not copy object")
+		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
+		return nil
+	}
+
+	writeTime := time.Now()
+	entry := catalog.DBEntry{
+		Path:            o.Path,
+		PhysicalAddress: blob.PhysicalAddress,
+		AddressType:     catalog.AddressTypeRelative,
+		Checksum:        blob.Checksum,
+		Metadata:        nil,
+		Size:            blob.Size,
+		CreationDate:    writeTime,
+	}
+	return &entry
+}
+
+func getPathFromSource(copySource string) (path.ResolvedAbsolutePath, error) {
 	copySourceDecoded, err := url.QueryUnescape(copySource)
 	if err != nil {
 		copySourceDecoded = copySource
 	}
 	p, err := path.ResolveAbsolutePath(copySourceDecoded)
 	if err != nil {
-		o.Log(req).WithError(err).Error("could not parse copy source path")
-		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInvalidCopySource))
-		return nil
+		return path.ResolvedAbsolutePath{}, gatewayErrors.ErrInvalidCopySource
 	}
-	// validate src and dst are in the same repository
-	if !strings.EqualFold(o.Repository.Name, p.Repo) {
-		o.Log(req).WithError(err).Error("cannot copy objects across repos")
-		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInvalidCopySource))
-		return nil
-	}
-
-	// update metadata to refer to the source hash in the destination workspace
-	ent, err := o.Catalog.GetEntry(req.Context(), o.Repository.Name, p.Reference, p.Path, catalog.GetEntryParams{})
-	if err != nil {
-		o.Log(req).WithError(err).Error("could not read copy source")
-		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInvalidCopySource))
-		return nil
-	}
-	return ent
+	return p, nil
 }
 
 func handleCopy(w http.ResponseWriter, req *http.Request, o *PathOperation, copySource string) {
 	o.Incr("copy_object")
-	ent := extractEntryFromCopyReq(w, req, o, copySource)
-	if ent == nil {
-		return // operation already failed
+	p, err := getPathFromSource(copySource)
+	if err != nil {
+		o.Log(req).WithError(err).Error("could not parse copy source path")
+		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
+		return
+	}
+	var ent *catalog.DBEntry
+	// check if src and dst are in the same repository
+	if strings.EqualFold(o.Repository.Name, p.Repo) {
+		ent = extractEntryFromCopyReq(w, req, o, copySource)
+		if ent == nil {
+			return // operation already failed
+		}
+	} else {
+		ent = CopyFromEntry(w, req, o, copySource)
+		if ent == nil {
+			return // operation already failed
+		}
 	}
 	ent.CreationDate = time.Now()
 	ent.Path = o.Path
-	err := o.Catalog.CreateEntry(req.Context(), o.Repository.Name, o.Reference, *ent)
+	err = o.Catalog.CreateEntry(req.Context(), o.Repository.Name, o.Reference, *ent)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not write copy destination")
-		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInvalidCopyDest))
+		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopyDest))
 		return
 	}
 
@@ -97,20 +177,20 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 	partNumber, err := strconv.ParseInt(partNumberStr, 10, 64)
 	if err != nil {
 		o.Log(req).WithError(err).Error("invalid part number")
-		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInvalidPartNumberMarker))
+		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidPartNumberMarker))
 		return
 	}
 
 	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{
-		"part_number": partNumber,
-		"upload_id":   uploadID,
+		logging.PartNumberFieldKey: partNumber,
+		logging.UploadIDFieldKey:   uploadID,
 	}))
 
 	// handle the upload/copy itself
 	multiPart, err := o.MultipartsTracker.Get(req.Context(), uploadID)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not read  multipart record")
-		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
+		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
 
@@ -150,7 +230,7 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 
 		if err != nil {
 			o.Log(req).WithError(err).WithField("copy_source", ent.Path).Error("copy part " + partNumberStr + " upload failed")
-			_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
+			_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 			return
 		}
 
@@ -166,7 +246,7 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 		byteSize, req.Body, uploadID, partNumber)
 	if err != nil {
 		o.Log(req).WithError(err).Error("part " + partNumberStr + " upload failed")
-		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
+		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
 	o.SetHeader(w, "ETag", etag)
@@ -178,12 +258,12 @@ func (controller *PutObject) Handle(w http.ResponseWriter, req *http.Request, o 
 	branchExists, err := o.Catalog.BranchExists(req.Context(), o.Repository.Name, o.Reference)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not check if branch exists")
-		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
+		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
 	if !branchExists {
 		o.Log(req).Debug("branch not found")
-		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrNoSuchBucket))
+		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrNoSuchBucket))
 		return
 	}
 
@@ -220,14 +300,20 @@ func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	blob, err := upload.WriteBlob(req.Context(), o.BlockStore, o.Repository.StorageNamespace, req.Body, req.ContentLength, opts)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not write request body to block adapter")
-		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
+		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
 
 	// write metadata
-	err = o.finishUpload(req, blob.Checksum, blob.PhysicalAddress, blob.Size, true)
+	metadata := amzMetaAsMetadata(req)
+	contentType := req.Header.Get("Content-Type")
+	err = o.finishUpload(req, blob.Checksum, blob.PhysicalAddress, blob.Size, true, metadata, contentType)
+	if errors.Is(err, graveler.ErrWriteToProtectedBranch) {
+		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrWriteToProtectedBranch))
+		return
+	}
 	if err != nil {
-		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
+		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
 	o.SetHeader(w, "ETag", httputil.ETag(blob.Checksum))

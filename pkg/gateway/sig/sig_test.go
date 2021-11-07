@@ -1,10 +1,20 @@
 package sig_test
 
 import (
+	"errors"
+	"fmt"
+	"math/rand"
 	"net/http"
+	"net/url"
 	"testing"
+	"time"
 
+	"github.com/minio/minio-go/v7/pkg/s3utils"
+	"github.com/minio/minio-go/v7/pkg/signer"
+	"github.com/treeverse/lakefs/pkg/auth/model"
+	gwErrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/gateway/sig"
+	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
 func makeRequest(t *testing.T, headers map[string]string, query map[string]string) *http.Request {
@@ -26,10 +36,10 @@ func makeRequest(t *testing.T, headers map[string]string, query map[string]strin
 func TestIsAWSSignedRequest(t *testing.T) {
 	type KV map[string]string
 	cases := []struct {
-		name    string
-		want    bool
-		headers map[string]string
-		query   map[string]string
+		Name    string
+		Want    bool
+		Headers map[string]string
+		Query   map[string]string
 	}{
 		{"no sig", false, nil, nil},
 		{"non aws auth header", false, KV{"Authorization": "Basic dXNlcjpwYXNzd29yZA=="}, nil},
@@ -40,11 +50,162 @@ func TestIsAWSSignedRequest(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			r := makeRequest(t, tc.headers, tc.query)
+		t.Run(tc.Name, func(t *testing.T) {
+			r := makeRequest(t, tc.Headers, tc.Query)
 			got := sig.IsAWSSignedRequest(r)
-			if got != tc.want {
-				t.Fatalf("IsAWSSignedRequest with %s: got %v, expected %v", tc.name, got, tc.want)
+			if got != tc.Want {
+				t.Fatalf("IsAWSSignedRequest with %s: got %v, expected %v", tc.Name, got, tc.Want)
+			}
+		})
+	}
+}
+
+type Signer func(req http.Request) *http.Request
+type Verifier func(req *http.Request) error
+
+type Style string
+
+const (
+	PathStyle = "path"
+	HostStyle = "host"
+)
+
+func MakeV2Signer(keyID, secretKey string, style Style) Signer {
+	return func(req http.Request) *http.Request {
+		return signer.SignV2(req, keyID, secretKey, style == "host")
+	}
+}
+
+func MakeV4Signer(keyID, secretKey, location string) Signer {
+	return func(req http.Request) *http.Request {
+		return signer.SignV4(req, keyID, secretKey, "", location)
+	}
+}
+
+func MakeV2Verifier(keyID, secretKey, bareDomain string) Verifier {
+	return func(req *http.Request) error {
+		authenticator := sig.NewV2SigAuthenticator(req)
+		_, err := authenticator.Parse()
+		if err != nil {
+			return fmt.Errorf("sigV2 parse failed: %w", err)
+		}
+		return authenticator.Verify(
+			&model.Credential{AccessKeyID: keyID, SecretAccessKey: secretKey},
+			bareDomain,
+		)
+	}
+}
+
+func MakeV4Verifier(keyID, secretKey, bareDomain string) Verifier {
+	return func(req *http.Request) error {
+		authenticator := sig.NewV4Authenticator(req)
+		_, err := authenticator.Parse()
+		if err != nil {
+			return fmt.Errorf("sigV4 parse failed: %w", err)
+		}
+		return authenticator.Verify(
+			&model.Credential{AccessKeyID: keyID, SecretAccessKey: secretKey},
+			bareDomain,
+		)
+	}
+}
+
+func MakeHeader(m map[string]string) http.Header {
+	ret := http.Header{}
+	for k, v := range m {
+		ret.Add(k, v)
+	}
+	return ret
+}
+
+const (
+	keyID     = "AKIAIOSFODNN7EXAMPLE"
+	secretKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+	domain    = "s3.lakefs.test"
+	location  = "lu-alpha-1"
+)
+
+var date = time.Unix(1631523198, 0)
+
+type SignCase struct {
+	Name     string
+	Signer   Signer
+	Verifier Verifier
+	Style    Style
+}
+
+var signatures = []SignCase{
+	{
+		Name:     "V2Host",
+		Signer:   MakeV2Signer(keyID, secretKey, "host"),
+		Verifier: MakeV2Verifier(keyID, secretKey, domain),
+		Style:    "host",
+	}, {
+		Name:     "V2Path",
+		Signer:   MakeV2Signer(keyID, secretKey, "path"),
+		Verifier: MakeV2Verifier(keyID, secretKey, domain),
+		Style:    "path",
+	}, {
+		Name:     "V4Host",
+		Signer:   MakeV4Signer(keyID, secretKey, location),
+		Verifier: MakeV4Verifier(keyID, secretKey, domain),
+		Style:    "host",
+	}, {
+		Name:     "V4Path",
+		Signer:   MakeV4Signer(keyID, secretKey, location),
+		Verifier: MakeV4Verifier(keyID, secretKey, domain),
+		Style:    "path",
+	},
+}
+
+func TestAWSSigVerify(t *testing.T) {
+	const (
+		numRounds  = 1000
+		seed       = 20210913
+		pathLength = 900
+		bucket     = "my-bucket"
+	)
+	methods := []string{"GET", "PUT", "DELETE", "PATCH"}
+
+	for _, s := range signatures {
+		t.Run("Sig"+s.Name, func(t *testing.T) {
+			host := domain
+			if s.Style == "host" {
+				host = fmt.Sprintf("%s.%s", bucket, domain)
+			}
+
+			rand := rand.New(rand.NewSource(seed))
+			for i := 0; i < numRounds; i++ {
+				path := s3utils.EncodePath("my-branch/ariels/x/" + testutil.RandomString(rand, pathLength))
+				url := &url.URL{
+					Scheme: "s3",
+					Host:   bucket,
+					Path:   path,
+					// No way to construct possibly-equivalent forms, so let
+					// URL construct The Right RawPath.
+					RawPath: "",
+				}
+				req := http.Request{
+					Method: methods[rand.Intn(len(methods))],
+					Host:   host,
+					URL:    url,
+					Header: MakeHeader(map[string]string{
+						"Date":         date.Format(http.TimeFormat),
+						"x-amz-date":   date.Format("20060102T150405Z"),
+						"Content-Md5":  "deadbeef",
+						"Content-Type": "application/binary",
+					}),
+				}
+				signedReq := s.Signer(req)
+				err := s.Verifier(signedReq)
+				if err != nil {
+					errText := err.Error()
+					var apiErr gwErrors.APIErrorCode
+					if errors.As(err, &apiErr) {
+						errText = apiErr.ToAPIErr().Description
+					}
+					t.Errorf("Sign and verify %s: %s", url.String(), errText)
+				}
 			}
 		})
 	}

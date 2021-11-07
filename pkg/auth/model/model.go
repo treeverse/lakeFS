@@ -28,6 +28,12 @@ type User struct {
 	ID        int       `db:"id"`
 	CreatedAt time.Time `db:"created_at"`
 	Username  string    `db:"display_name" json:"display_name"`
+	// FriendlyName, if set, is a shorter name for the user than
+	// Username.  Unlike Username it does not identify the user (it
+	// might not be unique); use it in the user's GUI rather than in
+	// backend code.
+	FriendlyName *string `db:"friendly_name" json:"friendly_name"`
+	Source       string
 }
 
 // SuperuserConfiguration requests a particular configuration for a superuser.

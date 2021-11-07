@@ -406,9 +406,9 @@ type VersionController interface {
 	// This is similar to a two-dot (left..right) diff in git.
 	Diff(ctx context.Context, repositoryID RepositoryID, left, right Ref) (DiffIterator, error)
 
-	// Compare returns the difference between the commit where 'to' was last synced into 'from', and the most recent commit of `from`.
+	// Compare returns the difference between the commit where 'left' was last synced into 'right', and the most recent commit of `right`.
 	// This is similar to a three-dot (from...to) diff in git.
-	Compare(ctx context.Context, repositoryID RepositoryID, from, to Ref) (DiffIterator, error)
+	Compare(ctx context.Context, repositoryID RepositoryID, left, right Ref) (DiffIterator, error)
 
 	// SetHooksHandler set handler for all graveler hooks
 	SetHooksHandler(handler HooksHandler)
@@ -429,6 +429,17 @@ type VersionController interface {
 	// If a previousRunID is specified, commits that were already expired and their ancestors will not be considered as expired/active.
 	// Note: Ancestors of previously expired commits may still be considered if they can be reached from a non-expired commit.
 	SaveGarbageCollectionCommits(ctx context.Context, repositoryID RepositoryID, previousRunID string) (garbageCollectionRunMetadata *GarbageCollectionRunMetadata, err error)
+
+	// GetBranchProtectionRules return all branch protection rules for the repository
+	GetBranchProtectionRules(ctx context.Context, repositoryID RepositoryID) (*BranchProtectionRules, error)
+
+	// DeleteBranchProtectionRule deletes the branch protection rule for the given pattern,
+	// or return ErrRuleNotExists if no such rule exists.
+	DeleteBranchProtectionRule(ctx context.Context, repositoryID RepositoryID, pattern string) error
+
+	// CreateBranchProtectionRule creates a rule for the given name pattern,
+	// or returns ErrRuleAlreadyExists if there is already a rule for the pattern.
+	CreateBranchProtectionRule(ctx context.Context, repositoryID RepositoryID, pattern string, blockedActions []BranchProtectionBlockedAction) error
 }
 
 // Plumbing includes commands for fiddling more directly with graveler implementation
@@ -716,10 +727,11 @@ type Graveler struct {
 	branchLocker             BranchLocker
 	hooks                    HooksHandler
 	garbageCollectionManager GarbageCollectionManager
+	protectedBranchesManager ProtectedBranchesManager
 	log                      logging.Logger
 }
 
-func NewGraveler(branchLocker BranchLocker, committedManager CommittedManager, stagingManager StagingManager, refManager RefManager, gcManager GarbageCollectionManager) *Graveler {
+func NewGraveler(branchLocker BranchLocker, committedManager CommittedManager, stagingManager StagingManager, refManager RefManager, gcManager GarbageCollectionManager, protectedBranchesManager ProtectedBranchesManager) *Graveler {
 	return &Graveler{
 		CommittedManager:         committedManager,
 		StagingManager:           stagingManager,
@@ -727,6 +739,7 @@ func NewGraveler(branchLocker BranchLocker, committedManager CommittedManager, s
 		branchLocker:             branchLocker,
 		hooks:                    &HooksNoOp{},
 		garbageCollectionManager: gcManager,
+		protectedBranchesManager: protectedBranchesManager,
 		log:                      logging.Default().WithField("service_name", "graveler_graveler"),
 	}
 }
@@ -831,7 +844,7 @@ func (g *Graveler) updateBranchNoLock(ctx context.Context, repositoryID Reposito
 		return nil, err
 	}
 	if reference.ResolvedBranchModifier == ResolvedBranchModifierStaging {
-		return nil, fmt.Errorf("reference '%s': %w", ref, ErrCreateBranchNoCommit)
+		return nil, fmt.Errorf("reference '%s': %w", ref, ErrDereferenceCommitWithStaging)
 	}
 
 	curBranch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
@@ -981,6 +994,18 @@ func (g *Graveler) SaveGarbageCollectionCommits(ctx context.Context, repositoryI
 	}, err
 }
 
+func (g *Graveler) GetBranchProtectionRules(ctx context.Context, repositoryID RepositoryID) (*BranchProtectionRules, error) {
+	return g.protectedBranchesManager.GetRules(ctx, repositoryID)
+}
+
+func (g *Graveler) DeleteBranchProtectionRule(ctx context.Context, repositoryID RepositoryID, pattern string) error {
+	return g.protectedBranchesManager.Delete(ctx, repositoryID, pattern)
+}
+
+func (g *Graveler) CreateBranchProtectionRule(ctx context.Context, repositoryID RepositoryID, pattern string, blockedActions []BranchProtectionBlockedAction) error {
+	return g.protectedBranchesManager.Add(ctx, repositoryID, pattern, blockedActions)
+}
+
 func (g *Graveler) Get(ctx context.Context, repositoryID RepositoryID, ref Ref, key Key) (*Value, error) {
 	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 	if err != nil {
@@ -1014,6 +1039,13 @@ func (g *Graveler) Get(ctx context.Context, repositoryID RepositoryID, ref Ref, 
 
 func (g *Graveler) Set(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key, value Value, writeConditions ...WriteConditionOption) error {
 	_, err := g.branchLocker.Writer(ctx, repositoryID, branchID, func() (interface{}, error) {
+		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+		if err != nil {
+			return nil, err
+		}
+		if isProtected {
+			return nil, ErrWriteToProtectedBranch
+		}
 		branch, err := g.GetBranch(ctx, repositoryID, branchID)
 		if err != nil {
 			return nil, err
@@ -1055,6 +1087,13 @@ func isStagedTombstone(ctx context.Context, manager StagingManager, token Stagin
 
 func (g *Graveler) Delete(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
 	_, err := g.branchLocker.Writer(ctx, repositoryID, branchID, func() (interface{}, error) {
+		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+		if err != nil {
+			return nil, err
+		}
+		if isProtected {
+			return nil, ErrWriteToProtectedBranch
+		}
 		repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 		if err != nil {
 			return nil, err
@@ -1137,6 +1176,13 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 	var commit Commit
 	var storageNamespace StorageNamespace
 	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
+		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_COMMIT)
+		if err != nil {
+			return nil, err
+		}
+		if isProtected {
+			return nil, ErrCommitToProtectedBranch
+		}
 		repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 		if err != nil {
 			return "", fmt.Errorf("get repository: %w", err)
@@ -1387,6 +1433,13 @@ func (g *Graveler) stagingEmpty(ctx context.Context, branch *Branch) (bool, erro
 
 func (g *Graveler) Reset(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error {
 	_, err := g.branchLocker.Writer(ctx, repositoryID, branchID, func() (interface{}, error) {
+		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+		if err != nil {
+			return nil, err
+		}
+		if isProtected {
+			return nil, ErrWriteToProtectedBranch
+		}
 		branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
 		if err != nil {
 			return nil, err
@@ -1398,6 +1451,13 @@ func (g *Graveler) Reset(ctx context.Context, repositoryID RepositoryID, branchI
 
 func (g *Graveler) ResetKey(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
 	_, err := g.branchLocker.Writer(ctx, repositoryID, branchID, func() (interface{}, error) {
+		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+		if err != nil {
+			return nil, err
+		}
+		if isProtected {
+			return nil, ErrWriteToProtectedBranch
+		}
 		branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
 		if err != nil {
 			return nil, err
@@ -1409,6 +1469,13 @@ func (g *Graveler) ResetKey(ctx context.Context, repositoryID RepositoryID, bran
 
 func (g *Graveler) ResetPrefix(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
 	_, err := g.branchLocker.Writer(ctx, repositoryID, branchID, func() (interface{}, error) {
+		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+		if err != nil {
+			return nil, err
+		}
+		if isProtected {
+			return nil, ErrWriteToProtectedBranch
+		}
 		branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
 		if err != nil {
 			return nil, err
@@ -1644,7 +1711,7 @@ func (g *Graveler) dereferenceCommit(ctx context.Context, repositoryID Repositor
 		return nil, err
 	}
 	if reference.ResolvedBranchModifier == ResolvedBranchModifierStaging {
-		return nil, fmt.Errorf("reference '%s': %w", ref, ErrCreateBranchNoCommit)
+		return nil, fmt.Errorf("reference '%s': %w", ref, ErrDereferenceCommitWithStaging)
 	}
 	commit, err := g.RefManager.GetCommit(ctx, repositoryID, reference.CommitID)
 	if err != nil {
@@ -1665,20 +1732,42 @@ func (g *Graveler) Diff(ctx context.Context, repositoryID RepositoryID, left, ri
 	if err != nil {
 		return nil, err
 	}
-	rightCommit, err := g.dereferenceCommit(ctx, repositoryID, right)
+	rightRawRef, err := g.Dereference(ctx, repositoryID, right)
 	if err != nil {
 		return nil, err
 	}
-
-	return g.CommittedManager.Diff(ctx, repo.StorageNamespace, leftCommit.MetaRangeID, rightCommit.MetaRangeID)
+	rightCommit, err := g.RefManager.GetCommit(ctx, repositoryID, rightRawRef.CommitID)
+	if err != nil {
+		return nil, err
+	}
+	diff, err := g.CommittedManager.Diff(ctx, repo.StorageNamespace, leftCommit.MetaRangeID, rightCommit.MetaRangeID)
+	if err != nil {
+		return nil, err
+	}
+	if rightRawRef.ResolvedBranchModifier != ResolvedBranchModifierStaging {
+		return diff, nil
+	}
+	leftValueIterator, err := g.CommittedManager.List(ctx, repo.StorageNamespace, leftCommit.MetaRangeID)
+	if err != nil {
+		return nil, err
+	}
+	rightBranch, err := g.RefManager.GetBranch(ctx, repositoryID, rightRawRef.BranchID)
+	if err != nil {
+		return nil, err
+	}
+	stagingIterator, err := g.StagingManager.List(ctx, rightBranch.StagingToken)
+	if err != nil {
+		return nil, err
+	}
+	return NewCombinedDiffIterator(diff, leftValueIterator, stagingIterator), nil
 }
 
-func (g *Graveler) Compare(ctx context.Context, repositoryID RepositoryID, from, to Ref) (DiffIterator, error) {
+func (g *Graveler) Compare(ctx context.Context, repositoryID RepositoryID, left, right Ref) (DiffIterator, error) {
 	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, err
 	}
-	fromCommit, toCommit, baseCommit, err := g.getCommitsForMerge(ctx, repositoryID, from, to)
+	fromCommit, toCommit, baseCommit, err := g.getCommitsForMerge(ctx, repositoryID, right, left)
 	if err != nil {
 		return nil, err
 	}
@@ -2116,4 +2205,18 @@ type GarbageCollectionManager interface {
 	GetRunExpiredCommits(ctx context.Context, storageNamespace StorageNamespace, runID string) ([]CommitID, error)
 	GetCommitsCSVLocation(runID string, sn StorageNamespace) (string, error)
 	GetAddressesLocation(sn StorageNamespace) (string, error)
+}
+
+type ProtectedBranchesManager interface {
+	// Add creates a rule for the given name pattern, blocking the given actions.
+	// Returns ErrRuleAlreadyExists if there is already a rule for the given pattern.
+	Add(ctx context.Context, repositoryID RepositoryID, branchNamePattern string, blockedActions []BranchProtectionBlockedAction) error
+	// Delete deletes the rule for the given name pattern, or returns ErrRuleNotExists if there is no such rule.
+	Delete(ctx context.Context, repositoryID RepositoryID, branchNamePattern string) error
+	// Get returns the list of blocked actions for the given name pattern, or nil if no rule was defined for the pattern.
+	Get(ctx context.Context, repositoryID RepositoryID, branchNamePattern string) ([]BranchProtectionBlockedAction, error)
+	// GetRules returns all branch protection rules for the repository
+	GetRules(ctx context.Context, repositoryID RepositoryID) (*BranchProtectionRules, error)
+	// IsBlocked returns whether the action is blocked by any branch protection rule matching the given branch.
+	IsBlocked(ctx context.Context, repositoryID RepositoryID, branchID BranchID, action BranchProtectionBlockedAction) (bool, error)
 }

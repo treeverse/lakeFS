@@ -36,7 +36,7 @@ const UsersContainer = () => {
     const router = useRouter();
     const after = (!!router.query.after) ? router.query.after : "";
     const { results, loading, error, nextPage } =  useAPIWithPagination(() => {
-        return auth.listUsers(after);
+        return auth.listUsers('', after);
     }, [after, refresh]);
 
     useEffect(() => { setSelected([]); }, [refresh, after]);
@@ -68,12 +68,14 @@ const UsersContainer = () => {
                         msg={`Are you sure you'd like to delete ${selected.length} users?`}>
                         Delete Selected
                     </ConfirmationButton>
-
                 </ActionGroup>
                 <ActionGroup orientation="right">
                     <RefreshButton onClick={() => setRefresh(!refresh)}/>
                 </ActionGroup>
             </ActionsBar>
+            <div className="auth-learn-more">
+                Users are entities that access and use lakeFS. <a href="https://docs.lakefs.io/reference/authorization.html#authorization" target="_blank" rel="noopener noreferrer">Learn more.</a>
+            </div>
 
             {(!!deleteError) && <Error error={deleteError}/>}
 

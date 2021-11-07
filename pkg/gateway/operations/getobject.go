@@ -18,12 +18,11 @@ import (
 
 type GetObject struct{}
 
-func (controller *GetObject) RequiredPermissions(_ *http.Request, repoID, _, path string) ([]permissions.Permission, error) {
-	return []permissions.Permission{
-		{
+func (controller *GetObject) RequiredPermissions(_ *http.Request, repoID, _, path string) (permissions.Node, error) {
+	return permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ReadObjectAction,
-			Resource: permissions.ObjectArn(repoID, path),
-		},
+			Resource: permissions.ObjectArn(repoID, path)},
 	}, nil
 }
 
@@ -65,8 +64,8 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 	o.SetHeader(w, "Last-Modified", httputil.HeaderTimestamp(entry.CreationDate))
 	o.SetHeader(w, "ETag", httputil.ETag(entry.Checksum))
 	o.SetHeader(w, "Accept-Ranges", "bytes")
+	amzMetaWriteHeaders(w, entry.Metadata)
 	// TODO: the rest of https://docs.aws.amazon.com/en_pv/AmazonS3/latest/API/API_GetObject.html
-
 	// range query
 	var expected int64
 	var data io.ReadCloser
@@ -96,9 +95,7 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 		_ = data.Close()
 	}()
 	o.SetHeader(w, "Content-Length", fmt.Sprintf("%d", expected))
-	// Delete the default content-type header so http.Server will detect it from contents
-	// TODO(ariels): After/if we add content-type support to adapter, use *that*.
-	o.DeleteHeader(w, "Content-Type")
+	o.SetHeader(w, "Content-Type", entry.ContentType)
 	_, err = io.Copy(w, data)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not write response body for object")

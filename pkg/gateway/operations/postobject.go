@@ -3,17 +3,20 @@ package operations
 import (
 	"encoding/hex"
 	"encoding/xml"
+	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/gateway/errors"
+	gatewayErrors "github.com/treeverse/lakefs/pkg/gateway/errors"
+	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
 	"github.com/treeverse/lakefs/pkg/gateway/path"
 	"github.com/treeverse/lakefs/pkg/gateway/serde"
+	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
@@ -26,12 +29,11 @@ const (
 
 type PostObject struct{}
 
-func (controller *PostObject) RequiredPermissions(_ *http.Request, repoID, _, path string) ([]permissions.Permission, error) {
-	return []permissions.Permission{
-		{
+func (controller *PostObject) RequiredPermissions(_ *http.Request, repoID, _, path string) (permissions.Node, error) {
+	return permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.WriteObjectAction,
-			Resource: permissions.ObjectArn(repoID, path),
-		},
+			Resource: permissions.ObjectArn(repoID, path)},
 	}, nil
 }
 
@@ -44,13 +46,22 @@ func (controller *PostObject) HandleCreateMultipartUpload(w http.ResponseWriter,
 	uploadID, err := o.BlockStore.CreateMultiPartUpload(req.Context(), block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: objName}, req, opts)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not create multipart upload")
-		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
+		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
-	err = o.MultipartsTracker.Create(req.Context(), uploadID, o.Path, objName, time.Now())
+	// uploadID, o.Path, objName, time.Now()
+	mpu := multiparts.MultipartUpload{
+		UploadID:        uploadID,
+		Path:            o.Path,
+		CreationDate:    time.Now(),
+		PhysicalAddress: objName,
+		Metadata:        map[string]string(amzMetaAsMetadata(req)),
+		ContentType:     req.Header.Get("Content-Type"),
+	}
+	err = o.MultipartsTracker.Create(req.Context(), mpu)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not write multipart upload to DB")
-		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
+		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
 	o.EncodeResponse(w, req, &serde.InitiateMultipartUploadResult{
@@ -69,39 +80,46 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 	var size int64
 	o.Incr("complete_mpu")
 	uploadID := req.URL.Query().Get(CompleteMultipartUploadQueryParam)
-	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{"upload_id": uploadID}))
+	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{logging.UploadIDFieldKey: uploadID}))
 	multiPart, err := o.MultipartsTracker.Get(req.Context(), uploadID)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not read multipart record")
-		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
+		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
 	objName := multiPart.PhysicalAddress
-	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{"physical_address": objName}))
-	xmlMultipartComplete, err := ioutil.ReadAll(req.Body)
+	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{logging.PhysicalAddressFieldKey: objName}))
+	xmlMultipartComplete, err := io.ReadAll(req.Body)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not read request body")
-		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
+		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
-	var MultipartList block.MultipartUploadCompletion
-	err = xml.Unmarshal(xmlMultipartComplete, &MultipartList)
+	var multipartList block.MultipartUploadCompletion
+	err = xml.Unmarshal(xmlMultipartComplete, &multipartList)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not parse multipart XML on complete multipart")
-		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
+		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
-	etag, size, err = o.BlockStore.CompleteMultiPartUpload(req.Context(), block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: objName}, uploadID, &MultipartList)
+	etag, size, err = o.BlockStore.CompleteMultiPartUpload(req.Context(),
+		block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: objName},
+		uploadID,
+		&multipartList)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not complete multipart upload")
-		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
+		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
 	ch := trimQuotes(*etag)
 	checksum := strings.Split(ch, "-")[0]
-	err = o.finishUpload(req, checksum, objName, size, true)
+	err = o.finishUpload(req, checksum, objName, size, true, multiPart.Metadata, multiPart.ContentType)
+	if errors.Is(err, graveler.ErrWriteToProtectedBranch) {
+		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrWriteToProtectedBranch))
+		return
+	}
 	if err != nil {
-		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
+		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
 	err = o.MultipartsTracker.Delete(req.Context(), uploadID)
@@ -110,7 +128,12 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 	}
 
 	scheme := httputil.RequestScheme(req)
-	location := fmt.Sprintf("%s://%s/%s/%s/%s", scheme, o.FQDN, o.Repository.Name, o.Reference, o.Path)
+	var location string
+	if o.MatchedHost {
+		location = fmt.Sprintf("%s://%s/%s/%s", scheme, req.Host, o.Reference, o.Path)
+	} else {
+		location = fmt.Sprintf("%s://%s/%s/%s/%s", scheme, req.Host, o.Repository.Name, o.Reference, o.Path)
+	}
 	o.EncodeResponse(w, req, &serde.CompleteMultipartUploadResult{
 		Location: location,
 		Bucket:   o.Repository.Name,

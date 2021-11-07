@@ -21,26 +21,24 @@ const (
 
 type ListObjects struct{}
 
-func (controller *ListObjects) RequiredPermissions(req *http.Request, repoID string) ([]permissions.Permission, error) {
+func (controller *ListObjects) RequiredPermissions(req *http.Request, repoID string) (permissions.Node, error) {
 	// check if we're listing files in a branch, or listing branches
 	params := req.URL.Query()
 	delimiter := params.Get("delimiter")
 	prefix := params.Get("prefix")
 	if delimiter == "/" && !strings.Contains(prefix, "/") {
-		return []permissions.Permission{
-			{
+		return permissions.Node{
+			Permission: permissions.Permission{
 				Action:   permissions.ListBranchesAction,
-				Resource: permissions.RepoArn(repoID),
-			},
+				Resource: permissions.RepoArn(repoID)},
 		}, nil
 	}
 
 	// otherwise, we're listing objects within a branch
-	return []permissions.Permission{
-		{
+	return permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ListObjectsAction,
-			Resource: permissions.RepoArn(repoID),
-		},
+			Resource: permissions.RepoArn(repoID)},
 	}, nil
 }
 
@@ -89,7 +87,9 @@ func (controller *ListObjects) serializeBranches(branches []*catalog.Branch) ([]
 }
 
 func (controller *ListObjects) ListV2(w http.ResponseWriter, req *http.Request, o *RepoOperation) {
-	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{"list_type": "v2"}))
+	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{
+		logging.ListTypeFieldKey: "v2",
+	}))
 	params := req.URL.Query()
 	delimiter := params.Get("delimiter")
 	startAfter := params.Get("start-after")
@@ -229,7 +229,7 @@ func (controller *ListObjects) ListV2(w http.ResponseWriter, req *http.Request, 
 
 func (controller *ListObjects) ListV1(w http.ResponseWriter, req *http.Request, o *RepoOperation) {
 	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{
-		"list_type": "v1",
+		logging.ListTypeFieldKey: "v1",
 	}))
 	// handle ListObjects (v1)
 	params := req.URL.Query()

@@ -9,6 +9,7 @@ import (
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
+	"github.com/treeverse/lakefs/pkg/auth/model"
 )
 
 func TestAuthMiddleware(t *testing.T) {
@@ -47,7 +48,7 @@ func TestAuthMiddleware(t *testing.T) {
 
 	t.Run("valid jwt header", func(t *testing.T) {
 		ctx := context.Background()
-		apiToken := testGenerateApiToken(t, deps.authService, cred.AccessKeyID)
+		apiToken := testGenerateApiToken(ctx, t, clt, cred)
 		authProvider, err := securityprovider.NewSecurityProviderApiKey("header", "Authorization", "Bearer "+apiToken)
 		if err != nil {
 			t.Fatal("basic auth security provider", err)
@@ -67,7 +68,7 @@ func TestAuthMiddleware(t *testing.T) {
 
 	t.Run("invalid jwt header", func(t *testing.T) {
 		ctx := context.Background()
-		apiToken := testGenerateApiToken(t, deps.authService, "AKIAIOSFODNN7EXAMPLE")
+		apiToken := testGenerateBadAPIToken(t, deps.authService)
 		authProvider, err := securityprovider.NewSecurityProviderApiKey("header", "Authorization", "Bearer "+apiToken)
 		if err != nil {
 			t.Fatal("basic auth security provider", err)
@@ -90,7 +91,7 @@ func TestAuthMiddleware(t *testing.T) {
 
 	t.Run("valid jwt cookie", func(t *testing.T) {
 		ctx := context.Background()
-		apiToken := testGenerateApiToken(t, deps.authService, cred.AccessKeyID)
+		apiToken := testGenerateApiToken(ctx, t, clt, cred)
 		authProvider, err := securityprovider.NewSecurityProviderApiKey("cookie", api.JWTCookieName, apiToken)
 		if err != nil {
 			t.Fatal("basic auth security provider", err)
@@ -110,7 +111,7 @@ func TestAuthMiddleware(t *testing.T) {
 
 	t.Run("invalid jwt cookie", func(t *testing.T) {
 		ctx := context.Background()
-		apiToken := testGenerateApiToken(t, deps.authService, "AKIAIOSFODNN7EXAMPLE")
+		apiToken := testGenerateBadAPIToken(t, deps.authService)
 		authProvider, err := securityprovider.NewSecurityProviderApiKey("cookie", api.JWTCookieName, apiToken)
 		if err != nil {
 			t.Fatal("basic auth security provider", err)
@@ -132,14 +133,30 @@ func TestAuthMiddleware(t *testing.T) {
 	})
 }
 
-func testGenerateApiToken(t testing.TB, authService auth.Service, accessKeyID string) string {
+func testGenerateApiToken(ctx context.Context, t testing.TB, clt api.ClientWithResponsesInterface, cred *model.Credential) string {
 	t.Helper()
+	loginReq := api.LoginJSONRequestBody{
+		AccessKeyId:     cred.AccessKeyID,
+		SecretAccessKey: cred.SecretAccessKey,
+	}
+	login, err := clt.LoginWithResponse(ctx, loginReq)
+	if err != nil {
+		t.Fatal("Login:", err)
+	}
+	if login.JSON200 == nil {
+		t.Fatal("Failed to login:", login.Status())
+	}
+	return login.JSON200.Token
+}
+
+func testGenerateBadAPIToken(t testing.TB, authService auth.Service) string {
 	secret := authService.SecretStore().SharedSecret()
 	now := time.Now()
 	expires := now.Add(time.Hour)
-	tokenString, err := api.GenerateJWT(secret, accessKeyID, now, expires)
+	// Generate a JWT for a nonexistent user.  It will fail authentication.
+	tokenString, err := api.GenerateJWT(secret, 2906, now, expires)
 	if err != nil {
-		t.Fatal("Failed to generate jwt token:", err)
+		t.Fatal("Generate (bad) JWT token:", err)
 	}
 	return tokenString
 }

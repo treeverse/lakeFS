@@ -2892,7 +2892,11 @@ paths:
         required: true
       responses:
         "200":
-          description: successfully linked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjectStats'
+          description: object metadata
         "400":
           content:
             application/json:
@@ -3880,6 +3884,136 @@ paths:
       - retention
       x-contentType: application/json
       x-accepts: application/json
+  /repositories/{repository}/branch_protection:
+    delete:
+      operationId: deleteBranchProtectionRule
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        $ref: '#/components/requestBodies/inline_object_1'
+        content:
+          application/json:
+            schema:
+              properties:
+                pattern:
+                  type: string
+              required:
+              - pattern
+              type: object
+        required: true
+      responses:
+        "204":
+          description: branch protection rule deleted successfully
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - repositories
+      x-contentType: application/json
+      x-accepts: application/json
+    get:
+      operationId: getBranchProtectionRules
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/BranchProtectionRule'
+                type: array
+          description: branch protection rules
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: get branch protection rules
+      tags:
+      - repositories
+      x-accepts: application/json
+    post:
+      operationId: createBranchProtectionRule
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BranchProtectionRule'
+        required: true
+      responses:
+        "204":
+          description: branch protection rule created successfully
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - repositories
+      x-contentType: application/json
+      x-accepts: application/json
   /healthcheck:
     get:
       description: check that the API server is up and running
@@ -3973,6 +4107,12 @@ components:
         type: string
       style: form
   requestBodies:
+    inline_object_1:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/inline_object_1'
+      required: true
     inline_object:
       content:
         multipart/form-data:
@@ -4139,6 +4279,7 @@ components:
         metadata:
           key: metadata
         size_bytes: 0
+        content_type: content_type
         checksum: checksum
         path_type: common_prefix
         mtime: 6
@@ -4165,6 +4306,9 @@ components:
           additionalProperties:
             type: string
           type: object
+        content_type:
+          description: Object media type
+          type: string
       required:
       - checksum
       - mtime
@@ -4185,6 +4329,7 @@ components:
           metadata:
             key: metadata
           size_bytes: 0
+          content_type: content_type
           checksum: checksum
           path_type: common_prefix
           mtime: 6
@@ -4193,6 +4338,7 @@ components:
           metadata:
             key: metadata
           size_bytes: 0
+          content_type: content_type
           checksum: checksum
           path_type: common_prefix
           mtime: 6
@@ -4213,6 +4359,7 @@ components:
         metadata:
           key: metadata
         size_bytes: 0
+        content_type: content_type
         checksum: checksum
         mtime: 6
       properties:
@@ -4231,6 +4378,9 @@ components:
           additionalProperties:
             type: string
           type: object
+        content_type:
+          description: Object media type
+          type: string
       required:
       - checksum
       - physical_address
@@ -4544,6 +4694,7 @@ components:
       type: object
     User:
       example:
+        friendly_name: friendly_name
         id: id
         creation_date: 0
       properties:
@@ -4553,6 +4704,8 @@ components:
           description: Unix Epoch in seconds
           format: int64
           type: integer
+        friendly_name:
+          type: string
       required:
       - creation_date
       - id
@@ -4560,6 +4713,7 @@ components:
     CurrentUser:
       example:
         user:
+          friendly_name: friendly_name
           id: id
           creation_date: 0
       properties:
@@ -4714,9 +4868,11 @@ components:
           next_offset: next_offset
           results: 0
         results:
-        - id: id
+        - friendly_name: friendly_name
+          id: id
           creation_date: 0
-        - id: id
+        - friendly_name: friendly_name
+          id: id
           creation_date: 0
       properties:
         pagination:
@@ -5043,6 +5199,7 @@ components:
         size_bytes: 0
         user_metadata:
           key: user_metadata
+        content_type: content_type
         checksum: checksum
         staging:
           physical_address: physical_address
@@ -5061,6 +5218,9 @@ components:
           additionalProperties:
             type: string
           type: object
+        content_type:
+          description: Object media type
+          type: string
       required:
       - checksum
       - size_bytes
@@ -5132,12 +5292,31 @@ components:
       - branches
       - default_retention_days
       type: object
+    BranchProtectionRule:
+      example:
+        pattern: stable_*
+      properties:
+        pattern:
+          description: fnmatch pattern for the branch name, supporting * and ? wildcards
+          example: stable_*
+          minLength: 1
+          type: string
+      required:
+      - pattern
+      type: object
     inline_object:
       properties:
         content:
           description: Object content to upload
           format: binary
           type: string
+      type: object
+    inline_object_1:
+      properties:
+        pattern:
+          type: string
+      required:
+      - pattern
       type: object
     MergeResult_summary:
       example:

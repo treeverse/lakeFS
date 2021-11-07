@@ -21,7 +21,7 @@ import (
 
 type AuthorizationRequest struct {
 	Username            string
-	RequiredPermissions []permissions.Permission
+	RequiredPermissions permissions.Node
 }
 
 type AuthorizationResponse struct {
@@ -29,11 +29,13 @@ type AuthorizationResponse struct {
 	Error   error
 }
 
+const InvalidUserID = -1
+
 type Service interface {
 	SecretStore() crypt.SecretStore
 
 	// users
-	CreateUser(ctx context.Context, user *model.User) error
+	CreateUser(ctx context.Context, user *model.User) (int, error)
 	DeleteUser(ctx context.Context, username string) error
 	GetUserByID(ctx context.Context, userID int) (*model.User, error)
 	GetUser(ctx context.Context, username string) (*model.User, error)
@@ -242,16 +244,21 @@ func (s *DBAuthService) DB() db.Database {
 	return s.db
 }
 
-func (s *DBAuthService) CreateUser(ctx context.Context, user *model.User) error {
-	_, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
+func (s *DBAuthService) CreateUser(ctx context.Context, user *model.User) (int, error) {
+	id, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		if err := model.ValidateAuthEntityID(user.Username); err != nil {
 			return nil, err
 		}
-		err := tx.Get(user,
-			`INSERT INTO auth_users (display_name, created_at) VALUES ($1, $2) RETURNING id`, user.Username, user.CreatedAt)
-		return nil, err
+		var id int
+		err := tx.Get(&id,
+			`INSERT INTO auth_users (display_name, created_at, friendly_name, source) VALUES ($1, $2, $3, $4) RETURNING id`,
+			user.Username, user.CreatedAt, user.FriendlyName, user.Source)
+		return id, err
 	})
-	return err
+	if err != nil {
+		return InvalidUserID, err
+	}
+	return id.(int), err
 }
 
 func (s *DBAuthService) DeleteUser(ctx context.Context, username string) error {
@@ -698,6 +705,12 @@ func (s *DBAuthService) CreateCredentials(ctx context.Context, username string) 
 }
 
 func (s *DBAuthService) AddCredentials(ctx context.Context, username, accessKeyID, secretAccessKey string) (*model.Credential, error) {
+	if !IsValidAccessKeyID(accessKeyID) {
+		return nil, ErrInvalidAccessKeyID
+	}
+	if len(secretAccessKey) == 0 {
+		return nil, ErrInvalidSecretAccessKey
+	}
 	now := time.Now()
 	encryptedKey, err := s.encryptSecret(secretAccessKey)
 	if err != nil {
@@ -729,6 +742,11 @@ func (s *DBAuthService) AddCredentials(ctx context.Context, username, accessKeyI
 		return nil, err
 	}
 	return credentials.(*model.Credential), err
+}
+
+func IsValidAccessKeyID(key string) bool {
+	l := len(key)
+	return l >= 3 && l <= 20
 }
 
 func (s *DBAuthService) DeleteCredentials(ctx context.Context, username, accessKeyID string) error {
@@ -834,6 +852,79 @@ func interpolateUser(resource string, username string) string {
 	return strings.ReplaceAll(resource, "${user}", username)
 }
 
+// CheckResult - the final result for the authorization is accepted only if it's CheckAllow
+type CheckResult int
+
+const (
+	// CheckAllow Permission allowed
+	CheckAllow CheckResult = iota
+	// CheckNeutral Permission neither allowed nor denied
+	CheckNeutral
+	// CheckDeny Permission denied
+	CheckDeny
+)
+
+func checkPermissions(node permissions.Node, username string, policies []*model.Policy) CheckResult {
+	allowed := CheckNeutral
+	switch node.Type {
+	case permissions.NodeTypeNode:
+		// check whether the permission is allowed, denied or natural (not allowed and not denied)
+		for _, policy := range policies {
+			for _, stmt := range policy.Statement {
+				resource := interpolateUser(stmt.Resource, username)
+				if !ArnMatch(resource, node.Permission.Resource) {
+					continue
+				}
+				for _, action := range stmt.Action {
+					if !wildcard.Match(action, node.Permission.Action) {
+						continue // not a matching action
+					}
+
+					if stmt.Effect == model.StatementEffectDeny {
+						// this is a "Deny" and it takes precedence
+						return CheckDeny
+					}
+
+					allowed = CheckAllow
+				}
+			}
+		}
+
+	case permissions.NodeTypeOr:
+		// returns:
+		// Allowed - at least one of the permissions is allowed and no one is denied
+		// Denied - one of the permissions is Deny
+		// Natural - otherwise
+		for _, node := range node.Nodes {
+			result := checkPermissions(node, username, policies)
+			if result == CheckDeny {
+				return CheckDeny
+			}
+			if allowed != CheckAllow {
+				allowed = result
+			}
+		}
+
+	case permissions.NodeTypeAnd:
+		// returns:
+		// Allowed - all the permissions are allowed
+		// Denied - one of the permissions is Deny
+		// Natural - otherwise
+		for _, node := range node.Nodes {
+			result := checkPermissions(node, username, policies)
+			if result == CheckNeutral || result == CheckDeny {
+				return result
+			}
+		}
+		return CheckAllow
+
+	default:
+		logging.Default().Error("unknown permission node type")
+		return CheckDeny
+	}
+	return allowed
+}
+
 func (s *DBAuthService) Authorize(ctx context.Context, req *AuthorizationRequest) (*AuthorizationResponse, error) {
 	policies, _, err := s.ListEffectivePolicies(ctx, req.Username, &model.PaginationParams{
 		After:  "", // all
@@ -843,34 +934,10 @@ func (s *DBAuthService) Authorize(ctx context.Context, req *AuthorizationRequest
 	if err != nil {
 		return nil, err
 	}
-	allowed := false
-	for _, perm := range req.RequiredPermissions {
-		for _, policy := range policies {
-			for _, stmt := range policy.Statement {
-				resource := interpolateUser(stmt.Resource, req.Username)
-				if !ArnMatch(resource, perm.Resource) {
-					continue
-				}
-				for _, action := range stmt.Action {
-					if !wildcard.Match(action, perm.Action) {
-						continue // not a matching action
-					}
 
-					if stmt.Effect == model.StatementEffectDeny {
-						// this is a "Deny" and it takes precedence
-						return &AuthorizationResponse{
-							Allowed: false,
-							Error:   ErrInsufficientPermissions,
-						}, nil
-					}
+	allowed := checkPermissions(req.RequiredPermissions, req.Username, policies)
 
-					allowed = true
-				}
-			}
-		}
-	}
-
-	if !allowed {
+	if allowed != CheckAllow {
 		return &AuthorizationResponse{
 			Allowed: false,
 			Error:   ErrInsufficientPermissions,

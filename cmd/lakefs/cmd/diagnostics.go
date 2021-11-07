@@ -16,6 +16,7 @@ var diagnosticsCmd = &cobra.Command{
 	Use:   "diagnostics",
 	Short: "Collect lakeFS diagnostics",
 	Run: func(cmd *cobra.Command, args []string) {
+		cfg := loadConfig()
 		ctx := cmd.Context()
 		output, _ := cmd.Flags().GetString("output")
 

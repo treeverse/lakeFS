@@ -37,3 +37,16 @@ message GarbageCollectionRunMetadata {
   string Commits_csv_location = 2;
   string Address_location = 3;
 }
+
+enum BranchProtectionBlockedAction {
+  STAGING_WRITE = 0;
+  COMMIT = 1;
+}
+
+message BranchProtectionBlockedActions {
+  repeated BranchProtectionBlockedAction value = 1;
+}
+
+message BranchProtectionRules {
+  map<string, BranchProtectionBlockedActions> branch_pattern_to_blocked_actions = 1;
+}
