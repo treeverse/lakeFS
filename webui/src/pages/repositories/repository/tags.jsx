@@ -4,7 +4,7 @@ import {
     TagIcon,
     LinkIcon,
     PackageIcon,
-    SearchIcon, TrashIcon
+    TrashIcon
 } from "@primer/octicons-react";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import Button from "react-bootstrap/Button";
@@ -43,7 +43,7 @@ const TagWidget = ({ repo, tag, onDelete }) => {
                         <Link href={{
                             pathname: '/repositories/:repoId/objects',
                             params: { repoId: repo.id },
-                            query: { ref: tag.commit_id }
+                            query: { ref: tag.id }
                         }}>
                             {tag.id}
                         </Link>
