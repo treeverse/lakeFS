@@ -897,7 +897,7 @@ func (c *Catalog) ListCommits(ctx context.Context, repository string, branch str
 		}
 
 		if len(params.PathList) != 0 && len(v.Parents) == NumberOfParentsOfNonMergeCommit {
-			// if path list ins't empty, and also the current commit isn't a merge commit -
+			// if path list isn't empty, and also the current commit isn't a merge commit -
 			// we check if the current commit contains changes to the paths
 			pathInCommit, err := c.pathInCommit(ctx, repositoryID, v, params)
 			if err != nil {
