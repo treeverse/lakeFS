@@ -248,6 +248,7 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 	}
 	return nil
 }
+
 func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
 	var err error
 	defer reportMetrics("CreateMultiPartUpload", time.Now(), nil, &err)

@@ -96,6 +96,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
+	normalizeMultipartUploadCompletion(&multipartList)
 	resp, err := o.BlockStore.CompleteMultiPartUpload(req.Context(),
 		block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: objName},
 		uploadID,
@@ -134,6 +135,16 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 		Key:      path.WithRef(o.Path, o.Reference),
 		ETag:     httputil.ETag(resp.ETag),
 	}, http.StatusOK)
+}
+
+// normalizeMultipartUploadCompletion normalization incoming multipart upload completion list.
+// we make sure that each part's ETag will be without the wrapping quotes
+func normalizeMultipartUploadCompletion(list *block.MultipartUploadCompletion) {
+	for _, part := range list.Part {
+		if part.ETag != nil {
+			*part.ETag = strings.Trim(*part.ETag, `"`)
+		}
+	}
 }
 
 func (controller *PostObject) Handle(w http.ResponseWriter, req *http.Request, o *PathOperation) {
