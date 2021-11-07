@@ -29,6 +29,7 @@ import RefDropdown from "../../../lib/components/repository/refDropdown";
 import { Link } from "../../../lib/components/nav";
 import { useRouter } from "../../../lib/hooks/router";
 import {ConfirmationButton} from "../../../lib/components/modals";
+import Alert from "react-bootstrap/Alert";
 
 
 const TagWidget = ({ repo, tag, onDelete }) => {
@@ -88,7 +89,7 @@ const TagWidget = ({ repo, tag, onDelete }) => {
 
 const CreateTagButton = ({ repo, variant = "success", onCreate = null, children }) => {
     const [show, setShow] = useState(false);
-    const [disabled, setDisabled] = useState(false);
+    const [disabled, setDisabled] = useState(true);
     const [error, setError] = useState(null);
     const textRef = useRef(null);
     const defaultRef = useMemo(
@@ -97,27 +98,29 @@ const CreateTagButton = ({ repo, variant = "success", onCreate = null, children 
     const [selectedRef, setSelectedRef] = useState(defaultRef);
 
     const hide = () => {
-        if (disabled) return;
         setShow(false);
     };
 
     const display = () => {
+        setError(null);
+        setDisabled(true);
         setShow(true);
     };
 
     const onSubmit = () => {
         setDisabled(true);
+        setError(null);
         const tagId = textRef.current.value;
         const sourceRef = selectedRef.id;
         tags.create(repo.id, tagId, sourceRef)
-            .catch(err => {
-                setError(err);
-            })
-            .then((response) => {
-                setError(false);
+            .then(response => {
+                setError(null);
                 setDisabled(false);
                 setShow(false);
                 if (onCreate !== null) onCreate(response);
+            }, err => {
+                setDisabled(false);
+                setError(err);
             });
     };
 
@@ -134,7 +137,7 @@ const CreateTagButton = ({ repo, variant = "success", onCreate = null, children 
                         e.preventDefault();
                     }}>
                         <Form.Group controlId="name" className="float-left w-25">
-                            <Form.Control type="text" placeholder="Tag Name" name="text" ref={textRef} />
+                            <Form.Control type="text" placeholder="Tag Name" name="text" ref={textRef} onChange={() => setDisabled(!textRef.current || !textRef.current.value)}/>
                         </Form.Group>
                         <Form.Group controlId="source">
                             <span className="ml-2 mr-2">@</span>
@@ -155,7 +158,7 @@ const CreateTagButton = ({ repo, variant = "success", onCreate = null, children 
 
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="secondary" disabled={disabled} onClick={hide}>
+                    <Button variant="secondary" onClick={hide}>
                         Cancel
                     </Button>
                     <Button variant="success" onClick={onSubmit} disabled={disabled}>
@@ -182,7 +185,7 @@ const TagList = ({ repo, after, onPaginate }) => {
 
     if (loading) content = <Loading />;
     else if (!!error) content = <Error error={error} />;
-    else content = ( results && !!results.length  &&
+    else content = ( results && !!results.length  ?
         <>
             <Card>
                 <ListGroup variant="flush">
@@ -192,8 +195,8 @@ const TagList = ({ repo, after, onPaginate }) => {
                 </ListGroup>
             </Card>
             <Paginator onPaginate={onPaginate} nextPage={nextPage} after={after} />
-        </>
-    );
+        </> : <Alert variant="info">There aren&apos;t any tags yet.</Alert>
+    )
 
     return (
         <>
