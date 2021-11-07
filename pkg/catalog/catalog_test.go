@@ -375,7 +375,7 @@ func TestCatalog_ListTags(t *testing.T) {
 				Store: gravelerMock,
 			}
 			ctx := context.Background()
-			got, hasMore, err := c.ListTags(ctx, "repo", tt.args.limit, tt.args.after)
+			got, hasMore, err := c.ListTags(ctx, "repo", "", tt.args.limit, tt.args.after)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("ListTags() error = %v, wantErr %v", err, tt.wantErr)
 			}

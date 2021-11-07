@@ -1785,6 +1785,7 @@ paths:
       operationId: listTags
       summary: list tags
       parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
       responses:

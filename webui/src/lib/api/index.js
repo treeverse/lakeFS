@@ -468,8 +468,8 @@ class Branches {
 
 class Tags {
 
-    async list(repoId, after = "", amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({after, amount});
+    async list(repoId, prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
+        const query = qs({prefix, after, amount});
         const response = await apiRequest(`/repositories/${repoId}/tags?${query}`);
         if (response.status !== 200) {
             throw new Error(`could not list tags: ${await extractError(response)}`);
