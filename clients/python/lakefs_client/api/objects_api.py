@@ -59,7 +59,7 @@ class ObjectsApi(object):
             Args:
                 repository (str):
                 branch (str):
-                path (str):
+                path (str): relative to the branch
 
             Keyword Args:
                 _return_http_data_only (bool): response data without head status
@@ -199,7 +199,7 @@ class ObjectsApi(object):
             Args:
                 repository (str):
                 ref (str): a reference (could be either a branch or a commit ID)
-                path (str):
+                path (str): relative to the ref
 
             Keyword Args:
                 _return_http_data_only (bool): response data without head status
@@ -340,7 +340,7 @@ class ObjectsApi(object):
             Args:
                 repository (str):
                 ref (str): a reference (could be either a branch or a commit ID)
-                path (str):
+                path (str): relative to the branch
 
             Keyword Args:
                 _return_http_data_only (bool): response data without head status
@@ -647,7 +647,7 @@ class ObjectsApi(object):
             Args:
                 repository (str):
                 branch (str):
-                path (str):
+                path (str): relative to the branch
                 object_stage_creation (ObjectStageCreation):
 
             Keyword Args:
@@ -797,7 +797,7 @@ class ObjectsApi(object):
             Args:
                 repository (str):
                 ref (str): a reference (could be either a branch or a commit ID)
-                path (str):
+                path (str): relative to the branch
 
             Keyword Args:
                 user_metadata (bool): [optional] if omitted the server will use the default value of True
@@ -943,12 +943,12 @@ class ObjectsApi(object):
             Args:
                 repository (str):
                 branch (str):
-                path (str):
+                path (str): relative to the branch
 
             Keyword Args:
                 storage_class (str): [optional]
                 if_none_match (str): Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet. [optional]
-                content (file_type): Object content to upload. [optional]
+                content (file_type): Only a single file per upload which must be named \\\"content\\\".. [optional]
                 _return_http_data_only (bool): response data without head status
                     code and headers. Default is True.
                 _preload_content (bool): if False, the urllib3.HTTPResponse object

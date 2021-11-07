@@ -63,7 +63,7 @@ public class ObjectsApi {
      * Build call for deleteObject
      * @param repository  (required)
      * @param branch  (required)
-     * @param path  (required)
+     * @param path relative to the branch (required)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -141,7 +141,7 @@ public class ObjectsApi {
      * 
      * @param repository  (required)
      * @param branch  (required)
-     * @param path  (required)
+     * @param path relative to the branch (required)
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
@@ -161,7 +161,7 @@ public class ObjectsApi {
      * 
      * @param repository  (required)
      * @param branch  (required)
-     * @param path  (required)
+     * @param path relative to the branch (required)
      * @return ApiResponse&lt;Void&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -183,7 +183,7 @@ public class ObjectsApi {
      * 
      * @param repository  (required)
      * @param branch  (required)
-     * @param path  (required)
+     * @param path relative to the branch (required)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -206,7 +206,7 @@ public class ObjectsApi {
      * Build call for getObject
      * @param repository  (required)
      * @param ref a reference (could be either a branch or a commit ID) (required)
-     * @param path  (required)
+     * @param path relative to the ref (required)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -285,7 +285,7 @@ public class ObjectsApi {
      * 
      * @param repository  (required)
      * @param ref a reference (could be either a branch or a commit ID) (required)
-     * @param path  (required)
+     * @param path relative to the ref (required)
      * @return File
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -308,7 +308,7 @@ public class ObjectsApi {
      * 
      * @param repository  (required)
      * @param ref a reference (could be either a branch or a commit ID) (required)
-     * @param path  (required)
+     * @param path relative to the ref (required)
      * @return ApiResponse&lt;File&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -332,7 +332,7 @@ public class ObjectsApi {
      * 
      * @param repository  (required)
      * @param ref a reference (could be either a branch or a commit ID) (required)
-     * @param path  (required)
+     * @param path relative to the ref (required)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -357,7 +357,7 @@ public class ObjectsApi {
      * Build call for getUnderlyingProperties
      * @param repository  (required)
      * @param ref a reference (could be either a branch or a commit ID) (required)
-     * @param path  (required)
+     * @param path relative to the branch (required)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -435,7 +435,7 @@ public class ObjectsApi {
      * 
      * @param repository  (required)
      * @param ref a reference (could be either a branch or a commit ID) (required)
-     * @param path  (required)
+     * @param path relative to the branch (required)
      * @return UnderlyingObjectProperties
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -457,7 +457,7 @@ public class ObjectsApi {
      * 
      * @param repository  (required)
      * @param ref a reference (could be either a branch or a commit ID) (required)
-     * @param path  (required)
+     * @param path relative to the branch (required)
      * @return ApiResponse&lt;UnderlyingObjectProperties&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -480,7 +480,7 @@ public class ObjectsApi {
      * 
      * @param repository  (required)
      * @param ref a reference (could be either a branch or a commit ID) (required)
-     * @param path  (required)
+     * @param path relative to the branch (required)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -678,7 +678,7 @@ public class ObjectsApi {
      * Build call for stageObject
      * @param repository  (required)
      * @param branch  (required)
-     * @param path  (required)
+     * @param path relative to the branch (required)
      * @param objectStageCreation  (required)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
@@ -763,7 +763,7 @@ public class ObjectsApi {
      * 
      * @param repository  (required)
      * @param branch  (required)
-     * @param path  (required)
+     * @param path relative to the branch (required)
      * @param objectStageCreation  (required)
      * @return ObjectStats
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
@@ -787,7 +787,7 @@ public class ObjectsApi {
      * 
      * @param repository  (required)
      * @param branch  (required)
-     * @param path  (required)
+     * @param path relative to the branch (required)
      * @param objectStageCreation  (required)
      * @return ApiResponse&lt;ObjectStats&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
@@ -812,7 +812,7 @@ public class ObjectsApi {
      * 
      * @param repository  (required)
      * @param branch  (required)
-     * @param path  (required)
+     * @param path relative to the branch (required)
      * @param objectStageCreation  (required)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
@@ -838,7 +838,7 @@ public class ObjectsApi {
      * Build call for statObject
      * @param repository  (required)
      * @param ref a reference (could be either a branch or a commit ID) (required)
-     * @param path  (required)
+     * @param path relative to the branch (required)
      * @param userMetadata  (optional, default to true)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
@@ -922,7 +922,7 @@ public class ObjectsApi {
      * 
      * @param repository  (required)
      * @param ref a reference (could be either a branch or a commit ID) (required)
-     * @param path  (required)
+     * @param path relative to the branch (required)
      * @param userMetadata  (optional, default to true)
      * @return ObjectStats
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
@@ -946,7 +946,7 @@ public class ObjectsApi {
      * 
      * @param repository  (required)
      * @param ref a reference (could be either a branch or a commit ID) (required)
-     * @param path  (required)
+     * @param path relative to the branch (required)
      * @param userMetadata  (optional, default to true)
      * @return ApiResponse&lt;ObjectStats&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
@@ -971,7 +971,7 @@ public class ObjectsApi {
      * 
      * @param repository  (required)
      * @param ref a reference (could be either a branch or a commit ID) (required)
-     * @param path  (required)
+     * @param path relative to the branch (required)
      * @param userMetadata  (optional, default to true)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
@@ -997,10 +997,10 @@ public class ObjectsApi {
      * Build call for uploadObject
      * @param repository  (required)
      * @param branch  (required)
-     * @param path  (required)
+     * @param path relative to the branch (required)
      * @param storageClass  (optional)
      * @param ifNoneMatch Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet (optional)
-     * @param content Object content to upload (optional)
+     * @param content Only a single file per upload which must be named \\\&quot;content\\\&quot;. (optional)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -1092,10 +1092,10 @@ public class ObjectsApi {
      * 
      * @param repository  (required)
      * @param branch  (required)
-     * @param path  (required)
+     * @param path relative to the branch (required)
      * @param storageClass  (optional)
      * @param ifNoneMatch Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet (optional)
-     * @param content Object content to upload (optional)
+     * @param content Only a single file per upload which must be named \\\&quot;content\\\&quot;. (optional)
      * @return ObjectStats
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -1119,10 +1119,10 @@ public class ObjectsApi {
      * 
      * @param repository  (required)
      * @param branch  (required)
-     * @param path  (required)
+     * @param path relative to the branch (required)
      * @param storageClass  (optional)
      * @param ifNoneMatch Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet (optional)
-     * @param content Object content to upload (optional)
+     * @param content Only a single file per upload which must be named \\\&quot;content\\\&quot;. (optional)
      * @return ApiResponse&lt;ObjectStats&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -1147,10 +1147,10 @@ public class ObjectsApi {
      * 
      * @param repository  (required)
      * @param branch  (required)
-     * @param path  (required)
+     * @param path relative to the branch (required)
      * @param storageClass  (optional)
      * @param ifNoneMatch Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet (optional)
-     * @param content Object content to upload (optional)
+     * @param content Only a single file per upload which must be named \\\&quot;content\\\&quot;. (optional)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
