@@ -1762,6 +1762,10 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 
 	// write the content
 	file, handler, err := r.FormFile("content")
+	if errors.Is(err, http.ErrMissingFile) {
+		writeError(w, http.StatusInternalServerError, fmt.Errorf("multipart uploads missing key 'content': %w", err))
+		return
+	}
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return

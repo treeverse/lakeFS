@@ -52,7 +52,7 @@ public class Example {
     ObjectsApi apiInstance = new ObjectsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | 
-    String path = "path_example"; // String | 
+    String path = "path_example"; // String | relative to the branch
     try {
       apiInstance.deleteObject(repository, branch, path);
     } catch (ApiException e) {
@@ -72,7 +72,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **String**|  |
  **branch** | **String**|  |
- **path** | **String**|  |
+ **path** | **String**| relative to the branch |
 
 ### Return type
 
@@ -134,7 +134,7 @@ public class Example {
     ObjectsApi apiInstance = new ObjectsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String ref = "ref_example"; // String | a reference (could be either a branch or a commit ID)
-    String path = "path_example"; // String | 
+    String path = "path_example"; // String | relative to the ref
     try {
       File result = apiInstance.getObject(repository, ref, path);
       System.out.println(result);
@@ -155,7 +155,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **String**|  |
  **ref** | **String**| a reference (could be either a branch or a commit ID) |
- **path** | **String**|  |
+ **path** | **String**| relative to the ref |
 
 ### Return type
 
@@ -218,7 +218,7 @@ public class Example {
     ObjectsApi apiInstance = new ObjectsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String ref = "ref_example"; // String | a reference (could be either a branch or a commit ID)
-    String path = "path_example"; // String | 
+    String path = "path_example"; // String | relative to the branch
     try {
       UnderlyingObjectProperties result = apiInstance.getUnderlyingProperties(repository, ref, path);
       System.out.println(result);
@@ -239,7 +239,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **String**|  |
  **ref** | **String**| a reference (could be either a branch or a commit ID) |
- **path** | **String**|  |
+ **path** | **String**| relative to the branch |
 
 ### Return type
 
@@ -392,7 +392,7 @@ public class Example {
     ObjectsApi apiInstance = new ObjectsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | 
-    String path = "path_example"; // String | 
+    String path = "path_example"; // String | relative to the branch
     ObjectStageCreation objectStageCreation = new ObjectStageCreation(); // ObjectStageCreation | 
     try {
       ObjectStats result = apiInstance.stageObject(repository, branch, path, objectStageCreation);
@@ -414,7 +414,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **String**|  |
  **branch** | **String**|  |
- **path** | **String**|  |
+ **path** | **String**| relative to the branch |
  **objectStageCreation** | [**ObjectStageCreation**](ObjectStageCreation.md)|  |
 
 ### Return type
@@ -478,7 +478,7 @@ public class Example {
     ObjectsApi apiInstance = new ObjectsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String ref = "ref_example"; // String | a reference (could be either a branch or a commit ID)
-    String path = "path_example"; // String | 
+    String path = "path_example"; // String | relative to the branch
     Boolean userMetadata = true; // Boolean | 
     try {
       ObjectStats result = apiInstance.statObject(repository, ref, path, userMetadata);
@@ -500,7 +500,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **String**|  |
  **ref** | **String**| a reference (could be either a branch or a commit ID) |
- **path** | **String**|  |
+ **path** | **String**| relative to the branch |
  **userMetadata** | **Boolean**|  | [optional] [default to true]
 
 ### Return type
@@ -564,10 +564,10 @@ public class Example {
     ObjectsApi apiInstance = new ObjectsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | 
-    String path = "path_example"; // String | 
+    String path = "path_example"; // String | relative to the branch
     String storageClass = "storageClass_example"; // String | 
     String ifNoneMatch = "*"; // String | Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet
-    File content = new File("/path/to/file"); // File | Object content to upload
+    File content = new File("/path/to/file"); // File | Only a single file per upload which must be named \\\"content\\\".
     try {
       ObjectStats result = apiInstance.uploadObject(repository, branch, path, storageClass, ifNoneMatch, content);
       System.out.println(result);
@@ -588,10 +588,10 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **String**|  |
  **branch** | **String**|  |
- **path** | **String**|  |
+ **path** | **String**| relative to the branch |
  **storageClass** | **String**|  | [optional]
  **ifNoneMatch** | **String**| Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet | [optional]
- **content** | **File**| Object content to upload | [optional]
+ **content** | **File**| Only a single file per upload which must be named \\\&quot;content\\\&quot;. | [optional]
 
 ### Return type
 

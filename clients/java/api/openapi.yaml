@@ -2732,7 +2732,8 @@ paths:
         schema:
           type: string
         style: simple
-      - explode: true
+      - description: relative to the ref
+        explode: true
         in: query
         name: path
         required: true
@@ -2815,7 +2816,8 @@ paths:
         schema:
           type: string
         style: simple
-      - explode: true
+      - description: relative to the branch
+        explode: true
         in: query
         name: path
         required: true
@@ -2877,7 +2879,8 @@ paths:
         schema:
           type: string
         style: simple
-      - explode: true
+      - description: relative to the branch
+        explode: true
         in: query
         name: path
         required: true
@@ -2950,7 +2953,8 @@ paths:
         schema:
           type: string
         style: simple
-      - explode: true
+      - description: relative to the branch
+        explode: true
         in: query
         name: path
         required: true
@@ -2999,7 +3003,8 @@ paths:
         schema:
           type: string
         style: simple
-      - explode: true
+      - description: relative to the branch
+        explode: true
         in: query
         name: path
         required: true
@@ -3031,7 +3036,7 @@ paths:
             schema:
               properties:
                 content:
-                  description: Object content to upload
+                  description: Only a single file per upload which must be named "content".
                   format: binary
                   type: string
               type: object
@@ -3094,7 +3099,8 @@ paths:
         schema:
           type: string
         style: simple
-      - explode: true
+      - description: relative to the branch
+        explode: true
         in: query
         name: path
         required: true
@@ -3162,7 +3168,8 @@ paths:
         schema:
           type: string
         style: simple
-      - explode: true
+      - description: relative to the branch
+        explode: true
         in: query
         name: path
         required: true
@@ -3227,7 +3234,8 @@ paths:
         schema:
           type: string
         style: simple
-      - explode: true
+      - description: relative to the branch
+        explode: true
         in: query
         name: path
         required: true
@@ -5307,7 +5315,7 @@ components:
     inline_object:
       properties:
         content:
-          description: Object content to upload
+          description: Only a single file per upload which must be named "content".
           format: binary
           type: string
       type: object

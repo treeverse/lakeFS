@@ -61,7 +61,7 @@ public class StagingApi {
      * Build call for getPhysicalAddress
      * @param repository  (required)
      * @param branch  (required)
-     * @param path  (required)
+     * @param path relative to the branch (required)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -139,7 +139,7 @@ public class StagingApi {
      * 
      * @param repository  (required)
      * @param branch  (required)
-     * @param path  (required)
+     * @param path relative to the branch (required)
      * @return StagingLocation
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -161,7 +161,7 @@ public class StagingApi {
      * 
      * @param repository  (required)
      * @param branch  (required)
-     * @param path  (required)
+     * @param path relative to the branch (required)
      * @return ApiResponse&lt;StagingLocation&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -184,7 +184,7 @@ public class StagingApi {
      * 
      * @param repository  (required)
      * @param branch  (required)
-     * @param path  (required)
+     * @param path relative to the branch (required)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -208,7 +208,7 @@ public class StagingApi {
      * Build call for linkPhysicalAddress
      * @param repository  (required)
      * @param branch  (required)
-     * @param path  (required)
+     * @param path relative to the branch (required)
      * @param stagingMetadata  (required)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
@@ -294,7 +294,7 @@ public class StagingApi {
      * If the supplied token matches the current staging token, associate the object as the physical address with the supplied path.  Otherwise, if staging has been committed and the token has expired, return a conflict and hint where to place the object to try again.  Caller should copy the object to the new physical address and PUT again with the new staging token.  (No need to back off, this is due to losing the race against a concurrent commit operation.) 
      * @param repository  (required)
      * @param branch  (required)
-     * @param path  (required)
+     * @param path relative to the branch (required)
      * @param stagingMetadata  (required)
      * @return ObjectStats
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
@@ -319,7 +319,7 @@ public class StagingApi {
      * If the supplied token matches the current staging token, associate the object as the physical address with the supplied path.  Otherwise, if staging has been committed and the token has expired, return a conflict and hint where to place the object to try again.  Caller should copy the object to the new physical address and PUT again with the new staging token.  (No need to back off, this is due to losing the race against a concurrent commit operation.) 
      * @param repository  (required)
      * @param branch  (required)
-     * @param path  (required)
+     * @param path relative to the branch (required)
      * @param stagingMetadata  (required)
      * @return ApiResponse&lt;ObjectStats&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
@@ -345,7 +345,7 @@ public class StagingApi {
      * If the supplied token matches the current staging token, associate the object as the physical address with the supplied path.  Otherwise, if staging has been committed and the token has expired, return a conflict and hint where to place the object to try again.  Caller should copy the object to the new physical address and PUT again with the new staging token.  (No need to back off, this is due to losing the race against a concurrent commit operation.) 
      * @param repository  (required)
      * @param branch  (required)
-     * @param path  (required)
+     * @param path relative to the branch (required)
      * @param stagingMetadata  (required)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call

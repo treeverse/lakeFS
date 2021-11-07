@@ -58,7 +58,7 @@ class StagingApi(object):
             Args:
                 repository (str):
                 branch (str):
-                path (str):
+                path (str): relative to the branch
 
             Keyword Args:
                 _return_http_data_only (bool): response data without head status
@@ -200,7 +200,7 @@ class StagingApi(object):
             Args:
                 repository (str):
                 branch (str):
-                path (str):
+                path (str): relative to the branch
                 staging_metadata (StagingMetadata):
 
             Keyword Args:

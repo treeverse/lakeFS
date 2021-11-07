@@ -2325,6 +2325,7 @@ paths:
         description: a reference (could be either a branch or a commit ID)
       - in: query
         name: path
+        description: relative to the ref
         required: true
         schema:
           type: string
@@ -2382,6 +2383,7 @@ paths:
           type: string
       - in: query
         name: path
+        description: relative to the branch
         required: true
         schema:
           type: string
@@ -2462,6 +2464,7 @@ paths:
           type: string
       - in: query
         name: path
+        description: relative to the branch
         required: true
         schema:
           type: string
@@ -2503,7 +2506,7 @@ paths:
               type: object
               properties:
                 content:
-                  description: Object content to upload
+                  description: Only a single file per upload which must be named "content".
                   type: string
                   format: binary
 
@@ -2568,6 +2571,7 @@ paths:
         description: a reference (could be either a branch or a commit ID)
       - in: query
         name: path
+        description: relative to the branch
         required: true
         schema:
           type: string
@@ -2613,6 +2617,7 @@ paths:
         description: a reference (could be either a branch or a commit ID)
       - in: query
         name: path
+        description: relative to the branch
         required: true
         schema:
           type: string
