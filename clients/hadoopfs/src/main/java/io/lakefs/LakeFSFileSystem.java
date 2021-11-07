@@ -760,9 +760,13 @@ public class LakeFSFileSystem extends FileSystem {
     @Override
     public FileStatus[] globStatus(Path pathPattern) throws IOException {
         // TODO: implement this method as part of https://github.com/treeverse/lakeFS/issues/2629
-        FileStatus fStatus = new FileStatus(0, false, 1, 20, 1,
-                new Path("globStatus-test-path"));
-        return new FileStatus[]{fStatus};
+        OPERATIONS_LOG.info("pathPattern({})", pathPattern);
+
+        try{
+            return listStatus(pathPattern);
+        } catch (FileNotFoundException f){
+            return null;
+        }
     }
 
     @Override
