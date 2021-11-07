@@ -64,7 +64,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     api_instance = objects_api.ObjectsApi(api_client)
     repository = "repository_example" # str | 
     branch = "branch_example" # str | 
-    path = "path_example" # str | 
+    path = "path_example" # str | relative to the branch
 
     # example passing only required values which don't have defaults set
     try:
@@ -81,7 +81,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
  **branch** | **str**|  |
- **path** | **str**|  |
+ **path** | **str**| relative to the branch |
 
 ### Return type
 
@@ -159,7 +159,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     api_instance = objects_api.ObjectsApi(api_client)
     repository = "repository_example" # str | 
     ref = "ref_example" # str | a reference (could be either a branch or a commit ID)
-    path = "path_example" # str | 
+    path = "path_example" # str | relative to the ref
 
     # example passing only required values which don't have defaults set
     try:
@@ -177,7 +177,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
  **ref** | **str**| a reference (could be either a branch or a commit ID) |
- **path** | **str**|  |
+ **path** | **str**| relative to the ref |
 
 ### Return type
 
@@ -257,7 +257,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     api_instance = objects_api.ObjectsApi(api_client)
     repository = "repository_example" # str | 
     ref = "ref_example" # str | a reference (could be either a branch or a commit ID)
-    path = "path_example" # str | 
+    path = "path_example" # str | relative to the branch
 
     # example passing only required values which don't have defaults set
     try:
@@ -275,7 +275,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
  **ref** | **str**| a reference (could be either a branch or a commit ID) |
- **path** | **str**|  |
+ **path** | **str**| relative to the branch |
 
 ### Return type
 
@@ -469,7 +469,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     api_instance = objects_api.ObjectsApi(api_client)
     repository = "repository_example" # str | 
     branch = "branch_example" # str | 
-    path = "path_example" # str | 
+    path = "path_example" # str | relative to the branch
     object_stage_creation = ObjectStageCreation(
         physical_address="physical_address_example",
         checksum="checksum_example",
@@ -497,7 +497,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
  **branch** | **str**|  |
- **path** | **str**|  |
+ **path** | **str**| relative to the branch |
  **object_stage_creation** | [**ObjectStageCreation**](ObjectStageCreation.md)|  |
 
 ### Return type
@@ -578,7 +578,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     api_instance = objects_api.ObjectsApi(api_client)
     repository = "repository_example" # str | 
     ref = "ref_example" # str | a reference (could be either a branch or a commit ID)
-    path = "path_example" # str | 
+    path = "path_example" # str | relative to the branch
     user_metadata = True # bool |  (optional) if omitted the server will use the default value of True
 
     # example passing only required values which don't have defaults set
@@ -606,7 +606,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
  **ref** | **str**| a reference (could be either a branch or a commit ID) |
- **path** | **str**|  |
+ **path** | **str**| relative to the branch |
  **user_metadata** | **bool**|  | [optional] if omitted the server will use the default value of True
 
 ### Return type
@@ -687,10 +687,10 @@ with lakefs_client.ApiClient(configuration) as api_client:
     api_instance = objects_api.ObjectsApi(api_client)
     repository = "repository_example" # str | 
     branch = "branch_example" # str | 
-    path = "path_example" # str | 
+    path = "path_example" # str | relative to the branch
     storage_class = "storageClass_example" # str |  (optional)
     if_none_match = "*" # str | Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet (optional)
-    content = open('/path/to/file', 'rb') # file_type | Object content to upload (optional)
+    content = open('/path/to/file', 'rb') # file_type | Only a single file per upload which must be named \\\"content\\\". (optional)
 
     # example passing only required values which don't have defaults set
     try:
@@ -715,10 +715,10 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
  **branch** | **str**|  |
- **path** | **str**|  |
+ **path** | **str**| relative to the branch |
  **storage_class** | **str**|  | [optional]
  **if_none_match** | **str**| Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet | [optional]
- **content** | **file_type**| Object content to upload | [optional]
+ **content** | **file_type**| Only a single file per upload which must be named \\\&quot;content\\\&quot;. | [optional]
 
 ### Return type
 

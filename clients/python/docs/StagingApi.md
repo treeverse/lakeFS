@@ -60,7 +60,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     api_instance = staging_api.StagingApi(api_client)
     repository = "repository_example" # str | 
     branch = "branch_example" # str | 
-    path = "path_example" # str | 
+    path = "path_example" # str | relative to the branch
 
     # example passing only required values which don't have defaults set
     try:
@@ -78,7 +78,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
  **branch** | **str**|  |
- **path** | **str**|  |
+ **path** | **str**| relative to the branch |
 
 ### Return type
 
@@ -161,7 +161,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     api_instance = staging_api.StagingApi(api_client)
     repository = "repository_example" # str | 
     branch = "branch_example" # str | 
-    path = "path_example" # str | 
+    path = "path_example" # str | relative to the branch
     staging_metadata = StagingMetadata(
         staging=StagingLocation(
             physical_address="physical_address_example",
@@ -191,7 +191,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
  **branch** | **str**|  |
- **path** | **str**|  |
+ **path** | **str**| relative to the branch |
  **staging_metadata** | [**StagingMetadata**](StagingMetadata.md)|  |
 
 ### Return type

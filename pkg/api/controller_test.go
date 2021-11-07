@@ -937,8 +937,8 @@ func uploadObjectHelper(t testing.TB, ctx context.Context, clt api.ClientWithRes
 func writeMultipart(fieldName, filename, content string) (string, io.Reader) {
 	var buf bytes.Buffer
 	mpw := multipart.NewWriter(&buf)
-	w, _ := mpw.CreateFormFile("content", "bar")
-	_, _ = w.Write([]byte("hello world!"))
+	w, _ := mpw.CreateFormFile(fieldName, filename)
+	_, _ = w.Write([]byte(content))
 	_ = mpw.Close()
 	return mpw.FormDataContentType(), &buf
 }
@@ -1041,6 +1041,22 @@ func TestController_UploadObject(t *testing.T) {
 		testutil.Must(t, err)
 		if b.StatusCode() != 412 {
 			t.Fatalf("expected 412 for UploadObject, got %d", b.StatusCode())
+		}
+	})
+
+	t.Run("upload object missing 'content' key", func(t *testing.T) {
+		// write
+		contentType, buf := writeMultipart("this-is-not-content", "bar", "hello world!")
+		b, err := clt.UploadObjectWithBodyWithResponse(ctx, "my-new-repo", "main", &api.UploadObjectParams{
+			Path: "foo/bar",
+		}, contentType, buf)
+
+		testutil.Must(t, err)
+		if b.StatusCode() != 500 {
+			t.Fatalf("expected 500 for UploadObject, got %d", b.StatusCode())
+		}
+		if !strings.Contains(b.JSONDefault.Message, "missing key 'content'") {
+			t.Fatalf("error message should state missing 'content' key")
 		}
 	})
 }

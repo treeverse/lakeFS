@@ -47,7 +47,7 @@ public class Example {
     StagingApi apiInstance = new StagingApi(defaultClient);
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | 
-    String path = "path_example"; // String | 
+    String path = "path_example"; // String | relative to the branch
     try {
       StagingLocation result = apiInstance.getPhysicalAddress(repository, branch, path);
       System.out.println(result);
@@ -68,7 +68,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **String**|  |
  **branch** | **String**|  |
- **path** | **String**|  |
+ **path** | **String**| relative to the branch |
 
 ### Return type
 
@@ -132,7 +132,7 @@ public class Example {
     StagingApi apiInstance = new StagingApi(defaultClient);
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | 
-    String path = "path_example"; // String | 
+    String path = "path_example"; // String | relative to the branch
     StagingMetadata stagingMetadata = new StagingMetadata(); // StagingMetadata | 
     try {
       ObjectStats result = apiInstance.linkPhysicalAddress(repository, branch, path, stagingMetadata);
@@ -154,7 +154,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **String**|  |
  **branch** | **String**|  |
- **path** | **String**|  |
+ **path** | **String**| relative to the branch |
  **stagingMetadata** | [**StagingMetadata**](StagingMetadata.md)|  |
 
 ### Return type
