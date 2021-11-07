@@ -274,14 +274,14 @@ func TestController_CommitsGetBranchCommitLogByPath(t *testing.T) {
 				•	commit P
 					⁃	added data/c/banana.txt
 				•	commit R
-					⁃	merged branch-a to main
+					⁃	merged branch-b to main
 				•	commit L
 					⁃	changed data/a/foo.txt
 					⁃	changed data/b/bar.txt
 				•	commit M
 					⁃	added data/a/d.txt
 				•	commit N
-					⁃	merged branch-b to main
+					⁃	merged branch-a to main
 				•	commit x
 					⁃	changed data/a/a.txt
 					⁃	added data/c/zebra.txt
@@ -369,7 +369,7 @@ func TestController_CommitsGetBranchCommitLogByPath(t *testing.T) {
 		expectedCommits []string
 	}{
 		{
-			name:            "simpleObjectWithOneCommit",
+			name:            "singleObjectWithOneCommit",
 			objectList:      &[]string{"data/a/d.txt"},
 			expectedCommits: []string{commitsMap["commitM"]},
 		},

@@ -3014,34 +3014,34 @@ func paginationAmount(v *PaginationAmount) int {
 	return i
 }
 
-func resolvePathList(objectList *[]string, prefixList *[]string) []catalog.PathRecord {
-	var pathList []catalog.PathRecord
-	if objectList == nil && prefixList == nil {
+func resolvePathList(objects *[]string, prefixes *[]string) []catalog.PathRecord {
+	var pathRecords []catalog.PathRecord
+	if objects == nil && prefixes == nil {
 		return make([]catalog.PathRecord, 0)
 	}
-	if objectList != nil {
-		for _, path := range *objectList {
+	if objects != nil {
+		for _, path := range *objects {
 			if path != "" {
 				path := path
-				pathList = append(pathList, catalog.PathRecord{
+				pathRecords = append(pathRecords, catalog.PathRecord{
 					Path:     catalog.Path(StringValue(&path)),
 					IsPrefix: false,
 				})
 			}
 		}
 	}
-	if prefixList != nil {
-		for _, path := range *prefixList {
+	if prefixes != nil {
+		for _, path := range *prefixes {
 			if path != "" {
 				path := path
-				pathList = append(pathList, catalog.PathRecord{
+				pathRecords = append(pathRecords, catalog.PathRecord{
 					Path:     catalog.Path(StringValue(&path)),
 					IsPrefix: true,
 				})
 			}
 		}
 	}
-	return pathList
+	return pathRecords
 }
 
 func NewController(

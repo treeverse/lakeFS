@@ -26,7 +26,7 @@ Merge:         {{ $val.Parents|join ", "|bold }}
 var logCmd = &cobra.Command{
 	Use:   "log <branch uri>",
 	Short: "Show log of commits",
-	Long:  "Show log of commits for a given branch. \nWith objects or prefixes, show log of commits containing changes to at least one of the paths.",
+	Long:  "Show log of commits for a given branch",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		amount := MustInt(cmd.Flags().GetInt("amount"))
@@ -85,6 +85,6 @@ func init() {
 	logCmd.Flags().Int("amount", 0, "number of results to return. By default, all results are returned")
 	logCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 	logCmd.Flags().Bool("show-meta-range-id", false, "also show meta range ID")
-	logCmd.Flags().StringSlice("objects", nil, "show results that contains changes to that list of objects. Use comma separator to pass all objects together")
-	logCmd.Flags().StringSlice("prefixes", nil, "show results that contains changes to that list of prefixes. Use comma separator to pass all prefixes together")
+	logCmd.Flags().StringSlice("objects", nil, "show results that contains changes to at least one path in that list of objects. Use comma separator to pass all objects together")
+	logCmd.Flags().StringSlice("prefixes", nil, "show results that contains changes to at least one path in that list of prefixes. Use comma separator to pass all prefixes together")
 }

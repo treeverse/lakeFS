@@ -37,6 +37,8 @@ import (
 // function they will be unable to re-use any existing objects.
 const hashAlg = crypto.SHA256
 
+const NumberOfParentsOfNonMergeCommit = 1
+
 type Path string
 
 type EntryRecord struct {
@@ -894,9 +896,9 @@ func (c *Catalog) ListCommits(ctx context.Context, repository string, branch str
 			commit.Parents = append(commit.Parents, parent.String())
 		}
 
-		if len(params.PathList) != 0 && len(v.Parents) == 1 {
-			// if we need to log only commits associated to the path, and also the current commit
-			// is not a merge commit, then we check if the current commit contains changes to the path
+		if len(params.PathList) != 0 && len(v.Parents) == NumberOfParentsOfNonMergeCommit {
+			// if path list ins't empty, and also the current commit isn't a merge commit -
+			// we check if the current commit contains changes to the paths
 			pathInCommit, err := c.pathInCommit(ctx, repositoryID, v, params)
 			if err != nil {
 				return nil, false, err
