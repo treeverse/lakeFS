@@ -8,6 +8,10 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 
+// MultipartUploadCompletion parts described as part of complete multipart upload. Each part holds the part number and ETag received while calling part upload.
+// NOTE that S3 implementation and our S3 gateway accept and returns ETag value surrounded with double-quotes ("), while
+// the adapter implementations supply the raw value of the etag (without double quotes) and let the gateway manage the s3
+// protocol specifications.
 type MultipartUploadCompletion struct{ Part []*s3.CompletedPart }
 
 // IdentifierType is the type the ObjectPointer Identifier
@@ -71,7 +75,8 @@ type CreateMultiPartUploadResponse struct {
 	ServerSideHeader http.Header
 }
 
-// CompleteMultiPartUploadResponse complete multipart etag, content length and additional headers (implementation specific) currently it targets s3
+// CompleteMultiPartUploadResponse complete multipart etag, content length and additional headers (implementation specific) currently it targets s3.
+// The ETag is a hex string value of the content checksum
 type CompleteMultiPartUploadResponse struct {
 	ETag             string
 	ContentLength    int64
@@ -80,6 +85,7 @@ type CompleteMultiPartUploadResponse struct {
 
 // UploadPartResponse upload part ETag and additional headers (implementation specific) currently it targets s3
 // capabilities to enable encryption properties
+// The ETag is a hex string value of the content checksum
 type UploadPartResponse struct {
 	ETag             string
 	ServerSideHeader http.Header
