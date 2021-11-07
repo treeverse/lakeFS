@@ -475,7 +475,7 @@ jobs:
         working-directory: test/spark
         run: docker-compose up -d
       - name: Copy repository ref
-        run: aws s3 cp --recursive s3://nessie-system-testing/test-data s3://nessie-system-testing/${{ github.run_number }}-spark3-metaclient
+        run: aws s3 cp --recursive s3://nessie-system-testing-data/golden-files/gc-test-data s3://nessie-system-testing/${{ github.run_number }}-spark3-metaclient
 
       - name: Setup lakeFS for tests
         env:
