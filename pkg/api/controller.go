@@ -2242,7 +2242,11 @@ func (c *Controller) RestoreRefs(w http.ResponseWriter, r *http.Request, body Re
 	}
 
 	// ensure no refs currently found
-	_, _, err = c.Catalog.ListCommits(ctx, repo.Name, repo.DefaultBranch, "", 1)
+	_, _, err = c.Catalog.ListCommits(ctx, repo.Name, repo.DefaultBranch, catalog.LogParams{
+		PathList:      make([]catalog.PathRecord, 0),
+		FromReference: "",
+		Limit:         1,
+	})
 	if !errors.Is(err, graveler.ErrNotFound) {
 		writeError(w, http.StatusBadRequest, "can only restore into a bare repository")
 		return
@@ -2404,14 +2408,17 @@ func (c *Controller) DiffRefs(w http.ResponseWriter, r *http.Request, repository
 
 // LogBranchCommits deprecated replaced by LogCommits
 func (c *Controller) LogBranchCommits(w http.ResponseWriter, r *http.Request, repository string, branch string, params LogBranchCommitsParams) {
-	c.logCommitsHelper(w, r, repository, branch, params.After, params.Amount)
+	c.logCommitsHelper(w, r, repository, branch, LogCommitsParams{
+		After:  params.After,
+		Amount: params.Amount,
+	})
 }
 
 func (c *Controller) LogCommits(w http.ResponseWriter, r *http.Request, repository string, ref string, params LogCommitsParams) {
-	c.logCommitsHelper(w, r, repository, ref, params.After, params.Amount)
+	c.logCommitsHelper(w, r, repository, ref, params)
 }
 
-func (c *Controller) logCommitsHelper(w http.ResponseWriter, r *http.Request, repository string, ref string, after *PaginationAfter, amount *PaginationAmount) {
+func (c *Controller) logCommitsHelper(w http.ResponseWriter, r *http.Request, repository string, ref string, params LogCommitsParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ReadBranchAction,
@@ -2424,7 +2431,11 @@ func (c *Controller) logCommitsHelper(w http.ResponseWriter, r *http.Request, re
 	c.LogAction(ctx, "get_branch_commit_log")
 
 	// get commit log
-	commitLog, hasMore, err := c.Catalog.ListCommits(ctx, repository, ref, paginationAfter(after), paginationAmount(amount))
+	commitLog, hasMore, err := c.Catalog.ListCommits(ctx, repository, ref, catalog.LogParams{
+		PathList:      resolvePathList(params.Objects, params.Prefixes),
+		FromReference: paginationAfter(params.After),
+		Limit:         paginationAmount(params.Amount),
+	})
 	if handleAPIError(w, err) {
 		return
 	}
@@ -2920,6 +2931,13 @@ func StringValue(s *string) string {
 	return *s
 }
 
+func BoolValue(v *bool) bool {
+	if v == nil {
+		return false
+	}
+	return *v
+}
+
 func Int64Value(p *int64) int64 {
 	if p == nil {
 		return 0
@@ -2994,6 +3012,36 @@ func paginationAmount(v *PaginationAmount) int {
 		return DefaultMaxPerPage
 	}
 	return i
+}
+
+func resolvePathList(objects *[]string, prefixes *[]string) []catalog.PathRecord {
+	var pathRecords []catalog.PathRecord
+	if objects == nil && prefixes == nil {
+		return make([]catalog.PathRecord, 0)
+	}
+	if objects != nil {
+		for _, path := range *objects {
+			if path != "" {
+				path := path
+				pathRecords = append(pathRecords, catalog.PathRecord{
+					Path:     catalog.Path(StringValue(&path)),
+					IsPrefix: false,
+				})
+			}
+		}
+	}
+	if prefixes != nil {
+		for _, path := range *prefixes {
+			if path != "" {
+				path := path
+				pathRecords = append(pathRecords, catalog.PathRecord{
+					Path:     catalog.Path(StringValue(&path)),
+					IsPrefix: true,
+				})
+			}
+		}
+	}
+	return pathRecords
 }
 
 func NewController(

@@ -6,7 +6,7 @@ Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**diffRefs**](RefsApi.md#diffRefs) | **GET** /repositories/{repository}/refs/{leftRef}/diff/{rightRef} | diff references
 [**dumpRefs**](RefsApi.md#dumpRefs) | **PUT** /repositories/{repository}/refs/dump | Dump repository refs (tags, commits, branches) to object store
-[**logCommits**](RefsApi.md#logCommits) | **GET** /repositories/{repository}/refs/{ref}/commits | get commit log from ref
+[**logCommits**](RefsApi.md#logCommits) | **GET** /repositories/{repository}/refs/{ref}/commits | get commit log from ref. If both objects and prefixes are empty, return all commits.
 [**mergeIntoBranch**](RefsApi.md#mergeIntoBranch) | **POST** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch} | merge references
 [**restoreRefs**](RefsApi.md#restoreRefs) | **PUT** /repositories/{repository}/refs/restore | Restore repository refs (tags, commits, branches) from object store
 
@@ -188,9 +188,9 @@ Name | Type | Description  | Notes
 
 <a name="logCommits"></a>
 # **logCommits**
-> CommitList logCommits(repository, ref, after, amount)
+> CommitList logCommits(repository, ref, after, amount, objects, prefixes)
 
-get commit log from ref
+get commit log from ref. If both objects and prefixes are empty, return all commits.
 
 ### Example
 ```java
@@ -227,8 +227,10 @@ public class Example {
     String ref = "ref_example"; // String | 
     String after = "after_example"; // String | return items after this value
     Integer amount = 100; // Integer | how many items to return
+    List<String> objects = Arrays.asList(); // List<String> | list of paths, each element is a path of a specific object
+    List<String> prefixes = Arrays.asList(); // List<String> | list of paths, each element is a path of a prefix
     try {
-      CommitList result = apiInstance.logCommits(repository, ref, after, amount);
+      CommitList result = apiInstance.logCommits(repository, ref, after, amount, objects, prefixes);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling RefsApi#logCommits");
@@ -249,6 +251,8 @@ Name | Type | Description  | Notes
  **ref** | **String**|  |
  **after** | **String**| return items after this value | [optional]
  **amount** | **Integer**| how many items to return | [optional] [default to 100]
+ **objects** | [**List&lt;String&gt;**](String.md)| list of paths, each element is a path of a specific object | [optional]
+ **prefixes** | [**List&lt;String&gt;**](String.md)| list of paths, each element is a path of a prefix | [optional]
 
 ### Return type
 

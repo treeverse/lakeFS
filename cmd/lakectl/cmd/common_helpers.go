@@ -23,6 +23,9 @@ import (
 var isTerminal = true
 var noColorRequested = false
 
+// ErrInvalidValueInList is an error returned when a parameter of type list contains an empty string
+var ErrInvalidValueInList = errors.New("empty string in list")
+
 const (
 	LakectlInteractive        = "LAKECTL_INTERACTIVE"
 	LakectlInteractiveDisable = "no"

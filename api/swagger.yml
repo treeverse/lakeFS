@@ -895,6 +895,7 @@ components:
           minLength: 1
       required:
         - pattern
+
 paths:
   /setup_lakefs:
     post:
@@ -1948,10 +1949,24 @@ paths:
       tags:
         - refs
       operationId: logCommits
-      summary: get commit log from ref
+      summary: get commit log from ref. If both objects and prefixes are empty, return all commits.
       parameters:
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
+        - in: query
+          name: objects
+          description: list of paths, each element is a path of a specific object
+          schema:
+            type: array
+            items:
+              type: string
+        - in: query
+          name: prefixes
+          description: list of paths, each element is a path of a prefix
+          schema:
+            type: array
+            items:
+              type: string
       responses:
         200:
           description: commit log

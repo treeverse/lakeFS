@@ -100,6 +100,22 @@ func MustString(v string, err error) string {
 	return v
 }
 
+func MustStringSlice(v []string, err error) []string {
+	if err != nil {
+		DieErr(err)
+	}
+	return v
+}
+
+func MustSliceNonEmptyString(list string, v []string) []string {
+	for _, s := range v {
+		if s == "" {
+			DieErr(fmt.Errorf("error in %s list: %w", list, ErrInvalidValueInList))
+		}
+	}
+	return v
+}
+
 func MustInt(v int, err error) int {
 	if err != nil {
 		DieErr(err)
