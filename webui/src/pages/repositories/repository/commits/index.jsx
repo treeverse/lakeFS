@@ -92,7 +92,7 @@ const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => 
 
     const [refresh, setRefresh] = useState(true)
     const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
-        return commits.log(repo.id, reference.id, after)
+        return commits.g(repo.id, reference.id, after)
     }, [repo.id, reference.id, refresh, after])
 
     if (loading) return <Loading/>

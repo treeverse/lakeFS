@@ -8,11 +8,11 @@ import Overlay from "react-bootstrap/Overlay";
 import {ChevronDownIcon, ChevronRightIcon, ChevronUpIcon, XIcon} from "@primer/octicons-react";
 import Popover from "react-bootstrap/Popover";
 
-import {branches, commits} from '../../api';
+import {tags, branches, commits} from '../../api';
 
 
-const BranchSelector = ({ repo, selected, branches, listBranches, selectRef, withCommits, withWorkspace, amount = 300 }) => {
-    // used for branch pagination
+const RefSelector = ({ repo, selected, branches, listRefs, selectRef, withCommits, withWorkspace, amount = 300 }) => {
+    // used for ref pagination
     const [pagination, setPagination] = useState({after: "", prefix: "", amount});
 
     // used for commit listing
@@ -20,8 +20,8 @@ const BranchSelector = ({ repo, selected, branches, listBranches, selectRef, wit
     const [commitList, setCommitList] = useState(initialCommitList);
 
     useEffect(()=> {
-        listBranches(repo.id, pagination.prefix, pagination.after, pagination.amount);
-    }, [repo.id, listBranches, pagination]);
+        listRefs(repo.id, pagination.prefix, pagination.after, pagination.amount);
+    }, [repo.id, listRefs, pagination]);
 
     const form = (
         <div className="ref-filter-form">
@@ -186,7 +186,7 @@ const RefDropdown = ({ repo, selected, selectRef, onCancel, variant="light", pre
     const listBranches = useCallback(async (repoId, prefix, after, amount) => {
         setBranches({loading: true, payload: null, error: null});
         try {
-            const response = await branches.list(repoId, prefix, after, amount);
+            const response = await tags.list(repoId, prefix, after, amount);
             setBranches({loading: false, payload: response, error: null});
         } catch (error) {
             setBranches({loading: false, payload: null, error: error});
@@ -197,11 +197,11 @@ const RefDropdown = ({ repo, selected, selectRef, onCancel, variant="light", pre
         <Overlay target={target.current} show={show} placement="bottom" rootClose={true} onHide={() => setShow(false)}>
             <Popover className="ref-popover">
                 <Popover.Content>
-                    <BranchSelector
+                    <RefSelector
                         repo={repo}
                         branches={branchList}
                         withCommits={withCommits}
-                        listBranches={listBranches}
+                        listRefs={listBranches}
                         withWorkspace={withWorkspace}
                         selected={selected}
                         selectRef={(ref) => {
