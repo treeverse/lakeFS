@@ -350,6 +350,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = tags_api.TagsApi(api_client)
     repository = "repository_example" # str | 
+    prefix = "prefix_example" # str | return items prefixed with this value (optional)
     after = "after_example" # str | return items after this value (optional)
     amount = 100 # int | how many items to return (optional) if omitted the server will use the default value of 100
 
@@ -365,7 +366,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # and optional values
     try:
         # list tags
-        api_response = api_instance.list_tags(repository, after=after, amount=amount)
+        api_response = api_instance.list_tags(repository, prefix=prefix, after=after, amount=amount)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling TagsApi->list_tags: %s\n" % e)
@@ -377,6 +378,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
+ **prefix** | **str**| return items prefixed with this value | [optional]
  **after** | **str**| return items after this value | [optional]
  **amount** | **int**| how many items to return | [optional] if omitted the server will use the default value of 100
 
