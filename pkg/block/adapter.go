@@ -8,6 +8,10 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 
+// MultipartUploadCompletion parts described as part of complete multipart upload. Each part holds the part number and ETag received while calling part upload.
+// NOTE that S3 implementation and our S3 gateway accept and returns ETag value surrounded with double-quotes ("), while
+// the adapter implementations supply the raw value of the etag (without double quotes) and let the gateway manage the s3
+// protocol specifications.
 type MultipartUploadCompletion struct{ Part []*s3.CompletedPart }
 
 // IdentifierType is the type the ObjectPointer Identifier
@@ -64,7 +68,30 @@ type WalkOpts struct {
 	Prefix           string
 }
 
-// CreateMultiPartOpts contains optional arguments for
+// CreateMultiPartUploadResponse multipart upload ID and additional headers (implementation specific) currently it targets s3
+// capabilities to enable encryption properties
+type CreateMultiPartUploadResponse struct {
+	UploadID         string
+	ServerSideHeader http.Header
+}
+
+// CompleteMultiPartUploadResponse complete multipart etag, content length and additional headers (implementation specific) currently it targets s3.
+// The ETag is a hex string value of the content checksum
+type CompleteMultiPartUploadResponse struct {
+	ETag             string
+	ContentLength    int64
+	ServerSideHeader http.Header
+}
+
+// UploadPartResponse upload part ETag and additional headers (implementation specific) currently it targets s3
+// capabilities to enable encryption properties
+// The ETag is a hex string value of the content checksum
+type UploadPartResponse struct {
+	ETag             string
+	ServerSideHeader http.Header
+}
+
+// CreateMultiPartUploadOpts contains optional arguments for
 // CreateMultiPartUpload.  These should be analogous to options on
 // some underlying storage layer.  Missing arguments are mapped to the
 // default if a storage layer implements the option.
@@ -101,12 +128,12 @@ type Adapter interface {
 	GetProperties(ctx context.Context, obj ObjectPointer) (Properties, error)
 	Remove(ctx context.Context, obj ObjectPointer) error
 	Copy(ctx context.Context, sourceObj, destinationObj ObjectPointer) error
-	CreateMultiPartUpload(ctx context.Context, obj ObjectPointer, r *http.Request, opts CreateMultiPartUploadOpts) (string, error)
-	UploadPart(ctx context.Context, obj ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (string, error)
-	UploadCopyPart(ctx context.Context, sourceObj, destinationObj ObjectPointer, uploadID string, partNumber int64) (string, error)
-	UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj ObjectPointer, uploadID string, partNumber, startPosition, endPosition int64) (string, error)
+	CreateMultiPartUpload(ctx context.Context, obj ObjectPointer, r *http.Request, opts CreateMultiPartUploadOpts) (*CreateMultiPartUploadResponse, error)
+	UploadPart(ctx context.Context, obj ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (*UploadPartResponse, error)
+	UploadCopyPart(ctx context.Context, sourceObj, destinationObj ObjectPointer, uploadID string, partNumber int64) (*UploadPartResponse, error)
+	UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj ObjectPointer, uploadID string, partNumber, startPosition, endPosition int64) (*UploadPartResponse, error)
 	AbortMultiPartUpload(ctx context.Context, obj ObjectPointer, uploadID string) error
-	CompleteMultiPartUpload(ctx context.Context, obj ObjectPointer, uploadID string, multipartList *MultipartUploadCompletion) (*string, int64, error)
+	CompleteMultiPartUpload(ctx context.Context, obj ObjectPointer, uploadID string, multipartList *MultipartUploadCompletion) (*CompleteMultiPartUploadResponse, error)
 	// ValidateConfiguration validates an appropriate bucket
 	// configuration and returns a validation error or nil.
 	ValidateConfiguration(ctx context.Context, storageNamespace string) error
@@ -128,7 +155,9 @@ type NoOpTranslator struct{}
 func (d *NoOpTranslator) SetUploadID(uploadID string) string {
 	return uploadID
 }
+
 func (d *NoOpTranslator) TranslateUploadID(uploadID string) string {
 	return uploadID
 }
+
 func (d *NoOpTranslator) RemoveUploadID(_ string) {}

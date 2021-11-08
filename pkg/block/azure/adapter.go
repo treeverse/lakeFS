@@ -332,26 +332,28 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 	return nil
 }
 
-func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPointer, _ *http.Request, _ block.CreateMultiPartUploadOpts) (string, error) {
+func (a *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPointer, _ *http.Request, _ block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
 	// Azure has no create multipart upload
 	var err error
 	defer reportMetrics("CreateMultiPartUpload", time.Now(), nil, &err)
 
 	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return qualifiedKey.BlobURL, nil
+	return &block.CreateMultiPartUploadResponse{
+		UploadID: qualifiedKey.BlobURL,
+	}, nil
 }
 
-func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, _ string, _ int64) (string, error) {
+func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, _ string, _ int64) (*block.UploadPartResponse, error) {
 	var err error
 	defer reportMetrics("UploadPart", time.Now(), nil, &err)
 
 	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	container := a.getContainerURL(qualifiedKey.ContainerURL)
@@ -359,7 +361,7 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, _ int
 
 	transferManager, err := azblob.NewStaticBuffer(_1MiB, MaxBuffers)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer transferManager.Close()
 	multipartBlockWriter := NewMultipartBlockWriter(hashReader, container, qualifiedKey.BlobURL)
@@ -367,34 +369,35 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, _ int
 		TransferManager: transferManager,
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return multipartBlockWriter.etag, nil
+	return &block.UploadPartResponse{
+		ETag: strings.Trim(multipartBlockWriter.etag, `"`),
+	}, nil
 }
 
-func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, _ string, _ int64) (string, error) {
+func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, _ string, _ int64) (*block.UploadPartResponse, error) {
 	var err error
 	defer reportMetrics("UploadPart", time.Now(), nil, &err)
 
 	return a.copyPartRange(ctx, sourceObj, destinationObj, 0, azblob.CountToEnd)
 }
 
-func (a *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, _ string, _, startPosition, endPosition int64) (string, error) {
+func (a *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, _ string, _, startPosition, endPosition int64) (*block.UploadPartResponse, error) {
 	var err error
 	defer reportMetrics("UploadPart", time.Now(), nil, &err)
-
 	return a.copyPartRange(ctx, sourceObj, destinationObj, startPosition, endPosition-startPosition+1)
 }
 
-func (a *Adapter) copyPartRange(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, startPosition, count int64) (string, error) {
+func (a *Adapter) copyPartRange(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, startPosition, count int64) (*block.UploadPartResponse, error) {
 	qualifiedSourceKey, err := resolveBlobURLInfo(sourceObj)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	qualifiedDestinationKey, err := resolveBlobURLInfo(destinationObj)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	destinationContainer := a.getContainerURL(qualifiedDestinationKey.ContainerURL)
@@ -404,12 +407,12 @@ func (a *Adapter) copyPartRange(ctx context.Context, sourceObj, destinationObj b
 	return copyPartRange(ctx, destinationContainer, qualifiedDestinationKey.BlobURL, sourceBlobURL, startPosition, count)
 }
 
-func (a *Adapter) AbortMultiPartUpload(ctx context.Context, _ block.ObjectPointer, _ string) error {
+func (a *Adapter) AbortMultiPartUpload(_ context.Context, _ block.ObjectPointer, _ string) error {
 	// Azure has no abort, in case of commit, uncommitted parts are erased, otherwise staged data is erased after 7 days
 	return nil
 }
 
-func (a *Adapter) ValidateConfiguration(ctx context.Context, _ string) error {
+func (a *Adapter) ValidateConfiguration(_ context.Context, _ string) error {
 	return nil
 }
 
@@ -417,16 +420,15 @@ func (a *Adapter) BlockstoreType() string {
 	return block.BlockstoreTypeAzure
 }
 
-func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectPointer, _ string, multipartList *block.MultipartUploadCompletion) (*string, int64, error) {
+func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectPointer, _ string, multipartList *block.MultipartUploadCompletion) (*block.CompleteMultiPartUploadResponse, error) {
 	var err error
 	defer reportMetrics("CompleteMultiPartUpload", time.Now(), nil, &err)
 	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	containerURL := a.getContainerURL(qualifiedKey.ContainerURL)
-
-	return CompleteMultipart(ctx, multipartList.Part, containerURL, qualifiedKey.BlobURL, a.configurations.retryReaderOptions)
+	return completeMultipart(ctx, multipartList.Part, containerURL, qualifiedKey.BlobURL, a.configurations.retryReaderOptions)
 }
 
 func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {

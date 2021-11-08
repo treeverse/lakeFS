@@ -43,15 +43,14 @@ func (controller *PostObject) HandleCreateMultipartUpload(w http.ResponseWriter,
 	objName := hex.EncodeToString(uuidBytes[:])
 	storageClass := StorageClassFromHeader(req.Header)
 	opts := block.CreateMultiPartUploadOpts{StorageClass: storageClass}
-	uploadID, err := o.BlockStore.CreateMultiPartUpload(req.Context(), block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: objName}, req, opts)
+	resp, err := o.BlockStore.CreateMultiPartUpload(req.Context(), block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: objName}, req, opts)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not create multipart upload")
 		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
-	// uploadID, o.Path, objName, time.Now()
 	mpu := multiparts.MultipartUpload{
-		UploadID:        uploadID,
+		UploadID:        resp.UploadID,
 		Path:            o.Path,
 		CreationDate:    time.Now(),
 		PhysicalAddress: objName,
@@ -64,20 +63,15 @@ func (controller *PostObject) HandleCreateMultipartUpload(w http.ResponseWriter,
 		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
+	o.SetHeaders(w, resp.ServerSideHeader)
 	o.EncodeResponse(w, req, &serde.InitiateMultipartUploadResult{
 		Bucket:   o.Repository.Name,
 		Key:      path.WithRef(o.Path, o.Reference),
-		UploadID: uploadID,
+		UploadID: resp.UploadID,
 	}, http.StatusOK)
 }
 
-func trimQuotes(s string) string {
-	return strings.Trim(s, "\"")
-}
-
 func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWriter, req *http.Request, o *PathOperation) {
-	var etag *string
-	var size int64
 	o.Incr("complete_mpu")
 	uploadID := req.URL.Query().Get(CompleteMultipartUploadQueryParam)
 	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{logging.UploadIDFieldKey: uploadID}))
@@ -102,7 +96,8 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
-	etag, size, err = o.BlockStore.CompleteMultiPartUpload(req.Context(),
+	normalizeMultipartUploadCompletion(&multipartList)
+	resp, err := o.BlockStore.CompleteMultiPartUpload(req.Context(),
 		block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: objName},
 		uploadID,
 		&multipartList)
@@ -111,9 +106,8 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
-	ch := trimQuotes(*etag)
-	checksum := strings.Split(ch, "-")[0]
-	err = o.finishUpload(req, checksum, objName, size, true, multiPart.Metadata, multiPart.ContentType)
+	checksum := strings.Split(resp.ETag, "-")[0]
+	err = o.finishUpload(req, checksum, objName, resp.ContentLength, true, multiPart.Metadata, multiPart.ContentType)
 	if errors.Is(err, graveler.ErrWriteToProtectedBranch) {
 		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrWriteToProtectedBranch))
 		return
@@ -134,12 +128,23 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 	} else {
 		location = fmt.Sprintf("%s://%s/%s/%s/%s", scheme, req.Host, o.Repository.Name, o.Reference, o.Path)
 	}
+	o.SetHeaders(w, resp.ServerSideHeader)
 	o.EncodeResponse(w, req, &serde.CompleteMultipartUploadResult{
 		Location: location,
 		Bucket:   o.Repository.Name,
 		Key:      path.WithRef(o.Path, o.Reference),
-		ETag:     *etag,
+		ETag:     httputil.ETag(resp.ETag),
 	}, http.StatusOK)
+}
+
+// normalizeMultipartUploadCompletion normalization incoming multipart upload completion list.
+// we make sure that each part's ETag will be without the wrapping quotes
+func normalizeMultipartUploadCompletion(list *block.MultipartUploadCompletion) {
+	for _, part := range list.Part {
+		if part.ETag != nil {
+			*part.ETag = strings.Trim(*part.ETag, `"`)
+		}
+	}
 }
 
 func (controller *PostObject) Handle(w http.ResponseWriter, req *http.Request, o *PathOperation) {

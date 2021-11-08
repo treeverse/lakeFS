@@ -155,88 +155,99 @@ func (a *Adapter) Copy(_ context.Context, sourceObj, destinationObj block.Object
 	return nil
 }
 
-func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int64) (string, error) {
+func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int64) (*block.UploadPartResponse, error) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	uploadID = a.uploadIDTranslator.TranslateUploadID(uploadID)
 	mpu, ok := a.mpu[uploadID]
 	if !ok {
-		return "", ErrMultiPartNotFound
+		return nil, ErrMultiPartNotFound
 	}
 	entry, err := a.Get(ctx, sourceObj, 0)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	data, err := io.ReadAll(entry)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	h := sha256.New()
 	_, err = h.Write(data)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	code := h.Sum(nil)
 	mpu.parts[partNumber] = data
-	return fmt.Sprintf("%x", code), nil
+	etag := fmt.Sprintf("%x", code)
+	return &block.UploadPartResponse{
+		ETag: etag,
+	}, nil
 }
 
-func (a *Adapter) UploadCopyPartRange(_ context.Context, sourceObj, _ block.ObjectPointer, uploadID string, partNumber, startPosition, endPosition int64) (string, error) {
+func (a *Adapter) UploadCopyPartRange(_ context.Context, sourceObj, _ block.ObjectPointer, uploadID string, partNumber, startPosition, endPosition int64) (*block.UploadPartResponse, error) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	uploadID = a.uploadIDTranslator.TranslateUploadID(uploadID)
 	mpu, ok := a.mpu[uploadID]
 	if !ok {
-		return "", ErrMultiPartNotFound
+		return nil, ErrMultiPartNotFound
 	}
 	data, ok := a.data[getKey(sourceObj)]
 	if !ok {
-		return "", ErrNoDataForKey
+		return nil, ErrNoDataForKey
 	}
 	reader := io.NewSectionReader(bytes.NewReader(data), startPosition, endPosition-startPosition+1)
 	data, err := io.ReadAll(reader)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	h := sha256.New()
 	_, err = h.Write(data)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	code := h.Sum(nil)
 	mpu.parts[partNumber] = data
-	return fmt.Sprintf("%x", code), nil
+	etag := fmt.Sprintf("%x", code)
+	return &block.UploadPartResponse{
+		ETag: etag,
+	}, nil
 }
 
-func (a *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (string, error) {
+func (a *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	mpu := newMPU()
 	a.mpu[mpu.id] = mpu
 	tid := a.uploadIDTranslator.SetUploadID(mpu.id)
-	return tid, nil
+	return &block.CreateMultiPartUploadResponse{
+		UploadID: tid,
+	}, nil
 }
 
-func (a *Adapter) UploadPart(_ context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (string, error) {
+func (a *Adapter) UploadPart(_ context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (*block.UploadPartResponse, error) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	uploadID = a.uploadIDTranslator.TranslateUploadID(uploadID)
 	mpu, ok := a.mpu[uploadID]
 	if !ok {
-		return "", ErrMultiPartNotFound
+		return nil, ErrMultiPartNotFound
 	}
 	data, err := io.ReadAll(reader)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	h := sha256.New()
 	_, err = h.Write(data)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	code := h.Sum(nil)
 	mpu.parts[partNumber] = data
-	return fmt.Sprintf("%x", code), nil
+	etag := fmt.Sprintf("%x", code)
+	return &block.UploadPartResponse{
+		ETag: etag,
+	}, nil
 }
 
 func (a *Adapter) AbortMultiPartUpload(_ context.Context, obj block.ObjectPointer, uploadID string) error {
@@ -252,25 +263,28 @@ func (a *Adapter) AbortMultiPartUpload(_ context.Context, obj block.ObjectPointe
 	return nil
 }
 
-func (a *Adapter) CompleteMultiPartUpload(_ context.Context, obj block.ObjectPointer, uploadID string, _ *block.MultipartUploadCompletion) (*string, int64, error) {
+func (a *Adapter) CompleteMultiPartUpload(_ context.Context, obj block.ObjectPointer, uploadID string, _ *block.MultipartUploadCompletion) (*block.CompleteMultiPartUploadResponse, error) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	uploadID = a.uploadIDTranslator.TranslateUploadID(uploadID)
 	mpu, ok := a.mpu[uploadID]
 	if !ok {
-		return nil, 0, ErrMultiPartNotFound
+		return nil, ErrMultiPartNotFound
 	}
 	data := mpu.get()
 	h := sha256.New()
 	_, err := h.Write(data)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	code := h.Sum(nil)
 	hexCode := fmt.Sprintf("%x", code)
 	a.uploadIDTranslator.RemoveUploadID(uploadID)
 	a.data[getKey(obj)] = data
-	return &hexCode, int64(len(data)), nil
+	return &block.CompleteMultiPartUploadResponse{
+		ETag:          hexCode,
+		ContentLength: int64(len(data)),
+	}, nil
 }
 
 func (a *Adapter) Walk(_ context.Context, walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
