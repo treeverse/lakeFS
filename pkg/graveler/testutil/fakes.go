@@ -201,6 +201,17 @@ type RefsFake struct {
 	StagingToken        graveler.StagingToken
 }
 
+func (m *RefsFake) CreateBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, branch graveler.Branch) error {
+	if m.Branch != nil {
+		return graveler.ErrBranchExists
+	}
+	m.Branch = &graveler.Branch{
+		CommitID:     branch.CommitID,
+		StagingToken: branch.StagingToken,
+	}
+	return nil
+}
+
 func (m *RefsFake) FillGenerations(ctx context.Context, repositoryID graveler.RepositoryID) error {
 	panic("implement me")
 }
