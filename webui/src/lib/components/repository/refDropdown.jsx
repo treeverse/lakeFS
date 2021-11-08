@@ -9,7 +9,7 @@ import {ChevronDownIcon, ChevronRightIcon, ChevronUpIcon, XIcon} from "@primer/o
 import Popover from "react-bootstrap/Popover";
 
 import {tags, branches, commits} from '../../api';
-import {Nav, Tab, Tabs} from "react-bootstrap";
+import {Nav} from "react-bootstrap";
 
 
 const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, withTags, amount = 300 }) => {
@@ -40,7 +40,7 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
     const form = (
         <div className="ref-filter-form">
             <Form onSubmit={e => { e.preventDefault(); }}>
-                <Form.Control type="text" placeholder="filter branches" onChange={(e)=> {
+                <Form.Control type="text" placeholder={refType === 'tag' ? "Filter tags" : "Filter branches"} onChange={(e)=> {
                     setPagination({
                         amount,
                         after: "",
@@ -102,7 +102,7 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
             <div className="ref-scroller">
                 <ul className="list-group ref-list">
                     {results.map(namedRef => (
-                        <RefEntry key={namedRef.id} repo={repo} namedRef={namedRef.id} selectRef={selectRef} selected={selected} withCommits={refType !== 'tag' && withCommits} logCommits={async () => {
+                        <RefEntry key={namedRef.id} repo={repo} refType={refType} namedRef={namedRef.id} selectRef={selectRef} selected={selected} withCommits={refType !== 'tag' && withCommits} logCommits={async () => {
                             const data = await commits.log(repo.id, namedRef.id)
                             setCommitList({...commitList, branch: namedRef.id, commits: data.results});
                         }}/>
@@ -160,17 +160,17 @@ const CommitList = ({ commits, selectRef, reset, branch, withWorkspace }) => {
     );
 };
 
-const RefEntry = ({repo, namedRef, selectRef, selected, logCommits, withCommits}) => {
+const RefEntry = ({repo, namedRef, refType, selectRef, selected, logCommits, withCommits}) => {
     return (
         <li className="list-group-item" key={namedRef}>
             {(!!selected && namedRef === selected) ?
                 <strong>{namedRef}</strong> :
                 <Button variant="link" onClick={() => {
-                    selectRef({id: namedRef});
+                    selectRef({id: namedRef, type: refType});
                 }}>{namedRef}</Button>
             }
             <div className="actions">
-                {(namedRef === repo.default_branch) ? (<Badge variant="info">Default</Badge>) : <span/>}
+                {(refType === 'branch' && namedRef === repo.default_branch) ? (<Badge variant="info">Default</Badge>) : <span/>}
                 {(withCommits) ? (
                     <Button onClick={logCommits} size="sm" variant="link">
                         <ChevronRightIcon/>

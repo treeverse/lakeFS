@@ -467,6 +467,15 @@ class Branches {
 
 
 class Tags {
+    async get(repoId, tagId) {
+        const response = await apiRequest(`/repositories/${repoId}/tags/${tagId}`);
+        if (response.status === 404) {
+            throw new NotFoundError(`could not find tag ${tagId}`);
+        } else if (response.status !== 200) {
+            throw new Error(`could not get tagId: ${await extractError(response)}`);
+        }
+        return response.json();
+    }
 
     async list(repoId, prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({prefix, after, amount});

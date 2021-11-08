@@ -57,7 +57,7 @@ const EntryRowActions = ({ repo, reference, entry, onDelete }) => {
                         as={Dropdown.Item}>
                         <DownloadIcon/> {' '} Download
                     </PathLink>
-                    {reference.type !== 'commit' && <Dropdown.Item onClick={(e) => {
+                    {reference.type === 'branch' && <Dropdown.Item onClick={(e) => {
                         e.preventDefault();
                         handleShow();
                     }}>
