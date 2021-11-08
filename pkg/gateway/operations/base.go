@@ -121,9 +121,12 @@ func (o *Operation) DeleteHeader(w http.ResponseWriter, key string) {
 }
 
 // SetHeaders sets a map of headers on the response while preserving the header's case
-func (o *Operation) SetHeaders(w http.ResponseWriter, headers map[string]string) {
+func (o *Operation) SetHeaders(w http.ResponseWriter, headers http.Header) {
+	h := w.Header()
 	for k, v := range headers {
-		o.SetHeader(w, k, v)
+		for _, val := range v {
+			h.Add(k, val)
+		}
 	}
 }
 

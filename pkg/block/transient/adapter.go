@@ -62,65 +62,79 @@ func (a *Adapter) Copy(_ context.Context, _, _ block.ObjectPointer) error {
 	return nil
 }
 
-func (a *Adapter) UploadCopyPart(_ context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int64) (string, error) {
+func (a *Adapter) UploadCopyPart(_ context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int64) (*block.UploadPartResponse, error) {
 	h := sha256.New()
 	code := h.Sum(nil)
-	return hex.EncodeToString(code), nil
+	etag := hex.EncodeToString(code)
+	return &block.UploadPartResponse{
+		ETag: etag,
+	}, nil
 }
 
-func (a *Adapter) UploadCopyPartRange(_ context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber, startPosition, endPosition int64) (string, error) {
+func (a *Adapter) UploadCopyPartRange(_ context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber, startPosition, endPosition int64) (*block.UploadPartResponse, error) {
 	n := endPosition - startPosition
 	if n < 0 {
-		return "", io.ErrUnexpectedEOF
+		return nil, io.ErrUnexpectedEOF
 	}
 	h := sha256.New()
 	code := h.Sum(nil)
-	return hex.EncodeToString(code), nil
+	etag := hex.EncodeToString(code)
+	return &block.UploadPartResponse{
+		ETag: etag,
+	}, nil
 }
 
 func (a *Adapter) Walk(_ context.Context, walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
 	return nil
 }
 
-func (a *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (string, error) {
+func (a *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
 	uid := uuid.New()
 	uploadID := hex.EncodeToString(uid[:])
-	return uploadID, nil
+	return &block.CreateMultiPartUploadResponse{
+		UploadID: uploadID,
+	}, nil
 }
 
-func (a *Adapter) UploadPart(_ context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (string, error) {
+func (a *Adapter) UploadPart(_ context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (*block.UploadPartResponse, error) {
 	data, err := io.ReadAll(reader)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	h := sha256.New()
 	_, err = h.Write(data)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	code := h.Sum(nil)
-	return hex.EncodeToString(code), nil
+	etag := hex.EncodeToString(code)
+	return &block.UploadPartResponse{
+		ETag: etag,
+	}, nil
 }
 
 func (a *Adapter) AbortMultiPartUpload(context.Context, block.ObjectPointer, string) error {
 	return nil
 }
 
-func (a *Adapter) CompleteMultiPartUpload(context.Context, block.ObjectPointer, string, *block.MultipartUploadCompletion) (*string, int64, error) {
+func (a *Adapter) CompleteMultiPartUpload(context.Context, block.ObjectPointer, string, *block.MultipartUploadCompletion) (*block.CompleteMultiPartUploadResponse, error) {
 	const dataSize = 1024
 	data := make([]byte, dataSize)
 	if _, err := rand.Read(data); err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	h := sha256.New()
 	_, err := h.Write(data)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	code := h.Sum(nil)
 	codeHex := hex.EncodeToString(code)
-	return &codeHex, dataSize, nil
+	return &block.CompleteMultiPartUploadResponse{
+		ETag:          codeHex,
+		ContentLength: dataSize,
+	}, nil
 }
 
 func (a *Adapter) ValidateConfiguration(_ context.Context, _ string) error {

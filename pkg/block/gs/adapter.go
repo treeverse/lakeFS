@@ -248,12 +248,13 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 	}
 	return nil
 }
-func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (string, error) {
+
+func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
 	var err error
 	defer reportMetrics("CreateMultiPartUpload", time.Now(), nil, &err)
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	// we use the qualified key as the upload id
 	uploadID := a.uploadIDTranslator.SetUploadID(qualifiedKey.Key)
@@ -265,11 +266,11 @@ func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPoi
 	w := o.NewWriter(ctx)
 	_, err = io.WriteString(w, qualifiedKey.Key)
 	if err != nil {
-		return "", fmt.Errorf("io.WriteString: %w", err)
+		return nil, fmt.Errorf("io.WriteString: %w", err)
 	}
 	err = w.Close()
 	if err != nil {
-		return "", fmt.Errorf("writer.Close: %w", err)
+		return nil, fmt.Errorf("writer.Close: %w", err)
 	}
 	// log information
 	a.log(ctx).WithFields(logging.Fields{
@@ -278,15 +279,17 @@ func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPoi
 		"qualified_key": qualifiedKey.Key,
 		"key":           obj.Identifier,
 	}).Debug("created multipart upload")
-	return uploadID, nil
+	return &block.CreateMultiPartUploadResponse{
+		UploadID: uploadID,
+	}, nil
 }
 
-func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (string, error) {
+func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (*block.UploadPartResponse, error) {
 	var err error
 	defer reportMetrics("UploadPart", time.Now(), &sizeBytes, &err)
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	uploadID = a.uploadIDTranslator.SetUploadID(uploadID)
 	objName := formatMultipartFilename(uploadID, partNumber)
@@ -296,25 +299,27 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeB
 	w := o.NewWriter(ctx)
 	_, err = io.Copy(w, reader)
 	if err != nil {
-		return "", fmt.Errorf("io.Copy: %w", err)
+		return nil, fmt.Errorf("io.Copy: %w", err)
 	}
 	err = w.Close()
 	if err != nil {
-		return "", fmt.Errorf("writer.Close: %w", err)
+		return nil, fmt.Errorf("writer.Close: %w", err)
 	}
 	attrs, err := o.Attrs(ctx)
 	if err != nil {
-		return "", fmt.Errorf("object.Attrs: %w", err)
+		return nil, fmt.Errorf("object.Attrs: %w", err)
 	}
-	return attrs.Etag, nil
+	return &block.UploadPartResponse{
+		ETag: attrs.Etag,
+	}, nil
 }
 
-func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int64) (string, error) {
+func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int64) (*block.UploadPartResponse, error) {
 	var err error
 	defer reportMetrics("UploadCopyPart", time.Now(), nil, &err)
 	qualifiedKey, err := resolveNamespace(destinationObj)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	uploadID = a.uploadIDTranslator.SetUploadID(uploadID)
 	objName := formatMultipartFilename(uploadID, partNumber)
@@ -324,23 +329,25 @@ func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj 
 
 	qualifiedSourceKey, err := resolveNamespace(sourceObj)
 	if err != nil {
-		return "", fmt.Errorf("resolve source: %w", err)
+		return nil, fmt.Errorf("resolve source: %w", err)
 	}
 	sourceObjectHandle := a.client.Bucket(qualifiedSourceKey.StorageNamespace).Object(qualifiedSourceKey.Key)
 
 	attrs, err := o.CopierFrom(sourceObjectHandle).Run(ctx)
 	if err != nil {
-		return "", fmt.Errorf("CopierFrom: %w", err)
+		return nil, fmt.Errorf("CopierFrom: %w", err)
 	}
-	return attrs.Etag, nil
+	return &block.UploadPartResponse{
+		ETag: attrs.Etag,
+	}, nil
 }
 
-func (a *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber, startPosition, endPosition int64) (string, error) {
+func (a *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber, startPosition, endPosition int64) (*block.UploadPartResponse, error) {
 	var err error
 	defer reportMetrics("UploadCopyPartRange", time.Now(), nil, &err)
 	qualifiedKey, err := resolveNamespace(destinationObj)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	uploadID = a.uploadIDTranslator.SetUploadID(uploadID)
 	objName := formatMultipartFilename(uploadID, partNumber)
@@ -350,28 +357,30 @@ func (a *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinatio
 
 	reader, err := a.GetRange(ctx, sourceObj, startPosition, endPosition)
 	if err != nil {
-		return "", fmt.Errorf("GetRange: %w", err)
+		return nil, fmt.Errorf("GetRange: %w", err)
 	}
 	w := o.NewWriter(ctx)
 	_, err = io.Copy(w, reader)
 	if err != nil {
-		return "", fmt.Errorf("Copy: %w", err)
+		return nil, fmt.Errorf("Copy: %w", err)
 	}
 	err = w.Close()
 	if err != nil {
 		_ = reader.Close()
-		return "", fmt.Errorf("WriterClose: %w", err)
+		return nil, fmt.Errorf("WriterClose: %w", err)
 	}
 	err = reader.Close()
 	if err != nil {
-		return "", fmt.Errorf("ReaderClose: %w", err)
+		return nil, fmt.Errorf("ReaderClose: %w", err)
 	}
 
 	attrs, err := o.Attrs(ctx)
 	if err != nil {
-		return "", fmt.Errorf("object.Attrs: %w", err)
+		return nil, fmt.Errorf("object.Attrs: %w", err)
 	}
-	return attrs.Etag, nil
+	return &block.UploadPartResponse{
+		ETag: attrs.Etag,
+	}, nil
 }
 
 func (a *Adapter) AbortMultiPartUpload(ctx context.Context, obj block.ObjectPointer, uploadID string) error {
@@ -405,12 +414,12 @@ func (a *Adapter) AbortMultiPartUpload(ctx context.Context, obj block.ObjectPoin
 	return nil
 }
 
-func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectPointer, uploadID string, multipartList *block.MultipartUploadCompletion) (*string, int64, error) {
+func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectPointer, uploadID string, multipartList *block.MultipartUploadCompletion) (*block.CompleteMultiPartUploadResponse, error) {
 	var err error
 	defer reportMetrics("CompleteMultiPartUpload", time.Now(), nil, &err)
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	uploadID = a.uploadIDTranslator.TranslateUploadID(uploadID)
 	lg := a.log(ctx).WithFields(logging.Fields{
@@ -423,12 +432,12 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 	// list bucket parts and validate request match
 	bucketParts, err := a.listMultipartUploadParts(ctx, qualifiedKey.StorageNamespace, uploadID)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	// validate bucketParts match the request multipartList
 	err = a.validateMultipartUploadParts(uploadID, multipartList, bucketParts)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	// prepare names
@@ -441,7 +450,7 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 	targetAttrs, err := a.composeMultipartUploadParts(ctx, qualifiedKey.StorageNamespace, uploadID, parts)
 	if err != nil {
 		lg.WithError(err).Error("CompleteMultipartUpload failed")
-		return nil, 0, err
+		return nil, err
 	}
 
 	// delete marker
@@ -452,7 +461,10 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 	}
 	a.uploadIDTranslator.RemoveUploadID(uploadID)
 	lg.Debug("completed multipart upload")
-	return &targetAttrs.Etag, targetAttrs.Size, nil
+	return &block.CompleteMultiPartUploadResponse{
+		ETag:          targetAttrs.Etag,
+		ContentLength: targetAttrs.Size,
+	}, nil
 }
 
 func (a *Adapter) validateMultipartUploadParts(uploadID string, multipartList *block.MultipartUploadCompletion, bucketParts []*storage.ObjectAttrs) error {
@@ -541,7 +553,7 @@ func (a *Adapter) composeMultipartUploadParts(ctx context.Context, bucketName st
 	return targetAttrs, nil
 }
 
-func (a *Adapter) ValidateConfiguration(ctx context.Context, _ string) error {
+func (a *Adapter) ValidateConfiguration(_ context.Context, _ string) error {
 	return nil
 }
 

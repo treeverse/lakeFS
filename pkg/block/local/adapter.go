@@ -201,34 +201,44 @@ func (l *Adapter) Copy(_ context.Context, sourceObj, destinationObj block.Object
 	return err
 }
 
-func (l *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int64) (string, error) {
+func (l *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int64) (*block.UploadPartResponse, error) {
 	if err := isValidUploadID(uploadID); err != nil {
-		return "", err
+		return nil, err
 	}
 	r, err := l.Get(ctx, sourceObj, 0)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	md5Read := block.NewHashingReader(r, block.HashFunctionMD5)
 	fName := uploadID + fmt.Sprintf("-%05d", partNumber)
 	err = l.Put(ctx, block.ObjectPointer{StorageNamespace: destinationObj.StorageNamespace, Identifier: fName}, -1, md5Read, block.PutOpts{})
-	etag := "\"" + hex.EncodeToString(md5Read.Md5.Sum(nil)) + "\""
-	return etag, err
+	if err != nil {
+		return nil, err
+	}
+	etag := hex.EncodeToString(md5Read.Md5.Sum(nil))
+	return &block.UploadPartResponse{
+		ETag: etag,
+	}, nil
 }
 
-func (l *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber, startPosition, endPosition int64) (string, error) {
+func (l *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber, startPosition, endPosition int64) (*block.UploadPartResponse, error) {
 	if err := isValidUploadID(uploadID); err != nil {
-		return "", err
+		return nil, err
 	}
 	r, err := l.GetRange(ctx, sourceObj, startPosition, endPosition)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	md5Read := block.NewHashingReader(r, block.HashFunctionMD5)
 	fName := uploadID + fmt.Sprintf("-%05d", partNumber)
 	err = l.Put(ctx, block.ObjectPointer{StorageNamespace: destinationObj.StorageNamespace, Identifier: fName}, -1, md5Read, block.PutOpts{})
-	etag := "\"" + hex.EncodeToString(md5Read.Md5.Sum(nil)) + "\""
-	return etag, err
+	if err != nil {
+		return nil, err
+	}
+	etag := hex.EncodeToString(md5Read.Md5.Sum(nil))
+	return &block.UploadPartResponse{
+		ETag: etag,
+	}, err
 }
 
 func (l *Adapter) Get(_ context.Context, obj block.ObjectPointer, _ int64) (reader io.ReadCloser, err error) {
@@ -320,33 +330,37 @@ func isDirectoryWritable(pth string) bool {
 	return true
 }
 
-func (l *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPointer, _ *http.Request, _ block.CreateMultiPartUploadOpts) (string, error) {
+func (l *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPointer, _ *http.Request, _ block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
 	if strings.Contains(obj.Identifier, "/") {
 		fullPath, err := l.getPath(obj)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		fullDir := path.Dir(fullPath)
 		err = os.MkdirAll(fullDir, 0750)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 	}
 	uidBytes := uuid.New()
 	uploadID := hex.EncodeToString(uidBytes[:])
 	uploadID = l.uploadIDTranslator.SetUploadID(uploadID)
-	return uploadID, nil
+	return &block.CreateMultiPartUploadResponse{
+		UploadID: uploadID,
+	}, nil
 }
 
-func (l *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, uploadID string, partNumber int64) (string, error) {
+func (l *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, uploadID string, partNumber int64) (*block.UploadPartResponse, error) {
 	if err := isValidUploadID(uploadID); err != nil {
-		return "", err
+		return nil, err
 	}
 	md5Read := block.NewHashingReader(reader, block.HashFunctionMD5)
 	fName := uploadID + fmt.Sprintf("-%05d", partNumber)
 	err := l.Put(ctx, block.ObjectPointer{StorageNamespace: obj.StorageNamespace, Identifier: fName}, -1, md5Read, block.PutOpts{})
-	etag := "\"" + hex.EncodeToString(md5Read.Md5.Sum(nil)) + "\""
-	return etag, err
+	etag := hex.EncodeToString(md5Read.Md5.Sum(nil))
+	return &block.UploadPartResponse{
+		ETag: etag,
+	}, err
 }
 
 func (l *Adapter) AbortMultiPartUpload(_ context.Context, obj block.ObjectPointer, uploadID string) error {
@@ -363,32 +377,32 @@ func (l *Adapter) AbortMultiPartUpload(_ context.Context, obj block.ObjectPointe
 	return nil
 }
 
-func (l *Adapter) CompleteMultiPartUpload(_ context.Context, obj block.ObjectPointer, uploadID string, multipartList *block.MultipartUploadCompletion) (*string, int64, error) {
+func (l *Adapter) CompleteMultiPartUpload(_ context.Context, obj block.ObjectPointer, uploadID string, multipartList *block.MultipartUploadCompletion) (*block.CompleteMultiPartUploadResponse, error) {
 	if err := isValidUploadID(uploadID); err != nil {
-		return nil, -1, err
+		return nil, err
 	}
 	etag := computeETag(multipartList.Part) + "-" + strconv.Itoa(len(multipartList.Part))
 	partFiles, err := l.getPartFiles(uploadID, obj)
 	if err != nil {
-		return nil, -1, fmt.Errorf("part files not found for %s: %w", uploadID, err)
+		return nil, fmt.Errorf("part files not found for %s: %w", uploadID, err)
 	}
 	size, err := l.unitePartFiles(obj, partFiles)
 	if err != nil {
-		return nil, -1, fmt.Errorf("multipart upload unite for %s: %w", uploadID, err)
+		return nil, fmt.Errorf("multipart upload unite for %s: %w", uploadID, err)
 	}
 	if err = l.removePartFiles(partFiles); err != nil {
-		return nil, -1, err
+		return nil, err
 	}
-	return &etag, size, nil
+	return &block.CompleteMultiPartUploadResponse{
+		ETag:          etag,
+		ContentLength: size,
+	}, nil
 }
 
 func computeETag(parts []*s3.CompletedPart) string {
 	var etagHex []string
 	for _, p := range parts {
-		e := *p.ETag
-		if strings.HasPrefix(e, "\"") && strings.HasSuffix(e, "\"") {
-			e = e[1 : len(e)-1]
-		}
+		e := strings.Trim(*p.ETag, `"`)
 		etagHex = append(etagHex, e)
 	}
 	s := strings.Join(etagHex, "")

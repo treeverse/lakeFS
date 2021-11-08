@@ -1,7 +1,7 @@
 package httputil
 
 import (
-	"fmt"
+	"strings"
 	"time"
 )
 
@@ -14,6 +14,9 @@ func HeaderTimestamp(ts time.Time) string {
 	return ts.UTC().Format(DateHeaderTimestampFormat)
 }
 
-func ETag(cksum string) string {
-	return fmt.Sprintf("\"%s\"", cksum)
+func ETag(checksum string) string {
+	if strings.HasPrefix(checksum, `"`) {
+		return checksum
+	}
+	return `"` + checksum + `"`
 }

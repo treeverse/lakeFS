@@ -105,18 +105,18 @@ func TestLocalMultipartUpload(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			pointer := makePointer(c.path)
-			uploadID, err := a.CreateMultiPartUpload(ctx, pointer, nil, block.CreateMultiPartUploadOpts{})
+			resp, err := a.CreateMultiPartUpload(ctx, pointer, nil, block.CreateMultiPartUploadOpts{})
 			testutil.MustDo(t, "CreateMultiPartUpload", err)
 			parts := make([]*s3.CompletedPart, 0)
 			for partNumber, content := range c.partData {
-				cs, err := a.UploadPart(ctx, pointer, 0, strings.NewReader(content), uploadID, int64(partNumber))
+				partResp, err := a.UploadPart(ctx, pointer, 0, strings.NewReader(content), resp.UploadID, int64(partNumber))
 				testutil.MustDo(t, "UploadPart", err)
 				parts = append(parts, &s3.CompletedPart{
-					ETag:       aws.String(cs),
+					ETag:       aws.String(partResp.ETag),
 					PartNumber: aws.Int64(int64(partNumber)),
 				})
 			}
-			_, _, err = a.CompleteMultiPartUpload(ctx, pointer, uploadID, &block.MultipartUploadCompletion{
+			_, err = a.CompleteMultiPartUpload(ctx, pointer, resp.UploadID, &block.MultipartUploadCompletion{
 				Part: parts,
 			})
 			testutil.MustDo(t, "CompleteMultiPartUpload", err)
