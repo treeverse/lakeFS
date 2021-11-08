@@ -177,6 +177,7 @@ func TestManager_GetBranch(t *testing.T) {
 		}
 	})
 }
+
 func TestManager_CreateBranch(t *testing.T) {
 	r := testRefManager(t)
 	ctx := context.Background()
