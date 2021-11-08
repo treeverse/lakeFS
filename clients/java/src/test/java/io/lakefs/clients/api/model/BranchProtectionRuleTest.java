@@ -21,8 +21,6 @@ import com.google.gson.stream.JsonWriter;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -48,14 +46,6 @@ public class BranchProtectionRuleTest {
     @Test
     public void patternTest() {
         // TODO: test pattern
-    }
-
-    /**
-     * Test the property 'blockedActions'
-     */
-    @Test
-    public void blockedActionsTest() {
-        // TODO: test blockedActions
     }
 
 }

@@ -78,7 +78,7 @@ public class RefsApiTest {
     }
     
     /**
-     * get commit log from ref
+     * get commit log from ref. If both objects and prefixes are empty, return all commits.
      *
      * 
      *
@@ -91,7 +91,9 @@ public class RefsApiTest {
         String ref = null;
         String after = null;
         Integer amount = null;
-        CommitList response = api.logCommits(repository, ref, after, amount);
+        List<String> objects = null;
+        List<String> prefixes = null;
+        CommitList response = api.logCommits(repository, ref, after, amount, objects, prefixes);
 
         // TODO: test validations
     }
