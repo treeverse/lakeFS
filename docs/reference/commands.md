@@ -1574,12 +1574,12 @@ lakectl diff <ref uri> [ref uri] [flags]
 	This is similar to the three-dot (...) syntax in git.
 	Uncommitted changes are not shown.
 
-	lakectl diff lakefs://example-repo/main..lakefs://example-repo/dev
+	lakectl diff --two-way lakefs://example-repo/main lakefs://example-repo/dev
 	Show changes between the tips of the main and dev branches.
 	This is similar to the two-dot (..) syntax in git.
 	Uncommitted changes are not shown.
 
-	lakectl diff lakefs://example-repo/main..lakefs://example-repo/dev$
+	lakectl diff --two-way lakefs://example-repo/main lakefs://example-repo/dev$
 	Show changes between the tip of the main and the dev branch, including uncommitted changes on dev.
 ```
 
@@ -1588,7 +1588,7 @@ lakectl diff <ref uri> [ref uri] [flags]
 
 ```
   -h, --help      help for diff
-      --two-way   Use two way diff
+      --two-way   Use two-way diff: show difference between the given refs, regardless of a common ancestor.
 ```
 
 
