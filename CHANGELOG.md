@@ -2,6 +2,7 @@
 
 ## v0.54.0 - 2021-11-08
 
+- Fix branch creation concurrency bug (#2663)
 - Fix login button required two logins to pass (#2524)
 - Multipart upload content verification failed on s3 encrypted bucket (#2656)
 - Present commit history for a specific file or prefix (#2251)
