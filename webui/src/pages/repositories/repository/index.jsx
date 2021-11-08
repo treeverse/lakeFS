@@ -4,6 +4,7 @@ import {Redirect, Route, Switch} from "react-router-dom";
 import RepositoryObjectsPage from "./objects";
 import RepositoryChangesPage from "./changes";
 import RepositoryBranchesPage from "./branches";
+import RepositoryTagsPage from "./tags";
 import RepositoryComparePage from "./compare";
 import RepositoryCommitsIndexPage from "./commits";
 import RepositoryActionsIndexPage from "./actions";
@@ -29,6 +30,9 @@ const RepositoryPage = () => {
             </Route>
             <Route path="/repositories/:repoId/branches">
                 <RepositoryBranchesPage/>
+            </Route>
+            <Route path="/repositories/:repoId/tags">
+                <RepositoryTagsPage/>
             </Route>
             <Route path="/repositories/:repoId/compare">
                 <RepositoryComparePage/>

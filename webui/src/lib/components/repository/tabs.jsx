@@ -1,7 +1,7 @@
 import React from "react";
 
 import Nav from "react-bootstrap/Nav";
-import {FileDiffIcon, GitCommitIcon, DatabaseIcon, GitBranchIcon, GitCompareIcon, PlayIcon, GearIcon} from "@primer/octicons-react";
+import {FileDiffIcon, GitCommitIcon, DatabaseIcon, GitBranchIcon, GitCompareIcon, PlayIcon, GearIcon, TagIcon} from "@primer/octicons-react";
 
 import {useRefs} from "../../hooks/repo";
 import {Link, NavItem} from "../nav";
@@ -64,6 +64,9 @@ export const RepositoryNavTabs = ({ active }) => {
             </Link>
             <Link active={active === 'branches'} href={`/repositories/${repoId}/branches`} component={NavItem}>
                 <GitBranchIcon/> Branches
+            </Link>
+            <Link active={active === 'tags'} href={`/repositories/${repoId}/tags`} component={NavItem}>
+                <TagIcon/> Tags
             </Link>
             <Link active={active === 'compare'} href={withRefAndCompareContext(`/repositories/${repoId}/compare`)} component={NavItem}>
                 <GitCompareIcon/> Compare

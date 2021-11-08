@@ -465,6 +465,40 @@ class Branches {
     }
 }
 
+
+class Tags {
+
+    async list(repoId, after = "", amount = DEFAULT_LISTING_AMOUNT) {
+        const query = qs({after, amount});
+        const response = await apiRequest(`/repositories/${repoId}/tags?${query}`);
+        if (response.status !== 200) {
+            throw new Error(`could not list tags: ${await extractError(response)}`);
+        }
+        return response.json();
+    }
+
+    async create(repoId, id, ref) {
+        const response = await apiRequest(`/repositories/${repoId}/tags`, {
+            method: 'POST',
+            body: json({id, ref}),
+        });
+        if (response.status !== 201) {
+            throw new Error(await extractError(response));
+        }
+        return response.json();
+    }
+
+    async delete(repoId, name) {
+        const response = await apiRequest(`/repositories/${repoId}/tags/${name}`, {
+            method: 'DELETE',
+        });
+        if (response.status !== 204) {
+            throw new Error(await extractError(response));
+        }
+    }
+
+}
+
 class Objects {
 
     async list(repoId, ref, tree, after = "", amount = DEFAULT_LISTING_AMOUNT, readUncommitted = true, delimiter = "/") {
@@ -720,6 +754,7 @@ class BranchProtectionRules {
 }
 export const repositories = new Repositories();
 export const branches = new Branches();
+export const tags = new Tags();
 export const objects = new Objects();
 export const commits = new Commits();
 export const refs = new Refs();
