@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/jedib0t/go-pretty/v6/text"
@@ -23,7 +24,7 @@ const (
 var diffCmd = &cobra.Command{
 	Use:   `diff <ref uri> [ref uri]`,
 	Short: "Show changes between two commits, or the currently uncommitted changes",
-	Example: `
+	Example: fmt.Sprintf(`
 	lakectl diff lakefs://example-repo/example-branch
 	Show uncommitted changes in example-branch.
 
@@ -32,13 +33,13 @@ var diffCmd = &cobra.Command{
 	This is similar to the three-dot (...) syntax in git.
 	Uncommitted changes are not shown.
 
-	lakectl diff --two_way lakefs://example-repo/main lakefs://example-repo/dev
+	lakectl diff --%s lakefs://example-repo/main lakefs://example-repo/dev
 	Show changes between the tips of the main and dev branches.
 	This is similar to the two-dot (..) syntax in git.
 	Uncommitted changes are not shown.
 
-	lakectl diff --two_way lakefs://example-repo/main lakefs://example-repo/dev$
-	Show changes between the tip of the main and the dev branch, including uncommitted changes on dev.`,
+	lakectl diff --%s lakefs://example-repo/main lakefs://example-repo/dev$
+	Show changes between the tip of the main and the dev branch, including uncommitted changes on dev.`, twoWayFlagName, twoWayFlagName),
 
 	Args: cobra.RangeArgs(diffCmdMinArgs, diffCmdMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {
