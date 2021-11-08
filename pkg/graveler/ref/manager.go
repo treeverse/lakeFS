@@ -175,6 +175,20 @@ func (m *Manager) GetBranch(ctx context.Context, repositoryID graveler.Repositor
 	return branch.(*graveler.Branch), nil
 }
 
+func (m *Manager) CreateBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, branch graveler.Branch) error {
+	_, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
+		_, err := tx.Exec(`
+			INSERT INTO graveler_branches (repository_id, id, staging_token, commit_id)
+			VALUES ($1, $2, $3, $4)`,
+			repositoryID, branchID, branch.StagingToken, branch.CommitID)
+		return nil, err
+	})
+	if errors.Is(err, db.ErrAlreadyExists) {
+		return graveler.ErrBranchExists
+	}
+	return err
+}
+
 func (m *Manager) SetBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, branch graveler.Branch) error {
 	_, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		_, err := tx.Exec(`

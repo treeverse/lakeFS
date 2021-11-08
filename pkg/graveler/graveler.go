@@ -567,6 +567,9 @@ type RefManager interface {
 	// GetBranch returns the Branch metadata object for the given BranchID
 	GetBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (*Branch, error)
 
+	// CreateBranch creates a branch with the given id and Branch metadata
+	CreateBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, branch Branch) error
+
 	// SetBranch points the given BranchID at the given Branch metadata
 	SetBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, branch Branch) error
 
@@ -801,15 +804,6 @@ func generateStagingToken(repositoryID RepositoryID, branchID BranchID) StagingT
 }
 
 func (g *Graveler) CreateBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (*Branch, error) {
-	// check if branch exists
-	_, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
-	if !errors.Is(err, ErrNotFound) {
-		if err == nil {
-			err = ErrBranchExists
-		}
-		return nil, fmt.Errorf("branch '%s': %w", branchID, err)
-	}
-
 	reference, err := g.Dereference(ctx, repositoryID, ref)
 	if err != nil {
 		return nil, fmt.Errorf("source reference '%s': %w", ref, err)
@@ -821,7 +815,7 @@ func (g *Graveler) CreateBranch(ctx context.Context, repositoryID RepositoryID, 
 		CommitID:     reference.CommitID,
 		StagingToken: generateStagingToken(repositoryID, branchID),
 	}
-	err = g.RefManager.SetBranch(ctx, repositoryID, branchID, newBranch)
+	err = g.RefManager.CreateBranch(ctx, repositoryID, branchID, newBranch)
 	if err != nil {
 		return nil, fmt.Errorf("set branch '%s' to '%s': %w", branchID, newBranch, err)
 	}
