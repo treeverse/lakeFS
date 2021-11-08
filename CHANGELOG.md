@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.54.0 - 2021-11-08
+
+- Fix branch creation concurrency bug (#2663)
+- Fix login button required two logins to pass (#2524)
+- Multipart upload content verification failed on s3 encrypted bucket (#2656)
+- Present commit history for a specific file or prefix (#2251)
+- Support S3 API copy-object across buckets (#2162)
+- Add copy-schema to lakectl metastore commands (#2640)
+- UI: New Tags tab (#2655)
+- UI: Add docs link to Setup, Create Repo, Branches, and Admin Pages (#2316)
+- UI: Unifying 3 views into one in uncommitted/compare/commit components (#2602)
+
 ## v0.53.1 - 2021-10-21
 
 - Fix ldap auth re-open control connection after it closes, and add timeouts (#2613)
