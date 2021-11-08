@@ -40,12 +40,17 @@ const GCPolicy = ({repo}) => {
     }, [repo, refresh])
     const doRefresh = () => setRefresh(!refresh);
     const onSubmit = (policy) => {
-
         return retention.setGCPolicy(repo.id, policy).then(() => {
             setShowCreate(false);
             setRefresh(!refresh);
         })
     };
+    const jsonToggleBar = <ActionsBar>
+        <ActionGroup orientation="right">
+            <ToggleSwitch label={"JSON view"} id={"policy-json-switch"} onChange={setJsonView}
+                          defaultChecked={jsonView}/>
+        </ActionGroup>
+    </ActionsBar>
     const policy = response
     let content;
     if (loading) {
@@ -53,7 +58,10 @@ const GCPolicy = ({repo}) => {
     } else if (!!error) {
         content = error instanceof NotFoundError ? <Alert variant="info" className={"mt-3"}>A garbage collection policy is not set yet.</Alert> :  <Error error={error}/>;
     } else if (jsonView) {
-        content = <pre className={"policy-body"}>{JSON.stringify(policy, null, 4)}</pre>
+        content = <>
+            <pre className={"policy-body"}>{JSON.stringify(policy, null, 4)}</pre>
+            {jsonToggleBar}
+            </>
     } else {
         content = <>
             <Table borderless>
@@ -63,7 +71,7 @@ const GCPolicy = ({repo}) => {
                 </tr>
                 </tbody>
             </Table>
-            <Card>
+            <Card className={"mb-3"}>
                 {policy.branches && <Table>
                     <thead>
                     <tr>
@@ -83,7 +91,7 @@ const GCPolicy = ({repo}) => {
                     </tbody>
                 </Table>}
             </Card>
-            <br/>
+            {jsonToggleBar}
         </>
     }
     let editorProps = {
@@ -114,12 +122,6 @@ const GCPolicy = ({repo}) => {
         <div className={"mt-3"}>
             {content}
         </div>
-        <ActionsBar>
-            <ActionGroup orientation="right">
-                <ToggleSwitch label={"JSON view"} id={"policy-json-switch"} onChange={setJsonView}
-                              defaultChecked={jsonView}/>
-            </ActionGroup>
-        </ActionsBar>
         <PolicyEditor
             onSubmit={onSubmit}
             onHide={() => setShowCreate(false)}
