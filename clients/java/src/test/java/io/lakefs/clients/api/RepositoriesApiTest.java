@@ -14,7 +14,9 @@
 package io.lakefs.clients.api;
 
 import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.model.BranchProtectionRule;
 import io.lakefs.clients.api.model.Error;
+import io.lakefs.clients.api.model.InlineObject1;
 import io.lakefs.clients.api.model.Repository;
 import io.lakefs.clients.api.model.RepositoryCreation;
 import io.lakefs.clients.api.model.RepositoryList;
@@ -36,6 +38,23 @@ public class RepositoriesApiTest {
 
     
     /**
+     * 
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void createBranchProtectionRuleTest() throws ApiException {
+        String repository = null;
+        BranchProtectionRule branchProtectionRule = null;
+        api.createBranchProtectionRule(repository, branchProtectionRule);
+
+        // TODO: test validations
+    }
+    
+    /**
      * create repository
      *
      * 
@@ -53,6 +72,23 @@ public class RepositoriesApiTest {
     }
     
     /**
+     * 
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void deleteBranchProtectionRuleTest() throws ApiException {
+        String repository = null;
+        InlineObject1 inlineObject1 = null;
+        api.deleteBranchProtectionRule(repository, inlineObject1);
+
+        // TODO: test validations
+    }
+    
+    /**
      * delete repository
      *
      * 
@@ -64,6 +100,22 @@ public class RepositoriesApiTest {
     public void deleteRepositoryTest() throws ApiException {
         String repository = null;
         api.deleteRepository(repository);
+
+        // TODO: test validations
+    }
+    
+    /**
+     * get branch protection rules
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void getBranchProtectionRulesTest() throws ApiException {
+        String repository = null;
+        List<BranchProtectionRule> response = api.getBranchProtectionRules(repository);
 
         // TODO: test validations
     }
