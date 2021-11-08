@@ -202,6 +202,9 @@ validate-proto: proto  ## build proto and check if diff found
 	git diff --quiet -- pkg/graveler/graveler.pb.go
 	git diff --quiet -- pkg/graveler/settings/test_settings.pb.go
 
+validate-reference:
+	git diff --quiet -- docs/reference/commands.md
+
 validate-client-python:
 	git diff --quiet -- clients/python
 
@@ -209,7 +212,7 @@ validate-client-java:
 	git diff --quiet -- clients/java
 
 # Run all validation/linting steps
-checks-validator: lint validate-fmt validate-proto validate-client-python validate-client-java
+checks-validator: lint validate-fmt validate-proto validate-client-python validate-client-java validate-reference
 
 $(UI_DIR)/node_modules:
 	cd $(UI_DIR) && $(NPM) install
@@ -244,4 +247,4 @@ help:  ## Show Help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 # helpers
-gen: gen-api gen-ui gen-ddl gen-mockgen clients
+gen: gen-api gen-ui gen-ddl gen-mockgen clients gen-docs
