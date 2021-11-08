@@ -178,6 +178,50 @@ func TestManager_GetBranch(t *testing.T) {
 	})
 }
 
+func TestManager_CreateBranch(t *testing.T) {
+	r := testRefManager(t)
+	ctx := context.Background()
+	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageNamespace: "s3://",
+		CreationDate:     time.Now(),
+		DefaultBranchID:  "main",
+	}, ""))
+
+	err := r.CreateBranch(ctx, "repo1", "f1", graveler.Branch{CommitID: "c1", StagingToken: "s1"})
+	testutil.MustDo(t, "create branch f1", err)
+
+	br, err := r.GetBranch(ctx, "repo1", "f1")
+	testutil.MustDo(t, "get f1 branch", err)
+	if br == nil {
+		t.Fatal("get branch got nil")
+	}
+	if br.CommitID != "c1" {
+		t.Fatalf("unexpected commit for branch f1: %s - expected: c1", br.CommitID)
+	}
+
+	// check we can't create existing
+	err = r.CreateBranch(ctx, "repo1", "f1", graveler.Branch{CommitID: "c2", StagingToken: "s2"})
+	if !errors.Is(err, graveler.ErrBranchExists) {
+		t.Fatalf("CreateBranch() err = %s, expected already exists", err)
+	}
+	// overwrite by delete and create
+	err = r.DeleteBranch(ctx, "repo1", "f1")
+	testutil.MustDo(t, "delete branch f1", err)
+
+	err = r.CreateBranch(ctx, "repo1", "f1", graveler.Branch{CommitID: "c2", StagingToken: "s2"})
+	testutil.MustDo(t, "create branch f1", err)
+
+	br, err = r.GetBranch(ctx, "repo1", "f1")
+	testutil.MustDo(t, "get f1 branch", err)
+
+	if br == nil {
+		t.Fatal("get branch got nil")
+	}
+	if br.CommitID != "c2" {
+		t.Fatalf("unexpected commit for branch f1: %s - expected: c2", br.CommitID)
+	}
+}
+
 func TestManager_SetBranch(t *testing.T) {
 	r := testRefManager(t)
 	testutil.Must(t, r.CreateRepository(context.Background(), "repo1", graveler.Repository{

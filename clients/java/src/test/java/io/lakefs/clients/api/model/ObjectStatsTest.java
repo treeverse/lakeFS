@@ -99,4 +99,12 @@ public class ObjectStatsTest {
         // TODO: test metadata
     }
 
+    /**
+     * Test the property 'contentType'
+     */
+    @Test
+    public void contentTypeTest() {
+        // TODO: test contentType
+    }
+
 }

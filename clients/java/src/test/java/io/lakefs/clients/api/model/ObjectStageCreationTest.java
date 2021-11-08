@@ -83,4 +83,12 @@ public class ObjectStageCreationTest {
         // TODO: test metadata
     }
 
+    /**
+     * Test the property 'contentType'
+     */
+    @Test
+    public void contentTypeTest() {
+        // TODO: test contentType
+    }
+
 }

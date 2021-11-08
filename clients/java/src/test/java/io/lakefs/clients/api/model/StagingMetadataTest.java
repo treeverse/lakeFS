@@ -76,4 +76,12 @@ public class StagingMetadataTest {
         // TODO: test userMetadata
     }
 
+    /**
+     * Test the property 'contentType'
+     */
+    @Test
+    public void contentTypeTest() {
+        // TODO: test contentType
+    }
+
 }

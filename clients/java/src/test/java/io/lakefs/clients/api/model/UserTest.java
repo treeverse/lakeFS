@@ -56,4 +56,12 @@ public class UserTest {
         // TODO: test creationDate
     }
 
+    /**
+     * Test the property 'friendlyName'
+     */
+    @Test
+    public void friendlyNameTest() {
+        // TODO: test friendlyName
+    }
+
 }

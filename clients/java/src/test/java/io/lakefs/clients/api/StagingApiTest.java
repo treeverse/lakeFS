@@ -15,6 +15,7 @@ package io.lakefs.clients.api;
 
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.Error;
+import io.lakefs.clients.api.model.ObjectStats;
 import io.lakefs.clients.api.model.StagingLocation;
 import io.lakefs.clients.api.model.StagingMetadata;
 import org.junit.Test;
@@ -66,7 +67,7 @@ public class StagingApiTest {
         String branch = null;
         String path = null;
         StagingMetadata stagingMetadata = null;
-        api.linkPhysicalAddress(repository, branch, path, stagingMetadata);
+        ObjectStats response = api.linkPhysicalAddress(repository, branch, path, stagingMetadata);
 
         // TODO: test validations
     }
