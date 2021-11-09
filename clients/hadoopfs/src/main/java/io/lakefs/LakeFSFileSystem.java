@@ -762,11 +762,19 @@ public class LakeFSFileSystem extends FileSystem {
         // TODO: implement this method as part of https://github.com/treeverse/lakeFS/issues/2629
         OPERATIONS_LOG.info("pathPattern({})", pathPattern);
 
+        FileStatus[] statuses;
         try{
-            return listStatus(pathPattern);
+            statuses = listStatus(pathPattern);
         } catch (FileNotFoundException f){
             return null;
         }
+
+        if (statuses.length > 0 &&
+                Arrays.stream(statuses).noneMatch(status -> status.getPath().equals(pathPattern))){
+            return new FileStatus[]{new LakeFSFileStatus.Builder(pathPattern).isdir(true).build()};
+        }
+
+        return statuses;
     }
 
     @Override
