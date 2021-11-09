@@ -60,6 +60,8 @@ func checkSecurityRequirements(r *http.Request, securityRequirements openapi3.Se
 	ctx := r.Context()
 	var user *model.User
 	var err error
+
+	logger = logger.WithContext(ctx)
 	for _, securityRequirement := range securityRequirements {
 		for provider := range securityRequirement {
 			switch provider {

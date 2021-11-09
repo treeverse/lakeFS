@@ -54,11 +54,14 @@ func NewPgxDatabase(db *pgxpool.Pool) *PgxDatabase {
 	return &PgxDatabase{db: db}
 }
 
-func (d *PgxDatabase) getLogger() logging.Logger {
+func (d *PgxDatabase) getLogger(ctx context.Context, fields logging.Fields) logging.Logger {
+	var log logging.Logger
 	if d.queryOptions != nil {
-		return d.queryOptions.logger
+		log = d.queryOptions.logger
+	} else {
+		log = logging.Default()
 	}
-	return logging.Default()
+	return log.WithContext(ctx).WithFields(fields)
 }
 
 func (d *PgxDatabase) Close() {
@@ -70,12 +73,12 @@ func (d *PgxDatabase) Pool() *pgxpool.Pool {
 }
 
 // performAndReport performs fn and logs a "done" report if its duration was long enough.
-func (d *PgxDatabase) performAndReport(fields logging.Fields, fn func() (interface{}, error)) (interface{}, error) {
+func (d *PgxDatabase) performAndReport(ctx context.Context, fields logging.Fields, fn func() (interface{}, error)) (interface{}, error) {
 	start := time.Now()
 	ret, err := fn()
 	duration := time.Since(start)
 	if duration > 100*time.Millisecond {
-		logger := d.getLogger().WithFields(fields).WithField("took", duration)
+		logger := d.getLogger(ctx, fields).WithField("took", duration)
 		if err != nil {
 			logger = logger.WithError(err)
 		}
@@ -85,7 +88,7 @@ func (d *PgxDatabase) performAndReport(fields logging.Fields, fn func() (interfa
 }
 
 func (d *PgxDatabase) Get(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
-	_, err := d.performAndReport(logging.Fields{
+	_, err := d.performAndReport(ctx, logging.Fields{
 		"type":  "get",
 		"query": query,
 		"args":  args,
@@ -107,7 +110,7 @@ func (d *PgxDatabase) GetPrimitive(ctx context.Context, dest interface{}, query 
 	return nil
 }
 func (d *PgxDatabase) Query(ctx context.Context, query string, args ...interface{}) (rows pgx.Rows, err error) {
-	l := d.getLogger().WithFields(logging.Fields{
+	l := d.getLogger(ctx, logging.Fields{
 		"type":  "start query",
 		"query": query,
 		"args":  args,
@@ -130,7 +133,7 @@ func (d *PgxDatabase) Select(ctx context.Context, results interface{}, query str
 }
 
 func (d *PgxDatabase) Exec(ctx context.Context, query string, args ...interface{}) (pgconn.CommandTag, error) {
-	ret, err := d.performAndReport(logging.Fields{
+	ret, err := d.performAndReport(ctx, logging.Fields{
 		"type":  "exec",
 		"query": query,
 		"args":  args,
@@ -141,8 +144,8 @@ func (d *PgxDatabase) Exec(ctx context.Context, query string, args ...interface{
 	return ret.(pgconn.CommandTag), nil
 }
 
-func (d *PgxDatabase) getTxOptions() *TxOptions {
-	options := DefaultTxOptions()
+func (d *PgxDatabase) getTxOptions(ctx context.Context) *TxOptions {
+	options := DefaultTxOptions(ctx)
 	if d.queryOptions != nil {
 		options.logger = d.queryOptions.logger
 	}
@@ -150,7 +153,7 @@ func (d *PgxDatabase) getTxOptions() *TxOptions {
 }
 
 func (d *PgxDatabase) Transact(ctx context.Context, fn TxFunc, opts ...TxOpt) (interface{}, error) {
-	options := d.getTxOptions()
+	options := d.getTxOptions(ctx)
 	for _, opt := range opts {
 		opt(options)
 	}
