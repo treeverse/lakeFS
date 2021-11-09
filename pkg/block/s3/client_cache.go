@@ -76,7 +76,8 @@ func (c *ClientCache) getBucketRegion(ctx context.Context, bucket string) string
 // Get returns an AWS client configured to the region of the given bucket.
 func (c *ClientCache) Get(ctx context.Context, bucket string) s3iface.S3API {
 	region := c.getBucketRegion(ctx, bucket)
-	if _, hasClient := c.regionToS3Client.Load(region); !hasClient {
+	svc, hasClient := c.regionToS3Client.Load(region)
+	if !hasClient {
 		logging.FromContext(ctx).WithField("bucket", bucket).WithField("region", region).Debug("creating client for region")
 		svc := c.clientFactory(c.awsSession, &aws.Config{Region: swag.String(region)})
 		c.regionToS3Client.Store(region, svc)
@@ -85,6 +86,5 @@ func (c *ClientCache) Get(ctx context.Context, bucket string) s3iface.S3API {
 		}
 		return svc
 	}
-	svc, _ := c.regionToS3Client.Load(region)
 	return svc.(s3iface.S3API)
 }
