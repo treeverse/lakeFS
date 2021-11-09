@@ -125,7 +125,7 @@ const ActionsList = ({ repo, after, onPaginate, branch, commit, onFilterBranch, 
     if (!!error) content = <Error error={error}/>
 
     else if (loading) content = <Loading/>
-    else if (results.length === 0 && !nextPage) content = <Alert variant="info" className={"mt-3"}>No actions have been logged yet.</Alert>
+    else if (results.length === 0 && !nextPage) content = <Alert variant="info" className={"mt-3"}>No action runs have been logged yet.</Alert>
     else content = (
             <RunTable
                 repo={repo}
