@@ -121,6 +121,7 @@ client-python: api/swagger.yml  ## Generate SDK for Python client
 		-o /mnt/clients/python
 
 client-java: api/swagger.yml  ## Generate SDK for Java (and Scala) client
+	rm -rf clients/java
 	$(OPENAPI_GENERATOR) generate \
 		-i /mnt/$< \
 		-g java \
