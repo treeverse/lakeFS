@@ -65,11 +65,13 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
 
 const GetStarted = ({onCreateRepo}) => {
     return (
-        <Container className="m-4 mb-5">
+        <Alert variant={"secondary"}>
             <h4>You don&apos;t have any repositories yet.</h4>
             {/* eslint-disable-next-line react/jsx-no-target-blank */}
-            <Link onClick={onCreateRepo}>Create your first repository</Link> or <a href="https://docs.lakefs.io/understand/branching-model.html#repositories" target="_blank">learn more about repositories in lakeFS</a>.
-        </Container>
+            <Link onClick={onCreateRepo}>Create your first repository</Link> or <a
+            href="https://docs.lakefs.io/understand/branching-model.html#repositories" target="_blank">learn more about
+            repositories in lakeFS</a>.
+        </Alert>
     );
 };
 
