@@ -10,6 +10,7 @@ import {useAPI} from "../../../../lib/hooks/api";
 import {branchProtectionRules} from "../../../../lib/api";
 import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
+import Alert from "react-bootstrap/Alert";
 
 const SettingsContainer = () => {
     const {repo, loading, error} = useRefs();
@@ -37,14 +38,15 @@ const SettingsContainer = () => {
             </div>
             <div>
                 Define branch protection rules to prevent direct changes.
-                Changes to protected branches can only be done by merging from other branches. <a href="https://docs.lakefs.io/reference/protected_branches.html">Learn more.</a>
+                {/* eslint-disable-next-line react/jsx-no-target-blank */}
+                Changes to protected branches can only be done by merging from other branches. <a href="https://docs.lakefs.io/reference/protected_branches.html" target="_blank">Learn more.</a>
             </div>
             {loading || rulesLoading ? <div className={"mt-3 ml-1 pr-5"}><Loading/></div> :
                 <div className={"row mt-3 ml-1 pr-5"}>
                     <Card className={"w-100 rounded border-0"}>
                         <Card.Body className={"p-0 rounded"}>
                             <ListGroup>
-                                {rules && rules.map(r => {
+                                {rules && rules.length > 0 ? rules.map(r => {
                                     return <ListGroup.Item >
                                         <div className={"d-flex"}>
                                             <code>{r.pattern}</code>
@@ -60,7 +62,7 @@ const SettingsContainer = () => {
                                             }}>Delete</Button>
                                         </div>
                                     </ListGroup.Item>
-                                })}
+                                }) : <Alert variant="info">There aren&apos;t any rules yet.</Alert>}
                             </ListGroup>
                         </Card.Body>
                     </Card>

@@ -18,6 +18,7 @@ import {SettingsLayout} from "./layout";
 import {Container, Row} from "react-bootstrap";
 import Col from "react-bootstrap/Col";
 import {PolicyEditor} from "../../../../lib/components/policy";
+import Alert from "react-bootstrap/Alert";
 
 const exampleJson = (defaultBranch) => {
     return {
@@ -27,40 +28,6 @@ const exampleJson = (defaultBranch) => {
                 {"branch_id": defaultBranch, "retention_days": 28},
             ]
     }
-}
-
-const GetStarted = ({repo, onSubmit}) => {
-    const [showCreate, setShowCreate] = useState(false);
-    return (
-        <>
-            <Container className="m-4 mb-5">
-                <h2 className="mt-2">No Garbage collection policy found</h2>
-                <br/>
-                This policy determines for how long objects are kept in the storage after they are deleted in lakeFS.
-                <br/>
-                <Row>
-                    <Col md={{span: 5, offset: 3}}>
-                        <br/>
-                        <Button variant="success" onClick={() => setShowCreate(true)}>Create your first policy</Button>
-                    </Col>
-                </Row>
-                <br/>
-                <Row className="pt-2 ml-2">
-                    For detailed information about garbage collection see the&nbsp;<a
-                    href="https://docs.lakefs.io/reference/garbage-collection.html" target="_blank"
-                    rel="noopener noreferrer">docs</a>
-                </Row>
-            </Container>
-            <PolicyEditor
-                noID
-                isCreate
-                policy={exampleJson(repo.default_branch)}
-                onSubmit={onSubmit}
-                onHide={() => setShowCreate(false)}
-                show={showCreate}
-            />
-        </>
-    )
 }
 
 const GCPolicy = ({repo}) => {
@@ -73,90 +40,95 @@ const GCPolicy = ({repo}) => {
     }, [repo, refresh])
     const doRefresh = () => setRefresh(!refresh);
     const onSubmit = (policy) => {
-
         return retention.setGCPolicy(repo.id, policy).then(() => {
             setShowCreate(false);
             setRefresh(!refresh);
         })
     };
+    const jsonToggleBar = <ActionsBar>
+        <ActionGroup orientation="right">
+            <ToggleSwitch label={"JSON view"} id={"policy-json-switch"} onChange={setJsonView}
+                          defaultChecked={jsonView}/>
+        </ActionGroup>
+    </ActionsBar>
     const policy = response
     let content;
-
-    if (loading) content = <Loading/>;
-    else if (!!error) content = error instanceof NotFoundError ? <GetStarted repo={repo} onSubmit={onSubmit}/> :  <Error error={error}/>;
-    else {
-        content = (
-                    <>
-                        <ActionsBar>
-                            <ActionGroup><h4>Garbage Collection Policy</h4></ActionGroup>
-                            <ActionGroup orientation="right">
-                                <RefreshButton onClick={doRefresh}/>
-                                <Button variant="success" onClick={() => setShowCreate(true)}>Edit Policy</Button>
-                            </ActionGroup>
-                        </ActionsBar>
-                        <ActionsBar>
-                            <ActionGroup orientation="right">
-                                <ToggleSwitch label={"JSON view"} id={"policy-json-switch"} onChange={setJsonView}
-                                              defaultChecked={jsonView}/>
-                            </ActionGroup>
-                        </ActionsBar>
-                        {jsonView ? (
-                            <pre className={"policy-body"}>{JSON.stringify(policy, null, 4)}</pre>
-                        ) : (
-                            <>
-                                <Table borderless>
-                                    <tbody>
-                                    <tr key={'branch-default'}>
-                                        <td><code>Default retention days: {policy.default_retention_days}</code></td>
-                                    </tr>
-                                    </tbody>
-                                </Table>
-                                <Card>
-                                    {policy.branches && <Table>
-                                        <thead>
-                                        <tr>
-                                            <th width={"80%"}>Branch</th>
-                                            <th>Retention Days</th>
-                                        </tr>
-                                        </thead>
-                                        <tbody>
-                                        {policy.branches.map((branch, i) => {
-                                            return (
-                                                <tr key={`branch-${i}`}>
-                                                    <td><code>{branch.branch_id}</code></td>
-                                                    <td><code>{branch.retention_days}</code></td>
-                                                </tr>
-                                            );
-                                        })}
-                                        </tbody>
-                                    </Table>}
-                                </Card>
-                                <br/>
-                                <br/>
-                                <Row className="pt-2 ml-2">
-                                    For information about how to run the garbage collection see the&nbsp;<a
-                                    href="https://docs.lakefs.io/reference/garbage-collection.html" target="_blank"
-                                    rel="noopener noreferrer">docs</a>.
-                                </Row>
-                            </>
-                        )}
-
-                        <PolicyEditor
-                            policy={policy}
-                            onSubmit={onSubmit}
-                            onHide={() => setShowCreate(false)}
-                            show={showCreate}
-                        />
-                    </>
-                );
+    if (loading) {
+        content = <Loading/>;
+    } else if (!!error) {
+        content = error instanceof NotFoundError ? <Alert variant="info" className={"mt-3"}>A garbage collection policy is not set yet.</Alert> :  <Error error={error}/>;
+    } else if (jsonView) {
+        content = <>
+            <pre className={"policy-body"}>{JSON.stringify(policy, null, 4)}</pre>
+            {jsonToggleBar}
+            </>
+    } else {
+        content = <>
+            <Table borderless>
+                <tbody>
+                <tr key={'branch-default'}>
+                    <td><code>Default retention days: {policy.default_retention_days}</code></td>
+                </tr>
+                </tbody>
+            </Table>
+            <Card className={"mb-3"}>
+                {policy.branches && <Table>
+                    <thead>
+                    <tr>
+                        <th width={"80%"}>Branch</th>
+                        <th>Retention Days</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {policy.branches.map((branch, i) => {
+                        return (
+                            <tr key={`branch-${i}`}>
+                                <td><code>{branch.branch_id}</code></td>
+                                <td><code>{branch.retention_days}</code></td>
+                            </tr>
+                        );
+                    })}
+                    </tbody>
+                </Table>}
+            </Card>
+            {jsonToggleBar}
+        </>
     }
-    return (
-        <div className="mb-5">
-            <ActionsBar>
-            </ActionsBar>
+    let editorProps = {
+        policy: policy
+    };
+    if (!!error  && error instanceof NotFoundError) {
+        editorProps = {
+            noID: true,
+            isCreate: true,
+            policy: exampleJson(repo.default_branch),
+        }
+    }
+    return <div className="mt-3 mb-5">
+        <div className={"section-title"}>
+            <h4 className={"mb-0"}>
+                <div className={"ml-1 mr-1 pl-0 row flex"}>
+                    <div className={"flex-fill"}>Garbage collection policy</div>
+                    <RefreshButton className={"ml-1"} onClick={doRefresh}/>
+                    <Button className={"ml-2"} onClick={() => setShowCreate(true)}>Edit Policy</Button>
+                </div>
+            </h4>
+        </div>
+        <div>
+            {/* eslint-disable-next-line react/jsx-no-target-blank */}
+            This policy determines for how long objects are kept in the storage after they are deleted in lakeFS. <a
+            href="https://docs.lakefs.io/reference/garbage-collection.html" target="_blank">Learn more.</a>
+        </div>
+        <div className={"mt-3"}>
             {content}
         </div>
-    );
+        <PolicyEditor
+            onSubmit={onSubmit}
+            onHide={() => setShowCreate(false)}
+            show={showCreate}
+            {...editorProps}
+        />
+    </div>
 };
 
 
