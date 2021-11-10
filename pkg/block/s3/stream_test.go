@@ -108,7 +108,7 @@ func TestS3StreamingReader_Read(t *testing.T) {
 
 			data := &s3a.StreamingReader{
 				Reader:       r,
-				Size:         len(cas.Input),
+				Size:         int64(len(cas.Input)),
 				StreamSigner: v4.NewStreamSigner("us-east-1", s3.ServiceName, sigSeed, keys),
 				Time:         sigTime,
 				ChunkSize:    cas.ChunkSize,

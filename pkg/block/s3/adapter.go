@@ -208,7 +208,7 @@ func (a *Adapter) streamToS3(ctx context.Context, sdkRequest *request.Request, s
 
 	req.Body = io.NopCloser(&StreamingReader{
 		Reader: reader,
-		Size:   int(sizeBytes),
+		Size:   sizeBytes,
 		Time:   sigTime,
 		StreamSigner: v4.NewStreamSigner(
 			aws.StringValue(sdkRequest.Config.Region),
