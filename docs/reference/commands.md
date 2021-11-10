@@ -1553,6 +1553,98 @@ lakectl config [flags]
 
 
 
+### lakectl dbt
+
+Integration with dbt commands
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for dbt
+```
+
+
+
+### lakectl dbt create-branch-schema
+
+Creates a new schema dedicated for branch and clones all dbt models to new schema
+
+```
+lakectl dbt create-branch-schema [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl dbt create-branch-schema <branch-name>
+```
+
+#### Options
+{:.no_toc}
+
+```
+      --continue-on-error           prevent command from failing when a single table fails
+      --continue-on-schema-exists   allow running on existing schema
+      --dbfs-location string        
+      --from-client-type string     metastore type [hive, glue]
+  -h, --help                        help for create-branch-schema
+      --project-root string         location of dbt project [default is current working directory]
+      --skip-views                  
+      --to-schema string            destination schema name [default is from-branch]
+```
+
+
+
+### lakectl dbt generate-macro
+
+generates the a macro allowing lakectl to run dbt on dynamic schemas
+
+```
+lakectl dbt generate-macro [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl dbt generate-macro
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help                  help for generate-macro
+      --project-root string   location of dbt project [default is current working directory]
+```
+
+
+
+### lakectl dbt help
+
+Help about any command
+
+#### Synopsis
+{:.no_toc}
+
+Help provides help for any command in the application.
+Simply type dbt help [path to command] for full details.
+
+```
+lakectl dbt help [command] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for help
+```
+
+
+
 ### lakectl diff
 
 Show changes between two commits, or the currently uncommitted changes
@@ -1985,7 +2077,7 @@ Copy or merge table
 #### Synopsis
 {:.no_toc}
 
-copy or merge table. the destination table will point to the selected branch
+Copy or merge table. the destination table will point to the selected branch
 
 ```
 lakectl metastore copy [flags]
@@ -2039,6 +2131,36 @@ lakectl metastore copy-all [flags]
       --table-filter string       filter for tables to copy in metastore pattern (default ".*")
       --to-address string         destination metastore address
       --to-client-type string     metastore type [hive, glue]
+```
+
+
+
+### lakectl metastore copy-schema
+
+Copy schema
+
+#### Synopsis
+{:.no_toc}
+
+Copy schema (without tables). the destination schema will point to the selected branch
+
+```
+lakectl metastore copy-schema [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+      --catalog-id string         Glue catalog ID
+      --dbfs-root dbfs:/          dbfs location root will replace dbfs:/ in the location before transforming
+      --from-client-type string   metastore type [hive, glue]
+      --from-schema string        source schema name
+  -h, --help                      help for copy-schema
+      --metastore-uri string      Hive metastore URI
+      --to-branch string          lakeFS branch name
+      --to-client-type string     metastore type [hive, glue]
+      --to-schema string          destination schema name [default is from-branch]
 ```
 
 
