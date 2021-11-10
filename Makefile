@@ -198,19 +198,19 @@ validate-fmt:  ## Validate go format
 
 .PHONY: validate-proto
 validate-proto: proto  ## build proto and check if diff found
-	git diff --quiet -- pkg/catalog/catalog.pb.go
-	git diff --quiet -- pkg/graveler/committed/committed.pb.go
-	git diff --quiet -- pkg/graveler/graveler.pb.go
-	git diff --quiet -- pkg/graveler/settings/test_settings.pb.go
+	git diff --quiet -- pkg/catalog/catalog.pb.go || (echo "Modification verification failed! graveler's catalog proto"; false)
+	git diff --quiet -- pkg/graveler/committed/committed.pb.go || (echo "Modification verification failed! graveler's committed proto"; false)
+	git diff --quiet -- pkg/graveler/graveler.pb.go || (echo "Modification verification failed! graveler's proto"; false)
+	git diff --quiet -- pkg/graveler/settings/test_settings.pb.go || (echo "Modification verification failed! graveler's settings test proto"; false)
 
 validate-reference:
-	git diff --quiet -- docs/reference/commands.md
+	git diff --quiet -- docs/reference/commands.md || (echo "Modification verification failed! commands docs"; false)
 
 validate-client-python:
-	git diff --quiet -- clients/python
+	git diff --quiet -- clients/python || (echo "Modification verification failed! python client"; false)
 
 validate-client-java:
-	git diff --quiet -- clients/java
+	git diff --quiet -- clients/java || (echo "Modification verification failed! java client"; false)
 
 # Run all validation/linting steps
 checks-validator: lint validate-fmt validate-proto validate-client-python validate-client-java validate-reference
