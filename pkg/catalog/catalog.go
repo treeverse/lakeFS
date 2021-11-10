@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/cockroachdb/pebble"
+	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/factory"
