@@ -14,9 +14,10 @@ import {Nav} from "react-bootstrap";
 
 const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, withTags, amount = 300 }) => {
     // used for ref pagination
+    console.log(JSON.stringify(selected))
     const [pagination, setPagination] = useState({after: "", prefix: "", amount});
     const [refList, setRefs] = useState({loading: true, payload: null, error: null});
-    const [refType, setRefType] = useState('branch')
+    const [refType, setRefType] = useState(selected && selected.type || 'branch')
     useEffect(async () => {
         setRefs({loading: true, payload: null, error: null});
         try {
@@ -163,7 +164,7 @@ const CommitList = ({ commits, selectRef, reset, branch, withWorkspace }) => {
 const RefEntry = ({repo, namedRef, refType, selectRef, selected, logCommits, withCommits}) => {
     return (
         <li className="list-group-item" key={namedRef}>
-            {(!!selected && namedRef === selected) ?
+            {(!!selected && namedRef === selected.id) ?
                 <strong>{namedRef}</strong> :
                 <Button variant="link" onClick={() => {
                     selectRef({id: namedRef, type: refType});

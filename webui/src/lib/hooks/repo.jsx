@@ -16,8 +16,8 @@ export const resolveRef = async (repoId, refId) => {
     }
     // try tag
     try {
-        const branch = await tags.get(repoId, refId);
-        return {id: branch.id, type: 'tag'};
+        const tag = await tags.get(repoId, refId);
+        return {id: tag.id, type: 'tag'};
     } catch(error) {
         if (!(error instanceof NotFoundError)) {
             throw error;

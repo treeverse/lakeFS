@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/cockroachdb/pebble"
-	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/factory"
@@ -557,8 +556,6 @@ func (c *Catalog) ListTags(ctx context.Context, repository string, prefix string
 		return nil, false, err
 	}
 	defer it.Close()
-	defer it.Close()
-
 	afterTagID := graveler.TagID(after)
 	prefixTagID := graveler.TagID(prefix)
 	if afterTagID < prefixTagID {
