@@ -441,7 +441,7 @@ Policy:
                 "fs:ListObjects",
                 "fs:ReadObject",
                 "fs:WriteObject",
-                "fs:DeleteObject",
+                "fs:DeleteObject"
             ],
             "effect": "allow",
             "resource": "arn:lakefs:fs:::repository/<repository-name>/object/*"
