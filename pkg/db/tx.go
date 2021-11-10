@@ -44,11 +44,13 @@ func queryToString(q string) string {
 func (d *dbTx) Query(query string, args ...interface{}) (pgx.Rows, error) {
 	start := time.Now()
 	rows, err := d.tx.Query(d.ctx, query, args...)
-	log := d.logger.WithFields(logging.Fields{
-		"type":  "query",
-		"args":  args,
-		"query": queryToString(query),
-	})
+	log := d.logger.
+		WithContext(d.ctx).
+		WithFields(logging.Fields{
+			"type":  "query",
+			"args":  args,
+			"query": queryToString(query),
+		})
 	if err != nil {
 		log.WithError(err).Error("SQL query failed with error")
 		return nil, err
@@ -146,9 +148,9 @@ type TxOptions struct {
 	accessMode     pgx.TxAccessMode
 }
 
-func DefaultTxOptions() *TxOptions {
+func DefaultTxOptions(ctx context.Context) *TxOptions {
 	return &TxOptions{
-		logger:         logging.Default(),
+		logger:         logging.Default().WithContext(ctx),
 		isolationLevel: pgx.Serializable,
 		accessMode:     pgx.ReadWrite,
 	}
