@@ -20,14 +20,14 @@ const (
 
 type StreamingReader struct {
 	Reader       io.Reader
-	Size         int
+	Size         int64
 	StreamSigner *v4.StreamSigner
 	Time         time.Time
 	ChunkSize    int
 	ChunkTimeout time.Duration
 
 	currentChunk io.Reader
-	totalRead    int
+	totalRead    int64
 	eof          bool
 }
 
@@ -86,7 +86,7 @@ var ErrReaderTimeout = errors.New("reader timeout")
 func (s *StreamingReader) readNextChunk() error {
 	buf := make([]byte, s.ChunkSize)
 	n, err := ReadAllWithTimeout(s.Reader, buf, s.ChunkTimeout, minChunkSize)
-	s.totalRead += n
+	s.totalRead += int64(n)
 	buf = buf[:n]
 	if err != nil && !isEOF(err) && !errors.Is(err, ErrReaderTimeout) {
 		// actual error happened
