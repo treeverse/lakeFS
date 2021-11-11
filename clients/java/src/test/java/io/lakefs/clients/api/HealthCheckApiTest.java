@@ -41,8 +41,7 @@ public class HealthCheckApiTest {
      */
     @Test
     public void healthCheckTest() throws ApiException {
-        api.healthCheck();
-
+                api.healthCheck();
         // TODO: test validations
     }
     

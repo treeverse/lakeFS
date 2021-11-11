@@ -52,6 +52,7 @@ public class CommitList {
    * Get pagination
    * @return pagination
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public Pagination getPagination() {
@@ -79,6 +80,7 @@ public class CommitList {
    * Get results
    * @return results
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public List<Commit> getResults() {

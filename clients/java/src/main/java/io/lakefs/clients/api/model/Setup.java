@@ -49,6 +49,7 @@ public class Setup {
    * an identifier for the user (e.g. jane.doe)
    * @return username
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "an identifier for the user (e.g. jane.doe)")
 
   public String getUsername() {

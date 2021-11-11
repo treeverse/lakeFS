@@ -112,6 +112,7 @@ public class HookRun {
    * Get hookRunId
    * @return hookRunId
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getHookRunId() {
@@ -134,6 +135,7 @@ public class HookRun {
    * Get action
    * @return action
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getAction() {
@@ -156,6 +158,7 @@ public class HookRun {
    * Get hookId
    * @return hookId
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getHookId() {
@@ -178,6 +181,7 @@ public class HookRun {
    * Get startTime
    * @return startTime
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public OffsetDateTime getStartTime() {
@@ -223,6 +227,7 @@ public class HookRun {
    * Get status
    * @return status
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public StatusEnum getStatus() {

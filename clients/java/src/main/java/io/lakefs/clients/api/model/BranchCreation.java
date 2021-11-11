@@ -48,6 +48,7 @@ public class BranchCreation {
    * Get name
    * @return name
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getName() {
@@ -70,6 +71,7 @@ public class BranchCreation {
    * Get source
    * @return source
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getSource() {

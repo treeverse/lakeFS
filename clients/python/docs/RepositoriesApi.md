@@ -160,7 +160,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = repositories_api.RepositoriesApi(api_client)
     repository_creation = RepositoryCreation(
-        name="wr1c2v7s6djuy1zmet",
+        name="wr1c2v7s6djuy1zmeto",
         storage_namespace="s3://example-bucket/",
         default_branch="main",
     ) # RepositoryCreation | 

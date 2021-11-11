@@ -72,6 +72,7 @@ public class StagingLocation {
    * opaque staging token to use to link uploaded object
    * @return token
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "opaque staging token to use to link uploaded object")
 
   public String getToken() {

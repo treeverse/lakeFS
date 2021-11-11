@@ -44,6 +44,7 @@ public class InlineObject1 {
    * Get pattern
    * @return pattern
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getPattern() {

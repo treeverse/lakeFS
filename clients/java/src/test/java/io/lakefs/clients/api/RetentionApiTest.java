@@ -46,8 +46,7 @@ public class RetentionApiTest {
     @Test
     public void getGarbageCollectionRulesTest() throws ApiException {
         String repository = null;
-        GarbageCollectionRules response = api.getGarbageCollectionRules(repository);
-
+                GarbageCollectionRules response = api.getGarbageCollectionRules(repository);
         // TODO: test validations
     }
     
@@ -63,8 +62,7 @@ public class RetentionApiTest {
     public void prepareGarbageCollectionCommitsTest() throws ApiException {
         String repository = null;
         GarbageCollectionPrepareRequest garbageCollectionPrepareRequest = null;
-        GarbageCollectionPrepareResponse response = api.prepareGarbageCollectionCommits(repository, garbageCollectionPrepareRequest);
-
+                GarbageCollectionPrepareResponse response = api.prepareGarbageCollectionCommits(repository, garbageCollectionPrepareRequest);
         // TODO: test validations
     }
     
@@ -80,8 +78,7 @@ public class RetentionApiTest {
     public void setGarbageCollectionRulesTest() throws ApiException {
         String repository = null;
         GarbageCollectionRules garbageCollectionRules = null;
-        api.setGarbageCollectionRules(repository, garbageCollectionRules);
-
+                api.setGarbageCollectionRules(repository, garbageCollectionRules);
         // TODO: test validations
     }
     

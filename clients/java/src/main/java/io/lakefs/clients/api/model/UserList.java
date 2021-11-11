@@ -52,6 +52,7 @@ public class UserList {
    * Get pagination
    * @return pagination
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public Pagination getPagination() {
@@ -79,6 +80,7 @@ public class UserList {
    * Get results
    * @return results
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public List<User> getResults() {

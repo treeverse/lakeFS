@@ -48,8 +48,7 @@ public class CommitsApiTest {
         String repository = null;
         String branch = null;
         CommitCreation commitCreation = null;
-        Commit response = api.commit(repository, branch, commitCreation);
-
+                Commit response = api.commit(repository, branch, commitCreation);
         // TODO: test validations
     }
     
@@ -65,8 +64,7 @@ public class CommitsApiTest {
     public void getCommitTest() throws ApiException {
         String repository = null;
         String commitId = null;
-        Commit response = api.getCommit(repository, commitId);
-
+                Commit response = api.getCommit(repository, commitId);
         // TODO: test validations
     }
     
@@ -84,8 +82,7 @@ public class CommitsApiTest {
         String branch = null;
         String after = null;
         Integer amount = null;
-        CommitList response = api.logBranchCommits(repository, branch, after, amount);
-
+                CommitList response = api.logBranchCommits(repository, branch, after, amount);
         // TODO: test validations
     }
     

@@ -51,6 +51,7 @@ public class GarbageCollectionRules {
    * Get defaultRetentionDays
    * @return defaultRetentionDays
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public Integer getDefaultRetentionDays() {
@@ -78,6 +79,7 @@ public class GarbageCollectionRules {
    * Get branches
    * @return branches
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public List<GarbageCollectionRule> getBranches() {

@@ -48,6 +48,7 @@ public class Group {
    * Get id
    * @return id
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getId() {
@@ -70,6 +71,7 @@ public class Group {
    * Unix Epoch in seconds
    * @return creationDate
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "Unix Epoch in seconds")
 
   public Long getCreationDate() {

@@ -56,6 +56,7 @@ public class MergeResultSummary {
    * Get added
    * @return added
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public Integer getAdded() {
@@ -78,6 +79,7 @@ public class MergeResultSummary {
    * Get removed
    * @return removed
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public Integer getRemoved() {
@@ -100,6 +102,7 @@ public class MergeResultSummary {
    * Get changed
    * @return changed
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public Integer getChanged() {
@@ -122,6 +125,7 @@ public class MergeResultSummary {
    * Get conflict
    * @return conflict
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public Integer getConflict() {

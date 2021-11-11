@@ -58,8 +58,7 @@ public class AuthApiTest {
     public void addGroupMembershipTest() throws ApiException {
         String groupId = null;
         String userId = null;
-        api.addGroupMembership(groupId, userId);
-
+                api.addGroupMembership(groupId, userId);
         // TODO: test validations
     }
     
@@ -75,8 +74,7 @@ public class AuthApiTest {
     public void attachPolicyToGroupTest() throws ApiException {
         String groupId = null;
         String policyId = null;
-        api.attachPolicyToGroup(groupId, policyId);
-
+                api.attachPolicyToGroup(groupId, policyId);
         // TODO: test validations
     }
     
@@ -92,8 +90,7 @@ public class AuthApiTest {
     public void attachPolicyToUserTest() throws ApiException {
         String userId = null;
         String policyId = null;
-        api.attachPolicyToUser(userId, policyId);
-
+                api.attachPolicyToUser(userId, policyId);
         // TODO: test validations
     }
     
@@ -108,8 +105,7 @@ public class AuthApiTest {
     @Test
     public void createCredentialsTest() throws ApiException {
         String userId = null;
-        CredentialsWithSecret response = api.createCredentials(userId);
-
+                CredentialsWithSecret response = api.createCredentials(userId);
         // TODO: test validations
     }
     
@@ -124,8 +120,7 @@ public class AuthApiTest {
     @Test
     public void createGroupTest() throws ApiException {
         GroupCreation groupCreation = null;
-        Group response = api.createGroup(groupCreation);
-
+                Group response = api.createGroup(groupCreation);
         // TODO: test validations
     }
     
@@ -140,8 +135,7 @@ public class AuthApiTest {
     @Test
     public void createPolicyTest() throws ApiException {
         Policy policy = null;
-        Policy response = api.createPolicy(policy);
-
+                Policy response = api.createPolicy(policy);
         // TODO: test validations
     }
     
@@ -156,8 +150,7 @@ public class AuthApiTest {
     @Test
     public void createUserTest() throws ApiException {
         UserCreation userCreation = null;
-        User response = api.createUser(userCreation);
-
+                User response = api.createUser(userCreation);
         // TODO: test validations
     }
     
@@ -173,8 +166,7 @@ public class AuthApiTest {
     public void deleteCredentialsTest() throws ApiException {
         String userId = null;
         String accessKeyId = null;
-        api.deleteCredentials(userId, accessKeyId);
-
+                api.deleteCredentials(userId, accessKeyId);
         // TODO: test validations
     }
     
@@ -189,8 +181,7 @@ public class AuthApiTest {
     @Test
     public void deleteGroupTest() throws ApiException {
         String groupId = null;
-        api.deleteGroup(groupId);
-
+                api.deleteGroup(groupId);
         // TODO: test validations
     }
     
@@ -206,8 +197,7 @@ public class AuthApiTest {
     public void deleteGroupMembershipTest() throws ApiException {
         String groupId = null;
         String userId = null;
-        api.deleteGroupMembership(groupId, userId);
-
+                api.deleteGroupMembership(groupId, userId);
         // TODO: test validations
     }
     
@@ -222,8 +212,7 @@ public class AuthApiTest {
     @Test
     public void deletePolicyTest() throws ApiException {
         String policyId = null;
-        api.deletePolicy(policyId);
-
+                api.deletePolicy(policyId);
         // TODO: test validations
     }
     
@@ -238,8 +227,7 @@ public class AuthApiTest {
     @Test
     public void deleteUserTest() throws ApiException {
         String userId = null;
-        api.deleteUser(userId);
-
+                api.deleteUser(userId);
         // TODO: test validations
     }
     
@@ -255,8 +243,7 @@ public class AuthApiTest {
     public void detachPolicyFromGroupTest() throws ApiException {
         String groupId = null;
         String policyId = null;
-        api.detachPolicyFromGroup(groupId, policyId);
-
+                api.detachPolicyFromGroup(groupId, policyId);
         // TODO: test validations
     }
     
@@ -272,8 +259,7 @@ public class AuthApiTest {
     public void detachPolicyFromUserTest() throws ApiException {
         String userId = null;
         String policyId = null;
-        api.detachPolicyFromUser(userId, policyId);
-
+                api.detachPolicyFromUser(userId, policyId);
         // TODO: test validations
     }
     
@@ -289,8 +275,7 @@ public class AuthApiTest {
     public void getCredentialsTest() throws ApiException {
         String userId = null;
         String accessKeyId = null;
-        Credentials response = api.getCredentials(userId, accessKeyId);
-
+                Credentials response = api.getCredentials(userId, accessKeyId);
         // TODO: test validations
     }
     
@@ -304,8 +289,7 @@ public class AuthApiTest {
      */
     @Test
     public void getCurrentUserTest() throws ApiException {
-        CurrentUser response = api.getCurrentUser();
-
+                CurrentUser response = api.getCurrentUser();
         // TODO: test validations
     }
     
@@ -320,8 +304,7 @@ public class AuthApiTest {
     @Test
     public void getGroupTest() throws ApiException {
         String groupId = null;
-        Group response = api.getGroup(groupId);
-
+                Group response = api.getGroup(groupId);
         // TODO: test validations
     }
     
@@ -336,8 +319,7 @@ public class AuthApiTest {
     @Test
     public void getPolicyTest() throws ApiException {
         String policyId = null;
-        Policy response = api.getPolicy(policyId);
-
+                Policy response = api.getPolicy(policyId);
         // TODO: test validations
     }
     
@@ -352,8 +334,7 @@ public class AuthApiTest {
     @Test
     public void getUserTest() throws ApiException {
         String userId = null;
-        User response = api.getUser(userId);
-
+                User response = api.getUser(userId);
         // TODO: test validations
     }
     
@@ -371,8 +352,7 @@ public class AuthApiTest {
         String prefix = null;
         String after = null;
         Integer amount = null;
-        UserList response = api.listGroupMembers(groupId, prefix, after, amount);
-
+                UserList response = api.listGroupMembers(groupId, prefix, after, amount);
         // TODO: test validations
     }
     
@@ -390,8 +370,7 @@ public class AuthApiTest {
         String prefix = null;
         String after = null;
         Integer amount = null;
-        PolicyList response = api.listGroupPolicies(groupId, prefix, after, amount);
-
+                PolicyList response = api.listGroupPolicies(groupId, prefix, after, amount);
         // TODO: test validations
     }
     
@@ -408,8 +387,7 @@ public class AuthApiTest {
         String prefix = null;
         String after = null;
         Integer amount = null;
-        GroupList response = api.listGroups(prefix, after, amount);
-
+                GroupList response = api.listGroups(prefix, after, amount);
         // TODO: test validations
     }
     
@@ -426,8 +404,7 @@ public class AuthApiTest {
         String prefix = null;
         String after = null;
         Integer amount = null;
-        PolicyList response = api.listPolicies(prefix, after, amount);
-
+                PolicyList response = api.listPolicies(prefix, after, amount);
         // TODO: test validations
     }
     
@@ -445,8 +422,7 @@ public class AuthApiTest {
         String prefix = null;
         String after = null;
         Integer amount = null;
-        CredentialsList response = api.listUserCredentials(userId, prefix, after, amount);
-
+                CredentialsList response = api.listUserCredentials(userId, prefix, after, amount);
         // TODO: test validations
     }
     
@@ -464,8 +440,7 @@ public class AuthApiTest {
         String prefix = null;
         String after = null;
         Integer amount = null;
-        GroupList response = api.listUserGroups(userId, prefix, after, amount);
-
+                GroupList response = api.listUserGroups(userId, prefix, after, amount);
         // TODO: test validations
     }
     
@@ -484,8 +459,7 @@ public class AuthApiTest {
         String after = null;
         Integer amount = null;
         Boolean effective = null;
-        PolicyList response = api.listUserPolicies(userId, prefix, after, amount, effective);
-
+                PolicyList response = api.listUserPolicies(userId, prefix, after, amount, effective);
         // TODO: test validations
     }
     
@@ -502,8 +476,7 @@ public class AuthApiTest {
         String prefix = null;
         String after = null;
         Integer amount = null;
-        UserList response = api.listUsers(prefix, after, amount);
-
+                UserList response = api.listUsers(prefix, after, amount);
         // TODO: test validations
     }
     
@@ -518,8 +491,7 @@ public class AuthApiTest {
     @Test
     public void loginTest() throws ApiException {
         LoginInformation loginInformation = null;
-        AuthenticationToken response = api.login(loginInformation);
-
+                AuthenticationToken response = api.login(loginInformation);
         // TODO: test validations
     }
     
@@ -533,8 +505,7 @@ public class AuthApiTest {
      */
     @Test
     public void logoutTest() throws ApiException {
-        api.logout();
-
+                api.logout();
         // TODO: test validations
     }
     
@@ -550,8 +521,7 @@ public class AuthApiTest {
     public void updatePolicyTest() throws ApiException {
         String policyId = null;
         Policy policy = null;
-        Policy response = api.updatePolicy(policyId, policy);
-
+                Policy response = api.updatePolicy(policyId, policy);
         // TODO: test validations
     }
     

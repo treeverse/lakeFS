@@ -65,6 +65,7 @@ public class StagingMetadata {
    * Get staging
    * @return staging
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public StagingLocation getStaging() {
@@ -87,6 +88,7 @@ public class StagingMetadata {
    * unique identifier of object content on backing store (typically ETag)
    * @return checksum
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "unique identifier of object content on backing store (typically ETag)")
 
   public String getChecksum() {
@@ -109,6 +111,7 @@ public class StagingMetadata {
    * Get sizeBytes
    * @return sizeBytes
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public Long getSizeBytes() {

@@ -52,6 +52,7 @@ public class GarbageCollectionPrepareResponse {
    * a unique identifier generated for this GC job
    * @return runId
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(example = "64eaa103-d726-4a33-bcb8-7c0b4abfe09e", required = true, value = "a unique identifier generated for this GC job")
 
   public String getRunId() {
@@ -74,6 +75,7 @@ public class GarbageCollectionPrepareResponse {
    * location of the resulting commits csv table (partitioned by run_id)
    * @return gcCommitsLocation
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(example = "s3://my-storage-namespace/_lakefs/retention/commits", required = true, value = "location of the resulting commits csv table (partitioned by run_id)")
 
   public String getGcCommitsLocation() {
@@ -96,6 +98,7 @@ public class GarbageCollectionPrepareResponse {
    * location to use for expired addresses parquet table (partitioned by run_id)
    * @return gcAddressesLocation
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(example = "s3://my-storage-namespace/_lakefs/retention/addresses", required = true, value = "location to use for expired addresses parquet table (partitioned by run_id)")
 
   public String getGcAddressesLocation() {

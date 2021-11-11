@@ -122,6 +122,7 @@ public class ObjectStats {
    * Get path
    * @return path
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getPath() {
@@ -144,6 +145,7 @@ public class ObjectStats {
    * Get pathType
    * @return pathType
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public PathTypeEnum getPathType() {
@@ -166,6 +168,7 @@ public class ObjectStats {
    * Get physicalAddress
    * @return physicalAddress
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getPhysicalAddress() {
@@ -188,6 +191,7 @@ public class ObjectStats {
    * Get checksum
    * @return checksum
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getChecksum() {
@@ -233,6 +237,7 @@ public class ObjectStats {
    * Unix Epoch in seconds
    * @return mtime
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "Unix Epoch in seconds")
 
   public Long getMtime() {
