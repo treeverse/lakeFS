@@ -52,10 +52,6 @@ var dbtCreateBranchSchema = &cobra.Command{
 		continueOnError, _ := cmd.Flags().GetBool("continue-on-error")
 		continueOnSchemaExists, _ := cmd.Flags().GetBool(continueOnSchemaFlag)
 
-		if projectRoot == "" {
-			projectRoot = MustString(os.Getwd())
-		}
-
 		// in order to generate views in new schema dbt should contain a macro script allowing lakectl to dynamically set the schema
 		// this could be skipped by using the skip-views flag
 		if !skipViews {
@@ -98,14 +94,14 @@ func copySchemaWithDbtTables(ctx context.Context, continueOnError, continueOnSch
 
 	err := metastore.CopyDB(ctx, client, client, fromSchema, toSchema, branchName, dbfsLocation)
 	switch {
-	case err != nil && !errors.Is(err, mserrors.ErrSchemaExists):
-		DieErr(err)
-	case errors.Is(err, mserrors.ErrSchemaExists) && continueOnSchemaExists:
-		fmt.Printf("schema %s already exists, proceeding with existing schema\n", toSchema)
-	case errors.Is(err, mserrors.ErrSchemaExists):
-		DieFmt("schema %s exists, change schema or use %s flag", toSchema, continueOnSchemaFlag)
-	default:
+	case err == nil:
 		fmt.Printf("schema %s created\n", toSchema)
+	case !errors.Is(err, mserrors.ErrSchemaExists):
+		DieErr(err)
+	case continueOnSchemaExists:
+		fmt.Printf("schema %s already exists, proceeding with existing schema\n", toSchema)
+	default:
+		DieFmt("schema %s exists, change schema or use %s flag", toSchema, continueOnSchemaFlag)
 	}
 
 	models, err := getDbtTables(projectRoot)
@@ -189,9 +185,6 @@ var dbtGenerateSchemaMacro = &cobra.Command{
 	Example: "lakectl dbt generate-schema-macro",
 	Run: func(cmd *cobra.Command, args []string) {
 		projectRoot, _ := cmd.Flags().GetString("project-root")
-		if projectRoot == "" {
-			projectRoot = MustString(os.Getwd())
-		}
 
 		if !pathExists(path.Join(projectRoot, macrosDirName)) {
 			DieFmt("The project-root should contain the macro directory")
@@ -239,12 +232,12 @@ func init() {
 	_ = dbtCreateBranchSchema.MarkFlagRequired("branch")
 	dbtCreateBranchSchema.Flags().String("from-client-type", "", "metastore type [hive, glue]")
 	dbtCreateBranchSchema.Flags().String("to-schema", "", "destination schema name [default is branch]")
-	dbtCreateBranchSchema.Flags().String("project-root", "", "location of dbt project [default is current working directory]")
+	dbtCreateBranchSchema.Flags().String("project-root", ".", "location of dbt project")
 	dbtCreateBranchSchema.Flags().String("dbfs-location", "", "")
 	dbtCreateBranchSchema.Flags().Bool("skip-views", false, "")
 	dbtCreateBranchSchema.Flags().Bool("continue-on-error", false, "prevent command from failing when a single table fails")
 	dbtCreateBranchSchema.Flags().Bool(continueOnSchemaFlag, false, "allow running on existing schema")
 
 	dbtCmd.AddCommand(dbtGenerateSchemaMacro)
-	dbtGenerateSchemaMacro.Flags().String("project-root", "", "location of dbt project [default is current working directory]")
+	dbtGenerateSchemaMacro.Flags().String("project-root", ".", "location of dbt project")
 }
