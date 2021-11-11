@@ -19,7 +19,7 @@ Revert in lakeFS is an atomic action that prevents the data consumers from recei
 
 As previously mentioned, with lakeFS the recommended branching schema is to ingest data to a dedicated branch. When streaming data, we can decide to merge the incoming data to main at a given time interval or checkpoint, depending on how we chose to write it from Kafka. 
 
-You can run quality tests for each merge (as discussed in the [During Deployment] section). Alas, tests are not perfect and we might still introduce low quality data to our main branch at some point.
+You can run quality tests for each merge (as discussed in the [During Deployment](./ci.md) section). Alas, tests are not perfect and we might still introduce low quality data to our main branch at some point.
 In such a case, we can revert the bad commits from main to the last known high quality commit.
  
 
