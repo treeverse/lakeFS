@@ -142,7 +142,7 @@ client.branches.diff_branch(repository='example-repo', branch='experiment-aggreg
 Let's diff between our branch and the main branch:
 
 ```python
-client.refs.diff_refs(repository='example-repo', left_ref='experiment-aggregations1', right_ref='main').results
+client.refs.diff_refs(repository='example-repo', left_ref='main', right_ref='experiment-aggregations1').results
 # output:
 # [{'path': 'path/to/file.csv', 'path_type': 'object', 'type': 'added'}]
 
@@ -160,7 +160,7 @@ client.refs.merge_into_branch(repository='example-repo', source_ref='experiment-
 Let's diff again - there should be no changes as all changes are on our main branch already:
 
 ```python
-client.refs.diff_refs(repository='example-repo', left_ref='experiment-aggregations1', right_ref='main').results
+client.refs.diff_refs(repository='example-repo', left_ref='main', right_ref='experiment-aggregations1').results
 # output:
 # []
 ```
