@@ -475,10 +475,6 @@ func (l *Adapter) getPartFiles(uploadID string, obj block.ObjectPointer) ([]stri
 	return names, nil
 }
 
-func (l *Adapter) ValidateConfiguration(_ context.Context, _ string) error {
-	return nil
-}
-
 func (l *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string, _ bool, _ []string) (block.Inventory, error) {
 	return nil, ErrInventoryNotSupported
 }

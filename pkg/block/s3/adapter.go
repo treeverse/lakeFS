@@ -634,39 +634,6 @@ func isExpirationRule(rule s3.LifecycleRule) bool {
 			)
 }
 
-// ValidateConfiguration on an S3 adapter checks for a usable bucket
-// lifecycle policy: the storageNamespace bucket should expire objects
-// marked with ExpireObjectS3Tag (with _some_ duration, even if
-// nonzero).
-func (a *Adapter) ValidateConfiguration(ctx context.Context, storageNamespace string) error {
-	getLifecycleConfigInput := &s3.GetBucketLifecycleConfigurationInput{Bucket: &storageNamespace}
-	config, err := a.clients.Get(ctx, storageNamespace).GetBucketLifecycleConfigurationWithContext(ctx, getLifecycleConfigInput)
-	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == "NoSuchLifecycleConfiguration" {
-			return fmt.Errorf("%w: bucket %s has no lifecycle configuration", ErrS3, storageNamespace)
-		}
-		return err
-	}
-	a.log(ctx).WithFields(logging.Fields{
-		"Bucket":          storageNamespace,
-		"LifecyclePolicy": config.GoString(),
-	}).Info("S3 bucket lifecycle policy")
-
-	hasMatchingRule := false
-	for _, a := range config.Rules {
-		if isExpirationRule(*a) {
-			hasMatchingRule = true
-			break
-		}
-	}
-
-	if !hasMatchingRule {
-		return fmt.Errorf("%w: bucket %s lifecycle rules not configured to expire objects tagged \"%s\"",
-			ErrS3, storageNamespace, ExpireObjectS3Tag)
-	}
-	return nil
-}
-
 func (a *Adapter) BlockstoreType() string {
 	return block.BlockstoreTypeS3
 }
