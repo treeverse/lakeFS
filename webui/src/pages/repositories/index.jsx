@@ -30,6 +30,7 @@ import {useRouter} from "../../lib/hooks/router";
 
 import {Route, Switch} from "react-router-dom";
 import RepositoryPage from './repository';
+import Alert from "react-bootstrap/Alert";
 
 
 const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
@@ -64,18 +65,13 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
 
 const GetStarted = ({onCreateRepo}) => {
     return (
-        <Container className="m-4 mb-5">
-            <h2 className="mt-2">Looks like you don&apos;t have any repositories!</h2>
-
-            <Row className="pt-2 ml-2">
-                <DotIcon className="mr-1 mt-1"/>
-                <Button variant="link" onClick={onCreateRepo}>Click</Button>&nbsp;here to create your first one :)
-            </Row>
-            <Row className="pt-2 ml-2">
-                <DotIcon className="mr-1 mt-1"/>
-                See the&nbsp;<a href="https://docs.lakefs.io/setup/create-repo.html#create-the-repository" target="_blank" rel="noopener noreferrer">docs</a>&nbsp;for more information.
-            </Row>
-        </Container>
+        <Alert variant={"secondary"}>
+            <h4>You don&apos;t have any repositories yet.</h4>
+            {/* eslint-disable-next-line react/jsx-no-target-blank */}
+            <Link onClick={onCreateRepo}>Create your first repository</Link> or <a
+            href="https://docs.lakefs.io/understand/branching-model.html#repositories" target="_blank">learn more about
+            repositories in lakeFS</a>.
+        </Alert>
     );
 };
 
@@ -214,7 +210,7 @@ const ModalTitleContainer = () => {
             </Row>
             <Row>
                 <Col>
-                    A repository contains all of your objects, including the revision history. <a href="https://docs.lakefs.io/quickstart/repository.html#create-the-repository" target="_blank" rel="noopener noreferrer">Learn more.</a>
+                    A repository contains all of your objects, including the revision history. <a href="https://docs.lakefs.io/understand/branching-model.html#repositories" target="_blank" rel="noopener noreferrer">Learn more.</a>
                 </Col>
             </Row>
         </Container>
