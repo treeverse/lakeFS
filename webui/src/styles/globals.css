@@ -196,15 +196,15 @@
 }
 
 .diff-changed {
-  background-color: #ffeaa7;
+  background-color: #fff6db;
 }
 
 .diff-added {
-  background-color: #cdffd8;
+  background-color: #e6ffec;
 }
 
 .diff-removed {
-  background-color: #ffdce0;
+  background-color: #ffece6;
 }
 
 .diff-conflict {
