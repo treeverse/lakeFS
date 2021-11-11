@@ -610,30 +610,6 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 	}, nil
 }
 
-func contains(tags []*s3.Tag, pred func(string, string) bool) bool {
-	for _, tag := range tags {
-		if pred(*tag.Key, *tag.Value) {
-			return true
-		}
-	}
-	return false
-}
-
-func isExpirationRule(rule s3.LifecycleRule) bool {
-	return rule.Expiration != nil && // Check for *any* expiration -- not its details.
-		rule.Status != nil && *rule.Status == "Enabled" &&
-		rule.Filter != nil &&
-		rule.Filter.Tag != nil &&
-		*rule.Filter.Tag.Key == ExpireObjectS3Tag &&
-		*rule.Filter.Tag.Value == "1" ||
-		rule.Filter.And != nil &&
-			contains(rule.Filter.And.Tags,
-				func(key string, value string) bool {
-					return key == ExpireObjectS3Tag && value == "1"
-				},
-			)
-}
-
 func (a *Adapter) BlockstoreType() string {
 	return block.BlockstoreTypeS3
 }
