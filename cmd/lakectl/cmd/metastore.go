@@ -31,7 +31,7 @@ var metastoreCopyCmd = &cobra.Command{
 		toBranch, _ := cmd.Flags().GetString("to-branch")
 		serde, _ := cmd.Flags().GetString("serde")
 		partition, _ := cmd.Flags().GetStringSlice("partition")
-		dbfsLocation, _ := cmd.Flags().GetString("dbfs-location")
+		dbfsLocation, _ := cmd.Flags().GetString("dbfs-root")
 
 		fromClient, fromClientDeferFunc := getMetastoreClient(fromClientType, "")
 		defer fromClientDeferFunc()
@@ -75,7 +75,7 @@ var metastoreCopySchemaCmd = &cobra.Command{
 		toClientType, _ := cmd.Flags().GetString("to-client-type")
 		toDB, _ := cmd.Flags().GetString("to-schema")
 		toBranch, _ := cmd.Flags().GetString("to-branch")
-		dbfsLocation, _ := cmd.Flags().GetString("dbfs-location")
+		dbfsLocation, _ := cmd.Flags().GetString("dbfs-root")
 
 		fromClient, fromClientDeferFunc := getMetastoreClient(fromClientType, "")
 		defer fromClientDeferFunc()
@@ -147,7 +147,7 @@ var metastoreCopyAllCmd = &cobra.Command{
 		tableFilter, _ := cmd.Flags().GetString("table-filter")
 		branch, _ := cmd.Flags().GetString("branch")
 		continueOnError, _ := cmd.Flags().GetBool("continue-on-error")
-		dbfsLocation, _ := cmd.Flags().GetString("dbfs-location")
+		dbfsLocation, _ := cmd.Flags().GetString("dbfs-root")
 
 		if fromAddress == toAddress {
 			Die("from-address must be different than to-address", 1)
@@ -184,7 +184,7 @@ will be transformed to location s3://repo-param/bucket-param/path/to/table
 		repo, _ := cmd.Flags().GetString("repo")
 		branch, _ := cmd.Flags().GetString("branch")
 		continueOnError, _ := cmd.Flags().GetBool("continue-on-error")
-		dbfsLocation, _ := cmd.Flags().GetString("dbfs-location")
+		dbfsLocation, _ := cmd.Flags().GetString("dbfs-root")
 		if fromAddress == toAddress {
 			Die("from-address must be different than to-address", 1)
 		}

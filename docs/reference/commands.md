@@ -1553,6 +1553,98 @@ lakectl config [flags]
 
 
 
+### lakectl dbt
+
+Integration with dbt commands
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for dbt
+```
+
+
+
+### lakectl dbt create-branch-schema
+
+Creates a new schema dedicated for branch and clones all dbt models to new schema
+
+```
+lakectl dbt create-branch-schema [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl dbt create-branch-schema --branch <branch-name>
+```
+
+#### Options
+{:.no_toc}
+
+```
+      --branch string               requested branch
+      --continue-on-error           prevent command from failing when a single table fails
+      --continue-on-schema-exists   allow running on existing schema
+      --dbfs-location string        
+  -h, --help                        help for create-branch-schema
+      --project-root string         location of dbt project (default ".")
+      --skip-views                  
+      --to-schema string            destination schema name [default is branch]
+```
+
+
+
+### lakectl dbt generate-schema-macro
+
+generates the a macro allowing lakectl to run dbt on dynamic schemas
+
+```
+lakectl dbt generate-schema-macro [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl dbt generate-schema-macro
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help                  help for generate-schema-macro
+      --project-root string   location of dbt project (default ".")
+```
+
+
+
+### lakectl dbt help
+
+Help about any command
+
+#### Synopsis
+{:.no_toc}
+
+Help provides help for any command in the application.
+Simply type dbt help [path to command] for full details.
+
+```
+lakectl dbt help [command] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for help
+```
+
+
+
 ### lakectl diff
 
 Show changes between two commits, or the currently uncommitted changes
