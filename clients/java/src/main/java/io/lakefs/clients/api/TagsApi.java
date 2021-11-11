@@ -465,6 +465,7 @@ public class TagsApi {
     /**
      * Build call for listTags
      * @param repository  (required)
+     * @param prefix return items prefixed with this value (optional)
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
      * @param _callback Callback for upload/download progress
@@ -479,7 +480,7 @@ public class TagsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call listTagsCall(String repository, String after, Integer amount, final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call listTagsCall(String repository, String prefix, String after, Integer amount, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = null;
 
         // create path and map variables
@@ -491,6 +492,10 @@ public class TagsApi {
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
         Map<String, String> localVarCookieParams = new HashMap<String, String>();
         Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        if (prefix != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("prefix", prefix));
+        }
 
         if (after != null) {
             localVarQueryParams.addAll(localVarApiClient.parameterToPair("after", after));
@@ -519,7 +524,7 @@ public class TagsApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call listTagsValidateBeforeCall(String repository, String after, Integer amount, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call listTagsValidateBeforeCall(String repository, String prefix, String after, Integer amount, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'repository' is set
         if (repository == null) {
@@ -527,7 +532,7 @@ public class TagsApi {
         }
         
 
-        okhttp3.Call localVarCall = listTagsCall(repository, after, amount, _callback);
+        okhttp3.Call localVarCall = listTagsCall(repository, prefix, after, amount, _callback);
         return localVarCall;
 
     }
@@ -536,6 +541,7 @@ public class TagsApi {
      * list tags
      * 
      * @param repository  (required)
+     * @param prefix return items prefixed with this value (optional)
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
      * @return RefList
@@ -549,8 +555,8 @@ public class TagsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public RefList listTags(String repository, String after, Integer amount) throws ApiException {
-        ApiResponse<RefList> localVarResp = listTagsWithHttpInfo(repository, after, amount);
+    public RefList listTags(String repository, String prefix, String after, Integer amount) throws ApiException {
+        ApiResponse<RefList> localVarResp = listTagsWithHttpInfo(repository, prefix, after, amount);
         return localVarResp.getData();
     }
 
@@ -558,6 +564,7 @@ public class TagsApi {
      * list tags
      * 
      * @param repository  (required)
+     * @param prefix return items prefixed with this value (optional)
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
      * @return ApiResponse&lt;RefList&gt;
@@ -571,8 +578,8 @@ public class TagsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<RefList> listTagsWithHttpInfo(String repository, String after, Integer amount) throws ApiException {
-        okhttp3.Call localVarCall = listTagsValidateBeforeCall(repository, after, amount, null);
+    public ApiResponse<RefList> listTagsWithHttpInfo(String repository, String prefix, String after, Integer amount) throws ApiException {
+        okhttp3.Call localVarCall = listTagsValidateBeforeCall(repository, prefix, after, amount, null);
         Type localVarReturnType = new TypeToken<RefList>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
@@ -581,6 +588,7 @@ public class TagsApi {
      * list tags (asynchronously)
      * 
      * @param repository  (required)
+     * @param prefix return items prefixed with this value (optional)
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
      * @param _callback The callback to be executed when the API call finishes
@@ -595,9 +603,9 @@ public class TagsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call listTagsAsync(String repository, String after, Integer amount, final ApiCallback<RefList> _callback) throws ApiException {
+    public okhttp3.Call listTagsAsync(String repository, String prefix, String after, Integer amount, final ApiCallback<RefList> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = listTagsValidateBeforeCall(repository, after, amount, _callback);
+        okhttp3.Call localVarCall = listTagsValidateBeforeCall(repository, prefix, after, amount, _callback);
         Type localVarReturnType = new TypeToken<RefList>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;

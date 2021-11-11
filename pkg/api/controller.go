@@ -2761,7 +2761,7 @@ func (c *Controller) ListTags(w http.ResponseWriter, r *http.Request, repository
 	ctx := r.Context()
 	c.LogAction(ctx, "list_tags")
 
-	res, hasMore, err := c.Catalog.ListTags(ctx, repository, paginationAmount(params.Amount), paginationAfter(params.After))
+	res, hasMore, err := c.Catalog.ListTags(ctx, repository, paginationPrefix(params.Prefix), paginationAmount(params.Amount), paginationAfter(params.After))
 	if handleAPIError(w, err) {
 		return
 	}

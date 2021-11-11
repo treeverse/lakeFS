@@ -542,7 +542,7 @@ func (c *Catalog) DeleteTag(ctx context.Context, repository string, tagID string
 	return c.Store.DeleteTag(ctx, repositoryID, tag)
 }
 
-func (c *Catalog) ListTags(ctx context.Context, repository string, limit int, after string) ([]*Tag, bool, error) {
+func (c *Catalog) ListTags(ctx context.Context, repository string, prefix string, limit int, after string) ([]*Tag, bool, error) {
 	if limit < 0 || limit > ListTagsLimitMax {
 		limit = ListTagsLimitMax
 	}
@@ -558,13 +558,20 @@ func (c *Catalog) ListTags(ctx context.Context, repository string, limit int, af
 	}
 	defer it.Close()
 	afterTagID := graveler.TagID(after)
-	it.SeekGE(afterTagID)
-
+	prefixTagID := graveler.TagID(prefix)
+	if afterTagID < prefixTagID {
+		it.SeekGE(prefixTagID)
+	} else {
+		it.SeekGE(afterTagID)
+	}
 	var tags []*Tag
 	for it.Next() {
 		v := it.Value()
 		if v.TagID == afterTagID {
 			continue
+		}
+		if !strings.HasPrefix(v.TagID.String(), prefix) {
+			break
 		}
 		tag := &Tag{
 			ID:       string(v.TagID),

@@ -8,25 +8,40 @@ import Overlay from "react-bootstrap/Overlay";
 import {ChevronDownIcon, ChevronRightIcon, ChevronUpIcon, XIcon} from "@primer/octicons-react";
 import Popover from "react-bootstrap/Popover";
 
-import {branches, commits} from '../../api';
+import {tags, branches, commits} from '../../api';
+import {Nav} from "react-bootstrap";
 
 
-const BranchSelector = ({ repo, selected, branches, listBranches, selectRef, withCommits, withWorkspace, amount = 300 }) => {
-    // used for branch pagination
+const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, withTags, amount = 300 }) => {
+    // used for ref pagination
+    console.log(JSON.stringify(selected))
     const [pagination, setPagination] = useState({after: "", prefix: "", amount});
+    const [refList, setRefs] = useState({loading: true, payload: null, error: null});
+    const [refType, setRefType] = useState(selected && selected.type || 'branch')
+    useEffect(async () => {
+        setRefs({loading: true, payload: null, error: null});
+        try {
+            let response;
+            if (refType === 'tag') {
+                response = await tags.list(repo.id, pagination.prefix, pagination.after, pagination.amount);
+            } else {
+                response = await branches.list(repo.id, pagination.prefix, pagination.after, pagination.amount);
+            }
+            setRefs({loading: false, payload: response, error: null});
+        } catch (error) {
+            setRefs({loading: false, payload: null, error: error});
+        }
+    }, [refType, repo.id, pagination])
 
     // used for commit listing
     const initialCommitList = {branch: selected, commits: null, loading: false};
     const [commitList, setCommitList] = useState(initialCommitList);
 
-    useEffect(()=> {
-        listBranches(repo.id, pagination.prefix, pagination.after, pagination.amount);
-    }, [repo.id, listBranches, pagination]);
 
     const form = (
         <div className="ref-filter-form">
             <Form onSubmit={e => { e.preventDefault(); }}>
-                <Form.Control type="text" placeholder="filter branches" onChange={(e)=> {
+                <Form.Control type="text" placeholder={refType === 'tag' ? "Filter tags" : "Filter branches"} onChange={(e)=> {
                     setPagination({
                         amount,
                         after: "",
@@ -36,21 +51,31 @@ const BranchSelector = ({ repo, selected, branches, listBranches, selectRef, wit
             </Form>
         </div>
     );
+    const refTypeNav = withTags && <Nav variant="tabs" onSelect={setRefType} activeKey={refType}>
+        <Nav.Item>
+            <Nav.Link eventKey={"branch"}>Branches</Nav.Link>
+        </Nav.Item>
+        <Nav.Item>
+            <Nav.Link eventKey={"tag"}>Tags</Nav.Link>
+        </Nav.Item>
+    </Nav>
 
-    if (branches.loading) {
+    if (refList.loading) {
         return  (
             <div className="ref-selector">
                 {form}
+                {refTypeNav}
                 <p>Loading...</p>
             </div>
         );
     }
 
-    if (!!branches.error) {
+    if (!!refList.error) {
         return  (
             <div className="ref-selector">
                 {form}
-                <Alert variant="danger">{branches.error}</Alert>
+                {refTypeNav}
+                <Alert variant="danger">{refList.error}</Alert>
             </div>
         );
     }
@@ -69,21 +94,22 @@ const BranchSelector = ({ repo, selected, branches, listBranches, selectRef, wit
     }
 
 
-    const results = branches.payload.results;
+    const results = refList.payload.results;
 
     return (
         <div className="ref-selector">
             {form}
+            {refTypeNav}
             <div className="ref-scroller">
                 <ul className="list-group ref-list">
-                    {results.map(branch => (
-                        <BranchEntry key={branch.id} repo={repo} branch={branch.id} selectRef={selectRef} selected={selected} withCommits={withCommits} logCommits={async () => {
-                            const data = await commits.log(repo.id, branch.id)
-                            setCommitList({...commitList, branch: branch.id, commits: data.results});
+                    {results.map(namedRef => (
+                        <RefEntry key={namedRef.id} repo={repo} refType={refType} namedRef={namedRef.id} selectRef={selectRef} selected={selected} withCommits={refType !== 'tag' && withCommits} logCommits={async () => {
+                            const data = await commits.log(repo.id, namedRef.id)
+                            setCommitList({...commitList, branch: namedRef.id, commits: data.results});
                         }}/>
                     ))}
                 </ul>
-                <Paginator results={branches.payload.results} pagination={branches.payload.pagination} from={pagination.after} onPaginate={(after) => {
+                <Paginator results={refList.payload.results} pagination={refList.payload.pagination} from={pagination.after} onPaginate={(after) => {
                     setPagination({after})
                 }}/>
             </div>
@@ -135,17 +161,17 @@ const CommitList = ({ commits, selectRef, reset, branch, withWorkspace }) => {
     );
 };
 
-const BranchEntry = ({repo, branch, selectRef, selected, logCommits, withCommits}) => {
+const RefEntry = ({repo, namedRef, refType, selectRef, selected, logCommits, withCommits}) => {
     return (
-        <li className="list-group-item" key={branch}>
-            {(!!selected && branch === selected) ?
-                <strong>{branch}</strong> :
+        <li className="list-group-item" key={namedRef}>
+            {(!!selected && namedRef === selected.id) ?
+                <strong>{namedRef}</strong> :
                 <Button variant="link" onClick={() => {
-                    selectRef({id: branch, type: 'branch'});
-                }}>{branch}</Button>
+                    selectRef({id: namedRef, type: refType});
+                }}>{namedRef}</Button>
             }
             <div className="actions">
-                {(branch === repo.default_branch) ? (<Badge variant="info">Default</Badge>) : <span/>}
+                {(refType === 'branch' && namedRef === repo.default_branch) ? (<Badge variant="info">Default</Badge>) : <span/>}
                 {(withCommits) ? (
                     <Button onClick={logCommits} size="sm" variant="link">
                         <ChevronRightIcon/>
@@ -176,33 +202,21 @@ const Paginator = ({ pagination, onPaginate, results, from }) => {
     );
 };
 
-const RefDropdown = ({ repo, selected, selectRef, onCancel, variant="light", prefix = '', emptyText = '', withCommits = true, withWorkspace = true }) => {
+const RefDropdown = ({ repo, selected, selectRef, onCancel, variant="light", prefix = '', emptyText = '', withCommits = true, withWorkspace = true, withTags = true }) => {
 
     const [show, setShow] = useState(false);
     const target = useRef(null);
 
-    const [branchList, setBranches] = useState({loading: true, payload: null, error: null});
-
-    const listBranches = useCallback(async (repoId, prefix, after, amount) => {
-        setBranches({loading: true, payload: null, error: null});
-        try {
-            const response = await branches.list(repoId, prefix, after, amount);
-            setBranches({loading: false, payload: response, error: null});
-        } catch (error) {
-            setBranches({loading: false, payload: null, error: error});
-        }
-    }, [])
 
     const popover = (
         <Overlay target={target.current} show={show} placement="bottom" rootClose={true} onHide={() => setShow(false)}>
             <Popover className="ref-popover">
                 <Popover.Content>
-                    <BranchSelector
+                    <RefSelector
                         repo={repo}
-                        branches={branchList}
                         withCommits={withCommits}
-                        listBranches={listBranches}
                         withWorkspace={withWorkspace}
+                        withTags={withTags}
                         selected={selected}
                         selectRef={(ref) => {
                             selectRef(ref);

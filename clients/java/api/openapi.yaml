@@ -1686,6 +1686,14 @@ paths:
         schema:
           type: string
         style: simple
+      - description: return items prefixed with this value
+        explode: true
+        in: query
+        name: prefix
+        required: false
+        schema:
+          type: string
+        style: form
       - description: return items after this value
         explode: true
         in: query
