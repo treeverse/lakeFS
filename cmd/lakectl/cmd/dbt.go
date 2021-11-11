@@ -230,7 +230,6 @@ func init() {
 	dbtCmd.AddCommand(dbtCreateBranchSchema)
 	dbtCreateBranchSchema.Flags().String("branch", "", "requested branch")
 	_ = dbtCreateBranchSchema.MarkFlagRequired("branch")
-	dbtCreateBranchSchema.Flags().String("from-client-type", "", "metastore type [hive, glue]")
 	dbtCreateBranchSchema.Flags().String("to-schema", "", "destination schema name [default is branch]")
 	dbtCreateBranchSchema.Flags().String("project-root", ".", "location of dbt project")
 	dbtCreateBranchSchema.Flags().String("dbfs-location", "", "")

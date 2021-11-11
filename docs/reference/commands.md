@@ -1578,46 +1578,46 @@ lakectl dbt create-branch-schema [flags]
 {:.no_toc}
 
 ```
-lakectl dbt create-branch-schema <branch-name>
+lakectl dbt create-branch-schema --branch <branch-name>
 ```
 
 #### Options
 {:.no_toc}
 
 ```
+      --branch string               requested branch
       --continue-on-error           prevent command from failing when a single table fails
       --continue-on-schema-exists   allow running on existing schema
       --dbfs-location string        
-      --from-client-type string     metastore type [hive, glue]
   -h, --help                        help for create-branch-schema
-      --project-root string         location of dbt project [default is current working directory]
+      --project-root string         location of dbt project (default ".")
       --skip-views                  
-      --to-schema string            destination schema name [default is from-branch]
+      --to-schema string            destination schema name [default is branch]
 ```
 
 
 
-### lakectl dbt generate-macro
+### lakectl dbt generate-schema-macro
 
 generates the a macro allowing lakectl to run dbt on dynamic schemas
 
 ```
-lakectl dbt generate-macro [flags]
+lakectl dbt generate-schema-macro [flags]
 ```
 
 #### Examples
 {:.no_toc}
 
 ```
-lakectl dbt generate-macro
+lakectl dbt generate-schema-macro
 ```
 
 #### Options
 {:.no_toc}
 
 ```
-  -h, --help                  help for generate-macro
-      --project-root string   location of dbt project [default is current working directory]
+  -h, --help                  help for generate-schema-macro
+      --project-root string   location of dbt project (default ".")
 ```
 
 
