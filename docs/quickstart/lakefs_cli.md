@@ -22,7 +22,7 @@ has_children: false
 
      The CLI binary can be downloaded from the official [lakeFS releases](https://github.com/treeverse/lakeFS/releases) published on GitHub under "Assets". Unless you need a specific previous version of the CLI, it is recommended to download the most recently released version.
 
-      ![Relase Assets]({{ site.baseurl }}/assets/img/lakefs-release-asset.png)
+      ![Release Assets]({{ site.baseurl }}/assets/img/lakefs-release-asset.png)
 
      The Operating System of the computer being used determines whether you should pick the binary Asset compiled for a Windows, Linux, or Mac (Darwin). For Mac and Linux Operating Systems, the processor determines whether you should download the x64 or arm binary. 
   
