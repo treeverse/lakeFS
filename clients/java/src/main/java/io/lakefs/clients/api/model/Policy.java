@@ -55,6 +55,7 @@ public class Policy {
    * Get id
    * @return id
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getId() {
@@ -105,6 +106,7 @@ public class Policy {
    * Get statement
    * @return statement
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public List<Statement> getStatement() {

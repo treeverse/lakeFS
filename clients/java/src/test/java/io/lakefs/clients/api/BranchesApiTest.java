@@ -50,8 +50,7 @@ public class BranchesApiTest {
     public void createBranchTest() throws ApiException {
         String repository = null;
         BranchCreation branchCreation = null;
-        String response = api.createBranch(repository, branchCreation);
-
+                String response = api.createBranch(repository, branchCreation);
         // TODO: test validations
     }
     
@@ -67,8 +66,7 @@ public class BranchesApiTest {
     public void deleteBranchTest() throws ApiException {
         String repository = null;
         String branch = null;
-        api.deleteBranch(repository, branch);
-
+                api.deleteBranch(repository, branch);
         // TODO: test validations
     }
     
@@ -88,8 +86,7 @@ public class BranchesApiTest {
         Integer amount = null;
         String prefix = null;
         String delimiter = null;
-        DiffList response = api.diffBranch(repository, branch, after, amount, prefix, delimiter);
-
+                DiffList response = api.diffBranch(repository, branch, after, amount, prefix, delimiter);
         // TODO: test validations
     }
     
@@ -105,8 +102,7 @@ public class BranchesApiTest {
     public void getBranchTest() throws ApiException {
         String repository = null;
         String branch = null;
-        Ref response = api.getBranch(repository, branch);
-
+                Ref response = api.getBranch(repository, branch);
         // TODO: test validations
     }
     
@@ -124,8 +120,7 @@ public class BranchesApiTest {
         String prefix = null;
         String after = null;
         Integer amount = null;
-        RefList response = api.listBranches(repository, prefix, after, amount);
-
+                RefList response = api.listBranches(repository, prefix, after, amount);
         // TODO: test validations
     }
     
@@ -142,8 +137,7 @@ public class BranchesApiTest {
         String repository = null;
         String branch = null;
         ResetCreation resetCreation = null;
-        api.resetBranch(repository, branch, resetCreation);
-
+                api.resetBranch(repository, branch, resetCreation);
         // TODO: test validations
     }
     
@@ -160,8 +154,7 @@ public class BranchesApiTest {
         String repository = null;
         String branch = null;
         RevertCreation revertCreation = null;
-        api.revertBranch(repository, branch, revertCreation);
-
+                api.revertBranch(repository, branch, revertCreation);
         // TODO: test validations
     }
     

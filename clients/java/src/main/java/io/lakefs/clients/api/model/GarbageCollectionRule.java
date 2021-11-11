@@ -48,6 +48,7 @@ public class GarbageCollectionRule {
    * Get branchId
    * @return branchId
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getBranchId() {
@@ -70,6 +71,7 @@ public class GarbageCollectionRule {
    * Get retentionDays
    * @return retentionDays
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public Integer getRetentionDays() {

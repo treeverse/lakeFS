@@ -45,6 +45,7 @@ public class CurrentUser {
    * Get user
    * @return user
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public User getUser() {

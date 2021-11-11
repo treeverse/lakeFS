@@ -44,6 +44,7 @@ public class BranchProtectionRule {
    * fnmatch pattern for the branch name, supporting * and ? wildcards
    * @return pattern
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(example = "stable_*", required = true, value = "fnmatch pattern for the branch name, supporting * and ? wildcards")
 
   public String getPattern() {

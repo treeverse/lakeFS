@@ -48,6 +48,7 @@ public class LoginInformation {
    * Get accessKeyId
    * @return accessKeyId
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getAccessKeyId() {
@@ -70,6 +71,7 @@ public class LoginInformation {
    * Get secretAccessKey
    * @return secretAccessKey
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getSecretAccessKey() {

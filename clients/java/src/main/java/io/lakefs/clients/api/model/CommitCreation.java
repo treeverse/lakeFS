@@ -51,6 +51,7 @@ public class CommitCreation {
    * Get message
    * @return message
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getMessage() {

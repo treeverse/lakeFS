@@ -163,6 +163,7 @@ public class ActionRun {
    * Get runId
    * @return runId
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getRunId() {
@@ -185,6 +186,7 @@ public class ActionRun {
    * Get branch
    * @return branch
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getBranch() {
@@ -207,6 +209,7 @@ public class ActionRun {
    * Get startTime
    * @return startTime
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public OffsetDateTime getStartTime() {
@@ -252,6 +255,7 @@ public class ActionRun {
    * Get eventType
    * @return eventType
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public EventTypeEnum getEventType() {
@@ -274,6 +278,7 @@ public class ActionRun {
    * Get status
    * @return status
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public StatusEnum getStatus() {
@@ -296,6 +301,7 @@ public class ActionRun {
    * Get commitId
    * @return commitId
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getCommitId() {

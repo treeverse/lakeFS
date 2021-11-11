@@ -72,6 +72,7 @@ public class Commit {
    * Get id
    * @return id
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getId() {
@@ -99,6 +100,7 @@ public class Commit {
    * Get parents
    * @return parents
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public List<String> getParents() {
@@ -121,6 +123,7 @@ public class Commit {
    * Get committer
    * @return committer
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getCommitter() {
@@ -143,6 +146,7 @@ public class Commit {
    * Get message
    * @return message
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getMessage() {
@@ -165,6 +169,7 @@ public class Commit {
    * Unix Epoch in seconds
    * @return creationDate
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "Unix Epoch in seconds")
 
   public Long getCreationDate() {
@@ -187,6 +192,7 @@ public class Commit {
    * Get metaRangeId
    * @return metaRangeId
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getMetaRangeId() {

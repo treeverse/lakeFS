@@ -46,8 +46,7 @@ public class MetadataApiTest {
         String repository = null;
         String branch = null;
         String location = null;
-        StorageURI response = api.createSymlinkFile(repository, branch, location);
-
+                StorageURI response = api.createSymlinkFile(repository, branch, location);
         // TODO: test validations
     }
     
@@ -63,8 +62,7 @@ public class MetadataApiTest {
     public void getMetaRangeTest() throws ApiException {
         String repository = null;
         String metaRange = null;
-        StorageURI response = api.getMetaRange(repository, metaRange);
-
+                StorageURI response = api.getMetaRange(repository, metaRange);
         // TODO: test validations
     }
     
@@ -80,8 +78,7 @@ public class MetadataApiTest {
     public void getRangeTest() throws ApiException {
         String repository = null;
         String range = null;
-        StorageURI response = api.getRange(repository, range);
-
+                StorageURI response = api.getRange(repository, range);
         // TODO: test validations
     }
     

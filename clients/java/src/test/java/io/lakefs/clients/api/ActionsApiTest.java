@@ -48,8 +48,7 @@ public class ActionsApiTest {
     public void getRunTest() throws ApiException {
         String repository = null;
         String runId = null;
-        ActionRun response = api.getRun(repository, runId);
-
+                ActionRun response = api.getRun(repository, runId);
         // TODO: test validations
     }
     
@@ -66,8 +65,7 @@ public class ActionsApiTest {
         String repository = null;
         String runId = null;
         String hookRunId = null;
-        File response = api.getRunHookOutput(repository, runId, hookRunId);
-
+                File response = api.getRunHookOutput(repository, runId, hookRunId);
         // TODO: test validations
     }
     
@@ -86,8 +84,7 @@ public class ActionsApiTest {
         Integer amount = null;
         String branch = null;
         String commit = null;
-        ActionRunList response = api.listRepositoryRuns(repository, after, amount, branch, commit);
-
+                ActionRunList response = api.listRepositoryRuns(repository, after, amount, branch, commit);
         // TODO: test validations
     }
     
@@ -105,8 +102,7 @@ public class ActionsApiTest {
         String runId = null;
         String after = null;
         Integer amount = null;
-        HookRunList response = api.listRunHooks(repository, runId, after, amount);
-
+                HookRunList response = api.listRunHooks(repository, runId, after, amount);
         // TODO: test validations
     }
     

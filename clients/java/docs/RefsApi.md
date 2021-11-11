@@ -56,7 +56,7 @@ public class Example {
     String prefix = "prefix_example"; // String | return items prefixed with this value
     String delimiter = "delimiter_example"; // String | delimiter used to group common prefixes by
     String type = "type_example"; // String | 
-    String diffType = "three_dot"; // String | 
+    String diffType = "two_dot"; // String | 
     try {
       DiffList result = apiInstance.diffRefs(repository, leftRef, rightRef, after, amount, prefix, delimiter, type, diffType);
       System.out.println(result);

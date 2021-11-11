@@ -48,6 +48,7 @@ public class TagCreation {
    * Get id
    * @return id
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getId() {
@@ -70,6 +71,7 @@ public class TagCreation {
    * Get ref
    * @return ref
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getRef() {

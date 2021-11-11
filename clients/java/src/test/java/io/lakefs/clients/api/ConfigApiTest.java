@@ -46,8 +46,7 @@ public class ConfigApiTest {
      */
     @Test
     public void getLakeFSVersionTest() throws ApiException {
-        VersionConfig response = api.getLakeFSVersion();
-
+                VersionConfig response = api.getLakeFSVersion();
         // TODO: test validations
     }
     
@@ -61,8 +60,7 @@ public class ConfigApiTest {
      */
     @Test
     public void getStorageConfigTest() throws ApiException {
-        StorageConfig response = api.getStorageConfig();
-
+                StorageConfig response = api.getStorageConfig();
         // TODO: test validations
     }
     
@@ -77,8 +75,7 @@ public class ConfigApiTest {
     @Test
     public void setupTest() throws ApiException {
         Setup setup = null;
-        CredentialsWithSecret response = api.setup(setup);
-
+                CredentialsWithSecret response = api.setup(setup);
         // TODO: test validations
     }
     

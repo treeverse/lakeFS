@@ -48,6 +48,7 @@ public class Credentials {
    * Get accessKeyId
    * @return accessKeyId
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getAccessKeyId() {
@@ -70,6 +71,7 @@ public class Credentials {
    * Unix Epoch in seconds
    * @return creationDate
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "Unix Epoch in seconds")
 
   public Long getCreationDate() {

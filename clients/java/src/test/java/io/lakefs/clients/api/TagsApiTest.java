@@ -47,8 +47,7 @@ public class TagsApiTest {
     public void createTagTest() throws ApiException {
         String repository = null;
         TagCreation tagCreation = null;
-        Ref response = api.createTag(repository, tagCreation);
-
+                Ref response = api.createTag(repository, tagCreation);
         // TODO: test validations
     }
     
@@ -64,8 +63,7 @@ public class TagsApiTest {
     public void deleteTagTest() throws ApiException {
         String repository = null;
         String tag = null;
-        api.deleteTag(repository, tag);
-
+                api.deleteTag(repository, tag);
         // TODO: test validations
     }
     
@@ -81,8 +79,7 @@ public class TagsApiTest {
     public void getTagTest() throws ApiException {
         String repository = null;
         String tag = null;
-        Ref response = api.getTag(repository, tag);
-
+                Ref response = api.getTag(repository, tag);
         // TODO: test validations
     }
     
@@ -100,8 +97,7 @@ public class TagsApiTest {
         String prefix = null;
         String after = null;
         Integer amount = null;
-        RefList response = api.listTags(repository, prefix, after, amount);
-
+                RefList response = api.listTags(repository, prefix, after, amount);
         // TODO: test validations
     }
     

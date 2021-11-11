@@ -67,6 +67,7 @@ public class ObjectStageCreation {
    * Get physicalAddress
    * @return physicalAddress
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getPhysicalAddress() {
@@ -89,6 +90,7 @@ public class ObjectStageCreation {
    * Get checksum
    * @return checksum
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getChecksum() {
@@ -111,6 +113,7 @@ public class ObjectStageCreation {
    * Get sizeBytes
    * @return sizeBytes
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public Long getSizeBytes() {

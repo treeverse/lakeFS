@@ -97,6 +97,7 @@ public class ResetCreation {
    * Get type
    * @return type
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public TypeEnum getType() {

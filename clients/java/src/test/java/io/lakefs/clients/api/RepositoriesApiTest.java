@@ -49,8 +49,7 @@ public class RepositoriesApiTest {
     public void createBranchProtectionRuleTest() throws ApiException {
         String repository = null;
         BranchProtectionRule branchProtectionRule = null;
-        api.createBranchProtectionRule(repository, branchProtectionRule);
-
+                api.createBranchProtectionRule(repository, branchProtectionRule);
         // TODO: test validations
     }
     
@@ -66,8 +65,7 @@ public class RepositoriesApiTest {
     public void createRepositoryTest() throws ApiException {
         RepositoryCreation repositoryCreation = null;
         Boolean bare = null;
-        Repository response = api.createRepository(repositoryCreation, bare);
-
+                Repository response = api.createRepository(repositoryCreation, bare);
         // TODO: test validations
     }
     
@@ -83,8 +81,7 @@ public class RepositoriesApiTest {
     public void deleteBranchProtectionRuleTest() throws ApiException {
         String repository = null;
         InlineObject1 inlineObject1 = null;
-        api.deleteBranchProtectionRule(repository, inlineObject1);
-
+                api.deleteBranchProtectionRule(repository, inlineObject1);
         // TODO: test validations
     }
     
@@ -99,8 +96,7 @@ public class RepositoriesApiTest {
     @Test
     public void deleteRepositoryTest() throws ApiException {
         String repository = null;
-        api.deleteRepository(repository);
-
+                api.deleteRepository(repository);
         // TODO: test validations
     }
     
@@ -115,8 +111,7 @@ public class RepositoriesApiTest {
     @Test
     public void getBranchProtectionRulesTest() throws ApiException {
         String repository = null;
-        List<BranchProtectionRule> response = api.getBranchProtectionRules(repository);
-
+                List<BranchProtectionRule> response = api.getBranchProtectionRules(repository);
         // TODO: test validations
     }
     
@@ -131,8 +126,7 @@ public class RepositoriesApiTest {
     @Test
     public void getRepositoryTest() throws ApiException {
         String repository = null;
-        Repository response = api.getRepository(repository);
-
+                Repository response = api.getRepository(repository);
         // TODO: test validations
     }
     
@@ -149,8 +143,7 @@ public class RepositoriesApiTest {
         String prefix = null;
         String after = null;
         Integer amount = null;
-        RepositoryList response = api.listRepositories(prefix, after, amount);
-
+                RepositoryList response = api.listRepositories(prefix, after, amount);
         // TODO: test validations
     }
     

@@ -45,6 +45,7 @@ public class StorageURI {
    * Get location
    * @return location
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getLocation() {
