@@ -48,6 +48,7 @@ public class AccessKeyCredentials {
    * access key ID to set for user for use in integration testing.
    * @return accessKeyId
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(example = "AKIAIOSFODNN7EXAMPLE", required = true, value = "access key ID to set for user for use in integration testing.")
 
   public String getAccessKeyId() {
@@ -70,6 +71,7 @@ public class AccessKeyCredentials {
    * secret access key to set for user for use in integration testing.
    * @return secretAccessKey
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(example = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY", required = true, value = "secret access key to set for user for use in integration testing.")
 
   public String getSecretAccessKey() {

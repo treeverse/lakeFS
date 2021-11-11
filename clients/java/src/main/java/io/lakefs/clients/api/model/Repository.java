@@ -56,6 +56,7 @@ public class Repository {
    * Get id
    * @return id
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getId() {
@@ -78,6 +79,7 @@ public class Repository {
    * Unix Epoch in seconds
    * @return creationDate
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "Unix Epoch in seconds")
 
   public Long getCreationDate() {
@@ -100,6 +102,7 @@ public class Repository {
    * Get defaultBranch
    * @return defaultBranch
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getDefaultBranch() {
@@ -122,6 +125,7 @@ public class Repository {
    * Filesystem URI to store the underlying data in (e.g. \&quot;s3://my-bucket/some/path/\&quot;)
    * @return storageNamespace
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "Filesystem URI to store the underlying data in (e.g. \"s3://my-bucket/some/path/\")")
 
   public String getStorageNamespace() {

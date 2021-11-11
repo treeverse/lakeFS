@@ -101,6 +101,7 @@ public class Statement {
    * Get effect
    * @return effect
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public EffectEnum getEffect() {
@@ -123,6 +124,7 @@ public class Statement {
    * Get resource
    * @return resource
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getResource() {
@@ -150,6 +152,7 @@ public class Statement {
    * Get action
    * @return action
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public List<String> getAction() {

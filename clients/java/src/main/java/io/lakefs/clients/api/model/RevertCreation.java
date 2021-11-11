@@ -48,6 +48,7 @@ public class RevertCreation {
    * the commit to revert, given by a ref
    * @return ref
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "the commit to revert, given by a ref")
 
   public String getRef() {
@@ -70,6 +71,7 @@ public class RevertCreation {
    * when reverting a merge commit, the parent number (starting from 1) relative to which to perform the revert.
    * @return parentNumber
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "when reverting a merge commit, the parent number (starting from 1) relative to which to perform the revert.")
 
   public Integer getParentNumber() {

@@ -52,6 +52,7 @@ public class RefsDump {
    * Get commitsMetaRangeId
    * @return commitsMetaRangeId
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getCommitsMetaRangeId() {
@@ -74,6 +75,7 @@ public class RefsDump {
    * Get tagsMetaRangeId
    * @return tagsMetaRangeId
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getTagsMetaRangeId() {
@@ -96,6 +98,7 @@ public class RefsDump {
    * Get branchesMetaRangeId
    * @return branchesMetaRangeId
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getBranchesMetaRangeId() {

@@ -52,6 +52,7 @@ public class StorageConfig {
    * Get blockstoreType
    * @return blockstoreType
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getBlockstoreType() {
@@ -74,6 +75,7 @@ public class StorageConfig {
    * Get blockstoreNamespaceExample
    * @return blockstoreNamespaceExample
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getBlockstoreNamespaceExample() {
@@ -96,6 +98,7 @@ public class StorageConfig {
    * Get blockstoreNamespaceValidityRegex
    * @return blockstoreNamespaceValidityRegex
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getBlockstoreNamespaceValidityRegex() {

@@ -150,7 +150,6 @@ lakefs_client/model/user_list.py
 lakefs_client/model/version_config.py
 lakefs_client/model_utils.py
 lakefs_client/models/__init__.py
-lakefs_client/models/__init__.py
 lakefs_client/rest.py
 requirements.txt
 setup.cfg
