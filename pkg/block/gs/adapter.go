@@ -26,8 +26,6 @@ const (
 
 var (
 	ErrNotImplemented      = errors.New("not implemented")
-	ErrMissingPartNumber   = errors.New("missing part number")
-	ErrMissingPartETag     = errors.New("missing part ETag")
 	ErrMismatchPartETag    = errors.New("mismatch part ETag")
 	ErrMismatchPartName    = errors.New("mismatch part name")
 	ErrMaxMultipartObjects = errors.New("maximum multipart object reached")
@@ -472,17 +470,11 @@ func (a *Adapter) validateMultipartUploadParts(uploadID string, multipartList *b
 		return ErrPartListMismatch
 	}
 	for i, p := range multipartList.Part {
-		if p.PartNumber == nil {
-			return fmt.Errorf("invalid part at position %d: %w", i, ErrMissingPartNumber)
-		}
-		if p.ETag == nil {
-			return fmt.Errorf("invalid part at position %d: %w", i, ErrMissingPartETag)
-		}
-		objName := formatMultipartFilename(uploadID, *p.PartNumber)
+		objName := formatMultipartFilename(uploadID, p.PartNumber)
 		if objName != bucketParts[i].Name {
 			return fmt.Errorf("invalid part at position %d: %w", i, ErrMismatchPartName)
 		}
-		if *p.ETag != bucketParts[i].Etag {
+		if p.ETag != bucketParts[i].Etag {
 			return fmt.Errorf("invalid part at position %d: %w", i, ErrMismatchPartETag)
 		}
 	}

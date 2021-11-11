@@ -4,15 +4,21 @@ import (
 	"context"
 	"io"
 	"net/http"
-
-	"github.com/aws/aws-sdk-go/service/s3"
 )
+
+// MultipartPart single multipart information
+type MultipartPart struct {
+	ETag       string
+	PartNumber int64
+}
 
 // MultipartUploadCompletion parts described as part of complete multipart upload. Each part holds the part number and ETag received while calling part upload.
 // NOTE that S3 implementation and our S3 gateway accept and returns ETag value surrounded with double-quotes ("), while
 // the adapter implementations supply the raw value of the etag (without double quotes) and let the gateway manage the s3
 // protocol specifications.
-type MultipartUploadCompletion struct{ Part []*s3.CompletedPart }
+type MultipartUploadCompletion struct {
+	Part []MultipartPart
+}
 
 // IdentifierType is the type the ObjectPointer Identifier
 type IdentifierType int32

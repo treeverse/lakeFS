@@ -563,6 +563,17 @@ func (a *Adapter) AbortMultiPartUpload(ctx context.Context, obj block.ObjectPoin
 	return err
 }
 
+func convertFromBlockMultipartUploadCompletion(multipartList *block.MultipartUploadCompletion) *s3.CompletedMultipartUpload {
+	var parts []*s3.CompletedPart
+	for _, p := range multipartList.Part {
+		parts = append(parts, &s3.CompletedPart{
+			ETag:       aws.String(p.ETag),
+			PartNumber: aws.Int64(p.PartNumber),
+		})
+	}
+	return &s3.CompletedMultipartUpload{Parts: parts}
+}
+
 func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectPointer, uploadID string, multipartList *block.MultipartUploadCompletion) (*block.CompleteMultiPartUploadResponse, error) {
 	var err error
 	defer reportMetrics("CompleteMultiPartUpload", time.Now(), nil, &err)
@@ -570,13 +581,12 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 	if err != nil {
 		return nil, err
 	}
-	cmpu := &s3.CompletedMultipartUpload{Parts: multipartList.Part}
 	translatedUploadID := a.uploadIDTranslator.TranslateUploadID(uploadID)
 	input := &s3.CompleteMultipartUploadInput{
 		Bucket:          aws.String(qualifiedKey.StorageNamespace),
 		Key:             aws.String(qualifiedKey.Key),
 		UploadId:        aws.String(translatedUploadID),
-		MultipartUpload: cmpu,
+		MultipartUpload: convertFromBlockMultipartUploadCompletion(multipartList),
 	}
 	lg := a.log(ctx).WithFields(logging.Fields{
 		"upload_id":            uploadID,

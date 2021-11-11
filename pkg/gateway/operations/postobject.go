@@ -141,9 +141,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 // we make sure that each part's ETag will be without the wrapping quotes
 func normalizeMultipartUploadCompletion(list *block.MultipartUploadCompletion) {
 	for _, part := range list.Part {
-		if part.ETag != nil {
-			*part.ETag = strings.Trim(*part.ETag, `"`)
-		}
+		part.ETag = strings.Trim(part.ETag, `"`)
 	}
 }
 

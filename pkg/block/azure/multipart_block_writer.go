@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-storage-blob-go/azblob"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -60,15 +59,15 @@ func (m *MultipartBlockWriter) CommitBlockList(ctx context.Context, ids []string
 	return &azblob.BlockBlobCommitBlockListResponse{}, err
 }
 
-func completeMultipart(ctx context.Context, parts []*s3.CompletedPart, container azblob.ContainerURL, objName string, retryOptions azblob.RetryReaderOptions) (*block.CompleteMultiPartUploadResponse, error) {
+func completeMultipart(ctx context.Context, parts []block.MultipartPart, container azblob.ContainerURL, objName string, retryOptions azblob.RetryReaderOptions) (*block.CompleteMultiPartUploadResponse, error) {
 	sort.Slice(parts, func(i, j int) bool {
-		return *parts[i].PartNumber < *parts[j].PartNumber
+		return parts[i].PartNumber < parts[j].PartNumber
 	})
 	// extract staging blockIDs
 	metaBlockIDs := make([]string, len(parts))
 	for i, part := range parts {
 		// add Quotations marks (") if missing, Etags sent by spark include Quotations marks, Etags sent aws cli don't include Quotations marks
-		etag := strings.Trim(*part.ETag, "\"")
+		etag := strings.Trim(part.ETag, "\"")
 		etag = "\"" + etag + "\""
 		base64Etag := base64.StdEncoding.EncodeToString([]byte(etag))
 		metaBlockIDs[i] = base64Etag
