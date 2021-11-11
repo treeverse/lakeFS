@@ -97,9 +97,10 @@ public class TagsApiTest {
     @Test
     public void listTagsTest() throws ApiException {
         String repository = null;
+        String prefix = null;
         String after = null;
         Integer amount = null;
-        RefList response = api.listTags(repository, after, amount);
+        RefList response = api.listTags(repository, prefix, after, amount);
 
         // TODO: test validations
     }

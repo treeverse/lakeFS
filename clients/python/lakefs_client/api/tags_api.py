@@ -448,6 +448,7 @@ class TagsApi(object):
                 repository (str):
 
             Keyword Args:
+                prefix (str): return items prefixed with this value. [optional]
                 after (str): return items after this value. [optional]
                 amount (int): how many items to return. [optional] if omitted the server will use the default value of 100
                 _return_http_data_only (bool): response data without head status
@@ -514,6 +515,7 @@ class TagsApi(object):
             params_map={
                 'all': [
                     'repository',
+                    'prefix',
                     'after',
                     'amount',
                 ],
@@ -541,6 +543,8 @@ class TagsApi(object):
                 'openapi_types': {
                     'repository':
                         (str,),
+                    'prefix':
+                        (str,),
                     'after':
                         (str,),
                     'amount':
@@ -548,11 +552,13 @@ class TagsApi(object):
                 },
                 'attribute_map': {
                     'repository': 'repository',
+                    'prefix': 'prefix',
                     'after': 'after',
                     'amount': 'amount',
                 },
                 'location_map': {
                     'repository': 'path',
+                    'prefix': 'query',
                     'after': 'query',
                     'amount': 'query',
                 },

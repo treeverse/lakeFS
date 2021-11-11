@@ -1,6 +1,6 @@
 import React, {useContext, useState, createContext, useEffect} from "react";
 
-import {repositories, branches, commits, NotFoundError} from "../api";
+import {repositories, branches, commits, NotFoundError, tags} from "../api";
 import {useRouter} from "./router";
 
 
@@ -9,6 +9,15 @@ export const resolveRef = async (repoId, refId) => {
     try {
         const branch = await branches.get(repoId, refId);
         return {id: branch.id, type: 'branch'};
+    } catch(error) {
+        if (!(error instanceof NotFoundError)) {
+            throw error;
+        }
+    }
+    // try tag
+    try {
+        const tag = await tags.get(repoId, refId);
+        return {id: tag.id, type: 'tag'};
     } catch(error) {
         if (!(error instanceof NotFoundError)) {
             throw error;

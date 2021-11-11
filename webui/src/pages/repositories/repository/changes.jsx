@@ -222,6 +222,7 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
                         selected={(!!reference) ? reference : null}
                         withCommits={false}
                         withWorkspace={false}
+                        withTags={false}
                         selectRef={onSelectRef}
                     />
                 </ActionGroup>

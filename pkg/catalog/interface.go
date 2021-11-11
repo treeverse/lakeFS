@@ -89,7 +89,7 @@ type Interface interface {
 
 	CreateTag(ctx context.Context, repository, tagID string, ref string) (string, error)
 	DeleteTag(ctx context.Context, repository, tagID string) error
-	ListTags(ctx context.Context, repository string, limit int, after string) ([]*Tag, bool, error)
+	ListTags(ctx context.Context, repository string, prefix string, limit int, after string) ([]*Tag, bool, error)
 	GetTag(ctx context.Context, repository, tagID string) (string, error)
 
 	// GetEntry returns the current entry for path in repository branch reference.  Returns
