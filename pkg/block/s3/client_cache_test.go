@@ -57,7 +57,7 @@ func TestClientCache(t *testing.T) {
 			expectedRegionFetch := make(map[string]bool)
 			c := s3.NewClientCache(sess)
 
-			c = c.WithClientFactory(func(sess *session.Session, cfgs ...*aws.Config) s3iface.S3API {
+			c.SetClientFactory(func(sess *session.Session, cfgs ...*aws.Config) s3iface.S3API {
 				region := sess.Config.Region
 				for _, cfg := range cfgs {
 					if cfg.Region != nil {
@@ -70,7 +70,7 @@ func TestClientCache(t *testing.T) {
 				actualClientsCreated[*region] = true
 				return struct{ s3iface.S3API }{}
 			})
-			c = c.WithS3RegionGetter(func(ctx context.Context, sess *session.Session, bucket string) (string, error) {
+			c.SetS3RegionGetter(func(ctx context.Context, sess *session.Session, bucket string) (string, error) {
 				if actualRegionFetch[bucket] {
 					t.Fatalf("region fetched more than once for bucket")
 				}
