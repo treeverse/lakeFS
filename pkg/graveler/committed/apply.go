@@ -3,6 +3,7 @@ package committed
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -95,6 +96,7 @@ func (a *applier) hasChanges(summary graveler.DiffSummary) bool {
 	}
 	return false
 }
+
 func (a *applier) addIntoDiffSummary(typ graveler.DiffType, n int) {
 	if a.summary.Count != nil {
 		a.summary.Count[typ] += n
@@ -134,6 +136,9 @@ func (a *applier) apply() (graveler.DiffSummary, error) {
 		return a.summary, err
 	}
 	if err := a.diffs.Err(); err != nil {
+		if errors.Is(err, graveler.ErrConflictFound) {
+			a.incrementDiffSummary(graveler.DiffTypeConflict)
+		}
 		return a.summary, err
 	}
 	if a.haveSource {

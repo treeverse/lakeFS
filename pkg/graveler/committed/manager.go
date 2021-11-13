@@ -138,14 +138,15 @@ func (c *committedManager) applyOnDiffWithRanges(ctx context.Context, ns gravele
 		if !errors.Is(err, graveler.ErrUserVisible) {
 			err = fmt.Errorf("apply ns=%s id=%s: %w", ns, rangeID, err)
 		}
-		return "", graveler.DiffSummary{}, err
+		return "", summary, err
 	}
 	newID, err := mwWriter.Close()
 	if newID == nil {
-		return "", graveler.DiffSummary{}, fmt.Errorf("close writer ns=%s id=%s: %w", ns, rangeID, err)
+		return "", summary, fmt.Errorf("close writer ns=%s id=%s: %w", ns, rangeID, err)
 	}
 	return *newID, summary, err
 }
+
 func (c *committedManager) Apply(ctx context.Context, ns graveler.StorageNamespace, rangeID graveler.MetaRangeID, diffs graveler.ValueIterator) (graveler.MetaRangeID, graveler.DiffSummary, error) {
 	return c.applyOnDiffWithRanges(ctx, ns, rangeID, NewIteratorWrapper(diffs))
 }
