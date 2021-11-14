@@ -1574,31 +1574,31 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, destination, func() (interface{}, error) {
 		repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		storageNamespace = repo.StorageNamespace
 
 		branch, err := g.GetBranch(ctx, repositoryID, destination)
 		if err != nil {
-			return "", fmt.Errorf("get branch: %w", err)
+			return nil, fmt.Errorf("get branch: %w", err)
 		}
 		empty, err := g.stagingEmpty(ctx, branch)
 		if err != nil {
-			return "", fmt.Errorf("check if staging empty: %w", err)
+			return nil, fmt.Errorf("check if staging empty: %w", err)
 		}
 		if !empty {
-			return "", ErrDirtyBranch
+			return nil, ErrDirtyBranch
 		}
 		fromCommit, toCommit, baseCommit, err := g.getCommitsForMerge(ctx, repositoryID, source, Ref(destination))
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		metaRangeID, summary, err := g.CommittedManager.Merge(ctx, storageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID)
 		if err != nil {
 			if !errors.Is(err, ErrUserVisible) {
 				err = fmt.Errorf("merge in CommitManager: %w", err)
 			}
-			return "", err
+			return &CommitIDAndSummary{Summary: summary}, err
 		}
 		commit = NewCommit()
 		commit.Committer = commitParams.Committer
@@ -1622,7 +1622,7 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 			Commit:           commit,
 		})
 		if err != nil {
-			return "", &HookAbortError{
+			return &CommitIDAndSummary{Summary: summary}, &HookAbortError{
 				EventType: EventTypePreMerge,
 				RunID:     preRunID,
 				Err:       err,
@@ -1630,19 +1630,23 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 		}
 		commitID, err := g.RefManager.AddCommit(ctx, repositoryID, commit)
 		if err != nil {
-			return "", fmt.Errorf("add commit: %w", err)
+			return &CommitIDAndSummary{Summary: summary}, fmt.Errorf("add commit: %w", err)
 		}
 		branch.CommitID = commitID
 		err = g.RefManager.SetBranch(ctx, repositoryID, destination, *branch)
 		if err != nil {
-			return "", fmt.Errorf("update branch %s: %w", destination, err)
+			return &CommitIDAndSummary{ID: commitID, Summary: summary}, fmt.Errorf("update branch %s: %w", destination, err)
 		}
-		return &CommitIDAndSummary{commitID, summary}, nil
+		return &CommitIDAndSummary{ID: commitID, Summary: summary}, nil
 	})
-	if err != nil {
-		return "", DiffSummary{}, err
+	// extract summary, relevant also for some errors
+	var c *CommitIDAndSummary
+	if res != nil {
+		c = res.(*CommitIDAndSummary)
 	}
-	c := res.(*CommitIDAndSummary)
+	if err != nil {
+		return "", c.Summary, err
+	}
 	postRunID := NewRunID()
 	err = g.hooks.PostMergeHook(ctx, HookRecord{
 		EventType:        EventTypePostMerge,

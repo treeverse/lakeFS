@@ -3,6 +3,7 @@ package committed
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -95,6 +96,7 @@ func (a *applier) hasChanges(summary graveler.DiffSummary) bool {
 	}
 	return false
 }
+
 func (a *applier) addIntoDiffSummary(typ graveler.DiffType, n int) {
 	if a.summary.Count != nil {
 		a.summary.Count[typ] += n
@@ -105,12 +107,12 @@ func (a *applier) incrementDiffSummary(typ graveler.DiffType) {
 	a.addIntoDiffSummary(typ, 1)
 }
 
-func (a *applier) apply() (graveler.DiffSummary, error) {
+func (a *applier) apply() error {
 	a.haveSource, a.haveDiffs = a.source.Next(), a.diffs.Next()
 	for a.haveSource && a.haveDiffs {
 		select {
 		case <-a.ctx.Done():
-			return a.summary, a.ctx.Err()
+			return a.ctx.Err()
 		default:
 		}
 		sourceValue, sourceRange := a.source.Value()
@@ -127,25 +129,28 @@ func (a *applier) apply() (graveler.DiffSummary, error) {
 			err = a.applyBothKeys(sourceValue, diffValue)
 		}
 		if err != nil {
-			return a.summary, err
+			return err
 		}
 	}
 	if err := a.source.Err(); err != nil {
-		return a.summary, err
+		return err
 	}
 	if err := a.diffs.Err(); err != nil {
-		return a.summary, err
+		if errors.Is(err, graveler.ErrConflictFound) {
+			a.incrementDiffSummary(graveler.DiffTypeConflict)
+		}
+		return err
 	}
 	if a.haveSource {
 		if _, err := a.applyAll(a.source); err != nil {
-			return a.summary, err
+			return err
 		}
 	}
 
 	if a.haveDiffs {
 		numAdded, err := a.applyAll(a.diffs)
 		if err != nil {
-			return a.summary, err
+			return err
 		}
 		if numAdded > 0 {
 			a.addIntoDiffSummary(graveler.DiffTypeAdded, numAdded)
@@ -153,9 +158,9 @@ func (a *applier) apply() (graveler.DiffSummary, error) {
 	}
 
 	if !a.opts.AllowEmpty && !a.hasChanges(a.summary) {
-		return a.summary, graveler.ErrNoChanges
+		return graveler.ErrNoChanges
 	}
-	return a.summary, a.diffs.Err()
+	return a.diffs.Err()
 }
 
 func (a *applier) applyBothKeys(sourceValue *graveler.ValueRecord, diffValue *graveler.ValueRecord) error {
@@ -305,5 +310,5 @@ func Apply(ctx context.Context, writer MetaRangeWriter, source Iterator, diffs I
 		opts:    opts,
 		summary: graveler.DiffSummary{Count: make(map[graveler.DiffType]int)},
 	}
-	return a.apply()
+	return a.summary, a.apply()
 }
