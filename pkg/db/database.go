@@ -190,10 +190,11 @@ func (d *PgxDatabase) Transact(ctx context.Context, fn TxFunc, opts ...TxOpt) (i
 			rollbackErr := tx.Rollback(ctx)
 			if rollbackErr != nil {
 				// returning the original error and not the rollbackErr
+				// there are cases we use the return value with specific error, so we capture 'ret'
 				return ret, err
 			}
 			// retry on serialization error
-			if IsSerializationError(rollbackErr) {
+			if IsSerializationError(err) {
 				// retry
 				attempt++
 				continue
