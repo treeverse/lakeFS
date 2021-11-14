@@ -412,10 +412,6 @@ func (a *Adapter) AbortMultiPartUpload(_ context.Context, _ block.ObjectPointer,
 	return nil
 }
 
-func (a *Adapter) ValidateConfiguration(_ context.Context, _ string) error {
-	return nil
-}
-
 func (a *Adapter) BlockstoreType() string {
 	return block.BlockstoreTypeAzure
 }

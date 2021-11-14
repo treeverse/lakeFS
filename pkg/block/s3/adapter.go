@@ -610,63 +610,6 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 	}, nil
 }
 
-func contains(tags []*s3.Tag, pred func(string, string) bool) bool {
-	for _, tag := range tags {
-		if pred(*tag.Key, *tag.Value) {
-			return true
-		}
-	}
-	return false
-}
-
-func isExpirationRule(rule s3.LifecycleRule) bool {
-	return rule.Expiration != nil && // Check for *any* expiration -- not its details.
-		rule.Status != nil && *rule.Status == "Enabled" &&
-		rule.Filter != nil &&
-		rule.Filter.Tag != nil &&
-		*rule.Filter.Tag.Key == ExpireObjectS3Tag &&
-		*rule.Filter.Tag.Value == "1" ||
-		rule.Filter.And != nil &&
-			contains(rule.Filter.And.Tags,
-				func(key string, value string) bool {
-					return key == ExpireObjectS3Tag && value == "1"
-				},
-			)
-}
-
-// ValidateConfiguration on an S3 adapter checks for a usable bucket
-// lifecycle policy: the storageNamespace bucket should expire objects
-// marked with ExpireObjectS3Tag (with _some_ duration, even if
-// nonzero).
-func (a *Adapter) ValidateConfiguration(ctx context.Context, storageNamespace string) error {
-	getLifecycleConfigInput := &s3.GetBucketLifecycleConfigurationInput{Bucket: &storageNamespace}
-	config, err := a.clients.Get(ctx, storageNamespace).GetBucketLifecycleConfigurationWithContext(ctx, getLifecycleConfigInput)
-	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == "NoSuchLifecycleConfiguration" {
-			return fmt.Errorf("%w: bucket %s has no lifecycle configuration", ErrS3, storageNamespace)
-		}
-		return err
-	}
-	a.log(ctx).WithFields(logging.Fields{
-		"Bucket":          storageNamespace,
-		"LifecyclePolicy": config.GoString(),
-	}).Info("S3 bucket lifecycle policy")
-
-	hasMatchingRule := false
-	for _, a := range config.Rules {
-		if isExpirationRule(*a) {
-			hasMatchingRule = true
-			break
-		}
-	}
-
-	if !hasMatchingRule {
-		return fmt.Errorf("%w: bucket %s lifecycle rules not configured to expire objects tagged \"%s\"",
-			ErrS3, storageNamespace, ExpireObjectS3Tag)
-	}
-	return nil
-}
-
 func (a *Adapter) BlockstoreType() string {
 	return block.BlockstoreTypeS3
 }

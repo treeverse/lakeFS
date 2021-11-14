@@ -90,10 +90,6 @@ func (a *mockAdapter) UploadCopyPartRange(_ context.Context, _, _ block.ObjectPo
 	panic("try to upload copy part range in mock adapter")
 }
 
-func (a *mockAdapter) ValidateConfiguration(_ context.Context, _ string) error {
-	return nil
-}
-
 func (a *mockAdapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string, _ bool, _ []string) (block.Inventory, error) {
 	return nil, nil
 }
