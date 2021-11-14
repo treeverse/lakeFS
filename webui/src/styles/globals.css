@@ -155,6 +155,20 @@
   padding: 2px;
 }
 
+.table .leaf-entry-row .objects-diff .removed {
+  color: #FF3300;
+  font-weight: bold;
+}
+
+.table .leaf-entry-row .objects-diff .added {
+  color: #339933;
+  font-weight: bold;
+}
+
+.table .leaf-entry-row .objects-diff .diff-size {
+  font-weight: bold;
+}
+
 .table .tree-entry-row,
 .table .change-entry-row {
   border-bottom: 1px solid rgba(0, 0, 0, 0.125);

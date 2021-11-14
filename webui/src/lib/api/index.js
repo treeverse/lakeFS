@@ -505,7 +505,8 @@ class Objects {
     async getWithSizeConstraint(repoId, ref, path, maxObjectSizeBytes) {
         const response = await objects.get(repoId, ref, path);
         const headers = response.headers;
-        if (headers.get("Content-length") > maxObjectSizeBytes) {
+        const size = + headers.get("Content-Length") || 0
+        if (size > maxObjectSizeBytes) {
             throw new Error(path + " is too big (> 20KB). To view its diff please download the objects and use an " +
                 "external diff tool.");
         }

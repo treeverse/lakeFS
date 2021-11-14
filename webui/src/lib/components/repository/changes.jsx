@@ -54,8 +54,8 @@ const ChangeRowActions = ({ entry, onRevert }) => {
     entry: The entry the TreeItem is representing, could be either an object or a prefix.
     repo: Repository
     reference: commitID / branch
-    compareReference: commitID / branch
     displayedAt: the page in which the TreeItem is displayed. e.g. changes, commit, or compare pages.
+    compareReference: commitID / branch
     internalRefresh: to be called when the page refreshes manually
     onRevert: to be called when an object/prefix is requested to be reverted
     delimiter: objects delimiter ('' or '/')
@@ -126,17 +126,15 @@ export const TreeEntryRow = ({ entry, repo, reference, showActions, relativeTo="
         <tr className={rowClass} >
             <td className="diff-indicator">{diffIndicator}</td>
             <td className="tree-path">
-                {
-                    <span style={{marginLeft: depth * 20 + "px"}}>
-                        <span onClick={onClick}>
-                            {leaf ?
-                                  <DiffIcon/>
-                                  : dirExpanded ? <ChevronDownIcon/> : <ChevronRightIcon/>}
-                        </span>
-                            {loading ? <ClockIcon/> : ""}
-                            {pathSection}
+                <span style={{marginLeft: depth * 20 + "px"}}>
+                    <span onClick={onClick}>
+                        {leaf ?
+                              <DiffIcon/>
+                              : dirExpanded ? <ChevronDownIcon/> : <ChevronRightIcon/>}
                     </span>
-                }
+                    {loading ? <ClockIcon/> : ""}
+                    {pathSection}
+                </span>
             </td>
             { actions === null ?
                 <td/> :
@@ -187,13 +185,13 @@ export const TreeEntryPaginator = ({ path, setAfterUpdated, nextPage, depth=0, l
  */
 function getDiffRefs(reference, displayedAt, compareReference) {
     switch (displayedAt) {
-        case ("changes"):
+        case "changes":
             const committedRef = reference.id + "@"
             const uncommittedRef = reference.id
             return [committedRef, uncommittedRef]
-        case ("commit"):
+        case "commit":
             return [reference.parents[0], reference.id]
-        case ("compare"):
+        case "compare":
             if (compareReference === null) {
                 return <Error error={"Missing a comparison reference"}/>
             }
@@ -204,7 +202,7 @@ function getDiffRefs(reference, displayedAt, compareReference) {
 }
 
 const ExpandedLeafRow = ({entry, repoId, reference, compareReference, displayedAt, loading}) => {
-    let [left, right] = getDiffRefs(reference, displayedAt, compareReference)
+    const [left, right] = getDiffRefs(reference, displayedAt, compareReference);
     return (
         <tr key={"row-" + entry.path} className={"leaf-entry-row"}>
             <td className="objects-diff" colSpan={3}>
