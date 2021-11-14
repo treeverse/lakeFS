@@ -770,6 +770,8 @@ public class LakeFSFileSystem extends FileSystem {
 
         if (statuses.length > 0 &&
                 Arrays.stream(statuses).noneMatch(status -> status.getPath().equals(pathPattern))){
+            // If files were found but none equal the pattern, it means that it's an existing directory
+            // with files in it. In that case return the single status which represent that.
             return new FileStatus[]{new LakeFSFileStatus.Builder(pathPattern).isdir(true).build()};
         }
 
