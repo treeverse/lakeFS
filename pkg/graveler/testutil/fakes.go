@@ -237,6 +237,9 @@ func (m *RefsFake) ResolveRawRef(ctx context.Context, repoID graveler.Repository
 		if res, ok := m.Refs[ref]; ok {
 			return res, nil
 		}
+		if m.Err != nil {
+			return nil, m.Err
+		}
 	}
 
 	var branch graveler.BranchID
