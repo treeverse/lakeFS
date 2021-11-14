@@ -759,8 +759,7 @@ public class LakeFSFileSystem extends FileSystem {
 
     @Override
     public FileStatus[] globStatus(Path pathPattern) throws IOException {
-        // TODO: implement this method as part of https://github.com/treeverse/lakeFS/issues/2629
-        OPERATIONS_LOG.info("pathPattern({})", pathPattern);
+        OPERATIONS_LOG.trace("globStatus({})", pathPattern);
 
         FileStatus[] statuses;
         try{
