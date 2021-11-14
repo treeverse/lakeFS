@@ -1639,14 +1639,16 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 		}
 		return &CommitIDAndSummary{ID: commitID, Summary: summary}, nil
 	})
-	// extract summary, relevant also for some errors
-	var c *CommitIDAndSummary
-	if res != nil {
-		c = res.(*CommitIDAndSummary)
-	}
 	if err != nil {
-		return "", c.Summary, err
+		// extract summary, relevant also for some errors
+		var summary DiffSummary
+		if res != nil {
+			c := res.(*CommitIDAndSummary)
+			summary = c.Summary
+		}
+		return "", summary, err
 	}
+	c := res.(*CommitIDAndSummary)
 	postRunID := NewRunID()
 	err = g.hooks.PostMergeHook(ctx, HookRecord{
 		EventType:        EventTypePostMerge,

@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
 )
@@ -41,8 +39,7 @@ var mergeCmd = &cobra.Command{
 
 		resp, err := client.MergeIntoBranchWithResponse(cmd.Context(), destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, api.MergeIntoBranchJSONRequestBody{})
 		if resp != nil && resp.JSON409 != nil {
-			_, _ = fmt.Printf("Conflicts: %d\n", resp.JSON409.Summary.Conflict)
-			return
+			Die("Conflict found.", 1)
 		}
 		DieOnResponseError(resp, err)
 
