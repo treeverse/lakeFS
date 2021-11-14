@@ -2716,7 +2716,7 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 		writeError(w, http.StatusPreconditionFailed, err)
 		return
 	case errors.Is(err, catalog.ErrConflictFound) || errors.Is(err, graveler.ErrConflictFound):
-		writeError(w, http.StatusConflict, newMergeResultFromCatalog(res))
+		writeResponse(w, http.StatusConflict, newMergeResultFromCatalog(res))
 		return
 	}
 	if handleAPIError(w, err) {

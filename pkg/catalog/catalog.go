@@ -1162,7 +1162,9 @@ func (c *Catalog) Merge(ctx context.Context, repository string, destinationBranc
 	if errors.Is(err, graveler.ErrConflictFound) {
 		// for compatibility with old Catalog
 		return &MergeResult{
-			Summary: map[DifferenceType]int{DifferenceTypeConflict: 1},
+			Summary: map[DifferenceType]int{
+				DifferenceTypeConflict: summary.Count[graveler.DiffTypeConflict],
+			},
 		}, err
 	}
 	if err != nil {

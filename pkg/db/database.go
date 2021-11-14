@@ -190,7 +190,8 @@ func (d *PgxDatabase) Transact(ctx context.Context, fn TxFunc, opts ...TxOpt) (i
 			rollbackErr := tx.Rollback(ctx)
 			if rollbackErr != nil {
 				// returning the original error and not the rollbackErr
-				return nil, err
+				// there are cases we use the return value with specific error, so we capture 'ret'
+				return ret, err
 			}
 			// retry on serialization error
 			if IsSerializationError(err) {
@@ -198,21 +199,21 @@ func (d *PgxDatabase) Transact(ctx context.Context, fn TxFunc, opts ...TxOpt) (i
 				attempt++
 				continue
 			}
-			return nil, err
 		} else {
-			err = tx.Commit(ctx)
-			if err != nil {
+			commitErr := tx.Commit(ctx)
+			if commitErr != nil {
 				// retry on serialization error
-				if IsSerializationError(err) {
+				if IsSerializationError(commitErr) {
 					attempt++
 					continue
 				}
 				// other commit error
-				return nil, err
+				return nil, commitErr
 			}
 			// committed successfully, we're done
-			return ret, nil
 		}
+		// always return the callback value with or without the error - some cases depends on the data with an error
+		return ret, err
 	}
 	if attempt == SerializationRetryMaxAttempts {
 		options.logger.
