@@ -111,7 +111,7 @@ func Test_merge(t *testing.T) {
 					rng:    committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234},
 				},
 			},
-			expectedSummary: graveler.DiffSummary{Count: nil},
+			expectedSummary: graveler.DiffSummary{Count: make(map[graveler.DiffType]int)},
 			expectedErr:     graveler.ErrNoChanges,
 		},
 		"source range added before": {
@@ -224,7 +224,7 @@ func Test_merge(t *testing.T) {
 				},
 			},
 			expectedErr:     graveler.ErrNoChanges,
-			expectedSummary: graveler.DiffSummary{},
+			expectedSummary: graveler.DiffSummary{Count: make(map[graveler.DiffType]int)},
 		},
 		"source range append after": {
 			baseRange: []testRange{
@@ -364,7 +364,7 @@ func Test_merge(t *testing.T) {
 			expectedActions: []writeAction{
 				{action: actionTypeWriteRange, rng: committed.Range{ID: "dest:k1-k10", MinKey: committed.Key("k1"), MaxKey: committed.Key("k10"), Count: 6, EstimatedSize: 66666}},
 			},
-			expectedSummary: graveler.DiffSummary{Count: nil},
+			expectedSummary: graveler.DiffSummary{Count: make(map[graveler.DiffType]int)},
 			expectedErr:     graveler.ErrNoChanges,
 		},
 		"source - remove at end of range": {
@@ -387,7 +387,7 @@ func Test_merge(t *testing.T) {
 			expectedActions: []writeAction{
 				{action: actionTypeWriteRange, rng: committed.Range{ID: "dest:k1-k10", MinKey: committed.Key("k1"), MaxKey: committed.Key("k10"), Count: 6, EstimatedSize: 66666}},
 			},
-			expectedSummary: graveler.DiffSummary{Count: nil},
+			expectedSummary: graveler.DiffSummary{Count: make(map[graveler.DiffType]int)},
 			expectedErr:     graveler.ErrNoChanges,
 		},
 		"both added key to range": {
@@ -478,7 +478,7 @@ func Test_merge(t *testing.T) {
 					rng:    committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234},
 				},
 			},
-			expectedSummary: graveler.DiffSummary{Count: nil},
+			expectedSummary: graveler.DiffSummary{Count: make(map[graveler.DiffType]int)},
 			expectedErr:     graveler.ErrNoChanges,
 		},
 		"source key removed from range": {
@@ -544,7 +544,7 @@ func Test_merge(t *testing.T) {
 				{action: actionTypeWriteRange, rng: committed.Range{ID: "base:k1-k2", MinKey: committed.Key("k1"), MaxKey: committed.Key("k2"), Count: 2, EstimatedSize: 1234}},
 				{action: actionTypeWriteRange, rng: committed.Range{ID: "dest:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234}},
 			},
-			expectedSummary: graveler.DiffSummary{},
+			expectedSummary: graveler.DiffSummary{Count: make(map[graveler.DiffType]int)},
 			expectedErr:     graveler.ErrNoChanges,
 		},
 		"empty source and base": {
@@ -565,7 +565,7 @@ func Test_merge(t *testing.T) {
 					rng:    committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234},
 				},
 			},
-			expectedSummary: graveler.DiffSummary{Count: nil},
+			expectedSummary: graveler.DiffSummary{Count: make(map[graveler.DiffType]int)},
 			expectedErr:     graveler.ErrNoChanges,
 		},
 	}
