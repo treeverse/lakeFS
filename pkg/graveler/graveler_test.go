@@ -730,6 +730,47 @@ func TestGraveler_PreMergeHook(t *testing.T) {
 	}
 }
 
+// TestGraveler_MergeInvalidRef test merge with invalid source reference in order
+func TestGraveler_MergeInvalidRef(t *testing.T) {
+	// prepare graveler
+	conn, _ := tu.GetDB(t, databaseURI)
+	branchLocker := ref.NewBranchLocker(conn)
+	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
+	const destinationCommitID = graveler.CommitID("destinationCommitID")
+	const mergeDestination = graveler.BranchID("destinationID")
+	committedManager := &testutil.CommittedFake{MetaRangeID: expectedRangeID}
+	stagingManager := &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(nil)}
+	refManager := &testutil.RefsFake{
+		Err:    graveler.ErrInvalidRef,
+		Branch: &graveler.Branch{CommitID: destinationCommitID},
+		Refs: map[graveler.Ref]*graveler.ResolvedRef{
+			graveler.Ref(mergeDestination): {
+				Type:     graveler.ReferenceTypeBranch,
+				BranchID: mergeDestination,
+				CommitID: destinationCommitID,
+			},
+		},
+		Commits: map[graveler.CommitID]*graveler.Commit{
+			destinationCommitID: {MetaRangeID: expectedRangeID},
+		},
+	}
+	g := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager, nil, testutil.NewProtectedBranchesManagerFake())
+
+	// test merge invalid ref
+	ctx := context.Background()
+	const mergeRepositoryID = "repoID"
+	const commitCommitter = "committer"
+	const mergeMessage = "message"
+	_, _, err := g.Merge(ctx, mergeRepositoryID, mergeDestination, "unexpectedRef", graveler.CommitParams{
+		Committer: commitCommitter,
+		Message:   mergeMessage,
+		Metadata:  graveler.Metadata{"key1": "val1"},
+	})
+	if !errors.Is(err, graveler.ErrInvalidRef) {
+		t.Fatalf("Merge failed with err=%v, expected ErrInvalidRef", err)
+	}
+}
+
 func TestGraveler_AddCommitToBranchHead(t *testing.T) {
 	conn, _ := tu.GetDB(t, databaseURI)
 	branchLocker := ref.NewBranchLocker(conn)
