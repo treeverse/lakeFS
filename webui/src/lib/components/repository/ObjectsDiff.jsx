@@ -10,18 +10,46 @@ const maxDiffSizeBytes = 20 << 10;
 const supportedReadableFormats = ["txt", "csv", "tsv"];
 
 export const ObjectsDiff = ({diffType, repoId, leftRef, rightRef, path}) => {
+    const readable = readableObject(path);
+    let left;
+    let right;
     switch (diffType) {
         case 'changed':
-            return <ChangedDiff repoId={repoId} leftRef={leftRef} rightRef={rightRef} path={path}/>;
+            left = useAPI(async () => objects.getStat(repoId, leftRef, path),
+                [repoId, leftRef, path]);
+            right = useAPI(async () => objects.getStat(repoId, rightRef, path),
+                [repoId, rightRef, path]);
+            break;
         case 'added':
-            return <AddedDiff repoId={repoId} rightRef={rightRef} path={path}/>;
+            right = useAPI(async () => objects.getStat(repoId, rightRef, path),
+                [repoId, rightRef, path]);
+            break;
         case 'removed':
-            return <RemovedDiff repoId={repoId} leftRef={leftRef} path={path}/>;
+            left = useAPI(async () => objects.getStat(repoId, leftRef, path),
+                [repoId, leftRef, path]);
+            break;
         case 'conflict':
             return <>{path} has a conflict. Please resolve the conflict manually and then review objects diff.</>;
+            break;
         default:
             return <Error error={"Unsupported diff type " + diffType}/>;
     }
+
+    if ((left && left.loading) || (right && right.loading)) return <Loading/>;
+    const err = (left && left.error) || (right && right.err);
+    if (err) return <Error error={err}/>;
+
+    if (readable) {
+        if ((!left || left.response.size_bytes <= maxDiffSizeBytes) && (!right || right.response.size_bytes <= maxDiffSizeBytes)) {
+            const leftSize = left && left.response.size_bytes;
+            const rightSize = right && right.response.size_bytes;
+            return <ContentDiff repoId={repoId} path={path} leftRef={left && leftRef} rightRef={right && rightRef}
+                                leftSize={left && leftSize} rightSize={right && rightSize} diffType={diffType}/>
+        }
+        return <Error error={path + " is too big (> 20KB). To view its diff please download the objects and use an " +
+            "external diff tool."}/>
+    }
+    return <StatDiff left={left && left.response} right={right && right.response} diffType={diffType}/>;
 }
 
 function readableObject(path) {
@@ -33,73 +61,25 @@ function readableObject(path) {
     return false;
 }
 
-const ChangedDiff = ({repoId, leftRef, rightRef, path}) => {
-    const readable = readableObject(path);
-    const getFn = readable ? objects.getWithSizeConstraint : objects.getStat;
-    const left = useAPI(async () => getFn(repoId, leftRef, path, maxDiffSizeBytes),
+const ContentDiff = ({repoId, path, leftRef, rightRef, leftSize, rightSize, diffType}) => {
+    const left = leftRef && useAPI(async () => objects.get(repoId, leftRef, path),
         [repoId, leftRef, path]);
-    const right = useAPI(async () => getFn(repoId, rightRef, path, maxDiffSizeBytes),
+    const right = rightRef && useAPI(async () => objects.get(repoId, rightRef, path),
         [repoId, rightRef, path]);
 
-    if (left.loading || right.loading) return <Loading/>;
-    const err = right.error || left.error;
+    if ((left && left.loading) || (right && right.loading)) return <Loading/>;
+    const err = (left && left.error) || (right && right.err);
     if (err) return <Error error={err}/>;
 
-    if (readable) {
-        const leftBody = left.response[0];
-        const leftSize = (left.response[1]).get("Content-length");
-        const rightBody = right.response[0];
-        const rightSize = (right.response[1]).get("Content-length");
-        return <ContentDiff left={leftBody} right={rightBody} leftSize={leftSize} rightSize={rightSize} diffType={"changed"}/>;
-    }
-    return <StatDiff left={left.response} right={right.response} diffType={"changed"}/>;
-}
-
-const AddedDiff = ({repoId, rightRef, path}) => {
-    let readable = readableObject(path);
-    const getFn = readable ? objects.getWithSizeConstraint : objects.getStat;
-    const right = useAPI(async () => getFn(repoId, rightRef, path, maxDiffSizeBytes),
-            [repoId, rightRef, path]);
-
-    if (right.loading) return <Loading/>;
-    if (right.error) return <Error error={right.error}/>;
-
-    if (readable) {
-        const rightBody = right.response[0];
-        const rightSize = (right.response[1]).get("Content-length");
-        return <ContentDiff right={rightBody} rightSize={rightSize} diffType={"added"}/>;
-    }
-    return <StatDiff right={right.response} diffType={"added"}/>;
-}
-
-const RemovedDiff = ({repoId, leftRef, path}) => {
-    let readable = readableObject(path);
-    const getFn = readable ? objects.getWithSizeConstraint : objects.getStat;
-    const left = useAPI(async () => getFn(repoId, leftRef, path, maxDiffSizeBytes),
-            [repoId, leftRef, path]);
-
-    if (left.loading) return <Loading/>;
-    if (left.error) return <Error error={left.error}/>;
-
-    if (readable) {
-        const leftBody = left.response[0];
-        const leftSize = (left.response[1]).get("Content-length");
-        return <ContentDiff left={leftBody} leftSize={leftSize} diffType={"removed"}/>;
-    }
-    return <StatDiff left={left.response} diffType={"removed"}/>;
-}
-
-const ContentDiff = ({left, right, leftSize, rightSize, diffType}) => {
     return <div>
         <span><DiffSizeReport leftSize={leftSize} rightSize={rightSize} diffType={diffType}/></span>
         <ReactDiffViewer
-            oldValue={left}
-            newValue={right}
+            oldValue={left && left.response}
+            newValue={right && right.response}
             splitView={false}
             compareMethod={DiffMethod.LINES}/>
     </div>;
 }
-
 
 const StatDiff = ({left, right, diffType}) => {
     switch (diffType) {

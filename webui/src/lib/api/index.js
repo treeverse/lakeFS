@@ -502,28 +502,15 @@ class Objects {
         }
     }
 
-    async getWithSizeConstraint(repoId, ref, path, maxObjectSizeBytes) {
-        const response = await objects.get(repoId, ref, path);
-        const headers = response.headers;
-        const size = + headers.get("Content-Length") || 0
-        if (size > maxObjectSizeBytes) {
-            throw new Error(path + " is too big (> 20KB). To view its diff please download the objects and use an " +
-                "external diff tool.");
-        }
-        const content = await response.text();
-        return [content, headers];
-    }
-
-    async get(repoId, ref, path, additionalHeaders) {
+    async get(repoId, ref, path) {
         const query = qs({path});
         const response = await apiRequest(`/repositories/${repoId}/refs/${ref}/objects?${query}`, {
             method: 'GET',
-            headers: new Headers(additionalHeaders)
         });
         if (response.status !== 200) {
             throw new Error(await extractError(response));
         }
-        return response
+        return response.text()
     }
 
     async getStat(repoId, ref, path) {
