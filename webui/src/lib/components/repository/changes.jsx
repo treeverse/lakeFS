@@ -13,7 +13,7 @@ import {
     PencilIcon,
     PlusIcon,
     TrashIcon,
-    DiffIcon
+    FileDiffIcon
 } from "@primer/octicons-react";
 
 import {ConfirmationModal} from "../modals";
@@ -128,7 +128,7 @@ export const TreeEntryRow = ({ entry, repo, reference, showActions, relativeTo="
                 <span style={{marginLeft: depth * 20 + "px"}}>
                     <span onClick={onClick}>
                         {leaf ?
-                              <DiffIcon/>
+                              <FileDiffIcon/>
                               : dirExpanded ? <ChevronDownIcon/> : <ChevronRightIcon/>}
                     </span>
                     {loading ? <ClockIcon/> : ""}
