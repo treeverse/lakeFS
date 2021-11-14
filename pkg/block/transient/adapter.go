@@ -137,10 +137,6 @@ func (a *Adapter) CompleteMultiPartUpload(context.Context, block.ObjectPointer, 
 	}, nil
 }
 
-func (a *Adapter) ValidateConfiguration(_ context.Context, _ string) error {
-	return nil
-}
-
 func (a *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string, _ bool, _ []string) (block.Inventory, error) {
 	return nil, ErrInventoryNotImplemented
 }

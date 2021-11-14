@@ -134,9 +134,6 @@ type Adapter interface {
 	UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj ObjectPointer, uploadID string, partNumber, startPosition, endPosition int64) (*UploadPartResponse, error)
 	AbortMultiPartUpload(ctx context.Context, obj ObjectPointer, uploadID string) error
 	CompleteMultiPartUpload(ctx context.Context, obj ObjectPointer, uploadID string, multipartList *MultipartUploadCompletion) (*CompleteMultiPartUploadResponse, error)
-	// ValidateConfiguration validates an appropriate bucket
-	// configuration and returns a validation error or nil.
-	ValidateConfiguration(ctx context.Context, storageNamespace string) error
 	BlockstoreType() string
 	GetStorageNamespaceInfo() StorageNamespaceInfo
 	RuntimeStats() map[string]string
