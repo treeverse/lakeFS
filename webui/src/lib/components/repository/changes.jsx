@@ -54,8 +54,8 @@ const ChangeRowActions = ({ entry, onRevert }) => {
     entry: The entry the TreeItem is representing, could be either an object or a prefix.
     repo: Repository
     reference: commitID / branch
-    displayedAt: the page in which the TreeItem is displayed. e.g. changes, commit, or compare pages.
-    compareReference: commitID / branch
+    leftDiffRefID: commitID / branch
+    rightDiffRefID: commitID / branch
     internalRefresh: to be called when the page refreshes manually
     onRevert: to be called when an object/prefix is requested to be reverted
     delimiter: objects delimiter ('' or '/')
@@ -64,7 +64,7 @@ const ChangeRowActions = ({ entry, onRevert }) => {
     getMore: callback to be called when more items need to be rendered
     depth: the item's depth withing the tree
  */
-export const TreeItem = ({ entry, repo, reference, displayedAt, compareReference, internalRefresh, onRevert, onNavigate, delimiter, relativeTo, getMore, depth=0 }) => {
+export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID, internalRefresh, onRevert, onNavigate, delimiter, relativeTo, getMore, depth=0 }) => {
     const [dirExpanded, setDirExpanded] = useState(false); // state of a non-leaf item expansion
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({results:[], pagination:{}}); // current retrieved children of the item
@@ -96,8 +96,7 @@ export const TreeItem = ({ entry, repo, reference, displayedAt, compareReference
         return <>
             <TreeEntryRow key={entry.path+"entry-row"} entry={entry} showActions={true} leaf={true} relativeTo={relativeTo} depth={depth === 0 ? 0 : depth + 1} onRevert={onRevert}  onNavigate={onNavigate} repo={repo}
                                      reference={reference} diffExpanded={diffExpanded} onClick={() => setDiffExpanded(!diffExpanded)}/>
-                {diffExpanded && <ExpandedLeafRow entry={entry} repoId={repo.id} reference={reference} compareReference={compareReference}
-                                                  displayedAt={displayedAt} depth={depth} loading={loading}/>
+                {diffExpanded && <ExpandedLeafRow entry={entry} repoId={repo.id} leftDiffRef={leftDiffRefID} rightDiffRef={rightDiffRefID} depth={depth} loading={loading}/>
                 }
             </>
 
@@ -105,7 +104,7 @@ export const TreeItem = ({ entry, repo, reference, displayedAt, compareReference
             <TreeEntryRow key={entry.path+"entry-row"} entry={entry} showActions={true} dirExpanded={dirExpanded} relativeTo={relativeTo} depth={depth} onClick={() => setDirExpanded(!dirExpanded)} onRevert={onRevert} onNavigate={onNavigate}  repo={repo} reference={reference}/>
             {dirExpanded && results &&
                 results.map(child =>
-                    ( <TreeItem key={child.path+"-item"} entry={child} repo={repo} reference={reference} displayedAt={displayedAt} onRevert={onRevert} onNavigate={onNavigate}
+                    ( <TreeItem key={child.path+"-item"} entry={child} repo={repo} reference={reference} leftDiffRefID={leftDiffRefID} rightDiffRefID={rightDiffRefID} onRevert={onRevert} onNavigate={onNavigate}
                                 internalReferesh={internalRefresh} delimiter={delimiter} depth={depth+1} relativeTo={entry.path} getMore={getMore}/>))}
             {(!!nextPage || loading) &&
                 <TreeEntryPaginator path={entry.path} depth={depth} loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated}/>
@@ -168,49 +167,15 @@ export const TreeEntryPaginator = ({ path, setAfterUpdated, nextPage, depth=0, l
     );
 };
 
-/**
- * Builds the references required to getting object-level diff. The left and right refs change according to the page
- * in which the diff is displayed.
- *
- *   page   |      left       |        right
- * ------------------------------------------------
- * changes  | committed data  | uncommitted data
- * commit   | parent commit   | commit
- * compare  | base branch     | Compared to branch
- *
- * @param reference commitId / branch
- * @param displayedAt page name: commit, changes, or compare
- * @param compareReference defined only in case that displayedAt = compare
- * @returns refs to calculate diff for
- */
-function getDiffRefs(reference, displayedAt, compareReference) {
-    switch (displayedAt) {
-        case "changes":
-            const committedRef = reference.id + "@"
-            const uncommittedRef = reference.id
-            return [committedRef, uncommittedRef]
-        case "commit":
-            return [reference.parents[0], reference.id]
-        case "compare":
-            if (compareReference === null) {
-                return <Error error={"Missing a comparison reference"}/>
-            }
-            return [reference.id, compareReference.id]
-        default:
-            return <Error error={"Diff is unsupported for view " + displayedAt}/>
-    }
-}
-
-const ExpandedLeafRow = ({entry, repoId, reference, compareReference, displayedAt, loading}) => {
-    const [left, right] = getDiffRefs(reference, displayedAt, compareReference);
+const ExpandedLeafRow = ({entry, repoId, leftDiffRef, rightDiffRef, loading}) => {
     return (
         <tr key={"row-" + entry.path} className={"leaf-entry-row"}>
             <td className="objects-diff" colSpan={3}>
                 <ObjectsDiff
                     diffType={entry.type}
                     repoId={repoId}
-                    leftRef={left}
-                    rightRef={right}
+                    leftRef={leftDiffRef}
+                    rightRef={rightDiffRef}
                     path={entry.path}
                 />
                 {loading && <ClockIcon/>}

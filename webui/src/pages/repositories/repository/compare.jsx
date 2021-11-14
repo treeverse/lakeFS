@@ -98,8 +98,9 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                                 <tbody>
                                 {results.map(entry => (
                                     <TreeItem key={entry.path+"-item"} entry={entry} repo={repo} reference={reference}
-                                              internalReferesh={internalRefresh} displayedAt={"compare"} compareReference={compareReference}
-                                              delimiter={delimiter} relativeTo={prefix} onNavigate={onNavigate}
+                                              internalReferesh={internalRefresh} leftDiffRefID={reference.id}
+                                              rightDiffRefID={compareReference.id} delimiter={delimiter} relativeTo={prefix}
+                                              onNavigate={onNavigate}
                                               getMore={(afterUpdatedChild, path) => refs.diff(repo.id, reference.id, compareReference.id, afterUpdatedChild, path, delimiter)}
                                     />
                                 ))}
