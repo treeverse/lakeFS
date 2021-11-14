@@ -161,7 +161,7 @@ auth:
 blockstore:
   type: s3
   s3:
-    region: us-east-1
+    region: us-east-1 # optional, fallback in case discover from bucket is not supported
     credentials_file: /secrets/aws/credentials
     profile: default
 
@@ -212,9 +212,9 @@ auth:
 blockstore:
   type: s3
   s3:
-    region: us-east-1
     force_path_style: true
     endpoint: http://localhost:9000
+    discover_bucket_region: false
     credentials:
       access_key_id: minioadmin
       secret_access_key: minioadmin

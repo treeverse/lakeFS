@@ -21,6 +21,7 @@ blockstore:
   s3:
     force_path_style: true
     endpoint: http://<minio_endpoint>:9000
+    discover_bucket_region: false
     credentials:
       access_key_id: <minio_access_key>
       secret_access_key: <minio_secret_key>

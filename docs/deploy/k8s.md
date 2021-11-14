@@ -45,7 +45,7 @@ lakefsConfig: |
     blockstore:
       type: s3
       s3:
-        region: us-east-1
+        region: us-east-1 # optional, fallback in case discover from bucket is not supported
 ```
    </div>
    <div markdown="1" id="helm-tabs-2">
