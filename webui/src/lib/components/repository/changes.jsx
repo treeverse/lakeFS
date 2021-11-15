@@ -19,7 +19,7 @@ import {
 import {ConfirmationModal} from "../modals";
 import {Link} from "../nav";
 import {useAPIWithPagination} from "../../hooks/api";
-import {ClipboardButton, Error} from "../controls";
+import {Error} from "../controls";
 import {ObjectsDiff} from "./ObjectsDiff";
 
 
