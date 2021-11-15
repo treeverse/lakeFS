@@ -19,7 +19,7 @@ import {
 import {ConfirmationModal} from "../modals";
 import {Link} from "../nav";
 import {useAPIWithPagination} from "../../hooks/api";
-import {Error} from "../controls";
+import {ClipboardButton, Error} from "../controls";
 import {ObjectsDiff} from "./ObjectsDiff";
 
 
@@ -128,7 +128,14 @@ export const TreeEntryRow = ({ entry, repo, reference, showActions, relativeTo="
                 <span style={{marginLeft: depth * 20 + "px"}}>
                     <span onClick={onClick}>
                         {leaf ?
-                              <FileDiffIcon/>
+                                <OverlayTrigger placement="bottom" overlay={<Tooltip>Show changes</Tooltip>}>
+                                    <Button variant="link" disabled={false} onClick={(e) => {
+                                        e.preventDefault();
+                                        setShow(true)
+                                    }} >
+                                    <FileDiffIcon/>
+                                    </Button>
+                                </OverlayTrigger>
                               : dirExpanded ? <ChevronDownIcon/> : <ChevronRightIcon/>}
                     </span>
                     {loading ? <ClockIcon/> : ""}
