@@ -1593,6 +1593,10 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 		if err != nil {
 			return nil, err
 		}
+		g.log.WithFields(logging.Fields{
+			"from_meta_range": fromCommit.MetaRangeID,
+			"to_meta_range":   toCommit.MetaRangeID,
+			"base_meta_range": baseCommit.MetaRangeID}).Trace("Merge")
 		metaRangeID, summary, err := g.CommittedManager.Merge(ctx, storageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID)
 		if err != nil {
 			if !errors.Is(err, ErrUserVisible) {
