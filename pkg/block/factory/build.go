@@ -94,6 +94,7 @@ func buildS3Adapter(statsCollector stats.Collector, params params.S3) (*s3a.Adap
 		s3a.WithStreamingChunkSize(params.StreamingChunkSize),
 		s3a.WithStreamingChunkTimeout(params.StreamingChunkTimeout),
 		s3a.WithStatsCollector(statsCollector),
+		s3a.WithDiscoverBucketRegion(params.DiscoverBucketRegion),
 	)
 	logging.Default().WithField("type", "s3").Info("initialized blockstore adapter")
 	return adapter, nil

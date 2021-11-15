@@ -108,6 +108,7 @@ type configuration struct {
 			StreamingChunkTimeout time.Duration `mapstructure:"streaming_chunk_timeout"`
 			MaxRetries            int           `mapstructure:"max_retries"`
 			ForcePathStyle        bool          `mapstructure:"force_path_style"`
+			DiscoverBucketRegion  bool          `mapstructure:"discover_bucket_region"`
 		}
 		Azure *struct {
 			TryTimeout       time.Duration `mapstructure:"try_timeout"`
