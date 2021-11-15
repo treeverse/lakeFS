@@ -282,7 +282,7 @@ func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPoi
 	}, nil
 }
 
-func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (*block.UploadPartResponse, error) {
+func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
 	var err error
 	defer reportMetrics("UploadPart", time.Now(), &sizeBytes, &err)
 	qualifiedKey, err := resolveNamespace(obj)
@@ -312,7 +312,7 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeB
 	}, nil
 }
 
-func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int64) (*block.UploadPartResponse, error) {
+func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
 	var err error
 	defer reportMetrics("UploadCopyPart", time.Now(), nil, &err)
 	qualifiedKey, err := resolveNamespace(destinationObj)
@@ -340,7 +340,7 @@ func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj 
 	}, nil
 }
 
-func (a *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber, startPosition, endPosition int64) (*block.UploadPartResponse, error) {
+func (a *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int, startPosition, endPosition int64) (*block.UploadPartResponse, error) {
 	var err error
 	defer reportMetrics("UploadCopyPartRange", time.Now(), nil, &err)
 	qualifiedKey, err := resolveNamespace(destinationObj)
@@ -565,7 +565,7 @@ func (a *Adapter) RuntimeStats() map[string]string {
 	return nil
 }
 
-func formatMultipartFilename(uploadID string, partNumber int64) string {
+func formatMultipartFilename(uploadID string, partNumber int) string {
 	// keep natural sort order with zero padding
 	return fmt.Sprintf("%s"+partSuffix+"%05d", uploadID, partNumber)
 }

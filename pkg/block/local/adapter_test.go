@@ -107,9 +107,9 @@ func TestLocalMultipartUpload(t *testing.T) {
 			testutil.MustDo(t, "CreateMultiPartUpload", err)
 			parts := make([]block.MultipartPart, len(c.partData))
 			for partNumber, content := range c.partData {
-				partResp, err := a.UploadPart(ctx, pointer, 0, strings.NewReader(content), resp.UploadID, int64(partNumber))
+				partResp, err := a.UploadPart(ctx, pointer, 0, strings.NewReader(content), resp.UploadID, partNumber)
 				testutil.MustDo(t, "UploadPart", err)
-				parts[partNumber].PartNumber = int64(partNumber) + 1
+				parts[partNumber].PartNumber = partNumber + 1
 				parts[partNumber].ETag = partResp.ETag
 			}
 			_, err = a.CompleteMultiPartUpload(ctx, pointer, resp.UploadID, &block.MultipartUploadCompletion{

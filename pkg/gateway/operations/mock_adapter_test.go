@@ -70,7 +70,7 @@ func (a *mockAdapter) CreateMultiPartUpload(_ context.Context, _ block.ObjectPoi
 	panic("try to create multipart in mock adapter")
 }
 
-func (a *mockAdapter) UploadPart(_ context.Context, _ block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (*block.UploadPartResponse, error) {
+func (a *mockAdapter) UploadPart(_ context.Context, _ block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
 	panic("try to upload part in mock adapter")
 }
 
@@ -82,11 +82,11 @@ func (a *mockAdapter) CompleteMultiPartUpload(_ context.Context, _ block.ObjectP
 	panic("try to complete multipart in mock adapter")
 }
 
-func (a *mockAdapter) UploadCopyPart(_ context.Context, _, _ block.ObjectPointer, _ string, _ int64) (*block.UploadPartResponse, error) {
+func (a *mockAdapter) UploadCopyPart(_ context.Context, _, _ block.ObjectPointer, _ string, _ int) (*block.UploadPartResponse, error) {
 	panic("try to upload copy part in mock adapter")
 }
 
-func (a *mockAdapter) UploadCopyPartRange(_ context.Context, _, _ block.ObjectPointer, _ string, _, _, _ int64) (*block.UploadPartResponse, error) {
+func (a *mockAdapter) UploadCopyPartRange(_ context.Context, _, _ block.ObjectPointer, _ string, _ int, _, _ int64) (*block.UploadPartResponse, error) {
 	panic("try to upload copy part range in mock adapter")
 }
 

@@ -200,7 +200,7 @@ func (l *Adapter) Copy(_ context.Context, sourceObj, destinationObj block.Object
 	return err
 }
 
-func (l *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int64) (*block.UploadPartResponse, error) {
+func (l *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
 	if err := isValidUploadID(uploadID); err != nil {
 		return nil, err
 	}
@@ -220,7 +220,7 @@ func (l *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj 
 	}, nil
 }
 
-func (l *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber, startPosition, endPosition int64) (*block.UploadPartResponse, error) {
+func (l *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int, startPosition, endPosition int64) (*block.UploadPartResponse, error) {
 	if err := isValidUploadID(uploadID); err != nil {
 		return nil, err
 	}
@@ -349,7 +349,7 @@ func (l *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPoint
 	}, nil
 }
 
-func (l *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, uploadID string, partNumber int64) (*block.UploadPartResponse, error) {
+func (l *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
 	if err := isValidUploadID(uploadID); err != nil {
 		return nil, err
 	}

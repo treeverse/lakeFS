@@ -143,7 +143,7 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 	return err
 }
 
-func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (*block.UploadPartResponse, error) {
+func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
 	var err error
 	defer reportMetrics("UploadPart", time.Now(), &sizeBytes, &err)
 	qualifiedKey, err := resolveNamespace(obj)
@@ -154,7 +154,7 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeB
 	uploadPartObject := s3.UploadPartInput{
 		Bucket:     aws.String(qualifiedKey.StorageNamespace),
 		Key:        aws.String(qualifiedKey.Key),
-		PartNumber: aws.Int64(partNumber),
+		PartNumber: aws.Int64(int64(partNumber)),
 		UploadId:   aws.String(uploadID),
 	}
 	client := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
@@ -420,7 +420,7 @@ func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {
 	return err
 }
 
-func (a *Adapter) copyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int64, byteRange *string) (*block.UploadPartResponse, error) {
+func (a *Adapter) copyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int, byteRange *string) (*block.UploadPartResponse, error) {
 	qualifiedKey, err := resolveNamespace(destinationObj)
 	if err != nil {
 		return nil, err
@@ -434,7 +434,7 @@ func (a *Adapter) copyPart(ctx context.Context, sourceObj, destinationObj block.
 	uploadPartCopyObject := s3.UploadPartCopyInput{
 		Bucket:     aws.String(qualifiedKey.StorageNamespace),
 		Key:        aws.String(qualifiedKey.Key),
-		PartNumber: aws.Int64(partNumber),
+		PartNumber: aws.Int64(int64(partNumber)),
 		UploadId:   aws.String(uploadID),
 		CopySource: aws.String(fmt.Sprintf("%s/%s", srcKey.StorageNamespace, srcKey.Key)),
 	}
@@ -465,13 +465,13 @@ func (a *Adapter) copyPart(ctx context.Context, sourceObj, destinationObj block.
 	}, nil
 }
 
-func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int64) (*block.UploadPartResponse, error) {
+func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
 	var err error
 	defer reportMetrics("UploadCopyPart", time.Now(), nil, &err)
 	return a.copyPart(ctx, sourceObj, destinationObj, uploadID, partNumber, nil)
 }
 
-func (a *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber, startPosition, endPosition int64) (*block.UploadPartResponse, error) {
+func (a *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int, startPosition, endPosition int64) (*block.UploadPartResponse, error) {
 	var err error
 	defer reportMetrics("UploadCopyPartRange", time.Now(), nil, &err)
 	return a.copyPart(ctx,
@@ -564,12 +564,12 @@ func (a *Adapter) AbortMultiPartUpload(ctx context.Context, obj block.ObjectPoin
 }
 
 func convertFromBlockMultipartUploadCompletion(multipartList *block.MultipartUploadCompletion) *s3.CompletedMultipartUpload {
-	var parts []*s3.CompletedPart
-	for _, p := range multipartList.Part {
-		parts = append(parts, &s3.CompletedPart{
+	parts := make([]*s3.CompletedPart, 0, len(multipartList.Part))
+	for i, p := range multipartList.Part {
+		parts[i] = &s3.CompletedPart{
 			ETag:       aws.String(p.ETag),
-			PartNumber: aws.Int64(p.PartNumber),
-		})
+			PartNumber: aws.Int64(int64(p.PartNumber)),
+		}
 	}
 	return &s3.CompletedMultipartUpload{Parts: parts}
 }

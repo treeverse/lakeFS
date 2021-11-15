@@ -17,7 +17,7 @@ func TestEtag(t *testing.T) {
 		for j := 0; j < len(b); j++ {
 			b[j] = byte(32 + i + j)
 		}
-		parts[i].PartNumber = int64(i) + 1
+		parts[i].PartNumber = i + 1
 		parts[i].ETag = hex.EncodeToString(b)
 	}
 	etag := computeETag(parts)

@@ -173,11 +173,13 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 	uploadID := query.Get(QueryParamUploadID)
 	partNumberStr := query.Get(QueryParamPartNumber)
 
-	partNumber, err := strconv.ParseInt(partNumberStr, 10, 64)
-	if err != nil {
+	var partNumber int
+	if n, err := strconv.ParseInt(partNumberStr, 10, 32); err != nil {
 		o.Log(req).WithError(err).Error("invalid part number")
 		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidPartNumberMarker))
 		return
+	} else {
+		partNumber = int(n)
 	}
 
 	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{

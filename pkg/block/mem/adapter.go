@@ -28,7 +28,7 @@ var (
 
 type mpu struct {
 	id    string
-	parts map[int64][]byte
+	parts map[int][]byte
 }
 
 func newMPU() *mpu {
@@ -36,13 +36,13 @@ func newMPU() *mpu {
 	uploadID := hex.EncodeToString(uid[:])
 	return &mpu{
 		id:    uploadID,
-		parts: make(map[int64][]byte),
+		parts: make(map[int][]byte),
 	}
 }
 
 func (m *mpu) get() []byte {
 	buf := bytes.NewBuffer(nil)
-	keys := make([]int64, len(m.parts))
+	keys := make([]int, len(m.parts))
 	sort.Slice(keys, func(i, j int) bool {
 		return keys[i] < keys[j]
 	})
@@ -155,7 +155,7 @@ func (a *Adapter) Copy(_ context.Context, sourceObj, destinationObj block.Object
 	return nil
 }
 
-func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int64) (*block.UploadPartResponse, error) {
+func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	uploadID = a.uploadIDTranslator.TranslateUploadID(uploadID)
@@ -184,7 +184,7 @@ func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj 
 	}, nil
 }
 
-func (a *Adapter) UploadCopyPartRange(_ context.Context, sourceObj, _ block.ObjectPointer, uploadID string, partNumber, startPosition, endPosition int64) (*block.UploadPartResponse, error) {
+func (a *Adapter) UploadCopyPartRange(_ context.Context, sourceObj, _ block.ObjectPointer, uploadID string, partNumber int, startPosition, endPosition int64) (*block.UploadPartResponse, error) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	uploadID = a.uploadIDTranslator.TranslateUploadID(uploadID)
@@ -225,7 +225,7 @@ func (a *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPoint
 	}, nil
 }
 
-func (a *Adapter) UploadPart(_ context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (*block.UploadPartResponse, error) {
+func (a *Adapter) UploadPart(_ context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	uploadID = a.uploadIDTranslator.TranslateUploadID(uploadID)

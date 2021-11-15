@@ -62,7 +62,7 @@ func (a *Adapter) Copy(_ context.Context, _, _ block.ObjectPointer) error {
 	return nil
 }
 
-func (a *Adapter) UploadCopyPart(_ context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int64) (*block.UploadPartResponse, error) {
+func (a *Adapter) UploadCopyPart(_ context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
 	h := sha256.New()
 	code := h.Sum(nil)
 	etag := hex.EncodeToString(code)
@@ -71,7 +71,7 @@ func (a *Adapter) UploadCopyPart(_ context.Context, sourceObj, destinationObj bl
 	}, nil
 }
 
-func (a *Adapter) UploadCopyPartRange(_ context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber, startPosition, endPosition int64) (*block.UploadPartResponse, error) {
+func (a *Adapter) UploadCopyPartRange(_ context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int, startPosition, endPosition int64) (*block.UploadPartResponse, error) {
 	n := endPosition - startPosition
 	if n < 0 {
 		return nil, io.ErrUnexpectedEOF
@@ -96,7 +96,7 @@ func (a *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPoint
 	}, nil
 }
 
-func (a *Adapter) UploadPart(_ context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (*block.UploadPartResponse, error) {
+func (a *Adapter) UploadPart(_ context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
 	data, err := io.ReadAll(reader)
 	if err != nil {
 		return nil, err
