@@ -564,7 +564,7 @@ func (a *Adapter) AbortMultiPartUpload(ctx context.Context, obj block.ObjectPoin
 }
 
 func convertFromBlockMultipartUploadCompletion(multipartList *block.MultipartUploadCompletion) *s3.CompletedMultipartUpload {
-	parts := make([]*s3.CompletedPart, 0, len(multipartList.Part))
+	parts := make([]*s3.CompletedPart, len(multipartList.Part))
 	for i, p := range multipartList.Part {
 		parts[i] = &s3.CompletedPart{
 			ETag:       aws.String(p.ETag),
