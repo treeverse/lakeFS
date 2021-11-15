@@ -26,8 +26,6 @@ const (
 
 var (
 	ErrNotImplemented      = errors.New("not implemented")
-	ErrMissingPartNumber   = errors.New("missing part number")
-	ErrMissingPartETag     = errors.New("missing part ETag")
 	ErrMismatchPartETag    = errors.New("mismatch part ETag")
 	ErrMismatchPartName    = errors.New("mismatch part name")
 	ErrMaxMultipartObjects = errors.New("maximum multipart object reached")
@@ -284,7 +282,7 @@ func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPoi
 	}, nil
 }
 
-func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (*block.UploadPartResponse, error) {
+func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
 	var err error
 	defer reportMetrics("UploadPart", time.Now(), &sizeBytes, &err)
 	qualifiedKey, err := resolveNamespace(obj)
@@ -314,7 +312,7 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeB
 	}, nil
 }
 
-func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int64) (*block.UploadPartResponse, error) {
+func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
 	var err error
 	defer reportMetrics("UploadCopyPart", time.Now(), nil, &err)
 	qualifiedKey, err := resolveNamespace(destinationObj)
@@ -342,7 +340,7 @@ func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj 
 	}, nil
 }
 
-func (a *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber, startPosition, endPosition int64) (*block.UploadPartResponse, error) {
+func (a *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int, startPosition, endPosition int64) (*block.UploadPartResponse, error) {
 	var err error
 	defer reportMetrics("UploadCopyPartRange", time.Now(), nil, &err)
 	qualifiedKey, err := resolveNamespace(destinationObj)
@@ -472,17 +470,11 @@ func (a *Adapter) validateMultipartUploadParts(uploadID string, multipartList *b
 		return ErrPartListMismatch
 	}
 	for i, p := range multipartList.Part {
-		if p.PartNumber == nil {
-			return fmt.Errorf("invalid part at position %d: %w", i, ErrMissingPartNumber)
-		}
-		if p.ETag == nil {
-			return fmt.Errorf("invalid part at position %d: %w", i, ErrMissingPartETag)
-		}
-		objName := formatMultipartFilename(uploadID, *p.PartNumber)
+		objName := formatMultipartFilename(uploadID, p.PartNumber)
 		if objName != bucketParts[i].Name {
 			return fmt.Errorf("invalid part at position %d: %w", i, ErrMismatchPartName)
 		}
-		if *p.ETag != bucketParts[i].Etag {
+		if p.ETag != bucketParts[i].Etag {
 			return fmt.Errorf("invalid part at position %d: %w", i, ErrMismatchPartETag)
 		}
 	}
@@ -573,7 +565,7 @@ func (a *Adapter) RuntimeStats() map[string]string {
 	return nil
 }
 
-func formatMultipartFilename(uploadID string, partNumber int64) string {
+func formatMultipartFilename(uploadID string, partNumber int) string {
 	// keep natural sort order with zero padding
 	return fmt.Sprintf("%s"+partSuffix+"%05d", uploadID, partNumber)
 }

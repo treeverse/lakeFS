@@ -9,8 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/local"
@@ -107,14 +105,12 @@ func TestLocalMultipartUpload(t *testing.T) {
 			pointer := makePointer(c.path)
 			resp, err := a.CreateMultiPartUpload(ctx, pointer, nil, block.CreateMultiPartUploadOpts{})
 			testutil.MustDo(t, "CreateMultiPartUpload", err)
-			parts := make([]*s3.CompletedPart, 0)
+			parts := make([]block.MultipartPart, len(c.partData))
 			for partNumber, content := range c.partData {
-				partResp, err := a.UploadPart(ctx, pointer, 0, strings.NewReader(content), resp.UploadID, int64(partNumber))
+				partResp, err := a.UploadPart(ctx, pointer, 0, strings.NewReader(content), resp.UploadID, partNumber)
 				testutil.MustDo(t, "UploadPart", err)
-				parts = append(parts, &s3.CompletedPart{
-					ETag:       aws.String(partResp.ETag),
-					PartNumber: aws.Int64(int64(partNumber)),
-				})
+				parts[partNumber].PartNumber = partNumber + 1
+				parts[partNumber].ETag = partResp.ETag
 			}
 			_, err = a.CompleteMultiPartUpload(ctx, pointer, resp.UploadID, &block.MultipartUploadCompletion{
 				Part: parts,
