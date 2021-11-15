@@ -25,6 +25,7 @@ type S3 struct {
 	AwsConfig             *aws.Config
 	StreamingChunkSize    int
 	StreamingChunkTimeout time.Duration
+	DiscoverBucketRegion  bool
 }
 
 type GS struct {

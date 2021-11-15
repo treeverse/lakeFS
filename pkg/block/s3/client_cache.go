@@ -32,6 +32,11 @@ func getBucketRegionFromS3(ctx context.Context, sess *session.Session, bucket st
 	return s3manager.GetBucketRegion(ctx, sess, bucket, "")
 }
 
+func getBucketRegionFromSession(ctx context.Context, sess *session.Session, bucket string) (string, error) {
+	region := aws.StringValue(sess.Config.Region)
+	return region, nil
+}
+
 func newS3Client(sess *session.Session, cfgs ...*aws.Config) s3iface.S3API {
 	return s3.New(sess, cfgs...)
 }
@@ -44,19 +49,16 @@ func NewClientCache(awsSession *session.Session) *ClientCache {
 	}
 }
 
-func (c *ClientCache) WithClientFactory(clientFactory clientFactory) *ClientCache {
+func (c *ClientCache) SetClientFactory(clientFactory clientFactory) {
 	c.clientFactory = clientFactory
-	return c
 }
 
-func (c *ClientCache) WithS3RegionGetter(s3RegionGetter s3RegionGetter) *ClientCache {
+func (c *ClientCache) SetS3RegionGetter(s3RegionGetter s3RegionGetter) {
 	c.s3RegionGetter = s3RegionGetter
-	return c
 }
 
-func (c *ClientCache) WithStatsCollector(statsCollector stats.Collector) *ClientCache {
+func (c *ClientCache) SetStatsCollector(statsCollector stats.Collector) {
 	c.collector = statsCollector
-	return c
 }
 
 func (c *ClientCache) getBucketRegion(ctx context.Context, bucket string) string {
@@ -87,4 +89,13 @@ func (c *ClientCache) Get(ctx context.Context, bucket string) s3iface.S3API {
 		return svc
 	}
 	return svc.(s3iface.S3API)
+}
+
+func (c *ClientCache) DiscoverBucketRegion(b bool) {
+	fmt.Println("DiscoverBucketRegion", b)
+	if b {
+		c.s3RegionGetter = getBucketRegionFromS3
+	} else {
+		c.s3RegionGetter = getBucketRegionFromSession
+	}
 }

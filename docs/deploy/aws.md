@@ -49,7 +49,7 @@ If you already have a database, take note of the connection string and skip to t
    blockstore:
      type: s3
      s3:
-       region: us-east-1
+       region: us-east-1 # optional, fallback in case discover from bucket is not supported
    ```
 
 1. [Download the binary](../index.md#downloads) to the EC2 instance.

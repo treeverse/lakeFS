@@ -95,7 +95,13 @@ func WithTranslator(t block.UploadIDTranslator) func(a *Adapter) {
 
 func WithStatsCollector(s stats.Collector) func(a *Adapter) {
 	return func(a *Adapter) {
-		a.clients = a.clients.WithStatsCollector(s)
+		a.clients.SetStatsCollector(s)
+	}
+}
+
+func WithDiscoverBucketRegion(b bool) func(a *Adapter) {
+	return func(a *Adapter) {
+		a.clients.DiscoverBucketRegion(b)
 	}
 }
 
