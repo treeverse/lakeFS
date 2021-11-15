@@ -274,16 +274,16 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
                                     const committedRef = reference.id + "@"
                                     const uncommittedRef = reference.id
                                     return (
-                                    <TreeItem key={entry.path + "-tree-item"} entry={entry} repo={repo}
-                                              reference={reference}
-                                              leftDiffRefID={committedRef} rightDiffRefID={uncommittedRef}
-                                              internalReferesh={internalRefresh}
-                                              onNavigate={onNavigate} onRevert={onRevert} delimiter={delimiter}
-                                              relativeTo={prefix}
-                                              getMore={(afterUpdated, path) => {
-                                                  return refs.changes(repo.id, reference.id, afterUpdated, path, delimiter)
-                                              }}/>
-                                    )
+                                        <TreeItem key={entry.path + "-tree-item"} entry={entry} repo={repo}
+                                                  reference={reference}
+                                                  leftDiffRefID={committedRef} rightDiffRefID={uncommittedRef}
+                                                  internalReferesh={internalRefresh}
+                                                  onNavigate={onNavigate} onRevert={onRevert} delimiter={delimiter}
+                                                  relativeTo={prefix}
+                                                  getMore={(afterUpdated, path) => {
+                                                      return refs.changes(repo.id, reference.id, afterUpdated, path, delimiter)
+                                                  }}/>
+                                        )
                                 })}
                                 { !!nextPage &&
                                     <TreeEntryPaginator path={""} loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated}/>
