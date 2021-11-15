@@ -92,7 +92,6 @@ func (c *ClientCache) Get(ctx context.Context, bucket string) s3iface.S3API {
 }
 
 func (c *ClientCache) DiscoverBucketRegion(b bool) {
-	fmt.Println("DiscoverBucketRegion", b)
 	if b {
 		c.s3RegionGetter = getBucketRegionFromS3
 	} else {
