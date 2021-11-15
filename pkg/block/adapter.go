@@ -4,15 +4,21 @@ import (
 	"context"
 	"io"
 	"net/http"
-
-	"github.com/aws/aws-sdk-go/service/s3"
 )
+
+// MultipartPart single multipart information
+type MultipartPart struct {
+	ETag       string
+	PartNumber int
+}
 
 // MultipartUploadCompletion parts described as part of complete multipart upload. Each part holds the part number and ETag received while calling part upload.
 // NOTE that S3 implementation and our S3 gateway accept and returns ETag value surrounded with double-quotes ("), while
 // the adapter implementations supply the raw value of the etag (without double quotes) and let the gateway manage the s3
 // protocol specifications.
-type MultipartUploadCompletion struct{ Part []*s3.CompletedPart }
+type MultipartUploadCompletion struct {
+	Part []MultipartPart
+}
 
 // IdentifierType is the type the ObjectPointer Identifier
 type IdentifierType int32
@@ -129,9 +135,9 @@ type Adapter interface {
 	Remove(ctx context.Context, obj ObjectPointer) error
 	Copy(ctx context.Context, sourceObj, destinationObj ObjectPointer) error
 	CreateMultiPartUpload(ctx context.Context, obj ObjectPointer, r *http.Request, opts CreateMultiPartUploadOpts) (*CreateMultiPartUploadResponse, error)
-	UploadPart(ctx context.Context, obj ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (*UploadPartResponse, error)
-	UploadCopyPart(ctx context.Context, sourceObj, destinationObj ObjectPointer, uploadID string, partNumber int64) (*UploadPartResponse, error)
-	UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj ObjectPointer, uploadID string, partNumber, startPosition, endPosition int64) (*UploadPartResponse, error)
+	UploadPart(ctx context.Context, obj ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int) (*UploadPartResponse, error)
+	UploadCopyPart(ctx context.Context, sourceObj, destinationObj ObjectPointer, uploadID string, partNumber int) (*UploadPartResponse, error)
+	UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj ObjectPointer, uploadID string, partNumber int, startPosition, endPosition int64) (*UploadPartResponse, error)
 	AbortMultiPartUpload(ctx context.Context, obj ObjectPointer, uploadID string) error
 	CompleteMultiPartUpload(ctx context.Context, obj ObjectPointer, uploadID string, multipartList *MultipartUploadCompletion) (*CompleteMultiPartUploadResponse, error)
 	BlockstoreType() string

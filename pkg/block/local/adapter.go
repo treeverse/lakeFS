@@ -15,7 +15,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/adapter"
@@ -57,15 +56,15 @@ func NewAdapter(path string, opts ...func(a *Adapter)) (*Adapter, error) {
 	if !isDirectoryWritable(path) {
 		return nil, ErrPathNotWritable
 	}
-	adapter := &Adapter{
+	localAdapter := &Adapter{
 		path:               path,
 		uploadIDTranslator: &block.NoOpTranslator{},
 		removeEmptyDir:     true,
 	}
 	for _, opt := range opts {
-		opt(adapter)
+		opt(localAdapter)
 	}
-	return adapter, nil
+	return localAdapter, nil
 }
 
 func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
@@ -201,7 +200,7 @@ func (l *Adapter) Copy(_ context.Context, sourceObj, destinationObj block.Object
 	return err
 }
 
-func (l *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int64) (*block.UploadPartResponse, error) {
+func (l *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
 	if err := isValidUploadID(uploadID); err != nil {
 		return nil, err
 	}
@@ -221,7 +220,7 @@ func (l *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj 
 	}, nil
 }
 
-func (l *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber, startPosition, endPosition int64) (*block.UploadPartResponse, error) {
+func (l *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int, startPosition, endPosition int64) (*block.UploadPartResponse, error) {
 	if err := isValidUploadID(uploadID); err != nil {
 		return nil, err
 	}
@@ -350,7 +349,7 @@ func (l *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPoint
 	}, nil
 }
 
-func (l *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, uploadID string, partNumber int64) (*block.UploadPartResponse, error) {
+func (l *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
 	if err := isValidUploadID(uploadID); err != nil {
 		return nil, err
 	}
@@ -399,10 +398,10 @@ func (l *Adapter) CompleteMultiPartUpload(_ context.Context, obj block.ObjectPoi
 	}, nil
 }
 
-func computeETag(parts []*s3.CompletedPart) string {
+func computeETag(parts []block.MultipartPart) string {
 	var etagHex []string
 	for _, p := range parts {
-		e := strings.Trim(*p.ETag, `"`)
+		e := strings.Trim(p.ETag, `"`)
 		etagHex = append(etagHex, e)
 	}
 	s := strings.Join(etagHex, "")
