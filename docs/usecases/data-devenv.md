@@ -33,7 +33,7 @@ _Creating a testing branch:_
       lakefs://example-repo/testing-spark-3 \
       --source lakefs://example-repo/main
    # output:
-   # created branch 'testing-spark-3', pointing to commit ID: '~79RU9aUsQ9GLnU'
+   # created branch 'testing-spark-3'
    ```
 
 _Resetting changes to a branch:_
