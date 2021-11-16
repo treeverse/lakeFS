@@ -147,6 +147,28 @@
   padding: 0 10px;
 }
 
+.table .leaf-entry-row {
+  border: 1px solid rgba(0,0,0,.125);
+}
+
+.table .leaf-entry-row .objects-diff .stats-diff-block {
+  padding: 2px;
+}
+
+.table .leaf-entry-row .objects-diff .removed {
+  color: #FF3300;
+  font-weight: bold;
+}
+
+.table .leaf-entry-row .objects-diff .added {
+  color: #339933;
+  font-weight: bold;
+}
+
+.table .leaf-entry-row .objects-diff .diff-size {
+  font-weight: bold;
+}
+
 .table .tree-entry-row,
 .table .change-entry-row {
   border-bottom: 1px solid rgba(0, 0, 0, 0.125);
@@ -313,6 +335,10 @@
 
 .tree-container .table {
   margin-bottom: 0;
+}
+
+.tree-container .table td {
+  word-break: break-word;
 }
 
 .paginator  {
