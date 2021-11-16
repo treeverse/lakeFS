@@ -12,18 +12,23 @@ Errors with data in production inevitably occur. When they do, they best thing w
 
 ### Example 1: RollBack! - Data ingested from a Kafka stream
 
-If you introduce a new code version to production and discover it has a critical bug, you can simply roll back to the previous version. But you also need to roll back the results of running it.  lakeFS gives you the power to rollback your data if you introduced low quality data. The rollback is an atomic action that prevents the data consumers from receiving low quality data until the issue is resolved.
+If you introduce a new code version to production and discover it has a critical bug, you can simply roll back to the previous version.
+But you also need to roll back the results of running it. 
+Similar to Git, lakeFS allows you to revert your commits in case they introduced low-quality data.
+Revert in lakeFS is an atomic action that prevents the data consumers from receiving low quality data until the issue is resolved.
 
 As previously mentioned, with lakeFS the recommended branching schema is to ingest data to a dedicated branch. When streaming data, we can decide to merge the incoming data to main at a given time interval or checkpoint, depending on how we chose to write it from Kafka. 
 
-You can run quality tests for each merge (as presented in Example 1). Alas, tests are not perfect and we might still introduce low quality data at some point. In such a case, we can rollback main to the last known high quality commit, since our commits for streaming will include the metadata of the Kafka offset. 
+You can run quality tests for each merge (as discussed in the [During Deployment](./ci.md) section). Alas, tests are not perfect and we might still introduce low quality data to our main branch at some point.
+In such a case, we can revert the bad commits from main to the last known high quality commit. This will record new commits reversing the effect of the bad commits.
+ 
 
 <img src="{{ site.baseurl }}/assets/img/branching_7.png" alt="branching_7" width="500px"/>
 
-_Rolling back a branch to a previous commit using the CLI_
+_Reverting commits using the CLI_
 
    ```shell
-   lakectl branch reset lakefs://example-repo/stream-1 --commit ~79RU9aUsQ9GLnU
+   lakectl branch revert lakefs://example-repo/main 20c30c96 ababea32
    ```
 
 **Note** lakeFS version <= v0.33.1 uses '@' (instead of '/') as separator between repository and branch.
@@ -40,8 +45,8 @@ lakeFS allows you to open a branch of your lake from the specific merge/commit t
 _Reading from a historic version (a previous commit) using Spark_
 
    ```scala
-   // represents the data as existed at commit "~79RU9aUsQ9GLnU":
-   spark.read.parquet("s3://example-repo/~79RU9aUsQ9GLnU/events/by-date")
+   // represents the data as existed at commit "11eef40b":
+   spark.read.parquet("s3://example-repo/11eef40b/events/by-date")
    ```
 
 ### Example 3: Cross collection consistency
