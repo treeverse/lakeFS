@@ -544,6 +544,26 @@ class Objects {
             throw new Error(await extractError(response));
         }
     }
+
+    async get(repoId, ref, path) {
+        const query = qs({path});
+        const response = await apiRequest(`/repositories/${repoId}/refs/${ref}/objects?${query}`, {
+            method: 'GET',
+        });
+        if (response.status !== 200) {
+            throw new Error(await extractError(response));
+        }
+        return response.text()
+    }
+
+    async getStat(repoId, ref, path) {
+        const query = qs({path});
+        const response = await apiRequest(`/repositories/${repoId}/refs/${ref}/objects/stat?${query}`);
+        if (response.status !== 200) {
+            throw new Error(await extractError(response));
+        }
+        return response.json()
+    }
 }
 
 class Commits {

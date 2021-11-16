@@ -25,7 +25,7 @@ import {Paginator} from "../pagination";
 import {Link} from "../nav";
 
 
-const humanSize = (bytes) => {
+export const humanSize = (bytes) => {
     if (!bytes) return '0.0 B';
     const e = Math.floor(Math.log(bytes) / Math.log(1024));
     return (bytes / Math.pow(1024, e)).toFixed(1) + ' ' + ' KMGTP'.charAt(e) + 'B';

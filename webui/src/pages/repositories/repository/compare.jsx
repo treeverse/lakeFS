@@ -96,12 +96,17 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                         <Card.Body>
                             <Table borderless size="sm">
                                 <tbody>
-                                {results.map(entry => (
-                                    <TreeItem key={entry.path+"-item"} entry={entry} repo={repo} reference={reference} internalReferesh={internalRefresh}
-                                              delimiter={delimiter} relativeTo={prefix} onNavigate={onNavigate}
+                                {results.map(entry => {
+                                    const leftCommittedRef = reference.id + "@"
+                                    const rightCommittedRef = compareReference.id + "@"
+                                    return (
+                                    <TreeItem key={entry.path+"-item"} entry={entry} repo={repo} reference={reference}
+                                              internalReferesh={internalRefresh} leftDiffRefID={leftCommittedRef}
+                                              rightDiffRefID={rightCommittedRef} delimiter={delimiter} relativeTo={prefix}
+                                              onNavigate={onNavigate}
                                               getMore={(afterUpdatedChild, path) => refs.diff(repo.id, reference.id, compareReference.id, afterUpdatedChild, path, delimiter)}
-                                    />
-                                ))}
+                                    />)})
+                                }
                                 { !!nextPage &&
                                 <TreeEntryPaginator path={""} loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated}/>
                                 }

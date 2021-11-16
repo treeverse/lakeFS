@@ -12,13 +12,15 @@ import {
     HistoryIcon,
     PencilIcon,
     PlusIcon,
-    TrashIcon
+    TrashIcon,
+    FileDiffIcon
 } from "@primer/octicons-react";
 
 import {ConfirmationModal} from "../modals";
 import {Link} from "../nav";
 import {useAPIWithPagination} from "../../hooks/api";
 import {Error} from "../controls";
+import {ObjectsDiff} from "./ObjectsDiff";
 
 
 const ChangeRowActions = ({ entry, onRevert }) => {
@@ -52,6 +54,8 @@ const ChangeRowActions = ({ entry, onRevert }) => {
     entry: The entry the TreeItem is representing, could be either an object or a prefix.
     repo: Repository
     reference: commitID / branch
+    leftDiffRefID: commitID / branch
+    rightDiffRefID: commitID / branch
     internalRefresh: to be called when the page refreshes manually
     onRevert: to be called when an object/prefix is requested to be reverted
     delimiter: objects delimiter ('' or '/')
@@ -60,13 +64,14 @@ const ChangeRowActions = ({ entry, onRevert }) => {
     getMore: callback to be called when more items need to be rendered
     depth: the item's depth withing the tree
  */
-export const TreeItem = ({ entry, repo, reference, internalRefresh, onRevert, onNavigate, delimiter, relativeTo, getMore, depth=0 }) => {
-    const [expanded, setExpanded] = useState(false); // state of the item expansion
+export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID, internalRefresh, onRevert, onNavigate, delimiter, relativeTo, getMore, depth=0 }) => {
+    const [dirExpanded, setDirExpanded] = useState(false); // state of a non-leaf item expansion
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({results:[], pagination:{}}); // current retrieved children of the item
+    const [diffExpanded, setDiffExpanded] = useState(false); // state of a leaf item expansion
 
     const { error, loading, nextPage } = useAPIWithPagination(async () => {
-        if (!expanded) return
+        if (!dirExpanded) return
         if (!repo) return
 
         if (resultsState.results.length > 0 && resultsState.results.at(-1).path > afterUpdated) {
@@ -77,23 +82,29 @@ export const TreeItem = ({ entry, repo, reference, internalRefresh, onRevert, on
         const { results, pagination } =  await getMore(afterUpdated, entry.path)
         setResultsState({results: resultsState.results.concat(results), pagination: pagination})
         return {results:resultsState.results, pagination: pagination}
-    }, [repo.id, reference.id, internalRefresh, afterUpdated, entry.path, delimiter, expanded])
+    }, [repo.id, reference.id, internalRefresh, afterUpdated, entry.path, delimiter, dirExpanded])
 
     const results = resultsState.results
     if (!!error)
         return <Error error={error}/>
 
     if (loading && results.length === 0)
-        return <TreeEntryRow key={entry.path+"entry-row"} entry={entry} showActions={true} loading={true} relativeTo={relativeTo} depth={depth} onRevert={onRevert} onNavigate={onNavigate}/>
+        return <TreeEntryRow key={entry.path+"entry-row"} entry={entry} showActions={true} loading={true} relativeTo={relativeTo} depth={depth} onRevert={onRevert} onNavigate={onNavigate} repo={repo} reference={reference}/>
 
+    // When the entry represents a tree leaf
     if (!entry.path.endsWith(delimiter))
-        return <TreeEntryRow key={entry.path+"entry-row"} entry={entry} showActions={true} leaf={true} relativeTo={relativeTo} depth={depth === 0 ? 0 : depth + 1} onRevert={onRevert} onNavigate={onNavigate}/>
+        return <>
+            <TreeEntryRow key={entry.path+"entry-row"} entry={entry} showActions={true} leaf={true} relativeTo={relativeTo} depth={depth === 0 ? 0 : depth + 1} onRevert={onRevert}  onNavigate={onNavigate} repo={repo}
+                                     reference={reference} diffExpanded={diffExpanded} onClick={() => setDiffExpanded(!diffExpanded)}/>
+                {diffExpanded && <ExpandedLeafRow entry={entry} repoId={repo.id} leftDiffRef={leftDiffRefID} rightDiffRef={rightDiffRefID} depth={depth} loading={loading}/>
+                }
+            </>
 
     return <>
-            <TreeEntryRow key={entry.path+"entry-row"} entry={entry} showActions={true} expanded={expanded} relativeTo={relativeTo} depth={depth} onClick={() => setExpanded(!expanded)} onRevert={onRevert} onNavigate={onNavigate} />
-            {expanded && results &&
+            <TreeEntryRow key={entry.path+"entry-row"} entry={entry} showActions={true} dirExpanded={dirExpanded} relativeTo={relativeTo} depth={depth} onClick={() => setDirExpanded(!dirExpanded)} onRevert={onRevert} onNavigate={onNavigate}  repo={repo} reference={reference}/>
+            {dirExpanded && results &&
                 results.map(child =>
-                    ( <TreeItem key={child.path+"-item"} entry={child} repo={repo} reference={reference} onRevert={onRevert} onNavigate={onNavigate}
+                    ( <TreeItem key={child.path+"-item"} entry={child} repo={repo} reference={reference} leftDiffRefID={leftDiffRefID} rightDiffRefID={rightDiffRefID} onRevert={onRevert} onNavigate={onNavigate}
                                 internalReferesh={internalRefresh} delimiter={delimiter} depth={depth+1} relativeTo={entry.path} getMore={getMore}/>))}
             {(!!nextPage || loading) &&
                 <TreeEntryPaginator path={entry.path} depth={depth} loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated}/>
@@ -101,7 +112,7 @@ export const TreeItem = ({ entry, repo, reference, internalRefresh, onRevert, on
           </>
 }
 
-export const TreeEntryRow = ({ entry, showActions, relativeTo="", leaf=false, expanded, depth=0, onClick, loading=false, onRevert, onNavigate }) => {
+export const TreeEntryRow = ({ entry, showActions, relativeTo="", leaf=false, dirExpanded, depth=0, onClick, loading=false, onRevert, onNavigate}) => {
     let rowClass = 'tree-entry-row ' + diffType(entry);
     let pathSection = extractPathText(entry, relativeTo);
     let diffIndicator = diffIndicatorIcon(entry);
@@ -115,11 +126,20 @@ export const TreeEntryRow = ({ entry, showActions, relativeTo="", leaf=false, ex
             <td className="diff-indicator">{diffIndicator}</td>
             <td className="tree-path">
                 <span style={{marginLeft: depth * 20 + "px"}}>
-                    {leaf ? "" :
-                        <span onClick={onClick}>
-                            {expanded ? <ChevronDownIcon/>:<ChevronRightIcon/>}
-                        </span>
-                    }
+                    <span onClick={onClick}>
+                        {leaf
+                            ? entry.type === 'conflict'
+                                ? ""
+                                : <OverlayTrigger placement="bottom" overlay={<Tooltip>Show changes</Tooltip>}>
+                                    <Link style={{verticalAlign: "revert"}} disabled={false} onClick={(e) => {
+                                        e.preventDefault();
+                                        setShow(true)
+                                    }} >
+                                    <FileDiffIcon/>
+                                    </Link>
+                                </OverlayTrigger>
+                            : dirExpanded ? <ChevronDownIcon/> : <ChevronRightIcon/>}
+                    </span>
                     {loading ? <ClockIcon/> : ""}
                     {pathSection}
                 </span>
@@ -155,6 +175,23 @@ export const TreeEntryPaginator = ({ path, setAfterUpdated, nextPage, depth=0, l
         </tr>
     );
 };
+
+const ExpandedLeafRow = ({entry, repoId, leftDiffRef, rightDiffRef, loading}) => {
+    return (
+        <tr key={"row-" + entry.path} className={"leaf-entry-row"}>
+            <td className="objects-diff" colSpan={3}>
+                <ObjectsDiff
+                    diffType={entry.type}
+                    repoId={repoId}
+                    leftRef={leftDiffRef}
+                    rightRef={rightDiffRef}
+                    path={entry.path}
+                />
+                {loading && <ClockIcon/>}
+            </td>
+        </tr>
+    );
+}
 
 function extractPathText(entry, relativeTo) {
     let pathText = entry.path;
