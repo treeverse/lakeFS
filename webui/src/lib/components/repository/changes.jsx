@@ -112,7 +112,7 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
           </>
 }
 
-export const TreeEntryRow = ({ entry, repo, reference, showActions, relativeTo="", leaf=false, dirExpanded, depth=0, onClick, loading=false, onRevert, onNavigate, diffExpanded }) => {
+export const TreeEntryRow = ({ entry, showActions, relativeTo="", leaf=false, dirExpanded, depth=0, onClick, loading=false, onRevert, onNavigate}) => {
     let rowClass = 'tree-entry-row ' + diffType(entry);
     let pathSection = extractPathText(entry, relativeTo);
     let diffIndicator = diffIndicatorIcon(entry);
@@ -127,16 +127,18 @@ export const TreeEntryRow = ({ entry, repo, reference, showActions, relativeTo="
             <td className="tree-path">
                 <span style={{marginLeft: depth * 20 + "px"}}>
                     <span onClick={onClick}>
-                        {leaf ?
-                                <OverlayTrigger placement="bottom" overlay={<Tooltip>Show changes</Tooltip>}>
-                                    <Button variant="link" disabled={false} onClick={(e) => {
+                        {leaf
+                            ? entry.type === 'conflict'
+                                ? ""
+                                : <OverlayTrigger placement="bottom" overlay={<Tooltip>Show changes</Tooltip>}>
+                                    <Link style={{verticalAlign: "revert"}} disabled={false} onClick={(e) => {
                                         e.preventDefault();
                                         setShow(true)
                                     }} >
                                     <FileDiffIcon/>
-                                    </Button>
+                                    </Link>
                                 </OverlayTrigger>
-                              : dirExpanded ? <ChevronDownIcon/> : <ChevronRightIcon/>}
+                            : dirExpanded ? <ChevronDownIcon/> : <ChevronRightIcon/>}
                     </span>
                     {loading ? <ClockIcon/> : ""}
                     {pathSection}

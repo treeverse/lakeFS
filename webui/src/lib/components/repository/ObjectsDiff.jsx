@@ -28,7 +28,7 @@ export const ObjectsDiff = ({diffType, repoId, leftRef, rightRef, path}) => {
                 [repoId, leftRef, path]);
             break;
         case 'conflict':
-            return <>{path} has a conflict. Please resolve the conflict manually and then review objects diff.</>;
+            return <Error error={"Conflict in " + path + "; fix conflicts and then view content diff."}/>;
             break;
         default:
             return <Error error={"Unsupported diff type " + diffType}/>;
