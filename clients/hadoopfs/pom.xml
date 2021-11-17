@@ -85,7 +85,7 @@ To export to S3:
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>2.9.1</version>
+                        <version>3.3.1</version>
                         <executions>
                             <execution>
                                 <id>attach-javadocs</id>
@@ -94,6 +94,7 @@ To export to S3:
                                 </goals>
                                 <configuration>
                                     <source>1.8</source>
+                                    <doclint>none</doclint>
                                 </configuration>
                             </execution>
                         </executions>
