@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/testutil"
@@ -44,7 +44,7 @@ func (bs *Booleans) Parse(value string) error {
 var (
 	logger logging.Logger
 	client api.ClientWithResponsesInterface
-	svc    *s3.S3
+	svc    *s3.Client
 	server *webhookServer
 
 	testDirectDataAccess = Booleans{false}

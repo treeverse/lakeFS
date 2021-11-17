@@ -1,18 +1,18 @@
 package s3inventory
 
 import (
+	"context"
 	"fmt"
 	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3iface"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	aws_config "github.com/aws/aws-sdk-go-v2/config"
+	aws_credentials "github.com/aws/aws-sdk-go-v2/credentials"
+	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/johannesboyne/gofakes3"
 	"github.com/johannesboyne/gofakes3/backend/s3mem"
 )
@@ -61,12 +61,13 @@ func objs(num int, lastModified []time.Time) <-chan *TestObject {
 	return out
 }
 
-func uploadFile(t *testing.T, s3 s3iface.S3API, inventoryBucket string, inventoryFilename string, f *os.File) {
+func uploadFile(t *testing.T, client *s3.Client, inventoryBucket string, inventoryFilename string, f *os.File) {
+	ctx := context.Background()
 	defer func() {
 		_ = f.Close()
 	}()
-	uploader := s3manager.NewUploaderWithClient(s3)
-	_, err := uploader.Upload(&s3manager.UploadInput{
+	uploader := s3manager.NewUploader(client)
+	_, err := uploader.Upload(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(inventoryBucket),
 		Key:    aws.String(inventoryFilename),
 		Body:   f,
@@ -76,21 +77,28 @@ func uploadFile(t *testing.T, s3 s3iface.S3API, inventoryBucket string, inventor
 	}
 }
 
-func getS3Fake(t *testing.T) (s3iface.S3API, *httptest.Server) {
+func getS3Fake(t *testing.T) (*s3.Client, *httptest.Server) {
+	ctx := context.Background()
 	backend := s3mem.New()
 	faker := gofakes3.New(backend)
 	ts := httptest.NewServer(faker.Server())
 	// configure S3 client
-	s3Config := &aws.Config{
-		Credentials:      credentials.NewStaticCredentials("YOUR-ACCESSKEYID", "YOUR-SECRETACCESSKEY", ""),
-		Endpoint:         aws.String(ts.URL),
-		Region:           aws.String("eu-central-1"),
-		DisableSSL:       aws.Bool(true),
-		S3ForcePathStyle: aws.Bool(true),
-	}
-	newSession, err := session.NewSession(s3Config)
+	cfg, err := aws_config.LoadDefaultConfig(ctx,
+		aws_config.WithCredentialsProvider(
+			aws_credentials.NewStaticCredentialsProvider("YOUR-ACCESSKEYID", "YOUR-SECRETACCESSKEY", "")),
+		func(o *aws_config.LoadOptions) error {
+			o.Region = "eu-central-1"
+			return nil
+		},
+	)
+
 	if err != nil {
 		t.Fatal(err)
 	}
-	return s3.New(newSession), ts
+	return s3.NewFromConfig(cfg,
+		s3.WithEndpointResolver(s3.EndpointResolverFromURL(ts.URL)),
+		func(o *s3.Options) {
+			o.EndpointOptions.DisableHTTPS = true
+			o.UsePathStyle = true
+		}), ts
 }

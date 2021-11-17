@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/cznic/mathutil"
 	"github.com/scritchley/orc"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -182,9 +182,10 @@ func generateOrc(t *testing.T, objs <-chan *TestObject, fieldToRemove string) *o
 }
 
 func TestReaders(t *testing.T) {
+	ctx := context.Background()
 	svc, testServer := getS3Fake(t)
 	defer testServer.Close()
-	_, err := svc.CreateBucket(&s3.CreateBucketInput{
+	_, err := svc.CreateBucket(ctx, &s3.CreateBucketInput{
 		Bucket: aws.String(inventoryBucketName),
 	})
 	if err != nil {
