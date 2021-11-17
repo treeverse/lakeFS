@@ -68,6 +68,7 @@ Advantages:
 Disadvantages:
 * Requires implementation - unlike `lakefs` server, we currently don't have a mock
 * Requires (a lot of) maintenance - every new feature and every bug fix in `lakefs` may, and probably will, need to be reflected in the mock
+* Does not test the client with the actual server.  E.g. if the client expects a particular response but the server sends a different response, the test passes but client behaviour will be different.
 
 #### Conclusion ?
 
