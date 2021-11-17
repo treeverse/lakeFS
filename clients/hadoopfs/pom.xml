@@ -92,6 +92,9 @@ To export to S3:
                                 <goals>
                                     <goal>jar</goal>
                                 </goals>
+                                <configuration>
+                                    <source>1.8</source>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>
