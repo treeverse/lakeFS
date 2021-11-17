@@ -55,7 +55,11 @@ var setupCmd = &cobra.Command{
 			crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
 			cfg.GetAuthCacheConfig())
 		metadataManager := auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
-		cloudMetadataProvider := stats.BuildMetadataProvider(logging.Default(), cfg)
+		cloudMetadataProvider, err := stats.BuildMetadataProvider(logging.Default(), cfg)
+		if err != nil {
+			fmt.Printf("Build metadata provider failed: %s\n", err)
+			os.Exit(1)
+		}
 		metadata := stats.NewMetadata(ctx, logging.Default(), cfg.GetBlockstoreType(), metadataManager, cloudMetadataProvider)
 
 		initialized, err := metadataManager.IsInitialized(ctx)

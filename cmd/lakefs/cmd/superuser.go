@@ -47,7 +47,11 @@ var superuserCmd = &cobra.Command{
 			crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
 			cfg.GetAuthCacheConfig())
 		authMetadataManager := auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
-		metadataProvider := stats.BuildMetadataProvider(logging.Default(), cfg)
+		metadataProvider, err := stats.BuildMetadataProvider(logging.Default(), cfg)
+		if err != nil {
+			fmt.Printf("Build metadata provider failed: %s\n", err)
+			os.Exit(1)
+		}
 		metadata := stats.NewMetadata(ctx, logging.Default(), cfg.GetBlockstoreType(), authMetadataManager, metadataProvider)
 		credentials, err := auth.AddAdminUser(ctx, authService, &model.SuperuserConfiguration{
 			User: model.User{
