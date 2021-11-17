@@ -1,15 +1,15 @@
 package aws
 
 import (
+	"context"
 	"crypto/md5" //nolint:gosec
 	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/retry"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
@@ -23,26 +23,21 @@ func NewMetadataProvider(logger logging.Logger, awsConfig *aws.Config) *Metadata
 	return &MetadataProvider{logger: logger, awsConfig: awsConfig}
 }
 
-func (m *MetadataProvider) GetMetadata() map[string]string {
+func (m *MetadataProvider) GetMetadata(ctx context.Context) map[string]string {
 	// max number of retries on the client operation
-	const sessionMaxRetries = 0
+	const sessionMaxAttempts = 0
 	// use a shorter timeout than default because the service can be inaccessible from networks which don't have internet connection
 	const sessionTimeout = 5 * time.Second
-	metaConfig := &aws.Config{
+	retryer := retry.NewStandard(func(o *retry.StandardOptions) {
+		o.MaxAttempts = sessionMaxAttempts
+	})
+	stsClient := sts.New(sts.Options{
 		HTTPClient: &http.Client{
 			Timeout: sessionTimeout,
 		},
-		MaxRetries: aws.Int(sessionMaxRetries),
-	}
-	sess, err := session.NewSession(m.awsConfig.Copy(metaConfig))
-	if err != nil {
-		m.logger.WithError(err).Warn("Failed to create AWS session for BI")
-		return nil
-	}
-	sess.ClientConfig(s3.ServiceName)
-
-	stsClient := sts.New(sess)
-	identity, err := stsClient.GetCallerIdentity(&sts.GetCallerIdentityInput{})
+		Retryer: retryer,
+	})
+	identity, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
 	if err != nil {
 		m.logger.WithError(err).Warn("Failed to get AWS account ID for BI")
 		return nil

@@ -1,34 +1,30 @@
 package simulator
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 const EtagExtension = "etag"
 
 type externalRecordDownloader struct {
+	client     *s3.Client
 	downloader *s3manager.Downloader
 }
 
 func NewExternalRecordDownloader(region string) *externalRecordDownloader {
-	// The session the S3 Downloader will use
-	sess := session.Must(session.NewSession(&aws.Config{
-		Region:      aws.String(region),
-		Credentials: credentials.AnonymousCredentials,
-	}))
+	client := s3.New(s3.Options{Region: region})
 
 	// Create a downloader with the session and default options
-	downloader := s3manager.NewDownloader(sess)
+	downloader := s3manager.NewDownloader(client)
 
-	return &externalRecordDownloader{downloader}
+	return &externalRecordDownloader{client, downloader}
 }
 
 func getEtagFileName(path string) string {
@@ -54,14 +50,17 @@ func (d *externalRecordDownloader) DownloadRecording(bucket, key, destination st
 		return err
 	}
 
-	headObject, err := d.downloader.S3.HeadObject(&s3.HeadObjectInput{
+	headObject, err := d.client.HeadObject(context.Background(), &s3.HeadObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 	})
 	if err != nil {
 		return err
 	}
-	s3Etag := aws.StringValue(headObject.ETag)
+	s3Etag := ""
+	if headObject.ETag != nil {
+		s3Etag = *headObject.ETag
+	}
 	if s3Etag == etag {
 		return nil
 	}
@@ -79,7 +78,7 @@ func (d *externalRecordDownloader) DownloadRecording(bucket, key, destination st
 		_ = f.Close()
 	}()
 	// Write the contents of S3 Object to the file
-	n, err := d.downloader.Download(f, &s3.GetObjectInput{
+	n, err := d.downloader.Download(context.Background(), f, &s3.GetObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 	})

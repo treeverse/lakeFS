@@ -9,10 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	aws_config "github.com/aws/aws-sdk-go-v2/config"
+	aws_credentials "github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/rs/xid"
 	"github.com/spf13/viper"
@@ -31,7 +30,7 @@ type SetupTestingEnvParams struct {
 	AdminSecretAccessKey string
 }
 
-func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientWithResponsesInterface, *s3.S3) {
+func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientWithResponsesInterface, *s3.Client) {
 	logger := logging.Default()
 
 	viper.SetDefault("setup_lakefs", true)
@@ -101,18 +100,25 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 	}
 
 	s3Endpoint := viper.GetString("s3_endpoint")
-	awsSession := session.Must(session.NewSession())
-	svc := s3.New(awsSession,
-		aws.NewConfig().
-			WithRegion("us-east-1").
-			WithEndpoint(s3Endpoint).
-			WithDisableSSL(true).
-			WithCredentials(credentials.NewCredentials(
-				&credentials.StaticProvider{
-					Value: credentials.Value{
-						AccessKeyID:     viper.GetString("access_key_id"),
-						SecretAccessKey: viper.GetString("secret_access_key"),
-					}})))
+	awsConfig, err := aws_config.LoadDefaultConfig(ctx,
+		aws_config.WithCredentialsProvider(
+			aws_credentials.NewStaticCredentialsProvider(
+				viper.GetString("access_key_id"),
+				viper.GetString("secret_access_key"),
+				"")),
+		func(o *aws_config.LoadOptions) error {
+			o.Region = "us-east-1"
+			return nil
+		},
+	)
+	if err != nil {
+		logger.WithError(err).Fatal("could not initialize AWS configuration")
+	}
+	svc := s3.NewFromConfig(awsConfig,
+		s3.WithEndpointResolver(s3.EndpointResolverFromURL(s3Endpoint)),
+		func(o *s3.Options) {
+			o.EndpointOptions.DisableHTTPS = true
+		})
 
 	return logger, client, svc
 }

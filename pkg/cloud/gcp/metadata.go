@@ -1,6 +1,7 @@
 package gcp
 
 import (
+	"context"
 	"crypto/md5" //nolint:gosec
 	"fmt"
 
@@ -17,7 +18,7 @@ func NewMetadataProvider(logger logging.Logger) *MetadataProvider {
 	return &MetadataProvider{logger: logger}
 }
 
-func (m *MetadataProvider) GetMetadata() map[string]string {
+func (m *MetadataProvider) GetMetadata(_ context.Context) map[string]string {
 	projectID, err := metadata.NumericProjectID()
 	if err != nil {
 		m.logger.WithError(err).Warn("Failed to get Google numeric project ID from instance metadata")

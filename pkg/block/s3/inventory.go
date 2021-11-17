@@ -9,8 +9,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws/arn"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/aws/arn"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/cloud/aws/s3inventory"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -85,7 +85,9 @@ func (a *Adapter) loadManifest(ctx context.Context, manifestURL string) (*Manife
 	if err != nil {
 		return nil, err
 	}
-	output, err := a.clients.Get(ctx, u.Host).GetObject(&s3.GetObjectInput{Bucket: &u.Host, Key: &u.Path})
+	output, err := a.clients.
+		Get(ctx, u.Host).
+		GetObject(ctx, &s3.GetObjectInput{Bucket: &u.Host, Key: &u.Path})
 	if err != nil {
 		return nil, fmt.Errorf("%w: failed to read manifest.json from %s", err, manifestURL)
 	}

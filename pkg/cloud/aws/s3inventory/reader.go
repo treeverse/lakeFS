@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/aws/aws-sdk-go/service/s3/s3iface"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/scritchley/orc"
 	"github.com/treeverse/lakefs/pkg/logging"
-	s3parquet "github.com/xitongsys/parquet-go-source/s3"
+	s3parquet "github.com/xitongsys/parquet-go-source/s3v2"
 	"github.com/xitongsys/parquet-go/reader"
 )
 
@@ -71,7 +71,7 @@ func (o *InventoryObject) GetPhysicalAddress() string {
 
 type Reader struct {
 	ctx    context.Context
-	svc    s3iface.S3API
+	client *s3.Client
 	logger logging.Logger
 }
 
@@ -87,8 +87,8 @@ type FileReader interface {
 	Read(n int) ([]*InventoryObject, error)
 }
 
-func NewReader(ctx context.Context, svc s3iface.S3API, logger logging.Logger) IReader {
-	return &Reader{ctx: ctx, svc: svc, logger: logger}
+func NewReader(ctx context.Context, client *s3.Client, logger logging.Logger) IReader {
+	return &Reader{ctx: ctx, client: client, logger: logger}
 }
 
 func (o *Reader) GetFileReader(format string, bucket string, key string) (FileReader, error) {
@@ -112,7 +112,7 @@ func (o *Reader) GetMetadataReader(format string, bucket string, key string) (Me
 }
 
 func (o *Reader) getParquetReader(bucket string, key string) (FileReader, error) {
-	pf, err := s3parquet.NewS3FileReaderWithClient(o.ctx, o.svc, bucket, key)
+	pf, err := s3parquet.NewS3FileReaderWithClient(o.ctx, o.client, bucket, key)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create parquet file reader: %w", err)
 	}
@@ -124,7 +124,7 @@ func (o *Reader) getParquetReader(bucket string, key string) (FileReader, error)
 }
 
 func (o *Reader) getOrcReader(bucket string, key string, tailOnly bool) (FileReader, error) {
-	orcFile, err := DownloadOrc(o.ctx, o.svc, o.logger, bucket, key, tailOnly)
+	orcFile, err := DownloadOrc(o.ctx, o.client, o.logger, bucket, key, tailOnly)
 	if err != nil {
 		return nil, err
 	}

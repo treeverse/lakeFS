@@ -135,7 +135,10 @@ var runCmd = &cobra.Command{
 			authenticator = auth.NewChainAuthenticator(authenticator, ldapAuthenticator)
 		}
 		authMetadataManager := auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
-		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
+		cloudMetadataProvider, err := stats.BuildMetadataProvider(logger, cfg)
+		if err != nil {
+			logger.WithError(err).Info("No metadata provider")
+		}
 		blockstoreType := cfg.GetBlockstoreType()
 		if blockstoreType == "local" || blockstoreType == "mem" {
 			printLocalWarning(os.Stderr, blockstoreType)

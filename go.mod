@@ -13,7 +13,13 @@ require (
 	github.com/Masterminds/squirrel v1.5.0
 	github.com/Microsoft/go-winio v0.5.1 // indirect
 	github.com/apache/thrift v0.14.1
-	github.com/aws/aws-sdk-go v1.37.26
+	github.com/aws/aws-sdk-go-v2 v1.11.0 // indirect
+	github.com/aws/aws-sdk-go-v2/config v1.10.0 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.6.0 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.7.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.18.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.9.0 // indirect
+	github.com/aws/smithy-go v1.9.0 // indirect
 	github.com/cockroachdb/errors v1.8.2 // indirect
 	github.com/cockroachdb/pebble v0.0.0-20210308135031-3c37882d2ac8
 	github.com/cockroachdb/redact v1.0.9 // indirect
@@ -79,7 +85,7 @@ require (
 	github.com/vbauerster/mpb/v5 v5.4.0
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xitongsys/parquet-go v1.6.0
-	github.com/xitongsys/parquet-go-source v0.0.0-20201108113611-f372b7d813be
+	github.com/xitongsys/parquet-go-source v0.0.0-20211010230925-397910c5e371
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
 	golang.org/x/exp v0.0.0-20210220032938-85be41e4509f // indirect
 	golang.org/x/net v0.0.0-20211101193420-4a448f8816b3 // indirect

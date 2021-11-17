@@ -3,7 +3,7 @@ package params
 import (
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go-v2/aws"
 )
 
 // AdapterConfig configures a block adapter.
@@ -21,8 +21,21 @@ type Local struct {
 	Path string
 }
 
+type AWSParams struct {
+	Config      *aws.Config
+	EndpointURL string
+	// Region is a default region value to use if not looking bucket
+	// regions up on S3, or if a lookup fails.
+	//
+	// TODO(ariels): Can we just set it on Config?
+	Region string
+	S3     struct {
+		ForcePathStyle bool
+	}
+}
+
 type S3 struct {
-	AwsConfig             *aws.Config
+	AWSParams             AWSParams
 	StreamingChunkSize    int
 	StreamingChunkTimeout time.Duration
 	DiscoverBucketRegion  bool

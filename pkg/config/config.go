@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math"
@@ -9,8 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	aws_retry "github.com/aws/aws-sdk-go-v2/aws/retry"
+	aws_config "github.com/aws/aws-sdk-go-v2/config"
+	aws_credentials "github.com/aws/aws-sdk-go-v2/credentials"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/mitchellh/go-homedir"
 	"github.com/mitchellh/mapstructure"
@@ -244,45 +247,67 @@ func (c *Config) GetLDAPConfiguration() *LDAP {
 	return c.values.Auth.LDAP
 }
 
-func (c *Config) GetAwsConfig() *aws.Config {
+func (c *Config) GetAwsConfig() (blockparams.AWSParams, error) {
 	logger := logging.Default().WithField("sdk", "aws")
-	cfg := &aws.Config{
-		Region: aws.String(c.values.Blockstore.S3.Region),
-		Logger: &logging.AWSAdapter{Logger: logger},
-	}
-	level := strings.ToLower(logging.Level())
-	if level == "trace" {
-		cfg.LogLevel = aws.LogLevel(aws.LogDebugWithRequestRetries | aws.LogDebugWithRequestErrors)
-	}
-	if c.values.Blockstore.S3.Profile != "" || c.values.Blockstore.S3.CredentialsFile != "" {
-		cfg.Credentials = credentials.NewSharedCredentials(
-			c.values.Blockstore.S3.CredentialsFile,
-			c.values.Blockstore.S3.Profile,
-		)
-	}
+
+	var (
+		err            error
+		configLoadOpts []func(*aws_config.LoadOptions) error
+		yes            = true
+		ret            blockparams.AWSParams
+	)
+
+	configLoadOpts = append(configLoadOpts,
+		func(o *aws_config.LoadOptions) error {
+			o.LogConfigurationWarnings = &yes
+			return nil
+		})
+
 	if c.values.Blockstore.S3.Credentials != nil {
 		secretAccessKey := c.values.Blockstore.S3.Credentials.SecretAccessKey
 		if secretAccessKey == "" {
-			logging.Default().Warn("blockstore.s3.credentials.access_secret_key is deprecated. Use instead: blockstore.s3.credentials.secret_access_key.")
+			logger.Warn("blockstore.s3.credentials.access_secret_key is deprecated. Use instead: blockstore.s3.credentials.secret_access_key.")
 			secretAccessKey = c.values.Blockstore.S3.Credentials.AccessSecretKey
 		}
-		cfg.Credentials = credentials.NewStaticCredentials(
-			c.values.Blockstore.S3.Credentials.AccessKeyID.String(),
-			secretAccessKey.String(),
-			c.values.Blockstore.S3.Credentials.SessionToken.String(),
-		)
+		configLoadOpts = append(configLoadOpts, aws_config.WithCredentialsProvider(
+			aws_credentials.NewStaticCredentialsProvider(
+				c.values.Blockstore.S3.Credentials.AccessKeyID.String(),
+				secretAccessKey.String(),
+				c.values.Blockstore.S3.Credentials.SessionToken.String(),
+			),
+		))
 	}
 
-	s3Endpoint := c.values.Blockstore.S3.Endpoint
-	if len(s3Endpoint) > 0 {
-		cfg = cfg.WithEndpoint(s3Endpoint)
+	if c.values.Blockstore.S3.Profile != "" {
+		configLoadOpts = append(configLoadOpts, aws_config.WithSharedConfigProfile(c.values.Blockstore.S3.Profile))
 	}
-	s3ForcePathStyle := c.values.Blockstore.S3.ForcePathStyle
-	if s3ForcePathStyle {
-		cfg = cfg.WithS3ForcePathStyle(true)
+	if c.values.Blockstore.S3.CredentialsFile != "" {
+		configLoadOpts = append(configLoadOpts, aws_config.WithSharedConfigFiles([]string{c.values.Blockstore.S3.CredentialsFile}))
 	}
-	cfg = cfg.WithMaxRetries(c.values.Blockstore.S3.MaxRetries)
-	return cfg
+
+	ret.EndpointURL = c.values.Blockstore.S3.Endpoint
+	ret.Region = c.values.Blockstore.S3.Region
+
+	ret.S3.ForcePathStyle = c.values.Blockstore.S3.ForcePathStyle
+
+	cfg, err := aws_config.LoadDefaultConfig(context.Background(), configLoadOpts...)
+	if err != nil {
+		return blockparams.AWSParams{}, err
+	}
+	ret.Config = &cfg
+
+	level := strings.ToLower(logging.Level())
+	if level == "trace" {
+		ret.Config.ClientLogMode = aws.LogRetries | aws.LogRequest | aws.LogResponse
+	}
+
+	ret.Config.Retryer = func() aws.Retryer {
+		return aws_retry.NewStandard(
+			func(o *aws_retry.StandardOptions) {
+				o.MaxAttempts = c.values.Blockstore.S3.MaxRetries
+			})
+	}
+	return ret, nil
 }
 
 func (c *Config) GetBlockstoreType() string {
@@ -290,10 +315,14 @@ func (c *Config) GetBlockstoreType() string {
 }
 
 func (c *Config) GetBlockAdapterS3Params() (blockparams.S3, error) {
-	cfg := c.GetAwsConfig()
+	cfg, err := c.GetAwsConfig()
+
+	if err != nil {
+		return blockparams.S3{}, err
+	}
 
 	return blockparams.S3{
-		AwsConfig:             cfg,
+		AWSParams:             cfg,
 		StreamingChunkSize:    c.values.Blockstore.S3.StreamingChunkSize,
 		StreamingChunkTimeout: c.values.Blockstore.S3.StreamingChunkTimeout,
 		DiscoverBucketRegion:  c.values.Blockstore.S3.DiscoverBucketRegion,

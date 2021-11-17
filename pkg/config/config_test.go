@@ -168,8 +168,10 @@ func TestConfig_JSONLogger(t *testing.T) {
 }
 
 func verifyAWSConfig(t *testing.T, c *config.Config) {
-	awsConfig := c.GetAwsConfig()
-	credentials, err := awsConfig.Credentials.Get()
+	ctx := context.Background()
+	awsConfig, err := c.GetAwsConfig()
+	testutil.Must(t, err)
+	credentials, err := awsConfig.Config.Credentials.Retrieve(ctx)
 	testutil.Must(t, err)
 	if credentials.AccessKeyID != "my-key-id" {
 		t.Fatalf("unexpected key id in credentials. expected %s got %s", "my-key-id", credentials.AccessKeyID)

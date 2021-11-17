@@ -10,9 +10,8 @@ import (
 	"testing"
 
 	"cloud.google.com/go/storage"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
+	aws_config "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4/pgxpool"
 	_ "github.com/jackc/pgx/v4/stdlib"
@@ -20,6 +19,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/gs"
 	"github.com/treeverse/lakefs/pkg/block/mem"
+	block_params "github.com/treeverse/lakefs/pkg/block/params"
 	lakefsS3 "github.com/treeverse/lakefs/pkg/block/s3"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/db/params"
@@ -212,9 +212,9 @@ func MustDo(t testing.TB, what string, err error) {
 }
 
 func NewBlockAdapterByType(t testing.TB, translator block.UploadIDTranslator, blockstoreType string) block.Adapter {
+	ctx := context.Background()
 	switch blockstoreType {
 	case block.BlockstoreTypeGS:
-		ctx := context.Background()
 		client, err := storage.NewClient(ctx)
 		if err != nil {
 			t.Fatal("Google Storage new client", err)
@@ -222,22 +222,41 @@ func NewBlockAdapterByType(t testing.TB, translator block.UploadIDTranslator, bl
 		return gs.NewAdapter(client, gs.WithTranslator(translator))
 
 	case block.BlockstoreTypeS3:
+		var (
+			configLoadOpts []func(*aws_config.LoadOptions) error
+			yes            = true
+		)
+
+		configLoadOpts = append(configLoadOpts,
+			func(o *aws_config.LoadOptions) error {
+				o.LogConfigurationWarnings = &yes
+				return nil
+			})
+
 		awsRegion, regionOk := os.LookupEnv(envKeyAwsRegion)
 		if !regionOk {
 			awsRegion = "us-east-1"
 		}
-		cfg := &aws.Config{
-			Region: aws.String(awsRegion),
-		}
 		awsSecret, secretOk := os.LookupEnv(envKeyAwsSecretKey)
 		awsKey, keyOk := os.LookupEnv(envKeyAwsKeyID)
 		if keyOk && secretOk {
-			cfg.Credentials = credentials.NewStaticCredentials(awsKey, awsSecret, "")
+			configLoadOpts = append(configLoadOpts, aws_config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(awsKey, awsSecret, "")))
 		} else {
-			cfg.Credentials = credentials.NewSharedCredentials("", "default")
+			// BUG(ariels): What do we do here?
+			// configLoadOpts = append(configLoadOpts, aws_config.WithCredentialsProvider(credentials.NewSharedCredentials("", "default")))
 		}
-		sess := session.Must(session.NewSession(cfg))
-		return lakefsS3.NewAdapter(sess, lakefsS3.WithTranslator(translator))
+
+		cfg, err := aws_config.LoadDefaultConfig(ctx, configLoadOpts...)
+		if err != nil {
+			panic(fmt.Errorf("New S3 block adapter: %w", err))
+		}
+
+		params := block_params.AWSParams{
+			// TODO(ariels)...
+			Config: &cfg,
+			Region: awsRegion,
+		}
+		return lakefsS3.NewAdapter(&params, lakefsS3.WithTranslator(translator))
 
 	default:
 		return mem.New(mem.WithTranslator(translator))

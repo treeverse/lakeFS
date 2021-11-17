@@ -2,6 +2,7 @@ package stats
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -38,7 +39,7 @@ func NewMetadata(ctx context.Context, logger logging.Logger, blockstoreType stri
 		res.Entries = append(res.Entries, MetadataEntry{Name: k, Value: v})
 	}
 	if cloudMetadataProvider != nil {
-		cloudMetadata := cloudMetadataProvider.GetMetadata()
+		cloudMetadata := cloudMetadataProvider.GetMetadata(ctx)
 		for k, v := range cloudMetadata {
 			res.Entries = append(res.Entries, MetadataEntry{Name: k, Value: v})
 		}
@@ -47,15 +48,19 @@ func NewMetadata(ctx context.Context, logger logging.Logger, blockstoreType stri
 	return res
 }
 
-func BuildMetadataProvider(logger logging.Logger, c *config.Config) cloud.MetadataProvider {
+func BuildMetadataProvider(logger logging.Logger, c *config.Config) (cloud.MetadataProvider, error) {
 	switch c.GetBlockstoreType() {
 	case block.BlockstoreTypeGS:
-		return gcp.NewMetadataProvider(logger)
+		return gcp.NewMetadataProvider(logger), nil
 	case block.BlockstoreTypeS3:
-		return aws.NewMetadataProvider(logger, c.GetAwsConfig())
+		cfg, err := c.GetAwsConfig()
+		if err != nil {
+			return nil, fmt.Errorf("get AWS config: %w", err)
+		}
+		return aws.NewMetadataProvider(logger, cfg.Config), nil
 	case block.BlockstoreTypeAzure:
-		return azure.NewMetadataProvider(logger)
+		return azure.NewMetadataProvider(logger), nil
 	default:
-		return nil
+		return nil, nil
 	}
 }

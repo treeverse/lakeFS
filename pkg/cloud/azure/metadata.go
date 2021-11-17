@@ -1,6 +1,7 @@
 package azure
 
 import (
+	"context"
 	"crypto/md5" //nolint:gosec
 	"encoding/json"
 	"fmt"
@@ -30,7 +31,7 @@ type instanceMetadataResponse struct {
 	} `json:"compute"`
 }
 
-func (m *MetadataProvider) GetMetadata() map[string]string {
+func (m *MetadataProvider) GetMetadata(_ context.Context) map[string]string {
 	client := http.Client{Timeout: metadataRequestTimeout}
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s/metadata/instance", azureMetadataIP), nil)
 	if err != nil {
