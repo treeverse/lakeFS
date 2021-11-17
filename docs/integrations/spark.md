@@ -220,10 +220,10 @@ FileSystem.
 #### Load the FileSystem JARs
 
 Add the package `io.lakefs:hadoop-lakefs-assembly:<VERSION>` to your Spark job.  Right now
-this is version 0.1.0, so add:
+this is version 0.1.3, so add:
 
 ```
---packages io.lakefs:hadoop-lakefs-assembly:0.1.0
+--packages io.lakefs:hadoop-lakefs-assembly:0.1.3
 ```
 
 to your Spark commandlines.
@@ -270,7 +270,7 @@ spark-shell --conf spark.hadoop.fs.s3a.access.key='AKIAIOSFODNN7EXAMPLE' \
               --conf spark.hadoop.fs.lakefs.access.key=AKIAlakefs12345EXAMPLE \
               --conf spark.hadoop.fs.lakefs.secret.key=abc/lakefs/1234567bPxRfiCYEXAMPLEKEY \
               --conf spark.hadoop.fs.lakefs.endpoint=https://lakefs.example.com/api/v1 \
-              --packages io.lakefs:hadoop-lakefs-assembly:0.1.0
+              --packages io.lakefs:hadoop-lakefs-assembly:0.1.3
               ...
 ```
   </div>
