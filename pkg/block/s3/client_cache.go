@@ -43,7 +43,7 @@ func NewClientCache(params *params.AWSParams) *ClientCache {
 	return &ClientCache{
 		params:         *params,
 		clientFactory:  newS3Client,
-		s3RegionGetter: getBucketRegionFromParams,
+		s3RegionGetter: getBucketRegionFromS3,
 	}
 }
 
