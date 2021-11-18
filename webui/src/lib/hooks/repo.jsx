@@ -10,7 +10,7 @@ export const resolveRef = async (repoId, refId) => {
         const branch = await branches.get(repoId, refId);
         return {id: branch.id, type: 'branch'};
     } catch(error) {
-        if (!error instanceof NotFoundError && !error instanceof BadRequestError) {
+        if (!(error instanceof NotFoundError) && !(error instanceof BadRequestError)) {
             throw error;
         }
     }
@@ -19,7 +19,7 @@ export const resolveRef = async (repoId, refId) => {
         const tag = await tags.get(repoId, refId);
         return {id: tag.id, type: 'tag'};
     } catch(error) {
-        if (!error instanceof NotFoundError && !error instanceof BadRequestError) {
+        if (!(error instanceof NotFoundError) && !(error instanceof BadRequestError)) {
             throw error;
         }
     }
@@ -28,7 +28,7 @@ export const resolveRef = async (repoId, refId) => {
         const commit = await commits.get(repoId, refId);
         return {id: commit.id,  type: 'commit'};
     } catch(error) {
-        if (!error instanceof NotFoundError && !error instanceof BadRequestError) {
+        if (!(error instanceof NotFoundError)) {
             throw error;
         }
     }
