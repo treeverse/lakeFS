@@ -24,9 +24,6 @@ const (
 	DefaultStreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
 	DefaultStreamingChunkTimeout = time.Second * 1 // if we haven't read DefaultStreamingChunkSize by this duration, write whatever we have as a chunk
 
-	// Chunks smaller than that are only allowed for the last chunk upload
-	minChunkSize = 8 * 1024
-
 	// Time to Wait() for S3 operations
 	S3WaitDur = 1 * time.Minute
 
@@ -586,7 +583,11 @@ func (a *Adapter) RuntimeStats() map[string]string {
 	}
 }
 
-func (a *Adapter) extractS3Server(resp *http.Response) {
+// BUG(ariels): Extract this another way.  E.g. recordHeadersClient could do
+//     this, or a similar one, maybe run it just when unknown :-/
+//
+// Needed to report stats of actual S3 server identification.
+func (a *Adapter) ExtractS3Server(resp *http.Response) {
 	if resp == nil || resp.Header == nil {
 		return
 	}

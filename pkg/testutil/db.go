@@ -241,14 +241,12 @@ func NewBlockAdapterByType(t testing.TB, translator block.UploadIDTranslator, bl
 		awsKey, keyOk := os.LookupEnv(envKeyAwsKeyID)
 		if keyOk && secretOk {
 			configLoadOpts = append(configLoadOpts, aws_config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(awsKey, awsSecret, "")))
-		} else {
-			// BUG(ariels): What do we do here?
-			// configLoadOpts = append(configLoadOpts, aws_config.WithCredentialsProvider(credentials.NewSharedCredentials("", "default")))
 		}
+		// (if no keys, the default shared key providers should load by default).
 
 		cfg, err := aws_config.LoadDefaultConfig(ctx, configLoadOpts...)
 		if err != nil {
-			panic(fmt.Errorf("New S3 block adapter: %w", err))
+			panic(fmt.Errorf("new S3 block adapter: %w", err))
 		}
 
 		params := block_params.AWSParams{

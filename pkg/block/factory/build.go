@@ -47,7 +47,7 @@ func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c pa
 		if err != nil {
 			return nil, err
 		}
-		return buildS3Adapter(statsCollector, p)
+		return buildS3Adapter(statsCollector, p), nil
 	case block.BlockstoreTypeMem, "memory":
 		return mem.New(), nil
 	case block.BlockstoreTypeTransient:
@@ -82,7 +82,7 @@ func buildLocalAdapter(params params.Local) (*local.Adapter, error) {
 	return adapter, nil
 }
 
-func buildS3Adapter(statsCollector stats.Collector, params params.S3) (*s3a.Adapter, error) {
+func buildS3Adapter(statsCollector stats.Collector, params params.S3) *s3a.Adapter {
 	adapter := s3a.NewAdapter(&params.AWSParams,
 		s3a.WithStreamingChunkSize(params.StreamingChunkSize),
 		s3a.WithStreamingChunkTimeout(params.StreamingChunkTimeout),
@@ -90,7 +90,7 @@ func buildS3Adapter(statsCollector stats.Collector, params params.S3) (*s3a.Adap
 		s3a.WithDiscoverBucketRegion(params.DiscoverBucketRegion),
 	)
 	logging.Default().WithField("type", "s3").Info("initialized blockstore adapter")
-	return adapter, nil
+	return adapter
 }
 
 func buildGSAdapter(ctx context.Context, params params.GS) (*gs.Adapter, error) {
