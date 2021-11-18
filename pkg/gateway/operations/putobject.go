@@ -230,7 +230,10 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 		}
 
 		if err != nil {
-			o.Log(req).WithError(err).WithField("copy_source", ent.Path).Error("copy part " + partNumberStr + " upload failed")
+			o.Log(req).WithError(err).WithFields(logging.Fields{
+				"copy_source": ent.Path,
+				"part_number": partNumber,
+			}).Error("copy part upload failed")
 			_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 			return
 		}
@@ -246,7 +249,7 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 	resp, err := o.BlockStore.UploadPart(req.Context(), block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: multiPart.PhysicalAddress},
 		byteSize, req.Body, uploadID, partNumber)
 	if err != nil {
-		o.Log(req).WithError(err).Error("part " + partNumberStr + " upload failed")
+		o.Log(req).WithError(err).WithField("part_number", partNumber).Error("upload failed")
 		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
