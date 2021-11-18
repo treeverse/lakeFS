@@ -122,6 +122,20 @@ func (a *Adapter) log(ctx context.Context) logging.Logger {
 	return logging.FromContext(ctx)
 }
 
+func qkFields(qualifiedKey block.QualifiedKey) logging.Fields {
+	return logging.Fields{
+		"qualified_ns":  qualifiedKey.StorageNamespace,
+		"qualified_key": qualifiedKey.Key,
+	}
+}
+
+func qpFields(qualifiedPrefix block.QualifiedPrefix) logging.Fields {
+	return logging.Fields{
+		"qualified_ns":     qualifiedPrefix.StorageNamespace,
+		"qualified_prefix": qualifiedPrefix.Prefix,
+	}
+}
+
 func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) error {
 	var err error
 	defer reportMetrics("Put", time.Now(), &sizeBytes, &err)
@@ -195,9 +209,9 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeB
 	}, nil
 }
 
-func isErrNotFound(err error) bool {
-	var notFound *types.NotFound
-	return errors.As(err, &notFound)
+func isErrNoSuchKey(err error) bool {
+	var nsk *types.NoSuchKey
+	return errors.As(err, &nsk)
 }
 
 func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
@@ -208,18 +222,18 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 	if err != nil {
 		return nil, err
 	}
-	log := a.log(ctx).WithField("operation", "GetObject")
 	getObjectInput := s3.GetObjectInput{
 		Bucket: aws.String(qualifiedKey.StorageNamespace),
 		Key:    aws.String(qualifiedKey.Key),
 	}
 	client := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
 	objectOutput, err := client.GetObject(ctx, &getObjectInput)
-	if isErrNotFound(err) {
+	if isErrNoSuchKey(err) {
 		return nil, adapter.ErrDataNotFound
 	}
 	if err != nil {
-		log.WithError(err).Errorf("failed to get S3 object bucket %s key %s", qualifiedKey.StorageNamespace, qualifiedKey.Key)
+		log := a.log(ctx).WithField("operation", "GetObject")
+		log.WithError(err).WithFields(qkFields(qualifiedKey)).Error("failed to get S3 object")
 		return nil, err
 	}
 	sizeBytes = objectOutput.ContentLength
@@ -233,18 +247,18 @@ func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, er
 	if err != nil {
 		return false, err
 	}
-	log := a.log(ctx).WithField("operation", "HeadObject")
 	input := s3.HeadObjectInput{
 		Bucket: aws.String(qualifiedKey.StorageNamespace),
 		Key:    aws.String(qualifiedKey.Key),
 	}
 	client := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
 	_, err = client.HeadObject(ctx, &input)
-	if isErrNotFound(err) {
+	if isErrNoSuchKey(err) {
 		return false, nil
 	}
 	if err != nil {
-		log.WithError(err).Errorf("failed to stat S3 object")
+		log := a.log(ctx).WithField("operation", "HeadObject")
+		log.WithError(err).WithFields(qkFields(qualifiedKey)).Error("failed to stat S3 object")
 		return false, err
 	}
 	return true, nil
@@ -258,7 +272,6 @@ func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPo
 	if err != nil {
 		return nil, err
 	}
-	log := a.log(ctx).WithField("operation", "GetObjectRange")
 	getObjectInput := s3.GetObjectInput{
 		Bucket: aws.String(qualifiedKey.StorageNamespace),
 		Key:    aws.String(qualifiedKey.Key),
@@ -266,11 +279,12 @@ func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPo
 	}
 	client := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
 	objectOutput, err := client.GetObject(ctx, &getObjectInput)
-	if isErrNotFound(err) {
+	if isErrNoSuchKey(err) {
 		return nil, adapter.ErrDataNotFound
 	}
 	if err != nil {
-		log.WithError(err).WithFields(logging.Fields{
+		log := a.log(ctx).WithField("operation", "GetRange")
+		log.WithError(err).WithFields(qkFields(qualifiedKey)).WithFields(logging.Fields{
 			"start_position": startPosition,
 			"end_position":   endPosition,
 		}).Error("failed to get S3 object range")
@@ -281,7 +295,6 @@ func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPo
 }
 
 func (a *Adapter) Walk(ctx context.Context, walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
-	log := a.log(ctx).WithField("operation", "Walk")
 	var err error
 	var lenRes int64
 	defer reportMetrics("Walk", time.Now(), &lenRes, &err)
@@ -290,6 +303,8 @@ func (a *Adapter) Walk(ctx context.Context, walkOpt block.WalkOpts, walkFn block
 	if err != nil {
 		return err
 	}
+
+	log := a.log(ctx).WithField("operation", "Walk").WithFields(qpFields(qualifiedPrefix))
 
 	listObjectInput := s3.ListObjectsInput{
 		Bucket: aws.String(qualifiedPrefix.StorageNamespace),
@@ -301,10 +316,7 @@ func (a *Adapter) Walk(ctx context.Context, walkOpt block.WalkOpts, walkFn block
 			Get(ctx, qualifiedPrefix.StorageNamespace).
 			ListObjects(ctx, &listObjectInput)
 		if err != nil {
-			log.WithError(err).WithFields(logging.Fields{
-				"bucket": qualifiedPrefix.StorageNamespace,
-				"prefix": qualifiedPrefix.Prefix,
-			}).Error("failed to list S3 objects")
+			log.WithError(err).Error("failed to list S3 objects")
 			return err
 		}
 
@@ -358,7 +370,7 @@ func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {
 	client := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
 	_, err = client.DeleteObject(ctx, deleteObjectParams)
 	if err != nil {
-		a.log(ctx).WithError(err).Error("failed to delete S3 object")
+		a.log(ctx).WithError(err).WithFields(qkFields(qualifiedKey)).Error("failed to delete S3 object")
 		return err
 	}
 	waiter := s3.NewObjectNotExistsWaiter(client)
@@ -439,7 +451,12 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 	}
 	_, err = a.clients.Get(ctx, qualifiedDestinationKey.StorageNamespace).CopyObject(ctx, copyObjectParams)
 	if err != nil {
-		a.log(ctx).WithError(err).Error("failed to copy S3 object")
+		a.log(ctx).WithError(err).WithFields(logging.Fields{
+			"qualified_ns_source":       qualifiedSourceKey.StorageNamespace,
+			"qualified_key_source":      qualifiedSourceKey.Key,
+			"qualified_ns_destination":  qualifiedDestinationKey.StorageNamespace,
+			"qualified_key_destination": qualifiedDestinationKey.Key,
+		}).Error("failed to copy S3 object")
 	}
 	return err
 }
@@ -466,11 +483,9 @@ func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPoi
 	upload, err := client.CreateMultipartUpload(ctx, input, httpClient.WrapClient())
 	uploadID := *upload.UploadId
 	uploadID = a.uploadIDTranslator.SetUploadID(uploadID)
-	a.log(ctx).WithFields(logging.Fields{
+	a.log(ctx).WithFields(qkFields(qualifiedKey)).WithFields(logging.Fields{
 		"upload_id":            *upload.UploadId,
 		"translated_upload_id": uploadID,
-		"qualified_ns":         qualifiedKey.StorageNamespace,
-		"qualified_key":        qualifiedKey.Key,
 		"key":                  obj.Identifier,
 	}).Debug("created multipart upload")
 	return &block.CreateMultiPartUploadResponse{
@@ -495,11 +510,9 @@ func (a *Adapter) AbortMultiPartUpload(ctx context.Context, obj block.ObjectPoin
 	client := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
 	_, err = client.AbortMultipartUpload(ctx, input)
 	a.uploadIDTranslator.RemoveUploadID(uploadID)
-	a.log(ctx).WithFields(logging.Fields{
-		"upload_id":     uploadID,
-		"qualified_ns":  qualifiedKey.StorageNamespace,
-		"qualified_key": qualifiedKey.Key,
-		"key":           obj.Identifier,
+	a.log(ctx).WithFields(qkFields(qualifiedKey)).WithFields(logging.Fields{
+		"upload_id": uploadID,
+		"key":       obj.Identifier,
 	}).Debug("aborted multipart upload")
 	return err
 }
@@ -529,11 +542,9 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 		UploadId:        aws.String(translatedUploadID),
 		MultipartUpload: convertFromBlockMultipartUploadCompletion(multipartList),
 	}
-	lg := a.log(ctx).WithFields(logging.Fields{
+	lg := a.log(ctx).WithFields(qkFields(qualifiedKey)).WithFields(logging.Fields{
 		"upload_id":            uploadID,
 		"translated_upload_id": translatedUploadID,
-		"qualified_ns":         qualifiedKey.StorageNamespace,
-		"qualified_key":        qualifiedKey.Key,
 		"key":                  obj.Identifier,
 	})
 	client := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
