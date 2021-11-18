@@ -183,11 +183,12 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeB
 	}
 	uploadID = a.uploadIDTranslator.TranslateUploadID(uploadID)
 	uploadPartIn := s3.UploadPartInput{
-		Bucket:     aws.String(qualifiedKey.StorageNamespace),
-		Key:        aws.String(qualifiedKey.Key),
-		PartNumber: int32(partNumber),
-		UploadId:   aws.String(uploadID),
-		Body:       reader,
+		Bucket:        aws.String(qualifiedKey.StorageNamespace),
+		Key:           aws.String(qualifiedKey.Key),
+		PartNumber:    int32(partNumber),
+		UploadId:      aws.String(uploadID),
+		Body:          reader,
+		ContentLength: sizeBytes,
 	}
 
 	// TODO(ariels): Could just set region from a bucket->region cache as an extra Opt arg.
