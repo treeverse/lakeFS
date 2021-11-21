@@ -92,13 +92,16 @@ func uploadMultipartComplete(ctx context.Context, svc *s3.Client, resp *s3.Creat
 }
 
 func uploadMultipartPart(ctx context.Context, logger logging.Logger, svc *s3.Client, resp *s3.CreateMultipartUploadOutput, fileBytes []byte, partNumber int) (types.CompletedPart, error) {
+	fileBytesSize := len(fileBytes)
 	partInput := &s3.UploadPartInput{
-		Body:          bytes.NewReader(fileBytes),
 		Bucket:        resp.Bucket,
 		Key:           resp.Key,
 		PartNumber:    int32(partNumber),
 		UploadId:      resp.UploadId,
-		ContentLength: int64(len(fileBytes)),
+		ContentLength: int64(fileBytesSize),
+	}
+	if fileBytesSize != 0 {
+		partInput.Body = bytes.NewReader(fileBytes)
 	}
 
 	uploadResult, err := svc.UploadPart(ctx, partInput)

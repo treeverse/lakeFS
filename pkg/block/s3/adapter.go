@@ -157,6 +157,15 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 
 		// TODO(ariels): If we have an MD5 from the user, pass it to S3 to verify.
 	}
+	if sizeBytes == 0 {
+		// AWS Go SDK v2 has recurring issues with putting length=0
+		// objects, e.g. aws/smithy-go#236 (which fixes a related
+		// but different case, when the client computes
+		// content-length on its own).  Removing the reader appears
+		// to bypass these.
+		putIn.Body = nil
+	}
+
 	if opts.StorageClass != nil {
 		putIn.StorageClass = types.StorageClass(*opts.StorageClass)
 	}
@@ -189,6 +198,14 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeB
 		UploadId:      aws.String(uploadID),
 		Body:          reader,
 		ContentLength: sizeBytes,
+	}
+	if sizeBytes == 0 {
+		// AWS Go SDK v2 has recurring issues with putting length=0
+		// objects, e.g. aws/smithy-go#236 (which fixes a related
+		// but different case, when the client computes
+		// content-length on its own).  Removing the reader appears
+		// to bypass these.
+		uploadPartIn.Body = nil
 	}
 
 	// TODO(ariels): Could just set region from a bucket->region cache as an extra Opt arg.
