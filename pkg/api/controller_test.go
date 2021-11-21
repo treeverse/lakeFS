@@ -1874,8 +1874,8 @@ func TestController_MergeIntoExplicitBranch(t *testing.T) {
 			destinationBranch := "main" + string(tt.Mod)
 			resp, err := clt.MergeIntoBranchWithResponse(ctx, repo, "branch1", destinationBranch, api.MergeIntoBranchJSONRequestBody{})
 			testutil.MustDo(t, "perform merge into branch", err)
-			if resp.JSONDefault == nil {
-				t.Fatalf("merge to explict branch should fail, with an error, got: %v", resp)
+			if resp.StatusCode() != http.StatusBadRequest {
+				t.Fatalf("merge to branch with modifier should fail with status %d, got code: %v", http.StatusBadRequest, resp.StatusCode())
 			}
 		})
 	}
