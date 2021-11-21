@@ -1,6 +1,6 @@
 # lakeFS `docker-compose`
 
-Compose file for lakeFS using variety of services lakeFS can work with.
+Compose file for lakeFS using variety of services lakeFS can work with. 
 Automatically creates a minIO bucket and lakeFS repository as part of the start up.
 
 To spin up the environment, run:
@@ -12,6 +12,8 @@ That's it! To check the status of the containers:
 ```sh
 docker compose ps
 ```
+
+To access the lakeFS UI, go to http://localhost:8000. The setup stage is done for you, and your user name and passwords are AKIAIOSFODNN7EXAMPLE and wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY compatibly. 
 
 ### Hive Client
 
