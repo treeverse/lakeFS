@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"cloud.google.com/go/storage"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	aws_config "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/google/uuid"
@@ -224,12 +225,11 @@ func NewBlockAdapterByType(t testing.TB, translator block.UploadIDTranslator, bl
 	case block.BlockstoreTypeS3:
 		var (
 			configLoadOpts []func(*aws_config.LoadOptions) error
-			yes            = true
 		)
 
 		configLoadOpts = append(configLoadOpts,
 			func(o *aws_config.LoadOptions) error {
-				o.LogConfigurationWarnings = &yes
+				o.LogConfigurationWarnings = aws.Bool(true)
 				return nil
 			})
 

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	aws_config "github.com/aws/aws-sdk-go-v2/config"
 	aws_credentials "github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -108,6 +109,7 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 				"")),
 		func(o *aws_config.LoadOptions) error {
 			o.Region = "us-east-1"
+			o.LogConfigurationWarnings = aws.Bool(true)
 			return nil
 		},
 	)
@@ -115,10 +117,12 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 		logger.WithError(err).Fatal("could not initialize AWS configuration")
 	}
 	svc := s3.NewFromConfig(awsConfig,
-		s3.WithEndpointResolver(s3.EndpointResolverFromURL(s3Endpoint)),
 		func(o *s3.Options) {
 			o.EndpointOptions.DisableHTTPS = true
-		})
+			o.UsePathStyle = true
+		},
+		s3.WithEndpointResolver(s3.EndpointResolverFromURL(s3Endpoint)),
+	)
 
 	return logger, client, svc
 }

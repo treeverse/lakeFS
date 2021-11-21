@@ -253,13 +253,12 @@ func (c *Config) GetAwsConfig() (blockparams.AWSParams, error) {
 	var (
 		err            error
 		configLoadOpts []func(*aws_config.LoadOptions) error
-		yes            = true
 		ret            blockparams.AWSParams
 	)
 
 	configLoadOpts = append(configLoadOpts,
 		func(o *aws_config.LoadOptions) error {
-			o.LogConfigurationWarnings = &yes
+			o.LogConfigurationWarnings = aws.Bool(true)
 			return nil
 		})
 
