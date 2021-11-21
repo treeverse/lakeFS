@@ -287,6 +287,10 @@ func (c *Config) GetAwsConfig() (blockparams.AWSParams, error) {
 	ret.EndpointURL = c.values.Blockstore.S3.Endpoint
 	ret.Region = c.values.Blockstore.S3.Region
 
+	if ret.Region != "" {
+		configLoadOpts = append(configLoadOpts, aws_config.WithDefaultRegion(ret.Region))
+	}
+
 	ret.S3.ForcePathStyle = c.values.Blockstore.S3.ForcePathStyle
 
 	cfg, err := aws_config.LoadDefaultConfig(context.Background(), configLoadOpts...)
