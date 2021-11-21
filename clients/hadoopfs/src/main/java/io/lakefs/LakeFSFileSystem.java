@@ -758,27 +758,6 @@ public class LakeFSFileSystem extends FileSystem {
     }
 
     @Override
-    public FileStatus[] globStatus(Path pathPattern) throws IOException {
-        OPERATIONS_LOG.trace("globStatus({})", pathPattern);
-
-        FileStatus[] statuses;
-        try{
-            statuses = listStatus(pathPattern);
-        } catch (FileNotFoundException f){
-            return null;
-        }
-
-        if (statuses.length > 0 &&
-                Arrays.stream(statuses).noneMatch(status -> status.getPath().equals(pathPattern))){
-            // If files were found but none equal the pattern, it means that it's an existing directory
-            // with files in it. In that case return the single status which represent that.
-            return new FileStatus[]{new LakeFSFileStatus.Builder(pathPattern).isdir(true).build()};
-        }
-
-        return statuses;
-    }
-
-    @Override
     public boolean exists(Path path) throws IOException {
         OPERATIONS_LOG.trace("exists({})", path);
         ObjectLocation objectLoc = pathToObjectLocation(path);
