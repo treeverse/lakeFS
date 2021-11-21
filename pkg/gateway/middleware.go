@@ -194,6 +194,7 @@ func OperationLookupHandler(next http.Handler) http.Handler {
 				operationID = repositoryBasedOperationID(req.Method)
 			default:
 				w.WriteHeader(http.StatusNotFound)
+				return
 			}
 		}
 		o.OperationID = operationID
