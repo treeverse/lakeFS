@@ -1545,7 +1545,8 @@ func handleAPIError(w http.ResponseWriter, err error) bool {
 		errors.Is(err, permissions.ErrInvalidServiceName),
 		errors.Is(err, permissions.ErrInvalidAction),
 		errors.Is(err, model.ErrValidationError),
-		errors.Is(err, graveler.ErrInvalidRef):
+		errors.Is(err, graveler.ErrInvalidRef),
+		errors.Is(err, catalog.ErrInvalidValue):
 		writeError(w, http.StatusBadRequest, err)
 
 	case errors.Is(err, graveler.ErrNotUnique):

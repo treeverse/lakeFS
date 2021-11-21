@@ -83,6 +83,13 @@ export class NotFoundError extends Error {
     }
 }
 
+export class BadRequestError extends Error {
+    constructor(message) {
+        super(message)
+        this.name = "BadRequestError"
+    }
+}
+
 export class AuthorizationError extends Error {
     constructor(message) {
         super(message);
@@ -417,7 +424,9 @@ class Branches {
 
     async get(repoId, branchId) {
         const response = await apiRequest(`/repositories/${repoId}/branches/${branchId}`);
-        if (response.status === 404) {
+        if (response.status === 400) {
+            throw new BadRequestError('invalid get branch request');
+        } else if (response.status === 404) {
             throw new NotFoundError(`could not find branch ${branchId}`);
         } else if (response.status !== 200) {
             throw new Error(`could not get branch: ${await extractError(response)}`);
