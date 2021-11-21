@@ -33,7 +33,7 @@ type Iterator interface {
 //        ------------------------------------------------------------------------------------------------
 // right                        [min].R2.[max]     [min.....R4....max]  [min].R6.[max] [min].R7.[max]
 //
-// R1 -  will return as diff with header
+// R1 - will return as diff with header
 // R2 - will return as diff with header
 // R3 and R4 - could not return a header because we must enter the ranges in order to get some header values (such as count)
 // R5 and R6 - same as R3 and R4
