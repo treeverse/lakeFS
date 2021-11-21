@@ -23,7 +23,7 @@ services:
       - LAKEFS_GATEWAYS_S3_DOMAIN_NAME=s3.docker.lakefs.io,s3.local.lakefs.io
       - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=some random secret string
       - LAKEFS_DATABASE_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
-      - LAKEFS_LOGGING_LEVEL=DEBUG
+      - LAKEFS_LOGGING_LEVEL=TRACE # DO NOT MERGE ME!
       - LAKEFS_STATS_ENABLED=false
       - LAKEFS_BLOCKSTORE_LOCAL_PATH=/home/lakefs
       - LAKEFS_BLOCKSTORE_TYPE
