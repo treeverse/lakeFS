@@ -14,9 +14,10 @@ docker compose ps
 ```
 
 To access the lakeFS UI, go to http://localhost:8000. 
-Your credentials are (The setup stage was done for you):
-user:AKIAIOSFODNN7EXAMPLE
-pass: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY 
+
+Your admin credentials are (The setup stage was done for you):
+* username: AKIAIOSFODNN7EXAMPLE
+* password: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY 
 
 ### Hive Client
 
