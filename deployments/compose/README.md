@@ -15,7 +15,7 @@ docker compose ps
 
 To access the lakeFS UI, go to http://localhost:8000. 
 
-Your admin credentials are (The setup stage was done for you):
+The docker-compose also runs the setup stage and configures admin user with the following credentials:
 * username: AKIAIOSFODNN7EXAMPLE
 * password: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY 
 
