@@ -19,9 +19,11 @@ import (
 )
 
 const (
-	configFileSuffixTemplate    = "/%s/retention/gc/rules/config.json"
-	addressesFilePrefixTemplate = "/%s/retention/gc/addresses/"
-	commitsFileSuffixTemplate   = "/%s/retention/gc/commits/run_id=%s/commits.csv"
+	// BUG(#2732): ariels removed leading slashes, but fixing this
+	//     properly requires some more work.  DO NOT PUSH THIS CODE!
+	configFileSuffixTemplate    = "%s/retention/gc/rules/config.json"
+	addressesFilePrefixTemplate = "%s/retention/gc/addresses/"
+	commitsFileSuffixTemplate   = "%s/retention/gc/commits/run_id=%s/commits.csv"
 )
 
 type GarbageCollectionManager struct {
