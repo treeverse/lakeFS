@@ -13,7 +13,10 @@ That's it! To check the status of the containers:
 docker compose ps
 ```
 
-To access the lakeFS UI, go to http://localhost:8000. The setup stage is done for you, and your user name and passwords are AKIAIOSFODNN7EXAMPLE and wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY compatibly. 
+To access the lakeFS UI, go to http://localhost:8000. 
+Your credentials are (The setup stage was done for you):
+user:AKIAIOSFODNN7EXAMPLE
+pass: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY 
 
 ### Hive Client
 
