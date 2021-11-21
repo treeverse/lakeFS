@@ -1,6 +1,6 @@
 import React, {useState} from "react";
 
-import {OverlayTrigger} from "react-bootstrap";
+import {OverlayTrigger, Row} from "react-bootstrap";
 import Tooltip from "react-bootstrap/Tooltip";
 import Button from "react-bootstrap/Button";
 import {
@@ -19,30 +19,42 @@ import {
 import {ConfirmationModal} from "../modals";
 import {Link} from "../nav";
 import {useAPIWithPagination} from "../../hooks/api";
-import {Error} from "../controls";
+import {ActionsBar, Error} from "../controls";
 import {ObjectsDiff} from "./ObjectsDiff";
+import Container from "react-bootstrap/Container";
 
 
-const ChangeRowActions = ({ entry, onRevert }) => {
-    const [show, setShow] = useState(false);
+const ChangeRowActions = ({entry, onRevert, diffExpanded, onClickExpandDiff}) => {
+    const [showConfirmRevert, setShowConfirmRevertConfirmRevert] = useState(false);
     const revertConfirmMsg = `Are you sure you wish to revert "${entry.path}" (${entry.type})?`;
     const onSubmit = () => {
         onRevert(entry)
-        setShow(false)
+        setShowConfirmRevertConfirmRevert(false)
     };
 
     return (
         <>
-            <OverlayTrigger key={"bottom"} overlay={(<Tooltip id={"revert-entry"}>Revert change</Tooltip>)}>
-                <Button variant="link" disabled={false} onClick={(e) => {
-                    e.preventDefault();
-                    setShow(true)
-                }} >
-                    <HistoryIcon/>
-                </Button>
-            </OverlayTrigger>
-
-            <ConfirmationModal show={show} onHide={() => setShow(false)} msg={revertConfirmMsg} onConfirm={onSubmit}/>
+            {entry.type !== 'conflict' && onClickExpandDiff !== null &&
+                <OverlayTrigger placement="bottom" overlay={<Tooltip>{diffExpanded ? "Hide" : "Show"} changes</Tooltip>}>
+                    <Button variant={"link"} disabled={false} style={{visibility: diffExpanded && "visible"}} onClick={(e) => {
+                        e.preventDefault();
+                        onClickExpandDiff()
+                    }}>
+                        <FileDiffIcon/>
+                    </Button>
+                </OverlayTrigger>}&#160;
+            {onRevert !== null &&
+                <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"revert-entry"}>Revert change</Tooltip>)}>
+                    <Button variant="link" disabled={false} onClick={(e) => {
+                        e.preventDefault();
+                        setShowConfirmRevertConfirmRevert(true)
+                    }}>
+                        <HistoryIcon/>
+                    </Button>
+                </OverlayTrigger>
+            }
+            <ConfirmationModal show={showConfirmRevert} onHide={() => setShowConfirmRevertConfirmRevert(false)}
+                               msg={revertConfirmMsg} onConfirm={onSubmit}/>
         </>
     );
 };
@@ -64,24 +76,37 @@ const ChangeRowActions = ({ entry, onRevert }) => {
     getMore: callback to be called when more items need to be rendered
     depth: the item's depth withing the tree
  */
-export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID, internalRefresh, onRevert, onNavigate, delimiter, relativeTo, getMore, depth=0 }) => {
+export const TreeItem = ({
+                             entry,
+                             repo,
+                             reference,
+                             leftDiffRefID,
+                             rightDiffRefID,
+                             internalRefresh,
+                             onRevert,
+                             onNavigate,
+                             delimiter,
+                             relativeTo,
+                             getMore,
+                             depth = 0
+                         }) => {
     const [dirExpanded, setDirExpanded] = useState(false); // state of a non-leaf item expansion
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
-    const [resultsState, setResultsState] = useState({results:[], pagination:{}}); // current retrieved children of the item
+    const [resultsState, setResultsState] = useState({results: [], pagination: {}}); // current retrieved children of the item
     const [diffExpanded, setDiffExpanded] = useState(false); // state of a leaf item expansion
 
-    const { error, loading, nextPage } = useAPIWithPagination(async () => {
+    const {error, loading, nextPage} = useAPIWithPagination(async () => {
         if (!dirExpanded) return
         if (!repo) return
 
         if (resultsState.results.length > 0 && resultsState.results.at(-1).path > afterUpdated) {
             // results already cached
-            return {results:resultsState.results, pagination: resultsState.pagination}
+            return {results: resultsState.results, pagination: resultsState.pagination}
         }
 
-        const { results, pagination } =  await getMore(afterUpdated, entry.path)
+        const {results, pagination} = await getMore(afterUpdated, entry.path)
         setResultsState({results: resultsState.results.concat(results), pagination: pagination})
-        return {results:resultsState.results, pagination: pagination}
+        return {results: resultsState.results, pagination: pagination}
     }, [repo.id, reference.id, internalRefresh, afterUpdated, entry.path, delimiter, dirExpanded])
 
     const results = resultsState.results
@@ -89,72 +114,88 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
         return <Error error={error}/>
 
     if (loading && results.length === 0)
-        return <TreeEntryRow key={entry.path+"entry-row"} entry={entry} showActions={true} loading={true} relativeTo={relativeTo} depth={depth} onRevert={onRevert} onNavigate={onNavigate} repo={repo} reference={reference}/>
+        return <TreeEntryRow key={entry.path + "entry-row"} entry={entry} loading={true}
+                             relativeTo={relativeTo} depth={depth} onRevert={onRevert} onNavigate={onNavigate}
+                             repo={repo} reference={reference}/>
 
     // When the entry represents a tree leaf
     if (!entry.path.endsWith(delimiter))
         return <>
-            <TreeEntryRow key={entry.path+"entry-row"} entry={entry} showActions={true} leaf={true} relativeTo={relativeTo} depth={depth === 0 ? 0 : depth + 1} onRevert={onRevert}  onNavigate={onNavigate} repo={repo}
-                                     reference={reference} diffExpanded={diffExpanded} onClick={() => setDiffExpanded(!diffExpanded)}/>
-                {diffExpanded && <ExpandedLeafRow entry={entry} repoId={repo.id} leftDiffRef={leftDiffRefID} rightDiffRef={rightDiffRefID} depth={depth} loading={loading}/>
-                }
-            </>
+            <TreeEntryRow key={entry.path + "entry-row"} entry={entry} leaf={true}
+                          relativeTo={relativeTo} depth={depth === 0 ? 0 : depth + 1} onRevert={onRevert}
+                          onNavigate={onNavigate} repo={repo}
+                          reference={reference} diffExpanded={diffExpanded}
+                          onClickExpandDiff={() => setDiffExpanded(!diffExpanded)}/>
+            {diffExpanded && <ExpandedLeafRow entry={entry} repoId={repo.id} leftDiffRef={leftDiffRefID}
+                                              rightDiffRef={rightDiffRefID} depth={depth} loading={loading}/>
+            }
+        </>
 
     return <>
-            <TreeEntryRow key={entry.path+"entry-row"} entry={entry} showActions={true} dirExpanded={dirExpanded} relativeTo={relativeTo} depth={depth} onClick={() => setDirExpanded(!dirExpanded)} onRevert={onRevert} onNavigate={onNavigate}  repo={repo} reference={reference}/>
-            {dirExpanded && results &&
-                results.map(child =>
-                    ( <TreeItem key={child.path+"-item"} entry={child} repo={repo} reference={reference} leftDiffRefID={leftDiffRefID} rightDiffRefID={rightDiffRefID} onRevert={onRevert} onNavigate={onNavigate}
-                                internalReferesh={internalRefresh} delimiter={delimiter} depth={depth+1} relativeTo={entry.path} getMore={getMore}/>))}
-            {(!!nextPage || loading) &&
-                <TreeEntryPaginator path={entry.path} depth={depth} loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated}/>
-            }
-          </>
+        <TreeEntryRow key={entry.path + "entry-row"} entry={entry} dirExpanded={dirExpanded}
+                      relativeTo={relativeTo} depth={depth} onClick={() => setDirExpanded(!dirExpanded)}
+                      onRevert={onRevert} onNavigate={onNavigate} repo={repo} reference={reference}/>
+        {dirExpanded && results &&
+            results.map(child =>
+                (<TreeItem key={child.path + "-item"} entry={child} repo={repo} reference={reference}
+                           leftDiffRefID={leftDiffRefID} rightDiffRefID={rightDiffRefID} onRevert={onRevert}
+                           onNavigate={onNavigate}
+                           internalReferesh={internalRefresh} delimiter={delimiter} depth={depth + 1}
+                           relativeTo={entry.path} getMore={getMore}/>))}
+        {(!!nextPage || loading) &&
+            <TreeEntryPaginator path={entry.path} depth={depth} loading={loading} nextPage={nextPage}
+                                setAfterUpdated={setAfterUpdated}/>
+        }
+    </>
 }
 
-export const TreeEntryRow = ({ entry, showActions, relativeTo="", leaf=false, dirExpanded, depth=0, onClick, loading=false, onRevert, onNavigate}) => {
+export const TreeEntryRow = ({
+                                 entry,
+                                 relativeTo = "",
+                                 leaf = false,
+                                 dirExpanded,
+                                 diffExpanded,
+                                 depth = 0,
+                                 onClick,
+                                 loading = false,
+                                 onRevert,
+                                 onNavigate,
+                                 onClickExpandDiff = null
+                             }) => {
     let rowClass = 'tree-entry-row ' + diffType(entry);
     let pathSection = extractPathText(entry, relativeTo);
     let diffIndicator = diffIndicatorIcon(entry);
-    let actions = entryActions(showActions, entry, onRevert);
-
-    if (entry.path_type === "common_prefix"){
+    if (entry.path_type === "common_prefix") {
         pathSection = <Link href={onNavigate(entry)}>{pathSection}</Link>
     }
     return (
-        <tr className={rowClass} >
+        <tr className={rowClass}>
             <td className="diff-indicator">{diffIndicator}</td>
             <td className="tree-path">
-                <span style={{marginLeft: depth * 20 + "px"}}>
+                <span style={{marginLeft: (depth * 20 - (leaf ? 10 : 0))  + "px"}}>
                     <span onClick={onClick}>
-                        {leaf
-                            ? entry.type === 'conflict'
-                                ? ""
-                                : <OverlayTrigger placement="bottom" overlay={<Tooltip>Show changes</Tooltip>}>
-                                    <Link style={{verticalAlign: "revert"}} disabled={false} onClick={(e) => {
-                                        e.preventDefault();
-                                        setShow(true)
-                                    }} >
-                                    <FileDiffIcon/>
-                                    </Link>
-                                </OverlayTrigger>
-                            : dirExpanded ? <ChevronDownIcon/> : <ChevronRightIcon/>}
+                        {!leaf && (dirExpanded ? <ChevronDownIcon/> : <ChevronRightIcon/>)}
                     </span>
                     {loading ? <ClockIcon/> : ""}
                     {pathSection}
                 </span>
             </td>
-            { actions === null ?
-                <td/> :
-                <td className={"change-entry-row-actions"}>{actions}</td>
-            }
+            <td/>
+            <td className={"change-entry-row-actions"}>
+                <ChangeRowActions
+                    entry={entry}
+                    onRevert={onRevert}
+                    diffExpanded={diffExpanded}
+                    onClickExpandDiff={onClickExpandDiff}
+                />
+            </td>
         </tr>
     );
 };
 
-export const TreeEntryPaginator = ({ path, setAfterUpdated, nextPage, depth=0, loading=false }) => {
+export const TreeEntryPaginator = ({path, setAfterUpdated, nextPage, depth = 0, loading = false}) => {
     let pathSectionText = "Load more results ...";
-    if (path !== ""){
+    if (path !== "") {
         pathSectionText = `Load more results for prefix ${path} ....`
     }
     return (
@@ -166,7 +207,7 @@ export const TreeEntryPaginator = ({ path, setAfterUpdated, nextPage, depth=0, l
         >
             <td className="diff-indicator"/>
             <td className="tree-path">
-                <span style={{marginLeft: depth * 20 + "px",color:"#007bff"}}>
+                <span style={{marginLeft: depth * 20 + "px", color: "#007bff"}}>
                     {loading && <ClockIcon/>}
                     {pathSectionText}
                 </span>
@@ -179,7 +220,7 @@ export const TreeEntryPaginator = ({ path, setAfterUpdated, nextPage, depth=0, l
 const ExpandedLeafRow = ({entry, repoId, leftDiffRef, rightDiffRef, loading}) => {
     return (
         <tr key={"row-" + entry.path} className={"leaf-entry-row"}>
-            <td className="objects-diff" colSpan={3}>
+            <td className="objects-diff" colSpan={4}>
                 <ObjectsDiff
                     diffType={entry.type}
                     repoId={repoId}
@@ -222,7 +263,7 @@ function diffIndicatorIcon(entry) {
                         <span>
                             <FileDirectoryIcon fill={"#d9b63e"}/>
                         </span>
-               </OverlayTrigger>;
+        </OverlayTrigger>;
     }
 
     switch (entry.type) {
@@ -231,40 +272,26 @@ function diffIndicatorIcon(entry) {
                         <span>
                             <TrashIcon/>
                         </span>
-                    </OverlayTrigger>;
+            </OverlayTrigger>;
         case 'added':
             return <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-added"}>Added</Tooltip>)}>
                         <span>
                             <PlusIcon/>
                         </span>
-                    </OverlayTrigger>;
+            </OverlayTrigger>;
         case 'changed':
             return <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-changed"}>Changed</Tooltip>)}>
                         <span>
                             <PencilIcon/>
                         </span>
-                    </OverlayTrigger>;
+            </OverlayTrigger>;
         case 'conflict':
             return <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-conflict"}>Conflict</Tooltip>)}>
                         <span>
                             <CircleSlashIcon/>
                         </span>
-                    </OverlayTrigger>;
+            </OverlayTrigger>;
         default:
             return '';
     }
-}
-
-function entryActions(showActions, entry, onRevert) {
-    if (!!!onRevert){
-        return null
-    }
-    let actions;
-    if (showActions) {
-        actions = <ChangeRowActions
-            entry={entry}
-            onRevert={onRevert}
-        />;
-    }
-    return actions;
 }
