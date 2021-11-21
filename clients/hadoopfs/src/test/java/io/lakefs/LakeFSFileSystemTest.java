@@ -873,4 +873,19 @@ public class LakeFSFileSystemTest {
         boolean success = fs.rename(src, dst);
         Assert.assertFalse(success);
     }
+
+    /**
+     * globStatus is used only by the Hadoop CLI where the pattern is always the exact file.
+     */
+    @Test
+    public void testGlobStatus_SingleFile() throws ApiException, IOException {
+        Path path = new Path("lakefs://repo/main/existing.dst");
+        ObjectLocation dstObjLoc = fs.pathToObjectLocation(path);
+        mockExistingFilePath(dstObjLoc);
+
+        FileStatus[] statuses = fs.globStatus(path);
+        Assert.assertArrayEquals(new FileStatus[]{
+                new LakeFSFileStatus.Builder(path).build()
+        }, statuses);
+    }
 }
