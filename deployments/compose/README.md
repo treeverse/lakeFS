@@ -1,6 +1,6 @@
 # lakeFS `docker-compose`
 
-Compose file for lakeFS using variety of services lakeFS can work with. 
+Compose file for lakeFS using variety of services lakeFS can work with.
 Automatically creates a minIO bucket and lakeFS repository as part of the start up.
 
 To spin up the environment, run:
