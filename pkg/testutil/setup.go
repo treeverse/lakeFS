@@ -37,7 +37,7 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 	viper.SetDefault("setup_lakefs", true)
 	viper.SetDefault("setup_lakefs_timeout", defaultSetupTimeout)
 	viper.SetDefault("endpoint_url", "http://localhost:8000")
-	viper.SetDefault("s3_endpoint", "s3.local.lakefs.io:8000")
+	viper.SetDefault("s3_endpoint", "http://s3.local.lakefs.io:8000")
 	viper.SetDefault("access_key_id", "")
 	viper.SetDefault("secret_access_key", "")
 	viper.SetDefault("storage_namespace", fmt.Sprintf("s3://%s/%s", params.StorageNS, xid.New().String()))
@@ -116,13 +116,17 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 	if err != nil {
 		logger.WithError(err).Fatal("could not initialize AWS configuration")
 	}
-	svc := s3.NewFromConfig(awsConfig,
+	opts := []func(*s3.Options){
 		func(o *s3.Options) {
 			o.EndpointOptions.DisableHTTPS = true
 			o.UsePathStyle = true
 		},
-		s3.WithEndpointResolver(s3.EndpointResolverFromURL(s3Endpoint)),
-	)
+	}
+	if s3Endpoint != "" {
+		opts = append(opts, s3.WithEndpointResolver(s3.EndpointResolverFromURL(s3Endpoint)))
+	}
+
+	svc := s3.NewFromConfig(awsConfig, opts...)
 
 	return logger, client, svc
 }
