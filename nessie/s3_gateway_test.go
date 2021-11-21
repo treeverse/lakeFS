@@ -5,6 +5,7 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"testing"
@@ -33,6 +34,17 @@ const (
 	prefix               = "main/data/"
 )
 
+// getEndpointHost reformats s3_endpoint to include only the host portion,
+// as required for the Minio client constructor.
+func getEndpointHost(t testing.TB) string {
+	endpoint := viper.GetString("s3_endpoint")
+	endpointURL, err := url.Parse(endpoint)
+	if err != nil {
+		t.Fatalf("Parse S3 endpoint %s: %s", endpoint, err)
+	}
+	return endpointURL.Host
+}
+
 func TestS3UploadAndDownload(t *testing.T) {
 	const parallelism = 10
 
@@ -40,7 +52,7 @@ func TestS3UploadAndDownload(t *testing.T) {
 
 	accessKeyID := viper.GetString("access_key_id")
 	secretAccessKey := viper.GetString("secret_access_key")
-	endpoint := viper.GetString("s3_endpoint")
+	endpoint := getEndpointHost(t)
 	opts := minio.PutObjectOptions{}
 
 	for _, sig := range sigs {
@@ -116,7 +128,7 @@ func TestS3CopyObject(t *testing.T) {
 
 	accessKeyID := viper.GetString("access_key_id")
 	secretAccessKey := viper.GetString("secret_access_key")
-	endpoint := viper.GetString("s3_endpoint")
+	endpoint := getEndpointHost(t)
 	opts := minio.PutObjectOptions{}
 	rand := rand.New(rand.NewSource(17))
 
