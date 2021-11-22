@@ -104,7 +104,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                                               internalReferesh={internalRefresh} leftDiffRefID={leftCommittedRef}
                                               rightDiffRefID={rightCommittedRef} delimiter={delimiter} relativeTo={prefix}
                                               onNavigate={onNavigate}
-                                              getMore={(afterUpdatedChild, path) => refs.diff(repo.id, reference.id, compareReference.id, afterUpdatedChild, path, delimiter)}
+                                              getMore={(afterUpdatedChild, path, useDelimiter = true) => refs.diff(repo.id, reference.id, compareReference.id, afterUpdatedChild, path, useDelimiter ? delimiter : "")}
                                     />)})
                                 }
                                 { !!nextPage &&

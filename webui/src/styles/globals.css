@@ -1,3 +1,13 @@
+:root {
+  --color-fg-added: #339933;
+  --color-fg-removed: #FF3300;
+  --color-bg-added: #e6ffec;
+  --color-bg-removed: #ffece6;
+  --color-bg-changed: #fff6db;
+  --color-bg-conflict: #fff3cd;
+}
+
+
 .logo {
   height: 30px;
 }
@@ -156,12 +166,12 @@
 }
 
 .table .leaf-entry-row .objects-diff .removed {
-  color: #FF3300;
+  color: var(--color-fg-removed);
   font-weight: bold;
 }
 
 .table .leaf-entry-row .objects-diff .added {
-  color: #339933;
+  color: var(--color-fg-added);
   font-weight: bold;
 }
 
@@ -218,19 +228,19 @@
 }
 
 .diff-changed {
-  background-color: #fff6db;
+  background-color: var(--color-bg-changed);
 }
 
 .diff-added {
-  background-color: #e6ffec;
+  background-color: var(--color-bg-added)
 }
 
 .diff-removed {
-  background-color: #ffece6;
+  background-color: var(--color-bg-removed);
 }
 
 .diff-conflict {
-  background-color: #fff3cd;
+  background-color: var(--color-bg-conflict);
 }
 
 .diff-more {
@@ -286,7 +296,7 @@
 }
 
 .change-entry-row-actions {
-  width: 60px;
+  width: 90px;
   padding:0;
 }
 
@@ -408,4 +418,18 @@ td .form-group {
 
 .tree-column{
   width: 2px;
+}
+
+.change-summary .arrow {
+  visibility: hidden;
+}
+
+.color-fg-added {
+  color: var(--color-fg-added);
+  font-weight: bold;
+}
+
+.color-fg-removed {
+  color: var(--color-fg-removed);
+  font-weight: bold;
 }

@@ -1,6 +1,6 @@
-import React, {useState} from "react";
+import React, {useRef, useState} from "react";
 
-import {OverlayTrigger, Row} from "react-bootstrap";
+import {Overlay, OverlayTrigger, Popover} from "react-bootstrap";
 import Tooltip from "react-bootstrap/Tooltip";
 import Button from "react-bootstrap/Button";
 import {
@@ -8,25 +8,29 @@ import {
     ChevronRightIcon,
     CircleSlashIcon,
     ClockIcon,
+    FileDiffIcon,
     FileDirectoryIcon,
+    GraphIcon,
     HistoryIcon,
     PencilIcon,
     PlusIcon,
-    TrashIcon,
-    FileDiffIcon
+    TrashIcon
 } from "@primer/octicons-react";
 
 import {ConfirmationModal} from "../modals";
 import {Link} from "../nav";
 import {useAPIWithPagination} from "../../hooks/api";
-import {ActionsBar, Error} from "../controls";
+import {Error} from "../controls";
 import {ObjectsDiff} from "./ObjectsDiff";
-import Container from "react-bootstrap/Container";
+import ChangeSummary from "./ChangeSummary";
 
-
-const ChangeRowActions = ({entry, onRevert, diffExpanded, onClickExpandDiff}) => {
+/**
+ * @param {(after : string, path : string, useDelimiter :? boolean) => Promise<any>} getMore - function to use to get the diff.
+ */
+const ChangeRowActions = ({entry, onRevert, diffExpanded, onClickExpandDiff, showSummary, onClickShowSummary, getMore}) => {
     const [showConfirmRevert, setShowConfirmRevertConfirmRevert] = useState(false);
     const revertConfirmMsg = `Are you sure you wish to revert "${entry.path}" (${entry.type})?`;
+    const ref = useRef(null)
     const onSubmit = () => {
         onRevert(entry)
         setShowConfirmRevertConfirmRevert(false)
@@ -34,15 +38,36 @@ const ChangeRowActions = ({entry, onRevert, diffExpanded, onClickExpandDiff}) =>
 
     return (
         <>
+            {onClickShowSummary &&
+                <>
+                    <OverlayTrigger overlay={<Tooltip>Calculate summary</Tooltip>} placement="bottom">
+                        <Button variant="link" ref={ref} style={{visibility: showSummary && "visible"}} /*onBlur={onClickShowSummary}*/ onClick={(e) => {
+                            e.preventDefault();
+                            onClickShowSummary();
+                        }}>
+                            <GraphIcon/>
+                        </Button>
+                    </OverlayTrigger>
+                    <Overlay target={ref.current} placement="right" show={showSummary} >
+                        {({arrowProps, ...props}) =>
+                            <Popover className={"change-summary"} {...props} style={{...props.style}}>
+                             <ChangeSummary prefix={entry.path} getMore={getMore}/>
+                            </Popover>
+                        }
+                    </Overlay>
+                    &#160;
+                </>}
             {entry.type !== 'conflict' && onClickExpandDiff !== null &&
-                <OverlayTrigger placement="bottom" overlay={<Tooltip>{diffExpanded ? "Hide" : "Show"} changes</Tooltip>}>
-                    <Button variant={"link"} disabled={false} style={{visibility: diffExpanded && "visible"}} onClick={(e) => {
-                        e.preventDefault();
-                        onClickExpandDiff()
-                    }}>
+                <><OverlayTrigger placement="bottom"
+                                  overlay={<Tooltip>{diffExpanded ? "Hide" : "Show"} changes</Tooltip>}>
+                    <Button variant={"link"} disabled={false} style={{visibility: diffExpanded && "visible"}}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                onClickExpandDiff()
+                            }}>
                         <FileDiffIcon/>
                     </Button>
-                </OverlayTrigger>}&#160;
+                </OverlayTrigger>&#160;</>}
             {onRevert !== null &&
                 <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"revert-entry"}>Revert change</Tooltip>)}>
                     <Button variant="link" disabled={false} onClick={(e) => {
@@ -59,22 +84,21 @@ const ChangeRowActions = ({entry, onRevert, diffExpanded, onClickExpandDiff}) =>
     );
 };
 
-/*
-    Tree item is a node in the tree view. It can be expanded to multiple TreeEntryRow:
-    1. A single TreeEntryRow for the current prefix (or entry for leaves).
-    2. Multiple TreeItem as children, each representing another tree node.
-    entry: The entry the TreeItem is representing, could be either an object or a prefix.
-    repo: Repository
-    reference: commitID / branch
-    leftDiffRefID: commitID / branch
-    rightDiffRefID: commitID / branch
-    internalRefresh: to be called when the page refreshes manually
-    onRevert: to be called when an object/prefix is requested to be reverted
-    delimiter: objects delimiter ('' or '/')
-    after: all entries must be greater than after
-    relativeTo: prefix of the parent item ('' for root elements)
-    getMore: callback to be called when more items need to be rendered
-    depth: the item's depth withing the tree
+/**
+ * Tree item is a node in the tree view. It can be expanded to multiple TreeEntryRow:
+ * 1. A single TreeEntryRow for the current prefix (or entry for leaves).
+ * 2. Multiple TreeItem as children, each representing another tree node.
+ * @param entry The entry the TreeItem is representing, could be either an object or a prefix.
+ * @param repo Repository
+ * @param reference commitID / branch
+ * @param leftDiffRefID commitID / branch
+ * @param rightDiffRefID commitID / branch
+ * @param internalRefresh to be called when the page refreshes manually
+ * @param onRevert to be called when an object/prefix is requested to be reverted
+ * @param delimiter objects delimiter ('' or '/')
+ * @param after all entries must be greater than after
+ * @param relativeTo prefix of the parent item ('' for root elements)
+ * @param {(after : string, path : string, useDelimiter :? boolean) => Promise<any>} getMore callback to be called when more items need to be rendered
  */
 export const TreeItem = ({
                              entry,
@@ -94,7 +118,7 @@ export const TreeItem = ({
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({results: [], pagination: {}}); // current retrieved children of the item
     const [diffExpanded, setDiffExpanded] = useState(false); // state of a leaf item expansion
-
+    const [showSummary, setShowSummary] = useState(false);
     const {error, loading, nextPage} = useAPIWithPagination(async () => {
         if (!dirExpanded) return
         if (!repo) return
@@ -116,7 +140,7 @@ export const TreeItem = ({
     if (loading && results.length === 0)
         return <TreeEntryRow key={entry.path + "entry-row"} entry={entry} loading={true}
                              relativeTo={relativeTo} depth={depth} onRevert={onRevert} onNavigate={onNavigate}
-                             repo={repo} reference={reference}/>
+                             repo={repo} reference={reference} getMore={getMore}/>
 
     // When the entry represents a tree leaf
     if (!entry.path.endsWith(delimiter))
@@ -125,7 +149,7 @@ export const TreeItem = ({
                           relativeTo={relativeTo} depth={depth === 0 ? 0 : depth + 1} onRevert={onRevert}
                           onNavigate={onNavigate} repo={repo}
                           reference={reference} diffExpanded={diffExpanded}
-                          onClickExpandDiff={() => setDiffExpanded(!diffExpanded)}/>
+                          onClickExpandDiff={() => setDiffExpanded(!diffExpanded)} getMore={getMore}/>
             {diffExpanded && <ExpandedLeafRow entry={entry} repoId={repo.id} leftDiffRef={leftDiffRefID}
                                               rightDiffRef={rightDiffRefID} depth={depth} loading={loading}/>
             }
@@ -134,7 +158,8 @@ export const TreeItem = ({
     return <>
         <TreeEntryRow key={entry.path + "entry-row"} entry={entry} dirExpanded={dirExpanded}
                       relativeTo={relativeTo} depth={depth} onClick={() => setDirExpanded(!dirExpanded)}
-                      onRevert={onRevert} onNavigate={onNavigate} repo={repo} reference={reference}/>
+                      onRevert={onRevert} onNavigate={onNavigate} repo={repo} reference={reference}
+                      showSummary={showSummary} onClickShowSummary={() => setShowSummary(!showSummary)} getMore={getMore}/>
         {dirExpanded && results &&
             results.map(child =>
                 (<TreeItem key={child.path + "-item"} entry={child} repo={repo} reference={reference}
@@ -148,19 +173,24 @@ export const TreeItem = ({
         }
     </>
 }
-
+/**
+ * @param {(after : string, path : string, useDelimiter :? boolean) => Promise<any>} getMore - function to use to get the diff.
+ */
 export const TreeEntryRow = ({
                                  entry,
                                  relativeTo = "",
                                  leaf = false,
                                  dirExpanded,
                                  diffExpanded,
+                                 showSummary,
                                  depth = 0,
                                  onClick,
                                  loading = false,
                                  onRevert,
                                  onNavigate,
-                                 onClickExpandDiff = null
+                                 onClickExpandDiff = null,
+                                 onClickShowSummary = null,
+                                 getMore,
                              }) => {
     let rowClass = 'tree-entry-row ' + diffType(entry);
     let pathSection = extractPathText(entry, relativeTo);
@@ -172,7 +202,7 @@ export const TreeEntryRow = ({
         <tr className={rowClass}>
             <td className="diff-indicator">{diffIndicator}</td>
             <td className="tree-path">
-                <span style={{marginLeft: (depth * 20 - (leaf ? 10 : 0))  + "px"}}>
+                <span style={{marginLeft: (depth * 20 - (leaf ? 10 : 0)) + "px"}}>
                     <span onClick={onClick}>
                         {!leaf && (dirExpanded ? <ChevronDownIcon/> : <ChevronRightIcon/>)}
                     </span>
@@ -187,6 +217,9 @@ export const TreeEntryRow = ({
                     onRevert={onRevert}
                     diffExpanded={diffExpanded}
                     onClickExpandDiff={onClickExpandDiff}
+                    showSummary={showSummary}
+                    onClickShowSummary={onClickShowSummary}
+                    getMore={getMore}
                 />
             </td>
         </tr>
