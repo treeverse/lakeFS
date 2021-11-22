@@ -29,7 +29,18 @@ jobs:
 
   test-go:
     name: Run Go tests
-    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        experimental: [false]
+        os:
+          - ubuntu-20.04
+          - windows-latest
+        include:
+          - os: windows-latest
+            experimental: true
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.experimental }}
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v2
