@@ -288,6 +288,14 @@ func (a *applier) applyBothRanges(diffRange *Range, sourceRange *Range) error {
 			return fmt.Errorf("copy source range %s: %w", sourceRange.ID, err)
 		}
 		a.haveSource = a.source.NextRange()
+	case bytes.Equal(sourceRange.MinKey, diffRange.MinKey) && bytes.Equal(sourceRange.MaxKey, diffRange.MaxKey) && sourceRange.ID != diffRange.ID:
+		// insert diff move both
+		if err := a.writer.WriteRange(*diffRange); err != nil {
+			return fmt.Errorf("copy diff range %s: %w", diffRange.ID, err)
+		}
+		// TODO(Guys): When this optimization (inserting the whole range in case base and source are identical) is used. we can't be sure of the diff summary. e.g 4 files added 2 removed or 3 files changed. Need to find a way to handle this case
+		a.haveDiffs = a.diffs.NextRange()
+		a.haveSource = a.source.NextRange()
 	case diffRange.ID == sourceRange.ID && diffRange.Tombstone:
 		a.addIntoDiffSummary(graveler.DiffTypeRemoved, int(diffRange.Count))
 		a.haveSource = a.source.NextRange()
