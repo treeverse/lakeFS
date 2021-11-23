@@ -1,13 +1,17 @@
-GOCMD=$(or $(shell which go), $(error "Missing dependency - no go in PATH"))
-DOCKER=$(or $(shell which docker), $(error "Missing dependency - no docker in PATH"))
-GOBINPATH=$(shell $(GOCMD) env GOPATH)/bin
-NPM=$(or $(shell which npm), $(error "Missing dependency - no npm in PATH"))
+GOCMD='$(or $(shell which go), $(error "Missing dependency - no go in PATH"))'
+DOCKER=$(if $(shell which docker && echo docker),docker, $(error "Missing dependency - no docker in PATH"))
+# On Windows "go env" outputs backslashes.  This is wrong because we are
+# using bash.  So fix them back.  See
+# https://stackoverflow.com/questions/43417754/8-backslashes for why we need
+# to use *EIGHT* backslashes.
+GOBINPATH='$(shell $(GOCMD) env GOPATH | tr \\\\\\\\ /)/bin'
+NPM='$(or $(shell which npm), $(error "Missing dependency - no npm in PATH"))'
 
 UID_GID := $(shell id -u):$(shell id -g)
 
 # Protoc is a Docker dependency (since it's a pain to install locally and manage versions of it)
 PROTOC_IMAGE="treeverse/protoc:3.14.0"
-PROTOC=$(DOCKER) run --rm -v $(shell pwd):/mnt $(PROTOC_IMAGE)
+PROTOC=$(DOCKER) run --rm -v "$(shell pwd)":/mnt $(PROTOC_IMAGE)
 
 CLIENT_JARS_BUCKET="s3://treeverse-clients-us-east/"
 
