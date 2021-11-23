@@ -101,3 +101,12 @@ Cons:
 #### Conclusion ?
 
 As it seems, the 2 approaches are pretty similar, so no clear cut here. I believe that the simplicity that comes with testing `lakectl` code with golang, will make our life easier and although it will not test the real binary, the benefits are non negligible
+
+## Conclusion
+
+At the design review meeting we came to the following understandings:
+* lakectl tests will be implemented as part of nessie system tests
+* lakectl will be tested only as a binary
+  * lakectl binary location will be passed as env variable
+* By default, real lakefs server will be used, for everything currently possible with lakefs. Mocks will (probably) be used at a later phase, to test behaviors that are difficult to achieve in a real server environment
+* Good flows are the first ones to be covered, then bad flows/common error scenarios. Specific errors reported by users will be covered as needed
