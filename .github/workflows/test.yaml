@@ -4,6 +4,9 @@ on:
     branches:
       - master
   pull_request:
+defaults:
+  run:
+    shell: bash
 jobs:
   validator:
     name: Run Linters and Checkers
