@@ -55,7 +55,6 @@ const ChangeRowActions = ({actions}) => <>
         ))}
 </>;
 
-
 /**
  * Tree item is a node in the tree view. It can be expanded to multiple TreeEntryRow:
  * 1. A single TreeEntryRow for the current prefix (or entry for leaves).
@@ -77,7 +76,6 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({results:[], pagination:{}}); // current retrieved children of the item
     const [diffExpanded, setDiffExpanded] = useState(false); // state of a leaf item expansion
-    const [showSummary, setShowSummary] = useState(false);
     const {error, loading, nextPage} = useAPIWithPagination(async () => {
         if (!dirExpanded) return
         if (!repo) return
@@ -104,11 +102,8 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
     // When the entry represents a tree leaf
     if (!entry.path.endsWith(delimiter))
         return <>
-            <TreeEntryRow key={entry.path + "entry-row"} entry={entry} leaf={true}
-                          relativeTo={relativeTo} depth={depth === 0 ? 0 : depth + 1} onRevert={onRevert}
-                          onNavigate={onNavigate} repo={repo}
-                          reference={reference} diffExpanded={diffExpanded}
-                          onClickExpandDiff={() => setDiffExpanded(!diffExpanded)} getMore={getMore}/>
+            <TreeEntryRow key={entry.path + "entry-row"} entry={entry} leaf={true} relativeTo={relativeTo} depth={depth === 0 ? 0 : depth + 1} onRevert={onRevert} onNavigate={onNavigate} repo={repo}
+                          reference={reference} diffExpanded={diffExpanded} onClickExpandDiff={() => setDiffExpanded(!diffExpanded)} getMore={getMore}/>
             {diffExpanded && <tr key={"row-" + entry.path} className={"leaf-entry-row"}>
                 <td className="objects-diff" colSpan={4}>
                     <ObjectsDiff
@@ -125,18 +120,10 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
         </>
 
     return <>
-        <TreeEntryRow key={entry.path + "entry-row"} entry={entry} dirExpanded={dirExpanded}
-                      relativeTo={relativeTo} depth={depth} onClick={() => setDirExpanded(!dirExpanded)}
-                      onRevert={onRevert} onNavigate={onNavigate} repo={repo} reference={reference}
-                      getMore={getMore} showSummary={showSummary}
-                      onClickShowSummary={() => setShowSummary(!showSummary)}
-                      extraColumn={showSummary && <ChangeSummary prefix={entry.path} getMore={getMore}/>
-        }/>
+        <TreeEntryRow key={entry.path + "entry-row"} entry={entry} dirExpanded={dirExpanded} relativeTo={relativeTo} depth={depth} onClick={() => setDirExpanded(!dirExpanded)} onRevert={onRevert} onNavigate={onNavigate} repo={repo} reference={reference} getMore={getMore}/>
         {dirExpanded && results &&
             results.map(child =>
-                (<TreeItem key={child.path + "-item"} entry={child} repo={repo} reference={reference}
-                           leftDiffRefID={leftDiffRefID} rightDiffRefID={rightDiffRefID} onRevert={onRevert}
-                           onNavigate={onNavigate}
+                (<TreeItem key={child.path + "-item"} entry={child} repo={repo} reference={reference} leftDiffRefID={leftDiffRefID} rightDiffRefID={rightDiffRefID} onRevert={onRevert} onNavigate={onNavigate}
                            internalReferesh={internalRefresh} delimiter={delimiter} depth={depth + 1}
                            relativeTo={entry.path} getMore={getMore}/>))}
         {(!!nextPage || loading) &&
@@ -146,11 +133,12 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
     </>
 }
 
-export const TreeEntryRow = ({entry, relativeTo = "", leaf = false, dirExpanded, diffExpanded, showSummary, depth = 0, onClick, loading = false, onRevert, onNavigate, onClickExpandDiff = null, onClickShowSummary = null, extraColumn}) => {
+export const TreeEntryRow = ({entry, relativeTo = "", leaf = false, dirExpanded, diffExpanded, depth = 0, onClick, loading = false, onRevert, onNavigate, onClickExpandDiff = null, getMore}) => {
     const [showRevertConfirm, setShowRevertConfirm] = useState(false)
     let rowClass = 'tree-entry-row ' + diffType(entry);
     let pathSection = extractPathText(entry, relativeTo);
     let diffIndicator = diffIndicatorIcon(entry);
+    const [showSummary, setShowSummary] = useState(false);
     if (entry.path_type === "common_prefix") {
         pathSection = <Link href={onNavigate(entry)}>{pathSection}</Link>
     }
@@ -158,8 +146,8 @@ export const TreeEntryRow = ({entry, relativeTo = "", leaf = false, dirExpanded,
     if (onClickExpandDiff) {
         rowActions.push(new RowAction(<FileDiffIcon/>, diffExpanded ? "Hide changes" : "Show changes", diffExpanded, onClickExpandDiff))
     }
-    if (onClickShowSummary) {
-        rowActions.push(new RowAction(<GraphIcon/>, showSummary ? "Hide summary" : "Calculate change summary", showSummary, onClickShowSummary))
+    if (!leaf) {
+        rowActions.push(new RowAction(<GraphIcon/>, showSummary ? "Hide summary" : "Calculate change summary", showSummary, () => setShowSummary(!showSummary)))
     }
     rowActions.push(new RowAction(<HistoryIcon/>, "Revert changes", false, () => {setShowRevertConfirm(true)}))
     return (
@@ -174,7 +162,7 @@ export const TreeEntryRow = ({entry, relativeTo = "", leaf = false, dirExpanded,
                     {pathSection}
                 </span>
             </td>
-            <td className={"col-2 p-0 text-right"}>{extraColumn}</td>
+            <td className={"col-2 p-0 text-right"}>{showSummary && <ChangeSummary prefix={entry.path} getMore={getMore}/>}</td>
             <td className={"col-1 change-entry-row-actions"}>
                 <ChangeRowActions actions={rowActions} />
                 <ConfirmationModal show={showRevertConfirm} onHide={() => setShowRevertConfirm(false)}

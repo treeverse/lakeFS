@@ -67,7 +67,7 @@ export default ({prefix, getMore}) => {
                             overlay={
                                 <Tooltip>
                                    <span className={"small font-weight-bold"}>
-                                       Can't show summary for a change with more than {MAX_NUM_OBJECTS} objects
+                                       Can&apos;t show summary for a change with more than {MAX_NUM_OBJECTS} objects
                                    </span>
                                 </Tooltip>
                             }>
@@ -82,13 +82,16 @@ export default ({prefix, getMore}) => {
     }, new SummaryData())
     const detailsTooltip = <Tooltip>
         <div className={"m-1 small text-left"}>
-        {summaryData.added.count > 0 &&
-            <><span className={"color-fg-added"}>{summaryData.added.count}</span> objects added (total {humanSize(summaryData.added.size)})<br/></>}
-        {summaryData.removed.count > 0 &&
-            <><span className={"color-fg-removed"}>{summaryData.removed.count}</span> objects removed<br/></>}
-        {summaryData.changed.count > 0 && <><span className={"color-fg-changed"}>{summaryData.changed.count}</span> objects changed<br/></>}
-            {summaryData.conflict.count > 0 && <><span className={"color-fg-conflict"}>{summaryData.conflict.count}</span> conflicts<br/></>}
-    </div></Tooltip>
+            {summaryData.added.count > 0 &&
+                <><span className={"color-fg-added"}>{summaryData.added.count}</span> objects added (total {humanSize(summaryData.added.size)})<br/></>}
+            {summaryData.removed.count > 0 &&
+                <><span className={"color-fg-removed"}>{summaryData.removed.count}</span> objects removed<br/></>}
+            {summaryData.changed.count > 0 &&
+                <><span className={"color-fg-changed"}>{summaryData.changed.count}</span> objects changed<br/></>}
+            {summaryData.conflict.count > 0 &&
+                <><span className={"color-fg-conflict"}>{summaryData.conflict.count}</span> conflicts<br/></>}
+        </div>
+    </Tooltip>
     return (
         <OverlayTrigger placement="right-end" overlay={detailsTooltip}>
             <div className={"m-1 small text-right"}>
@@ -96,8 +99,10 @@ export default ({prefix, getMore}) => {
                     <span className={"color-fg-added"}><DiffAddedIcon className={"change-summary-icon"}/>{summaryData.added.count}</span>}
                 {summaryData.removed.count > 0 &&
                     <span className={"color-fg-removed"}><DiffRemovedIcon className={"change-summary-icon"}/>{summaryData.removed.count}</span>}
-                {summaryData.changed.count > 0 && <span className={"font-weight-bold"}><DiffModifiedIcon className={"change-summary-icon"}/>{summaryData.changed.count}</span>}
-                {summaryData.conflict.count > 0 && <span className={"color-fg-conflict"}><DiffIgnoredIcon className={"change-summary-icon"}/>{summaryData.conflict.count}</span>}
+                {summaryData.changed.count > 0 &&
+                    <span className={"font-weight-bold"}><DiffModifiedIcon className={"change-summary-icon"}/>{summaryData.changed.count}</span>}
+                {summaryData.conflict.count > 0 &&
+                    <span className={"color-fg-conflict"}><DiffIgnoredIcon className={"change-summary-icon"}/>{summaryData.conflict.count}</span>}
             </div>
         </OverlayTrigger>
     )
