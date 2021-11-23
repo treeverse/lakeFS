@@ -25,6 +25,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
     const [resultsState, setResultsState] = useState({prefix: prefix, results:[], pagination:{}}); // current retrieved children of the item
 
     const refresh = () => {
+        setResultsState({prefix: prefix, results:[], pagination:{}})
         setInternalRefresh(!internalRefresh)
         setMergeError(null)
     }
