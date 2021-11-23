@@ -1518,7 +1518,7 @@ func (g *Graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 		if empty, err := g.stagingEmpty(ctx, branch); err != nil {
 			return "", err
 		} else if !empty {
-			return "", ErrDirtyBranch
+			return "", fmt.Errorf("%s: %w", branchID, ErrDirtyBranch)
 		}
 		var parentMetaRangeID MetaRangeID
 		if len(commitRecord.Parents) > 0 {
@@ -1587,7 +1587,7 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 			return nil, fmt.Errorf("check if staging empty: %w", err)
 		}
 		if !empty {
-			return nil, ErrDirtyBranch
+			return nil, fmt.Errorf("%s: %w", destination, ErrDirtyBranch)
 		}
 		fromCommit, toCommit, baseCommit, err := g.getCommitsForMerge(ctx, repositoryID, source, Ref(destination))
 		if err != nil {
