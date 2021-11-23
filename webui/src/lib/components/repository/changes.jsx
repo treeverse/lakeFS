@@ -1,8 +1,7 @@
-import React, {useRef, useState} from "react";
+import React, {useState} from "react";
 
-import {Overlay, OverlayTrigger, Popover} from "react-bootstrap";
+import {OverlayTrigger} from "react-bootstrap";
 import Tooltip from "react-bootstrap/Tooltip";
-import Button from "react-bootstrap/Button";
 import {
     ChevronDownIcon,
     ChevronRightIcon,
@@ -16,73 +15,46 @@ import {
     PlusIcon,
     TrashIcon
 } from "@primer/octicons-react";
-
-import {ConfirmationModal} from "../modals";
 import {Link} from "../nav";
 import {useAPIWithPagination} from "../../hooks/api";
 import {Error} from "../controls";
 import {ObjectsDiff} from "./ObjectsDiff";
+import {ConfirmationModal} from "../modals";
 import ChangeSummary from "./ChangeSummary";
 
-/**
- * @param {(after : string, path : string, useDelimiter :? boolean) => Promise<any>} getMore - function to use to get the diff.
- */
-const ChangeRowActions = ({entry, onRevert, diffExpanded, onClickExpandDiff, showSummary, onClickShowSummary, getMore}) => {
-    const [showConfirmRevert, setShowConfirmRevertConfirmRevert] = useState(false);
-    const revertConfirmMsg = `Are you sure you wish to revert "${entry.path}" (${entry.type})?`;
-    const ref = useRef(null)
-    const onSubmit = () => {
-        onRevert(entry)
-        setShowConfirmRevertConfirmRevert(false)
-    };
+class RowAction {
+    /**
+     * @param {JSX.Element} icon
+     * @param {string} tooltip
+     * @param {boolean} visible
+     * @param {()=>void} onClick
+     */
+    constructor(icon, tooltip, visible, onClick) {
+        this.tooltip = tooltip
+        this.visible = visible
+        this.onClick = onClick
+        this.icon = icon
+    }
+}
 
-    return (
-        <>
-            {onClickShowSummary &&
-                <>
-                    <OverlayTrigger overlay={<Tooltip>Calculate summary</Tooltip>} placement="bottom">
-                        <Button variant="link" ref={ref} style={{visibility: showSummary && "visible"}} /*onBlur={onClickShowSummary}*/ onClick={(e) => {
+/**
+ * @param {[RowAction]} actions
+ */
+const ChangeRowActions = ({actions}) => <>
+    {
+        actions.map(action => (
+            <><OverlayTrigger placement="bottom" overlay={<Tooltip>{action.tooltip}</Tooltip>}>
+                <Link className={"btn-link"} disabled={false} style={{visibility: action.visible ? "visible" : ""}}
+                        onClick={(e) => {
                             e.preventDefault();
-                            onClickShowSummary();
+                            action.onClick()
                         }}>
-                            <GraphIcon/>
-                        </Button>
-                    </OverlayTrigger>
-                    <Overlay target={ref.current} placement="right" show={showSummary} >
-                        {({arrowProps, ...props}) =>
-                            <Popover className={"change-summary"} {...props} style={{...props.style}}>
-                             <ChangeSummary prefix={entry.path} getMore={getMore}/>
-                            </Popover>
-                        }
-                    </Overlay>
-                    &#160;
-                </>}
-            {entry.type !== 'conflict' && onClickExpandDiff !== null &&
-                <><OverlayTrigger placement="bottom"
-                                  overlay={<Tooltip>{diffExpanded ? "Hide" : "Show"} changes</Tooltip>}>
-                    <Button variant={"link"} disabled={false} style={{visibility: diffExpanded && "visible"}}
-                            onClick={(e) => {
-                                e.preventDefault();
-                                onClickExpandDiff()
-                            }}>
-                        <FileDiffIcon/>
-                    </Button>
-                </OverlayTrigger>&#160;</>}
-            {onRevert !== null &&
-                <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"revert-entry"}>Revert change</Tooltip>)}>
-                    <Button variant="link" disabled={false} onClick={(e) => {
-                        e.preventDefault();
-                        setShowConfirmRevertConfirmRevert(true)
-                    }}>
-                        <HistoryIcon/>
-                    </Button>
-                </OverlayTrigger>
-            }
-            <ConfirmationModal show={showConfirmRevert} onHide={() => setShowConfirmRevertConfirmRevert(false)}
-                               msg={revertConfirmMsg} onConfirm={onSubmit}/>
-        </>
-    );
-};
+                    {action.icon}
+                </Link>
+            </OverlayTrigger>&#160;</>
+        ))}
+</>;
+
 
 /**
  * Tree item is a node in the tree view. It can be expanded to multiple TreeEntryRow:
@@ -98,25 +70,12 @@ const ChangeRowActions = ({entry, onRevert, diffExpanded, onClickExpandDiff, sho
  * @param delimiter objects delimiter ('' or '/')
  * @param after all entries must be greater than after
  * @param relativeTo prefix of the parent item ('' for root elements)
- * @param {(after : string, path : string, useDelimiter :? boolean) => Promise<any>} getMore callback to be called when more items need to be rendered
+ * @param {(after : string, path : string, useDelimiter :? boolean, amount :? number) => Promise<any> } getMore callback to be called when more items need to be rendered
  */
-export const TreeItem = ({
-                             entry,
-                             repo,
-                             reference,
-                             leftDiffRefID,
-                             rightDiffRefID,
-                             internalRefresh,
-                             onRevert,
-                             onNavigate,
-                             delimiter,
-                             relativeTo,
-                             getMore,
-                             depth = 0
-                         }) => {
+export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID, internalRefresh, onRevert, onNavigate, delimiter, relativeTo, getMore, depth=0 }) => {
     const [dirExpanded, setDirExpanded] = useState(false); // state of a non-leaf item expansion
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
-    const [resultsState, setResultsState] = useState({results: [], pagination: {}}); // current retrieved children of the item
+    const [resultsState, setResultsState] = useState({results:[], pagination:{}}); // current retrieved children of the item
     const [diffExpanded, setDiffExpanded] = useState(false); // state of a leaf item expansion
     const [showSummary, setShowSummary] = useState(false);
     const {error, loading, nextPage} = useAPIWithPagination(async () => {
@@ -150,8 +109,18 @@ export const TreeItem = ({
                           onNavigate={onNavigate} repo={repo}
                           reference={reference} diffExpanded={diffExpanded}
                           onClickExpandDiff={() => setDiffExpanded(!diffExpanded)} getMore={getMore}/>
-            {diffExpanded && <ExpandedLeafRow entry={entry} repoId={repo.id} leftDiffRef={leftDiffRefID}
-                                              rightDiffRef={rightDiffRefID} depth={depth} loading={loading}/>
+            {diffExpanded && <tr key={"row-" + entry.path} className={"leaf-entry-row"}>
+                <td className="objects-diff" colSpan={4}>
+                    <ObjectsDiff
+                        diffType={entry.type}
+                        repoId={repo.id}
+                        leftRef={leftDiffRefID}
+                        rightRef={rightDiffRefID}
+                        path={entry.path}
+                    />
+            {loading && <ClockIcon/>}
+                </td>
+                </tr>
             }
         </>
 
@@ -159,7 +128,10 @@ export const TreeItem = ({
         <TreeEntryRow key={entry.path + "entry-row"} entry={entry} dirExpanded={dirExpanded}
                       relativeTo={relativeTo} depth={depth} onClick={() => setDirExpanded(!dirExpanded)}
                       onRevert={onRevert} onNavigate={onNavigate} repo={repo} reference={reference}
-                      showSummary={showSummary} onClickShowSummary={() => setShowSummary(!showSummary)} getMore={getMore}/>
+                      getMore={getMore} showSummary={showSummary}
+                      onClickShowSummary={() => setShowSummary(!showSummary)}
+                      extraColumn={showSummary && <ChangeSummary prefix={entry.path} getMore={getMore}/>
+        }/>
         {dirExpanded && results &&
             results.map(child =>
                 (<TreeItem key={child.path + "-item"} entry={child} repo={repo} reference={reference}
@@ -173,36 +145,28 @@ export const TreeItem = ({
         }
     </>
 }
-/**
- * @param {(after : string, path : string, useDelimiter :? boolean) => Promise<any>} getMore - function to use to get the diff.
- */
-export const TreeEntryRow = ({
-                                 entry,
-                                 relativeTo = "",
-                                 leaf = false,
-                                 dirExpanded,
-                                 diffExpanded,
-                                 showSummary,
-                                 depth = 0,
-                                 onClick,
-                                 loading = false,
-                                 onRevert,
-                                 onNavigate,
-                                 onClickExpandDiff = null,
-                                 onClickShowSummary = null,
-                                 getMore,
-                             }) => {
+
+export const TreeEntryRow = ({entry, relativeTo = "", leaf = false, dirExpanded, diffExpanded, showSummary, depth = 0, onClick, loading = false, onRevert, onNavigate, onClickExpandDiff = null, onClickShowSummary = null, extraColumn}) => {
+    const [showRevertConfirm, setShowRevertConfirm] = useState(false)
     let rowClass = 'tree-entry-row ' + diffType(entry);
     let pathSection = extractPathText(entry, relativeTo);
     let diffIndicator = diffIndicatorIcon(entry);
     if (entry.path_type === "common_prefix") {
         pathSection = <Link href={onNavigate(entry)}>{pathSection}</Link>
     }
+    const rowActions = []
+    if (onClickExpandDiff) {
+        rowActions.push(new RowAction(<FileDiffIcon/>, diffExpanded ? "Hide changes" : "Show changes", diffExpanded, onClickExpandDiff))
+    }
+    if (onClickShowSummary) {
+        rowActions.push(new RowAction(<GraphIcon/>, showSummary ? "Hide summary" : "Calculate change summary", showSummary, onClickShowSummary))
+    }
+    rowActions.push(new RowAction(<HistoryIcon/>, "Revert changes", false, () => {setShowRevertConfirm(true)}))
     return (
         <tr className={rowClass}>
-            <td className="diff-indicator">{diffIndicator}</td>
-            <td className="tree-path">
-                <span style={{marginLeft: (depth * 20 - (leaf ? 10 : 0)) + "px"}}>
+            <td className="pl-4 col-auto p-2">{diffIndicator}</td>
+            <td className="col-9 tree-path">
+                <span style={{marginLeft: (depth * 20) + "px"}}>
                     <span onClick={onClick}>
                         {!leaf && (dirExpanded ? <ChevronDownIcon/> : <ChevronRightIcon/>)}
                     </span>
@@ -210,17 +174,12 @@ export const TreeEntryRow = ({
                     {pathSection}
                 </span>
             </td>
-            <td/>
-            <td className={"change-entry-row-actions"}>
-                <ChangeRowActions
-                    entry={entry}
-                    onRevert={onRevert}
-                    diffExpanded={diffExpanded}
-                    onClickExpandDiff={onClickExpandDiff}
-                    showSummary={showSummary}
-                    onClickShowSummary={onClickShowSummary}
-                    getMore={getMore}
-                />
+            <td className={"col-2 p-0 text-right"}>{extraColumn}</td>
+            <td className={"col-1 change-entry-row-actions"}>
+                <ChangeRowActions actions={rowActions} />
+                <ConfirmationModal show={showRevertConfirm} onHide={() => setShowRevertConfirm(false)}
+                                   msg={`Are you sure you wish to revert "${entry.path}" (${entry.type})?`}
+                                   onConfirm={() => onRevert(entry)}/>
             </td>
         </tr>
     );
@@ -249,23 +208,6 @@ export const TreeEntryPaginator = ({path, setAfterUpdated, nextPage, depth = 0, 
         </tr>
     );
 };
-
-const ExpandedLeafRow = ({entry, repoId, leftDiffRef, rightDiffRef, loading}) => {
-    return (
-        <tr key={"row-" + entry.path} className={"leaf-entry-row"}>
-            <td className="objects-diff" colSpan={4}>
-                <ObjectsDiff
-                    diffType={entry.type}
-                    repoId={repoId}
-                    leftRef={leftDiffRef}
-                    rightRef={rightDiffRef}
-                    path={entry.path}
-                />
-                {loading && <ClockIcon/>}
-            </td>
-        </tr>
-    );
-}
 
 function extractPathText(entry, relativeTo) {
     let pathText = entry.path;

@@ -1,35 +1,104 @@
-import React, {useState} from "react";
-import Container from "react-bootstrap/Container";
-import Row from "react-bootstrap/Row";
-import {useAPIWithPagination} from "../../hooks/api";
-import {Loading} from "../controls";
+import React, {useEffect, useState} from "react";
+import {
+    ClockIcon,
+    DiffAddedIcon,
+    DiffIgnoredIcon,
+    DiffModifiedIcon,
+    DiffRemovedIcon,
+    XCircleIcon
+} from "@primer/octicons-react";
+import {OverlayTrigger, Tooltip} from "react-bootstrap";
+import {humanSize} from "./tree";
+
+const MAX_NUM_OBJECTS = 10_000;
+const PAGE_SIZE = 1_000;
+
+class SummaryEntry {
+    constructor() {
+        this.count = 0
+        this.size = 0
+    }
+    add(count, size) {
+        this.count += count
+        this.size += size
+    }
+}
+
+class SummaryData {
+    constructor() {
+        this.added = new SummaryEntry()
+        this.changed = new SummaryEntry()
+        this.removed = new SummaryEntry()
+        this.conflict = new SummaryEntry()
+    }
+}
 
 /**
+ * Widget to display a summary of a change: the number of added/changed/deleted/conflicting objects.
+ * Shows an error if the change is has more than {@link MAX_NUM_OBJECTS} entries.
+
  * @param {string} prefix - prefix to display summary for.
- * @param {(after : string, path : string, useDelimiter :? boolean) => Promise<any> } getMore - function to use to get the change entries.
+ * @param {(after : string, path : string, useDelimiter :? boolean, amount :? number) => Promise<any> } getMore - function to use to get the change entries.
  */
 export default ({prefix, getMore}) => {
-    const [resultsState, setResultsState] = useState({results: [], pagination:{}});
-    const { loading, nextPage } = useAPIWithPagination(async () => {
-        const {results, pagination} = await getMore("", prefix, false)
-        setResultsState({results: resultsState.results.concat(results), pagination: pagination})
-    })
-    console.log(JSON.stringify(resultsState.results))
-    if (loading) return <Loading/>
-    if (nextPage) {
-        return "Diff too big"
+    const [resultsState, setResultsState] = useState({results: [], pagination: {}, tooManyPages: false});
+    const [loading, setLoading] = useState(true);
+    useEffect(async () => {
+        // get pages until reaching the max change size
+        if (resultsState.results && resultsState.results.length >= MAX_NUM_OBJECTS) {
+            setResultsState({results: null, pagination: {}, tooManyPages: true})
+            setLoading(false)
+            return
+        }
+        if (!loading) {
+            return
+        }
+        const {results, pagination} = await getMore(resultsState.pagination.next_offset || "", prefix, false, PAGE_SIZE)
+        if (!pagination.has_more) {
+            setLoading(false)
+        }
+        setResultsState({results: resultsState.results.concat(results), pagination: pagination, tooManyPages: false})
+    }, [resultsState.results, loading])
+
+    if (loading) return <ClockIcon/>
+    if (resultsState.tooManyPages) {
+        return (
+            <OverlayTrigger placement="bottom"
+                            overlay={
+                                <Tooltip>
+                                   <span className={"small font-weight-bold"}>
+                                       Can't show summary for a change with more than {MAX_NUM_OBJECTS} objects
+                                   </span>
+                                </Tooltip>
+                            }>
+                <span><XCircleIcon className="text-danger"/></span>
+            </OverlayTrigger>
+        )
     }
-    const diffSummary = resultsState.results.reduce((prev, current) => {
-        prev[current.type][0]++
-        prev[current.type][1] += current.size_bytes
+    const summaryData = resultsState.results.reduce((prev, current) => {
+        console.log(current.size_bytes)
+        prev[current.type].add(1, current.size_bytes)
         return prev
-    }, {added: [0, 0], removed: [0, 0], changed: [0, 0], conflict: [0, 0]})
-    return <Container>
-        <Row className={"m-1"}>
-            {diffSummary.added[0] > 0 && <><span className={"color-fg-added"}>+{diffSummary.added[0]}</span>&#160;objects (total {diffSummary.added[1]}B)<br/></>}
-            {diffSummary.removed[0] > 0 && <><span className={"color-fg-removed"}>-{diffSummary.removed[0]}</span>&#160;objects</>}
-            {diffSummary.changed[0] > 0 && <>{diffSummary.changed[0]} changed objects</>}
-            {diffSummary.conflict[0] > 0 && <>{diffSummary.conflict[0]} conflicts</>}
-        </Row>
-    </Container>
+    }, new SummaryData())
+    const detailsTooltip = <Tooltip>
+        <div className={"m-1 small text-left"}>
+        {summaryData.added.count > 0 &&
+            <><span className={"color-fg-added"}>{summaryData.added.count}</span> objects added (total {humanSize(summaryData.added.size)})<br/></>}
+        {summaryData.removed.count > 0 &&
+            <><span className={"color-fg-removed"}>{summaryData.removed.count}</span> objects removed<br/></>}
+        {summaryData.changed.count > 0 && <><span className={"color-fg-changed"}>{summaryData.changed.count}</span> objects changed<br/></>}
+            {summaryData.conflict.count > 0 && <><span className={"color-fg-conflict"}>{summaryData.conflict.count}</span> conflicts<br/></>}
+    </div></Tooltip>
+    return (
+        <OverlayTrigger placement="right-end" overlay={detailsTooltip}>
+            <div className={"m-1 small text-right"}>
+                {summaryData.added.count > 0 &&
+                    <span className={"color-fg-added"}><DiffAddedIcon className={"change-summary-icon"}/>{summaryData.added.count}</span>}
+                {summaryData.removed.count > 0 &&
+                    <span className={"color-fg-removed"}><DiffRemovedIcon className={"change-summary-icon"}/>{summaryData.removed.count}</span>}
+                {summaryData.changed.count > 0 && <span className={"font-weight-bold"}><DiffModifiedIcon className={"change-summary-icon"}/>{summaryData.changed.count}</span>}
+                {summaryData.conflict.count > 0 && <span className={"color-fg-conflict"}><DiffIgnoredIcon className={"change-summary-icon"}/>{summaryData.conflict.count}</span>}
+            </div>
+        </OverlayTrigger>
+    )
 }

@@ -1,6 +1,8 @@
 :root {
   --color-fg-added: #339933;
   --color-fg-removed: #FF3300;
+  --color-fg-changed: #ffc003;
+  --color-fg-conflict: #7f7966;
   --color-bg-added: #e6ffec;
   --color-bg-removed: #ffece6;
   --color-bg-changed: #fff6db;
@@ -296,20 +298,19 @@
 }
 
 .change-entry-row-actions {
-  width: 90px;
   padding:0;
 }
 
-.table .change-entry-row .change-entry-row-actions .btn,
-.table .tree-entry-row .change-entry-row-actions .btn,
+.table .change-entry-row .change-entry-row-actions .btn-link,
+.table .tree-entry-row .change-entry-row-actions .btn-link,
 .actions-runs-list .table tbody tr td .clipboard-copy button,
 .actions-runs-list .table tbody tr td .run-filter .link {
   visibility: hidden;
   font-size: 0.7rem;
 }
-.table .change-entry-row:hover .change-entry-row-actions .btn,
-.table .tree-entry-row:hover .change-entry-row-actions .btn,
-.table .tree-entry-row:focus .change-entry-row-actions .btn,
+.table .change-entry-row:hover .change-entry-row-actions .btn-link,
+.table .tree-entry-row:hover .change-entry-row-actions .btn-link,
+.table .tree-entry-row:focus .change-entry-row-actions .btn-link,
 .actions-runs-list .table tbody tr:hover td .clipboard-copy button ,
 .actions-runs-list .table tbody tr:focus td .clipboard-copy button ,
 .actions-runs-list .table tbody tr:hover td .run-filter .link ,
@@ -432,4 +433,19 @@ td .form-group {
 .color-fg-removed {
   color: var(--color-fg-removed);
   font-weight: bold;
+}
+
+.color-fg-changed {
+  color: var(--color-fg-changed);
+  font-weight: bold;
+}
+
+.color-fg-conflict {
+  color: var(--color-fg-conflict);
+  font-weight: bold;
+}
+
+.change-summary-icon {
+  margin-left: 0.125rem;
+  padding: .1rem;
 }
