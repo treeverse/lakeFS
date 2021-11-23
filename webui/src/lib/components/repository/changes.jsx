@@ -76,18 +76,19 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({results:[], pagination:{}}); // current retrieved children of the item
     const [diffExpanded, setDiffExpanded] = useState(false); // state of a leaf item expansion
-    const {error, loading, nextPage} = useAPIWithPagination(async () => {
+
+    const { error, loading, nextPage } = useAPIWithPagination(async () => {
         if (!dirExpanded) return
         if (!repo) return
 
         if (resultsState.results.length > 0 && resultsState.results.at(-1).path > afterUpdated) {
             // results already cached
-            return {results: resultsState.results, pagination: resultsState.pagination}
+            return {results:resultsState.results, pagination: resultsState.pagination}
         }
 
-        const {results, pagination} = await getMore(afterUpdated, entry.path)
+        const { results, pagination } =  await getMore(afterUpdated, entry.path)
         setResultsState({results: resultsState.results.concat(results), pagination: pagination})
-        return {results: resultsState.results, pagination: pagination}
+        return {results:resultsState.results, pagination: pagination}
     }, [repo.id, reference.id, internalRefresh, afterUpdated, entry.path, delimiter, dirExpanded])
 
     const results = resultsState.results
@@ -95,9 +96,8 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
         return <Error error={error}/>
 
     if (loading && results.length === 0)
-        return <TreeEntryRow key={entry.path + "entry-row"} entry={entry} loading={true}
-                             relativeTo={relativeTo} depth={depth} onRevert={onRevert} onNavigate={onNavigate}
-                             repo={repo} reference={reference} getMore={getMore}/>
+        return <TreeEntryRow key={entry.path+"entry-row"} entry={entry} loading={true} relativeTo={relativeTo} depth={depth} onRevert={onRevert} onNavigate={onNavigate}repo={repo} reference={reference}
+                             getMore={getMore}/>
 
     // When the entry represents a tree leaf
     if (!entry.path.endsWith(delimiter))
@@ -173,9 +173,9 @@ export const TreeEntryRow = ({entry, relativeTo = "", leaf = false, dirExpanded,
     );
 };
 
-export const TreeEntryPaginator = ({path, setAfterUpdated, nextPage, depth = 0, loading = false}) => {
+export const TreeEntryPaginator = ({ path, setAfterUpdated, nextPage, depth=0, loading=false }) => {
     let pathSectionText = "Load more results ...";
-    if (path !== "") {
+    if (path !== ""){
         pathSectionText = `Load more results for prefix ${path} ....`
     }
     return (
@@ -187,7 +187,7 @@ export const TreeEntryPaginator = ({path, setAfterUpdated, nextPage, depth = 0, 
         >
             <td className="diff-indicator"/>
             <td className="tree-path">
-                <span style={{marginLeft: depth * 20 + "px", color: "#007bff"}}>
+                <span style={{marginLeft: depth * 20 + "px",color:"#007bff"}}>
                     {loading && <ClockIcon/>}
                     {pathSectionText}
                 </span>
@@ -226,7 +226,7 @@ function diffIndicatorIcon(entry) {
                         <span>
                             <FileDirectoryIcon fill={"#d9b63e"}/>
                         </span>
-        </OverlayTrigger>;
+               </OverlayTrigger>;
     }
 
     switch (entry.type) {
@@ -235,25 +235,25 @@ function diffIndicatorIcon(entry) {
                         <span>
                             <TrashIcon/>
                         </span>
-            </OverlayTrigger>;
+                    </OverlayTrigger>;
         case 'added':
             return <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-added"}>Added</Tooltip>)}>
                         <span>
                             <PlusIcon/>
                         </span>
-            </OverlayTrigger>;
+                    </OverlayTrigger>;
         case 'changed':
             return <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-changed"}>Changed</Tooltip>)}>
                         <span>
                             <PencilIcon/>
                         </span>
-            </OverlayTrigger>;
+                    </OverlayTrigger>;
         case 'conflict':
             return <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-conflict"}>Conflict</Tooltip>)}>
                         <span>
                             <CircleSlashIcon/>
                         </span>
-            </OverlayTrigger>;
+                    </OverlayTrigger>;
         default:
             return '';
     }
