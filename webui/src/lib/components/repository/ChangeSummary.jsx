@@ -76,7 +76,6 @@ export default ({prefix, getMore}) => {
         )
     }
     const summaryData = resultsState.results.reduce((prev, current) => {
-        console.log(current.size_bytes)
         prev[current.type].add(1, current.size_bytes)
         return prev
     }, new SummaryData())

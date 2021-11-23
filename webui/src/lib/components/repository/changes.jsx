@@ -51,7 +51,7 @@ const ChangeRowActions = ({actions}) => <>
                         }}>
                     {action.icon}
                 </Link>
-            </OverlayTrigger>&#160;</>
+            </OverlayTrigger>&#160;&#160;</>
         ))}
 </>;
 
