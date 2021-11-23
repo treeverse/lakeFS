@@ -3,13 +3,18 @@
 
 ## Milestone 1 - lakeFS Metastore Proposal
 
-Items for discover listed with hierarchy as dependency:
+Items to discover listed with hierarchy as dependency:
 
-- Passing reference/branch information
-    - Authentication with lakeFS
-    - Co-exist with other metastore solutions - very similar to the current work on side-by-side work with lakeFS and the current object-storage, the user like to run the same application with minimum changes, while enabling some of the data to live inside lakeFS. What needs to change or requirements in order to have the same in the metadata level? Do we need to sync information, manage part of the data and enable mapping on the client side? Can we replace the client side implementation? Do we need to spin different endpoints to serve different repositories, branches in lakeFS for parts of the metadata? Fallback to existing metastore?
-- Data model - Graveler to enable 3-way diff / merge that will work in optimal way.
-
+- lakeFS metastore implementation over lakeFS or as part of lakeFS.
+- Co-exist with other metastores.
+- Authentication with lakeFS - optional?
+- Passing lakeFS's reference/branch information from the metastore client.
+- Data model
+  - file per entity, using graveler
+      - diff / merge data - do we use graveler to diff, can it extend to understand the entities. do we need to associate data changes with metadata changes? how it effect the conflict resolution.
+  - import / export with existing metastore - do we support just hive? do we enable export and import of the complete data model?
+  - How do we store statistics?
+- Hook do we need to support in what level
 
 ## Milestone 2 - TDB
 
