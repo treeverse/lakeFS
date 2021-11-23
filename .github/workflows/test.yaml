@@ -35,11 +35,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        experimental: [false]
-        os:
-          - ubuntu-20.04
-          - windows-latest
         include:
+          - os: ubuntu-20.04
+            experimental: false
           - os: windows-latest
             experimental: true
     runs-on: ${{ matrix.os }}
