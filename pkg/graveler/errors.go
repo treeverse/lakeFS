@@ -34,7 +34,7 @@ var (
 	ErrCommitNotHeadBranch          = wrapError(ErrUserVisible, "commit is not head of branch")
 	ErrBranchExists                 = fmt.Errorf("branch already exists: %w", ErrNotUnique)
 	ErrTagAlreadyExists             = fmt.Errorf("tag already exists: %w", ErrNotUnique)
-	ErrDirtyBranch                  = wrapError(ErrUserVisible, "dirty branch (has uncommitted changes)")
+	ErrDirtyBranch                  = wrapError(ErrUserVisible, "uncommitted changes (dirty branch)")
 	ErrMetaRangeNotFound            = errors.New("metarange not found")
 	ErrLockNotAcquired              = errors.New("lock not acquired")
 	ErrRevertMergeNoParent          = wrapError(ErrUserVisible, "must specify 1-based parent number for reverting merge commit")
