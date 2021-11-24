@@ -98,8 +98,14 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                             <Table borderless size="sm">
                                 <tbody>
                                 {results.map(entry => {
-                                    const leftCommittedRef = reference.id + "@"
-                                    const rightCommittedRef = compareReference.id + "@"
+                                    let leftCommittedRef = reference.id;
+                                    let rightCommittedRef = compareReference.id;
+                                    if (reference.type === 'branch') {
+                                        leftCommittedRef +=  + "@";
+                                    }
+                                    if (compareReference.type === 'branch') {
+                                        rightCommittedRef += "@";
+                                    }
                                     return (
                                     <TreeItem key={entry.path+"-item"} entry={entry} repo={repo} reference={reference}
                                               internalReferesh={internalRefresh} leftDiffRefID={leftCommittedRef}
