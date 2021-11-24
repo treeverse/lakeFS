@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	gproto "github.com/golang/protobuf/proto" //nolint:staticcheck // orc lib uses old proto
 	"github.com/scritchley/orc/proto"
@@ -63,7 +63,7 @@ func downloadRange(ctx context.Context, client *s3.Client, logger logging.Logger
 			logger.Errorf("failed to remove orc file after download. file=%s, err=%w", f.Name(), err)
 		}
 	}()
-	downloader := manager.NewDownloader(client)
+	downloader := s3manager.NewDownloader(client)
 	rng := ""
 	if fromByte > 0 {
 		rng = fmt.Sprintf("bytes=%d-", fromByte)

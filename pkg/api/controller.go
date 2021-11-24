@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	aws_manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/go-openapi/swag"
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/treeverse/lakefs/pkg/actions"
@@ -2353,7 +2353,7 @@ func (c *Controller) CreateSymlinkFile(w http.ResponseWriter, r *http.Request, r
 func writeSymlink(ctx context.Context, repo *catalog.Repository, branch string, path string, addresses []string, adapter block.Adapter) error {
 	address := fmt.Sprintf("%s/%s/%s/%s/symlink.txt", lakeFSPrefix, repo.Name, branch, path)
 	data := strings.Join(addresses, "\n")
-	symlinkReader := aws_manager.ReadSeekCloser(strings.NewReader(data))
+	symlinkReader := s3manager.ReadSeekCloser(strings.NewReader(data))
 	err := adapter.Put(ctx, block.ObjectPointer{
 		StorageNamespace: repo.StorageNamespace,
 		Identifier:       address,
