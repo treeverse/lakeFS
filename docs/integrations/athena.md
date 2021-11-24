@@ -72,8 +72,11 @@ The command will have 2 notable outputs:
 2021-11-23 17:46:30         60 my-repo-prefix/my_table/symlinks/example/main/my_table/year=2022/month=1/symlink.txt
 ```
 
-An example content of a symlink file:
+An example content of a symlink file, where each line represents a single object of the specific partition:
 ```text
+s3://my-bucket/my-repo-prefix/5bdc62da516944b49889770d98274227
+s3://my-bucket/my-repo-prefix/64262fbf3d6347a79ead641d2b2baee6
+s3://my-bucket/my-repo-prefix/64486c8de6484de69f12d7d26804c93e
 s3://my-bucket/my-repo-prefix/b0165d5c5b13473d8a0f460eece9eb26
 ```
 
