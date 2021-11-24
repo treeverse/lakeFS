@@ -2,6 +2,8 @@ package logging
 
 import aws_logging "github.com/aws/smithy-go/logging"
 
+// TODO(ariels): Wire these logs up to the S3 adapter.
+
 type AWSAdapter struct {
 	Logger Logger
 }

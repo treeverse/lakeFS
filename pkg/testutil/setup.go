@@ -107,11 +107,8 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 				viper.GetString("access_key_id"),
 				viper.GetString("secret_access_key"),
 				"")),
-		func(o *aws_config.LoadOptions) error {
-			o.Region = "us-east-1"
-			o.LogConfigurationWarnings = aws.Bool(true)
-			return nil
-		},
+		aws_config.WithRegion("us-east-1"),
+		aws_config.WithLogConfigurationWarnings(true),
 	)
 	if err != nil {
 		logger.WithError(err).Fatal("could not initialize AWS configuration")

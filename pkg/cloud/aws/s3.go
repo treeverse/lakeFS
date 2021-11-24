@@ -2,7 +2,6 @@ package aws
 
 import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-
 	"github.com/treeverse/lakefs/pkg/block/params"
 )
 

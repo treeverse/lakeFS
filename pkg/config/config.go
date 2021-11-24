@@ -260,10 +260,8 @@ func (c *Config) GetAwsConfig() (blockparams.AWSParams, error) {
 	)
 
 	configLoadOpts = append(configLoadOpts,
-		func(o *aws_config.LoadOptions) error {
-			o.LogConfigurationWarnings = aws.Bool(true)
-			return nil
-		})
+		aws_config.WithLogConfigurationWarnings(true),
+	)
 
 	if c.values.Blockstore.S3.Credentials != nil {
 		secretAccessKey := c.values.Blockstore.S3.Credentials.SecretAccessKey
@@ -302,8 +300,7 @@ func (c *Config) GetAwsConfig() (blockparams.AWSParams, error) {
 	}
 	ret.Config = &cfg
 
-	level := strings.ToLower(logging.Level())
-	if level == "trace" {
+	if logging.Default().IsTracing() {
 		ret.Config.ClientLogMode = aws.LogRetries | aws.LogRequest | aws.LogResponse
 	}
 

@@ -228,10 +228,8 @@ func NewBlockAdapterByType(t testing.TB, translator block.UploadIDTranslator, bl
 		)
 
 		configLoadOpts = append(configLoadOpts,
-			func(o *aws_config.LoadOptions) error {
-				o.LogConfigurationWarnings = aws.Bool(true)
-				return nil
-			})
+			aws_config.WithLogConfigurationWarnings(true),
+		)
 
 		awsRegion, regionOk := os.LookupEnv(envKeyAwsRegion)
 		if !regionOk {

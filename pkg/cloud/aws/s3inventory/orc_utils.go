@@ -64,9 +64,9 @@ func downloadRange(ctx context.Context, client *s3.Client, logger logging.Logger
 		}
 	}()
 	downloader := s3manager.NewDownloader(client)
-	rng := ""
+	var rng *string
 	if fromByte > 0 {
-		rng = fmt.Sprintf("bytes=%d-", fromByte)
+		rng = aws.String(fmt.Sprintf("bytes=%d-", fromByte))
 	}
 	logger.Debugf("start downloading %s[%s] to local file %s", key, rng, f.Name())
 	timeoutCtx, cancelFn := context.WithTimeout(ctx, downloadTimeout)
@@ -74,7 +74,7 @@ func downloadRange(ctx context.Context, client *s3.Client, logger logging.Logger
 	_, err = downloader.Download(timeoutCtx, f, &s3.GetObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
-		Range:  &rng,
+		Range:  rng,
 	})
 	if err != nil {
 		logger.WithError(err).

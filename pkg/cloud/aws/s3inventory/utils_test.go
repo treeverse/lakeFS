@@ -86,10 +86,7 @@ func getS3Fake(t *testing.T) (*s3.Client, *httptest.Server) {
 	cfg, err := aws_config.LoadDefaultConfig(ctx,
 		aws_config.WithCredentialsProvider(
 			aws_credentials.NewStaticCredentialsProvider("YOUR-ACCESSKEYID", "YOUR-SECRETACCESSKEY", "")),
-		func(o *aws_config.LoadOptions) error {
-			o.Region = "eu-central-1"
-			return nil
-		},
+		aws_config.WithRegion("eu-central-1"),
 	)
 
 	if err != nil {
