@@ -256,8 +256,11 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 		return nil, adapter.ErrDataNotFound
 	}
 	if err != nil {
-		log := a.log(ctx).WithField("operation", "GetObject")
-		log.WithError(err).WithFields(qkFields(qualifiedKey)).Error("failed to get S3 object")
+		a.log(ctx).
+			WithField("operation", "GetObject").
+			WithError(err).
+			WithFields(qkFields(qualifiedKey)).
+			Error("failed to get S3 object")
 		return nil, err
 	}
 	sizeBytes = objectOutput.ContentLength
@@ -281,8 +284,11 @@ func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, er
 		return false, nil
 	}
 	if err != nil {
-		log := a.log(ctx).WithField("operation", "HeadObject")
-		log.WithError(err).WithFields(qkFields(qualifiedKey)).Error("failed to stat S3 object")
+		a.log(ctx).
+			WithField("operation", "HeadObject").
+			WithError(err).
+			WithFields(qkFields(qualifiedKey)).
+			Error("failed to stat S3 object")
 		return false, err
 	}
 	return true, nil
@@ -307,11 +313,14 @@ func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPo
 		return nil, adapter.ErrDataNotFound
 	}
 	if err != nil {
-		log := a.log(ctx).WithField("operation", "GetRange")
-		log.WithError(err).WithFields(qkFields(qualifiedKey)).WithFields(logging.Fields{
-			"start_position": startPosition,
-			"end_position":   endPosition,
-		}).Error("failed to get S3 object range")
+		a.log(ctx).
+			WithField("operation", "GetRange").
+			WithError(err).
+			WithFields(qkFields(qualifiedKey)).
+			WithFields(logging.Fields{
+				"start_position": startPosition,
+				"end_position":   endPosition,
+			}).Error("failed to get S3 object range")
 		return nil, err
 	}
 	sizeBytes = objectOutput.ContentLength
@@ -394,7 +403,10 @@ func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {
 	client := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
 	_, err = client.DeleteObject(ctx, deleteObjectParams)
 	if err != nil {
-		a.log(ctx).WithError(err).WithFields(qkFields(qualifiedKey)).Error("failed to delete S3 object")
+		a.log(ctx).
+			WithError(err).
+			WithFields(qkFields(qualifiedKey)).
+			Error("failed to delete S3 object")
 		return err
 	}
 	waiter := s3.NewObjectNotExistsWaiter(client)
@@ -475,12 +487,14 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 	}
 	_, err = a.clients.Get(ctx, qualifiedDestinationKey.StorageNamespace).CopyObject(ctx, copyObjectParams)
 	if err != nil {
-		a.log(ctx).WithError(err).WithFields(logging.Fields{
-			"qualified_ns_source":       qualifiedSourceKey.StorageNamespace,
-			"qualified_key_source":      qualifiedSourceKey.Key,
-			"qualified_ns_destination":  qualifiedDestinationKey.StorageNamespace,
-			"qualified_key_destination": qualifiedDestinationKey.Key,
-		}).Error("failed to copy S3 object")
+		a.log(ctx).
+			WithError(err).
+			WithFields(logging.Fields{
+				"qualified_ns_source":       qualifiedSourceKey.StorageNamespace,
+				"qualified_key_source":      qualifiedSourceKey.Key,
+				"qualified_ns_destination":  qualifiedDestinationKey.StorageNamespace,
+				"qualified_key_destination": qualifiedDestinationKey.Key,
+			}).Error("failed to copy S3 object")
 	}
 	return err
 }
@@ -507,11 +521,14 @@ func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPoi
 	upload, err := client.CreateMultipartUpload(ctx, input, httpClient.WrapClient())
 	uploadID := *upload.UploadId
 	uploadID = a.uploadIDTranslator.SetUploadID(uploadID)
-	a.log(ctx).WithFields(qkFields(qualifiedKey)).WithFields(logging.Fields{
-		"upload_id":            *upload.UploadId,
-		"translated_upload_id": uploadID,
-		"key":                  obj.Identifier,
-	}).Debug("created multipart upload")
+	a.log(ctx).
+		WithFields(qkFields(qualifiedKey)).
+		WithFields(logging.Fields{
+			"upload_id":            *upload.UploadId,
+			"translated_upload_id": uploadID,
+			"key":                  obj.Identifier,
+		}).
+		Debug("created multipart upload")
 	return &block.CreateMultiPartUploadResponse{
 		UploadID:         uploadID,
 		ServerSideHeader: httpClient.Metadata,
@@ -534,10 +551,13 @@ func (a *Adapter) AbortMultiPartUpload(ctx context.Context, obj block.ObjectPoin
 	client := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
 	_, err = client.AbortMultipartUpload(ctx, input)
 	a.uploadIDTranslator.RemoveUploadID(uploadID)
-	a.log(ctx).WithFields(qkFields(qualifiedKey)).WithFields(logging.Fields{
-		"upload_id": uploadID,
-		"key":       obj.Identifier,
-	}).Debug("aborted multipart upload")
+	a.log(ctx).
+		WithFields(qkFields(qualifiedKey)).
+		WithFields(logging.Fields{
+			"upload_id": uploadID,
+			"key":       obj.Identifier,
+		}).
+		Debug("aborted multipart upload")
 	return err
 }
 
@@ -566,20 +586,22 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 		UploadId:        aws.String(translatedUploadID),
 		MultipartUpload: convertFromBlockMultipartUploadCompletion(multipartList),
 	}
-	lg := a.log(ctx).WithFields(qkFields(qualifiedKey)).WithFields(logging.Fields{
-		"upload_id":            uploadID,
-		"translated_upload_id": translatedUploadID,
-		"key":                  obj.Identifier,
-	})
+	log := a.log(ctx).
+		WithFields(qkFields(qualifiedKey)).
+		WithFields(logging.Fields{
+			"upload_id":            uploadID,
+			"translated_upload_id": translatedUploadID,
+			"key":                  obj.Identifier,
+		})
 	client := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
 
 	httpClient := recordHeadersClient{Prefix: ServerSideHeaderPrefix}
 	uploadPartOut, err := client.CompleteMultipartUpload(ctx, input, httpClient.WrapClient())
 	if err != nil {
-		lg.WithError(err).Error("CompleteMultipartUpload failed")
+		log.WithError(err).Error("CompleteMultipartUpload failed")
 		return nil, err
 	}
-	lg.Debug("completed multipart upload")
+	log.Debug("completed multipart upload")
 	a.uploadIDTranslator.RemoveUploadID(translatedUploadID)
 	headInput := &s3.HeadObjectInput{Bucket: &qualifiedKey.StorageNamespace, Key: &qualifiedKey.Key}
 	headResp, err := client.HeadObject(ctx, headInput)
