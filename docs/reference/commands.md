@@ -2184,15 +2184,16 @@ lakectl metastore create-symlink [flags]
 {:.no_toc}
 
 ```
-      --branch string        lakeFS branch name
-      --catalog-id string    Glue catalog ID
-      --from-schema string   source schema name
-      --from-table string    source table name
-  -h, --help                 help for create-symlink
-      --path string          path to table on lakeFS
-      --repo string          lakeFS repository name
-      --to-schema string     destination schema name
-      --to-table string      destination table name
+      --branch string             lakeFS branch name
+      --catalog-id string         Glue catalog ID
+      --from-client-type string   metastore type [hive, glue]
+      --from-schema string        source schema name
+      --from-table string         source table name
+  -h, --help                      help for create-symlink
+      --path string               path to table on lakeFS
+      --repo string               lakeFS repository name
+      --to-schema string          destination schema name
+      --to-table string           destination table name
 ```
 
 

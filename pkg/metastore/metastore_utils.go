@@ -8,7 +8,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/gateway/path"
 )
 
-const SymlinkInputFormat = "org.apache.hadoop.hive.ql.io.SymlinkTextInputFormat"
+const symlinkInputFormat = "org.apache.hadoop.hive.ql.io.SymlinkTextInputFormat"
 
 var ErrInvalidLocation = errors.New("got empty schema or host wile parsing location url, location should be schema://host/path")
 

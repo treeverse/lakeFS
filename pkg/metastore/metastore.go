@@ -17,18 +17,19 @@ const (
 	sparkSQLProviderLocationKey = "path"
 )
 
-func (m *Table) Update(db, table, serde string, transformLocation func(location string) (string, error), isSparkSQLTable, fixSparkPlaceHolder bool) error {
+func (m *Table) Update(db, table, serde string, setSymlink bool, transformLocation func(location string) (string, error), isSparkSQLTable, fixSparkPlaceHolder bool) error {
 	log := logging.Default().WithFields(logging.Fields{
-		"db":    db,
-		"table": table,
-		"serde": serde,
+		"db":         db,
+		"table":      table,
+		"serde":      serde,
+		"setSymlink": setSymlink,
 	})
 	if m.Sd == nil {
 		m.Sd = &StorageDescriptor{}
 	}
 	m.DBName = db
 	m.TableName = table
-	err := m.Sd.Update(db, table, serde, transformLocation, isSparkSQLTable, fixSparkPlaceHolder)
+	err := m.Sd.Update(db, table, serde, setSymlink, transformLocation, isSparkSQLTable, fixSparkPlaceHolder)
 	if err != nil {
 		log.WithError(err).WithField("table", spew.Sdump(*m)).Error("Update table")
 		return err
@@ -42,11 +43,12 @@ func (m *Table) isSparkSQLTable() (res bool) {
 	return
 }
 
-func (m *Partition) Update(db, table, serde string, transformLocation func(location string) (string, error), isSparkSQLTable, fixSparkPlaceHolder bool) error {
+func (m *Partition) Update(db, table, serde string, setSymlink bool, transformLocation func(location string) (string, error), isSparkSQLTable, fixSparkPlaceHolder bool) error {
 	log := logging.Default().WithFields(logging.Fields{
-		"db":    db,
-		"table": table,
-		"serde": serde,
+		"db":         db,
+		"table":      table,
+		"serde":      serde,
+		"setSymlink": setSymlink,
 	})
 	if m.Sd == nil {
 		m.Sd = &StorageDescriptor{}
@@ -57,7 +59,11 @@ func (m *Partition) Update(db, table, serde string, transformLocation func(locat
 	m.DBName = db
 	m.TableName = table
 	m.Sd.SerdeInfo.Name = serde
-	err := m.Sd.Update(db, table, serde, transformLocation, isSparkSQLTable, fixSparkPlaceHolder)
+	if setSymlink {
+		m.Sd.InputFormat = symlinkInputFormat
+	}
+
+	err := m.Sd.Update(db, table, serde, setSymlink, transformLocation, isSparkSQLTable, fixSparkPlaceHolder)
 	if err != nil {
 		log.WithError(err).WithField("table", spew.Sdump(*m)).Error("Update table")
 		return err
@@ -66,12 +72,16 @@ func (m *Partition) Update(db, table, serde string, transformLocation func(locat
 	return nil
 }
 
-func (m *StorageDescriptor) Update(db, table, serde string, transformLocation func(location string) (string, error), isSparkSQLTable, fixSparkPlaceHolder bool) error {
+func (m *StorageDescriptor) Update(db, table, serde string, setSymlink bool, transformLocation func(location string) (string, error), isSparkSQLTable, fixSparkPlaceHolder bool) error {
 	if m.SerdeInfo == nil {
 		m.SerdeInfo = &SerDeInfo{}
 	}
 
 	m.SerdeInfo.Name = serde
+
+	if setSymlink {
+		m.InputFormat = symlinkInputFormat
+	}
 	var err error
 	if m.Location != "" && !(isSparkSQLTable && strings.HasSuffix(m.Location, sparkSQLWorkaroundSuffix)) {
 		m.Location, err = transformLocation(m.Location)

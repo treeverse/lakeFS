@@ -109,8 +109,15 @@ func serDeLocalToGlue(info *metastore.SerDeInfo) *glue.SerDeInfo {
 	if info == nil {
 		return nil
 	}
+
+	// glue cannot have empty name
+	name := "default"
+	if info.Name != "" {
+		name = info.Name
+	}
+
 	return &glue.SerDeInfo{
-		Name:                 aws.String(info.Name),
+		Name:                 aws.String(name),
 		Parameters:           aws.StringMap(info.Parameters),
 		SerializationLibrary: aws.String(info.SerializationLib),
 	}
