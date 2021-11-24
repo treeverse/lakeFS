@@ -56,7 +56,7 @@ Add the following to the lakectl configuration file (by default `~/.lakectl.yaml
 metastore:
   type: hive
   hive:
-    uri: thrift://hive-metastore:9083
+    uri: hive-metastore:9083
 ```
 
 ### Glue
@@ -175,29 +175,3 @@ Partitions
 + 2020-07-06
 ~ 2020-07-08
 ```
-
-## Athena with lakeFS branches
-Athena doesn't support configuring the endpoint-uri. to use S3-compatible services like lakeFS.
-Hence, Athena can't access lakeFS, and can only be used with AWS S3 as the storage.
-
-In order to enable accessing partitioned data we could use the `create-symlink` command.
-create-symlink receives a source table, destination table and the location of the table and does two actions:
-1. Creates partitioned directories with symlink files in the underlying S3 bucket.
-1. Creates a table in Glue catalog with symlink format type and location pointing to the created symlinks.
-
-**Notice:** create-symlink source table must point to a location in lakeFS.
-{: .note .pb-3 }
-
-
-Example:
-
-Let's assume we have the table `inventory` in Glue.
-The table is pointing to repo `example-repo` branch `main` and the data is located at `path/to/table/in/lakeFS`
-
-We want to query the table using Athena.
-To do this, we run the command:
-```bash
-lakectl metastore create-symlink --address 123456789012 --branch main --from-schema default --from-table branch_inventory --to-schema default --to-table sym_inventory --repo example-repository --path path/to/table/in/lakeFS
-```
-
-We can now use Amazon Athena to query the created table `sym_inventory`.
