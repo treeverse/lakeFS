@@ -66,6 +66,7 @@ This reference uses `.` to denote the nesting of values.
 * `blockstore.s3.force_path_style` `(boolean : false)` - When true, use path-style S3 URLs (https://<host>/<bucket> instead of https://<bucket>.<host>)
 * `blockstore.s3.streaming_chunk_size` `(int : 1048576)` - Object chunk size to buffer before streaming to blockstore (use a lower value for less reliable networks). Minimum is 8192.
 * `blockstore.s3.streaming_chunk_timeout` `(time duration : "60s")` - Per object chunk timeout for blockstore streaming operations (use a larger value for less reliable networks).
+* `blockstore.s3.operation_wait_duration` `(time duration : "1m")` - Maximal time to wait for uncapped operations on S3 to complete (currently this applies only to deleting a stored object, which is very rare).
 * `blockstore.s3.discover_bucket_region` `(boolean : true)` - (Can be turned off if the underlying S3 bucket doesn't support the GetBucketRegion API).
 * `committed.local_cache` - an object describing the local (on-disk) cache of metadata from
   permanent storage:

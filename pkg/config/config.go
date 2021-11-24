@@ -32,6 +32,7 @@ const (
 	DefaultBlockStoreS3Region                = "us-east-1"
 	DefaultBlockStoreS3StreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
 	DefaultBlockStoreS3StreamingChunkTimeout = time.Second * 1 // or 1 seconds, whatever comes first
+	DefaultBlockStoreS3WaitDUr               = 1 * time.Minute
 	DefaultBlockStoreS3DiscoverBucketRegion  = true
 
 	DefaultCommittedLocalCacheRangePercent          = 0.9
@@ -123,6 +124,7 @@ const (
 	BlockstoreS3RegionKey                = "blockstore.s3.region"
 	BlockstoreS3StreamingChunkSizeKey    = "blockstore.s3.streaming_chunk_size"
 	BlockstoreS3StreamingChunkTimeoutKey = "blockstore.s3.streaming_chunk_timeout"
+	BlockstoreS3WaitDurKey               = "blockstore.s3.operation_wait_duration"
 	BlockstoreS3MaxRetriesKey            = "blockstore.s3.max_retries"
 	BlockstoreS3DiscoverBucketRegionKey  = "blockstore.s3.discover_bucket_region"
 
@@ -168,6 +170,7 @@ func setDefaults() {
 	viper.SetDefault(BlockstoreS3RegionKey, DefaultBlockStoreS3Region)
 	viper.SetDefault(BlockstoreS3StreamingChunkSizeKey, DefaultBlockStoreS3StreamingChunkSize)
 	viper.SetDefault(BlockstoreS3StreamingChunkTimeoutKey, DefaultBlockStoreS3StreamingChunkTimeout)
+	viper.SetDefault(BlockstoreS3WaitDurKey, DefaultBlockStoreS3WaitDUr)
 	viper.SetDefault(BlockstoreS3MaxRetriesKey, DefaultS3MaxRetries)
 	viper.SetDefault(BlockstoreS3StreamingChunkSizeKey, DefaultBlockStoreS3StreamingChunkSize)
 	viper.SetDefault(BlockstoreS3DiscoverBucketRegionKey, DefaultBlockStoreS3DiscoverBucketRegion)
@@ -328,6 +331,7 @@ func (c *Config) GetBlockAdapterS3Params() (blockparams.S3, error) {
 		AWSParams:             cfg,
 		StreamingChunkSize:    c.values.Blockstore.S3.StreamingChunkSize,
 		StreamingChunkTimeout: c.values.Blockstore.S3.StreamingChunkTimeout,
+		WaitDur:               c.values.Blockstore.S3.WaitDur,
 		DiscoverBucketRegion:  c.values.Blockstore.S3.DiscoverBucketRegion,
 	}, nil
 }

@@ -23,9 +23,7 @@ import (
 const (
 	DefaultStreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
 	DefaultStreamingChunkTimeout = time.Second * 1 // if we haven't read DefaultStreamingChunkSize by this duration, write whatever we have as a chunk
-
-	// Time to Wait() for S3 operations
-	S3WaitDur = 1 * time.Minute
+	DefaultWaitDur               = 1 * time.Minute // Time to Wait() for S3 operations
 
 	ExpireObjectS3Tag      = "lakefs_expire_object"
 	ServerSideHeaderPrefix = "X-Amz-Server-Side-"
@@ -64,6 +62,7 @@ type Adapter struct {
 	uploadIDTranslator    block.UploadIDTranslator
 	streamingChunkSize    int
 	streamingChunkTimeout time.Duration
+	waitDur               time.Duration
 	respServer            string
 	respServerLock        sync.Mutex
 }
@@ -83,6 +82,12 @@ func WithStreamingChunkSize(sz int) func(a *Adapter) {
 func WithStreamingChunkTimeout(d time.Duration) func(a *Adapter) {
 	return func(a *Adapter) {
 		a.streamingChunkTimeout = d
+	}
+}
+
+func WithWaitDur(d time.Duration) func(a *Adapter) {
+	return func(a *Adapter) {
+		a.waitDur = d
 	}
 }
 
@@ -111,6 +116,7 @@ func NewAdapter(params *params.AWSParams, opts ...func(a *Adapter)) *Adapter {
 		uploadIDTranslator:    &block.NoOpTranslator{},
 		streamingChunkSize:    DefaultStreamingChunkSize,
 		streamingChunkTimeout: DefaultStreamingChunkTimeout,
+		waitDur:               DefaultWaitDur,
 	}
 	for _, opt := range opts {
 		opt(a)
@@ -395,7 +401,7 @@ func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {
 	return waiter.Wait(ctx, &s3.HeadObjectInput{
 		Bucket: aws.String(qualifiedKey.StorageNamespace),
 		Key:    aws.String(qualifiedKey.Key),
-	}, S3WaitDur)
+	}, a.waitDur)
 }
 
 func (a *Adapter) copyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int, byteRange *string) (*block.UploadPartResponse, error) {

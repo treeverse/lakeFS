@@ -106,6 +106,7 @@ type configuration struct {
 			Endpoint              string
 			StreamingChunkSize    int           `mapstructure:"streaming_chunk_size"`
 			StreamingChunkTimeout time.Duration `mapstructure:"streaming_chunk_timeout"`
+			WaitDur               time.Duration `mapstructure:"operation_wait_duration"`
 			MaxRetries            int           `mapstructure:"max_retries"`
 			ForcePathStyle        bool          `mapstructure:"force_path_style"`
 			DiscoverBucketRegion  bool          `mapstructure:"discover_bucket_region"`

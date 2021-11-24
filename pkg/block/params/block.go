@@ -38,6 +38,7 @@ type S3 struct {
 	AWSParams             AWSParams
 	StreamingChunkSize    int
 	StreamingChunkTimeout time.Duration
+	WaitDur               time.Duration
 	DiscoverBucketRegion  bool
 }
 

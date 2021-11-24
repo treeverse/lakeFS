@@ -86,6 +86,7 @@ func buildS3Adapter(statsCollector stats.Collector, params params.S3) *s3a.Adapt
 	adapter := s3a.NewAdapter(&params.AWSParams,
 		s3a.WithStreamingChunkSize(params.StreamingChunkSize),
 		s3a.WithStreamingChunkTimeout(params.StreamingChunkTimeout),
+		s3a.WithWaitDur(params.WaitDur),
 		s3a.WithStatsCollector(statsCollector),
 		s3a.WithDiscoverBucketRegion(params.DiscoverBucketRegion),
 	)
