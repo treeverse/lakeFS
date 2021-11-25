@@ -10,6 +10,7 @@ import Popover from "react-bootstrap/Popover";
 
 import {tags, branches, commits} from '../../api';
 import {Nav} from "react-bootstrap";
+import {RefTypeBranch, RefTypeCommit, RefTypeTag} from "../../../constants";
 
 
 const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, withTags, amount = 300 }) => {
@@ -17,12 +18,12 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
     console.log(JSON.stringify(selected))
     const [pagination, setPagination] = useState({after: "", prefix: "", amount});
     const [refList, setRefs] = useState({loading: true, payload: null, error: null});
-    const [refType, setRefType] = useState(selected && selected.type || 'branch')
+    const [refType, setRefType] = useState(selected && selected.type || RefTypeBranch)
     useEffect(async () => {
         setRefs({loading: true, payload: null, error: null});
         try {
             let response;
-            if (refType === 'tag') {
+            if (refType === RefTypeTag) {
                 response = await tags.list(repo.id, pagination.prefix, pagination.after, pagination.amount);
             } else {
                 response = await branches.list(repo.id, pagination.prefix, pagination.after, pagination.amount);
@@ -41,7 +42,7 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
     const form = (
         <div className="ref-filter-form">
             <Form onSubmit={e => { e.preventDefault(); }}>
-                <Form.Control type="text" placeholder={refType === 'tag' ? "Filter tags" : "Filter branches"} onChange={(e)=> {
+                <Form.Control type="text" placeholder={refType === RefTypeTag ? "Filter tags" : "Filter branches"} onChange={(e)=> {
                     setPagination({
                         amount,
                         after: "",
@@ -103,7 +104,7 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
             <div className="ref-scroller">
                 <ul className="list-group ref-list">
                     {results.map(namedRef => (
-                        <RefEntry key={namedRef.id} repo={repo} refType={refType} namedRef={namedRef.id} selectRef={selectRef} selected={selected} withCommits={refType !== 'tag' && withCommits} logCommits={async () => {
+                        <RefEntry key={namedRef.id} repo={repo} refType={refType} namedRef={namedRef.id} selectRef={selectRef} selected={selected} withCommits={refType !== RefTypeTag && withCommits} logCommits={async () => {
                             const data = await commits.log(repo.id, namedRef.id)
                             setCommitList({...commitList, branch: namedRef.id, commits: data.results});
                         }}/>
@@ -138,14 +139,14 @@ const CommitList = ({ commits, selectRef, reset, branch, withWorkspace }) => {
                     {(withWorkspace) ? (
                         <li className="list-group-item" key={branch}>
                             <Button variant="link" onClick={() => {
-                                selectRef({id: branch, type: 'branch'});
+                                selectRef({id: branch, type: RefTypeBranch});
                             }}><em>{branch}{'\''}s Workspace (uncommitted changes)</em></Button>
                         </li>
                     ) : (<span/>)}
                     {commits.map(commit => (
                         <li className="list-group-item" key={commit.id}>
                             <Button variant="link" onClick={() => {
-                                selectRef({id: commit.id, type: 'commit'});
+                                selectRef({id: commit.id, type: RefTypeCommit});
                             }}>{getMessage(commit)} </Button>
                             <div className="actions">
                                 <Badge variant="light">{commit.id.substr(0, 12)}</Badge>
@@ -171,7 +172,7 @@ const RefEntry = ({repo, namedRef, refType, selectRef, selected, logCommits, wit
                 }}>{namedRef}</Button>
             }
             <div className="actions">
-                {(refType === 'branch' && namedRef === repo.default_branch) ? (<Badge variant="info">Default</Badge>) : <span/>}
+                {(refType === RefTypeBranch && namedRef === repo.default_branch) ? (<Badge variant="info">Default</Badge>) : <span/>}
                 {(withCommits) ? (
                     <Button onClick={logCommits} size="sm" variant="link">
                         <ChevronRightIcon/>
@@ -247,7 +248,7 @@ const RefDropdown = ({ repo, selected, selectRef, onCancel, variant="light", pre
     const showId = (ref) => {
         if (!ref)
             return ''
-        if (ref.type === 'commit')
+        if (ref.type === RefTypeCommit)
             return ref.id.substr(0, 12)
         return ref.id
     }

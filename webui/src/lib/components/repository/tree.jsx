@@ -23,6 +23,7 @@ import {linkToPath} from "../../api";
 import {ConfirmationModal} from "../modals";
 import {Paginator} from "../pagination";
 import {Link} from "../nav";
+import {RefTypeBranch, RefTypeCommit} from "../../../constants";
 
 
 export const humanSize = (bytes) => {
@@ -57,7 +58,7 @@ const EntryRowActions = ({ repo, reference, entry, onDelete }) => {
                         as={Dropdown.Item}>
                         <DownloadIcon/> {' '} Download
                     </PathLink>
-                    {reference.type === 'branch' && <Dropdown.Item onClick={(e) => {
+                    {reference.type === RefTypeBranch && <Dropdown.Item onClick={(e) => {
                         e.preventDefault();
                         handleShow();
                     }}>
@@ -235,7 +236,7 @@ export const URINavigator = ({ repo, reference, path, relativeTo = "", pathURLBu
                     <strong>{'lakefs://'}</strong>
                     <Link href={{pathname: '/repositories/:repoId/objects', params}}>{repo.id}</Link>
                     <strong>{'/'}</strong>
-                    <Link href={{pathname: '/repositories/:repoId/objects',params, query: {ref: reference.id}}}>{(reference.type === 'commit') ? reference.id.substr(0, 12) : reference.id}</Link>
+                    <Link href={{pathname: '/repositories/:repoId/objects',params, query: {ref: reference.id}}}>{(reference.type === RefTypeCommit) ? reference.id.substr(0, 12) : reference.id}</Link>
                     <strong>{'/'}</strong>
                 </>
             ): (
