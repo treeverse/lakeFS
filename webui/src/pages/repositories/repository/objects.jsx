@@ -15,6 +15,7 @@ import {config, objects} from "../../../lib/api";
 import {useAPI, useAPIWithPagination} from "../../../lib/hooks/api";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import {useRouter} from "../../../lib/hooks/router";
+import {RefTypeBranch} from "../../../constants";
 
 
 const UploadButton = ({ config, repo, reference, path, onDone, variant = "success", onClick, onHide, show = false}) => {
@@ -28,7 +29,7 @@ const UploadButton = ({ config, repo, reference, path, onDone, variant = "succes
     const textRef = useRef(null);
     const fileRef = useRef(null);
 
-    if (!reference || reference.type !== 'branch') return <></>
+    if (!reference || reference.type !== RefTypeBranch) return <></>
 
     const hide = () => {
         if (uploadState.inProgress) return;
