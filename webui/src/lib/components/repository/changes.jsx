@@ -133,7 +133,6 @@ export const TreeEntryRow = ({ entry, showActions, relativeTo="", leaf=false, di
                                 : <OverlayTrigger placement="bottom" overlay={<Tooltip>Show changes</Tooltip>}>
                                     <Link style={{verticalAlign: "revert"}} disabled={false} onClick={(e) => {
                                         e.preventDefault();
-                                        setShow(true)
                                     }} >
                                     <FileDiffIcon/>
                                     </Link>
