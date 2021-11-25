@@ -37,6 +37,21 @@ The request to the metastore proxy will invoke the equivalent operation on lakeF
 In turn, lakeFS will use the metastore catalog implemented by Graveler.
 
 
+### Design Diagram Alt.
+
+Alternative design that will be discussed
+
+![lakeFS Metastore Alt.](diagrams/metastore-alt.png)
+
+In this diagram:
+1. Spark/Hive/Trino - data and metadata clients (connects using Thrift endpoint)
+1. lakeFS Metastore - acts as the client's metastore by implementing the Hive Metastore Thrift protocol and manage the metastore data on top of lakeFS
+1. lakeFS - same lakeFS with additional support for the metastore data format. Implementing a way to include custom data format for diff / merge.
+
+The diagram shows how Spark/Hive/Trino connects to the lakeFS metastore (which replaces Hive Metastore) and uses lakeFS as the storage and versioning engine.
+The request to the lakeFS metastore will access the relevant repository branch under lakeFS to read/write/list metastore information.
+lakeFS will have to extend the diff/merge functionality in order to support a better versioning support to the data the lakeFS metastore choose to store.
+
 
 ### Data Model
 
