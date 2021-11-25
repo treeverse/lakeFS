@@ -288,6 +288,11 @@ object BlockParser {
   /** @return Iterator over all SSTable entries
    */
   def entryIterator(in: BlockReadable): Iterator[Entry] = {
+    if (in.length < BlockParser.footerLength) {
+      throw new BadFileFormatException(
+        s"Block of length ${in.length} too short: not enough footer bytes"
+      )
+    }
     val bytes = in.iterate(in.length - BlockParser.footerLength, BlockParser.footerLength)
     val footer = BlockParser.readFooter(bytes)
     BlockParser.readEnd(bytes)
