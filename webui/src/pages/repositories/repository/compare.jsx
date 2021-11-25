@@ -15,6 +15,7 @@ import {ConfirmationButton} from "../../../lib/components/modals";
 import {useRouter} from "../../../lib/hooks/router";
 import {URINavigator} from "../../../lib/components/repository/tree";
 import {appendMoreResults} from "./changes";
+import {RefTypeBranch} from "../../../constants";
 
 
 const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, onSelectCompare, onNavigate }) => {
@@ -100,10 +101,10 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                                 {results.map(entry => {
                                     let leftCommittedRef = reference.id;
                                     let rightCommittedRef = compareReference.id;
-                                    if (reference.type === 'branch') {
+                                    if (reference.type === RefTypeBranch) {
                                         leftCommittedRef +=  + "@";
                                     }
-                                    if (compareReference.type === 'branch') {
+                                    if (compareReference.type === RefTypeBranch) {
                                         rightCommittedRef += "@";
                                     }
                                     return (
@@ -155,7 +156,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
 
                     <RefreshButton onClick={refresh}/>
 
-                    {(compareReference.type === 'branch' && reference.type === 'branch') &&
+                    {(compareReference.type === RefTypeBranch && reference.type === RefTypeBranch) &&
                     <ConfirmationButton
                         variant="success"
                         disabled={((compareReference.id === reference.id) || merging || emptyDiff)}
