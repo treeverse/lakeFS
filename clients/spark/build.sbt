@@ -20,7 +20,7 @@ def settingsToCompileIn(dir: String) = {
     Test / scalaSource := (ThisBuild / baseDirectory).value / dir / "src" / "test" / "scala",
     Compile / resourceDirectory := (ThisBuild / baseDirectory).value / dir / "src" / "main" / "resources",
     Compile / PB.includePaths += (Compile / resourceDirectory).value,
-    Compile / PB.protoSources += (Compile / resourceDirectory).value,
+    Compile / PB.protoSources += (Compile / resourceDirectory).value
   )
 }
 
@@ -57,19 +57,19 @@ def generateCoreProject(buildType: BuildType) =
         // is quite stable.  Take the version documented in DataBricks
         // Runtime 7.6, and note that it changes in 8.3 :-(
         "org.xerial.snappy" % "snappy-java" % "1.1.7.5",
-
         "org.scalactic" %% "scalactic" % "3.2.9",
         "org.scalatest" %% "scalatest" % "3.2.9" % "test",
         "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.39.5" % "test",
         "com.dimafeng" %% "testcontainers-scala-munit" % "0.39.5" % "test",
         "com.lihaoyi" %% "upickle" % "1.4.0" % "test",
-        "com.lihaoyi" %% "os-lib" % "0.7.8" % "test",
+        "com.lihaoyi" %% "os-lib" % "0.7.8" % "test"
       ),
       Test / logBuffered := false,
       // Uncomment to get (very) full stacktraces in test:
       //      Test / testOptions += Tests.Argument("-oF"),
       target := file(s"target/core-${buildType.name}/")
-    ).enablePlugins(S3Plugin)
+    )
+    .enablePlugins(S3Plugin)
 
 def generateExamplesProject(buildType: BuildType) =
   Project(s"${baseName}-examples-${buildType.name}", file(s"examples"))
@@ -80,18 +80,21 @@ def generateExamplesProject(buildType: BuildType) =
       semanticdbEnabled := true, // enable SemanticDB
       semanticdbVersion := scalafixSemanticdb.revision,
       scalacOptions += "-Ywarn-unused-import",
-      libraryDependencies ++= Seq("org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
+      libraryDependencies ++= Seq(
+        "org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
         "software.amazon.awssdk" % "bom" % "2.15.15",
         "software.amazon.awssdk" % "s3" % "2.15.15",
-        "com.amazonaws" % "aws-java-sdk" % "1.7.4", // should match hadoop-aws version(!)
+        "com.amazonaws" % "aws-java-sdk" % "1.7.4" // should match hadoop-aws version(!)
       ),
       assembly / mainClass := Some("io.treeverse.examples.List"),
       target := file(s"target/examples-${buildType.name}/"),
-      run / fork := false, // https://stackoverflow.com/questions/44298847/sbt-spark-fork-in-run
+      run / fork := false // https://stackoverflow.com/questions/44298847/sbt-spark-fork-in-run
     )
 
-lazy val spark2Type = new BuildType("247", scala211Version, "2.4.7", "0.9.8", "2.7.7", "hadoop2-2.0.1")
-lazy val spark3Type = new BuildType("301", scala212Version, "3.0.1", "0.10.11", "2.7.7", "hadoop2-2.0.1")
+lazy val spark2Type =
+  new BuildType("247", scala211Version, "2.4.7", "0.9.8", "2.7.7", "hadoop2-2.0.1")
+lazy val spark3Type =
+  new BuildType("301", scala212Version, "3.0.1", "0.10.11", "2.7.7", "hadoop2-2.0.1")
 
 lazy val core2 = generateCoreProject(spark2Type)
 lazy val core3 = generateCoreProject(spark3Type)
@@ -105,13 +108,16 @@ lazy val assemblySettings = Seq(
   assembly / assemblyShadeRules := Seq(
     ShadeRule.rename("org.apache.http.**" -> "org.apache.httpShaded@1").inAll,
     ShadeRule.rename("com.google.protobuf.**" -> "shadeproto.@1").inAll,
-    ShadeRule.rename("com.google.common.**" -> "shadegooglecommon.@1")
-      .inLibrary("com.google.guava" % "guava" % "30.1-jre", "com.google.guava" % "failureaccess" % "1.0.1")
+    ShadeRule
+      .rename("com.google.common.**" -> "shadegooglecommon.@1")
+      .inLibrary("com.google.guava" % "guava" % "30.1-jre",
+                 "com.google.guava" % "failureaccess" % "1.0.1"
+                )
       .inProject,
     ShadeRule.rename("scala.collection.compat.**" -> "shadecompat.@1").inAll,
     ShadeRule.rename("okio.**" -> "okio.shaded.@0").inAll,
-    ShadeRule.rename("okhttp3.**" -> "okhttp3.shaded.@0").inAll,
-  ),
+    ShadeRule.rename("okhttp3.**" -> "okhttp3.shaded.@0").inAll
+  )
 )
 
 // Upload assembly jars to S3
@@ -121,7 +127,7 @@ lazy val s3UploadSettings = Seq(
       s"${name.value}/${version.value}/${(assemblyJarName in assembly).value}"
   ),
   s3Upload / s3Host := "treeverse-clients-us-east.s3.amazonaws.com",
-  s3Upload / s3Progress  := true
+  s3Upload / s3Progress := true
 )
 
 // Don't publish root project
@@ -144,7 +150,7 @@ lazy val publishSettings = Seq(
   pomIncludeRepository := { _ => false },
   credentials ++= Seq(
     Credentials(Path.userHome / ".sbt" / "credentials"),
-    Credentials(Path.userHome / ".sbt" / "sonatype_credentials"),
+    Credentials(Path.userHome / ".sbt" / "sonatype_credentials")
   )
 )
 
@@ -158,35 +164,35 @@ ThisBuild / scmInfo := Some(
 )
 ThisBuild / developers := List(
   Developer(
-    id    = "ariels",
-    name  = "Ariel Shaqed (Scolnicov)",
+    id = "ariels",
+    name = "Ariel Shaqed (Scolnicov)",
     email = "ariels@treeverse.io",
-    url   = url("https://github.com/arielshaqed")
+    url = url("https://github.com/arielshaqed")
   ),
   Developer(
-    id    = "baraktr",
-    name  = "B. A.",
+    id = "baraktr",
+    name = "B. A.",
     email = "barak.amar@treeverse.io",
-    url   = url("https://github.com/nopcoder"),
+    url = url("https://github.com/nopcoder")
   ),
   Developer(
-    id    = "ozkatz",
-    name  = "Oz Katz",
+    id = "ozkatz",
+    name = "Oz Katz",
     email = "oz.katz@treeverse.io",
-    url   = url("https://github.com/ozkatz"),
+    url = url("https://github.com/ozkatz")
   ),
   Developer(
-    id    = "johnnyaug",
-    name  = "J. A.",
+    id = "johnnyaug",
+    name = "J. A.",
     email = "yoni.augarten@treeverse.io",
-    url   = url("https://github.com/johnnyaug"),
+    url = url("https://github.com/johnnyaug")
   ),
   Developer(
-    id    = "itai.admi",
-    name  = "Itai Admi",
+    id = "itai.admi",
+    name = "Itai Admi",
     email = "itai.admi@treeverse.io",
-    url   = url("https://github.com/itaiad200"),
-  ),
+    url = url("https://github.com/itaiad200")
+  )
 )
 
 ThisBuild / versionScheme := Some("early-semver")
@@ -194,5 +200,7 @@ ThisBuild / organization := "io.lakefs"
 ThisBuild / organizationName := "Treeverse Labs"
 ThisBuild / organizationHomepage := Some(url("http://treeverse.io"))
 ThisBuild / description := "Spark client for lakeFS object metadata."
-ThisBuild / licenses := List("Apache 2" -> new URL("http://www.apache.org/licenses/LICENSE-2.0.txt"))
+ThisBuild / licenses := List(
+  "Apache 2" -> new URL("http://www.apache.org/licenses/LICENSE-2.0.txt")
+)
 ThisBuild / homepage := Some(url("https://github.com/treeverse/spark-client"))
