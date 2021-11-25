@@ -15,7 +15,7 @@ import {ConfirmationButton} from "../../../lib/components/modals";
 import {useRouter} from "../../../lib/hooks/router";
 import {URINavigator} from "../../../lib/components/repository/tree";
 import {appendMoreResults} from "./changes";
-import {RefTypeBranch} from "../../../constants";
+import {RefTypeBranch, RefTypeCommit} from "../../../constants";
 
 
 const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, onSelectCompare, onNavigate }) => {
@@ -48,10 +48,10 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
     const relativeTitle = (from, to) => {
         let fromId = from.id;
         let toId = to.id;
-        if (from.type === 'commit') {
+        if (from.type === RefTypeCommit) {
             fromId = fromId.substr(0, 12);
         }
-        if (to.type === 'commit') {
+        if (to.type === RefTypeCommit) {
             toId = toId.substr(0, 12);
         }
 

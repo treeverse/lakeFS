@@ -2,13 +2,14 @@ import React, {useContext, useState, createContext, useEffect} from "react";
 
 import {repositories, branches, commits, NotFoundError, tags, BadRequestError} from "../api";
 import {useRouter} from "./router";
+import {RefTypeBranch, RefTypeCommit, RefTypeTag} from "../../constants";
 
 
 export const resolveRef = async (repoId, refId) => {
     // try branch
     try {
         const branch = await branches.get(repoId, refId);
-        return {id: branch.id, type: 'branch'};
+        return {id: branch.id, type: RefTypeBranch};
     } catch(error) {
         if (!(error instanceof NotFoundError) && !(error instanceof BadRequestError)) {
             throw error;
@@ -17,7 +18,7 @@ export const resolveRef = async (repoId, refId) => {
     // try tag
     try {
         const tag = await tags.get(repoId, refId);
-        return {id: tag.id, type: 'tag'};
+        return {id: tag.id, type: RefTypeTag};
     } catch(error) {
         if (!(error instanceof NotFoundError) && !(error instanceof BadRequestError)) {
             throw error;
@@ -26,7 +27,7 @@ export const resolveRef = async (repoId, refId) => {
     // try commit
     try {
         const commit = await commits.get(repoId, refId);
-        return {id: commit.id,  type: 'commit'};
+        return {id: commit.id,  type: RefTypeCommit};
     } catch(error) {
         if (!(error instanceof NotFoundError)) {
             throw error;
