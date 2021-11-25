@@ -19,7 +19,8 @@ has_children: false
 {: .no_toc }
 
 In case you want to use the secret key for authentication you will need to use the account key in the configuration
-Go to the `Access Keys` tab and click on `Show Keys` save the values under `Storage account name` and `Key` we will need them in the [installing lakeFS](install.md) step
+Go to the `Access Keys` tab and click on `Show Keys` save the values under `Storage account name` and `Key` we will need them in the [installing lakeFS](../../quickstart/installing.md) step
+
 ## Authenticate with Active Directory
 {: .no_toc }
 
