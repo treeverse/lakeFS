@@ -20,7 +20,7 @@ class BlockReadableSpec extends AnyFunSpec with Matchers {
   describe("instantiate BlockReadableFileChannel") {
     describe("with null file channel") {
       it("should fail with a Null Pointer Exception") {
-        assertThrows[NullPointerException]{
+        assertThrows[NullPointerException] {
           new BlockReadableFileChannel(null)
         }
       }
@@ -50,14 +50,14 @@ class BlockParserSpec extends AnyFunSpec with Matchers {
     it("fails to read changed magic") {
       val bytes = magicBytes.toArray
       bytes(2) = (bytes(2) + 3).toByte
-      assertThrows[BadFileFormatException]{
+      assertThrows[BadFileFormatException] {
         BlockParser.readMagic(bytes.iterator)
       }
     }
 
     it("fails to read truncated magic") {
       val bytes = magicBytes.iterator.drop(3)
-      assertThrows[BadFileFormatException]{
+      assertThrows[BadFileFormatException] {
         BlockParser.readMagic(bytes)
       }
     }
@@ -71,7 +71,7 @@ class BlockParserSpec extends AnyFunSpec with Matchers {
         case ((name, b, value)) => {
           it(name) {
             val decodedValue = BlockParser.readUnsignedVarLong(b.map(_.toByte).iterator)
-            decodedValue should be (value)
+            decodedValue should be(value)
           }
         }
       })
@@ -102,7 +102,7 @@ class BlockParserSpec extends AnyFunSpec with Matchers {
         case ((b, value)) => {
           it(s"parses ${value}") {
             val decodedValue = BlockParser.readUnsignedVarLong(b.map(_.toByte).iterator)
-            decodedValue should be (value)
+            decodedValue should be(value)
           }
         }
       })
@@ -121,7 +121,7 @@ class BlockParserSpec extends AnyFunSpec with Matchers {
         case ((name, b, value)) => {
           it(name) {
             val decodedValue = BlockParser.readSignedVarLong(b.map(_.toByte).iterator)
-            decodedValue should be (value)
+            decodedValue should be(value)
           }
         }
       })
@@ -152,7 +152,7 @@ class BlockParserSpec extends AnyFunSpec with Matchers {
         case ((bytes, value)) => {
           it(s"parses ${value}") {
             val decodedValue = BlockParser.readSignedVarLong(bytes.map(_.toByte).iterator)
-            decodedValue should be (value)
+            decodedValue should be(value)
           }
         }
       })
@@ -173,7 +173,7 @@ class BlockParserSpec extends AnyFunSpec with Matchers {
         case ((bytes, value)) => {
           it(s"parses ${value.toInt}") {
             val decodedValue = BlockParser.readInt32(bytes.map(_.toByte).iterator)
-            decodedValue should be (value.toInt)
+            decodedValue should be(value.toInt)
           }
         }
       })
@@ -184,14 +184,18 @@ class BlockParserSpec extends AnyFunSpec with Matchers {
     // Load source data
     val hTxt = Source.fromInputStream(
       // Source.fromResource in Scala >= 2.12 but need to support 2.11.
-      getClass.getClassLoader.getResourceAsStream("pebble-testdata/h.txt"))
+      getClass.getClassLoader.getResourceAsStream("pebble-testdata/h.txt")
+    )
     val histRe = " *(\\d+) *(\\w+) *$".r
-    val expected = hTxt.getLines().map((line) =>
-      line match {
-        case histRe(count, word) => (word, count.toInt)
-        case _ => throw new RuntimeException(s"Bad format h.txt line ${line}")
-      }
-    ).toSeq
+    val expected = hTxt
+      .getLines()
+      .map((line) =>
+        line match {
+          case histRe(count, word) => (word, count.toInt)
+          case _                   => throw new RuntimeException(s"Bad format h.txt line ${line}")
+        }
+      )
+      .toSeq
 
     it("internal: load h.txt") {
       expected should not be empty
@@ -207,11 +211,10 @@ class BlockParserSpec extends AnyFunSpec with Matchers {
       "h.table-bloom.sst"
     )
 
-    /**
-     * Lightweight fixture for running particular tests with an SSTable and
-     * recovering its handle after running.  See
-     * https://www.scalatest.org/scaladoc/1.8/org/scalatest/FlatSpec.html
-     * ("Providing different fixtures to different tests") for how this works.
+    /** Lightweight fixture for running particular tests with an SSTable and
+     *  recovering its handle after running.  See
+     *  https://www.scalatest.org/scaladoc/1.8/org/scalatest/FlatSpec.html
+     *  ("Providing different fixtures to different tests") for how this works.
      */
     def withSSTable(sstFilename: String, test: BlockReadable => Any) = {
       // Copy SSTable to a readable file
@@ -232,37 +235,48 @@ class BlockParserSpec extends AnyFunSpec with Matchers {
       }
     }
 
-    testFiles.foreach(
-      (sstFilename) => {
-        describe(sstFilename) {
-          it("reads footer") {
-            withSSTable(sstFilename, (in: BlockReadable) => {
+    testFiles.foreach((sstFilename) => {
+      describe(sstFilename) {
+        it("reads footer") {
+          withSSTable(
+            sstFilename,
+            (in: BlockReadable) => {
               val bytes = in.iterate(in.length - BlockParser.footerLength, BlockParser.footerLength)
               val footer = BlockParser.readFooter(bytes)
-              bytes.hasNext should be (false)
-            })
-          }
+              bytes.hasNext should be(false)
+            }
+          )
+        }
 
-          it("dumps properties") {
-            withSSTable(sstFilename, (in: BlockReadable) => {
+        it("dumps properties") {
+          withSSTable(
+            sstFilename,
+            (in: BlockReadable) => {
               val bytes = in.iterate(in.length - BlockParser.footerLength, BlockParser.footerLength)
               val footer = BlockParser.readFooter(bytes)
 
               val props = BlockParser.readProperties(in, footer)
-            })
-          }
+            }
+          )
+        }
 
-          it("reads everything") {
-            withSSTable(sstFilename, (in: BlockReadable) => {
+        it("reads everything") {
+          withSSTable(
+            sstFilename,
+            (in: BlockReadable) => {
               val it = BlockParser.entryIterator(in)
-              val actual = it.map((entry) =>
-                (BlockParserSpec.str(entry.key), BlockParserSpec.str(entry.value).toInt)).toSeq
+              val actual = it
+                .map((entry) =>
+                  (BlockParserSpec.str(entry.key), BlockParserSpec.str(entry.value).toInt)
+                )
+                .toSeq
 
               actual should contain theSameElementsInOrderAs expected
-            })
-          }
+            }
+          )
         }
-      })
+      }
+    })
   }
 }
 
@@ -277,24 +291,31 @@ class CountedIteratorSpec extends AnyFunSpec with Matchers {
 
     it("counts elements") {
       val ci = new CountedIterator(base.iterator)
-      ci.count should be (0)
+      ci.count should be(0)
       ci.next
-      ci.count should be (1)
+      ci.count should be(1)
       ci.foreach((_) => Unit)
-      ci.count should be (base.length)
+      ci.count should be(base.length)
     }
   }
 }
 
 class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
 
-  override val container: GenericContainer = GenericContainer("golang:1.16.2-alpine",
+  override val container: GenericContainer = GenericContainer(
+    "golang:1.16.2-alpine",
     classpathResourceMapping = Seq(
       ("parser-test/sst_files_generator.go", "/local/sst_files_generator.go", BindMode.READ_WRITE),
       ("parser-test/go.mod", "/local/go.mod", BindMode.READ_WRITE),
-      ("parser-test/go.sum", "/local/go.sum", BindMode.READ_WRITE)),
-    command = Seq("/bin/sh", "-c", "cd /local && CGO_ENABLED=0 go run sst_files_generator.go && echo \"done\""),
-    waitStrategy = new LogMessageWaitStrategy().withRegEx("done\\n") // TODO(Tals): use startupCheckStrategy instead of waitStrategy (https://github.com/treeverse/lakeFS/issues/2455)
+      ("parser-test/go.sum", "/local/go.sum", BindMode.READ_WRITE)
+    ),
+    command = Seq("/bin/sh",
+                  "-c",
+                  "cd /local && CGO_ENABLED=0 go run sst_files_generator.go && echo \"done\""
+                 ),
+    waitStrategy = new LogMessageWaitStrategy().withRegEx(
+      "done\\n"
+    ) // TODO(Tals): use startupCheckStrategy instead of waitStrategy (https://github.com/treeverse/lakeFS/issues/2455)
   )
 
   describe("A block parser") {
@@ -319,7 +340,8 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
           it("should parse successfully") {
             withGeneratedSstTestFiles(fileName, verifyBlockParserOutput)
           }
-        })
+        }
+      )
     }
 
     describe("with random table user properties") {
@@ -330,7 +352,7 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
 
     describe("with sstable with xxHash64 checksum") {
       it("should fail parsing") {
-        assertThrows[BadFileFormatException]{
+        assertThrows[BadFileFormatException] {
           withGeneratedSstTestFiles("checksum.type.xxHash64", verifyBlockParserOutput)
         }
       }
@@ -338,7 +360,7 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
 
     describe("with sstable with levelDB table format") {
       it("should fail parsing") {
-        assertThrows[BadFileFormatException]{
+        assertThrows[BadFileFormatException] {
           withGeneratedSstTestFiles("table.format.leveldb", verifyBlockParserOutput)
         }
       }
@@ -346,7 +368,7 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
 
     describe("with sstable with Zstd compression") {
       it("should fail parsing") {
-        assertThrows[BadFileFormatException]{
+        assertThrows[BadFileFormatException] {
           withGeneratedSstTestFiles("compression.type.zstd", verifyBlockParserOutput)
         }
       }
@@ -377,9 +399,9 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
     }
 
     describe("with empty file") {
-      ignore("should fail parsing") {
-        assertThrows[BadFileFormatException]{ // TODO (tals): enable the test after closing https://github.com/treeverse/lakeFS/issues/2508
-          withGeneratedEmptyTestFile("empty.sfile", verifyBlockParserOutput)
+      it("should fail parsing") {
+        assertThrows[BadFileFormatException] {
+          withGeneratedEmptyTestFile("empty.file", verifyBlockParserOutput)
         }
       }
     }
@@ -392,38 +414,42 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
 
     describe("with sstable with a corrupted magic mark") {
       it("should fail parsing") {
-        assertThrows[BadFileFormatException]{
+        assertThrows[BadFileFormatException] {
           withGeneratedSstTestFiles("bad.magic.mark", verifyBlockParserOutput)
         }
       }
     }
   }
 
-  /**
-   * Copies data from a file inside the test container to a temporary file.
-   * @param baseFileName the file name without a suffix of the files to copy from within the container
-   * @param suffix of the file to copy from the container
-   * @return
+  /** Copies data from a file inside the test container to a temporary file.
+   *  @param baseFileName the file name without a suffix of the files to copy from within the container
+   *  @param suffix of the file to copy from the container
+   *  @return
    */
-  def copyTestFile(baseFileName: String, suffix: String) : File =
-    container.copyFileFromContainer("/local/" + baseFileName + suffix, in => {
-      val tempOutFile = File.createTempFile("test-block-parser.", suffix)
-      tempOutFile.deleteOnExit()
-      val out = new java.io.FileOutputStream(tempOutFile)
-      try {
-        IOUtils.copy(in, out)
-      } finally {
-        out.close()
+  def copyTestFile(baseFileName: String, suffix: String): File =
+    container.copyFileFromContainer(
+      "/local/" + baseFileName + suffix,
+      in => {
+        val tempOutFile = File.createTempFile("test-block-parser.", suffix)
+        tempOutFile.deleteOnExit()
+        val out = new java.io.FileOutputStream(tempOutFile)
+        try {
+          IOUtils.copy(in, out)
+        } finally {
+          out.close()
+        }
+        return tempOutFile
       }
-      return tempOutFile
-    })
+    )
 
-  /**
-   * Lightweight fixture for running particular tests with SSTables and JSON fules generated by a go application on
-   * test startup. The fixture uses sstables as the parser input, and the json as the source of the expected output of
-   * the parsing operation.
+  /** Lightweight fixture for running particular tests with SSTables and JSON fules generated by a go application on
+   *  test startup. The fixture uses sstables as the parser input, and the json as the source of the expected output of
+   *  the parsing operation.
    */
-  def withGeneratedSstTestFiles(baseFileName: String, test: (BlockReadable, Seq[(String, String)], Long) => Any) = {
+  def withGeneratedSstTestFiles(
+      baseFileName: String,
+      test: (BlockReadable, Seq[(String, String)], Long) => Any
+  ) = {
     val tmpSstFile = copyTestFile(baseFileName, ".sst")
     val tmpJsonFile = copyTestFile(baseFileName, ".json")
 
@@ -438,7 +464,10 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
     }
   }
 
-  def withGeneratedEmptyTestFile(baseFileName: String, test: (BlockReadable, Seq[(String, String)], Long) => Any) = {
+  def withGeneratedEmptyTestFile(
+      baseFileName: String,
+      test: (BlockReadable, Seq[(String, String)], Long) => Any
+  ) = {
     val tmpFile = copyTestFile(baseFileName, "")
     val in = new BlockReadableFileChannel(new java.io.FileInputStream(tmpFile).getChannel)
     try {
@@ -448,10 +477,14 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
     }
   }
 
-  def verifyBlockParserOutput(in: BlockReadable, expected: Seq[(String, String)], sstSize: Long): Unit = {
+  def verifyBlockParserOutput(
+      in: BlockReadable,
+      expected: Seq[(String, String)],
+      sstSize: Long
+  ): Unit = {
     val it = BlockParser.entryIterator(in)
-    val actual = it.map((entry) =>
-      (BlockParserSpec.str(entry.key), BlockParserSpec.str(entry.value))).toSeq
+    val actual =
+      it.map((entry) => (BlockParserSpec.str(entry.key), BlockParserSpec.str(entry.value))).toSeq
 
     actual should contain theSameElementsInOrderAs expected
   }
