@@ -35,7 +35,7 @@ class SummaryData {
 
 /**
  * Widget to display a summary of a change: the number of added/changed/deleted/conflicting objects.
- * Shows an error if the change is has more than {@link MAX_NUM_OBJECTS} entries.
+ * Shows an error if the change has more than {@link MAX_NUM_OBJECTS} entries.
 
  * @param {string} prefix - prefix to display summary for.
  * @param {(after : string, path : string, useDelimiter :? boolean, amount :? number) => Promise<any> } getMore - function to use to get the change entries.
@@ -84,7 +84,7 @@ export default ({prefix, getMore}) => {
             {summaryData.added.count > 0 &&
                 <><span className={"color-fg-added"}>{summaryData.added.count}</span> objects added (total {humanSize(summaryData.added.sizeBytes)})<br/></>}
             {summaryData.removed.count > 0 &&
-                <><span className={"color-fg-removed"}>{summaryData.removed.count}</span> objects removed<br/></>}
+                <><span className={"color-fg-removed"}>{summaryData.removed.count}</span> objects removed (total {humanSize(summaryData.removed.sizeBytes)})<br/></>}
             {summaryData.changed.count > 0 &&
                 <><span className={"color-fg-changed"}>{summaryData.changed.count}</span> objects changed<br/></>}
             {summaryData.conflict.count > 0 &&

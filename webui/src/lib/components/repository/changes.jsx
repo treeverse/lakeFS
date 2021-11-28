@@ -96,7 +96,7 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
         return <Error error={error}/>
 
     if (loading && results.length === 0)
-        return <TreeEntryRow key={entry.path+"entry-row"} entry={entry} loading={true} relativeTo={relativeTo} depth={depth} onRevert={onRevert} onNavigate={onNavigate}repo={repo} reference={reference}
+        return <TreeEntryRow key={entry.path+"entry-row"} entry={entry} loading={true} relativeTo={relativeTo} depth={depth} onRevert={onRevert} onNavigate={onNavigate} repo={repo} reference={reference}
                              getMore={getMore}/>
 
     // When the entry represents a tree leaf
