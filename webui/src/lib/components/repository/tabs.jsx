@@ -6,6 +6,7 @@ import {FileDiffIcon, GitCommitIcon, DatabaseIcon, GitBranchIcon, GitCompareIcon
 import {useRefs} from "../../hooks/repo";
 import {Link, NavItem} from "../nav";
 import {useRouter} from "../../hooks/router";
+import {RefTypeBranch} from "../../../constants";
 
 
 
@@ -35,7 +36,7 @@ export const RepositoryNavTabs = ({ active }) => {
 
     const withBranchContext = (url) => {
         const params = new URLSearchParams();
-        if (!!reference && reference.type === 'branch') params.append('ref', reference.id);
+        if (!!reference && reference.type === RefTypeBranch) params.append('ref', reference.id);
         if (!!params.toString())
             return `${url}?${params.toString()}`;
         return url;
