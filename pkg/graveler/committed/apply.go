@@ -103,6 +103,10 @@ func (a *applier) addIntoDiffSummary(typ graveler.DiffType, n int) {
 	}
 }
 
+func (a *applier) setMissingInfo() {
+	a.summary.MissingInfo = false
+}
+
 func (a *applier) incrementDiffSummary(typ graveler.DiffType) {
 	a.addIntoDiffSummary(typ, 1)
 }
@@ -239,6 +243,14 @@ func (a *applier) applySourceRangeDiffKey(sourceRange *Range, diffValue *gravele
 }
 
 func (a *applier) applyDiffRangeSourceKey(diffRange *Range, sourceValue *graveler.ValueRecord) error {
+	if bytes.Compare(diffRange.MinKey, sourceValue.Key) > 0 {
+		// source is before diff range
+		if err := a.writer.WriteRecord(*sourceValue); err != nil {
+			return fmt.Errorf("write source record: %w", err)
+		}
+		a.haveSource = a.source.Next()
+		return nil
+	}
 	if bytes.Compare(diffRange.MaxKey, sourceValue.Key) >= 0 {
 		// diffs is at start of range which we need to scan, enter it.
 		a.haveDiffs = a.diffs.Next()
@@ -267,6 +279,15 @@ func (a *applier) applyDiffRangeSourceKey(diffRange *Range, sourceValue *gravele
 
 func (a *applier) applyBothRanges(diffRange *Range, sourceRange *Range) error {
 	switch {
+	case bytes.Equal(sourceRange.MinKey, diffRange.MinKey) && bytes.Equal(sourceRange.MaxKey, diffRange.MaxKey):
+		// insert diff move both
+		if err := a.writer.WriteRange(*diffRange); err != nil {
+			return fmt.Errorf("copy diff range %s: %w", diffRange.ID, err)
+		}
+		a.setMissingInfo()
+		// TODO(Guys): When this optimization (inserting the whole range in case base and source are identical) is used. we can't be sure of the diff summary. e.g 4 files added 2 removed or 3 files changed. Need to find a way to handle this case
+		a.haveDiffs = a.diffs.NextRange()
+		a.haveSource = a.source.NextRange()
 	case bytes.Compare(diffRange.MaxKey, sourceRange.MinKey) < 0 && diffRange.Tombstone:
 		// internal error but no data lost: deletion requested of a
 		// range that was not there.
@@ -287,14 +308,6 @@ func (a *applier) applyBothRanges(diffRange *Range, sourceRange *Range) error {
 		if err := a.writer.WriteRange(*sourceRange); err != nil {
 			return fmt.Errorf("copy source range %s: %w", sourceRange.ID, err)
 		}
-		a.haveSource = a.source.NextRange()
-	case bytes.Equal(sourceRange.MinKey, diffRange.MinKey) && bytes.Equal(sourceRange.MaxKey, diffRange.MaxKey) && sourceRange.ID != diffRange.ID:
-		// insert diff move both
-		if err := a.writer.WriteRange(*diffRange); err != nil {
-			return fmt.Errorf("copy diff range %s: %w", diffRange.ID, err)
-		}
-		// TODO(Guys): When this optimization (inserting the whole range in case base and source are identical) is used. we can't be sure of the diff summary. e.g 4 files added 2 removed or 3 files changed. Need to find a way to handle this case
-		a.haveDiffs = a.diffs.NextRange()
 		a.haveSource = a.source.NextRange()
 	case diffRange.ID == sourceRange.ID && diffRange.Tombstone:
 		a.addIntoDiffSummary(graveler.DiffTypeRemoved, int(diffRange.Count))

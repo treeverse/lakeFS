@@ -108,8 +108,9 @@ func (d *diffIterator) setCurrentRangeBoth() {
 	d.currentRange.iter = nil
 	d.currentRange.value = &d.rightValue
 	d.currentRange.currentRangeDiff = &RangeDiff{
-		Type:  graveler.DiffTypeChanged,
-		Range: d.rightValue.rng.Copy(),
+		Type:         graveler.DiffTypeChanged,
+		Range:        d.rightValue.rng.Copy(),
+		LeftIdentity: d.leftValue.rng.ID,
 	}
 	d.currentDiff = nil
 }
@@ -275,6 +276,13 @@ func (d *diffIterator) Next() bool {
 }
 
 func (d *diffIterator) NextRange() bool {
+	if d.currentRange.currentRangeDiff != nil && d.currentRange.currentRangeDiff.Type == graveler.DiffTypeChanged {
+		d.leftValue.record, d.leftValue.rng, d.leftValue.err = diffIteratorNextRange(d.left)
+		d.rightValue.record, d.rightValue.rng, d.rightValue.err = diffIteratorNextRange(d.right)
+		d.clearCurrentRange()
+		d.state = diffIteratorStateOpen
+		return d.Next()
+	}
 	if d.currentRange.iter == nil {
 		d.err = ErrNoRange
 		return false

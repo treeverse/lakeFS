@@ -218,7 +218,7 @@ func (d *compareIterator) stepRange() (hasMore bool, done bool) {
 			d.val = nil
 			return true, true
 		}
-		if baseValue == nil || bytes.Compare(rng.MaxKey, baseValue.Key) < 0 {
+		if (baseRange != nil && bytes.Compare(rng.MaxKey, baseRange.MinKey) < 0) || baseValue == nil || bytes.Compare(rng.MaxKey, baseValue.Key) < 0 {
 			// added on dest, but not on source, skip range
 			return d.diffIt.NextRange(), false
 		}
@@ -233,7 +233,7 @@ func (d *compareIterator) stepRange() (hasMore bool, done bool) {
 			d.val = nil
 			return true, true
 		}
-		if baseRange != nil && rng.ID == baseRange.ID {
+		if bytes.Compare(rng.MaxKey, baseRange.MinKey) < 0 || baseRange != nil && rng.ID == baseRange.ID {
 			// changed on dest, but not on source, skip range
 			return d.diffIt.NextRange(), false
 		}
