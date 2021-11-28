@@ -16,11 +16,11 @@ const PAGE_SIZE = 1_000;
 class SummaryEntry {
     constructor() {
         this.count = 0
-        this.size = 0
+        this.sizeBytes = 0
     }
-    add(count, size) {
+    add(count, sizeBytes) {
         this.count += count
-        this.size += size
+        this.sizeBytes += sizeBytes
     }
 }
 
@@ -82,7 +82,7 @@ export default ({prefix, getMore}) => {
     const detailsTooltip = <Tooltip>
         <div className={"m-1 small text-left"}>
             {summaryData.added.count > 0 &&
-                <><span className={"color-fg-added"}>{summaryData.added.count}</span> objects added (total {humanSize(summaryData.added.size)})<br/></>}
+                <><span className={"color-fg-added"}>{summaryData.added.count}</span> objects added (total {humanSize(summaryData.added.sizeBytes)})<br/></>}
             {summaryData.removed.count > 0 &&
                 <><span className={"color-fg-removed"}>{summaryData.removed.count}</span> objects removed<br/></>}
             {summaryData.changed.count > 0 &&
