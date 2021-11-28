@@ -116,7 +116,7 @@ For example, lakeFS will search and execute all matching `Action` files with the
 
 ## Runs API & CLI
 
-[OpenAPI](reference/api.md) endpoint and [lakectl](reference/commands.md/#lakectl-actions) expose the results of `Runs` execution per repository, branch, commit and specific `Action`.
+[OpenAPI](../reference/api.md) endpoint and [lakectl](../reference/commands.md#lakectl-actions) expose the results of `Runs` execution per repository, branch, commit and specific `Action`.
 The endpoint also allows to download the execution log of any executed `Hook` under each `Run` for observability.
 
 
