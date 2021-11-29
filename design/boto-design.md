@@ -25,7 +25,7 @@ When a user with an existing python code that uses boto3 client to access s3 wan
 The botwo package provides a boto3 like client with two underlying boto3 clients.
 It handles several things for the user:
 * Holds two boto clients and routes the requests between them by the bucket/prefix configuration. 
-For example: user can route all requests to s3 with `Bucket/prefix` to lakeFs with `Bucket/main/prefix` in lakeFS (Bucket = repository name).
+For example: user can route all requests to s3 with `Bucket` to lakeFs with `Bucket/main/` in lakeFS (Bucket = repository name).
 * Maps 1:1 with the boto AWS service API. All botwo client AWS functions will be generated on the fly according to boto3 client AWS functions.
 * Holds special treatment for functions that operate on multiple buckets like `upload_part_copy`. If more such functions are added to s3 in the future, we will need to implement them as well.
 * It has more functionality like the event-system that will be implemented by using one of its clients (the default one).
@@ -78,7 +78,7 @@ client2 = boto3.client('s3', endpoint_url='https://lakefs.example.com')
 
 mapping = [
   {
-    "bucket_name": "bucket-a/*",
+    "bucket_name": "bucket-a",
     "client": "lakefs",
     "key_prefix": "dev/"
   },
@@ -99,7 +99,7 @@ s3 = botwo.client({"s3": client1, "lakefs": client2}, mapping)
 s3.get_object(Bucket="test-bucket", Key="test/object.txt") # stays the same
 ```
 
-Wildcard matching- every time s3 function is called, it will go over the mapping prefix list by order and stop if there is a match.
+Every time s3 function is called, it will go over the mapping bucket list by order and stop if there is a match.
 If there isn't a match it will go to the default client (the user must provide a default client).
 
 ## Open Questions
