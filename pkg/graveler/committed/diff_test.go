@@ -360,7 +360,7 @@ func TestNextErr(t *testing.T) {
 	ctx := context.Background()
 	it := committed.NewDiffIterator(ctx,
 		newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"i1", "i2"}}),
-		newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"i1a", "i2a"}}))
+		newFakeMetaRangeIterator([][]string{{"k1", "k2", "k3"}}, [][]string{{"i1a", "i2a", "i3a"}}))
 	if !it.Next() {
 		t.Fatalf("unexptected result from it.Next(), expected true, got false with err=%s", it.Err())
 	}
@@ -370,6 +370,33 @@ func TestNextErr(t *testing.T) {
 	}
 	if err := it.Err(); err != committed.ErrNoRange {
 		t.Fatalf("expected to get err=%s, got: %s", committed.ErrNoRange, err)
+	}
+}
+
+func TestSameBounds(t *testing.T) {
+	ctx := context.Background()
+	it := committed.NewDiffIterator(ctx,
+		newFakeMetaRangeIterator([][]string{{"k1", "k2"}, {"k3", "k4"}}, [][]string{{"i1", "i2"}, {"i3", "i4"}}),
+		newFakeMetaRangeIterator([][]string{{"k1", "k2"}, {"k3", "k4"}}, [][]string{{"i1a", "i2a"}, {"i3a", "i4a"}}))
+	if !it.Next() {
+		t.Fatalf("unexptected result from it.Next(), expected true, got false with err=%s", it.Err())
+	}
+	if !it.NextRange() {
+		t.Fatalf("unexptected result from it.Next(), expected true, got false with err=%s", it.Err())
+	}
+	val, _ := it.Value()
+	if val != nil {
+		t.Errorf("unexptected value after it.NextRange(), expected nil, got=%v", val)
+	}
+	if !it.Next() {
+		t.Fatalf("unexptected result from it.Next(), expected true, got false with err=%s", it.Err())
+	}
+	val, _ = it.Value()
+	if val == nil || string(val.Value.Identity) != "i3a" {
+		t.Errorf("unexptected value after it.Next(), expected i3a, got=%v", val)
+	}
+	if err := it.Err(); err != nil {
+		t.Fatalf("unexpected error, got: %s", err)
 	}
 }
 

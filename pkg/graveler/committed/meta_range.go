@@ -56,7 +56,7 @@ type DiffIterator interface {
 type RangeDiff struct {
 	Type         graveler.DiffType
 	Range        *Range
-	LeftIdentity ID
+	LeftIdentity ID // the Identity of the value on the left side of the diff (populated on DiffTypeChanged )
 }
 
 func (r RangeDiff) Copy() *RangeDiff {
