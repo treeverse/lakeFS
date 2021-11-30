@@ -20,7 +20,7 @@ Solving 2 is hard because it involves changing many paths scattered throughout t
 When a user with an existing python code that uses boto3 client to access s3 wants to move only part of their buckets/prefixes to lakefs, botwo allows using lakefs and s3 together with minimum code changes.
 
 ## Proposed Design
-![Drawing of botwo architecture](./botwo-design.png)
+![Drawing of botwo architecture](diagrams/botwo-design.png)
 
 The botwo package provides a boto3 like client with two underlying boto3 clients.
 It handles several things for the user:
@@ -103,7 +103,7 @@ Every time s3 function is called, it will go over the mapping bucket list by ord
 If there isn't a match it will go to the default client (the user must provide a default client).
 
 ## Open Questions
-![Drawing of boto architecture](./boto-architecture.png)
+![Drawing of boto architecture](diagrams/boto-architecture.png)
 
 * There are two different abstractions within the boto3 SDK for making AWS service requests: client and resource.
   * Client - provides low-level AWS service access, maps 1:1 with the AWS service API.
