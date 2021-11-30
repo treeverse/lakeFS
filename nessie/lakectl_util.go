@@ -142,9 +142,9 @@ func runCmdAndVerifyResult(t *testing.T, cmd string, expectFail bool, isTerminal
 	}
 	result, err := runShellCommand(cmd, isTerminal)
 	if expectFail {
-		require.Error(t, err, "Expected error in %s command", cmd)
+		require.Error(t, err, "Expected error in %s command did not occur. Output -%s", cmd, string(result))
 	} else {
-		require.NoError(t, err, "Failed to run %s command", cmd)
+		require.NoError(t, err, "Failed to run %s command - %s", cmd, string(result))
 	}
 	require.Equal(t, expanded, sanitize(string(result)), "Unexpected output for %s command", cmd)
 }
