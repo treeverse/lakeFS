@@ -1,3 +1,15 @@
+:root {
+  --color-fg-added: #339933;
+  --color-fg-removed: #FF3300;
+  --color-fg-changed: #ffc003;
+  --color-fg-conflict: #7f7966;
+  --color-bg-added: #e6ffec;
+  --color-bg-removed: #ffece6;
+  --color-bg-changed: #fff6db;
+  --color-bg-conflict: #fff3cd;
+}
+
+
 .logo {
   height: 30px;
 }
@@ -156,12 +168,12 @@
 }
 
 .table .leaf-entry-row .objects-diff .removed {
-  color: #FF3300;
+  color: var(--color-fg-removed);
   font-weight: bold;
 }
 
 .table .leaf-entry-row .objects-diff .added {
-  color: #339933;
+  color: var(--color-fg-added);
   font-weight: bold;
 }
 
@@ -218,19 +230,19 @@
 }
 
 .diff-changed {
-  background-color: #fff6db;
+  background-color: var(--color-bg-changed);
 }
 
 .diff-added {
-  background-color: #e6ffec;
+  background-color: var(--color-bg-added)
 }
 
 .diff-removed {
-  background-color: #ffece6;
+  background-color: var(--color-bg-removed);
 }
 
 .diff-conflict {
-  background-color: #fff3cd;
+  background-color: var(--color-bg-conflict);
 }
 
 .diff-more {
@@ -286,20 +298,19 @@
 }
 
 .change-entry-row-actions {
-  width: 30px;
   padding:0;
 }
 
-.table .change-entry-row .change-entry-row-actions .btn,
-.table .tree-entry-row .change-entry-row-actions .btn,
+.table .change-entry-row .change-entry-row-actions .btn-link,
+.table .tree-entry-row .change-entry-row-actions .btn-link,
 .actions-runs-list .table tbody tr td .clipboard-copy button,
 .actions-runs-list .table tbody tr td .run-filter .link {
   visibility: hidden;
   font-size: 0.7rem;
 }
-.table .change-entry-row:hover .change-entry-row-actions .btn,
-.table .tree-entry-row:hover .change-entry-row-actions .btn,
-.table .tree-entry-row:focus .change-entry-row-actions .btn,
+.table .change-entry-row:hover .change-entry-row-actions .btn-link,
+.table .tree-entry-row:hover .change-entry-row-actions .btn-link,
+.table .tree-entry-row:focus .change-entry-row-actions .btn-link,
 .actions-runs-list .table tbody tr:hover td .clipboard-copy button ,
 .actions-runs-list .table tbody tr:focus td .clipboard-copy button ,
 .actions-runs-list .table tbody tr:hover td .run-filter .link ,
@@ -408,4 +419,33 @@ td .form-group {
 
 .tree-column{
   width: 2px;
+}
+
+.change-summary .arrow {
+  visibility: hidden;
+}
+
+.color-fg-added {
+  color: var(--color-fg-added);
+  font-weight: bold;
+}
+
+.color-fg-removed {
+  color: var(--color-fg-removed);
+  font-weight: bold;
+}
+
+.color-fg-changed {
+  color: var(--color-fg-changed);
+  font-weight: bold;
+}
+
+.color-fg-conflict {
+  color: var(--color-fg-conflict);
+  font-weight: bold;
+}
+
+.change-summary-icon {
+  margin-left: 0.125rem;
+  padding: .1rem;
 }
