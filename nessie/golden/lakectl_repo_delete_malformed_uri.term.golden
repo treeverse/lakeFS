@@ -1,0 +1,2 @@
+[91mInvalid 'repository': parsing ${REPO}: malformed lakefs uri[0m
+Error executing command.

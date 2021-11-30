@@ -59,20 +59,27 @@ func createRepositoryForTest(ctx context.Context, t *testing.T) string {
 }
 
 func createRepositoryByName(ctx context.Context, t *testing.T, name string) string {
-	storageNamespace := viper.GetString("storage_namespace")
-	if !strings.HasSuffix(storageNamespace, "/") {
-		storageNamespace += "/"
-	}
-	storageNamespace += name
+	storageNamespace := generateUniqueStorageNamespace(name)
 	name = makeRepositoryName(name)
 	createRepository(ctx, t, name, storageNamespace)
 	return name
 }
 
 func createRepositoryUnique(ctx context.Context, t *testing.T) string {
-	id := xid.New().String()
-	name := "repo-" + id
+	name := generateUniqueRepositoryName()
 	return createRepositoryByName(ctx, t, name)
+}
+
+func generateUniqueRepositoryName() string {
+	return "repo-" + xid.New().String()
+}
+
+func generateUniqueStorageNamespace(repoName string) string {
+	storageNamespace := viper.GetString("storage_namespace")
+	if !strings.HasSuffix(storageNamespace, "/") {
+		storageNamespace += "/"
+	}
+	return storageNamespace + repoName
 }
 
 func createRepository(ctx context.Context, t *testing.T, name string, repoStorage string) {
