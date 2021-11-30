@@ -281,8 +281,8 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
                                                   internalReferesh={internalRefresh}
                                                   onNavigate={onNavigate} onRevert={onRevert} delimiter={delimiter}
                                                   relativeTo={prefix}
-                                                  getMore={(afterUpdated, path) => {
-                                                      return refs.changes(repo.id, reference.id, afterUpdated, path, delimiter)
+                                                  getMore={(afterUpdated, path, useDelimiter= true, amount = -1) => {
+                                                      return refs.changes(repo.id, reference.id, afterUpdated, path, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined)
                                                   }}/>
                                         )
                                 })}
