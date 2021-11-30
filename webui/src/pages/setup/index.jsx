@@ -11,14 +11,27 @@ import {DownloadIcon} from "@primer/octicons-react";
 import {useState} from "react";
 import {setup, API_ENDPOINT} from "../../lib/api";
 import {ClipboardButton, Error} from "../../lib/components/controls";
+import {useRouter} from "../../lib/hooks/router";
+import {useAPI} from "../../lib/hooks/api";
 
 
 const SetupContents = () => {
+
     const usernameRef = useRef(null);
     const [setupError, setSetupError] = useState(null);
     const [setupData, setSetupData] = useState(null);
     const [disabled, setDisabled] = useState(false);
-
+    const router = useRouter();
+    const { response, error, loading } = useAPI(() => {
+        return setup.getState()
+    });
+    if (loading) {
+        return null;
+    }
+    if (!error && response && response.initialized) {
+        router.push({pathname: '/', query: router.query})
+    }
+    const { next } = router.query;
     const onSubmit = async () => {
         setDisabled(true);
         try {
@@ -32,7 +45,6 @@ const SetupContents = () => {
             setDisabled(false);
         }
     };
-
     if (setupData && setupData.access_key_id) {
         const downloadContent = 'data:application/octet-stream,' + encodeURIComponent(
             `# lakectl command line configuration - save under the filename $HOME/.lakectl.yaml
@@ -74,7 +86,7 @@ server:
                             <hr/>
                             <Button variant="success" href={downloadContent} taget="_blank" download="lakectl.yaml"><DownloadIcon />Download Configuration </Button>
                             {' '}
-                            <Button variant="link" href="/">Go To Login</Button>
+                            <Button variant="link" onClick={() => router.push({pathname: "/auth/login", query: {next}})}>Go To Login</Button>
                         </Card.Body>
                     </Card>
                 </Col>

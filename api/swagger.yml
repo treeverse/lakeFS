@@ -508,7 +508,11 @@ components:
           type: string
       required:
         - id
-
+    SetupState:
+      type: object
+      properties:
+        initialized:
+          type: boolean
     AccessKeyCredentials:
       type: object
       properties:
@@ -898,6 +902,21 @@ components:
 
 paths:
   /setup_lakefs:
+    get:
+      tags:
+        - config
+      operationId: getSetupState
+      summary: check if the lakeFS installation is already set up
+      security: []
+      responses:
+        200:
+          description: lakeFS setup state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetupState"
+        default:
+          $ref: "#/components/responses/ServerError"
     post:
       tags:
         - config

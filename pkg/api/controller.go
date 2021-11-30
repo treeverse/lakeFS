@@ -2844,6 +2844,17 @@ func (c *Controller) GetTag(w http.ResponseWriter, r *http.Request, repository s
 	writeResponse(w, http.StatusOK, response)
 }
 
+func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	initialized, err := c.MetadataManager.IsInitialized(ctx)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	response := SetupState{Initialized: swag.Bool(initialized)}
+	writeResponse(w, http.StatusOK, response)
+}
+
 func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSONRequestBody) {
 	if len(body.Username) == 0 {
 		writeError(w, http.StatusBadRequest, "empty user display name")

@@ -710,6 +710,18 @@ class Retention {
 }
 
 class Setup {
+    async getState() {
+        const response = await apiRequest('/setup_lakefs', {
+            method: 'GET',
+        });
+        switch (response.status) {
+            case 200:
+                return response.json();
+            default:
+                throw new Error('Unknown');
+        }
+    }
+
     async lakeFS(username) {
         const response = await apiRequest('/setup_lakefs', {
             method: 'POST',
