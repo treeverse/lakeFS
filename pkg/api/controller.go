@@ -2848,8 +2848,6 @@ func (c *Controller) GetTag(w http.ResponseWriter, r *http.Request, repository s
 }
 
 func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
-	writeError(w, 400, "god this is terrible")
-	return
 	ctx := r.Context()
 	initialized, err := c.MetadataManager.IsInitialized(ctx)
 	if err != nil {
