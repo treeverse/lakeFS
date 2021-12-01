@@ -105,6 +105,8 @@ services:
     container_name: trino
     volumes:
       - ./etc/s3.properties:/etc/trino/catalog/s3.properties
+    ports:
+      - 8080:48080
 
   trino-client:
     image: trinodb/trino:358
@@ -177,47 +179,34 @@ services:
       - ./etc/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml
     command: ["spark-sql", "--master", "spark://spark:7077"]
 
-  spark-sql-create-schema:
-    image: docker.io/bitnami/spark:3
-    profiles: ["client"]
-    environment:
-      - SPARK_MODE=worker
-      - SPARK_MASTER_URL=spark://spark:7077
-      - SPARK_WORKER_MEMORY=1G
-      - SPARK_WORKER_CORES=1
-      - SPARK_RPC_AUTHENTICATION_ENABLED=no
-      - SPARK_RPC_ENCRYPTION_ENABLED=no
-      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
-      - SPARK_SSL_ENABLED=no
-    volumes:
-      - ./:/local
-      - ./etc/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml
-    command: ["spark-sql", "--master", "spark://spark:7077","create database dbt location 's3://example/main/dbt/';"]
-
 
   spark-thrift:
     image: docker.io/bitnami/spark:3
-    command: ["bash","-c", "/opt/bitnami/wait-for spark:8080 && /opt/bitnami/spark/bin/spark-submit --class org.apache.spark.sql.hive.thriftserver.HiveThriftServer2"]
-    ports:
-      - 10002:10000
+    command: ["bash","-c", "/opt/bitnami/entrypoint.sh"]
     depends_on:
       - spark
     environment:
       - SPARK_MODE=master
-      - SPARK_MASTER_HOST=spark
       - SPARK_MASTER_URL=spark://spark:7077
       - SPARK_RPC_AUTHENTICATION_ENABLED=no
       - SPARK_RPC_ENCRYPTION_ENABLED=no
       - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
       - SPARK_MODE=worker
     volumes:
-      - ./etc/wait-for:/opt/bitnami/wait-for
+      - ./etc/entrypoint.sh:/opt/bitnami/entrypoint.sh
       - ./etc/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml
+
+
+  create-dbt-schema-main:
+    image: trinodb/trino:358
+    profiles: ["client"]
+    entrypoint: ["trino", "--server", "trino:8080", "--catalog", "s3", "--execute", "drop schema if exists dbt_main  ;create schema dbt_main with (location = 's3://example/main/dbt' )"]
 
   dbt:
     build: dbt
     profiles: ["client"]
     volumes:
       - ./dbt/dbt-project:/usr/app
-    environment:
-      - DBT_PROFILES_DIR=/usr/app/
+      - ./dbt/profiles.yml:/root/.dbt/profiles.yml
+    entrypoint: dbt
+
