@@ -511,8 +511,9 @@ components:
     SetupState:
       type: object
       properties:
-        initialized:
-          type: boolean
+        state:
+          type: string
+          enum: [initialized, not_initialized]
     AccessKeyCredentials:
       type: object
       properties:

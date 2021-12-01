@@ -9,14 +9,13 @@ import Table from "react-bootstrap/Table";
 import Row from "react-bootstrap/Row";
 import {DownloadIcon} from "@primer/octicons-react";
 import {useState} from "react";
-import {setup, API_ENDPOINT} from "../../lib/api";
+import {setup, API_ENDPOINT, SETUP_STATE_INITIALIZED} from "../../lib/api";
 import {ClipboardButton, Error} from "../../lib/components/controls";
 import {useRouter} from "../../lib/hooks/router";
 import {useAPI} from "../../lib/hooks/api";
 
 
 const SetupContents = () => {
-
     const usernameRef = useRef(null);
     const [setupError, setSetupError] = useState(null);
     const [setupData, setSetupData] = useState(null);
@@ -28,7 +27,7 @@ const SetupContents = () => {
     if (loading) {
         return null;
     }
-    if (!error && response && response.initialized) {
+    if (!error && response && response.state === SETUP_STATE_INITIALIZED) {
         router.push({pathname: '/', query: router.query})
     }
     const { next } = router.query;

@@ -1,17 +1,14 @@
-import React, {useEffect} from "react";
-
+import React, {useState} from "react";
 import Layout from "../../lib/components/layout";
 import Row from "react-bootstrap/Row";
 import Card from "react-bootstrap/Card";
 import Form from "react-bootstrap/Form";
 import Col from "react-bootstrap/Col";
-import {useState} from "react";
 import Button from "react-bootstrap/Button";
-import {auth, setup} from "../../lib/api";
+import {auth, setup, SETUP_STATE_INITIALIZED} from "../../lib/api";
 import {Error} from "../../lib/components/controls"
 import {useRouter} from "../../lib/hooks/router";
 import {useAPI} from "../../lib/hooks/api";
-import SetupPage from "../setup";
 
 const LoginForm = () => {
     const router = useRouter();
@@ -66,7 +63,7 @@ const LoginPage = () => {
     if (loading) {
         return null;
     }
-    if (!error && response && !response.initialized) {
+    if (!error && response && response.state !== SETUP_STATE_INITIALIZED) {
         router.push({pathname: '/setup', query: router.query})
     }
     return (

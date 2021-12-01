@@ -58,6 +58,7 @@ docs/ResetCreation.md
 docs/RetentionApi.md
 docs/RevertCreation.md
 docs/Setup.md
+docs/SetupState.md
 docs/StagingApi.md
 docs/StagingLocation.md
 docs/StagingMetadata.md
@@ -137,6 +138,7 @@ lakefs_client/model/repository_list.py
 lakefs_client/model/reset_creation.py
 lakefs_client/model/revert_creation.py
 lakefs_client/model/setup.py
+lakefs_client/model/setup_state.py
 lakefs_client/model/staging_location.py
 lakefs_client/model/staging_metadata.py
 lakefs_client/model/statement.py
@@ -213,6 +215,7 @@ test/test_reset_creation.py
 test/test_retention_api.py
 test/test_revert_creation.py
 test/test_setup.py
+test/test_setup_state.py
 test/test_staging_api.py
 test/test_staging_location.py
 test/test_staging_metadata.py

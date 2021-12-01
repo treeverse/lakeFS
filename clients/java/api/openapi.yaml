@@ -12,6 +12,26 @@ security:
 - cookie_auth: []
 paths:
   /setup_lakefs:
+    get:
+      operationId: getSetupState
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetupState'
+          description: lakeFS setup state
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      security: []
+      summary: check if the lakeFS installation is already set up
+      tags:
+      - config
+      x-accepts: application/json
     post:
       operationId: setup
       requestBody:
@@ -4767,6 +4787,16 @@ components:
           type: string
       required:
       - id
+      type: object
+    SetupState:
+      example:
+        state: initialized
+      properties:
+        state:
+          enum:
+          - initialized
+          - not_initialized
+          type: string
       type: object
     AccessKeyCredentials:
       example:
