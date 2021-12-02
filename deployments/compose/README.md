@@ -19,6 +19,12 @@ The docker-compose also runs the setup stage and configures admin user with the 
 * Access key ID: `AKIAIOSFODNN7EXAMPLE`
 * Secret access key: `wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY` 
 
+
+#### How to override env vars values 
+
+To avoid undesired secrets leak into the public repository, it is recommended to override environment variables values by
+creating a [.env](https://docs.docker.com/compose/environment-variables/#the-env-file) file under `/deployments/compose`.
+
 ### Hive Client
 
 Can access Hive Server using client, run under 'client' profile:
