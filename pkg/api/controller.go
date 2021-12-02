@@ -50,6 +50,9 @@ const (
 
 	entryTypeObject       = "object"
 	entryTypeCommonPrefix = "common_prefix"
+
+	setupStateInitialized    = "initialized"
+	setupStateNotInitialized = "not_initialized"
 )
 
 type actionsHandler interface {
@@ -2841,6 +2844,21 @@ func (c *Controller) GetTag(w http.ResponseWriter, r *http.Request, repository s
 		CommitId: reference,
 		Id:       tag,
 	}
+	writeResponse(w, http.StatusOK, response)
+}
+
+func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	initialized, err := c.MetadataManager.IsInitialized(ctx)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	state := setupStateNotInitialized
+	if initialized {
+		state = setupStateInitialized
+	}
+	response := SetupState{State: swag.String(state)}
 	writeResponse(w, http.StatusOK, response)
 }
 

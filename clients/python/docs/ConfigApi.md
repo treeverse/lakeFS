@@ -5,6 +5,7 @@ All URIs are relative to *http://localhost/api/v1*
 Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**get_lake_fs_version**](ConfigApi.md#get_lake_fs_version) | **GET** /config/version | 
+[**get_setup_state**](ConfigApi.md#get_setup_state) | **GET** /setup_lakefs | check if the lakeFS installation is already set up
 [**get_storage_config**](ConfigApi.md#get_storage_config) | **GET** /config/storage | 
 [**setup**](ConfigApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
 
@@ -94,6 +95,69 @@ This endpoint does not need any parameter.
 |-------------|-------------|------------------|
 **200** | lakeFS version |  -  |
 **401** | Unauthorized |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **get_setup_state**
+> SetupState get_setup_state()
+
+check if the lakeFS installation is already set up
+
+### Example
+
+
+```python
+import time
+import lakefs_client
+from lakefs_client.api import config_api
+from lakefs_client.model.error import Error
+from lakefs_client.model.setup_state import SetupState
+from pprint import pprint
+# Defining the host is optional and defaults to http://localhost/api/v1
+# See configuration.py for a list of all supported configuration parameters.
+configuration = lakefs_client.Configuration(
+    host = "http://localhost/api/v1"
+)
+
+
+# Enter a context with an instance of the API client
+with lakefs_client.ApiClient() as api_client:
+    # Create an instance of the API class
+    api_instance = config_api.ConfigApi(api_client)
+
+    # example, this endpoint has no required or optional parameters
+    try:
+        # check if the lakeFS installation is already set up
+        api_response = api_instance.get_setup_state()
+        pprint(api_response)
+    except lakefs_client.ApiException as e:
+        print("Exception when calling ConfigApi->get_setup_state: %s\n" % e)
+```
+
+
+### Parameters
+This endpoint does not need any parameter.
+
+### Return type
+
+[**SetupState**](SetupState.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | lakeFS setup state |  -  |
+**0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 

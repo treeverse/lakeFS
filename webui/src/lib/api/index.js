@@ -1,6 +1,8 @@
 export const API_ENDPOINT = '/api/v1';
 export const DEFAULT_LISTING_AMOUNT = 100;
 
+export const SETUP_STATE_INITIALIZED = "initialized"
+export const SETUP_STATE_NOT_INITIALIZED = "not_initialized"
 class LocalCache {
     get(key) {
         const value = localStorage.getItem(key)
@@ -710,6 +712,18 @@ class Retention {
 }
 
 class Setup {
+    async getState() {
+        const response = await apiRequest('/setup_lakefs', {
+            method: 'GET',
+        });
+        switch (response.status) {
+            case 200:
+                return response.json();
+            default:
+                throw new Error(`Could not get setup state: ${await extractError(response)}`);
+        }
+    }
+
     async lakeFS(username) {
         const response = await apiRequest('/setup_lakefs', {
             method: 'POST',
