@@ -168,6 +168,7 @@ Class | Method | HTTP request | Description
 *CommitsApi* | [**getCommit**](docs/CommitsApi.md#getCommit) | **GET** /repositories/{repository}/commits/{commitId} | get commit
 *CommitsApi* | [**logBranchCommits**](docs/CommitsApi.md#logBranchCommits) | **GET** /repositories/{repository}/branches/{branch}/commits | get commit log from branch. Deprecated: replaced by logCommits by passing branch name as ref 
 *ConfigApi* | [**getLakeFSVersion**](docs/ConfigApi.md#getLakeFSVersion) | **GET** /config/version | 
+*ConfigApi* | [**getSetupState**](docs/ConfigApi.md#getSetupState) | **GET** /setup_lakefs | check if the lakeFS installation is already set up
 *ConfigApi* | [**getStorageConfig**](docs/ConfigApi.md#getStorageConfig) | **GET** /config/storage | 
 *ConfigApi* | [**setup**](docs/ConfigApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
 *HealthCheckApi* | [**healthCheck**](docs/HealthCheckApi.md#healthCheck) | **GET** /healthcheck | 
@@ -251,6 +252,7 @@ Class | Method | HTTP request | Description
  - [ResetCreation](docs/ResetCreation.md)
  - [RevertCreation](docs/RevertCreation.md)
  - [Setup](docs/Setup.md)
+ - [SetupState](docs/SetupState.md)
  - [StagingLocation](docs/StagingLocation.md)
  - [StagingMetadata](docs/StagingMetadata.md)
  - [Statement](docs/Statement.md)

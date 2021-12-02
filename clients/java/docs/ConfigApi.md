@@ -5,6 +5,7 @@ All URIs are relative to *http://localhost/api/v1*
 Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**getLakeFSVersion**](ConfigApi.md#getLakeFSVersion) | **GET** /config/version | 
+[**getSetupState**](ConfigApi.md#getSetupState) | **GET** /setup_lakefs | check if the lakeFS installation is already set up
 [**getStorageConfig**](ConfigApi.md#getStorageConfig) | **GET** /config/storage | 
 [**setup**](ConfigApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
 
@@ -83,6 +84,63 @@ This endpoint does not need any parameter.
 |-------------|-------------|------------------|
 **200** | lakeFS version |  -  |
 **401** | Unauthorized |  -  |
+
+<a name="getSetupState"></a>
+# **getSetupState**
+> SetupState getSetupState()
+
+check if the lakeFS installation is already set up
+
+### Example
+```java
+// Import classes:
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.ConfigApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("http://localhost/api/v1");
+
+    ConfigApi apiInstance = new ConfigApi(defaultClient);
+    try {
+      SetupState result = apiInstance.getSetupState();
+      System.out.println(result);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling ConfigApi#getSetupState");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+This endpoint does not need any parameter.
+
+### Return type
+
+[**SetupState**](SetupState.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | lakeFS setup state |  -  |
+**0** | Internal Server Error |  -  |
 
 <a name="getStorageConfig"></a>
 # **getStorageConfig**
