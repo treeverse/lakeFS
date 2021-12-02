@@ -15,6 +15,8 @@ type ApplyOptions struct {
 	AllowEmpty bool
 }
 
+var ErrInvalidState = errors.New("invalid apply state")
+
 // ReferenceType represents the type of the reference
 
 type applier struct {
@@ -277,9 +279,45 @@ func (a *applier) applyDiffRangeSourceKey(diffRange *Range, sourceValue *gravele
 	return nil
 }
 
-func (a *applier) applyBothRanges(diffRange *Range, sourceRange *Range) error {
+type RangeCompareSate int
+
+const (
+	RangeCompareBefore RangeCompareSate = iota
+	RangeCompareAfter
+	RangeCompareSameRange
+	RangeCompareSameBounds
+	RangeCompareOverlapping
+)
+
+func compareRanges(rangeA, rangeB *Range) RangeCompareSate {
 	switch {
-	case !diffRange.Tombstone && bytes.Equal(sourceRange.MinKey, diffRange.MinKey) && bytes.Equal(sourceRange.MaxKey, diffRange.MaxKey):
+	case rangeA.ID == rangeB.ID:
+		return RangeCompareSameRange
+	case bytes.Compare(rangeA.MaxKey, rangeB.MinKey) < 0:
+		return RangeCompareBefore
+	case bytes.Compare(rangeB.MinKey, rangeA.MaxKey) < 0:
+		return RangeCompareAfter
+	case bytes.Equal(rangeA.MinKey, rangeB.MinKey) && bytes.Equal(rangeA.MaxKey, rangeB.MaxKey):
+		return RangeCompareSameBounds
+	default:
+		return RangeCompareOverlapping
+	}
+}
+
+func (a *applier) applyBothRanges(diffRange *Range, sourceRange *Range) error {
+	comp := compareRanges(sourceRange, diffRange)
+	switch comp {
+	case RangeCompareOverlapping:
+		return fmt.Errorf("%w - overlapping ranges", ErrInvalidState)
+	case RangeCompareSameRange:
+		if !diffRange.Tombstone {
+			return fmt.Errorf("%w - identical ranges ", ErrInvalidState)
+		}
+		a.addIntoDiffSummary(graveler.DiffTypeRemoved, int(diffRange.Count))
+		a.haveSource = a.source.NextRange()
+		a.haveDiffs = a.diffs.NextRange()
+
+	case RangeCompareSameBounds:
 		// insert diff move both
 		if err := a.writer.WriteRange(*diffRange); err != nil {
 			return fmt.Errorf("copy diff range %s: %w", diffRange.ID, err)
@@ -288,31 +326,30 @@ func (a *applier) applyBothRanges(diffRange *Range, sourceRange *Range) error {
 		a.setMissingInfo()
 		a.haveDiffs = a.diffs.NextRange()
 		a.haveSource = a.source.NextRange()
-	case bytes.Compare(diffRange.MaxKey, sourceRange.MinKey) < 0 && diffRange.Tombstone:
-		// internal error but no data lost: deletion requested of a
-		// range that was not there.
-		a.logger.WithFields(logging.Fields{
-			"from": string(diffRange.MinKey),
-			"to":   string(diffRange.MaxKey),
-			"ID":   string(diffRange.ID),
-		}).Warn("[I] unmatched delete")
-	case bytes.Compare(diffRange.MaxKey, sourceRange.MinKey) < 0:
-		// insert diff
-		if err := a.writer.WriteRange(*diffRange); err != nil {
-			return fmt.Errorf("copy diff range %s: %w", diffRange.ID, err)
+
+	case RangeCompareAfter:
+		if diffRange.Tombstone {
+			// internal error but no data lost: deletion requested of a
+			// range that was not there.
+			a.logger.WithFields(logging.Fields{
+				"from": string(diffRange.MinKey),
+				"to":   string(diffRange.MaxKey),
+				"ID":   string(diffRange.ID),
+			}).Warn("[I] unmatched delete")
+		} else {
+			// insert diff
+			if err := a.writer.WriteRange(*diffRange); err != nil {
+				return fmt.Errorf("copy diff range %s: %w", diffRange.ID, err)
+			}
+			a.addIntoDiffSummary(graveler.DiffTypeAdded, int(diffRange.Count))
 		}
-		a.addIntoDiffSummary(graveler.DiffTypeAdded, int(diffRange.Count))
 		a.haveDiffs = a.diffs.NextRange()
-	case bytes.Compare(sourceRange.MaxKey, diffRange.MinKey) < 0:
+	case RangeCompareBefore:
 		// insert source
 		if err := a.writer.WriteRange(*sourceRange); err != nil {
 			return fmt.Errorf("copy source range %s: %w", sourceRange.ID, err)
 		}
 		a.haveSource = a.source.NextRange()
-	case diffRange.ID == sourceRange.ID && diffRange.Tombstone:
-		a.addIntoDiffSummary(graveler.DiffTypeRemoved, int(diffRange.Count))
-		a.haveSource = a.source.NextRange()
-		a.haveDiffs = a.diffs.NextRange()
 	default:
 		a.haveSource = a.source.Next()
 		a.haveDiffs = a.diffs.Next()
