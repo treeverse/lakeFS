@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: lakefs
       POSTGRES_PASSWORD: lakefs
   lakefs:
-    image: "${REPO}/lakefs:${TAG}"
+    image: "${REPO:-treeverse}/lakefs:${TAG:-latest}"
     ports:
       - "8000:8000"
     networks:
@@ -36,7 +36,7 @@ services:
         - tester.env
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
   spark:
-    image: docker.io/bitnami/spark:${SPARK_TAG}
+    image: docker.io/bitnami/spark:${SPARK_TAG:-3}
     environment:
       - SPARK_MODE=master
       - SPARK_MASTER_HOST=spark
@@ -58,7 +58,7 @@ services:
       - "gateway-test.s3.docker.lakefs.io:10.5.0.55"
       - "thick-client-test.s3.docker.lakefs.io:10.5.0.55"
   spark-worker:
-    image: docker.io/bitnami/spark:${SPARK_TAG}
+    image: docker.io/bitnami/spark:${SPARK_TAG:-3}
     ports:
       - 8081
     environment:
@@ -84,7 +84,7 @@ services:
       - "gateway-test.s3.docker.lakefs.io:10.5.0.55"
       - "thick-client-test.s3.docker.lakefs.io:10.5.0.55"
   spark-submit:
-    image: docker.io/bitnami/spark:${SPARK_TAG}
+    image: docker.io/bitnami/spark:${SPARK_TAG:-3}
     profiles: ["command"]
     volumes:
       - ./:/local

@@ -1,7 +1,7 @@
 version: '3'
 services:
   lakefs:
-    image: "${REPO}/lakefs:${TAG}"
+    image: "${REPO:-treeverse}/lakefs:${TAG:-dev}"
     ports:
       - "8000:8000"
     depends_on:
@@ -9,7 +9,7 @@ services:
     environment:
       - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=some random secret string
       - LAKEFS_DATABASE_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
-      - LAKEFS_BLOCKSTORE_TYPE=${LAKEFS_BLOCKSTORE_TYPE}
+      - LAKEFS_BLOCKSTORE_TYPE=${LAKEFS_BLOCKSTORE_TYPE:-local}
       - LAKEFS_BLOCKSTORE_LOCAL_PATH=/home/lakefs
       - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
@@ -54,5 +54,5 @@ volumes:
     driver_opts:
       o: bind
       type: none
-      device: ${LAKEFS_ROOT}
+      device: ${LAKEFS_ROOT:-.}
 
