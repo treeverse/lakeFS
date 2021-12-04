@@ -6,6 +6,7 @@ WORKDIR /build
 
 # Packages required to build
 RUN apk add --no-cache build-base
+RUN apk add --no-cache make
 
 # Copy project deps first since they don't change often
 COPY go.mod go.sum ./
