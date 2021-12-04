@@ -64,7 +64,7 @@ func buildLakectl() error {
 		return err
 	}
 
-	make := exec.Command("/bin/make", "build-lakectl")
+	make := exec.Command("make", "build-lakectl")
 	err = make.Run()
 	if err != nil {
 		return err
