@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -31,6 +33,46 @@ type SetupTestingEnvParams struct {
 	AdminSecretAccessKey string
 }
 
+func LakectlLocation() string {
+	return viper.GetString("lakectl_dir") + "/lakectl"
+}
+
+func buildLakectl() error {
+	_, err := os.Stat(LakectlLocation())
+	if err == nil {
+		//
+		// lakectl binary exists in the expected location. Nothing to do
+		//
+		return nil
+	}
+	if !errors.Is(err, os.ErrNotExist) {
+		//
+		// An error occurred, other than not exist - FAIL
+		//
+		return err
+	}
+	//
+	// lakectl does not exist - build it
+	//
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	err = os.Chdir(viper.GetString("lakectl_dir"))
+	if err != nil {
+		return err
+	}
+
+	make := exec.Command("/bin/make", "build-lakectl")
+	err = make.Run()
+	if err != nil {
+		return err
+	}
+
+	return os.Chdir(wd)
+}
+
 func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientWithResponsesInterface, *s3.S3) {
 	logger := logging.Default()
 
@@ -51,6 +93,11 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 	err := viper.ReadInConfig()
 	if err != nil && !errors.As(err, &viper.ConfigFileNotFoundError{}) {
 		logger.WithError(err).Fatal("Failed to read configuration")
+	}
+
+	err = buildLakectl()
+	if err != nil {
+		logger.WithError(err).Fatal("Failed to build lakectl")
 	}
 
 	ctx := context.Background()

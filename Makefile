@@ -151,9 +151,14 @@ gen-mockgen: go-install ## Run the generator for inline commands
 	$(GOGENERATE) ./pkg/actions
 
 LD_FLAGS := "-X github.com/treeverse/lakefs/pkg/version.Version=$(VERSION)-$(REVISION)"
-build: gen docs ## Download dependencies and build the default binary
-	$(GOBUILD) -o $(LAKEFS_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKEFS_BINARY_NAME)
+
+build-lakectl: gen
 	$(GOBUILD) -o $(LAKECTL_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKECTL_BINARY_NAME)
+
+build-lakefs: gen
+	$(GOBUILD) -o $(LAKEFS_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKEFS_BINARY_NAME)
+
+build: gen docs build-lakefs build-lakectl ## Download dependencies and build the default binary
 
 lint: go-install  ## Lint code
 	$(GOBINPATH)/golangci-lint run $(GOLANGCI_LINT_FLAGS)
