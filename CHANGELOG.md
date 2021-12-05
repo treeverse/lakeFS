@@ -1,13 +1,14 @@
 # Changelog
 
 ## v0.56.0 - 2021-12-05
-- Remove pattern validation for auth entity ID, also known as username (#2774)
+
+- Fix bug: faulty LDAP username validation (#2774)
+- Fix bug: lakectl metastore create-symlink command (#2747)
+- Fix bug: can't view tag when name is invalid as branch ID (#2723)
+- Fix bug: can't view content diff when comparing non-branch references (#2751)
+- Fix bug: Refresh page after merging from the UI (#2743)
 - UI: Calculate change summary under every prefix (#2744)
-- Enable content diff while comparing references other than branches (#2751)
-- Fixed lakectl metastore create-symlink command (#2747)
-- Mark user-visible graveler errors and phrase them for users (#2738)
-- UI: Clear merged tree items after merging branches (#2743)
-- Fix bug: Can't view tag when name is invalid as branch id (#2723)
+- Improved readability of error messages (#2738)
 
 ## v0.55.0 - 2021-11-17
 
