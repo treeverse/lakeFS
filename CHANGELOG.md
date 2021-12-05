@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.56.0 - 2021-12-05
+- Remove pattern validation for auth entity ID, also known as username (#2774)
+- UI: Calculate change summary under every prefix (#2744)
+- Enable content diff while comparing references other than branches (#2751)
+- Fixed lakectl metastore create-symlink command (#2747)
+- Mark user-visible graveler errors and phrase them for users (#2738)
+- UI: Clear merged tree items after merging branches (#2743)
+- Fix bug: Can't view tag when name is invalid as branch id (#2723)
+
 ## v0.55.0 - 2021-11-17
 
 - lakefs-dbt integration: support lakeFS branches in dbt (#2680)
