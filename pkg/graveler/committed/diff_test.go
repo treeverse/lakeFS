@@ -356,6 +356,26 @@ func TestNextRange(t *testing.T) {
 	})
 }
 
+func TestNextRangeChange(t *testing.T) {
+	ctx := context.Background()
+	it := committed.NewDiffIterator(ctx,
+		newFakeMetaRangeIterator([][]string{{"k1", "k3"}, {"k5", "k6"}}, [][]string{{"i1", "i3"}, {"i5", "i6"}}),
+		newFakeMetaRangeIterator([][]string{{"k1", "k2", "k3"}, {"k5", "k6"}}, [][]string{{"i1", "i2", "i3"}, {"i5", "i6"}}))
+	if !it.Next() {
+		t.Fatal("expected iterator to have value")
+	}
+	record, rng := it.Value()
+	if record != nil {
+		t.Errorf("expected record to be nil got record %v", record)
+	}
+	if rng.Type != changed {
+		t.Errorf("expected range diff type to be changed got %v", rng.Type)
+	}
+	if it.NextRange() {
+		t.Fatal("expected next range to return false")
+	}
+}
+
 func TestNextErr(t *testing.T) {
 	ctx := context.Background()
 	it := committed.NewDiffIterator(ctx,

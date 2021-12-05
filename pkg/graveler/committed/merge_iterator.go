@@ -82,8 +82,11 @@ func (d *compareIterator) handleConflict() bool {
 		d.err = graveler.ErrConflictFound
 		return false
 	}
-	val, _ := d.diffIt.Value()
-	d.val = val.Copy()
+	val, rng := d.diffIt.Value()
+	if val != nil {
+		d.val = val.Copy()
+	}
+	d.setRangeDiff(rng)
 	d.val.Type = graveler.DiffTypeConflict
 	return true
 }
@@ -233,7 +236,11 @@ func (d *compareIterator) stepRange() (hasMore bool, done bool) {
 			d.val = nil
 			return true, true
 		}
-		if bytes.Compare(rng.MaxKey, baseRange.MinKey) < 0 || baseRange != nil && rng.ID == baseRange.ID {
+		if bytes.Compare(rng.MaxKey, baseRange.MinKey) < 0 {
+			// conflict, added on dest and source
+			return d.handleConflict(), true
+		}
+		if baseRange != nil && rng.ID == baseRange.ID {
 			// changed on dest, but not on source, skip range
 			return d.diffIt.NextRange(), false
 		}

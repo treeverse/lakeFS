@@ -91,6 +91,10 @@ func (a *applier) applyAll(iter Iterator) (int, error) {
 }
 
 func (a *applier) hasChanges(summary graveler.DiffSummary) bool {
+	if a.summary.Incomplete {
+		// range optimization was used
+		return true
+	}
 	for _, changes := range summary.Count {
 		if changes > 0 {
 			return true
@@ -106,7 +110,7 @@ func (a *applier) addIntoDiffSummary(typ graveler.DiffType, n int) {
 }
 
 func (a *applier) setMissingInfo() {
-	a.summary.MissingInfo = true
+	a.summary.Incomplete = true
 }
 
 func (a *applier) incrementDiffSummary(typ graveler.DiffType) {
@@ -163,7 +167,7 @@ func (a *applier) apply() error {
 		}
 	}
 
-	if !a.opts.AllowEmpty && !a.hasChanges(a.summary) && !a.summary.MissingInfo {
+	if !a.opts.AllowEmpty && !a.hasChanges(a.summary) {
 		return graveler.ErrNoChanges
 	}
 	return a.diffs.Err()
@@ -284,18 +288,18 @@ type RangeCompareSate int
 const (
 	RangeCompareBefore RangeCompareSate = iota
 	RangeCompareAfter
-	RangeCompareSameRange
+	RangeCompareSameID
 	RangeCompareSameBounds
 	RangeCompareOverlapping
 )
 
-func compareRanges(rangeA, rangeB *Range) RangeCompareSate {
+func CompareRanges(rangeA, rangeB *Range) RangeCompareSate {
 	switch {
 	case rangeA.ID == rangeB.ID:
-		return RangeCompareSameRange
+		return RangeCompareSameID
 	case bytes.Compare(rangeA.MaxKey, rangeB.MinKey) < 0:
 		return RangeCompareBefore
-	case bytes.Compare(rangeB.MinKey, rangeA.MaxKey) < 0:
+	case bytes.Compare(rangeB.MaxKey, rangeA.MinKey) < 0:
 		return RangeCompareAfter
 	case bytes.Equal(rangeA.MinKey, rangeB.MinKey) && bytes.Equal(rangeA.MaxKey, rangeB.MaxKey):
 		return RangeCompareSameBounds
@@ -305,13 +309,11 @@ func compareRanges(rangeA, rangeB *Range) RangeCompareSate {
 }
 
 func (a *applier) applyBothRanges(diffRange *Range, sourceRange *Range) error {
-	comp := compareRanges(sourceRange, diffRange)
+	comp := CompareRanges(sourceRange, diffRange)
 	switch comp {
-	case RangeCompareOverlapping:
-		return fmt.Errorf("%w - overlapping ranges", ErrInvalidState)
-	case RangeCompareSameRange:
+	case RangeCompareSameID:
 		if !diffRange.Tombstone {
-			return fmt.Errorf("%w - identical ranges ", ErrInvalidState)
+			return fmt.Errorf("%w - range already exists in apply source", ErrInvalidState)
 		}
 		a.addIntoDiffSummary(graveler.DiffTypeRemoved, int(diffRange.Count))
 		a.haveSource = a.source.NextRange()
@@ -350,7 +352,7 @@ func (a *applier) applyBothRanges(diffRange *Range, sourceRange *Range) error {
 			return fmt.Errorf("copy source range %s: %w", sourceRange.ID, err)
 		}
 		a.haveSource = a.source.NextRange()
-	default:
+	case RangeCompareOverlapping:
 		a.haveSource = a.source.Next()
 		a.haveDiffs = a.diffs.Next()
 		// enter both
