@@ -64,8 +64,8 @@ func buildLakectl() error {
 		return err
 	}
 
-	make := exec.Command("make", "build-lakectl")
-	err = make.Run()
+	build := exec.Command("go", "build", "-ldflags", fmt.Sprintf("-X github.com/treeverse/lakefs/pkg/version.Version=%s", viper.GetString("version")), "-o", "lakectl", "./cmd/lakectl")
+	err = build.Run()
 	if err != nil {
 		return err
 	}
@@ -83,6 +83,7 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 	viper.SetDefault("access_key_id", "")
 	viper.SetDefault("secret_access_key", "")
 	viper.SetDefault("storage_namespace", fmt.Sprintf("s3://%s/%s", params.StorageNS, xid.New().String()))
+	viper.SetDefault("version", "dev")
 	viper.SetDefault("lakectl_dir", "..")
 
 	viper.AddConfigPath(".")
