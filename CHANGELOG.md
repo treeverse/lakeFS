@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.56.0 - 2021-12-05
+
+- Fix bug: faulty LDAP username validation (#2774)
+- Fix bug: lakectl metastore create-symlink command (#2747)
+- Fix bug: can't view tag when name is invalid as branch ID (#2723)
+- Fix bug: can't view content diff when comparing non-branch references (#2751)
+- Fix bug: Refresh page after merging from the UI (#2743)
+- UI: Calculate change summary under every prefix (#2744)
+- Improved readability of error messages (#2738)
+
 ## v0.55.0 - 2021-11-17
 
 - lakefs-dbt integration: support lakeFS branches in dbt (#2680)
