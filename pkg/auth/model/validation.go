@@ -14,7 +14,7 @@ var (
 
 func ValidateAuthEntityID(name string) error {
 	if len(name) == 0 {
-		return ErrValidationError
+		return fmt.Errorf("empty name: %w", ErrValidationError)
 	}
 	return nil
 }
