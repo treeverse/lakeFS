@@ -3,7 +3,6 @@ package model
 import (
 	"errors"
 	"fmt"
-	"regexp"
 
 	"github.com/aws/aws-sdk-go/aws/arn"
 	"github.com/treeverse/lakefs/pkg/permissions"
@@ -11,13 +10,11 @@ import (
 
 var (
 	ErrValidationError = errors.New("validation error")
-
-	EntityIDRegexp = regexp.MustCompile(`^[\w+=.,@\-]{1,127}$`)
 )
 
 func ValidateAuthEntityID(name string) error {
-	if !EntityIDRegexp.MatchString(name) {
-		return ErrValidationError
+	if len(name) == 0 {
+		return fmt.Errorf("empty name: %w", ErrValidationError)
 	}
 	return nil
 }
