@@ -3,17 +3,15 @@ package sig
 import (
 	"crypto/hmac"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
 	"unicode/utf8"
 
-	gwErrors "github.com/treeverse/lakefs/pkg/gateway/errors"
-
 	"github.com/treeverse/lakefs/pkg/auth/model"
-
-	"errors"
+	gwErrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 )
 
 var (
@@ -32,7 +30,7 @@ var (
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *     https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,

@@ -106,7 +106,7 @@ func ValidateTagID(v interface{}) error {
 	if !ok {
 		panic(ErrInvalidType)
 	}
-	// http://git-scm.com/docs/git-check-ref-format
+	// https://git-scm.com/docs/git-check-ref-format
 	tag := string(s)
 	if len(tag) == 0 {
 		return ErrRequiredValue
