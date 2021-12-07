@@ -73,6 +73,7 @@ type Controller struct {
 	Collector             stats.Collector
 	CloudMetadataProvider cloud.MetadataProvider
 	Actions               actionsHandler
+	AuditChecker          AuditChecker
 	Logger                logging.Logger
 }
 
@@ -2936,7 +2937,22 @@ func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnauthorized, ErrAuthenticatingRequest)
 		return
 	}
-	writeResponse(w, http.StatusOK, VersionConfig{Version: swag.String(version.Version)})
+	// set upgrade recommended based on last security audit check
+	lastCheck, _ := c.AuditChecker.LastCheck()
+	var (
+		upgradeRecommended *bool
+		upgradeURL         *string
+	)
+	if recommendedURL := lastCheck.UpgradeRecommendedURL(); recommendedURL != "" {
+		upgradeRecommended = swag.Bool(true)
+		upgradeURL = swag.String(recommendedURL)
+	}
+
+	writeResponse(w, http.StatusOK, VersionConfig{
+		UpgradeRecommended: upgradeRecommended,
+		UpgradeUrl:         upgradeURL,
+		Version:            swag.String(version.Version),
+	})
 }
 
 func IsStatusCodeOK(statusCode int) bool {
@@ -3078,6 +3094,7 @@ func NewController(
 	collector stats.Collector,
 	cloudMetadataProvider cloud.MetadataProvider,
 	actions actionsHandler,
+	auditChecker AuditChecker,
 	logger logging.Logger,
 ) *Controller {
 	return &Controller{
@@ -3091,6 +3108,7 @@ func NewController(
 		Collector:             collector,
 		CloudMetadataProvider: cloudMetadataProvider,
 		Actions:               actions,
+		AuditChecker:          auditChecker,
 		Logger:                logger,
 	}
 }

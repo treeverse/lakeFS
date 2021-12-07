@@ -48,4 +48,20 @@ public class VersionConfigTest {
         // TODO: test version
     }
 
+    /**
+     * Test the property 'upgradeRecommended'
+     */
+    @Test
+    public void upgradeRecommendedTest() {
+        // TODO: test upgradeRecommended
+    }
+
+    /**
+     * Test the property 'upgradeUrl'
+     */
+    @Test
+    public void upgradeUrlTest() {
+        // TODO: test upgradeUrl
+    }
+
 }

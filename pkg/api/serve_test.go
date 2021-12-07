@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/version"
+
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/actions"
@@ -110,6 +112,8 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 		_ = c.Close()
 	})
 
+	auditChecker := version.NewDefaultAuditChecker()
+
 	handler := api.Serve(
 		cfg,
 		c,
@@ -121,6 +125,7 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 		collector,
 		nil,
 		actionsService,
+		auditChecker,
 		logging.Default(),
 		nil,
 	)

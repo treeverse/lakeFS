@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"sync/atomic"
 	"time"
@@ -40,6 +41,11 @@ type AuditChecker struct {
 	Client           http.Client
 	Version          string
 	periodicResponse atomic.Value
+	ticker           *time.Ticker
+}
+
+func NewDefaultAuditChecker() *AuditChecker {
+	return NewAuditChecker(Version)
 }
 
 func NewAuditChecker(version string) *AuditChecker {
@@ -69,7 +75,7 @@ func (a *AuditChecker) Check(ctx context.Context) (*AuditResponse, error) {
 		_ = resp.Body.Close()
 	}()
 	if resp.StatusCode != http.StatusOK {
-		return nil, ErrAuditCheckFailed
+		return nil, fmt.Errorf("%w: %s (Status code: %d)", ErrAuditCheckFailed, resp.Status, resp.StatusCode)
 	}
 	var auditResponse AuditResponse
 	if err := json.NewDecoder(resp.Body).Decode(&auditResponse); err != nil {
@@ -86,11 +92,17 @@ func (a *AuditChecker) CheckAndLog(ctx context.Context, log logging.Logger) {
 		Err:           err,
 	})
 	if err != nil {
-		log.WithField("version", a.Version).WithError(err).Error("Audit check failed")
+		log.WithFields(logging.Fields{
+			"version":   a.Version,
+			"check_url": a.CheckURL,
+		}).WithError(err).Error("Audit check failed")
 		return
 	}
 	if len(resp.Alerts) == 0 {
-		log.WithField("version", a.Version).Debug("No alerts found on audit check")
+		log.WithFields(logging.Fields{
+			"version":   a.Version,
+			"check_url": a.CheckURL,
+		}).Debug("No alerts found on audit check")
 		return
 	}
 	for _, alert := range resp.Alerts {
@@ -103,6 +115,7 @@ func (a *AuditChecker) CheckAndLog(ctx context.Context, log logging.Logger) {
 	}
 	log.WithFields(logging.Fields{
 		"alerts_len": len(resp.Alerts),
+		"check_url":  a.CheckURL,
 		"version":    a.Version,
 	}).Warnf("Audit security - upgrade recommended: %s", resp.UpgradeURL)
 }
@@ -112,12 +125,42 @@ func (a *AuditChecker) LastCheck() (*AuditResponse, error) {
 	return resp.AuditResponse, resp.Err
 }
 
-// PeriodicCheck perform one check and continue every 'interval' the check results found in the 'log'
-func (a *AuditChecker) PeriodicCheck(ctx context.Context, interval time.Duration, log logging.Logger) {
-	a.CheckAndLog(ctx, log)
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
-	for range ticker.C {
-		a.CheckAndLog(ctx, log)
+// StartPeriodicCheck perform one check and continue every 'interval' in the background
+// check results will be found in the log and updated for 'LastCheck'
+// the func will return false in case periodic check already run
+func (a *AuditChecker) StartPeriodicCheck(ctx context.Context, interval time.Duration, log logging.Logger) bool {
+	if a.ticker != nil {
+		return false
 	}
+	a.CheckAndLog(ctx, log)
+	a.ticker = time.NewTicker(interval)
+	go func() {
+		for range a.ticker.C {
+			a.CheckAndLog(ctx, log)
+		}
+	}()
+	return true
+}
+
+func (a *AuditChecker) StopPeriodicCheck() {
+	if a.ticker == nil {
+		return
+	}
+	a.ticker.Stop()
+	a.ticker = nil
+}
+
+// Close release resources used by audit checker - ex: periodic check
+func (a *AuditChecker) Close() {
+	a.StopPeriodicCheck()
+}
+
+func (a *AuditResponse) UpgradeRecommendedURL() string {
+	if a == nil {
+		return ""
+	}
+	if len(a.Alerts) == 0 {
+		return ""
+	}
+	return a.UpgradeURL
 }

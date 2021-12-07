@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/version"
+
 	"github.com/ory/dockertest/v3"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/actions"
@@ -91,6 +93,7 @@ func TestLocalLoad(t *testing.T) {
 	t.Cleanup(func() {
 		_ = c.Close()
 	})
+	auditChecker := version.NewDefaultAuditChecker()
 
 	handler := api.Serve(
 		conf,
@@ -103,6 +106,7 @@ func TestLocalLoad(t *testing.T) {
 		&nullCollector{},
 		nil,
 		actionsService,
+		auditChecker,
 		logging.Default(),
 		nil,
 	)
