@@ -10,8 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/version"
-
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/actions"
@@ -28,6 +26,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/testutil"
+	"github.com/treeverse/lakefs/pkg/version"
 )
 
 const (
