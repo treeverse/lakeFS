@@ -193,7 +193,7 @@ services:
       - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
       - SPARK_MODE=worker
     volumes:
-      - ./etc/entrypoint.sh:/opt/bitnami/entrypoint.sh
+      - ./etc/spark-thrift-entrypoint.sh:/opt/bitnami/entrypoint.sh
       - ./etc/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml
 
 
