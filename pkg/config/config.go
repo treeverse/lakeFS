@@ -150,6 +150,9 @@ const (
 
 	SecurityAuditCheckIntervalKey     = "security.audit_check_interval"
 	DefaultSecurityAuditCheckInterval = 12 * time.Hour
+
+	SecurityAuditCheckURLKey     = "security.audit_check_url"
+	DefaultSecurityAuditCheckURL = "https://audit.lakefs.io/audit"
 )
 
 func setDefaults() {
@@ -197,6 +200,7 @@ func setDefaults() {
 	viper.SetDefault(BlockstoreAzureAuthMethod, DefaultAzureAuthMethod)
 
 	viper.SetDefault(SecurityAuditCheckIntervalKey, DefaultSecurityAuditCheckInterval)
+	viper.SetDefault(SecurityAuditCheckURLKey, DefaultSecurityAuditCheckURL)
 }
 
 func reverse(s string) string {
@@ -437,4 +441,8 @@ func (c *Config) GetLoggingTraceRequestHeaders() bool {
 
 func (c *Config) GetSecurityAuditCheckInterval() time.Duration {
 	return c.values.Security.AuditCheckInterval
+}
+
+func (c *Config) GetSecurityAuditCheckURL() string {
+	return c.values.Security.AuditCheckURL
 }

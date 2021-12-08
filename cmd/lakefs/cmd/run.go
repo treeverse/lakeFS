@@ -165,7 +165,7 @@ var runCmd = &cobra.Command{
 		c.SetHooksHandler(actionsService)
 		defer actionsService.Stop()
 
-		auditChecker := version.NewDefaultAuditChecker()
+		auditChecker := version.NewDefaultAuditChecker(cfg.GetSecurityAuditCheckURL())
 		defer auditChecker.Close()
 		if version.Version != version.UnreleasedVersion {
 			const maxSecondsToJitter = 12 * 60 * 60                                // 12h in seconds

@@ -137,8 +137,7 @@ func TestAuditChecker_PassVersionOnRequest(t *testing.T) {
 	ctx := context.Background()
 	for _, version := range []string{"v1", "v1.2", "v2.0.1"} {
 		t.Run(version, func(t *testing.T) {
-			auditChecker := NewAuditChecker(version)
-			auditChecker.CheckURL = svr.URL
+			auditChecker := NewAuditChecker(svr.URL, version)
 			_, err := auditChecker.Check(ctx)
 			if err != nil {
 				t.Errorf("Check() error = %v", err)
@@ -188,8 +187,7 @@ func TestAuditChecker_Check(t *testing.T) {
 	ctx := context.Background()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a := NewAuditChecker("v1")
-			a.CheckURL = svr.URL
+			a := NewAuditChecker(svr.URL, "v1")
 			responseAlerts = tt.alerts
 			responseStatusCode = tt.statusCode
 			got, err := a.Check(ctx)
@@ -232,8 +230,7 @@ func TestAuditChecker_CheckAndLog(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	checker := NewAuditChecker("v1.0")
-	checker.CheckURL = svr.URL
+	checker := NewAuditChecker(svr.URL, "v1.0")
 	ctx := context.Background()
 	memLog := &MemLogger{}
 	checker.CheckAndLog(ctx, memLog)

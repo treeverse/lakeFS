@@ -13,11 +13,13 @@ import (
 )
 
 const (
-	auditCheckURL     = "http://localhost:4000/audit"
-	auditCheckTimeout = time.Minute
+	auditCheckTimeout = 5 * time.Minute
 )
 
-var ErrAuditCheckFailed = errors.New("audit check request failed")
+var (
+	ErrAuditCheckFailed = errors.New("audit check request failed")
+	ErrMissingCheckURL  = errors.New("missing audit check URL")
+)
 
 type Alert struct {
 	ID              string `json:"id" db:"id"`
@@ -44,21 +46,27 @@ type AuditChecker struct {
 	ticker           *time.Ticker
 }
 
-func NewDefaultAuditChecker() *AuditChecker {
-	return NewAuditChecker(Version)
+func NewDefaultAuditChecker(checkURL string) *AuditChecker {
+	return NewAuditChecker(checkURL, Version)
 }
 
-func NewAuditChecker(version string) *AuditChecker {
-	return &AuditChecker{
-		CheckURL: auditCheckURL,
+func NewAuditChecker(checkURL, version string) *AuditChecker {
+	ac := &AuditChecker{
+		CheckURL: checkURL,
 		Client: http.Client{
 			Timeout: auditCheckTimeout,
 		},
 		Version: version,
 	}
+	// initial value for last check - empty value
+	ac.periodicResponse.Store(auditPeriodicResponse{})
+	return ac
 }
 
 func (a *AuditChecker) Check(ctx context.Context) (*AuditResponse, error) {
+	if a.CheckURL == "" {
+		return nil, ErrMissingCheckURL
+	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, a.CheckURL, nil)
 	if err != nil {
 		return nil, err
@@ -84,7 +92,7 @@ func (a *AuditChecker) Check(ctx context.Context) (*AuditResponse, error) {
 	return &auditResponse, nil
 }
 
-// CheckAndLog performs an audit check, log and keep the last response
+// CheckAndLog performs an audit check, logs and keeps the last response
 func (a *AuditChecker) CheckAndLog(ctx context.Context, log logging.Logger) {
 	resp, err := a.Check(ctx)
 	a.periodicResponse.Store(auditPeriodicResponse{
@@ -125,9 +133,9 @@ func (a *AuditChecker) LastCheck() (*AuditResponse, error) {
 	return resp.AuditResponse, resp.Err
 }
 
-// StartPeriodicCheck perform one check and continue every 'interval' in the background
+// StartPeriodicCheck performs one check and continues every 'interval' in the background
 // check results will be found in the log and updated for 'LastCheck'
-// the func will return false in case periodic check already run
+// Return false if periodic check already ran
 func (a *AuditChecker) StartPeriodicCheck(ctx context.Context, interval time.Duration, log logging.Logger) bool {
 	if a.ticker != nil {
 		return false

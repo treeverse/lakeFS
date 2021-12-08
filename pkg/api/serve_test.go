@@ -111,7 +111,7 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 		_ = c.Close()
 	})
 
-	auditChecker := version.NewDefaultAuditChecker()
+	auditChecker := version.NewDefaultAuditChecker(cfg.GetSecurityAuditCheckURL())
 
 	handler := api.Serve(
 		cfg,

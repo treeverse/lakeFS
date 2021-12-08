@@ -92,7 +92,7 @@ func TestLocalLoad(t *testing.T) {
 	t.Cleanup(func() {
 		_ = c.Close()
 	})
-	auditChecker := version.NewDefaultAuditChecker()
+	auditChecker := version.NewDefaultAuditChecker(conf.GetSecurityAuditCheckURL())
 
 	handler := api.Serve(
 		conf,

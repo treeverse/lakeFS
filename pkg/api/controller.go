@@ -2938,14 +2938,17 @@ func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// set upgrade recommended based on last security audit check
-	lastCheck, _ := c.AuditChecker.LastCheck()
 	var (
 		upgradeRecommended *bool
 		upgradeURL         *string
 	)
-	if recommendedURL := lastCheck.UpgradeRecommendedURL(); recommendedURL != "" {
-		upgradeRecommended = swag.Bool(true)
-		upgradeURL = swag.String(recommendedURL)
+	lastCheck, _ := c.AuditChecker.LastCheck()
+	if lastCheck != nil {
+		recommendedURL := lastCheck.UpgradeRecommendedURL();
+		if recommendedURL != "" {
+			upgradeRecommended = swag.Bool(true)
+			upgradeURL = swag.String(recommendedURL)
+		}
 	}
 
 	writeResponse(w, http.StatusOK, VersionConfig{
