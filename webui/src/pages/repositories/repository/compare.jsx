@@ -15,6 +15,7 @@ import {ConfirmationButton} from "../../../lib/components/modals";
 import {useRouter} from "../../../lib/hooks/router";
 import {URINavigator} from "../../../lib/components/repository/tree";
 import {appendMoreResults} from "./changes";
+import {RefTypeBranch, RefTypeCommit} from "../../../constants";
 
 
 const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, onSelectCompare, onNavigate }) => {
@@ -25,6 +26,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
     const [resultsState, setResultsState] = useState({prefix: prefix, results:[], pagination:{}}); // current retrieved children of the item
 
     const refresh = () => {
+        setResultsState({prefix: prefix, results:[], pagination:{}})
         setInternalRefresh(!internalRefresh)
         setMergeError(null)
     }
@@ -46,10 +48,10 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
     const relativeTitle = (from, to) => {
         let fromId = from.id;
         let toId = to.id;
-        if (from.type === 'commit') {
+        if (from.type === RefTypeCommit) {
             fromId = fromId.substr(0, 12);
         }
-        if (to.type === 'commit') {
+        if (to.type === RefTypeCommit) {
             toId = toId.substr(0, 12);
         }
 
@@ -96,12 +98,25 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                         <Card.Body>
                             <Table borderless size="sm">
                                 <tbody>
-                                {results.map(entry => (
-                                    <TreeItem key={entry.path+"-item"} entry={entry} repo={repo} reference={reference} internalReferesh={internalRefresh}
-                                              delimiter={delimiter} relativeTo={prefix} onNavigate={onNavigate}
-                                              getMore={(afterUpdatedChild, path) => refs.diff(repo.id, reference.id, compareReference.id, afterUpdatedChild, path, delimiter)}
-                                    />
-                                ))}
+                                {results.map(entry => {
+                                    let leftCommittedRef = reference.id;
+                                    let rightCommittedRef = compareReference.id;
+                                    if (reference.type === RefTypeBranch) {
+                                        leftCommittedRef +=  + "@";
+                                    }
+                                    if (compareReference.type === RefTypeBranch) {
+                                        rightCommittedRef += "@";
+                                    }
+                                    return (
+                                    <TreeItem key={entry.path+"-item"} entry={entry} repo={repo} reference={reference}
+                                              internalReferesh={internalRefresh} leftDiffRefID={leftCommittedRef}
+                                              rightDiffRefID={rightCommittedRef} delimiter={delimiter} relativeTo={prefix}
+                                              onNavigate={onNavigate}
+                                              getMore={(afterUpdatedChild, path, useDelimiter = true, amount = -1) => {
+                                                  return refs.diff(repo.id, reference.id, compareReference.id, afterUpdatedChild, path, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined)
+                                              }}
+                                    />)})
+                                }
                                 { !!nextPage &&
                                 <TreeEntryPaginator path={""} loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated}/>
                                 }
@@ -143,7 +158,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
 
                     <RefreshButton onClick={refresh}/>
 
-                    {(compareReference.type === 'branch' && reference.type === 'branch') &&
+                    {(compareReference.type === RefTypeBranch && reference.type === RefTypeBranch) &&
                     <ConfirmationButton
                         variant="success"
                         disabled={((compareReference.id === reference.id) || merging || emptyDiff)}

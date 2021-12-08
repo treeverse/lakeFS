@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.56.0 - 2021-12-05
+
+- Fix bug: faulty LDAP username validation (#2774)
+- Fix bug: lakectl metastore create-symlink command (#2747)
+- Fix bug: can't view tag when name is invalid as branch ID (#2723)
+- Fix bug: can't view content diff when comparing non-branch references (#2751)
+- Fix bug: Refresh page after merging from the UI (#2743)
+- UI: Calculate change summary under every prefix (#2744)
+- Improved readability of error messages (#2738)
+
+## v0.55.0 - 2021-11-17
+
+- lakefs-dbt integration: support lakeFS branches in dbt (#2680)
+- UI: explore tags in objects, compare and other views (#2670)
+- UI: View content and size diff between two objects (#2685)
+- Logging: Add request ID fields to all DB and auth logs (#2683)
+- Remove the lakefs diagnose command (#2693)
+- Add an s3 block adapter configuration parameter to disable bucket's region discovery (#2705) 
+- Make lakectl provide meaningful information and exit code in case of a merge conflict (#2700,#2706; Fixes:#2699)
+
 ## v0.54.0 - 2021-11-08
 
 - Fix branch creation concurrency bug (#2663)

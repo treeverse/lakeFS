@@ -206,8 +206,8 @@ var metastoreDiffCmd = &cobra.Command{
 	Use:   "diff",
 	Short: "Show column and partition differences between two tables",
 	Run: func(cmd *cobra.Command, args []string) {
-		fromClientType, _ := cmd.Flags().GetString("from-client-type")
 		toAddress, _ := cmd.Flags().GetString("to-address")
+		fromClientType, _ := cmd.Flags().GetString("from-client-type")
 		fromDB, _ := cmd.Flags().GetString("from-schema")
 		fromTable, _ := cmd.Flags().GetString("from-table")
 		toClientType, _ := cmd.Flags().GetString("to-client-type")
@@ -215,16 +215,8 @@ var metastoreDiffCmd = &cobra.Command{
 		toDB, _ := cmd.Flags().GetString("to-schema")
 		toTable, _ := cmd.Flags().GetString("to-table")
 
-		msType := cfg.GetMetastoreType()
-		if len(fromClientType) == 0 {
-			fromClientType = msType
-		}
-		if len(toClientType) == 0 {
-			toClientType = msType
-		}
-		fromClient, fromClientDeferFunc := getMetastoreClient(fromClientType, fromAddress)
+		fromClient, toClient, fromClientDeferFunc, toClientDeferFunc := getClients(fromClientType, toClientType, fromAddress, toAddress)
 		defer fromClientDeferFunc()
-		toClient, toClientDeferFunc := getMetastoreClient(toClientType, toAddress)
 		defer toClientDeferFunc()
 
 		if len(toDB) == 0 {
@@ -257,7 +249,21 @@ var metastoreDiffCmd = &cobra.Command{
 	},
 }
 
-var glueSymlinkCmd = &cobra.Command{
+func getClients(fromClientType, toClientType, fromAddress, toAddress string) (metastore.Client, metastore.Client, func(), func()) {
+	msType := cfg.GetMetastoreType()
+	if len(fromClientType) == 0 {
+		fromClientType = msType
+	}
+	if len(toClientType) == 0 {
+		toClientType = msType
+	}
+	fromClient, fromClientDeferFunc := getMetastoreClient(fromClientType, fromAddress)
+	toClient, toClientDeferFunc := getMetastoreClient(toClientType, toAddress)
+
+	return fromClient, toClient, fromClientDeferFunc, toClientDeferFunc
+}
+
+var createSymlinkCmd = &cobra.Command{
 	Use:   "create-symlink",
 	Short: "Create symlink table and data",
 	Long:  "create table with symlinks, and create the symlinks in s3 in order to access from external services that could only access s3 directly (e.g athena)",
@@ -269,21 +275,21 @@ var glueSymlinkCmd = &cobra.Command{
 		fromTable, _ := cmd.Flags().GetString("from-table")
 		toDB, _ := cmd.Flags().GetString("to-schema")
 		toTable, _ := cmd.Flags().GetString("to-table")
+		fromClientType, _ := cmd.Flags().GetString("from-client-type")
 
-		client := getClient()
-		res, err := client.CreateSymlinkFileWithResponse(cmd.Context(), repo, branch, &api.CreateSymlinkFileParams{Location: &path})
+		apiClient := getClient()
+		fromClient, toClient, fromClientDeferFunc, toClientDeferFunc := getClients(fromClientType, "glue", "", "")
+		defer fromClientDeferFunc()
+		defer toClientDeferFunc()
+
+		res, err := apiClient.CreateSymlinkFileWithResponse(cmd.Context(), repo, branch, &api.CreateSymlinkFileParams{Location: &path})
 		if err != nil {
 			DieErr(err)
 		}
 		DieOnResponseError(res, err)
 		location := res.JSON201.Location
 
-		msClient, err := glue.NewMSClient(cfg.GetMetastoreAwsConfig(), cfg.GetMetastoreGlueCatalogID(), cfg.GetGlueDBLocationURI())
-		if err != nil {
-			DieErr(err)
-		}
-
-		err = metastore.CopyOrMergeToSymlink(cmd.Context(), msClient, fromDB, fromTable, toDB, toTable, location, cfg.GetFixSparkPlaceholder())
+		err = metastore.CopyOrMergeToSymlink(cmd.Context(), fromClient, toClient, fromDB, fromTable, toDB, toTable, location, cfg.GetFixSparkPlaceholder())
 		if err != nil {
 			DieErr(err)
 		}
@@ -366,21 +372,22 @@ func init() {
 	_ = metastoreImportAllCmd.MarkFlagRequired("branch")
 	_ = metastoreImportAllCmd.Flags().Bool("continue-on-error", false, "prevent import-all from failing when a single table fails")
 	_ = metastoreImportAllCmd.Flags().String("dbfs-root", "", "dbfs location root will replace `dbfs:/` in the location before transforming")
-	metastoreCmd.AddCommand(glueSymlinkCmd)
-	_ = glueSymlinkCmd.Flags().String("repo", "", "lakeFS repository name")
-	_ = glueSymlinkCmd.MarkFlagRequired("repo")
-	_ = glueSymlinkCmd.Flags().String("branch", "", "lakeFS branch name")
-	_ = glueSymlinkCmd.MarkFlagRequired("branch")
-	_ = glueSymlinkCmd.Flags().String("path", "", "path to table on lakeFS")
-	_ = glueSymlinkCmd.MarkFlagRequired("path")
-	_ = glueSymlinkCmd.Flags().String("catalog-id", "", "Glue catalog ID")
-	_ = viper.BindPFlag("metastore.glue.catalog_id", glueSymlinkCmd.Flag("catalog-id"))
-	_ = glueSymlinkCmd.Flags().String("from-schema", "", "source schema name")
-	_ = glueSymlinkCmd.MarkFlagRequired("from-schema")
-	_ = glueSymlinkCmd.Flags().String("from-table", "", "source table name")
-	_ = glueSymlinkCmd.MarkFlagRequired("from-table")
-	_ = glueSymlinkCmd.Flags().String("to-schema", "", "destination schema name")
-	_ = glueSymlinkCmd.MarkFlagRequired("to-schema")
-	_ = glueSymlinkCmd.Flags().String("to-table", "", "destination table name")
-	_ = glueSymlinkCmd.MarkFlagRequired("to-table")
+	metastoreCmd.AddCommand(createSymlinkCmd)
+	_ = createSymlinkCmd.Flags().String("repo", "", "lakeFS repository name")
+	_ = createSymlinkCmd.MarkFlagRequired("repo")
+	_ = createSymlinkCmd.Flags().String("branch", "", "lakeFS branch name")
+	_ = createSymlinkCmd.MarkFlagRequired("branch")
+	_ = createSymlinkCmd.Flags().String("path", "", "path to table on lakeFS")
+	_ = createSymlinkCmd.MarkFlagRequired("path")
+	_ = createSymlinkCmd.Flags().String("catalog-id", "", "Glue catalog ID")
+	_ = viper.BindPFlag("metastore.glue.catalog_id", createSymlinkCmd.Flag("catalog-id"))
+	_ = createSymlinkCmd.Flags().String("from-schema", "", "source schema name")
+	_ = createSymlinkCmd.MarkFlagRequired("from-schema")
+	_ = createSymlinkCmd.Flags().String("from-table", "", "source table name")
+	_ = createSymlinkCmd.MarkFlagRequired("from-table")
+	_ = createSymlinkCmd.Flags().String("to-schema", "", "destination schema name")
+	_ = createSymlinkCmd.MarkFlagRequired("to-schema")
+	_ = createSymlinkCmd.Flags().String("to-table", "", "destination table name")
+	_ = createSymlinkCmd.MarkFlagRequired("to-table")
+	_ = createSymlinkCmd.Flags().String("from-client-type", "", "metastore type [hive, glue]")
 }

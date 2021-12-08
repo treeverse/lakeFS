@@ -1,6 +1,8 @@
 export const API_ENDPOINT = '/api/v1';
 export const DEFAULT_LISTING_AMOUNT = 100;
 
+export const SETUP_STATE_INITIALIZED = "initialized"
+export const SETUP_STATE_NOT_INITIALIZED = "not_initialized"
 class LocalCache {
     get(key) {
         const value = localStorage.getItem(key)
@@ -80,6 +82,13 @@ export class NotFoundError extends Error {
     constructor(message) {
         super(message)
         this.name = "NotFoundError"
+    }
+}
+
+export class BadRequestError extends Error {
+    constructor(message) {
+        super(message)
+        this.name = "BadRequestError"
     }
 }
 
@@ -417,7 +426,9 @@ class Branches {
 
     async get(repoId, branchId) {
         const response = await apiRequest(`/repositories/${repoId}/branches/${branchId}`);
-        if (response.status === 404) {
+        if (response.status === 400) {
+            throw new BadRequestError('invalid get branch request');
+        } else if (response.status === 404) {
             throw new NotFoundError(`could not find branch ${branchId}`);
         } else if (response.status !== 200) {
             throw new Error(`could not get branch: ${await extractError(response)}`);
@@ -543,6 +554,26 @@ class Objects {
         if (response.status !== 204) {
             throw new Error(await extractError(response));
         }
+    }
+
+    async get(repoId, ref, path) {
+        const query = qs({path});
+        const response = await apiRequest(`/repositories/${repoId}/refs/${ref}/objects?${query}`, {
+            method: 'GET',
+        });
+        if (response.status !== 200) {
+            throw new Error(await extractError(response));
+        }
+        return response.text()
+    }
+
+    async getStat(repoId, ref, path) {
+        const query = qs({path});
+        const response = await apiRequest(`/repositories/${repoId}/refs/${ref}/objects/stat?${query}`);
+        if (response.status !== 200) {
+            throw new Error(await extractError(response));
+        }
+        return response.json()
     }
 }
 
@@ -681,6 +712,18 @@ class Retention {
 }
 
 class Setup {
+    async getState() {
+        const response = await apiRequest('/setup_lakefs', {
+            method: 'GET',
+        });
+        switch (response.status) {
+            case 200:
+                return response.json();
+            default:
+                throw new Error(`Could not get setup state: ${await extractError(response)}`);
+        }
+    }
+
     async lakeFS(username) {
         const response = await apiRequest('/setup_lakefs', {
             method: 'POST',

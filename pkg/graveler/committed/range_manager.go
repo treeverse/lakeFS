@@ -90,7 +90,7 @@ type RangeWriter interface {
 	// WriteRecord appends the given record to the Range.
 	WriteRecord(record Record) error
 
-	// AddMetadata associates metadata value (which will be stringified when the writer is
+	// SetMetadata associates metadata value (which will be stringified when the writer is
 	// Closed and added to the resulting range ID) with key.
 	SetMetadata(key, value string)
 

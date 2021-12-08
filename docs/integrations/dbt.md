@@ -14,7 +14,7 @@ redirect_from: ../using/dbt.html
 DBT could run on lakeFS with the Spark adapter or the Presto/Trino adapter. 
 Both Spark and Presto use Hive metastore or Glue in order to manage tables and views.
 When creating a branch in lakeFS we receive a logical copy of the data that could be accessed by `s3://my-repo/branch/...` 
-In order to run our DBT project on a new created branch we need to have a copy ot the metadata as well.
+In order to run our DBT project on a new created branch we need to have a copy of the metadata as well.
 
 The lakectl dbt command generates all the metadata needed in order to work on the new created branch,
 continuing from the last state in the source branch.

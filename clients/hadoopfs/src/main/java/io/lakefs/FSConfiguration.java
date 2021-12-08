@@ -10,7 +10,7 @@ public final class FSConfiguration {
 
     /**
      * lookup value from configuration based on scheme and key suffix.
-     * first try to get "fs.\<scheme\>.\<key suffix\>", if value not found use the default scheme
+     * first try to get "fs.[scheme].[key suffix]", if value not found use the default scheme
      * to build a key for lookup.
      *
      * @param conf      configuration object to get the value from

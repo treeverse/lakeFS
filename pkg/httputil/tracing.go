@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	MaxBodyBytes                      = 100
+	MaxBodyBytes                      = 750               // Log lines will be < 2KiB
 	RequestTracingMaxRequestBodySize  = 1024 * 1024 * 50  // 50KB
 	RequestTracingMaxResponseBodySize = 1024 * 1024 * 150 // 150KB
 )
@@ -137,7 +137,7 @@ func TracingMiddleware(requestIDHeaderName string, fields logging.Fields, traceR
 				"took":             time.Since(startTime),
 				"status_code":      responseWriter.StatusCode,
 				"sent_bytes":       responseWriter.ResponseSize,
-				"request_body":     requestBodyTracer.bodyRecorder.Buffer,
+				"request_body":     presentBody(requestBodyTracer.bodyRecorder.Buffer),
 				"response_body":    presentBody(responseWriter.BodyRecorder.Buffer),
 				"response_headers": responseWriter.Header(),
 			}

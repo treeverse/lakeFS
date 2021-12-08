@@ -55,6 +55,7 @@ from lakefs_client.model.repository_list import RepositoryList
 from lakefs_client.model.reset_creation import ResetCreation
 from lakefs_client.model.revert_creation import RevertCreation
 from lakefs_client.model.setup import Setup
+from lakefs_client.model.setup_state import SetupState
 from lakefs_client.model.staging_location import StagingLocation
 from lakefs_client.model.staging_metadata import StagingMetadata
 from lakefs_client.model.statement import Statement

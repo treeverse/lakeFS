@@ -65,9 +65,10 @@ const ChangeList = ({ repo, commit, prefix, onNavigate }) => {
                                 <tbody>
                                 {results.map(entry => (
                                     <TreeItem key={entry.path + "-tree-item"} entry={entry} repo={repo} reference={commit}
-                                              delimiter={delimiter} after={afterUpdated} relativeTo={prefix} onNavigate={onNavigate}
-                                              getMore={(afterUpdated, path) => {
-                                                  return refs.diff(repo.id, commit.parents[0], commit.id, afterUpdated, path, delimiter)
+                                              leftDiffRefID={commit.parents[0]} rightDiffRefID={commit.id} delimiter={delimiter}
+                                              after={afterUpdated} relativeTo={prefix} onNavigate={onNavigate}
+                                              getMore={(afterUpdated, path, useDelimiter = true, amount = -1) => {
+                                                  return refs.diff(repo.id, commit.parents[0], commit.id, afterUpdated, path, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined)
                                               }}/>
                                 ))}
                                 { !!nextPage &&

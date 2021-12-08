@@ -30,15 +30,17 @@ class ByteBufferIndexedBytesSpec extends AnyFunSpec with Matchers {
       // Verify slices contents
       for (indices <- sliceIndices) {
         val slice = buffer.slice(indices._1, indices._2)
-        slice.iterator.toSeq should contain theSameElementsInOrderAs (
-          bytesSeq.view(indices._1, indices._2))
+        slice.iterator.toSeq should contain theSameElementsInOrderAs (bytesSeq.view(indices._1,
+                                                                                    indices._2
+                                                                                   ))
       }
 
       // Verify them _again_, ensuring no slice ruined a previous slice.
       for (indices <- sliceIndices) {
         val slice = buffer.slice(indices._1, indices._2)
-        slice.iterator.toSeq should contain theSameElementsInOrderAs (
-          bytesSeq.view(indices._1, indices._2))
+        slice.iterator.toSeq should contain theSameElementsInOrderAs (bytesSeq.view(indices._1,
+                                                                                    indices._2
+                                                                                   ))
       }
     }
 

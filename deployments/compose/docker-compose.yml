@@ -85,6 +85,8 @@ services:
   hive-server:
     build: hive
     container_name: hiveserver2
+    ports:
+      - 10001:10000
     depends_on:
       - hive-metastore
     environment:
@@ -103,6 +105,8 @@ services:
     container_name: trino
     volumes:
       - ./etc/s3.properties:/etc/trino/catalog/s3.properties
+    ports:
+      - 8080:48080
 
   trino-client:
     image: trinodb/trino:358
@@ -174,3 +178,35 @@ services:
       - ./:/local
       - ./etc/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml
     command: ["spark-sql", "--master", "spark://spark:7077"]
+
+
+  spark-thrift:
+    image: docker.io/bitnami/spark:3
+    command: ["bash","-c", "/opt/bitnami/entrypoint.sh"]
+    depends_on:
+      - spark
+    environment:
+      - SPARK_MODE=master
+      - SPARK_MASTER_URL=spark://spark:7077
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_MODE=worker
+    volumes:
+      - ./etc/spark-thrift-entrypoint.sh:/opt/bitnami/entrypoint.sh
+      - ./etc/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml
+
+
+  create-dbt-schema-main:
+    image: trinodb/trino:358
+    profiles: ["client"]
+    entrypoint: ["trino", "--server", "trino:8080", "--catalog", "s3", "--execute", "drop schema if exists dbt_main  ;create schema dbt_main with (location = 's3://example/main/dbt' )"]
+
+  dbt:
+    build: dbt
+    profiles: ["client"]
+    volumes:
+      - ./dbt/dbt-project:/usr/app
+      - ./dbt/profiles.yml:/root/.dbt/profiles.yml
+    entrypoint: dbt
+
