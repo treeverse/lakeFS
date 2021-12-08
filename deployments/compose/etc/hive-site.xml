@@ -25,6 +25,10 @@
         <value>admin</value>
     </property>
     <property>
+        <name>hive.metastore.schema.verification</name>
+        <value>false</value>
+    </property>
+    <property>
         <name>fs.s3a.path.style.access</name>
         <value>true</value>
     </property>
