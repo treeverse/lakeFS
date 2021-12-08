@@ -2,7 +2,7 @@
 
 ### Problem Description
 
-This feature gives the ability to log commits that contain changes only to a specified path or list of path.
+This feature gives the ability to log commits that contain changes only to a specified path or list of paths.
 The path can represent a specif object or a prefix.
 
 For example: `lakectl log lakefs://example1/main/path/to/object` will output only the commits in which the object changed.
