@@ -7,9 +7,6 @@ WORKDIR /build
 # Packages required to build
 RUN apk add --no-cache build-base
 
-# Linux utilities
-RUN apk add --no-cache util-linux
-
 # Copy project deps first since they don't change often
 COPY go.mod go.sum ./
 RUN go mod download
@@ -54,3 +51,10 @@ VOLUME /etc/lakefs.yaml
 
 ENTRYPOINT ["/app/lakefs"]
 CMD ["run"]
+
+# nessie image
+FROM golang:1.16.2-alpine AS nessie
+
+# Linux utilities for 'script'
+RUN apk add --no-cache util-linux
+
