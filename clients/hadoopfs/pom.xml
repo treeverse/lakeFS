@@ -212,7 +212,7 @@ To export to S3:
         <dependency>
             <groupId>io.lakefs</groupId>
             <artifactId>api-client</artifactId>
-            <version>0.40.3</version>
+            <version>0.56.0</version>
         </dependency>
 
         <dependency>

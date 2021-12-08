@@ -38,7 +38,7 @@ def generateCoreProject(buildType: BuildType) =
         scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
       ),
       libraryDependencies ++= Seq(
-        "io.lakefs" % "api-client" % "0.44.0",
+        "io.lakefs" % "api-client" % "0.56.0",
         "commons-codec" % "commons-codec" % "1.15",
         "org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
         "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
