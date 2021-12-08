@@ -13,7 +13,6 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
 //
@@ -21,13 +20,17 @@ import (
 //
 var update = flag.Bool("update", false, "update golden files with results")
 
+func lakectlLocation() string {
+	return viper.GetString("lakectl_dir") + "/lakectl"
+}
+
 func lakectl() string {
 	os.Setenv("LAKECTL_DIR", "~/Code/lakeFS")
 	lakectlCmdline :=
 		"LAKECTL_CREDENTIALS_ACCESS_KEY_ID=" + viper.GetString("access_key_id") +
 			" LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY=" + viper.GetString("secret_access_key") +
 			" LAKECTL_SERVER_ENDPOINT_URL=" + viper.GetString("endpoint_url") +
-			" " + testutil.LakectlLocation()
+			" " + lakectlLocation()
 
 	return lakectlCmdline
 }

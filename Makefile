@@ -44,7 +44,6 @@ UI_DIR=webui
 UI_BUILD_DIR=$(UI_DIR)/dist
 
 DOCKER_IMAGE=lakefs
-NESSIE_DOCKER_IMAGE=nessie
 DOCKER_TAG=dev
 VERSION=dev
 export VERSION
@@ -152,14 +151,9 @@ gen-mockgen: go-install ## Run the generator for inline commands
 	$(GOGENERATE) ./pkg/actions
 
 LD_FLAGS := "-X github.com/treeverse/lakefs/pkg/version.Version=$(VERSION)-$(REVISION)"
-
-build-lakectl: gen
-	$(GOBUILD) -o $(LAKECTL_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKECTL_BINARY_NAME)
-
-build-lakefs: gen
+build: gen docs ## Download dependencies and build the default binary
 	$(GOBUILD) -o $(LAKEFS_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKEFS_BINARY_NAME)
-
-build: gen docs build-lakefs build-lakectl ## Download dependencies and build the default binary
+	$(GOBUILD) -o $(LAKECTL_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKECTL_BINARY_NAME)
 
 lint: go-install  ## Lint code
 	$(GOBINPATH)/golangci-lint run $(GOLANGCI_LINT_FLAGS)
@@ -186,7 +180,6 @@ test-html: test  ## Run tests with HTML for the project
 
 build-docker: build ## Build Docker image file (Docker required)
 	$(DOCKER) build -t treeverse/$(DOCKER_IMAGE):$(DOCKER_TAG) .
-	$(DOCKER) build -t treeverse/$(NESSIE_DOCKER_IMAGE):$(DOCKER_TAG) nessie/ops/
 
 gofmt:  ## gofmt code formating
 	@echo Running go formating with the following command:
