@@ -28,7 +28,7 @@ services:
       POSTGRES_USER: lakefs
       POSTGRES_PASSWORD: lakefs
   nessie:
-    image: "${REPO}/lakefs:${TAG}"
+    image: "${REPO}/nessie:${TAG}"
     links:
       - lakefs:s3.local.lakefs.io
       - lakefs:testmultipartupload.s3.local.lakefs.io

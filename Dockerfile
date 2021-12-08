@@ -52,9 +52,3 @@ VOLUME /etc/lakefs.yaml
 ENTRYPOINT ["/app/lakefs"]
 CMD ["run"]
 
-# nessie image
-FROM golang:1.16.2-alpine AS nessie
-
-# Linux utilities for 'script'
-RUN apk add --no-cache util-linux
-

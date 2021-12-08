@@ -44,6 +44,7 @@ UI_DIR=webui
 UI_BUILD_DIR=$(UI_DIR)/dist
 
 DOCKER_IMAGE=lakefs
+NESSIE_DOCKER_IMAGE=nessie
 DOCKER_TAG=dev
 VERSION=dev
 export VERSION
@@ -185,6 +186,7 @@ test-html: test  ## Run tests with HTML for the project
 
 build-docker: build ## Build Docker image file (Docker required)
 	$(DOCKER) build -t treeverse/$(DOCKER_IMAGE):$(DOCKER_TAG) .
+	$(DOCKER) build -t treeverse/$(NESSIE_DOCKER_IMAGE):$(DOCKER_TAG) nessie/ops/
 
 gofmt:  ## gofmt code formating
 	@echo Running go formating with the following command:
