@@ -168,7 +168,7 @@ var runCmd = &cobra.Command{
 		auditChecker := version.NewDefaultAuditChecker()
 		defer auditChecker.Close()
 		if version.Version != version.UnreleasedVersion {
-			const maxSecondsToJitter = 300
+			const maxSecondsToJitter = 12 * 60 * 60                                // 12h in seconds
 			jitter := time.Duration(rand.Int63n(maxSecondsToJitter)) * time.Second //nolint:gosec
 			interval := cfg.GetSecurityAuditCheckInterval() + jitter
 			auditChecker.StartPeriodicCheck(ctx, interval, logger)

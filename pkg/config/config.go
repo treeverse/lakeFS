@@ -149,7 +149,7 @@ const (
 	StatsFlushIntervalKey = "stats.flush_interval"
 
 	SecurityAuditCheckIntervalKey     = "security.audit_check_interval"
-	DefaultSecurityAuditCheckInterval = 24 * time.Hour
+	DefaultSecurityAuditCheckInterval = 12 * time.Hour
 )
 
 func setDefaults() {
