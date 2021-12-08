@@ -16,11 +16,14 @@ func TestLakectlHelp(t *testing.T) {
 
 func TestBasicRepoActions(t *testing.T) {
 	//
-	// lakectl repo list with no repo created. Verifying terminal and piped formats
+	// runCmdAndVerifySuccess(t, lakectl()+" repo list", false, "\n", emptyVars)
 	//
-	runCmdAndVerifySuccess(t, lakectl()+" repo list", false, "\n", emptyVars)
-	runCmdAndVerifySuccess(t, lakectl()+" repo list --no-color", true, "\n", emptyVars)
-	runCmdAndVerifySuccessWithFile(t, lakectl()+" repo list", true, "lakectl_repo_list_empty.term", emptyVars)
+	// Fails due to the usage of repos for isolation - nessie creates repos in parallel and
+	// the output of 'repo list' command cannot be well defined
+	//
+	// lakectl repo list with no repo created. Verifying terminal and piped formats
+	// runCmdAndVerifySuccess(t, lakectl()+" repo list --no-color", true, "\n", emptyVars)
+	// runCmdAndVerifySuccessWithFile(t, lakectl()+" repo list", true, "lakectl_repo_list_empty.term", emptyVars)
 
 	//
 	// Create repo using lakectl repo create and verifying the output
@@ -38,25 +41,33 @@ func TestBasicRepoActions(t *testing.T) {
 	//
 	// lakectl repo list is expected to show the created repo
 	//
-	runCmdAndVerifySuccessWithFile(t, lakectl()+" repo list", false, "lakectl_repo_list_1", vars)
-	runCmdAndVerifySuccessWithFile(t, lakectl()+" repo list --no-color", true, "lakectl_repo_list_1", vars)
-	runCmdAndVerifySuccessWithFile(t, lakectl()+" repo list", true, "lakectl_repo_list_1.term", vars)
+	// Fails due to the usage of repos for isolation - nessie creates repos in parallel and
+	// the output of 'repo list' command cannot be well defined
+	//
+	// runCmdAndVerifySuccessWithFile(t, lakectl()+" repo list", false, "lakectl_repo_list_1", vars)
+	// runCmdAndVerifySuccessWithFile(t, lakectl()+" repo list --no-color", true, "lakectl_repo_list_1", vars)
+	// runCmdAndVerifySuccessWithFile(t, lakectl()+" repo list", true, "lakectl_repo_list_1.term", vars)
 
 	//
 	// Create a second repo. Vars for the first repo are being saved in a new map, in order to be used
 	// for a follow-up verification with 'repo list'
 	//
-	listVars := map[string]string{
-		"REPO1":    repoName,
-		"STORAGE1": storage,
-		"BRANCH1":  mainBranch,
-	}
+	// listVars := map[string]string{
+	// 	"REPO1":    repoName,
+	// 	"STORAGE1": storage,
+	// 	"BRANCH1":  mainBranch,
+	// }
 
 	//
 	// Trying to create the same repo again fails and does not change the list
 	//
 	runCmdAndVerifyFailureWithFile(t, lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create_not_unique", vars)
-	runCmdAndVerifySuccessWithFile(t, lakectl()+" repo list", false, "lakectl_repo_list_1", vars)
+
+	//
+	// Fails due to the usage of repos for isolation - nessie creates repos in parallel and
+	// the output of 'repo list' command cannot be well defined
+	//
+	// runCmdAndVerifySuccessWithFile(t, lakectl()+" repo list", false, "lakectl_repo_list_1", vars)
 
 	//
 	// Create another repo with non-default branch
@@ -72,14 +83,17 @@ func TestBasicRepoActions(t *testing.T) {
 	//
 	// The generated names are also added to the verification vars map
 	//
-	listVars["REPO2"] = repoName2
-	listVars["STORAGE2"] = storage2
-	listVars["BRANCH2"] = notDefaultBranchName
-	runCmdAndVerifySuccessWithFile(t, lakectl()+" repo list", false, "lakectl_repo_list_2", listVars)
-	runCmdAndVerifySuccessWithFile(t, lakectl()+" repo list --no-color", true, "lakectl_repo_list_2", listVars)
-	runCmdAndVerifySuccessWithFile(t, lakectl()+" repo list", true, "lakectl_repo_list_2.term", listVars)
+	// Fails due to the usage of repos for isolation - nessie creates repos in parallel and
+	// the output of 'repo list' command cannot be well defined
+	//
+	// listVars["REPO2"] = repoName2
+	// listVars["STORAGE2"] = storage2
+	// listVars["BRANCH2"] = notDefaultBranchName
+	// runCmdAndVerifySuccessWithFile(t, lakectl()+" repo list", false, "lakectl_repo_list_2", listVars)
+	// runCmdAndVerifySuccessWithFile(t, lakectl()+" repo list --no-color", true, "lakectl_repo_list_2", listVars)
+	// runCmdAndVerifySuccessWithFile(t, lakectl()+" repo list", true, "lakectl_repo_list_2.term", listVars)
 
-	runCmdAndVerifySuccessWithFile(t, lakectl()+" repo list --after "+repoName, false, "lakectl_repo_list_1", vars)
+	// runCmdAndVerifySuccessWithFile(t, lakectl()+" repo list --after "+repoName, false, "lakectl_repo_list_1", vars)
 
 	//
 	// Trying to delete a repo using malformed_uri
@@ -100,5 +114,4 @@ func TestBasicRepoActions(t *testing.T) {
 	// Trying to delete again
 	//
 	runCmdAndVerifyFailureWithFile(t, lakectl()+" repo delete lakefs://"+repoName2+" -y", false, "lakectl_repo_delete_not_found", vars)
-
 }
