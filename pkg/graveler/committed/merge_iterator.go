@@ -236,7 +236,7 @@ func (d *compareIterator) stepRange() (hasMore bool, done bool) {
 			d.val = nil
 			return true, true
 		}
-		if bytes.Compare(rng.MaxKey, baseRange.MinKey) < 0 {
+		if baseRange != nil && bytes.Compare(rng.MaxKey, baseRange.MinKey) < 0 {
 			// conflict, added on dest and source
 			return d.handleConflict(), true
 		}
