@@ -64,7 +64,8 @@ func buildLakectl() error {
 		return err
 	}
 
-	build := exec.Command("go", "build", "-ldflags", fmt.Sprintf("-X github.com/treeverse/lakefs/pkg/version.Version=%s", viper.GetString("version")), "-o", "lakectl", "./cmd/lakectl")
+	ldflags := fmt.Sprintf("-X github.com/treeverse/lakefs/pkg/version.Version=%s", viper.GetString("version"))
+	build := exec.Command("go", "build", "-ldflags", ldflags, "-o", "lakectl", "./cmd/lakectl")
 	err = build.Run()
 	if err != nil {
 		return err
