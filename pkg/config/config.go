@@ -197,7 +197,6 @@ func setDefaults() {
 	viper.SetDefault(BlockstoreAzureAuthMethod, DefaultAzureAuthMethod)
 
 	viper.SetDefault(SecurityAuditCheckIntervalKey, DefaultSecurityAuditCheckInterval)
-
 }
 
 func reverse(s string) string {
