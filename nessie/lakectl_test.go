@@ -115,3 +115,23 @@ func TestBasicRepoActions(t *testing.T) {
 	//
 	runCmdAndVerifyFailureWithFile(t, lakectl()+" repo delete lakefs://"+repoName2+" -y", false, "lakectl_repo_delete_not_found", vars)
 }
+
+func TestCommit(t *testing.T) {
+	repoName := generateUniqueRepositoryName()
+	storage := generateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+	}
+	runCmdAndVerifyFailureWithFile(t, lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, "lakectl_log_404", vars)
+	runCmdAndVerifySuccessWithFile(t, lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
+	runCmdAndVerifySuccessWithFile(t, lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, "lakectl_log_initial", vars)
+	runCmdAndVerifySuccessWithFile(t, lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/ro_1k.1", false, "lakectl_fs_upload", vars)
+	runCmdAndVerifySuccessWithFile(t, lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, "lakectl_log_initial", vars)
+	runCmdAndVerifyFailureWithFile(t, lakectl()+" commit lakefs://"+repoName+"/"+mainBranch, false, "lakectl_commit_no_msg", vars)
+	runCmdAndVerifySuccessWithFile(t, lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+" -m \"nessie_lakectl:TestCommit\"", false, "lakectl_commit", vars)
+	runCmdAndVerifySuccessWithFile(t, lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, "lakectl_log_with_commit", vars)
+	runCmdAndVerifyFailureWithFile(t, lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+" -m \"nessie_lakectl:should fail\"", false, "lakectl_commit_no_change", vars)
+	runCmdAndVerifySuccessWithFile(t, lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, "lakectl_log_with_commit", vars)
+}

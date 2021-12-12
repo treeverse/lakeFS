@@ -101,8 +101,10 @@ func embedVariables(s string, vars map[string]string) (string, error) {
 	return s, nil
 }
 
-func sanitize(output string) string {
+func sanitize(output string, vars map[string]string) string {
 	s := removeProgramTimestamp(output)
+	s = removeRandomObjectKey(s, vars["STORAGE"])
+	s = removeCommitID(s)
 	return strings.ReplaceAll(s, "\r\n", "\n")
 
 }
@@ -122,7 +124,7 @@ func runCmdAndVerifyWithFile(t *testing.T, cmd string, expectFail bool, isTermin
 		result, _ := runShellCommand(cmd, isTerminal)
 		s, err := embedVariables(string(result), vars)
 		require.NoError(t, err, "Variable embed failed - %s", err)
-		err = ioutil.WriteFile(goldenFile, []byte(sanitize(s)), 0777)
+		err = ioutil.WriteFile(goldenFile, []byte(sanitize(s, vars)), 0777)
 		require.NoError(t, err, "Failed to write file %s", goldenFile)
 		return
 	}
@@ -130,7 +132,7 @@ func runCmdAndVerifyWithFile(t *testing.T, cmd string, expectFail bool, isTermin
 	if err != nil {
 		t.Fatal("Failed to read ", goldenFile, err)
 	}
-	expected := sanitize(string(content))
+	expected := sanitize(string(content), vars)
 	runCmdAndVerifyResult(t, cmd, expectFail, isTerminal, expected, vars)
 }
 
@@ -153,17 +155,29 @@ func runCmdAndVerifyResult(t *testing.T, cmd string, expectFail bool, isTerminal
 	} else {
 		require.NoError(t, err, "Failed to run %s command - %s", cmd, string(result))
 	}
-	require.Equal(t, expanded, sanitize(string(result)), "Unexpected output for %s command", cmd)
+	require.Equal(t, expanded, sanitize(string(result), vars), "Unexpected output for %s command", cmd)
 }
 
 var (
 	timeStampRegexp = regexp.MustCompile(`timestamp: \d+\r?\n`)
 	timeRegexp      = regexp.MustCompile(`\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} [\+|-]\d{4} \w{1,3}`)
+	commitIdRegExp  = regexp.MustCompile(`[\d|a-f]{64}`)
 )
 
 func removeProgramTimestamp(output string) string {
 	s := timeStampRegexp.ReplaceAll([]byte(output), []byte("timestamp: <TIMESTAMP>"))
 	s = timeRegexp.ReplaceAll(s, []byte("<DATE> <TIME> <TZ>"))
+	return string(s)
+}
+
+func removeRandomObjectKey(output string, objectPrefix string) string {
+	objectKeyRegExp := regexp.MustCompile(objectPrefix + `/[\d|a-f]{32}`)
+	s := objectKeyRegExp.ReplaceAll([]byte(output), []byte(objectPrefix+"/<OBJECT_KEY>"))
+	return string(s)
+}
+
+func removeCommitID(output string) string {
+	s := commitIdRegExp.ReplaceAll([]byte(output), []byte("<COMMIT_ID>"))
 	return string(s)
 }
 
