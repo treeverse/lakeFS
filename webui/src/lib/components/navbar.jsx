@@ -1,9 +1,7 @@
 import React from "react";
-
 import Navbar from 'react-bootstrap/Navbar';
 import Nav from 'react-bootstrap/Nav';
 import NavDropdown from 'react-bootstrap/NavDropdown';
-
 import useUser from '../hooks/user'
 import {auth, config} from "../api";
 import {useRouter} from "../hooks/router";
@@ -45,6 +43,10 @@ const NavUserInfo = () => {
                 <NavDropdown.Item disabled={true}>
                     <small>lakeFS {versionResponse.version}</small>
                 </NavDropdown.Item></>}
+                {!versionLoading && !versionError && versionResponse.upgrade_recommended && <>
+                    <NavDropdown.Item href={versionResponse.upgrade_url}>
+                        <small>upgrade recommended</small>
+                    </NavDropdown.Item></>}
             </NavDropdown>
         </Navbar.Collapse>
     );

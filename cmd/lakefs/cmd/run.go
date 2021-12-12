@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/rand"
 	"net"
 	"net/http"
 	"net/url"
@@ -164,6 +165,15 @@ var runCmd = &cobra.Command{
 		c.SetHooksHandler(actionsService)
 		defer actionsService.Stop()
 
+		auditChecker := version.NewDefaultAuditChecker(cfg.GetSecurityAuditCheckURL())
+		defer auditChecker.Close()
+		if version.Version != version.UnreleasedVersion {
+			const maxSecondsToJitter = 12 * 60 * 60                                // 12h in seconds
+			jitter := time.Duration(rand.Int63n(maxSecondsToJitter)) * time.Second //nolint:gosec
+			interval := cfg.GetSecurityAuditCheckInterval() + jitter
+			auditChecker.StartPeriodicCheck(ctx, interval, logger)
+		}
+
 		allowForeign, err := cmd.Flags().GetBool(mismatchedReposFlagName)
 		if err != nil {
 			fmt.Printf("%s: %s\n", mismatchedReposFlagName, err)
@@ -192,6 +202,7 @@ var runCmd = &cobra.Command{
 			bufferedCollector,
 			cloudMetadataProvider,
 			actionsService,
+			auditChecker,
 			logger.WithField("service", "api_gateway"),
 			cfg.GetS3GatewayDomainNames(),
 		)
@@ -405,7 +416,7 @@ func init() {
 	runCmd.Flags().BoolP(mismatchedReposFlagName, "m", false, "Allow repositories from other object store types")
 	if err := runCmd.Flags().MarkHidden(mismatchedReposFlagName); err != nil {
 		// (internal error)
-		fmt.Fprint(os.Stderr, err)
+		_, _ = fmt.Fprint(os.Stderr, err)
 		os.Exit(internalErrorCode)
 	}
 }
