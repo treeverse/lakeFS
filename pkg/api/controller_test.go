@@ -1539,6 +1539,8 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 		}
 
 		// enable branch protection on a branch
+		_, err = deps.catalog.CreateBranch(ctx, repo, "protected", branch)
+		testutil.Must(t, err)
 
 	})
 }

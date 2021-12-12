@@ -22,7 +22,6 @@ docs/CurrentUser.md
 docs/Diff.md
 docs/DiffList.md
 docs/Error.md
-docs/ErrorList.md
 docs/GarbageCollectionPrepareRequest.md
 docs/GarbageCollectionPrepareResponse.md
 docs/GarbageCollectionRule.md
@@ -39,6 +38,8 @@ docs/Merge.md
 docs/MergeResult.md
 docs/MergeResultSummary.md
 docs/MetadataApi.md
+docs/ObjectError.md
+docs/ObjectErrorList.md
 docs/ObjectStageCreation.md
 docs/ObjectStats.md
 docs/ObjectStatsList.md
@@ -110,7 +111,6 @@ lakefs_client/model/current_user.py
 lakefs_client/model/diff.py
 lakefs_client/model/diff_list.py
 lakefs_client/model/error.py
-lakefs_client/model/error_list.py
 lakefs_client/model/garbage_collection_prepare_request.py
 lakefs_client/model/garbage_collection_prepare_response.py
 lakefs_client/model/garbage_collection_rule.py
@@ -125,6 +125,8 @@ lakefs_client/model/login_information.py
 lakefs_client/model/merge.py
 lakefs_client/model/merge_result.py
 lakefs_client/model/merge_result_summary.py
+lakefs_client/model/object_error.py
+lakefs_client/model/object_error_list.py
 lakefs_client/model/object_stage_creation.py
 lakefs_client/model/object_stats.py
 lakefs_client/model/object_stats_list.py
@@ -183,7 +185,6 @@ test/test_current_user.py
 test/test_diff.py
 test/test_diff_list.py
 test/test_error.py
-test/test_error_list.py
 test/test_garbage_collection_prepare_request.py
 test/test_garbage_collection_prepare_response.py
 test/test_garbage_collection_rule.py
@@ -200,6 +201,8 @@ test/test_merge.py
 test/test_merge_result.py
 test/test_merge_result_summary.py
 test/test_metadata_api.py
+test/test_object_error.py
+test/test_object_error_list.py
 test/test_object_stage_creation.py
 test/test_object_stats.py
 test/test_object_stats_list.py

@@ -23,7 +23,7 @@ from lakefs_client.model_utils import (  # noqa: F401
     validate_and_convert_types
 )
 from lakefs_client.model.error import Error
-from lakefs_client.model.error_list import ErrorList
+from lakefs_client.model.object_error_list import ObjectErrorList
 from lakefs_client.model.object_stage_creation import ObjectStageCreation
 from lakefs_client.model.object_stats import ObjectStats
 from lakefs_client.model.object_stats_list import ObjectStatsList
@@ -109,7 +109,7 @@ class ObjectsApi(object):
         )
         self.delete_objects_endpoint = _Endpoint(
             settings={
-                'response_type': (ErrorList,),
+                'response_type': (ObjectErrorList,),
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
@@ -741,7 +741,7 @@ class ObjectsApi(object):
             async_req (bool): execute request asynchronously
 
         Returns:
-            ErrorList
+            ObjectErrorList
                 If the method is called asynchronously, returns the request
                 thread.
         """

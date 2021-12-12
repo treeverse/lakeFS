@@ -110,7 +110,7 @@ void (empty response body)
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **delete_objects**
-> ErrorList delete_objects(repository, branch, path_list)
+> ObjectErrorList delete_objects(repository, branch, path_list)
 
 delete objects
 
@@ -124,7 +124,7 @@ delete objects
 import time
 import lakefs_client
 from lakefs_client.api import objects_api
-from lakefs_client.model.error_list import ErrorList
+from lakefs_client.model.object_error_list import ObjectErrorList
 from lakefs_client.model.error import Error
 from lakefs_client.model.path_list import PathList
 from pprint import pprint
@@ -188,7 +188,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**ErrorList**](ErrorList.md)
+[**ObjectErrorList**](ObjectErrorList.md)
 
 ### Authorization
 
@@ -206,6 +206,8 @@ Name | Type | Description  | Notes
 |-------------|-------------|------------------|
 **200** | Delete objects response |  -  |
 **204** | object deleted successfully |  -  |
+**401** | Unauthorized |  -  |
+**404** | Resource Not Found |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

@@ -3227,10 +3227,22 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorList'
+                $ref: '#/components/schemas/ObjectErrorList'
           description: Delete objects response
         "204":
           description: object deleted successfully
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
         default:
           content:
             application/json:
@@ -4256,12 +4268,6 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
       description: Validation Error
-    DeleteObjectsResponse:
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorList'
-      description: Delete objects response
   schemas:
     Pagination:
       example:
@@ -4805,8 +4811,6 @@ components:
       - location
       type: object
     Error:
-      example:
-        message: message
       properties:
         message:
           description: short message explaining the error
@@ -4814,15 +4818,38 @@ components:
       required:
       - message
       type: object
-    ErrorList:
+    ObjectError:
+      example:
+        path: path
+        status_code: 0
+        message: message
+      properties:
+        status_code:
+          description: http status code associated with the path/operation
+          type: integer
+        path:
+          description: path to the associated object
+          type: string
+        message:
+          description: short message explaining the error
+          type: string
+      required:
+      - message
+      - status_code
+      type: object
+    ObjectErrorList:
       example:
         errors:
-        - message: message
-        - message: message
+        - path: path
+          status_code: 0
+          message: message
+        - path: path
+          status_code: 0
+          message: message
       properties:
         errors:
           items:
-            $ref: '#/components/schemas/Error'
+            $ref: '#/components/schemas/ObjectError'
           type: array
       required:
       - errors

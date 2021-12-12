@@ -28,8 +28,8 @@ import java.io.IOException;
 
 
 import io.lakefs.clients.api.model.Error;
-import io.lakefs.clients.api.model.ErrorList;
 import java.io.File;
+import io.lakefs.clients.api.model.ObjectErrorList;
 import io.lakefs.clients.api.model.ObjectStageCreation;
 import io.lakefs.clients.api.model.ObjectStats;
 import io.lakefs.clients.api.model.ObjectStatsList;
@@ -217,6 +217,8 @@ public class ObjectsApi {
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> Delete objects response </td><td>  -  </td></tr>
         <tr><td> 204 </td><td> object deleted successfully </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
@@ -282,18 +284,20 @@ public class ObjectsApi {
      * @param repository  (required)
      * @param branch  (required)
      * @param pathList  (required)
-     * @return ErrorList
+     * @return ObjectErrorList
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> Delete objects response </td><td>  -  </td></tr>
         <tr><td> 204 </td><td> object deleted successfully </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ErrorList deleteObjects(String repository, String branch, PathList pathList) throws ApiException {
-        ApiResponse<ErrorList> localVarResp = deleteObjectsWithHttpInfo(repository, branch, pathList);
+    public ObjectErrorList deleteObjects(String repository, String branch, PathList pathList) throws ApiException {
+        ApiResponse<ObjectErrorList> localVarResp = deleteObjectsWithHttpInfo(repository, branch, pathList);
         return localVarResp.getData();
     }
 
@@ -303,19 +307,21 @@ public class ObjectsApi {
      * @param repository  (required)
      * @param branch  (required)
      * @param pathList  (required)
-     * @return ApiResponse&lt;ErrorList&gt;
+     * @return ApiResponse&lt;ObjectErrorList&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> Delete objects response </td><td>  -  </td></tr>
         <tr><td> 204 </td><td> object deleted successfully </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<ErrorList> deleteObjectsWithHttpInfo(String repository, String branch, PathList pathList) throws ApiException {
+    public ApiResponse<ObjectErrorList> deleteObjectsWithHttpInfo(String repository, String branch, PathList pathList) throws ApiException {
         okhttp3.Call localVarCall = deleteObjectsValidateBeforeCall(repository, branch, pathList, null);
-        Type localVarReturnType = new TypeToken<ErrorList>(){}.getType();
+        Type localVarReturnType = new TypeToken<ObjectErrorList>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
@@ -333,13 +339,15 @@ public class ObjectsApi {
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> Delete objects response </td><td>  -  </td></tr>
         <tr><td> 204 </td><td> object deleted successfully </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call deleteObjectsAsync(String repository, String branch, PathList pathList, final ApiCallback<ErrorList> _callback) throws ApiException {
+    public okhttp3.Call deleteObjectsAsync(String repository, String branch, PathList pathList, final ApiCallback<ObjectErrorList> _callback) throws ApiException {
 
         okhttp3.Call localVarCall = deleteObjectsValidateBeforeCall(repository, branch, pathList, _callback);
-        Type localVarReturnType = new TypeToken<ErrorList>(){}.getType();
+        Type localVarReturnType = new TypeToken<ObjectErrorList>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
     }

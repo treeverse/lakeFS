@@ -15,8 +15,8 @@ package io.lakefs.clients.api;
 
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.Error;
-import io.lakefs.clients.api.model.ErrorList;
 import java.io.File;
+import io.lakefs.clients.api.model.ObjectErrorList;
 import io.lakefs.clients.api.model.ObjectStageCreation;
 import io.lakefs.clients.api.model.ObjectStats;
 import io.lakefs.clients.api.model.ObjectStatsList;
@@ -69,7 +69,7 @@ public class ObjectsApiTest {
         String repository = null;
         String branch = null;
         PathList pathList = null;
-                ErrorList response = api.deleteObjects(repository, branch, pathList);
+                ObjectErrorList response = api.deleteObjects(repository, branch, pathList);
         // TODO: test validations
     }
     

@@ -98,7 +98,7 @@ null (empty response body)
 
 <a name="deleteObjects"></a>
 # **deleteObjects**
-> ErrorList deleteObjects(repository, branch, pathList)
+> ObjectErrorList deleteObjects(repository, branch, pathList)
 
 delete objects
 
@@ -137,7 +137,7 @@ public class Example {
     String branch = "branch_example"; // String | 
     PathList pathList = new PathList(); // PathList | 
     try {
-      ErrorList result = apiInstance.deleteObjects(repository, branch, pathList);
+      ObjectErrorList result = apiInstance.deleteObjects(repository, branch, pathList);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ObjectsApi#deleteObjects");
@@ -160,7 +160,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**ErrorList**](ErrorList.md)
+[**ObjectErrorList**](ObjectErrorList.md)
 
 ### Authorization
 
@@ -176,6 +176,8 @@ Name | Type | Description  | Notes
 |-------------|-------------|------------------|
 **200** | Delete objects response |  -  |
 **204** | object deleted successfully |  -  |
+**401** | Unauthorized |  -  |
+**404** | Resource Not Found |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="getObject"></a>
