@@ -2,6 +2,6 @@ Path: ro_1k.1
 Modified Time: <DATE> <TIME> <TZ>
 Size: 1024 bytes
 Human Size: 1.0 kB
-Physical Address: ${STORAGE}/5e3fbf7be97c44f8b1a723116b341ba4
+Physical Address: ${STORAGE}/<OBJECT_KEY>
 Checksum: fcb4497459c8f23e68f00c59aa8b4b23
 Content-Type: application/octet-stream
