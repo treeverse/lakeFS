@@ -53,6 +53,8 @@ const (
 
 	setupStateInitialized    = "initialized"
 	setupStateNotInitialized = "not_initialized"
+
+	DefaultMaxDeleteObjects = 1000
 )
 
 type actionsHandler interface {
@@ -79,6 +81,13 @@ type Controller struct {
 func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body DeleteObjectsJSONRequestBody, repository string, branch string) {
 	ctx := r.Context()
 	c.LogAction(ctx, "delete_objects")
+
+	// limit check
+	if len(body.Paths) > DefaultMaxDeleteObjects {
+		writeError(w, http.StatusInternalServerError, fmt.Errorf("%w, max paths is set to %d",
+			ErrRequestSizeExceeded, DefaultMaxDeleteObjects))
+		return
+	}
 
 	// delete all the files and collect responses
 	var errs []ObjectError

@@ -1540,6 +1540,30 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 		}
 	})
 
+	t.Run("delete objects request size", func(t *testing.T) {
+		// setup content to delete
+		const namePrefix = "foo3/bar"
+		const numOfObjs = api.DefaultMaxDeleteObjects + 1
+		var paths []string
+		for i := 0; i < numOfObjs; i++ {
+			paths = append(paths, namePrefix+strconv.Itoa(i))
+		}
+
+		// delete objects
+		delResp, err := clt.DeleteObjectsWithResponse(ctx, repo, branch, api.DeleteObjectsJSONRequestBody{Paths: paths})
+		testutil.Must(t, err)
+		const expectedStatusCode = http.StatusInternalServerError
+		if delResp.StatusCode() != expectedStatusCode {
+			t.Fatalf("DeleteObjects status code %d, expected %d", delResp.StatusCode(), expectedStatusCode)
+		}
+		if delResp.JSONDefault == nil {
+			t.Fatal("DeleteObjects expected default error")
+		}
+		if !strings.Contains(delResp.JSONDefault.Message, api.ErrRequestSizeExceeded.Error()) {
+			t.Fatalf("DeleteObjects size exceeded error: '%s', expected '%s'", delResp.JSONDefault.Message, api.ErrRequestSizeExceeded)
+		}
+	})
+
 	t.Run("delete objects protected", func(t *testing.T) {
 		// create a branch with branch protection to test delete files
 		_, err = deps.catalog.CreateBranch(ctx, repo, "protected", branch)
@@ -1575,7 +1599,6 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 		if diff := deep.Equal(paths, errPaths); diff != nil {
 			t.Fatalf("DeleteObjects errors path difference: %s", diff)
 		}
-
 	})
 }
 
