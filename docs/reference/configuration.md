@@ -103,6 +103,7 @@ This reference uses `.` to denote the nesting of values.
 * `gateways.s3.region` `(string : "us-east-1")` - AWS region we're pretending to be. Should match the region configuration used in AWS SDK clients
 * `gateways.s3.fallback_url` `(string)` - If specified, requests with a non-existing repository will be forwarded to this url. This can be useful for using lakeFS side-by-side with S3, with the URL pointing at an [S3Proxy](https://github.com/gaul/s3proxy) instance.
 * `stats.enabled` `(boolean : true)` - Whether or not to periodically collect anonymous usage statistics
+* `security.audit_check_interval` `(duration : 12h)` - Duration in which we check for security audit
 {: .ref-list }
 
 ## Using Environment Variables

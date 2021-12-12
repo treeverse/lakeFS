@@ -33,6 +33,14 @@ public class VersionConfig {
   @SerializedName(SERIALIZED_NAME_VERSION)
   private String version;
 
+  public static final String SERIALIZED_NAME_UPGRADE_RECOMMENDED = "upgrade_recommended";
+  @SerializedName(SERIALIZED_NAME_UPGRADE_RECOMMENDED)
+  private Boolean upgradeRecommended;
+
+  public static final String SERIALIZED_NAME_UPGRADE_URL = "upgrade_url";
+  @SerializedName(SERIALIZED_NAME_UPGRADE_URL)
+  private String upgradeUrl;
+
 
   public VersionConfig version(String version) {
     
@@ -57,6 +65,52 @@ public class VersionConfig {
   }
 
 
+  public VersionConfig upgradeRecommended(Boolean upgradeRecommended) {
+    
+    this.upgradeRecommended = upgradeRecommended;
+    return this;
+  }
+
+   /**
+   * Get upgradeRecommended
+   * @return upgradeRecommended
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+
+  public Boolean getUpgradeRecommended() {
+    return upgradeRecommended;
+  }
+
+
+  public void setUpgradeRecommended(Boolean upgradeRecommended) {
+    this.upgradeRecommended = upgradeRecommended;
+  }
+
+
+  public VersionConfig upgradeUrl(String upgradeUrl) {
+    
+    this.upgradeUrl = upgradeUrl;
+    return this;
+  }
+
+   /**
+   * Get upgradeUrl
+   * @return upgradeUrl
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+
+  public String getUpgradeUrl() {
+    return upgradeUrl;
+  }
+
+
+  public void setUpgradeUrl(String upgradeUrl) {
+    this.upgradeUrl = upgradeUrl;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -66,12 +120,14 @@ public class VersionConfig {
       return false;
     }
     VersionConfig versionConfig = (VersionConfig) o;
-    return Objects.equals(this.version, versionConfig.version);
+    return Objects.equals(this.version, versionConfig.version) &&
+        Objects.equals(this.upgradeRecommended, versionConfig.upgradeRecommended) &&
+        Objects.equals(this.upgradeUrl, versionConfig.upgradeUrl);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(version);
+    return Objects.hash(version, upgradeRecommended, upgradeUrl);
   }
 
   @Override
@@ -79,6 +135,8 @@ public class VersionConfig {
     StringBuilder sb = new StringBuilder();
     sb.append("class VersionConfig {\n");
     sb.append("    version: ").append(toIndentedString(version)).append("\n");
+    sb.append("    upgradeRecommended: ").append(toIndentedString(upgradeRecommended)).append("\n");
+    sb.append("    upgradeUrl: ").append(toIndentedString(upgradeUrl)).append("\n");
     sb.append("}");
     return sb.toString();
   }

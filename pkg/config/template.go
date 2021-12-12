@@ -157,4 +157,8 @@ type configuration struct {
 	Installation struct {
 		FixedID string `mapstructure:"fixed_id"`
 	}
+	Security struct {
+		AuditCheckInterval time.Duration `mapstructure:"audit_check_interval"`
+		AuditCheckURL      string        `mapstructure:"audit_check_url"`
+	} `mapstructure:"security"`
 }

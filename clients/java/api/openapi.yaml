@@ -5105,8 +5105,14 @@ components:
     VersionConfig:
       example:
         version: version
+        upgrade_recommended: true
+        upgrade_url: upgrade_url
       properties:
         version:
+          type: string
+        upgrade_recommended:
+          type: boolean
+        upgrade_url:
           type: string
       type: object
     ActionRun:

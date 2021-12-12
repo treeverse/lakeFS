@@ -721,6 +721,10 @@ components:
       properties:
         version:
           type: string
+        upgrade_recommended:
+          type: boolean
+        upgrade_url:
+          type: string
 
     ActionRun:
       type: object

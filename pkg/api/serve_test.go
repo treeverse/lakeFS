@@ -26,6 +26,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/testutil"
+	"github.com/treeverse/lakefs/pkg/version"
 )
 
 const (
@@ -110,6 +111,8 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 		_ = c.Close()
 	})
 
+	auditChecker := version.NewDefaultAuditChecker(cfg.GetSecurityAuditCheckURL())
+
 	handler := api.Serve(
 		cfg,
 		c,
@@ -121,6 +124,7 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 		collector,
 		nil,
 		actionsService,
+		auditChecker,
 		logging.Default(),
 		nil,
 	)

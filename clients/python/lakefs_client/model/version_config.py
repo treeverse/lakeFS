@@ -83,6 +83,8 @@ class VersionConfig(ModelNormal):
         """
         return {
             'version': (str,),  # noqa: E501
+            'upgrade_recommended': (bool,),  # noqa: E501
+            'upgrade_url': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -92,6 +94,8 @@ class VersionConfig(ModelNormal):
 
     attribute_map = {
         'version': 'version',  # noqa: E501
+        'upgrade_recommended': 'upgrade_recommended',  # noqa: E501
+        'upgrade_url': 'upgrade_url',  # noqa: E501
     }
 
     read_only_vars = {
@@ -136,6 +140,8 @@ class VersionConfig(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             version (str): [optional]  # noqa: E501
+            upgrade_recommended (bool): [optional]  # noqa: E501
+            upgrade_url (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -218,6 +224,8 @@ class VersionConfig(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             version (str): [optional]  # noqa: E501
+            upgrade_recommended (bool): [optional]  # noqa: E501
+            upgrade_url (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

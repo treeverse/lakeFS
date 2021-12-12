@@ -25,6 +25,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/testutil"
+	"github.com/treeverse/lakefs/pkg/version"
 )
 
 var (
@@ -91,6 +92,7 @@ func TestLocalLoad(t *testing.T) {
 	t.Cleanup(func() {
 		_ = c.Close()
 	})
+	auditChecker := version.NewDefaultAuditChecker(conf.GetSecurityAuditCheckURL())
 
 	handler := api.Serve(
 		conf,
@@ -103,6 +105,7 @@ func TestLocalLoad(t *testing.T) {
 		&nullCollector{},
 		nil,
 		actionsService,
+		auditChecker,
 		logging.Default(),
 		nil,
 	)
