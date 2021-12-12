@@ -22,6 +22,7 @@ docs/CurrentUser.md
 docs/Diff.md
 docs/DiffList.md
 docs/Error.md
+docs/ErrorList.md
 docs/GarbageCollectionPrepareRequest.md
 docs/GarbageCollectionPrepareResponse.md
 docs/GarbageCollectionRule.md
@@ -44,6 +45,7 @@ docs/ObjectStatsList.md
 docs/ObjectUserMetadata.md
 docs/ObjectsApi.md
 docs/Pagination.md
+docs/PathList.md
 docs/Policy.md
 docs/PolicyList.md
 docs/Ref.md
@@ -108,6 +110,7 @@ lakefs_client/model/current_user.py
 lakefs_client/model/diff.py
 lakefs_client/model/diff_list.py
 lakefs_client/model/error.py
+lakefs_client/model/error_list.py
 lakefs_client/model/garbage_collection_prepare_request.py
 lakefs_client/model/garbage_collection_prepare_response.py
 lakefs_client/model/garbage_collection_rule.py
@@ -127,6 +130,7 @@ lakefs_client/model/object_stats.py
 lakefs_client/model/object_stats_list.py
 lakefs_client/model/object_user_metadata.py
 lakefs_client/model/pagination.py
+lakefs_client/model/path_list.py
 lakefs_client/model/policy.py
 lakefs_client/model/policy_list.py
 lakefs_client/model/ref.py
@@ -179,6 +183,7 @@ test/test_current_user.py
 test/test_diff.py
 test/test_diff_list.py
 test/test_error.py
+test/test_error_list.py
 test/test_garbage_collection_prepare_request.py
 test/test_garbage_collection_prepare_response.py
 test/test_garbage_collection_rule.py
@@ -201,6 +206,7 @@ test/test_object_stats_list.py
 test/test_object_user_metadata.py
 test/test_objects_api.py
 test/test_pagination.py
+test/test_path_list.py
 test/test_policy.py
 test/test_policy_list.py
 test/test_ref.py

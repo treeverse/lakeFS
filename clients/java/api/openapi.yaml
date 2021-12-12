@@ -3198,6 +3198,50 @@ paths:
       - objects
       x-contentType: application/json
       x-accepts: application/json
+  /repositories/{repository}/branches/{branch}/objects/delete:
+    post:
+      operationId: deleteObjects
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PathList'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorList'
+          description: Delete objects response
+        "204":
+          description: object deleted successfully
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: delete objects
+      tags:
+      - objects
+      x-contentType: application/json
+      x-accepts: application/json
   /repositories/{repository}/refs/{ref}/objects/stat:
     get:
       operationId: statObject
@@ -4212,6 +4256,12 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
       description: Validation Error
+    DeleteObjectsResponse:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorList'
+      description: Delete objects response
   schemas:
     Pagination:
       example:
@@ -4328,6 +4378,19 @@ components:
       required:
       - name
       - storage_namespace
+      type: object
+    PathList:
+      example:
+        paths:
+        - paths
+        - paths
+      properties:
+        paths:
+          items:
+            type: string
+          type: array
+      required:
+      - paths
       type: object
     ObjectStats:
       example:
@@ -4742,12 +4805,27 @@ components:
       - location
       type: object
     Error:
+      example:
+        message: message
       properties:
         message:
           description: short message explaining the error
           type: string
       required:
       - message
+      type: object
+    ErrorList:
+      example:
+        errors:
+        - message: message
+        - message: message
+      properties:
+        errors:
+          items:
+            $ref: '#/components/schemas/Error'
+          type: array
+      required:
+      - errors
       type: object
     User:
       example:

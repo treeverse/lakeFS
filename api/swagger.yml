@@ -198,6 +198,17 @@ components:
           type: string
           example: "main"
 
+    PathList:
+      type: object
+      required:
+        - paths
+      properties:
+        paths:
+          type: array
+          items:
+            type: string
+
+
     ObjectStats:
       type: object
       required:
@@ -477,6 +488,16 @@ components:
         message:
           description: short message explaining the error
           type: string
+
+    ErrorList:
+      type: object
+      required:
+        - errors
+      properties:
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/Error"
 
     User:
       type: object
@@ -2583,6 +2604,45 @@ paths:
       operationId: deleteObject
       summary: delete object
       responses:
+        204:
+          description: object deleted successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/branches/{branch}/objects/delete:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - objects
+      operationId: deleteObjects
+      summary: delete objects
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PathList"
+      responses:
+        200:
+          description: Delete objects response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorList"
         204:
           description: object deleted successfully
         401:

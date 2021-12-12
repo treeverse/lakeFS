@@ -25,6 +25,7 @@ from lakefs_client.model.current_user import CurrentUser
 from lakefs_client.model.diff import Diff
 from lakefs_client.model.diff_list import DiffList
 from lakefs_client.model.error import Error
+from lakefs_client.model.error_list import ErrorList
 from lakefs_client.model.garbage_collection_prepare_request import GarbageCollectionPrepareRequest
 from lakefs_client.model.garbage_collection_prepare_response import GarbageCollectionPrepareResponse
 from lakefs_client.model.garbage_collection_rule import GarbageCollectionRule
@@ -44,6 +45,7 @@ from lakefs_client.model.object_stats import ObjectStats
 from lakefs_client.model.object_stats_list import ObjectStatsList
 from lakefs_client.model.object_user_metadata import ObjectUserMetadata
 from lakefs_client.model.pagination import Pagination
+from lakefs_client.model.path_list import PathList
 from lakefs_client.model.policy import Policy
 from lakefs_client.model.policy_list import PolicyList
 from lakefs_client.model.ref import Ref

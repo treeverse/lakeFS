@@ -28,6 +28,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
+	gerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -74,6 +75,55 @@ type Controller struct {
 	CloudMetadataProvider cloud.MetadataProvider
 	Actions               actionsHandler
 	Logger                logging.Logger
+}
+
+func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body DeleteObjectsJSONRequestBody, repository string, branch string) {
+	ctx := r.Context()
+	c.LogAction(ctx, "delete_objects")
+
+	// delete all the files and collect responses
+	errs := make([]Error, len(body.Paths))
+	for i, objectPath := range body.Paths {
+		// authorize this object deletion
+		if !c.authorize(w, r, permissions.Node{
+			Permission: permissions.Permission{
+				Action:   permissions.DeleteObjectAction,
+				Resource: permissions.ObjectArn(repository, objectPath),
+			},
+		}) {
+			errs[i] = Error{
+				Message: http.StatusText(http.StatusUnauthorized),
+			}
+			continue
+		}
+
+		lg := c.Logger.WithField("path", objectPath)
+		err := c.Catalog.DeleteEntry(ctx, repository, branch, objectPath)
+		switch {
+		case errors.Is(err, catalog.ErrNotFound):
+			lg.Debug("tried to delete a non-existent object")
+		case errors.Is(err, graveler.ErrWriteToProtectedBranch):
+			errs[i] = Error{
+				Message: gerrors.ErrWriteToProtectedBranch.Error(),
+			}
+		case errors.Is(err, catalog.ErrPathRequiredValue):
+			// issue #1706 - https://github.com/treeverse/lakeFS/issues/1706
+			// Spark trying to delete the path "main/", which we map to branch "main" with an empty path.
+			// Spark expects it to succeed (not deleting anything is a success), instead of returning an error.
+			lg.Debug("tried to delete with an empty branch")
+		case err != nil:
+			lg.WithError(err).Error("failed deleting object")
+			errs[i] = Error{
+				Message: err.Error(),
+			}
+		default:
+			lg.Debug("object set for deletion")
+		}
+	}
+	response := ErrorList{
+		Errors: errs,
+	}
+	writeResponse(w, http.StatusOK, response)
 }
 
 func (c *Controller) Logout(w http.ResponseWriter, _ *http.Request) {

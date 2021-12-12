@@ -15,10 +15,12 @@ package io.lakefs.clients.api;
 
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.Error;
+import io.lakefs.clients.api.model.ErrorList;
 import java.io.File;
 import io.lakefs.clients.api.model.ObjectStageCreation;
 import io.lakefs.clients.api.model.ObjectStats;
 import io.lakefs.clients.api.model.ObjectStatsList;
+import io.lakefs.clients.api.model.PathList;
 import io.lakefs.clients.api.model.UnderlyingObjectProperties;
 import org.junit.Test;
 import org.junit.Ignore;
@@ -51,6 +53,23 @@ public class ObjectsApiTest {
         String branch = null;
         String path = null;
                 api.deleteObject(repository, branch, path);
+        // TODO: test validations
+    }
+    
+    /**
+     * delete objects
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void deleteObjectsTest() throws ApiException {
+        String repository = null;
+        String branch = null;
+        PathList pathList = null;
+                ErrorList response = api.deleteObjects(repository, branch, pathList);
         // TODO: test validations
     }
     
