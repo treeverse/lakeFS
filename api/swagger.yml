@@ -489,7 +489,23 @@ components:
           description: short message explaining the error
           type: string
 
-    ErrorList:
+    ObjectError:
+      type: object
+      required:
+        - status_code
+        - message
+      properties:
+        status_code:
+          type: integer
+          description: http status code associated with the path/operation
+        path:
+          type: string
+          description: path to the associated object
+        message:
+          type: string
+          description: short message explaining the error
+
+    ObjectErrorList:
       type: object
       required:
         - errors
@@ -497,7 +513,7 @@ components:
         errors:
           type: array
           items:
-            $ref: "#/components/schemas/Error"
+            $ref: "#/components/schemas/ObjectError"
 
     User:
       type: object
@@ -2642,7 +2658,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorList"
+                $ref: "#/components/schemas/ObjectErrorList"
         204:
           description: object deleted successfully
         401:

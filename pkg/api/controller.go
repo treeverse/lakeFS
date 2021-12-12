@@ -82,8 +82,8 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 	c.LogAction(ctx, "delete_objects")
 
 	// delete all the files and collect responses
-	errs := make([]Error, len(body.Paths))
-	for i, objectPath := range body.Paths {
+	var errs []ObjectError
+	for _, objectPath := range body.Paths {
 		// authorize this object deletion
 		if !c.authorize(w, r, permissions.Node{
 			Permission: permissions.Permission{
@@ -91,9 +91,11 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 				Resource: permissions.ObjectArn(repository, objectPath),
 			},
 		}) {
-			errs[i] = Error{
-				Message: http.StatusText(http.StatusUnauthorized),
-			}
+			errs = append(errs, ObjectError{
+				Path:       StringPtr(objectPath),
+				StatusCode: http.StatusUnauthorized,
+				Message:    http.StatusText(http.StatusUnauthorized),
+			})
 			continue
 		}
 
@@ -103,9 +105,11 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 		case errors.Is(err, catalog.ErrNotFound):
 			lg.Debug("tried to delete a non-existent object")
 		case errors.Is(err, graveler.ErrWriteToProtectedBranch):
-			errs[i] = Error{
-				Message: gerrors.ErrWriteToProtectedBranch.Error(),
-			}
+			errs = append(errs, ObjectError{
+				Path:       StringPtr(objectPath),
+				StatusCode: http.StatusForbidden,
+				Message:    gerrors.ErrWriteToProtectedBranch.Error(),
+			})
 		case errors.Is(err, catalog.ErrPathRequiredValue):
 			// issue #1706 - https://github.com/treeverse/lakeFS/issues/1706
 			// Spark trying to delete the path "main/", which we map to branch "main" with an empty path.
@@ -113,14 +117,22 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 			lg.Debug("tried to delete with an empty branch")
 		case err != nil:
 			lg.WithError(err).Error("failed deleting object")
-			errs[i] = Error{
-				Message: err.Error(),
-			}
+			errs = append(errs, ObjectError{
+				Path:       StringPtr(objectPath),
+				StatusCode: http.StatusInternalServerError,
+				Message:    err.Error(),
+			})
 		default:
 			lg.Debug("object set for deletion")
 		}
 	}
-	response := ErrorList{
+	// no content in case there are no errors
+	if len(errs) == 0 {
+		writeResponse(w, http.StatusNoContent, nil)
+		return
+	}
+	// status ok with list of errors
+	response := ObjectErrorList{
 		Errors: errs,
 	}
 	writeResponse(w, http.StatusOK, response)

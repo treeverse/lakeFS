@@ -1460,14 +1460,17 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t, "")
 	ctx := context.Background()
 
-	_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "some-bucket/prefix"), "main")
+	const repo = "repo1"
+	const branch = "main"
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "some-bucket/prefix"), branch)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	const content = "hello world this is my awesome content"
+
 	t.Run("delete object", func(t *testing.T) {
-		const content = "hello world this is my awesome content"
-		resp, err := uploadObjectHelper(t, ctx, clt, "foo/bar", strings.NewReader(content), "repo1", "main")
+		resp, err := uploadObjectHelper(t, ctx, clt, "foo/bar", strings.NewReader(content), repo, branch)
 		verifyResponseOK(t, resp, err)
 
 		sizeBytes := api.Int64Value(resp.JSON201.SizeBytes)
@@ -1476,7 +1479,7 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 		}
 
 		// download it
-		rresp, err := clt.GetObjectWithResponse(ctx, "repo1", "main", &api.GetObjectParams{Path: "foo/bar"})
+		rresp, err := clt.GetObjectWithResponse(ctx, repo, branch, &api.GetObjectParams{Path: "foo/bar"})
 		verifyResponseOK(t, rresp, err)
 		result := string(rresp.Body)
 		if len(result) != 38 {
@@ -1489,11 +1492,11 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 		}
 
 		// delete it
-		delResp, err := clt.DeleteObjectWithResponse(ctx, "repo1", "main", &api.DeleteObjectParams{Path: "foo/bar"})
+		delResp, err := clt.DeleteObjectWithResponse(ctx, repo, branch, &api.DeleteObjectParams{Path: "foo/bar"})
 		verifyResponseOK(t, delResp, err)
 
 		// get it
-		statResp, err := clt.StatObjectWithResponse(ctx, "repo1", "main", &api.StatObjectParams{Path: "foo/bar"})
+		statResp, err := clt.StatObjectWithResponse(ctx, repo, branch, &api.StatObjectParams{Path: "foo/bar"})
 		testutil.Must(t, err)
 		if statResp == nil {
 			t.Fatal("StatObject missing response")
@@ -1501,6 +1504,42 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 		if statResp.JSON404 == nil {
 			t.Fatalf("expected file to be gone now")
 		}
+	})
+
+	t.Run("delete objects", func(t *testing.T) {
+		// setup content to delete
+		const namePrefix = "foo2/bar"
+		const numOfObjs = 3
+		var paths []string
+		for i := 0; i < numOfObjs; i++ {
+			objPath := namePrefix + strconv.Itoa(i)
+			paths = append(paths, objPath)
+			resp, err := uploadObjectHelper(t, ctx, clt, objPath, strings.NewReader(content), repo, branch)
+			verifyResponseOK(t, resp, err)
+		}
+
+		// delete objects
+		delResp, err := clt.DeleteObjectsWithResponse(ctx, repo, branch, api.DeleteObjectsJSONRequestBody{Paths: paths})
+		verifyResponseOK(t, delResp, err)
+		if delResp.StatusCode() != http.StatusNoContent {
+			t.Errorf("DeleteObjects should return 204 (no content) for successful delete, got %d", delResp.StatusCode())
+		}
+
+		// check objects no longer there
+		paths = append(paths, "not-there") // include missing one
+		for _, p := range paths {
+			statResp, err := clt.StatObjectWithResponse(ctx, repo, branch, &api.StatObjectParams{Path: p})
+			testutil.Must(t, err)
+			if statResp == nil {
+				t.Fatalf("StatObject missing response for '%s'", p)
+			}
+			if statResp.JSON404 == nil {
+				t.Fatalf("expected file to be gone now for '%s'", p)
+			}
+		}
+
+		// enable branch protection on a branch
+
 	})
 }
 
