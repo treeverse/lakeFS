@@ -180,8 +180,8 @@ func TestAuditChecker_Check(t *testing.T) {
 	}{
 		{name: "none", alerts: []Alert{}},
 		{name: "alerts", alerts: []Alert{
-			{ID: "1", AffectedVersion: ">v1,<v2", PatchedVersion: "v2", Description: "bad1"},
-			{ID: "2", AffectedVersion: ">v1,<v1.0.5||>v2<v2.2.0", PatchedVersion: "v1.0.5,v.2.1.1", Description: "bad2"}}},
+			{ID: "1", AffectedVersions: ">v1,<v2", PatchedVersions: "v2", Description: "bad1"},
+			{ID: "2", AffectedVersions: ">v1,<v1.0.5||>v2<v2.2.0", PatchedVersions: "v1.0.5,v.2.1.1", Description: "bad2"}}},
 		{name: "failed", alerts: []Alert{}, statusCode: http.StatusInternalServerError, wantErr: true},
 	}
 	ctx := context.Background()
@@ -210,10 +210,10 @@ func TestAuditChecker_Check(t *testing.T) {
 func TestAuditChecker_CheckAndLog(t *testing.T) {
 	const upgradeURL = "https://no.place.like/home"
 	responseAlert := Alert{
-		ID:              "1",
-		AffectedVersion: "v2",
-		PatchedVersion:  "v2.1",
-		Description:     "alert",
+		ID:               "1",
+		AffectedVersions: "v2",
+		PatchedVersions:  "v2.1",
+		Description:      "alert",
 	}
 	responseAlerts := []Alert{
 		responseAlert,
@@ -238,10 +238,10 @@ func TestAuditChecker_CheckAndLog(t *testing.T) {
 	// verify we logged the right information
 	if diff := deep.Equal(memLog.Log[0], &LogLine{
 		Fields: logging.Fields{
-			"id":               responseAlert.ID,
-			"affected_version": responseAlert.AffectedVersion,
-			"patched_version":  responseAlert.PatchedVersion,
-			"description":      responseAlert.Description,
+			"id":                responseAlert.ID,
+			"affected_versions": responseAlert.AffectedVersions,
+			"patched_versions":  responseAlert.PatchedVersions,
+			"description":       responseAlert.Description,
 		},
 		Level: "WARN",
 		Msg:   "Audit security alert",

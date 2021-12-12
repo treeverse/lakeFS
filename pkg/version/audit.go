@@ -22,10 +22,10 @@ var (
 )
 
 type Alert struct {
-	ID              string `json:"id" db:"id"`
-	AffectedVersion string `json:"affected_version" db:"affected_version"`
-	PatchedVersion  string `json:"patched_version" db:"patched_version"`
-	Description     string `json:"description" db:"description"`
+	ID               string `json:"id"`
+	AffectedVersions string `json:"affected_versions"`
+	PatchedVersions  string `json:"patched_versions"`
+	Description      string `json:"description"`
 }
 
 type AuditResponse struct {
@@ -115,10 +115,10 @@ func (a *AuditChecker) CheckAndLog(ctx context.Context, log logging.Logger) {
 	}
 	for _, alert := range resp.Alerts {
 		log.WithFields(logging.Fields{
-			"id":               alert.ID,
-			"description":      alert.Description,
-			"affected_version": alert.AffectedVersion,
-			"patched_version":  alert.PatchedVersion,
+			"id":                alert.ID,
+			"description":       alert.Description,
+			"affected_versions": alert.AffectedVersions,
+			"patched_versions":  alert.PatchedVersions,
 		}).Warn("Audit security alert")
 	}
 	log.WithFields(logging.Fields{
