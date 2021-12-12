@@ -12,6 +12,7 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"testing"
@@ -1537,10 +1538,43 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 				t.Fatalf("expected file to be gone now for '%s'", p)
 			}
 		}
+	})
 
-		// enable branch protection on a branch
+	t.Run("delete objects protected", func(t *testing.T) {
+		// create a branch with branch protection to test delete files
 		_, err = deps.catalog.CreateBranch(ctx, repo, "protected", branch)
 		testutil.Must(t, err)
+		// some content
+		paths := []string{"a", "b", "c"}
+		for _, p := range paths {
+			resp, err := uploadObjectHelper(t, ctx, clt, p, strings.NewReader(content), repo, branch)
+			verifyResponseOK(t, resp, err)
+		}
+		err = deps.catalog.CreateBranchProtectionRule(ctx, repo, "*", []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_STAGING_WRITE})
+		testutil.Must(t, err)
+
+		// delete objects
+		delResp, err := clt.DeleteObjectsWithResponse(ctx, repo, "protected", api.DeleteObjectsJSONRequestBody{Paths: paths})
+		verifyResponseOK(t, delResp, err)
+		if delResp.StatusCode() != http.StatusOK {
+			t.Fatalf("DeleteObjects status code %d, expected %d", delResp.StatusCode(), http.StatusOK)
+		}
+		if delResp.JSON200 == nil {
+			t.Fatal("DeleteObjects response is missing")
+		}
+		if len(delResp.JSON200.Errors) != len(paths) {
+			t.Fatalf("DeleteObjects")
+		}
+		var errPaths []string
+		for _, item := range delResp.JSON200.Errors {
+			errPaths = append(errPaths, api.StringValue(item.Path))
+		}
+		// sort both lists to match
+		sort.Strings(errPaths)
+		sort.Strings(paths)
+		if diff := deep.Equal(paths, errPaths); diff != nil {
+			t.Fatalf("DeleteObjects errors path difference: %s", diff)
+		}
 
 	})
 }

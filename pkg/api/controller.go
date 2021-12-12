@@ -28,7 +28,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
-	gerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -108,7 +107,7 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 			errs = append(errs, ObjectError{
 				Path:       StringPtr(objectPath),
 				StatusCode: http.StatusForbidden,
-				Message:    gerrors.ErrWriteToProtectedBranch.Error(),
+				Message:    err.Error(),
 			})
 		case errors.Is(err, catalog.ErrPathRequiredValue):
 			// issue #1706 - https://github.com/treeverse/lakeFS/issues/1706
