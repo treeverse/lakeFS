@@ -18,7 +18,7 @@ This design document describes the lakeFS proposal for a metastore as part of ou
 
 - Support storing metadata inside existing Hive Metastore implementations
 - Provide any significant change in performance or throughput of metadata operations
-- Provide compatibility with other specific versions of Hive or Hive Metastore
+- Provide compatibility with other specific versions of Hive or Hive Metastore (like Glue)
 
 
 ### Design Diagram

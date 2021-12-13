@@ -3,27 +3,31 @@
 
 ## Milestone 1 - lakeFS Metastore Proposal
 
-Items to discover listed with hierarchy as dependency:
 
-- Metastore per repo, or n:m?
-- Map and select one of the two ways to implement the metastore. Understand each suggested design, list pros and cons.
-  - Metastore as additional functionality that lakeFS provides (described in the doc)
-  - Metastore implemented above lakeFS (**TDB** describe as alternative in the doc)
-- Data model. Based on access patterns, and operations the metastore and lakeFS provide over the data, import/export functionality. Map the data model and how it is stored for the metadata.
-  - file per entity, using Graveler
-  - diff / merge data - do we use Graveler to diff, can it extend to understand the entities. do we need to associate data changes with metadata changes? how it effect the conflict resolution.
-  - import / export with existing metastore - do we support just hive? do we enable export and import of the complete data model?
-  - How do we store statistics?
-- Based on the protocol, the written applications and the way we run with existing metastore solutions. Map the ways we can pass the lakeFS reference information, how we distinguish between versions and different metastore from the client's application code or though other technich that will enable us to provide our additional functionality while enabling minimal changes while moving from the current lakeFS or working together with existing one.
-  - Passing lakeFS's reference/branch information from the metastore client.
-  - Co-exist with other metastores.
+- *High-level design*: Map and select one of the two ways to implement the lakeFS Metastore. Understand each suggested design option, and list pros and cons. The potential architectures are: 
+  - Metastore as additional functionality inside lakeFS 
+  - Metastore as an external client to lakeFS
 
-- Authentication with lakeFS - optional?
-- Hook do we need to support in what level
+- *Data model*: Define the Data model for Metastore entities. Consider metadata access patterns, typical Metastore operations, and the operations lakeFS will provide over metadata.
+  Questions we like to address:
+  - Can (and should) we use Graveler to model metadata?
+  - How diff, merge and commit operations will look like?
+  - How are we going to tie data versioning to metadata versioning?
+  - How will conflict resolution look like, and will it be affected?
+  - How to enable import and export from an existing Metastore?
+  - How to model Metastore's statistics?
 
-## Milestone 2 - TDB
+- *Communication with lakeFS*: Investigate the options for passing lakeFS references (repository/branch/ref) from Metastore clients to lakeFS Metastore. 
+  Questions we like to address:
+  - How can lakeFS metastore acn get the information as a remote Hive Metastore? Any alternatives without passing the data?
+  - How lakeFS Metastore can co-exist with other Metastores?
 
-- layout list of task based on final proposal, specify dependency between each task  if any
+- *Metastore hooks*: What does it take to support hooks? Does anybody put it into use? is it still relevant?
+
+- *Authentication* with lakeFS - optional. 
 
 
+Open items for the design document:
+
+- Define the relationship between Metastore and lakeFS repositories. 1:1, 1:n, m:n?
 
