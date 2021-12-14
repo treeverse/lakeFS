@@ -43,9 +43,9 @@ const LoginForm = () => {
                                 <Form.Control type="password" placeholder="Secret Access Key"/>
                             </Form.Group>
 
-                            {(!!loginError) && <Error error={loginError}/>}
+                            {(!!loginError) && <Error error={loginError} className={"login-error"}/>}
 
-                            <Button variant="primary" type="submit">Login</Button>
+                            <Button variant="primary" type="submit" className="login-btn">Login</Button>
                         </Form>
                     </Card.Body>
                 </Card>
