@@ -54,8 +54,9 @@ type DiffIterator interface {
 
 // RangeDiff represents a change in Range
 type RangeDiff struct {
-	Type  graveler.DiffType
-	Range *Range
+	Type         graveler.DiffType
+	Range        *Range
+	LeftIdentity ID // the Identity of the value on the left side of the diff (populated on DiffTypeChanged )
 }
 
 func (r RangeDiff) Copy() *RangeDiff {

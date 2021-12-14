@@ -82,8 +82,11 @@ func (d *compareIterator) handleConflict() bool {
 		d.err = graveler.ErrConflictFound
 		return false
 	}
-	val, _ := d.diffIt.Value()
-	d.val = val.Copy()
+	val, rng := d.diffIt.Value()
+	if val != nil {
+		d.val = val.Copy()
+	}
+	d.setRangeDiff(rng)
 	d.val.Type = graveler.DiffTypeConflict
 	return true
 }
@@ -190,12 +193,14 @@ func (d *compareIterator) stepRange() (hasMore bool, done bool) {
 	_, rngDiff := d.diffIt.Value()
 	typ := rngDiff.Type
 	rng := rngDiff.Range
+	leftID := rngDiff.LeftIdentity
 	baseValue, baseRange, err := d.baseGE(graveler.Key(rng.MinKey))
 	if err != nil {
 		d.err = err
 		return false, true
 	}
-	if typ == graveler.DiffTypeAdded {
+	switch typ {
+	case graveler.DiffTypeAdded:
 		// exists on source, but not on dest
 		if baseRange != nil && rng.ID == baseRange.ID {
 			// removed only on dest -> skip range
@@ -209,23 +214,40 @@ func (d *compareIterator) stepRange() (hasMore bool, done bool) {
 		}
 		// overlapping base and diff, must step into range
 		return d.diffIt.Next(), false
-	}
-	if typ == graveler.DiffTypeRemoved {
+	case graveler.DiffTypeRemoved:
 		if baseRange != nil && rng.ID == baseRange.ID {
 			// removed on source, not changed on dest
 			d.setRangeDiff(rngDiff)
 			d.val = nil
 			return true, true
 		}
-		if baseValue == nil || bytes.Compare(rng.MaxKey, baseValue.Key) < 0 {
+		if (baseRange != nil && bytes.Compare(rng.MaxKey, baseRange.MinKey) < 0) || baseValue == nil || bytes.Compare(rng.MaxKey, baseValue.Key) < 0 {
 			// added on dest, but not on source, skip range
 			return d.diffIt.NextRange(), false
 		}
 
 		// overlapping base and diff, must step into range
 		return d.diffIt.Next(), false
+
+	case graveler.DiffTypeChanged:
+		if baseRange != nil && leftID == baseRange.ID {
+			// changed only in source
+			d.setRangeDiff(rngDiff)
+			d.val = nil
+			return true, true
+		}
+		if baseRange != nil && bytes.Compare(rng.MaxKey, baseRange.MinKey) < 0 {
+			// conflict, added on dest and source
+			return d.handleConflict(), true
+		}
+		if baseRange != nil && rng.ID == baseRange.ID {
+			// changed on dest, but not on source, skip range
+			return d.diffIt.NextRange(), false
+		}
+		return d.diffIt.Next(), false
+	default:
+		d.err = ErrUnsupportedRangeDiffType
 	}
-	d.err = ErrUnsupportedRangeDiffType
 	return false, true
 }
 

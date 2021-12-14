@@ -1,6 +1,7 @@
 package committed
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 
@@ -8,14 +9,15 @@ import (
 )
 
 type iterator struct {
-	ctx       context.Context
-	started   bool
-	manager   RangeManager
-	rangesIt  ValueIterator
-	rng       *Range                 // Decoded value at which rangeIt point
-	it        graveler.ValueIterator // nil at start of range
-	err       error
-	namespace Namespace
+	ctx         context.Context
+	started     bool
+	manager     RangeManager
+	rangesIt    ValueIterator
+	rng         *Range                 // Decoded value at which rangeIt point
+	it          graveler.ValueIterator // nil at start of range
+	err         error
+	namespace   Namespace
+	beforeRange bool
 }
 
 func NewIterator(ctx context.Context, manager RangeManager, namespace Namespace, rangesIt ValueIterator) Iterator {
@@ -75,6 +77,10 @@ func (rvi *iterator) NextRange() bool {
 func (rvi *iterator) Next() bool {
 	if rvi.err != nil {
 		return false
+	}
+	if rvi.beforeRange {
+		rvi.beforeRange = false
+		return true
 	}
 	if !rvi.started {
 		rvi.started = true
@@ -140,6 +146,11 @@ func (rvi *iterator) SeekGE(key graveler.Key) {
 		return // Reached end.
 	}
 	rvi.started = true // "Started": rangesIt is valid.
+	if bytes.Compare(key, rvi.rng.MinKey) <= 0 {
+		// the given key is before the next range
+		rvi.beforeRange = true
+		return
+	}
 	if !rvi.loadIt() {
 		return
 	}
