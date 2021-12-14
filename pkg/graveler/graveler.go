@@ -51,7 +51,8 @@ type RawRef struct {
 }
 
 type DiffSummary struct {
-	Count map[DiffType]int
+	Count      map[DiffType]int
+	Incomplete bool // true when Diff summary has missing Information (could happen when skipping ranges with same bounds)
 }
 
 // ReferenceType represents the type of the reference

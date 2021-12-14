@@ -67,6 +67,7 @@ const (
 	diffItCompareResultRightBeforeLeft
 	diffItCompareResultRightRangeBeforeLeft
 	diffItCompareResultLeftRangeBeforeRight
+	diffItCompareResultSameBounds
 )
 
 func NewDiffIterator(ctx context.Context, left Iterator, right Iterator) DiffIterator {
@@ -103,6 +104,16 @@ func (d *diffIterator) setCurrentRangeRight() {
 	d.currentDiff = nil
 }
 
+func (d *diffIterator) setCurrentRangeBoth() {
+	d.currentRange.iter = nil
+	d.currentRange.value = &d.rightValue
+	d.currentRange.currentRangeDiff = &RangeDiff{
+		Type:         graveler.DiffTypeChanged,
+		Range:        d.rightValue.rng.Copy(),
+		LeftIdentity: d.leftValue.rng.ID,
+	}
+	d.currentDiff = nil
+}
 func (d *diffIterator) setCurrentRangeLeft() {
 	d.currentRange.iter = d.left
 	d.currentRange.value = &d.leftValue
@@ -143,9 +154,11 @@ func (d *diffIterator) compareDiffIterators() diffIteratorCompareResult {
 	rightStartRange := rightRange != nil && d.rightValue.record == nil
 	leftBeforeRight := leftStartRange && rightRange == nil
 	rightBeforeLeft := rightStartRange && leftRange == nil
+	sameBounds := false
 	if leftStartRange && rightStartRange {
 		leftBeforeRight = bytes.Compare(leftRange.MaxKey, rightRange.MinKey) < 0
 		rightBeforeLeft = bytes.Compare(rightRange.MaxKey, leftRange.MinKey) < 0
+		sameBounds = bytes.Equal(leftRange.MinKey, rightRange.MinKey) && bytes.Equal(leftRange.MaxKey, rightRange.MaxKey)
 	}
 	comp := d.compareDiffKeys()
 	switch {
@@ -153,6 +166,8 @@ func (d *diffIterator) compareDiffIterators() diffIteratorCompareResult {
 		return diffItCompareResultLeftRangeBeforeRight
 	case rightBeforeLeft:
 		return diffItCompareResultRightRangeBeforeLeft
+	case leftStartRange && rightStartRange && comp == 0 && sameBounds:
+		return diffItCompareResultSameBounds
 	case leftStartRange && rightStartRange && comp == 0:
 		return diffItCompareResultNeedStartRangeBoth
 	case leftStartRange && comp <= 0:
@@ -173,6 +188,12 @@ func (d *diffIterator) compareDiffIterators() diffIteratorCompareResult {
 func (d *diffIterator) Next() bool {
 	if d.state == diffIteratorStateClosed || d.err != nil {
 		return false
+	}
+	if d.state == diffIteratorStatePreInit {
+		d.state = diffIteratorStateOpen
+		d.clearCurrentRange()
+		d.leftValue.record, d.leftValue.rng, d.leftValue.err = diffIteratorNextValue(d.left)
+		d.rightValue.record, d.rightValue.rng, d.rightValue.err = diffIteratorNextValue(d.right)
 	}
 	if d.currentRange.iter != nil {
 		// we are currently inside a range
@@ -196,11 +217,6 @@ func (d *diffIterator) Next() bool {
 		d.err = d.ctx.Err()
 		return false
 	default:
-		if d.state == diffIteratorStatePreInit {
-			d.state = diffIteratorStateOpen
-			d.leftValue.record, d.leftValue.rng, d.leftValue.err = diffIteratorNextValue(d.left)
-			d.rightValue.record, d.rightValue.rng, d.rightValue.err = diffIteratorNextValue(d.right)
-		}
 		for {
 			if d.rightValue.err != nil {
 				d.err = d.rightValue.err
@@ -226,6 +242,10 @@ func (d *diffIterator) Next() bool {
 				return true
 			case diffItCompareResultRightRangeBeforeLeft:
 				d.setCurrentRangeRight()
+				return true
+			case diffItCompareResultSameBounds:
+				d.setCurrentRangeBoth()
+				d.state = diffIteratorStatePreInit
 				return true
 			case diffItCompareResultSameKeys:
 				// same keys on different ranges
@@ -256,6 +276,13 @@ func (d *diffIterator) Next() bool {
 }
 
 func (d *diffIterator) NextRange() bool {
+	if d.currentRange.currentRangeDiff != nil && d.currentRange.currentRangeDiff.Type == graveler.DiffTypeChanged {
+		d.leftValue.record, d.leftValue.rng, d.leftValue.err = diffIteratorNextRange(d.left)
+		d.rightValue.record, d.rightValue.rng, d.rightValue.err = diffIteratorNextRange(d.right)
+		d.clearCurrentRange()
+		d.state = diffIteratorStateOpen
+		return d.Next()
+	}
 	if d.currentRange.iter == nil {
 		d.err = ErrNoRange
 		return false
