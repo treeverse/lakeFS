@@ -10,7 +10,7 @@ This includes:
 
 ## Non-Requirements
 1. Support distribution across machines.
-1. The functionality doesn't need to be supported from lakeFS.
+1. Support from lakeFS.
 
 
 ## Possible Solutions external to lakeFS
@@ -23,12 +23,14 @@ In order to use Docker containers, users will need to download it if necessary, 
 
 Usage example:
 
-`docker run lakefs-export --conf spark.hadoop.lakefs.api.url=https://<LAKEFS_ENDPOINT>/api/v1 \
+```shell 
+docker run lakefs-export --conf spark.hadoop.lakefs.api.url=https://<LAKEFS_ENDPOINT>/api/v1 \
 --conf spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY_ID> \
 --conf spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_ACCESS_KEY> \
 --packages io.lakefs:lakefs-spark-client-301_2.12:0.1.0 \
 --class io.treeverse.clients.Main export-app example-repo s3://example-bucket/prefix \
---branch=example-branch`
+--branch=example-branch 
+``` 
 
 Pros:
 - Utilizes the existing spark client, and gives the same functionality. 
@@ -42,15 +44,19 @@ This class can be part of the java cliet, or a new "Export" client that uses the
 
 The usage will be with java code (in a similar way of using custom code with the spark client).
 
-In order to use java code, users will need to download it if necessary, learn it, and have it in their toolset.
+In order to use Java code, users will need to download it if necessary, learn it, and have it in their toolset.
 
 Usage example:
 
-`val exporter = new Exporter(apiClient, repoName, rootLocation)`
-
-`exporter.exportAllFromBranch(branchName)`
-
-`exporter.exportFrom(branchName, commitRef)`
+```java
+class Export{
+    public static void main(String[]args){
+        Exporter exporter = new Exporter(apiClient, repoName, rootLocation);
+        exporter.exportAllFromBranch(branchName);
+        exporter.exportFrom(branchName, commitRef);
+    }
+}
+```
 
 
 Pros:
@@ -71,9 +77,11 @@ In order to use Rclone, users will need to download it if necessary, learn it, a
 
 Usage example:
 
-`rclone copy source:lakefs:example-repo/main/ dest:s3://example-bucket/prefix`
+```shell
+rclone copy source:lakefs:example-repo/main/ dest:s3://example-bucket/prefix
 
-`rclone sync source:lakefs:example-repo/main/ dest:s3://example-bucket/prefix`
+rclone sync source:lakefs:example-repo/main/ dest:s3://example-bucket/prefix
+```
 
 Pros:
 - Rclone gives the functionality of exporting data from lakeFS to a designated object store location. Require only few additional work of documentation for the usage of Rclone as an export functionality.
