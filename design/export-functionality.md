@@ -58,7 +58,6 @@ class Export{
 }
 ```
 
-
 Pros:
 - An intermediate solution that is compatible with the issue.
 
@@ -68,10 +67,11 @@ Cons:
 
 ### Using Rclone
 [Rclone](https://rclone.org/) is a command line program to sync files and directories between cloud providers.
-Users can gain the export functionality by using Rclone's [copy](https://rclone.org/commands/rclone_copy/) and [sync](https://rclone.org/commands/rclone_sync/) commands.
+Users can gain the export functionality by using Rclone's [copy](https://rclone.org/commands/rclone_copy/), [sync](https://rclone.org/commands/rclone_sync/), and [check](https://rclone.org/commands/rclone_check/) commands.
 
 The copy command can be used to copy files from lakeFS to a designated object store location.
 The sync command can be used to export only the diff between a specific branch and a commit reference, since sync makes the source and the dest identical (modifying destination only).
+The check command can be used as a success/failure indication on the exported objects, since it checks if the files in the source and destination match, and logs a report of files which don't match.
 
 In order to use Rclone, users will need to download it if necessary, learn it, and have it in their toolset.
 
@@ -81,6 +81,8 @@ Usage example:
 rclone copy source:lakefs:example-repo/main/ dest:s3://example-bucket/prefix
 
 rclone sync source:lakefs:example-repo/main/ dest:s3://example-bucket/prefix
+
+rclone check source:lakefs:example-repo/main/ dest:s3://example-bucket/prefix
 ```
 
 Pros:
@@ -89,5 +91,4 @@ Pros:
 - Doesn't require maintaining a new feature.
 
 Cons:
-- Doesn't support success/failure indications on the exported objects.
 - Require a designated object store location that doesn't contain any other data but the data associated to the lakeFS branch. That is because Rclone's sync command will delete all files that don't exist in the branch.   
