@@ -5,7 +5,6 @@
 - OpenAPI: Delete multiple objects in a single request (#2788)
 - Performance: Optimize merge by skipping ranges with same bounds (#2737)
 - Security check by lakeFS version and suggest upgrade (#2776)
-- Optimize merge by skipping ranges with same bounds (#2737)
 - Include dbt in Everything Bagel (#2769)
 
 ## v0.56.0 - 2021-12-05
