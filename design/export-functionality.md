@@ -17,7 +17,7 @@ This includes:
 
 ### Spark client stand-alone
 
-Create a standalone Docker container that runs the spark client.
+Create a stand-alone Docker container that runs the Spark client.
 
 In order to use Docker containers, users will need to download it if necessary, learn it, and have it in their toolset.
 
@@ -33,10 +33,11 @@ docker run lakefs-export --conf spark.hadoop.lakefs.api.url=https://<LAKEFS_ENDP
 ``` 
 
 Pros:
-- Utilizes the existing spark client, and gives the same functionality. 
+- Utilizes the existing Spark client, and gives the same functionality. 
  
 Cons:
 - Require creating and maintaining the standalone container.
+- Still requires the user to understand Spark indirectly - for example know how to read logs or errors that arise from running Spark stand-alone.
 
 ### Using the java client
 Reimplement the spark client export functionality by creating a new Exporter class that doesn't use spark.
@@ -92,3 +93,22 @@ Pros:
 
 Cons:
 - Require a designated object store location that doesn't contain any other data but the data associated to the lakeFS branch. That is because Rclone's sync command will delete all files that don't exist in the branch.   
+
+
+## Chosen solution
+
+Wrap Rclone with a bash script to match the behavior of the new export functionality to the one of the Spark client.
+This solution utilizes Rclone and its features, it is easy to implement and achives the required behavior.
+
+For example:
+
+```shell
+$ bash lakefs_export.sh source=lakefs:example-repo/main/ dest=s3://example-bucket/prefix export_diff=true
+```
+
+This command will call:
+```shell
+rclone sync source:lakefs:example-repo/main/ dest:s3://example-bucket/prefix
+rclone check source:lakefs:example-repo/main/ dest:s3://example-bucket/prefix
+```
+And then add a success/failure file according to the check command result.
