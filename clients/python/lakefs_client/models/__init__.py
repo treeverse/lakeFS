@@ -39,11 +39,14 @@ from lakefs_client.model.login_information import LoginInformation
 from lakefs_client.model.merge import Merge
 from lakefs_client.model.merge_result import MergeResult
 from lakefs_client.model.merge_result_summary import MergeResultSummary
+from lakefs_client.model.object_error import ObjectError
+from lakefs_client.model.object_error_list import ObjectErrorList
 from lakefs_client.model.object_stage_creation import ObjectStageCreation
 from lakefs_client.model.object_stats import ObjectStats
 from lakefs_client.model.object_stats_list import ObjectStatsList
 from lakefs_client.model.object_user_metadata import ObjectUserMetadata
 from lakefs_client.model.pagination import Pagination
+from lakefs_client.model.path_list import PathList
 from lakefs_client.model.policy import Policy
 from lakefs_client.model.policy_list import PolicyList
 from lakefs_client.model.ref import Ref

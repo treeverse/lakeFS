@@ -31,6 +31,13 @@ class TestObjectsApi(unittest.TestCase):
         """
         pass
 
+    def test_delete_objects(self):
+        """Test case for delete_objects
+
+        delete objects  # noqa: E501
+        """
+        pass
+
     def test_get_object(self):
         """Test case for get_object
 
