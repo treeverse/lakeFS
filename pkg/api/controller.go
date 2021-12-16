@@ -53,6 +53,8 @@ const (
 
 	setupStateInitialized    = "initialized"
 	setupStateNotInitialized = "not_initialized"
+
+	DefaultMaxDeleteObjects = 1000
 )
 
 type actionsHandler interface {
@@ -75,6 +77,74 @@ type Controller struct {
 	Actions               actionsHandler
 	AuditChecker          AuditChecker
 	Logger                logging.Logger
+}
+
+func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body DeleteObjectsJSONRequestBody, repository string, branch string) {
+	ctx := r.Context()
+	c.LogAction(ctx, "delete_objects")
+
+	// limit check
+	if len(body.Paths) > DefaultMaxDeleteObjects {
+		writeError(w, http.StatusInternalServerError, fmt.Errorf("%w, max paths is set to %d",
+			ErrRequestSizeExceeded, DefaultMaxDeleteObjects))
+		return
+	}
+
+	// delete all the files and collect responses
+	var errs []ObjectError
+	for _, objectPath := range body.Paths {
+		// authorize this object deletion
+		if !c.authorize(w, r, permissions.Node{
+			Permission: permissions.Permission{
+				Action:   permissions.DeleteObjectAction,
+				Resource: permissions.ObjectArn(repository, objectPath),
+			},
+		}) {
+			errs = append(errs, ObjectError{
+				Path:       StringPtr(objectPath),
+				StatusCode: http.StatusUnauthorized,
+				Message:    http.StatusText(http.StatusUnauthorized),
+			})
+			continue
+		}
+
+		lg := c.Logger.WithField("path", objectPath)
+		err := c.Catalog.DeleteEntry(ctx, repository, branch, objectPath)
+		switch {
+		case errors.Is(err, catalog.ErrNotFound):
+			lg.Debug("tried to delete a non-existent object")
+		case errors.Is(err, graveler.ErrWriteToProtectedBranch):
+			errs = append(errs, ObjectError{
+				Path:       StringPtr(objectPath),
+				StatusCode: http.StatusForbidden,
+				Message:    err.Error(),
+			})
+		case errors.Is(err, catalog.ErrPathRequiredValue):
+			// issue #1706 - https://github.com/treeverse/lakeFS/issues/1706
+			// Spark trying to delete the path "main/", which we map to branch "main" with an empty path.
+			// Spark expects it to succeed (not deleting anything is a success), instead of returning an error.
+			lg.Debug("tried to delete with an empty branch")
+		case err != nil:
+			lg.WithError(err).Error("failed deleting object")
+			errs = append(errs, ObjectError{
+				Path:       StringPtr(objectPath),
+				StatusCode: http.StatusInternalServerError,
+				Message:    err.Error(),
+			})
+		default:
+			lg.Debug("object set for deletion")
+		}
+	}
+	// no content in case there are no errors
+	if len(errs) == 0 {
+		writeResponse(w, http.StatusNoContent, nil)
+		return
+	}
+	// status ok with list of errors
+	response := ObjectErrorList{
+		Errors: errs,
+	}
+	writeResponse(w, http.StatusOK, response)
 }
 
 func (c *Controller) Logout(w http.ResponseWriter, _ *http.Request) {

@@ -29,9 +29,11 @@ import java.io.IOException;
 
 import io.lakefs.clients.api.model.Error;
 import java.io.File;
+import io.lakefs.clients.api.model.ObjectErrorList;
 import io.lakefs.clients.api.model.ObjectStageCreation;
 import io.lakefs.clients.api.model.ObjectStats;
 import io.lakefs.clients.api.model.ObjectStatsList;
+import io.lakefs.clients.api.model.PathList;
 import io.lakefs.clients.api.model.UnderlyingObjectProperties;
 
 import java.lang.reflect.Type;
@@ -200,6 +202,153 @@ public class ObjectsApi {
 
         okhttp3.Call localVarCall = deleteObjectValidateBeforeCall(repository, branch, path, _callback);
         localVarApiClient.executeAsync(localVarCall, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for deleteObjects
+     * @param repository  (required)
+     * @param branch  (required)
+     * @param pathList  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Delete objects response </td><td>  -  </td></tr>
+        <tr><td> 204 </td><td> all requested objects successfully deleted </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call deleteObjectsCall(String repository, String branch, PathList pathList, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = pathList;
+
+        // create path and map variables
+        String localVarPath = "/repositories/{repository}/branches/{branch}/objects/delete"
+            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()))
+            .replaceAll("\\{" + "branch" + "\\}", localVarApiClient.escapeString(branch.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        localVarHeaderParams.put("Content-Type", localVarContentType);
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token" };
+        return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call deleteObjectsValidateBeforeCall(String repository, String branch, PathList pathList, final ApiCallback _callback) throws ApiException {
+        
+        // verify the required parameter 'repository' is set
+        if (repository == null) {
+            throw new ApiException("Missing the required parameter 'repository' when calling deleteObjects(Async)");
+        }
+        
+        // verify the required parameter 'branch' is set
+        if (branch == null) {
+            throw new ApiException("Missing the required parameter 'branch' when calling deleteObjects(Async)");
+        }
+        
+        // verify the required parameter 'pathList' is set
+        if (pathList == null) {
+            throw new ApiException("Missing the required parameter 'pathList' when calling deleteObjects(Async)");
+        }
+        
+
+        okhttp3.Call localVarCall = deleteObjectsCall(repository, branch, pathList, _callback);
+        return localVarCall;
+
+    }
+
+    /**
+     * delete objects
+     * 
+     * @param repository  (required)
+     * @param branch  (required)
+     * @param pathList  (required)
+     * @return ObjectErrorList
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Delete objects response </td><td>  -  </td></tr>
+        <tr><td> 204 </td><td> all requested objects successfully deleted </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public ObjectErrorList deleteObjects(String repository, String branch, PathList pathList) throws ApiException {
+        ApiResponse<ObjectErrorList> localVarResp = deleteObjectsWithHttpInfo(repository, branch, pathList);
+        return localVarResp.getData();
+    }
+
+    /**
+     * delete objects
+     * 
+     * @param repository  (required)
+     * @param branch  (required)
+     * @param pathList  (required)
+     * @return ApiResponse&lt;ObjectErrorList&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Delete objects response </td><td>  -  </td></tr>
+        <tr><td> 204 </td><td> all requested objects successfully deleted </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<ObjectErrorList> deleteObjectsWithHttpInfo(String repository, String branch, PathList pathList) throws ApiException {
+        okhttp3.Call localVarCall = deleteObjectsValidateBeforeCall(repository, branch, pathList, null);
+        Type localVarReturnType = new TypeToken<ObjectErrorList>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * delete objects (asynchronously)
+     * 
+     * @param repository  (required)
+     * @param branch  (required)
+     * @param pathList  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Delete objects response </td><td>  -  </td></tr>
+        <tr><td> 204 </td><td> all requested objects successfully deleted </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call deleteObjectsAsync(String repository, String branch, PathList pathList, final ApiCallback<ObjectErrorList> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = deleteObjectsValidateBeforeCall(repository, branch, pathList, _callback);
+        Type localVarReturnType = new TypeToken<ObjectErrorList>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
     }
     /**

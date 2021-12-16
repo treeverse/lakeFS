@@ -12,4 +12,6 @@ var (
 	ErrAuthenticatingRequest = errors.New("error authenticating request")
 
 	ErrInvalidAPIEndpoint = errors.New("invalid API endpoint")
+
+	ErrRequestSizeExceeded = errors.New("request size exceeded")
 )
