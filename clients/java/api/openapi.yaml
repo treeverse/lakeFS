@@ -3230,7 +3230,7 @@ paths:
                 $ref: '#/components/schemas/ObjectErrorList'
           description: Delete objects response
         "204":
-          description: object deleted successfully
+          description: all requested objects successfully deleted
         "401":
           content:
             application/json:
@@ -4393,6 +4393,7 @@ components:
       properties:
         paths:
           items:
+            description: Object path
             type: string
           type: array
       required:
@@ -4825,13 +4826,13 @@ components:
         message: message
       properties:
         status_code:
-          description: http status code associated with the path/operation
+          description: HTTP status code associated for operation on path
           type: integer
-        path:
-          description: path to the associated object
-          type: string
         message:
-          description: short message explaining the error
+          description: short message explaining status_code
+          type: string
+        path:
+          description: affected path
           type: string
       required:
       - message

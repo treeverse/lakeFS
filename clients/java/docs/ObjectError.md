@@ -7,9 +7,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**statusCode** | **Integer** | http status code associated with the path/operation | 
-**path** | **String** | path to the associated object |  [optional]
-**message** | **String** | short message explaining the error | 
+**statusCode** | **Integer** | HTTP status code associated for operation on path | 
+**message** | **String** | short message explaining status_code | 
+**path** | **String** | affected path |  [optional]
 
 
 

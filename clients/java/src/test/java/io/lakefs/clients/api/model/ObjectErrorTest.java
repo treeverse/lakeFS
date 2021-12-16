@@ -49,19 +49,19 @@ public class ObjectErrorTest {
     }
 
     /**
-     * Test the property 'path'
-     */
-    @Test
-    public void pathTest() {
-        // TODO: test path
-    }
-
-    /**
      * Test the property 'message'
      */
     @Test
     public void messageTest() {
         // TODO: test message
+    }
+
+    /**
+     * Test the property 'path'
+     */
+    @Test
+    public void pathTest() {
+        // TODO: test path
     }
 
 }

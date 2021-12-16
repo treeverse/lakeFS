@@ -33,13 +33,13 @@ public class ObjectError {
   @SerializedName(SERIALIZED_NAME_STATUS_CODE)
   private Integer statusCode;
 
-  public static final String SERIALIZED_NAME_PATH = "path";
-  @SerializedName(SERIALIZED_NAME_PATH)
-  private String path;
-
   public static final String SERIALIZED_NAME_MESSAGE = "message";
   @SerializedName(SERIALIZED_NAME_MESSAGE)
   private String message;
+
+  public static final String SERIALIZED_NAME_PATH = "path";
+  @SerializedName(SERIALIZED_NAME_PATH)
+  private String path;
 
 
   public ObjectError statusCode(Integer statusCode) {
@@ -49,11 +49,11 @@ public class ObjectError {
   }
 
    /**
-   * http status code associated with the path/operation
+   * HTTP status code associated for operation on path
    * @return statusCode
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "http status code associated with the path/operation")
+  @ApiModelProperty(required = true, value = "HTTP status code associated for operation on path")
 
   public Integer getStatusCode() {
     return statusCode;
@@ -65,29 +65,6 @@ public class ObjectError {
   }
 
 
-  public ObjectError path(String path) {
-    
-    this.path = path;
-    return this;
-  }
-
-   /**
-   * path to the associated object
-   * @return path
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "path to the associated object")
-
-  public String getPath() {
-    return path;
-  }
-
-
-  public void setPath(String path) {
-    this.path = path;
-  }
-
-
   public ObjectError message(String message) {
     
     this.message = message;
@@ -95,11 +72,11 @@ public class ObjectError {
   }
 
    /**
-   * short message explaining the error
+   * short message explaining status_code
    * @return message
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "short message explaining the error")
+  @ApiModelProperty(required = true, value = "short message explaining status_code")
 
   public String getMessage() {
     return message;
@@ -108,6 +85,29 @@ public class ObjectError {
 
   public void setMessage(String message) {
     this.message = message;
+  }
+
+
+  public ObjectError path(String path) {
+    
+    this.path = path;
+    return this;
+  }
+
+   /**
+   * affected path
+   * @return path
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "affected path")
+
+  public String getPath() {
+    return path;
+  }
+
+
+  public void setPath(String path) {
+    this.path = path;
   }
 
 
@@ -121,13 +121,13 @@ public class ObjectError {
     }
     ObjectError objectError = (ObjectError) o;
     return Objects.equals(this.statusCode, objectError.statusCode) &&
-        Objects.equals(this.path, objectError.path) &&
-        Objects.equals(this.message, objectError.message);
+        Objects.equals(this.message, objectError.message) &&
+        Objects.equals(this.path, objectError.path);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(statusCode, path, message);
+    return Objects.hash(statusCode, message, path);
   }
 
   @Override
@@ -135,8 +135,8 @@ public class ObjectError {
     StringBuilder sb = new StringBuilder();
     sb.append("class ObjectError {\n");
     sb.append("    statusCode: ").append(toIndentedString(statusCode)).append("\n");
-    sb.append("    path: ").append(toIndentedString(path)).append("\n");
     sb.append("    message: ").append(toIndentedString(message)).append("\n");
+    sb.append("    path: ").append(toIndentedString(path)).append("\n");
     sb.append("}");
     return sb.toString();
   }

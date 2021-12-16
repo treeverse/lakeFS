@@ -109,8 +109,8 @@ class ObjectError(ModelNormal):
         """ObjectError - a model defined in OpenAPI
 
         Args:
-            status_code (int): http status code associated with the path/operation
-            message (str): short message explaining the error
+            status_code (int): HTTP status code associated for operation on path
+            message (str): short message explaining status_code
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -143,7 +143,7 @@ class ObjectError(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            path (str): path to the associated object. [optional]  # noqa: E501
+            path (str): affected path. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -197,8 +197,8 @@ class ObjectError(ModelNormal):
         """ObjectError - a model defined in OpenAPI
 
         Args:
-            status_code (int): http status code associated with the path/operation
-            message (str): short message explaining the error
+            status_code (int): HTTP status code associated for operation on path
+            message (str): short message explaining status_code
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -231,7 +231,7 @@ class ObjectError(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            path (str): path to the associated object. [optional]  # noqa: E501
+            path (str): affected path. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
