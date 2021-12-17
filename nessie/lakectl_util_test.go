@@ -50,28 +50,21 @@ func runShellCommand(command string, isTerminal bool) ([]byte, error) {
 	return cmd.CombinedOutput()
 }
 
-//
-// Copied and slightly modified from go-cmdtest
-//
 var varRegexp = regexp.MustCompile(`\$\{([^${}]+)\}`)
 
 func expandVariables(s string, vars map[string]string) (string, error) {
-	var sb strings.Builder
-	for {
-		ixs := varRegexp.FindStringSubmatchIndex(s)
-		if ixs == nil {
-			sb.WriteString(s)
-			return sb.String(), nil
+	s = varRegexp.ReplaceAllStringFunc(s, func(varName string) string {
+		if val, ok := vars[varName[2:len(varName)-1]]; ok {
+			return val
 		}
-		varName := s[ixs[2]:ixs[3]]
-		varVal, ok := vars[varName]
-		if !ok {
-			return "", fmt.Errorf("variable %q not found", varName)
-		}
-		sb.WriteString(s[:ixs[0]])
-		sb.WriteString(varVal)
-		s = s[ixs[1]:]
+		return varName
+	})
+
+	if missingVar := varRegexp.FindString(s); missingVar != "" {
+		return "", fmt.Errorf("variable %q not found", missingVar)
 	}
+
+	return s, nil
 }
 
 func embedVariables(s string, vars map[string]string) (string, error) {
