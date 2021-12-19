@@ -1,4 +1,5 @@
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.Column
 import org.apache.log4j.Logger
 
 object Sonnets {
@@ -20,14 +21,16 @@ object Sonnets {
       .flatMap(line => line.split(" "))
       .map(word => (word, 1))
       .reduceByKey(_ + _)
+      .map({ case (word, count) => (word, count, if (word != "") word.substring(0, 1) else "") })
       .repartition(partitions)
-      .toDF
+      .toDF("word", "count", "partition_key")
+      .repartition($"partition_key")
 
     for (fmt <- Seq("csv", "parquet", "json", "orc")) {
       // save data is selected format
       val outputPath = "%s.%s".format(output, fmt)
       logger.info(s"Write word count - format:$fmt path:$outputPath")
-      counts.write.format(fmt).save(outputPath)
+      counts.write.partitionBy("partition_key").format(fmt).save(outputPath)
 
       // read the data we just wrote
       logger.info(s"Read word count - format:$fmt path:$outputPath")
@@ -36,6 +39,8 @@ object Sonnets {
       // filter word count for specific 'times' and match result
       val expected = "can,or"
       val times = "42"
+      val debug = wc.top(50).collect.sorted.mkstring("\n")
+      logger.info(s"[DEBUG] ${debug}")
       val life = wc
         .filter(x => x(1).toString == times) // different formats use different types - compare as string
         .map(x => x(0).toString)
