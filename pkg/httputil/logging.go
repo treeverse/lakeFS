@@ -54,7 +54,7 @@ func DebugLoggingMiddleware(requestIDHeaderName string, fields logging.Fields) f
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			startTime := time.Now()
-			writer := &ResponseRecordingWriter{Writer: w, StatusCode: http.StatusOK}
+			//writer := &ResponseRecordingWriter{Writer: w, StatusCode: http.StatusOK}
 			r, reqID := RequestID(r)
 
 			// add default fields to context
@@ -68,13 +68,16 @@ func DebugLoggingMiddleware(requestIDHeaderName string, fields logging.Fields) f
 				requestFields[k] = v
 			}
 			r = r.WithContext(logging.AddFields(r.Context(), requestFields))
-			writer.Header().Set(requestIDHeaderName, reqID)
-			next.ServeHTTP(writer, r) // handle the request
+
+			w.Header().Set(requestIDHeaderName, reqID)
+			//writer.Header().Set(requestIDHeaderName, reqID)
+
+			next.ServeHTTP(w, r) // handle the request
 
 			logging.FromContext(r.Context()).WithFields(logging.Fields{
-				"took":        time.Since(startTime),
-				"status_code": writer.StatusCode,
-				"sent_bytes":  writer.ResponseSize,
+				"took": time.Since(startTime),
+				//"status_code": writer.StatusCode,
+				//"sent_bytes":  writer.ResponseSize,
 			}).Debug("HTTP call ended")
 		})
 	}

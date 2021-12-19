@@ -1681,6 +1681,7 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body CommitJ
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "create_commit")
+
 	user, ok := ctx.Value(UserContextKey).(*model.User)
 	if !ok {
 		writeError(w, http.StatusUnauthorized, "missing user")
@@ -1690,6 +1691,13 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body CommitJ
 	if body.Metadata != nil {
 		metadata = body.Metadata.AdditionalProperties
 	}
+
+	if d := c.Config.GetAPILongPostDuration(); d > 0 {
+		lp := httputil.NewLongPost(ctx, w, d, http.StatusCreated, c.Logger)
+		defer lp.Close()
+		w = lp
+	}
+
 	committer := user.Username
 	newCommit, err := c.Catalog.Commit(ctx, repository, branch, body.Message, committer, metadata)
 	var hookAbortErr *graveler.HookAbortError
@@ -2769,11 +2777,19 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "merge_branches")
+
 	user, ok := ctx.Value(UserContextKey).(*model.User)
 	if !ok {
 		writeError(w, http.StatusUnauthorized, "user not found")
 		return
 	}
+
+	if d := c.Config.GetAPILongPostDuration(); d > 0 {
+		lp := httputil.NewLongPost(ctx, w, d, http.StatusOK, c.Logger)
+		defer lp.Close()
+		w = lp
+	}
+
 	var metadata map[string]string
 	if body.Metadata != nil {
 		metadata = body.Metadata.AdditionalProperties

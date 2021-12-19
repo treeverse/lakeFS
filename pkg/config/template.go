@@ -161,4 +161,7 @@ type configuration struct {
 		AuditCheckInterval time.Duration `mapstructure:"audit_check_interval"`
 		AuditCheckURL      string        `mapstructure:"audit_check_url"`
 	} `mapstructure:"security"`
+	API struct {
+		LongPostDuration time.Duration `mapstructure:"long_post_duration"`
+	} `mapstructure:"api"`
 }

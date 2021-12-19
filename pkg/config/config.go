@@ -153,6 +153,9 @@ const (
 
 	SecurityAuditCheckURLKey     = "security.audit_check_url"
 	DefaultSecurityAuditCheckURL = "https://audit.lakefs.io/audit"
+
+	APILongPostDurationKey     = "api.long_post_duration"
+	DefaultAPILongPostDuration = 0
 )
 
 func setDefaults() {
@@ -201,6 +204,8 @@ func setDefaults() {
 
 	viper.SetDefault(SecurityAuditCheckIntervalKey, DefaultSecurityAuditCheckInterval)
 	viper.SetDefault(SecurityAuditCheckURLKey, DefaultSecurityAuditCheckURL)
+
+	viper.SetDefault(APILongPostDurationKey, DefaultAPILongPostDuration)
 }
 
 func reverse(s string) string {
@@ -445,4 +450,8 @@ func (c *Config) GetSecurityAuditCheckInterval() time.Duration {
 
 func (c *Config) GetSecurityAuditCheckURL() string {
 	return c.values.Security.AuditCheckURL
+}
+
+func (c *Config) GetAPILongPostDuration() time.Duration {
+	return c.values.API.LongPostDuration
 }
