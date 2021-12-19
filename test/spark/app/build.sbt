@@ -33,8 +33,8 @@ def generateProject(buildType: BuildType) =
       target := { baseDirectory.value / "target" / s"${baseName}-${buildType.name}" }
     )
 
-lazy val proj24 = generateProject(new BuildType("246", scala211Version, "2.4.6", "2.7.7"))
-lazy val proj31 = generateProject(new BuildType("311", scala212Version, "3.1.1", "2.7.7"))
+lazy val proj24 = generateProject(new BuildType("246", scala211Version, "2.4.6", "2.7.4"))
+lazy val proj31 = generateProject(new BuildType("311", scala212Version, "3.1.1", "2.7.4"))
 
 lazy val root = (project in file("."))
   .aggregate(proj24, proj31)
