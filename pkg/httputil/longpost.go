@@ -97,14 +97,20 @@ func (l *LongPost) Close() {
 
 // FlusherCaptureHandler capture ResponseWriter Flusher implementation, keeping it on request context under
 // 'FlusherContextKey'. Used by LongPost to flush content during long post operation.
-func FlusherCaptureHandler(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		flusher, ok := w.(http.Flusher)
-		if !ok {
-			panic("Flush capture should be first in he middleware")
+func FlusherCaptureHandler(log logging.Logger, duration time.Duration) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		if duration <= 0 {
+			return next
 		}
-		ctx := context.WithValue(r.Context(), FlusherContextKey, flusher)
-		r = r.WithContext(ctx)
-		next.ServeHTTP(w, r)
-	})
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			flusher, ok := w.(http.Flusher)
+			if !ok {
+				log.Error("ResponseWriter is missing Flusher implementation, LongPost will not be supported")
+			} else {
+				ctx := context.WithValue(r.Context(), FlusherContextKey, flusher)
+				r = r.WithContext(ctx)
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 }

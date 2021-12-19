@@ -10,8 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/httputil"
-
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/actions"
@@ -162,7 +160,6 @@ func setupServer(t testing.TB, handler http.Handler) *httptest.Server {
 	if shouldUseServerTimeout() {
 		handler = http.TimeoutHandler(handler, ServerTimeout, `{"error": "timeout"}`)
 	}
-	handler = httputil.FlusherCaptureHandler(handler)
 	server := httptest.NewServer(handler)
 	t.Cleanup(server.Close)
 	return server

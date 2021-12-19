@@ -14,7 +14,8 @@ import (
 
 func TestFlusherCaptureHandler(t *testing.T) {
 	const responseBody = `{}`
-	handler := httputil.FlusherCaptureHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handlerFunc := httputil.FlusherCaptureHandler(logging.Dummy(), time.Second)
+	handler := handlerFunc(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("ContentType", "application/json")
 		// validate that context holds a flusher
 		flusher, ok := r.Context().Value(httputil.FlusherContextKey).(http.Flusher)
@@ -37,7 +38,8 @@ func TestLongPost(t *testing.T) {
 		responseBody     = `{}`
 		longPostDuration = time.Second
 	)
-	handler := httputil.FlusherCaptureHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handlerFunc := httputil.FlusherCaptureHandler(logging.Dummy(), longPostDuration)
+	handler := handlerFunc(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		longPost := httputil.NewLongPost(r.Context(), w, longPostDuration, http.StatusOK, logging.Dummy())
 		defer longPost.Close()
 		time.Sleep(longPostDuration + time.Second)

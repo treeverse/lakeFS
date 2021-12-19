@@ -59,7 +59,7 @@ func Serve(
 	}
 	r := chi.NewRouter()
 	apiRouter := r.With(
-		httputil.FlusherCaptureHandler,
+		httputil.FlusherCaptureHandler(logger, cfg.GetAPILongPostDuration()),
 		OapiRequestValidatorWithOptions(swagger, &openapi3filter.Options{
 			AuthenticationFunc: openapi3filter.NoopAuthenticationFunc,
 		}),
