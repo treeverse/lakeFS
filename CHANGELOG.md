@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.57.0 - 2021-12-21
+
+- OpenAPI: Delete multiple objects in a single request (#2788)
+- Performance: Optimize merge by skipping ranges with same bounds (#2737)
+- Security check by lakeFS version and suggest upgrade (#2776)
+- Include dbt in Everything Bagel (#2769)
+
 ## v0.56.0 - 2021-12-05
 
 - Fix bug: faulty LDAP username validation (#2774)
