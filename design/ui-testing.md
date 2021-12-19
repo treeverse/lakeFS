@@ -167,11 +167,11 @@ _**Notes:**_
 1. The decision on the testing automation framework will not affect this section. 
 2. Its TBD to decide exactly how to work with Testcontainers to do the tests setup; what the containers 
 should include, and the frequency of creating and tearing them down (In each test file, single instance for the whole 
-test  suit etc.)
+test suite etc.)
 
 ### Future improvements
 
-In the proposed increment, Jest is used as the E2E tests runner. As a a second step we can use Jest in combination with
+In the proposed increment, Jest is used as the E2E tests runner. As a second step we can use Jest in combination with
 other React testing libraries to to unit-test the UI. As a third increment, when the UI becomes more stable we can use more advanced features provided by the testing automation framework such as screenshot
 testing, performance testing, etc.
 
