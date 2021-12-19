@@ -141,7 +141,7 @@ func (rvi *iterator) loadRange(key graveler.Key) bool {
 		return false
 	}
 	if !rvi.NextRange() {
-		return false // Reached end.
+		return false // Reached end.3
 	}
 	rvi.started = true // "Started": rangesIt is valid.
 	if bytes.Compare(key, rvi.rng.MinKey) <= 0 {
@@ -153,7 +153,7 @@ func (rvi *iterator) loadRange(key graveler.Key) bool {
 }
 
 func (rvi *iterator) SeekGE(key graveler.Key) {
-	if rvi.rng == nil || bytes.Compare(key, rvi.rng.MinKey) < 0 || bytes.Compare(key, rvi.rng.MaxKey) > 0 {
+	if rvi.rng == nil || rvi.it == nil || bytes.Compare(key, rvi.rng.MinKey) < 0 || bytes.Compare(key, rvi.rng.MaxKey) > 0 {
 		// no current range, or new key outside current range boundaries
 		if !rvi.loadRange(key) {
 			return
