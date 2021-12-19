@@ -136,24 +136,27 @@ func (rvi *iterator) Close() {
 
 func (rvi *iterator) SeekGE(key graveler.Key) {
 	var err error
-	if rvi.rng == nil || bytes.Compare(key, rvi.rng.MinKey) < 0 || bytes.Compare(key, rvi.rng.MaxKey) > 0 {
-		rvi.rangesIt.SeekGE(Key(key))
-		if err = rvi.rangesIt.Err(); err != nil {
-			rvi.err = err
-			return
-		}
-		if !rvi.NextRange() {
-			return // Reached end.
-		}
-		rvi.started = true // "Started": rangesIt is valid.
-		if bytes.Compare(key, rvi.rng.MinKey) <= 0 {
-			// the given key is before the next range
-			rvi.beforeRange = true
-			return
-		}
-		if !rvi.loadIt() {
-			return
-		}
+	if rvi.rng != nil && bytes.Compare(key, rvi.rng.MinKey) >= 0 && bytes.Compare(key, rvi.rng.MaxKey) <= 0 {
+		rvi.it.SeekGE(key)
+		rvi.err = rvi.it.Err()
+		return
+	}
+	rvi.rangesIt.SeekGE(Key(key))
+	if err = rvi.rangesIt.Err(); err != nil {
+		rvi.err = err
+		return
+	}
+	if !rvi.NextRange() {
+		return // Reached end.
+	}
+	rvi.started = true // "Started": rangesIt is valid.
+	if bytes.Compare(key, rvi.rng.MinKey) <= 0 {
+		// the given key is before the next range
+		rvi.beforeRange = true
+		return
+	}
+	if !rvi.loadIt() {
+		return
 	}
 	rvi.it.SeekGE(key)
 	// Ready to call Next to see values.
