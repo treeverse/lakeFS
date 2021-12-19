@@ -133,16 +133,9 @@ func (rvi *iterator) Close() {
 	}
 	rvi.it.Close()
 }
-
-func (rvi *iterator) SeekGE(key graveler.Key) {
-	var err error
-	if rvi.rng != nil && bytes.Compare(key, rvi.rng.MinKey) >= 0 && bytes.Compare(key, rvi.rng.MaxKey) <= 0 {
-		rvi.it.SeekGE(key)
-		rvi.err = rvi.it.Err()
-		return
-	}
+func (rvi *iterator) loadRange(key graveler.Key) {
 	rvi.rangesIt.SeekGE(Key(key))
-	if err = rvi.rangesIt.Err(); err != nil {
+	if err := rvi.rangesIt.Err(); err != nil {
 		rvi.err = err
 		return
 	}
@@ -157,6 +150,13 @@ func (rvi *iterator) SeekGE(key graveler.Key) {
 	}
 	if !rvi.loadIt() {
 		return
+	}
+}
+
+func (rvi *iterator) SeekGE(key graveler.Key) {
+	if rvi.rng == nil || bytes.Compare(key, rvi.rng.MinKey) < 0 || bytes.Compare(key, rvi.rng.MaxKey) > 0 {
+		// no current range, or new key outside current range boundaries
+		rvi.loadRange(key)
 	}
 	rvi.it.SeekGE(key)
 	// Ready to call Next to see values.
