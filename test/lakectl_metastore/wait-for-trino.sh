@@ -1,6 +1,6 @@
 #!/bin/bash
 
-MAX_ATTEMPTS=30
+MAX_ATTEMPTS=60
 
 attempt_counter=0
 while :
