@@ -6,6 +6,7 @@ import (
 	"crypto"
 	"errors"
 	"fmt"
+	"github.com/minio/sha256-simd"
 
 	"github.com/cockroachdb/pebble"
 	"github.com/cockroachdb/pebble/sstable"
@@ -157,7 +158,9 @@ func (m *RangeManager) NewRangeIterator(ctx context.Context, ns committed.Namesp
 
 // GetWriter returns a new SSTable writer instance
 func (m *RangeManager) GetWriter(ctx context.Context, ns committed.Namespace, metadata graveler.Metadata) (committed.RangeWriter, error) {
-	return NewDiskWriter(ctx, m.fs, ns, m.hash.New(), metadata)
+	server := sha256.NewAvx512Server()
+	h512 := sha256.NewAvx512(server)
+	return NewDiskWriter(ctx, m.fs, ns, h512, metadata)
 }
 
 func (m *RangeManager) GetURI(ctx context.Context, ns committed.Namespace, id committed.ID) (string, error) {
