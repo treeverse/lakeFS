@@ -42,6 +42,7 @@ func TestLongPost(t *testing.T) {
 	handler := handlerFunc(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		longPost := httputil.NewLongPost(r.Context(), w, longPostDuration, http.StatusOK, logging.Dummy())
 		defer longPost.Close()
+		w = longPost
 		time.Sleep(longPostDuration + time.Second)
 		w.Header().Set("ContentType", "application/json")
 		_, _ = io.WriteString(w, responseBody)
