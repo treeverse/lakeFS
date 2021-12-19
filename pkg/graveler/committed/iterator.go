@@ -141,7 +141,7 @@ func (rvi *iterator) loadRange(key graveler.Key) bool {
 		return false
 	}
 	if !rvi.NextRange() {
-		return false // Reached end.3
+		return false // Reached end
 	}
 	rvi.started = true // "Started": rangesIt is valid.
 	if bytes.Compare(key, rvi.rng.MinKey) <= 0 {
