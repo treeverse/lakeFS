@@ -133,6 +133,7 @@ func (rvi *iterator) Close() {
 	}
 	rvi.it.Close()
 }
+
 func (rvi *iterator) loadRange(key graveler.Key) {
 	rvi.rangesIt.SeekGE(Key(key))
 	if err := rvi.rangesIt.Err(); err != nil {
