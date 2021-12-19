@@ -26,7 +26,7 @@ object Sonnets {
       .toDF("word", "count", "partition_key")
       .repartition($"partition_key")
 
-    for (fmt <- Seq("csv", "parquet", "json", "orc")) {
+    for (fmt <- Seq("parquet")) {
       // save data is selected format
       val outputPath = "%s.%s".format(output, fmt)
       logger.info(s"Write word count - format:$fmt path:$outputPath")
