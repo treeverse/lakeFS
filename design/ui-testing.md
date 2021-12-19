@@ -143,6 +143,7 @@ The main arguments that turn my recommendation towards **Puppeteer** as the test
 * The lakeFS UI is written in React, and using a framework that lives at the same space is more natural and convenient, 
 as opposed to Selenium which is used for multiple types of applications. 
 * The development experience working with Puppeteer was much better.
+* Online resources testify that Puppeteer executes faster than Selenium.  
 
 ### Why test against a live server?
 
@@ -182,3 +183,5 @@ testing, performance testing, etc.
 * https://jestjs.io/docs/puppeteer
 * https://github.com/puppeteer/puppeteer
 * https://levelup.gitconnected.com/running-puppeteer-with-jest-on-github-actions-for-automated-testing-with-coverage-6cd15bc843b0
+* https://blog.testproject.io/2020/02/20/selenium-vs-puppeteer-when-to-choose-what/
+* https://www.blazemeter.com/blog/selenium-vs-puppeteer-for-test-automation
