@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.57.1 - 2021-12-20
+- Major performance improvment in merges (#2808)
+
 ## v0.57.0 - 2021-12-21
 
 - OpenAPI: Delete multiple objects in a single request (#2788)
