@@ -31,15 +31,15 @@ services:
     image: minio/minio
     container_name: minio
     ports:
-      - 9000:9000
-      - 9001:9001
+      - "9000:9000"
+      - "9001:9001"
     entrypoint: ["minio", "server", "/data", "--console-address", ":9001"]
 
   lakefs:
     image: treeverse/lakefs:latest
     container_name: lakefs
     ports:
-      - 8000:8000
+      - "8000:8000"
     depends_on:
       - postgres
     environment:
@@ -76,7 +76,7 @@ services:
     depends_on:
       - mariadb
     ports:
-      - 9083:9083
+      - "9083:9083"
     environment:
       - DB_URI=mariadb:3306
     volumes:
@@ -86,7 +86,7 @@ services:
     build: hive
     container_name: hiveserver2
     ports:
-      - 10001:10000
+      - "10001:10000"
     depends_on:
       - hive-metastore
     environment:
@@ -106,7 +106,7 @@ services:
     volumes:
       - ./etc/s3.properties:/etc/trino/catalog/s3.properties
     ports:
-      - 8080:48080
+      - "48080:8080"
 
   trino-client:
     image: trinodb/trino:358
@@ -123,14 +123,14 @@ services:
       - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
       - SPARK_SSL_ENABLED=no
     ports:
-      - 18080:8080
+      - "18080:8080"
     volumes:
       - ./etc/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml
 
   spark-worker:
     image: docker.io/bitnami/spark:3
     ports:
-      - 8081
+      - "8081"
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER_URL=spark://spark:7077
