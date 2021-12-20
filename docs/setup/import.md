@@ -104,6 +104,9 @@ when accessing it through other branches. In a sense, your original bucket becom
 - The S3 credentials you provided to lakeFS should have GetObject permissions on the source bucket and on the bucket where the inventory is stored.
 - If you want to use the tool for [gradual import](#gradual-import), you should not delete the data for the most recently imported inventory, until a more recent inventory is successfully imported.
 
+For a step-by-step walkthrough of this process, see the post [3 Ways to Add Data to lakeFS](https://lakefs.io/3-ways-to-add-data-to-lakefs/) on our blog.
+{: .note .note-info }
+
 ### Usage
 
 Import is performed by the `lakefs import` command.
