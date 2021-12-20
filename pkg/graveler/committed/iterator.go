@@ -134,25 +134,30 @@ func (rvi *iterator) Close() {
 	rvi.it.Close()
 }
 
-func (rvi *iterator) SeekGE(key graveler.Key) {
-	var err error
-	// TODO(ariels): rangesIt might already be on correct range.
+func (rvi *iterator) loadRange(key graveler.Key) bool {
 	rvi.rangesIt.SeekGE(Key(key))
-	if err = rvi.rangesIt.Err(); err != nil {
+	if err := rvi.rangesIt.Err(); err != nil {
 		rvi.err = err
-		return
+		return false
 	}
 	if !rvi.NextRange() {
-		return // Reached end.
+		return false // Reached end
 	}
 	rvi.started = true // "Started": rangesIt is valid.
 	if bytes.Compare(key, rvi.rng.MinKey) <= 0 {
 		// the given key is before the next range
 		rvi.beforeRange = true
-		return
+		return false
 	}
-	if !rvi.loadIt() {
-		return
+	return rvi.loadIt()
+}
+
+func (rvi *iterator) SeekGE(key graveler.Key) {
+	if rvi.rng == nil || rvi.it == nil || bytes.Compare(key, rvi.rng.MinKey) < 0 || bytes.Compare(key, rvi.rng.MaxKey) > 0 {
+		// no current range, or new key outside current range boundaries
+		if !rvi.loadRange(key) {
+			return
+		}
 	}
 	rvi.it.SeekGE(key)
 	// Ready to call Next to see values.
