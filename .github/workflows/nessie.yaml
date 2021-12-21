@@ -435,6 +435,88 @@ jobs:
         continue-on-error: true
         working-directory: test/spark
         run: docker-compose logs --tail=1000 lakefs
+
+
+  metastore-client-with-trino:
+    name: Test metastore client commands using trino and dbt
+    needs: [gen-code, deploy-image]
+    runs-on: ubuntu-20.04
+    env:
+      TAG: ${{ needs.deploy-image.outputs.tag }}
+      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+    steps:
+      - name: Setup Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.16.2
+        id: go
+
+      - name: Retrieve generated code
+        uses: actions/download-artifact@v2
+        with:
+          name: generated-code
+          path: /tmp/
+
+      - name: Unpack generated code
+        run: tar -xf /tmp/generated.tar.gz
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build lakectl for dbt container
+        run:  go build -o test/lakectl_metastore/etc/lakectl ./cmd/lakectl
+
+      - name: Start lakeFS S3 and trino and hive
+        env:
+          LAKEFS_STATS_ENABLED: "false"
+          LAKEFS_BLOCKSTORE_TYPE: s3
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-metaclient
+          AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
+        working-directory: test/lakectl_metastore
+        run: docker-compose up -d
+
+      - name: Setup lakeFS for tests
+        working-directory: test/lakectl_metastore
+        env:
+          STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-metaclient
+        run: ./setup-test.sh
+
+      - name: Test using DBT and lakectl metastore commands
+        env:
+          AWS-ACCESS-KEY-ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS-SECRET-ACCESS-KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS-REGION: us-east-1
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          REPOSITORY: gateway-test
+          SONNET_JAR: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
+        working-directory: test/lakectl_metastore
+        run: docker-compose run dbt
+
+      - name: lakeFS Logs on Spark with gateway failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        working-directory: test/lakectl_metastore
+        run: docker-compose logs --tail=1000 lakefs
+
+      - name: dbt Logs with failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        working-directory: test/lakectl_metastore
+        run: docker-compose logs --tail=1000 dbt
+
+
   metadata-client-spark3:
     name: Test lakeFS metadata client with Spark 3.x
     needs: deploy-image
