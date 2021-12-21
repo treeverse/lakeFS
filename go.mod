@@ -56,6 +56,7 @@ require (
 	github.com/manifoldco/promptui v0.8.0
 	github.com/matoous/go-nanoid/v2 v2.0.0
 	github.com/minio/minio-go/v7 v7.0.13
+	github.com/minio/sha256-simd v1.0.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/mapstructure v1.4.2
 	github.com/ory/dockertest/v3 v3.8.0
