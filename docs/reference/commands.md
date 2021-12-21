@@ -2036,6 +2036,25 @@ lakectl log <branch uri> [flags]
 ```
 
 
+### lakectl annotate
+
+Show who created the latest commit
+
+#### Synopsis
+{:.no_toc}
+
+Show who created the latest commit to an object or objects in a give path
+
+```
+lakectl annotate <path uri> [flags]
+```
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for merge
+```
+
 
 ### lakectl merge
 
