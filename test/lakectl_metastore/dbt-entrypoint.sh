@@ -14,11 +14,8 @@ export LAKEFS_SCHEMA=test
 
 dbt run --select star_rating
 
-
+# todo(Guys) - uncomment and test once create-symlink supports hive, in order not to create many tables on our glue catalog
 # create symlinks
 #lakectl metastore create-symlink --branch test --from-schema test --from-table amazon_reviews --to-schema nessie_system_testing --to-table ${TO_TABLE} --repo example --path dbt/amazon_reviews
-
-# test and drop
-# run test
 
 

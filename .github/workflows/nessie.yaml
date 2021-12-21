@@ -510,11 +510,11 @@ jobs:
         working-directory: test/lakectl_metastore
         run: docker-compose logs --tail=1000 lakefs
 
-      - name: dbt Logs with gateway failure
+      - name: dbt Logs with failure
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/lakectl_metastore
-        run: docker-compose logs --tail=1000 lakefs
+        run: docker-compose logs --tail=1000 dbt
 
 
   metadata-client-spark3:
