@@ -1,0 +1,102 @@
+version: "3"
+services:
+
+  lakefs:
+    image: "${REPO:-treeverse}/lakefs:${TAG:-latest}"
+    container_name: lakefs
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+    environment:
+      - STORAGE_NAMESPACE
+      - LAKEFS_BLOCKSTORE_TYPE=s3
+      - LAKEFS_BLOCKSTORE_S3_FORCE_PATH_STYLE=true
+      - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=some random secret string
+      - LAKEFS_DATABASE_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
+      - LAKEFS_STATS_ENABLED=false
+      - LAKEFS_LOGGING_LEVEL
+    env_file:
+      - tester.env
+    entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
+
+  postgres:
+    image: postgres:11
+    container_name: postgres
+    environment:
+      POSTGRES_USER: lakefs
+      POSTGRES_PASSWORD: lakefs
+
+  mariadb:
+    image: mariadb:10
+    container_name: mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: admin
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: admin
+      MYSQL_DATABASE: metastore_db
+
+  hive-metastore:
+    build: hive
+    container_name: hive
+    depends_on:
+      - mariadb
+    ports:
+      - 9083:9083
+    environment:
+      - DB_URI=mariadb:3306
+    volumes:
+      - ./etc/hive-site.xml:/opt/apache-hive-bin/conf/hive-site.xml
+
+
+  trino:
+    image: trinodb/trino:358
+    container_name: trino
+    environment:
+      - AWS_ACCOUNT_ID
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+    volumes:
+      - ./etc/s3.properties:/etc/trino/catalog/s3.properties
+      - ./etc/lakefs.properties:/etc/trino/catalog/lakefs.properties
+    ports:
+      - "8080:8085"
+
+  trino-client:
+    image: trinodb/trino:358
+    profiles: ["client"]
+    entrypoint: ["trino", "--server", "trino:8080", "--catalog", "s3", "--schema", "default"]
+
+
+  create-dbt-schema-main:
+    image: trinodb/trino:358
+    profiles: ["client"]
+    entrypoint: ["trino", "--server", "trino:8080", "--catalog", "lakefs", "--execute", "drop schema if exists dbt_main; create schema dbt_main with (location = 's3://example/main/dbt' )"]
+
+  dbt:
+    build: dbt
+    depends_on:
+      - trino
+    profiles: ["client"]
+    environment:
+      - AWS_ACCOUNT_ID
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - LAKECTL_METASTORE_GLUE_CATALOG_ID=${AWS_ACCOUNT_ID}
+      - LAKECTL_METASTORE_GLUE_CREDENTIALS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - LAKECTL_METASTORE_GLUE_CREDENTIALS_ACCESS_SECRET_KEY=${AWS_SECRET_ACCESS_KEY}
+      - LAKECTL_METASTORE_GLUE_REGION=us-east-1
+      - LAKECTL_METASTORE_HIVE_URI=hive:9083
+      - LAKECTL_METASTORE_TYPE=hive
+      - LAKECTL_SERVER_ENDPOINT_URL=http://lakefs:8000
+    env_file:
+      - tester.env
+    volumes:
+      - ./dbt/dbt-project:/usr/app
+      - ./dbt/profiles.yml:/root/.dbt/profiles.yml
+      - ./etc/lakectl:/usr/local/bin/lakectl
+      - ./dbt-entrypoint.sh:/usr/app/entrypoint.sh
+      - ./wait-for-trino.sh:/usr/app/wait-for-trino.sh
+    entrypoint: /usr/app/entrypoint.sh

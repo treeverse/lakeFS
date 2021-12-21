@@ -1,0 +1,25 @@
+
+trino:
+  target: main
+  outputs:
+
+    main:
+      type: trino
+      method: none
+      user: trino
+
+      database: lakefs # equal to presto trino catalog
+      host: trino
+      port: 8080
+      schema: dbt_main
+      threads: 5
+
+    branch:
+      type: trino
+      method: none
+      user: trino
+      database: s3 # equal to presto trino catalog
+      host: trino
+      port: 8080
+      schema: <BRANCH-SCHEMA>
+      threads: 1
