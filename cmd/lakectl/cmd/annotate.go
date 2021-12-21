@@ -21,12 +21,12 @@ var annotateCmd = &cobra.Command{
 		pfx := api.PaginationPrefix(*pathURI.Path)
 		res, err := client.ListObjectsWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.ListObjectsParams{Prefix: &pfx})
 		DieOnResponseError(res, err)
-		obj_list := res.JSON200.Results
+		objList := res.JSON200.Results
 		logCommitsParams := &api.LogCommitsParams{
 			Amount: api.PaginationAmountPtr(amount),
 		}
 		pagination := api.Pagination{HasMore: true}
-		for _, obj := range obj_list {
+		for _, obj := range objList {
 			res, err := client.LogCommitsWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, logCommitsParams)
 			DieOnResponseError(res, err)
 			pagination = res.JSON200.Pagination
@@ -47,6 +47,7 @@ var annotateCmd = &cobra.Command{
 	},
 }
 
+//nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(annotateCmd)
 }
