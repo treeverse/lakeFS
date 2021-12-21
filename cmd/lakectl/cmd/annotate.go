@@ -12,7 +12,7 @@ const annotateTemplate = `{{ range $val := .Commits}}
 var annotateCmd = &cobra.Command{
 	Use:   "annotate <path uri>",
 	Short: "Show who created the latest commit",
-	Long:  "Show who created the latest commit to all objects in a given branch",
+	Long:  "Show who created the latest commit to an object or objects in a give path",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, c_args []string) {
 		pathURI := MustParsePathURI("path", c_args[0])
@@ -43,7 +43,6 @@ var annotateCmd = &cobra.Command{
 				},
 			}
 			Write(annotateTemplate, data)
-
 		}
 	},
 }
