@@ -176,6 +176,10 @@ In the proposed increment, Jest is used as the E2E tests runner. As a second ste
 other React testing libraries to to unit-test the UI. As a third increment, when the UI becomes more stable we can use more advanced features provided by the testing automation framework such as screenshot
 testing, performance testing, etc.
 
+### Conclusion
+
+Use Jest and Puppeteer. 
+
 ### References
 * https://medium.com/touch4it/end-to-end-testing-with-puppeteer-and-jest-ec8198145321
 * https://www.browserstack.com/guide/puppeteer-vs-selenium
