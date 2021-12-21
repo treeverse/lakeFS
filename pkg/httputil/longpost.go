@@ -24,6 +24,7 @@ type LongPost struct {
 }
 
 func (l *LongPost) Header() http.Header {
+	l.Close()
 	return l.writer.Header()
 }
 
