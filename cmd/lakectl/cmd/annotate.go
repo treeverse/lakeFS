@@ -48,7 +48,7 @@ var annotateCmd = &cobra.Command{
 				}{
 					Commit:        res.JSON200.Results[0],
 					Object:        obj.Path,
-					CommitMessage: setMessageSize(100, (res.JSON200.Results[0].Message)),
+					CommitMessage: splitOnNewLine(setMessageSize(messageSize, (res.JSON200.Results[0].Message))),
 				}
 				Write(annotateTemplate, data)
 			}
@@ -61,10 +61,16 @@ var annotateCmd = &cobra.Command{
 	},
 }
 
+const messageSize = 100
+
 func setMessageSize(size int, str string) string {
 	if len(str) > size {
 		str = str[:size] + "..."
 	}
+	return str
+}
+
+func splitOnNewLine(str string) string {
 	str = strings.Split(str, "\\n")[0]
 	return str
 }
@@ -72,5 +78,4 @@ func setMessageSize(size int, str string) string {
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(annotateCmd)
-
 }
