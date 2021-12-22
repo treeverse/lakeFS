@@ -34,7 +34,6 @@ var annotateCmd = &cobra.Command{
 			resp, err := client.ListObjectsWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, params)
 			DieOnResponseError(resp, err)
 			for _, obj := range resp.JSON200.Results {
-
 				prfx := []string{obj.Path}
 				logCommitsParams := &api.LogCommitsParams{
 					Amount:  api.PaginationAmountPtr(amount),
@@ -49,7 +48,7 @@ var annotateCmd = &cobra.Command{
 				}{
 					Commit:        res.JSON200.Results[0],
 					Object:        obj.Path,
-					CommitMessage: setMessageSize(100, string(res.JSON200.Results[0].Message)),
+					CommitMessage: setMessageSize(100, (res.JSON200.Results[0].Message)),
 				}
 				Write(annotateTemplate, data)
 			}
