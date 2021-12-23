@@ -14,7 +14,7 @@ object Sonnets {
     val input = args.applyOrElse(0, (_: Any) => "s3a://example/main/sonnets.txt")
     val output = args.applyOrElse(1, (_: Any) => "s3a://example/main/sonnets-wordcount")
     val sc = spark.sparkContext
-    sc.setLogLevel("INFO")
+    sc.setLogLevel("TRACE")
     import spark.implicits._
     val sonnets = sc.textFile(input)
     val partitions = 7
@@ -23,9 +23,8 @@ object Sonnets {
       .map(word => (word, 1))
       .reduceByKey(_ + _)
       .map({ case (word, count) => (word, count, if (word != "") word.substring(0, 1) else "") })
-      .repartition(partitions)
       .toDF("word", "count", "partition_key")
-      .repartition($"partition_key")
+      .repartition(partitions, $"partition_key")
 
     var failed = new ListBuffer[String]
 
