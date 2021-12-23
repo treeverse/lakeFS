@@ -113,7 +113,7 @@ func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespa
 		return "", summary, graveler.ErrNoChanges
 	}
 	if destination == base {
-		// changes introduced only on source, optimize be returning source with unknown summery
+		// changes introduced only on source, optimize be returning source with unknown summary
 		summary.Incomplete = true
 		return source, summary, nil
 	}
