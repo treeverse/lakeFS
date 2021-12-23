@@ -1,6 +1,7 @@
 package nessie
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -47,6 +48,8 @@ func runShellCommand(command string, isTerminal bool) ([]byte, error) {
 
 var varRegexp = regexp.MustCompile(`\$\{([^${}]+)\}`)
 
+var errVariableNotFound = errors.New("variable not found")
+
 // expandVariables receives a string with (possibly) variables in the form of {VAR_NAME}, and
 // a var-name -> value mapping. It attempts to replace all occurrences of all variables with
 // the corresponding values from the map. If all variables in the string has their mapping
@@ -61,11 +64,13 @@ func expandVariables(s string, vars map[string]string) (string, error) {
 	})
 
 	if missingVar := varRegexp.FindString(s); missingVar != "" {
-		return "", fmt.Errorf("variable %q not found", missingVar)
+		return "", fmt.Errorf("%w, %s", errVariableNotFound, missingVar)
 	}
 
 	return s, nil
 }
+
+var errValueNotUnique = errors.New("value no unique in mapping")
 
 // embedVariables allows to replace run-specific values from a string with generic, normalized
 // variables, that can later be expanded by expandVariables.
@@ -87,7 +92,7 @@ func embedVariables(s string, vars map[string]string) (string, error) {
 
 	for k, v := range vars {
 		if _, exist := revMap[v]; exist {
-			return "", fmt.Errorf("value %q not unique in mapping", v)
+			return "", fmt.Errorf("%w, %s", errValueNotUnique, v)
 		}
 		revMap[v] = k
 		vals = append(vals, v)
@@ -128,7 +133,7 @@ func runCmdAndVerifyWithFile(t *testing.T, cmd string, expectFail bool, isTermin
 		result, _ := runShellCommand(cmd, isTerminal)
 		s, err := embedVariables(string(result), vars)
 		require.NoError(t, err, "Variable embed failed - %s", err)
-		err = ioutil.WriteFile(goldenFile, []byte(sanitize(s, vars)), 0777)
+		err = ioutil.WriteFile(goldenFile, []byte(sanitize(s, vars)), 0600)
 		require.NoError(t, err, "Failed to write file %s", goldenFile)
 		return
 	}
@@ -165,7 +170,7 @@ func runCmdAndVerifyResult(t *testing.T, cmd string, expectFail bool, isTerminal
 var (
 	timeStampRegexp = regexp.MustCompile(`timestamp: \d+\r?\n`)
 	timeRegexp      = regexp.MustCompile(`\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} [\+|-]\d{4} \w{1,3}`)
-	commitIdRegExp  = regexp.MustCompile(`[\d|a-f]{64}`)
+	commitIDRegExp  = regexp.MustCompile(`[\d|a-f]{64}`)
 )
 
 func normalizeProgramTimestamp(output string) string {
@@ -181,6 +186,6 @@ func normalizeRandomObjectKey(output string, objectPrefix string) string {
 }
 
 func normalizeCommitID(output string) string {
-	s := commitIdRegExp.ReplaceAll([]byte(output), []byte("<COMMIT_ID>"))
+	s := commitIDRegExp.ReplaceAll([]byte(output), []byte("<COMMIT_ID>"))
 	return string(s)
 }
