@@ -93,9 +93,9 @@ func embedVariables(s string, vars map[string]string) (string, error) {
 }
 
 func sanitize(output string, vars map[string]string) string {
-	s := removeProgramTimestamp(output)
-	s = removeRandomObjectKey(s, vars["STORAGE"])
-	s = removeCommitID(s)
+	s := normalizeProgramTimestamp(output)
+	s = normalizeRandomObjectKey(s, vars["STORAGE"])
+	s = normalizeCommitID(s)
 	return strings.ReplaceAll(s, "\r\n", "\n")
 
 }
@@ -155,19 +155,19 @@ var (
 	commitIdRegExp  = regexp.MustCompile(`[\d|a-f]{64}`)
 )
 
-func removeProgramTimestamp(output string) string {
+func normalizeProgramTimestamp(output string) string {
 	s := timeStampRegexp.ReplaceAll([]byte(output), []byte("timestamp: <TIMESTAMP>"))
 	s = timeRegexp.ReplaceAll(s, []byte("<DATE> <TIME> <TZ>"))
 	return string(s)
 }
 
-func removeRandomObjectKey(output string, objectPrefix string) string {
+func normalizeRandomObjectKey(output string, objectPrefix string) string {
 	objectKeyRegExp := regexp.MustCompile(objectPrefix + `/[\d|a-f]{32}`)
 	s := objectKeyRegExp.ReplaceAll([]byte(output), []byte(objectPrefix+"/<OBJECT_KEY>"))
 	return string(s)
 }
 
-func removeCommitID(output string) string {
+func normalizeCommitID(output string) string {
 	s := commitIdRegExp.ReplaceAll([]byte(output), []byte("<COMMIT_ID>"))
 	return string(s)
 }
