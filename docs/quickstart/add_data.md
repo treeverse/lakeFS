@@ -44,7 +44,7 @@ Since lakeFS exposes an S3-compatible API, we can use the AWS CLI to operate on 
    # upload: ./foo.txt to s3://example-repo/main/foo.txt
    ```
 
-1. Back in the lakeFS UI we are able to see our file in the *Uncommitted Changes* tab.
+1. Back in the lakeFS UI, we are able to see our file in the *Uncommitted Changes* tab:
 
    ![Object Added]({{ site.baseurl }}/assets/img/object_added.png)
 
