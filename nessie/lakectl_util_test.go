@@ -20,30 +20,35 @@ func TestRunShellCommand(t *testing.T) {
 }
 
 func TestExpandVariables(t *testing.T) {
+	type test struct {
+		// In is the input string to expand.
+		In string
+		// Vars are the variable contents to expand into In.
+		Vars map[string]string
+		// ExpectedOut is the expected output string if no error is expected.
+		ExpectedOut string
+		// ExpectedErr is the expected error.  It is tested using errors.Is.
+		ExpectedErr error
+	}
+
 	s := "This is a string with ${number} ${vars} to expand. This $part $should ${not $expand"
 	expected := "This is a string with 2 elements to expand. This $part $should ${not $expand"
-	varMap := make(map[string]string)
-	expanded, err := expandVariables(s, varMap)
-	require.ErrorIs(t, err, errVariableNotFound, "Expected error for empty mapping did not happen")
 
-	varMap["vars"] = "elements"
-	expanded, err = expandVariables(s, varMap)
-	require.ErrorIs(t, err, errVariableNotFound, "Expected error for empty mapping did not happen")
+	tests := []test{
+		{In: s, Vars: map[string]string{}, ExpectedOut: "", ExpectedErr: errVariableNotFound},
+		{In: s, Vars: map[string]string{"vars": "elements"}, ExpectedOut: "", ExpectedErr: errVariableNotFound},
+		{In: s, Vars: map[string]string{"vars": "elements", "numbers": "2"}, ExpectedOut: "", ExpectedErr: errVariableNotFound},
+		{In: s, Vars: map[string]string{"vars": "elements", "numbers": "2", "number": "2"}, ExpectedOut: expected, ExpectedErr: nil},
+		{In: s, Vars: map[string]string{"vars": "elements", "numbers": "2", "number": "2", "should": "could", "not": "definitely"}, ExpectedOut: expected, ExpectedErr: nil},
+	}
 
-	// Setting wrong variable name. This should not affect the string
-	varMap["numbers"] = "2"
-	expanded, err = expandVariables(s, varMap)
-	require.ErrorIs(t, err, errVariableNotFound, "Expected error for empty mapping did not happen")
-
-	varMap["number"] = "2"
-	expanded, err = expandVariables(s, varMap)
-	require.NoError(t, err, "Unexpected error during expandVariables")
-	require.Equal(t, expected, expanded, "Unexpected result from expandVariables")
-
-	// Verify that only exact var pattern is recognized as var
-	varMap["should"] = "could"
-	varMap["not"] = "definitely"
-	expanded, err = expandVariables(s, varMap)
-	require.NoError(t, err, "Unexpected error during expandVariables")
-	require.Equal(t, expected, expanded, "Unexpected result from expandVariables")
+	for _, tc := range tests {
+		expanded, err := expandVariables(tc.In, tc.Vars)
+		if tc.ExpectedErr != nil {
+			require.ErrorIs(t, err, tc.ExpectedErr, "Unexpected error from expandVariables")
+		} else {
+			require.NoError(t, err, "Unexpected error during expandVariables")
+			require.Equal(t, tc.ExpectedOut, expanded, "Unexpected result from expandVariables")
+		}
+	}
 }
