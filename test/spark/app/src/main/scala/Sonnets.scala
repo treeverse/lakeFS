@@ -2,6 +2,8 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.Column
 import org.apache.log4j.Logger
 
+import scala.collection.mutable.ListBuffer
+
 object Sonnets {
   val logger = Logger.getLogger(getClass.getName)
 
@@ -25,6 +27,8 @@ object Sonnets {
       .repartition(partitions)
       .toDF("word", "count", "partition_key")
       .repartition($"partition_key")
+
+    var failed = new ListBuffer[String]
 
     for (fmt <- Seq("csv", "parquet", "json", "orc")) {
       // save data is selected format
@@ -50,8 +54,13 @@ object Sonnets {
       if (life != expected) {
         logger.error(s"Word count - format:$fmt times:$times matched:'$life' expected:'$expected'")
         println(s"Words found $times times, '$life',  doesn't match '$expected' (format:$fmt)")
-        System.exit(1)
+        failed = failed :+ fmt
       }
+    }
+
+    if (!failed.isEmpty) {
+      logger.error(s"FAIL  formats: ${failed}\n")
+      System.exit(1)
     }
   }
 }
