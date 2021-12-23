@@ -105,10 +105,19 @@ func (c *committedManager) diffWithRanges(ctx context.Context, ns graveler.Stora
 }
 
 func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespace, destination, source, base graveler.MetaRangeID) (graveler.MetaRangeID, graveler.DiffSummary, error) {
-	diffIt, err := c.diffWithRanges(ctx, ns, destination, source)
 	summary := graveler.DiffSummary{
 		Count: map[graveler.DiffType]int{},
 	}
+	if source == base {
+		// no changes on source
+		return "", summary, graveler.ErrNoChanges
+	}
+	if destination == base {
+		// changes introduced only on source, optimize be returning source with unknown summary
+		summary.Incomplete = true
+		return source, summary, nil
+	}
+	diffIt, err := c.diffWithRanges(ctx, ns, destination, source)
 	if err != nil {
 		return "", summary, fmt.Errorf("diff: %w", err)
 	}
