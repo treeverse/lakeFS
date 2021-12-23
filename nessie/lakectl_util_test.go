@@ -50,6 +50,11 @@ func runShellCommand(command string, isTerminal bool) ([]byte, error) {
 
 var varRegexp = regexp.MustCompile(`\$\{([^${}]+)\}`)
 
+// expandVariables receives a string with (possibly) variables in the form of {VAR_NAME}, and
+// a var-name -> value mapping. It attempts to replace all occurrences of all variables with
+// the corresponding values from the map. If all variables in the string has their mapping
+// expandVariables is successful and returns the result string. If at least one variable does
+// not have a mapping, expandVariables fails and returns error
 func expandVariables(s string, vars map[string]string) (string, error) {
 	s = varRegexp.ReplaceAllStringFunc(s, func(varName string) string {
 		if val, ok := vars[varName[2:len(varName)-1]]; ok {
@@ -65,6 +70,20 @@ func expandVariables(s string, vars map[string]string) (string, error) {
 	return s, nil
 }
 
+// embedVariables allows to replace run-specific values from a string with generic, normalized
+// variables, that can later be expanded by expandVariables.
+// embedVariables receives a string that may contain some run-specific data (e.g. repo-name), and
+// a mapping of variable names to values. It then replaces all the values found in the original
+// string with the corresponding variable name, in the format of {VAR_NAME}. This string can later
+// be consumed by expandVariables.
+//
+// Notes:
+// - embedVarialbes will fail if 2 different variables maps to the same value. While this is a possible
+// scenario (e.g. a file named 'master' in 'master' branch) it cannot be processed by embedVariables
+// - Values are processed from longest to shortest, and so, if certain var value contains another (e.g.
+// VAR1 -> "xy", VAR2 -> "xyz"), the longest option will be considered first. As an example, the string
+// "wxyz contains xy which is a prefix of xyz" will be embedded as
+// "w{VAR2} contains {VAR1} which is a prefix of {VAR2}")
 func embedVariables(s string, vars map[string]string) (string, error) {
 	revMap := make(map[string]string)
 	vals := make([]string, 0, len(vars)) // collecting all vals, which will be used as keys, in order to control iteration order
