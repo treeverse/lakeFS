@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Install lakeFS CLI
+title: Commit the Data
 parent: Quickstart
 nav_order: 40
 has_children: false
