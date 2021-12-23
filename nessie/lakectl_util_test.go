@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"os/exec"
 	"regexp"
 	"sort"
@@ -25,7 +24,6 @@ func lakectlLocation() string {
 }
 
 func lakectl() string {
-	os.Setenv("LAKECTL_DIR", "~/Code/lakeFS")
 	lakectlCmdline :=
 		"LAKECTL_CREDENTIALS_ACCESS_KEY_ID=" + viper.GetString("access_key_id") +
 			" LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY=" + viper.GetString("secret_access_key") +
