@@ -24,16 +24,16 @@ func TestExpandVariables(t *testing.T) {
 	expected := "This is a string with 2 elements to expand. This $part $should ${not $expand"
 	varMap := make(map[string]string)
 	expanded, err := expandVariables(s, varMap)
-	require.Error(t, err, "Expected error for empty mapping did not happen")
+	require.ErrorIs(t, err, errVariableNotFound, "Expected error for empty mapping did not happen")
 
 	varMap["vars"] = "elements"
 	expanded, err = expandVariables(s, varMap)
-	require.Error(t, err, "Expected error for empty mapping did not happen")
+	require.ErrorIs(t, err, errVariableNotFound, "Expected error for empty mapping did not happen")
 
 	// Setting wrong variable name. This should not affect the string
 	varMap["numbers"] = "2"
 	expanded, err = expandVariables(s, varMap)
-	require.Error(t, err, "Expected error for empty mapping did not happen")
+	require.ErrorIs(t, err, errVariableNotFound, "Expected error for empty mapping did not happen")
 
 	varMap["number"] = "2"
 	expanded, err = expandVariables(s, varMap)
