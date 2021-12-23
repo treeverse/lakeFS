@@ -205,18 +205,15 @@ func TestExpandVariables(t *testing.T) {
 	varMap := make(map[string]string)
 	expanded, err := expandVariables(s, varMap)
 	require.Error(t, err, "Expected error for empty mapping did not happen")
-	require.Empty(t, expanded, "Unexpected string when expecting empty string")
 
 	varMap["vars"] = "elements"
 	expanded, err = expandVariables(s, varMap)
 	require.Error(t, err, "Expected error for empty mapping did not happen")
-	require.Empty(t, expanded, "Unexpected string when expecting empty string")
 
 	// Setting wrong variable name. This should not affect the string
 	varMap["numbers"] = "2"
 	expanded, err = expandVariables(s, varMap)
 	require.Error(t, err, "Expected error for empty mapping did not happen")
-	require.Empty(t, expanded, "Unexpected string when expecting empty string")
 
 	varMap["number"] = "2"
 	expanded, err = expandVariables(s, varMap)
