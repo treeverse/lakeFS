@@ -1,5 +1,4 @@
-import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.Column
+import org.apache.spark.sql.{Column, SaveMode, SparkSession}
 import org.apache.log4j.Logger
 
 import scala.collection.mutable.ListBuffer
@@ -34,7 +33,7 @@ object Sonnets {
       // save data is selected format
       val outputPath = "%s.%s".format(output, fmt)
       logger.info(s"Write word count - format:$fmt path:$outputPath")
-      counts.write.partitionBy("partition_key").format(fmt).save(outputPath)
+      counts.write.partitionBy("partition_key").mode(SaveMode.Overwrite).format(fmt).save(outputPath)
 
       // read the data we just wrote
       logger.info(s"Read word count - format:$fmt path:$outputPath")
