@@ -94,7 +94,7 @@ in the airflow-provider-lakeFS repository.
 To perform other operations that are not yet supported by the package, you can use:
 
 - SimpleHttpOperator to send [API requests](../reference/api.md) to lakeFS. 
-- BashOperator with [lakeCTL](../quickstart/lakefs_cli.md) commands.
+- BashOperator with [lakeCTL](../quickstart/first_commit.md) commands.
 For example, deleting a branch using BashOperator:
 ```bash
 commit_extract = BashOperator(
