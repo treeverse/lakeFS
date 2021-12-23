@@ -14,9 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-//
 // lakectl tests utility functions
-//
 var update = flag.Bool("update", false, "update golden files with results")
 
 func lakectlLocation() string {
@@ -36,9 +34,8 @@ func lakectl() string {
 func runShellCommand(command string, isTerminal bool) ([]byte, error) {
 	fmt.Println("Testing '", command, "'")
 	var cmd exec.Cmd
-	//
+
 	// Assuming linux. Not sure this is correct
-	//
 	if isTerminal {
 		cmd = *exec.Command("/usr/bin/script", "--return", "--quiet", "-c", command, "/dev/null")
 	} else {
@@ -96,10 +93,8 @@ func embedVariables(s string, vars map[string]string) (string, error) {
 		vals = append(vals, v)
 	}
 
-	//
 	// Sorting the reversed keys (variable values) by descending length in order to handle longer nbames first
 	// This will diminish replacing partial names that were used to construct longer names
-	//
 	sort.Slice(vals, func(i, j int) bool {
 		return len(vals[i]) > len(vals[j])
 	})
@@ -191,9 +186,7 @@ func normalizeCommitID(output string) string {
 	return string(s)
 }
 
-//
 // Utilities tests
-//
 func TestRunShellCommand(t *testing.T) {
 	checkTerminal := "if [ -t 1 ] ; then echo -n terminal; else echo -n pipe; fi"
 
@@ -219,9 +212,7 @@ func TestExpandVariables(t *testing.T) {
 	require.Error(t, err, "Expected error for empty mapping did not happen")
 	require.Empty(t, expanded, "Unexpected string when expecting empty string")
 
-	//
 	// Setting wrong variable name. This should not affect the string
-	//
 	varMap["numbers"] = "2"
 	expanded, err = expandVariables(s, varMap)
 	require.Error(t, err, "Expected error for empty mapping did not happen")
@@ -232,9 +223,7 @@ func TestExpandVariables(t *testing.T) {
 	require.NoError(t, err, "Unexpected error during expandVariables")
 	require.Equal(t, expected, expanded, "Unexpected result from expandVariables")
 
-	//
 	// Verify that only exact var pattern is recognized as var
-	//
 	varMap["should"] = "could"
 	varMap["not"] = "definitely"
 	expanded, err = expandVariables(s, varMap)
