@@ -149,6 +149,18 @@ func (controller *PostObject) Handle(w http.ResponseWriter, req *http.Request, o
 	// POST is only supported for CreateMultipartUpload/CompleteMultipartUpload
 	// https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateMultipartUpload.html
 	// https://docs.aws.amazon.com/AmazonS3/latest/API/API_CompleteMultipartUpload.html
+	branchExists, err := o.Catalog.BranchExists(req.Context(), o.Repository.Name, o.Reference)
+	if err != nil {
+		o.Log(req).WithError(err).Error("could not check if branch exists")
+		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
+		return
+	}
+	if !branchExists {
+		o.Log(req).Debug("branch not found")
+		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrNoSuchBucket))
+		return
+	}
+
 	_, mpuCreateParamExist := req.URL.Query()[CreateMultipartUploadQueryParam]
 	if mpuCreateParamExist {
 		controller.HandleCreateMultipartUpload(w, req, o)
