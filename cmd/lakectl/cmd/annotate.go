@@ -12,6 +12,7 @@ const annotateTemplate = `{{  $val := .Commit}}
 {{ $.Object|ljust 15}} {{ $val.Committer|ljust 20 }} {{ $val.Id | printf "%.16s"|ljust 20 }} {{ $val.CreationDate|date }}  {{ $.CommitMessage |ljust 30 }}
 `
 const messageSize = 100
+const trailingThreeDots = "..."
 
 var annotateCmd = &cobra.Command{
 	Use:     "annotate <path uri>",
@@ -68,8 +69,8 @@ var annotateCmd = &cobra.Command{
 }
 
 func stringTrimLen(str string, size int) string {
-	if len(str) > size {
-		str = str[:size-3] + "..."
+	if len(str) > size && size > len(trailingThreeDots) {
+		str = str[:size-len(trailingThreeDots)] + trailingThreeDots
 	}
 	return str
 }
