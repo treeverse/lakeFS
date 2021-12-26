@@ -9,7 +9,7 @@ Currently, lakeFS supports only WebHooks. While easy to understand, they are not
 
  - They require a server to be deployed and provide an uptime SLA
  - They require setting up network communication between said server and lakeFS
- - Depending on security protocols, they often require some sort of y authentication
+ - Depending on security protocols, they often require some sort of authentication
  - They make very simple things more complex than needed (i.e. a one-liner in bash now needs to be wrapped in a web application)
  - They make it hard to experiment locally, if lakeFS is running in Docker container due to Docker networking woes (a Docker container by default cannot access network ports of the hosting machine)
 
