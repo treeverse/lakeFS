@@ -11,6 +11,11 @@ redirect_from: ../using/boto.html
 # Using lakeFS with Boto (Python)
 {: .no_toc }
 
+To use Boto with lakeFS alongside S3, check out [Boto S3 Router](https://github.com/treeverse/boto-s3-router){:target="_blank"}. It will route
+requests to either S3 or lakeFS according to the provided bucket name.
+{: .note }
+
+lakeFS exposes an S3-compatible API, so you can use Boto to interact with your objects on lakeFS.
 {% include toc.html %}
 
 ## Creating a Boto client
@@ -24,6 +29,7 @@ s3 = boto3.client('s3',
     aws_secret_access_key='wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY')
 ```
 
+The client is now configured to operate on your lakeFS installation.
 
 ## Usage Examples
 
@@ -34,6 +40,8 @@ Use a branch name and a path to put an object in lakeFS:
 with open('/local/path/to/file_0', 'rb') as f:
     s3.put_object(Body=f, Bucket='example-repo', Key='main/example-file.parquet')
 ```
+
+You can now commit this change using the lakeFS UI or CLI.
 
 ### List Objects
 
