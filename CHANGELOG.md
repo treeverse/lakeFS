@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.57.2 - 2021-12-26
+- Performance: Optimize merge by skipping ranges when source or destination are identical to base (#2822)
+
 ## v0.57.1 - 2021-12-20
 - Major performance improvment in merges (#2808)
 
