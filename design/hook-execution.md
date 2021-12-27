@@ -5,7 +5,7 @@
 
 (from https://github.com/treeverse/lakeFS/issues/2231)
 
-Currently, lakeFS supports only WebHooks. While easy to understand, they are not always easy in terms of operations:
+Currently, lakeFS supports web and airflow hooks. While they are very easy to understand, they are not always easy in terms of operations:
 
  - They require a server to be deployed and provide an uptime SLA
  - They require setting up network communication between said server and lakeFS
