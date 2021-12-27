@@ -581,7 +581,7 @@ func TestMergeSeek(t *testing.T) {
 	base := makeBaseIterator(baseKeys)
 	ctx := context.Background()
 	it := committed.NewMergeIterator(ctx, committed.NewDiffIteratorWrapper(diffIt), base)
-	// expected diffs, +k1, -k2, Chng:k3,+k7, Conf:k9,
+	// expected changes, +k1, -k2, Chng:k3,+k7, Conf:k9,
 	defer it.Close()
 	tests := []struct {
 		seekTo              string
@@ -846,7 +846,7 @@ func TestMergeSeekWithRange(t *testing.T) {
 		AddValueRecords(makeV("k8", "i8"), makeV("k9", "i9"))
 	ctx := context.Background()
 	it := committed.NewMergeIterator(ctx, diffIt, baseIt)
-	// expected diffs, +k1, -k2, Chng:k3,+k7, Conf:k9,
+	// expected changes, +k1, -k2, Chng:k3,+k7, Conf:k9,
 	defer it.Close()
 	tests := []struct {
 		seekTo             string
@@ -962,7 +962,7 @@ func TestCompareSeek(t *testing.T) {
 	base := makeBaseIterator(baseKeys)
 	ctx := context.Background()
 	it := committed.NewCompareValueIterator(ctx, committed.NewDiffIteratorWrapper(diffIt), base)
-	// expected diffs, +k1, -k2, Chng:k3,+k7, Conf:k9,
+	// expected changes, +k1, -k2, Chng:k3,+k7, Conf:k9,
 	defer it.Close()
 	tests := []struct {
 		seekTo             string
