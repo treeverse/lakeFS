@@ -20,14 +20,14 @@ var ErrInvalidState = errors.New("invalid apply state")
 // ReferenceType represents the type of the reference
 
 type applier struct {
-	ctx                     context.Context
-	logger                  logging.Logger
-	writer                  MetaRangeWriter
-	base                    Iterator
-	changes                 Iterator
-	opts                    *ApplyOptions
-	summary                 graveler.DiffSummary
-	haveChanges, haveSource bool
+	ctx                   context.Context
+	logger                logging.Logger
+	writer                MetaRangeWriter
+	base                  Iterator
+	changes               Iterator
+	opts                  *ApplyOptions
+	summary               graveler.DiffSummary
+	haveChanges, haveBase bool
 }
 
 // applyAll applies all changes from Iterator to writer and returns the number of writes
@@ -118,8 +118,8 @@ func (a *applier) incrementDiffSummary(typ graveler.DiffType) {
 }
 
 func (a *applier) apply() error {
-	a.haveSource, a.haveChanges = a.base.Next(), a.changes.Next()
-	for a.haveSource && a.haveChanges {
+	a.haveBase, a.haveChanges = a.base.Next(), a.changes.Next()
+	for a.haveBase && a.haveChanges {
 		select {
 		case <-a.ctx.Done():
 			return a.ctx.Err()
@@ -132,9 +132,9 @@ func (a *applier) apply() error {
 		case changeValue == nil && baseValue == nil:
 			err = a.applyBothRanges(changeRange, baseRange)
 		case changeValue == nil && baseValue != nil:
-			err = a.applyChangeRangeSourceKey(changeRange, baseValue)
+			err = a.applyChangeRangeBaseKey(changeRange, baseValue)
 		case baseValue == nil && changeValue != nil:
-			err = a.applySourceRangeChangeKey(baseRange, changeValue)
+			err = a.applyBaseRangeChangeKey(baseRange, changeValue)
 		default:
 			err = a.applyBothKeys(baseValue, changeValue)
 		}
@@ -151,7 +151,7 @@ func (a *applier) apply() error {
 		}
 		return err
 	}
-	if a.haveSource {
+	if a.haveBase {
 		if _, err := a.applyAll(a.base); err != nil {
 			return err
 		}
@@ -220,14 +220,14 @@ func (a *applier) applyBothKeys(baseValue *graveler.ValueRecord, changeValue *gr
 	}
 	if c <= 0 {
 		// used up this record from base
-		a.haveSource = a.base.Next()
+		a.haveBase = a.base.Next()
 	}
 	return nil
 }
 
-func (a *applier) applySourceRangeChangeKey(baseRange *Range, changeValue *graveler.ValueRecord) error {
+func (a *applier) applyBaseRangeChangeKey(baseRange *Range, changeValue *graveler.ValueRecord) error {
 	if bytes.Compare(baseRange.MaxKey, changeValue.Key) < 0 {
-		// Source at start of range which we do not need to scan --
+		// Base at start of range which we do not need to scan --
 		// write and skip that entire range.
 		if a.logger.IsTracing() {
 			a.logger.WithFields(logging.Fields{
@@ -240,21 +240,21 @@ func (a *applier) applySourceRangeChangeKey(baseRange *Range, changeValue *grave
 		if err := a.writer.WriteRange(*baseRange); err != nil {
 			return fmt.Errorf("copy base range %s: %w", baseRange.ID, err)
 		}
-		a.haveSource = a.base.NextRange()
+		a.haveBase = a.base.NextRange()
 	} else {
-		// Source is at start of range which we need to scan, enter it.
-		a.haveSource = a.base.Next()
+		// Base is at start of range which we need to scan, enter it.
+		a.haveBase = a.base.Next()
 	}
 	return nil
 }
 
-func (a *applier) applyChangeRangeSourceKey(changeRange *Range, baseValue *graveler.ValueRecord) error {
+func (a *applier) applyChangeRangeBaseKey(changeRange *Range, baseValue *graveler.ValueRecord) error {
 	if bytes.Compare(changeRange.MinKey, baseValue.Key) > 0 {
 		// base is before change range
 		if err := a.writer.WriteRecord(*baseValue); err != nil {
 			return fmt.Errorf("write base record: %w", err)
 		}
-		a.haveSource = a.base.Next()
+		a.haveBase = a.base.Next()
 		return nil
 	}
 	if bytes.Compare(changeRange.MaxKey, baseValue.Key) >= 0 {
@@ -316,7 +316,7 @@ func (a *applier) applyBothRanges(changeRange *Range, baseRange *Range) error {
 			return fmt.Errorf("%w - range already exists in apply base", ErrInvalidState)
 		}
 		a.addIntoDiffSummary(graveler.DiffTypeRemoved, int(changeRange.Count))
-		a.haveSource = a.base.NextRange()
+		a.haveBase = a.base.NextRange()
 		a.haveChanges = a.changes.NextRange()
 
 	case RangeCompareSameBounds:
@@ -327,7 +327,7 @@ func (a *applier) applyBothRanges(changeRange *Range, baseRange *Range) error {
 		// When this optimization (inserting the whole range in case base and base are identical) is used. we can't be sure of the diff summary. e.g 4 files added 2 removed or 3 files changed.
 		a.setMissingInfo()
 		a.haveChanges = a.changes.NextRange()
-		a.haveSource = a.base.NextRange()
+		a.haveBase = a.base.NextRange()
 
 	case RangeCompareAfter:
 		if changeRange.Tombstone {
@@ -351,9 +351,9 @@ func (a *applier) applyBothRanges(changeRange *Range, baseRange *Range) error {
 		if err := a.writer.WriteRange(*baseRange); err != nil {
 			return fmt.Errorf("copy base range %s: %w", baseRange.ID, err)
 		}
-		a.haveSource = a.base.NextRange()
+		a.haveBase = a.base.NextRange()
 	case RangeCompareOverlapping:
-		a.haveSource = a.base.Next()
+		a.haveBase = a.base.Next()
 		a.haveChanges = a.changes.Next()
 		// enter both
 	}

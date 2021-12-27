@@ -52,7 +52,7 @@ func TestApplyAdd(t *testing.T) {
 	}, summary)
 }
 
-func TestChangeRangesWithinSourceRange(t *testing.T) {
+func TestChangeRangesWithinBaseRange(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -84,7 +84,7 @@ func TestChangeRangesWithinSourceRange(t *testing.T) {
 	}, summary)
 }
 
-func TestSourceRangesWithinChangeRange(t *testing.T) {
+func TestBaseRangesWithinChangeRange(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -231,7 +231,7 @@ func TestApplyTombstoneNoBase(t *testing.T) {
 		Count: map[graveler.DiffType]int{},
 	}, summary)
 }
-func TestApplyCopiesLeftoverSources(t *testing.T) {
+func TestApplyCopiesLeftoverBase(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
