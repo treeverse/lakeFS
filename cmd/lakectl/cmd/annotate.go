@@ -29,7 +29,6 @@ var annotateCmd = &cobra.Command{
 		DieOnResponseError(res, err)
 		var from string
 		for {
-			pfx := api.PaginationPrefix(*pathURI.Path)
 			params := &api.ListObjectsParams{
 				Prefix: &pfx,
 				After:  api.PaginationAfterPtr(from),
