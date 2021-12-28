@@ -55,7 +55,7 @@ var annotateCmd = &cobra.Command{
 					}
 					Write(annotateTemplate, data)
 				} else {
-					fmt.Println("Error, No commit info has been retrieved from the api call")
+					fmt.Println("Error")
 				}
 			}
 			pagination := resp.JSON200.Pagination
