@@ -405,6 +405,9 @@ jobs:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
     steps:
+      - name: Check-out code
+        uses: actions/checkout@v2
+
       - name: Setup Go
         uses: actions/setup-go@v1
         with:
@@ -571,6 +574,8 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
+      - name: Check-out code
+        uses: actions/checkout@v2
       - name: Start lakeFS with GS tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
@@ -597,6 +602,8 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
+      - name: Check-out code
+        uses: actions/checkout@v2
       - name: Start lakeFS with GS tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
