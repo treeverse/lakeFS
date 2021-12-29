@@ -33,11 +33,23 @@ object Sonnets {
         // save data is selected format
         val outputPath = s"${output}.${fmt}"
         logger.info(s"Write word count - format:$fmt path:$outputPath")
-        counts.write.partitionBy("partition_key").mode(SaveMode.Overwrite).format(fmt).save(outputPath)
+        val targetBase = counts.write.partitionBy("partition_key").mode(SaveMode.Overwrite).format(fmt)
+        val target = (
+          if (fmt == "csv")
+            targetBase.option("inferSchema", "true").option("header", "true")
+          else targetBase
+        )
+        target.save(outputPath)
 
         // read the data we just wrote
         logger.info(s"Read word count - format:$fmt path:$outputPath")
-        val data = spark.read.format(fmt).load(outputPath)
+        val sourceBase = spark.read.format(fmt)
+        val source = (
+          if (fmt == "csv")
+            sourceBase.option("inferSchema", "true").option("header", "true")
+          else sourceBase
+        )
+        val data = source.load(outputPath)
 
         // filter word count for specific 'times' and match result
         val expected = "can,or"
