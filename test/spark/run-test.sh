@@ -37,7 +37,7 @@ if [ -v USE_DIRECT_ACCESS ]; then # Direct access using thick Spark client.
     echo $SUBMIT_CMD
     docker-compose run -v $PWD/../../clients/hadoopfs/target/:/target/ \
       -T --no-deps --rm spark-submit
-      sh -c ''
+      sh -c "${SUBMIT_CMD}"
 else				# Access via S3 gateway using regular Spark client.
     SUBMIT_CMD="spark-submit --master spark://spark:7077\
     -c spark.hadoop.fs.s3a.access.key=${TESTER_ACCESS_KEY_ID}\
