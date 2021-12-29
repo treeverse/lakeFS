@@ -449,7 +449,20 @@ jobs:
       - name: Setup lakeFS for tests
         working-directory: test/spark
         run: ./setup-test.sh
+      - name: Test lakeFS S3 with Spark 3.x
+        env:
+          STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-spark
+          REPOSITORY: gateway-test
+          SONNET_JAR: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
+          TESTER_LAKEFS_URL: ${{ steps.ngrok-url.outputs.url }}
+        working-directory: test/spark
+        run: ./run-test.sh
 
+      - name: lakeFS Logs on Spark with gateway failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        working-directory: test/spark
+        run: docker-compose logs --tail=1000 lakefs
       - name: Build Spark direct-access client
         working-directory: clients/hadoopfs
         run: mvn -Passembly -Djar.finalName=client --batch-mode --update-snapshots package
