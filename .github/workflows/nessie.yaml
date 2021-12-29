@@ -445,7 +445,7 @@ jobs:
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
-          TESTER_LAKEFS_URL: ${{ steps.ngrok-url.outputs.url }}
+          LAKEFS_URL: ${{ steps.ngrok-url.outputs.url }}
       - name: Setup lakeFS for tests
         working-directory: test/spark
         run: ./setup-test.sh
@@ -454,7 +454,7 @@ jobs:
           STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-spark
           REPOSITORY: gateway-test
           SONNET_JAR: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
-          TESTER_LAKEFS_URL: ${{ steps.ngrok-url.outputs.url }}
+          LAKEFS_URL: ${{ steps.ngrok-url.outputs.url }}
         working-directory: test/spark
         run: ./run-test.sh
 
@@ -477,7 +477,7 @@ jobs:
           USE_DIRECT_ACCESS: "true"
           REPOSITORY: thick-client-test
           SONNET_JAR: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
-          TESTER_LAKEFS_URL: ${{ steps.ngrok-url.outputs.url }}
+          LAKEFS_URL: ${{ steps.ngrok-url.outputs.url }}
         working-directory: test/spark
         run: ./run-test.sh
 
