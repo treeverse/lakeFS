@@ -11,6 +11,7 @@ inputs:
   compose-directory:
     description: working directory for the docker-compose step
     required: false
+    default: "."
 runs:
   using: "composite"
   steps:
@@ -46,3 +47,4 @@ runs:
         [[ -z "${{ inputs.compose-file }}" ]] && flags="" || flags="-f ${{ inputs.compose-file }}"
         docker-compose ${flags} up ${{ inputs.compose-flags }}
       shell: bash
+      working-directory: ${{ inputs.compose-directory }}
