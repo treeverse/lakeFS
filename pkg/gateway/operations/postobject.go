@@ -39,6 +39,17 @@ func (controller *PostObject) RequiredPermissions(_ *http.Request, repoID, _, pa
 
 func (controller *PostObject) HandleCreateMultipartUpload(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	o.Incr("create_mpu")
+	branchExists, err := o.Catalog.BranchExists(req.Context(), o.Repository.Name, o.Reference)
+	if err != nil {
+		o.Log(req).WithError(err).Error("could not check if branch exists")
+		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
+		return
+	}
+	if !branchExists {
+		o.Log(req).Debug("branch not found")
+		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrNoSuchBucket))
+		return
+	}
 	uuidBytes := [16]byte(uuid.New())
 	objName := hex.EncodeToString(uuidBytes[:])
 	storageClass := StorageClassFromHeader(req.Header)
