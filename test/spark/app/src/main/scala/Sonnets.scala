@@ -1,4 +1,4 @@
-import org.apache.spark.sql.{Column, SaveMode, SparkSession}
+import org.apache.spark.sql.{SaveMode, SparkSession}
 import org.apache.log4j.Logger
 
 import scala.collection.mutable.ListBuffer
@@ -30,22 +30,20 @@ object Sonnets {
 
     for (fmt <- Seq("csv", "parquet", "json", "orc")) {
       // save data is selected format
-      val outputPath = "%s.%s".format(output, fmt)
+      val outputPath = s"${output}.${fmt}"
       logger.info(s"Write word count - format:$fmt path:$outputPath")
       counts.write.partitionBy("partition_key").mode(SaveMode.Overwrite).format(fmt).save(outputPath)
 
       // read the data we just wrote
       logger.info(s"Read word count - format:$fmt path:$outputPath")
-      val wc = spark.read.format(fmt).load(outputPath)
+      val data = spark.read.format(fmt).load(outputPath)
 
       // filter word count for specific 'times' and match result
       val expected = "can,or"
       val times = "42"
-      val debug = wc.top(50).collect.sorted.mkstring("\n")
-      logger.info(s"[DEBUG] ${debug}")
-      val life = wc
-        .filter(x => x(1).toString == times) // different formats use different types - compare as string
-        .map(x => x(0).toString)
+      val life = data
+        .filter($"count".cast("string") === times) // different formats use different types - compare as string
+        .map(_.getAs[String]("word"))
         .collect
         .sorted
         .mkString(",")
