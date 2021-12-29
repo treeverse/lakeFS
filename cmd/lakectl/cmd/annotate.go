@@ -11,18 +11,17 @@ import (
 const annotateTemplate = `{{  $val := .Commit}}
 {{ $.Object|ljust 15}} {{ $val.Committer|ljust 20 }} {{ $val.Id | printf "%.16s"|ljust 20 }} {{ $val.CreationDate|date }}  {{ $.CommitMessage |ljust 30 }}
 `
-const messageSize = 100
-const trailingThreeDots = "..."
+const messageSize = 200
+const ellipsis = "..."
 
 var annotateCmd = &cobra.Command{
 	Use:     "annotate <path uri>",
-	Short:   "List entries under a given path, annotating each with the latest modifying commit ",
+	Short:   "List entries under a given path, annotating each with the latest modifying commit",
 	Aliases: []string{"blame"},
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := MustParsePathURI("path", args[0])
 		client := getClient()
-		amount := 1
 		pfx := api.PaginationPrefix(*pathURI.Path)
 		context := cmd.Context()
 		res, err := client.ListObjectsWithResponse(context, pathURI.Repository, pathURI.Ref, &api.ListObjectsParams{Prefix: &pfx})
@@ -36,10 +35,9 @@ var annotateCmd = &cobra.Command{
 			resp, err := client.ListObjectsWithResponse(context, pathURI.Repository, pathURI.Ref, params)
 			DieOnResponseError(resp, err)
 			for _, obj := range resp.JSON200.Results {
-				path := []string{obj.Path}
 				logCommitsParams := &api.LogCommitsParams{
-					Amount:  api.PaginationAmountPtr(amount),
-					Objects: &path,
+					Amount:  api.PaginationAmountPtr(1),
+					Objects: &[]string{obj.Path},
 				}
 				res, err := client.LogCommitsWithResponse(context, pathURI.Repository, pathURI.Ref, logCommitsParams)
 				DieOnResponseError(res, err)
@@ -68,8 +66,8 @@ var annotateCmd = &cobra.Command{
 }
 
 func stringTrimLen(str string, size int) string {
-	if len(str) > size && size > len(trailingThreeDots) {
-		str = str[:size-len(trailingThreeDots)] + trailingThreeDots
+	if len(str) > size && size > len(ellipsis) {
+		str = str[:size-len(ellipsis)] + ellipsis
 	}
 	return str
 }
