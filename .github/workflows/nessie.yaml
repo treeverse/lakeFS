@@ -426,7 +426,6 @@ jobs:
         id: ngrok-url
         working-directory: test/spark
       - run: echo ${{ steps.ngrok-url.url }}
-        id: ngrok-url
         working-directory: test/spark
 
       - name: Setup Scala
