@@ -29,28 +29,34 @@ object Sonnets {
     var failed = new ListBuffer[String]
 
     for (fmt <- Seq("csv", "parquet", "json", "orc")) {
-      // save data is selected format
-      val outputPath = s"${output}.${fmt}"
-      logger.info(s"Write word count - format:$fmt path:$outputPath")
-      counts.write.partitionBy("partition_key").mode(SaveMode.Overwrite).format(fmt).save(outputPath)
+      try {
+        // save data is selected format
+        val outputPath = s"${output}.${fmt}"
+        logger.info(s"Write word count - format:$fmt path:$outputPath")
+        counts.write.partitionBy("partition_key").mode(SaveMode.Overwrite).format(fmt).save(outputPath)
 
-      // read the data we just wrote
-      logger.info(s"Read word count - format:$fmt path:$outputPath")
-      val data = spark.read.format(fmt).load(outputPath)
+        // read the data we just wrote
+        logger.info(s"Read word count - format:$fmt path:$outputPath")
+        val data = spark.read.format(fmt).load(outputPath)
 
-      // filter word count for specific 'times' and match result
-      val expected = "can,or"
-      val times = "42"
-      val life = data
-        .filter($"count".cast("string") === times) // different formats use different types - compare as string
-        .map(_.getAs[String]("word"))
-        .collect
-        .sorted
-        .mkString(",")
-      if (life != expected) {
-        logger.error(s"Word count - format:$fmt times:$times matched:'$life' expected:'$expected'")
-        println(s"Words found $times times, '$life',  doesn't match '$expected' (format:$fmt)")
-        failed = failed :+ fmt
+        // filter word count for specific 'times' and match result
+        val expected = "can,or"
+        val times = "42"
+        val life = data
+          .filter($"count".cast("string") === times) // different formats use different types - compare as string
+          .map(_.getAs[String]("word"))
+          .collect
+          .sorted
+          .mkString(",")
+        if (life != expected) {
+          logger.error(s"Word count - format:$fmt times:$times matched:'$life' expected:'$expected'")
+          println(s"Words found $times times, '$life',  doesn't match '$expected' (format:$fmt)")
+          failed = failed :+ fmt
+        }
+      } catch {
+        case e: (Exception) =>
+          logger.error(s"Format $fmt unexpected exception: ${e}")
+          failed = failed :+ fmt
       }
     }
 
