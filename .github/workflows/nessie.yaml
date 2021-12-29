@@ -395,7 +395,81 @@ jobs:
         continue-on-error: true
         working-directory: test/spark
         run: docker-compose logs --tail=1000 lakefs
+  spark3-dbr:
+    name: Test lakeFS with Spark 3.x
+    needs: deploy-image
+    runs-on: ubuntu-20.04
+    env:
+      TAG: ${{ needs.deploy-image.outputs.tag }}
+      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      SPARK_TAG: 3
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+      - run: pip install pyngrok
+        shell: bash
+      - run: python create-ngrok-tunnel.py &
+        id: start-ngrok
+        shell: bash
+        working-directory: test/spark
+      - run: |
+          until [ -f .ngrok_url ]
+          do
+               sleep 5
+          done
+          echo "::set-output name=url::$(cat .ngrok_url)"
+          exit
+        id: ngrok-url
+        working-directory: test/spark
 
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+
+      - name: Package Spark App
+        working-directory: test/spark/app
+        run: sbt sonnets-311/package
+
+      - name: Start lakeFS for Spark tests
+        uses: ./.github/actions/bootstrap-test-lakefs
+        with:
+          compose-directory: test/spark
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_BLOCKSTORE_TYPE: s3
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
+          TESTER_LAKEFS_URL: ${{ steps.ngrok-url.url }}
+      - name: Setup lakeFS for tests
+        working-directory: test/spark
+        run: ./setup-test.sh
+
+      - name: Build Spark direct-access client
+        working-directory: clients/hadoopfs
+        run: mvn -Passembly -Djar.finalName=client --batch-mode --update-snapshots package
+
+      - name: Test lakeFS S3 with Spark 3.x thick client
+        timeout-minutes: 8
+        env:
+          JARS: clients/hadoopfs/
+          STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-spark3-client
+          AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
+          USE_DIRECT_ACCESS: "true"
+          REPOSITORY: thick-client-test
+          SONNET_JAR: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
+          TESTER_LAKEFS_URL: ${{ steps.ngrok-url.url }}
+        working-directory: test/spark
+        run: ./run-test.sh
+
+      - name: lakeFS Logs on Spark with client failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        working-directory: test/spark
+        run: docker-compose logs --tail=1000 lakefs
 
   metastore-client-with-trino:
     name: Test metastore client commands using trino and dbt
