@@ -40,6 +40,7 @@ if [ -v USE_DIRECT_ACCESS ]; then # Direct access using thick Spark client.
       sh -c "${SUBMIT_CMD}"
 else				# Access via S3 gateway using regular Spark client.
     SUBMIT_CMD='spark-submit --master spark://spark:7077\
+    -c spark.haddop.fs.s3a.path.style.access=true\
     -c spark.hadoop.fs.s3a.access.key=${TESTER_ACCESS_KEY_ID}\
     -c spark.hadoop.fs.s3a.secret.key=${TESTER_SECRET_ACCESS_KEY}\
     -c spark.hadoop.fs.s3a.endpoint='${LAKEFS_URL:-http://localhost:8000}'\
