@@ -12,6 +12,12 @@ inputs:
     description: working directory for the docker-compose step
     required: false
     default: "."
+  compose-aws-access-key:
+    description: AWS access key to pass to compose, if not specified will take environment variable
+    required: false
+  compose-aws-secret-key:
+    description: AWS secret key to pass to compose, if not specified will take environment variable
+    required: false
 runs:
   using: "composite"
   steps:
@@ -36,6 +42,8 @@ runs:
       env:
         LAKEFS_STATS_ENABLED: "false"
         LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.docker.lakefs.io:8000
+        AWS_ACCCESS_KEY_ID: ${{ inputs.compose-aws-access-key || env.AWS_ACCESS_KEY_ID}}
+        AWS_SECRET_ACCESS_KEY: ${{ inputs.compose-aws-secret-key || env.AWS_SECRET_ACCESS_KEY}}
       run: |
         [[ -z "${{ inputs.compose-file }}" ]] && flags="" || flags="-f ${{ inputs.compose-file }}"
         docker-compose ${flags} up ${{ inputs.compose-flags }}
