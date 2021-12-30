@@ -31,7 +31,7 @@ For this to work, we'd need to ensure 3 things first:
 
 1. The user calling `lakectl ingest` must have permissions to list the object at the source object store
 2. The lakeFS installation must have read permissions to the objects being ingested
-3. The source path must **not** be in a storage namespace used by lakeFS. e.g. if `lakefs://my-repo` created with storage namespace `s3://my-bucket`, then `s3://my-bucket*` cannot be an ingestion source.   
+3. The source path must **not** be in a storage namespace used by lakeFS. e.g. if `lakefs://my-repo` created with storage namespace `s3://my-bucket`, then `s3://my-bucket/*` cannot be an ingestion source.   
 
 ### Ingesting from S3
 
