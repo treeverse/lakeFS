@@ -74,8 +74,6 @@ The copy command can be used to copy files from lakeFS to a designated object st
 The sync command can be used to export only the diff between a specific branch and a commit reference, since sync makes the source and the dest identical (modifying destination only).
 The check command can be used as a success/failure indication on the exported objects, since it checks if the files in the source and destination match, and logs a report of files which don't match.
 
-In order to use Rclone, users will need to download it if necessary, learn it, and have it in their toolset.
-
 Usage example:
 
 ```shell
@@ -87,7 +85,7 @@ rclone check source:lakefs:example-repo/main/ dest:s3://example-bucket/prefix
 ```
 
 Pros:
-- Rclone gives the functionality of exporting data from lakeFS to a designated object store location. Require only few additional work of documentation for the usage of Rclone as an export functionality.
+- Rclone gives the functionality of exporting data from lakeFS to a designated object store location. 
 - Simple to use. 
 - Doesn't require maintaining a new feature.
 
@@ -97,18 +95,19 @@ Cons:
 
 ## Chosen solution
 
-Wrap Rclone with a bash script to match the behavior of the new export functionality to the one of the Spark client.
+Wrap Rclone with a python script to match the behavior of the new export functionality to the one of the Spark client.
+The script will run over a Docker container, which will have all the necessary dependencies.
+The relevant Docker image will be published to Docker Hub. 
 This solution utilizes Rclone and its features, it is easy to implement and achives the required behavior.
 
 For example:
-
 ```shell
-$ bash lakefs_export.sh source=lakefs:example-repo/main/ dest=s3://example-bucket/prefix export_diff=true
+docker run -e LAKEFS_ACCESS_KEY=XXX -e LAKEFS_SECRET_KEY=YYY -e LAKEFS_ENDPOINT=https://<LAKEFS_ENDPOINT>/ -e S3_ACCESS_KEY=XXX -e S3_SECRET_KEY=YYY -it lakefs-export repo-name s3://some-bucket/some_path/ --branch="branch-name"
 ```
 
-This command will call:
+The script will call:
 ```shell
 rclone sync source:lakefs:example-repo/main/ dest:s3://example-bucket/prefix
 rclone check source:lakefs:example-repo/main/ dest:s3://example-bucket/prefix
 ```
-And then add a success/failure file according to the check command result.
+And then will add a success/failure file according to the check command result.
