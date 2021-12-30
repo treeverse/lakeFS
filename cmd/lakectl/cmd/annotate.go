@@ -53,7 +53,7 @@ var annotateCmd = &cobra.Command{
 					}
 					Write(annotateTemplate, data)
 				} else {
-					fmt.Println(obj.Path, "Could not retrive commit info about this object")
+					fmt.Println(obj.Path, "Could not retrieve commit info about this object")
 				}
 			}
 			pagination := resp.JSON200.Pagination
