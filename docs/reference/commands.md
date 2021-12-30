@@ -19,7 +19,7 @@ has_children: false
 [Download lakectl](../index.md#downloads){: .btn .btn-green target="_blank"}
 
 
-## Configuring credentials and API endpoint
+### Configuring credentials and API endpoint
 
 Once you've installed the lakectl command, run:
 
@@ -39,8 +39,7 @@ will provide a link to download a preconfigured configuration file for you.
 `lakectl` configuration items can each be controlled by an environment variable. The variable name will have a prefix of
 *LAKECTL_*, followed by the name of the configuration, replacing every '.' with a '_'. Example: `LAKECTL_SERVER_ENDPOINT_URL` 
 controls `server.endpoint_url`.
-
-## lakectl
+### lakectl
 
 A cli tool to explore manage and work with lakeFS
 
