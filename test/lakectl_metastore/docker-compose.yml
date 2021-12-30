@@ -56,8 +56,8 @@ services:
     container_name: trino
     environment:
       - AWS_ACCOUNT_ID
-      - NESSIE_AWS_ACCESS_KEY_ID
-      - NESSIE_AWS_SECRET_ACCESS_KEY
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
     volumes:
       - ./etc/s3.properties:/etc/trino/catalog/s3.properties
       - ./etc/lakefs.properties:/etc/trino/catalog/lakefs.properties
@@ -82,11 +82,11 @@ services:
     profiles: ["client"]
     environment:
       - AWS_ACCOUNT_ID
-      - NESSIE_AWS_ACCESS_KEY_ID
-      - NESSIE_AWS_SECRET_ACCESS_KEY
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
       - LAKECTL_METASTORE_GLUE_CATALOG_ID=${AWS_ACCOUNT_ID}
-      - LAKECTL_METASTORE_GLUE_CREDENTIALS_ACCESS_KEY_ID=${NESSIE_AWS_ACCESS_KEY_ID}
-      - LAKECTL_METASTORE_GLUE_CREDENTIALS_ACCESS_SECRET_KEY=${NESSIE_AWS_SECRET_ACCESS_KEY}
+      - LAKECTL_METASTORE_GLUE_CREDENTIALS_ACCESS_KEY_ID
+      - LAKECTL_METASTORE_GLUE_CREDENTIALS_ACCESS_SECRET_KEY
       - LAKECTL_METASTORE_GLUE_REGION=us-east-1
       - LAKECTL_METASTORE_HIVE_URI=hive:9083
       - LAKECTL_METASTORE_TYPE=hive
