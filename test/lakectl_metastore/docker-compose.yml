@@ -77,14 +77,12 @@ services:
     entrypoint: ["trino", "--server", "trino:8080", "--catalog", "lakefs", "--execute", "drop schema if exists dbt_main; create schema dbt_main with (location = 's3://example/main/dbt' )"]
 
   dbt:
-    build: dbt
+    image: 2baecf600787
     depends_on:
       - trino
     profiles: ["client"]
     environment:
       - AWS_ACCOUNT_ID
-      - AWS_ACCESS_KEY_ID
-      - AWS_SECRET_ACCESS_KEY
       - LAKECTL_METASTORE_GLUE_CATALOG_ID=${AWS_ACCOUNT_ID}
       - LAKECTL_METASTORE_GLUE_CREDENTIALS_ACCESS_KEY_ID
       - LAKECTL_METASTORE_GLUE_CREDENTIALS_ACCESS_SECRET_KEY
