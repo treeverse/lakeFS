@@ -419,9 +419,10 @@ jobs:
       - run: |
           until [ -f .ngrok_url ]
           do
-               sleep 5
+               sleep .5
           done
           echo "::set-output name=url::$(cat .ngrok_url)"
+          echo "::set-output name=domain::$(cat .ngrok_url)"
           exit
         id: ngrok-url
         working-directory: test/spark
@@ -445,7 +446,7 @@ jobs:
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
-          LAKEFS_URL: ${{ steps.ngrok-url.outputs.url }}
+          LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.${{ steps.ngrok-url.outputs.domain }}
       - name: Setup lakeFS for tests
         working-directory: test/spark
         run: ./setup-test.sh
@@ -454,7 +455,7 @@ jobs:
           STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-spark
           REPOSITORY: gateway-test
           SONNET_JAR: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
-          LAKEFS_URL: ${{ steps.ngrok-url.outputs.url }}
+          LAKEFS_S3_ENDPOINT_URL: https://s3.${{ steps.ngrok-url.outputs.domain }}
         working-directory: test/spark
         run: ./run-test.sh
 
