@@ -2002,7 +2002,7 @@ lakectl ingest --from <object store URI> --to <lakeFS path URI> [--dry-run] [fla
 ```
   -C, --concurrency int   max concurrent API calls to make to the lakeFS server (default 64)
       --dry-run           only print the paths to be ingested
-      --from string       prefix to read from (e.g. "s3://bucket/sub/path/")
+      --from string       prefix to read from (e.g. "s3://bucket/sub/path/"). must not be in a storage namespace
   -h, --help              help for ingest
       --to string         lakeFS path to load objects into (e.g. "lakefs://repo/branch/sub/path/")
   -v, --verbose           print stats for each individual object staged
