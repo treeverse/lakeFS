@@ -65,9 +65,7 @@ jobs:
 
       - name: Generate code
         run: |
-          make gen-ddl
-          make gen-api
-          make gen-ui
+          make -j3 gen-ddl gen-api gen-ui
           tar -cf /tmp/generated.tar.gz .
       - name: Store generated code
         uses: actions/upload-artifact@v2
