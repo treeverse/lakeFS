@@ -1087,6 +1087,18 @@ func TestController_DeleteBranchHandler(t *testing.T) {
 		}
 	})
 
+	t.Run("delete default branch", func(t *testing.T) {
+		_, err := deps.catalog.CreateRepository(ctx, "my-new-repo2", onBlock(deps, "foo2"), "main")
+		testutil.Must(t, err)
+		resp, err := clt.DeleteBranchWithResponse(ctx, "my-new-repo2", "main")
+		if err != nil {
+			t.Fatal("DeleteBranch error:", err)
+		}
+		if resp.JSONDefault == nil {
+			t.Fatal("DeleteBranch expected error while trying to delete default branch")
+		}
+	})
+
 	t.Run("delete branch doesnt exist", func(t *testing.T) {
 		resp, err := clt.DeleteBranchWithResponse(ctx, "my-new-repo", "main5")
 		if err != nil {
