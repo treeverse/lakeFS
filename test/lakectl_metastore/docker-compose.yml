@@ -1,6 +1,5 @@
 version: "3"
 services:
-
   lakefs:
     image: "${REPO:-treeverse}/lakefs:${TAG:-latest}"
     container_name: lakefs
@@ -12,8 +11,8 @@ services:
       - STORAGE_NAMESPACE
       - LAKEFS_BLOCKSTORE_TYPE=s3
       - LAKEFS_BLOCKSTORE_S3_FORCE_PATH_STYLE=true
-      - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID
+      - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY
       - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=some random secret string
       - LAKEFS_DATABASE_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
       - LAKEFS_STATS_ENABLED=false
@@ -56,8 +55,10 @@ services:
     container_name: trino
     environment:
       - AWS_ACCOUNT_ID
-      - AWS_ACCESS_KEY_ID
-      - AWS_SECRET_ACCESS_KEY
+      - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID
+      - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY
+      - LAKECTL_METASTORE_GLUE_CREDENTIALS_ACCESS_KEY_ID
+      - LAKECTL_METASTORE_GLUE_CREDENTIALS_ACCESS_SECRET_KEY
     volumes:
       - ./etc/s3.properties:/etc/trino/catalog/s3.properties
       - ./etc/lakefs.properties:/etc/trino/catalog/lakefs.properties
@@ -82,11 +83,9 @@ services:
     profiles: ["client"]
     environment:
       - AWS_ACCOUNT_ID
-      - AWS_ACCESS_KEY_ID
-      - AWS_SECRET_ACCESS_KEY
       - LAKECTL_METASTORE_GLUE_CATALOG_ID=${AWS_ACCOUNT_ID}
-      - LAKECTL_METASTORE_GLUE_CREDENTIALS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - LAKECTL_METASTORE_GLUE_CREDENTIALS_ACCESS_SECRET_KEY=${AWS_SECRET_ACCESS_KEY}
+      - LAKECTL_METASTORE_GLUE_CREDENTIALS_ACCESS_KEY_ID
+      - LAKECTL_METASTORE_GLUE_CREDENTIALS_ACCESS_SECRET_KEY
       - LAKECTL_METASTORE_GLUE_REGION=us-east-1
       - LAKECTL_METASTORE_HIVE_URI=hive:9083
       - LAKECTL_METASTORE_TYPE=hive

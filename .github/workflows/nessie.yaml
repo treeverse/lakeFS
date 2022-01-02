@@ -65,9 +65,8 @@ jobs:
 
       - name: Generate code
         run: |
-          make gen
+          make -j3 gen-ddl gen-api gen-ui
           tar -cf /tmp/generated.tar.gz .
-
       - name: Store generated code
         uses: actions/upload-artifact@v2
         with:
@@ -179,26 +178,18 @@ jobs:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
     steps:
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
       - name: Check-out code
         uses: actions/checkout@v2
-      - name: Start lakeFS
+      - name: Start lakeFS for contract tests
+        uses: ./.github/actions/bootstrap-test-lakefs
+        with:
+          compose-directory: test/lakefsfs_contract
         env:
-          LAKEFS_STATS_ENABLED: "false"
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: minio
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: minio123
-          LAKEFS_BLOCKSTORE_S3_ENDPOINT: "http://s3.local.lakefs.io:9000"
-        working-directory: test/lakefsfs_contract
-        run: docker-compose up -d
       - name: Setup contract tests
         working-directory: test/lakefsfs_contract
         run: ./setup-test.sh
@@ -226,27 +217,16 @@ jobs:
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
+      - name: Start lakeFS for Spark tests
+        uses: ./.github/actions/bootstrap-test-lakefs
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-
-      - name: Start lakeFS S3
+          compose-directory: test/spark
         env:
-          LAKEFS_STATS_ENABLED: "false"
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           LAKEFS_BLOCKSTORE_TYPE: s3
-          LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.docker.lakefs.io:8000
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
-        working-directory: test/spark
-        run: docker-compose up -d postgres lakefs
-
       - name: Setup lakeFS for tests
         working-directory: test/spark
         run: ./setup-test.sh
@@ -293,27 +273,16 @@ jobs:
         working-directory: test/spark/app
         run: sbt sonnets-246/package
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
+      - name: Start lakeFS for Spark tests
+        uses: ./.github/actions/bootstrap-test-lakefs
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-
-      - name: Start lakeFS S3 and Spark 2.x
+          compose-directory: test/spark
         env:
-          LAKEFS_STATS_ENABLED: "false"
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           LAKEFS_BLOCKSTORE_TYPE: s3
-          LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.docker.lakefs.io:8000
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
-        working-directory: test/spark
-        run: docker-compose up -d
-
       - name: Setup lakeFS for tests
         working-directory: test/spark
         run: ./setup-test.sh
@@ -374,27 +343,16 @@ jobs:
         working-directory: test/spark/app
         run: sbt sonnets-311/package
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
+      - name: Start lakeFS for Spark tests
+        uses: ./.github/actions/bootstrap-test-lakefs
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-
-      - name: Start lakeFS S3 and Spark 3.x
+          compose-directory: test/spark
         env:
-          LAKEFS_STATS_ENABLED: "false"
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           LAKEFS_BLOCKSTORE_TYPE: s3
-          LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.docker.lakefs.io:8000
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
-        working-directory: test/spark
-        run: docker-compose up -d
-
       - name: Setup lakeFS for tests
         working-directory: test/spark
         run: ./setup-test.sh
@@ -446,47 +404,31 @@ jobs:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
     steps:
+      - name: Check-out code
+        uses: actions/checkout@v2
+
       - name: Setup Go
         uses: actions/setup-go@v1
         with:
           go-version: 1.16.2
         id: go
 
-      - name: Retrieve generated code
-        uses: actions/download-artifact@v2
+      - name: Start lakeFS for Metastore tests
+        uses: ./.github/actions/bootstrap-test-lakefs
         with:
-          name: generated-code
-          path: /tmp/
-
-      - name: Unpack generated code
-        run: tar -xf /tmp/generated.tar.gz
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-
-      - name: Build lakectl for dbt container
-        run:  go build -o test/lakectl_metastore/etc/lakectl ./cmd/lakectl
-
-      - name: Start lakeFS S3 and trino and hive
+          compose-directory: test/lakectl_metastore
         env:
-          LAKEFS_STATS_ENABLED: "false"
-          LAKEFS_BLOCKSTORE_TYPE: s3
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
           STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-metaclient
-          AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_BLOCKSTORE_TYPE: s3
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
-        working-directory: test/lakectl_metastore
-        run: docker-compose up -d
+          LAKECTL_METASTORE_GLUE_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
+          LAKECTL_METASTORE_GLUE_CREDENTIALS_ACCESS_SECRET_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
+      - name: Build lakectl for dbt container
+        run:  go build -o test/lakectl_metastore/etc/lakectl ./cmd/lakectl
 
       - name: Setup lakeFS for tests
         working-directory: test/lakectl_metastore
@@ -496,9 +438,6 @@ jobs:
 
       - name: Test using DBT and lakectl metastore commands
         env:
-          AWS-ACCESS-KEY-ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS-SECRET-ACCESS-KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS-REGION: us-east-1
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
           REPOSITORY: gateway-test
           SONNET_JAR: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
@@ -537,26 +476,16 @@ jobs:
         working-directory: clients/spark
         run: sbt lakefs-spark-client-301/assembly
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
+      - name: Start lakeFS for Spark tests
+        uses: ./.github/actions/bootstrap-test-lakefs
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-
-      - name: Start lakeFS S3 and Spark 2.x
+          compose-directory: test/spark
         env:
-          LAKEFS_STATS_ENABLED: "false"
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           LAKEFS_BLOCKSTORE_TYPE: s3
-          LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.docker.lakefs.io:8000
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
-        working-directory: test/spark
-        run: docker-compose up -d
       - name: Copy repository ref
         run: aws s3 cp --recursive s3://nessie-system-testing-data/golden-files/gc-test-data s3://nessie-system-testing/${{ github.run_number }}-spark3-metaclient
 
@@ -589,40 +518,27 @@ jobs:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       # Setting Account_ID as a secret as a way to avoid specifying it here
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
-      - name: Retrieve generated code
-        uses: actions/download-artifact@v2
+      - name: Check-out code
+        uses: actions/checkout@v2
+
+      - name: Start lakeFS with S3 tests
+        uses: ./.github/actions/bootstrap-test-lakefs
         with:
-          name: generated-code
-          path: /tmp/
-      - name: Unpack generated code
-        run: tar -xf /tmp/generated.tar.gz
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-      - name: Run lakeFS S3
+          compose-file: nessie/ops/docker-compose.yaml
+          compose-flags: "--quiet-pull --exit-code-from=nessie"
         env:
-          LAKEFS_STATS_ENABLED: "false"
           LAKEFS_BLOCKSTORE_TYPE: s3
-          LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.local.lakefs.io:8000
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
           DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
           NESSIE_TEST_DATA_ACCESS: true,false
           NESSIE_STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}
           NESSIE_AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
           NESSIE_AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
-        run: docker-compose -f nessie/ops/docker-compose.yaml up --quiet-pull --exit-code-from=nessie
       - name: Check files in S3 bucket
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
         run: |
             FILES_COUNT=`aws s3 ls s3://nessie-system-testing/${{ github.run_number }} --recursive | wc -l`
             [ $FILES_COUNT -gt 5 ]
@@ -632,9 +548,6 @@ jobs:
         run: docker-compose -f nessie/ops/docker-compose.yaml logs --tail=1000 lakefs
       - name: Export DB
         if: ${{ always() }}
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
         run: |
             cd nessie/ops
             docker-compose ps -q postgres && docker-compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://nessie-system-testing/${{ github.run_number }}/dump.gz
@@ -642,10 +555,7 @@ jobs:
         env:
           LAKEFS_STATS_ENABLED: "false"
           LAKEFS_BLOCKSTORE_TYPE: s3
-          LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.local.lakefs.io:8000
           DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
           NESSIE_TEST_DATA_ACCESS: true,false
           NESSIE_STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-local-api-key
         run: |
@@ -660,36 +570,21 @@ jobs:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       # Setting Account_ID as a secret as a way to avoid specifying it here
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
-      - name: Retrieve generated code
-        uses: actions/download-artifact@v2
+      - name: Check-out code
+        uses: actions/checkout@v2
+      - name: Start lakeFS with GS tests
+        uses: ./.github/actions/bootstrap-test-lakefs
         with:
-          name: generated-code
-          path: /tmp/
-      - name: Unpack generated code
-        run: tar -xf /tmp/generated.tar.gz
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-      - name: Run lakeFS GS
+          compose-file: nessie/ops/docker-compose.yaml
+          compose-flags: "--quiet-pull --exit-code-from=nessie"
         env:
-          LAKEFS_STATS_ENABLED: "false"
-          LAKEFS_BLOCKSTORE_TYPE: gs
-          LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.local.lakefs.io:8000
           DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
-          AWS_ACCESS_KEY_ID: ""
-          AWS_SECRET_ACCESS_KEY: ""
+          LAKEFS_BLOCKSTORE_TYPE: gs
           LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON: ${{ secrets.LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON }}
           NESSIE_STORAGE_NAMESPACE: gs://nessie-system-testing/${{ github.run_number }}
-        run: |
-            docker-compose -f nessie/ops/docker-compose.yaml down -v
-            docker-compose -f nessie/ops/docker-compose.yaml up --quiet-pull --exit-code-from=nessie
       - name: lakeFS Logs on GS failure
         if: ${{ failure() }}
         continue-on-error: true
@@ -703,38 +598,22 @@ jobs:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       # Setting Account_ID as a secret as a way to avoid specifying it here
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
-      - name: Retrieve generated code
-        uses: actions/download-artifact@v2
+      - name: Check-out code
+        uses: actions/checkout@v2
+      - name: Start lakeFS with GS tests
+        uses: ./.github/actions/bootstrap-test-lakefs
         with:
-          name: generated-code
-          path: /tmp/
-      - name: Unpack generated code
-        run: tar -xf /tmp/generated.tar.gz
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-
-      - name: Run lakeFS Azure
+          compose-file: nessie/ops/docker-compose.yaml
+          compose-flags: "--quiet-pull --exit-code-from=nessie"
         env:
-          LAKEFS_STATS_ENABLED: "false"
-          LAKEFS_BLOCKSTORE_TYPE: azure
-          LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.local.lakefs.io:8000
           DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
-          AWS_ACCESS_KEY_ID: ""
-          AWS_SECRET_ACCESS_KEY: ""
+          LAKEFS_BLOCKSTORE_TYPE: azure
           LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT }}
           LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY }}
           NESSIE_STORAGE_NAMESPACE: https://${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT }}.blob.core.windows.net/nessie-system-testing/${{ github.run_number }}
-        run: |
-          docker-compose -f nessie/ops/docker-compose.yaml down -v
-          docker-compose -f nessie/ops/docker-compose.yaml up --quiet-pull --exit-code-from=nessie
       - name: lakeFS Logs on Azure failure
         if: ${{ failure() }}
         continue-on-error: true
