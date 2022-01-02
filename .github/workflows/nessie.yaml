@@ -32,7 +32,7 @@ jobs:
     name: Generate code from latest lakeFS app
     runs-on: ubuntu-20.04
     steps:
-#      - run: echo "TODO uncomment"
+      - run: echo "TODO uncomment"
 #      - name: Check-out code
 #        uses: actions/checkout@v2
 #
