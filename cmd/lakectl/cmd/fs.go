@@ -119,23 +119,20 @@ var fsCatCmd = &cobra.Command{
 		direct, _ := cmd.Flags().GetBool("direct")
 		var err error
 		var body io.ReadCloser
+		var resp *http.Response
+		client := getClient()
 		if direct {
-			client := getClient()
 			_, body, err = helpers.ClientDownload(cmd.Context(), client, pathURI.Repository, pathURI.Ref, *pathURI.Path)
-			if err != nil {
-				DieErr(err)
-			}
-			defer body.Close()
 		} else {
-			client := getClientWithoutResponse()
-			resp, err := client.GetObject(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.GetObjectParams{
+			resp, err = client.GetObject(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.GetObjectParams{
 				Path: *pathURI.Path,
 			})
-			if err != nil {
-				DieErr(err)
-			}
 			body = resp.Body
 		}
+		if err != nil {
+			DieErr(err)
+		}
+		defer body.Close()
 		_, err = io.Copy(os.Stdout, body)
 		if err != nil {
 			DieErr(err)

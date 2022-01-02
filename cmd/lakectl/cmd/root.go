@@ -112,21 +112,9 @@ func getEnpointWithAuth() (string, *securityprovider.SecurityProviderBasicAuth) 
 	return serverEndpoint, basicAuthProvider
 }
 
-func getClient() api.ClientWithResponsesInterface {
+func getClient() *api.ClientWithResponses {
 	serverEndpoint, basicAuthProvider := getEnpointWithAuth()
 	client, err := api.NewClientWithResponses(
-		serverEndpoint,
-		api.WithRequestEditorFn(basicAuthProvider.Intercept),
-	)
-	if err != nil {
-		Die(fmt.Sprintf("could not initialize API client: %s", err), 1)
-	}
-	return client
-}
-
-func getClientWithoutResponse() api.ClientInterface {
-	serverEndpoint, basicAuthProvider := getEnpointWithAuth()
-	client, err := api.NewClient(
 		serverEndpoint,
 		api.WithRequestEditorFn(basicAuthProvider.Intercept),
 	)
