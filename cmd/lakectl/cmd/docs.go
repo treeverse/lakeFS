@@ -26,7 +26,7 @@ has_children: false
 
 ## Installing the lakectl command locally
 
-` + "`" + `lakectl` + "`" + ` is distributed as a single binary, with no external dependencies - and is available for MacOS, Windows and Linux.
+` + "`lakectl`" + ` is distributed as a single binary, with no external dependencies - and is available for MacOS, Windows and Linux.
 
 [Download lakectl](../index.md#downloads){: .btn .btn-green target="_blank"}
 
@@ -44,10 +44,13 @@ lakectl config
 # Server endpoint URL: http://localhost:8000/api/v1
 ` + "```" + `
 
-This will setup a ` + "`" + `$HOME/.lakectl.yaml` + "`" + ` file with the credentials and API endpoint you've supplied.
+This will setup a ` + "`$HOME/.lakectl.yaml`" + ` file with the credentials and API endpoint you've supplied.
 When setting up a new installation and creating initial credentials (see [Quick start](../quickstart/index.md)), the UI
 will provide a link to download a preconfigured configuration file for you.
 
+` + "`lakectl`" + ` configuration items can each be controlled by an environment variable. The variable name will have a prefix of
+*LAKECTL_*, followed by the name of the configuration, replacing every '.' with a '_'. Example: ` + "`LAKECTL_SERVER_ENDPOINT_URL`" + ` 
+controls ` + "`server.endpoint_url`" + `.
 `
 
 func printOptions(buf *bytes.Buffer, cmd *cobra.Command) error {
@@ -60,6 +63,12 @@ func printOptions(buf *bytes.Buffer, cmd *cobra.Command) error {
 	}
 	parentFlags := cmd.InheritedFlags()
 	parentFlags.SetOutput(buf)
+
+	if cmd == rootCmd {
+		buf.WriteString("**note:** The `base-uri` option can be controlled with the `LAKECTL_BASE_URI` environment variable.\n{: .note .note-warning }\n\n")
+		buf.WriteString("#### Example usage\n{:.no_toc}\n\n")
+		buf.WriteString("```shell\n$ export LAKECTL_BASE_URI=\"lakefs://my-repo/my-branch\"\n# Once set, use relative lakefs uri's:\n$ lakectl fs ls /path\n```")
+	}
 	return nil
 }
 
