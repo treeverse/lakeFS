@@ -42,6 +42,7 @@ var (
 	ErrMultipleParents              = errors.New("cannot have more than a single parent")
 	ErrRevertParentOutOfRange       = errors.New("given commit does not have the given parent number")
 	ErrDereferenceCommitWithStaging = wrapError(ErrUserVisible, "reference to staging area with $ is not a commit")
+	ErrDeleteDefaultBranch          = wrapError(ErrUserVisible, "cannot delete repository default branch")
 )
 
 // wrappedError is an error for wrapping another error while ignoring its message.

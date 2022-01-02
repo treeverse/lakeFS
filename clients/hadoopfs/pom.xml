@@ -146,6 +146,14 @@ To export to S3:
                                             <pattern>com.google.gson</pattern>
                                             <shadedPattern>io.lakefs.shaded.gson</shadedPattern>
                                         </relocation>
+                                        <relocation>
+                                            <pattern>io.gsonfire</pattern>
+                                            <shadedPattern>io.lakefs.shaded.gsonfire</shadedPattern>
+                                        </relocation>
+                                        <relocation>
+                                            <pattern>io.lakefs.clients.api</pattern>
+                                            <shadedPattern>io.lakefs.shaded.api</shadedPattern>
+                                        </relocation>
                                     </relocations>
                                 </configuration>
                             </execution>
@@ -233,11 +241,6 @@ To export to S3:
             <version>2.7.7</version>
         </dependency>
 
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk</artifactId>
-            <version>1.7.4</version><!-- should match hadoop-aws version(!) -->
-        </dependency>
         <dependency>        <!-- needed for aws-java-sdk in tests(!) -->
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>

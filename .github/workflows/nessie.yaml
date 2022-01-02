@@ -400,6 +400,7 @@ jobs:
         run: ./setup-test.sh
 
       - name: Test lakeFS S3 with Spark 3.x
+        continue-on-error: true
         env:
           STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-spark
           REPOSITORY: gateway-test
