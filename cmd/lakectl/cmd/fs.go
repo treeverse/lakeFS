@@ -115,28 +115,31 @@ var fsCatCmd = &cobra.Command{
 	Short: "Dump content of object to stdout",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := getClient()
 		pathURI := MustParsePathURI("path", args[0])
 		direct, _ := cmd.Flags().GetBool("direct")
-		var contents []byte
+		var err error
+		var body io.ReadCloser
 		if direct {
-			_, body, err := helpers.ClientDownload(cmd.Context(), client, pathURI.Repository, pathURI.Ref, *pathURI.Path)
+			client := getClient()
+			_, body, err = helpers.ClientDownload(cmd.Context(), client, pathURI.Repository, pathURI.Ref, *pathURI.Path)
 			if err != nil {
 				DieErr(err)
 			}
 			defer body.Close()
-			contents, err = io.ReadAll(body)
+		} else {
+			client := getClientWithoutResponse()
+			resp, err := client.GetObject(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.GetObjectParams{
+				Path: *pathURI.Path,
+			})
 			if err != nil {
 				DieErr(err)
 			}
-		} else {
-			resp, err := client.GetObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.GetObjectParams{
-				Path: *pathURI.Path,
-			})
-			DieOnResponseError(resp, err)
-			contents = resp.Body
+			body = resp.Body
 		}
-		Fmt("%s\n", string(contents))
+		_, err = io.Copy(os.Stdout, body)
+		if err != nil {
+			DieErr(err)
+		}
 	},
 }
 
