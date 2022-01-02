@@ -36,6 +36,9 @@ This will setup a `$HOME/.lakectl.yaml` file with the credentials and API endpoi
 When setting up a new installation and creating initial credentials (see [Quick start](../quickstart/index.md)), the UI
 will provide a link to download a preconfigured configuration file for you.
 
+`lakectl` configuration items can each be controlled by an environment variable. The variable name will have a prefix of
+*LAKECTL_*, followed by the name of the configuration, replacing every '.' with a '_'. Example: `LAKECTL_SERVER_ENDPOINT_URL` 
+controls `server.endpoint_url`.
 ### lakectl
 
 A cli tool to explore manage and work with lakeFS
@@ -60,7 +63,17 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
       --no-color            don't use fancy output colors (default when not attached to an interactive terminal)
 ```
 
+**note:** The `base-uri` option can be controlled with the `LAKECTL_BASE_URI` environment variable.
+{: .note .note-warning }
 
+#### Example usage
+{:.no_toc}
+
+```shell
+$ export LAKECTL_BASE_URI="lakefs://my-repo/my-branch"
+# Once set, use relative lakefs uri's:
+$ lakectl fs ls /path
+```
 
 ### lakectl abuse
 
