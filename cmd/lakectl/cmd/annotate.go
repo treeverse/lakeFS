@@ -1,18 +1,25 @@
 package cmd
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
-const annotateTemplate = `{{  $val := .Commit}}
-{{ $.Object|ljust 15}} {{ $val.Committer|ljust 20 }} {{ $val.Id | printf "%.16s"|ljust 20 }} {{ $val.CreationDate|date }}  {{ $.CommitMessage |ljust 30 }}
+const (
+	annotateTemplate = `{{  $val := .Commit}}
+{{ $.Object|ljust 15}} {{ $val.Committer|ljust 20 }} {{ $val.Id | printf "%.16s"|ljust 20 }} {{if $val.CreationDate}}{{ $val.CreationDate|date}}{{end}}  {{ $.CommitMessage |ljust 30 }}
 `
-const messageSize = 200
-const ellipsis = "..."
+	annotateMessageSize = 200
+	ellipsis            = "..."
+)
+
+type objectCommitData struct {
+	Object        string
+	Commit        api.Commit
+	CommitMessage string
+}
 
 var annotateCmd = &cobra.Command{
 	Use:     "annotate <path uri>",
@@ -41,20 +48,17 @@ var annotateCmd = &cobra.Command{
 				}
 				res, err := client.LogCommitsWithResponse(context, pathURI.Repository, pathURI.Ref, logCommitsParams)
 				DieOnResponseError(res, err)
-				if len(res.JSON200.Results) > 0 {
-					data := struct {
-						Commit        api.Commit
-						Object        string
-						CommitMessage string
-					}{
-						Commit:        res.JSON200.Results[0],
-						Object:        obj.Path,
-						CommitMessage: splitOnNewLine(stringTrimLen((res.JSON200.Results[0].Message), messageSize)),
-					}
-					Write(annotateTemplate, data)
-				} else {
-					fmt.Println(obj.Path, "Could not retrieve commit info about this object")
+				data := objectCommitData{
+					Object: obj.Path,
 				}
+				if len(res.JSON200.Results) > 0 {
+					data = objectCommitData{
+						Object:        data.Object,
+						Commit:        res.JSON200.Results[0],
+						CommitMessage: splitOnNewLine(stringTrimLen((res.JSON200.Results[0].Message), annotateMessageSize)),
+					}
+				}
+				Write(annotateTemplate, data)
 			}
 			pagination := resp.JSON200.Pagination
 			if !pagination.HasMore {
