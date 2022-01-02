@@ -77,7 +77,7 @@ services:
     entrypoint: ["trino", "--server", "trino:8080", "--catalog", "lakefs", "--execute", "drop schema if exists dbt_main; create schema dbt_main with (location = 's3://example/main/dbt' )"]
 
   dbt:
-    image: 2baecf600787
+    build: dbt
     depends_on:
       - trino
     profiles: ["client"]
