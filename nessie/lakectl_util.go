@@ -169,7 +169,7 @@ func runCmdAndVerifyResult(t *testing.T, cmd string, expectFail bool, isTerminal
 
 var (
 	timeStampRegexp = regexp.MustCompile(`timestamp: \d+\r?\n`)
-	timeRegexp      = regexp.MustCompile(`\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} [\+|-]\d{4} \w{1,3}`)
+	timeRegexp      = regexp.MustCompile(`\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} [-+]\d{4} \w{1,3}`)
 	commitIDRegExp  = regexp.MustCompile(`[\d|a-f]{64}`)
 )
 
