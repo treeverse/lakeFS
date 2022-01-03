@@ -119,11 +119,11 @@ var fsCatCmd = &cobra.Command{
 		direct, _ := cmd.Flags().GetBool("direct")
 		var err error
 		var body io.ReadCloser
-		var resp *http.Response
 		client := getClient()
 		if direct {
 			_, body, err = helpers.ClientDownload(cmd.Context(), client, pathURI.Repository, pathURI.Ref, *pathURI.Path)
 		} else {
+			var resp *http.Response
 			resp, err = client.GetObject(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.GetObjectParams{
 				Path: *pathURI.Path,
 			})
