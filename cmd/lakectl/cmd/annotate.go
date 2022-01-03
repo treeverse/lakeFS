@@ -52,11 +52,8 @@ var annotateCmd = &cobra.Command{
 					Object: obj.Path,
 				}
 				if len(res.JSON200.Results) > 0 {
-					data = objectCommitData{
-						Object:        data.Object,
-						Commit:        res.JSON200.Results[0],
-						CommitMessage: splitOnNewLine(stringTrimLen((res.JSON200.Results[0].Message), annotateMessageSize)),
-					}
+					data.Commit = res.JSON200.Results[0]
+					data.CommitMessage = splitOnNewLine(stringTrimLen((res.JSON200.Results[0].Message), annotateMessageSize))
 				}
 				Write(annotateTemplate, data)
 			}
