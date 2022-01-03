@@ -51,7 +51,8 @@ type RawRef struct {
 }
 
 type DiffSummary struct {
-	Count map[DiffType]int
+	Count      map[DiffType]int
+	Incomplete bool // true when Diff summary has missing Information (could happen when skipping ranges with same bounds)
 }
 
 // ReferenceType represents the type of the reference
@@ -917,6 +918,13 @@ func (g *Graveler) ListBranches(ctx context.Context, repositoryID RepositoryID) 
 
 func (g *Graveler) DeleteBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error {
 	_, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
+		repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+		if err != nil {
+			return nil, err
+		}
+		if repo.DefaultBranchID == branchID {
+			return nil, ErrDeleteDefaultBranch
+		}
 		branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
 		if err != nil {
 			return nil, err

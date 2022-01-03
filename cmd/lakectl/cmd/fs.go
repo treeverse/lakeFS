@@ -136,7 +136,7 @@ var fsCatCmd = &cobra.Command{
 			DieOnResponseError(resp, err)
 			contents = resp.Body
 		}
-		Fmt("%s\n", string(contents))
+		Fmt("%s", string(contents))
 	},
 }
 

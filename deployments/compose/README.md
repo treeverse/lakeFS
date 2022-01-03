@@ -84,4 +84,9 @@ docker-compose run dbt run
 
 You could now see the generated objects in lakeFS (under path `lakefs://example/main/dbt/my_first_dbt_model/`) and query table `dbt_main.my_first_dbt_model` using the trino-client.
 
+### Notebook
+
+Jupyter notebook is the 'notebook' service.
+It serves on port 8888.
+The login password is set to 'lakefs'.
 

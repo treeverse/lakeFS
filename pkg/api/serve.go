@@ -48,6 +48,7 @@ func Serve(
 	collector stats.Collector,
 	cloudMetadataProvider cloud.MetadataProvider,
 	actions actionsHandler,
+	auditChecker AuditChecker,
 	logger logging.Logger,
 	gatewayDomains []string,
 ) http.Handler {
@@ -80,6 +81,7 @@ func Serve(
 		collector,
 		cloudMetadataProvider,
 		actions,
+		auditChecker,
 		logger,
 	)
 	HandlerFromMuxWithBaseURL(controller, apiRouter, BaseURL)

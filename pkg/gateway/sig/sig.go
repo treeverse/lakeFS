@@ -3,17 +3,15 @@ package sig
 import (
 	"crypto/hmac"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
 	"unicode/utf8"
 
-	gwErrors "github.com/treeverse/lakefs/pkg/gateway/errors"
-
 	"github.com/treeverse/lakefs/pkg/auth/model"
-
-	"errors"
+	gwErrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 )
 
 var (

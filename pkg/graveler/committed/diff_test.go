@@ -97,7 +97,7 @@ func TestDiff(t *testing.T) {
 			rightKeys:                 [][]string{{"k1", "k2"}, {"k3"}},
 			rightIdentities:           [][]string{{"i1", "i2"}, {"i3a"}},
 			expectedDiffKeys:          []string{"k3"},
-			expectedRanges:            []*diffTestRange{nil},
+			expectedRanges:            []*diffTestRange{{"k3", "k3", 1}, nil},
 			expectedDiffTypes:         []graveler.DiffType{changed},
 			expectedDiffIdentities:    []string{"i3a"},
 			expectedLeftReadsByRange:  []int{0, 1},
@@ -209,7 +209,7 @@ func TestDiff(t *testing.T) {
 			rightKeys:                 [][]string{{"k1", "k2"}, {"k3", "k4"}, {"k5", "k6"}},
 			rightIdentities:           [][]string{{"i1", "i2a"}, {"i3", "i4"}, {"i5", "i6a"}},
 			expectedDiffKeys:          []string{"k2", "k6"},
-			expectedRanges:            []*diffTestRange{nil, nil},
+			expectedRanges:            []*diffTestRange{{"k1", "k2", 2}, nil, {"k5", "k6", 2}, nil},
 			expectedDiffTypes:         []graveler.DiffType{changed, changed},
 			expectedDiffIdentities:    []string{"i2a", "i6a"},
 			expectedLeftReadsByRange:  []int{2, 0, 2},
@@ -275,11 +275,13 @@ func TestDiffCancelContext(t *testing.T) {
 		t.Fatalf("Err() returned %v, should return context.Canceled", err)
 	}
 }
+
+// TODO(Guys): add test for range changed
 func TestNextRange(t *testing.T) {
 	ctx := context.Background()
 	it := committed.NewDiffIterator(ctx,
 		newFakeMetaRangeIterator([][]string{{"k1", "k2"}, {"k3", "k4"}}, [][]string{{"i1", "i2"}, {"i3", "i4"}}),
-		newFakeMetaRangeIterator([][]string{{"k3", "k4"}, {"k5", "k6"}}, [][]string{{"i3a", "i4a"}, {"i5", "i6"}}))
+		newFakeMetaRangeIterator([][]string{{"k3", "k4", "k5"}, {"k6", "k7"}}, [][]string{{"i3a", "i4a", "i5a"}, {"i6", "i7"}}))
 
 	t.Run("next range - in middle of range", func(t *testing.T) {
 		if !it.Next() { // move to range k1-k2
@@ -309,19 +311,22 @@ func TestNextRange(t *testing.T) {
 		if !it.Next() { // move to k4
 			t.Fatalf("expected it.Next() to return true (err %v)", it.Err())
 		}
-		if !it.Next() { // move to range k5-k6
+		if !it.Next() { // move to k5
+			t.Fatalf("expected it.Next() to return true (err %v)", it.Err())
+		}
+		if !it.Next() { // move to range k6-k7
 			t.Fatalf("expected it.Next() to return true (err %v)", it.Err())
 		}
 		record, rng = it.Value()
 		if record != nil {
 			t.Errorf("expected record to be nil got record %v", record)
 		}
-		if !it.Next() { // move to k5
+		if !it.Next() { // move to k6
 			t.Fatalf("expected it.Next() to return true (err %v)", it.Err())
 		}
 		record, rng = it.Value()
-		if record == nil || string(record.Key) != "k5" {
-			t.Errorf("expected record with key=k5, got record %v", record)
+		if record == nil || string(record.Key) != "k6" {
+			t.Errorf("expected record with key=k6, got record %v", record)
 		}
 		if it.NextRange() { // move to end
 			t.Fatal("expected it.NextRange() to return false")
@@ -351,11 +356,31 @@ func TestNextRange(t *testing.T) {
 	})
 }
 
+func TestNextRangeChange(t *testing.T) {
+	ctx := context.Background()
+	it := committed.NewDiffIterator(ctx,
+		newFakeMetaRangeIterator([][]string{{"k1", "k3"}, {"k5", "k6"}}, [][]string{{"i1", "i3"}, {"i5", "i6"}}),
+		newFakeMetaRangeIterator([][]string{{"k1", "k2", "k3"}, {"k5", "k6"}}, [][]string{{"i1", "i2", "i3"}, {"i5", "i6"}}))
+	if !it.Next() {
+		t.Fatal("expected iterator to have value")
+	}
+	record, rng := it.Value()
+	if record != nil {
+		t.Errorf("expected record to be nil got record %v", record)
+	}
+	if rng.Type != changed {
+		t.Errorf("expected range diff type to be changed got %v", rng.Type)
+	}
+	if it.NextRange() {
+		t.Fatal("expected next range to return false")
+	}
+}
+
 func TestNextErr(t *testing.T) {
 	ctx := context.Background()
 	it := committed.NewDiffIterator(ctx,
 		newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"i1", "i2"}}),
-		newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"i1a", "i2a"}}))
+		newFakeMetaRangeIterator([][]string{{"k1", "k2", "k3"}}, [][]string{{"i1a", "i2a", "i3a"}}))
 	if !it.Next() {
 		t.Fatalf("unexptected result from it.Next(), expected true, got false with err=%s", it.Err())
 	}
@@ -365,6 +390,33 @@ func TestNextErr(t *testing.T) {
 	}
 	if err := it.Err(); err != committed.ErrNoRange {
 		t.Fatalf("expected to get err=%s, got: %s", committed.ErrNoRange, err)
+	}
+}
+
+func TestSameBounds(t *testing.T) {
+	ctx := context.Background()
+	it := committed.NewDiffIterator(ctx,
+		newFakeMetaRangeIterator([][]string{{"k1", "k2"}, {"k3", "k4"}}, [][]string{{"i1", "i2"}, {"i3", "i4"}}),
+		newFakeMetaRangeIterator([][]string{{"k1", "k2"}, {"k3", "k4"}}, [][]string{{"i1a", "i2a"}, {"i3a", "i4a"}}))
+	if !it.Next() {
+		t.Fatalf("unexptected result from it.Next(), expected true, got false with err=%s", it.Err())
+	}
+	if !it.NextRange() {
+		t.Fatalf("unexptected result from it.Next(), expected true, got false with err=%s", it.Err())
+	}
+	val, _ := it.Value()
+	if val != nil {
+		t.Errorf("unexptected value after it.NextRange(), expected nil, got=%v", val)
+	}
+	if !it.Next() {
+		t.Fatalf("unexptected result from it.Next(), expected true, got false with err=%s", it.Err())
+	}
+	val, _ = it.Value()
+	if val == nil || string(val.Value.Identity) != "i3a" {
+		t.Errorf("unexptected value after it.Next(), expected i3a, got=%v", val)
+	}
+	if err := it.Err(); err != nil {
+		t.Fatalf("unexpected error, got: %s", err)
 	}
 }
 
@@ -392,22 +444,22 @@ func TestDiffSeek(t *testing.T) {
 		{
 			seekTo:             "k1",
 			expectedDiffKeys:   []string{"k2", "k3", "k3a", "k3b", "k7"},
-			expectedDiffRanges: []*diffTestRange{nil, nil, {"k3a", "k3b", 2}, {"k3a", "k3b", 2}, {"k3a", "k3b", 2}, nil},
+			expectedDiffRanges: []*diffTestRange{nil, nil, {"k3a", "k3b", 2}, {"k3a", "k3b", 2}, {"k3a", "k3b", 2}, {"k6", "k7", 2}, nil},
 		},
 		{
 			seekTo:             "k2",
 			expectedDiffKeys:   []string{"k2", "k3", "k3a", "k3b", "k7"},
-			expectedDiffRanges: []*diffTestRange{nil, nil, {"k3a", "k3b", 2}, {"k3a", "k3b", 2}, {"k3a", "k3b", 2}, nil},
+			expectedDiffRanges: []*diffTestRange{nil, nil, {"k3a", "k3b", 2}, {"k3a", "k3b", 2}, {"k3a", "k3b", 2}, {"k6", "k7", 2}, nil},
 		},
 		{
 			seekTo:             "k3",
 			expectedDiffKeys:   []string{"k3", "k3a", "k3b", "k7"},
-			expectedDiffRanges: []*diffTestRange{nil, {"k3a", "k3b", 2}, {"k3a", "k3b", 2}, {"k3a", "k3b", 2}, nil},
+			expectedDiffRanges: []*diffTestRange{nil, {"k3a", "k3b", 2}, {"k3a", "k3b", 2}, {"k3a", "k3b", 2}, {"k6", "k7", 2}, nil},
 		},
 		{
 			seekTo:             "k4",
 			expectedDiffKeys:   []string{"k7"},
-			expectedDiffRanges: []*diffTestRange{nil},
+			expectedDiffRanges: []*diffTestRange{{"k6", "k7", 2}, nil},
 		},
 		{
 			seekTo:             "k8",
@@ -416,34 +468,37 @@ func TestDiffSeek(t *testing.T) {
 		},
 	}
 	for _, tst := range tests {
-		it.SeekGE([]byte(tst.seekTo))
-		diff, rangeDiff := it.Value()
-		if diff != nil || rangeDiff != nil {
-			t.Fatalf("value expected to be nil after SeekGE. got diff=%v rangeDiff=%v", diff, rangeDiff)
-		}
-		keys := make([]string, 0)
-		ranges := make([]*diffTestRange, 0)
-		for it.Next() {
-			currentDiff, currentRangeDiff := it.Value()
-			ranges = append(ranges, newDiffTestRange(currentRangeDiff))
-			if currentDiff != nil {
-				key := currentDiff.Key.String()
-				identity := string(currentDiff.Value.Identity)
-				if currentDiff.Type != diffTypeByKey[key] {
-					t.Fatalf("unexpected diff type in index %d. expected=%d, got=%d", len(keys), diffTypeByKey[key], currentDiff.Type)
-				}
-				if identity != diffIdentityByKey[key] {
-					t.Fatalf("unexpected identity in diff index %d. expected=%s, got=%s", len(keys), diffIdentityByKey[key], identity)
-				}
-				keys = append(keys, key)
+		t.Run(tst.seekTo, func(t *testing.T) {
+			it.SeekGE([]byte(tst.seekTo))
+			diff, rangeDiff := it.Value()
+			if diff != nil || rangeDiff != nil {
+				t.Fatalf("value expected to be nil after SeekGE. got diff=%v rangeDiff=%v", diff, rangeDiff)
 			}
-		}
-		if diff := deep.Equal(keys, tst.expectedDiffKeys); diff != nil {
-			t.Fatal("unexpected keys in diff", diff)
-		}
-		if diff := deep.Equal(tst.expectedDiffRanges, ranges); diff != nil {
-			t.Fatalf("ranges in diff different than expected. diff=%s", diff)
-		}
+			keys := make([]string, 0)
+			ranges := make([]*diffTestRange, 0)
+			for it.Next() {
+				currentDiff, currentRangeDiff := it.Value()
+				ranges = append(ranges, newDiffTestRange(currentRangeDiff))
+				if currentDiff != nil {
+					key := currentDiff.Key.String()
+					identity := string(currentDiff.Value.Identity)
+					if currentDiff.Type != diffTypeByKey[key] {
+						t.Fatalf("unexpected diff type in index %d. expected=%d, got=%d", len(keys), diffTypeByKey[key], currentDiff.Type)
+					}
+					if identity != diffIdentityByKey[key] {
+						t.Fatalf("unexpected identity in diff index %d. expected=%s, got=%s", len(keys), diffIdentityByKey[key], identity)
+					}
+					keys = append(keys, key)
+				}
+			}
+			if diff := deep.Equal(keys, tst.expectedDiffKeys); diff != nil {
+				t.Fatal("unexpected keys in diff", diff)
+			}
+			if diff := deep.Equal(tst.expectedDiffRanges, ranges); diff != nil {
+				t.Fatalf("ranges in diff different than expected. diff=%s", diff)
+			}
+		})
+
 	}
 }
 

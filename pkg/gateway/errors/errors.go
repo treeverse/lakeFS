@@ -46,7 +46,7 @@ type APIErrorResponse struct {
 // APIErrorCode type of error status.
 type APIErrorCode int
 
-// Error codes, non exhaustive list - http://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html
+// Error codes, non exhaustive list - https://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html
 const (
 	ErrNone APIErrorCode = iota
 	ErrAccessDenied

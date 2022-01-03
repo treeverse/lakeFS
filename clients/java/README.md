@@ -176,6 +176,7 @@ Class | Method | HTTP request | Description
 *MetadataApi* | [**getMetaRange**](docs/MetadataApi.md#getMetaRange) | **GET** /repositories/{repository}/metadata/meta_range/{meta_range} | return URI to a meta-range file
 *MetadataApi* | [**getRange**](docs/MetadataApi.md#getRange) | **GET** /repositories/{repository}/metadata/range/{range} | return URI to a range file
 *ObjectsApi* | [**deleteObject**](docs/ObjectsApi.md#deleteObject) | **DELETE** /repositories/{repository}/branches/{branch}/objects | delete object
+*ObjectsApi* | [**deleteObjects**](docs/ObjectsApi.md#deleteObjects) | **POST** /repositories/{repository}/branches/{branch}/objects/delete | delete objects
 *ObjectsApi* | [**getObject**](docs/ObjectsApi.md#getObject) | **GET** /repositories/{repository}/refs/{ref}/objects | get object content
 *ObjectsApi* | [**getUnderlyingProperties**](docs/ObjectsApi.md#getUnderlyingProperties) | **GET** /repositories/{repository}/refs/{ref}/objects/underlyingProperties | get object properties on underlying storage
 *ObjectsApi* | [**listObjects**](docs/ObjectsApi.md#listObjects) | **GET** /repositories/{repository}/refs/{ref}/objects/ls | list objects under a given prefix
@@ -237,10 +238,13 @@ Class | Method | HTTP request | Description
  - [Merge](docs/Merge.md)
  - [MergeResult](docs/MergeResult.md)
  - [MergeResultSummary](docs/MergeResultSummary.md)
+ - [ObjectError](docs/ObjectError.md)
+ - [ObjectErrorList](docs/ObjectErrorList.md)
  - [ObjectStageCreation](docs/ObjectStageCreation.md)
  - [ObjectStats](docs/ObjectStats.md)
  - [ObjectStatsList](docs/ObjectStatsList.md)
  - [Pagination](docs/Pagination.md)
+ - [PathList](docs/PathList.md)
  - [Policy](docs/Policy.md)
  - [PolicyList](docs/PolicyList.md)
  - [Ref](docs/Ref.md)

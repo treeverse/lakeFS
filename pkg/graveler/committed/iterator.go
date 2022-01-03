@@ -1,6 +1,7 @@
 package committed
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 
@@ -8,14 +9,15 @@ import (
 )
 
 type iterator struct {
-	ctx       context.Context
-	started   bool
-	manager   RangeManager
-	rangesIt  ValueIterator
-	rng       *Range                 // Decoded value at which rangeIt point
-	it        graveler.ValueIterator // nil at start of range
-	err       error
-	namespace Namespace
+	ctx         context.Context
+	started     bool
+	manager     RangeManager
+	rangesIt    ValueIterator
+	rng         *Range                 // Decoded value at which rangeIt point
+	it          graveler.ValueIterator // nil at start of range
+	err         error
+	namespace   Namespace
+	beforeRange bool
 }
 
 func NewIterator(ctx context.Context, manager RangeManager, namespace Namespace, rangesIt ValueIterator) Iterator {
@@ -76,6 +78,10 @@ func (rvi *iterator) Next() bool {
 	if rvi.err != nil {
 		return false
 	}
+	if rvi.beforeRange {
+		rvi.beforeRange = false
+		return true
+	}
 	if !rvi.started {
 		rvi.started = true
 		return rvi.NextRange()
@@ -128,20 +134,30 @@ func (rvi *iterator) Close() {
 	rvi.it.Close()
 }
 
-func (rvi *iterator) SeekGE(key graveler.Key) {
-	var err error
-	// TODO(ariels): rangesIt might already be on correct range.
+func (rvi *iterator) loadRange(key graveler.Key) bool {
 	rvi.rangesIt.SeekGE(Key(key))
-	if err = rvi.rangesIt.Err(); err != nil {
+	if err := rvi.rangesIt.Err(); err != nil {
 		rvi.err = err
-		return
+		return false
 	}
 	if !rvi.NextRange() {
-		return // Reached end.
+		return false // Reached end
 	}
 	rvi.started = true // "Started": rangesIt is valid.
-	if !rvi.loadIt() {
-		return
+	if bytes.Compare(key, rvi.rng.MinKey) <= 0 {
+		// the given key is before the next range
+		rvi.beforeRange = true
+		return false
+	}
+	return rvi.loadIt()
+}
+
+func (rvi *iterator) SeekGE(key graveler.Key) {
+	if rvi.rng == nil || rvi.it == nil || bytes.Compare(key, rvi.rng.MinKey) < 0 || bytes.Compare(key, rvi.rng.MaxKey) > 0 {
+		// no current range, or new key outside current range boundaries
+		if !rvi.loadRange(key) {
+			return
+		}
 	}
 	rvi.it.SeekGE(key)
 	// Ready to call Next to see values.

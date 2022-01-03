@@ -48,6 +48,8 @@ footer_links:
     - 'https://lakefs.io/contact-us/'
 
 footer_social:
+  'youtube':
+    - 'https://lakefs.io/youtube'
   'linkedin':
     - 'https://www.linkedin.com/company/treeverse'
   'github':
