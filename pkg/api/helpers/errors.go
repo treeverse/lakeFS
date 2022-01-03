@@ -108,15 +108,23 @@ func ResponseAsError(response interface{}) error {
 			Err:     ErrRequestFailed,
 		}
 	}
+	var f reflect.Value
+	var httpResponse *http.Response
+	var ok bool
+	if reflect.TypeOf(response).String() != "*http.Response" {
+		f = r.FieldByName("HTTPResponse")
+		if !f.IsValid() {
+			return fmt.Errorf("[no HTTPResponse]: %w", ErrRequestFailed)
+		}
+		httpResponse, ok = f.Interface().(*http.Response)
+		if !ok {
+			return fmt.Errorf("%w: no HTTPResponse", ErrRequestFailed)
+		}
 
-	f := r.FieldByName("HTTPResponse")
-	if !f.IsValid() {
-		return fmt.Errorf("[no HTTPResponse]: %w", ErrRequestFailed)
+	} else {
+		httpResponse = response.(*http.Response)
 	}
-	httpResponse, ok := f.Interface().(*http.Response)
-	if !ok {
-		return fmt.Errorf("%w: no HTTPResponse", ErrRequestFailed)
-	}
+
 	if httpResponse == nil || isOK(httpResponse.StatusCode) {
 		return nil
 	}
