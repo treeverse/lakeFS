@@ -120,21 +120,17 @@ func ResponseAsError(response interface{}) error {
 		if !ok {
 			return fmt.Errorf("%w: no HTTPResponse", ErrRequestFailed)
 		}
-
 	} else {
 		httpResponse = response.(*http.Response)
 	}
-
 	if httpResponse == nil || isOK(httpResponse.StatusCode) {
 		return nil
 	}
-
 	statusCode := httpResponse.StatusCode
 	statusText := httpResponse.Status
 	if statusText == "" {
 		statusText = http.StatusText(statusCode)
 	}
-
 	var message string
 	f = r.FieldByName("Body")
 	if f.IsValid() && f.Type().Kind() == reflect.Slice && f.Type().Elem().Kind() == reflect.Uint8 {
@@ -144,7 +140,6 @@ func ResponseAsError(response interface{}) error {
 			message = apiError.Message
 		}
 	}
-
 	return UserVisibleAPIError{
 		Err: ErrRequestFailed,
 		APIFields: APIFields{
