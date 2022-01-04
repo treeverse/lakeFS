@@ -163,7 +163,33 @@ func (c *committedManager) applyOnDiffWithRanges(ctx context.Context, ns gravele
 }
 
 func (c *committedManager) Apply(ctx context.Context, ns graveler.StorageNamespace, rangeID graveler.MetaRangeID, diffs graveler.ValueIterator) (graveler.MetaRangeID, graveler.DiffSummary, error) {
-	return c.applyOnDiffWithRanges(ctx, ns, rangeID, NewIteratorWrapper(diffs))
+	mwWriter := c.metaRangeManager.NewWriter(ctx, ns, nil)
+	defer func() {
+		err := mwWriter.Abort()
+		if err != nil {
+			c.logger.WithError(err).Error("Abort failed after Apply")
+		}
+	}()
+	metaRangeIterator, err := c.metaRangeManager.NewMetaRangeIterator(ctx, ns, rangeID)
+	summary := graveler.DiffSummary{
+		Count: map[graveler.DiffType]int{},
+	}
+	if err != nil {
+		return "", summary, fmt.Errorf("get metarange ns=%s id=%s: %w", ns, rangeID, err)
+	}
+	defer metaRangeIterator.Close()
+	summary, err = Commit(ctx, mwWriter, metaRangeIterator, diffs, &CommitOptions{})
+	if err != nil {
+		if !errors.Is(err, graveler.ErrUserVisible) {
+			err = fmt.Errorf("apply ns=%s id=%s: %w", ns, rangeID, err)
+		}
+		return "", summary, err
+	}
+	newID, err := mwWriter.Close()
+	if newID == nil {
+		return "", summary, fmt.Errorf("close writer ns=%s id=%s: %w", ns, rangeID, err)
+	}
+	return *newID, summary, err
 }
 
 func (c *committedManager) Compare(ctx context.Context, ns graveler.StorageNamespace, destination, source, base graveler.MetaRangeID) (graveler.DiffIterator, error) {
