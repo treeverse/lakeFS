@@ -231,6 +231,33 @@ func TestApplyTombstoneNoBase(t *testing.T) {
 		Count: map[graveler.DiffType]int{},
 	}, summary)
 }
+
+func TestApplyDeleteNonExistingRecord(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	base := testutil.NewFakeIterator().
+		AddRange(&committed.Range{ID: "base:one", MinKey: committed.Key("c"), MaxKey: committed.Key("d"), Count: 2}).
+		AddValueRecords(makeV("c", "base:c"), makeV("d", "base:d"))
+	changes := testutil.NewFakeIterator()
+	changes.
+		AddRange(&committed.Range{ID: "changes:one", MinKey: committed.Key("a"), MaxKey: committed.Key("f"), Count: 3}).
+		AddValueRecords(makeV("a", "changes:a"), makeTombstoneV("e"), makeTombstoneV("f"))
+
+	writer := mock.NewMockMetaRangeWriter(ctrl)
+	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("a", "changes:a")))
+	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("c", "base:c")))
+	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("d", "base:d")))
+
+	summary, err := committed.Apply(context.Background(), writer, base, changes, &committed.ApplyOptions{})
+
+	assert.NoError(t, err)
+	assert.Equal(t, graveler.DiffSummary{
+		Count: map[graveler.DiffType]int{
+			graveler.DiffTypeAdded: 1,
+		},
+	}, summary)
+}
 func TestApplyCopiesLeftoverBase(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
