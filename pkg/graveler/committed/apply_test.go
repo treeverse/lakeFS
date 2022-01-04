@@ -232,7 +232,7 @@ func TestApplyTombstoneNoBase(t *testing.T) {
 	}, summary)
 }
 
-func TestApplyOverTombstoneChanges(t *testing.T) {
+func TestApplyDeleteNonExistingRecord(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
