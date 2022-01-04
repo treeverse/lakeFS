@@ -3,7 +3,6 @@ package operations
 import (
 	"errors"
 	"fmt"
-	"github.com/treeverse/lakefs/pkg/validator"
 	"net/http"
 
 	"github.com/treeverse/lakefs/pkg/auth"
@@ -13,6 +12,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/gateway/serde"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/permissions"
+	"github.com/treeverse/lakefs/pkg/validator"
 )
 
 type DeleteObjects struct{}

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/treeverse/lakefs/pkg/validator"
 	"io"
 	"mime"
 	"net/http"
@@ -35,6 +34,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/upload"
+	"github.com/treeverse/lakefs/pkg/validator"
 	"github.com/treeverse/lakefs/pkg/version"
 )
 

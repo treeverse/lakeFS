@@ -3,9 +3,10 @@ package uri
 import (
 	"errors"
 	"fmt"
-	"github.com/treeverse/lakefs/pkg/validator"
 	"net/url"
 	"strings"
+
+	"github.com/treeverse/lakefs/pkg/validator"
 )
 
 const (

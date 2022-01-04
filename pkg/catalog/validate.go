@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"fmt"
+
 	"github.com/treeverse/lakefs/pkg/validator"
 )
 
