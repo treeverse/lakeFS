@@ -67,6 +67,8 @@ func (a *applier) applyAll(iter Iterator) (int, error) {
 			}
 		} else {
 			if iterValue.IsTombstone() {
+				// internal error but no data lost: deletion requested of a
+				// file that was not there.
 				if a.logger.IsTracing() {
 					a.logger.WithField("id", string(iterValue.Identity)).Warn("[I] unmatched delete")
 				}

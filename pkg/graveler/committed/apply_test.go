@@ -232,20 +232,22 @@ func TestApplyTombstoneNoBase(t *testing.T) {
 	}, summary)
 }
 
-func TestApplyNoBaseOverTombstoneChanges(t *testing.T) {
+func TestApplyOverTombstoneChanges(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	base := testutil.NewFakeIterator().
-		AddRange(&committed.Range{ID: "base:one", MinKey: committed.Key("a"), MaxKey: committed.Key("b"), Count: 0})
-
+		AddRange(&committed.Range{ID: "base:one", MinKey: committed.Key("c"), MaxKey: committed.Key("d"), Count: 2}).
+		AddValueRecords(makeV("c", "base:c"), makeV("d", "base:d"))
 	changes := testutil.NewFakeIterator()
 	changes.
 		AddRange(&committed.Range{ID: "changes:one", MinKey: committed.Key("a"), MaxKey: committed.Key("f"), Count: 3}).
-		AddValueRecords(makeV("b1", "base:b"), makeTombstoneV("e"), makeTombstoneV("f"))
+		AddValueRecords(makeV("a", "changes:a"), makeTombstoneV("e"), makeTombstoneV("f"))
 
 	writer := mock.NewMockMetaRangeWriter(ctrl)
-	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("b1", "base:b")))
+	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("a", "changes:a")))
+	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("c", "base:c")))
+	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("d", "base:d")))
 
 	summary, err := committed.Apply(context.Background(), writer, base, changes, &committed.ApplyOptions{})
 
