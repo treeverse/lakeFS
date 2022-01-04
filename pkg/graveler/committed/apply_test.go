@@ -231,6 +231,31 @@ func TestApplyTombstoneNoBase(t *testing.T) {
 		Count: map[graveler.DiffType]int{},
 	}, summary)
 }
+
+func TestApplyNoBaseOverTombstoneChanges(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	base := testutil.NewFakeIterator().
+		AddRange(&committed.Range{ID: "base:one", MinKey: committed.Key("a"), MaxKey: committed.Key("b"), Count: 0})
+
+	changes := testutil.NewFakeIterator()
+	changes.
+		AddRange(&committed.Range{ID: "changes:one", MinKey: committed.Key("a"), MaxKey: committed.Key("f"), Count: 3}).
+		AddValueRecords(makeV("b1", "base:b"), makeTombstoneV("e"), makeTombstoneV("f"))
+
+	writer := mock.NewMockMetaRangeWriter(ctrl)
+	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("b1", "base:b")))
+
+	summary, err := committed.Apply(context.Background(), writer, base, changes, &committed.ApplyOptions{})
+
+	assert.NoError(t, err)
+	assert.Equal(t, graveler.DiffSummary{
+		Count: map[graveler.DiffType]int{
+			graveler.DiffTypeAdded: 1,
+		},
+	}, summary)
+}
 func TestApplyCopiesLeftoverBase(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
