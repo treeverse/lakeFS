@@ -70,7 +70,7 @@ func expandVariables(s string, vars map[string]string) (string, error) {
 	return s, nil
 }
 
-var errValueNotUnique = errors.New("value no unique in mapping")
+var errValueNotUnique = errors.New("value not unique in mapping")
 
 // embedVariables replaces run-specific values from a string with generic, normalized
 // variables, that can later be expanded by expandVariables.
