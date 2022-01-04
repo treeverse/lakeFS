@@ -26,7 +26,7 @@ var runsDescribeCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		amount := MustInt(cmd.Flags().GetInt("amount"))
 		after := MustString(cmd.Flags().GetString("after"))
-		u := MustParseRepoURI("repository", args[0])
+		u := MustParseRepo("repository", args[0])
 		pagination := api.Pagination{HasMore: true}
 
 		Fmt("Repository: %s\n", u.String())

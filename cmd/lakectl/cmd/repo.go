@@ -50,7 +50,7 @@ var repoCreateCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(repoCreateCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
-		u := MustParseRepoURI("repository", args[0])
+		u := MustParseRepo("repository", args[0])
 		Fmt("Repository: %s\n", u.String())
 		defaultBranch, err := cmd.Flags().GetString("default-branch")
 		if err != nil {
@@ -83,7 +83,7 @@ var repoCreateBareCmd = &cobra.Command{
 	Args:   cobra.ExactArgs(repoCreateCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
-		u := MustParseRepoURI("repository", args[0])
+		u := MustParseRepo("repository", args[0])
 		Fmt("Repository: %s\n", u.String())
 		defaultBranch, err := cmd.Flags().GetString("default-branch")
 		if err != nil {
@@ -116,7 +116,7 @@ var repoDeleteCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
-		u := MustParseRepoURI("repository", args[0])
+		u := MustParseRepo("repository", args[0])
 		Fmt("Repository: %s\n", u.String())
 		confirmation, err := Confirm(cmd.Flags(), "Are you sure you want to delete repository: "+u.Repository)
 		if err != nil || !confirmation {

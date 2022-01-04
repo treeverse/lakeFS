@@ -48,7 +48,7 @@ Example configuration file:
 	Example: "lakectl gc set-config <repository uri> -f config.json",
 	Args:    cobra.ExactArgs(gcSetConfigCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseRepoURI("repository", args[0])
+		u := MustParseRepo("repository", args[0])
 		filename := MustString(cmd.Flags().GetString(filenameFlagName))
 		var reader io.ReadCloser
 		var err error
@@ -83,7 +83,7 @@ var gcGetConfigCmd = &cobra.Command{
 	Example: "lakectl gc get-config <repository uri>",
 	Args:    cobra.ExactArgs(gcSetConfigCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseRepoURI("repository", args[0])
+		u := MustParseRepo("repository", args[0])
 		isJSON := MustBool(cmd.Flags().GetBool(jsonFlagName))
 		client := getClient()
 		resp, err := client.GetGarbageCollectionRulesWithResponse(cmd.Context(), u.Repository)

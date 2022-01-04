@@ -34,7 +34,7 @@ var commitCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		branchURI := MustParseRefURI("branch", args[0])
+		branchURI := MustParseRef("branch", args[0])
 		Fmt("Branch: %s\n", branchURI.String())
 
 		// do commit

@@ -30,8 +30,8 @@ var mergeCmd = &cobra.Command{
 	Args:  cobra.RangeArgs(mergeCmdMinArgs, mergeCmdMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		sourceRef := MustParseRefURI("source ref", args[0])
-		destinationRef := MustParseRefURI("destination ref", args[1])
+		sourceRef := MustParseRef("source ref", args[0])
+		destinationRef := MustParseRef("destination ref", args[1])
 		Fmt("Source: %s\nDestination: %s\n", sourceRef.String(), destinationRef)
 		if destinationRef.Repository != sourceRef.Repository {
 			Die("both references must belong to the same repository", 1)

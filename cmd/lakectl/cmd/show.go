@@ -13,7 +13,7 @@ var showCmd = &cobra.Command{
 	Short: "See detailed information about an entity by ID (commit, user, etc)",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseRepoURI("repository", args[0])
+		u := MustParseRepo("repository", args[0])
 		Fmt("Repository: %s\n", u.String())
 
 		oneOf := []string{"commit"}

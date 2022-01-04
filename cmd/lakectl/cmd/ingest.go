@@ -42,7 +42,7 @@ var ingestCmd = &cobra.Command{
 		from := MustString(cmd.Flags().GetString("from"))
 		to := MustString(cmd.Flags().GetString("to"))
 		concurrency := MustInt(cmd.Flags().GetInt("concurrency"))
-		lakefsURI := MustParsePathURI("to", to)
+		lakefsURI := MustParsePath("to", to)
 
 		// initialize worker pool
 		client := getClient()

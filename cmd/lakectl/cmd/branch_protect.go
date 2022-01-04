@@ -22,7 +22,7 @@ var branchProtectListCmd = &cobra.Command{
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		u := MustParseRepoURI("repository", args[0])
+		u := MustParseRepo("repository", args[0])
 		resp, err := client.GetBranchProtectionRulesWithResponse(cmd.Context(), u.Repository)
 		DieOnResponseError(resp, err)
 		patterns := make([][]interface{}, len(*resp.JSON200))
@@ -44,7 +44,7 @@ var branchProtectAddCmd = &cobra.Command{
 	Args:    cobra.ExactArgs(branchProtectAddCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		u := MustParseRepoURI("repository", args[0])
+		u := MustParseRepo("repository", args[0])
 		resp, err := client.CreateBranchProtectionRuleWithResponse(cmd.Context(), u.Repository, api.CreateBranchProtectionRuleJSONRequestBody{
 			Pattern: args[1],
 		})
@@ -60,7 +60,7 @@ var branchProtectDeleteCmd = &cobra.Command{
 	Args:    cobra.ExactArgs(branchProtectDeleteCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		u := MustParseRepoURI("repository", args[0])
+		u := MustParseRepo("repository", args[0])
 		resp, err := client.DeleteBranchProtectionRuleWithResponse(cmd.Context(), u.Repository, api.DeleteBranchProtectionRuleJSONRequestBody{
 			Pattern: args[1],
 		})

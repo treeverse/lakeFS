@@ -23,7 +23,7 @@ var tagListCmd = &cobra.Command{
 		amount := MustInt(cmd.Flags().GetInt("amount"))
 		after := MustString(cmd.Flags().GetString("after"))
 
-		u := MustParseRepoURI("repository", args[0])
+		u := MustParseRepo("repository", args[0])
 
 		ctx := cmd.Context()
 		client := getClient()
@@ -65,7 +65,7 @@ var tagCreateCmd = &cobra.Command{
 	Short: "Create a new tag in a repository",
 	Args:  cobra.ExactArgs(tagCreateRequiredArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		tagURI := MustParseRefURI("tag", args[0])
+		tagURI := MustParseRef("tag", args[0])
 		Fmt("Tag ref: %s\n", tagURI.String())
 
 		client := getClient()
@@ -104,7 +104,7 @@ var tagDeleteCmd = &cobra.Command{
 			Die("Delete tag aborted", 1)
 		}
 		client := getClient()
-		u := MustParseRefURI("tag", args[0])
+		u := MustParseRef("tag", args[0])
 		Fmt("Tag ref: %s\n", u.String())
 
 		ctx := cmd.Context()
@@ -119,7 +119,7 @@ var tagShowCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		u := MustParseRefURI("tag", args[0])
+		u := MustParseRef("tag", args[0])
 		Fmt("Tag ref: %s\n", u.String())
 
 		ctx := cmd.Context()

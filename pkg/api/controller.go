@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/treeverse/lakefs/pkg/validator"
 	"io"
 	"mime"
 	"net/http"
@@ -119,7 +120,7 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 				StatusCode: http.StatusForbidden,
 				Message:    err.Error(),
 			})
-		case errors.Is(err, catalog.ErrPathRequiredValue):
+		case errors.Is(err, validator.ErrPathRequiredValue):
 			// issue #1706 - https://github.com/treeverse/lakeFS/issues/1706
 			// Spark trying to delete the path "main/", which we map to branch "main" with an empty path.
 			// Spark expects it to succeed (not deleting anything is a success), instead of returning an error.
@@ -1620,7 +1621,7 @@ func handleAPIError(w http.ResponseWriter, err error) bool {
 		errors.Is(err, permissions.ErrInvalidAction),
 		errors.Is(err, model.ErrValidationError),
 		errors.Is(err, graveler.ErrInvalidRef),
-		errors.Is(err, catalog.ErrInvalidValue):
+		errors.Is(err, validator.ErrInvalidValue):
 		writeError(w, http.StatusBadRequest, err)
 
 	case errors.Is(err, graveler.ErrNotUnique):
