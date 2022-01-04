@@ -27,8 +27,8 @@ type commiter struct {
 	haveChanges, haveBase bool
 }
 
-// applyAllBase writes all Base Iterator to writer
-func (a *commiter) applyAllBase(iter Iterator) error {
+// commitAllBase writes all Base Iterator to writer
+func (a *commiter) commitAllBase(iter Iterator) error {
 	for {
 		select {
 		case <-a.ctx.Done():
@@ -86,8 +86,8 @@ func (a *commiter) applyAllBase(iter Iterator) error {
 	return iter.Err()
 }
 
-// applyAllChanges writes all Changes Iterator to writer and returns the number of writes
-func (a *commiter) applyAllChanges(iter graveler.ValueIterator) (int, error) {
+// commitAllChanges writes all Changes Iterator to writer and returns the number of writes
+func (a *commiter) commitAllChanges(iter graveler.ValueIterator) (int, error) {
 	var count int
 	for {
 		select {
@@ -144,7 +144,7 @@ func (a *commiter) incrementDiffSummary(typ graveler.DiffType) {
 	a.addIntoDiffSummary(typ, 1)
 }
 
-func (a *commiter) apply() error {
+func (a *commiter) commit() error {
 	a.haveBase, a.haveChanges = a.base.Next(), a.changes.Next()
 	for a.haveBase && a.haveChanges {
 		select {
@@ -156,9 +156,9 @@ func (a *commiter) apply() error {
 		changeValue := a.changes.Value()
 		var err error
 		if baseValue == nil {
-			err = a.applyBaseRange(baseRange, changeValue)
+			err = a.commitBaseRange(baseRange, changeValue)
 		} else {
-			err = a.applyBothKeys(baseValue, changeValue)
+			err = a.commitBothKeys(baseValue, changeValue)
 		}
 		if err != nil {
 			return err
@@ -174,13 +174,13 @@ func (a *commiter) apply() error {
 		return err
 	}
 	if a.haveBase {
-		if err := a.applyAllBase(a.base); err != nil {
+		if err := a.commitAllBase(a.base); err != nil {
 			return err
 		}
 	}
 
 	if a.haveChanges {
-		numAdded, err := a.applyAllChanges(a.changes)
+		numAdded, err := a.commitAllChanges(a.changes)
 		if err != nil {
 			return err
 		}
@@ -195,7 +195,7 @@ func (a *commiter) apply() error {
 	return a.changes.Err()
 }
 
-func (a *commiter) applyBaseRange(baseRange *Range, changeValue *graveler.ValueRecord) error {
+func (a *commiter) commitBaseRange(baseRange *Range, changeValue *graveler.ValueRecord) error {
 	if bytes.Compare(baseRange.MaxKey, changeValue.Key) < 0 {
 		// Base at start of range which we do not need to scan --
 		// write and skip that entire range.
@@ -218,7 +218,7 @@ func (a *commiter) applyBaseRange(baseRange *Range, changeValue *graveler.ValueR
 	return nil
 }
 
-func (a *commiter) applyBothKeys(baseValue *graveler.ValueRecord, changeValue *graveler.ValueRecord) error {
+func (a *commiter) commitBothKeys(baseValue *graveler.ValueRecord, changeValue *graveler.ValueRecord) error {
 	c := bytes.Compare(baseValue.Key, changeValue.Key)
 	if c < 0 {
 		// select record from base
@@ -280,5 +280,5 @@ func Commit(ctx context.Context, writer MetaRangeWriter, base Iterator, changes 
 		opts:    opts,
 		summary: graveler.DiffSummary{Count: make(map[graveler.DiffType]int)},
 	}
-	return c.summary, c.apply()
+	return c.summary, c.commit()
 }
