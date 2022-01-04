@@ -74,7 +74,7 @@ var errValueNotUnique = errors.New("value no unique in mapping")
 
 // embedVariables replaces run-specific values from a string with generic, normalized
 // variables, that can later be expanded by expandVariables.
-// embedVariables receives a string that may contain some run-specific data (e.g. repo-name), and
+// It receives a string that may contain some run-specific data (e.g. repo-name), and
 // a mapping of variable names to values. It then replaces all the values found in the original
 // string with the corresponding variable name, in the format of {VAR_NAME}. This string can later
 // be consumed by expandVariables.
