@@ -56,11 +56,11 @@ var errVariableNotFound = errors.New("variable not found")
 // expandVariables is successful and returns the result string. If at least one variable does
 // not have a mapping, expandVariables fails and returns error
 func expandVariables(s string, vars map[string]string) (string, error) {
-	s = varRegexp.ReplaceAllStringFunc(s, func(varName string) string {
-		if val, ok := vars[varName[2:len(varName)-1]]; ok {
+	s = varRegexp.ReplaceAllStringFunc(s, func(varReference string) string {
+		if val, ok := vars[varReference[2:len(varReference)-1]]; ok {
 			return val
 		}
-		return varName
+		return varReference
 	})
 
 	if missingVar := varRegexp.FindString(s); missingVar != "" {
