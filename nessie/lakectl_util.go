@@ -34,13 +34,13 @@ func Lakectl() string {
 
 func runShellCommand(command string, isTerminal bool) ([]byte, error) {
 	fmt.Println("Testing '", command, "'")
-	var cmd exec.Cmd
+	var cmd *exec.Cmd
 
 	// Assuming linux. Not sure this is correct
 	if isTerminal {
-		cmd = *exec.Command("/usr/bin/script", "--return", "--quiet", "-c", command, "/dev/null")
+		cmd = exec.Command("/usr/bin/script", "--return", "--quiet", "-c", command, "/dev/null")
 	} else {
-		cmd = *exec.Command("/bin/sh", "-c", command)
+		cmd = exec.Command("/bin/sh", "-c", command)
 	}
 
 	return cmd.CombinedOutput()
