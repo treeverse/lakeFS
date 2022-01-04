@@ -77,7 +77,7 @@ func (c *CommittedFake) Merge(_ context.Context, _ graveler.StorageNamespace, _,
 	return c.MetaRangeID, c.DiffSummary, nil
 }
 
-func (c *CommittedFake) Apply(_ context.Context, _ graveler.StorageNamespace, metaRangeID graveler.MetaRangeID, values graveler.ValueIterator) (graveler.MetaRangeID, graveler.DiffSummary, error) {
+func (c *CommittedFake) Commit(_ context.Context, _ graveler.StorageNamespace, metaRangeID graveler.MetaRangeID, values graveler.ValueIterator) (graveler.MetaRangeID, graveler.DiffSummary, error) {
 	if c.Err != nil {
 		return "", graveler.DiffSummary{}, c.Err
 	}
