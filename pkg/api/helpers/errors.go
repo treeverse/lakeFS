@@ -127,18 +127,20 @@ func HTTPResponseAsError(httpResponse *http.Response) error {
 	if httpResponse == nil || isOK(httpResponse.StatusCode) {
 		return nil
 	}
-
 	statusCode := httpResponse.StatusCode
 	statusText := httpResponse.Status
 	if statusText == "" {
 		statusText = http.StatusText(statusCode)
 	}
 	var message string
-	body, err := io.ReadAll(httpResponse.Body)
-	if err == nil {
-		var apiError api.Error
-		if json.Unmarshal(body, &apiError) == nil && apiError.Message != "" {
-			message = apiError.Message
+	r := reflect.Indirect(reflect.ValueOf(httpResponse))
+	if r.Kind() != reflect.Interface {
+		body, err := io.ReadAll(httpResponse.Body)
+		if err == nil {
+			var apiError api.Error
+			if json.Unmarshal(body, &apiError) == nil && apiError.Message != "" {
+				message = apiError.Message
+			}
 		}
 	}
 	return UserVisibleAPIError{
@@ -149,4 +151,5 @@ func HTTPResponseAsError(httpResponse *http.Response) error {
 			Message:    message,
 		},
 	}
+
 }
