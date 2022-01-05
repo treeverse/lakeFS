@@ -203,7 +203,7 @@ func DieOnResponseError(response interface{}, err error) {
 	}
 }
 
-func DieOnHttpError(httpResponse *http.Response) {
+func DieOnHTTPError(httpResponse *http.Response) {
 	err := helpers.HTTPResponseAsError(httpResponse)
 	if err != nil {
 		DieErr(err)
