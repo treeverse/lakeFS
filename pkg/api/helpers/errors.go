@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"reflect"
 	"strings"
@@ -126,23 +127,19 @@ func HTTPResponseAsError(httpResponse *http.Response) error {
 	if httpResponse == nil || isOK(httpResponse.StatusCode) {
 		return nil
 	}
+
 	statusCode := httpResponse.StatusCode
 	statusText := httpResponse.Status
 	if statusText == "" {
 		statusText = http.StatusText(statusCode)
 	}
 	var message string
-	r := reflect.Indirect(reflect.ValueOf(httpResponse))
-	f := r.FieldByName("Body")
-	if f.IsValid() && f.Type().Kind() == reflect.Slice && f.Type().Elem().Kind() == reflect.Uint8 {
-		body := f.Bytes()
+	body, err := io.ReadAll(httpResponse.Body)
+	if err == nil {
 		var apiError api.Error
-		fmt.Println(body)
 		if json.Unmarshal(body, &apiError) == nil && apiError.Message != "" {
 			message = apiError.Message
 		}
-	} else {
-		message = httpResponse.Status
 	}
 	return UserVisibleAPIError{
 		Err: ErrRequestFailed,
