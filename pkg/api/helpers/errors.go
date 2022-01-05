@@ -137,9 +137,12 @@ func HTTPResponseAsError(httpResponse *http.Response) error {
 	if f.IsValid() && f.Type().Kind() == reflect.Slice && f.Type().Elem().Kind() == reflect.Uint8 {
 		body := f.Bytes()
 		var apiError api.Error
+		fmt.Println(body)
 		if json.Unmarshal(body, &apiError) == nil && apiError.Message != "" {
 			message = apiError.Message
 		}
+	} else {
+		message = httpResponse.Status
 	}
 	return UserVisibleAPIError{
 		Err: ErrRequestFailed,
