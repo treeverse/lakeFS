@@ -51,3 +51,4 @@ VOLUME /etc/lakefs.yaml
 
 ENTRYPOINT ["/app/lakefs"]
 CMD ["run"]
+
