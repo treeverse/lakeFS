@@ -66,22 +66,24 @@ func (a *applier) applyAll(iter Iterator) (int, error) {
 				break
 			}
 		} else {
-			if a.logger.IsTracing() {
-				if iterValue.IsTombstone() {
-					// internal error but no data lost: deletion requested of a
-					// file that was not there.
+			if iterValue.IsTombstone() {
+				// internal error but no data lost: deletion requested of a
+				// file that was not there.
+				if a.logger.IsTracing() {
 					a.logger.WithField("id", string(iterValue.Identity)).Warn("[I] unmatched delete")
-					continue
 				}
-				a.logger.WithFields(logging.Fields{
-					"key": string(iterValue.Key),
-					"ID":  string(iterValue.Identity),
-				}).Trace("write key from iter at end")
+			} else {
+				if a.logger.IsTracing() {
+					a.logger.WithFields(logging.Fields{
+						"key": string(iterValue.Key),
+						"ID":  string(iterValue.Identity),
+					}).Trace("write key from iter at end")
+				}
+				if err := a.writer.WriteRecord(*iterValue); err != nil {
+					return 0, fmt.Errorf("write iter record: %w", err)
+				}
+				count++
 			}
-			if err := a.writer.WriteRecord(*iterValue); err != nil {
-				return 0, fmt.Errorf("write iter record: %w", err)
-			}
-			count++
 			if !iter.Next() {
 				break
 			}
