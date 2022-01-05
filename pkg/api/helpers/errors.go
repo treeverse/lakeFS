@@ -111,18 +111,18 @@ func ResponseAsError(response interface{}) error {
 	var f reflect.Value
 	var httpResponse *http.Response
 	var ok bool
-	if reflect.TypeOf(response).String() != "*http.Response" {
-		f = r.FieldByName("HTTPResponse")
-		if !f.IsValid() {
-			return fmt.Errorf("[no HTTPResponse]: %w", ErrRequestFailed)
-		}
-		httpResponse, ok = f.Interface().(*http.Response)
-		if !ok {
-			return fmt.Errorf("%w: no HTTPResponse", ErrRequestFailed)
-		}
-	} else {
-		httpResponse = response.(*http.Response)
+	f = r.FieldByName("HTTPResponse")
+	if !f.IsValid() {
+		return fmt.Errorf("[no HTTPResponse]: %w", ErrRequestFailed)
 	}
+	httpResponse, ok = f.Interface().(*http.Response)
+	if !ok {
+		return fmt.Errorf("%w: no HTTPResponse", ErrRequestFailed)
+	}
+	return HTTPResponseAsError(httpResponse)
+}
+
+func HTTPResponseAsError(httpResponse *http.Response) error {
 	if httpResponse == nil || isOK(httpResponse.StatusCode) {
 		return nil
 	}
@@ -132,7 +132,8 @@ func ResponseAsError(response interface{}) error {
 		statusText = http.StatusText(statusCode)
 	}
 	var message string
-	f = r.FieldByName("Body")
+	r := reflect.Indirect(reflect.ValueOf(httpResponse))
+	f := r.FieldByName("Body")
 	if f.IsValid() && f.Type().Kind() == reflect.Slice && f.Type().Elem().Kind() == reflect.Uint8 {
 		body := f.Bytes()
 		var apiError api.Error

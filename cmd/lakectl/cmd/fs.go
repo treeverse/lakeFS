@@ -127,7 +127,7 @@ var fsCatCmd = &cobra.Command{
 			resp, err = client.GetObject(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.GetObjectParams{
 				Path: *pathURI.Path,
 			})
-			DieOnResponseError(resp, err)
+			DieOnHttpError(resp)
 			body = resp.Body
 		}
 		if err != nil {
