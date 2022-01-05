@@ -133,8 +133,8 @@ func HTTPResponseAsError(httpResponse *http.Response) error {
 		statusText = http.StatusText(statusCode)
 	}
 	var message string
-	r := reflect.Indirect(reflect.ValueOf(httpResponse))
-	if r.Kind() != reflect.Interface {
+	r := reflect.Indirect(reflect.ValueOf(httpResponse.Body))
+	if r.Kind() == reflect.Struct && r.IsValid() {
 		body, err := io.ReadAll(httpResponse.Body)
 		if err == nil {
 			var apiError api.Error
@@ -151,5 +151,4 @@ func HTTPResponseAsError(httpResponse *http.Response) error {
 			Message:    message,
 		},
 	}
-
 }
