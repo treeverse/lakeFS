@@ -142,6 +142,15 @@ func HTTPResponseAsError(httpResponse *http.Response) error {
 				message = apiError.Message
 			}
 		}
+	} else {
+		f := r.FieldByName("Body")
+		if f.IsValid() && f.Type().Kind() == reflect.Slice && f.Type().Elem().Kind() == reflect.Uint8 {
+			body := f.Bytes()
+			var apiError api.Error
+			if json.Unmarshal(body, &apiError) == nil && apiError.Message != "" {
+				message = apiError.Message
+			}
+		}
 	}
 	return UserVisibleAPIError{
 		Err: ErrRequestFailed,
