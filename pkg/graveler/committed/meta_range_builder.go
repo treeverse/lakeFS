@@ -36,46 +36,28 @@ func (a *metaRangeBuilder) applyAllBase(iter Iterator) error {
 		}
 		iterValue, iterRange := iter.Value()
 		if iterValue == nil {
-			if iterRange.Tombstone {
-				// internal error but no data lost: deletion requested of a
-				// file that was not there.
+			if a.logger.IsTracing() {
 				a.logger.WithFields(logging.Fields{
 					"from": string(iterRange.MinKey),
 					"to":   string(iterRange.MaxKey),
-					"ID":   string(iterRange.ID),
-				}).Warn("[I] unmatched delete")
-			} else {
-				if a.logger.IsTracing() {
-					a.logger.WithFields(logging.Fields{
-						"from": string(iterRange.MinKey),
-						"to":   string(iterRange.MaxKey),
-						"ID":   iterRange.ID,
-					}).Trace("copy entire range at end")
-				}
-				if err := a.writer.WriteRange(*iterRange); err != nil {
-					return fmt.Errorf("copy iter range %s: %w", iterRange.ID, err)
-				}
+					"ID":   iterRange.ID,
+				}).Trace("copy entire range at end")
+			}
+			if err := a.writer.WriteRange(*iterRange); err != nil {
+				return fmt.Errorf("copy iter range %s: %w", iterRange.ID, err)
 			}
 			if !iter.NextRange() {
 				break
 			}
 		} else {
-			if iterValue.IsTombstone() {
-				// internal error but no data lost: deletion requested of a
-				// file that was not there.
-				if a.logger.IsTracing() {
-					a.logger.WithField("id", string(iterValue.Identity)).Warn("[I] unmatched delete")
-				}
-			} else {
-				if a.logger.IsTracing() {
-					a.logger.WithFields(logging.Fields{
-						"key": string(iterValue.Key),
-						"ID":  string(iterValue.Identity),
-					}).Trace("write key from iter at end")
-				}
-				if err := a.writer.WriteRecord(*iterValue); err != nil {
-					return fmt.Errorf("write iter record: %w", err)
-				}
+			if a.logger.IsTracing() {
+				a.logger.WithFields(logging.Fields{
+					"key": string(iterValue.Key),
+					"ID":  string(iterValue.Identity),
+				}).Trace("write key from iter at end")
+			}
+			if err := a.writer.WriteRecord(*iterValue); err != nil {
+				return fmt.Errorf("write iter record: %w", err)
 			}
 			if !iter.Next() {
 				break

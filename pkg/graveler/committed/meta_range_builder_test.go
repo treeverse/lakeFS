@@ -253,7 +253,7 @@ func TestBuildCopiesLeftoverBase(t *testing.T) {
 		AddValueRecords(makeV("a", "base:a"), makeV("b", "base:b"), makeV("c", "base:c")).
 		AddRange(range2).
 		AddValueRecords(makeV("d", "base:d")).
-		AddRange(&committed.Range{ID: "three", MaxKey: committed.Key("ez"), Count: 1}).
+		AddRange(&committed.Range{ID: "three", MinKey: committed.Key("e"), MaxKey: committed.Key("f"), Count: 1}).
 		AddValueRecords(makeV("e", "base:e"), makeV("f", "base:f")).
 		AddRange(range4).
 		AddValueRecords(makeV("g", "base:g"), makeV("h", "base:h"))
