@@ -13,7 +13,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler/testutil"
 )
 
-func TestBuildAdd(t *testing.T) {
+func TestCommitAdd(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -35,7 +35,7 @@ func TestBuildAdd(t *testing.T) {
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("e", "dest:e")))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("f", "dest:f")))
 
-	summary, err := committed.BuildMetaRange(context.Background(), writer, base, changes, &committed.CommitOptions{})
+	summary, err := committed.Commit(context.Background(), writer, base, changes, &committed.CommitOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, graveler.DiffSummary{
 		Count: map[graveler.DiffType]int{
@@ -44,7 +44,7 @@ func TestBuildAdd(t *testing.T) {
 	}, summary)
 }
 
-func TestBuildChangeWithinBaseRange(t *testing.T) {
+func TestCommitChangeWithinBaseRange(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -67,7 +67,7 @@ func TestBuildChangeWithinBaseRange(t *testing.T) {
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("k5", "dest:k5")))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("k6", "base:k6")))
 	writer.EXPECT().WriteRange(gomock.Eq(committed.Range{ID: "last", MinKey: committed.Key("k10"), MaxKey: committed.Key("k13"), Count: 2}))
-	summary, err := committed.BuildMetaRange(context.Background(), writer, base, changes, &committed.CommitOptions{})
+	summary, err := committed.Commit(context.Background(), writer, base, changes, &committed.CommitOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, graveler.DiffSummary{
 		Count: map[graveler.DiffType]int{
@@ -76,7 +76,7 @@ func TestBuildChangeWithinBaseRange(t *testing.T) {
 	}, summary)
 }
 
-func TestBuildBaseRangesWithinChanges(t *testing.T) {
+func TestCommitBaseRangesWithinChanges(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -95,7 +95,7 @@ func TestBuildBaseRangesWithinChanges(t *testing.T) {
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("k3", "base:k3")))
 	writer.EXPECT().WriteRange(gomock.Eq(committed.Range{ID: "inner-range-2", MinKey: committed.Key("k4"), MaxKey: committed.Key("k5"), Count: 2}))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("k6", "changes:k6")))
-	summary, err := committed.BuildMetaRange(context.Background(), writer, base, changes, &committed.CommitOptions{})
+	summary, err := committed.Commit(context.Background(), writer, base, changes, &committed.CommitOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, graveler.DiffSummary{
 		Count: map[graveler.DiffType]int{
@@ -104,7 +104,7 @@ func TestBuildBaseRangesWithinChanges(t *testing.T) {
 	}, summary)
 }
 
-func TestBuildReplace(t *testing.T) {
+func TestCommitReplace(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -126,7 +126,7 @@ func TestBuildReplace(t *testing.T) {
 	writer.EXPECT().WriteRange(gomock.Eq(committed.Range{ID: "two", MinKey: committed.Key("d"), MaxKey: committed.Key("dz"), Count: 1}))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("e", "changes:e")))
 
-	summary, err := committed.BuildMetaRange(context.Background(), writer, base, changes, &committed.CommitOptions{})
+	summary, err := committed.Commit(context.Background(), writer, base, changes, &committed.CommitOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, graveler.DiffSummary{
 		Count: map[graveler.DiffType]int{
@@ -135,7 +135,7 @@ func TestBuildReplace(t *testing.T) {
 	}, summary)
 }
 
-func TestBuildDelete(t *testing.T) {
+func TestCommitDelete(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -155,7 +155,7 @@ func TestBuildDelete(t *testing.T) {
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("c", "base:c")))
 	writer.EXPECT().WriteRange(gomock.Eq(committed.Range{ID: "two", MinKey: committed.Key("d"), MaxKey: committed.Key("dz"), Count: 1}))
 
-	summary, err := committed.BuildMetaRange(context.Background(), writer, base, changes, &committed.CommitOptions{})
+	summary, err := committed.Commit(context.Background(), writer, base, changes, &committed.CommitOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, graveler.DiffSummary{
 		Count: map[graveler.DiffType]int{
@@ -164,7 +164,7 @@ func TestBuildDelete(t *testing.T) {
 	}, summary)
 }
 
-func TestBuildCopiesLeftoverChanges(t *testing.T) {
+func TestCommitCopiesLeftoverChanges(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -185,7 +185,7 @@ func TestBuildCopiesLeftoverChanges(t *testing.T) {
 	writer.EXPECT().WriteRange(gomock.Eq(committed.Range{ID: "two", MinKey: committed.Key("d"), MaxKey: committed.Key("dz"), Count: 1}))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("e", "changes:e")))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("f", "changes:f")))
-	summary, err := committed.BuildMetaRange(context.Background(), writer, base, changes, &committed.CommitOptions{})
+	summary, err := committed.Commit(context.Background(), writer, base, changes, &committed.CommitOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, graveler.DiffSummary{
 		Count: map[graveler.DiffType]int{
@@ -195,7 +195,7 @@ func TestBuildCopiesLeftoverChanges(t *testing.T) {
 	}, summary)
 }
 
-func TestBuildTombstoneNoBase(t *testing.T) {
+func TestCommitTombstoneNoBase(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -207,14 +207,14 @@ func TestBuildTombstoneNoBase(t *testing.T) {
 
 	writer := mock.NewMockMetaRangeWriter(ctrl)
 
-	summary, err := committed.BuildMetaRange(context.Background(), writer, base, changes, &committed.CommitOptions{})
+	summary, err := committed.Commit(context.Background(), writer, base, changes, &committed.CommitOptions{})
 	assert.Error(t, err, graveler.ErrNoChanges)
 	assert.Equal(t, graveler.DiffSummary{
 		Count: map[graveler.DiffType]int{},
 	}, summary)
 }
 
-func TestBuildDeleteNonExistingRecord(t *testing.T) {
+func TestCommitDeleteNonExistingRecord(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -230,7 +230,7 @@ func TestBuildDeleteNonExistingRecord(t *testing.T) {
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("c", "base:c")))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("d", "base:d")))
 
-	summary, err := committed.BuildMetaRange(context.Background(), writer, base, changes, &committed.CommitOptions{})
+	summary, err := committed.Commit(context.Background(), writer, base, changes, &committed.CommitOptions{})
 
 	assert.NoError(t, err)
 	assert.Equal(t, graveler.DiffSummary{
@@ -240,7 +240,7 @@ func TestBuildDeleteNonExistingRecord(t *testing.T) {
 	}, summary)
 }
 
-func TestBuildCopiesLeftoverBase(t *testing.T) {
+func TestCommitCopiesLeftoverBase(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -268,7 +268,7 @@ func TestBuildCopiesLeftoverBase(t *testing.T) {
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("f", "base:f")))
 	writer.EXPECT().WriteRange(gomock.Eq(*range4))
 
-	summary, err := committed.BuildMetaRange(context.Background(), writer, base, changes, &committed.CommitOptions{})
+	summary, err := committed.Commit(context.Background(), writer, base, changes, &committed.CommitOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, graveler.DiffSummary{
 		Count: map[graveler.DiffType]int{
@@ -277,7 +277,7 @@ func TestBuildCopiesLeftoverBase(t *testing.T) {
 	}, summary)
 }
 
-func TestBuildNoChangesFails(t *testing.T) {
+func TestCommitNoChangesFails(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -295,11 +295,11 @@ func TestBuildNoChangesFails(t *testing.T) {
 	writer := mock.NewMockMetaRangeWriter(ctrl)
 	writer.EXPECT().WriteRange(gomock.Any()).AnyTimes()
 
-	_, err := committed.BuildMetaRange(context.Background(), writer, base, changes, &committed.CommitOptions{})
+	_, err := committed.Commit(context.Background(), writer, base, changes, &committed.CommitOptions{})
 	assert.Error(t, err, graveler.ErrNoChanges)
 }
 
-func TestBuildCancelContext(t *testing.T) {
+func TestCommitCancelContext(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -311,7 +311,7 @@ func TestBuildCancelContext(t *testing.T) {
 		writer := mock.NewMockMetaRangeWriter(ctrl)
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
-		_, err := committed.BuildMetaRange(ctx, writer, base, changes, &committed.CommitOptions{})
+		_, err := committed.Commit(ctx, writer, base, changes, &committed.CommitOptions{})
 		assert.True(t, errors.Is(err, context.Canceled), "context canceled error")
 	})
 
@@ -321,7 +321,7 @@ func TestBuildCancelContext(t *testing.T) {
 		writer := mock.NewMockMetaRangeWriter(ctrl)
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
-		_, err := committed.BuildMetaRange(ctx, writer, base, changes, &committed.CommitOptions{})
+		_, err := committed.Commit(ctx, writer, base, changes, &committed.CommitOptions{})
 		assert.True(t, errors.Is(err, context.Canceled), "context canceled error")
 	})
 
@@ -333,7 +333,7 @@ func TestBuildCancelContext(t *testing.T) {
 		writer := mock.NewMockMetaRangeWriter(ctrl)
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
-		_, err := committed.BuildMetaRange(ctx, writer, base, changes, &committed.CommitOptions{})
+		_, err := committed.Commit(ctx, writer, base, changes, &committed.CommitOptions{})
 		assert.True(t, errors.Is(err, context.Canceled), "context canceled error")
 	})
 }

@@ -14,7 +14,7 @@ type CommitOptions struct {
 	AllowEmpty bool
 }
 
-type metaRangeBuilder struct {
+type committer struct {
 	ctx    context.Context
 	logger logging.Logger
 
@@ -27,7 +27,7 @@ type metaRangeBuilder struct {
 }
 
 // applyAllBase writes all remaining changes from Base Iterator to writer
-func (a *metaRangeBuilder) applyAllBase(iter Iterator) error {
+func (a *committer) applyAllBase(iter Iterator) error {
 	for {
 		select {
 		case <-a.ctx.Done():
@@ -68,7 +68,7 @@ func (a *metaRangeBuilder) applyAllBase(iter Iterator) error {
 }
 
 // applyAllChanges writes all remaining changes from Changes Iterator to writer and returns the number of writes
-func (a *metaRangeBuilder) applyAllChanges(iter graveler.ValueIterator) (int, error) {
+func (a *committer) applyAllChanges(iter graveler.ValueIterator) (int, error) {
 	var count int
 	for {
 		select {
@@ -102,7 +102,7 @@ func (a *metaRangeBuilder) applyAllChanges(iter graveler.ValueIterator) (int, er
 	return count, iter.Err()
 }
 
-func (a *metaRangeBuilder) hasChanges(summary graveler.DiffSummary) bool {
+func (a *committer) hasChanges(summary graveler.DiffSummary) bool {
 	for _, changes := range summary.Count {
 		if changes > 0 {
 			return true
@@ -111,17 +111,17 @@ func (a *metaRangeBuilder) hasChanges(summary graveler.DiffSummary) bool {
 	return false
 }
 
-func (a *metaRangeBuilder) addIntoDiffSummary(typ graveler.DiffType, n int) {
+func (a *committer) addIntoDiffSummary(typ graveler.DiffType, n int) {
 	if a.summary.Count != nil {
 		a.summary.Count[typ] += n
 	}
 }
 
-func (a *metaRangeBuilder) incrementDiffSummary(typ graveler.DiffType) {
+func (a *committer) incrementDiffSummary(typ graveler.DiffType) {
 	a.addIntoDiffSummary(typ, 1)
 }
 
-func (a *metaRangeBuilder) applyBaseRange(baseRange *Range, changeValue *graveler.ValueRecord) error {
+func (a *committer) applyBaseRange(baseRange *Range, changeValue *graveler.ValueRecord) error {
 	if bytes.Compare(baseRange.MaxKey, changeValue.Key) < 0 {
 		// Base at start of range which we do not need to scan --
 		// write and skip that entire range.
@@ -144,7 +144,7 @@ func (a *metaRangeBuilder) applyBaseRange(baseRange *Range, changeValue *gravele
 	return nil
 }
 
-func (a *metaRangeBuilder) applyNextKey(baseValue *graveler.ValueRecord, changeValue *graveler.ValueRecord) error {
+func (a *committer) applyNextKey(baseValue *graveler.ValueRecord, changeValue *graveler.ValueRecord) error {
 	c := bytes.Compare(baseValue.Key, changeValue.Key)
 	if c < 0 {
 		// select record from base
@@ -196,7 +196,7 @@ func (a *metaRangeBuilder) applyNextKey(baseValue *graveler.ValueRecord, changeV
 	return nil
 }
 
-func (a *metaRangeBuilder) build() error {
+func (a *committer) commit() error {
 	a.haveBase, a.haveChanges = a.base.Next(), a.changes.Next()
 	for a.haveBase && a.haveChanges {
 		select {
@@ -244,8 +244,8 @@ func (a *metaRangeBuilder) build() error {
 	return a.changes.Err()
 }
 
-func BuildMetaRange(ctx context.Context, writer MetaRangeWriter, base Iterator, changes graveler.ValueIterator, opts *CommitOptions) (graveler.DiffSummary, error) {
-	b := metaRangeBuilder{
+func Commit(ctx context.Context, writer MetaRangeWriter, base Iterator, changes graveler.ValueIterator, opts *CommitOptions) (graveler.DiffSummary, error) {
+	c := committer{
 		ctx:     ctx,
 		logger:  logging.FromContext(ctx),
 		writer:  writer,
@@ -254,5 +254,5 @@ func BuildMetaRange(ctx context.Context, writer MetaRangeWriter, base Iterator, 
 		opts:    opts,
 		summary: graveler.DiffSummary{Count: make(map[graveler.DiffType]int)},
 	}
-	return b.summary, b.build()
+	return c.summary, c.commit()
 }
