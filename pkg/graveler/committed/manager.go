@@ -167,7 +167,7 @@ func (c *committedManager) Commit(ctx context.Context, ns graveler.StorageNamesp
 	defer func() {
 		err := mwWriter.Abort()
 		if err != nil {
-			c.logger.WithError(err).Error("Abort failed after BuildMetaRange")
+			c.logger.WithError(err).Error("Abort failed after Commit")
 		}
 	}()
 	metaRangeIterator, err := c.metaRangeManager.NewMetaRangeIterator(ctx, ns, baseMetaRangeID)
@@ -181,7 +181,7 @@ func (c *committedManager) Commit(ctx context.Context, ns graveler.StorageNamesp
 	summary, err = Commit(ctx, mwWriter, metaRangeIterator, changes, &CommitOptions{})
 	if err != nil {
 		if !errors.Is(err, graveler.ErrUserVisible) {
-			err = fmt.Errorf("build ns=%s id=%s: %w", ns, baseMetaRangeID, err)
+			err = fmt.Errorf("commit ns=%s id=%s: %w", ns, baseMetaRangeID, err)
 		}
 		return "", summary, err
 	}
