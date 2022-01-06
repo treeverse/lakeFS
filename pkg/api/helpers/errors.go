@@ -102,6 +102,9 @@ func (e UserVisibleAPIError) Unwrap() error {
 // unsuccessful HTTPResponse field and uses its message, along with a Body
 // that it assumes is an api.Error.
 func ResponseAsError(response interface{}) error {
+	if httpResponse, ok := response.(*http.Response); ok {
+		return HTTPResponseAsError(httpResponse)
+	}
 	r := reflect.Indirect(reflect.ValueOf(response))
 	if !r.IsValid() || r.Kind() != reflect.Struct {
 		return CallFailedError{
@@ -109,10 +112,9 @@ func ResponseAsError(response interface{}) error {
 			Err:     ErrRequestFailed,
 		}
 	}
-	var f reflect.Value
 	var httpResponse *http.Response
 	var ok bool
-	f = r.FieldByName("HTTPResponse")
+	f := r.FieldByName("HTTPResponse")
 	if !f.IsValid() {
 		return fmt.Errorf("[no HTTPResponse]: %w", ErrRequestFailed)
 	}
@@ -160,8 +162,6 @@ func HTTPResponseAsError(httpResponse *http.Response) error {
 		statusText = http.StatusText(statusCode)
 	}
 	var message string
-	// r := reflect.Indirect(reflect.ValueOf(httpResponse))
-	// if r.Kind() == reflect.Struct && r.IsValid() {
 	body, err := io.ReadAll(httpResponse.Body)
 	if err == nil {
 		var apiError api.Error
@@ -169,7 +169,6 @@ func HTTPResponseAsError(httpResponse *http.Response) error {
 			message = apiError.Message
 		}
 	}
-	// }
 	return UserVisibleAPIError{
 		Err: ErrRequestFailed,
 		APIFields: APIFields{
