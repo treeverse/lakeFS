@@ -120,7 +120,34 @@ func ResponseAsError(response interface{}) error {
 	if !ok {
 		return fmt.Errorf("%w: no HTTPResponse", ErrRequestFailed)
 	}
-	return HTTPResponseAsError(httpResponse)
+	if httpResponse == nil || isOK(httpResponse.StatusCode) {
+		return nil
+	}
+
+	statusCode := httpResponse.StatusCode
+	statusText := httpResponse.Status
+	if statusText == "" {
+		statusText = http.StatusText(statusCode)
+	}
+
+	var message string
+	f = r.FieldByName("Body")
+	if f.IsValid() && f.Type().Kind() == reflect.Slice && f.Type().Elem().Kind() == reflect.Uint8 {
+		body := f.Bytes()
+		var apiError api.Error
+		if json.Unmarshal(body, &apiError) == nil && apiError.Message != "" {
+			message = apiError.Message
+		}
+	}
+
+	return UserVisibleAPIError{
+		Err: ErrRequestFailed,
+		APIFields: APIFields{
+			StatusCode: statusCode,
+			Status:     statusText,
+			Message:    message,
+		},
+	}
 }
 
 func HTTPResponseAsError(httpResponse *http.Response) error {
@@ -133,25 +160,16 @@ func HTTPResponseAsError(httpResponse *http.Response) error {
 		statusText = http.StatusText(statusCode)
 	}
 	var message string
-	r := reflect.Indirect(reflect.ValueOf(httpResponse))
-	if r.Kind() == reflect.Struct && r.IsValid() {
-		body, err := io.ReadAll(httpResponse.Body)
-		if err == nil {
-			var apiError api.Error
-			if json.Unmarshal(body, &apiError) == nil && apiError.Message != "" {
-				message = apiError.Message
-			}
-		}
-	} else {
-		f := r.FieldByName("Body")
-		if f.IsValid() && f.Type().Kind() == reflect.Slice && f.Type().Elem().Kind() == reflect.Uint8 {
-			body := f.Bytes()
-			var apiError api.Error
-			if json.Unmarshal(body, &apiError) == nil && apiError.Message != "" {
-				message = apiError.Message
-			}
+	// r := reflect.Indirect(reflect.ValueOf(httpResponse))
+	// if r.Kind() == reflect.Struct && r.IsValid() {
+	body, err := io.ReadAll(httpResponse.Body)
+	if err == nil {
+		var apiError api.Error
+		if json.Unmarshal(body, &apiError) == nil && apiError.Message != "" {
+			message = apiError.Message
 		}
 	}
+	// }
 	return UserVisibleAPIError{
 		Err: ErrRequestFailed,
 		APIFields: APIFields{
