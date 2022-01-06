@@ -340,6 +340,23 @@ lakectl actions validate <path>
 
 
 
+### lakectl annotate
+
+List entries under a given path, annotating each with the latest modifying commit
+
+```
+lakectl annotate <path uri> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for annotate
+```
+
+
+
 ### lakectl auth
 
 Manage authentication and authorization
