@@ -3,7 +3,6 @@ package committed
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -15,7 +14,7 @@ type CommitOptions struct {
 	AllowEmpty bool
 }
 
-type commiter struct {
+type metaRangeBuilder struct {
 	ctx    context.Context
 	logger logging.Logger
 
@@ -27,8 +26,8 @@ type commiter struct {
 	haveChanges, haveBase bool
 }
 
-// commitAllBase writes all Base Iterator to writer
-func (a *commiter) commitAllBase(iter Iterator) error {
+// applyAllBase writes all remaining changes from Base Iterator to writer
+func (a *metaRangeBuilder) applyAllBase(iter Iterator) error {
 	for {
 		select {
 		case <-a.ctx.Done():
@@ -86,8 +85,8 @@ func (a *commiter) commitAllBase(iter Iterator) error {
 	return iter.Err()
 }
 
-// commitAllChanges writes all Changes Iterator to writer and returns the number of writes
-func (a *commiter) commitAllChanges(iter graveler.ValueIterator) (int, error) {
+// applyAllChanges writes all remaining changes from Changes Iterator to writer and returns the number of writes
+func (a *metaRangeBuilder) applyAllChanges(iter graveler.ValueIterator) (int, error) {
 	var count int
 	for {
 		select {
@@ -121,11 +120,7 @@ func (a *commiter) commitAllChanges(iter graveler.ValueIterator) (int, error) {
 	return count, iter.Err()
 }
 
-func (a *commiter) hasChanges(summary graveler.DiffSummary) bool {
-	if a.summary.Incomplete {
-		// range optimization was used
-		return true
-	}
+func (a *metaRangeBuilder) hasChanges(summary graveler.DiffSummary) bool {
 	for _, changes := range summary.Count {
 		if changes > 0 {
 			return true
@@ -134,68 +129,17 @@ func (a *commiter) hasChanges(summary graveler.DiffSummary) bool {
 	return false
 }
 
-func (a *commiter) addIntoDiffSummary(typ graveler.DiffType, n int) {
+func (a *metaRangeBuilder) addIntoDiffSummary(typ graveler.DiffType, n int) {
 	if a.summary.Count != nil {
 		a.summary.Count[typ] += n
 	}
 }
 
-func (a *commiter) incrementDiffSummary(typ graveler.DiffType) {
+func (a *metaRangeBuilder) incrementDiffSummary(typ graveler.DiffType) {
 	a.addIntoDiffSummary(typ, 1)
 }
 
-func (a *commiter) commit() error {
-	a.haveBase, a.haveChanges = a.base.Next(), a.changes.Next()
-	for a.haveBase && a.haveChanges {
-		select {
-		case <-a.ctx.Done():
-			return a.ctx.Err()
-		default:
-		}
-		baseValue, baseRange := a.base.Value()
-		changeValue := a.changes.Value()
-		var err error
-		if baseValue == nil {
-			err = a.commitBaseRange(baseRange, changeValue)
-		} else {
-			err = a.commitBothKeys(baseValue, changeValue)
-		}
-		if err != nil {
-			return err
-		}
-	}
-	if err := a.base.Err(); err != nil {
-		return err
-	}
-	if err := a.changes.Err(); err != nil {
-		if errors.Is(err, graveler.ErrConflictFound) {
-			a.incrementDiffSummary(graveler.DiffTypeConflict)
-		}
-		return err
-	}
-	if a.haveBase {
-		if err := a.commitAllBase(a.base); err != nil {
-			return err
-		}
-	}
-
-	if a.haveChanges {
-		numAdded, err := a.commitAllChanges(a.changes)
-		if err != nil {
-			return err
-		}
-		if numAdded > 0 {
-			a.addIntoDiffSummary(graveler.DiffTypeAdded, numAdded)
-		}
-	}
-
-	if !a.opts.AllowEmpty && !a.hasChanges(a.summary) {
-		return graveler.ErrNoChanges
-	}
-	return a.changes.Err()
-}
-
-func (a *commiter) commitBaseRange(baseRange *Range, changeValue *graveler.ValueRecord) error {
+func (a *metaRangeBuilder) applyBaseRange(baseRange *Range, changeValue *graveler.ValueRecord) error {
 	if bytes.Compare(baseRange.MaxKey, changeValue.Key) < 0 {
 		// Base at start of range which we do not need to scan --
 		// write and skip that entire range.
@@ -218,7 +162,7 @@ func (a *commiter) commitBaseRange(baseRange *Range, changeValue *graveler.Value
 	return nil
 }
 
-func (a *commiter) commitBothKeys(baseValue *graveler.ValueRecord, changeValue *graveler.ValueRecord) error {
+func (a *metaRangeBuilder) applyNextKey(baseValue *graveler.ValueRecord, changeValue *graveler.ValueRecord) error {
 	c := bytes.Compare(baseValue.Key, changeValue.Key)
 	if c < 0 {
 		// select record from base
@@ -270,8 +214,56 @@ func (a *commiter) commitBothKeys(baseValue *graveler.ValueRecord, changeValue *
 	return nil
 }
 
-func Commit(ctx context.Context, writer MetaRangeWriter, base Iterator, changes graveler.ValueIterator, opts *CommitOptions) (graveler.DiffSummary, error) {
-	c := commiter{
+func (a *metaRangeBuilder) build() error {
+	a.haveBase, a.haveChanges = a.base.Next(), a.changes.Next()
+	for a.haveBase && a.haveChanges {
+		select {
+		case <-a.ctx.Done():
+			return a.ctx.Err()
+		default:
+		}
+		baseValue, baseRange := a.base.Value()
+		changeValue := a.changes.Value()
+		var err error
+		if baseValue == nil {
+			err = a.applyBaseRange(baseRange, changeValue)
+		} else {
+			err = a.applyNextKey(baseValue, changeValue)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	if err := a.base.Err(); err != nil {
+		return err
+	}
+	if err := a.changes.Err(); err != nil {
+		return err
+	}
+	if a.haveBase {
+		if err := a.applyAllBase(a.base); err != nil {
+			return err
+		}
+	}
+
+	if a.haveChanges {
+		numAdded, err := a.applyAllChanges(a.changes)
+		if err != nil {
+			return err
+		}
+		if numAdded > 0 {
+			a.addIntoDiffSummary(graveler.DiffTypeAdded, numAdded)
+		}
+	}
+
+	if !a.opts.AllowEmpty && !a.hasChanges(a.summary) {
+		return graveler.ErrNoChanges
+	}
+	return a.changes.Err()
+}
+
+func BuildMetaRange(ctx context.Context, writer MetaRangeWriter, base Iterator, changes graveler.ValueIterator, opts *CommitOptions) (graveler.DiffSummary, error) {
+	b := metaRangeBuilder{
 		ctx:     ctx,
 		logger:  logging.FromContext(ctx),
 		writer:  writer,
@@ -280,5 +272,5 @@ func Commit(ctx context.Context, writer MetaRangeWriter, base Iterator, changes 
 		opts:    opts,
 		summary: graveler.DiffSummary{Count: make(map[graveler.DiffType]int)},
 	}
-	return c.summary, c.commit()
+	return b.summary, b.build()
 }
