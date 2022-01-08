@@ -112,13 +112,12 @@ func ResponseAsError(response interface{}) error {
 			Err:     ErrRequestFailed,
 		}
 	}
-	var httpResponse *http.Response
 	var ok bool
 	f := r.FieldByName("HTTPResponse")
 	if !f.IsValid() {
 		return fmt.Errorf("[no HTTPResponse]: %w", ErrRequestFailed)
 	}
-	httpResponse, ok = f.Interface().(*http.Response)
+	httpResponse, ok := f.Interface().(*http.Response)
 	if !ok {
 		return fmt.Errorf("%w: no HTTPResponse", ErrRequestFailed)
 	}
