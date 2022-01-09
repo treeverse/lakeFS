@@ -112,9 +112,7 @@ func (a *committer) hasChanges(summary graveler.DiffSummary) bool {
 }
 
 func (a *committer) addIntoDiffSummary(typ graveler.DiffType, n int) {
-	if a.summary.Count != nil {
-		a.summary.Count[typ] += n
-	}
+	a.summary.Count[typ] += n
 }
 
 func (a *committer) incrementDiffSummary(typ graveler.DiffType) {
