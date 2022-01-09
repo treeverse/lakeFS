@@ -642,10 +642,10 @@ type CommittedManager interface {
 	// git merge operation. The resulting tree is expected to be immediately addressable.
 	Merge(ctx context.Context, ns StorageNamespace, destination, source, base MetaRangeID) (MetaRangeID, DiffSummary, error)
 
-	// Apply is the act of taking an existing metaRange (snapshot) and applying a set of changes to it.
+	// Commit is the act of taking an existing metaRange (snapshot) and applying a set of changes to it.
 	// A change is either an entity to write/overwrite, or a tombstone to mark a deletion
 	// it returns a new MetaRangeID that is expected to be immediately addressable
-	Apply(ctx context.Context, ns StorageNamespace, rangeID MetaRangeID, iterator ValueIterator) (MetaRangeID, DiffSummary, error)
+	Commit(ctx context.Context, ns StorageNamespace, baseMetaRangeID MetaRangeID, changes ValueIterator) (MetaRangeID, DiffSummary, error)
 
 	// GetMetaRange returns information where metarangeID is stored.
 	GetMetaRange(ctx context.Context, ns StorageNamespace, metaRangeID MetaRangeID) (MetaRangeInfo, error)
@@ -1240,7 +1240,7 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 		}
 		defer changes.Close()
 
-		commit.MetaRangeID, _, err = g.CommittedManager.Apply(ctx, storageNamespace, branchMetaRangeID, changes)
+		commit.MetaRangeID, _, err = g.CommittedManager.Commit(ctx, storageNamespace, branchMetaRangeID, changes)
 		if err != nil {
 			return "", fmt.Errorf("commit: %w", err)
 		}
