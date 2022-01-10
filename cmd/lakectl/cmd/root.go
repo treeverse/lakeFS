@@ -85,14 +85,13 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
 	Version: version.Version,
 }
 
-func getClient() api.ClientWithResponsesInterface {
+func getClient() *api.ClientWithResponses {
 	// override MaxIdleConnsPerHost to allow highly concurrent access to our API client.
 	// This is done to avoid accumulating many sockets in `TIME_WAIT` status that were closed
 	// only to be immediately reopened.
 	// see: https://stackoverflow.com/a/39834253
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.MaxIdleConnsPerHost = DefaultMaxIdleConnsPerHost
-
 	accessKeyID := cfg.Values.Credentials.AccessKeyID
 	secretAccessKey := cfg.Values.Credentials.SecretAccessKey
 	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(accessKeyID, secretAccessKey)
@@ -109,7 +108,6 @@ func getClient() api.ClientWithResponsesInterface {
 	if u.Path == "" || u.Path == "/" {
 		serverEndpoint = strings.TrimRight(serverEndpoint, "/") + api.BaseURL
 	}
-
 	client, err := api.NewClientWithResponses(
 		serverEndpoint,
 		api.WithRequestEditorFn(basicAuthProvider.Intercept),
