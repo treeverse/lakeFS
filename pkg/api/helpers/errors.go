@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"reflect"
 	"strings"
@@ -101,6 +102,9 @@ func (e UserVisibleAPIError) Unwrap() error {
 // unsuccessful HTTPResponse field and uses its message, along with a Body
 // that it assumes is an api.Error.
 func ResponseAsError(response interface{}) error {
+	if httpResponse, ok := response.(*http.Response); ok {
+		return HTTPResponseAsError(httpResponse)
+	}
 	r := reflect.Indirect(reflect.ValueOf(response))
 	if !r.IsValid() || r.Kind() != reflect.Struct {
 		return CallFailedError{
@@ -108,7 +112,7 @@ func ResponseAsError(response interface{}) error {
 			Err:     ErrRequestFailed,
 		}
 	}
-
+	var ok bool
 	f := r.FieldByName("HTTPResponse")
 	if !f.IsValid() {
 		return fmt.Errorf("[no HTTPResponse]: %w", ErrRequestFailed)
@@ -137,6 +141,33 @@ func ResponseAsError(response interface{}) error {
 		}
 	}
 
+	return UserVisibleAPIError{
+		Err: ErrRequestFailed,
+		APIFields: APIFields{
+			StatusCode: statusCode,
+			Status:     statusText,
+			Message:    message,
+		},
+	}
+}
+
+func HTTPResponseAsError(httpResponse *http.Response) error {
+	if httpResponse == nil || isOK(httpResponse.StatusCode) {
+		return nil
+	}
+	statusCode := httpResponse.StatusCode
+	statusText := httpResponse.Status
+	if statusText == "" {
+		statusText = http.StatusText(statusCode)
+	}
+	var message string
+	body, err := io.ReadAll(httpResponse.Body)
+	if err == nil {
+		var apiError api.Error
+		if json.Unmarshal(body, &apiError) == nil && apiError.Message != "" {
+			message = apiError.Message
+		}
+	}
 	return UserVisibleAPIError{
 		Err: ErrRequestFailed,
 		APIFields: APIFields{

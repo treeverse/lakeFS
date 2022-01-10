@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"strings"
 	"text/template"
@@ -199,6 +200,13 @@ func DieOnResponseError(response interface{}, err error) {
 	retrievedErr := RetrieveError(response, err)
 	if retrievedErr != nil {
 		DieErr(retrievedErr)
+	}
+}
+
+func DieOnHTTPError(httpResponse *http.Response) {
+	err := helpers.HTTPResponseAsError(httpResponse)
+	if err != nil {
+		DieErr(err)
 	}
 }
 
