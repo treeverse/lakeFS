@@ -133,6 +133,7 @@ var fsCatCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
+
 		defer body.Close()
 		_, err = io.Copy(os.Stdout, body)
 		if err != nil {
