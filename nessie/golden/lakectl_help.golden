@@ -7,6 +7,7 @@ Usage:
 
 Available Commands:
   actions         Manage Actions commands
+  annotate        List entries under a given path, annotating each with the latest modifying commit
   auth            Manage authentication and authorization
   branch          Create and manage branches within a repository
   branch-protect  Create and manage branch protection rules
