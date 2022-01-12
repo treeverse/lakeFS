@@ -211,20 +211,9 @@ services:
     entrypoint: dbt
 
   notebook:
-    build: notebook
+    image: jupyter/pyspark-notebook:notebook-6.4.6
     ports:
       - 8888:8888
-    environment:
-      - SPARK_MODE=worker
-      - SPARK_MASTER_URL=spark://spark:7077
-      - SPARK_WORKER_MEMORY=1G
-      - SPARK_WORKER_CORES=1
-      - SPARK_RPC_AUTHENTICATION_ENABLED=no
-      - SPARK_RPC_ENCRYPTION_ENABLED=no
-      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
-      - SPARK_SSL_ENABLED=no
-      - PYSPARK_DRIVER_PYTHON=jupyter
-      - PYSPARK_DRIVER_PYTHON_OPTS='notebook --no-browser --port=8888'
     volumes:
-      - ./etc/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml
-
+      - ./etc/jupyter_notebook_config.py:/home/jovyan/.jupyter/jupyter_notebook_config.py
+      - ./etc/hive-site.xml:/usr/local/spark/conf/hive-site.xml
