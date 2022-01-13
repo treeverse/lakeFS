@@ -1,16 +1,14 @@
-package validator
+package graveler
 
 import (
 	"errors"
 	"testing"
-
-	"github.com/treeverse/lakefs/pkg/graveler"
 )
 
 func TestValidateTagID(t *testing.T) {
 	tests := []struct {
 		name    string
-		tag     graveler.TagID
+		tag     TagID
 		wantErr error
 	}{
 		{name: "empty", tag: "", wantErr: ErrRequiredValue},
@@ -35,7 +33,7 @@ func TestValidateTagID(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			err := ValidateTagID(tt.tag)
 			if !errors.Is(err, tt.wantErr) {
-				t.Errorf("ValidateTagID() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ValidateTagID() error = %v, wantErr %v (%v)", err, tt.wantErr, tt.name)
 			}
 		})
 	}
@@ -53,7 +51,7 @@ func TestValidateTagID_Type(t *testing.T) {
 func TestValidateBranchID(t *testing.T) {
 	tests := []struct {
 		name     string
-		branchID graveler.BranchID
+		branchID BranchID
 		wantErr  error
 	}{
 		{name: "alpha dash", branchID: "valid-branch", wantErr: nil},
