@@ -3,11 +3,15 @@ package validator
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"regexp"
 	"strings"
 
-	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/ident"
+)
+
+const (
+	MaxPathLength = 1024
 )
 
 var (
@@ -61,69 +65,69 @@ func MakeValidateOptional(fn ValidateFunc) ValidateFunc {
 }
 
 func ValidateStorageNamespace(v interface{}) error {
-	s, ok := v.(graveler.StorageNamespace)
-	if !ok {
+	storageNamespace := reflect.ValueOf(v).String()
+	if reflect.TypeOf(v).String() != "graveler.StorageNamespace" {
 		panic(ErrInvalidType)
 	}
-	if len(s) == 0 {
+	if len(storageNamespace) == 0 {
 		return ErrRequiredValue
 	}
 	return nil
 }
 
 func ValidateRef(v interface{}) error {
-	s, ok := v.(graveler.Ref)
-	if !ok {
+	ref := reflect.ValueOf(v).String()
+	if reflect.TypeOf(v).String() != "graveler.Ref" {
 		panic(ErrInvalidType)
 	}
-	if len(s) == 0 {
+	if len(ref) == 0 {
 		return ErrRequiredValue
 	}
-	if !ReValidRef.MatchString(s.String()) {
+	if !ReValidRef.MatchString(ref) {
 		return ErrInvalidValue
 	}
 	return nil
 }
 
 func ValidateBranchID(v interface{}) error {
-	s, ok := v.(graveler.BranchID)
-	if !ok {
+	branchId := reflect.ValueOf(v).String()
+	if reflect.TypeOf(v).String() != "graveler.BranchID" {
 		panic(ErrInvalidType)
 	}
-	if len(s) == 0 {
+
+	if len(branchId) == 0 {
 		return ErrRequiredValue
 	}
-	branchName := s.String()
-	if !ReValidBranchID.MatchString(branchName) {
+	if !ReValidBranchID.MatchString(branchId) {
 		return ErrInvalidValue
 	}
 	return nil
 }
 
 func ValidateTagID(v interface{}) error {
-	s, ok := v.(graveler.TagID)
-	if !ok {
+	tagId := reflect.ValueOf(v).String()
+	if reflect.TypeOf(v).String() != "graveler.TagID" {
 		panic(ErrInvalidType)
 	}
+
 	// https://git-scm.com/docs/git-check-ref-format
-	tag := string(s)
-	if len(tag) == 0 {
+	if len(tagId) == 0 {
 		return ErrRequiredValue
 	}
-	if tag == "@" {
+	if tagId == "@" {
 		return ErrInvalidValue
 	}
-	if strings.HasSuffix(tag, ".") || strings.HasSuffix(tag, ".lock") || strings.HasSuffix(tag, "/") {
+	if strings.HasSuffix(tagId, ".") || strings.HasSuffix(tagId, ".lock") || strings.HasSuffix(tagId, "/") {
 		return ErrInvalidValue
 	}
-	if strings.Contains(tag, "..") || strings.Contains(tag, "//") || strings.Contains(tag, "@{") {
+	if strings.Contains(tagId, "..") || strings.Contains(tagId, "//") || strings.Contains(tagId, "@{") {
 		return ErrInvalidValue
 	}
 	// Unlike git, we do allow '~'.  That supports migration from our previous ref format where commits started with a tilde.
-	if strings.ContainsAny(tag, "^:?*[\\") {
+	if strings.ContainsAny(tagId, "^:?*[\\") {
 		return ErrInvalidValue
 	}
-	for _, r := range tag {
+	for _, r := range tagId {
 		if isControlCodeOrSpace(r) {
 			return ErrInvalidValue
 		}
@@ -137,28 +141,28 @@ func isControlCodeOrSpace(r rune) bool {
 }
 
 func ValidateCommitID(v interface{}) error {
-	s, ok := v.(graveler.CommitID)
-	if !ok {
+	commitId := reflect.ValueOf(v).String()
+	if reflect.TypeOf(v).String() != "graveler.CommitID" {
 		panic(ErrInvalidType)
 	}
-	if len(s) == 0 {
+	if len(commitId) == 0 {
 		return ErrRequiredValue
 	}
-	if !ident.IsContentAddress(s.String()) {
+	if !ident.IsContentAddress(commitId) {
 		return ErrInvalidValue
 	}
 	return nil
 }
 
 func ValidateRepositoryID(v interface{}) error {
-	s, ok := v.(graveler.RepositoryID)
-	if !ok {
+	repositoryId := reflect.ValueOf(v).String()
+	if reflect.TypeOf(v).String() != "graveler.RepositoryID" {
 		panic(ErrInvalidType)
 	}
-	if len(s) == 0 {
+	if len(repositoryId) == 0 {
 		return ErrRequiredValue
 	}
-	if !ReValidRepositoryID.MatchString(s.String()) {
+	if !ReValidRepositoryID.MatchString(repositoryId) {
 		return ErrInvalidValue
 	}
 	return nil
@@ -186,4 +190,21 @@ func ValidateNonNegativeInt(v interface{}) error {
 	return nil
 }
 
+func ValidatePath(v interface{}) error {
+	path := reflect.ValueOf(v).String()
+	if reflect.TypeOf(v).String() != "catalog.Path" {
+		panic(ErrInvalidType)
+	}
+
+	l := len(path)
+	if l == 0 {
+		return ErrPathRequiredValue
+	}
+	if l > MaxPathLength {
+		return fmt.Errorf("%w: %d is above maximum length (%d)", ErrInvalidValue, l, MaxPathLength)
+	}
+	return nil
+}
+
 var ValidateTagIDOptional = MakeValidateOptional(ValidateTagID)
+var ValidatePathOptional = MakeValidateOptional(ValidatePath)

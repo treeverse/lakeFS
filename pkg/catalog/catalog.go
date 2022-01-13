@@ -619,7 +619,7 @@ func (c *Catalog) GetEntry(ctx context.Context, repository string, reference str
 	if err := validator.Validate([]validator.ValidateArg{
 		{Name: "repository", Value: repositoryID, Fn: validator.ValidateRepositoryID},
 		{Name: "ref", Value: refToGet, Fn: validator.ValidateRef},
-		{Name: "path", Value: Path(path), Fn: validatePath},
+		{Name: "path", Value: Path(path), Fn: validator.ValidatePath},
 	}); err != nil {
 		return nil, err
 	}
@@ -682,7 +682,7 @@ func (c *Catalog) CreateEntry(ctx context.Context, repository string, branch str
 	if err := validator.Validate([]validator.ValidateArg{
 		{Name: "repository", Value: repositoryID, Fn: validator.ValidateRepositoryID},
 		{Name: "branch", Value: branchID, Fn: validator.ValidateBranchID},
-		{Name: "path", Value: path, Fn: validatePath},
+		{Name: "path", Value: path, Fn: validator.ValidatePath},
 	}); err != nil {
 		return err
 	}
@@ -701,7 +701,7 @@ func (c *Catalog) DeleteEntry(ctx context.Context, repository string, branch str
 	if err := validator.Validate([]validator.ValidateArg{
 		{Name: "repository", Value: repositoryID, Fn: validator.ValidateRepositoryID},
 		{Name: "branch", Value: branchID, Fn: validator.ValidateBranchID},
-		{Name: "path", Value: p, Fn: validatePath},
+		{Name: "path", Value: p, Fn: validator.ValidatePath},
 	}); err != nil {
 		return err
 	}
@@ -722,8 +722,8 @@ func (c *Catalog) ListEntries(ctx context.Context, repository string, reference 
 	if err := validator.Validate([]validator.ValidateArg{
 		{Name: "repository", Value: repositoryID, Fn: validator.ValidateRepositoryID},
 		{Name: "ref", Value: refToList, Fn: validator.ValidateRef},
-		{Name: "prefix", Value: prefixPath, Fn: validatePathOptional},
-		{Name: "delimiter", Value: delimiterPath, Fn: validatePathOptional},
+		{Name: "prefix", Value: prefixPath, Fn: validator.ValidatePathOptional},
+		{Name: "delimiter", Value: delimiterPath, Fn: validator.ValidatePathOptional},
 	}); err != nil {
 		return nil, false, err
 	}
@@ -766,7 +766,7 @@ func (c *Catalog) ResetEntry(ctx context.Context, repository string, branch stri
 	if err := validator.Validate([]validator.ValidateArg{
 		{Name: "repository", Value: repositoryID, Fn: validator.ValidateRepositoryID},
 		{Name: "branch", Value: branchID, Fn: validator.ValidateBranchID},
-		{Name: "path", Value: entryPath, Fn: validatePath},
+		{Name: "path", Value: entryPath, Fn: validator.ValidatePath},
 	}); err != nil {
 		return err
 	}

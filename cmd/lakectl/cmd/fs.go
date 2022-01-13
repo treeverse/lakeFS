@@ -40,7 +40,7 @@ var fsStatCmd = &cobra.Command{
 	Short: "View object metadata",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		pathURI := MustParsePath("path", args[0])
+		pathURI := MustParsePathURI("path", args[0])
 		client := getClient()
 		res, err := client.StatObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.StatObjectParams{
 			Path: *pathURI.Path,
@@ -63,7 +63,7 @@ var fsListCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		pathURI := MustParsePath("path", args[0])
+		pathURI := MustParsePathURI("path", args[0])
 		recursive, _ := cmd.Flags().GetBool("recursive")
 		prefix := *pathURI.Path
 
@@ -209,7 +209,7 @@ var fsUploadCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		pathURI := MustParsePath("path", args[0])
+		pathURI := MustParsePathURI("path", args[0])
 		source, _ := cmd.Flags().GetString("source")
 		recursive, _ := cmd.Flags().GetBool("recursive")
 		direct, _ := cmd.Flags().GetBool("direct")
@@ -262,7 +262,7 @@ var fsStageCmd = &cobra.Command{
 	Args:   cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		pathURI := MustParsePath("path", args[0])
+		pathURI := MustParsePathURI("path", args[0])
 		flags := cmd.Flags()
 		size, _ := flags.GetInt64("size")
 		mtimeSeconds, _ := flags.GetInt64("mtime")
@@ -325,7 +325,7 @@ var fsRmCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		recursive, _ := cmd.Flags().GetBool("recursive")
 		concurrency := MustInt(cmd.Flags().GetInt("concurrency"))
-		pathURI := MustParsePath("path", args[0])
+		pathURI := MustParsePathURI("path", args[0])
 		client := getClient()
 		if !recursive {
 			// Delete single object in the main thread

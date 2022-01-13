@@ -235,7 +235,7 @@ func PrintTable(rows [][]interface{}, headers []interface{}, paginator *api.Pagi
 	Write(resourceListTemplate, ctx)
 }
 
-func MustParseRepo(name, s string) *uri.URI {
+func MustParseRepoURI(name, s string) *uri.URI {
 	u, err := uri.ParseWithBaseURI(s, baseURI)
 	if err != nil {
 		DieFmt("Invalid '%s': %s", name, err)
@@ -246,7 +246,7 @@ func MustParseRepo(name, s string) *uri.URI {
 	return u
 }
 
-func MustParseRef(name, s string) *uri.URI {
+func MustParseRefURI(name, s string) *uri.URI {
 	u, err := uri.ParseWithBaseURI(s, baseURI)
 	if err != nil {
 		DieFmt("Invalid '%s': %s", name, err)
@@ -257,7 +257,7 @@ func MustParseRef(name, s string) *uri.URI {
 	return u
 }
 
-func MustParsePath(name, s string) *uri.URI {
+func MustParsePathURI(name, s string) *uri.URI {
 	u, err := uri.ParseWithBaseURI(s, baseURI)
 	if err != nil {
 		DieFmt("Invalid '%s': %s", name, err)

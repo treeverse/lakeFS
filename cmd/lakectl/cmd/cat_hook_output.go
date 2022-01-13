@@ -13,7 +13,7 @@ var catHookOutputCmd = &cobra.Command{
 	Example: "lakectl cat-hook-output lakefs://<repository> <run_id> <run_hook_id>",
 	Args:    cobra.ExactArgs(catHookOutputRequiredArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseRepo("repository", args[0])
+		u := MustParseRepoURI("repository", args[0])
 		Fmt("Repository: %s\n", u.String())
 		runID := args[1]
 		hookRunID := args[2]
