@@ -24,20 +24,20 @@ Start Spark Shell / PySpark with the `--packages` flag:
 Spark 3.0.1:
 
 ```bash
-spark-shell --packages io.lakefs:lakefs-spark-client-301_2.12:0.1.0
+spark-shell --packages io.lakefs:lakefs-spark-client-301_2.12:0.1.6
 ```
 
 Spark 2.4.7:
 
 ```bash
-spark-shell --packages io.lakefs:lakefs-spark-client-247_2.11:0.1.0
+spark-shell --packages io.lakefs:lakefs-spark-client-247_2.11:0.1.6
 ```
 
 Alternatively, the Jars are publicly available on S3:
 
-* Spark 3.0.1: `s3://treeverse-clients-us-east/lakefs-spark-client-301_2.12/0.1.0/lakefs-spark-client-301_2.12-0.1.0.jar`
+* Spark 3.0.1: `s3://treeverse-clients-us-east/lakefs-spark-client-301_2.12/0.1.0/lakefs-spark-client-301_2.12-0.1.6.jar`
 
-* Spark 2.4.7: `s3://treeverse-clients-us-east/lakefs-spark-client-247_2.11/0.1.0/lakefs-spark-client-247_2.11-0.1.0.jar`
+* Spark 2.4.7: `s3://treeverse-clients-us-east/lakefs-spark-client-247_2.11/0.1.0/lakefs-spark-client-247_2.11-0.1.6.jar`
 
 ## Configuration
 
