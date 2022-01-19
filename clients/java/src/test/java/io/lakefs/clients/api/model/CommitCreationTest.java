@@ -59,4 +59,12 @@ public class CommitCreationTest {
         // TODO: test metadata
     }
 
+    /**
+     * Test the property 'date'
+     */
+    @Test
+    public void dateTest() {
+        // TODO: test date
+    }
+
 }
