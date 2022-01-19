@@ -75,14 +75,20 @@ def main():
     	raise Exception("Should assign branch or commit, but not both.")
 
     if args.prev_commit_id == None:
-    	cmd = ["rclone", "copy", "--create-empty-src-dirs", source, args.Dest, "--config=rclone.conf"]
+        only_copy = True
+        cmd = ["rclone", "copy", "--create-empty-src-dirs", source, args.Dest, "--config=rclone.conf"]
     else:
-    	cmd = ["rclone", "sync", source, args.Dest, "--config=rclone.conf", "--create-empty-src-dirs"]
+        only_copy = False
+        cmd = ["rclone", "sync", source, args.Dest, "--config=rclone.conf", "--create-empty-src-dirs"]
 
     process = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     # check export and create status file
-    check_process = subprocess.run(["rclone", "check", source, args.Dest, "--config=rclone.conf", "--combined=errors"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if only_copy:
+        # if we check the copy command we add the flag --one-way since we only want to check that the source files were copied to the destination
+        check_process = subprocess.run(["rclone", "check", source, args.Dest, "--config=rclone.conf", "--combined=errors", "--one-way"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    else:
+        check_process = subprocess.run(["rclone", "check", source, args.Dest, "--config=rclone.conf", "--combined=errors"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     # rclnoe check --combined contains files that are identical, so we'll remove those files from the errors file
     with open("errors", "r") as input, open("temp", "w") as output:
@@ -102,7 +108,6 @@ def main():
 
     write_status_file(success, status_file_name)
     upload_status_file = subprocess.run(["rclone", "copy", "./" + status_file_name, args.Dest, "--config=rclone.conf"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
 
 if __name__ == '__main__':
 	main()
