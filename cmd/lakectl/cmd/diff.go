@@ -15,7 +15,7 @@ const (
 	diffCmdMaxArgs = 2
 
 	minDiffPageSize = 50
-	maxDiffPageSize = 100000
+	maxDiffPageSize = 1000
 
 	twoWayFlagName = "two-way"
 	diffTypeTwoDot = "two_dot"
