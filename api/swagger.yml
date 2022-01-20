@@ -426,7 +426,7 @@ components:
           additionalProperties:
             type: string
         date:
-          description: optional - use to override creation date in the commit
+          description: set date to override creation date in the commit (Unix Epoch in seconds)
           type: integer
           format: int64
 

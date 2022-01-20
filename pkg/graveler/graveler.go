@@ -292,8 +292,9 @@ func (d *Diff) Copy() *Diff {
 type CommitParams struct {
 	Committer string
 	Message   string
-	Date      *int64
-	Metadata  Metadata
+	// Date (Unix Epoch in seconds) is used to override commits creation date
+	Date     *int64
+	Metadata Metadata
 }
 
 type KeyValueStore interface {

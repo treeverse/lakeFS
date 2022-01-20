@@ -106,11 +106,11 @@ public class CommitCreation {
   }
 
    /**
-   * optional - use to override creation date in the commit
+   * set date to override creation date in the commit (Unix Epoch in seconds)
    * @return date
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "optional - use to override creation date in the commit")
+  @ApiModelProperty(value = "set date to override creation date in the commit (Unix Epoch in seconds)")
 
   public Long getDate() {
     return date;

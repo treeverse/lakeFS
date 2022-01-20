@@ -497,11 +497,11 @@ func TestController_CommitHandler(t *testing.T) {
 	})
 
 	t.Run("commit success - with creation date", func(t *testing.T) {
-		_, err := deps.catalog.CreateRepository(ctx, "foo1", onBlock(deps, "foo1"), "main")
-		testutil.MustDo(t, "create repo foo1", err)
-		testutil.MustDo(t, "commit bar on foo1", deps.catalog.CreateEntry(ctx, "foo1", "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
+		_, err := deps.catalog.CreateRepository(ctx, "foo2", onBlock(deps, "foo2"), "main")
+		testutil.MustDo(t, "create repo foo2", err)
+		testutil.MustDo(t, "commit bar on foo2", deps.catalog.CreateEntry(ctx, "foo2", "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
 		date := int64(1642626109)
-		resp, err := clt.CommitWithResponse(ctx, "foo1", "main", api.CommitJSONRequestBody{
+		resp, err := clt.CommitWithResponse(ctx, "foo2", "main", api.CommitJSONRequestBody{
 			Message: "some message",
 			Date:    &date,
 		})

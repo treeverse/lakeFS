@@ -143,7 +143,7 @@ class CommitCreation(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             metadata ({str: (str,)}): [optional]  # noqa: E501
-            date (int): optional - use to override creation date in the commit. [optional]  # noqa: E501
+            date (int): set date to override creation date in the commit (Unix Epoch in seconds). [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -230,7 +230,7 @@ class CommitCreation(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             metadata ({str: (str,)}): [optional]  # noqa: E501
-            date (int): optional - use to override creation date in the commit. [optional]  # noqa: E501
+            date (int): set date to override creation date in the commit (Unix Epoch in seconds). [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
