@@ -34,6 +34,7 @@ This reference uses `.` to denote the nesting of values.
 * `database.max_idle_connections` `(int : 25)` - Sets the maximum number of connections in the idle connection pool
 * `database.connection_max_lifetime` `(duration : 5m)` - Sets the maximum amount of time a connection may be reused
 * `listen_address` `(string : "0.0.0.0:8000")` - A `<host>:<port>` structured string representing the address to listen on
+* `actions_disabled` `(bool : false)` - Setting this to true will block hooks from being executed
 * `auth.cache.enabled` `(bool : true)` - Whether to cache access credentials and user policies in-memory. Can greatly improve throughput when enabled.
 * `auth.cache.size` `(int : 1024)` - How many items to store in the auth cache. Systems with a very high user count should use a larger value at the expense of ~1kb of memory per cached user.
 * `auth.cache.ttl` `(time duration : "20s")` - How long to store an item in the auth cache. Using a higher value reduces load on the database, but will cause changes longer to take effect for cached users.

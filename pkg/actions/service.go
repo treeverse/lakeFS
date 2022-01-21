@@ -19,13 +19,14 @@ import (
 )
 
 type Service struct {
-	DB     db.Database
-	Source Source
-	Writer OutputWriter
-	ctx    context.Context
-	cancel context.CancelFunc
-	wg     sync.WaitGroup
-	stats  stats.Collector
+	DB       db.Database
+	Source   Source
+	Writer   OutputWriter
+	ctx      context.Context
+	cancel   context.CancelFunc
+	wg       sync.WaitGroup
+	stats    stats.Collector
+	disabled bool
 }
 
 type Task struct {
@@ -87,16 +88,17 @@ const defaultFetchSize = 1024
 
 var ErrNotFound = errors.New("not found")
 
-func NewService(ctx context.Context, db db.Database, source Source, writer OutputWriter, stats stats.Collector) *Service {
+func NewService(ctx context.Context, db db.Database, source Source, writer OutputWriter, stats stats.Collector, disabled bool) *Service {
 	ctx, cancel := context.WithCancel(ctx)
 	return &Service{
-		DB:     db,
-		Source: source,
-		Writer: writer,
-		ctx:    ctx,
-		cancel: cancel,
-		wg:     sync.WaitGroup{},
-		stats:  stats,
+		DB:       db,
+		Source:   source,
+		Writer:   writer,
+		ctx:      ctx,
+		cancel:   cancel,
+		wg:       sync.WaitGroup{},
+		stats:    stats,
+		disabled: disabled,
 	}
 }
 
@@ -120,6 +122,11 @@ func (s *Service) asyncRun(record graveler.HookRecord) {
 
 // Run load and run actions based on the event information
 func (s *Service) Run(ctx context.Context, record graveler.HookRecord) error {
+	if s.disabled {
+		logging.Default().WithField("record", record).Info("Hooks are disabled, skipping hooks execution")
+		return nil
+	}
+
 	// load relevant actions
 	spec := MatchSpec{
 		EventType: record.EventType,

@@ -368,6 +368,10 @@ func (c *Config) GetListenAddress() string {
 	return c.values.ListenAddress
 }
 
+func (c *Config) GetActionsDisabled() bool {
+	return c.values.ActionsDisabled
+}
+
 func (c *Config) GetStatsEnabled() bool {
 	return c.values.Stats.Enabled
 }
