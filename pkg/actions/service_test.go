@@ -220,7 +220,7 @@ hooks:
 	// run actions
 	now := time.Now()
 	mockStatsCollector := NewActionStatsMockCollector()
-	actionsService := actions.NewService(ctx, conn, testSource, testOutputWriter, &mockStatsCollector)
+	actionsService := actions.NewService(ctx, conn, testSource, testOutputWriter, &mockStatsCollector, true)
 	defer actionsService.Stop()
 
 	err := actionsService.Run(ctx, record)
@@ -298,6 +298,97 @@ hooks:
 	}
 
 	require.Greater(t, bytes.Count(writerBytes, []byte("\n")), 10)
+}
+
+func TestDisableHooksRun(t *testing.T) {
+	conn, _ := testutil.GetDB(t, databaseURI)
+
+	record := graveler.HookRecord{
+		RunID:            graveler.NewRunID(),
+		EventType:        graveler.EventTypePreCommit,
+		StorageNamespace: "storageNamespace",
+		RepositoryID:     "repoID",
+		BranchID:         "branchID",
+		SourceRef:        "sourceRef",
+		Commit: graveler.Commit{
+			Message:   "commitMessage",
+			Committer: "committer",
+			Metadata:  map[string]string{"key": "value"},
+		},
+	}
+	const actionName = "test action"
+	const webhookID = "webhook_id"
+	hookResponse := "OK"
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() { _ = r.Body.Close() }()
+		data, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Error("Failed to read webhook post data", err)
+			return
+		}
+
+		if r.URL.Path == "/webhook" {
+			queryParams := map[string][]string(r.URL.Query())
+			require.Len(t, queryParams["prefix"], 1)
+			require.Equal(t, "public/", queryParams["prefix"][0])
+			require.Len(t, queryParams["disallow"], 2)
+			require.Equal(t, "user_", queryParams["disallow"][0])
+			require.Equal(t, "private_", queryParams["disallow"][1])
+
+			var eventInfo actions.EventInfo
+			err = json.Unmarshal(data, &eventInfo)
+			if err != nil {
+				t.Error("Failed to unmarshal webhook data", err)
+				return
+			}
+
+			checkEvent(t, record, eventInfo, actionName, webhookID)
+		} else {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		_, _ = io.WriteString(w, hookResponse)
+	}))
+	defer ts.Close()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	require.NoError(t, os.Setenv("PRIVATE", "private_"))
+	require.NoError(t, os.Setenv("AIRFLOW_PASSWORD", "some_password"))
+
+	ctx := context.Background()
+	testOutputWriter := mock.NewMockOutputWriter(ctrl)
+	var writerBytes []byte
+
+	testSource := mock.NewMockSource(ctrl)
+
+	// run actions
+	mockStatsCollector := NewActionStatsMockCollector()
+	actionsService := actions.NewService(ctx, conn, testSource, testOutputWriter, &mockStatsCollector, false)
+	defer actionsService.Stop()
+
+	err := actionsService.Run(ctx, record)
+	if err != nil {
+		t.Fatalf("Run() failed with err=%s", err)
+	}
+
+	// update commit using post event record
+	err = actionsService.UpdateCommitID(ctx, record.RepositoryID.String(), record.StorageNamespace.String(), record.RunID, "commit1")
+	if err != nil {
+		t.Fatalf("UpdateCommitID() failed with err=%s", err)
+	}
+
+	// get run result
+	runResult, err := actionsService.GetRunResult(ctx, record.RepositoryID.String(), record.RunID)
+	if !errors.Is(err, actions.ErrNotFound) || runResult != nil {
+		t.Fatal("GetRunResult() shouldn't get run result", err, runResult)
+	}
+
+	require.Equal(t, 0, mockStatsCollector.Hits["pre-commit"])
+	require.Equal(t, bytes.Count(writerBytes, []byte("\n")), 0)
 }
 
 func checkEvent(t *testing.T, record graveler.HookRecord, event actions.EventInfo, actionName string, hookID string) {
@@ -379,7 +470,7 @@ hooks:
 
 	// run actions
 	mockStatsCollector := NewActionStatsMockCollector()
-	actionsService := actions.NewService(ctx, conn, testSource, testOutputWriter, &mockStatsCollector)
+	actionsService := actions.NewService(ctx, conn, testSource, testOutputWriter, &mockStatsCollector, true)
 	defer actionsService.Stop()
 
 	require.Error(t, actionsService.Run(ctx, record))
