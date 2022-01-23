@@ -117,47 +117,42 @@ func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespa
 		summary.Incomplete = true
 		return source, summary, nil
 	}
-	diffIt, err := c.diffWithRanges(ctx, ns, destination, source)
-	if err != nil {
-		return "", summary, fmt.Errorf("diff: %w", err)
-	}
-	defer diffIt.Close()
 	baseIt, err := c.metaRangeManager.NewMetaRangeIterator(ctx, ns, base)
 	if err != nil {
 		return "", summary, fmt.Errorf("get base iterator: %w", err)
 	}
 	defer baseIt.Close()
-	patchIterator := NewMergeIterator(ctx, diffIt, baseIt)
-	defer patchIterator.Close()
-	return c.applyOnDiffWithRanges(ctx, ns, destination, patchIterator)
-}
 
-func (c *committedManager) applyOnDiffWithRanges(ctx context.Context, ns graveler.StorageNamespace, rangeID graveler.MetaRangeID, diffs Iterator) (graveler.MetaRangeID, graveler.DiffSummary, error) {
+	sourceIt, err := c.metaRangeManager.NewMetaRangeIterator(ctx, ns, source)
+	if err != nil {
+		return "", summary, fmt.Errorf("get source iterator: %w", err)
+	}
+	defer sourceIt.Close()
+
+	destIt, err := c.metaRangeManager.NewMetaRangeIterator(ctx, ns, destination)
+	if err != nil {
+		return "", summary, fmt.Errorf("get destination iterator: %w", err)
+	}
+	defer destIt.Close()
+
 	mwWriter := c.metaRangeManager.NewWriter(ctx, ns, nil)
 	defer func() {
 		err := mwWriter.Abort()
 		if err != nil {
-			c.logger.WithError(err).Error("Abort failed after Apply")
+			c.logger.WithError(err).Error("Abort failed after Merge")
 		}
 	}()
-	metaRangeIterator, err := c.metaRangeManager.NewMetaRangeIterator(ctx, ns, rangeID)
-	summary := graveler.DiffSummary{
-		Count: map[graveler.DiffType]int{},
-	}
-	if err != nil {
-		return "", summary, fmt.Errorf("get metarange ns=%s id=%s: %w", ns, rangeID, err)
-	}
-	defer metaRangeIterator.Close()
-	summary, err = Apply(ctx, mwWriter, metaRangeIterator, diffs, &ApplyOptions{})
+
+	summary, err = Merge(ctx, mwWriter, baseIt, sourceIt, destIt)
 	if err != nil {
 		if !errors.Is(err, graveler.ErrUserVisible) {
-			err = fmt.Errorf("apply ns=%s id=%s: %w", ns, rangeID, err)
+			err = fmt.Errorf("merge ns=%s id=%s: %w", ns, destination, err)
 		}
 		return "", summary, err
 	}
 	newID, err := mwWriter.Close()
 	if newID == nil {
-		return "", summary, fmt.Errorf("close writer ns=%s id=%s: %w", ns, rangeID, err)
+		return "", summary, fmt.Errorf("close writer ns=%s id=%s: %w", ns, destination, err)
 	}
 	return *newID, summary, err
 }

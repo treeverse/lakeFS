@@ -3,10 +3,12 @@ package committed_test
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
-	"github.com/go-test/deep"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/golang/mock/gomock"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
@@ -84,7 +86,6 @@ func Test_merge(t *testing.T) {
 		destRange           []testRange
 		expectedActions     []writeAction
 		conflictExpectedIdx *int
-		expectedSummary     graveler.DiffSummary
 		expectedErr         error
 	}{
 		"dest range added before": {
@@ -111,8 +112,7 @@ func Test_merge(t *testing.T) {
 					rng:    committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234},
 				},
 			},
-			expectedSummary: graveler.DiffSummary{Count: make(map[graveler.DiffType]int)},
-			expectedErr:     graveler.ErrNoChanges,
+			expectedErr: nil,
 		},
 		"source range added before": {
 			baseRange: []testRange{
@@ -136,7 +136,6 @@ func Test_merge(t *testing.T) {
 					rng:    committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1024},
 				},
 			},
-			expectedSummary: graveler.DiffSummary{Count: map[graveler.DiffType]int{added: 2}},
 		},
 		"source range removed before": {
 			baseRange: []testRange{
@@ -157,7 +156,6 @@ func Test_merge(t *testing.T) {
 					rng:    committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1024},
 				},
 			},
-			expectedSummary: graveler.DiffSummary{Count: map[graveler.DiffType]int{removed: 2}},
 		},
 		"source range inner change": {
 			baseRange: []testRange{
@@ -183,7 +181,6 @@ func Test_merge(t *testing.T) {
 					rng:    committed.Range{ID: "source:k1-k3", MinKey: committed.Key("k1"), MaxKey: committed.Key("k3"), EstimatedSize: 1024},
 				},
 			},
-			expectedSummary: graveler.DiffSummary{Count: map[graveler.DiffType]int{}, Incomplete: true},
 		},
 		"dest range inner change": {
 			baseRange: []testRange{
@@ -212,8 +209,7 @@ func Test_merge(t *testing.T) {
 					rng:    committed.Range{ID: "dest:k1-k3", MinKey: committed.Key("k1"), MaxKey: committed.Key("k3"), EstimatedSize: 1024},
 				},
 			},
-			expectedErr:     graveler.ErrNoChanges,
-			expectedSummary: graveler.DiffSummary{Count: make(map[graveler.DiffType]int)},
+			expectedErr: nil,
 		},
 		"source range append after": {
 			baseRange: []testRange{
@@ -239,8 +235,14 @@ func Test_merge(t *testing.T) {
 			conflictExpectedIdx: nil,
 			expectedActions: []writeAction{
 				{
-					action: actionTypeWriteRange,
-					rng:    committed.Range{ID: "base:k1-k3", MinKey: committed.Key("k1"), MaxKey: committed.Key("k3"), Count: 2, EstimatedSize: 1024},
+					action:   actionTypeWriteRecord,
+					key:      "k1",
+					identity: "base:k1",
+				},
+				{
+					action:   actionTypeWriteRecord,
+					key:      "k3",
+					identity: "base:k3",
 				},
 				{
 					action:   actionTypeWriteRecord,
@@ -253,7 +255,6 @@ func Test_merge(t *testing.T) {
 					identity: "source:k5",
 				},
 			},
-			expectedSummary: graveler.DiffSummary{Count: map[graveler.DiffType]int{added: 2}},
 		},
 		"source range append and remove after": {
 			baseRange: []testRange{
@@ -303,8 +304,7 @@ func Test_merge(t *testing.T) {
 					identity: "source:k5",
 				},
 			},
-			expectedErr:     nil,
-			expectedSummary: graveler.DiffSummary{Count: map[graveler.DiffType]int{added: 2, removed: 1}},
+			expectedErr: nil,
 		},
 		"source range - overlapping ranges": {
 			baseRange: []testRange{
@@ -331,7 +331,6 @@ func Test_merge(t *testing.T) {
 				{action: actionTypeWriteRecord, key: "k6", identity: "base:k6"},
 				{action: actionTypeWriteRecord, key: "k10", identity: "source:k10"},
 			},
-			expectedSummary: graveler.DiffSummary{Count: map[graveler.DiffType]int{added: 2}},
 		},
 		"dest range - overlapping ranges": {
 			baseRange: []testRange{
@@ -351,10 +350,14 @@ func Test_merge(t *testing.T) {
 			},
 			conflictExpectedIdx: nil,
 			expectedActions: []writeAction{
-				{action: actionTypeWriteRange, rng: committed.Range{ID: "dest:k1-k10", MinKey: committed.Key("k1"), MaxKey: committed.Key("k10"), Count: 6, EstimatedSize: 66666}},
+				{action: actionTypeWriteRecord, key: "k1", identity: "base:k1"},
+				{action: actionTypeWriteRecord, key: "k3", identity: "base:k3"},
+				{action: actionTypeWriteRecord, key: "k4", identity: "dest:k4"},
+				{action: actionTypeWriteRecord, key: "k5", identity: "base:k5"},
+				{action: actionTypeWriteRecord, key: "k6", identity: "base:k6"},
+				{action: actionTypeWriteRecord, key: "k10", identity: "dest:k10"},
 			},
-			expectedSummary: graveler.DiffSummary{Count: make(map[graveler.DiffType]int)},
-			expectedErr:     graveler.ErrNoChanges,
+			expectedErr: nil,
 		},
 		"source - remove at end of range": {
 			baseRange: []testRange{
@@ -374,10 +377,14 @@ func Test_merge(t *testing.T) {
 			},
 			conflictExpectedIdx: nil,
 			expectedActions: []writeAction{
-				{action: actionTypeWriteRange, rng: committed.Range{ID: "dest:k1-k10", MinKey: committed.Key("k1"), MaxKey: committed.Key("k10"), Count: 6, EstimatedSize: 66666}},
+				{action: actionTypeWriteRecord, key: "k1", identity: "base:k1"},
+				{action: actionTypeWriteRecord, key: "k3", identity: "base:k3"},
+				{action: actionTypeWriteRecord, key: "k4", identity: "dest:k4"},
+				{action: actionTypeWriteRecord, key: "k5", identity: "base:k5"},
+				{action: actionTypeWriteRecord, key: "k6", identity: "base:k6"},
+				{action: actionTypeWriteRecord, key: "k10", identity: "dest:k10"},
 			},
-			expectedSummary: graveler.DiffSummary{Count: make(map[graveler.DiffType]int)},
-			expectedErr:     graveler.ErrNoChanges,
+			expectedErr: nil,
 		},
 		"both added key to range": {
 			baseRange: []testRange{
@@ -423,7 +430,6 @@ func Test_merge(t *testing.T) {
 					identity: "base:k6",
 				},
 			},
-			expectedSummary: graveler.DiffSummary{Count: map[graveler.DiffType]int{added: 1}},
 		},
 		"source range removed": {
 			baseRange: []testRange{
@@ -445,8 +451,7 @@ func Test_merge(t *testing.T) {
 					rng:    committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234},
 				},
 			},
-			expectedSummary: graveler.DiffSummary{Count: map[graveler.DiffType]int{removed: 2}},
-			expectedErr:     nil,
+			expectedErr: nil,
 		},
 		"dest range removed": {
 			baseRange: []testRange{
@@ -467,8 +472,7 @@ func Test_merge(t *testing.T) {
 					rng:    committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234},
 				},
 			},
-			expectedSummary: graveler.DiffSummary{Count: make(map[graveler.DiffType]int)},
-			expectedErr:     graveler.ErrNoChanges,
+			expectedErr: nil,
 		},
 		"source key removed from range - same bounds": {
 			baseRange: []testRange{
@@ -500,7 +504,6 @@ func Test_merge(t *testing.T) {
 				{action: actionTypeWriteRange, rng: committed.Range{ID: "base:k1-k2", MinKey: committed.Key("k1"), MaxKey: committed.Key("k2"), Count: 2, EstimatedSize: 1234}},
 				{action: actionTypeWriteRange, rng: committed.Range{ID: "source:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234}},
 			},
-			expectedSummary: graveler.DiffSummary{Count: map[graveler.DiffType]int{}, Incomplete: true},
 		},
 		"source key removed from range": {
 			baseRange: []testRange{
@@ -533,7 +536,6 @@ func Test_merge(t *testing.T) {
 				{action: actionTypeWriteRecord, key: "k3", identity: "base:k3"},
 				{action: actionTypeWriteRecord, key: "k5", identity: "base:k5"},
 			},
-			expectedSummary: graveler.DiffSummary{Count: map[graveler.DiffType]int{removed: 2}},
 		},
 		"dest key removed from range": {
 			baseRange: []testRange{
@@ -565,8 +567,7 @@ func Test_merge(t *testing.T) {
 				{action: actionTypeWriteRange, rng: committed.Range{ID: "base:k1-k2", MinKey: committed.Key("k1"), MaxKey: committed.Key("k2"), Count: 2, EstimatedSize: 1234}},
 				{action: actionTypeWriteRange, rng: committed.Range{ID: "dest:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234}},
 			},
-			expectedSummary: graveler.DiffSummary{Count: make(map[graveler.DiffType]int)},
-			expectedErr:     graveler.ErrNoChanges,
+			expectedErr: nil,
 		},
 		"empty source and base": {
 			baseRange:   []testRange{},
@@ -586,8 +587,7 @@ func Test_merge(t *testing.T) {
 					rng:    committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234},
 				},
 			},
-			expectedSummary: graveler.DiffSummary{Count: make(map[graveler.DiffType]int)},
-			expectedErr:     graveler.ErrNoChanges,
+			expectedErr: nil,
 		},
 	}
 
@@ -610,22 +610,224 @@ func Test_merge(t *testing.T) {
 			sourceKey := graveler.MetaRangeID("source")
 			destKey := graveler.MetaRangeID("dest")
 			baseKey := graveler.MetaRangeID("base")
-			metaRangeManager.EXPECT().NewMetaRangeIterator(gomock.Any(), gomock.Any(), sourceKey).Return(createIter(tst.sourceRange), nil)
-			metaRangeManager.EXPECT().NewMetaRangeIterator(gomock.Any(), gomock.Any(), destKey).Return(createIter(tst.destRange), nil)
 			metaRangeManager.EXPECT().NewMetaRangeIterator(gomock.Any(), gomock.Any(), baseKey).Return(createIter(tst.baseRange), nil)
+			metaRangeManager.EXPECT().NewMetaRangeIterator(gomock.Any(), gomock.Any(), sourceKey).Return(createIter(tst.sourceRange), nil)
 			metaRangeManager.EXPECT().NewMetaRangeIterator(gomock.Any(), gomock.Any(), destKey).Return(createIter(tst.destRange), nil)
 
 			writer.EXPECT().Abort()
 			metaRangeId := graveler.MetaRangeID("merge")
 			writer.EXPECT().Close().Return(&metaRangeId, nil).AnyTimes()
 			committedManager := committed.NewCommittedManager(metaRangeManager)
-			_, summary, err := committedManager.Merge(ctx, "ns", "dest", "source", "base")
+			_, _, err := committedManager.Merge(ctx, "ns", "dest", "source", "base")
 			if err != tst.expectedErr {
 				t.Fatal(err)
 			}
-			if diff := deep.Equal(summary, tst.expectedSummary); diff != nil {
-				t.Error("LoadActions() found diff", diff)
-			}
 		})
 	}
+}
+
+func TestMergeAdd(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	base := testutil.NewFakeIterator()
+	base.
+		AddRange(&committed.Range{ID: "one", MinKey: committed.Key("a"), MaxKey: committed.Key("cz"), Count: 2}).
+		AddValueRecords(makeV("a", "base:a"), makeV("c", "base:c")).
+		AddRange(&committed.Range{ID: "two", MinKey: committed.Key("d"), MaxKey: committed.Key("d"), Count: 1}).
+		AddValueRecords(makeV("d", "base:d"))
+
+	destination := testutil.NewFakeIterator()
+	destination.
+		AddRange(&committed.Range{ID: "one", MinKey: committed.Key("a"), MaxKey: committed.Key("cz"), Count: 2}).
+		AddValueRecords(makeV("a", "base:a"), makeV("c", "base:c")).
+		AddRange(&committed.Range{ID: "two", MinKey: committed.Key("d"), MaxKey: committed.Key("d"), Count: 1}).
+		AddValueRecords(makeV("d", "base:d"))
+
+	source := testutil.NewFakeIterator()
+	source.
+		AddRange(&committed.Range{ID: "b", MinKey: committed.Key("b"), MaxKey: committed.Key("f"), Count: 3}).
+		AddValueRecords(makeV("b", "dest:b"), makeV("e", "dest:e"), makeV("f", "dest:f"))
+	writer := mock.NewMockMetaRangeWriter(ctrl)
+
+	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("b", "dest:b")))
+	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("e", "dest:e")))
+	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("f", "dest:f")))
+
+	_, err := committed.Merge(context.Background(), writer, base, source, destination)
+	assert.NoError(t, err)
+}
+
+func TestMergeSameBounds(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	base := testutil.NewFakeIterator()
+	base.AddRange(&committed.Range{ID: "one", MinKey: committed.Key("a"), MaxKey: committed.Key("cz"), Count: 3}).
+		AddValueRecords(makeV("a", "base:a"), makeV("c", "base:c"))
+
+	source := testutil.NewFakeIterator()
+	source.AddRange(&committed.Range{ID: "one", MinKey: committed.Key("a"), MaxKey: committed.Key("cz"), Count: 3}).
+		AddValueRecords(makeV("a", "base:a"), makeV("c", "base:c"))
+
+	dest := testutil.NewFakeIterator()
+	dest.AddRange(&committed.Range{ID: "two", MinKey: committed.Key("a"), MaxKey: committed.Key("cz"), Count: 3}).
+		AddValueRecords(makeV("a", "base:a"), makeV("b", "dest:b"), makeV("c", "base:c"))
+
+	writer := mock.NewMockMetaRangeWriter(ctrl)
+	writer.EXPECT().WriteRange(gomock.Eq(committed.Range{ID: "two", MinKey: committed.Key("a"), MaxKey: committed.Key("cz"), Count: 3}))
+
+	_, err := committed.Merge(context.Background(), writer, base, source, dest)
+	assert.NoError(t, err)
+}
+
+func TestMergeDeleteSource(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	base := testutil.NewFakeIterator()
+	base.AddRange(&committed.Range{ID: "one", MinKey: committed.Key("a"), MaxKey: committed.Key("cz"), Count: 3}).
+		AddValueRecords(makeV("a", "base:a"), makeV("b", "base:b"), makeV("c", "base:c"))
+
+	source := testutil.NewFakeIterator()
+	source.AddRange(&committed.Range{ID: "two", MinKey: committed.Key("d"), MaxKey: committed.Key("dz"), Count: 1}).
+		AddValueRecords(makeV("d", "base:d"))
+
+	dest := testutil.NewFakeIterator()
+	dest.AddRange(&committed.Range{ID: "one", MinKey: committed.Key("a"), MaxKey: committed.Key("cz"), Count: 3}).
+		AddValueRecords(makeV("a", "base:a"), makeV("b", "base:b"), makeV("c", "base:c"))
+
+	writer := mock.NewMockMetaRangeWriter(ctrl)
+	writer.EXPECT().WriteRange(gomock.Eq(committed.Range{ID: "two", MinKey: committed.Key("d"), MaxKey: committed.Key("dz"), Count: 1}))
+
+	_, err := committed.Merge(context.Background(), writer, base, source, dest)
+	assert.NoError(t, err)
+}
+
+func TestMergeLeftoverSource(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	base := testutil.NewFakeIterator()
+	base.
+		AddRange(&committed.Range{ID: "one", MinKey: committed.Key("a"), MaxKey: committed.Key("cz"), Count: 3}).
+		AddValueRecords(makeV("a", "base:a"), makeV("b", "base:b"), makeV("c", "base:c")).
+		AddRange(&committed.Range{ID: "two", MinKey: committed.Key("d"), MaxKey: committed.Key("dz"), Count: 1}).
+		AddValueRecords(makeV("d", "base:d"))
+	source := testutil.NewFakeIterator()
+	source.
+		AddRange(&committed.Range{ID: "source:one", MinKey: committed.Key("b"), MaxKey: committed.Key("f"), Count: 3}).
+		AddValueRecords(makeV("b", "base:b"), makeV("e", "source:e"), makeV("f", "source:f"))
+	dest := testutil.NewFakeIterator()
+	dest.
+		AddRange(&committed.Range{ID: "one", MinKey: committed.Key("a"), MaxKey: committed.Key("cz"), Count: 3}).
+		AddValueRecords(makeV("a", "base:a"), makeV("b", "base:b"), makeV("c", "base:c")).
+		AddRange(&committed.Range{ID: "two", MinKey: committed.Key("d"), MaxKey: committed.Key("dz"), Count: 1}).
+		AddValueRecords(makeV("d", "base:d"))
+
+	writer := mock.NewMockMetaRangeWriter(ctrl)
+	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("b", "base:b")))
+	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("e", "source:e")))
+	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("f", "source:f")))
+	summary, err := committed.Merge(context.Background(), writer, base, source, dest)
+	assert.NoError(t, err)
+	assert.Equal(t, graveler.DiffSummary{
+		Count: map[graveler.DiffType]int{}, Incomplete: true,
+	}, summary)
+}
+
+func TestMergeNoChanges(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	range1 := &committed.Range{ID: "one", MinKey: committed.Key("a"), MaxKey: committed.Key("cz"), Count: 3}
+	range2 := &committed.Range{ID: "two", MinKey: committed.Key("d"), MaxKey: committed.Key("dz"), Count: 1}
+	base := testutil.NewFakeIterator().AddRange(range1).
+		AddValueRecords(makeV("a", "base:a"), makeV("b", "base:b"), makeV("c", "base:c")).
+		AddRange(range2).
+		AddValueRecords(makeV("d", "base:d"))
+
+	source := testutil.NewFakeIterator().AddRange(range1).
+		AddValueRecords(makeV("a", "base:a"), makeV("b", "base:b"), makeV("c", "base:c")).
+		AddRange(range2).
+		AddValueRecords(makeV("d", "base:d"))
+
+	destination := testutil.NewFakeIterator().AddRange(range1).
+		AddValueRecords(makeV("a", "base:a"), makeV("b", "base:b"), makeV("c", "base:c")).
+		AddRange(range2).
+		AddValueRecords(makeV("d", "base:d"))
+
+	writer := mock.NewMockMetaRangeWriter(ctrl)
+	writer.EXPECT().WriteRange(gomock.Eq(committed.Range{ID: "one", MinKey: committed.Key("a"), MaxKey: committed.Key("cz"), Count: 3}))
+	writer.EXPECT().WriteRange(gomock.Eq(committed.Range{ID: "two", MinKey: committed.Key("d"), MaxKey: committed.Key("dz"), Count: 1}))
+
+	_, err := committed.Merge(context.Background(), writer, base, source, destination)
+	assert.NoError(t, err)
+}
+
+func TestMergeOpCancelContext(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	t.Run("source", func(t *testing.T) {
+		base := testutil.NewFakeIterator().
+			AddRange(&committed.Range{ID: "one", MinKey: committed.Key("b"), MaxKey: committed.Key("b"), Count: 1}).
+			AddValueRecords(makeV("b", "dest:b"))
+		source := testutil.NewFakeIterator()
+		destination := testutil.NewFakeIterator().
+			AddRange(&committed.Range{ID: "one", MinKey: committed.Key("b"), MaxKey: committed.Key("b"), Count: 1}).
+			AddValueRecords(makeV("b", "dest:b"))
+		writer := mock.NewMockMetaRangeWriter(ctrl)
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		_, err := committed.Merge(ctx, writer, base, source, destination)
+		assert.True(t, errors.Is(err, context.Canceled), "context canceled error")
+	})
+
+	t.Run("destination", func(t *testing.T) {
+		base := testutil.NewFakeIterator().
+			AddRange(&committed.Range{ID: "one", MinKey: committed.Key("a"), MaxKey: committed.Key("cz"), Count: 2}).
+			AddValueRecords(makeV("a", "base:a"), makeV("c", "base:c"))
+		source := testutil.NewFakeIterator().
+			AddRange(&committed.Range{ID: "one", MinKey: committed.Key("a"), MaxKey: committed.Key("cz"), Count: 2}).
+			AddValueRecords(makeV("a", "base:a"), makeV("c", "base:c"))
+		destination := testutil.NewFakeIterator()
+		writer := mock.NewMockMetaRangeWriter(ctrl)
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		_, err := committed.Merge(ctx, writer, base, source, destination)
+		assert.True(t, errors.Is(err, context.Canceled), "context canceled error")
+	})
+
+	t.Run("source_and_destination", func(t *testing.T) {
+		base := testutil.NewFakeIterator().
+			AddRange(&committed.Range{ID: "one", MinKey: committed.Key("a"), MaxKey: committed.Key("cz"), Count: 3}).
+			AddValueRecords(makeV("a", "base:a"), makeV("c", "base:c"))
+		source := testutil.NewFakeIterator().
+			AddRange(&committed.Range{ID: "two", MinKey: committed.Key("e"), MaxKey: committed.Key("f"), Count: 2}).
+			AddValueRecords(makeV("e", "source:e"), makeV("f", "source:f"))
+		destination := testutil.NewFakeIterator().
+			AddRange(&committed.Range{ID: "three", MinKey: committed.Key("b"), MaxKey: committed.Key("b"), Count: 1}).
+			AddValueRecords(makeV("b", "dest:b"))
+		writer := mock.NewMockMetaRangeWriter(ctrl)
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		_, err := committed.Merge(ctx, writer, base, source, destination)
+		assert.True(t, errors.Is(err, context.Canceled), "context canceled error")
+	})
+
+	t.Run("base", func(t *testing.T) {
+		base := testutil.NewFakeIterator()
+		source := testutil.NewFakeIterator().
+			AddRange(&committed.Range{ID: "two", MinKey: committed.Key("e"), MaxKey: committed.Key("f"), Count: 2}).
+			AddValueRecords(makeV("e", "source:e"), makeV("f", "source:f"))
+		destination := testutil.NewFakeIterator().
+			AddRange(&committed.Range{ID: "one", MinKey: committed.Key("b"), MaxKey: committed.Key("b"), Count: 1}).
+			AddValueRecords(makeV("b", "dest:b"))
+		writer := mock.NewMockMetaRangeWriter(ctrl)
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		_, err := committed.Merge(ctx, writer, base, source, destination)
+		assert.True(t, errors.Is(err, context.Canceled), "context canceled error")
+	})
 }

@@ -13,6 +13,14 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler/testutil"
 )
 
+func makeV(k, id string) *graveler.ValueRecord {
+	return &graveler.ValueRecord{Key: graveler.Key(k), Value: &graveler.Value{Identity: []byte(id)}}
+}
+
+func makeTombstoneV(k string) *graveler.ValueRecord {
+	return &graveler.ValueRecord{Key: graveler.Key(k)}
+}
+
 func TestCommitAdd(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
