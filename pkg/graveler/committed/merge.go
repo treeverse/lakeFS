@@ -48,18 +48,15 @@ func (m *merger) baseKeyGE(key graveler.Key) (*graveler.ValueRecord, error) {
 	for {
 		_, baseRange := m.base.Value()
 		if baseRange != nil && bytes.Compare(baseRange.MaxKey, key) >= 0 {
-			baseValue, innerRange := m.base.Value()
+			_, innerRange := m.base.Value()
 			for m.base.Next() && innerRange.ID == baseRange.ID {
 				baseValue, innerRange = m.base.Value()
 				if baseValue != nil && bytes.Compare(key, baseValue.Key) <= 0 {
 					return baseValue, nil
 				}
 			}
-			// error
-		} else {
-			if !m.base.NextRange() {
-				break
-			}
+		} else if !m.base.NextRange() {
+			break
 		}
 	}
 	if err := m.base.Err(); err != nil {
@@ -124,7 +121,7 @@ func (m *merger) applyAll(iter Iterator) error {
 			if err != nil {
 				return fmt.Errorf("base value GE: %w", err)
 			}
-			if baseValue == nil || bytes.Compare(baseValue.Identity, iterValue.Identity) != 0 {
+			if baseValue == nil || !bytes.Equal(baseValue.Identity, iterValue.Identity) {
 				if err := m.writeRecord(iterValue); err != nil {
 					return err
 				}
@@ -155,15 +152,17 @@ func (m *merger) applyBothRanges(sourceRange *Range, destRange *Range) error {
 		}
 		if baseRange != nil && sourceRange.ID == baseRange.ID { // dest deleted this range
 			m.haveSource = m.source.NextRange()
-		} else if baseRange == nil || destRange.ID == baseRange.ID { // source added this range
+			return nil
+		}
+		if baseRange == nil || destRange.ID == baseRange.ID { // source added this range
 			err = m.writeRange(sourceRange)
 			if err != nil {
 				return err
 			}
 			m.haveSource = m.source.NextRange()
-		} else { // conflict - both changed this range
-			return graveler.ErrConflictFound
+			return nil
 		}
+		return graveler.ErrConflictFound // conflict - both changed this range
 
 	case bytes.Compare(destRange.MaxKey, sourceRange.MinKey) < 0: // dest before source
 		baseRange, err := m.baseRangeGE(graveler.Key(destRange.MinKey))
@@ -176,11 +175,13 @@ func (m *merger) applyBothRanges(sourceRange *Range, destRange *Range) error {
 				return err
 			}
 			m.haveDest = m.dest.NextRange()
-		} else if baseRange == nil || destRange.ID == baseRange.ID { // source deleted this range
-			m.haveDest = m.dest.NextRange()
-		} else { // conflict - both changed this range
-			return graveler.ErrConflictFound
+			return nil
 		}
+		if baseRange == nil || destRange.ID == baseRange.ID { // source deleted this range
+			m.haveDest = m.dest.NextRange()
+			return nil
+		}
+		return graveler.ErrConflictFound // conflict - both changed this range
 
 	case bytes.Equal(sourceRange.MinKey, destRange.MinKey) && bytes.Equal(sourceRange.MaxKey, destRange.MaxKey): // same bounds
 		baseRange, err := m.baseRangeGE(graveler.Key(sourceRange.MinKey))
@@ -198,7 +199,7 @@ func (m *merger) applyBothRanges(sourceRange *Range, destRange *Range) error {
 			}
 			m.haveSource = m.source.NextRange()
 			m.haveDest = m.dest.NextRange()
-		} else { //enter both ranges
+		} else { // enter both ranges
 			m.haveSource = m.source.Next()
 			m.haveDest = m.dest.Next()
 		}
@@ -213,15 +214,16 @@ func (m *merger) applyBothRanges(sourceRange *Range, destRange *Range) error {
 // applyBothKeys applies merging when both source and dest insides ranges
 func (m *merger) applyBothKeys(sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) error {
 	c := bytes.Compare(sourceValue.Key, destValue.Key)
-	if c < 0 { // source before dest
+	switch {
+	case c < 0: // source before dest
 		baseValue, err := m.baseKeyGE(sourceValue.Key)
 		if err != nil {
 			return err
 		}
-		if baseValue != nil && bytes.Compare(sourceValue.Identity, baseValue.Identity) == 0 { // dest deleted this record
+		if baseValue != nil && bytes.Equal(sourceValue.Identity, baseValue.Identity) { // dest deleted this record
 			m.haveSource = m.source.Next()
 		} else {
-			if baseValue != nil && bytes.Compare(sourceValue.Key, baseValue.Key) == 0 { // conflict
+			if baseValue != nil && bytes.Equal(sourceValue.Key, baseValue.Key) { // conflict
 				return graveler.ErrConflictFound
 			}
 			// source added this record
@@ -231,16 +233,15 @@ func (m *merger) applyBothKeys(sourceValue *graveler.ValueRecord, destValue *gra
 			}
 			m.haveSource = m.source.Next()
 		}
-
-	} else if c > 0 { // dest before source
+	case c > 0: // dest before source
 		baseValue, err := m.baseKeyGE(destValue.Key)
 		if err != nil {
 			return err
 		}
-		if baseValue != nil && bytes.Compare(destValue.Identity, baseValue.Identity) == 0 { // source deleted this record
+		if baseValue != nil && bytes.Equal(destValue.Identity, baseValue.Identity) { // source deleted this record
 			m.haveDest = m.dest.Next()
 		} else {
-			if baseValue != nil && bytes.Compare(destValue.Key, baseValue.Key) == 0 { // conflict
+			if baseValue != nil && bytes.Equal(destValue.Key, baseValue.Key) { // conflict
 				return graveler.ErrConflictFound
 			}
 			// dest added this record
@@ -250,15 +251,14 @@ func (m *merger) applyBothKeys(sourceValue *graveler.ValueRecord, destValue *gra
 			}
 			m.haveDest = m.dest.Next()
 		}
-
-	} else { // identical keys
+	default: // identical keys
 		baseValue, err := m.baseKeyGE(destValue.Key)
 		if err != nil {
 			return err
 		}
-		if bytes.Compare(sourceValue.Identity, destValue.Identity) != 0 {
-			if baseValue != nil && (bytes.Compare(sourceValue.Identity, baseValue.Identity) == 0 ||
-				bytes.Compare(destValue.Identity, baseValue.Identity) == 0) {
+		if !bytes.Equal(sourceValue.Identity, destValue.Identity) {
+			if baseValue != nil && (bytes.Equal(sourceValue.Identity, baseValue.Identity) ||
+				bytes.Equal(destValue.Identity, baseValue.Identity)) {
 				err := m.writeRecord(sourceValue)
 				if err != nil {
 					return fmt.Errorf("write record: %w", err)
@@ -288,10 +288,10 @@ func (m *merger) applyDestRangeSourceKey(destRange *Range, sourceValue *graveler
 		if err != nil {
 			return fmt.Errorf("base key GE: %w", err)
 		}
-		if baseValue != nil && bytes.Compare(sourceValue.Identity, baseValue.Identity) == 0 { // dest deleted this record
+		if baseValue != nil && bytes.Equal(sourceValue.Identity, baseValue.Identity) { // dest deleted this record
 			m.haveSource = m.source.Next()
 		} else {
-			if baseValue != nil && bytes.Compare(sourceValue.Key, baseValue.Key) == 0 { // conflict
+			if baseValue != nil && bytes.Equal(sourceValue.Key, baseValue.Key) { // conflict
 				return graveler.ErrConflictFound
 			}
 			// source added this record
@@ -328,10 +328,10 @@ func (m *merger) applySourceRangeDestKey(sourceRange *Range, destValue *graveler
 		if err != nil {
 			return fmt.Errorf("base key GE: %w", err)
 		}
-		if baseValue != nil && bytes.Compare(destValue.Identity, baseValue.Identity) == 0 { // source deleted this record
+		if baseValue != nil && bytes.Equal(destValue.Identity, baseValue.Identity) { // source deleted this record
 			m.haveSource = m.source.Next()
 		} else {
-			if baseValue != nil && bytes.Compare(destValue.Key, baseValue.Key) == 0 { // conflict
+			if baseValue != nil && bytes.Equal(destValue.Key, baseValue.Key) { // conflict
 				return graveler.ErrConflictFound
 			}
 			// dest added this record
