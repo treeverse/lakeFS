@@ -69,7 +69,7 @@ type configuration struct {
 
 	Actions struct {
 		// ActionsEnabled set to false will block any hook execution
-		Enabled bool `mapstructure:"actions_enabled"`
+		Enabled bool `mapstructure:"enabled"`
 	}
 
 	Logging struct {
