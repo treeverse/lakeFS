@@ -54,6 +54,8 @@ const (
 	DefaultS3GatewayRegion     = "us-east-1"
 	DefaultS3MaxRetries        = 5
 
+	DefaultActionsEnabled = true
+
 	DefaultStatsEnabled       = true
 	DefaultStatsAddr          = "https://stats.treeverse.io"
 	DefaultStatsFlushInterval = time.Second * 30
@@ -110,6 +112,8 @@ const (
 	LoggingLevelKey  = "logging.level"
 	LoggingOutputKey = "logging.output"
 
+	ActionsEnabledKey = "actions.enabled"
+
 	AuthCacheEnabledKey = "auth.cache.enabled"
 	AuthCacheSizeKey    = "auth.cache.size"
 	AuthCacheTTLKey     = "auth.cache.ttl"
@@ -161,6 +165,8 @@ func setDefaults() {
 	viper.SetDefault(LoggingFormatKey, DefaultLoggingFormat)
 	viper.SetDefault(LoggingLevelKey, DefaultLoggingLevel)
 	viper.SetDefault(LoggingOutputKey, DefaultLoggingOutput)
+
+	viper.SetDefault(ActionsEnabledKey, DefaultActionsEnabled)
 
 	viper.SetDefault(AuthCacheEnabledKey, DefaultAuthCacheEnabled)
 	viper.SetDefault(AuthCacheSizeKey, DefaultAuthCacheSize)
@@ -366,6 +372,10 @@ func (c *Config) GetS3GatewayFallbackURL() string {
 
 func (c *Config) GetListenAddress() string {
 	return c.values.ListenAddress
+}
+
+func (c *Config) GetActionsEnabled() bool {
+	return c.values.Actions.Enabled
 }
 
 func (c *Config) GetStatsEnabled() bool {

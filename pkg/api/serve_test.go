@@ -97,6 +97,7 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 		catalog.NewActionsSource(c),
 		catalog.NewActionsOutputWriter(c.BlockAdapter),
 		collector,
+		true,
 	)
 	c.SetHooksHandler(actionsService)
 

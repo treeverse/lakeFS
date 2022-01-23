@@ -29,6 +29,7 @@ This reference uses `.` to denote the nesting of values.
 * `logging.format` `(one of ["json", "text"] : "text")` - Format to output log message in
 * `logging.level` `(one of ["DEBUG", "INFO", "WARN", "ERROR", "NONE"] : "DEBUG")` - Logging level to output
 * `logging.output` `(string : "-")` - Path name to write logs to. `"-"` means Standard Output
+* `actions.enabled` `(bool : true)` - Setting this to false will block hooks from being executed
 * `database.connection_string` `(string : "postgres://localhost:5432/postgres?sslmode=disable")` - PostgreSQL connection string to use
 * `database.max_open_connections` `(int : 25)` - Maximum number of open connections to the database
 * `database.max_idle_connections` `(int : 25)` - Sets the maximum number of connections in the idle connection pool
