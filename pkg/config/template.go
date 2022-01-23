@@ -67,8 +67,10 @@ type S3AuthInfo struct {
 type configuration struct {
 	ListenAddress string `mapstructure:"listen_address"`
 
-	// ActionsDisabled set to true will block any hook execution
-	ActionsDisabled bool `mapstructure:"actions_disabled"`
+	Actions struct {
+		// ActionsEnabled set to false will block any hook execution
+		Enabled bool `mapstructure:"actions_enabled"`
+	}
 
 	Logging struct {
 		Format string `mapstructure:"format"`

@@ -82,6 +82,7 @@ func TestLocalLoad(t *testing.T) {
 		catalog.NewActionsSource(c),
 		catalog.NewActionsOutputWriter(c.BlockAdapter),
 		&nullCollector{},
+		true,
 	)
 	c.SetHooksHandler(actionsService)
 

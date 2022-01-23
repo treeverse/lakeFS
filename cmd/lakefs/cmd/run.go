@@ -161,7 +161,7 @@ var runCmd = &cobra.Command{
 			catalog.NewActionsSource(c),
 			catalog.NewActionsOutputWriter(c.BlockAdapter),
 			bufferedCollector,
-			cfg.GetActionsDisabled(),
+			cfg.GetActionsEnabled(),
 		)
 		c.SetHooksHandler(actionsService)
 		defer actionsService.Stop()
