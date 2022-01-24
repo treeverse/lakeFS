@@ -48,11 +48,13 @@ func (m *merger) baseKeyGE(key graveler.Key) (*graveler.ValueRecord, error) {
 	for {
 		_, baseRange := m.base.Value()
 		if baseRange != nil && bytes.Compare(baseRange.MaxKey, key) >= 0 {
-			_, innerRange := m.base.Value()
-			for m.base.Next() && innerRange.ID == baseRange.ID {
-				baseValue, innerRange = m.base.Value()
+			for {
+				baseValue, innerRange := m.base.Value()
 				if baseValue != nil && bytes.Compare(key, baseValue.Key) <= 0 {
 					return baseValue, nil
+				}
+				if !m.base.Next() || innerRange.ID != baseRange.ID {
+					break
 				}
 			}
 		} else if !m.base.NextRange() {
@@ -362,7 +364,7 @@ func (m *merger) applySourceRangeDestKey(sourceRange *Range, destValue *graveler
 }
 
 func (m *merger) merge() error {
-	m.haveSource, m.haveDest = m.source.Next(), m.dest.Next()
+	m.haveSource, m.haveDest, _ = m.source.Next(), m.dest.Next(), m.base.Next()
 	for m.haveSource && m.haveDest {
 		select {
 		case <-m.ctx.Done():
