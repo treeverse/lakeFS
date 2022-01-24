@@ -45,6 +45,8 @@ archives:
 - format: binary
   id: binary
   name_template: "{{ .Version }}_{{ .Os }}_{{ .Arch }}/lakectl"
+  builds:
+   - lakectl
 checksum:
   name_template: 'checksums.txt'
 snapshot:
@@ -60,7 +62,7 @@ blobs:
   region: us-east-1
   bucket: treeverse-clients-us-east
   folder: "lakectl/{{.Version}}"
-  builds: lakectl
+  builds:
   ids:
     - binary
 
