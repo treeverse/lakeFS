@@ -29,12 +29,10 @@ builds:
   ldflags:
   - -s -w -X github.com/treeverse/lakefs/pkg/version.Version={{.Version}}
   goarch:
-  - amd64
   - arm64
   goos:
   - darwin
   - linux
-  - windows
 archives:
 - replacements:
     darwin: Darwin
@@ -44,6 +42,7 @@ archives:
   format_overrides:
     - goos: windows
       format: zip
+- format: binary
 checksum:
   name_template: 'checksums.txt'
 snapshot:
