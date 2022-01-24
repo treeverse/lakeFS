@@ -44,7 +44,7 @@ archives:
       format: zip
 - format: binary
   id: binary
-  name_template: {{ .Version }}_{{ .Os }}_{{ .Arch }}/lakectl
+  name_template: "{{ .Version }}_{{ .Os }}_{{ .Arch }}/lakectl"
 checksum:
   name_template: 'checksums.txt'
 snapshot:
