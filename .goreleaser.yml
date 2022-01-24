@@ -54,3 +54,11 @@ changelog:
     exclude:
     - '^docs:'
     - '^test:'
+blobs:
+  provider: s3
+  region: us-east-1
+  bucket: treeverse-clients-us-east
+  folder: "lakectl/{{.Version}}"
+  ids:
+    - lakectl
+
