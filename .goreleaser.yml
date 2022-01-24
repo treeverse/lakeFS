@@ -60,6 +60,4 @@ blobs:
   region: us-east-1
   bucket: treeverse-clients-us-east
   folder: "lakectl/{{.Version}}"
-  ids:
-    - binary
 
