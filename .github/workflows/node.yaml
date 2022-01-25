@@ -1,0 +1,27 @@
+name: Node
+on: 
+  push:
+    paths:
+      - "webui/**"
+    branches:
+      - master
+  pull_request:
+    paths:
+      - "webui/**"
+jobs:
+  test:
+    name: Test React App
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '14.x'
+      - name: install UI dependencies
+        run: npm install
+        working-directory: ./webui
+      - name: run UI tests
+        run: npm test
+        env:
+          CI: true
+        working-directory: ./webui
