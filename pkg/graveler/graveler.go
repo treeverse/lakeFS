@@ -665,7 +665,7 @@ type StagingManager interface {
 	Set(ctx context.Context, st StagingToken, key Key, value *Value, overwrite bool) error
 
 	// List returns a ValueIterator for the given staging token
-	List(ctx context.Context, st StagingToken) (ValueIterator, error)
+	List(ctx context.Context, st StagingToken, batchSize int) (ValueIterator, error)
 
 	// DropKey clears a value by staging token and key
 	DropKey(ctx context.Context, st StagingToken, key Key) error
@@ -850,7 +850,7 @@ func (g *Graveler) updateBranchNoLock(ctx context.Context, repositoryID Reposito
 	}
 	// validate no conflict
 	// TODO(Guys) return error only on conflicts, currently returns error for any changes on staging
-	iter, err := g.StagingManager.List(ctx, curBranch.StagingToken)
+	iter, err := g.StagingManager.List(ctx, curBranch.StagingToken, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -1166,7 +1166,7 @@ func (g *Graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref)
 		return nil, err
 	}
 	if reference.StagingToken != "" {
-		stagingList, err := g.StagingManager.List(ctx, reference.StagingToken)
+		stagingList, err := g.StagingManager.List(ctx, reference.StagingToken, 0)
 		if err != nil {
 			return nil, err
 		}
@@ -1240,7 +1240,7 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 			parentGeneration = commit.Generation
 		}
 		commit.Generation = parentGeneration + 1
-		changes, err := g.StagingManager.List(ctx, branch.StagingToken)
+		changes, err := g.StagingManager.List(ctx, branch.StagingToken, -1)
 		if err != nil {
 			return "", fmt.Errorf("staging list: %w", err)
 		}
@@ -1425,7 +1425,7 @@ func (g *Graveler) addCommitNoLock(ctx context.Context, repositoryID RepositoryI
 }
 
 func (g *Graveler) stagingEmpty(ctx context.Context, branch *Branch) (bool, error) {
-	stIt, err := g.StagingManager.List(ctx, branch.StagingToken)
+	stIt, err := g.StagingManager.List(ctx, branch.StagingToken, 0)
 	if err != nil {
 		return false, fmt.Errorf("staging list (token %s): %w", branch.StagingToken, err)
 	}
@@ -1711,7 +1711,7 @@ func (g *Graveler) DiffUncommitted(ctx context.Context, repositoryID RepositoryI
 		metaRangeID = commit.MetaRangeID
 	}
 
-	valueIterator, err := g.StagingManager.List(ctx, branch.StagingToken)
+	valueIterator, err := g.StagingManager.List(ctx, branch.StagingToken, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -1777,7 +1777,7 @@ func (g *Graveler) Diff(ctx context.Context, repositoryID RepositoryID, left, ri
 	if err != nil {
 		return nil, err
 	}
-	stagingIterator, err := g.StagingManager.List(ctx, rightBranch.StagingToken)
+	stagingIterator, err := g.StagingManager.List(ctx, rightBranch.StagingToken, 0)
 	if err != nil {
 		return nil, err
 	}
