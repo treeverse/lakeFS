@@ -1,7 +1,9 @@
 name: goreleaser
 
 on:
-  push:
+  release:
+    types: [published]
+
 jobs:
   goreleaser:
     runs-on: ubuntu-20.04
