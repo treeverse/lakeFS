@@ -84,6 +84,7 @@ class CommitCreation(ModelNormal):
         return {
             'message': (str,),  # noqa: E501
             'metadata': ({str: (str,)},),  # noqa: E501
+            'date': (int,),  # noqa: E501
         }
 
     @cached_property
@@ -94,6 +95,7 @@ class CommitCreation(ModelNormal):
     attribute_map = {
         'message': 'message',  # noqa: E501
         'metadata': 'metadata',  # noqa: E501
+        'date': 'date',  # noqa: E501
     }
 
     read_only_vars = {
@@ -141,6 +143,7 @@ class CommitCreation(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             metadata ({str: (str,)}): [optional]  # noqa: E501
+            date (int): set date to override creation date in the commit (Unix Epoch in seconds). [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -227,6 +230,7 @@ class CommitCreation(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             metadata ({str: (str,)}): [optional]  # noqa: E501
+            date (int): set date to override creation date in the commit (Unix Epoch in seconds). [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

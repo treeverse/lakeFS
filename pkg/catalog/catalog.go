@@ -787,7 +787,7 @@ func (c *Catalog) ResetEntries(ctx context.Context, repository string, branch st
 	return c.Store.ResetPrefix(ctx, repositoryID, branchID, keyPrefix)
 }
 
-func (c *Catalog) Commit(ctx context.Context, repository string, branch string, message string, committer string, metadata Metadata) (*CommitLog, error) {
+func (c *Catalog) Commit(ctx context.Context, repository, branch, message, committer string, metadata Metadata, date *int64) (*CommitLog, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	if err := Validate([]ValidateArg{
@@ -799,6 +799,7 @@ func (c *Catalog) Commit(ctx context.Context, repository string, branch string, 
 	commitID, err := c.Store.Commit(ctx, repositoryID, branchID, graveler.CommitParams{
 		Committer: committer,
 		Message:   message,
+		Date:      date,
 		Metadata:  map[string]string(metadata),
 	})
 	if err != nil {
