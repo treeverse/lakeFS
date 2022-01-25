@@ -292,7 +292,9 @@ func (d *Diff) Copy() *Diff {
 type CommitParams struct {
 	Committer string
 	Message   string
-	Metadata  Metadata
+	// Date (Unix Epoch in seconds) is used to override commits creation date
+	Date     *int64
+	Metadata Metadata
 }
 
 type KeyValueStore interface {
@@ -1198,6 +1200,10 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 
 		// fill commit information - use for pre-commit and after adding the commit information used by commit
 		commit = NewCommit()
+
+		if params.Date != nil {
+			commit.CreationDate = time.Unix(*params.Date, 0)
+		}
 		commit.Committer = params.Committer
 		commit.Message = params.Message
 		commit.Metadata = params.Metadata
