@@ -36,6 +36,6 @@ jobs:
        - name: Make lakectl public
          run: >
            aws s3 cp --recursive --acl public-read
-             s3://treeverse-clients-us-east/lakectl/$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)
-             s3://treeverse-clients-us-east/lakectl/$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)
-             --metadata-directive REPLACE
+           s3://treeverse-clients-us-east/lakectl/$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)
+           s3://treeverse-clients-us-east/lakectl/$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)
+           --metadata-directive REPLACE
