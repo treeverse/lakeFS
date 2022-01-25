@@ -1691,7 +1691,7 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body CommitJ
 		metadata = body.Metadata.AdditionalProperties
 	}
 	committer := user.Username
-	newCommit, err := c.Catalog.Commit(ctx, repository, branch, body.Message, committer, metadata)
+	newCommit, err := c.Catalog.Commit(ctx, repository, branch, body.Message, committer, metadata, body.Date)
 	var hookAbortErr *graveler.HookAbortError
 	if errors.As(err, &hookAbortErr) {
 		c.Logger.

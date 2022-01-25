@@ -40,6 +40,10 @@ public class CommitCreation {
   @SerializedName(SERIALIZED_NAME_METADATA)
   private Map<String, String> metadata = null;
 
+  public static final String SERIALIZED_NAME_DATE = "date";
+  @SerializedName(SERIALIZED_NAME_DATE)
+  private Long date;
+
 
   public CommitCreation message(String message) {
     
@@ -95,6 +99,29 @@ public class CommitCreation {
   }
 
 
+  public CommitCreation date(Long date) {
+    
+    this.date = date;
+    return this;
+  }
+
+   /**
+   * set date to override creation date in the commit (Unix Epoch in seconds)
+   * @return date
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "set date to override creation date in the commit (Unix Epoch in seconds)")
+
+  public Long getDate() {
+    return date;
+  }
+
+
+  public void setDate(Long date) {
+    this.date = date;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -105,12 +132,13 @@ public class CommitCreation {
     }
     CommitCreation commitCreation = (CommitCreation) o;
     return Objects.equals(this.message, commitCreation.message) &&
-        Objects.equals(this.metadata, commitCreation.metadata);
+        Objects.equals(this.metadata, commitCreation.metadata) &&
+        Objects.equals(this.date, commitCreation.date);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(message, metadata);
+    return Objects.hash(message, metadata, date);
   }
 
   @Override
@@ -119,6 +147,7 @@ public class CommitCreation {
     sb.append("class CommitCreation {\n");
     sb.append("    message: ").append(toIndentedString(message)).append("\n");
     sb.append("    metadata: ").append(toIndentedString(metadata)).append("\n");
+    sb.append("    date: ").append(toIndentedString(date)).append("\n");
     sb.append("}");
     return sb.toString();
   }

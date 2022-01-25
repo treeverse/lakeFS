@@ -4732,6 +4732,7 @@ components:
       type: object
     CommitCreation:
       example:
+        date: 0
         metadata:
           key: metadata
         message: message
@@ -4742,6 +4743,11 @@ components:
           additionalProperties:
             type: string
           type: object
+        date:
+          description: set date to override creation date in the commit (Unix Epoch
+            in seconds)
+          format: int64
+          type: integer
       required:
       - message
       type: object
