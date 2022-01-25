@@ -42,7 +42,7 @@ archives:
       format: zip
 - format: binary
   id: lakectl
-  name_template: "{{ .Version }}_{{ .Os }}_{{ .Arch }}/lakectl"
+  name_template: "{{ .Os }}_{{ .Arch}}/lakectl"
   builds:
    - lakectl
 checksum:
@@ -59,6 +59,6 @@ blobs:
 - provider: s3
   region: us-east-1
   bucket: treeverse-clients-us-east
-  folder: "lakectl/{{.Version}}"
+  folder: "lakectl/{{.Version}}/{{ .Os }}_{{ .Arch }}"
   ids:
    - lakectl
