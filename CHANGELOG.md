@@ -1,6 +1,6 @@
 # Changelog
 
-## v.58.0 - 2022-01-26
+## v0.58.0 - 2022-01-26
 
 - Include Jupyter notebook in our everything bagel (#2832)
 - Added branch existence check to createMultiPart (#2835)
