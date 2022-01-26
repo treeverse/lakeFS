@@ -25,7 +25,13 @@ jobs:
       - name: Extract version
         shell: bash
 #        run: echo "::set-output name=tag::sha-$(git rev-parse --short HEAD | sed s/^v//g)"
-        run: echo "::set-output name=tag::$(echo ${GITHUB_REF##*/} | sed s/^v//g)"
+#        run: echo "::set-output name=tag::$(echo ${GITHUB_REF##*/} | sed s/^v//g)"
+        run: |
+          if [ "${{ github.event.inputs.tag }}" != "" ]; then
+            echo "::set-output name=tag::$(echo ${{ github.event.inputs.tag }} | sed s/^v//)"
+          else
+            echo "::set-output name=tag::$(echo ${GITHUB_REF##*/} | sed s/^v//)"
+          fi
         id: version
 
       - name: Login to Amazon ECR
@@ -38,17 +44,15 @@ jobs:
 
       - name: Build and Push to Amazon ECR
         run: |
-          docker build . -t $ECR_REGISTRY/lakefs-rclone-export:${{ steps.version.outputs.tag }}
+          docker build deployments/tools/export -t $ECR_REGISTRY/lakefs-rclone-export:${{ steps.version.outputs.tag }}
           docker push $ECR_REGISTRY/lakefs-rclone-export:${{ steps.version.outputs.tag }}
-        env:
-          DOCKER_BUILDKIT: '1'
 
-      - name: Build and push lakefs to Docker hub
+      - name: Build and push to Docker hub
         uses: docker/build-push-action@v1
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
           build_args: VERSION=${{ steps.version.outputs.tag }}
-          target: lakefs
-          repository: treeverse/lakefs
+          target: lakefs-rclone-export
+          repository: treeverse/lakefs-rclone-export
           tags: ${{ steps.version.outputs.tag }},latest
