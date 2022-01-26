@@ -8,8 +8,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-const batchSize = 1000
-
 type Iterator struct {
 	ctx context.Context
 	db  db.Database
@@ -25,10 +23,18 @@ type Iterator struct {
 	dbHasNext   bool
 	buffer      []*graveler.ValueRecord
 	nextFrom    graveler.Key
+	batchSize   int
 }
 
-func NewStagingIterator(ctx context.Context, db db.Database, log logging.Logger, st graveler.StagingToken) *Iterator {
-	return &Iterator{ctx: ctx, st: st, dbHasNext: true, initPhase: true, db: db, log: log, nextFrom: make([]byte, 0)}
+// NewStagingIterator initiates the staging iterator with a batchSize
+func NewStagingIterator(ctx context.Context, db db.Database, log logging.Logger, st graveler.StagingToken, batchSize int) *Iterator {
+	bs := batchSize
+	if bs <= 0 {
+		bs = graveler.ListingDefaultBatchSize
+	} else if bs > graveler.ListingMaxBatchSize {
+		bs = graveler.ListingMaxBatchSize
+	}
+	return &Iterator{ctx: ctx, st: st, dbHasNext: true, initPhase: true, db: db, log: log, nextFrom: make([]byte, 0), batchSize: bs}
 }
 
 func (s *Iterator) Next() bool {
@@ -80,7 +86,7 @@ func (s *Iterator) loadBuffer() bool {
 	queryResult, err := s.db.Transact(s.ctx, func(tx db.Tx) (interface{}, error) {
 		var res []*graveler.ValueRecord
 		err := tx.Select(&res, "SELECT key, identity, data "+
-			"FROM graveler_staging_kv WHERE staging_token=$1 AND key >= $2 ORDER BY key LIMIT $3", s.st, s.nextFrom, batchSize+1)
+			"FROM graveler_staging_kv WHERE staging_token=$1 AND key >= $2 ORDER BY key LIMIT $3", s.st, s.nextFrom, s.batchSize+1)
 		return res, err
 	}, db.WithLogger(s.log), db.ReadOnly())
 	if err != nil {
@@ -89,7 +95,7 @@ func (s *Iterator) loadBuffer() bool {
 	}
 	values := queryResult.([]*graveler.ValueRecord)
 	s.idxInBuffer = 0
-	if len(values) == batchSize+1 {
+	if len(values) == s.batchSize+1 {
 		s.nextFrom = values[len(values)-1].Key
 		s.buffer = values[:len(values)-1]
 		return true

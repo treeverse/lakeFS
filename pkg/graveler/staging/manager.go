@@ -79,8 +79,9 @@ func (p *Manager) DropKey(ctx context.Context, st graveler.StagingToken, key gra
 	return err
 }
 
-func (p *Manager) List(ctx context.Context, st graveler.StagingToken) (graveler.ValueIterator, error) {
-	return NewStagingIterator(ctx, p.db, p.log, st), nil
+// List returns an iterator of staged values on the staging token st
+func (p *Manager) List(ctx context.Context, st graveler.StagingToken, batchSize int) (graveler.ValueIterator, error) {
+	return NewStagingIterator(ctx, p.db, p.log, st, batchSize), nil
 }
 
 func (p *Manager) Drop(ctx context.Context, st graveler.StagingToken) error {

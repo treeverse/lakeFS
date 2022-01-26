@@ -87,12 +87,12 @@ func TestDrop(t *testing.T) {
 	if !errors.Is(err, graveler.ErrNotFound) {
 		t.Fatalf("after dropping staging area, expected ErrNotFound in Get. got err=%v, got value=%v", err, v)
 	}
-	it, _ := s.List(ctx, "t1")
+	it, _ := s.List(ctx, "t1", 0)
 	if it.Next() {
 		t.Fatal("expected staging area with token t1 to be empty, got non-empty iterator")
 	}
 	it.Close()
-	it, _ = s.List(ctx, "t2")
+	it, _ = s.List(ctx, "t2", 0)
 	count := 0
 	for it.Next() {
 		if string(it.Value().Data) != fmt.Sprintf("value%d", count) {
@@ -125,7 +125,7 @@ func TestDropByPrefix(t *testing.T) {
 	_, err = s.Get(ctx, "t1", []byte("key0000"))
 	// key0000 does not start with the deleted prefix - should be returned
 	testutil.Must(t, err)
-	it, _ := s.List(ctx, "t1")
+	it, _ := s.List(ctx, "t1", 0)
 	count := 0
 	for it.Next() {
 		count++
@@ -134,7 +134,7 @@ func TestDropByPrefix(t *testing.T) {
 	if count != numOfValues-1000 {
 		t.Errorf("got unexpected number of results after drop. expected=%d, got=%d", numOfValues-1000, count)
 	}
-	it, _ = s.List(ctx, "t2")
+	it, _ = s.List(ctx, "t2", 0)
 	count = 0
 	for it.Next() {
 		count++
@@ -230,7 +230,7 @@ func TestDropPrefixBytes(t *testing.T) {
 			}
 			err := s.DropByPrefix(ctx, st, tst.prefix)
 			testutil.Must(t, err)
-			it, err := s.List(ctx, st)
+			it, err := s.List(ctx, st, 0)
 			testutil.Must(t, err)
 			count := 0
 			for it.Next() {
@@ -256,7 +256,7 @@ func TestList(t *testing.T) {
 			testutil.Must(t, err)
 		}
 		res := make([]*graveler.ValueRecord, 0, numOfValues)
-		it, _ := s.List(ctx, token)
+		it, _ := s.List(ctx, token, 0)
 		for it.Next() {
 			res = append(res, it.Value())
 		}
@@ -285,7 +285,7 @@ func TestSeek(t *testing.T) {
 		err := s.Set(ctx, "t1", []byte(fmt.Sprintf("key%04d", i)), newTestValue("identity1", "value1"), true)
 		testutil.Must(t, err)
 	}
-	it, _ := s.List(ctx, "t1")
+	it, _ := s.List(ctx, "t1", 0)
 	if it.SeekGE([]byte("key0050")); !it.Next() {
 		t.Fatal("iterator seek expected to return true, got false")
 	}
@@ -324,7 +324,7 @@ func TestNilValue(t *testing.T) {
 	if e != nil {
 		t.Errorf("got unexpected value. expected=nil, got=%s", e)
 	}
-	it, err := s.List(ctx, "t1")
+	it, err := s.List(ctx, "t1", 0)
 	testutil.Must(t, err)
 	if !it.Next() {
 		t.Fatalf("expected to get key from list")
@@ -390,7 +390,7 @@ func TestDeleteAndTombstone(t *testing.T) {
 		if string(e.Identity) != "identity1" {
 			t.Fatalf("got unexpected value identity. expected=%s, got=%s", "identity1", string(e.Identity))
 		}
-		it, err := s.List(ctx, "t1")
+		it, err := s.List(ctx, "t1", 0)
 		testutil.Must(t, err)
 		if !it.Next() {
 			t.Fatalf("expected to get key from list")
