@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.58.0 - 2022-01-26
+
+- Include Jupyter notebook in our everything bagel (#2832)
+- Added branch existence check to createMultiPart (#2835)
+- Align hadoop-aws versions in Hadoop filesystem and shade lakeFS API client (#2843)
+- Remove trailing newline, make `lakectl fs cat` output identical to file (#2845)
+- Prevent Graveler from deleting default branch (#2851)
+- Added lakectl CLI command 'annotate' (blame)  (#2825)
+- Stream output from `lakectl fs cat` rather than copying file to memory (#2852)
+- Switch docker-compose "everything bagel" to use jupyter/pyspark-notebook (#2869)
+- Fix docker-compose "everything bagel" for Windows users (#2871)
+- Disable hooks run configuration (#2881)
+- Add date flag to commit api (#2878)
+
 ## v0.57.2 - 2021-12-26
 - Performance: Optimize merge by skipping ranges when source or destination are identical to base (#2822)
 
