@@ -217,7 +217,7 @@ jobs:
 
       - name: Build and Push to Amazon ECR
         run: |
-          docker build . -t $ECR_REGISTRY/lakefs-rclone-export:${{ steps.version.outputs.tag }}
+          docker build deployments/tools/export -t $ECR_REGISTRY/lakefs-rclone-export:${{ steps.version.outputs.tag }}
           docker push $ECR_REGISTRY/lakefs-rclone-export:${{ steps.version.outputs.tag }}
         env:
           DOCKER_BUILDKIT: '1'
