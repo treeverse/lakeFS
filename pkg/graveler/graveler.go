@@ -16,6 +16,9 @@ import (
 
 //go:generate mockgen -source=graveler.go -destination=mock/graveler.go -package=mock
 
+const ListingDefaultBatchSize = 1000
+const ListingMaxBatchSize = 100000
+
 // Basic Types
 
 // DiffType represents the type of the change
@@ -850,7 +853,7 @@ func (g *Graveler) updateBranchNoLock(ctx context.Context, repositoryID Reposito
 	}
 	// validate no conflict
 	// TODO(Guys) return error only on conflicts, currently returns error for any changes on staging
-	iter, err := g.StagingManager.List(ctx, curBranch.StagingToken, 0)
+	iter, err := g.StagingManager.List(ctx, curBranch.StagingToken, ListingDefaultBatchSize)
 	if err != nil {
 		return nil, err
 	}
@@ -1166,7 +1169,7 @@ func (g *Graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref)
 		return nil, err
 	}
 	if reference.StagingToken != "" {
-		stagingList, err := g.StagingManager.List(ctx, reference.StagingToken, 0)
+		stagingList, err := g.StagingManager.List(ctx, reference.StagingToken, ListingDefaultBatchSize)
 		if err != nil {
 			return nil, err
 		}
@@ -1240,7 +1243,7 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 			parentGeneration = commit.Generation
 		}
 		commit.Generation = parentGeneration + 1
-		changes, err := g.StagingManager.List(ctx, branch.StagingToken, -1)
+		changes, err := g.StagingManager.List(ctx, branch.StagingToken, ListingMaxBatchSize)
 		if err != nil {
 			return "", fmt.Errorf("staging list: %w", err)
 		}
@@ -1425,7 +1428,7 @@ func (g *Graveler) addCommitNoLock(ctx context.Context, repositoryID RepositoryI
 }
 
 func (g *Graveler) stagingEmpty(ctx context.Context, branch *Branch) (bool, error) {
-	stIt, err := g.StagingManager.List(ctx, branch.StagingToken, 0)
+	stIt, err := g.StagingManager.List(ctx, branch.StagingToken, ListingDefaultBatchSize)
 	if err != nil {
 		return false, fmt.Errorf("staging list (token %s): %w", branch.StagingToken, err)
 	}
@@ -1711,7 +1714,7 @@ func (g *Graveler) DiffUncommitted(ctx context.Context, repositoryID RepositoryI
 		metaRangeID = commit.MetaRangeID
 	}
 
-	valueIterator, err := g.StagingManager.List(ctx, branch.StagingToken, 0)
+	valueIterator, err := g.StagingManager.List(ctx, branch.StagingToken, ListingDefaultBatchSize)
 	if err != nil {
 		return nil, err
 	}
@@ -1777,7 +1780,7 @@ func (g *Graveler) Diff(ctx context.Context, repositoryID RepositoryID, left, ri
 	if err != nil {
 		return nil, err
 	}
-	stagingIterator, err := g.StagingManager.List(ctx, rightBranch.StagingToken, 0)
+	stagingIterator, err := g.StagingManager.List(ctx, rightBranch.StagingToken, ListingDefaultBatchSize)
 	if err != nil {
 		return nil, err
 	}

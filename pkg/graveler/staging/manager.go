@@ -80,8 +80,6 @@ func (p *Manager) DropKey(ctx context.Context, st graveler.StagingToken, key gra
 }
 
 // List returns an iterator of staged values on the staging token st
-// batchSize = 0 -> defaultBatchSize
-// batchSize = -1 -> maximumBatchSize
 func (p *Manager) List(ctx context.Context, st graveler.StagingToken, batchSize int) (graveler.ValueIterator, error) {
 	return NewStagingIterator(ctx, p.db, p.log, st, batchSize), nil
 }

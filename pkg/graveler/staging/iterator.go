@@ -8,9 +8,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-const defaultBatchSize = 1000
-const maxBatchSize = 100000
-
 type Iterator struct {
 	ctx context.Context
 	db  db.Database
@@ -29,16 +26,14 @@ type Iterator struct {
 	batchSize   int
 }
 
-// NewStagingIterator initiates the staging iterator with a batchSize,
-// batchSize = 0 -> defaultBatchSize
-// batchSize = -1 -> maximumBatchSize
+// NewStagingIterator initiates the staging iterator with a batchSize
 func NewStagingIterator(ctx context.Context, db db.Database, log logging.Logger, st graveler.StagingToken, bachSize int) *Iterator {
 	bs := bachSize
-	if bs == 0 {
-		bs = defaultBatchSize
+	if bs <= 0 {
+		bs = graveler.ListingDefaultBatchSize
 	}
-	if bs == -1 || bs > maxBatchSize {
-		bs = maxBatchSize
+	if bs > graveler.ListingMaxBatchSize {
+		bs = graveler.ListingMaxBatchSize
 	}
 	return &Iterator{ctx: ctx, st: st, dbHasNext: true, initPhase: true, db: db, log: log, nextFrom: make([]byte, 0), batchSize: bs}
 }
