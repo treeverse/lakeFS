@@ -31,8 +31,7 @@ func NewStagingIterator(ctx context.Context, db db.Database, log logging.Logger,
 	bs := bachSize
 	if bs <= 0 {
 		bs = graveler.ListingDefaultBatchSize
-	}
-	if bs > graveler.ListingMaxBatchSize {
+	} else if bs > graveler.ListingMaxBatchSize {
 		bs = graveler.ListingMaxBatchSize
 	}
 	return &Iterator{ctx: ctx, st: st, dbHasNext: true, initPhase: true, db: db, log: log, nextFrom: make([]byte, 0), batchSize: bs}
