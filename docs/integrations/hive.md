@@ -56,7 +56,7 @@ For example, we could add the configurations to the file ``` hdfs-site.xml```:
 ```
 
 **Note**
-In this example we set `fs.s3a.path.style.access` in order to remove the need to set up DNS for [virtual hosting](https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html)
+In this example we set `fs.s3a.path.style.access` to true,  in order to remove the need of additional DNS records for [virtual hosting](https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html)
 `fs.s3a.path.style.access` was introduced in Hadoop 2.8.0
 {: .note}
 
