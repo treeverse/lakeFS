@@ -27,8 +27,8 @@ type Iterator struct {
 }
 
 // NewStagingIterator initiates the staging iterator with a batchSize
-func NewStagingIterator(ctx context.Context, db db.Database, log logging.Logger, st graveler.StagingToken, bachSize int) *Iterator {
-	bs := bachSize
+func NewStagingIterator(ctx context.Context, db db.Database, log logging.Logger, st graveler.StagingToken, batchSize int) *Iterator {
+	bs := batchSize
 	if bs <= 0 {
 		bs = graveler.ListingDefaultBatchSize
 	} else if bs > graveler.ListingMaxBatchSize {
