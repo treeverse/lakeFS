@@ -80,6 +80,9 @@ type MetaRangeManager interface {
 	// NewRangeWriter returns a writer that is used for creating new MetaRanges
 	NewWriter(ctx context.Context, ns graveler.StorageNamespace, metadata graveler.Metadata) MetaRangeWriter
 
+	// ShouldBreakByRaggedness returns true if the given key is a breaking point by the raggedness parameter
+	ShouldBreakByRaggedness(key graveler.Key) bool
+
 	// NewMetaRangeIterator returns an Iterator over the MetaRange with id.
 	NewMetaRangeIterator(ctx context.Context, ns graveler.StorageNamespace, metaRangeID graveler.MetaRangeID) (Iterator, error)
 

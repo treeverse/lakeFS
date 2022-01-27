@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"hash/fnv"
 	"sort"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -13,16 +12,17 @@ import (
 )
 
 type GeneralMetaRangeWriter struct {
-	ctx              context.Context
-	metadata         graveler.Metadata
-	params           *Params // for breaking ranges
-	namespace        Namespace
-	metaRangeManager RangeManager
-	rangeManager     RangeManager
-	rangeWriter      RangeWriter // writer for the current range
-	lastKey          Key
-	batchWriteCloser BatchWriterCloser
-	ranges           []Range
+	ctx               context.Context
+	metadata          graveler.Metadata
+	params            *Params // for breaking ranges
+	breakByRaggedness func(key graveler.Key) bool
+	namespace         Namespace
+	metaRangeManager  RangeManager
+	rangeManager      RangeManager
+	rangeWriter       RangeWriter // writer for the current range
+	lastKey           Key
+	batchWriteCloser  BatchWriterCloser
+	ranges            []Range
 }
 
 const (
@@ -36,15 +36,16 @@ var (
 	ErrNilValue     = errors.New("record value should not be nil")
 )
 
-func NewGeneralMetaRangeWriter(ctx context.Context, rangeManager, metaRangeManager RangeManager, params *Params, namespace Namespace, md graveler.Metadata) *GeneralMetaRangeWriter {
+func NewGeneralMetaRangeWriter(ctx context.Context, rangeManager, metaRangeManager RangeManager, params *Params, breakByRaggedness func(key graveler.Key) bool, namespace Namespace, md graveler.Metadata) *GeneralMetaRangeWriter {
 	return &GeneralMetaRangeWriter{
-		ctx:              ctx,
-		metadata:         md,
-		rangeManager:     rangeManager,
-		metaRangeManager: metaRangeManager,
-		batchWriteCloser: NewBatchCloser(params.MaxUploaders),
-		params:           params,
-		namespace:        namespace,
+		ctx:               ctx,
+		metadata:          md,
+		rangeManager:      rangeManager,
+		metaRangeManager:  metaRangeManager,
+		batchWriteCloser:  NewBatchCloser(params.MaxUploaders),
+		params:            params,
+		breakByRaggedness: breakByRaggedness,
+		namespace:         namespace,
 	}
 }
 
@@ -142,18 +143,14 @@ func (w *GeneralMetaRangeWriter) Close() (*graveler.MetaRangeID, error) {
 // shouldBreakAtKey returns true if should break range after the given key
 func (w *GeneralMetaRangeWriter) shouldBreakAtKey(key graveler.Key) bool {
 	approximateSize := w.rangeWriter.GetApproximateSize()
+	// TODO(Guys): consider removing, might cause problems on parallel
 	if approximateSize < w.params.MinRangeSizeBytes {
 		return false
 	}
 	if approximateSize >= w.params.MaxRangeSizeBytes {
 		return true
 	}
-
-	h := fnv.New64a()
-	// FNV always reads all bytes and never fails; ignore its return values
-	_, _ = h.Write(key)
-	r := h.Sum64() % uint64(w.params.RangeSizeEntriesRaggedness)
-	return r == 0
+	return w.breakByRaggedness(key)
 }
 
 // writeRangesToMetaRange writes all ranges to a MetaRange and returns the MetaRangeID

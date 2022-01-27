@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"hash/fnv"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
 )
@@ -82,9 +83,28 @@ func (m *metaRangeManager) GetValue(ctx context.Context, ns graveler.StorageName
 }
 
 func (m *metaRangeManager) NewWriter(ctx context.Context, ns graveler.StorageNamespace, metadata graveler.Metadata) MetaRangeWriter {
-	return NewGeneralMetaRangeWriter(ctx, m.rangeManager, m.metaManager, &m.params, Namespace(ns), metadata)
+	return NewGeneralMetaRangeWriter(ctx,
+		m.rangeManager,
+		m.metaManager,
+		&m.params,
+		func(key graveler.Key) bool {
+			return breakByRaggedness(m.params.RangeSizeEntriesRaggedness, key)
+		},
+		Namespace(ns),
+		metadata)
 }
 
+func (m *metaRangeManager) ShouldBreakByRaggedness(key graveler.Key) bool {
+	return breakByRaggedness(m.params.RangeSizeEntriesRaggedness, key)
+}
+
+func breakByRaggedness(rangeSizeEntriesRaggedness float64, key graveler.Key) bool {
+	h := fnv.New64a()
+	// FNV always reads all bytes and never fails; ignore its return values
+	_, _ = h.Write(key)
+	r := h.Sum64() % uint64(rangeSizeEntriesRaggedness)
+	return r == 0
+}
 func (m *metaRangeManager) NewMetaRangeIterator(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID) (Iterator, error) {
 	if id == "" {
 		return NewEmptyIterator(), nil

@@ -192,6 +192,23 @@ func (c *committedManager) Commit(ctx context.Context, ns graveler.StorageNamesp
 	return *newID, summary, err
 }
 
+func (c *committedManager) GetBreakingPoints(ctx context.Context, ns graveler.StorageNamespace, baseMetaRangeID graveler.MetaRangeID) ([]graveler.Key, error) {
+	breakingPoints := make([]graveler.Key, 0)
+	metaRangeIterator, err := c.metaRangeManager.NewMetaRangeIterator(ctx, ns, baseMetaRangeID)
+	if err != nil {
+		return nil, err
+	}
+	defer metaRangeIterator.Close()
+
+	for metaRangeIterator.NextRange() {
+		_, rng := metaRangeIterator.Value()
+		if c.metaRangeManager.ShouldBreakByRaggedness(graveler.Key(rng.MaxKey)) {
+			breakingPoints = append(breakingPoints, graveler.Key(rng.MaxKey))
+		}
+	}
+	return breakingPoints, metaRangeIterator.Err()
+}
+
 func (c *committedManager) Compare(ctx context.Context, ns graveler.StorageNamespace, destination, source, base graveler.MetaRangeID) (graveler.DiffIterator, error) {
 	diffIt, err := c.Diff(ctx, ns, destination, source)
 	if err != nil {

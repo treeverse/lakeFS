@@ -652,6 +652,9 @@ type CommittedManager interface {
 	// it returns a new MetaRangeID that is expected to be immediately addressable
 	Commit(ctx context.Context, ns StorageNamespace, baseMetaRangeID MetaRangeID, changes ValueIterator) (MetaRangeID, DiffSummary, error)
 
+	// GetBreakingPoints returns all the maxKeys of ranges that broke on that maxKey due to raggedness
+	GetBreakingPoints(ctx context.Context, ns StorageNamespace, baseMetaRangeID MetaRangeID) ([]Key, error)
+
 	// GetMetaRange returns information where metarangeID is stored.
 	GetMetaRange(ctx context.Context, ns StorageNamespace, metaRangeID MetaRangeID) (MetaRangeInfo, error)
 	// GetRange returns information where rangeID is stored.
@@ -1301,6 +1304,19 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 			Error("Post-commit hook failed")
 	}
 	return newCommitID, nil
+}
+
+func (g *Graveler) getCommitBreakingPoints(ctx context.Context, storageNamespace StorageNamespace, mID MetaRangeID) ([]Key, error) {
+	possibleBreakingPoints, err := g.CommittedManager.GetBreakingPoints(ctx, storageNamespace, mID)
+	if err != nil {
+		return nil, err
+	}
+	// TODO(Guys): implement this
+	// for all breaking points get the breaking points that:
+	// 1. won't be deleted from staging
+	// 2. contains changes introduced in staging
+	_ = possibleBreakingPoints
+	return nil, err
 }
 
 func newStagingToken(repositoryID RepositoryID, branchID BranchID) StagingToken {
