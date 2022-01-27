@@ -677,7 +677,7 @@ func Test_merge(t *testing.T) {
 			},
 			expectedErr: nil,
 		},
-		"is it a bug?": {
+		"dest change key": {
 			baseRange: []testRange{
 				{
 					rng:     committed.Range{ID: "base:b-c", MinKey: committed.Key("b"), MaxKey: committed.Key("c"), Count: 2, EstimatedSize: 1024},
