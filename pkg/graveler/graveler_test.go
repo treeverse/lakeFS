@@ -681,7 +681,7 @@ func TestGraveler_PreMergeHook(t *testing.T) {
 				g.SetHooksHandler(h)
 			}
 			// call merge
-			_, _, err := g.Merge(ctx, mergeRepositoryID, mergeDestination, expectedCommitID.Ref(), graveler.CommitParams{
+			_, err := g.Merge(ctx, mergeRepositoryID, mergeDestination, expectedCommitID.Ref(), graveler.CommitParams{
 				Committer: commitCommitter,
 				Message:   mergeMessage,
 				Metadata:  mergeMetadata,
@@ -761,7 +761,7 @@ func TestGraveler_MergeInvalidRef(t *testing.T) {
 	const mergeRepositoryID = "repoID"
 	const commitCommitter = "committer"
 	const mergeMessage = "message"
-	_, _, err := g.Merge(ctx, mergeRepositoryID, mergeDestination, "unexpectedRef", graveler.CommitParams{
+	_, err := g.Merge(ctx, mergeRepositoryID, mergeDestination, "unexpectedRef", graveler.CommitParams{
 		Committer: commitCommitter,
 		Message:   mergeMessage,
 		Metadata:  graveler.Metadata{"key1": "val1"},

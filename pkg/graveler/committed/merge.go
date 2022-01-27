@@ -253,11 +253,12 @@ func (m *merger) handleBothKeys(sourceValue *graveler.ValueRecord, destValue *gr
 		}
 		if !bytes.Equal(sourceValue.Identity, destValue.Identity) {
 			if baseValue != nil {
-				if bytes.Equal(sourceValue.Identity, baseValue.Identity) {
+				switch {
+				case bytes.Equal(sourceValue.Identity, baseValue.Identity):
 					err = m.writeRecord(destValue)
-				} else if bytes.Equal(destValue.Identity, baseValue.Identity) {
+				case bytes.Equal(destValue.Identity, baseValue.Identity):
 					err = m.writeRecord(sourceValue)
-				} else { // both changed the same key
+				default: // both changed the same key
 					return graveler.ErrConflictFound
 				}
 				if err != nil {
@@ -269,19 +270,6 @@ func (m *merger) handleBothKeys(sourceValue *graveler.ValueRecord, destValue *gr
 			} else {
 				return graveler.ErrConflictFound
 			}
-
-			//if baseValue != nil && (bytes.Equal(sourceValue.Identity, baseValue.Identity) ||
-			//	bytes.Equal(destValue.Identity, baseValue.Identity)) {
-			//	err := m.writeRecord(sourceValue)
-			//	if err != nil {
-			//		return fmt.Errorf("write record: %w", err)
-			//	}
-			//	m.haveSource = m.source.Next()
-			//	m.haveDest = m.dest.Next()
-			//	return nil
-			//} else { // both changed the same key
-			//	return graveler.ErrConflictFound
-			//}
 		}
 		// record hasn't changed or both added the same record
 		err = m.writeRecord(sourceValue)
