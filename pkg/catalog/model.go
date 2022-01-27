@@ -46,7 +46,6 @@ type CommitLog struct {
 }
 
 type MergeResult struct {
-	Summary   map[DifferenceType]int
 	Reference string
 }
 

@@ -18,26 +18,7 @@ type compareIterator struct {
 	err             error
 }
 
-type mergeIterator struct {
-	*compareIterator
-}
-
 var ErrUnsupportedRangeDiffType = errors.New("range diff type unsupported - supports only added and removed")
-
-// NewMergeIterator accepts an iterator describing a diff from the merge destination to the source.
-// It returns an Iterator with the changes to perform on the destination branch, in order to merge the source into it,
-// relative to base as the merge base.
-// When reaching a conflict, the iterator will enter an error state with the graveler.ErrConflictFound error.
-func NewMergeIterator(ctx context.Context, diffDestToSource DiffIterator, base Iterator) *mergeIterator {
-	return &mergeIterator{
-		compareIterator: &compareIterator{
-			ctx:             ctx,
-			diffIt:          diffDestToSource,
-			base:            base,
-			errorOnConflict: true,
-		},
-	}
-}
 
 // NewCompareIterator accepts an iterator describing a diff from the merge destination to the source.
 // It returns a DiffIterator with the changes to perform on the destination branch, in order to merge the source into it,
@@ -286,25 +267,4 @@ func (d *compareIterator) Err() error {
 func (d *compareIterator) Close() {
 	d.diffIt.Close()
 	d.base.Close()
-}
-
-func (c *mergeIterator) Value() (*graveler.ValueRecord, *Range) {
-	value, rng := c.compareIterator.Value()
-	var resValue *graveler.ValueRecord
-	var resRange *Range
-	if value != nil {
-		resValue = &graveler.ValueRecord{
-			Key: value.Key,
-		}
-		if value.Type != graveler.DiffTypeRemoved {
-			resValue.Value = value.Value
-		}
-	}
-	if rng != nil {
-		resRange = rng.Range.Copy()
-		if rng.Type == graveler.DiffTypeRemoved {
-			resRange.Tombstone = true
-		}
-	}
-	return resValue, resRange
 }

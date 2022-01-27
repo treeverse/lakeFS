@@ -53,7 +53,7 @@ func TestIdentity(t *testing.T) {
 
 			resp, err := client.MergeIntoBranchWithResponse(ctx, repo, branch1, branch2, api.MergeIntoBranchJSONRequestBody{})
 			require.NoError(t, err, "error during merge")
-			require.Nil(t, resp.JSON400, "allow merge with no changes between the branches")
+			require.NotEmpty(t, resp.JSON200, "allow merge with no changes between the branches")
 		})
 	}
 }

@@ -985,7 +985,7 @@ func (c *Catalog) Revert(ctx context.Context, repository string, branch string, 
 	}); err != nil {
 		return err
 	}
-	_, _, err := c.Store.Revert(ctx, repositoryID, branchID, reference, parentNumber, commitParams)
+	_, err := c.Store.Revert(ctx, repositoryID, branchID, reference, parentNumber, commitParams)
 	return err
 }
 
@@ -1158,30 +1158,15 @@ func (c *Catalog) Merge(ctx context.Context, repository string, destinationBranc
 	}); err != nil {
 		return nil, err
 	}
-	commitID, summary, err := c.Store.Merge(ctx, repositoryID, destination, source, commitParams)
+	commitID, err := c.Store.Merge(ctx, repositoryID, destination, source, commitParams)
 	if errors.Is(err, graveler.ErrConflictFound) {
 		// for compatibility with old Catalog
-		return &MergeResult{
-			Summary: map[DifferenceType]int{
-				DifferenceTypeConflict: summary.Count[graveler.DiffTypeConflict],
-			},
-		}, err
+		return &MergeResult{}, err
 	}
 	if err != nil {
 		return nil, err
 	}
-	count := make(map[DifferenceType]int)
-	for k, v := range summary.Count {
-		kk, err := catalogDiffType(k)
-		if err != nil {
-			return nil, err
-		}
-		count[kk] = v
-	}
-	return &MergeResult{
-		Summary:   count,
-		Reference: commitID.String(),
-	}, nil
+	return &MergeResult{Reference: commitID.String()}, nil
 }
 
 func (c *Catalog) DumpCommits(ctx context.Context, repositoryID string) (string, error) {

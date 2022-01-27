@@ -92,34 +92,26 @@ func (c *committedManager) Diff(ctx context.Context, ns graveler.StorageNamespac
 	return NewDiffValueIterator(ctx, leftIt, rightIt), nil
 }
 
-func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespace, destination, source, base graveler.MetaRangeID) (graveler.MetaRangeID, graveler.DiffSummary, error) {
-	summary := graveler.DiffSummary{
-		Count: map[graveler.DiffType]int{},
-	}
-	if source == base {
-		// no changes on source
-		return "", summary, graveler.ErrNoChanges
-	}
+func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespace, destination, source, base graveler.MetaRangeID) (graveler.MetaRangeID, error) {
 	if destination == base {
-		// changes introduced only on source, optimize be returning source with unknown summary
-		summary.Incomplete = true
-		return source, summary, nil
+		// changes introduced only on source
+		return source, nil
 	}
 	baseIt, err := c.metaRangeManager.NewMetaRangeIterator(ctx, ns, base)
 	if err != nil {
-		return "", summary, fmt.Errorf("get base iterator: %w", err)
+		return "", fmt.Errorf("get base iterator: %w", err)
 	}
 	defer baseIt.Close()
 
 	sourceIt, err := c.metaRangeManager.NewMetaRangeIterator(ctx, ns, source)
 	if err != nil {
-		return "", summary, fmt.Errorf("get source iterator: %w", err)
+		return "", fmt.Errorf("get source iterator: %w", err)
 	}
 	defer sourceIt.Close()
 
 	destIt, err := c.metaRangeManager.NewMetaRangeIterator(ctx, ns, destination)
 	if err != nil {
-		return "", summary, fmt.Errorf("get destination iterator: %w", err)
+		return "", fmt.Errorf("get destination iterator: %w", err)
 	}
 	defer destIt.Close()
 
@@ -131,18 +123,18 @@ func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespa
 		}
 	}()
 
-	summary, err = Merge(ctx, mwWriter, baseIt, sourceIt, destIt)
+	err = Merge(ctx, mwWriter, baseIt, sourceIt, destIt)
 	if err != nil {
 		if !errors.Is(err, graveler.ErrUserVisible) {
 			err = fmt.Errorf("merge ns=%s id=%s: %w", ns, destination, err)
 		}
-		return "", summary, err
+		return "", err
 	}
 	newID, err := mwWriter.Close()
 	if newID == nil {
-		return "", summary, fmt.Errorf("close writer ns=%s id=%s: %w", ns, destination, err)
+		return "", fmt.Errorf("close writer ns=%s id=%s: %w", ns, destination, err)
 	}
-	return *newID, summary, err
+	return *newID, err
 }
 
 func (c *committedManager) Commit(ctx context.Context, ns graveler.StorageNamespace, baseMetaRangeID graveler.MetaRangeID, changes graveler.ValueIterator) (graveler.MetaRangeID, graveler.DiffSummary, error) {

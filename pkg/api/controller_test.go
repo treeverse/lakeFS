@@ -343,9 +343,7 @@ func TestController_CommitsGetBranchCommitLogByPath(t *testing.T) {
 		commitName:   "P",
 	})
 	mergeCommit, err := deps.catalog.Merge(ctx, "repo3", "main", "branch-b", "user3", "commitR", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	testutil.Must(t, err)
 	commitsMap["commitR"] = mergeCommit.Reference
 	commitsMap["commitM"] = testCommitEntries(t, ctx, deps.catalog, deps, commitEntriesParams{
 		repo:         "repo3",
@@ -356,9 +354,7 @@ func TestController_CommitsGetBranchCommitLogByPath(t *testing.T) {
 		commitName:   "M",
 	})
 	mergeCommit, err = deps.catalog.Merge(ctx, "repo3", "main", "branch-a", "user2", "commitN", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	testutil.Must(t, err)
 	commitsMap["commitN"] = mergeCommit.Reference
 	commitsMap["commitX"] = testCommitEntries(t, ctx, deps.catalog, deps, commitEntriesParams{
 		repo:         "repo3",
