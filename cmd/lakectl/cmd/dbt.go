@@ -146,7 +146,7 @@ func getDbtTables(projectRoot string) ([]model, error) {
 	dbtCmd.Dir = projectRoot
 	output, err := dbtCmd.Output()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to run dbt debug with output:\n %s\n and error: %s", output, err)
 	}
 	models := make([]model, 0)
 	scan := bufio.NewScanner(bytes.NewReader(output))
@@ -155,7 +155,7 @@ func getDbtTables(projectRoot string) ([]model, error) {
 		var m model
 		err = json.Unmarshal(line, &m)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to unmarshal json: %w", err)
 		}
 		models = append(models, m)
 	}
@@ -168,7 +168,7 @@ func dbtDebug(projectRoot string) string {
 	dbtCmd.Dir = projectRoot
 	output, err := dbtCmd.Output()
 	if err != nil {
-		DieErr(err)
+		DieFmt("failed to run dbt debug with output:\n %s\n and error: %s", output, err)
 	}
 	submatch := schemaRegex.FindSubmatch(output)
 	if submatch == nil || len(submatch) < 2 {
