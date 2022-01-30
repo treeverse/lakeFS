@@ -135,8 +135,9 @@ func CopyModels(ctx context.Context, models []model, continueOnError bool, fromS
 				return err
 			}
 			fmt.Printf("copy %s.%s -> %s.%s  failed: %s\n", m.Schema, m.Alias, toSchema, m.Alias, err)
+		} else {
+			fmt.Printf("copied %s.%s -> %s.%s\n", m.Schema, m.Alias, toSchema, m.Alias)
 		}
-		fmt.Printf("copied %s.%s -> %s.%s\n", m.Schema, m.Alias, toSchema, m.Alias)
 	}
 	return nil
 }
