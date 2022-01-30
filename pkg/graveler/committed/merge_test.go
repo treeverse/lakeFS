@@ -732,6 +732,34 @@ func Test_merge(t *testing.T) {
 				},
 			},
 		},
+		"dest over source left": {
+			baseRange: []testRange{
+				{
+					rng:     committed.Range{ID: "base:a-d", MinKey: committed.Key("a"), MaxKey: committed.Key("d"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "a", identity: "a"}, {key: "d", identity: "d"}},
+				},
+			},
+			sourceRange: []testRange{
+				{
+					rng:     committed.Range{ID: "source:a-d", MinKey: committed.Key("a"), MaxKey: committed.Key("d"), Count: 4, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "a", identity: "a"}, {key: "b", identity: "b"}, {key: "c", identity: "c"}, {key: "d", identity: "d"}},
+				},
+			},
+			destRange:           []testRange{},
+			conflictExpectedIdx: nil,
+			expectedActions: []writeAction{
+				{
+					action:   actionTypeWriteRecord,
+					key:      "b",
+					identity: "b",
+				},
+				{
+					action:   actionTypeWriteRecord,
+					key:      "c",
+					identity: "c",
+				},
+			},
+		},
 	}
 
 	for name, tst := range tests {

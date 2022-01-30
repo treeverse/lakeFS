@@ -85,6 +85,48 @@ func (m *merger) writeRecord(writeValue *graveler.ValueRecord) error {
 	return nil
 }
 
+func (m *merger) destBeforeSource(destValue *graveler.ValueRecord) error {
+	baseValue, err := m.moveBaseToGEKey(destValue.Key)
+	if err != nil {
+		return err
+	}
+	if baseValue != nil && bytes.Equal(destValue.Identity, baseValue.Identity) { // source deleted this record
+		m.haveDest = m.dest.Next()
+	} else {
+		if baseValue != nil && bytes.Equal(destValue.Key, baseValue.Key) { // deleted by source added by dest
+			return graveler.ErrConflictFound
+		}
+		// dest added this record
+		err := m.writeRecord(destValue)
+		if err != nil {
+			return fmt.Errorf("write dest record: %w", err)
+		}
+		m.haveDest = m.dest.Next()
+	}
+	return nil
+}
+
+func (m *merger) sourceBeforeDest(sourceValue *graveler.ValueRecord) error {
+	baseValue, err := m.moveBaseToGEKey(sourceValue.Key)
+	if err != nil {
+		return err
+	}
+	if baseValue != nil && bytes.Equal(sourceValue.Identity, baseValue.Identity) { // dest deleted this record
+		m.haveSource = m.source.Next()
+	} else {
+		if baseValue != nil && bytes.Equal(sourceValue.Key, baseValue.Key) { // deleted by dest and changed by source
+			return graveler.ErrConflictFound
+		}
+		// source added this record
+		err := m.writeRecord(sourceValue)
+		if err != nil {
+			return fmt.Errorf("write source record: %w", err)
+		}
+		m.haveSource = m.source.Next()
+	}
+	return nil
+}
+
 // handleAll handles the case where only one Iterator from source or dest remains
 func (m *merger) handleAll(iter Iterator) error {
 	for {
@@ -99,13 +141,28 @@ func (m *merger) handleAll(iter Iterator) error {
 			if err != nil {
 				return fmt.Errorf("base range GE: %w", err)
 			}
-			if baseRange == nil || baseRange.ID != iterRange.ID {
-				if err := m.writeRange(iterRange); err != nil {
-					return err
+			if baseRange == nil || baseRange.ID == iterRange.ID {
+				if baseRange == nil {
+					if err := m.writeRange(iterRange); err != nil {
+						return err
+					}
 				}
-			}
-			if !iter.NextRange() {
-				break
+				if !iter.NextRange() {
+					break
+				}
+			} else {
+				if bytes.Compare(iterRange.MaxKey, baseRange.MinKey) >= 0 { // need to enter this range
+					if !iter.Next() {
+						break
+					}
+				} else {
+					if err := m.writeRange(iterRange); err != nil {
+						return err
+					}
+					if !iter.NextRange() {
+						break
+					}
+				}
 			}
 		} else {
 			baseValue, err := m.moveBaseToGEKey(iterValue.Key)
@@ -211,41 +268,16 @@ func (m *merger) handleBothKeys(sourceValue *graveler.ValueRecord, destValue *gr
 	c := bytes.Compare(sourceValue.Key, destValue.Key)
 	switch {
 	case c < 0: // source before dest
-		baseValue, err := m.moveBaseToGEKey(sourceValue.Key)
+		err := m.sourceBeforeDest(sourceValue)
 		if err != nil {
 			return err
-		}
-		if baseValue != nil && bytes.Equal(sourceValue.Identity, baseValue.Identity) { // dest deleted this record
-			m.haveSource = m.source.Next()
-		} else {
-			if baseValue != nil && bytes.Equal(sourceValue.Key, baseValue.Key) { // deleted by dest and changed by source
-				return graveler.ErrConflictFound
-			}
-			// source added this record
-			err := m.writeRecord(sourceValue)
-			if err != nil {
-				return fmt.Errorf("write source record: %w", err)
-			}
-			m.haveSource = m.source.Next()
 		}
 	case c > 0: // dest before source
-		baseValue, err := m.moveBaseToGEKey(destValue.Key)
+		err := m.destBeforeSource(destValue)
 		if err != nil {
 			return err
 		}
-		if baseValue != nil && bytes.Equal(destValue.Identity, baseValue.Identity) { // source deleted this record
-			m.haveDest = m.dest.Next()
-		} else {
-			if baseValue != nil && bytes.Equal(destValue.Key, baseValue.Key) { // deleted by source added by dest
-				return graveler.ErrConflictFound
-			}
-			// dest added this record
-			err := m.writeRecord(destValue)
-			if err != nil {
-				return fmt.Errorf("write dest record: %w", err)
-			}
-			m.haveDest = m.dest.Next()
-		}
+
 	default: // identical keys
 		baseValue, err := m.moveBaseToGEKey(destValue.Key)
 		if err != nil {
@@ -285,22 +317,9 @@ func (m *merger) handleBothKeys(sourceValue *graveler.ValueRecord, destValue *gr
 // handleDestRangeSourceKey handles the case where source Iterator inside range and dest Iterator at the header of a range
 func (m *merger) handleDestRangeSourceKey(destRange *Range, sourceValue *graveler.ValueRecord) error {
 	if bytes.Compare(destRange.MinKey, sourceValue.Key) > 0 { // source before dest range
-		baseValue, err := m.moveBaseToGEKey(sourceValue.Key)
+		err := m.destBeforeSource(sourceValue)
 		if err != nil {
-			return fmt.Errorf("base key GE: %w", err)
-		}
-		if baseValue != nil && bytes.Equal(sourceValue.Identity, baseValue.Identity) { // dest deleted this record
-			m.haveSource = m.source.Next()
-		} else {
-			if baseValue != nil && bytes.Equal(sourceValue.Key, baseValue.Key) { // deleted by dest and changed by source
-				return graveler.ErrConflictFound
-			}
-			// source added this record
-			err := m.writeRecord(sourceValue)
-			if err != nil {
-				return fmt.Errorf("write source record: %w", err)
-			}
-			m.haveSource = m.source.Next()
+			return err
 		}
 		return nil
 	}
@@ -323,22 +342,9 @@ func (m *merger) handleDestRangeSourceKey(destRange *Range, sourceValue *gravele
 // handleSourceRangeDestKey handles the case where dest Iterator inside range and source Iterator at the header of a range
 func (m *merger) handleSourceRangeDestKey(sourceRange *Range, destValue *graveler.ValueRecord) error {
 	if bytes.Compare(sourceRange.MinKey, destValue.Key) > 0 { // dest before source range
-		baseValue, err := m.moveBaseToGEKey(destValue.Key)
+		err := m.destBeforeSource(destValue)
 		if err != nil {
-			return fmt.Errorf("base key GE: %w", err)
-		}
-		if baseValue != nil && bytes.Equal(destValue.Identity, baseValue.Identity) { // source deleted this record
-			m.haveSource = m.source.Next()
-		} else {
-			if baseValue != nil && bytes.Equal(destValue.Key, baseValue.Key) { // deleted by source and changed by dest
-				return graveler.ErrConflictFound
-			}
-			// dest added this record
-			err := m.writeRecord(destValue)
-			if err != nil {
-				return fmt.Errorf("write dest record: %w", err)
-			}
-			m.haveDest = m.dest.Next()
+			return err
 		}
 		return nil
 	}
@@ -360,6 +366,16 @@ func (m *merger) handleSourceRangeDestKey(sourceRange *Range, destValue *gravele
 
 func (m *merger) merge() error {
 	m.haveSource, m.haveDest, _ = m.source.Next(), m.dest.Next(), m.base.Next()
+	if err := m.source.Err(); err != nil {
+		return err
+	}
+	if err := m.dest.Err(); err != nil {
+		return err
+	}
+	if err := m.base.Err(); err != nil {
+		return err
+	}
+
 	for m.haveSource && m.haveDest {
 		select {
 		case <-m.ctx.Done():
