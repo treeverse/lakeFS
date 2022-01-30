@@ -760,6 +760,44 @@ func Test_merge(t *testing.T) {
 				},
 			},
 		},
+		"same identity different key": {
+			baseRange: []testRange{
+				{
+					rng:     committed.Range{ID: "base:a-d", MinKey: committed.Key("a"), MaxKey: committed.Key("d"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "a", identity: "a"}, {key: "d", identity: "d"}},
+				},
+			},
+			sourceRange: []testRange{
+				{
+					rng:     committed.Range{ID: "source:a-d", MinKey: committed.Key("a"), MaxKey: committed.Key("d"), Count: 4, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "a", identity: "a"}, {key: "a1", identity: "a"}, {key: "c", identity: "c"}},
+				},
+			},
+			destRange: []testRange{
+				{
+					rng:     committed.Range{ID: "dest:a-d", MinKey: committed.Key("a"), MaxKey: committed.Key("d"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "a", identity: "a"}, {key: "d", identity: "d"}},
+				},
+			},
+			conflictExpectedIdx: nil,
+			expectedActions: []writeAction{
+				{
+					action:   actionTypeWriteRecord,
+					key:      "a",
+					identity: "a",
+				},
+				{
+					action:   actionTypeWriteRecord,
+					key:      "a1",
+					identity: "a",
+				},
+				{
+					action:   actionTypeWriteRecord,
+					key:      "c",
+					identity: "c",
+				},
+			},
+		},
 	}
 
 	for name, tst := range tests {

@@ -90,7 +90,7 @@ func (m *merger) destBeforeSource(destValue *graveler.ValueRecord) error {
 	if err != nil {
 		return err
 	}
-	if baseValue != nil && bytes.Equal(destValue.Identity, baseValue.Identity) { // source deleted this record
+	if baseValue != nil && bytes.Equal(destValue.Identity, baseValue.Identity) && bytes.Equal(destValue.Key, baseValue.Key) { // source deleted this record
 		m.haveDest = m.dest.Next()
 	} else {
 		if baseValue != nil && bytes.Equal(destValue.Key, baseValue.Key) { // deleted by source added by dest
@@ -111,7 +111,7 @@ func (m *merger) sourceBeforeDest(sourceValue *graveler.ValueRecord) error {
 	if err != nil {
 		return err
 	}
-	if baseValue != nil && bytes.Equal(sourceValue.Identity, baseValue.Identity) { // dest deleted this record
+	if baseValue != nil && bytes.Equal(sourceValue.Identity, baseValue.Identity) && bytes.Equal(sourceValue.Key, baseValue.Key) { // dest deleted this record
 		m.haveSource = m.source.Next()
 	} else {
 		if baseValue != nil && bytes.Equal(sourceValue.Key, baseValue.Key) { // deleted by dest and changed by source
@@ -170,6 +170,9 @@ func (m *merger) handleAll(iter Iterator) error {
 				return fmt.Errorf("base value GE: %w", err)
 			}
 			if baseValue == nil || !bytes.Equal(baseValue.Identity, iterValue.Identity) {
+				if baseValue != nil && bytes.Equal(baseValue.Key, iterValue.Key) {
+					return graveler.ErrConflictFound
+				}
 				if err := m.writeRecord(iterValue); err != nil {
 					return err
 				}
