@@ -2,7 +2,6 @@
 
 #RCLONE_IMAGE=${RCLONE_IMAGE:-treeverse/rclone-export:0.1}
 REPOSITORY=${REPOSITORY:-example}
-#EXPORT_LOCATION=${EXPORT_LOCATIONATION:-s3://lynn-example/local-export-test/exported/}
 
 # Run Export without previous commit
 

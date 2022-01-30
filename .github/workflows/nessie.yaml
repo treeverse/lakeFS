@@ -202,19 +202,6 @@ jobs:
         run: |
           echo "ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}" >> $GITHUB_ENV
 
-#      - name: Login to GitHub Docker Registry
-#        uses: docker/login-action@v1
-#        with:
-#          registry: ghcr.io
-#          username: ${{ github.actor }}
-#          password: ${{ secrets.GITHUB_TOKEN }}
-
-#      - name: Pull last built docker image cache
-#        run: |
-#          docker pull ghcr.io/${GITHUB_REPOSITORY,,}/build-cache-2:${{ steps.version.outputs.tag }} || \
-#          docker pull ghcr.io/${GITHUB_REPOSITORY,,}/build-cache-2 || \
-#          true
-
       - name: Build and Push to Amazon ECR
         run: |
           docker build deployments/tools/export -t $ECR_REGISTRY/lakefs-rclone-export:${{ steps.version.outputs.tag }}
@@ -471,8 +458,8 @@ jobs:
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
 
-#      - name: Copy repository ref
-#        run: aws s3 cp --recursive s3://nessie-system-testing-data/golden-files/gc-test-data s3://nessie-system-testing/${{ github.run_number }}-storage-rclone-export
+      - name: Copy repository ref
+        run: aws s3 cp --recursive s3://nessie-system-testing-data/golden-files/gc-test-data s3://nessie-system-testing/${{ github.run_number }}-storage-rclone-export
 
       - name: Test rclone export
         env:
@@ -481,12 +468,6 @@ jobs:
           S3_SECRET_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
         working-directory: test/rclone_export
         run: ./run-test.sh
-#
-#      - name: lakeFS Logs on Spark with gateway failure
-#        if: ${{ failure() }}
-#        continue-on-error: true
-#        working-directory: test/rclone_export
-#        run: docker-compose logs --tail=1000 lakefs
 
 
   metastore-client-with-trino:
