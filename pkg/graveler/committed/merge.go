@@ -317,7 +317,7 @@ func (m *merger) handleBothKeys(sourceValue *graveler.ValueRecord, destValue *gr
 // handleDestRangeSourceKey handles the case where source Iterator inside range and dest Iterator at the header of a range
 func (m *merger) handleDestRangeSourceKey(destRange *Range, sourceValue *graveler.ValueRecord) error {
 	if bytes.Compare(destRange.MinKey, sourceValue.Key) > 0 { // source before dest range
-		err := m.destBeforeSource(sourceValue)
+		err := m.sourceBeforeDest(sourceValue)
 		if err != nil {
 			return err
 		}
