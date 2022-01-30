@@ -1,16 +1,15 @@
 name: publish lakefs rclone export docker image
+
 on:
-  push:
-    paths:
-      - "deployments/tools/export/**"
-    branches:
-      - master
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag/version to publish
+
 jobs:
   deploy-rclone-export-image:
     name: Build and push rclone export Docker image
     runs-on: ubuntu-20.04
-#    outputs:
-#      tag: ${{ steps.version.outputs.tag }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -25,7 +24,6 @@ jobs:
       - name: Extract version
         shell: bash
 #        run: echo "::set-output name=tag::sha-$(git rev-parse --short HEAD | sed s/^v//g)"
-#        run: echo "::set-output name=tag::$(echo ${GITHUB_REF##*/} | sed s/^v//g)"
         run: |
           if [ "${{ github.event.inputs.tag }}" != "" ]; then
             echo "::set-output name=tag::$(echo ${{ github.event.inputs.tag }} | sed s/^v//)"
