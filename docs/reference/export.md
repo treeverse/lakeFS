@@ -26,7 +26,7 @@ Possible use-cases:
 
 {% include toc.html %}
 
-## How to use
+## Exporting Data With Spark 
 
 ### Using spark-submit
 You can use the export main in 3 different modes:
@@ -153,3 +153,37 @@ you can alternatively export just the difference between `main` branch and the c
    exporter.exportFrom(branch, commit)
    ```
 
+## Exporting Data With Docker
+
+In a similar way to the spark export - you can export data frome lakeFS to S3 using 3 export options:
+
+1. Export all objects from a branch `example-branch` on `example-repo` repository to s3 location `s3://destination-bucket/prefix/`:
+
+   ```shell
+   .... example-repo s3://destination-bucket/prefix/ --branch="example-branch"
+   ```
+
+
+1. Export all objects from a commit `c805e49bafb841a0875f49cd555b397340bbd9b8` on `example-repo` repository to s3 location `s3://destination-bucket/prefix/`:
+
+   ```shell
+   .... example-repo s3://destination-bucket/prefix/ --commit_id=c805e49bafb841a0875f49cd555b397340bbd9b8
+   ```
+
+
+1. Export only the diff between branch `example-branch` and commit `c805e49bafb841a0875f49cd555b397340bbd9b8`
+   on `example-repo` repository to s3 location `s3://destination-bucket/prefix/`:
+
+   ```shell
+   .... example-repo s3://destination-bucket/prefix/ --branch="example-branch" --prev_commit_id=c805e49bafb841a0875f49cd555b397340bbd9b8
+   ```
+
+You will need to add the relevant environment variables.
+The complete `docker run` command would look like:
+
+```shell 
+docker run \
+-e LAKEFS_ACCESS_KEY=XXX -e LAKEFS_SECRET_KEY=YYY -e LAKEFS_ENDPOINT=https://<LAKEFS_ENDPOINT>/ \
+-e S3_ACCESS_KEY=XXX -e S3_SECRET_KEY=YYY \
+-it treeverse/lakefs-rclone-export:latest example-repo s3://destination-bucket/prefix/ --branch="example-branch"
+``` 
