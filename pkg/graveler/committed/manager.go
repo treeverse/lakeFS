@@ -93,6 +93,10 @@ func (c *committedManager) Diff(ctx context.Context, ns graveler.StorageNamespac
 }
 
 func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespace, destination, source, base graveler.MetaRangeID) (graveler.MetaRangeID, error) {
+	if source == base {
+		// no changes on source
+		return "", nil
+	}
 	if destination == base {
 		// changes introduced only on source
 		return source, nil

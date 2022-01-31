@@ -589,7 +589,7 @@ func Test_merge(t *testing.T) {
 			},
 			expectedErr: nil,
 		},
-		"source and dest change same range": {
+		"dest removed range and added range after source removed range edges": {
 			baseRange: []testRange{
 				{rng: committed.Range{ID: "base:k1-k5", MinKey: committed.Key("k1"), MaxKey: committed.Key("k5"), Count: 5, EstimatedSize: 1234},
 					records: []testValueRecord{
@@ -677,7 +677,7 @@ func Test_merge(t *testing.T) {
 			},
 			expectedErr: nil,
 		},
-		"dest change key": {
+		"source and dest changed record identity": {
 			baseRange: []testRange{
 				{
 					rng:     committed.Range{ID: "base:b-c", MinKey: committed.Key("b"), MaxKey: committed.Key("c"), Count: 2, EstimatedSize: 1024},
@@ -732,7 +732,7 @@ func Test_merge(t *testing.T) {
 				},
 			},
 		},
-		"dest over source left": {
+		"dest removed all source added": {
 			baseRange: []testRange{
 				{
 					rng:     committed.Range{ID: "base:a-d", MinKey: committed.Key("a"), MaxKey: committed.Key("d"), Count: 2, EstimatedSize: 1024},

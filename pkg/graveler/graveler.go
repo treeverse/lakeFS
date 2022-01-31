@@ -638,8 +638,8 @@ type CommittedManager interface {
 	Compare(ctx context.Context, ns StorageNamespace, destination, source, base MetaRangeID) (DiffIterator, error)
 
 	// Merge applies changes from 'source' to 'destination', relative to a merge base 'base' and
-	// returns the ID of the new metarange and a summary of diffs.  This is similar to a
-	// git merge operation. The resulting tree is expected to be immediately addressable.
+	// returns the ID of the new metarange. This is similar to a git merge operation.
+	// The resulting tree is expected to be immediately addressable.
 	Merge(ctx context.Context, ns StorageNamespace, destination, source, base MetaRangeID) (MetaRangeID, error)
 
 	// Commit is the act of taking an existing metaRange (snapshot) and applying a set of changes to it.
