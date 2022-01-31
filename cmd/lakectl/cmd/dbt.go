@@ -104,10 +104,7 @@ func copySchemaWithDbtTables(ctx context.Context, continueOnError, continueOnSch
 		DieFmt("schema %s exists, change schema or use %s flag", toSchema, continueOnSchemaFlag)
 	}
 
-	models, err := getDbtTables(projectRoot)
-	if err != nil {
-		DieErr(err)
-	}
+	models := getDbtTables(projectRoot)
 	if err := CopyModels(ctx, models, continueOnError, fromSchema, toSchema, branchName, dbfsLocation, client); err != nil {
 		DieErr(err)
 	}
@@ -135,18 +132,20 @@ func CopyModels(ctx context.Context, models []model, continueOnError bool, fromS
 				return err
 			}
 			fmt.Printf("copy %s.%s -> %s.%s  failed: %s\n", m.Schema, m.Alias, toSchema, m.Alias, err)
+		} else {
+			fmt.Printf("copied %s.%s -> %s.%s\n", m.Schema, m.Alias, toSchema, m.Alias)
 		}
-		fmt.Printf("copied %s.%s -> %s.%s\n", m.Schema, m.Alias, toSchema, m.Alias)
 	}
 	return nil
 }
 
-func getDbtTables(projectRoot string) ([]model, error) {
+func getDbtTables(projectRoot string) []model {
 	dbtCmd := exec.Command("dbt", "ls", "--resource-type", "model", "--select", "config.materialized:table config.materialized:incremental", "--output", "json", "--output-keys", "alias schema")
 	dbtCmd.Dir = projectRoot
 	output, err := dbtCmd.Output()
 	if err != nil {
-		return nil, err
+		fmt.Println(string(output))
+		DieErr(err)
 	}
 	models := make([]model, 0)
 	scan := bufio.NewScanner(bytes.NewReader(output))
@@ -155,11 +154,11 @@ func getDbtTables(projectRoot string) ([]model, error) {
 		var m model
 		err = json.Unmarshal(line, &m)
 		if err != nil {
-			return nil, err
+			DieErr(err)
 		}
 		models = append(models, m)
 	}
-	return models, nil
+	return models
 }
 
 // dbtDebug validates dbt connection using dbt debug, return the schema configured by the target environment (configured in the dbt profiles file)
@@ -168,6 +167,7 @@ func dbtDebug(projectRoot string) string {
 	dbtCmd.Dir = projectRoot
 	output, err := dbtCmd.Output()
 	if err != nil {
+		fmt.Println(string(output))
 		DieErr(err)
 	}
 	submatch := schemaRegex.FindSubmatch(output)
