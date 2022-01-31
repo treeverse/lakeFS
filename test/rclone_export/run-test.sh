@@ -1,6 +1,5 @@
 #!/bin/bash
 
-#RCLONE_IMAGE=${RCLONE_IMAGE:-treeverse/rclone-export:0.1}
 REPOSITORY=${REPOSITORY:-example}
 
 # Run Export without previous commit

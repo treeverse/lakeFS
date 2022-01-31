@@ -153,9 +153,11 @@ you can alternatively export just the difference between `main` branch and the c
    exporter.exportFrom(branch, commit)
    ```
 
-## Exporting Data With Docker
+## Using Docker
 
-In a similar way to the spark export - you can export data frome lakeFS to S3 using 3 export options:
+This option is recommanded if you don't have spark at your tool-set.
+It does not support distribution across machines, therefore may have a lower performance. 
+Using this method, you can export data from lakeFS to S3 using 3 export options (in a similar way to the spark export):
 
 1. Export all objects from a branch `example-branch` on `example-repo` repository to s3 location `s3://destination-bucket/prefix/`:
 

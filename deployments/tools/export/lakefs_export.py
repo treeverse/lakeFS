@@ -65,32 +65,36 @@ def main():
 
     reference = ""
     source = "lakefs:" + args.Repo + "/"
-    if args.branch != None and args.commit_id == None:
-    	source += args.branch + "/"
-    	reference = args.branch
-    elif args.branch == None and args.commit_id != None:
-    	source += args.commit_id + "/"
-    	reference = args.commit_id
+    has_branch = (args.branch != None)
+    has_commit = (args.commit_id != None)
+    export_diff = (args.prev_commit_id != None)
+    if has_branch and not has_commit:
+        source += args.branch + "/"
+        reference = args.branch
+    elif not has_branch and has_commit:
+        source += args.commit_id + "/"
+        reference = args.commit_id
     else:
-    	raise Exception("Should assign branch or commit, but not both.")
+        raise Exception("Should assign branch or commit, but not both.")
 
-    if args.prev_commit_id == None:
-        only_copy = True
-        cmd = ["rclone", "copy", "--create-empty-src-dirs", source, args.Dest, "--config=rclone.conf"]
-    else:
-        only_copy = False
+    if has_commit and export_diff:
+        raise Exception("Could not export diff between two commits.")
+
+    if export_diff:
         cmd = ["rclone", "sync", source, args.Dest, "--config=rclone.conf", "--create-empty-src-dirs"]
+    else:
+        cmd = ["rclone", "copy", source, args.Dest, "--config=rclone.conf", "--create-empty-src-dirs"]
 
     process = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     # check export and create status file
-    if only_copy:
+    if export_diff:
+        check_process = subprocess.run(["rclone", "check", source, args.Dest, "--config=rclone.conf", "--combined=errors"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    else:
         # if we check the copy command we add the flag --one-way since we only want to check that the source files were copied to the destination
         check_process = subprocess.run(["rclone", "check", source, args.Dest, "--config=rclone.conf", "--combined=errors", "--one-way"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    else:
-        check_process = subprocess.run(["rclone", "check", source, args.Dest, "--config=rclone.conf", "--combined=errors"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-    # rclnoe check --combined contains files that are identical, so we'll remove those files from the errors file
+    # the command 'rclnoe check --combined' returns files that are identical, as well as the errors. So we'll remove the identical files from the errors file
     with open("errors", "r") as input, open("temp", "w") as output:
         for line in input:
             # if line starts with "=" then don't write it in temp file

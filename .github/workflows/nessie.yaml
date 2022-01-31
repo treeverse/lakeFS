@@ -435,7 +435,7 @@ jobs:
         run: docker-compose logs --tail=1000 lakefs
 
   export:
-    name: Test lakeFS export functionality
+    name: Test lakeFS rclone export functionality
     needs: [deploy-image, deploy-rclone-export-image]
     runs-on: ubuntu-20.04
     env:
