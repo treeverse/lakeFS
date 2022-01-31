@@ -52,7 +52,7 @@ public class MetadataClient {
             objectMetadata.setHeader("ETag", etag);
             return objectMetadata;
         } catch (InvocationTargetException | IllegalAccessException e) {
-            LOG.warn("failed to get etag from file status", e);
+            LOG.debug("failed to get etag from file status", e);
         } catch (NoSuchMethodException ignored) {
         }
 
@@ -65,8 +65,21 @@ public class MetadataClient {
             GetObjectMetadataRequest metadataRequest = new GetObjectMetadataRequest(bucket, key);
             return (ObjectMetadata) getObjectMetadataMethod.invoke(s3Client, metadataRequest);
         } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-            LOG.warn("failed to get object metadata using underlying s3 client", e);
-            throw new IOException("get object metadata using underlying s3 client", e);
+            LOG.debug("failed to get object metadata using underlying s3 client", e);
+        }
+        // fallback - get the underlying s3 client from the databricks wrapper and request object metadata
+        try {
+            Method fsGetter = fs.getClass().getDeclaredMethod("getWrappedFs");
+            Object s3fs = fsGetter.invoke(fs);
+            Method amazonS3ClientGetter = s3fs.getClass().getDeclaredMethod("getAmazonS3Client");
+            amazonS3ClientGetter.setAccessible(true);
+            Object s3Client = amazonS3ClientGetter.invoke(s3fs);
+            Method getObjectMetadataMethod = s3Client.getClass().getDeclaredMethod("getObjectMetadata", GetObjectMetadataRequest.class);
+            GetObjectMetadataRequest metadataRequest = new GetObjectMetadataRequest(bucket, key);
+            return (ObjectMetadata) getObjectMetadataMethod.invoke(s3Client, metadataRequest);
+        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+            LOG.warn("failed to get object metadata using underlying wrapped s3 client", e);
+            throw new IOException("get object metadata using underlying wrapped s3 client", e);
         }
     }
 }
