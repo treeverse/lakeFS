@@ -731,6 +731,7 @@ func Test_merge(t *testing.T) {
 					identity: "e1",
 				},
 			},
+			expectedErr: nil,
 		},
 		"dest removed all source added": {
 			baseRange: []testRange{
@@ -759,6 +760,7 @@ func Test_merge(t *testing.T) {
 					identity: "c",
 				},
 			},
+			expectedErr: nil,
 		},
 		"same identity different key": {
 			baseRange: []testRange{
@@ -797,6 +799,95 @@ func Test_merge(t *testing.T) {
 					identity: "c",
 				},
 			},
+			expectedErr: nil,
+		},
+		"dest removed all source range before base": {
+			baseRange: []testRange{
+				{
+					rng:     committed.Range{ID: "base:c-d", MinKey: committed.Key("c"), MaxKey: committed.Key("d"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "c", identity: "c"}, {key: "d", identity: "d"}},
+				},
+			},
+			sourceRange: []testRange{
+				{
+					rng:     committed.Range{ID: "source:a-b", MinKey: committed.Key("a"), MaxKey: committed.Key("b"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "a", identity: "a"}, {key: "b", identity: "b"}},
+				},
+			},
+			destRange:           []testRange{},
+			conflictExpectedIdx: nil,
+			expectedActions: []writeAction{
+				{
+					action: actionTypeWriteRange,
+					rng:    committed.Range{ID: "source:a-b", MinKey: committed.Key("a"), MaxKey: committed.Key("b"), Count: 2, EstimatedSize: 1024},
+				},
+			},
+			expectedErr: nil,
+		},
+		"dest removed all same key different identity": {
+			baseRange: []testRange{
+				{
+					rng:     committed.Range{ID: "base:a-b", MinKey: committed.Key("a"), MaxKey: committed.Key("b"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "a", identity: "a"}, {key: "b", identity: "b"}},
+				},
+			},
+			sourceRange: []testRange{
+				{
+					rng:     committed.Range{ID: "source:a-b", MinKey: committed.Key("a"), MaxKey: committed.Key("b"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "a", identity: "a1"}, {key: "b", identity: "b"}},
+				},
+			},
+			destRange:           []testRange{},
+			conflictExpectedIdx: nil,
+			expectedActions:     []writeAction{},
+			expectedErr:         graveler.ErrConflictFound,
+		},
+		"dest removed all different key different identity": {
+			baseRange: []testRange{
+				{
+					rng:     committed.Range{ID: "base:a-b", MinKey: committed.Key("a"), MaxKey: committed.Key("b"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "a", identity: "a"}, {key: "a2", identity: "a2"}, {key: "b", identity: "b"}},
+				},
+			},
+			sourceRange: []testRange{
+				{
+					rng:     committed.Range{ID: "source:a-b", MinKey: committed.Key("a"), MaxKey: committed.Key("b"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "a", identity: "a"}, {key: "a1", identity: "a1"}, {key: "b", identity: "b"}},
+				},
+			},
+			destRange:           []testRange{},
+			conflictExpectedIdx: nil,
+			expectedActions: []writeAction{
+				{
+					action:   actionTypeWriteRecord,
+					key:      "a1",
+					identity: "a1",
+				},
+			},
+			expectedErr: nil,
+		},
+		"dest range before source": {
+			baseRange: []testRange{
+				{
+					rng:     committed.Range{ID: "base:a-b", MinKey: committed.Key("a"), MaxKey: committed.Key("b"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "a", identity: "a"}, {key: "b", identity: "b"}},
+				},
+			},
+			sourceRange: []testRange{
+				{
+					rng:     committed.Range{ID: "source:c-d", MinKey: committed.Key("c"), MaxKey: committed.Key("d"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "c", identity: "c"}, {key: "d", identity: "d"}},
+				},
+			},
+			destRange: []testRange{
+				{
+					rng:     committed.Range{ID: "dest:a-b", MinKey: committed.Key("a"), MaxKey: committed.Key("b"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "a", identity: "a1"}, {key: "b", identity: "b"}},
+				},
+			},
+			conflictExpectedIdx: nil,
+			expectedActions:     []writeAction{},
+			expectedErr:         graveler.ErrConflictFound,
 		},
 	}
 
