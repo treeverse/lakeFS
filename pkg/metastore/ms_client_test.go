@@ -2,6 +2,7 @@ package metastore_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -106,7 +107,7 @@ func TestMSClient_CopySchema(t *testing.T) {
 
 			err := metastore.CopyDB(nil, client, client, tt.SourceName, tt.DestinationName, tt.destBranch, "")
 
-			if err != tt.ExpectedError {
+			if !errors.Is(err, tt.ExpectedError) {
 				t.Fatalf("expected err:%s got:%v", tt.ExpectedError, err)
 			}
 			if tt.ExpectedError != nil {
@@ -198,7 +199,7 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	//add columns to existing partition
+	// add columns to existing partition
 	partition19 := expectedPartitionsMap[mock.GetPartitionKey(toDBName, toTableName, []string{"part=19"})]
 	addColumn := &metastore.FieldSchema{
 		Name:    "column_three",
@@ -236,7 +237,7 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	if len(mergedPartitions) != numOfPartitions {
 		t.Fatalf("got wrong amount of partitions expected:%d, got:%d", numOfPartitions, len(mergedPartitions))
 	}
-	//check if partition 20 was added and has three columns, 19 was updated and 17 was deleted
+	// check if partition 20 was added and has three columns, 19 was updated and 17 was deleted
 	m := make(map[string]*metastore.Partition)
 	for _, partition := range mergedPartitions {
 		m[partition.Values[0]] = partition
