@@ -46,7 +46,7 @@ func CopyOrMerge(ctx context.Context, fromClient, toClient Client, fromDB, fromT
 		location = HandleDBFSLocation(location, dbfsLocation)
 		transformedLocation, err := ReplaceBranchName(location, toBranch)
 		if err != nil {
-			return "", fmt.Errorf("failed to replace branch name with location: %s and branch: %s : %w", location, toBranch, err)
+			return "", fmt.Errorf("failed to replace branch name with location: '%s' and branch: '%s': %w", location, toBranch, err)
 		}
 		return transformedLocation, nil
 	}
@@ -61,7 +61,7 @@ func CopyDB(ctx context.Context, fromClient, toClient Client, fromDB, toDB, toBr
 		location = HandleDBFSLocation(location, dbfsLocation)
 		transformedLocation, err := ReplaceBranchName(location, toBranch)
 		if err != nil {
-			return "", fmt.Errorf("failed to replace branch name with location: %s and branch: %s : %w", location, toBranch, err)
+			return "", fmt.Errorf("failed to replace branch name with location: '%s' and branch: '%s': %w", location, toBranch, err)
 		}
 		return transformedLocation, nil
 	}
@@ -71,7 +71,7 @@ func CopyDB(ctx context.Context, fromClient, toClient Client, fromDB, toDB, toBr
 func copyDBWithTransformLocation(ctx context.Context, fromClient, toClient Client, fromDB string, toDB string, transformLocation func(location string) (string, error)) error {
 	schema, err := fromClient.GetDatabase(ctx, fromDB)
 	if err != nil {
-		return fmt.Errorf("failed to get database on copy: %w", err)
+		return fmt.Errorf("failed to get database on copy from '%s': %w", fromDB, err)
 	}
 	schema.Name = toDB
 	schema.LocationURI, err = transformLocation(schema.LocationURI)
@@ -80,7 +80,7 @@ func copyDBWithTransformLocation(ctx context.Context, fromClient, toClient Clien
 	}
 	err = toClient.CreateDatabase(ctx, schema)
 	if err != nil {
-		return fmt.Errorf("failed to create database with name %s and location %s   :%w", schema.Name, schema.LocationURI, err)
+		return fmt.Errorf("failed to create database with name '%s' and location '%s': %w", schema.Name, schema.LocationURI, err)
 	}
 	return nil
 }
