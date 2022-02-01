@@ -189,3 +189,7 @@ docker run \
 -e S3_ACCESS_KEY=XXX -e S3_SECRET_KEY=YYY \
 -it treeverse/lakefs-rclone-export:latest example-repo s3://destination-bucket/prefix/ --branch="example-branch"
 ``` 
+
+**Note:** This feature uses [rclone](https://rclone.org/){: target="_blank"},
+and specifically [rclone sync](https://rclone.org/commands/rclone_sync/){: target="_blank"}. This can change the destination path, therefore the s3 destination location must be designated to lakeFS export.
+{: .note}

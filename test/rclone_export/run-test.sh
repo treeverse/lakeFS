@@ -52,3 +52,26 @@ if ! diff ${lakectl_out} ${s3_out}; then
   exit 1
 fi
 
+# Run Export with commit_id reference
+
+docker-compose exec -T lakefs lakectl fs upload lakefs://${REPOSITORY}/main/a/file_three.txt --source /local/file_three.txt
+commit_id=$(docker-compose exec -T lakefs lakectl commit lakefs://${REPOSITORY}/main --message="added file_three" | sed -n 4p | awk '{print $2}')
+
+docker-compose run --rm lakefs-export ${REPOSITORY} ${EXPORT_LOCATION} --commit_id="$commit_id"
+
+echo "commit_id $commit_id"
+
+# Validate sync
+lakectl_out=$(mktemp)
+s3_out=$(mktemp)
+trap 'rm -f -- $s3_out $lakectl_out' INT TERM EXIT
+
+docker-compose exec -T lakefs lakectl fs ls --recursive --no-color lakefs://${REPOSITORY}/main/ | awk '{print $8}' | sort > ${lakectl_out}
+
+aws s3 ls --recursive ${EXPORT_LOCATION} | awk '{print $4}'| cut -d/ -f ${n}-  | grep -v EXPORT_ | sort > ${s3_out}
+
+
+if ! diff ${lakectl_out} ${s3_out}; then
+  echo "export location and lakefs should contain same objects"
+  exit 1
+fi

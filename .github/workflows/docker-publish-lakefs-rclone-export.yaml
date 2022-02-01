@@ -23,7 +23,6 @@ jobs:
 
       - name: Extract version
         shell: bash
-#        run: echo "::set-output name=tag::sha-$(git rev-parse --short HEAD | sed s/^v//g)"
         run: |
           if [ "${{ github.event.inputs.tag }}" != "" ]; then
             echo "::set-output name=tag::$(echo ${{ github.event.inputs.tag }} | sed s/^v//)"
