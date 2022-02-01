@@ -461,6 +461,12 @@ jobs:
       - name: Copy repository ref
         run: aws s3 cp --recursive s3://nessie-system-testing-data/golden-files/gc-test-data s3://nessie-system-testing/${{ github.run_number }}-storage-rclone-export
 
+      - name: Setup lakeFS for tests
+        env:
+          STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-storage-rclone-export
+        working-directory: test/rclone_export
+        run: ./setup-test.sh
+
       - name: Test rclone export
         env:
           EXPORT_LOCATION: s3://nessie-system-testing/${{ github.run_number }}-rclone-export-dest

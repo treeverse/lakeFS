@@ -31,30 +31,12 @@ services:
       - LAKEFS_ENDPOINT=http://lakefs:8000
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
 
-  lakefs-setup:
-    image: "${REPO:-treeverse}/lakefs:${LAKEFS_TAG:-latest}"
-    container_name: lakefs-setup
-    depends_on:
-      - "lakefs"
-      - "postgres"
-    environment:
-      - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=some random secret string
-      - LAKEFS_DATABASE_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
-      - LAKECTL_CREDENTIALS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
-      - LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-      - LAKECTL_SERVER_ENDPOINT_URL=http://lakefs:8000
-      - LAKEFS_BLOCKSTORE_TYPE=s3
-      - STORAGE_NAMESPACE
-    entrypoint: [ "/app/wait-for", "postgres:5432", "--", "sh", "-c",
-                  "lakefs setup --user-name docker --access-key-id AKIAIOSFODNN7EXAMPLE --secret-access-key wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY && lakectl repo create lakefs://example $STORAGE_NAMESPACE"
-    ]
 
   lakefs-export:
     image: "${REPO:-treeverse}/lakefs-rclone-export:${EXPORT_TAG:-latest}"
     depends_on:
       - "lakefs"
       - "postgres"
-      - "lakefs-setup"
     profiles: ["client"]
     environment:
       - LAKEFS_ENDPOINT=http://lakefs:8000
