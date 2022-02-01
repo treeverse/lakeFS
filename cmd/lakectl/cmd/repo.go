@@ -46,8 +46,8 @@ var repoListCmd = &cobra.Command{
 // lakectl create lakefs://myrepo s3://my-bucket/
 var repoCreateCmd = &cobra.Command{
 	Use:     "create <repository uri> <storage namespace>",
-	Short:   "Create a new repository ",
-	Example: "create lakefs://some-repo-name s3://some-bucket-name",
+	Short:   "Create a new repository",
+	Example: "lakectl create lakefs://some-repo-name s3://some-bucket-name",
 	Args:    cobra.ExactArgs(repoCreateCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
@@ -80,7 +80,7 @@ var repoCreateCmd = &cobra.Command{
 var repoCreateBareCmd = &cobra.Command{
 	Use:     "create-bare <repository uri> <storage namespace>",
 	Short:   "Create a new repository with no initial branch or commit",
-	Example: "create-bare lakefs://some-repo-name s3://some-bucket-name",
+	Example: "lakectl create-bare lakefs://some-repo-name s3://some-bucket-name",
 	Hidden:  true,
 	Args:    cobra.ExactArgs(repoCreateCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
