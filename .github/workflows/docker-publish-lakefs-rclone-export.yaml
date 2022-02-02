@@ -1,0 +1,55 @@
+name: publish lakefs rclone export docker image
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag/version to publish
+
+jobs:
+  deploy-rclone-export-image:
+    name: Build and push rclone export Docker image
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Extract version
+        shell: bash
+        run: |
+          if [ "${{ github.event.inputs.tag }}" != "" ]; then
+            echo "::set-output name=tag::$(echo ${{ github.event.inputs.tag }} | sed s/^v//)"
+          else
+            echo "::set-output name=tag::$(echo ${GITHUB_REF##*/} | sed s/^v//)"
+          fi
+        id: version
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Export ECR parameters
+        run: |
+          echo "ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}" >> $GITHUB_ENV
+
+      - name: Build and Push to Amazon ECR
+        run: |
+          docker build deployments/tools/export -t $ECR_REGISTRY/lakefs-rclone-export:${{ steps.version.outputs.tag }}
+          docker push $ECR_REGISTRY/lakefs-rclone-export:${{ steps.version.outputs.tag }}
+
+      - name: Build and push to Docker hub
+        uses: docker/build-push-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          build_args: VERSION=${{ steps.version.outputs.tag }}
+          target: lakefs-rclone-export
+          repository: treeverse/lakefs-rclone-export
+          tags: ${{ steps.version.outputs.tag }},latest
