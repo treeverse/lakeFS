@@ -45,10 +45,6 @@ type CommitLog struct {
 	Parents      []string
 }
 
-type MergeResult struct {
-	Reference string
-}
-
 type Branch struct {
 	Name      string `db:"name"`
 	Reference string

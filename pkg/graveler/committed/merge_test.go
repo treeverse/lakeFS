@@ -7,9 +7,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/go-test/deep"
 
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
 	"github.com/treeverse/lakefs/pkg/graveler/committed/mock"
@@ -866,6 +867,43 @@ func Test_merge(t *testing.T) {
 			},
 			expectedErr: nil,
 		},
+		"dest removed all base and source same identity": {
+			baseRange: []testRange{
+				{
+					rng:     committed.Range{ID: "base:a-b", MinKey: committed.Key("a"), MaxKey: committed.Key("b"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "a", identity: "a"}, {key: "b", identity: "b"}},
+				},
+				{
+					rng:     committed.Range{ID: "base:d-f", MinKey: committed.Key("d"), MaxKey: committed.Key("f"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "d", identity: "d"}, {key: "f", identity: "f"}},
+				},
+			},
+			sourceRange: []testRange{
+				{
+					rng:     committed.Range{ID: "base:a-b", MinKey: committed.Key("a"), MaxKey: committed.Key("b"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "a", identity: "a"}, {key: "b", identity: "b"}},
+				},
+				{
+					rng:     committed.Range{ID: "source:c-e", MinKey: committed.Key("c"), MaxKey: committed.Key("e"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "c", identity: "c"}, {key: "e", identity: "e"}},
+				},
+			},
+			destRange:           []testRange{},
+			conflictExpectedIdx: nil,
+			expectedActions: []writeAction{
+				{
+					action:   actionTypeWriteRecord,
+					key:      "c",
+					identity: "c",
+				},
+				{
+					action:   actionTypeWriteRecord,
+					key:      "e",
+					identity: "e",
+				},
+			},
+			expectedErr: nil,
+		},
 		"dest range before source": {
 			baseRange: []testRange{
 				{
@@ -888,6 +926,182 @@ func Test_merge(t *testing.T) {
 			conflictExpectedIdx: nil,
 			expectedActions:     []writeAction{},
 			expectedErr:         graveler.ErrConflictFound,
+		},
+		"source key before dest range": {
+			baseRange: []testRange{
+				{
+					rng:     committed.Range{ID: "base:a-d", MinKey: committed.Key("a"), MaxKey: committed.Key("d"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "a", identity: "a"}, {key: "b", identity: "b"}, {key: "c", identity: "c"}, {key: "d", identity: "d"}},
+				},
+			},
+			sourceRange: []testRange{
+				{
+					rng:     committed.Range{ID: "source:a-d", MinKey: committed.Key("a"), MaxKey: committed.Key("d"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "a", identity: "a"}, {key: "b", identity: "b"}, {key: "c", identity: "c"}, {key: "d", identity: "d"}},
+				},
+			},
+			destRange: []testRange{
+				{
+					rng:     committed.Range{ID: "dest:b-c", MinKey: committed.Key("b"), MaxKey: committed.Key("c"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "b", identity: "b"}, {key: "c", identity: "c"}},
+				},
+				{
+					rng:     committed.Range{ID: "dest:e-f", MinKey: committed.Key("e"), MaxKey: committed.Key("f"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "e", identity: "e"}, {key: "f", identity: "f"}},
+				},
+			},
+			conflictExpectedIdx: nil,
+			expectedActions: []writeAction{
+				{
+					action:   actionTypeWriteRecord,
+					key:      "b",
+					identity: "b",
+				},
+				{
+					action:   actionTypeWriteRecord,
+					key:      "c",
+					identity: "c",
+				},
+				{
+					action: actionTypeWriteRange,
+					rng:    committed.Range{ID: "dest:e-f", MinKey: committed.Key("e"), MaxKey: committed.Key("f"), Count: 2, EstimatedSize: 1024},
+				},
+			},
+			expectedErr: nil,
+		},
+		"dest key before source range": {
+			baseRange: []testRange{
+				{
+					rng:     committed.Range{ID: "base:a-d", MinKey: committed.Key("a"), MaxKey: committed.Key("d"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "a", identity: "a"}, {key: "b", identity: "b"}, {key: "c", identity: "c"}, {key: "d", identity: "d"}},
+				},
+			},
+			sourceRange: []testRange{
+				{
+					rng:     committed.Range{ID: "source:b-c", MinKey: committed.Key("b"), MaxKey: committed.Key("c"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "b", identity: "b"}, {key: "c", identity: "c"}},
+				},
+				{
+					rng:     committed.Range{ID: "source:e-f", MinKey: committed.Key("e"), MaxKey: committed.Key("f"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "e", identity: "e"}, {key: "f", identity: "f"}},
+				},
+			},
+			destRange: []testRange{
+				{
+					rng:     committed.Range{ID: "dest:a-d", MinKey: committed.Key("a"), MaxKey: committed.Key("d"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "a", identity: "a"}, {key: "b", identity: "b"}, {key: "c", identity: "c"}, {key: "d", identity: "d"}},
+				},
+			},
+			conflictExpectedIdx: nil,
+			expectedActions: []writeAction{
+				{
+					action:   actionTypeWriteRecord,
+					key:      "b",
+					identity: "b",
+				},
+				{
+					action:   actionTypeWriteRecord,
+					key:      "c",
+					identity: "c",
+				},
+				{
+					action: actionTypeWriteRange,
+					rng:    committed.Range{ID: "source:e-f", MinKey: committed.Key("e"), MaxKey: committed.Key("f"), Count: 2, EstimatedSize: 1024},
+				},
+			},
+			expectedErr: nil,
+		},
+		"dest range before source key": {
+			baseRange: []testRange{
+				{
+					rng:     committed.Range{ID: "base:c-c", MinKey: committed.Key("c"), MaxKey: committed.Key("c"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "c", identity: "c"}},
+				},
+			},
+			sourceRange: []testRange{
+				{
+					rng:     committed.Range{ID: "source:a-d", MinKey: committed.Key("a"), MaxKey: committed.Key("d"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "a", identity: "a"}, {key: "d", identity: "d"}},
+				},
+			},
+			destRange: []testRange{
+				{
+					rng:     committed.Range{ID: "dest:a-a", MinKey: committed.Key("a"), MaxKey: committed.Key("a"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "a", identity: "a"}},
+				},
+				{
+					rng:     committed.Range{ID: "dest:b-b", MinKey: committed.Key("b"), MaxKey: committed.Key("b"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "b", identity: "b"}},
+				},
+				{
+					rng:     committed.Range{ID: "base:c-c", MinKey: committed.Key("c"), MaxKey: committed.Key("c"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "c", identity: "c"}},
+				},
+			},
+			conflictExpectedIdx: nil,
+			expectedActions: []writeAction{
+				{
+					action:   actionTypeWriteRecord,
+					key:      "a",
+					identity: "a",
+				},
+				{
+					action: actionTypeWriteRange,
+					rng:    committed.Range{ID: "dest:b-b", MinKey: committed.Key("b"), MaxKey: committed.Key("b"), Count: 2, EstimatedSize: 1024},
+				},
+				{
+					action:   actionTypeWriteRecord,
+					key:      "d",
+					identity: "d",
+				},
+			},
+			expectedErr: nil,
+		},
+		"source range before dest key": {
+			baseRange: []testRange{
+				{
+					rng:     committed.Range{ID: "base:c-c", MinKey: committed.Key("c"), MaxKey: committed.Key("c"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "c", identity: "c"}},
+				},
+			},
+			sourceRange: []testRange{
+				{
+					rng:     committed.Range{ID: "source:a-a", MinKey: committed.Key("a"), MaxKey: committed.Key("a"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "a", identity: "a"}},
+				},
+				{
+					rng:     committed.Range{ID: "source:b-b", MinKey: committed.Key("b"), MaxKey: committed.Key("b"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "b", identity: "b"}},
+				},
+				{
+					rng:     committed.Range{ID: "base:c-c", MinKey: committed.Key("c"), MaxKey: committed.Key("c"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "c", identity: "c"}},
+				},
+			},
+			destRange: []testRange{
+				{
+					rng:     committed.Range{ID: "dest:a-d", MinKey: committed.Key("a"), MaxKey: committed.Key("d"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{key: "a", identity: "a"}, {key: "d", identity: "d"}},
+				},
+			},
+			conflictExpectedIdx: nil,
+			expectedActions: []writeAction{
+				{
+					action:   actionTypeWriteRecord,
+					key:      "a",
+					identity: "a",
+				},
+				{
+					action: actionTypeWriteRange,
+					rng:    committed.Range{ID: "source:b-b", MinKey: committed.Key("b"), MaxKey: committed.Key("b"), Count: 2, EstimatedSize: 1024},
+				},
+				{
+					action:   actionTypeWriteRecord,
+					key:      "d",
+					identity: "d",
+				},
+			},
+			expectedErr: nil,
 		},
 	}
 
@@ -991,4 +1205,99 @@ func TestMergeCancelContext(t *testing.T) {
 		err := committed.Merge(ctx, writer, base, source, destination)
 		assert.True(t, errors.Is(err, context.Canceled), "context canceled error")
 	})
+}
+
+type FakeMetaRangeWriter struct {
+	records        []*graveler.ValueRecord
+	rangeToRecords map[committed.ID][]*graveler.ValueRecord
+}
+
+func NewFakeMetaRangeWriter(rangeToRecords map[committed.ID][]*graveler.ValueRecord) *FakeMetaRangeWriter {
+	return &FakeMetaRangeWriter{
+		records:        make([]*graveler.ValueRecord, 0),
+		rangeToRecords: rangeToRecords,
+	}
+}
+
+func (fmw *FakeMetaRangeWriter) WriteRecord(record graveler.ValueRecord) error {
+	fmw.records = append(fmw.records, &record)
+	return nil
+}
+
+func (fmw *FakeMetaRangeWriter) WriteRange(rng committed.Range) error {
+	fmw.records = append(fmw.records, fmw.rangeToRecords[rng.ID]...)
+	return nil
+}
+
+func (fmw *FakeMetaRangeWriter) Close() (*graveler.MetaRangeID, error) {
+	return nil, nil
+}
+
+func (fmw *FakeMetaRangeWriter) Abort() error {
+	return nil
+}
+
+func createIterFromRecords(rangeMap map[committed.ID][]*graveler.ValueRecord, rangeIds ...committed.ID) *testutil.FakeIterator {
+	res := testutil.NewFakeIterator()
+	for _, rangeId := range rangeIds {
+		res.AddRange(&committed.Range{
+			ID:            rangeId,
+			MinKey:        committed.Key(rangeMap[rangeId][0].Key),
+			MaxKey:        committed.Key(rangeMap[rangeId][len(rangeMap[rangeId])-1].Key),
+			EstimatedSize: 0,
+			Count:         int64(len(rangeMap[rangeId])),
+		}).AddValueRecords(rangeMap[rangeId]...)
+	}
+	return res
+}
+
+func TestMergeCorrectness(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	tsts := map[string]struct {
+		ranges          map[committed.ID][]*graveler.ValueRecord
+		baseRanges      []committed.ID
+		sourceRanges    []committed.ID
+		destRanges      []committed.ID
+		expectedRecords []*graveler.ValueRecord
+	}{
+		"correctness_1": {
+			ranges: map[committed.ID][]*graveler.ValueRecord{
+				"base:a-c":   {makeV("a", "a"), makeV("c", "c")},
+				"source:b-d": {makeV("b", "b"), makeV("c", "c"), makeV("d", "d")},
+				"dest:e-e":   {makeV("e", "e")},
+			},
+			baseRanges:      []committed.ID{"base:a-c"},
+			sourceRanges:    []committed.ID{"source:b-d"},
+			destRanges:      []committed.ID{"dest:e-e"},
+			expectedRecords: []*graveler.ValueRecord{makeV("b", "b"), makeV("d", "d"), makeV("e", "e")},
+		},
+		"correctness_2": {
+			ranges: map[committed.ID][]*graveler.ValueRecord{
+				"base:b-b":   {makeV("b", "b")},
+				"base:c-c":   {makeV("c", "c")},
+				"source:a-a": {makeV("a", "a")},
+			},
+			baseRanges:      []committed.ID{"base:b-b", "base:c-c"},
+			sourceRanges:    []committed.ID{"source:a-a"},
+			destRanges:      []committed.ID{"base:c-c"},
+			expectedRecords: []*graveler.ValueRecord{makeV("a", "a")},
+		},
+	}
+	for name, tst := range tsts {
+		t.Run(name, func(t *testing.T) {
+
+			writer := NewFakeMetaRangeWriter(tst.ranges)
+			base := createIterFromRecords(tst.ranges, tst.baseRanges...)
+			source := createIterFromRecords(tst.ranges, tst.sourceRanges...)
+			dest := createIterFromRecords(tst.ranges, tst.destRanges...)
+			err := committed.Merge(context.Background(), writer, base, source, dest)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := deep.Equal(tst.expectedRecords, writer.records); diff != nil {
+				t.Error("found diff in records", diff)
+			}
+		})
+	}
 }

@@ -20,12 +20,25 @@ type merger struct {
 	haveSource, haveDest bool
 }
 
-// moveBaseToGERange moves base iterator (from current point) to range which is greater or equal than the given key
-func (m *merger) moveBaseToGERange(key graveler.Key) (*Range, error) {
+// getNextGEKey moves base iterator (from current point) to key from is greater or equal than the given key
+func (m *merger) getNextGEKey(key graveler.Key) (*graveler.ValueRecord, error) {
+	baseValue, _ := m.base.Value()
+	if baseValue != nil && bytes.Compare(key, baseValue.Key) <= 0 {
+		return baseValue, nil
+	}
+
 	for {
 		_, baseRange := m.base.Value()
 		if baseRange != nil && bytes.Compare(baseRange.MaxKey, key) >= 0 {
-			return baseRange, nil
+			for {
+				baseValue, innerRange := m.base.Value()
+				if baseValue != nil && bytes.Compare(key, baseValue.Key) <= 0 {
+					return baseValue, nil
+				}
+				if !m.base.Next() || innerRange.ID != baseRange.ID {
+					break
+				}
+			}
 		}
 		if !m.base.NextRange() {
 			break
@@ -34,22 +47,17 @@ func (m *merger) moveBaseToGERange(key graveler.Key) (*Range, error) {
 	return nil, m.base.Err()
 }
 
-// moveBaseToGEKey moves base iterator (from current point) to key from is greater or equal than the given key
-func (m *merger) moveBaseToGEKey(key graveler.Key) (*graveler.ValueRecord, error) {
-	baseValue, _ := m.base.Value()
-	if baseValue != nil && bytes.Compare(key, baseValue.Key) <= 0 {
-		return baseValue, nil
-	}
-	baseRange, err := m.moveBaseToGERange(key)
-	if err != nil {
-		return nil, err
-	}
+// getNextOverlappingFromBase moves base iterator (from current point) to the next overlap range with rangeToOverlap
+func (m *merger) getNextOverlappingFromBase(rangeToOverlap *Range) (*Range, error) {
 	for {
-		baseValue, innerRange := m.base.Value()
-		if baseValue != nil && bytes.Compare(key, baseValue.Key) <= 0 {
-			return baseValue, nil
+		_, baseRange := m.base.Value()
+		if baseRange != nil && bytes.Compare(baseRange.MaxKey, rangeToOverlap.MinKey) >= 0 {
+			if bytes.Compare(baseRange.MinKey, rangeToOverlap.MaxKey) > 0 {
+				return nil, nil
+			}
+			return baseRange, nil
 		}
-		if !m.base.Next() || innerRange.ID != baseRange.ID {
+		if !m.base.NextRange() {
 			break
 		}
 	}
@@ -86,7 +94,7 @@ func (m *merger) writeRecord(writeValue *graveler.ValueRecord) error {
 }
 
 func (m *merger) destBeforeSource(destValue *graveler.ValueRecord) error {
-	baseValue, err := m.moveBaseToGEKey(destValue.Key)
+	baseValue, err := m.getNextGEKey(destValue.Key)
 	if err != nil {
 		return err
 	}
@@ -107,7 +115,7 @@ func (m *merger) destBeforeSource(destValue *graveler.ValueRecord) error {
 }
 
 func (m *merger) sourceBeforeDest(sourceValue *graveler.ValueRecord) error {
-	baseValue, err := m.moveBaseToGEKey(sourceValue.Key)
+	baseValue, err := m.getNextGEKey(sourceValue.Key)
 	if err != nil {
 		return err
 	}
@@ -137,35 +145,26 @@ func (m *merger) handleAll(iter Iterator) error {
 		}
 		iterValue, iterRange := iter.Value()
 		if iterValue == nil {
-			baseRange, err := m.moveBaseToGERange(graveler.Key(iterRange.MinKey))
+			baseRange, err := m.getNextOverlappingFromBase(iterRange)
 			if err != nil {
 				return fmt.Errorf("base range GE: %w", err)
 			}
-			if baseRange == nil || baseRange.ID == iterRange.ID {
-				if baseRange == nil {
-					if err := m.writeRange(iterRange); err != nil {
-						return err
-					}
+			if baseRange == nil {
+				if err := m.writeRange(iterRange); err != nil {
+					return err
 				}
 				if !iter.NextRange() {
 					break
 				}
-			} else {
-				if bytes.Compare(iterRange.MaxKey, baseRange.MinKey) >= 0 { // need to enter this range
-					if !iter.Next() {
-						break
-					}
-				} else {
-					if err := m.writeRange(iterRange); err != nil {
-						return err
-					}
-					if !iter.NextRange() {
-						break
-					}
+			} else if baseRange.ID == iterRange.ID {
+				if !iter.NextRange() {
+					break
 				}
+			} else if !iter.Next() { // need to enter this range
+				break
 			}
 		} else {
-			baseValue, err := m.moveBaseToGEKey(iterValue.Key)
+			baseValue, err := m.getNextGEKey(iterValue.Key)
 			if err != nil {
 				return fmt.Errorf("base value GE: %w", err)
 			}
@@ -196,50 +195,8 @@ func (m *merger) handleBothRanges(sourceRange *Range, destRange *Range) error {
 		m.haveSource = m.source.NextRange()
 		m.haveDest = m.dest.NextRange()
 
-	case bytes.Compare(sourceRange.MaxKey, destRange.MinKey) < 0: // source before dest
-		baseRange, err := m.moveBaseToGERange(graveler.Key(sourceRange.MinKey))
-		if err != nil {
-			return fmt.Errorf("base range GE: %w", err)
-		}
-		if baseRange != nil && sourceRange.ID == baseRange.ID { // dest deleted this range
-			m.haveSource = m.source.NextRange()
-			return nil
-		}
-		if baseRange == nil || destRange.ID == baseRange.ID { // source added this range
-			err = m.writeRange(sourceRange)
-			if err != nil {
-				return err
-			}
-			m.haveSource = m.source.NextRange()
-			return nil
-		}
-		// both changed this range
-		m.haveSource = m.source.Next()
-		m.haveDest = m.dest.Next()
-
-	case bytes.Compare(destRange.MaxKey, sourceRange.MinKey) < 0: // dest before source
-		baseRange, err := m.moveBaseToGERange(graveler.Key(destRange.MinKey))
-		if err != nil {
-			return fmt.Errorf("base range GE: %w", err)
-		}
-		if baseRange != nil && sourceRange.ID == baseRange.ID { // dest added this range
-			err = m.writeRange(destRange)
-			if err != nil {
-				return err
-			}
-			m.haveDest = m.dest.NextRange()
-			return nil
-		}
-		if baseRange == nil || destRange.ID == baseRange.ID { // source deleted this range
-			m.haveDest = m.dest.NextRange()
-			return nil
-		}
-		// both changed this range
-		m.haveSource = m.source.Next()
-		m.haveDest = m.dest.Next()
-
 	case bytes.Equal(sourceRange.MinKey, destRange.MinKey) && bytes.Equal(sourceRange.MaxKey, destRange.MaxKey): // same bounds
-		baseRange, err := m.moveBaseToGERange(graveler.Key(sourceRange.MinKey))
+		baseRange, err := m.getNextOverlappingFromBase(sourceRange)
 		if err != nil {
 			return err
 		}
@@ -259,6 +216,48 @@ func (m *merger) handleBothRanges(sourceRange *Range, destRange *Range) error {
 			m.haveDest = m.dest.Next()
 		}
 
+	case bytes.Compare(sourceRange.MaxKey, destRange.MinKey) < 0: // source before dest
+		baseRange, err := m.getNextOverlappingFromBase(sourceRange)
+		if err != nil {
+			return fmt.Errorf("base range GE: %w", err)
+		}
+		if baseRange == nil { // source added this range
+			err = m.writeRange(sourceRange)
+			if err != nil {
+				return err
+			}
+			m.haveSource = m.source.NextRange()
+			return nil
+		}
+		if sourceRange.ID == baseRange.ID { // dest deleted this range
+			m.haveSource = m.source.NextRange()
+			return nil
+		}
+		// both changed this range
+		m.haveSource = m.source.Next()
+		m.haveDest = m.dest.Next()
+
+	case bytes.Compare(destRange.MaxKey, sourceRange.MinKey) < 0: // dest before source
+		baseRange, err := m.getNextOverlappingFromBase(destRange)
+		if err != nil {
+			return fmt.Errorf("base range GE: %w", err)
+		}
+		if baseRange == nil { // dest added this range
+			err = m.writeRange(destRange)
+			if err != nil {
+				return err
+			}
+			m.haveDest = m.dest.NextRange()
+			return nil
+		}
+		if destRange.ID == baseRange.ID { // source deleted this range
+			m.haveDest = m.dest.NextRange()
+			return nil
+		}
+		// both changed this range
+		m.haveSource = m.source.Next()
+		m.haveDest = m.dest.Next()
+
 	default: // ranges overlapping
 		m.haveSource = m.source.Next()
 		m.haveDest = m.dest.Next()
@@ -271,18 +270,12 @@ func (m *merger) handleBothKeys(sourceValue *graveler.ValueRecord, destValue *gr
 	c := bytes.Compare(sourceValue.Key, destValue.Key)
 	switch {
 	case c < 0: // source before dest
-		err := m.sourceBeforeDest(sourceValue)
-		if err != nil {
-			return err
-		}
+		return m.sourceBeforeDest(sourceValue)
 	case c > 0: // dest before source
-		err := m.destBeforeSource(destValue)
-		if err != nil {
-			return err
-		}
+		return m.destBeforeSource(destValue)
 
 	default: // identical keys
-		baseValue, err := m.moveBaseToGEKey(destValue.Key)
+		baseValue, err := m.getNextGEKey(destValue.Key)
 		if err != nil {
 			return err
 		}
@@ -320,19 +313,23 @@ func (m *merger) handleBothKeys(sourceValue *graveler.ValueRecord, destValue *gr
 // handleDestRangeSourceKey handles the case where source Iterator inside range and dest Iterator at the header of a range
 func (m *merger) handleDestRangeSourceKey(destRange *Range, sourceValue *graveler.ValueRecord) error {
 	if bytes.Compare(destRange.MinKey, sourceValue.Key) > 0 { // source before dest range
-		err := m.sourceBeforeDest(sourceValue)
-		if err != nil {
-			return err
-		}
-		return nil
+		return m.sourceBeforeDest(sourceValue)
 	}
 
 	if bytes.Compare(destRange.MaxKey, sourceValue.Key) < 0 { // dest range before source
-		baseRange, err := m.moveBaseToGERange(graveler.Key(destRange.MinKey))
+		baseRange, err := m.getNextOverlappingFromBase(destRange)
 		if err != nil {
 			return fmt.Errorf("base range GE: %w", err)
 		}
-		if baseRange != nil && destRange.ID == baseRange.ID { // source deleted this range
+		if baseRange == nil {
+			err = m.writeRange(destRange)
+			if err != nil {
+				return err
+			}
+			m.haveDest = m.dest.NextRange()
+			return nil
+		}
+		if destRange.ID == baseRange.ID { // source deleted this range
 			m.haveDest = m.dest.NextRange()
 			return nil
 		}
@@ -345,19 +342,23 @@ func (m *merger) handleDestRangeSourceKey(destRange *Range, sourceValue *gravele
 // handleSourceRangeDestKey handles the case where dest Iterator inside range and source Iterator at the header of a range
 func (m *merger) handleSourceRangeDestKey(sourceRange *Range, destValue *graveler.ValueRecord) error {
 	if bytes.Compare(sourceRange.MinKey, destValue.Key) > 0 { // dest before source range
-		err := m.destBeforeSource(destValue)
-		if err != nil {
-			return err
-		}
-		return nil
+		return m.destBeforeSource(destValue)
 	}
 
 	if bytes.Compare(sourceRange.MaxKey, destValue.Key) < 0 { // source range before dest
-		baseRange, err := m.moveBaseToGERange(graveler.Key(sourceRange.MinKey))
+		baseRange, err := m.getNextOverlappingFromBase(sourceRange)
 		if err != nil {
 			return fmt.Errorf("base range GE: %w", err)
 		}
-		if baseRange != nil && sourceRange.ID == baseRange.ID { // dest deleted this range
+		if baseRange == nil {
+			err = m.writeRange(sourceRange)
+			if err != nil {
+				return err
+			}
+			m.haveSource = m.source.NextRange()
+			return nil
+		}
+		if sourceRange.ID == baseRange.ID { // dest deleted this range
 			m.haveSource = m.source.NextRange()
 			return nil
 		}

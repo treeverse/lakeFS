@@ -2791,13 +2791,13 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 		writeError(w, http.StatusPreconditionFailed, err)
 		return
 	case errors.Is(err, catalog.ErrConflictFound) || errors.Is(err, graveler.ErrConflictFound):
-		writeResponse(w, http.StatusConflict, MergeResult{Reference: res.Reference})
+		writeResponse(w, http.StatusConflict, MergeResult{Reference: res})
 		return
 	}
 	if handleAPIError(w, err) {
 		return
 	}
-	writeResponse(w, http.StatusOK, MergeResult{Reference: res.Reference}) // optimize returning unknown summary = 0
+	writeResponse(w, http.StatusOK, MergeResult{Reference: res}) // optimize returning unknown summary = 0
 }
 
 func (c *Controller) ListTags(w http.ResponseWriter, r *http.Request, repository string, params ListTagsParams) {
