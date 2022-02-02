@@ -3,8 +3,8 @@
 ## Goals
 
 - Enable hooks that trigger execution of some behavior directly by the lakeFS server using Kubernetes
-- Condition pre-commit and pre-merge with successful execution
 - Enable non-blocking execution for post-merge and post-merge
+- Support successful job completion as condition for the commit and merge operations
 
 
 ## Non Goals
@@ -39,7 +39,7 @@ hooks:
     type: k8s-job
     description: Create a tag based on last version
     properties:
-      image: "next/lakefs-hooks:4"
+      image: "registry/lakefs-hooks:4"
       command: ["python"]
       args: ["bump-version.py"]
       env:
@@ -147,7 +147,7 @@ hooks:
       - alpine
 ```
 
-Each item list will match the `repository/name:tag` used in the hook.
+Each item list will match the `registry/name:tag` used in the hook.
 If the tag is omitted, any tag will be allowed.
 
 ### Execution
