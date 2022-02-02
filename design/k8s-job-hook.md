@@ -14,12 +14,16 @@
 
 ## Proposition
 
+
 ### Overview
+
+Current hooks mechanism described [here](https://docs.lakefs.io/setup/hooks.html)
 
 New lakeFS hook type, triggered by pre/post commit/merge events to execute jobs on k8s cluster.
 
 The user will provide a hook definition that will include the name of the image (docker image) and arguments that will be used for the hook.
 While commit/merge occurs, lakeFS will request to execute the job definition on the cluster and wait (optional) for success in order to complete the operation.
+
 
 ### New hook definition
 
@@ -39,7 +43,7 @@ hooks:
     type: k8s-job
     description: Create a tag based on last version
     properties:
-      image: "registry/lakefs-hooks:4"
+      image: "myregistry/myhook:4"
       command: ["python"]
       args: ["bump-version.py"]
       env:
@@ -49,7 +53,7 @@ hooks:
         value: alpha
 ```
 
-In this example we specified a post merge hook to execute a job. The job will use the image `next/lakefs-hooks:4` with the command python with the argument `bump-version.py`.
+In this example we specified a post merge hook to execute a job. The job will use the user-supplied image `myregistry/myhook:4` with the command `python` using the argument `bump-version.py`.
 The container will have the environment variables populated with REPOSITORY and PROJECT as defined by the user.
 
 The following environment variables will be also populated with the event information:
@@ -133,7 +137,8 @@ spec:
               memory: 2G
 ```
 
-We can mount the job spec using a configmap having lakeFS use it as the base to the job template used for all k8s-job hooks.
+The job spec can be mounted using a configmap with lakeFS using it as the basis for all k8s-job hooks.
+
 
 *Limit the end-user image use*
 
@@ -150,6 +155,7 @@ hooks:
 Each item list will match the `registry/name:tag` used in the hook.
 If the tag is omitted, any tag will be allowed.
 
+
 ### Execution
 
 lakeFS requests job creation from the cluster.  In case the request fails it will log the job information and fail the hook execution.
@@ -164,6 +170,54 @@ properties:
 
 Without waiting for the job to complete, lakeFS will consider job creation as successful execution. Will log the job information without waiting for the job to complete or capturing the output.
 
+### Authorizations
+
+Base on the above, lakeFS will require the following permissions:
+
+- `job` get, create and watch
+- `pod` get
+- `pod/log` get, list, watch
+
+The following describes possible ClusteRole that enables the above. We can limit the scope to a single namespace using Role.
+Note that we need to add the rules to the current set used by lakefs, this document describes the requirements for this feature.
+
+```
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  namespace: default
+  name: lakefs
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: lakefs
+rules:
+  - apiGroups: [""]
+    resources: ["job"]
+    verbs: ["get", "create", "watch"]
+  - apiGroups: [""]
+    resources: ["pod"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["job/logs"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: lakefs
+subjects:
+  - kind: ServiceAccount
+    namespace: default
+    name: lakefs
+    apiGroup: ""
+roleRef:
+  kind: ClusterRole
+  name: lakefs
+  apiGroup: rbac.authorization.k8s.io
+```
+
 ### Considerations
 
 *Job lifetime*
@@ -174,3 +228,4 @@ Automatic Clean-up for Finished Jobs capability is currently found on Kubernetes
 *Job security*
 
 lakeFS has no control or a way to control the operations the job itself will perform on the cluster. The job spec can be used to limit the resources and namespace used by lakeFS jobs, but the actual configuration of how it is used inside the cluster is out of the scope of this hook.
+
