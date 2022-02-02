@@ -218,14 +218,16 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 ```
 
+
 ### Considerations
 
 *Job lifetime*
 
 Once a job is created and executed in the cluster, the lakeFS server will not take ownership of the object. A mechanism should be in place to clean up all jobs lakeFS applied and completed (successfully or not).
-Automatic Clean-up for Finished Jobs capability is currently found on Kubernetes 1.23 (which we don’t have yet on AWS for example) which can help with that.
+[Automatic Clean-up for Finished Jobs](https://kubernetes.io/docs/concepts/workloads/controllers/ttlafterfinished/) capability is currently found on Kubernetes 1.23 (which we don’t have yet on AWS for example) which can help with that.
 
 *Job security*
 
-lakeFS has no control or a way to control the operations the job itself will perform on the cluster. The job spec can be used to limit the resources and namespace used by lakeFS jobs, but the actual configuration of how it is used inside the cluster is out of the scope of this hook.
+A user-supplied image can be run within the scope specified in the job spec, but lakeFS has no control over the job and the code itself, except for the image name that is limited by the lakeFS configuration.
+
 
