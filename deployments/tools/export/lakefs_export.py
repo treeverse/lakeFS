@@ -28,11 +28,11 @@ def create_rclone_conf_file():
 def set_args():
     parser = argparse.ArgumentParser(description='Process lakeFS export.')
 
-    parser.add_argument('Repo', metavar='repo', type=str, help='the name of lakeFS repository')
+    parser.add_argument('Repo', metavar='repo', type=str, help='name of lakeFS repository')
     parser.add_argument('Dest', metavar='dest', type=str, help='path of destination')
-    parser.add_argument('--branch', metavar='branch', type=str, action='store', help='the relevant branch in the repository to export from')
-    parser.add_argument('--commit_id', metavar='commit', type=str, action='store', help='the relevant commit on the repository to export from')
-    parser.add_argument('--prev_commit_id', metavar='previous-commit', type=str, action='store', help='a previous commit reference to export only the diff between it and the head of the branch')
+    parser.add_argument('--branch', metavar='branch', type=str, action='store', help='relevant branch in the repository to export from')
+    parser.add_argument('--commit_id', metavar='commit', type=str, action='store', help='relevant commit on the repository to export from')
+    parser.add_argument('--prev_commit_id', metavar='previous-commit', type=str, action='store', help='if specified, export only the difference between this commit ID and the head of the branch')
 
     args = parser.parse_args()
     return args
@@ -46,7 +46,7 @@ def write_status_file(success, status_file_name):
         with open('errors','r') as errors_file, open(status_file_name,'w') as status_file:
             for line in errors_file:
                 if line.startswith('-'):
-                    status_file.write("path was missing on the source: " + line)
+                    status_file.write("path missing in source: " + line)
                 elif line.startswith('+'):
                     status_file.write("path was missing on the destination: " + line)
                 elif line.startswith('*'):
@@ -78,7 +78,7 @@ def main():
         raise Exception("Should assign branch or commit, but not both.")
 
     if has_commit and export_diff:
-        raise Exception("Could not export diff between two commits.")
+        raise Exception("Cannot export diff between two commits.")
 
     if export_diff:
         cmd = ["rclone", "sync", source, args.Dest, "--config=rclone.conf", "--create-empty-src-dirs"]
@@ -86,6 +86,8 @@ def main():
         cmd = ["rclone", "copy", source, args.Dest, "--config=rclone.conf", "--create-empty-src-dirs"]
 
     process = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if process.stderr:
+        raise Exception("Error while executing rclone command: ", process.stderr)
 
     # check export and create status file
     if export_diff:
@@ -94,7 +96,7 @@ def main():
         # if we check the copy command we add the flag --one-way since we only want to check that the source files were copied to the destination
         check_process = subprocess.run(["rclone", "check", source, args.Dest, "--config=rclone.conf", "--combined=errors", "--one-way"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-    # the command 'rclnoe check --combined' returns files that are identical, as well as the errors. So we'll remove the identical files from the errors file
+    # the command 'rclnoe check --combined' returns files that are identical, as well as errors. So we'll remove the identical files from the errors file
     with open("errors", "r") as input, open("temp", "w") as output:
         for line in input:
             # if line starts with "=" then don't write it in temp file

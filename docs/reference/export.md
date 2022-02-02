@@ -62,7 +62,7 @@ spark-submit --conf spark.hadoop.lakefs.api.url=https://<LAKEFS_ENDPOINT>/api/v1
   --branch=example-branch
 ```
 
-The command assumes the spark cluster has permissions to write to `s3://example-bucket/prefix`.
+The command assumes the Spark cluster has permissions to write to `s3://example-bucket/prefix`.
 Otherwise, add `spark.hadoop.fs.s3a.access.key` and `spark.hadoop.fs.s3a.secret.key` with the proper credentials.
 {: .note}
 
@@ -155,9 +155,9 @@ you can alternatively export just the difference between `main` branch and the c
 
 ## Using Docker
 
-This option is recommanded if you don't have spark at your tool-set.
+This option is recommended if you don't have Spark at your tool-set.
 It does not support distribution across machines, therefore may have a lower performance. 
-Using this method, you can export data from lakeFS to S3 using 3 export options (in a similar way to the spark export):
+Using this method, you can export data from lakeFS to S3 using 3 export options (in a similar way to the Spark export):
 
 1. Export all objects from a branch `example-branch` on `example-repo` repository to s3 location `s3://destination-bucket/prefix/`:
 
