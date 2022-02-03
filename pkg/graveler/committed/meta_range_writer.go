@@ -11,7 +11,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-type GeneralMetaRangeWriter struct {
+type BaseMetaRangeWriter struct {
 	ctx               context.Context
 	metadata          graveler.Metadata
 	params            *Params // for breaking ranges
@@ -36,8 +36,8 @@ var (
 	ErrNilValue     = errors.New("record value should not be nil")
 )
 
-func NewGeneralMetaRangeWriter(ctx context.Context, rangeManager, metaRangeManager RangeManager, params *Params, breakByRaggedness func(key graveler.Key) bool, namespace Namespace, md graveler.Metadata) *GeneralMetaRangeWriter {
-	return &GeneralMetaRangeWriter{
+func NewBaseMetaRangeWriter(ctx context.Context, rangeManager, metaRangeManager RangeManager, params *Params, breakByRaggedness func(key graveler.Key) bool, namespace Namespace, md graveler.Metadata) *BaseMetaRangeWriter {
+	return &BaseMetaRangeWriter{
 		ctx:               ctx,
 		metadata:          md,
 		rangeManager:      rangeManager,
@@ -50,7 +50,7 @@ func NewGeneralMetaRangeWriter(ctx context.Context, rangeManager, metaRangeManag
 }
 
 // WriteRecord writes a record to the current range, decides if should close range
-func (w *GeneralMetaRangeWriter) WriteRecord(record graveler.ValueRecord) error {
+func (w *BaseMetaRangeWriter) WriteRecord(record graveler.ValueRecord) error {
 	if w.lastKey != nil && bytes.Compare(record.Key, w.lastKey) <= 0 {
 		return ErrUnsortedKeys
 	}
@@ -82,7 +82,7 @@ func (w *GeneralMetaRangeWriter) WriteRecord(record graveler.ValueRecord) error 
 	return nil
 }
 
-func (w *GeneralMetaRangeWriter) closeCurrentRange() error {
+func (w *BaseMetaRangeWriter) closeCurrentRange() error {
 	if w.rangeWriter == nil {
 		return nil
 	}
@@ -93,7 +93,7 @@ func (w *GeneralMetaRangeWriter) closeCurrentRange() error {
 	return nil
 }
 
-func (w *GeneralMetaRangeWriter) getBatchedRanges() ([]Range, error) {
+func (w *BaseMetaRangeWriter) getBatchedRanges() ([]Range, error) {
 	wr, err := w.batchWriteCloser.Wait()
 	if err != nil {
 		return nil, fmt.Errorf("batch write closer wait: %w", err)
@@ -111,7 +111,7 @@ func (w *GeneralMetaRangeWriter) getBatchedRanges() ([]Range, error) {
 	return ranges, nil
 }
 
-func (w *GeneralMetaRangeWriter) WriteRange(rng Range) error {
+func (w *BaseMetaRangeWriter) WriteRange(rng Range) error {
 	if w.lastKey != nil && bytes.Compare(rng.MinKey, w.lastKey) <= 0 {
 		return ErrUnsortedKeys
 	}
@@ -124,7 +124,7 @@ func (w *GeneralMetaRangeWriter) WriteRange(rng Range) error {
 	return nil
 }
 
-func (w *GeneralMetaRangeWriter) Close() (*graveler.MetaRangeID, error) {
+func (w *BaseMetaRangeWriter) close() ([]Range, error) {
 	if err := w.closeCurrentRange(); err != nil {
 		return nil, err
 	}
@@ -137,11 +137,11 @@ func (w *GeneralMetaRangeWriter) Close() (*graveler.MetaRangeID, error) {
 		return bytes.Compare(ranges[i].MaxKey, ranges[j].MaxKey) < 0
 	})
 	w.ranges = ranges
-	return w.writeRangesToMetaRange()
+	return w.ranges, nil
 }
 
 // shouldBreakAtKey returns true if should break range after the given key
-func (w *GeneralMetaRangeWriter) shouldBreakAtKey(key graveler.Key) bool {
+func (w *BaseMetaRangeWriter) shouldBreakAtKey(key graveler.Key) bool {
 	approximateSize := w.rangeWriter.GetApproximateSize()
 	// TODO(Guys): consider removing, might cause problems on parallel
 	if approximateSize < w.params.MinRangeSizeBytes {
@@ -154,14 +154,14 @@ func (w *GeneralMetaRangeWriter) shouldBreakAtKey(key graveler.Key) bool {
 }
 
 // writeRangesToMetaRange writes all ranges to a MetaRange and returns the MetaRangeID
-func (w *GeneralMetaRangeWriter) writeRangesToMetaRange() (*graveler.MetaRangeID, error) {
-	metaRangeWriter, err := w.metaRangeManager.GetWriter(w.ctx, w.namespace, w.metadata)
+func writeRangesToMetaRange(ctx context.Context, namespace Namespace, metadata graveler.Metadata, manager RangeManager, ranges []Range) (*graveler.MetaRangeID, error) {
+	metaRangeWriter, err := manager.GetWriter(ctx, namespace, metadata)
 	if err != nil {
 		return nil, fmt.Errorf("failed creating metarange writer: %w", err)
 	}
 
 	// write user provided metadata, if any
-	for k, v := range w.metadata {
+	for k, v := range metadata {
 		metaRangeWriter.SetMetadata(k, v)
 	}
 	// set type
@@ -169,10 +169,10 @@ func (w *GeneralMetaRangeWriter) writeRangesToMetaRange() (*graveler.MetaRangeID
 
 	defer func() {
 		if abortErr := metaRangeWriter.Abort(); abortErr != nil {
-			logging.Default().WithField("namespace", w.namespace).Errorf("failed aborting metarange writer: %w", err)
+			logging.Default().WithField("namespace", namespace).Errorf("failed aborting metarange writer: %w", err)
 		}
 	}()
-	for _, p := range w.ranges {
+	for _, p := range ranges {
 		rangeValue, err := rangeToValue(p)
 		if err != nil {
 			return nil, err
@@ -189,9 +189,62 @@ func (w *GeneralMetaRangeWriter) writeRangesToMetaRange() (*graveler.MetaRangeID
 	return &metaRangeID, nil
 }
 
-func (w *GeneralMetaRangeWriter) Abort() error {
+func (w *BaseMetaRangeWriter) Abort() error {
 	if w.rangeWriter == nil {
 		return nil
 	}
 	return w.rangeWriter.Abort()
+}
+
+type GeneralMetaRangeWriterCloser struct {
+	*BaseMetaRangeWriter
+}
+
+func (g *GeneralMetaRangeWriterCloser) Close() (*graveler.MetaRangeID, error) {
+	ranges, err := g.close()
+	if err != nil {
+		return nil, err
+	}
+	return writeRangesToMetaRange(g.ctx, g.namespace, g.metadata, g.metaRangeManager, ranges)
+}
+
+func NewGeneralMetaRangeWriter(ctx context.Context, rangeManager, metaRangeManager RangeManager, params *Params, breakByRaggedness func(key graveler.Key) bool, namespace Namespace, md graveler.Metadata) *GeneralMetaRangeWriterCloser {
+	baseMetaRangeWriter := NewBaseMetaRangeWriter(ctx,
+		rangeManager,
+		metaRangeManager,
+		params,
+		breakByRaggedness,
+		namespace,
+		md)
+	return &GeneralMetaRangeWriterCloser{
+		BaseMetaRangeWriter: baseMetaRangeWriter,
+	}
+}
+
+type GeneralMetaRangeWriterPartCloser struct {
+	*BaseMetaRangeWriter
+}
+
+func NewGeneralMetaRangeWriterPartCloser(ctx context.Context, rangeManager, metaRangeManager RangeManager, params *Params, breakByRaggedness func(key graveler.Key) bool, namespace Namespace, md graveler.Metadata) *GeneralMetaRangeWriterPartCloser {
+	baseMetaRangeWriter := NewBaseMetaRangeWriter(ctx,
+		rangeManager,
+		metaRangeManager,
+		params,
+		breakByRaggedness,
+		namespace,
+		md)
+	return &GeneralMetaRangeWriterPartCloser{
+		BaseMetaRangeWriter: baseMetaRangeWriter,
+	}
+}
+
+func (g *GeneralMetaRangeWriterPartCloser) ClosePart() ([]Range, error) {
+	return g.close()
+}
+
+func CompleteMultipartMetaRange(ctx context.Context, namespace Namespace, metadata graveler.Metadata, manager RangeManager, ranges []Range) (*graveler.MetaRangeID, error) {
+	sort.Slice(ranges, func(i, j int) bool {
+		return bytes.Compare(ranges[i].MaxKey, ranges[j].MaxKey) < 0
+	})
+	return writeRangesToMetaRange(ctx, namespace, metadata, manager, ranges)
 }

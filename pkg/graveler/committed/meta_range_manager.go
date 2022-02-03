@@ -82,7 +82,7 @@ func (m *metaRangeManager) GetValue(ctx context.Context, ns graveler.StorageName
 	}, nil
 }
 
-func (m *metaRangeManager) NewWriter(ctx context.Context, ns graveler.StorageNamespace, metadata graveler.Metadata) MetaRangeWriter {
+func (m *metaRangeManager) NewWriterCloser(ctx context.Context, ns graveler.StorageNamespace, metadata graveler.Metadata) MetaRangeWriterCloser {
 	return NewGeneralMetaRangeWriter(ctx,
 		m.rangeManager,
 		m.metaManager,
@@ -92,6 +92,22 @@ func (m *metaRangeManager) NewWriter(ctx context.Context, ns graveler.StorageNam
 		},
 		Namespace(ns),
 		metadata)
+}
+
+func (m *metaRangeManager) NewPartWriterCloser(ctx context.Context, ns graveler.StorageNamespace, metadata graveler.Metadata) MetaRangeWriterPartCloser {
+	return NewGeneralMetaRangeWriterPartCloser(ctx,
+		m.rangeManager,
+		m.metaManager,
+		&m.params,
+		func(key graveler.Key) bool {
+			return breakByRaggedness(m.params.RangeSizeEntriesRaggedness, key)
+		},
+		Namespace(ns),
+		metadata)
+}
+
+func (m *metaRangeManager) CompleteMultipartMetaRange(ctx context.Context, namespace Namespace, metadata graveler.Metadata, ranges []Range) (*graveler.MetaRangeID, error) {
+	return CompleteMultipartMetaRange(ctx, namespace, metadata, m.rangeManager, ranges)
 }
 
 func (m *metaRangeManager) ShouldBreakByRaggedness(key graveler.Key) bool {

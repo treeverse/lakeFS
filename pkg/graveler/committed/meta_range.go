@@ -77,8 +77,15 @@ type MetaRangeManager interface {
 	// MetaRange with id.
 	GetValue(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID, key graveler.Key) (*graveler.ValueRecord, error)
 
-	// NewRangeWriter returns a writer that is used for creating new MetaRanges
-	NewWriter(ctx context.Context, ns graveler.StorageNamespace, metadata graveler.Metadata) MetaRangeWriter
+	// NewWriterCloser returns a writer that is used for creating new MetaRanges
+	NewWriterCloser(ctx context.Context, ns graveler.StorageNamespace, metadata graveler.Metadata) MetaRangeWriterCloser
+
+	// NewPartWriterCloser returns a writer that is used for creating new MetaRange parts
+	// write ranges and returns the ranges metadata to later create the MetaRange
+	NewPartWriterCloser(ctx context.Context, ns graveler.StorageNamespace, metadata graveler.Metadata) MetaRangeWriterPartCloser
+
+	// TODO(Guys): document
+	CompleteMultipartMetaRange(ctx context.Context, namespace Namespace, metadata graveler.Metadata, ranges []Range) (*graveler.MetaRangeID, error)
 
 	// ShouldBreakByRaggedness returns true if the given key is a breaking point by the raggedness parameter
 	ShouldBreakByRaggedness(key graveler.Key) bool
@@ -94,8 +101,6 @@ type MetaRangeManager interface {
 	// return a URI that does not resolve (rather than an error) if ID does not exist.
 	GetRangeURI(ctx context.Context, ns graveler.StorageNamespace, rangeID graveler.RangeID) (string, error)
 }
-
-// MetaRangeWriter is an abstraction for creating new MetaRanges
 type MetaRangeWriter interface {
 	// WriteRecord adds a record to the MetaRange. The key must be greater than any other key that was written
 	// (in other words - values must be entered sorted by key order).
@@ -106,10 +111,24 @@ type MetaRangeWriter interface {
 	// Added Range must not contain keys smaller than last previously written value.
 	WriteRange(Range) error
 
+	Abort() error
+}
+
+// MetaRangeWriter is an abstraction for creating new MetaRanges
+type MetaRangeWriterCloser interface {
+	MetaRangeWriter
 	// Close finalizes the MetaRange creation. It's invalid to add records after calling this method.
 	// During MetaRange writing, ranges are closed asynchronously and copied by tierFS
 	// while writing continues. Close waits until closing and copying all ranges.
 	Close() (*graveler.MetaRangeID, error)
+}
 
-	Abort() error
+type MetaRangeWriterPartCloser interface {
+	MetaRangeWriter
+	// ClosePart finalizes the MetaRange part creation. It's invalid to add records after calling this method.
+	// During MetaRange writing, ranges are closed asynchronously and copied by tierFS
+	// while writing continues. Close waits until closing and copying all ranges.
+	// ClosePart returns the ranges that where created
+	// You should later call CompleteMultipartMetaRange with the returned ranges from all parts
+	ClosePart() ([]Range, error)
 }
