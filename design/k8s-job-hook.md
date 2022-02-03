@@ -126,7 +126,7 @@ Base on the above, lakeFS will require the following permissions:
 - `pod` get
 - `pod/log` get, list, watch
 
-The following describes possible ClusteRole that enables the above. We can limit the scope to a single namespace using Role.
+The following describes possible ClusterRole that enables the above. We can limit the scope to a single namespace using Role.
 Note that we need to add the rules to the current set used by lakefs, this document describes the requirements for this feature.
 
 ```
