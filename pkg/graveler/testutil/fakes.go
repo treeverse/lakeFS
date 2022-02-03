@@ -155,7 +155,7 @@ func (s *StagingFake) DropKey(_ context.Context, _ graveler.StagingToken, key gr
 	return nil
 }
 
-func (s *StagingFake) List(context.Context, graveler.StagingToken) (graveler.ValueIterator, error) {
+func (s *StagingFake) List(context.Context, graveler.StagingToken, int) (graveler.ValueIterator, error) {
 	if s.Err != nil {
 		return nil, s.Err
 	}

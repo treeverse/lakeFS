@@ -44,7 +44,11 @@ type Client interface {
 func CopyOrMerge(ctx context.Context, fromClient, toClient Client, fromDB, fromTable, toDB, toTable, toBranch, serde string, partition []string, fixSparkPlaceHolder bool, dbfsLocation string) error {
 	transformLocation := func(location string) (string, error) {
 		location = HandleDBFSLocation(location, dbfsLocation)
-		return ReplaceBranchName(location, toBranch)
+		transformedLocation, err := ReplaceBranchName(location, toBranch)
+		if err != nil {
+			return "", fmt.Errorf("failed to replace branch name with location: '%s' and branch: '%s': %w", location, toBranch, err)
+		}
+		return transformedLocation, nil
 	}
 	return copyOrMergeWithTransformLocation(ctx, fromClient, toClient, fromDB, fromTable, toDB, toTable, serde, false, partition, transformLocation, fixSparkPlaceHolder)
 }
@@ -55,7 +59,11 @@ func CopyDB(ctx context.Context, fromClient, toClient Client, fromDB, toDB, toBr
 			return "", nil
 		}
 		location = HandleDBFSLocation(location, dbfsLocation)
-		return ReplaceBranchName(location, toBranch)
+		transformedLocation, err := ReplaceBranchName(location, toBranch)
+		if err != nil {
+			return "", fmt.Errorf("failed to replace branch name with location: '%s' and branch: '%s': %w", location, toBranch, err)
+		}
+		return transformedLocation, nil
 	}
 	return copyDBWithTransformLocation(ctx, fromClient, toClient, fromDB, toDB, transformLocation)
 }
@@ -63,14 +71,18 @@ func CopyDB(ctx context.Context, fromClient, toClient Client, fromDB, toDB, toBr
 func copyDBWithTransformLocation(ctx context.Context, fromClient, toClient Client, fromDB string, toDB string, transformLocation func(location string) (string, error)) error {
 	schema, err := fromClient.GetDatabase(ctx, fromDB)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get database on copy from '%s': %w", fromDB, err)
 	}
 	schema.Name = toDB
 	schema.LocationURI, err = transformLocation(schema.LocationURI)
 	if err != nil {
 		return err
 	}
-	return toClient.CreateDatabase(ctx, schema)
+	err = toClient.CreateDatabase(ctx, schema)
+	if err != nil {
+		return fmt.Errorf("failed to create database with name '%s' and location '%s': %w", schema.Name, schema.LocationURI, err)
+	}
+	return nil
 }
 
 func copyOrMergeWithTransformLocation(ctx context.Context, fromClient, toClient Client, fromDB, fromTable, toDB, toTable, serde string, setSymlink bool, partition []string, transformLocation func(location string) (string, error), fixSparkPlaceHolder bool) error {
@@ -146,10 +158,12 @@ func CopyOrMergeAll(ctx context.Context, fromClient, toClient Client, schemaFilt
 
 // HandleDBFSLocation translates Data Bricks File system path to the S3 path using the dbfsLocation
 func HandleDBFSLocation(location string, dbfsLocation string) string {
+	l := location
 	if dbfsLocation != "" && strings.HasPrefix(location, dbfsPrefix) {
-		location = strings.Replace(location, dbfsPrefix, dbfsLocation, 1)
+		l = strings.Replace(location, dbfsPrefix, dbfsLocation, 1)
 	}
-	return location
+	logging.Default().WithFields(logging.Fields{"dbfsLocation": dbfsLocation, "location": location, "new_location": l}).Info("translate databricks file system path to s3 path")
+	return l
 }
 
 func ImportAll(ctx context.Context, fromClient, toClient Client, schemaFilter, tableFilter, repo, toBranch string, continueOnError, fixSparkPlaceHolder bool, dbfsLocation string) error {

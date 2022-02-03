@@ -19,13 +19,14 @@ import (
 )
 
 type Service struct {
-	DB     db.Database
-	Source Source
-	Writer OutputWriter
-	ctx    context.Context
-	cancel context.CancelFunc
-	wg     sync.WaitGroup
-	stats  stats.Collector
+	DB       db.Database
+	Source   Source
+	Writer   OutputWriter
+	ctx      context.Context
+	cancel   context.CancelFunc
+	wg       sync.WaitGroup
+	stats    stats.Collector
+	runHooks bool
 }
 
 type Task struct {
@@ -87,16 +88,17 @@ const defaultFetchSize = 1024
 
 var ErrNotFound = errors.New("not found")
 
-func NewService(ctx context.Context, db db.Database, source Source, writer OutputWriter, stats stats.Collector) *Service {
+func NewService(ctx context.Context, db db.Database, source Source, writer OutputWriter, stats stats.Collector, runHooks bool) *Service {
 	ctx, cancel := context.WithCancel(ctx)
 	return &Service{
-		DB:     db,
-		Source: source,
-		Writer: writer,
-		ctx:    ctx,
-		cancel: cancel,
-		wg:     sync.WaitGroup{},
-		stats:  stats,
+		DB:       db,
+		Source:   source,
+		Writer:   writer,
+		ctx:      ctx,
+		cancel:   cancel,
+		wg:       sync.WaitGroup{},
+		stats:    stats,
+		runHooks: runHooks,
 	}
 }
 
@@ -120,6 +122,11 @@ func (s *Service) asyncRun(record graveler.HookRecord) {
 
 // Run load and run actions based on the event information
 func (s *Service) Run(ctx context.Context, record graveler.HookRecord) error {
+	if !s.runHooks {
+		logging.Default().WithField("record", record).Info("Hooks are disabled, skipping hooks execution")
+		return nil
+	}
+
 	// load relevant actions
 	spec := MatchSpec{
 		EventType: record.EventType,
@@ -316,7 +323,7 @@ func (s *Service) UpdateCommitID(ctx context.Context, repositoryID string, stora
 	}
 
 	// update database and re-read the run manifest
-	var manifest RunManifest
+	var manifest *RunManifest
 	_, err := s.DB.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		// update commit id
 		res, err := tx.Exec(`UPDATE actions_runs SET commit_id=$3 WHERE repository_id=$1 AND run_id=$2`,
@@ -334,7 +341,7 @@ func (s *Service) UpdateCommitID(ctx context.Context, repositoryID string, stora
 		if err != nil {
 			return nil, err
 		}
-		manifest.Run = *runResult
+		manifest = &RunManifest{Run: *runResult}
 
 		// read tasks information
 		err = tx.Select(&manifest.HooksRun, `SELECT run_id, hook_run_id, hook_id, action_name, start_time, end_time, passed
@@ -349,12 +356,12 @@ func (s *Service) UpdateCommitID(ctx context.Context, repositoryID string, stora
 	if errors.Is(err, db.ErrNotFound) {
 		return ErrNotFound
 	}
-	if err != nil {
+	if err != nil || manifest == nil {
 		return err
 	}
 
 	// update manifest
-	return s.saveRunManifestObjectStore(ctx, manifest, storageNamespace, runID)
+	return s.saveRunManifestObjectStore(ctx, *manifest, storageNamespace, runID)
 }
 
 func (s *Service) GetRunResult(ctx context.Context, repositoryID string, runID string) (*RunResult, error) {

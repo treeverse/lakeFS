@@ -170,6 +170,45 @@ jobs:
             echo "Image doesn't exist"
             docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}
           fi
+
+  deploy-rclone-export-image:
+    name: Build and push rclone export Docker image
+    needs: check-secrets
+    if: needs.check-secrets.outputs.secretsavailable == 'true'
+    runs-on: ubuntu-20.04
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Extract version
+        shell: bash
+        run: echo "::set-output name=tag::sha-$(git rev-parse --short HEAD | sed s/^v//g)"
+        id: version
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Export ECR parameters
+        run: |
+          echo "ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}" >> $GITHUB_ENV
+
+      - name: Build and Push to Amazon ECR
+        run: |
+          docker build deployments/tools/export -t $ECR_REGISTRY/lakefs-rclone-export:${{ steps.version.outputs.tag }}
+          docker push $ECR_REGISTRY/lakefs-rclone-export:${{ steps.version.outputs.tag }}
+        env:
+          DOCKER_BUILDKIT: '1'
+
   hadoopfs-tests:
     name: Test lakeFS Hadoop FileSystem
     needs: deploy-image
@@ -394,6 +433,47 @@ jobs:
         continue-on-error: true
         working-directory: test/spark
         run: docker-compose logs --tail=1000 lakefs
+
+  export:
+    name: Test lakeFS rclone export functionality
+    needs: [deploy-image, deploy-rclone-export-image]
+    runs-on: ubuntu-20.04
+    env:
+      LAKEFS_TAG: ${{ needs.deploy-image.outputs.tag }}
+      EXPORT_TAG: ${{ needs.deploy-rclone-export-image.outputs.tag }}
+      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-storage-rclone-export
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v2
+
+      - name: Start lakeFS for export tests
+        uses: ./.github/actions/bootstrap-test-lakefs
+        with:
+          compose-directory: test/rclone_export
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_BLOCKSTORE_TYPE: s3
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
+
+      - name: Copy repository ref
+        run: aws s3 cp --recursive s3://nessie-system-testing-data/golden-files/gc-test-data s3://nessie-system-testing/${{ github.run_number }}-storage-rclone-export
+
+      - name: Setup lakeFS for tests
+        env:
+          STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-storage-rclone-export
+        working-directory: test/rclone_export
+        run: ./setup-test.sh
+
+      - name: Test rclone export
+        env:
+          EXPORT_LOCATION: s3://nessie-system-testing/${{ github.run_number }}-rclone-export-dest
+          S3_ACCESS_KEY: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
+          S3_SECRET_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
+        working-directory: test/rclone_export
+        run: ./run-test.sh
 
 
   metastore-client-with-trino:

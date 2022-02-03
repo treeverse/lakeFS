@@ -67,6 +67,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
         metadata={
             "key": "key_example",
         },
+        date=1,
     ) # CommitCreation | 
 
     # example passing only required values which don't have defaults set

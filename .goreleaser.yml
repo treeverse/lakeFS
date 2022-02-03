@@ -6,6 +6,7 @@ before:
 release:
   disable: false
   prerelease: true
+  ids: [default]
 builds:
 - id: lakefs
   main: ./cmd/lakefs
@@ -44,6 +45,11 @@ archives:
   format_overrides:
     - goos: windows
       format: zip
+- format: binary
+  id: lakectl
+  name_template: "{{ .Os }}_{{ .Arch }}/lakectl"
+  builds:
+   - lakectl
 checksum:
   name_template: 'checksums.txt'
 snapshot:
@@ -54,3 +60,10 @@ changelog:
     exclude:
     - '^docs:'
     - '^test:'
+blobs:
+- provider: s3
+  region: us-east-1
+  bucket: treeverse-clients-us-east
+  folder: "lakectl/{{.Version}}"
+  ids:
+   - lakectl

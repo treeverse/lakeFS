@@ -2385,10 +2385,17 @@ Manage and explore repos
 
 ### lakectl repo create
 
-Create a new repository 
+Create a new repository
 
 ```
 lakectl repo create <repository uri> <storage namespace> [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl create lakefs://some-repo-name s3://some-bucket-name
 ```
 
 #### Options
@@ -2410,6 +2417,13 @@ Create a new repository with no initial branch or commit
 
 ```
 lakectl repo create-bare <repository uri> <storage namespace> [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl create-bare lakefs://some-repo-name s3://some-bucket-name
 ```
 
 #### Options
