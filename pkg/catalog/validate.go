@@ -192,11 +192,12 @@ func ValidateRequiredString(v interface{}) error {
 }
 
 func ValidateRequiredStrategy(v interface{}) error {
-	err := ValidateRequiredString(v)
-	if err != nil {
-		return err
+	s, ok := v.(string)
+	if !ok {
+		panic(ErrInvalidType)
 	}
-	if v != "ours" && v != "theirs" && v != "" {
+
+	if s != "ours" && s != "theirs" && s != "" {
 		return ErrInvalidValue
 	}
 	return nil
