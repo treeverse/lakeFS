@@ -137,7 +137,7 @@ func (m *merger) sourceBeforeDest(sourceValue *graveler.ValueRecord) error {
 	return nil
 }
 
-//func (m *merger) handleConflict(destValue *graveler.ValueRecord, sourceValue *graveler.ValueRecord) error {
+// func (m *merger) handleConflict(destValue *graveler.ValueRecord, sourceValue *graveler.ValueRecord) error {
 //	switch {
 //	case m.strategy == graveler.MergeStrategyTheirs:
 //		return m.writeRecord(sourceValue)
