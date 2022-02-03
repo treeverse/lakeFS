@@ -126,7 +126,7 @@ Base on the above, lakeFS will require the following permissions:
 - `pod` get
 - `pod/log` get, list, watch
 
-The following describes possible ClusterRole that enables the above. We can limit the scope to a single namespace using Role.
+The following describes possible `Role` that enables the above.
 Note that we need to add the rules to the current set used by lakefs, this document describes the requirements for this feature.
 
 ```
@@ -137,9 +137,10 @@ metadata:
   name: lakefs
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
+kind: Role
 metadata:
   name: lakefs
+  namespace: lakefs-hooks
 rules:
   - apiGroups: [""]
     resources: ["job"]
@@ -152,17 +153,19 @@ rules:
     verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
+kind: RoleBinding
 metadata:
   name: lakefs
+  namespace: lakefs-hooks
 subjects:
   - kind: ServiceAccount
-    namespace: default
     name: lakefs
+    namespace: default
     apiGroup: ""
 roleRef:
   kind: ClusterRole
   name: lakefs
+  namespace: lakefs-hooks
   apiGroup: rbac.authorization.k8s.io
 ```
 
