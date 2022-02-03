@@ -435,6 +435,9 @@ components:
           type: object
           additionalProperties:
             type: string
+        strategy:
+          description: changes from "ours"(dest) or "theirs"(source) are automatically overridden in case of a conflict
+          type: string
 
     BranchCreation:
       type: object

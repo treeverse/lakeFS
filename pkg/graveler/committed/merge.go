@@ -18,6 +18,7 @@ type merger struct {
 	source               Iterator
 	dest                 Iterator
 	haveSource, haveDest bool
+	strategy             graveler.MergeStrategy
 }
 
 func (m *merger) getNextGEKey(key graveler.Key) (*graveler.ValueRecord, error) {
@@ -135,6 +136,17 @@ func (m *merger) sourceBeforeDest(sourceValue *graveler.ValueRecord) error {
 	}
 	return nil
 }
+
+//func (m *merger) handleConflict(destValue *graveler.ValueRecord, sourceValue *graveler.ValueRecord) error {
+//	switch {
+//	case m.strategy == graveler.MergeStrategyTheirs:
+//		return m.writeRecord(sourceValue)
+//	case m.strategy == graveler.MergeStrategyOurs:
+//		return m.writeRecord(destValue)
+//	default: // no strategy
+//		return graveler.ErrConflictFound
+//	}
+//}
 
 // handleAll handles the case where only one Iterator from source or dest remains
 func (m *merger) handleAll(iter Iterator) error {
@@ -425,14 +437,15 @@ func (m *merger) merge() error {
 	return nil
 }
 
-func Merge(ctx context.Context, writer MetaRangeWriter, base Iterator, source Iterator, destination Iterator) error {
+func Merge(ctx context.Context, writer MetaRangeWriter, base Iterator, source Iterator, destination Iterator, strategy graveler.MergeStrategy) error {
 	m := merger{
-		ctx:    ctx,
-		logger: logging.FromContext(ctx),
-		writer: writer,
-		base:   base,
-		source: source,
-		dest:   destination,
+		ctx:      ctx,
+		logger:   logging.FromContext(ctx),
+		writer:   writer,
+		base:     base,
+		source:   source,
+		dest:     destination,
+		strategy: strategy,
 	}
 	return m.merge()
 }

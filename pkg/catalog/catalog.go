@@ -1136,7 +1136,7 @@ func listDiffHelper(it EntryDiffIterator, prefix, delimiter string, limit int, a
 	return diffs, hasMore, nil
 }
 
-func (c *Catalog) Merge(ctx context.Context, repository string, destinationBranch string, sourceRef string, committer string, message string, metadata Metadata) (string, error) {
+func (c *Catalog) Merge(ctx context.Context, repository string, destinationBranch string, sourceRef string, committer string, message string, metadata Metadata, strategy string) (string, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	destination := graveler.BranchID(destinationBranch)
 	source := graveler.Ref(sourceRef)
@@ -1155,10 +1155,11 @@ func (c *Catalog) Merge(ctx context.Context, repository string, destinationBranc
 		{"source", source, ValidateRef},
 		{"committer", commitParams.Committer, ValidateRequiredString},
 		{"message", commitParams.Message, ValidateRequiredString},
+		{"strategy", strategy, ValidateRequiredStrategy},
 	}); err != nil {
 		return "", err
 	}
-	commitID, err := c.Store.Merge(ctx, repositoryID, destination, source, commitParams)
+	commitID, err := c.Store.Merge(ctx, repositoryID, destination, source, commitParams, strategy)
 	if errors.Is(err, graveler.ErrConflictFound) {
 		// for compatibility with old Catalog
 		return "", err

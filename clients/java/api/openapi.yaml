@@ -4750,6 +4750,7 @@ components:
         metadata:
           key: metadata
         message: message
+        strategy: strategy
       properties:
         message:
           type: string
@@ -4757,6 +4758,9 @@ components:
           additionalProperties:
             type: string
           type: object
+        strategy:
+          description: "null"
+          type: string
       type: object
     BranchCreation:
       example:

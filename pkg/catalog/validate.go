@@ -191,6 +191,17 @@ func ValidateRequiredString(v interface{}) error {
 	return nil
 }
 
+func ValidateRequiredStrategy(v interface{}) error {
+	err := ValidateRequiredString(v)
+	if err != nil {
+		return err
+	}
+	if v != "ours" && v != "theirs" && v != "" {
+		return ErrInvalidValue
+	}
+	return nil
+}
+
 func ValidateNonNegativeInt(v interface{}) error {
 	i, ok := v.(int)
 	if !ok {

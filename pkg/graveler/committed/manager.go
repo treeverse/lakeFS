@@ -92,7 +92,7 @@ func (c *committedManager) Diff(ctx context.Context, ns graveler.StorageNamespac
 	return NewDiffValueIterator(ctx, leftIt, rightIt), nil
 }
 
-func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespace, destination, source, base graveler.MetaRangeID) (graveler.MetaRangeID, error) {
+func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespace, destination, source, base graveler.MetaRangeID, strategy graveler.MergeStrategy) (graveler.MetaRangeID, error) {
 	if source == base {
 		// no changes on source
 		return "", nil
@@ -127,7 +127,7 @@ func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespa
 		}
 	}()
 
-	err = Merge(ctx, mwWriter, baseIt, sourceIt, destIt)
+	err = Merge(ctx, mwWriter, baseIt, sourceIt, destIt, strategy)
 	if err != nil {
 		if !errors.Is(err, graveler.ErrUserVisible) {
 			err = fmt.Errorf("merge ns=%s id=%s: %w", ns, destination, err)

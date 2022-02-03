@@ -9,6 +9,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **message** | **String** |  |  [optional]
 **metadata** | **Map&lt;String, String&gt;** |  |  [optional]
+**strategy** | **String** | null |  [optional]
 
 
 
