@@ -75,3 +75,6 @@ if ! diff ${lakectl_out} ${s3_out}; then
   echo "export location and lakefs should contain same objects"
   exit 1
 fi
+
+# Delete files at destination in case of multiple nessie runs
+aws s3 rm ${EXPORT_LOCATION} --recursive
