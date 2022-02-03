@@ -3,13 +3,24 @@ layout: default
 title: Try without installing
 description: Learn how to use lakeFS using the CLI from your browser, without installing anything
 parent: Quickstart
-nav_order: 99
+nav_order: 1
 has_children: false
 ---
 
 # Try lakeFS without installing
 {: .no_toc}
 
+## Demo environment
+
+Experiment and learn about lakeFS with your own isolated environment.
+You can easily integrate it with your existing tools, and create a development environment
+to experiment with your data.
+
+<p style="margin-top: 40px;">
+    <a class="btn btn-green" href="https://demo.lakefs.io/" target="_blank">
+        Try lakeFS now without installing
+    </a>
+</p>
 
 ## Katacoda Tutorial
 
@@ -26,7 +37,7 @@ In the tutorial we cover:
 The web based environment provides a full working lakeFS and Spark environment, so feel free to explore it on your own.
 
 <p style="margin-top: 40px;">
-    <a class="btn btn-lg" href="https://www.katacoda.com/lakefs/scenarios/lakefs-play" target="_blank">
+    <a class="btn btn-green" href="https://www.katacoda.com/lakefs/scenarios/lakefs-play" target="_blank">
         Start Katacoda Tutorial Now
     </a>
 </p>
