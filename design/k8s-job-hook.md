@@ -10,6 +10,7 @@
 ## Non Goals
 
 - GitHub Actions - fully maintained, virtualized environment with pre-build images to execute pre/post hooks
+- Manage or control any aspect of the Kubernetes Job
 
 
 ## Proposition
@@ -22,7 +23,7 @@ Current hooks mechanism described [here](https://docs.lakefs.io/setup/hooks.html
 New lakeFS hook type, triggered by pre/post commit/merge events to execute jobs on k8s cluster.
 
 The user will provide a hook definition that will include the name of the image (docker image) and arguments that will be used for the hook.
-While commit/merge occurs, lakeFS will request to execute the job definition on the cluster and wait (optional) for success in order to complete the operation.
+During commit/merge, lakeFS will schedule a job to run in the cluster. Successful response from the cluster for the job creation, will be considered successful and complete the commit/merge operation.
 
 
 ### New hook definition
@@ -78,6 +79,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: ""
+  namespace: lakefs-hooks
 spec:
   template:
     spec:
@@ -92,52 +94,6 @@ spec:
 Note that the metadata.name, image, command and args will be set by lakeFS.
 Name - unique identifier to identify the specific job execution
 Image, command and args - set based on the hook information
-In case we would like to set a different job specification, we can specify in the lakeFS configuration (lakefs.yaml):
-
-```yaml
-hooks:
-  k8s-job:
-    spec_files:
-      default: /etc/lakefs/job_spec.yaml
-```
-
-Following an example of a `job_spec.yaml`:
-
-```yaml
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: ""
-  namespace: lakefs-hooks
-  labels:
-    app.kubernetes.io/name: post-merge-hook
-    app.kubernetes.io/version: "1.0.0"
-spec:
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: post-merge-hook
-        app.kubernetes.io/version: "1.0.0"
-    spec:
-      restartPolicy: Never
-      containers:
-        - name: hook
-          image: ""
-          command: []
-          args: []
-          env:
-            - name: SPECIAL_ENV
-              value: special_value
-          resources:
-            limits:
-              cpu: "2"
-              memory: 4G
-            requests:
-              cpu: "1"
-              memory: 2G
-```
-
-The job spec can be mounted using a configmap with lakeFS using it as the basis for all k8s-job hooks.
 
 
 *Limit the end-user image use*
@@ -158,17 +114,9 @@ If the tag is omitted, any tag will be allowed.
 
 ### Execution
 
-lakeFS requests job creation from the cluster.  In case the request fails it will log the job information and fail the hook execution.
-By default the hook waits for the job execution to complete, and based on the job status consider the execution to be successful.
-It will capture the job output into the step output.
-In case we would not like to block the operation (merge/commit) until the job execution is completed, for example on post-* events. We can change the default behavior by setting wait_for_complete to false:
-
-```yaml
-properties:
-  wait_for_complete: false
-```
-
-Without waiting for the job to complete, lakeFS will consider job creation as successful execution. Will log the job information without waiting for the job to complete or capturing the output.
+lakeFS requests job creation from the cluster.  Job information will be captured to the job's log.
+In case the request fails it will log the error and fail the hook execution.
+lakeFS will consider job creation as successful execution. Will log the job information without waiting for the job to complete or capturing the output.
 
 ### Authorizations
 
@@ -221,13 +169,7 @@ roleRef:
 
 ### Considerations
 
-*Job lifetime*
-
-Once a job is created and executed in the cluster, the lakeFS server will not take ownership of the object. A mechanism should be in place to clean up all jobs lakeFS applied and completed (successfully or not).
+*Job lifetime* - Once a job is created and executed in the cluster, the lakeFS server will not take ownership of the object. A mechanism should be in place to clean up all jobs lakeFS applied and completed (successfully or not).
 [Automatic Clean-up for Finished Jobs](https://kubernetes.io/docs/concepts/workloads/controllers/ttlafterfinished/) capability is currently found on Kubernetes 1.23 (which we don’t have yet on AWS for example) which can help with that.
-
-*Job security*
-
-A user-supplied image can be run within the scope specified in the job spec, but lakeFS has no control over the job and the code itself, except for the image name that is limited by the lakeFS configuration.
 
 
