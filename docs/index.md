@@ -20,6 +20,19 @@ lakeFS supports AWS S3, Azure Blob Storage and Google Cloud Storage (GCS) as its
 
 {: .pb-5 }
 
+
+## Demo
+
+Experiment and learn about lakeFS with your own isolated environment.
+You can easily integrate it with your existing tools, and create a development environment
+to experiment with your data.
+
+<p style="margin-top: 40px;">
+    <a class="btn btn-green" href="https://demo.lakefs.io/" target="_blank">
+        Try lakeFS now without installing
+    </a>
+</p>
+
 ## Why you need lakeFS and what it can do
 
 lakeFS enables data teams to stop worrying about issues that take away much of their time:

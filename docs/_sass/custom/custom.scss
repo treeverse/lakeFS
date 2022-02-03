@@ -204,6 +204,22 @@ body {
 			background: $white;
 		}
 	}
+
+	.btn-green {
+		font-size: 16px;
+		line-height: 1.63;
+		letter-spacing: 0.05px;
+		color: #ffffff;
+		padding: 10px;
+		border-radius: 2px;
+		background-color: #279890;
+		border: 2px solid #279890;
+	 }
+
+	.btn-green:hover {
+		background-color: #ffffff; color: #279890;
+	}
+
 	.note {
 		background-color: $whitegrey;
 		border-left: 4px solid $aqua-marine;
