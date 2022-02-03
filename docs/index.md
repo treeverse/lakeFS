@@ -9,9 +9,8 @@ redirect_from: ./downloads.html
 # What is lakeFS
 {: .no_toc }  
 
-lakeFS is an open source platform that delivers resilience and manageability to object-storage based data lakes.
-
-With lakeFS you can build repeatable, atomic and versioned data lake operations - from complex ETL jobs to data science and analytics.
+LakeFS is an open-source project that provides a git-like version control interface for data lakes, with seamless integration to most data tools and frameworks.
+lakeFS enables you to easily implement parallel pipelines for experimentation, reproducibility and CI/CD for data.
 
 lakeFS supports AWS S3, Azure Blob Storage and Google Cloud Storage (GCS) as its underlying storage service. It is [API compatible with S3](reference/s3.md) and works seamlessly with all modern data frameworks such as Spark, Hive, AWS Athena, Presto, etc.
 
@@ -22,13 +21,25 @@ lakeFS supports AWS S3, Azure Blob Storage and Google Cloud Storage (GCS) as its
 
 ## Why you need lakeFS and what it can do
 
-lakeFS provides a [Git-like branching and committing model](understand/branching-model.md) that scales to exabytes of data by utilizing S3, GCS, or Azure Blob for storage.
+lakeFS enables data teams to stop worrying about issues that take away much of their time:
+Atomically roll back changes to data, allow testing and validating data before exposing it to consumers and enables traveling back in time, across all collections - for reproducing and debugging issues.
 
-This branching model makes your data lake ACID compliant by allowing changes to happen in isolated branches that can be created, merged and rolled back atomically and instantly.
+lakeFS enables data teams to stop worrying about issues that take away much of their time:
+* Roll back changes to data: recover quickly from bugs and mistakes
+* Test and validate data before exposing it to consumers
+* Travel back in time, across collections - for reproducing and debugging issues
 
 Since lakeFS is compatible with the S3 API, all popular applications will work without modification, by simply adding the branch name to the object path:
 
 <img src="{{ site.baseurl }}/assets/img/s3_branch.png" alt="lakeFS s3 addressing" width="60%" height="60%" />
+
+## The benefits of lakeFS are:
+* Is it **format agnostic**
+* Your data **stays in place**
+* It helps you prevent data duplication by using **copy-on-write**
+* It is **highly performant** for huge data lakes
+* It includes **configurable garbage collection** capabilities
+* lakeFS is **highly available and production ready**
 
 ## Use-cases:
 
