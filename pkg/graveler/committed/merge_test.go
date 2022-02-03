@@ -596,7 +596,7 @@ func Test_merge(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			ctx := context.Background()
-			writer := mock.NewMockMetaRangeWriter(ctrl)
+			writer := mock.NewMockMetaRangeWriterCloser(ctrl)
 			for _, action := range tst.expectedActions {
 				switch action.action {
 				case actionTypeWriteRecord:
@@ -606,7 +606,7 @@ func Test_merge(t *testing.T) {
 				}
 			}
 			metaRangeManager := mock.NewMockMetaRangeManager(ctrl)
-			metaRangeManager.EXPECT().NewWriter(gomock.Any(), gomock.Any(), gomock.Any()).Return(writer)
+			metaRangeManager.EXPECT().NewWriterCloser(gomock.Any(), gomock.Any(), gomock.Any()).Return(writer)
 			sourceKey := graveler.MetaRangeID("source")
 			destKey := graveler.MetaRangeID("dest")
 			baseKey := graveler.MetaRangeID("base")

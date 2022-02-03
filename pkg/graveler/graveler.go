@@ -653,6 +653,7 @@ type CommittedManager interface {
 	// it returns a new MetaRangeID that is expected to be immediately addressable
 	Commit(ctx context.Context, ns StorageNamespace, baseMetaRangeID MetaRangeID, changes ValueIterator) (MetaRangeID, DiffSummary, error)
 
+	MultipartCommit(ctx context.Context, ns StorageNamespace, baseMetaRangeID MetaRangeID, parts []MultipartCommitPartData) (MetaRangeID, DiffSummary, error)
 	// GetBreakingPoints returns all the maxKeys of ranges that broke on that maxKey due to raggedness
 	GetBreakingPoints(ctx context.Context, ns StorageNamespace, baseMetaRangeID MetaRangeID) ([]Key, error)
 
@@ -1182,6 +1183,12 @@ func (g *Graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref)
 	return listing, nil
 }
 
+type MultipartCommitPartData struct {
+	Changes ValueIterator
+	From    Key
+	To      Key
+}
+
 func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branchID BranchID, params CommitParams) (CommitID, error) {
 	var preRunID string
 	var commit Commit
@@ -1247,23 +1254,32 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 			parentGeneration = commit.Generation
 		}
 		commit.Generation = parentGeneration + 1
-		changes, err := g.StagingManager.List(ctx, branch.StagingToken, ListingMaxBatchSize, nil, nil)
-		if err != nil {
-			return "", fmt.Errorf("staging list: %w", err)
-		}
-		defer changes.Close()
 
 		breakingPoints, err := g.getCommitBreakingPoints(ctx, storageNamespace, branch.StagingToken, branchMetaRangeID)
 		if err != nil {
 			return nil, err
 		}
 		if len(breakingPoints) != 0 {
-			// TODO(Guys): do parallel commit
-		}
-		g.log.Debug()
-		commit.MetaRangeID, _, err = g.CommittedManager.Commit(ctx, storageNamespace, branchMetaRangeID, changes)
-		if err != nil {
-			return "", fmt.Errorf("commit: %w", err)
+			parts, err := g.partsFromBreakingPoints(ctx, branch.StagingToken, breakingPoints)
+			if err != nil {
+				return nil, err
+			}
+			defer func() {
+				for _, p := range parts {
+					p.Changes.Close()
+				}
+			}()
+			commit.MetaRangeID, _, err = g.CommittedManager.MultipartCommit(ctx, storageNamespace, branchMetaRangeID, parts)
+		} else {
+			changes, err := g.StagingManager.List(ctx, branch.StagingToken, ListingMaxBatchSize, nil, nil)
+			if err != nil {
+				return "", fmt.Errorf("staging list: %w", err)
+			}
+			defer changes.Close()
+			commit.MetaRangeID, _, err = g.CommittedManager.Commit(ctx, storageNamespace, branchMetaRangeID, changes)
+			if err != nil {
+				return "", fmt.Errorf("commit: %w", err)
+			}
 		}
 
 		// add commit
@@ -1313,6 +1329,36 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 			Error("Post-commit hook failed")
 	}
 	return newCommitID, nil
+}
+
+func (g *Graveler) partsFromBreakingPoints(ctx context.Context, st StagingToken, points []Key) ([]MultipartCommitPartData, error) {
+	var from Key
+	partsData := make([]MultipartCommitPartData, len(points)+1)
+	// TODO(Guys): move call StagingManager.List
+	for i, to := range points {
+		changes, err := g.StagingManager.List(ctx, st, ListingMaxBatchSize, from, to)
+		if err != nil {
+			return nil, err
+		}
+		partsData[i] = MultipartCommitPartData{
+			Changes: changes,
+			From:    from,
+			To:      to,
+		}
+		// TODO(Guys): check this is the best way to Greater instead of greater Than
+		from = append(to.Copy(), 0)
+	}
+	// add last part
+	changes, err := g.StagingManager.List(ctx, st, ListingMaxBatchSize, from, nil)
+	if err != nil {
+		return nil, err
+	}
+	partsData[len(points)] = MultipartCommitPartData{
+		Changes: changes,
+		From:    from,
+		To:      nil,
+	}
+	return partsData, nil
 }
 
 // TODO(Guys): add tests

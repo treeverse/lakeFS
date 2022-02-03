@@ -192,6 +192,18 @@ func (c *committedManager) Commit(ctx context.Context, ns graveler.StorageNamesp
 	return *newID, summary, err
 }
 
+func (c *committedManager) MultipartCommit(ctx context.Context, ns graveler.StorageNamespace, baseMetaRangeID graveler.MetaRangeID, parts []graveler.MultipartCommitPartData) (graveler.MetaRangeID, graveler.DiffSummary, error) {
+	mwWriter := c.metaRangeManager.NewPartWriterCloser(ctx, ns, nil)
+	defer func() {
+		err := mwWriter.Abort()
+		if err != nil {
+			c.logger.WithError(err).Error("Abort failed after Commit")
+		}
+	}()
+	// TODO(Guys): decide num of workers as the minimum between 2*numOfCores and num of parts
+	return MultipartCommit(ctx, parts, &CommitOptions{}, 25, baseMetaRangeID, Namespace(ns), c.metaRangeManager)
+}
+
 func (c *committedManager) GetBreakingPoints(ctx context.Context, ns graveler.StorageNamespace, baseMetaRangeID graveler.MetaRangeID) ([]graveler.Key, error) {
 	breakingPoints := make([]graveler.Key, 0)
 	metaRangeIterator, err := c.metaRangeManager.NewMetaRangeIterator(ctx, ns, baseMetaRangeID)
