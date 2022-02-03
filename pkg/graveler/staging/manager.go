@@ -80,8 +80,8 @@ func (p *Manager) DropKey(ctx context.Context, st graveler.StagingToken, key gra
 }
 
 // List returns an iterator of staged values on the staging token st
-func (p *Manager) List(ctx context.Context, st graveler.StagingToken, batchSize int) (graveler.ValueIterator, error) {
-	return NewStagingIterator(ctx, p.db, p.log, st, batchSize), nil
+func (p *Manager) List(ctx context.Context, st graveler.StagingToken, batchSize int, from graveler.Key, to graveler.Key) (graveler.ValueIterator, error) {
+	return NewStagingIterator(ctx, p.db, p.log, st, batchSize, from, to), nil
 }
 
 func (p *Manager) Drop(ctx context.Context, st graveler.StagingToken) error {

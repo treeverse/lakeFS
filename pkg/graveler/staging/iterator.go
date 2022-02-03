@@ -1,8 +1,8 @@
 package staging
 
 import (
+	"bytes"
 	"context"
-
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -24,17 +24,23 @@ type Iterator struct {
 	buffer      []*graveler.ValueRecord
 	nextFrom    graveler.Key
 	batchSize   int
+	from        graveler.Key
+	to          graveler.Key
 }
 
 // NewStagingIterator initiates the staging iterator with a batchSize
-func NewStagingIterator(ctx context.Context, db db.Database, log logging.Logger, st graveler.StagingToken, batchSize int) *Iterator {
+func NewStagingIterator(ctx context.Context, db db.Database, log logging.Logger, st graveler.StagingToken, batchSize int, from graveler.Key, to graveler.Key) *Iterator {
 	bs := batchSize
 	if bs <= 0 {
 		bs = graveler.ListingDefaultBatchSize
 	} else if bs > graveler.ListingMaxBatchSize {
 		bs = graveler.ListingMaxBatchSize
 	}
-	return &Iterator{ctx: ctx, st: st, dbHasNext: true, initPhase: true, db: db, log: log, nextFrom: make([]byte, 0), batchSize: bs}
+	nextFrom := from
+	if nextFrom == nil {
+		nextFrom = make([]byte, 0)
+	}
+	return &Iterator{ctx: ctx, st: st, dbHasNext: true, initPhase: true, db: db, log: log, nextFrom: nextFrom, batchSize: bs, from: from, to: to}
 }
 
 func (s *Iterator) Next() bool {
@@ -83,10 +89,20 @@ func (s *Iterator) Close() {
 }
 
 func (s *Iterator) loadBuffer() bool {
+	nextFrom := s.nextFrom
+	if bytes.Compare(s.from, s.nextFrom) > 0 {
+		nextFrom = s.from
+	}
 	queryResult, err := s.db.Transact(s.ctx, func(tx db.Tx) (interface{}, error) {
 		var res []*graveler.ValueRecord
-		err := tx.Select(&res, "SELECT key, identity, data "+
-			"FROM graveler_staging_kv WHERE staging_token=$1 AND key >= $2 ORDER BY key LIMIT $3", s.st, s.nextFrom, s.batchSize+1)
+		var err error
+		if s.to != nil {
+			err = tx.Select(&res, "SELECT key, identity, data "+
+				"FROM graveler_staging_kv WHERE staging_token=$1 AND key >= $2 AND key <= $3 ORDER BY key LIMIT $4", s.st, nextFrom, s.to, s.batchSize+1)
+		} else {
+			err = tx.Select(&res, "SELECT key, identity, data "+
+				"FROM graveler_staging_kv WHERE staging_token=$1 AND key >= $2 ORDER BY key LIMIT $3", s.st, nextFrom, s.batchSize+1)
+		}
 		return res, err
 	}, db.WithLogger(s.log), db.ReadOnly())
 	if err != nil {

@@ -672,7 +672,7 @@ type StagingManager interface {
 	Set(ctx context.Context, st StagingToken, key Key, value *Value, overwrite bool) error
 
 	// List returns a ValueIterator for the given staging token
-	List(ctx context.Context, st StagingToken, batchSize int) (ValueIterator, error)
+	List(ctx context.Context, st StagingToken, batchSize int, from Key, to Key) (ValueIterator, error)
 
 	// DropKey clears a value by staging token and key
 	DropKey(ctx context.Context, st StagingToken, key Key) error
@@ -857,7 +857,7 @@ func (g *Graveler) updateBranchNoLock(ctx context.Context, repositoryID Reposito
 	}
 	// validate no conflict
 	// TODO(Guys) return error only on conflicts, currently returns error for any changes on staging
-	iter, err := g.StagingManager.List(ctx, curBranch.StagingToken, ListingDefaultBatchSize)
+	iter, err := g.StagingManager.List(ctx, curBranch.StagingToken, ListingDefaultBatchSize, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1173,7 +1173,7 @@ func (g *Graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref)
 		return nil, err
 	}
 	if reference.StagingToken != "" {
-		stagingList, err := g.StagingManager.List(ctx, reference.StagingToken, ListingDefaultBatchSize)
+		stagingList, err := g.StagingManager.List(ctx, reference.StagingToken, ListingDefaultBatchSize, nil, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -1247,7 +1247,7 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 			parentGeneration = commit.Generation
 		}
 		commit.Generation = parentGeneration + 1
-		changes, err := g.StagingManager.List(ctx, branch.StagingToken, ListingMaxBatchSize)
+		changes, err := g.StagingManager.List(ctx, branch.StagingToken, ListingMaxBatchSize, nil, nil)
 		if err != nil {
 			return "", fmt.Errorf("staging list: %w", err)
 		}
@@ -1328,7 +1328,7 @@ func (g *Graveler) getCommitBreakingPoints(ctx context.Context, storageNamespace
 	if len(possibleBreakingPoints) == 0 {
 		return breakingPoints, nil
 	}
-	list, err := g.StagingManager.List(ctx, stagingToken, 3)
+	list, err := g.StagingManager.List(ctx, stagingToken, 3, nil, nil)
 	if !list.Next() {
 		return breakingPoints, list.Err()
 	}
@@ -1481,7 +1481,7 @@ func (g *Graveler) addCommitNoLock(ctx context.Context, repositoryID RepositoryI
 }
 
 func (g *Graveler) stagingEmpty(ctx context.Context, branch *Branch) (bool, error) {
-	stIt, err := g.StagingManager.List(ctx, branch.StagingToken, ListingDefaultBatchSize)
+	stIt, err := g.StagingManager.List(ctx, branch.StagingToken, ListingDefaultBatchSize, nil, nil)
 	if err != nil {
 		return false, fmt.Errorf("staging list (token %s): %w", branch.StagingToken, err)
 	}
@@ -1767,7 +1767,7 @@ func (g *Graveler) DiffUncommitted(ctx context.Context, repositoryID RepositoryI
 		metaRangeID = commit.MetaRangeID
 	}
 
-	valueIterator, err := g.StagingManager.List(ctx, branch.StagingToken, ListingDefaultBatchSize)
+	valueIterator, err := g.StagingManager.List(ctx, branch.StagingToken, ListingDefaultBatchSize, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1833,7 +1833,7 @@ func (g *Graveler) Diff(ctx context.Context, repositoryID RepositoryID, left, ri
 	if err != nil {
 		return nil, err
 	}
-	stagingIterator, err := g.StagingManager.List(ctx, rightBranch.StagingToken, ListingDefaultBatchSize)
+	stagingIterator, err := g.StagingManager.List(ctx, rightBranch.StagingToken, ListingDefaultBatchSize, nil, nil)
 	if err != nil {
 		return nil, err
 	}
