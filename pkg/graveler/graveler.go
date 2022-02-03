@@ -1,6 +1,7 @@
 package graveler
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -1252,6 +1253,14 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 		}
 		defer changes.Close()
 
+		breakingPoints, err := g.getCommitBreakingPoints(ctx, storageNamespace, branch.StagingToken, branchMetaRangeID)
+		if err != nil {
+			return nil, err
+		}
+		if len(breakingPoints) != 0 {
+			// TODO(Guys): do parallel commit
+		}
+		g.log.Debug()
 		commit.MetaRangeID, _, err = g.CommittedManager.Commit(ctx, storageNamespace, branchMetaRangeID, changes)
 		if err != nil {
 			return "", fmt.Errorf("commit: %w", err)
@@ -1306,17 +1315,45 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 	return newCommitID, nil
 }
 
-func (g *Graveler) getCommitBreakingPoints(ctx context.Context, storageNamespace StorageNamespace, mID MetaRangeID) ([]Key, error) {
+// TODO(Guys): add tests
+// getCommitBreakingPoints finds breaking points of ranges (range max_key) such that:
+// 1. each breaking point would still be a breaking point after the commit
+// 2. between two following breaking points there are changes to be committed
+func (g *Graveler) getCommitBreakingPoints(ctx context.Context, storageNamespace StorageNamespace, stagingToken StagingToken, mID MetaRangeID) ([]Key, error) {
 	possibleBreakingPoints, err := g.CommittedManager.GetBreakingPoints(ctx, storageNamespace, mID)
+	breakingPoints := make([]Key, 0)
 	if err != nil {
 		return nil, err
 	}
-	// TODO(Guys): implement this
-	// for all breaking points get the breaking points that:
-	// 1. won't be deleted from staging
-	// 2. contains changes introduced in staging
-	_ = possibleBreakingPoints
-	return nil, err
+	if len(possibleBreakingPoints) == 0 {
+		return breakingPoints, nil
+	}
+	list, err := g.StagingManager.List(ctx, stagingToken, 3)
+	if !list.Next() {
+		return breakingPoints, list.Err()
+	}
+	cur := list.Value()
+	for _, bp := range possibleBreakingPoints {
+		if bytes.Compare(bp, cur.Key) >= 0 {
+			// check if exists as tombstone
+			list.SeekGE(bp)
+			if !list.Next() {
+				break
+			}
+			cur = list.Value()
+			if !(bytes.Equal(bp, cur.Key) && cur.Value == nil) {
+				// add only if not tombstone of
+				breakingPoints = append(breakingPoints, bp)
+				if !list.Next() {
+					break
+				}
+			}
+		}
+	}
+	if err := list.Err(); err != nil {
+		return nil, err
+	}
+	return breakingPoints, err
 }
 
 func newStagingToken(repositoryID RepositoryID, branchID BranchID) StagingToken {
