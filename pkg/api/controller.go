@@ -2791,37 +2791,13 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 		writeError(w, http.StatusPreconditionFailed, err)
 		return
 	case errors.Is(err, catalog.ErrConflictFound) || errors.Is(err, graveler.ErrConflictFound):
-		writeResponse(w, http.StatusConflict, newMergeResultFromCatalog(res))
+		writeResponse(w, http.StatusConflict, MergeResult{Reference: res})
 		return
 	}
 	if handleAPIError(w, err) {
 		return
 	}
-
-	response := newMergeResultFromCatalog(res)
-	writeResponse(w, http.StatusOK, response)
-}
-
-func newMergeResultFromCatalog(res *catalog.MergeResult) MergeResult {
-	if res == nil {
-		return MergeResult{}
-	}
-	result := MergeResult{
-		Reference: res.Reference,
-	}
-	for k, v := range res.Summary {
-		switch k {
-		case catalog.DifferenceTypeAdded:
-			result.Summary.Added = v
-		case catalog.DifferenceTypeChanged:
-			result.Summary.Changed = v
-		case catalog.DifferenceTypeRemoved:
-			result.Summary.Removed = v
-		case catalog.DifferenceTypeConflict:
-			result.Summary.Conflict = v
-		}
-	}
-	return result
+	writeResponse(w, http.StatusOK, MergeResult{Reference: res})
 }
 
 func (c *Controller) ListTags(w http.ResponseWriter, r *http.Request, repository string, params ListTagsParams) {

@@ -400,10 +400,10 @@ type VersionController interface {
 	ResetPrefix(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error
 
 	// Revert creates a reverse patch to the commit given as 'ref', and applies it as a new commit on the given branch.
-	Revert(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref, parentNumber int, commitParams CommitParams) (CommitID, DiffSummary, error)
+	Revert(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref, parentNumber int, commitParams CommitParams) (CommitID, error)
 
 	// Merge merges 'source' into 'destination' and returns the commit id for the created merge commit, and a summary of results.
-	Merge(ctx context.Context, repositoryID RepositoryID, destination BranchID, source Ref, commitParams CommitParams) (CommitID, DiffSummary, error)
+	Merge(ctx context.Context, repositoryID RepositoryID, destination BranchID, source Ref, commitParams CommitParams) (CommitID, error)
 
 	// DiffUncommitted returns iterator to scan the changes made on the branch
 	DiffUncommitted(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (DiffIterator, error)
@@ -643,9 +643,9 @@ type CommittedManager interface {
 	Compare(ctx context.Context, ns StorageNamespace, destination, source, base MetaRangeID) (DiffIterator, error)
 
 	// Merge applies changes from 'source' to 'destination', relative to a merge base 'base' and
-	// returns the ID of the new metarange and a summary of diffs.  This is similar to a
-	// git merge operation. The resulting tree is expected to be immediately addressable.
-	Merge(ctx context.Context, ns StorageNamespace, destination, source, base MetaRangeID) (MetaRangeID, DiffSummary, error)
+	// returns the ID of the new metarange. This is similar to a git merge operation.
+	// The resulting tree is expected to be immediately addressable.
+	Merge(ctx context.Context, ns StorageNamespace, destination, source, base MetaRangeID) (MetaRangeID, error)
 
 	// Commit is the act of taking an existing metaRange (snapshot) and applying a set of changes to it.
 	// A change is either an entity to write/overwrite, or a tombstone to mark a deletion
@@ -1507,19 +1507,19 @@ type CommitIDAndSummary struct {
 // To revert C2, we merge C1 into the branch, with C2 as the merge base.
 // That is, try to apply the diff from C2 to C1 on the tip of the branch.
 // If the commit is a merge commit, 'parentNumber' is the parent number (1-based) relative to which the revert is done.
-func (g *Graveler) Revert(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref, parentNumber int, commitParams CommitParams) (CommitID, DiffSummary, error) {
+func (g *Graveler) Revert(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref, parentNumber int, commitParams CommitParams) (CommitID, error) {
 	commitRecord, err := g.dereferenceCommit(ctx, repositoryID, ref)
 	if err != nil {
-		return "", DiffSummary{}, fmt.Errorf("get commit from ref %s: %w", ref, err)
+		return "", fmt.Errorf("get commit from ref %s: %w", ref, err)
 	}
 	if len(commitRecord.Parents) > 1 && parentNumber <= 0 {
 		// if commit has more than one parent, must explicitly specify parent number
-		return "", DiffSummary{}, ErrRevertMergeNoParent
+		return "", ErrRevertMergeNoParent
 	}
 	if parentNumber > 0 {
 		// validate parent is in range:
 		if parentNumber > len(commitRecord.Parents) { // parent number is 1-based
-			return "", DiffSummary{}, fmt.Errorf("%w: parent %d", ErrRevertParentOutOfRange, parentNumber)
+			return "", fmt.Errorf("%w: parent %d", ErrRevertParentOutOfRange, parentNumber)
 		}
 		parentNumber--
 	}
@@ -1550,7 +1550,7 @@ func (g *Graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 			return "", fmt.Errorf("get commit from ref %s: %w", branch.CommitID, err)
 		}
 		// merge from the parent to the top of the branch, with the given ref as the merge base:
-		metaRangeID, summary, err := g.CommittedManager.Merge(ctx, repo.StorageNamespace, branchCommit.MetaRangeID, parentMetaRangeID, commitRecord.MetaRangeID)
+		metaRangeID, err := g.CommittedManager.Merge(ctx, repo.StorageNamespace, branchCommit.MetaRangeID, parentMetaRangeID, commitRecord.MetaRangeID)
 		if err != nil {
 			if !errors.Is(err, ErrUserVisible) {
 				err = fmt.Errorf("merge: %w", err)
@@ -1575,16 +1575,15 @@ func (g *Graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 		if err != nil {
 			return "", fmt.Errorf("set branch: %w", err)
 		}
-		return &CommitIDAndSummary{commitID, summary}, nil
+		return commitID, nil
 	})
 	if err != nil {
-		return "", DiffSummary{}, err
+		return "", err
 	}
-	c := res.(*CommitIDAndSummary)
-	return c.ID, c.Summary, nil
+	return res.(CommitID), nil
 }
 
-func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destination BranchID, source Ref, commitParams CommitParams) (CommitID, DiffSummary, error) {
+func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destination BranchID, source Ref, commitParams CommitParams) (CommitID, error) {
 	var preRunID string
 	var storageNamespace StorageNamespace
 	var commit Commit
@@ -1618,12 +1617,12 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 			"destination_meta_range": toCommit.MetaRangeID,
 			"base_meta_range":        baseCommit.MetaRangeID,
 		}).Trace("Merge")
-		metaRangeID, summary, err := g.CommittedManager.Merge(ctx, storageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID)
+		metaRangeID, err := g.CommittedManager.Merge(ctx, storageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID)
 		if err != nil {
 			if !errors.Is(err, ErrUserVisible) {
 				err = fmt.Errorf("merge in CommitManager: %w", err)
 			}
-			return &CommitIDAndSummary{Summary: summary}, err
+			return nil, err
 		}
 		commit = NewCommit()
 		commit.Committer = commitParams.Committer
@@ -1647,7 +1646,7 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 			Commit:           commit,
 		})
 		if err != nil {
-			return &CommitIDAndSummary{Summary: summary}, &HookAbortError{
+			return nil, &HookAbortError{
 				EventType: EventTypePreMerge,
 				RunID:     preRunID,
 				Err:       err,
@@ -1655,25 +1654,18 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 		}
 		commitID, err := g.RefManager.AddCommit(ctx, repositoryID, commit)
 		if err != nil {
-			return &CommitIDAndSummary{Summary: summary}, fmt.Errorf("add commit: %w", err)
+			return nil, fmt.Errorf("add commit: %w", err)
 		}
 		branch.CommitID = commitID
 		err = g.RefManager.SetBranch(ctx, repositoryID, destination, *branch)
 		if err != nil {
-			return &CommitIDAndSummary{ID: commitID, Summary: summary}, fmt.Errorf("update branch %s: %w", destination, err)
+			return commitID, fmt.Errorf("update branch %s: %w", destination, err)
 		}
-		return &CommitIDAndSummary{ID: commitID, Summary: summary}, nil
+		return commitID, nil
 	})
 	if err != nil {
-		// extract summary, relevant also for some errors
-		var summary DiffSummary
-		if res != nil {
-			c := res.(*CommitIDAndSummary)
-			summary = c.Summary
-		}
-		return "", summary, err
+		return "", err
 	}
-	c := res.(*CommitIDAndSummary)
 	postRunID := NewRunID()
 	err = g.hooks.PostMergeHook(ctx, HookRecord{
 		EventType:        EventTypePostMerge,
@@ -1683,7 +1675,7 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 		BranchID:         destination,
 		SourceRef:        source,
 		Commit:           commit,
-		CommitID:         c.ID,
+		CommitID:         res.(CommitID),
 		PreRunID:         preRunID,
 	})
 	if err != nil {
@@ -1693,7 +1685,7 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 			WithField("pre_run_id", preRunID).
 			Error("Post-merge hook failed")
 	}
-	return c.ID, c.Summary, nil
+	return res.(CommitID), nil
 }
 
 func (g *Graveler) DiffUncommitted(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (DiffIterator, error) {

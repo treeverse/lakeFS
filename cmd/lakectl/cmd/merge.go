@@ -10,13 +10,7 @@ const (
 	mergeCmdMaxArgs = 2
 )
 
-var mergeCreateTemplate = `Merged "{{.Merge.FromRef|yellow}}" into "{{.Merge.ToRef|yellow}}" to get "{{.Result.Reference|green}}".
-
-Added: {{.Result.Summary.Added}}
-Changed: {{.Result.Summary.Changed}}
-Removed: {{.Result.Summary.Removed}}
-
-`
+var mergeCreateTemplate = `Merged "{{.Merge.FromRef|yellow}}" into "{{.Merge.ToRef|yellow}}" to get "{{.Result.Reference|green}}".`
 
 type FromTo struct {
 	FromRef, ToRef string

@@ -222,7 +222,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 			return 1
 		}
 		fmt.Println("Merge was completed successfully.")
-		fmt.Printf("To list imported objects, run:\n\t$ lakectl fs ls lakefs://%s@%s/\n", repoName, commitLog.Reference)
+		fmt.Printf("To list imported objects, run:\n\t$ lakectl fs ls lakefs://%s@%s/\n", repoName, commitLog)
 	} else {
 		fmt.Printf("To list imported objects, run:\n\t$ lakectl fs ls lakefs://%s@%s/\n", repoName, stats.CommitRef)
 		fmt.Printf("To merge the changes to your main branch, run:\n\t$ lakectl merge lakefs://%s@%s lakefs://%s@%s\n", repoName, stats.CommitRef, repoName, repo.DefaultBranch)
