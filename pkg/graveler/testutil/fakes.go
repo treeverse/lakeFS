@@ -27,8 +27,12 @@ type CommittedFake struct {
 	AppliedData   AppliedData
 }
 
-func (c *CommittedFake) GetBreakingPoints(ctx context.Context, ns graveler.StorageNamespace, baseMetaRangeID graveler.MetaRangeID) ([]graveler.Key, error) {
+func (c *CommittedFake) MultipartCommit(ctx context.Context, ns graveler.StorageNamespace, baseMetaRangeID graveler.MetaRangeID, parts []graveler.MultipartCommitPartData) (graveler.MetaRangeID, graveler.DiffSummary, error) {
 	// TODO implement me
+	panic("implement me")
+}
+
+func (c *CommittedFake) GetBreakingPoints(ctx context.Context, ns graveler.StorageNamespace, baseMetaRangeID graveler.MetaRangeID) ([]graveler.Key, error) {
 	return make([]graveler.Key, 0), nil
 }
 

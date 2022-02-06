@@ -1270,6 +1270,9 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 				}
 			}()
 			commit.MetaRangeID, _, err = g.CommittedManager.MultipartCommit(ctx, storageNamespace, branchMetaRangeID, parts)
+			if err != nil {
+				return "", fmt.Errorf("multipart commit: %w", err)
+			}
 		} else {
 			changes, err := g.StagingManager.List(ctx, branch.StagingToken, ListingMaxBatchSize, nil, nil)
 			if err != nil {

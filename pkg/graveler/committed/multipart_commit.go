@@ -93,12 +93,6 @@ func (m *multipartCommitter) commit() (graveler.MetaRangeID, graveler.DiffSummar
 		go m.worker(m.commitPartDataCh, m.resCh, m.errorCh)
 	}
 
-	newParts := make([]graveler.MultipartCommitPartData, 0)
-	for _, part := range m.parts {
-		if part.Changes != nil {
-			newParts = append(newParts, part)
-		}
-	}
 	// goroutine to send all jobs
 	go func(ctx context.Context, parts []graveler.MultipartCommitPartData) {
 		for _, part := range parts {
@@ -107,23 +101,19 @@ func (m *multipartCommitter) commit() (graveler.MetaRangeID, graveler.DiffSummar
 				return
 			default:
 			}
-			fmt.Printf("sending part from: %s to:%s changes:%s\n", part.From, part.To, part.Changes)
 			if part.Changes == nil {
-				fmt.Printf("Not sure what happened from %s to %s\n", part.From, part.To)
 			} else {
 				m.commitPartDataCh <- part
 			}
 		}
-	}(m.ctx, newParts)
+	}(m.ctx, m.parts)
 
 	ranges := make([]Range, 0)
 	var summary graveler.DiffSummary
 	summary.Count = make(map[graveler.DiffType]int, 4) // TODO(Guys): change
-	fmt.Printf("newParts length is %d\n", len(newParts))
-	for i := 0; i < len(newParts); i++ {
+	for i := 0; i < len(m.parts); i++ {
 		select {
 		case r := <-m.resCh:
-			fmt.Printf("%d:Adding %d ranges\n", i, len(r.ranges))
 			ranges = append(ranges, r.ranges...)
 			summary.Incomplete = summary.Incomplete || r.summary.Incomplete
 			summary.Count[graveler.DiffTypeRemoved] += r.summary.Count[graveler.DiffTypeRemoved]
@@ -137,8 +127,6 @@ func (m *multipartCommitter) commit() (graveler.MetaRangeID, graveler.DiffSummar
 			return "", summary, nil
 		}
 	}
-	fmt.Println("Done")
-	// TODO(Guys): call function with RangeManager
 	newID, err := m.metaRangeManager.CompleteMultipartMetaRange(m.ctx, m.namespace, nil, ranges)
 	if newID == nil {
 		return "", summary, fmt.Errorf("close writer ns=%s metarange id=%s: %w", m.namespace, m.metaRangeManager, err)
