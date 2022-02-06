@@ -45,11 +45,6 @@ type CommitLog struct {
 	Parents      []string
 }
 
-type MergeResult struct {
-	Summary   map[DifferenceType]int
-	Reference string
-}
-
 type Branch struct {
 	Name      string `db:"name"`
 	Reference string

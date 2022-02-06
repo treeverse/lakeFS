@@ -112,7 +112,7 @@ type Interface interface {
 	Compare(ctx context.Context, repository, leftReference string, rightReference string, params DiffParams) (Differences, bool, error)
 	DiffUncommitted(ctx context.Context, repository, branch, prefix, delimiter string, limit int, after string) (Differences, bool, error)
 
-	Merge(ctx context.Context, repository, destinationBranch, sourceRef, committer, message string, metadata Metadata) (*MergeResult, error)
+	Merge(ctx context.Context, repository, destinationBranch, sourceRef, committer, message string, metadata Metadata) (string, error)
 
 	// dump/load metadata
 	DumpCommits(ctx context.Context, repositoryID string) (string, error)

@@ -987,7 +987,7 @@ func (c *Catalog) Revert(ctx context.Context, repository string, branch string, 
 	}); err != nil {
 		return err
 	}
-	_, _, err := c.Store.Revert(ctx, repositoryID, branchID, reference, parentNumber, commitParams)
+	_, err := c.Store.Revert(ctx, repositoryID, branchID, reference, parentNumber, commitParams)
 	return err
 }
 
@@ -1138,7 +1138,7 @@ func listDiffHelper(it EntryDiffIterator, prefix, delimiter string, limit int, a
 	return diffs, hasMore, nil
 }
 
-func (c *Catalog) Merge(ctx context.Context, repository string, destinationBranch string, sourceRef string, committer string, message string, metadata Metadata) (*MergeResult, error) {
+func (c *Catalog) Merge(ctx context.Context, repository string, destinationBranch string, sourceRef string, committer string, message string, metadata Metadata) (string, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	destination := graveler.BranchID(destinationBranch)
 	source := graveler.Ref(sourceRef)
@@ -1158,32 +1158,17 @@ func (c *Catalog) Merge(ctx context.Context, repository string, destinationBranc
 		{Name: "committer", Value: commitParams.Committer, Fn: validator.ValidateRequiredString},
 		{Name: "message", Value: commitParams.Message, Fn: validator.ValidateRequiredString},
 	}); err != nil {
-		return nil, err
+		return "", err
 	}
-	commitID, summary, err := c.Store.Merge(ctx, repositoryID, destination, source, commitParams)
+	commitID, err := c.Store.Merge(ctx, repositoryID, destination, source, commitParams)
 	if errors.Is(err, graveler.ErrConflictFound) {
 		// for compatibility with old Catalog
-		return &MergeResult{
-			Summary: map[DifferenceType]int{
-				DifferenceTypeConflict: summary.Count[graveler.DiffTypeConflict],
-			},
-		}, err
+		return "", err
 	}
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	count := make(map[DifferenceType]int)
-	for k, v := range summary.Count {
-		kk, err := catalogDiffType(k)
-		if err != nil {
-			return nil, err
-		}
-		count[kk] = v
-	}
-	return &MergeResult{
-		Summary:   count,
-		Reference: commitID.String(),
-	}, nil
+	return commitID.String(), nil
 }
 
 func (c *Catalog) DumpCommits(ctx context.Context, repositoryID string) (string, error) {
