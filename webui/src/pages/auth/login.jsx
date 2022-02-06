@@ -34,9 +34,6 @@ const LoginForm = () => {
                         }}>
                             <Form.Group controlId="username">
                                 <Form.Control type="text" placeholder="Access Key ID" autoFocus/>
-                                <Form.Text className="text-muted">
-                                    <em>Running lakeFS for the first time? setup initial credentials by running <code>lakefs init</code></em>
-                                </Form.Text>
                             </Form.Group>
 
                             <Form.Group controlId="password">
