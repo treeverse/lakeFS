@@ -153,7 +153,7 @@ you can alternatively export just the difference between `main` branch and the c
    exporter.exportFrom(branch, commit)
    ```
 
-## Using Docker
+## Exporting Data With Docker
 
 This option is recommended if you don't have Spark at your tool-set.
 It does not support distribution across machines, therefore may have a lower performance. 
