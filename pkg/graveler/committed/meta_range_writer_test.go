@@ -26,6 +26,9 @@ var params = committed.Params{
 	MaxUploaders:               3,
 }
 
+func noBreak(_ graveler.Key) bool {
+	return false
+}
 func TestWriter_WriteRecords(t *testing.T) {
 	ctx := context.Background()
 	ctrl := gomock.NewController(t)
@@ -53,7 +56,8 @@ func TestWriter_WriteRecords(t *testing.T) {
 	rangeManagerMeta := mock.NewMockRangeManager(ctrl)
 	rangeManagerMeta.EXPECT().GetWriter(gomock.Any(), gomock.Any(), gomock.Any()).Return(fakeMetaWriter, nil)
 	namespace := committed.Namespace("ns")
-	w := committed.NewGeneralMetaRangeWriter(ctx, rangeManager, rangeManagerMeta, &params, namespace, nil)
+
+	w := committed.NewGeneralMetaRangeWriter(ctx, rangeManager, rangeManagerMeta, &params, noBreak, namespace, nil)
 
 	// Add first record
 	firstRecord := graveler.ValueRecord{
@@ -104,7 +108,7 @@ func TestWriter_OverlappingRanges(t *testing.T) {
 	namespace := committed.Namespace("ns")
 	rng := committed.Range{MinKey: committed.Key("a"), MaxKey: committed.Key("g")}
 	rng2 := committed.Range{MinKey: committed.Key("c"), MaxKey: committed.Key("l")}
-	w := committed.NewGeneralMetaRangeWriter(ctx, rangeManager, rangeManager, &params, namespace, nil)
+	w := committed.NewGeneralMetaRangeWriter(ctx, rangeManager, rangeManager, &params, noBreak, namespace, nil)
 	err := w.WriteRange(rng)
 	if err != nil {
 		t.Fatalf("unexpected error %s", err)
@@ -164,7 +168,7 @@ func TestWriter_RecordRangeAndClose(t *testing.T) {
 		},
 	}))
 
-	w := committed.NewGeneralMetaRangeWriter(ctx, rangeManager, rangeManagerMeta, &params, namespace, nil)
+	w := committed.NewGeneralMetaRangeWriter(ctx, rangeManager, rangeManagerMeta, &params, noBreak, namespace, nil)
 	err := w.WriteRecord(record)
 	if err != nil {
 		t.Fatalf("unexpected error %s", err)

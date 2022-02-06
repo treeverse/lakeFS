@@ -27,6 +27,11 @@ type CommittedFake struct {
 	AppliedData   AppliedData
 }
 
+func (c *CommittedFake) GetBreakingPoints(ctx context.Context, ns graveler.StorageNamespace, baseMetaRangeID graveler.MetaRangeID) ([]graveler.Key, error) {
+	// TODO implement me
+	return make([]graveler.Key, 0), nil
+}
+
 type MetaRangeFake struct {
 	id graveler.MetaRangeID
 }
