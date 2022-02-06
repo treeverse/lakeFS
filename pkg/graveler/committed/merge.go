@@ -102,7 +102,7 @@ func (m *merger) destBeforeSource(destValue *graveler.ValueRecord) error {
 	if baseValue != nil && bytes.Equal(destValue.Identity, baseValue.Identity) && bytes.Equal(destValue.Key, baseValue.Key) { // source deleted this record
 		m.haveDest = m.dest.Next()
 	} else {
-		if baseValue != nil && bytes.Equal(destValue.Key, baseValue.Key) { // deleted by source added by dest
+		if baseValue != nil && bytes.Equal(destValue.Key, baseValue.Key) { // deleted by source changed by dest
 			return graveler.ErrConflictFound
 		}
 		// dest added this record
@@ -168,7 +168,7 @@ func (m *merger) handleAll(iter Iterator) error {
 				return fmt.Errorf("base value GE: %w", err)
 			}
 			if baseValue == nil || !bytes.Equal(baseValue.Identity, iterValue.Identity) {
-				if baseValue != nil && bytes.Equal(baseValue.Key, iterValue.Key) {
+				if baseValue != nil && bytes.Equal(baseValue.Key, iterValue.Key) { // deleted by one changed by iter
 					return graveler.ErrConflictFound
 				}
 				if err := m.writeRecord(iterValue); err != nil {
@@ -294,7 +294,7 @@ func (m *merger) handleBothKeys(sourceValue *graveler.ValueRecord, destValue *gr
 				m.haveSource = m.source.Next()
 				m.haveDest = m.dest.Next()
 				return nil
-			} else {
+			} else { // both added the same key with different identity
 				return graveler.ErrConflictFound
 			}
 		}
