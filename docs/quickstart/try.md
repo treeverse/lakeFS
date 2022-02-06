@@ -12,9 +12,9 @@ has_children: false
 
 ## Demo environment
 
-Experiment and learn about lakeFS with your own isolated environment.
-You can easily integrate it with your existing tools, and create a development environment
-to experiment with your data.
+Experience lakeFS first hand with your own isolated environment.
+You can easily integrate it with your existing tools, and feel lakeFS in action in an environment
+similar to your own.
 
 <p style="margin-top: 40px;">
     <a class="btn btn-green" href="https://demo.lakefs.io/" target="_blank">
