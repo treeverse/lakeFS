@@ -54,6 +54,8 @@ Since lakeFS is compatible with the S3 API, all popular applications will work w
 * It includes **configurable garbage collection** capabilities
 * lakeFS is **highly available and production ready**
 
+<img src="{{ site.baseurl }}/assets/img/lakeFS_integration.png" alt="lakeFS integration into data lake" width="60%" height="60%" />
+
 ## Use-cases:
 
 lakeFS enhances processing workflows at each step of the data lifecycle:
