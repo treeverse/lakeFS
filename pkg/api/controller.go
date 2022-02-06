@@ -2797,7 +2797,7 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 	if handleAPIError(w, err) {
 		return
 	}
-	writeResponse(w, http.StatusOK, MergeResult{Reference: res}) // optimize returning unknown summary = 0
+	writeResponse(w, http.StatusOK, MergeResult{Reference: res})
 }
 
 func (c *Controller) ListTags(w http.ResponseWriter, r *http.Request, repository string, params ListTagsParams) {

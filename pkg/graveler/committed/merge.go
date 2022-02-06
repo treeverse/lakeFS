@@ -20,6 +20,7 @@ type merger struct {
 	haveSource, haveDest bool
 }
 
+// getNextGEKey moves base iterator from its current position to the next greater equal value
 func (m *merger) getNextGEKey(key graveler.Key) (*graveler.ValueRecord, error) {
 	baseValue, _ := m.base.Value()
 	if baseValue != nil && bytes.Compare(key, baseValue.Key) <= 0 {
@@ -48,7 +49,7 @@ func (m *merger) getNextGEKey(key graveler.Key) (*graveler.ValueRecord, error) {
 	return nil, nil
 }
 
-// getNextOverlappingFromBase moves base iterator (from current point) to the next overlap range with rangeToOverlap
+// getNextOverlappingFromBase moves base iterator from its current position to the next range overlapping with rangeToOverlap
 func (m *merger) getNextOverlappingFromBase(rangeToOverlap *Range) (*Range, error) {
 	for {
 		_, baseRange := m.base.Value()
