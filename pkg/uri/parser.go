@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+
+	"github.com/treeverse/lakefs/pkg/validator"
 )
 
 const (
@@ -32,15 +34,15 @@ type URI struct {
 }
 
 func (u *URI) IsRepository() bool {
-	return len(u.Repository) > 0 && len(u.Ref) == 0 && u.Path == nil
+	return len(u.Repository) > 0 && len(u.Ref) == 0 && u.Path == nil && validator.ReValidRepositoryID.MatchString(u.Repository)
 }
 
 func (u *URI) IsRef() bool {
-	return len(u.Repository) > 0 && len(u.Ref) > 0 && u.Path == nil
+	return len(u.Repository) > 0 && len(u.Ref) > 0 && u.Path == nil && validator.ReValidRepositoryID.MatchString(u.Repository) && validator.ReValidBranchID.MatchString(u.Ref)
 }
 
 func (u *URI) IsFullyQualified() bool {
-	return len(u.Repository) > 0 && len(u.Ref) > 0 && u.Path != nil
+	return len(u.Repository) > 0 && len(u.Ref) > 0 && u.Path != nil && validator.ReValidRepositoryID.MatchString(u.Repository) && validator.ReValidBranchID.MatchString(u.Ref)
 }
 
 func (u *URI) GetPath() string {
