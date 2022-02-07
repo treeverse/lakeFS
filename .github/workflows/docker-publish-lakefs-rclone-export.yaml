@@ -54,7 +54,5 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: deployments/tools/export
-          repository: treeverse/lakefs-rclone-export
-          tags: ${{ steps.version.outputs.tag }},latest
+          tags: treeverse/lakefs-rclone-export:${{ steps.version.outputs.tag }},treeverse/lakefs-rclone-export:latest
           push: true
-
