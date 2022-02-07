@@ -35,7 +35,7 @@ This is done by adding the following configurations to the lakectl configuration
 metastore:
   type: hive
   hive:
-    uri: thrift://hive-metastore:9083
+    uri: hive-metastore:9083
 ```
 
 ### Glue
