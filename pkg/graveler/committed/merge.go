@@ -18,6 +18,7 @@ type merger struct {
 	source               Iterator
 	dest                 Iterator
 	haveSource, haveDest bool
+	strategy             graveler.MergeStrategy
 }
 
 // getNextGEKey moves base iterator from its current position to the next greater equal value
@@ -104,7 +105,15 @@ func (m *merger) destBeforeSource(destValue *graveler.ValueRecord) error {
 		m.haveDest = m.dest.Next()
 	} else {
 		if baseValue != nil && bytes.Equal(destValue.Key, baseValue.Key) { // deleted by source changed by dest
-			return graveler.ErrConflictFound
+			switch m.strategy {
+			case graveler.MergeStrategyOurs:
+				break
+			case graveler.MergeStrategyTheirs:
+				m.haveDest = m.dest.Next()
+				return nil
+			default: // graveler.MergeStrategyNone
+				return graveler.ErrConflictFound
+			}
 		}
 		// dest added this record
 		err := m.writeRecord(destValue)
@@ -125,7 +134,15 @@ func (m *merger) sourceBeforeDest(sourceValue *graveler.ValueRecord) error {
 		m.haveSource = m.source.Next()
 	} else {
 		if baseValue != nil && bytes.Equal(sourceValue.Key, baseValue.Key) { // deleted by dest and changed by source
-			return graveler.ErrConflictFound
+			switch m.strategy {
+			case graveler.MergeStrategyOurs:
+				m.haveSource = m.source.Next()
+				return nil
+			case graveler.MergeStrategyTheirs:
+				break
+			default: // graveler.MergeStrategyNone
+				return graveler.ErrConflictFound
+			}
 		}
 		// source added this record
 		err := m.writeRecord(sourceValue)
@@ -265,6 +282,26 @@ func (m *merger) handleBothRanges(sourceRange *Range, destRange *Range) error {
 	return nil
 }
 
+func (m *merger) handleConflict(sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) error {
+	switch m.strategy {
+	case graveler.MergeStrategyOurs:
+		err := m.writeRecord(destValue)
+		if err != nil {
+			return fmt.Errorf("write record: %w", err)
+		}
+	case graveler.MergeStrategyTheirs:
+		err := m.writeRecord(sourceValue)
+		if err != nil {
+			return fmt.Errorf("write record: %w", err)
+		}
+	default: // graveler.MergeStrategyNone
+		return graveler.ErrConflictFound
+	}
+	m.haveSource = m.source.Next()
+	m.haveDest = m.dest.Next()
+	return nil
+}
+
 // handleBothKeys handles the case where both source and dest iterators are inside range
 func (m *merger) handleBothKeys(sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) error {
 	c := bytes.Compare(sourceValue.Key, destValue.Key)
@@ -287,7 +324,7 @@ func (m *merger) handleBothKeys(sourceValue *graveler.ValueRecord, destValue *gr
 				case bytes.Equal(destValue.Identity, baseValue.Identity):
 					err = m.writeRecord(sourceValue)
 				default: // both changed the same key
-					return graveler.ErrConflictFound
+					return m.handleConflict(sourceValue, destValue)
 				}
 				if err != nil {
 					return fmt.Errorf("write record: %w", err)
@@ -296,7 +333,7 @@ func (m *merger) handleBothKeys(sourceValue *graveler.ValueRecord, destValue *gr
 				m.haveDest = m.dest.Next()
 				return nil
 			} else { // both added the same key with different identity
-				return graveler.ErrConflictFound
+				return m.handleConflict(sourceValue, destValue)
 			}
 		}
 		// record hasn't changed or both added the same record
@@ -426,14 +463,15 @@ func (m *merger) merge() error {
 	return nil
 }
 
-func Merge(ctx context.Context, writer MetaRangeWriter, base Iterator, source Iterator, destination Iterator) error {
+func Merge(ctx context.Context, writer MetaRangeWriter, base Iterator, source Iterator, destination Iterator, strategy graveler.MergeStrategy) error {
 	m := merger{
-		ctx:    ctx,
-		logger: logging.FromContext(ctx),
-		writer: writer,
-		base:   base,
-		source: source,
-		dest:   destination,
+		ctx:      ctx,
+		logger:   logging.FromContext(ctx),
+		writer:   writer,
+		base:     base,
+		source:   source,
+		dest:     destination,
+		strategy: strategy,
 	}
 	return m.merge()
 }

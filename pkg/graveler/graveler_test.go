@@ -685,7 +685,7 @@ func TestGraveler_PreMergeHook(t *testing.T) {
 				Committer: commitCommitter,
 				Message:   mergeMessage,
 				Metadata:  mergeMetadata,
-			})
+			}, "")
 			// verify we got an error
 			if !errors.Is(err, tt.err) {
 				t.Fatalf("Merge err=%v, pre-merge error expected=%v", err, tt.err)
@@ -765,7 +765,7 @@ func TestGraveler_MergeInvalidRef(t *testing.T) {
 		Committer: commitCommitter,
 		Message:   mergeMessage,
 		Metadata:  graveler.Metadata{"key1": "val1"},
-	})
+	}, "")
 	if !errors.Is(err, graveler.ErrInvalidRef) {
 		t.Fatalf("Merge failed with err=%v, expected ErrInvalidRef", err)
 	}

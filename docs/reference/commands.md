@@ -2084,7 +2084,8 @@ lakectl merge <source ref> <destination ref> [flags]
 {:.no_toc}
 
 ```
-  -h, --help   help for merge
+  -h, --help              help for merge
+      --strategy string   changes from "ours"(dest) or "theirs"(source) are automatically overridden in case of a conflict
 ```
 
 

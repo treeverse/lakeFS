@@ -1130,7 +1130,7 @@ func Test_merge(t *testing.T) {
 			metaRangeId := graveler.MetaRangeID("merge")
 			writer.EXPECT().Close().Return(&metaRangeId, nil).AnyTimes()
 			committedManager := committed.NewCommittedManager(metaRangeManager)
-			_, err := committedManager.Merge(ctx, "ns", "dest", "source", "base")
+			_, err := committedManager.Merge(ctx, "ns", "dest", "source", "base", graveler.MergeStrategyNone)
 			if err != tst.expectedErr {
 				t.Fatal(err)
 			}
@@ -1153,7 +1153,7 @@ func TestMergeCancelContext(t *testing.T) {
 		writer := mock.NewMockMetaRangeWriter(ctrl)
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
-		err := committed.Merge(ctx, writer, base, source, destination)
+		err := committed.Merge(ctx, writer, base, source, destination, graveler.MergeStrategyNone)
 		assert.True(t, errors.Is(err, context.Canceled), "context canceled error")
 	})
 
@@ -1168,7 +1168,7 @@ func TestMergeCancelContext(t *testing.T) {
 		writer := mock.NewMockMetaRangeWriter(ctrl)
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
-		err := committed.Merge(ctx, writer, base, source, destination)
+		err := committed.Merge(ctx, writer, base, source, destination, graveler.MergeStrategyNone)
 		assert.True(t, errors.Is(err, context.Canceled), "context canceled error")
 	})
 
@@ -1185,7 +1185,7 @@ func TestMergeCancelContext(t *testing.T) {
 		writer := mock.NewMockMetaRangeWriter(ctrl)
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
-		err := committed.Merge(ctx, writer, base, source, destination)
+		err := committed.Merge(ctx, writer, base, source, destination, graveler.MergeStrategyNone)
 		assert.True(t, errors.Is(err, context.Canceled), "context canceled error")
 	})
 
@@ -1200,7 +1200,7 @@ func TestMergeCancelContext(t *testing.T) {
 		writer := mock.NewMockMetaRangeWriter(ctrl)
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
-		err := committed.Merge(ctx, writer, base, source, destination)
+		err := committed.Merge(ctx, writer, base, source, destination, graveler.MergeStrategyNone)
 		assert.True(t, errors.Is(err, context.Canceled), "context canceled error")
 	})
 }

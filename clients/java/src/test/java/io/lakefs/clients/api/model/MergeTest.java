@@ -59,4 +59,12 @@ public class MergeTest {
         // TODO: test metadata
     }
 
+    /**
+     * Test the property 'strategy'
+     */
+    @Test
+    public void strategyTest() {
+        // TODO: test strategy
+    }
+
 }
