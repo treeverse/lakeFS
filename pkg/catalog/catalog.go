@@ -1157,7 +1157,7 @@ func (c *Catalog) Merge(ctx context.Context, repository string, destinationBranc
 		{Name: "source", Value: source, Fn: graveler.ValidateRef},
 		{Name: "committer", Value: commitParams.Committer, Fn: validator.ValidateRequiredString},
 		{Name: "message", Value: commitParams.Message, Fn: validator.ValidateRequiredString},
-		{"strategy", strategy, graveler.ValidateRequiredStrategy},
+		{Name: "strategy", Value: strategy, Fn: graveler.ValidateRequiredStrategy},
 	}); err != nil {
 		return "", err
 	}
