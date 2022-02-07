@@ -106,11 +106,11 @@ public class Merge {
   }
 
    /**
-   * null
+   * changes from \&quot;ours\&quot;(dest) or \&quot;theirs\&quot;(source) are automatically overridden in case of a conflict
    * @return strategy
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "null")
+  @ApiModelProperty(value = "changes from \"ours\"(dest) or \"theirs\"(source) are automatically overridden in case of a conflict")
 
   public String getStrategy() {
     return strategy;

@@ -4765,7 +4765,8 @@ components:
             type: string
           type: object
         strategy:
-          description: "null"
+          description: changes from "ours"(dest) or "theirs"(source) are automatically
+            overridden in case of a conflict
           type: string
       type: object
     BranchCreation:

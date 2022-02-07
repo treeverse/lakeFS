@@ -141,7 +141,7 @@ class Merge(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             message (str): [optional]  # noqa: E501
             metadata ({str: (str,)}): [optional]  # noqa: E501
-            strategy (str): null. [optional]  # noqa: E501
+            strategy (str): changes from \"ours\"(dest) or \"theirs\"(source) are automatically overridden in case of a conflict. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -225,7 +225,7 @@ class Merge(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             message (str): [optional]  # noqa: E501
             metadata ({str: (str,)}): [optional]  # noqa: E501
-            strategy (str): null. [optional]  # noqa: E501
+            strategy (str): changes from \"ours\"(dest) or \"theirs\"(source) are automatically overridden in case of a conflict. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
