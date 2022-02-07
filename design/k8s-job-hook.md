@@ -3,7 +3,7 @@
 ## Goals
 
 - Allow lakeFS actions directly to trigger actions running on Kubernetes
-- Enable non-blocking execution for post-merge and post-merge
+- Enable non-blocking execution for post-commit and post-merge
 - Support successful job completion as condition for the commit and merge operations
 
 
