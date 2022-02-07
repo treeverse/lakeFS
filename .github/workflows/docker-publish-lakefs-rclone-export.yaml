@@ -50,6 +50,6 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
           build_args: VERSION=${{ steps.version.outputs.tag }}
-          target: lakefs-rclone-export
+          file: deployments/tools/export
           repository: treeverse/lakefs-rclone-export
           tags: ${{ steps.version.outputs.tag }},latest
