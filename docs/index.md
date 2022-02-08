@@ -34,10 +34,7 @@ You can easily integrate it with your existing tools, and feel lakeFS in action 
 
 ## Why you need lakeFS and what it can do
 
-lakeFS enables data teams to stop worrying about issues that take away much of their time:
-Atomically roll back changes to data, allow testing and validating data before exposing it to consumers and enables traveling back in time, across all collections - for reproducing and debugging issues.
-
-lakeFS enables data teams to stop worrying about issues that take away much of their time:
+With lakeFS data teams can stop worrying about issues that take away much of their time:
 * Roll back changes to data: recover quickly from bugs and mistakes
 * Test and validate data before exposing it to consumers
 * Travel back in time, across collections - for reproducing and debugging issues
