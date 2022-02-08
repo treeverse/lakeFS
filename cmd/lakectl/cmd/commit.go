@@ -9,16 +9,25 @@ import (
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
-var commitCreateTemplate = `Commit for branch "{{.Branch.Ref}}" completed.
+var (
+	errInvalidKeyValueFormat    = fmt.Errorf("invalid key/value pair - should be separated by \"=\"")
+	errEmptyMessage             = fmt.Errorf("commit with an empty message without specifying the \"--allow-empty-message\" flag")
+	allowEmptyCommitMessageFlag bool
+	commitCreateTemplate        = `Commit for branch "{{.Branch.Ref}}" completed.
+		
+		ID: {{.Commit.Id|yellow}}
+		Message: {{.Commit.Message}}
+		Timestamp: {{.Commit.CreationDate|date}}
+		Parents: {{.Commit.Parents|join ", "}}
+		
+		`
+)
 
-ID: {{.Commit.Id|yellow}}
-Message: {{.Commit.Message}}
-Timestamp: {{.Commit.CreationDate|date}}
-Parents: {{.Commit.Parents|join ", "}}
-
-`
-
-var errInvalidKeyValueFormat = fmt.Errorf("invalid key/value pair - should be separated by \"=\"")
+const (
+	MessageFlagName           string = "message"
+	AllowEmptyMessageFlagName string = "allow-empty-message"
+	MetaFlagName              string = "meta"
+)
 
 var commitCmd = &cobra.Command{
 	Use:   "commit <branch uri>",
@@ -26,13 +35,15 @@ var commitCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		// validate message
-		kvPairs, err := getKV(cmd, "meta")
+		kvPairs, err := getKV(cmd, MetaFlagName)
 		if err != nil {
 			DieErr(err)
 		}
-		message, err := cmd.Flags().GetString("message")
+		message, err := cmd.Flags().GetString(MessageFlagName)
 		if err != nil {
 			DieErr(err)
+		} else if strings.TrimSpace(message) == "" && !allowEmptyCommitMessageFlag {
+			DieErr(errEmptyMessage)
 		}
 		branchURI := MustParseRefURI("branch", args[0])
 		Fmt("Branch: %s\n", branchURI.String())
@@ -77,8 +88,9 @@ func getKV(cmd *cobra.Command, name string) (map[string]string, error) {
 func init() {
 	rootCmd.AddCommand(commitCmd)
 
-	commitCmd.Flags().StringP("message", "m", "", "commit message")
-	_ = commitCmd.MarkFlagRequired("message")
+	commitCmd.Flags().BoolVar(&allowEmptyCommitMessageFlag, AllowEmptyMessageFlagName, false, "allow an empty commit message")
+	commitCmd.Flags().StringP(MessageFlagName, "m", "", "commit message")
+	_ = commitCmd.MarkFlagRequired(MessageFlagName)
 
-	commitCmd.Flags().StringSlice("meta", []string{}, "key value pair in the form of key=value")
+	commitCmd.Flags().StringSlice(MetaFlagName, []string{}, "key value pair in the form of key=value")
 }
