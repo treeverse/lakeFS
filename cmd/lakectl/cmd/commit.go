@@ -42,7 +42,8 @@ var commitCmd = &cobra.Command{
 		message, err := cmd.Flags().GetString(MessageFlagName)
 		if err != nil {
 			DieErr(err)
-		} else if strings.TrimSpace(message) == "" && !allowEmptyCommitMessageFlag {
+		}
+		if strings.TrimSpace(message) == "" && !allowEmptyCommitMessageFlag {
 			DieErr(errEmptyMessage)
 		}
 		branchURI := MustParseRefURI("branch", args[0])
