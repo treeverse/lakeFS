@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/textproto"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -166,7 +165,7 @@ func uploadObject(ctx context.Context, client api.ClientWithResponsesInterface, 
 		defer func() {
 			_ = pw.Close()
 		}()
-		filename := path.Base(filePath)
+		filename := filepath.Base(filePath)
 		const fieldName = "content"
 		var err error
 		var cw io.Writer
@@ -236,7 +235,7 @@ var fsUploadCmd = &cobra.Command{
 			}
 			relPath := strings.TrimPrefix(path, source)
 			uri := *pathURI
-			p := filepath.Join(*uri.Path, relPath)
+			p := filepath.ToSlash(filepath.Join(*uri.Path, relPath))
 			uri.Path = &p
 			stat, err := upload(cmd.Context(), client, path, &uri, contentType, direct)
 			if err != nil {
