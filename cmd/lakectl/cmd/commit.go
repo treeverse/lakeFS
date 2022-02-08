@@ -16,7 +16,6 @@ var (
 	commitCreateTemplate        = `Commit for branch "{{.Branch.Ref}}" completed.
 
 ID: {{.Commit.Id|yellow}}
-
 Message: {{.Commit.Message}}
 Timestamp: {{.Commit.CreationDate|date}}
 Parents: {{.Commit.Parents|join ", "}}
