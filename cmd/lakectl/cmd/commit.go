@@ -14,13 +14,14 @@ var (
 	errEmptyMessage             = fmt.Errorf("commit with an empty message without specifying the \"--allow-empty-message\" flag")
 	allowEmptyCommitMessageFlag bool
 	commitCreateTemplate        = `Commit for branch "{{.Branch.Ref}}" completed.
-		
-		ID: {{.Commit.Id|yellow}}
-		Message: {{.Commit.Message}}
-		Timestamp: {{.Commit.CreationDate|date}}
-		Parents: {{.Commit.Parents|join ", "}}
-		
-		`
+
+ID: {{.Commit.Id|yellow}}
+
+Message: {{.Commit.Message}}
+Timestamp: {{.Commit.CreationDate|date}}
+Parents: {{.Commit.Parents|join ", "}}
+
+`
 )
 
 const (
