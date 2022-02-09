@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.58.1 - 2022-02-09
+- Merge operation optimized by another 20%! (#2884)
+- Improved the output verbosity of the `lakectl dbt` tool. (#2895)
+- Usage examples added in `lakectl repo create` command. (#2900)
+- Fixed misleading errors on branch creation. (#2859)
+
 ## v0.58.0 - 2022-01-26
 
 - Include Jupyter notebook in our everything bagel (#2832)
