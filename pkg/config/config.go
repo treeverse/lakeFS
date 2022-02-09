@@ -292,6 +292,11 @@ func (c *Config) GetAwsConfig() *aws.Config {
 	if len(s3Endpoint) > 0 {
 		cfg = cfg.WithEndpoint(s3Endpoint)
 	}
+	s3DisableSSL := c.values.Blockstore.S3.DisableSSL
+	if s3DisableSSL {
+		cfg = cfg.WithDisableSSL(true)
+	}
+
 	s3ForcePathStyle := c.values.Blockstore.S3.ForcePathStyle
 	if s3ForcePathStyle {
 		cfg = cfg.WithS3ForcePathStyle(true)

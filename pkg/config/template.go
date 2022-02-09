@@ -107,6 +107,7 @@ type configuration struct {
 		}
 		S3 *struct {
 			S3AuthInfo            `mapstructure:",squash"`
+			DisableSSL            bool `mapstructure:"disable_ssl"`
 			Region                string
 			Endpoint              string
 			StreamingChunkSize    int           `mapstructure:"streaming_chunk_size"`
