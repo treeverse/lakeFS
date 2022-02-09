@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	fmtErrInvalidKeyValueFormat = `invalid key/value pair - should be separated by "=""`
+	fmtErrInvalidKeyValueFormat = `invalid key/value pair - should be separated by "="`
 	fmtErrEmptyMessage          = `commit with no message without specifying the "--allow-empty-message" flag`
 )
 
