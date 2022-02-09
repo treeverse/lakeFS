@@ -2,14 +2,14 @@
 
 ## Goals
 
-- Allow lakeFS actions directly to trigger actions running on Kubernetes
+- Provide short term solution that enables lakeFS to trigger job execution on Kubernetes
 - Enable non-blocking execution for post-commit and post-merge
 - Support successful job completion as condition for the commit and merge operations
 
 
 ## Non Goals
 
-- GitHub Actions - fully maintained, virtualized environment with pre-build images to execute pre/post hooks
+- GitHub Actions - fully maintained, VM with pre-build images to execute pre/post hooks
 - Manage or control any aspect of the Kubernetes Job
 
 
@@ -20,15 +20,21 @@
 
 Current hooks mechanism described [here](https://docs.lakefs.io/setup/hooks.html)
 
-New lakeFS hook type, triggered by pre/post commit/merge events to execute jobs on k8s cluster.
+Enabling additional side-car deployment will enable the current web-hook to trigger, using a side-car a job execution on a Kubernetes cluster.
 
-The user will provide a hook definition that will include the name of the image (docker image) and arguments that will be used for the hook.
-During commit/merge, lakeFS will schedule a job to run in the cluster. Successful response from the cluster for the job creation, will be considered successful and complete the commit/merge operation.
+The user will provide a web-hook definition that will include query parameters with the image and command to execute. The side-car use the posted information to execute a job based on the image and command line parameters supplied in the hook.
+During commit/merge, lakeFS will trigger web-hook that will post the request to the side-car, it will create a job to run in the cluster.
 
 
-### New hook definition
+### Kubernetes Job Sidecar
 
-Based on the current actions mechanism, the user will need to write a yaml file and upload it into the repository `_lakefs_actions` folder.
+In order to encapsulate the new functionality, we will use a sidecar in the lakeFS pod that will accept the web-hook requests from lakeFS and create Kubernetes job.
+A request to the side-car will include the image, arguments and if we like to wait for the job for completion.
+The side-car will invoke the request to create job in the Kubernetes cluster.
+In case of waiting for response, the side-car will response to the web-hook on job completion.
+Without waiting for response, the side-car will response as soon as the cluster create job completes.
+
+Using the current actions mechanism, the user will create and upload a yaml file, into the repository's `_lakefs_actions` folder.
 
 Example of an action using the new hook definition:
 
@@ -41,23 +47,19 @@ on:
       - main
 hooks:
   - id: update_tag
-    type: k8s-job
-    description: Create a tag based on last version
+    type: webhook
+    description: Create a tag based on last merge
     properties:
-      image: "myregistry/myhook:4"
-      command: ["python"]
-      args: ["bump-version.py"]
-      env:
-      - name: REPOSITORY
-        value: customers
-      - name: PROJECT
-        value: alpha
+      url: "http://localhost:8008/job"
+      query_params:
+          image: "myregistry/myhook:4"
+          command: ["python"]
+          args: ["bump-version.py"]
 ```
 
-In this example we specified a post merge hook to execute a job. The job will use the user-supplied image `myregistry/myhook:4` with the command `python` using the argument `bump-version.py`.
-The container will have the environment variables populated with REPOSITORY and PROJECT as defined by the user.
-
-The following environment variables will be also populated with the event information:
+In this example we specified a post merge hook to trigger a job creation in cluster using our sidecar.
+The job will use the image `myregistry/myhook:4` with the command `python` using the argument `bump-version.py`.
+The following environment variables will be populated by the sidecar based on the event information triggered by the web hook:
 
 ```
 LAKEFS_HOOK_EVENTTYPE - Type of the event that triggered the action
@@ -72,7 +74,7 @@ LAKEFS_HOOK_COMMITTER - Name of the committer
 LAKEFS_HOOK_COMMIT_METADATA - Commit metadata (json serialized string)
 ```
 
-By default lakeFS will use the following as base definition to schedule a job:
+By default job created by the sidecar, will use the following definition as the base to schedule a job:
 
 ```yaml
 apiVersion: batch/v1
@@ -91,43 +93,41 @@ spec:
         args: []
 ```
 
-Note that the metadata.name, image, command and args will be set by lakeFS.
-Name - unique identifier to identify the specific job execution
-Image, command and args - set based on the hook information
-
+Note that the _metadata.name_, _image_, _command_, _args_ nd the environment variables will be set by the sidecar.
+Name will include a unique identifier specific to the job execution.
 
 *Limit the end-user image use*
 
-Using the lakeFS configuration, we can specify a list of allowed images that the end-user and use in the k8s-job hook:
+Using a configuration file, we can specify a list of allowed images that the end-user can use. The sidecar will validate and reject any request to execute a job which is not allowed in case the `allowed_images` is populated.
 
 ```yaml
-hooks:
-  k8s-job:
-    allowed_images:
-      - rclone/rclone:1.57
-      - alpine
+allowed_images:
+  - rclone/rclone:1.57
+  - alpine
 ```
 
-Each item list will match the `registry/name:tag` used in the hook.
-If the tag is omitted, any tag will be allowed.
+Each item list will match the `registry/name:tag` used in the `image` name. If `tag` is omitted, any tag will be allowed.
 
 
 ### Execution
 
-lakeFS requests job creation from the cluster.  Job information will be captured to the job's log.
-In case the request fails it will log the error and fail the hook execution.
-lakeFS will consider job creation as successful execution. Will log the job information without waiting for the job to complete or capturing the output.
+Using the lakeFS web-hook we can trigger a job creation on our Kubernetes cluster.
+The job information created will be captured and returned as success.
+In case we specify `wait_for_complete: true` as additional query parameter, the sidecar will wait until the job status turns to complete or the request is timed out based on the web-hook parameters.
+
+Note that using `wait_for_complete` will block the web hook, which blocks the commit/merge operation, which blocks writes to the branch. In the time of the call to commit/merge, usually the client request can be also timed out by the load-balancer. So unless we job execution is less than the maximum timeout of any of the component on the way, we do not recommend in the current system to block this operation for a long time as it will cause the failure of commit/merge with timeout.
+
 
 ### Authorizations
 
-Base on the above, lakeFS will require the following permissions:
+Base on the above, lakeFS deployment will require the following permissions:
 
 - `job` get, create and watch
 - `pod` get
 - `pod/log` get, list, watch
 
 The following describes possible `Role` that enables the above.
-Note that we need to add the rules to the current set used by lakefs, this document describes the requirements for this feature.
+Note that we need to add the rules to the current set used by the lakeFS deployment, this document describes the requirements for this feature.
 
 ```
 apiVersion: v1
