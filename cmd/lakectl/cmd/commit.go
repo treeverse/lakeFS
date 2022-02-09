@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	fmtErrInvalidKeyValueFormat = fmt.Errorf(`invalid key/value pair - should be separated by "=""`)
+	fmtErrInvalidKeyValueFormat = `invalid key/value pair - should be separated by "=""`
 	fmtErrEmptyMessage          = `commit with no message without specifying the "--allow-empty-message" flag`
 )
 
@@ -78,7 +78,7 @@ func getKV(cmd *cobra.Command, name string) (map[string]string, error) {
 	for _, pair := range kvList {
 		parts := strings.SplitN(pair, "=", keyValueParts)
 		if len(parts) != keyValueParts {
-			return nil, fmtErrInvalidKeyValueFormat
+			return nil, fmt.Errorf(fmtErrInvalidKeyValueFormat)
 		}
 		kv[parts[0]] = parts[1]
 	}
