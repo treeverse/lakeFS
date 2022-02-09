@@ -10,10 +10,15 @@ import (
 )
 
 var (
-	errInvalidKeyValueFormat    = fmt.Errorf("invalid key/value pair - should be separated by \"=\"")
-	errEmptyMessage             = fmt.Errorf("commit with an empty message without specifying the \"--allow-empty-message\" flag")
-	allowEmptyCommitMessageFlag bool
-	commitCreateTemplate        = `Commit for branch "{{.Branch.Ref}}" completed.
+	fmtErrInvalidKeyValueFormat = fmt.Errorf(`invalid key/value pair - should be separated by "=""`)
+	fmtErrEmptyMessage          = `commit with no message without specifying the "--allow-empty-message" flag`
+)
+
+const (
+	MessageFlagName           = "message"
+	AllowEmptyMessageFlagName = "allow-empty-message"
+	MetaFlagName              = "meta"
+	CommitCreateTemplate      = `Commit for branch "{{.Branch.Ref}}" completed.
 
 ID: {{.Commit.Id|yellow}}
 Message: {{.Commit.Message}}
@@ -21,12 +26,6 @@ Timestamp: {{.Commit.CreationDate|date}}
 Parents: {{.Commit.Parents|join ", "}}
 
 `
-)
-
-const (
-	MessageFlagName           string = "message"
-	AllowEmptyMessageFlagName string = "allow-empty-message"
-	MetaFlagName              string = "meta"
 )
 
 var commitCmd = &cobra.Command{
@@ -39,13 +38,14 @@ var commitCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		message, err := cmd.Flags().GetString(MessageFlagName)
-		if err != nil {
-			DieErr(err)
+
+		message := MustString(cmd.Flags().GetString(MessageFlagName))
+		emptyMessageBool := MustBool(cmd.Flags().GetBool(AllowEmptyMessageFlagName))
+
+		if strings.TrimSpace(message) == "" && !emptyMessageBool {
+			DieFmt(fmtErrEmptyMessage)
 		}
-		if strings.TrimSpace(message) == "" && !allowEmptyCommitMessageFlag {
-			DieErr(errEmptyMessage)
-		}
+
 		branchURI := MustParseRefURI("branch", args[0])
 		Fmt("Branch: %s\n", branchURI.String())
 
@@ -61,7 +61,7 @@ var commitCmd = &cobra.Command{
 		DieOnResponseError(resp, err)
 
 		commit := resp.JSON201
-		Write(commitCreateTemplate, struct {
+		Write(CommitCreateTemplate, struct {
 			Branch *uri.URI
 			Commit *api.Commit
 		}{Branch: branchURI, Commit: commit})
@@ -78,7 +78,7 @@ func getKV(cmd *cobra.Command, name string) (map[string]string, error) {
 	for _, pair := range kvList {
 		parts := strings.SplitN(pair, "=", keyValueParts)
 		if len(parts) != keyValueParts {
-			return nil, errInvalidKeyValueFormat
+			return nil, fmtErrInvalidKeyValueFormat
 		}
 		kv[parts[0]] = parts[1]
 	}
@@ -89,9 +89,8 @@ func getKV(cmd *cobra.Command, name string) (map[string]string, error) {
 func init() {
 	rootCmd.AddCommand(commitCmd)
 
-	commitCmd.Flags().BoolVar(&allowEmptyCommitMessageFlag, AllowEmptyMessageFlagName, false, "allow an empty commit message")
+	commitCmd.Flags().Bool(AllowEmptyMessageFlagName, false, "allow an empty commit message")
 	commitCmd.Flags().StringP(MessageFlagName, "m", "", "commit message")
-	_ = commitCmd.MarkFlagRequired(MessageFlagName)
 
 	commitCmd.Flags().StringSlice(MetaFlagName, []string{}, "key value pair in the form of key=value")
 }
