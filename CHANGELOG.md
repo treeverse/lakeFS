@@ -2,7 +2,7 @@
 
 ## v0.58.1 - 2022-02-09
 - Merge operation optimized by another 20%! (#2884)
-- Improvement the output verbosity of the `lakectl dbt` tool. (#2895)
+- Improved the output verbosity of the `lakectl dbt` tool. (#2895)
 - Usage examples added in `lakectl repo create` command. (#2900)
 - Fixed misleading errors on branch creation. (#2859)
 
