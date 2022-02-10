@@ -1488,9 +1488,10 @@ lakectl commit <branch uri> [flags]
 {:.no_toc}
 
 ```
-  -h, --help             help for commit
-  -m, --message string   commit message
-      --meta strings     key value pair in the form of key=value
+      --allow-empty-message   allow an empty commit message
+  -h, --help                  help for commit
+  -m, --message string        commit message
+      --meta strings          key value pair in the form of key=value
 ```
 
 
