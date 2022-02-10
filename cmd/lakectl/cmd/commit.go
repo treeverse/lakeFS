@@ -9,10 +9,9 @@ import (
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
-var (
-	errInvalidKeyValueFormat = errors.New(`invalid key/value pair - should be separated by "="`)
-	fmtErrEmptyMessage       = `commit with no message without specifying the "--allow-empty-message" flag`
-)
+var errInvalidKeyValueFormat = errors.New(`invalid key/value pair - should be separated by "="`)
+
+const FmtErrEmptyMessage = `commit with no message without specifying the "--allow-empty-message" flag`
 
 const (
 	MessageFlagName           = "message"
@@ -43,7 +42,7 @@ var commitCmd = &cobra.Command{
 		emptyMessageBool := MustBool(cmd.Flags().GetBool(AllowEmptyMessageFlagName))
 
 		if strings.TrimSpace(message) == "" && !emptyMessageBool {
-			DieFmt(fmtErrEmptyMessage)
+			DieFmt(FmtErrEmptyMessage)
 		}
 
 		branchURI := MustParseRefURI("branch", args[0])
