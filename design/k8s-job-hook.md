@@ -23,7 +23,7 @@ Current hooks mechanism described [here](https://docs.lakefs.io/setup/hooks.html
 Enabling additional side-car deployment will enable the current web-hook to trigger, using a side-car a job execution on a Kubernetes cluster.
 
 The user will provide a web-hook definition that will include query parameters with the image and command to execute. The side-car use the posted information to execute a job based on the image and command line parameters supplied in the hook.
-During commit/merge, lakeFS will trigger web-hook that will post the request to the side-car, it will create a job to run in the cluster.
+During commit/merge, lakeFS will trigger web-hook that will post the request to the side-car, the side-car will create a job to run in the cluster.
 
 
 ### Kubernetes Job Sidecar
