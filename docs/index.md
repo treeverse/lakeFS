@@ -43,8 +43,8 @@ Since lakeFS is compatible with the S3 API, all popular applications will work w
 
 <img src="{{ site.baseurl }}/assets/img/s3_branch.png" alt="lakeFS s3 addressing" width="60%" height="60%" />
 
-## The benefits of lakeFS are:
-* Is it **format agnostic**
+## Benefits of lakeFS
+* It is **format agnostic**
 * Your data **stays in place**
 * It helps you prevent data duplication by using **copy-on-write**
 * It is **highly performant** for huge data lakes
