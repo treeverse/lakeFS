@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/textproto"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -151,14 +150,14 @@ func upload(ctx context.Context, client api.ClientWithResponsesInterface, source
 	defer func() {
 		_ = fp.Close()
 	}()
-	filePath := api.StringValue(destURI.Path)
+	objectPath := api.StringValue(destURI.Path)
 	if direct {
-		return helpers.ClientUpload(ctx, client, destURI.Repository, destURI.Ref, filePath, nil, contentType, fp)
+		return helpers.ClientUpload(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp)
 	}
-	return uploadObject(ctx, client, destURI.Repository, destURI.Ref, filePath, contentType, fp)
+	return uploadObject(ctx, client, destURI.Repository, destURI.Ref, objectPath, contentType, fp)
 }
 
-func uploadObject(ctx context.Context, client api.ClientWithResponsesInterface, repoID, branchID, filePath, contentType string, fp io.Reader) (*api.ObjectStats, error) {
+func uploadObject(ctx context.Context, client api.ClientWithResponsesInterface, repoID, branchID, objectPath, contentType string, fp io.Reader) (*api.ObjectStats, error) {
 	pr, pw := io.Pipe()
 	mpw := multipart.NewWriter(pw)
 	mpContentType := mpw.FormDataContentType()
@@ -166,7 +165,7 @@ func uploadObject(ctx context.Context, client api.ClientWithResponsesInterface, 
 		defer func() {
 			_ = pw.Close()
 		}()
-		filename := path.Base(filePath)
+		filename := filepath.Base(objectPath)
 		const fieldName = "content"
 		var err error
 		var cw io.Writer
@@ -192,7 +191,7 @@ func uploadObject(ctx context.Context, client api.ClientWithResponsesInterface, 
 	}()
 
 	resp, err := client.UploadObjectWithBodyWithResponse(ctx, repoID, branchID, &api.UploadObjectParams{
-		Path: filePath,
+		Path: objectPath,
 	}, mpContentType, pr)
 	if err != nil {
 		return nil, err
@@ -236,7 +235,7 @@ var fsUploadCmd = &cobra.Command{
 			}
 			relPath := strings.TrimPrefix(path, source)
 			uri := *pathURI
-			p := filepath.Join(*uri.Path, relPath)
+			p := filepath.ToSlash(filepath.Join(*uri.Path, relPath))
 			uri.Path = &p
 			stat, err := upload(cmd.Context(), client, path, &uri, contentType, direct)
 			if err != nil {
