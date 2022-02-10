@@ -425,6 +425,10 @@ components:
           type: object
           additionalProperties:
             type: string
+        date:
+          description: set date to override creation date in the commit (Unix Epoch in seconds)
+          type: integer
+          format: int64
 
     Merge:
       type: object
