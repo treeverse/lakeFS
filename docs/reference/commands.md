@@ -2545,7 +2545,7 @@ lakectl tag create <tag uri> <commit ref> [flags]
 {:.no_toc}
 
 ```
-lakectl tag create lakefs://some-repo-name/some-tag-name 2397cc9a9d04c20a4e5739b42c1dd3d8ba655c0b3a3b974850895a13d8bf9917
+lakectl tag create lakefs://example-repo/example-tag 2397cc9a9d04c20a4e5739b42c1dd3d8ba655c0b3a3b974850895a13d8bf9917
 ```
 
 #### Options
