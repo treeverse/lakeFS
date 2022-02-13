@@ -98,7 +98,7 @@ Name will include a unique identifier specific to the job execution.
 
 *Limit the end-user image use*
 
-Using a configuration file, we can specify a list of allowed images that the end-user can use. The sidecar will validate and reject any request to execute a job which is not allowed in case the `allowed_images` is populated.
+Using the a configuration file used by the sidecar, we can specify a list of allowed images that the end-user can use. The sidecar will validate and reject any request to execute a job which is not allowed in case the `allowed_images` is populated.
 
 ```yaml
 allowed_images:
