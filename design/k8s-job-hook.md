@@ -20,9 +20,9 @@
 
 Current hooks mechanism described [here](https://docs.lakefs.io/setup/hooks.html)
 
-Enabling additional side-car deployment will enable the current web-hook to trigger, using a side-car a job execution on a Kubernetes cluster.
+Enabling additional side-car as part of lakeFS deployment will enable the current web-hook type to trigger a new job on a Kubernetes cluster.
 
-The user will provide a web-hook definition that will include query parameters with the image and command to execute. The side-car use the posted information to execute a job based on the image and command line parameters supplied in the hook.
+The user will provide a web-hook definition as part of upload action yaml, that will include query parameters with the image and command to execute. The side-car use the posted information to execute a job based on the image and command line parameters supplied in the hook.
 During commit/merge, lakeFS will trigger web-hook that will post the request to the side-car, the side-car will create a job to run in the cluster.
 
 
@@ -55,6 +55,7 @@ hooks:
           image: "myregistry/myhook:4"
           command: ["python"]
           args: ["bump-version.py"]
+      timeout: 30s
 ```
 
 In this example we specified a post merge hook to trigger a job creation in cluster using our sidecar.
@@ -106,7 +107,7 @@ allowed_images:
   - alpine
 ```
 
-Each item list will match the `registry/name:tag` used in the `image` name. If `tag` is omitted, any tag will be allowed.
+Each item in the images list, will match the image name and tag. When tag is missing it will match any given tag.
 
 
 ### Execution
