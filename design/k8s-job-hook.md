@@ -63,7 +63,7 @@ The following environment variables will be populated by the sidecar based on th
 
 ```
 LAKEFS_HOOK_EVENTTYPE - Type of the event that triggered the action
-LAKEFS_HOOK_EVENTTIME - Time of the event that triggered
+LAKEFS_HOOK_EVENTTIME - Time of the event that triggered the action
 LAKEFS_HOOK_ACTIONNAME - Containing Hook Action's name
 LAKEFS_HOOK_HOOKID - ID of the hook
 LAKEFS_HOOK_REPOSITORYID - ID of the repository
