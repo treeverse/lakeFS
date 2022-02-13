@@ -115,7 +115,7 @@ Using the lakeFS web-hook we can trigger a job creation on our Kubernetes cluste
 The job information created will be captured and returned as success.
 In case we specify `wait_for_complete: true` as additional query parameter, the sidecar will wait until the job status turns to complete or the request is timed out based on the web-hook parameters.
 
-Note that using `wait_for_complete` will block the web hook, which blocks the commit/merge operation, which blocks writes to the branch. In the time of the call to commit/merge, usually the client request can be also timed out by the load-balancer. So unless we job execution is less than the maximum timeout of any of the component on the way, we do not recommend in the current system to block this operation for a long time as it will cause the failure of commit/merge with timeout.
+Note that using `wait_for_complete` will block the web hook, which blocks the commit/merge operation, which blocks writes to the branch. In the time of the call to commit/merge, usually the client request can be also timed out by the load-balancer. Job execution lengths for blocking events should be less than any network timeout along the request route.
 
 
 ### Authorizations
