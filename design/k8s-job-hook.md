@@ -6,15 +6,12 @@
 - Enable non-blocking execution for post-commit and post-merge
 - Support successful job completion as condition for the commit and merge operations
 
-
 ## Non Goals
 
 - GitHub Actions - fully maintained, VM with pre-build images to execute pre/post hooks
 - Manage or control any aspect of the Kubernetes Job
 
-
 ## Proposition
-
 
 ### Overview
 
@@ -24,6 +21,11 @@ Enabling additional side-car as part of lakeFS deployment will enable the curren
 
 The user will provide a web-hook definition as part of upload action yaml, that will include query parameters with the image and command to execute. The side-car use the posted information to execute a job based on the image and command line parameters supplied in the hook.
 During commit/merge, lakeFS will trigger web-hook that will post the request to the side-car, the side-car will create a job to run in the cluster.
+
+
+
+![Overview Diagram](diagrams/k8s-job-hook.png)
+
 
 
 ### Kubernetes Job Sidecar
@@ -109,7 +111,6 @@ allowed_images:
 
 Each item in the images list, will match the image name and tag. When tag is missing it will match any given tag.
 
-
 ### Execution
 
 Using the lakeFS web-hook we can trigger a job creation on our Kubernetes cluster.
@@ -117,7 +118,6 @@ The job information created will be captured and returned as success.
 In case we specify `wait_for_complete: true` as additional query parameter, the sidecar will wait until the job status turns to complete or the request is timed out based on the web-hook parameters.
 
 Note that using `wait_for_complete` will block the web hook, which blocks the commit/merge operation, which blocks writes to the branch. In the time of the call to commit/merge, usually the client request can be also timed out by the load-balancer. Job execution lengths for blocking events should be less than any network timeout along the request route.
-
 
 ### Authorizations
 
@@ -170,10 +170,7 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 ```
 
-
 ### Considerations
 
 *Job lifetime* - Once a job is created and executed in the cluster, the lakeFS server will not take ownership of the object. A mechanism should be in place to clean up all jobs lakeFS applied and completed (successfully or not).
 [Automatic Clean-up for Finished Jobs](https://kubernetes.io/docs/concepts/workloads/controllers/ttlafterfinished/) capability is currently found on Kubernetes 1.23 (which we don’t have yet on AWS for example) which can help with that.
-
-
