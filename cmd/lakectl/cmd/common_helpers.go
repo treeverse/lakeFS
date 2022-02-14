@@ -2,15 +2,18 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"text/template"
 	"time"
+	"unicode"
 
 	"github.com/treeverse/lakefs/pkg/uri"
 
@@ -266,4 +269,44 @@ func MustParsePathURI(name, s string) *uri.URI {
 		DieFmt("Invalid '%s': %s", name, uri.ErrInvalidPathURI)
 	}
 	return u
+}
+
+func IsValidAccessKeyID(accessKeyID string) bool {
+	return (len(accessKeyID) == 20 && (strings.HasPrefix(accessKeyID, "ASIA") || strings.HasPrefix(accessKeyID, "AKIA")) && (string(accessKeyID[4]) == "I" || string(accessKeyID[4]) == "J") && (strings.HasSuffix(accessKeyID, "A") || strings.HasSuffix(accessKeyID, "Q")) && IsContainOnlyUpperLettersOrNumber(accessKeyID))
+}
+
+func IsValidSecretAccessKey(secretAcceessKey string) bool {
+	return (IsBase64(secretAcceessKey) && len(secretAcceessKey) == 40)
+}
+
+func IsBase64(s string) bool {
+	_, err := base64.StdEncoding.DecodeString(s)
+	return err == nil
+}
+
+func IsContainOnlyUpperLettersOrNumber(s string) bool {
+	for _, r := range s {
+		if !unicode.IsNumber(r) && !unicode.IsUpper(r) {
+			return false
+		}
+	}
+	return true
+}
+
+func IsValidUrI(URI string) bool {
+	_, err := url.ParseRequestURI(URI)
+	if err != nil {
+		return false
+	}
+
+	u, err := url.Parse(URI)
+	if err != nil || u.Scheme == "" || u.Host == "" {
+		return false
+	}
+
+	return true
+}
+
+func IsValidEndpointUrI(URI string) bool {
+	return (IsValidUrI(URI) && strings.HasSuffix(URI, api.BaseURL))
 }

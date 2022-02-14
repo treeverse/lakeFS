@@ -26,7 +26,16 @@ func Lakectl() string {
 	lakectlCmdline :=
 		"LAKECTL_CREDENTIALS_ACCESS_KEY_ID=" + viper.GetString("access_key_id") +
 			" LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY=" + viper.GetString("secret_access_key") +
-			" LAKECTL_SERVER_ENDPOINT_URL=" + viper.GetString("endpoint_url") +
+			" LAKECTL_SERVER_ENDPOINT_URL=" + viper.GetString("endpoint_url") + 
+			" " + lakectlLocation()
+
+	return lakectlCmdline
+}
+func LakectlWithParams(accessKeyID, secretAcceessKey, endPointURL string) string {
+	lakectlCmdline :=
+		"LAKECTL_CREDENTIALS_ACCESS_KEY_ID=" + accessKeyID +
+			" LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY=" + secretAcceessKey +
+			" LAKECTL_SERVER_ENDPOINT_URL=" + endPointURL +
 			" " + lakectlLocation()
 
 	return lakectlCmdline

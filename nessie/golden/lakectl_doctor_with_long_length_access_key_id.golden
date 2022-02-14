@@ -1,0 +1,3 @@
+access_key_id value looks suspicious...
+Login: json: cannot unmarshal string into Go value of type api.Error
+Error executing command.
