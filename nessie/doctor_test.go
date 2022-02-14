@@ -1,6 +1,8 @@
 package nessie
 
 import (
+	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/spf13/viper"
@@ -10,7 +12,14 @@ func TestDoctor(t *testing.T) {
 	accessKeyID := viper.GetString("access_key_id")
 	secretAccessKey := viper.GetString("secret_access_key")
 	endPointURL := viper.GetString("endpoint_url") + "/api/v1"
+	emptyConfigFileName := "empty.yaml"
+	wrongFormatFileName := "wrong_format.yaml"
+	os.Create(emptyConfigFileName)
+	ioutil.WriteFile(wrongFormatFileName, []byte("nothing"), 0644)
 	RunCmdAndVerifySuccessWithFile(t, LakectlWithParams(accessKeyID, secretAccessKey, endPointURL)+" doctor", false, "lakectl_doctor_ok", emptyVars)
+	RunCmdAndVerifyFailureWithFile(t, lakectlLocation()+" doctor -c "+wrongFormatFileName, false, "lakectl_doctor_wrong_format_file", emptyVars)
+	RunCmdAndVerifyFailureWithFile(t, lakectlLocation()+" doctor -c "+emptyConfigFileName, false, "lakectl_doctor_empty_file", emptyVars)
+	RunCmdAndVerifyFailureWithFile(t, lakectlLocation()+" doctor -c not_exited.yaml", false, "lakectl_doctor_not_existed_file", emptyVars)
 	RunCmdAndVerifyFailureWithFile(t, LakectlWithParams(accessKeyID, secretAccessKey, endPointURL+"1")+" doctor", false, "lakectl_doctor_wrong_endpoint", emptyVars)
 	RunCmdAndVerifyFailureWithFile(t, LakectlWithParams(accessKeyID, secretAccessKey, "wrong_uri")+" doctor", false, "lakectl_doctor_wrong_uri_format_endpoint", emptyVars)
 	RunCmdAndVerifyFailureWithFile(t, LakectlWithParams("AKIAJZZZZZZZZZZZZZZQ", secretAccessKey, endPointURL)+" doctor", false, "lakectl_doctor_wrong_access_key_id", emptyVars)
