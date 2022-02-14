@@ -211,7 +211,8 @@ services:
     entrypoint: dbt
 
   notebook:
-    image: jupyter/pyspark-notebook:notebook-6.4.6
+    build: jupyter
+    user: root
     ports:
       - 8888:8888
     volumes:
