@@ -1,3 +1,0 @@
-error reading configuration file: While parsing config: yaml: unmarshal errors:
-  line 1: cannot unmarshal !!str `nothing` into map[string]interface {}
-Error executing command.

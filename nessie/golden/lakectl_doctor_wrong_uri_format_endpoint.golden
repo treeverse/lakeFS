@@ -1,2 +1,4 @@
-Wrong URI format for server.endpoint_url: wrong_uri
+Suspicious URI format for server.endpoint_url: wrong_uri
+It looks like you have a problem with your '.lakectl.yaml' file. 
+Probably your endpoint url is wrong.
 Error executing command.

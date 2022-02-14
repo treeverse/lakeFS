@@ -1,2 +1,4 @@
-Wrong URI format for server.endpoint_url: http://localhost:8000/api/v11
+Suspicious URI format for server.endpoint_url: http://localhost:8000/api/v11
+It looks like you have a problem with your '.lakectl.yaml' file. 
+Probably your endpoint url is wrong.
 Error executing command.

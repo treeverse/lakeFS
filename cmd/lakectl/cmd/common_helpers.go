@@ -279,8 +279,8 @@ func IsValidAccessKeyID(accessKeyID string) bool {
 		IsContainOnlyUpperLettersOrNumber(accessKeyID))
 }
 
-func IsValidSecretAccessKey(secretAcceessKey string) bool {
-	return (IsBase64(secretAcceessKey) && len(secretAcceessKey) == 40)
+func IsValidSecretAccessKey(secretAccessKey string) bool {
+	return (IsBase64(secretAccessKey) && len(secretAccessKey) == 40)
 }
 
 func IsBase64(s string) bool {

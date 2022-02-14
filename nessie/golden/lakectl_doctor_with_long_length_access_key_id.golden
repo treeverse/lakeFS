@@ -1,6 +1,0 @@
-access_key_id value looks suspicious...
-It looks like you have a problem with your '.lakectl.yaml' file. 
-It is possible that the access_key_id' or 'secret_access_key' you supplied are wrong 
-
-
-Error executing command.
