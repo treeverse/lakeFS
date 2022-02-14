@@ -63,7 +63,7 @@ var doctorCmd = &cobra.Command{
 		}
 
 		serverEndpoint := cfg.Values.Server.EndpointURL
-		if !IsValidEndpointUrI(serverEndpoint) {
+		if !IsValidEndpointURI(serverEndpoint) {
 			DieFmt("Wrong URI format for server.endpoint_url: %v", serverEndpoint)
 		}
 

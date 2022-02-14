@@ -31,6 +31,7 @@ func Lakectl() string {
 
 	return lakectlCmdline
 }
+
 func LakectlWithParams(accessKeyID, secretAcceessKey, endPointURL string) string {
 	lakectlCmdline :=
 		"LAKECTL_CREDENTIALS_ACCESS_KEY_ID=" + accessKeyID +

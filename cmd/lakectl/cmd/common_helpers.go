@@ -307,6 +307,6 @@ func IsValidUrI(URI string) bool {
 	return true
 }
 
-func IsValidEndpointUrI(URI string) bool {
+func IsValidEndpointURI(URI string) bool {
 	return (IsValidUrI(URI) && strings.HasSuffix(URI, api.BaseURL))
 }
