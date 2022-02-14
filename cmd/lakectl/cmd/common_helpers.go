@@ -272,7 +272,11 @@ func MustParsePathURI(name, s string) *uri.URI {
 }
 
 func IsValidAccessKeyID(accessKeyID string) bool {
-	return (len(accessKeyID) == 20 && (strings.HasPrefix(accessKeyID, "ASIA") || strings.HasPrefix(accessKeyID, "AKIA")) && (string(accessKeyID[4]) == "I" || string(accessKeyID[4]) == "J") && (strings.HasSuffix(accessKeyID, "A") || strings.HasSuffix(accessKeyID, "Q")) && IsContainOnlyUpperLettersOrNumber(accessKeyID))
+	return (len(accessKeyID) == 20 &&
+		(strings.HasPrefix(accessKeyID, "ASIA") || strings.HasPrefix(accessKeyID, "AKIA")) &&
+		(string(accessKeyID[4]) == "I" || string(accessKeyID[4]) == "J") &&
+		(strings.HasSuffix(accessKeyID, "A") || strings.HasSuffix(accessKeyID, "Q")) &&
+		IsContainOnlyUpperLettersOrNumber(accessKeyID))
 }
 
 func IsValidSecretAccessKey(secretAcceessKey string) bool {
