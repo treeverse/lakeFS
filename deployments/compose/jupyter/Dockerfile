@@ -7,5 +7,5 @@ ENV SPARK_HOME=/usr/local/spark-3.2.0-bin-hadoop3.2
 USER root
 
 RUN apt update -y && apt install -y curl
-RUN curl https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/1.11.901/aws-java-sdk-bundle-1.11.901.jar -o /usr/local/spark-3.2.0-bin-hadoop3.2/jars/aws-java-sdk-bundle-1.11.901.jar
-RUN curl https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.3.1/hadoop-aws-3.3.1.jar -o /usr/local/spark-3.2.0-bin-hadoop3.2/jars/hadoop-aws-3.3.1.jar
+RUN curl https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/${AWS_SDK_VERSION}/aws-java-sdk-bundle-${AWS_SDK_VERSION}.jar -o ${SPARK_HOME}/jars/aws-java-sdk-bundle-${AWS_SDK_VERSION}.jar
+RUN curl https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/${HADOOP_VERSION}/hadoop-aws-${HADOOP_VERSION}.jar -o ${SPARK_HOME}/jars/hadoop-aws-${HADOOP_VERSION}.jar
