@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
@@ -18,16 +19,16 @@ var doctorCmd = &cobra.Command{
 	Use:   "doctor",
 	Short: "Run a basic diagnosis of the LakeFS configuration",
 	Run: func(cmd *cobra.Command, args []string) {
-		// Find home directory.
-		home, err := homedir.Dir()
-		if err != nil {
-			DieErr(err)
+		if viper.ConfigFileUsed() == "" {
+			// Find home directory.
+			home, err := homedir.Dir()
+			if err != nil {
+				DieErr(err)
+			}
+			// Setup default config file
+			viper.SetConfigFile(filepath.Join(home, ".lakectl.yaml"))
 		}
 
-		// Search config in home directory with name ".lakefs" (without extension).
-		viper.AddConfigPath(home)
-		viper.SetConfigType("yaml")
-		viper.SetConfigName(".lakectl")
 		viper.SetEnvPrefix("LAKECTL")
 		viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_")) // support nested config
 		viper.AutomaticEnv()                                   // read in environment variables that match
