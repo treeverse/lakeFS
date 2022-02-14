@@ -1733,17 +1733,24 @@ lakectl docs [outfile] [flags]
   -h, --help   help for docs
 ```
 
+
+
 ### lakectl doctor
 
-This command does a basic diagnosis of lakeFS configuration.
+Run a basic diagnosis of the LakeFS configuration
 
+```
+lakectl doctor [flags]
+```
 
 #### Options
 {:.no_toc}
 
 ```
-  -h, --help   help for docs
+  -h, --help   help for doctor
 ```
+
+
 
 ### lakectl fs
 
