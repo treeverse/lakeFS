@@ -212,7 +212,6 @@ services:
 
   notebook:
     build: jupyter
-    user: root
     ports:
       - 8888:8888
     volumes:
