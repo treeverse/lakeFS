@@ -222,3 +222,4 @@ services:
 networks:
   default:
     name: bagel
+
