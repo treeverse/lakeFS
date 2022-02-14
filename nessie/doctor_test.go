@@ -14,7 +14,9 @@ func TestDoctor(t *testing.T) {
 	endPointURL := viper.GetString("endpoint_url") + "/api/v1"
 	emptyConfigFileName := "empty.yaml"
 	wrongFormatFileName := "wrong_format.yaml"
+	defaultConfigPath := "/root/.lakectl.yaml"
 	os.Create(emptyConfigFileName)
+	os.Create(defaultConfigPath)
 	ioutil.WriteFile(wrongFormatFileName, []byte("nothing"), 0644)
 	RunCmdAndVerifySuccessWithFile(t, LakectlWithParams(accessKeyID, secretAccessKey, endPointURL)+" doctor", false, "lakectl_doctor_ok", emptyVars)
 	RunCmdAndVerifyFailureWithFile(t, lakectlLocation()+" doctor -c "+wrongFormatFileName, false, "lakectl_doctor_wrong_format_file", emptyVars)
