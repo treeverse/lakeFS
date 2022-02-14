@@ -81,13 +81,8 @@ var doctorCmd = &cobra.Command{
 		}
 
 		login, err := client.LoginWithResponse(cmd.Context(), loginReq)
-		if err != nil {
-			fmt.Print("It looks like you have a problem with your '.lakectl.yaml' file. \nIt is possible that the access_key_id' or 'secret_access_key' you supplied are wrong \n\n")
-			DieFmt("Login: %v", err.Error())
-		}
-		if login.JSON200 == nil {
-			fmt.Print("It looks like you have a problem with your '.lakectl.yaml' file. \nIt is possible that the access_key_id' or 'secret_access_key' you supplied are wrong \n\n")
-			DieFmt("Failed to login: %v", login.Status())
+		if err != nil || login.JSON200 == nil {
+			DieFmt("It looks like you have a problem with your '.lakectl.yaml' file. \nIt is possible that the access_key_id' or 'secret_access_key' you supplied are wrong \n\n")
 		}
 
 		rsp, _ := client.ListRepositoriesWithResponse(cmd.Context(), &api.ListRepositoriesParams{})
