@@ -293,13 +293,13 @@ func IsContainOnlyUpperLettersOrNumber(s string) bool {
 	return true
 }
 
-func IsValidUrI(URI string) bool {
-	_, err := url.ParseRequestURI(URI)
+func IsValidURI(uri string) bool {
+	_, err := url.ParseRequestURI(uri)
 	if err != nil {
 		return false
 	}
 
-	u, err := url.Parse(URI)
+	u, err := url.Parse(uri)
 	if err != nil || u.Scheme == "" || u.Host == "" {
 		return false
 	}
@@ -307,6 +307,6 @@ func IsValidUrI(URI string) bool {
 	return true
 }
 
-func IsValidEndpointURI(URI string) bool {
-	return (IsValidUrI(URI) && strings.HasSuffix(URI, api.BaseURL))
+func IsValidEndpointURI(uri string) bool {
+	return (IsValidURI(uri) && strings.HasSuffix(uri, api.BaseURL))
 }
