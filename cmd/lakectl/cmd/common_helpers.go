@@ -10,10 +10,10 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"strings"
 	"text/template"
 	"time"
-	"unicode"
 
 	"github.com/treeverse/lakefs/pkg/uri"
 
@@ -29,6 +29,8 @@ var noColorRequested = false
 
 // ErrInvalidValueInList is an error returned when a parameter of type list contains an empty string
 var ErrInvalidValueInList = errors.New("empty string in list")
+
+var uppersAndDigitsRegexp = regexp.MustCompile(`^[0-9A-Z]+$`)
 
 const (
 	LakectlInteractive        = "LAKECTL_INTERACTIVE"
@@ -289,12 +291,7 @@ func IsBase64(s string) bool {
 }
 
 func IsContainOnlyUpperLettersOrNumber(s string) bool {
-	for _, r := range s {
-		if !unicode.IsNumber(r) && !unicode.IsUpper(r) {
-			return false
-		}
-	}
-	return true
+	return uppersAndDigitsRegexp.MatchString(s)
 }
 
 func IsValidURI(uri string) bool {

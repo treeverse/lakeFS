@@ -32,10 +32,10 @@ func Lakectl() string {
 	return lakectlCmdline
 }
 
-func LakectlWithParams(accessKeyID, secretAcceessKey, endPointURL string) string {
+func LakectlWithParams(accessKeyID, secretAccessKey, endPointURL string) string {
 	lakectlCmdline :=
 		"LAKECTL_CREDENTIALS_ACCESS_KEY_ID=" + accessKeyID +
-			" LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY=" + secretAcceessKey +
+			" LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY=" + secretAccessKey +
 			" LAKECTL_SERVER_ENDPOINT_URL=" + endPointURL +
 			" " + lakectlLocation()
 
