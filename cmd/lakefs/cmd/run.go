@@ -96,7 +96,7 @@ var runCmd = &cobra.Command{
 		viper.WatchConfig()
 		viper.OnConfigChange(func(in fsnotify.Event) {
 			lvl := viper.GetString(config.LoggingLevelKey)
-			fmt.Println("Changing log level to", lvl)
+			logger.WithField("toLevel", lvl).Info("Changing log level")
 			logging.SetLevel(lvl)
 		})
 
