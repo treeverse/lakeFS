@@ -30,7 +30,7 @@ var noColorRequested = false
 // ErrInvalidValueInList is an error returned when a parameter of type list contains an empty string
 var ErrInvalidValueInList = errors.New("empty string in list")
 
-var uppersAndDigitsRegexp = regexp.MustCompile(`^[0-9A-Z]+$`)
+var accessKeyRegexp = regexp.MustCompile(`^A[K|S]IA[I|J][A-Z0-9]{14}[A|Q]$`)
 
 const (
 	LakectlInteractive        = "LAKECTL_INTERACTIVE"
@@ -274,11 +274,7 @@ func MustParsePathURI(name, s string) *uri.URI {
 }
 
 func IsValidAccessKeyID(accessKeyID string) bool {
-	return (len(accessKeyID) == 20 &&
-		(strings.HasPrefix(accessKeyID, "ASIA") || strings.HasPrefix(accessKeyID, "AKIA")) &&
-		(string(accessKeyID[4]) == "I" || string(accessKeyID[4]) == "J") &&
-		(strings.HasSuffix(accessKeyID, "A") || strings.HasSuffix(accessKeyID, "Q")) &&
-		IsContainOnlyUpperLettersOrNumber(accessKeyID))
+	return accessKeyRegexp.MatchString(accessKeyID)
 }
 
 func IsValidSecretAccessKey(secretAccessKey string) bool {
@@ -288,10 +284,6 @@ func IsValidSecretAccessKey(secretAccessKey string) bool {
 func IsBase64(s string) bool {
 	_, err := base64.StdEncoding.DecodeString(s)
 	return err == nil
-}
-
-func IsContainOnlyUpperLettersOrNumber(s string) bool {
-	return uppersAndDigitsRegexp.MatchString(s)
 }
 
 func IsValidURI(uri string) bool {
