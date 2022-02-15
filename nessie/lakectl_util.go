@@ -33,7 +33,7 @@ func LakectlWithParams(accessKeyID, secretAccessKey, endPointURL string) string 
 }
 
 func Lakectl() string {
-	return LakectlWithParams(viper.GetString("access_key_id"), viper.GetString("secret_access_key") , viper.GetString("endpoint_url"))
+	return LakectlWithParams(viper.GetString("access_key_id"), viper.GetString("secret_access_key"), viper.GetString("endpoint_url"))
 }
 
 func runShellCommand(command string, isTerminal bool) ([]byte, error) {
