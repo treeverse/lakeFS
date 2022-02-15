@@ -1737,7 +1737,7 @@ lakectl docs [outfile] [flags]
 
 ### lakectl doctor
 
-Run a basic diagnosis of the LakeFS configuration
+Run a basic diagnosis of lakectl configuration
 
 ```
 lakectl doctor [flags]

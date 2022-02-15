@@ -81,7 +81,7 @@ func TestIsValidURI(t *testing.T) {
 		args args
 		want bool
 	}{
-		{name: "valid uri", args: args{uri: "lakefs://main.com/side"}, want: true},
+		{name: "valid uri", args: args{uri: "https://main.com/side"}, want: true},
 		{name: "invalid uri", args: args{uri: "not_uri"}, want: false},
 	}
 	for _, tt := range tests {

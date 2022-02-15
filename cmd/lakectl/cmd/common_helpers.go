@@ -282,7 +282,7 @@ func IsValidAccessKeyID(accessKeyID string) bool {
 }
 
 func IsValidSecretAccessKey(secretAccessKey string) bool {
-	return (IsBase64(secretAccessKey) && len(secretAccessKey) == 40)
+	return IsBase64(secretAccessKey) && len(secretAccessKey) == 40
 }
 
 func IsBase64(s string) bool {
