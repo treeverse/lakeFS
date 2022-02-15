@@ -16,6 +16,7 @@ Available Commands:
   config          Create/update local lakeFS configuration
   dbt             Integration with dbt commands
   diff            Show changes between two commits, or the currently uncommitted changes
+  doctor          Run a basic diagnosis of the LakeFS configuration
   fs              View and manipulate objects
   gc              Manage garbage collection configuration
   help            Help about any command

@@ -45,7 +45,7 @@ var doctorCmd = &cobra.Command{
 			}
 			if rsp.JSON401 != nil {
 				fmt.Println(rsp.JSON401.Message)
-				DieFmt("It looks like you have a problem with your '.lakectl.yaml' file. \nIt is possible that the access_key_id' or 'secret_access_key' you supplied are wrong.")
+				DieFmt("It looks like you have a problem with your '.lakectl.yaml' file. \nIt is possible that the 'access_key_id' or 'secret_access_key' you supplied are wrong.")
 			}
 			if rsp.HTTPResponse != nil {
 				// In case we get the "not found" HTML page (the status is 200 and not 404 in this case)
