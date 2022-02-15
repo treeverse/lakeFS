@@ -27,6 +27,7 @@ require (
 	github.com/dlmiddlecote/sqlstats v1.0.2
 	github.com/docker/cli v20.10.10+incompatible // indirect
 	github.com/docker/docker v20.10.10+incompatible // indirect
+	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/georgysavva/scany v0.2.7
 	github.com/getkin/kin-openapi v0.53.0
 	github.com/go-chi/chi/v5 v5.0.0
