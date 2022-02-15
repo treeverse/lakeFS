@@ -29,8 +29,8 @@ var doctorCmd = &cobra.Command{
 					return
 				}
 				if rsp.JSON401 != nil {
-					fmt.Println(rsp.JSON401.Message)
 					fmt.Println("It looks like you have a problem with your '.lakectl.yaml' file. \nIt is possible that the 'access_key_id' or 'secret_access_key' you supplied are wrong.")
+					fmt.Println(rsp.JSON401.Message)
 				} else {
 					// In case we get the "not found" HTML page (the status is 200 and not 404 in this case)
 					if rsp.HTTPResponse != nil && rsp.HTTPResponse.StatusCode == 200 {
@@ -44,6 +44,8 @@ var doctorCmd = &cobra.Command{
 						}
 					}
 				}
+			} else {
+				fmt.Println("It looks like you have a problem with your '.lakectl.yaml' file.")
 			}
 
 		}
