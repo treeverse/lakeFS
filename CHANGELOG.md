@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.59.0 - 2022-02-15
+- lakectl: Convert windows paths to S3 style paths on upload (#2932)
+- lakectl: Allow empty commit message with a specified flag (#2927)
+- lakefs: Live configuration reload will change logging level (#2949)
+
 ## v0.58.1 - 2022-02-09
 - Merge operation optimized by another 20%! (#2884)
 - Improved the output verbosity of the `lakectl dbt` tool. (#2895)
