@@ -1,2 +1,3 @@
-error reading configuration file: open not_exited.yaml: no such file or directory
+error reading configuration file: open not_exits.yaml: no such file or directory
 Error executing command.
+You can try to run the 'kubectl doctor' command in order to find if there is a configuration issue in your environment.

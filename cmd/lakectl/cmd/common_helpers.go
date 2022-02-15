@@ -292,16 +292,7 @@ func IsBase64(s string) bool {
 
 func IsValidURI(uri string) bool {
 	_, err := url.ParseRequestURI(uri)
-	if err != nil {
-		return false
-	}
-
-	u, err := url.Parse(uri)
-	if err != nil || u.Scheme == "" || u.Host == "" {
-		return false
-	}
-
-	return true
+	return err == nil
 }
 
 func IsValidEndpointURI(uri string) bool {
