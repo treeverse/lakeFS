@@ -211,9 +211,14 @@ services:
     entrypoint: dbt
 
   notebook:
-    image: jupyter/pyspark-notebook:notebook-6.4.6
+    build: jupyter
     ports:
       - 8888:8888
     volumes:
       - ./etc/jupyter_notebook_config.py:/home/jovyan/.jupyter/jupyter_notebook_config.py
       - ./etc/hive-site.xml:/usr/local/spark/conf/hive-site.xml
+
+networks:
+  default:
+    name: bagel
+
