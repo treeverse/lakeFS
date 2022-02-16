@@ -14,16 +14,16 @@ spark:
       threads: 4
       connect_timeout: 60
 
-      branch:
-        method: thrift
-        type: spark
-        schema: <BRANCH-SCHEMA>
-        user: admin
-        password: admin
-        host: spark-thrift
-        port: 10000
-        connect_retries: 5
-        connect_timeout: 60
+    branch:
+      method: thrift
+      type: spark
+      schema: <BRANCH-SCHEMA>
+      user: admin
+      password: admin
+      host: spark-thrift
+      port: 10000
+      connect_retries: 5
+      connect_timeout: 60
 
 trino:
   target: main
@@ -37,7 +37,7 @@ trino:
       database: s3 # equal to presto trino catalog
       host: trino
       port: 8080
-      schema: test
+      schema: dbt_main
       threads: 1
 
     branch:
