@@ -50,26 +50,3 @@ func TestIsValidSecretAccessKey(t *testing.T) {
 		})
 	}
 }
-
-
-func TestIsValidEndpointURI(t *testing.T) {
-	type args struct {
-		uri string
-	}
-	tests := []struct {
-		name string
-		args args
-		want bool
-	}{
-		{name: "valid api uri", args: args{uri: "http://main.com/side/api/v1"}, want: true},
-		{name: "invalid api uri", args: args{uri: "http://main.com/side/api/v11"}, want: false},
-		{name: "invalid uri", args: args{uri: "not_uri"}, want: false},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := IsValidEndpointURI(tt.args.uri); got != tt.want {
-				t.Errorf("IsValidEndpointURI() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}

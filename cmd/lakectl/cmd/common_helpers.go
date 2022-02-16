@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"regexp"
 	"strings"
@@ -26,8 +25,6 @@ import (
 
 var isTerminal = true
 var noColorRequested = false
-
-var tryDoctorText = "You can try to run the 'kubectl doctor' command in order to find if there is a configuration issue in your environment."
 
 // ErrInvalidValueInList is an error returned when a parameter of type list contains an empty string
 var ErrInvalidValueInList = errors.New("empty string in list")
@@ -161,7 +158,6 @@ func Write(tpl string, data interface{}) {
 
 func Die(err string, code int) {
 	WriteTo(DeathMessage, struct{ Error string }{err}, os.Stderr)
-	fmt.Println(tryDoctorText)
 	os.Exit(code)
 }
 
@@ -190,7 +186,6 @@ func DieErr(err error) {
 	default:
 		WriteTo(DeathMessage, ErrData{Error: err.Error()}, os.Stderr)
 	}
-	fmt.Println(tryDoctorText)
 	os.Exit(1)
 }
 
@@ -288,13 +283,4 @@ func IsValidSecretAccessKey(secretAccessKey string) bool {
 func IsBase64(s string) bool {
 	_, err := base64.StdEncoding.DecodeString(s)
 	return err == nil
-}
-
-func IsValidURI(uri string) bool {
-	_, err := url.ParseRequestURI(uri)
-	return err == nil
-}
-
-func IsValidEndpointURI(uri string) bool {
-	return (IsValidURI(uri) && strings.HasSuffix(uri, api.BaseURL))
 }

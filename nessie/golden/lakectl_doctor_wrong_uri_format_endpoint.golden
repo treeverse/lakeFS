@@ -1,3 +1,4 @@
+Get "/wrong_uri/repositories": unsupported protocol scheme ""
 It looks like you have a problem with your `/root/.lakectl.yaml` file.
 Probably your endpoint url is wrong.
-Suspicious URI format for server.endpoint_url: wrong_uri
+Suspicious URI format for server.endpoint_url: wrong_uri, doesn't have `/api/v1` suffix.
