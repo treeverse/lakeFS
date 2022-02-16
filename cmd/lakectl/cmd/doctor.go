@@ -14,7 +14,7 @@ import (
 var (
 	ErrCredential       = errors.New("credential error")
 	ErrWrongEndpointURI = errors.New("wrong endpoint_uri error")
-	ErrUnknownConfig	= errors.New("unknown configuratioin error")
+	ErrUnknownConfig    = errors.New("unknown configuratioin error")
 )
 
 // doctorCmd represents the doctor command
