@@ -42,7 +42,7 @@ var doctorCmd = &cobra.Command{
 
 		secretAccessKey := cfg.Values.Credentials.SecretAccessKey
 		if !IsValidSecretAccessKey(secretAccessKey) {
-			Fmt("secret_access_key value looks suspicious...")
+			Fmt("secret_access_key value looks suspicious...\n")
 		}
 
 		serverEndpoint := cfg.Values.Server.EndpointURL
