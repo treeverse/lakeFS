@@ -25,6 +25,7 @@ var doctorCmd = &cobra.Command{
 		err := ListRepositoriesAndAnalyze(cmd.Context())
 		if err == nil {
 			Fmt("LakeFS doctor could not find any configuration issues\n")
+			return
 		}
 		configFileName := viper.GetViper().ConfigFileUsed()
 		Fmt("It looks like you have a problem with your `%v` file.\n", configFileName)
