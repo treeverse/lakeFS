@@ -60,6 +60,13 @@ type testRange struct {
 	records []testValueRecord
 }
 
+type testRunResult struct {
+	mergeStrategies     []graveler.MergeStrategy
+	expectedActions     []writeAction
+	conflictExpectedIdx *int
+	expectedErr         error
+}
+
 func createIter(tr []testRange) committed.Iterator {
 	iter := testutil.NewFakeIterator()
 	for _, rng := range tr {
@@ -80,12 +87,10 @@ func createIter(tr []testRange) committed.Iterator {
 
 func Test_merge(t *testing.T) {
 	tests := map[string]struct {
-		baseRange           []testRange
-		sourceRange         []testRange
-		destRange           []testRange
-		expectedActions     []writeAction
-		conflictExpectedIdx *int
-		expectedErr         error
+		baseRange      []testRange
+		sourceRange    []testRange
+		destRange      []testRange
+		expectedResult []testRunResult
 	}{
 		"dest range added before": {
 			baseRange: []testRange{{
@@ -100,18 +105,21 @@ func Test_merge(t *testing.T) {
 				{rng: committed.Range{ID: "dest:k1-k2", MinKey: committed.Key("k1"), MaxKey: committed.Key("k2"), Count: 2, EstimatedSize: 1234}},
 				{rng: committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234}},
 			},
-			conflictExpectedIdx: nil,
-			expectedActions: []writeAction{
-				{
-					action: actionTypeWriteRange,
-					rng:    committed.Range{ID: "dest:k1-k2", MinKey: committed.Key("k1"), MaxKey: committed.Key("k2"), Count: 2, EstimatedSize: 1234},
+			expectedResult: []testRunResult{{
+				mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyNone, graveler.MergeStrategyOurs, graveler.MergeStrategyTheirs},
+				conflictExpectedIdx: nil,
+				expectedActions: []writeAction{
+					{
+						action: actionTypeWriteRange,
+						rng:    committed.Range{ID: "dest:k1-k2", MinKey: committed.Key("k1"), MaxKey: committed.Key("k2"), Count: 2, EstimatedSize: 1234},
+					},
+					{
+						action: actionTypeWriteRange,
+						rng:    committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234},
+					},
 				},
-				{
-					action: actionTypeWriteRange,
-					rng:    committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234},
-				},
-			},
-			expectedErr: nil,
+				expectedErr: nil,
+			}},
 		},
 		"source range added before": {
 			baseRange: []testRange{
@@ -124,17 +132,20 @@ func Test_merge(t *testing.T) {
 			destRange: []testRange{
 				{rng: committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1024}},
 			},
-			conflictExpectedIdx: nil,
-			expectedActions: []writeAction{
-				{
-					action: actionTypeWriteRange,
-					rng:    committed.Range{ID: "source:k1-k2", MinKey: committed.Key("k1"), MaxKey: committed.Key("k2"), Count: 2, EstimatedSize: 1024},
+			expectedResult: []testRunResult{{
+				mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyNone, graveler.MergeStrategyOurs, graveler.MergeStrategyTheirs},
+				conflictExpectedIdx: nil,
+				expectedActions: []writeAction{
+					{
+						action: actionTypeWriteRange,
+						rng:    committed.Range{ID: "source:k1-k2", MinKey: committed.Key("k1"), MaxKey: committed.Key("k2"), Count: 2, EstimatedSize: 1024},
+					},
+					{
+						action: actionTypeWriteRange,
+						rng:    committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1024},
+					},
 				},
-				{
-					action: actionTypeWriteRange,
-					rng:    committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1024},
-				},
-			},
+			}},
 		},
 		"source range removed before": {
 			baseRange: []testRange{
@@ -148,13 +159,16 @@ func Test_merge(t *testing.T) {
 				{rng: committed.Range{ID: "base:k1-k2", MinKey: committed.Key("k1"), MaxKey: committed.Key("k2"), Count: 2, EstimatedSize: 1024}},
 				{rng: committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1024}},
 			},
-			conflictExpectedIdx: nil,
-			expectedActions: []writeAction{
-				{
-					action: actionTypeWriteRange,
-					rng:    committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1024},
+			expectedResult: []testRunResult{{
+				mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyNone, graveler.MergeStrategyOurs, graveler.MergeStrategyTheirs},
+				conflictExpectedIdx: nil,
+				expectedActions: []writeAction{
+					{
+						action: actionTypeWriteRange,
+						rng:    committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1024},
+					},
 				},
-			},
+			}},
 		},
 		"source range inner change": {
 			baseRange: []testRange{
@@ -173,13 +187,16 @@ func Test_merge(t *testing.T) {
 					{"k3", "base:k3"},
 				}},
 			},
-			conflictExpectedIdx: nil,
-			expectedActions: []writeAction{
-				{
-					action: actionTypeWriteRange,
-					rng:    committed.Range{ID: "source:k1-k3", MinKey: committed.Key("k1"), MaxKey: committed.Key("k3"), EstimatedSize: 1024},
+			expectedResult: []testRunResult{{
+				mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyNone, graveler.MergeStrategyOurs, graveler.MergeStrategyTheirs},
+				conflictExpectedIdx: nil,
+				expectedActions: []writeAction{
+					{
+						action: actionTypeWriteRange,
+						rng:    committed.Range{ID: "source:k1-k3", MinKey: committed.Key("k1"), MaxKey: committed.Key("k3"), EstimatedSize: 1024},
+					},
 				},
-			},
+			}},
 		},
 		"dest range inner change": {
 			baseRange: []testRange{
@@ -201,14 +218,17 @@ func Test_merge(t *testing.T) {
 					{"k3", "dest:k3"},
 				}},
 			},
-			conflictExpectedIdx: nil,
-			expectedActions: []writeAction{
-				{
-					action: actionTypeWriteRange,
-					rng:    committed.Range{ID: "dest:k1-k3", MinKey: committed.Key("k1"), MaxKey: committed.Key("k3"), EstimatedSize: 1024},
+			expectedResult: []testRunResult{{
+				mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyNone, graveler.MergeStrategyOurs, graveler.MergeStrategyTheirs},
+				conflictExpectedIdx: nil,
+				expectedActions: []writeAction{
+					{
+						action: actionTypeWriteRange,
+						rng:    committed.Range{ID: "dest:k1-k3", MinKey: committed.Key("k1"), MaxKey: committed.Key("k3"), EstimatedSize: 1024},
+					},
 				},
-			},
-			expectedErr: nil,
+				expectedErr: nil,
+			}},
 		},
 		"source range append after": {
 			baseRange: []testRange{
@@ -231,28 +251,31 @@ func Test_merge(t *testing.T) {
 					{"k3", "base:k3"},
 				}},
 			},
-			conflictExpectedIdx: nil,
-			expectedActions: []writeAction{
-				{
-					action:   actionTypeWriteRecord,
-					key:      "k1",
-					identity: "base:k1",
-				},
-				{
-					action:   actionTypeWriteRecord,
-					key:      "k3",
-					identity: "base:k3",
-				},
-				{
-					action:   actionTypeWriteRecord,
-					key:      "k4",
-					identity: "source:k4",
-				},
-				{
-					action:   actionTypeWriteRecord,
-					key:      "k5",
-					identity: "source:k5",
-				},
+			expectedResult: []testRunResult{{
+				mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyNone, graveler.MergeStrategyOurs, graveler.MergeStrategyTheirs},
+				conflictExpectedIdx: nil,
+				expectedActions: []writeAction{
+					{
+						action:   actionTypeWriteRecord,
+						key:      "k1",
+						identity: "base:k1",
+					},
+					{
+						action:   actionTypeWriteRecord,
+						key:      "k3",
+						identity: "base:k3",
+					},
+					{
+						action:   actionTypeWriteRecord,
+						key:      "k4",
+						identity: "source:k4",
+					},
+					{
+						action:   actionTypeWriteRecord,
+						key:      "k5",
+						identity: "source:k5",
+					},
+				}},
 			},
 		},
 		"source range append and remove after": {
@@ -275,35 +298,38 @@ func Test_merge(t *testing.T) {
 				{rng: committed.Range{ID: "base:k4-k6", MinKey: committed.Key("k4"), MaxKey: committed.Key("k6")}, records: []testValueRecord{
 					{"k4", "base:k4"}, {"k6", "base:k6"}},
 				}},
-			conflictExpectedIdx: nil,
-			expectedActions: []writeAction{
-				{
-					action:   actionTypeWriteRecord,
-					key:      "k1",
-					identity: "base:k1",
+			expectedResult: []testRunResult{{
+				mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyNone, graveler.MergeStrategyOurs, graveler.MergeStrategyTheirs},
+				conflictExpectedIdx: nil,
+				expectedActions: []writeAction{
+					{
+						action:   actionTypeWriteRecord,
+						key:      "k1",
+						identity: "base:k1",
+					},
+					{
+						action:   actionTypeWriteRecord,
+						key:      "k2",
+						identity: "source:k2",
+					},
+					{
+						action:   actionTypeWriteRecord,
+						key:      "k3",
+						identity: "base:k3",
+					},
+					{
+						action:   actionTypeWriteRecord,
+						key:      "k4",
+						identity: "base:k4",
+					},
+					{
+						action:   actionTypeWriteRecord,
+						key:      "k5",
+						identity: "source:k5",
+					},
 				},
-				{
-					action:   actionTypeWriteRecord,
-					key:      "k2",
-					identity: "source:k2",
-				},
-				{
-					action:   actionTypeWriteRecord,
-					key:      "k3",
-					identity: "base:k3",
-				},
-				{
-					action:   actionTypeWriteRecord,
-					key:      "k4",
-					identity: "base:k4",
-				},
-				{
-					action:   actionTypeWriteRecord,
-					key:      "k5",
-					identity: "source:k5",
-				},
-			},
-			expectedErr: nil,
+				expectedErr: nil,
+			}},
 		},
 		"source range - overlapping ranges": {
 			baseRange: []testRange{
@@ -321,15 +347,18 @@ func Test_merge(t *testing.T) {
 					{"k1", "base:k1"}, {"k3", "base:k3"}, {"k5", "base:k5"}, {"k6", "base:k6"},
 				}},
 			},
-			conflictExpectedIdx: nil,
-			expectedActions: []writeAction{
-				{action: actionTypeWriteRecord, key: "k1", identity: "base:k1"},
-				{action: actionTypeWriteRecord, key: "k3", identity: "base:k3"},
-				{action: actionTypeWriteRecord, key: "k4", identity: "source:k4"},
-				{action: actionTypeWriteRecord, key: "k5", identity: "base:k5"},
-				{action: actionTypeWriteRecord, key: "k6", identity: "base:k6"},
-				{action: actionTypeWriteRecord, key: "k10", identity: "source:k10"},
-			},
+			expectedResult: []testRunResult{{
+				mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyNone, graveler.MergeStrategyOurs, graveler.MergeStrategyTheirs},
+				conflictExpectedIdx: nil,
+				expectedActions: []writeAction{
+					{action: actionTypeWriteRecord, key: "k1", identity: "base:k1"},
+					{action: actionTypeWriteRecord, key: "k3", identity: "base:k3"},
+					{action: actionTypeWriteRecord, key: "k4", identity: "source:k4"},
+					{action: actionTypeWriteRecord, key: "k5", identity: "base:k5"},
+					{action: actionTypeWriteRecord, key: "k6", identity: "base:k6"},
+					{action: actionTypeWriteRecord, key: "k10", identity: "source:k10"},
+				},
+			}},
 		},
 		"dest range - overlapping ranges": {
 			baseRange: []testRange{
@@ -347,16 +376,19 @@ func Test_merge(t *testing.T) {
 					{"k1", "base:k1"}, {"k3", "base:k3"}, {"k4", "dest:k4"}, {"k5", "base:k5"}, {"k6", "base:k6"}, {"k10", "dest:k10"},
 				}},
 			},
-			conflictExpectedIdx: nil,
-			expectedActions: []writeAction{
-				{action: actionTypeWriteRecord, key: "k1", identity: "base:k1"},
-				{action: actionTypeWriteRecord, key: "k3", identity: "base:k3"},
-				{action: actionTypeWriteRecord, key: "k4", identity: "dest:k4"},
-				{action: actionTypeWriteRecord, key: "k5", identity: "base:k5"},
-				{action: actionTypeWriteRecord, key: "k6", identity: "base:k6"},
-				{action: actionTypeWriteRecord, key: "k10", identity: "dest:k10"},
-			},
-			expectedErr: nil,
+			expectedResult: []testRunResult{{
+				mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyNone, graveler.MergeStrategyOurs, graveler.MergeStrategyTheirs},
+				conflictExpectedIdx: nil,
+				expectedActions: []writeAction{
+					{action: actionTypeWriteRecord, key: "k1", identity: "base:k1"},
+					{action: actionTypeWriteRecord, key: "k3", identity: "base:k3"},
+					{action: actionTypeWriteRecord, key: "k4", identity: "dest:k4"},
+					{action: actionTypeWriteRecord, key: "k5", identity: "base:k5"},
+					{action: actionTypeWriteRecord, key: "k6", identity: "base:k6"},
+					{action: actionTypeWriteRecord, key: "k10", identity: "dest:k10"},
+				},
+				expectedErr: nil,
+			}},
 		},
 		"source - remove at end of range": {
 			baseRange: []testRange{
@@ -374,16 +406,19 @@ func Test_merge(t *testing.T) {
 					{"k1", "base:k1"}, {"k3", "base:k3"}, {"k4", "dest:k4"}, {"k5", "base:k5"}, {"k6", "base:k6"}, {"k10", "dest:k10"},
 				}},
 			},
-			conflictExpectedIdx: nil,
-			expectedActions: []writeAction{
-				{action: actionTypeWriteRecord, key: "k1", identity: "base:k1"},
-				{action: actionTypeWriteRecord, key: "k3", identity: "base:k3"},
-				{action: actionTypeWriteRecord, key: "k4", identity: "dest:k4"},
-				{action: actionTypeWriteRecord, key: "k5", identity: "base:k5"},
-				{action: actionTypeWriteRecord, key: "k6", identity: "base:k6"},
-				{action: actionTypeWriteRecord, key: "k10", identity: "dest:k10"},
-			},
-			expectedErr: nil,
+			expectedResult: []testRunResult{{
+				mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyNone, graveler.MergeStrategyOurs, graveler.MergeStrategyTheirs},
+				conflictExpectedIdx: nil,
+				expectedActions: []writeAction{
+					{action: actionTypeWriteRecord, key: "k1", identity: "base:k1"},
+					{action: actionTypeWriteRecord, key: "k3", identity: "base:k3"},
+					{action: actionTypeWriteRecord, key: "k4", identity: "dest:k4"},
+					{action: actionTypeWriteRecord, key: "k5", identity: "base:k5"},
+					{action: actionTypeWriteRecord, key: "k6", identity: "base:k6"},
+					{action: actionTypeWriteRecord, key: "k10", identity: "dest:k10"},
+				},
+				expectedErr: nil,
+			}},
 		},
 		"both added key to range": {
 			baseRange: []testRange{
@@ -406,29 +441,32 @@ func Test_merge(t *testing.T) {
 					{"k6", "base:k6"},
 				}},
 			},
-			conflictExpectedIdx: nil,
-			expectedActions: []writeAction{
-				{
-					action:   actionTypeWriteRecord,
-					key:      "k1",
-					identity: "base:k1",
+			expectedResult: []testRunResult{{
+				mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyNone, graveler.MergeStrategyOurs, graveler.MergeStrategyTheirs},
+				conflictExpectedIdx: nil,
+				expectedActions: []writeAction{
+					{
+						action:   actionTypeWriteRecord,
+						key:      "k1",
+						identity: "base:k1",
+					},
+					{
+						action:   actionTypeWriteRecord,
+						key:      "k2",
+						identity: "source:k2",
+					},
+					{
+						action:   actionTypeWriteRecord,
+						key:      "k3",
+						identity: "dest:k3",
+					},
+					{
+						action:   actionTypeWriteRecord,
+						key:      "k6",
+						identity: "base:k6",
+					},
 				},
-				{
-					action:   actionTypeWriteRecord,
-					key:      "k2",
-					identity: "source:k2",
-				},
-				{
-					action:   actionTypeWriteRecord,
-					key:      "k3",
-					identity: "dest:k3",
-				},
-				{
-					action:   actionTypeWriteRecord,
-					key:      "k6",
-					identity: "base:k6",
-				},
-			},
+			}},
 		},
 		"source range removed": {
 			baseRange: []testRange{
@@ -443,14 +481,17 @@ func Test_merge(t *testing.T) {
 				{rng: committed.Range{ID: "base:k1-k2", MinKey: committed.Key("k1"), MaxKey: committed.Key("k2"), Count: 2, EstimatedSize: 1234}},
 				{rng: committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234}},
 			},
-			conflictExpectedIdx: nil,
-			expectedActions: []writeAction{
-				{
-					action: actionTypeWriteRange,
-					rng:    committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234},
+			expectedResult: []testRunResult{{
+				mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyNone, graveler.MergeStrategyOurs, graveler.MergeStrategyTheirs},
+				conflictExpectedIdx: nil,
+				expectedActions: []writeAction{
+					{
+						action: actionTypeWriteRange,
+						rng:    committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234},
+					},
 				},
-			},
-			expectedErr: nil,
+				expectedErr: nil,
+			}},
 		},
 		"dest range removed": {
 			baseRange: []testRange{
@@ -464,14 +505,17 @@ func Test_merge(t *testing.T) {
 			destRange: []testRange{
 				{rng: committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234}},
 			},
-			conflictExpectedIdx: nil,
-			expectedActions: []writeAction{
-				{
-					action: actionTypeWriteRange,
-					rng:    committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234},
+			expectedResult: []testRunResult{{
+				mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyNone, graveler.MergeStrategyOurs, graveler.MergeStrategyTheirs},
+				conflictExpectedIdx: nil,
+				expectedActions: []writeAction{
+					{
+						action: actionTypeWriteRange,
+						rng:    committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234},
+					},
 				},
-			},
-			expectedErr: nil,
+				expectedErr: nil,
+			}},
 		},
 		"source key removed from range - same bounds": {
 			baseRange: []testRange{
@@ -498,11 +542,14 @@ func Test_merge(t *testing.T) {
 					},
 				},
 			},
-			conflictExpectedIdx: nil,
-			expectedActions: []writeAction{
-				{action: actionTypeWriteRange, rng: committed.Range{ID: "base:k1-k2", MinKey: committed.Key("k1"), MaxKey: committed.Key("k2"), Count: 2, EstimatedSize: 1234}},
-				{action: actionTypeWriteRange, rng: committed.Range{ID: "source:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234}},
-			},
+			expectedResult: []testRunResult{{
+				mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyNone, graveler.MergeStrategyOurs, graveler.MergeStrategyTheirs},
+				conflictExpectedIdx: nil,
+				expectedActions: []writeAction{
+					{action: actionTypeWriteRange, rng: committed.Range{ID: "base:k1-k2", MinKey: committed.Key("k1"), MaxKey: committed.Key("k2"), Count: 2, EstimatedSize: 1234}},
+					{action: actionTypeWriteRange, rng: committed.Range{ID: "source:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234}},
+				},
+			}},
 		},
 		"source key removed from range": {
 			baseRange: []testRange{
@@ -529,12 +576,15 @@ func Test_merge(t *testing.T) {
 					},
 				},
 			},
-			conflictExpectedIdx: nil,
-			expectedActions: []writeAction{
-				{action: actionTypeWriteRange, rng: committed.Range{ID: "base:k1-k2", MinKey: committed.Key("k1"), MaxKey: committed.Key("k2"), Count: 2, EstimatedSize: 1234}},
-				{action: actionTypeWriteRecord, key: "k3", identity: "base:k3"},
-				{action: actionTypeWriteRecord, key: "k5", identity: "base:k5"},
-			},
+			expectedResult: []testRunResult{{
+				mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyNone, graveler.MergeStrategyOurs, graveler.MergeStrategyTheirs},
+				conflictExpectedIdx: nil,
+				expectedActions: []writeAction{
+					{action: actionTypeWriteRange, rng: committed.Range{ID: "base:k1-k2", MinKey: committed.Key("k1"), MaxKey: committed.Key("k2"), Count: 2, EstimatedSize: 1234}},
+					{action: actionTypeWriteRecord, key: "k3", identity: "base:k3"},
+					{action: actionTypeWriteRecord, key: "k5", identity: "base:k5"},
+				},
+			}},
 		},
 		"dest key removed from range": {
 			baseRange: []testRange{
@@ -561,12 +611,15 @@ func Test_merge(t *testing.T) {
 					},
 				},
 			},
-			conflictExpectedIdx: nil,
-			expectedActions: []writeAction{
-				{action: actionTypeWriteRange, rng: committed.Range{ID: "base:k1-k2", MinKey: committed.Key("k1"), MaxKey: committed.Key("k2"), Count: 2, EstimatedSize: 1234}},
-				{action: actionTypeWriteRange, rng: committed.Range{ID: "dest:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234}},
-			},
-			expectedErr: nil,
+			expectedResult: []testRunResult{{
+				mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyNone, graveler.MergeStrategyOurs, graveler.MergeStrategyTheirs},
+				conflictExpectedIdx: nil,
+				expectedActions: []writeAction{
+					{action: actionTypeWriteRange, rng: committed.Range{ID: "base:k1-k2", MinKey: committed.Key("k1"), MaxKey: committed.Key("k2"), Count: 2, EstimatedSize: 1234}},
+					{action: actionTypeWriteRange, rng: committed.Range{ID: "dest:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234}},
+				},
+				expectedErr: nil,
+			}},
 		},
 		"empty source and base": {
 			baseRange:   []testRange{},
@@ -575,18 +628,21 @@ func Test_merge(t *testing.T) {
 				{rng: committed.Range{ID: "dest:k1-k2", MinKey: committed.Key("k1"), MaxKey: committed.Key("k2"), Count: 2, EstimatedSize: 1234}},
 				{rng: committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234}},
 			},
-			conflictExpectedIdx: nil,
-			expectedActions: []writeAction{
-				{
-					action: actionTypeWriteRange,
-					rng:    committed.Range{ID: "dest:k1-k2", MinKey: committed.Key("k1"), MaxKey: committed.Key("k2"), Count: 2, EstimatedSize: 1234},
+			expectedResult: []testRunResult{{
+				mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyNone, graveler.MergeStrategyOurs, graveler.MergeStrategyTheirs},
+				conflictExpectedIdx: nil,
+				expectedActions: []writeAction{
+					{
+						action: actionTypeWriteRange,
+						rng:    committed.Range{ID: "dest:k1-k2", MinKey: committed.Key("k1"), MaxKey: committed.Key("k2"), Count: 2, EstimatedSize: 1234},
+					},
+					{
+						action: actionTypeWriteRange,
+						rng:    committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234},
+					},
 				},
-				{
-					action: actionTypeWriteRange,
-					rng:    committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234},
-				},
-			},
-			expectedErr: nil,
+				expectedErr: nil,
+			}},
 		},
 		"dest removed range and added range after source removed range edges": {
 			baseRange: []testRange{
@@ -611,12 +667,15 @@ func Test_merge(t *testing.T) {
 					},
 				},
 			},
-			conflictExpectedIdx: nil,
-			expectedActions: []writeAction{
-				{action: actionTypeWriteRecord, key: "k6", identity: "dest:k6"},
-				{action: actionTypeWriteRecord, key: "k7", identity: "dest:k7"},
-			},
-			expectedErr: nil,
+			expectedResult: []testRunResult{{
+				mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyNone, graveler.MergeStrategyOurs, graveler.MergeStrategyTheirs},
+				conflictExpectedIdx: nil,
+				expectedActions: []writeAction{
+					{action: actionTypeWriteRecord, key: "k6", identity: "dest:k6"},
+					{action: actionTypeWriteRecord, key: "k7", identity: "dest:k7"},
+				},
+				expectedErr: nil,
+			}},
 		},
 		"source and dest change same range conflict": {
 			baseRange: []testRange{
@@ -641,9 +700,26 @@ func Test_merge(t *testing.T) {
 					},
 				},
 			},
-			conflictExpectedIdx: nil,
-			expectedActions:     []writeAction{},
-			expectedErr:         graveler.ErrConflictFound,
+			expectedResult: []testRunResult{
+				{
+					mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyNone},
+					conflictExpectedIdx: nil,
+					expectedActions:     []writeAction{},
+					expectedErr:         graveler.ErrConflictFound,
+				},
+				// {
+				// 	mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyOurs},
+				// 	conflictExpectedIdx: nil,
+				// 	expectedActions:     []writeAction{},
+				// 	expectedErr:         nil,
+				// },
+				// {
+				// 	mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyTheirs},
+				// 	conflictExpectedIdx: nil,
+				// 	expectedActions:     []writeAction{},
+				// 	expectedErr:         nil,
+				// }
+			},
 		},
 		"no changes": {
 			baseRange: []testRange{
@@ -667,14 +743,17 @@ func Test_merge(t *testing.T) {
 					},
 				},
 			},
-			conflictExpectedIdx: nil,
-			expectedActions: []writeAction{
-				{
-					action: actionTypeWriteRange,
-					rng:    committed.Range{ID: "base:k3-k4", MinKey: committed.Key("k3"), MaxKey: committed.Key("k4"), Count: 2, EstimatedSize: 1234},
+			expectedResult: []testRunResult{{
+				mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyNone, graveler.MergeStrategyOurs, graveler.MergeStrategyTheirs},
+				conflictExpectedIdx: nil,
+				expectedActions: []writeAction{
+					{
+						action: actionTypeWriteRange,
+						rng:    committed.Range{ID: "base:k3-k4", MinKey: committed.Key("k3"), MaxKey: committed.Key("k4"), Count: 2, EstimatedSize: 1234},
+					},
 				},
-			},
-			expectedErr: nil,
+				expectedErr: nil,
+			}},
 		},
 		"source and dest changed record identity": {
 			baseRange: []testRange{
@@ -707,30 +786,33 @@ func Test_merge(t *testing.T) {
 					records: []testValueRecord{{key: "d", identity: "d1"}, {key: "e", identity: "e"}},
 				},
 			},
-			conflictExpectedIdx: nil,
-			expectedActions: []writeAction{
-				{
-					action:   actionTypeWriteRecord,
-					key:      "a",
-					identity: "a",
+			expectedResult: []testRunResult{{
+				mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyNone, graveler.MergeStrategyOurs, graveler.MergeStrategyTheirs},
+				conflictExpectedIdx: nil,
+				expectedActions: []writeAction{
+					{
+						action:   actionTypeWriteRecord,
+						key:      "a",
+						identity: "a",
+					},
+					{
+						action:   actionTypeWriteRecord,
+						key:      "b",
+						identity: "b",
+					},
+					{
+						action:   actionTypeWriteRecord,
+						key:      "d",
+						identity: "d1",
+					},
+					{
+						action:   actionTypeWriteRecord,
+						key:      "e",
+						identity: "e1",
+					},
 				},
-				{
-					action:   actionTypeWriteRecord,
-					key:      "b",
-					identity: "b",
-				},
-				{
-					action:   actionTypeWriteRecord,
-					key:      "d",
-					identity: "d1",
-				},
-				{
-					action:   actionTypeWriteRecord,
-					key:      "e",
-					identity: "e1",
-				},
-			},
-			expectedErr: nil,
+				expectedErr: nil,
+			}},
 		},
 		"dest removed all source added": {
 			baseRange: []testRange{
@@ -745,21 +827,24 @@ func Test_merge(t *testing.T) {
 					records: []testValueRecord{{key: "a", identity: "a"}, {key: "b", identity: "b"}, {key: "c", identity: "c"}, {key: "d", identity: "d"}},
 				},
 			},
-			destRange:           []testRange{},
-			conflictExpectedIdx: nil,
-			expectedActions: []writeAction{
-				{
-					action:   actionTypeWriteRecord,
-					key:      "b",
-					identity: "b",
+			destRange: []testRange{},
+			expectedResult: []testRunResult{{
+				mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyNone, graveler.MergeStrategyOurs, graveler.MergeStrategyTheirs},
+				conflictExpectedIdx: nil,
+				expectedActions: []writeAction{
+					{
+						action:   actionTypeWriteRecord,
+						key:      "b",
+						identity: "b",
+					},
+					{
+						action:   actionTypeWriteRecord,
+						key:      "c",
+						identity: "c",
+					},
 				},
-				{
-					action:   actionTypeWriteRecord,
-					key:      "c",
-					identity: "c",
-				},
-			},
-			expectedErr: nil,
+				expectedErr: nil,
+			}},
 		},
 		"same identity different key": {
 			baseRange: []testRange{
@@ -780,25 +865,28 @@ func Test_merge(t *testing.T) {
 					records: []testValueRecord{{key: "a", identity: "a"}, {key: "d", identity: "d"}},
 				},
 			},
-			conflictExpectedIdx: nil,
-			expectedActions: []writeAction{
-				{
-					action:   actionTypeWriteRecord,
-					key:      "a",
-					identity: "a",
+			expectedResult: []testRunResult{{
+				mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyNone, graveler.MergeStrategyOurs, graveler.MergeStrategyTheirs},
+				conflictExpectedIdx: nil,
+				expectedActions: []writeAction{
+					{
+						action:   actionTypeWriteRecord,
+						key:      "a",
+						identity: "a",
+					},
+					{
+						action:   actionTypeWriteRecord,
+						key:      "a1",
+						identity: "a",
+					},
+					{
+						action:   actionTypeWriteRecord,
+						key:      "c",
+						identity: "c",
+					},
 				},
-				{
-					action:   actionTypeWriteRecord,
-					key:      "a1",
-					identity: "a",
-				},
-				{
-					action:   actionTypeWriteRecord,
-					key:      "c",
-					identity: "c",
-				},
-			},
-			expectedErr: nil,
+				expectedErr: nil,
+			}},
 		},
 		"dest removed all source range before base": {
 			baseRange: []testRange{
@@ -813,15 +901,18 @@ func Test_merge(t *testing.T) {
 					records: []testValueRecord{{key: "a", identity: "a"}, {key: "b", identity: "b"}},
 				},
 			},
-			destRange:           []testRange{},
-			conflictExpectedIdx: nil,
-			expectedActions: []writeAction{
-				{
-					action: actionTypeWriteRange,
-					rng:    committed.Range{ID: "source:a-b", MinKey: committed.Key("a"), MaxKey: committed.Key("b"), Count: 2, EstimatedSize: 1024},
+			destRange: []testRange{},
+			expectedResult: []testRunResult{{
+				mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyNone, graveler.MergeStrategyOurs, graveler.MergeStrategyTheirs},
+				conflictExpectedIdx: nil,
+				expectedActions: []writeAction{
+					{
+						action: actionTypeWriteRange,
+						rng:    committed.Range{ID: "source:a-b", MinKey: committed.Key("a"), MaxKey: committed.Key("b"), Count: 2, EstimatedSize: 1024},
+					},
 				},
-			},
-			expectedErr: nil,
+				expectedErr: nil,
+			}},
 		},
 		"dest removed all same key different identity": {
 			baseRange: []testRange{
@@ -836,10 +927,27 @@ func Test_merge(t *testing.T) {
 					records: []testValueRecord{{key: "a", identity: "a1"}, {key: "b", identity: "b"}},
 				},
 			},
-			destRange:           []testRange{},
-			conflictExpectedIdx: nil,
-			expectedActions:     []writeAction{},
-			expectedErr:         graveler.ErrConflictFound,
+			destRange: []testRange{},
+			expectedResult: []testRunResult{
+				{
+					mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyNone},
+					conflictExpectedIdx: nil,
+					expectedActions:     []writeAction{},
+					expectedErr:         graveler.ErrConflictFound,
+				},
+				// {
+				// 	mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyOurs},
+				// 	conflictExpectedIdx: nil,
+				// 	expectedActions:     []writeAction{},
+				// 	expectedErr:         graveler.ErrConflictFound,
+				// },
+				// {
+				// 	mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyTheirs},
+				// 	conflictExpectedIdx: nil,
+				// 	expectedActions:     []writeAction{},
+				// 	expectedErr:         graveler.ErrConflictFound,
+				// },
+			},
 		},
 		"dest removed all different key different identity": {
 			baseRange: []testRange{
@@ -854,16 +962,19 @@ func Test_merge(t *testing.T) {
 					records: []testValueRecord{{key: "a", identity: "a"}, {key: "a1", identity: "a1"}, {key: "b", identity: "b"}},
 				},
 			},
-			destRange:           []testRange{},
-			conflictExpectedIdx: nil,
-			expectedActions: []writeAction{
-				{
-					action:   actionTypeWriteRecord,
-					key:      "a1",
-					identity: "a1",
+			destRange: []testRange{},
+			expectedResult: []testRunResult{{
+				mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyNone, graveler.MergeStrategyOurs, graveler.MergeStrategyTheirs},
+				conflictExpectedIdx: nil,
+				expectedActions: []writeAction{
+					{
+						action:   actionTypeWriteRecord,
+						key:      "a1",
+						identity: "a1",
+					},
 				},
-			},
-			expectedErr: nil,
+				expectedErr: nil,
+			}},
 		},
 		"dest removed all base and source same identity": {
 			baseRange: []testRange{
@@ -886,21 +997,24 @@ func Test_merge(t *testing.T) {
 					records: []testValueRecord{{key: "c", identity: "c"}, {key: "e", identity: "e"}},
 				},
 			},
-			destRange:           []testRange{},
-			conflictExpectedIdx: nil,
-			expectedActions: []writeAction{
-				{
-					action:   actionTypeWriteRecord,
-					key:      "c",
-					identity: "c",
+			destRange: []testRange{},
+			expectedResult: []testRunResult{{
+				mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyNone, graveler.MergeStrategyOurs, graveler.MergeStrategyTheirs},
+				conflictExpectedIdx: nil,
+				expectedActions: []writeAction{
+					{
+						action:   actionTypeWriteRecord,
+						key:      "c",
+						identity: "c",
+					},
+					{
+						action:   actionTypeWriteRecord,
+						key:      "e",
+						identity: "e",
+					},
 				},
-				{
-					action:   actionTypeWriteRecord,
-					key:      "e",
-					identity: "e",
-				},
-			},
-			expectedErr: nil,
+				expectedErr: nil,
+			}},
 		},
 		"dest range before source": {
 			baseRange: []testRange{
@@ -921,9 +1035,26 @@ func Test_merge(t *testing.T) {
 					records: []testValueRecord{{key: "a", identity: "a1"}, {key: "b", identity: "b"}},
 				},
 			},
-			conflictExpectedIdx: nil,
-			expectedActions:     []writeAction{},
-			expectedErr:         graveler.ErrConflictFound,
+			expectedResult: []testRunResult{
+				{
+					mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyNone},
+					conflictExpectedIdx: nil,
+					expectedActions:     []writeAction{},
+					expectedErr:         graveler.ErrConflictFound,
+				},
+				// {
+				// 	mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyOurs},
+				// 	conflictExpectedIdx: nil,
+				// 	expectedActions:     []writeAction{},
+				// 	expectedErr:         graveler.ErrConflictFound,
+				// },
+				// {
+				// 	mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyTheirs},
+				// 	conflictExpectedIdx: nil,
+				// 	expectedActions:     []writeAction{},
+				// 	expectedErr:         graveler.ErrConflictFound,
+				// },
+			},
 		},
 		"source key before dest range": {
 			baseRange: []testRange{
@@ -948,24 +1079,27 @@ func Test_merge(t *testing.T) {
 					records: []testValueRecord{{key: "e", identity: "e"}, {key: "f", identity: "f"}},
 				},
 			},
-			conflictExpectedIdx: nil,
-			expectedActions: []writeAction{
-				{
-					action:   actionTypeWriteRecord,
-					key:      "b",
-					identity: "b",
+			expectedResult: []testRunResult{{
+				mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyNone, graveler.MergeStrategyOurs, graveler.MergeStrategyTheirs},
+				conflictExpectedIdx: nil,
+				expectedActions: []writeAction{
+					{
+						action:   actionTypeWriteRecord,
+						key:      "b",
+						identity: "b",
+					},
+					{
+						action:   actionTypeWriteRecord,
+						key:      "c",
+						identity: "c",
+					},
+					{
+						action: actionTypeWriteRange,
+						rng:    committed.Range{ID: "dest:e-f", MinKey: committed.Key("e"), MaxKey: committed.Key("f"), Count: 2, EstimatedSize: 1024},
+					},
 				},
-				{
-					action:   actionTypeWriteRecord,
-					key:      "c",
-					identity: "c",
-				},
-				{
-					action: actionTypeWriteRange,
-					rng:    committed.Range{ID: "dest:e-f", MinKey: committed.Key("e"), MaxKey: committed.Key("f"), Count: 2, EstimatedSize: 1024},
-				},
-			},
-			expectedErr: nil,
+				expectedErr: nil,
+			}},
 		},
 		"dest key before source range": {
 			baseRange: []testRange{
@@ -990,24 +1124,27 @@ func Test_merge(t *testing.T) {
 					records: []testValueRecord{{key: "a", identity: "a"}, {key: "b", identity: "b"}, {key: "c", identity: "c"}, {key: "d", identity: "d"}},
 				},
 			},
-			conflictExpectedIdx: nil,
-			expectedActions: []writeAction{
-				{
-					action:   actionTypeWriteRecord,
-					key:      "b",
-					identity: "b",
+			expectedResult: []testRunResult{{
+				mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyNone, graveler.MergeStrategyOurs, graveler.MergeStrategyTheirs},
+				conflictExpectedIdx: nil,
+				expectedActions: []writeAction{
+					{
+						action:   actionTypeWriteRecord,
+						key:      "b",
+						identity: "b",
+					},
+					{
+						action:   actionTypeWriteRecord,
+						key:      "c",
+						identity: "c",
+					},
+					{
+						action: actionTypeWriteRange,
+						rng:    committed.Range{ID: "source:e-f", MinKey: committed.Key("e"), MaxKey: committed.Key("f"), Count: 2, EstimatedSize: 1024},
+					},
 				},
-				{
-					action:   actionTypeWriteRecord,
-					key:      "c",
-					identity: "c",
-				},
-				{
-					action: actionTypeWriteRange,
-					rng:    committed.Range{ID: "source:e-f", MinKey: committed.Key("e"), MaxKey: committed.Key("f"), Count: 2, EstimatedSize: 1024},
-				},
-			},
-			expectedErr: nil,
+				expectedErr: nil,
+			}},
 		},
 		"dest range before source key": {
 			baseRange: []testRange{
@@ -1036,24 +1173,27 @@ func Test_merge(t *testing.T) {
 					records: []testValueRecord{{key: "c", identity: "c"}},
 				},
 			},
-			conflictExpectedIdx: nil,
-			expectedActions: []writeAction{
-				{
-					action:   actionTypeWriteRecord,
-					key:      "a",
-					identity: "a",
+			expectedResult: []testRunResult{{
+				mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyNone, graveler.MergeStrategyOurs, graveler.MergeStrategyTheirs},
+				conflictExpectedIdx: nil,
+				expectedActions: []writeAction{
+					{
+						action:   actionTypeWriteRecord,
+						key:      "a",
+						identity: "a",
+					},
+					{
+						action: actionTypeWriteRange,
+						rng:    committed.Range{ID: "dest:b-b", MinKey: committed.Key("b"), MaxKey: committed.Key("b"), Count: 2, EstimatedSize: 1024},
+					},
+					{
+						action:   actionTypeWriteRecord,
+						key:      "d",
+						identity: "d",
+					},
 				},
-				{
-					action: actionTypeWriteRange,
-					rng:    committed.Range{ID: "dest:b-b", MinKey: committed.Key("b"), MaxKey: committed.Key("b"), Count: 2, EstimatedSize: 1024},
-				},
-				{
-					action:   actionTypeWriteRecord,
-					key:      "d",
-					identity: "d",
-				},
-			},
-			expectedErr: nil,
+				expectedErr: nil,
+			}},
 		},
 		"source range before dest key": {
 			baseRange: []testRange{
@@ -1082,59 +1222,66 @@ func Test_merge(t *testing.T) {
 					records: []testValueRecord{{key: "a", identity: "a"}, {key: "d", identity: "d"}},
 				},
 			},
-			conflictExpectedIdx: nil,
-			expectedActions: []writeAction{
-				{
-					action:   actionTypeWriteRecord,
-					key:      "a",
-					identity: "a",
+			expectedResult: []testRunResult{{
+				mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyNone, graveler.MergeStrategyOurs, graveler.MergeStrategyTheirs},
+				conflictExpectedIdx: nil,
+				expectedActions: []writeAction{
+					{
+						action:   actionTypeWriteRecord,
+						key:      "a",
+						identity: "a",
+					},
+					{
+						action: actionTypeWriteRange,
+						rng:    committed.Range{ID: "source:b-b", MinKey: committed.Key("b"), MaxKey: committed.Key("b"), Count: 2, EstimatedSize: 1024},
+					},
+					{
+						action:   actionTypeWriteRecord,
+						key:      "d",
+						identity: "d",
+					},
 				},
-				{
-					action: actionTypeWriteRange,
-					rng:    committed.Range{ID: "source:b-b", MinKey: committed.Key("b"), MaxKey: committed.Key("b"), Count: 2, EstimatedSize: 1024},
-				},
-				{
-					action:   actionTypeWriteRecord,
-					key:      "d",
-					identity: "d",
-				},
-			},
-			expectedErr: nil,
+				expectedErr: nil,
+			}},
 		},
 	}
 
 	for name, tst := range tests {
-		t.Run(name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-			ctx := context.Background()
-			writer := mock.NewMockMetaRangeWriter(ctrl)
-			for _, action := range tst.expectedActions {
-				switch action.action {
-				case actionTypeWriteRecord:
-					writer.EXPECT().WriteRecord(newRecordMatcher(action.key, action.identity))
-				case actionTypeWriteRange:
-					writer.EXPECT().WriteRange(gomock.Eq(action.rng))
-				}
-			}
-			metaRangeManager := mock.NewMockMetaRangeManager(ctrl)
-			metaRangeManager.EXPECT().NewWriter(gomock.Any(), gomock.Any(), gomock.Any()).Return(writer)
-			sourceKey := graveler.MetaRangeID("source")
-			destKey := graveler.MetaRangeID("dest")
-			baseKey := graveler.MetaRangeID("base")
-			metaRangeManager.EXPECT().NewMetaRangeIterator(gomock.Any(), gomock.Any(), baseKey).Return(createIter(tst.baseRange), nil)
-			metaRangeManager.EXPECT().NewMetaRangeIterator(gomock.Any(), gomock.Any(), sourceKey).Return(createIter(tst.sourceRange), nil)
-			metaRangeManager.EXPECT().NewMetaRangeIterator(gomock.Any(), gomock.Any(), destKey).Return(createIter(tst.destRange), nil)
+		for _, expectedResult := range tst.expectedResult {
+			for _, mergeStrategy := range expectedResult.mergeStrategies {
+				t.Run(name, func(t *testing.T) {
+					ctrl := gomock.NewController(t)
+					defer ctrl.Finish()
+					ctx := context.Background()
+					writer := mock.NewMockMetaRangeWriter(ctrl)
+					for _, action := range expectedResult.expectedActions {
+						switch action.action {
+						case actionTypeWriteRecord:
+							writer.EXPECT().WriteRecord(newRecordMatcher(action.key, action.identity))
+						case actionTypeWriteRange:
+							writer.EXPECT().WriteRange(gomock.Eq(action.rng))
+						}
+					}
+					metaRangeManager := mock.NewMockMetaRangeManager(ctrl)
+					metaRangeManager.EXPECT().NewWriter(gomock.Any(), gomock.Any(), gomock.Any()).Return(writer)
+					sourceKey := graveler.MetaRangeID("source")
+					destKey := graveler.MetaRangeID("dest")
+					baseKey := graveler.MetaRangeID("base")
+					metaRangeManager.EXPECT().NewMetaRangeIterator(gomock.Any(), gomock.Any(), baseKey).Return(createIter(tst.baseRange), nil)
+					metaRangeManager.EXPECT().NewMetaRangeIterator(gomock.Any(), gomock.Any(), sourceKey).Return(createIter(tst.sourceRange), nil)
+					metaRangeManager.EXPECT().NewMetaRangeIterator(gomock.Any(), gomock.Any(), destKey).Return(createIter(tst.destRange), nil)
 
-			writer.EXPECT().Abort()
-			metaRangeId := graveler.MetaRangeID("merge")
-			writer.EXPECT().Close().Return(&metaRangeId, nil).AnyTimes()
-			committedManager := committed.NewCommittedManager(metaRangeManager)
-			_, err := committedManager.Merge(ctx, "ns", "dest", "source", "base", graveler.MergeStrategyNone)
-			if err != tst.expectedErr {
-				t.Fatal(err)
+					writer.EXPECT().Abort()
+					metaRangeId := graveler.MetaRangeID("merge")
+					writer.EXPECT().Close().Return(&metaRangeId, nil).AnyTimes()
+					committedManager := committed.NewCommittedManager(metaRangeManager)
+					_, err := committedManager.Merge(ctx, "ns", "dest", "source", "base", graveler.MergeStrategy(mergeStrategy))
+					if err != expectedResult.expectedErr {
+						t.Fatal(err)
+					}
+				})
 			}
-		})
+		}
 	}
 }
 
