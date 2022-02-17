@@ -757,7 +757,8 @@ components:
           type: string
         blockstore_namespace_ValidityRegex:
           type: string
-
+        default_namespace_prefix:
+          type: string
     VersionConfig:
       type: object
       properties:

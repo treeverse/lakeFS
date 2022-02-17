@@ -51,6 +51,9 @@ This reference uses `.` to denote the nesting of values.
 * `auth.ldap.default_user_group` `(string : )` - Create all LDAP users in this group.  Defaults to `Viewers`.
 * `auth.ldap.user_filter` `(string : )` - Additional filter for users.
 * `blockstore.type` `(one of ["local", "s3", "gs", "azure", "mem"] : required)`.  Block adapter to use. This controls where the underlying data will be stored
+* `blockstore.default_namespace_prefix` `(string : )` - Use this to help your users choose a storage namespace for their repositories. 
+   When creating a repository from the UI, the storage namespace will be filled with this default value as a prefix.
+   The user may still change it to something else 
 * `blockstore.local.path` `(string: "~/lakefs/data")` - When using the local Block Adapter, which directory to store files in
 * `blockstore.gs.credentials_file` `(string : )` - If specified will be used as a file path of the JSON file that contains your Google service account key
 * `blockstore.gs.credentials_json` `(string : )` - If specified will be used as JSON string that contains your Google service account key (when credentials_file is not set)
@@ -73,13 +76,13 @@ This reference uses `.` to denote the nesting of values.
   + `committed.local_cache.size_bytes` (`int` : `1073741824`) - bytes for local cache to use on disk.  The cache may use more storage for short periods of time.
   + `committed.local_cache.dir` (`string`, `~/lakefs/local_tier`) - directory to store local cache.
   +	`committed.local_cache.range_proportion` (`float` : `0.9`) - proportion of local cache to
-	use for storing ranges (leaves of committed metadata storage).
+    use for storing ranges (leaves of committed metadata storage).
   + `committed.local_cache.range.open_readers` (`int` : `500`) - maximal number of unused open
     SSTable readers to keep for ranges.
   + `committed.local_cache.range.num_shards` (`int` : `30`) - sharding factor for open SSTable
     readers for ranges.  Should be at least `sqrt(committed.local_cache.range.open_readers)`.
   + `committed.local_cache.metarange_proportion` (`float` : `0.1`) - proportion of local cache
-	to use for storing metaranges (roots of committed metadata storage).
+    to use for storing metaranges (roots of committed metadata storage).
   + `committed.local_cache.metarange.open_readers` (`int` : `50`) - maximal number of unused open
     SSTable readers to keep for metaranges.
   + `committed.local_cache.metarange.num_shards` (`int` : `10`) - sharding factor for open

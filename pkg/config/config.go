@@ -121,6 +121,7 @@ const (
 
 	BlockstoreTypeKey                    = "blockstore.type"
 	BlockstoreLocalPathKey               = "blockstore.local.path"
+	BlockstoreDefaultNamespacePrefixKey  = "blockstore.default_namespace_prefix"
 	BlockstoreS3RegionKey                = "blockstore.s3.region"
 	BlockstoreS3StreamingChunkSizeKey    = "blockstore.s3.streaming_chunk_size"
 	BlockstoreS3StreamingChunkTimeoutKey = "blockstore.s3.streaming_chunk_timeout"
@@ -302,6 +303,10 @@ func (c *Config) GetAwsConfig() *aws.Config {
 
 func (c *Config) GetBlockstoreType() string {
 	return c.values.Blockstore.Type
+}
+
+func (c *Config) GetBlockstoreDefaultNamespacePrefix() string {
+	return c.values.Blockstore.DefaultNamespacePrefix
 }
 
 func (c *Config) GetBlockAdapterS3Params() (blockparams.S3, error) {
