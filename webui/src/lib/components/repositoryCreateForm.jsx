@@ -60,14 +60,11 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
             if (!formValid) {
                 return;
             }
-            const repoCreation = {
+             onSubmit({
                 name: repoNameField.current.value,
+                storage_namespace: storageNamespaceField.current.value,
                 default_branch: defaultBranchField.current.value
-            }
-            if (storageNamespaceField.current) {
-                repoCreation.storage_namespace = storageNamespaceField.current.value
-            }
-            onSubmit(repoCreation);
+            });
         }}>
 	    {config?.warnings && <Warnings warnings={config.warnings}/>}
 
