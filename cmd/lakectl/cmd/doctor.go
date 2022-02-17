@@ -11,11 +11,42 @@ import (
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
-var (
-	ErrCredential       = errors.New("credential error")
-	ErrWrongEndpointURI = errors.New("wrong endpoint_uri error")
-	ErrUnknownConfig    = errors.New("unknown configuratioin error")
-)
+type ErrCredential struct {
+	Message string
+	Details string
+}
+
+func (e *ErrCredential) Error() string {
+	return (e.Message + "\n" + e.Details + "\n")
+}
+
+type ErrWrongEndpointURI struct {
+	Message string
+	Details string
+}
+
+func (e *ErrWrongEndpointURI) Error() string {
+	return (e.Message + "\n" + e.Details + "\n")
+}
+
+type ErrUnknownConfig struct {
+	Message string
+	Details string
+}
+
+func (e *ErrUnknownConfig) Error() string {
+	return (e.Message + "\n" + e.Details + "\n")
+}
+
+type SuccessMessage struct {
+	Message string
+}
+
+var configErrorTemplate = `{{ .Message |red }}
+{{  .Details | red }}
+`
+var successMessageTemplate = `{{ .Message | green}}
+`
 
 // doctorCmd represents the doctor command
 var doctorCmd = &cobra.Command{
@@ -24,17 +55,12 @@ var doctorCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		err := ListRepositoriesAndAnalyze(cmd.Context())
 		if err == nil {
-			Fmt("LakeFS doctor could not find any configuration issues\n")
+			Write(successMessageTemplate, &SuccessMessage{"Valid configuration"})
 			return
 		}
-		configFileName := viper.GetViper().ConfigFileUsed()
-		Fmt("It looks like you have a problem with your `%v` file.\n", configFileName)
-		switch {
-		case errors.Is(err, ErrCredential):
-			Fmt("It is possible that the `access_key_id` or `secret_access_key` you supplied are wrong.\n")
-		case errors.Is(err, ErrWrongEndpointURI):
-			Fmt("Probably your endpoint url is wrong.\n")
-		}
+
+		Write(configErrorTemplate, err)
+
 		accessKeyID := cfg.Values.Credentials.AccessKeyID
 		if !IsValidAccessKeyID(accessKeyID) {
 			Fmt("access_key_id value looks suspicious: %v\n", accessKeyID)
@@ -47,46 +73,45 @@ var doctorCmd = &cobra.Command{
 
 		serverEndpoint := cfg.Values.Server.EndpointURL
 		if !strings.HasSuffix(serverEndpoint, api.BaseURL) {
-			Fmt("Suspicious URI format for server.endpoint_url: %v, doesn't have `%v` suffix.\n", serverEndpoint, api.BaseURL)
+			Fmt("Suspicious URI format for server.endpoint_url: %v, doesn't end with: `%v`.\n", serverEndpoint, api.BaseURL)
 		}
 	},
 }
 
 func ListRepositoriesAndAnalyze(ctx context.Context) error {
+	configFileName := viper.GetViper().ConfigFileUsed()
+	msgOnErrUnknownConfig := "It looks like you have a problem with your `" + configFileName + "` file."
+	msgOnErrWrongEndpointURI := "It looks like endpoint url is wrong."
+	msgOnErrCredential := "It seems like the `access_key_id` or `secret_access_key` you supplied are wrong."
+
 	serverEndpoint := cfg.Values.Server.EndpointURL
 	_, err := url.Parse(serverEndpoint)
 	if err != nil {
-		Fmt("%v\n", err.Error())
-		return ErrWrongEndpointURI
+		return &ErrWrongEndpointURI{msgOnErrWrongEndpointURI, err.Error()}
 	}
 	client := getClient()
 	resp, err := client.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
 
-	if err != nil {
-		urlErr := new(url.Error)
+	switch {
+	case err != nil:
+		urlErr := &url.Error{}
 		if errors.As(err, &urlErr) {
-			Fmt("%v\n", err.Error())
-			return ErrWrongEndpointURI
+			return &ErrWrongEndpointURI{msgOnErrWrongEndpointURI, err.Error()}
 		}
-		return err
+		return &ErrUnknownConfig{msgOnErrUnknownConfig, err.Error()}
+	case resp == nil:
+		break
+	case resp.JSON200 != nil:
+		return nil
+	case resp.JSON401 != nil:
+		return &ErrCredential{msgOnErrCredential, resp.JSON401.Message}
+	// In case we get the "not found" HTML page (the status is 200 and not 404 in this case)
+	case resp.HTTPResponse != nil && resp.HTTPResponse.StatusCode == 200:
+		return &ErrWrongEndpointURI{msgOnErrWrongEndpointURI, ""}
+	case resp.JSONDefault != nil:
+		return &ErrUnknownConfig{msgOnErrUnknownConfig, resp.JSONDefault.Message}
 	}
-	if resp != nil {
-		if resp.JSON200 != nil {
-			return nil
-		}
-		if resp.JSON401 != nil {
-			Fmt(resp.JSON401.Message)
-			return ErrCredential
-		}
-		// In case we get the "not found" HTML page (the status is 200 and not 404 in this case)
-		if resp.HTTPResponse != nil && resp.HTTPResponse.StatusCode == 200 {
-			return ErrWrongEndpointURI
-		}
-		if resp.JSONDefault != nil {
-			Fmt(resp.JSONDefault.Message)
-		}
-	}
-	return ErrUnknownConfig
+	return &ErrUnknownConfig{msgOnErrUnknownConfig, "An unknown error accourd while trying to analyzing LakeCtl configuration."}
 }
 
 //nolint:gochecknoinits
