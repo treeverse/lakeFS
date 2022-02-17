@@ -85,6 +85,7 @@ class StorageConfig(ModelNormal):
             'blockstore_type': (str,),  # noqa: E501
             'blockstore_namespace_example': (str,),  # noqa: E501
             'blockstore_namespace_validity_regex': (str,),  # noqa: E501
+            'default_namespace_prefix': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -96,6 +97,7 @@ class StorageConfig(ModelNormal):
         'blockstore_type': 'blockstore_type',  # noqa: E501
         'blockstore_namespace_example': 'blockstore_namespace_example',  # noqa: E501
         'blockstore_namespace_validity_regex': 'blockstore_namespace_ValidityRegex',  # noqa: E501
+        'default_namespace_prefix': 'default_namespace_prefix',  # noqa: E501
     }
 
     read_only_vars = {
@@ -144,6 +146,7 @@ class StorageConfig(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            default_namespace_prefix (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -233,6 +236,7 @@ class StorageConfig(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            default_namespace_prefix (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
