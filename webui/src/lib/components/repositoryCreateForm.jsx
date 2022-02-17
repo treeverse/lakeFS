@@ -60,7 +60,7 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
             if (!formValid) {
                 return;
             }
-             onSubmit({
+            onSubmit({
                 name: repoNameField.current.value,
                 storage_namespace: storageNamespaceField.current.value,
                 default_branch: defaultBranchField.current.value
