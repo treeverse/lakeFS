@@ -67,6 +67,15 @@ type testRunResult struct {
 	expectedErr         error
 }
 
+type testCase struct {
+	baseRange      []testRange
+	sourceRange    []testRange
+	destRange      []testRange
+	expectedResult []testRunResult
+}
+
+type testCases map[string]testCase
+
 func createIter(tr []testRange) committed.Iterator {
 	iter := testutil.NewFakeIterator()
 	for _, rng := range tr {
@@ -86,12 +95,7 @@ func createIter(tr []testRange) committed.Iterator {
 }
 
 func Test_merge(t *testing.T) {
-	tests := map[string]struct {
-		baseRange      []testRange
-		sourceRange    []testRange
-		destRange      []testRange
-		expectedResult []testRunResult
-	}{
+	tests := testCases{
 		"dest range added before": {
 			baseRange: []testRange{{
 				rng:     committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234},
@@ -1246,6 +1250,10 @@ func Test_merge(t *testing.T) {
 		},
 	}
 
+	runMergeTests(tests, t)
+}
+
+func runMergeTests(tests testCases, t *testing.T) {
 	for name, tst := range tests {
 		for _, expectedResult := range tst.expectedResult {
 			for _, mergeStrategy := range expectedResult.mergeStrategies {
