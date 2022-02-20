@@ -45,13 +45,23 @@ This will force any file system operation performed on an object URI with `schem
 "MapperConfig" : [
     {
         "source_bucket_pattern": "bucket-a",
+        "source_key_pattern": "foo/*",
         "mapped_bucket_name": "example-repo",
         "mapped_prefix": "dev/"
     }
 ]
 ```
 
-With the mapping above, the URI `s3://bucket-a/foo.parquet` will be translated into `s3://example-repo/dev/foo.parquet`. 
+A mapper config can have the following properties:
+| Property              | Description                                                                                 | Required |
+|-----------------------|---------------------------------------------------------------------------------------------|----------|
+| source_bucket_pattern | Requests to buckets matching this pattern will use this profile.                            | Yes      |
+| source_key_pattern    | Requests to keys matching this pattern will use this profile.                               | No       |
+| mapped_bucket_name    | The bucket name to use when routing the request to the destination client                   | No       |
+| mapped_prefix         | An optional string to prepend to the key when routing the request to the destination client | No       |
+The same that we do with [boto-s3-router](https://github.com/treeverse/boto-s3-router)
+
+With the mapping above, the URI `s3://bucket-a/foo/foo.parquet` will be translated into `s3://example-repo/dev/foo.parquet`. 
 
 ### Invoke file system operations
 
