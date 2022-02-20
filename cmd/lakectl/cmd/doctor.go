@@ -15,7 +15,6 @@ type Detailed interface {
 	GetDetails() string
 }
 
-
 type CredentialsError struct {
 	Message string
 	Details string
