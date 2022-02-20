@@ -63,6 +63,7 @@ var successMessageTemplate = `{{ .Message | green}}
 
 var analayzingMessageTemplate = `{{ .Message }}
 `
+
 // doctorCmd represents the doctor command
 var doctorCmd = &cobra.Command{
 	Use:   "doctor",
@@ -82,7 +83,7 @@ var doctorCmd = &cobra.Command{
 
 		accessKeyID := cfg.Values.Credentials.AccessKeyID
 		if !IsValidAccessKeyID(accessKeyID) {
-			Write(analayzingMessageTemplate, &UserMessage{"access_key_id value looks suspicious: "+accessKeyID})
+			Write(analayzingMessageTemplate, &UserMessage{"access_key_id value looks suspicious: " + accessKeyID})
 		}
 
 		secretAccessKey := cfg.Values.Credentials.SecretAccessKey
@@ -92,7 +93,7 @@ var doctorCmd = &cobra.Command{
 
 		serverEndpoint := cfg.Values.Server.EndpointURL
 		if !strings.HasSuffix(serverEndpoint, api.BaseURL) {
-			Write(analayzingMessageTemplate, &UserMessage{"Suspicious URI format for server.endpoint_url: "+serverEndpoint+" doesn't end with: `"+api.BaseURL+"`."})
+			Write(analayzingMessageTemplate, &UserMessage{"Suspicious URI format for server.endpoint_url: " + serverEndpoint + " doesn't end with: `" + api.BaseURL + "`."})
 		}
 	},
 }
