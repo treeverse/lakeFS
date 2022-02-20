@@ -101,8 +101,9 @@ type configuration struct {
 		LDAP *LDAP
 	}
 	Blockstore struct {
-		Type  string `validate:"required"`
-		Local *struct {
+		Type                   string `validate:"required"`
+		DefaultNamespacePrefix string `mapstructure:"default_namespace_prefix"`
+		Local                  *struct {
 			Path string
 		}
 		S3 *struct {

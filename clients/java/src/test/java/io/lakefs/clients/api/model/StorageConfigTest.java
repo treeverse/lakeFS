@@ -64,4 +64,12 @@ public class StorageConfigTest {
         // TODO: test blockstoreNamespaceValidityRegex
     }
 
+    /**
+     * Test the property 'defaultNamespacePrefix'
+     */
+    @Test
+    public void defaultNamespacePrefixTest() {
+        // TODO: test defaultNamespacePrefix
+    }
+
 }
