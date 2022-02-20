@@ -5202,12 +5202,15 @@ components:
         blockstore_namespace_example: blockstore_namespace_example
         blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
         blockstore_type: blockstore_type
+        default_namespace_prefix: default_namespace_prefix
       properties:
         blockstore_type:
           type: string
         blockstore_namespace_example:
           type: string
         blockstore_namespace_ValidityRegex:
+          type: string
+        default_namespace_prefix:
           type: string
       required:
       - blockstore_namespace_ValidityRegex

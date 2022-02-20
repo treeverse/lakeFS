@@ -30,16 +30,18 @@ Note: If you already have lakeFS credentials, skip to step 2 and login.
    
 ## Create the repository
 
-1. Click `Create Repository`
+1. Click _Create Repository_.
     
    ![Create Repository]({{ site.baseurl }}/assets/img/create_repo_s3.png)
 
-   Under `Storage Namespace`, be sure to set the path to the bucket you've configured in a [previous step](./storage/index.md).
-   
-   
+1. Set the _Storage Namespace_ to a location in the bucket you've configured in a [previous step](./storage/index.md).
+   The _storage namespace_ is a location in the
+   [underlying storage](https://docs.lakefs.io/reference/object-model.html#concepts-unique-to-lakefs)
+   where data for this repository will be stored.
+
 # Next steps
 
-After creating a repo, you can import your existing data into it. lakeFS offers an [Import API](import.md) to bring your data without copying it.
+After creating a repository, you can import your existing data into it. lakeFS offers an [Import API](import.md) to bring your data without copying it.
 Alternatively, if you wish to copy existing data from an S3 bucket to lakeFS, use [DistCp](../integrations/distcp.md) or [Rclone](../integrations/rclone.md).
 
 Check out the usage guides under [Integrations](../integrations/index.md) for other options.
