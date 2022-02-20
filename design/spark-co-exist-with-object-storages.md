@@ -31,24 +31,24 @@ perform any file system operation.
 ### Handle any interaction with the underlying object store
 
 To allow Spark users to integrate with lakeFS without changing their Spark code, `RouterFileSystem` is configured to be 
-the file system for object store URIs with a certain scheme. For example, the following Spark configurations make 
+the file system for object store URIs with a certain scheme. For example, the following Hadoop configurations make 
 `RouterFileSystem` the file system for URIs with `scheme=s3`:
 ```shell
 fs.s3.impl=RouterFileSystem
 ```
-This will force any file system operation performed on an ibject URI with `scheme=s3` to go through `RouterFileSystem`.   
+This will force any file system operation performed on an object URI with `scheme=s3` to go through `RouterFileSystem`.   
 
 ### URI translation
 
 `RouterFileSystem` has access to a configurable mapping that maps bucket names into lakeFS repositories and prefixes, e.g.
-```yaml
-MapperConfig = {
+```json
+"MapperConfig" : [
     {
         "source_bucket_pattern": "bucket-a",
         "mapped_bucket_name": "example-repo",
         "mapped_prefix": "dev/"
     }
-}
+]
 ```
 
 With the mapping above, the URI `s3://bucket-a/foo.parquet` will be translated into `s3://example-repo/dev/foo.parquet`. 
@@ -97,14 +97,14 @@ file system can direct traffic to the lakeFS server for mapped buckets.
 
 `RouterFileSystem` will check the mapping configurations, and won't change paths that are not mapped to lakeFS objects. 
 e.g. given the URI `s3://bucket-b/bar.parquet` and the following mapping configurations:
-```yaml
-MapperConfig = {
+```json
+"MapperConfig" : [
     {
         "source_bucket_pattern": "bucket-a",
         "mapped_bucket_name": "example-repo",
         "mapped_prefix": "dev/"
     }
-}
+]
 ```
 `RouterFileSystem` will keep `s3://bucket-b/bar.parquet` as is and continue that process outlined above. 
 
@@ -130,7 +130,8 @@ set and get mappings.
 
 1. Based on our experience with lakeFSFS, we already know that supporting a hadoop file system is difficult. There are many things that can go wrong in terms of dependency conflicts, and unexpected behaviours working with managed frameworks (i.e. Databricks, EMR)
 2. The suggested method to [getting the relevant underlying filesystem](#getting-the-relevant-file-system) is kind of a hack.
-3. It's complex.
+3. Hadoop per-bucket configurations are required for RouterFileSystem but are only supported from Hadoop 3.3.1 onwards. 
+4. It's complex.
 
 ## Alternatives considered 
 
