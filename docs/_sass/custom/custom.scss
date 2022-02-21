@@ -82,7 +82,7 @@ body {
 		color: $teal-green;
 	}
 	p, li{
-		font-family: GalanoGrotesque-Medium;
+		font-family: GalanoGrotesque;
 	    font-size: 14px;
 	}
 
@@ -210,8 +210,6 @@ body {
 		line-height: 1.63;
 		letter-spacing: 0.05px;
 		color: #ffffff;
-		padding: 10px;
-		border-radius: 2px;
 		background-color: #279890;
 		border: 2px solid #279890;
 	 }
@@ -426,17 +424,16 @@ body {
 					padding: 12px 40px 12px calc(100% - 290px);
 					font-size: 14px !important;
 					color: $darkblue;
-					font-family: GalanoGrotesque-Medium;
+					font-family: GalanoGrotesque;
 					letter-spacing: 1.1px;
 					&.active,
 					&:hover {
 						background-color: $white;
 						background-image: none;
-						
 					}
 				}
 				a.nav-list-link.active{
-					font-family: GalanoGrotesque-Bold!important;
+					font-family: GalanoGrotesque-Medium!important;
     				color: $teal-green !important;
 				}
 				.nav-list-expander {

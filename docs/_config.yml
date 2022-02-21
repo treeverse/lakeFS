@@ -73,6 +73,7 @@ plugins:
 
 exclude: 
   - deploy/includes
+  - quickstart/includes
   - vendor
   - CNAME
 
