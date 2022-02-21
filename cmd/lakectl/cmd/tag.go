@@ -61,9 +61,10 @@ var tagListCmd = &cobra.Command{
 }
 
 var tagCreateCmd = &cobra.Command{
-	Use:   "create <tag uri> <commit ref>",
-	Short: "Create a new tag in a repository",
-	Args:  cobra.ExactArgs(tagCreateRequiredArgs),
+	Use:     "create <tag uri> <commit ref>",
+	Short:   "Create a new tag in a repository",
+	Example: "lakectl tag create lakefs://example-repo/example-tag 2397cc9a9d04c20a4e5739b42c1dd3d8ba655c0b3a3b974850895a13d8bf9917",
+	Args:    cobra.ExactArgs(tagCreateRequiredArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		tagURI := MustParseRefURI("tag", args[0])
 		Fmt("Tag ref: %s\n", tagURI.String())
