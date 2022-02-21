@@ -126,7 +126,7 @@ func ListRepositoriesAndAnalyze(ctx context.Context) error {
 		return nil
 	case resp.JSON401 != nil:
 		return &CredentialsError{msgOnErrCredential, resp.JSON401.Message}
-	// In case we get the "not found" HTML page (the status is 200 and not 404 in this case)
+	// In case we get the "not found" HTML page (the status is 200 and not 404 in this case).
 	case resp.HTTPResponse != nil && resp.HTTPResponse.StatusCode == 200:
 		return &WrongEndpointURIError{msgOnErrWrongEndpointURI, ""}
 	case resp.JSONDefault != nil:
