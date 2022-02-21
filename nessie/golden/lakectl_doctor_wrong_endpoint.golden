@@ -1,0 +1,3 @@
+It looks like endpoint url is wrong.
+
+Suspicious URI format for server.endpoint_url: http://lakefs:8000/api/v11 doesn't end with: `/api/v1`.

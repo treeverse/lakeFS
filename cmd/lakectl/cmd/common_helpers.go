@@ -2,12 +2,14 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"text/template"
 	"time"
@@ -26,6 +28,8 @@ var noColorRequested = false
 
 // ErrInvalidValueInList is an error returned when a parameter of type list contains an empty string
 var ErrInvalidValueInList = errors.New("empty string in list")
+
+var accessKeyRegexp = regexp.MustCompile(`^AKIA[I|J][A-Z0-9]{14}Q$`)
 
 const (
 	LakectlInteractive        = "LAKECTL_INTERACTIVE"
@@ -266,4 +270,17 @@ func MustParsePathURI(name, s string) *uri.URI {
 		DieFmt("Invalid '%s': %s", name, uri.ErrInvalidPathURI)
 	}
 	return u
+}
+
+func IsValidAccessKeyID(accessKeyID string) bool {
+	return accessKeyRegexp.MatchString(accessKeyID)
+}
+
+func IsValidSecretAccessKey(secretAccessKey string) bool {
+	return IsBase64(secretAccessKey) && len(secretAccessKey) == 40
+}
+
+func IsBase64(s string) bool {
+	_, err := base64.StdEncoding.DecodeString(s)
+	return err == nil
 }
