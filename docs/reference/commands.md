@@ -1736,6 +1736,23 @@ lakectl docs [outfile] [flags]
 
 
 
+### lakectl doctor
+
+Run a basic diagnosis of the LakeFS configuration
+
+```
+lakectl doctor [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for doctor
+```
+
+
+
 ### lakectl fs
 
 View and manipulate objects
