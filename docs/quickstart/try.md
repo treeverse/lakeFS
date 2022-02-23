@@ -10,7 +10,7 @@ has_children: false
 # Try lakeFS without installing
 {: .no_toc}
 
-## Demo environment
+## lakeFS Playground
 
 Experience lakeFS first hand with your own isolated environment.
 You can easily integrate it with your existing tools, and feel lakeFS in action in an environment
