@@ -55,5 +55,5 @@ var mergeCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(mergeCmd)
-	mergeCmd.Flags().String("strategy", "", "changes from \"ours\"(dest) or \"theirs\"(source) are automatically overridden in case of a conflict")
+	mergeCmd.Flags().String("strategy", "", "In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch (\"ours\") or from the source branch(\"theirs\"). In case no selection is made, the merge process will fail in case of a conflict")
 }

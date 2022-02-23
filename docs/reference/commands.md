@@ -2085,7 +2085,7 @@ lakectl merge <source ref> <destination ref> [flags]
 
 ```
   -h, --help              help for merge
-      --strategy string   changes from "ours"(dest) or "theirs"(source) are automatically overridden in case of a conflict
+      --strategy string   In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch ("ours") or from the source branch("theirs"). In case no selection is made, the merge process will fail in case of a conflict
 ```
 
 

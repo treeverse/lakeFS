@@ -425,6 +425,10 @@ components:
           type: object
           additionalProperties:
             type: string
+        date:
+          description: set date to override creation date in the commit (Unix Epoch in seconds)
+          type: integer
+          format: int64
 
     Merge:
       type: object
@@ -436,7 +440,7 @@ components:
           additionalProperties:
             type: string
         strategy:
-          description: changes from "ours"(dest) or "theirs"(source) are automatically overridden in case of a conflict
+          description: In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch ('ours') or from the source branch('theirs'). In case no selection is made, the merge process will fail in case of a conflict
           type: string
 
     BranchCreation:
