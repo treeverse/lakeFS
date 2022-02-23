@@ -22,14 +22,18 @@ func lakectlLocation() string {
 	return viper.GetString("lakectl_dir") + "/lakectl"
 }
 
-func Lakectl() string {
+func LakectlWithParams(accessKeyID, secretAccessKey, endPointURL string) string {
 	lakectlCmdline :=
-		"LAKECTL_CREDENTIALS_ACCESS_KEY_ID=" + viper.GetString("access_key_id") +
-			" LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY=" + viper.GetString("secret_access_key") +
-			" LAKECTL_SERVER_ENDPOINT_URL=" + viper.GetString("endpoint_url") +
+		"LAKECTL_CREDENTIALS_ACCESS_KEY_ID=" + accessKeyID +
+			" LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY=" + secretAccessKey +
+			" LAKECTL_SERVER_ENDPOINT_URL=" + endPointURL +
 			" " + lakectlLocation()
 
 	return lakectlCmdline
+}
+
+func Lakectl() string {
+	return LakectlWithParams(viper.GetString("access_key_id"), viper.GetString("secret_access_key"), viper.GetString("endpoint_url"))
 }
 
 func runShellCommand(command string, isTerminal bool) ([]byte, error) {
