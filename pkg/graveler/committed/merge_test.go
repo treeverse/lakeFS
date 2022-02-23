@@ -1136,6 +1136,13 @@ func Test_merge(t *testing.T) {
 
 func TestMergeStrategies(t *testing.T) {
 	tests := testCases{
+		// Base branch has a 2 records range, with the keys 'a' and 'b'. Source branch changes the value on key 'a' and leaves key 'b' unchanged
+		// Dest branch deletes both entries, creating a conflict on entry 'a'
+		// As per merge strategies, the expected outcomes are:
+		// - No strategy - a conflict
+		// - Ours strategy - favors dest branch, so both records are deleted, 'ignoring' the value modification on record 'a'
+		// - Theirs strategy - favors source branch, so record 'a', with the modified value, is written, ignoring its deletion on dest. Record b
+		//   is still deleted as there is no conflict involving it
 		"dest removed all same key different identity": {
 			baseRange: []testRange{
 				{
@@ -1177,6 +1184,16 @@ func TestMergeStrategies(t *testing.T) {
 				},
 			},
 		},
+		// Base branch has a 5 records range, with the keys 'k1' through 'k5'. Both source and dest branches modify this range by deleting and
+		// changing this range. Both branches delete records 'k1', 'k2' and 'k5' and while dest branch also deletes entries 'k3' and 'k4', source
+		// branch leaves record 'k3' unchanged and changes the value on record 'k4', creating a conflict
+		// Dest branch also adds 2 new records, 'k6' and 'k7', which should not create a conflict
+		// As per merge strategies, the expected outcomes are:
+		// - No strategy - a conflict
+		// - Ours strategy - favors dest branch, so records 'k1' through 'k5' are deleted, 'ignoring' the value modification on record 'k4'.
+		// - Theirs strategy - favors source branch, so record 'k4', with the modified value, is written, ignoring its deletion on dest. The rest
+		//   of record 'k1', 'k2' 'k3' and 'k5' are still deleted as there is no conflict involving them. Same goes for 'k6' and 'k7' which are
+		//   written on both 'ours' and 'theirs' strategies
 		"source and dest change same range conflict": {
 			baseRange: []testRange{
 				{rng: committed.Range{ID: "base:k1-k5", MinKey: committed.Key("k1"), MaxKey: committed.Key("k5"), Count: 5, EstimatedSize: 1234},
@@ -1248,6 +1265,14 @@ func TestMergeStrategies(t *testing.T) {
 				},
 			},
 		},
+		// Base branch has a 2 records range, with the keys 'a' and 'b'. Source branch deletes both records and adds 2 new records - 'c' and 'd'
+		// Dest branch changes the value on key 'a', creating a conflict with the deleted 'a' record on source, and leaves key 'b' unchanged
+		// As per merge strategies, the expected outcomes are:
+		// - No strategy - a conflict
+		// - Ours strategy - favors dest branch, so record 'a', with the modified value, is written, ignoring its deletion on source
+		// - Theirs strategy - favors source branch, so record 'a' is deleted, ignoring its value change on branch dest
+		// Record 'b' is deleted for both strategies as there is no conflict invloving it. Same goes for records 'c' and 'd' that are written,
+		// regardless of merge strategy
 		"dest range before source": {
 			baseRange: []testRange{
 				{
@@ -1321,7 +1346,7 @@ func TestMergeStrategies(t *testing.T) {
 				records: []testValueRecord{{key: "a", identity: "a"}, {key: "b", identity: "b"}, {key: "c", identity: "c"}},
 			}},
 			sourceRange: []testRange{{
-				rng:     committed.Range{ID: "source:a-c", MinKey: committed.Key("a"), MaxKey: committed.Key("c"), Count: 2, EstimatedSize: 123},
+				rng:     committed.Range{ID: "source:a-c", MinKey: committed.Key("a"), MaxKey: committed.Key("c"), Count: 3, EstimatedSize: 123},
 				records: []testValueRecord{{key: "a", identity: "a"}, {key: "b", identity: "b1"}, {key: "c", identity: "c"}},
 			}},
 			destRange: []testRange{{
@@ -1393,7 +1418,7 @@ func TestMergeStrategies(t *testing.T) {
 				records: []testValueRecord{{key: "a", identity: "a"}, {key: "c", identity: "c"}},
 			}},
 			destRange: []testRange{{
-				rng:     committed.Range{ID: "dest:a-c", MinKey: committed.Key("a"), MaxKey: committed.Key("c"), Count: 2, EstimatedSize: 321},
+				rng:     committed.Range{ID: "dest:a-c", MinKey: committed.Key("a"), MaxKey: committed.Key("c"), Count: 3, EstimatedSize: 321},
 				records: []testValueRecord{{key: "a", identity: "a"}, {key: "b", identity: "b1"}, {key: "c", identity: "c"}},
 			}},
 			expectedResult: []testRunResult{
