@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Our commitment to Open Source
+title: Our commitment to open source
 parent: Understanding lakeFS
 description: lakeFS is an open source project under the Apache 2.0 license. 
 nav_order: 50
