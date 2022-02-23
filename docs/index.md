@@ -21,7 +21,7 @@ lakeFS supports AWS S3, Azure Blob Storage and Google Cloud Storage (GCS) as its
 {: .pb-5 }
 
 
-## New! lakeFS Demo Environment
+## New! lakeFS Playground
 
 Experience lakeFS first hand with your own isolated environment.
 You can easily integrate it with your existing tools, and feel lakeFS in action in an environment similar to your own.
