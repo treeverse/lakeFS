@@ -1,4 +1,4 @@
-## demo.lakefs.io
+## lakeFS Playground
 
 Experience lakeFS first hand with your own isolated environment.
 You can easily integrate it with your existing tools, and feel lakeFS in action in an environment
@@ -32,4 +32,4 @@ The web based environment provides a full working lakeFS and Spark environment, 
 
 ## Next Steps
 
-After getting acquainted with lakeFS, you can easily [install it on your computer](installing.html) or [deploy it on your cloud account](../deploy/index.html).
+After getting acquainted with lakeFS, easily [install it on your computer](installing.html) or [deploy it on your cloud account](../deploy/index.html).
