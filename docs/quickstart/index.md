@@ -5,8 +5,10 @@ description: The quickstart. This section provides simple instructions for deplo
 nav_order: 5
 has_children: true
 redirect_from: "../quickstart.html"
+has_toc: false
 ---
 
-This section will guide you through setting up your lakeFS environment locally.
+# Quickstart
+{: .no_toc }
 
-{% include learn_only.html %} 
+{% include_relative includes/try.md %}
