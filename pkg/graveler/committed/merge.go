@@ -155,7 +155,7 @@ func (m *merger) sourceBeforeDest(sourceValue *graveler.ValueRecord) error {
 }
 
 // handleAll handles the case where only one Iterator from source or dest remains
-func (m *merger) handleAll(iter Iterator) error {
+func (m *merger) handleAll(iter Iterator, strategyToInclude graveler.MergeStrategy) error {
 	for {
 		select {
 		case <-m.ctx.Done():
@@ -186,11 +186,21 @@ func (m *merger) handleAll(iter Iterator) error {
 				return fmt.Errorf("base value GE: %w", err)
 			}
 			if baseValue == nil || !bytes.Equal(baseValue.Identity, iterValue.Identity) {
+				shouldWrietRecord := true
 				if baseValue != nil && bytes.Equal(baseValue.Key, iterValue.Key) { // deleted by one changed by iter
-					return graveler.ErrConflictFound
+					if m.strategy == graveler.MergeStrategyNone { // conflict is only reported if no strategy is selected
+						return graveler.ErrConflictFound
+					}
+					// In case of conflict, if the strategy favors the given iter (ours if it's dest, theirs if it's source)
+					// we still want to write the record. Otherwise it will be ignored.
+					if m.strategy != strategyToInclude {
+						shouldWrietRecord = false
+					}
 				}
-				if err := m.writeRecord(iterValue); err != nil {
-					return err
+				if shouldWrietRecord {
+					if err := m.writeRecord(iterValue); err != nil {
+						return err
+					}
 				}
 			}
 			if !iter.Next() {
@@ -451,12 +461,12 @@ func (m *merger) merge() error {
 	}
 
 	if m.haveSource {
-		if err := m.handleAll(m.source); err != nil {
+		if err := m.handleAll(m.source, graveler.MergeStrategyTheirs); err != nil {
 			return err
 		}
 	}
 	if m.haveDest {
-		if err := m.handleAll(m.dest); err != nil {
+		if err := m.handleAll(m.dest, graveler.MergeStrategyOurs); err != nil {
 			return err
 		}
 	}
