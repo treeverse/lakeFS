@@ -757,7 +757,8 @@ components:
           type: string
         blockstore_namespace_ValidityRegex:
           type: string
-
+        default_namespace_prefix:
+          type: string
     VersionConfig:
       type: object
       properties:
@@ -2580,7 +2581,7 @@ paths:
       tags:
         - objects
       operationId: uploadObject
-      x-validation-exclude-body: false
+      x-validation-exclude-body: true
       requestBody:
         content:
           multipart/form-data:
