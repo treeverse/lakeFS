@@ -3128,7 +3128,7 @@ paths:
           description: Internal Server Error
       tags:
       - objects
-      x-validation-exclude-body: false
+      x-validation-exclude-body: true
       x-contentType: multipart/form-data
       x-accepts: application/json
     put:
