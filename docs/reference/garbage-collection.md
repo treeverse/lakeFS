@@ -63,6 +63,18 @@ lakectl gc set-config lakefs://example-repo -f example_repo_gc_rules.json
 The GC job is a Spark program that can be run using `spark-submit` (or using your preferred method of running Spark programs).
 The job will hard-delete objects that were deleted and whose retention period has ended according to the GC rules.
 
+First, you'll have to download the lakeFS Spark client Uber-jar. The Uber-Jar can be found on a public S3 location:
+
+For Spark 2.4.7: \
+http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-247/${CLIENT_VERSION}/lakefs-spark-client-247-assembly-${CLIENT_VERSION}.jar
+
+For Spark 3.0.1: \
+http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-301/${CLIENT_VERSION}/lakefs-spark-client-301-assembly-${CLIENT_VERSION}.jar
+
+`CLIENT_VERSION`s for Spark 2.4.7 can be found [here](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client-247), and for Spark 3.0.1 they can be found [here](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client-301).
+
+
+Second, you should specify the Uber-jar path instead of `<APPLICATION-JAR-PATH>` and run the following command to make the garbage collector start running:
 ```bash
 spark-submit --class io.treeverse.clients.GarbageCollector \
   -c spark.hadoop.lakefs.api.url=https://lakefs.example.com:8000/api/v1  \
@@ -70,7 +82,7 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
   -c spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
   -c spark.hadoop.fs.s3a.access.key=<S3_ACCESS_KEY> \
   -c spark.hadoop.fs.s3a.secret.key=<S3_SECRET_KEY> \
-  --packages io.lakefs:lakefs-spark-client-301_2.12:0.1.6 \
+  <APPLICATION-JAR-PATH> \
   example-repo us-east-1
 ```
 ## Considerations
