@@ -80,6 +80,7 @@ func NewHandlerWithDefault(root http.FileSystem, handler http.Handler, defaultPa
 		}
 		_, err := root.Open(path.Clean(urlPath))
 		if err != nil && os.IsNotExist(err) {
+			//http.Redirect(w, r, defaultPath, http.StatusFound)
 			r.URL.Path = defaultPath
 		}
 		// consistent content-type
