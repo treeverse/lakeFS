@@ -225,17 +225,17 @@ func DieOnErrorOrUnexpectedStatusCode(response interface{}, err error, expectedS
 	}
 
 	if statusCode == 0 {
-		DieErr(fmt.Errorf("could not get status code from response"))
+		Die("could not get status code from response", 1)
 	}
 	if statusCode != expectedStatusCode {
-		// redirect to not found page
+		// redirected to not found page
 		if statusCode == 302 {
-			DieErr(fmt.Errorf("got not found error, probablly wrong endpoint url"))
+			Die("got not found error, probably wrong endpoint url", 1)
 		}
-		DieErr(fmt.Errorf("got unexpected status code: " + strconv.Itoa(statusCode) + ", expected: " + strconv.Itoa(expectedStatusCode)))
+		Die("got unexpected status code: "+strconv.Itoa(statusCode)+", expected: "+strconv.Itoa(expectedStatusCode), 1)
 	}
-
 }
+
 func DieOnHTTPError(httpResponse *http.Response) {
 	err := helpers.HTTPResponseAsError(httpResponse)
 	if err != nil {
