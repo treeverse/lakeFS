@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
+	"net/http"
 )
 
 const actionsRunsListTemplate = `{{.ActionsRunsTable | table -}}
@@ -44,7 +45,7 @@ var runsListCmd = &cobra.Command{
 			Branch: optionalBranch,
 			Commit: optionalCommit,
 		})
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 
 		results := resp.JSON200.Results
 		rows := make([][]interface{}, len(results))

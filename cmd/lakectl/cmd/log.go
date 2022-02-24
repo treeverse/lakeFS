@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
+	"net/http"
 )
 
 const commitsTemplate = `{{ range $val := .Commits }}
@@ -54,7 +55,7 @@ var logCmd = &cobra.Command{
 		}
 		for pagination.HasMore {
 			res, err := client.LogCommitsWithResponse(cmd.Context(), branchURI.Repository, branchURI.Ref, logCommitsParams)
-			DieOnResponseError(res, err)
+			DieOnErrorOrUnexpectedStatusCode(res, err, http.StatusOK)
 			pagination = res.JSON200.Pagination
 			logCommitsParams.After = api.PaginationAfterPtr(pagination.NextOffset)
 			data := struct {

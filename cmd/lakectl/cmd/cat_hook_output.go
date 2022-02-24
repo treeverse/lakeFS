@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+	"net/http"
 )
 
 const catHookOutputRequiredArgs = 3
@@ -20,7 +21,7 @@ var catHookOutputCmd = &cobra.Command{
 		client := getClient()
 		ctx := cmd.Context()
 		resp, err := client.GetRunHookOutputWithResponse(ctx, u.Repository, runID, hookRunID)
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		Fmt("%s\n", string(resp.Body))
 	},
 }

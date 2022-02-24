@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -286,7 +287,7 @@ var createSymlinkCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		DieOnResponseError(res, err)
+		DieOnErrorOrUnexpectedStatusCode(res, err, http.StatusCreated)
 		location := res.JSON201.Location
 
 		err = metastore.CopyOrMergeToSymlink(cmd.Context(), fromClient, toClient, fromDB, fromTable, toDB, toTable, location, cfg.GetFixSparkPlaceholder())

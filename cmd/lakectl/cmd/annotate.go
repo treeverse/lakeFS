@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"net/http"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -31,8 +32,8 @@ var annotateCmd = &cobra.Command{
 		client := getClient()
 		pfx := api.PaginationPrefix(*pathURI.Path)
 		context := cmd.Context()
-		res, err := client.ListObjectsWithResponse(context, pathURI.Repository, pathURI.Ref, &api.ListObjectsParams{Prefix: &pfx})
-		DieOnResponseError(res, err)
+		resp, err := client.ListObjectsWithResponse(context, pathURI.Repository, pathURI.Ref, &api.ListObjectsParams{Prefix: &pfx})
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		var from string
 		for {
 			params := &api.ListObjectsParams{
@@ -40,20 +41,20 @@ var annotateCmd = &cobra.Command{
 				After:  api.PaginationAfterPtr(from),
 			}
 			resp, err := client.ListObjectsWithResponse(context, pathURI.Repository, pathURI.Ref, params)
-			DieOnResponseError(resp, err)
+			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 			for _, obj := range resp.JSON200.Results {
 				logCommitsParams := &api.LogCommitsParams{
 					Amount:  api.PaginationAmountPtr(1),
 					Objects: &[]string{obj.Path},
 				}
 				res, err := client.LogCommitsWithResponse(context, pathURI.Repository, pathURI.Ref, logCommitsParams)
-				DieOnResponseError(res, err)
+				DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 				data := objectCommitData{
 					Object: obj.Path,
 				}
 				if len(res.JSON200.Results) > 0 {
 					data.Commit = res.JSON200.Results[0]
-					data.CommitMessage = splitOnNewLine(stringTrimLen((res.JSON200.Results[0].Message), annotateMessageSize))
+					data.CommitMessage = splitOnNewLine(stringTrimLen(res.JSON200.Results[0].Message, annotateMessageSize))
 				}
 				Write(annotateTemplate, data)
 			}

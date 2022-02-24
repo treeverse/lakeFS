@@ -119,7 +119,7 @@ var abuseRandomWritesCmd = &cobra.Command{
 
 		client := getClient()
 		resp, err := client.GetRepositoryWithResponse(cmd.Context(), u.Repository)
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 
 		repo := resp.JSON200
 		storagePrefix := repo.StorageNamespace
@@ -177,7 +177,7 @@ var abuseCreateBranchesCmd = &cobra.Command{
 					After:  &currentOffset,
 					Amount: &amount,
 				})
-				DieOnResponseError(res, err)
+				DieOnErrorOrUnexpectedStatusCode(res, err, http.StatusOK)
 
 				for _, ref := range res.JSON200.Results {
 					if !strings.HasPrefix(ref.Id, branchPrefix) {

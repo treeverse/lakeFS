@@ -2413,7 +2413,7 @@ lakectl repo create <repository uri> <storage namespace> [flags]
 {:.no_toc}
 
 ```
-lakectl create lakefs://some-repo-name s3://some-bucket-name
+lakectl repo create lakefs://some-repo-name s3://some-bucket-name
 ```
 
 #### Options

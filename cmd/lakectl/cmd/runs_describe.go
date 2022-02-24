@@ -37,7 +37,7 @@ var runsDescribeCmd = &cobra.Command{
 
 		// run result information
 		runsRes, err := client.GetRunWithResponse(ctx, u.Repository, runID)
-		DieOnResponseError(runsRes, err)
+		DieOnErrorOrUnexpectedStatusCode(runsRes, err, http.StatusOK)
 
 		runResult := runsRes.JSON200
 		Write(actionRunResultTemplate, convertRunResultTable(runResult))
@@ -51,7 +51,7 @@ var runsDescribeCmd = &cobra.Command{
 				After:  api.PaginationAfterPtr(after),
 				Amount: api.PaginationAmountPtr(amountForPagination),
 			})
-			DieOnResponseError(runHooksRes, err)
+			DieOnErrorOrUnexpectedStatusCode(runHooksRes, err, http.StatusOK)
 			pagination = runHooksRes.JSON200.Pagination
 			data := struct {
 				Hooks      []api.HookRun

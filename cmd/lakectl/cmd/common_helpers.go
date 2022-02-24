@@ -9,7 +9,9 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -40,6 +42,8 @@ const (
 
 const internalPageSize = 1000          // when retreiving all records, use this page size under the hood
 const defaultAmountArgumentValue = 100 // when no amount is specified, use this value for the argument
+
+const defaultResponseOnSwaggerClient = http.StatusNoContent
 
 const resourceListTemplate = `{{.Table | table -}}
 {{.Pagination | paginate }}
@@ -206,7 +210,32 @@ func DieOnResponseError(response interface{}, err error) {
 		DieErr(retrievedErr)
 	}
 }
+func DieOnErrorOrUnexpectedStatusCode(response interface{}, err error, expectedStatusCode int) {
+	DieOnResponseError(response, err)
+	var statusCode int
+	if httpResponse, ok := response.(*http.Response); ok {
+		statusCode = httpResponse.StatusCode
+	} else {
+		r := reflect.Indirect(reflect.ValueOf(response))
+		f := r.FieldByName("HTTPResponse")
+		httpResponse, _ := f.Interface().(*http.Response)
+		if httpResponse != nil {
+			statusCode = httpResponse.StatusCode
+		}
+	}
 
+	if statusCode == 0 {
+		DieErr(fmt.Errorf("could not get status code from response"))
+	}
+	if statusCode != expectedStatusCode {
+		// redirect to not found page
+		if statusCode == 302 {
+			DieErr(fmt.Errorf("got not found error, probablly wrong endpoint url"))
+		}
+		DieErr(fmt.Errorf("got unexpected status code: " + strconv.Itoa(statusCode) + ", expected: " + strconv.Itoa(expectedStatusCode)))
+	}
+
+}
 func DieOnHTTPError(httpResponse *http.Response) {
 	err := helpers.HTTPResponseAsError(httpResponse)
 	if err != nil {
