@@ -1,9 +1,11 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
 	"net/http"
+
+	"github.com/spf13/cobra"
+
+	"github.com/treeverse/lakefs/pkg/api"
 )
 
 const actionsRunsListTemplate = `{{.ActionsRunsTable | table -}}

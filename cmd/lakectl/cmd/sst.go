@@ -9,11 +9,12 @@ import (
 
 	pebblesst "github.com/cockroachdb/pebble/sstable"
 	"github.com/spf13/cobra"
+	"google.golang.org/protobuf/proto"
+
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
 	"github.com/treeverse/lakefs/pkg/graveler/sstable"
-	"google.golang.org/protobuf/proto"
 )
 
 func readStdin() (pebblesst.ReadableFile, error) {

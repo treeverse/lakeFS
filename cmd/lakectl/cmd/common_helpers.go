@@ -16,13 +16,13 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/uri"
-
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
+	"golang.org/x/term"
+
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
-	"golang.org/x/term"
+	"github.com/treeverse/lakefs/pkg/uri"
 )
 
 var isTerminal = true
@@ -229,7 +229,7 @@ func DieOnErrorOrUnexpectedStatusCode(response interface{}, err error, expectedS
 	}
 	if statusCode != expectedStatusCode {
 		// redirected to not found page
-		if statusCode == 302 {
+		if statusCode == http.StatusFound {
 			Die("got not found error, probably wrong endpoint url", 1)
 		}
 		Die("got unexpected status code: "+strconv.Itoa(statusCode)+", expected: "+strconv.Itoa(expectedStatusCode), 1)
