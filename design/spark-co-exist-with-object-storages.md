@@ -36,21 +36,25 @@ the file system for object store URIs with a certain scheme. For example, the fo
 ```shell
 fs.s3.impl=RouterFileSystem
 ```
-This will force any file system operation performed on an object URI with `scheme=s3` to go through `RouterFileSystem`.   
+This will force any file system operation performed on an object URI with `scheme=s3` to go through `RouterFileSystem`.
 
 ### URI translation
+
+
 
 `RouterFileSystem` has access to a configurable mapping that maps bucket names into lakeFS repositories and prefixes, e.g.
 ```json
 "MapperConfig" : [
     {
         "source_bucket_pattern": "bucket-a",
-        "source_key_pattern": "foo/*",
+        "source_key_pattern": "partition_key=*",
         "mapped_bucket_name": "example-repo",
         "mapped_prefix": "dev/"
     }
 ]
 ```
+
+With the mapping above, the URI `s3://bucket-a/partition_key=A/foo.parquet` will be translated into `s3://example-repo/dev/partition_key=A/foo.parquet`.
 
 A mapper config can have the following properties:
 | Property              | Description                                                                                 | Required |
@@ -60,8 +64,6 @@ A mapper config can have the following properties:
 | mapped_bucket_name    | The bucket name to use when routing the request to the destination client                   | No       |
 | mapped_prefix         | An optional string to prepend to the key when routing the request to the destination client | No       |
 The same that we do with [boto-s3-router](https://github.com/treeverse/boto-s3-router)
-
-With the mapping above, the URI `s3://bucket-a/foo/foo.parquet` will be translated into `s3://example-repo/dev/foo.parquet`. 
 
 ### Invoke file system operations
 
@@ -75,6 +77,23 @@ Considering the example above, the relevant object store and file system are S3 
 Given that `RouterFileSystem` is configured as the file system for URIs with a certain scheme (e.g. `scheme=s3`),
 we need to provide a way to get the relevant file system that can perform actual file system operations against the 
 relevant object store, e.g. `S3AFileSystem`. 
+
+define a default file system?
+should be applied last 
+```shell
+routerfs.mapping.default.replace = '^s3a://'
+routerfs.mapping.default.with = 's3a-wrapped://'
+```
+
+There are two ways to do that:
+1. 
+
+##### Using different schemes
+
+Goal -
+find a way to eliminate the need of using per-bucket configurations. why? because it is only supported from for hadoop-aws (includes S3AFileSystem implementation) versions >= [2.8.0](https://hadoop.apache.org/docs/r2.8.0/hadoop-aws/tools/hadoop-aws/index.html#Configurations_different_S3_buckets)
+
+Why do I currently need to use per bucket configurations?
 To do that, we would follow a two-step process: 
 1. add the following Spark configuration:
 ```shell
@@ -140,12 +159,17 @@ set and get mappings.
 
 1. Based on our experience with lakeFSFS, we already know that supporting a hadoop file system is difficult. There are many things that can go wrong in terms of dependency conflicts, and unexpected behaviours working with managed frameworks (i.e. Databricks, EMR)
 2. The suggested method to [getting the relevant underlying filesystem](#getting-the-relevant-file-system) is kind of a hack.
-3. Hadoop per-bucket configurations are required for RouterFileSystem but are only supported from Hadoop 3.3.1 onwards. 
+3. This solution relays on Hadoop per-bucket configurations that are only supported for hadoop-aws (includes S3AFileSystem implementation) versions >= [2.8.0](https://hadoop.apache.org/docs/r2.8.0/hadoop-aws/tools/hadoop-aws/index.html#Configurations_different_S3_buckets)  
 4. It's complex.
 
 ## Alternatives considered 
 
 Currently, none. we need to that because the proposed solution adds a notable amount of friction. 
+
+
+
+
+
 
 
 
