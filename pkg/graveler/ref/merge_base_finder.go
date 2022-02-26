@@ -72,11 +72,11 @@ func FindMergeBase(ctx context.Context, getter CommitGetter, repositoryID gravel
 	}
 }
 
-func getCommitAndEnqueue(ctx context.Context, getter CommitGetter, queue *CommitsGenerationPriorityQueue, repositoryID graveler.RepositoryID, commitId graveler.CommitID) (*graveler.Commit, error) {
-	commit, err := getter.GetCommit(ctx, repositoryID, commitId)
+func getCommitAndEnqueue(ctx context.Context, getter CommitGetter, queue *CommitsGenerationPriorityQueue, repositoryID graveler.RepositoryID, commitID graveler.CommitID) (*graveler.Commit, error) {
+	commit, err := getter.GetCommit(ctx, repositoryID, commitID)
 	if err != nil {
 		return nil, err
 	}
-	heap.Push(queue, &graveler.CommitRecord{CommitID: commitId, Commit: commit})
+	heap.Push(queue, &graveler.CommitRecord{CommitID: commitID, Commit: commit})
 	return commit, nil
 }
