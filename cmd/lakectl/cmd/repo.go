@@ -47,7 +47,7 @@ var repoListCmd = &cobra.Command{
 var repoCreateCmd = &cobra.Command{
 	Use:     "create <repository uri> <storage namespace>",
 	Short:   "Create a new repository",
-	Example: "lakectl create lakefs://some-repo-name s3://some-bucket-name",
+	Example: "lakectl repo create lakefs://some-repo-name s3://some-bucket-name",
 	Args:    cobra.ExactArgs(repoCreateCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
