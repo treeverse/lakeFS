@@ -73,9 +73,11 @@ type configuration struct {
 	}
 
 	Logging struct {
-		Format string `mapstructure:"format"`
-		Level  string `mapstructure:"level"`
-		Output string `mapstructure:"output"`
+		Format        string   `mapstructure:"format"`
+		Level         string   `mapstructure:"level"`
+		Output        []string `mapstructure:"output"`
+		FileMaxSizeMB int      `mapstructure:"file_max_size_mb"`
+		FilesKeep     int      `mapstructure:"files_keep"`
 		// TraceRequestHeaders work only on 'trace' level, default is false as it may log sensitive data to the log
 		TraceRequestHeaders bool `mapstructure:"trace_request_headers"`
 	}
