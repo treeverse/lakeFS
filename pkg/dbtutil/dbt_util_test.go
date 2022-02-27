@@ -1,26 +1,32 @@
 package dbtutil
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"os/exec"
 	"reflect"
 	"regexp"
+	"strings"
 	"testing"
 )
 
 type DummyCommandExecutor struct {
-	err    error
-	output string
+	err       error
+	output    string
+	envReturn bool
 }
 
-func (dce *DummyCommandExecutor) ExecuteCommand(*exec.Cmd) ([]byte, error) {
-	return []byte(dce.output), dce.err
+func (dce DummyCommandExecutor) ExecuteCommand(cmd *exec.Cmd) ([]byte, error) {
+	sb := strings.Builder{}
+	sb.WriteString(dce.output)
+	if len(cmd.Env) > 0 && dce.envReturn {
+		sb.WriteString(fmt.Sprintf(" %s", cmd.Env[len(cmd.Env)-1]))
+	}
+	return []byte(sb.String()), dce.err
 }
 
 var schemaRegex = regexp.MustCompile(`schema: (.+)`)
-
-// 3. Submatch is nil (output is not in the regex)
-// 4. Submatch has less than 2 parts (meaning that it's not of the format "schema: nameOfSchema")
 
 func TestDbtDebug(t *testing.T) {
 	type args struct {
@@ -29,10 +35,10 @@ func TestDbtDebug(t *testing.T) {
 		executor    CommandExecutor
 	}
 	tests := []struct {
-		name    string
-		args    args
-		want    string
-		wantErr bool
+		name                              string
+		args                              args
+		want                              string
+		wantErr                           bool
 		validateMissingSchemaInDebugError bool
 	}{
 		{
@@ -40,7 +46,7 @@ func TestDbtDebug(t *testing.T) {
 			args: args{
 				projectRoot: "nevermind",
 				schemaRegex: schemaRegex,
-				executor:    &DummyCommandExecutor{output: "schema: success", err: nil},
+				executor:    DummyCommandExecutor{output: "schema: success", err: nil},
 			},
 			want:    "success",
 			wantErr: false,
@@ -50,7 +56,7 @@ func TestDbtDebug(t *testing.T) {
 			args: args{
 				projectRoot: "nevermind",
 				schemaRegex: nil,
-				executor:    &DummyCommandExecutor{ output: "some error output", err: errors.New("BOOM") },
+				executor:    DummyCommandExecutor{output: "some error output", err: errors.New("BOOM")},
 			},
 			want:    "some error output",
 			wantErr: true,
@@ -60,10 +66,10 @@ func TestDbtDebug(t *testing.T) {
 			args: args{
 				projectRoot: "nevermind",
 				schemaRegex: schemaRegex,
-				executor:    &DummyCommandExecutor{ output: "no schema definition", err: nil },
+				executor:    DummyCommandExecutor{output: "no schema definition", err: nil},
 			},
-			want: "",
-			wantErr: true,
+			want:                              "",
+			wantErr:                           true,
 			validateMissingSchemaInDebugError: true,
 		},
 	}
@@ -74,7 +80,10 @@ func TestDbtDebug(t *testing.T) {
 				t.Errorf("DbtDebug() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if (err != nil) && tt.validateMissingSchemaInDebugError && err.()
+			if (err != nil) && tt.validateMissingSchemaInDebugError && !errors.Is(err, MissingSchemaInDebugError{}) {
+				t.Errorf("DbtDebug() error = %v, wantErr %v, validateMissingSchemaInDebugError %v", err, tt.wantErr, tt.validateMissingSchemaInDebugError)
+				return
+			}
 			if got != tt.want {
 				t.Errorf("DbtDebug() got = %v, want %v", got, tt.want)
 			}
@@ -83,6 +92,8 @@ func TestDbtDebug(t *testing.T) {
 }
 
 func TestDbtLsToJson(t *testing.T) {
+	DBTResources := make([]DBTResource, 0)
+	DBTResources = append(DBTResources, DBTResource{Schema: "schema1", Alias: "alias1"}, DBTResource{Schema: "schema2", Alias: "alias2"})
 	type args struct {
 		projectRoot  string
 		resourceType string
@@ -92,10 +103,42 @@ func TestDbtLsToJson(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    []DbtResource
+		want    []DBTResource
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Happy Flow",
+			args: args{
+				projectRoot:  "nevermind",
+				resourceType: "nevermind",
+				selectValues: []string{"nevermind"},
+				executor:     DummyCommandExecutor{err: nil, output: generateJsonStringFromResources(DBTResources...)},
+			},
+			want:    DBTResources,
+			wantErr: false,
+		},
+		{
+			name: "command returns an error",
+			args: args{
+				projectRoot:  "nevermind",
+				resourceType: "nevermind",
+				selectValues: []string{"nevermind"},
+				executor:     DummyCommandExecutor{err: errors.New("BOOM"), output: ""},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "command returns invalid json",
+			args: args{
+				projectRoot:  "nevermind",
+				resourceType: "nevermind",
+				selectValues: []string{"nevermind"},
+				executor:     DummyCommandExecutor{err: nil, output: "invalid json"},
+			},
+			want:    nil,
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -112,6 +155,8 @@ func TestDbtLsToJson(t *testing.T) {
 }
 
 func TestDbtRun(t *testing.T) {
+	schemaKey := "theschema"
+	schemaValue := "myschema"
 	type args struct {
 		projectRoot            string
 		schema                 string
@@ -125,7 +170,70 @@ func TestDbtRun(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "happy flow",
+			args: args{
+				projectRoot:            "nevermind",
+				schema:                 schemaValue,
+				schemaEnvVarIdentifier: schemaKey,
+				selectValues:           nil,
+				executor: DummyCommandExecutor{
+					err:       nil,
+					output:    "hello",
+					envReturn: true,
+				},
+			},
+			want:    fmt.Sprintf("hello %s=%s", schemaKey, schemaValue),
+			wantErr: false,
+		},
+		{
+			name: "schemaEnvVarIdentifier empty",
+			args: args{
+				projectRoot:            "nevermind",
+				schema:                 schemaValue,
+				schemaEnvVarIdentifier: "",
+				selectValues:           nil,
+				executor: DummyCommandExecutor{
+					err:       nil,
+					output:    "hello",
+					envReturn: false,
+				},
+			},
+			want:    "hello",
+			wantErr: false,
+		},
+		{
+			name: "schema value empty",
+			args: args{
+				projectRoot:            "nevermind",
+				schema:                 "",
+				schemaEnvVarIdentifier: schemaKey,
+				selectValues:           nil,
+				executor: DummyCommandExecutor{
+					err:       nil,
+					output:    "hello",
+					envReturn: false,
+				},
+			},
+			want:    "hello",
+			wantErr: false,
+		},
+		{
+			name: "command returns an error",
+			args: args{
+				projectRoot:            "nevermind",
+				schema:                 schemaValue,
+				schemaEnvVarIdentifier: schemaKey,
+				selectValues:           nil,
+				executor: DummyCommandExecutor{
+					err:       errors.New("BOOM"),
+					output:    "hello",
+					envReturn: true,
+				},
+			},
+			want:    fmt.Sprintf("hello %s=%s", schemaKey, schemaValue),
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -141,67 +249,12 @@ func TestDbtRun(t *testing.T) {
 	}
 }
 
-func TestMissingSchemaIdentifierError_Error(t *testing.T) {
-	type fields struct {
-		schemaIdentifier       string
-		generateSchemaFileName string
+func generateJsonStringFromResources(resources ...DBTResource) string {
+	sb := strings.Builder{}
+	for _, resource := range resources {
+		j, _ := json.Marshal(resource)
+		sb.WriteString(string(j))
+		sb.WriteString("\n")
 	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   string
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mie := &MissingSchemaIdentifierError{
-				schemaIdentifier:       tt.fields.schemaIdentifier,
-				generateSchemaFileName: tt.fields.generateSchemaFileName,
-			}
-			if got := mie.Error(); got != tt.want {
-				t.Errorf("Error() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestMissingSchemaInDebugError_Error(t *testing.T) {
-	tests := []struct {
-		name string
-		want string
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mie := &MissingSchemaInDebugError{}
-			if got := mie.Error(); got != tt.want {
-				t.Errorf("Error() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestValidateGenerateSchemaMacro(t *testing.T) {
-	type args struct {
-		projectRoot            string
-		macrosDirName          string
-		generateSchemaFileName string
-		schemaIdentifier       string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := ValidateGenerateSchemaMacro(tt.args.projectRoot, tt.args.macrosDirName, tt.args.generateSchemaFileName, tt.args.schemaIdentifier); (err != nil) != tt.wantErr {
-				t.Errorf("ValidateGenerateSchemaMacro() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
+	return sb.String()
 }
