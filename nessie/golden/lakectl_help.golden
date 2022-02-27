@@ -30,7 +30,7 @@ Available Commands:
 
 Flags:
       --base-uri string      base URI used for lakeFS address parse
-  -c, --config string        config file (default is /home/barak/.lakectl.yaml)
+  -c, --config string        config file (default is $HOME/.lakectl.yaml)
   -h, --help                 help for lakectl
       --log-format string    set logging output format
       --log-level string     set logging level (default "none")
