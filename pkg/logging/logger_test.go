@@ -10,21 +10,21 @@ import (
 
 func TestSetOutputs(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
-		SetOutputs(nil)
+		SetOutputs(nil, 0, 0)
 		if defaultLogger.Out != os.Stderr {
 			t.Error("Logger output should be stderr by default")
 		}
 	})
 
 	t.Run("stdout", func(t *testing.T) {
-		SetOutputs([]string{"-"})
+		SetOutputs([]string{"-"}, 0, 0)
 		if defaultLogger.Out != os.Stdout {
 			t.Error("Logger output should be stdout")
 		}
 	})
 
 	t.Run("stderr", func(t *testing.T) {
-		SetOutputs([]string{"="})
+		SetOutputs([]string{"="}, 0, 0)
 		if defaultLogger.Out != os.Stderr {
 			t.Error("Logger output should be stderr")
 		}
@@ -34,7 +34,7 @@ func TestSetOutputs(t *testing.T) {
 		logDir := t.TempDir()
 		log1 := filepath.Join(logDir, "file1.log")
 		log2 := filepath.Join(logDir, "file2.log")
-		SetOutputs([]string{log1, log2})
+		SetOutputs([]string{log1, log2}, 0, 0)
 		const content = "hello log"
 		_, err := io.WriteString(defaultLogger.Out, content)
 		if err != nil {

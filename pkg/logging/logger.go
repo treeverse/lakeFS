@@ -96,7 +96,7 @@ func SetLevel(level string) {
 	}
 }
 
-func SetOutputs(outputs []string) {
+func SetOutputs(outputs []string, fileMaxSizeMB, filesKeep int) {
 	var writers []io.Writer
 	for _, output := range outputs {
 		var w io.Writer
@@ -109,7 +109,9 @@ func SetOutputs(outputs []string) {
 			w = os.Stderr
 		default:
 			w = &lumberjack.Logger{
-				Filename: output,
+				Filename:   output,
+				MaxSize:    fileMaxSizeMB,
+				MaxBackups: filesKeep,
 			}
 		}
 		writers = append(writers, w)

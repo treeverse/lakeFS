@@ -16,7 +16,10 @@ func setupLogger() {
 	logging.SetOutputFormat(viper.GetString(LoggingFormatKey))
 
 	// set outputs
-	logging.SetOutputs(viper.GetStringSlice(LoggingOutputKey))
+	output := viper.GetStringSlice(LoggingOutputKey)
+	maxSizeMB := viper.GetInt(LoggingFileMaxSizeMBKey)
+	fileKeep := viper.GetInt(LoggingFilesKeepKey)
+	logging.SetOutputs(output, maxSizeMB, fileKeep)
 
 	// set level
 	logging.SetLevel(viper.GetString(LoggingLevelKey))

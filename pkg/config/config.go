@@ -108,9 +108,11 @@ func NewConfig() (*Config, error) {
 const (
 	ListenAddressKey = "listen_address"
 
-	LoggingFormatKey = "logging.format"
-	LoggingLevelKey  = "logging.level"
-	LoggingOutputKey = "logging.output"
+	LoggingFormatKey        = "logging.format"
+	LoggingLevelKey         = "logging.level"
+	LoggingOutputKey        = "logging.output"
+	LoggingFileMaxSizeMBKey = "logging.file_max_size_mb"
+	LoggingFilesKeepKey     = "logging.files_keep"
 
 	ActionsEnabledKey = "actions.enabled"
 
