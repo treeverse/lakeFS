@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/metastore"
-	"github.com/treeverse/lakefs/pkg/uri"
 )
 
 func ExtractRepoAndBranchFromDBName(ctx context.Context, clientType, dbName string) (string, string, error) {
@@ -18,7 +17,7 @@ func ExtractRepoAndBranchFromDBName(ctx context.Context, clientType, dbName stri
 		return "", "", fmt.Errorf("failed to get database on extractBranchFromSchema from '%s': %w", dbName, err)
 	}
 
-	repo, branch, err := metastore.GetRepoAndBranchFromMSLocationUri(metastoreDB.LocationURI)
+	repo, branch, err := metastore.GetRepoAndBranchFromMSLocationURI(metastoreDB.LocationURI)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to get source branch on extractBranchFromSchema from '%s': %w", metastoreDB.LocationURI, err)
 	}
@@ -26,19 +25,19 @@ func ExtractRepoAndBranchFromDBName(ctx context.Context, clientType, dbName stri
 	return repo, branch, nil
 }
 
-func GenerateLakefsBranchUriFromRepoAndBranchName(repoName, branchName string) string {
-	return fmt.Sprintf(`%s://%s/%s`, uri.LakeFSSchema, repoName, branchName)
+func GenerateLakeFSBranchURIFromRepoAndBranchName(repoName, branchName string) string {
+	return fmt.Sprintf(`lakefs://%s/%s`, repoName, branchName)
 }
 
 func CreateBranch(ctx context.Context, sourceLakefsBranchUri, destinationLakefsBranchUri string) {
-	branchUri := MustParseRefURI("destination branch uri", destinationLakefsBranchUri)
-	sourceUri := MustParseRefURI("source branch uri", sourceLakefsBranchUri)
+	branchURI := MustParseRefURI("destination branch uri", destinationLakefsBranchUri)
+	sourceURI := MustParseRefURI("source branch uri", sourceLakefsBranchUri)
 
 	client := getClient()
-	resp, err := client.CreateBranchWithResponse(ctx, branchUri.Repository, api.CreateBranchJSONRequestBody{
-		Name:   branchUri.Ref,
-		Source: sourceUri.Ref,
+	resp, err := client.CreateBranchWithResponse(ctx, branchURI.Repository, api.CreateBranchJSONRequestBody{
+		Name:   branchURI.Ref,
+		Source: sourceURI.Ref,
 	})
 	DieOnResponseError(resp, err)
-	Fmt("created branch '%s' %s\n", branchUri.Ref, string(resp.Body))
+	Fmt("created branch '%s' %s\n", branchURI.Ref, string(resp.Body))
 }

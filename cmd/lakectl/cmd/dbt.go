@@ -143,8 +143,8 @@ func handleBranchCreation(ctx context.Context, clientType, schema, branchName st
 	if err != nil {
 		DieErr(noSourceBranchError)
 	}
-	sourceBranchUri := GenerateLakefsBranchUriFromRepoAndBranchName(sourceRepo, sourceBranch)
-	destinationBranchUri := GenerateLakefsBranchUriFromRepoAndBranchName(sourceRepo, branchName)
+	sourceBranchUri := GenerateLakeFSBranchURIFromRepoAndBranchName(sourceRepo, sourceBranch)
+	destinationBranchUri := GenerateLakeFSBranchURIFromRepoAndBranchName(sourceRepo, branchName)
 	CreateBranch(ctx, sourceBranchUri, destinationBranchUri)
 }
 
