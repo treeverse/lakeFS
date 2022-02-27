@@ -78,8 +78,8 @@ var tagCreateCmd = &cobra.Command{
 		force, _ := cmd.Flags().GetBool("force")
 		if force {
 			// checking validity of the commitRef before deleting the old one
-			resp, err := client.GetCommitWithResponse(ctx, tagURI.Repository, commitRef)
-			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+			res, err := client.GetCommitWithResponse(ctx, tagURI.Repository, commitRef)
+			DieOnErrorOrUnexpectedStatusCode(res, err, http.StatusOK)
 
 			resp, err := client.DeleteTagWithResponse(ctx, tagURI.Repository, tagURI.Ref)
 			if err != nil && (resp == nil || resp.JSON404 == nil) {
