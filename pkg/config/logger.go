@@ -15,8 +15,8 @@ func setupLogger() {
 	// set output format
 	logging.SetOutputFormat(viper.GetString(LoggingFormatKey))
 
-	// set output
-	logging.SetOutput(viper.GetString(LoggingOutputKey))
+	// set outputs
+	logging.SetOutputs(viper.GetStringSlice(LoggingOutputKey))
 
 	// set level
 	logging.SetLevel(viper.GetString(LoggingLevelKey))

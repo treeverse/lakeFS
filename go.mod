@@ -27,7 +27,7 @@ require (
 	github.com/dlmiddlecote/sqlstats v1.0.2
 	github.com/docker/cli v20.10.10+incompatible // indirect
 	github.com/docker/docker v20.10.10+incompatible // indirect
-	github.com/fsnotify/fsnotify v1.4.9 // indirect
+	github.com/fsnotify/fsnotify v1.4.9
 	github.com/georgysavva/scany v0.2.7
 	github.com/getkin/kin-openapi v0.53.0
 	github.com/go-chi/chi/v5 v5.0.0
@@ -90,6 +90,7 @@ require (
 	google.golang.org/api v0.51.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/ini.v1 v1.62.0 // indirect
+	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/retry.v1 v1.0.3
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	pgregory.net/rapid v0.4.0 // indirect
