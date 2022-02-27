@@ -7,7 +7,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/treeverse/lakefs/pkg/auth"
+	"github.com/treeverse/lakefs/pkg/auth/keys"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/gateway/errors"
@@ -150,7 +150,7 @@ func (o *Operation) EncodeError(w http.ResponseWriter, req *http.Request, e erro
 
 func generateHostID() string {
 	const generatedHostIDLength = 8
-	return auth.HexStringGenerator(generatedHostIDLength)
+	return keys.HexStringGenerator(generatedHostIDLength)
 }
 
 type AuthorizedOperation struct {

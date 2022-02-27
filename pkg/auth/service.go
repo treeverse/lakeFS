@@ -11,6 +11,7 @@ import (
 	sq "github.com/Masterminds/squirrel"
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
+	"github.com/treeverse/lakefs/pkg/auth/keys"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/auth/wildcard"
@@ -186,17 +187,6 @@ func deleteOrNotFound(tx db.Tx, stmt string, args ...interface{}) error {
 		return ErrNotFound
 	}
 	return nil
-}
-
-func genAccessKeyID() string {
-	const accessKeyLength = 14
-	key := KeyGenerator(accessKeyLength)
-	return fmt.Sprintf("%s%s%s", "AKIAJ", key, "Q")
-}
-
-func genSecretAccessKey() string {
-	const secretKeyLength = 30
-	return Base64StringGenerator(secretKeyLength)
 }
 
 type DBAuthService struct {
@@ -699,8 +689,8 @@ func (s *DBAuthService) ListPolicies(ctx context.Context, params *model.Paginati
 }
 
 func (s *DBAuthService) CreateCredentials(ctx context.Context, username string) (*model.Credential, error) {
-	accessKeyID := genAccessKeyID()
-	secretAccessKey := genSecretAccessKey()
+	accessKeyID := keys.GenAccessKeyID()
+	secretAccessKey := keys.GenSecretAccessKey()
 	return s.AddCredentials(ctx, username, accessKeyID, secretAccessKey)
 }
 
