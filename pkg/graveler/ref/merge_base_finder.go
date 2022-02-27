@@ -60,8 +60,6 @@ func FindMergeBase(ctx context.Context, getter CommitGetter, repositoryID gravel
 			reached[parent] |= commitFlags
 			if reached[parent]&fromLeft != 0 && reached[parent]&fromRight != 0 {
 				// commit was reached from both left and right nodes
-				// At this point, we don't have the commit in-memory but only the corresponding commit record in the queue,
-				// therefore a call to GetCommit is issued.
 				return getter.GetCommit(ctx, repositoryID, parent)
 			}
 		}
