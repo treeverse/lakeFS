@@ -1,9 +1,10 @@
-package auth
+package keys
 
 import (
 	crand "crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
+	"fmt"
 	"strings"
 )
 
@@ -53,4 +54,15 @@ func HexStringGenerator(bytes int) string {
 		break
 	}
 	return ret
+}
+
+func GenAccessKeyID() string {
+	const accessKeyLength = 14
+	key := KeyGenerator(accessKeyLength)
+	return fmt.Sprintf("%s%s%s", "AKIAJ", key, "Q")
+}
+
+func GenSecretAccessKey() string {
+	const secretKeyLength = 30
+	return Base64StringGenerator(secretKeyLength)
 }
