@@ -168,6 +168,7 @@ func setDefaults() {
 	viper.SetDefault(LoggingFormatKey, DefaultLoggingFormat)
 	viper.SetDefault(LoggingLevelKey, DefaultLoggingLevel)
 	viper.SetDefault(LoggingOutputKey, DefaultLoggingOutput)
+	viper.SetDefault(LoggingFilesKeepKey, DefaultLoggingFilesKeepKey)
 
 	viper.SetDefault(ActionsEnabledKey, DefaultActionsEnabled)
 

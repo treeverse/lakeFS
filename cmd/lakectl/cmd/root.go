@@ -53,7 +53,7 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		logging.SetLevel(logLevel)
 		logging.SetOutputFormat(logFormat)
-		logging.SetOutputs(logOutputs)
+		logging.SetOutputs(logOutputs, 0, 0)
 		if noColorRequested {
 			DisableColors()
 		}
