@@ -150,7 +150,7 @@ func (o *Operation) EncodeError(w http.ResponseWriter, req *http.Request, e erro
 
 func generateHostID() string {
 	const generatedHostIDLength = 8
-	return compat.HexStringGenerator(generatedHostIDLength)
+	return keys.HexStringGenerator(generatedHostIDLength)
 }
 
 type AuthorizedOperation struct {

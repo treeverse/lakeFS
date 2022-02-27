@@ -689,8 +689,8 @@ func (s *DBAuthService) ListPolicies(ctx context.Context, params *model.Paginati
 }
 
 func (s *DBAuthService) CreateCredentials(ctx context.Context, username string) (*model.Credential, error) {
-	accessKeyID := compat.GenAccessKeyID()
-	secretAccessKey := compat.GenSecretAccessKey()
+	accessKeyID := keys.GenAccessKeyID()
+	secretAccessKey := keys.GenSecretAccessKey()
 	return s.AddCredentials(ctx, username, accessKeyID, secretAccessKey)
 }
 
