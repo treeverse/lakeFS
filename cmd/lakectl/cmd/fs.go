@@ -42,12 +42,12 @@ var fsStatCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := MustParsePathURI("path", args[0])
 		client := getClient()
-		res, err := client.StatObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.StatObjectParams{
+		resp, err := client.StatObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.StatObjectParams{
 			Path: *pathURI.Path,
 		})
-		DieOnErrorOrUnexpectedStatusCode(res, err, http.StatusOK)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 
-		stat := res.JSON200
+		stat := resp.JSON200
 		Write(fsStatTemplate, stat)
 	},
 }

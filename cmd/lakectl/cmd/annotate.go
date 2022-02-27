@@ -48,14 +48,14 @@ var annotateCmd = &cobra.Command{
 					Amount:  api.PaginationAmountPtr(1),
 					Objects: &[]string{obj.Path},
 				}
-				res, err := client.LogCommitsWithResponse(context, pathURI.Repository, pathURI.Ref, logCommitsParams)
+				resp, err := client.LogCommitsWithResponse(context, pathURI.Repository, pathURI.Ref, logCommitsParams)
 				DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 				data := objectCommitData{
 					Object: obj.Path,
 				}
-				if len(res.JSON200.Results) > 0 {
-					data.Commit = res.JSON200.Results[0]
-					data.CommitMessage = splitOnNewLine(stringTrimLen(res.JSON200.Results[0].Message, annotateMessageSize))
+				if len(resp.JSON200.Results) > 0 {
+					data.Commit = resp.JSON200.Results[0]
+					data.CommitMessage = splitOnNewLine(stringTrimLen((resp.JSON200.Results[0].Message), annotateMessageSize))
 				}
 				Write(annotateTemplate, data)
 			}

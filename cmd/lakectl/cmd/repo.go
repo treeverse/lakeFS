@@ -28,18 +28,18 @@ var repoListCmd = &cobra.Command{
 		after := MustString(cmd.Flags().GetString("after"))
 		clt := getClient()
 
-		res, err := clt.ListRepositoriesWithResponse(cmd.Context(), &api.ListRepositoriesParams{
+		resp, err := clt.ListRepositoriesWithResponse(cmd.Context(), &api.ListRepositoriesParams{
 			After:  api.PaginationAfterPtr(after),
 			Amount: api.PaginationAmountPtr(amount),
 		})
-		DieOnErrorOrUnexpectedStatusCode(res, err, http.StatusOK)
-		repos := res.JSON200.Results
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		repos := resp.JSON200.Results
 		rows := make([][]interface{}, len(repos))
 		for i, repo := range repos {
 			ts := time.Unix(repo.CreationDate, 0).String()
 			rows[i] = []interface{}{repo.Id, ts, repo.DefaultBranch, repo.StorageNamespace}
 		}
-		pagination := res.JSON200.Pagination
+		pagination := resp.JSON200.Pagination
 		PrintTable(rows, []interface{}{"Repository", "Creation Date", "Default Ref Name", "Storage Namespace"}, &pagination, amount)
 	},
 }

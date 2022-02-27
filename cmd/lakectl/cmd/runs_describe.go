@@ -81,14 +81,14 @@ var runsDescribeCmd = &cobra.Command{
 
 func makeHookLog(ctx context.Context, client api.ClientWithResponsesInterface, repositoryID string, runID string) func(hookRunID string) (string, error) {
 	return func(hookRunID string) (string, error) {
-		res, err := client.GetRunHookOutputWithResponse(ctx, repositoryID, runID, hookRunID)
+		resp, err := client.GetRunHookOutputWithResponse(ctx, repositoryID, runID, hookRunID)
 		if err != nil {
 			return "", err
 		}
-		if res.StatusCode() != http.StatusOK {
-			return "", helpers.ResponseAsError(res)
+		if resp.StatusCode() != http.StatusOK {
+			return "", helpers.ResponseAsError(resp)
 		}
-		return string(res.Body), nil
+		return string(resp.Body), nil
 	}
 }
 

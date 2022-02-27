@@ -1339,7 +1339,7 @@ lakectl branch-protect add <repo uri> <pattern> [flags]
 {:.no_toc}
 
 ```
-lakectl branch-protect add lakefs://<repository> 'stable_*'
+lakectl add lakefs://<repository> 'stable_*'
 ```
 
 #### Options
@@ -1368,7 +1368,7 @@ lakectl branch-protect delete <repo uri> <pattern> [flags]
 {:.no_toc}
 
 ```
-lakectl branch-protect delete lakefs://<repository> stable_*
+lakectl delete lakefs://<repository> stable_*
 ```
 
 #### Options
@@ -1415,7 +1415,7 @@ lakectl branch-protect list <repo uri> [flags]
 {:.no_toc}
 
 ```
-lakectl branch-protect list lakefs://<repository>
+lakectl list lakefs://<repository>
 ```
 
 #### Options

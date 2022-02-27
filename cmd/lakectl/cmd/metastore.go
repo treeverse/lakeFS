@@ -284,12 +284,12 @@ var createSymlinkCmd = &cobra.Command{
 		defer fromClientDeferFunc()
 		defer toClientDeferFunc()
 
-		res, err := apiClient.CreateSymlinkFileWithResponse(cmd.Context(), repo, branch, &api.CreateSymlinkFileParams{Location: &path})
+		resp, err := apiClient.CreateSymlinkFileWithResponse(cmd.Context(), repo, branch, &api.CreateSymlinkFileParams{Location: &path})
 		if err != nil {
 			DieErr(err)
 		}
-		DieOnErrorOrUnexpectedStatusCode(res, err, http.StatusCreated)
-		location := res.JSON201.Location
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		location := resp.JSON201.Location
 
 		err = metastore.CopyOrMergeToSymlink(cmd.Context(), fromClient, toClient, fromDB, fromTable, toDB, toTable, location, cfg.GetFixSparkPlaceholder())
 		if err != nil {

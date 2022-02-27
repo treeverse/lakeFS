@@ -56,16 +56,16 @@ var logCmd = &cobra.Command{
 			logCommitsParams.Prefixes = &prefixesList
 		}
 		for pagination.HasMore {
-			res, err := client.LogCommitsWithResponse(cmd.Context(), branchURI.Repository, branchURI.Ref, logCommitsParams)
-			DieOnErrorOrUnexpectedStatusCode(res, err, http.StatusOK)
-			pagination = res.JSON200.Pagination
+			resp, err := client.LogCommitsWithResponse(cmd.Context(), branchURI.Repository, branchURI.Ref, logCommitsParams)
+			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+			pagination = resp.JSON200.Pagination
 			logCommitsParams.After = api.PaginationAfterPtr(pagination.NextOffset)
 			data := struct {
 				Commits         []api.Commit
 				Pagination      *Pagination
 				ShowMetaRangeID bool
 			}{
-				Commits:         res.JSON200.Results,
+				Commits:         resp.JSON200.Results,
 				ShowMetaRangeID: showMetaRangeID,
 				Pagination: &Pagination{
 					Amount:  amount,
