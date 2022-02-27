@@ -22,17 +22,17 @@ type MissingSchemaIdentifierError struct {
 	generateSchemaFileName string
 }
 
-func (mie *MissingSchemaIdentifierError) Error() string {
+func (mie MissingSchemaIdentifierError) Error() string {
 	return fmt.Sprintf("generate_schema_name does not contain %s addition. Handle lakefs support to %s or use skip-views flag", mie.schemaIdentifier, mie.generateSchemaFileName)
 }
 
 type MissingSchemaInDebugError struct{}
 
-func (mie *MissingSchemaInDebugError) Error() string {
+func (mie MissingSchemaInDebugError) Error() string {
 	return "failed extracting schema from dbt debug message"
 }
 
-type DbtResource struct {
+type DBTResource struct {
 	Schema string `json:"schema"`
 	Alias  string `json:"alias"`
 }
@@ -48,7 +48,7 @@ func ValidateGenerateSchemaMacro(projectRoot, macrosDirName, generateSchemaFileN
 		return err
 	}
 	if !strings.Contains(string(data), schemaIdentifier) {
-		return &MissingSchemaIdentifierError{schemaIdentifier: schemaIdentifier, generateSchemaFileName: generateSchemaFileName}
+		return MissingSchemaIdentifierError{schemaIdentifier: schemaIdentifier, generateSchemaFileName: generateSchemaFileName}
 	}
 	return nil
 }
@@ -62,7 +62,7 @@ func DbtDebug(projectRoot string, schemaRegex *regexp.Regexp, executor CommandEx
 	}
 	submatch := schemaRegex.FindSubmatch(output)
 	if submatch == nil || len(submatch) < 2 {
-		return "", &MissingSchemaInDebugError{}
+		return "", MissingSchemaInDebugError{}
 	}
 	schema := submatch[1]
 	return string(schema), nil
@@ -78,7 +78,7 @@ func DbtRun(projectRoot, schema, schemaEnvVarIdentifier string, selectValues []s
 	return string(output), err
 }
 
-func DbtLsToJson(projectRoot, resourceType string, selectValues []string, executor CommandExecutor) ([]DbtResource, error) {
+func DbtLsToJson(projectRoot, resourceType string, selectValues []string, executor CommandExecutor) ([]DBTResource, error) {
 	dbtCmd := exec.Command("dbt", "ls", "--resource-type", resourceType, "--select", strings.Join(selectValues, " "), "--output", "json", "--output-keys", resourceJsonKeys)
 	dbtCmd.Dir = projectRoot
 	output, err := executor.ExecuteCommand(dbtCmd)
@@ -86,18 +86,18 @@ func DbtLsToJson(projectRoot, resourceType string, selectValues []string, execut
 		fmt.Println(string(output))
 		return nil, err
 	}
-	models := make([]DbtResource, 0)
+	dbtResources := make([]DBTResource, 0)
 	scan := bufio.NewScanner(bytes.NewReader(output))
 	for scan.Scan() {
 		line := scan.Bytes()
-		var m DbtResource
+		var m DBTResource
 		err = json.Unmarshal(line, &m)
 		if err != nil {
 			return nil, err
 		}
-		models = append(models, m)
+		dbtResources = append(dbtResources, m)
 
 	}
 	err = scan.Err()
-	return models, err
+	return dbtResources, err
 }

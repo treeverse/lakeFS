@@ -21,7 +21,7 @@ type DbtCommandClient interface {
 	// Debug validates dbt connection using dbt debug, return the schema configured by the target environment (configured in the dbt profiles file)
 	Debug() string
 	// Ls performs 'dbt ls' over the given schema and selected materializations
-	Ls(resourceType string, selectStatement []string) []dbtutil.DbtResource
+	Ls(resourceType string, selectStatement []string) []dbtutil.DBTResource
 	// ValidateGenerateSchemaMacro validates that the "generate_schema_name.sql" file was created and used correctly (according to implementation)
 	ValidateGenerateSchemaMacro()
 }
@@ -75,7 +75,7 @@ func (d DbtClient) Debug() string {
 	return schemaOutput
 }
 
-func (d DbtClient) Ls(resourceType string, selectStatement []string) []dbtutil.DbtResource {
+func (d DbtClient) Ls(resourceType string, selectStatement []string) []dbtutil.DBTResource {
 	resources, err := dbtutil.DbtLsToJson(d.projectDir, resourceType, selectStatement, d)
 	if err != nil {
 		DieErr(err)
@@ -179,7 +179,7 @@ func createViews(dbtClient DbtCommandClient, toSchema string) {
 	fmt.Println("views created")
 }
 
-func copyModels(ctx context.Context, models []dbtutil.DbtResource, continueOnError bool, fromSchema, toSchema, branchName, dbfsLocation string, client metastore.Client) error {
+func copyModels(ctx context.Context, models []dbtutil.DBTResource, continueOnError bool, fromSchema, toSchema, branchName, dbfsLocation string, client metastore.Client) error {
 	for _, m := range models {
 		if fromSchema != m.Schema {
 			fmt.Printf("skipping %s.%s, not in schema: %s", m.Schema, m.Alias, fromSchema)
@@ -198,7 +198,7 @@ func copyModels(ctx context.Context, models []dbtutil.DbtResource, continueOnErr
 	return nil
 }
 
-func getDbtTables(dbtClient DbtCommandClient) []dbtutil.DbtResource {
+func getDbtTables(dbtClient DbtCommandClient) []dbtutil.DBTResource {
 	materializedSelection := []string{"config.materialized:table", "config.materialized:incremental"}
 	resourceType := "model"
 	return dbtClient.Ls(resourceType, materializedSelection)
