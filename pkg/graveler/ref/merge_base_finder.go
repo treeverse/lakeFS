@@ -62,11 +62,7 @@ func FindMergeBase(ctx context.Context, getter CommitGetter, repositoryID gravel
 				// commit was reached from both left and right nodes
 				// Since it is not certain that the commit exist in the commits queue, a call
 				// to GetCommit is issued
-				commit, err := getter.GetCommit(ctx, repositoryID, parent)
-				if err != nil {
-					return nil, err
-				}
-				return commit, nil
+				return getter.GetCommit(ctx, repositoryID, parent)
 			}
 		}
 	}
