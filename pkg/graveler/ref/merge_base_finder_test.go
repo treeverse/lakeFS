@@ -12,11 +12,12 @@ import (
 
 type MockCommitGetter struct {
 	byCommitID map[graveler.CommitID]*graveler.Commit
-	visited    map[graveler.CommitID]interface{}
+	visited    map[graveler.CommitID]int
 }
 
 func (g *MockCommitGetter) GetCommit(_ context.Context, _ graveler.RepositoryID, commitID graveler.CommitID) (*graveler.Commit, error) {
 	if commit, ok := g.byCommitID[commitID]; ok {
+		g.visited[commitID] += 1
 		return commit, nil
 	}
 	return nil, graveler.ErrNotFound
@@ -45,9 +46,10 @@ func newReader(kv map[graveler.CommitID]*graveler.Commit) *MockCommitGetter {
 	for _, v := range kv {
 		v.Generation = computeGeneration(kv, v)
 	}
+
 	return &MockCommitGetter{
 		byCommitID: kv,
-		visited:    make(map[graveler.CommitID]interface{}),
+		visited:    map[graveler.CommitID]int{},
 	}
 
 }
@@ -226,16 +228,16 @@ func TestFindMergeBase(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error %v", err)
 			}
-			verifyResult(t, base, cas.Expected)
+			verifyResult(t, base, cas.Expected, getter.visited)
 
-			// flip right and left and expect the same result
+			// flip right and left and expect the same result, reset visited to keep track of the second round visits
+			getter.visited = map[graveler.CommitID]int{}
 			base, err = ref.FindMergeBase(
 				context.Background(), getter, "", cas.Right, cas.Left)
 			if err != nil {
 				t.Fatalf("unexpected error %v", err)
 			}
-			verifyResult(t, base, cas.Expected)
-
+			verifyResult(t, base, cas.Expected, getter.visited)
 		})
 	}
 }
@@ -274,27 +276,37 @@ func TestGrid(t *testing.T) {
 	getter := newReader(kv)
 	c, err := ref.FindMergeBase(context.Background(), getter, "", "7-4", "5-6")
 	testutil.Must(t, err)
-	verifyResult(t, c, []string{"5-4"})
+	verifyResult(t, c, []string{"5-4"}, getter.visited)
 
+	getter.visited = map[graveler.CommitID]int{}
 	c, err = ref.FindMergeBase(context.Background(), getter, "", "1-2", "2-1")
 	testutil.Must(t, err)
-	verifyResult(t, c, []string{"1-1"})
+	verifyResult(t, c, []string{"1-1"}, getter.visited)
 
+	getter.visited = map[graveler.CommitID]int{}
 	c, err = ref.FindMergeBase(context.Background(), getter, "", "0-9", "9-0")
 	testutil.Must(t, err)
-	verifyResult(t, c, []string{"0-0"})
+	verifyResult(t, c, []string{"0-0"}, getter.visited)
 
+	getter.visited = map[graveler.CommitID]int{}
 	c, err = ref.FindMergeBase(context.Background(), getter, "", "6-9", "9-6")
 	testutil.Must(t, err)
-	verifyResult(t, c, []string{"6-6"})
+	verifyResult(t, c, []string{"6-6"}, getter.visited)
 }
 
-func verifyResult(t *testing.T, base *graveler.Commit, expected []string) {
+func verifyResult(t *testing.T, base *graveler.Commit, expected []string, visited map[graveler.CommitID]int) {
 	if base == nil {
 		if len(expected) != 0 {
 			t.Fatalf("got nil result, expected %s", expected)
 		}
 		return
+	}
+	for id, numVisits := range visited {
+		if string(id) == base.Message && numVisits > 2 {
+			t.Fatalf("visited base commit %d, expected max 2 visits", numVisits)
+		} else if string(id) != base.Message && numVisits > 1 {
+			t.Fatalf("visited non-base commit %d, expected max 1 visit", numVisits)
+		}
 	}
 	for _, expectedKey := range expected {
 		if base.Message == expectedKey {
