@@ -10,6 +10,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/metastore"
 )
 
+// MissingDBError means that the requested DB is missing/not found
 type MissingDBError struct {
 	dbName string
 	err    error
@@ -23,6 +24,7 @@ func (mdbe MissingDBError) Unwrap() error {
 	return mdbe.err
 }
 
+// ExtractSourceBranchError means that the source branch extraction from the provided location URI failed
 type ExtractSourceBranchError struct {
 	locationURI string
 	err         error
