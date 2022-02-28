@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"net/http"
+
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
 )
@@ -31,7 +33,7 @@ var tagListCmd = &cobra.Command{
 			After:  api.PaginationAfterPtr(after),
 			Amount: api.PaginationAmountPtr(amount),
 		})
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 
 		refs := resp.JSON200.Results
 		rows := make([][]interface{}, len(refs))
@@ -76,11 +78,11 @@ var tagCreateCmd = &cobra.Command{
 		if force {
 			// checking validity of the commitRef before deleting the old one
 			res, err := client.GetCommitWithResponse(ctx, tagURI.Repository, commitRef)
-			DieOnResponseError(res, err)
+			DieOnErrorOrUnexpectedStatusCode(res, err, http.StatusOK)
 
 			resp, err := client.DeleteTagWithResponse(ctx, tagURI.Repository, tagURI.Ref)
 			if err != nil && (resp == nil || resp.JSON404 == nil) {
-				DieOnResponseError(resp, err)
+				DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 			}
 		}
 
@@ -88,7 +90,7 @@ var tagCreateCmd = &cobra.Command{
 			Id:  tagURI.Ref,
 			Ref: commitRef,
 		})
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 
 		commitID := *resp.JSON201
 		Fmt("Created tag '%s' (%s)\n", tagURI.Ref, commitID)
@@ -110,7 +112,7 @@ var tagDeleteCmd = &cobra.Command{
 
 		ctx := cmd.Context()
 		resp, err := client.DeleteTagWithResponse(ctx, u.Repository, u.Ref)
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
 }
 
@@ -125,7 +127,7 @@ var tagShowCmd = &cobra.Command{
 
 		ctx := cmd.Context()
 		resp, err := client.GetTagWithResponse(ctx, u.Repository, u.Ref)
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		Fmt("%s %s", resp.JSON200.Id, resp.JSON200.CommitId)
 	},
 }

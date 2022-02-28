@@ -41,12 +41,12 @@ var fsStatCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := MustParsePathURI("path", args[0])
 		client := getClient()
-		res, err := client.StatObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.StatObjectParams{
+		resp, err := client.StatObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.StatObjectParams{
 			Path: *pathURI.Path,
 		})
-		DieOnResponseError(res, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 
-		stat := res.JSON200
+		stat := resp.JSON200
 		Write(fsStatTemplate, stat)
 	},
 }
@@ -88,7 +88,7 @@ var fsListCmd = &cobra.Command{
 				Delimiter: &paramsDelimiter,
 			}
 			resp, err := client.ListObjectsWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, params)
-			DieOnResponseError(resp, err)
+			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 
 			results := resp.JSON200.Results
 			// trim prefix if non recursive
@@ -292,7 +292,7 @@ var fsStageCmd = &cobra.Command{
 		resp, err := client.StageObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.StageObjectParams{
 			Path: *pathURI.Path,
 		}, api.StageObjectJSONRequestBody(obj))
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 
 		Write(fsStatTemplate, resp.JSON201)
 	},
@@ -365,7 +365,7 @@ var fsRmCmd = &cobra.Command{
 				Delimiter: &paramsDelimiter,
 			}
 			resp, err := client.ListObjectsWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, params)
-			DieOnResponseError(resp, err)
+			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 
 			results := resp.JSON200.Results
 			for i := range results {

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"net/http"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -31,33 +32,33 @@ var annotateCmd = &cobra.Command{
 		client := getClient()
 		pfx := api.PaginationPrefix(*pathURI.Path)
 		context := cmd.Context()
-		res, err := client.ListObjectsWithResponse(context, pathURI.Repository, pathURI.Ref, &api.ListObjectsParams{Prefix: &pfx})
-		DieOnResponseError(res, err)
+		resp, err := client.ListObjectsWithResponse(context, pathURI.Repository, pathURI.Ref, &api.ListObjectsParams{Prefix: &pfx})
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		var from string
 		for {
 			params := &api.ListObjectsParams{
 				Prefix: &pfx,
 				After:  api.PaginationAfterPtr(from),
 			}
-			resp, err := client.ListObjectsWithResponse(context, pathURI.Repository, pathURI.Ref, params)
-			DieOnResponseError(resp, err)
+			listObjectsResp, err := client.ListObjectsWithResponse(context, pathURI.Repository, pathURI.Ref, params)
+			DieOnErrorOrUnexpectedStatusCode(listObjectsResp, err, http.StatusOK)
 			for _, obj := range resp.JSON200.Results {
 				logCommitsParams := &api.LogCommitsParams{
 					Amount:  api.PaginationAmountPtr(1),
 					Objects: &[]string{obj.Path},
 				}
-				res, err := client.LogCommitsWithResponse(context, pathURI.Repository, pathURI.Ref, logCommitsParams)
-				DieOnResponseError(res, err)
+				logCommitsResp, err := client.LogCommitsWithResponse(context, pathURI.Repository, pathURI.Ref, logCommitsParams)
+				DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 				data := objectCommitData{
 					Object: obj.Path,
 				}
-				if len(res.JSON200.Results) > 0 {
-					data.Commit = res.JSON200.Results[0]
-					data.CommitMessage = splitOnNewLine(stringTrimLen((res.JSON200.Results[0].Message), annotateMessageSize))
+				if len(logCommitsResp.JSON200.Results) > 0 {
+					data.Commit = logCommitsResp.JSON200.Results[0]
+					data.CommitMessage = splitOnNewLine(stringTrimLen((logCommitsResp.JSON200.Results[0].Message), annotateMessageSize))
 				}
 				Write(annotateTemplate, data)
 			}
-			pagination := resp.JSON200.Pagination
+			pagination := listObjectsResp.JSON200.Pagination
 			if !pagination.HasMore {
 				break
 			}

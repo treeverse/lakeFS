@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.60.0 - 2022-02-27
+Features: 
+- Add a "Default storage namespace" configuration (#2952)
+- lakectl: add a `lakectl doctor` command to run a basic diagnose on lakeFS configuration (#2948)
+Bug fixes: 
+- Fix diff performance issues (#2968)
+- Improve memory footprint during openapi object upload (#2963)
+- Make "Everything Bagel" Jupyter notebook container support S3A  (#2946)
+
+
 ## v0.59.0 - 2022-02-15
 - lakectl: Convert windows paths to S3 style paths on upload (#2932)
 - lakectl: Allow empty commit message with a specified flag (#2927)

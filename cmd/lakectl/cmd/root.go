@@ -39,8 +39,8 @@ var (
 	logLevel string
 	// logFormat logging format
 	logFormat string
-	// logOutput logging output file
-	logOutput string
+	// logOutputs logging outputs
+	logOutputs []string
 )
 
 // rootCmd represents the base command when called without any sub-commands
@@ -53,7 +53,7 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		logging.SetLevel(logLevel)
 		logging.SetOutputFormat(logFormat)
-		logging.SetOutput(logOutput)
+		logging.SetOutputs(logOutputs, 0, 0)
 		if noColorRequested {
 			DisableColors()
 		}
@@ -108,9 +108,17 @@ func getClient() *api.ClientWithResponses {
 	if u.Path == "" || u.Path == "/" {
 		serverEndpoint = strings.TrimRight(serverEndpoint, "/") + api.BaseURL
 	}
+	httpClient := &http.Client{
+		// avoid redirect automatically
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+
 	client, err := api.NewClientWithResponses(
 		serverEndpoint,
 		api.WithRequestEditorFn(basicAuthProvider.Intercept),
+		api.WithHTTPClient(httpClient),
 	)
 	if err != nil {
 		Die(fmt.Sprintf("could not initialize API client: %s", err), 1)
@@ -147,7 +155,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&baseURI, "base-uri", "", os.Getenv("LAKECTL_BASE_URI"), "base URI used for lakeFS address parse")
 	rootCmd.PersistentFlags().StringVarP(&logLevel, "log-level", "", "none", "set logging level")
 	rootCmd.PersistentFlags().StringVarP(&logFormat, "log-format", "", "", "set logging output format")
-	rootCmd.PersistentFlags().StringVarP(&logOutput, "log-output", "", "", "set logging output file")
+	rootCmd.PersistentFlags().StringSliceVarP(&logOutputs, "log-output", "", []string{}, "set logging output(s)")
 }
 
 // initConfig reads in config file and ENV variables if set.

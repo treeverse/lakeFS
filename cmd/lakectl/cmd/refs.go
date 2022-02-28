@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"io"
+	"net/http"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
@@ -48,7 +49,7 @@ Since a bare repo is expected, in case of transient failure, delete the reposito
 		// execute the restore operation
 		client := getClient()
 		resp, err := client.RestoreRefsWithResponse(cmd.Context(), repoURI.Repository, api.RestoreRefsJSONRequestBody(manifest))
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		Write(refsRestoreSuccess, nil)
 	},
 }
@@ -63,7 +64,7 @@ var refsDumpCmd = &cobra.Command{
 		Fmt("Repository: %s\n", repoURI.String())
 		client := getClient()
 		resp, err := client.DumpRefsWithResponse(cmd.Context(), repoURI.Repository)
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 
 		Write(metadataDumpTemplate, struct {
 			Response interface{}

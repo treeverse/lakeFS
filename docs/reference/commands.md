@@ -54,13 +54,13 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
 {:.no_toc}
 
 ```
-      --base-uri string     base URI used for lakeFS address parse
-  -c, --config string       config file (default is $HOME/.lakectl.yaml)
-  -h, --help                help for lakectl
-      --log-format string   set logging output format
-      --log-level string    set logging level (default "none")
-      --log-output string   set logging output file
-      --no-color            don't use fancy output colors (default when not attached to an interactive terminal)
+      --base-uri string      base URI used for lakeFS address parse
+  -c, --config string        config file (default is $HOME/.lakectl.yaml)
+  -h, --help                 help for lakectl
+      --log-format string    set logging output format
+      --log-level string     set logging level (default "none")
+      --log-output strings   set logging output(s)
+      --no-color             don't use fancy output colors (default when not attached to an interactive terminal)
 ```
 
 **note:** The `base-uri` option can be controlled with the `LAKECTL_BASE_URI` environment variable.
@@ -1339,7 +1339,7 @@ lakectl branch-protect add <repo uri> <pattern> [flags]
 {:.no_toc}
 
 ```
-lakectl add lakefs://<repository> 'stable_*'
+lakectl branch-protect add lakefs://<repository> 'stable_*'
 ```
 
 #### Options
@@ -1368,7 +1368,7 @@ lakectl branch-protect delete <repo uri> <pattern> [flags]
 {:.no_toc}
 
 ```
-lakectl delete lakefs://<repository> stable_*
+lakectl branch-protect delete lakefs://<repository> stable_*
 ```
 
 #### Options
@@ -1415,7 +1415,7 @@ lakectl branch-protect list <repo uri> [flags]
 {:.no_toc}
 
 ```
-lakectl list lakefs://<repository>
+lakectl branch-protect list lakefs://<repository>
 ```
 
 #### Options
@@ -2414,7 +2414,7 @@ lakectl repo create <repository uri> <storage namespace> [flags]
 {:.no_toc}
 
 ```
-lakectl create lakefs://some-repo-name s3://some-bucket-name
+lakectl repo create lakefs://some-repo-name s3://some-bucket-name
 ```
 
 #### Options

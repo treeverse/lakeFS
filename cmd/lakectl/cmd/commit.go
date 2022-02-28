@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	"net/http"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -57,7 +58,7 @@ var commitCmd = &cobra.Command{
 			Message:  message,
 			Metadata: &metadata,
 		})
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 
 		commit := resp.JSON201
 		Write(CommitCreateTemplate, struct {

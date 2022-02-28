@@ -9,17 +9,18 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
-
-	"github.com/treeverse/lakefs/pkg/uri"
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
+	"github.com/treeverse/lakefs/pkg/uri"
 	"golang.org/x/term"
 )
 
@@ -204,6 +205,31 @@ func DieOnResponseError(response interface{}, err error) {
 	retrievedErr := RetrieveError(response, err)
 	if retrievedErr != nil {
 		DieErr(retrievedErr)
+	}
+}
+func DieOnErrorOrUnexpectedStatusCode(response interface{}, err error, expectedStatusCode int) {
+	DieOnResponseError(response, err)
+	var statusCode int
+	if httpResponse, ok := response.(*http.Response); ok {
+		statusCode = httpResponse.StatusCode
+	} else {
+		r := reflect.Indirect(reflect.ValueOf(response))
+		f := r.FieldByName("HTTPResponse")
+		httpResponse, _ := f.Interface().(*http.Response)
+		if httpResponse != nil {
+			statusCode = httpResponse.StatusCode
+		}
+	}
+
+	if statusCode == 0 {
+		Die("could not get status code from response", 1)
+	}
+	if statusCode != expectedStatusCode {
+		// redirected to not found page
+		if statusCode == http.StatusFound {
+			Die("got not-found error, probably wrong endpoint url", 1)
+		}
+		Die("got unexpected status code: "+strconv.Itoa(statusCode)+", expected: "+strconv.Itoa(expectedStatusCode), 1)
 	}
 }
 
