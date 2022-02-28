@@ -112,6 +112,8 @@ var dbtCreateBranchSchema = &cobra.Command{
 		}
 
 		dbtClient := DbtClient{projectDir: projectRoot}
+		metastoreClient, clientDeferFunc := getMetastoreClient(clientType, "")
+		defer clientDeferFunc()
 
 		// in order to generate views in new schema dbt should contain a macro script allowing lakectl to dynamically set the schema
 		// this could be skipped by using the skip-views flag
@@ -123,10 +125,10 @@ var dbtCreateBranchSchema = &cobra.Command{
 		ctx := cmd.Context()
 
 		if shouldCreateBranch {
-			handleBranchCreation(ctx, clientType, schema, branchName)
+			handleBranchCreation(ctx, schema, branchName, metastoreClient)
 		}
 
-		copySchemaWithDbtTables(ctx, continueOnError, continueOnSchemaExists, clientType, schema, toSchema, branchName, dbfsLocation, dbtClient)
+		copySchemaWithDbtTables(ctx, continueOnError, continueOnSchemaExists, schema, toSchema, branchName, dbfsLocation, dbtClient, metastoreClient)
 
 		if skipViews {
 			fmt.Println("skipping views")
@@ -138,8 +140,8 @@ var dbtCreateBranchSchema = &cobra.Command{
 	},
 }
 
-func handleBranchCreation(ctx context.Context, clientType, schema, branchName string) {
-	sourceRepo, sourceBranch, err := ExtractRepoAndBranchFromDBName(ctx, clientType, schema)
+func handleBranchCreation(ctx context.Context, schema, branchName string, metastoreClient metastore.Client) {
+	sourceRepo, sourceBranch, err := ExtractRepoAndBranchFromDBName(ctx, schema, metastoreClient)
 	if err != nil {
 		DieErr(noSourceBranchError)
 	}
@@ -149,10 +151,7 @@ func handleBranchCreation(ctx context.Context, clientType, schema, branchName st
 }
 
 // copySchemaWithDbtTables create a copy of fromSchema and copies all dbt models materialized as table or incremental
-func copySchemaWithDbtTables(ctx context.Context, continueOnError, continueOnSchemaExists bool, clientType, fromSchema, toSchema, branchName, dbfsLocation string, dbtClient DbtCommandClient) {
-	client, clientDeferFunc := getMetastoreClient(clientType, "")
-	defer clientDeferFunc()
-
+func copySchemaWithDbtTables(ctx context.Context, continueOnError, continueOnSchemaExists bool, fromSchema, toSchema, branchName, dbfsLocation string, dbtClient DbtCommandClient, client metastore.Client) {
 	err := metastore.CopyDB(ctx, client, client, fromSchema, toSchema, branchName, dbfsLocation)
 	switch {
 	case err == nil:
