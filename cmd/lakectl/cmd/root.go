@@ -108,9 +108,17 @@ func getClient() *api.ClientWithResponses {
 	if u.Path == "" || u.Path == "/" {
 		serverEndpoint = strings.TrimRight(serverEndpoint, "/") + api.BaseURL
 	}
+	httpClient := &http.Client{
+		// avoid redirect automatically
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+
 	client, err := api.NewClientWithResponses(
 		serverEndpoint,
 		api.WithRequestEditorFn(basicAuthProvider.Intercept),
+		api.WithHTTPClient(httpClient),
 	)
 	if err != nil {
 		Die(fmt.Sprintf("could not initialize API client: %s", err), 1)

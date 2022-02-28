@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -36,7 +37,7 @@ var branchListCmd = &cobra.Command{
 			After:  api.PaginationAfterPtr(after),
 			Amount: api.PaginationAmountPtr(amount),
 		})
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 
 		refs := resp.JSON200.Results
 		rows := make([][]interface{}, len(refs))
@@ -70,7 +71,7 @@ var branchCreateCmd = &cobra.Command{
 			Name:   u.Ref,
 			Source: sourceURI.Ref,
 		})
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		Fmt("created branch '%s' %s\n", u.Ref, string(resp.Body))
 	},
 }
@@ -88,7 +89,7 @@ var branchDeleteCmd = &cobra.Command{
 		u := MustParseRefURI("branch", args[0])
 		Fmt("Branch: %s\n", u.String())
 		resp, err := client.DeleteBranchWithResponse(cmd.Context(), u.Repository, u.Ref)
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
 }
 
@@ -122,7 +123,7 @@ var branchRevertCmd = &cobra.Command{
 				ParentNumber: parentNumber,
 				Ref:          commitRef,
 			})
-			DieOnResponseError(resp, err)
+			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 			Fmt("commit %s successfully reverted\n", commitRef)
 		}
 	},
@@ -178,7 +179,7 @@ var branchResetCmd = &cobra.Command{
 			return
 		}
 		resp, err := clt.ResetBranchWithResponse(cmd.Context(), u.Repository, u.Ref, api.ResetBranchJSONRequestBody(reset))
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
 }
 
@@ -191,7 +192,7 @@ var branchShowCmd = &cobra.Command{
 		u := MustParseRefURI("branch", args[0])
 		Fmt("Branch: %s\n", u.String())
 		resp, err := client.GetBranchWithResponse(cmd.Context(), u.Repository, u.Ref)
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		branch := resp.JSON200
 		Fmt("%s\n", branch)
 	},

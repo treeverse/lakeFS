@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -26,18 +27,18 @@ var repoListCmd = &cobra.Command{
 		after := MustString(cmd.Flags().GetString("after"))
 		clt := getClient()
 
-		res, err := clt.ListRepositoriesWithResponse(cmd.Context(), &api.ListRepositoriesParams{
+		resp, err := clt.ListRepositoriesWithResponse(cmd.Context(), &api.ListRepositoriesParams{
 			After:  api.PaginationAfterPtr(after),
 			Amount: api.PaginationAmountPtr(amount),
 		})
-		DieOnResponseError(res, err)
-		repos := res.JSON200.Results
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		repos := resp.JSON200.Results
 		rows := make([][]interface{}, len(repos))
 		for i, repo := range repos {
 			ts := time.Unix(repo.CreationDate, 0).String()
 			rows[i] = []interface{}{repo.Id, ts, repo.DefaultBranch, repo.StorageNamespace}
 		}
-		pagination := res.JSON200.Pagination
+		pagination := resp.JSON200.Pagination
 		PrintTable(rows, []interface{}{"Repository", "Creation Date", "Default Ref Name", "Storage Namespace"}, &pagination, amount)
 	},
 }
@@ -64,10 +65,10 @@ var repoCreateCmd = &cobra.Command{
 				StorageNamespace: args[1],
 				DefaultBranch:    &defaultBranch,
 			})
-		DieOnResponseError(respCreateRepo, err)
+		DieOnErrorOrUnexpectedStatusCode(respCreateRepo, err, http.StatusCreated)
 
 		respGetRepo, err := clt.GetRepositoryWithResponse(cmd.Context(), u.Repository)
-		DieOnResponseError(respGetRepo, err)
+		DieOnErrorOrUnexpectedStatusCode(respGetRepo, err, http.StatusOK)
 
 		repo := respGetRepo.JSON200
 		Fmt("Repository '%s' created:\nstorage namespace: %s\ndefault branch: %s\ntimestamp: %d\n",
@@ -99,10 +100,10 @@ var repoCreateBareCmd = &cobra.Command{
 			Name:             u.Repository,
 			StorageNamespace: args[1],
 		})
-		DieOnResponseError(respCreateRepo, err)
+		DieOnErrorOrUnexpectedStatusCode(respCreateRepo, err, http.StatusOK)
 
 		respGetRepo, err := clt.GetRepositoryWithResponse(cmd.Context(), u.Repository)
-		DieOnResponseError(respGetRepo, err)
+		DieOnErrorOrUnexpectedStatusCode(respGetRepo, err, http.StatusOK)
 
 		repo := respGetRepo.JSON200
 		Fmt("Repository '%s' created:\nstorage namespace: %s\ndefault branch: %s\ntimestamp: %d\n",
@@ -125,7 +126,7 @@ var repoDeleteCmd = &cobra.Command{
 			DieFmt("Delete Repository '%s' aborted\n", u.Repository)
 		}
 		resp, err := clt.DeleteRepositoryWithResponse(cmd.Context(), u.Repository)
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 		Fmt("Repository '%s' deleted\n", u.Repository)
 	},
 }

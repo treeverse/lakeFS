@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -27,7 +28,7 @@ func stageWorker(ctx context.Context, client api.ClientWithResponsesInterface, w
 	for req := range requests {
 		resp, err := client.StageObjectWithResponse(
 			ctx, req.repository, req.branch, req.params, req.body)
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		responses <- resp
 	}
 }
