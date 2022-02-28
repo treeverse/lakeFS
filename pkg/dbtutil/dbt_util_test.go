@@ -17,6 +17,12 @@ type DummyCommandExecutor struct {
 	envReturn bool
 }
 
+type dummyCommandExecutorError struct{}
+
+func (dcee dummyCommandExecutorError) Error() string {
+	return "BOOM"
+}
+
 func (dce DummyCommandExecutor) ExecuteCommand(cmd *exec.Cmd) ([]byte, error) {
 	sb := strings.Builder{}
 	sb.WriteString(dce.output)
@@ -28,38 +34,43 @@ func (dce DummyCommandExecutor) ExecuteCommand(cmd *exec.Cmd) ([]byte, error) {
 
 var schemaRegex = regexp.MustCompile(`schema: (.+)`)
 
+type dbtDebugTestCase struct {
+	name string
+	args struct {
+		projectRoot string
+		schemaRegex *regexp.Regexp
+		executor    CommandExecutor
+	}
+	schemaName string
+	errType    error
+}
+
 func TestDbtDebug(t *testing.T) {
 	type args struct {
 		projectRoot string
 		schemaRegex *regexp.Regexp
 		executor    CommandExecutor
 	}
-	tests := []struct {
-		name                              string
-		args                              args
-		want                              string
-		wantErr                           bool
-		validateMissingSchemaInDebugError bool
-	}{
+	tests := []dbtDebugTestCase{
 		{
-			name: "Happy Flow",
+			name: "Sunny day Flow",
 			args: args{
 				projectRoot: "nevermind",
 				schemaRegex: schemaRegex,
 				executor:    DummyCommandExecutor{output: "schema: success", err: nil},
 			},
-			want:    "success",
-			wantErr: false,
+			schemaName: "success",
+			errType:    nil,
 		},
 		{
 			name: "Command failed with error and output string",
 			args: args{
 				projectRoot: "nevermind",
 				schemaRegex: nil,
-				executor:    DummyCommandExecutor{output: "some error output", err: errors.New("BOOM")},
+				executor:    DummyCommandExecutor{output: "some error output", err: dummyCommandExecutorError{}},
 			},
-			want:    "some error output",
-			wantErr: true,
+			schemaName: "some error output",
+			errType:    dummyCommandExecutorError{},
 		},
 		{
 			name: "Submatch is nil (output is not in the regex)",
@@ -68,27 +79,38 @@ func TestDbtDebug(t *testing.T) {
 				schemaRegex: schemaRegex,
 				executor:    DummyCommandExecutor{output: "no schema definition", err: nil},
 			},
-			want:                              "",
-			wantErr:                           true,
-			validateMissingSchemaInDebugError: true,
+			schemaName: "",
+			errType:    MissingSchemaInDebugError{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := DbtDebug(tt.args.projectRoot, tt.args.schemaRegex, tt.args.executor)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("DbtDebug() error = %v, wantErr %v", err, tt.wantErr)
+			if (err != nil) && tt.errType == nil {
+				t.Errorf("DbtDebug() error = %v, but no error was expected", err)
 				return
 			}
-			if (err != nil) && tt.validateMissingSchemaInDebugError && !errors.Is(err, MissingSchemaInDebugError{}) {
-				t.Errorf("DbtDebug() error = %v, wantErr %v, validateMissingSchemaInDebugError %v", err, tt.wantErr, tt.validateMissingSchemaInDebugError)
+			if (err != nil) && !errors.Is(err, tt.errType) {
+				t.Errorf("DbtDebug() error = %v, expected error type = %v", err, tt.errType)
 				return
 			}
-			if got != tt.want {
-				t.Errorf("DbtDebug() got = %v, want %v", got, tt.want)
+			if got != tt.schemaName {
+				t.Errorf("DbtDebug() got = %v, schemaName %v", got, tt.schemaName)
 			}
 		})
 	}
+}
+
+type dbtLsToJsonTestCase struct {
+	name string
+	args struct {
+		projectRoot  string
+		resourceType string
+		selectValues []string
+		executor     CommandExecutor
+	}
+	dbtResources []DBTResource
+	errType      error
 }
 
 func TestDbtLsToJson(t *testing.T) {
@@ -100,22 +122,17 @@ func TestDbtLsToJson(t *testing.T) {
 		selectValues []string
 		executor     CommandExecutor
 	}
-	tests := []struct {
-		name    string
-		args    args
-		want    []DBTResource
-		wantErr bool
-	}{
+	tests := []dbtLsToJsonTestCase{
 		{
-			name: "Happy Flow",
+			name: "Sunny day Flow",
 			args: args{
 				projectRoot:  "nevermind",
 				resourceType: "nevermind",
 				selectValues: []string{"nevermind"},
 				executor:     DummyCommandExecutor{err: nil, output: generateJsonStringFromResources(DBTResources...)},
 			},
-			want:    DBTResources,
-			wantErr: false,
+			dbtResources: DBTResources,
+			errType:      nil,
 		},
 		{
 			name: "command returns an error",
@@ -123,10 +140,10 @@ func TestDbtLsToJson(t *testing.T) {
 				projectRoot:  "nevermind",
 				resourceType: "nevermind",
 				selectValues: []string{"nevermind"},
-				executor:     DummyCommandExecutor{err: errors.New("BOOM"), output: ""},
+				executor:     DummyCommandExecutor{err: dummyCommandExecutorError{}, output: ""},
 			},
-			want:    nil,
-			wantErr: true,
+			dbtResources: nil,
+			errType:      dummyCommandExecutorError{},
 		},
 		{
 			name: "command returns invalid json",
@@ -136,22 +153,35 @@ func TestDbtLsToJson(t *testing.T) {
 				selectValues: []string{"nevermind"},
 				executor:     DummyCommandExecutor{err: nil, output: "invalid json"},
 			},
-			want:    nil,
-			wantErr: true,
+			dbtResources: nil,
+			errType:      &json.SyntaxError{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := DbtLsToJson(tt.args.projectRoot, tt.args.resourceType, tt.args.selectValues, tt.args.executor)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("DbtLsToJson() error = %v, wantErr %v", err, tt.wantErr)
+			if (err != nil) && !errors.As(err, &tt.errType) {
+				t.Errorf("DbtLsToJson() error = %v, expected errType: %v", err, tt.errType)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("DbtLsToJson() got = %v, want %v", got, tt.want)
+			if !reflect.DeepEqual(got, tt.dbtResources) {
+				t.Errorf("DbtLsToJson() got = %v, schemaName %v", got, tt.dbtResources)
 			}
 		})
 	}
+}
+
+type dbtRunTestCase struct {
+	name string
+	args struct {
+		projectRoot            string
+		schema                 string
+		schemaEnvVarIdentifier string
+		selectValues           []string
+		executor               CommandExecutor
+	}
+	runOutput string
+	errType   error
 }
 
 func TestDbtRun(t *testing.T) {
@@ -164,14 +194,9 @@ func TestDbtRun(t *testing.T) {
 		selectValues           []string
 		executor               CommandExecutor
 	}
-	tests := []struct {
-		name    string
-		args    args
-		want    string
-		wantErr bool
-	}{
+	tests := []dbtRunTestCase{
 		{
-			name: "happy flow",
+			name: "Sunny day flow",
 			args: args{
 				projectRoot:            "nevermind",
 				schema:                 schemaValue,
@@ -183,8 +208,8 @@ func TestDbtRun(t *testing.T) {
 					envReturn: true,
 				},
 			},
-			want:    fmt.Sprintf("hello %s=%s", schemaKey, schemaValue),
-			wantErr: false,
+			runOutput: fmt.Sprintf("hello %s=%s", schemaKey, schemaValue),
+			errType:   nil,
 		},
 		{
 			name: "schemaEnvVarIdentifier empty",
@@ -199,8 +224,8 @@ func TestDbtRun(t *testing.T) {
 					envReturn: false,
 				},
 			},
-			want:    "hello",
-			wantErr: false,
+			runOutput: "hello",
+			errType:   nil,
 		},
 		{
 			name: "schema value empty",
@@ -215,8 +240,8 @@ func TestDbtRun(t *testing.T) {
 					envReturn: false,
 				},
 			},
-			want:    "hello",
-			wantErr: false,
+			runOutput: "hello",
+			errType:   nil,
 		},
 		{
 			name: "command returns an error",
@@ -226,24 +251,24 @@ func TestDbtRun(t *testing.T) {
 				schemaEnvVarIdentifier: schemaKey,
 				selectValues:           nil,
 				executor: DummyCommandExecutor{
-					err:       errors.New("BOOM"),
+					err:       dummyCommandExecutorError{},
 					output:    "hello",
 					envReturn: true,
 				},
 			},
-			want:    fmt.Sprintf("hello %s=%s", schemaKey, schemaValue),
-			wantErr: true,
+			runOutput: fmt.Sprintf("hello %s=%s", schemaKey, schemaValue),
+			errType:   dummyCommandExecutorError{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := DbtRun(tt.args.projectRoot, tt.args.schema, tt.args.schemaEnvVarIdentifier, tt.args.selectValues, tt.args.executor)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("DbtRun() error = %v, wantErr %v", err, tt.wantErr)
+			if (err != nil) && !errors.Is(err, tt.errType) {
+				t.Errorf("DbtRun() error = %v, errType %v", err, tt.errType)
 				return
 			}
-			if got != tt.want {
-				t.Errorf("DbtRun() got = %v, want %v", got, tt.want)
+			if got != tt.runOutput {
+				t.Errorf("DbtRun() got = %v, schemaName %v", got, tt.runOutput)
 			}
 		})
 	}

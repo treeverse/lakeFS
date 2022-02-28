@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -20,51 +21,51 @@ var (
 	invalidPath = fmt.Sprintf("s3/%s/%s/", repoName, branchName)
 )
 
-func TestExtractRepoAndBranchFromDBName(t *testing.T) {
-	type args struct {
-		ctx    context.Context
+type extractRepoAndBranchFromDBNameTestCase struct {
+	name string
+	args struct {
 		dbName string
 	}
-	tests := []struct {
-		name      string
-		args      args
-		want      string
-		want1     string
-		wantErr   bool
-		validPath bool
-	}{
+	repositoryName string
+	branchName     string
+	errType        error
+	validPath      bool
+}
+
+func TestExtractRepoAndBranchFromDBName(t *testing.T) {
+	type args struct {
+		dbName string
+	}
+	tests := []extractRepoAndBranchFromDBNameTestCase{
 		{
-			name: "Happy flow",
+			name: "Sunny day flow",
 			args: args{
-				ctx:    nil,
 				dbName: dbName,
 			},
-			want:      repoName,
-			want1:     branchName,
-			wantErr:   false,
-			validPath: true,
+			repositoryName: repoName,
+			branchName:     branchName,
+			errType:        nil,
+			validPath:      true,
 		},
 		{
 			name: "Client with no database",
 			args: args{
-				ctx:    nil,
 				dbName: "db name that doesn't exist",
 			},
-			want:      "",
-			want1:     "",
-			wantErr:   true,
-			validPath: true,
+			repositoryName: "",
+			branchName:     "",
+			errType:        MissingDBError{},
+			validPath:      true,
 		},
 		{
 			name: "Failed getting repo and branch from uri",
 			args: args{
-				ctx:    nil,
 				dbName: dbName,
 			},
-			want:      "",
-			want1:     "",
-			wantErr:   true,
-			validPath: false,
+			repositoryName: "",
+			branchName:     "",
+			errType:        ExtractSourceBranchError{},
+			validPath:      false,
 		},
 	}
 	for _, tt := range tests {
@@ -76,16 +77,16 @@ func TestExtractRepoAndBranchFromDBName(t *testing.T) {
 				schemaPath = invalidPath
 			}
 			client := initializeMockClient(t, schemaPath)
-			got, got1, err := ExtractRepoAndBranchFromDBName(tt.args.ctx, tt.args.dbName, client)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ExtractRepoAndBranchFromDBName() error = %v, wantErr %v", err, tt.wantErr)
+			got, got1, err := ExtractRepoAndBranchFromDBName(context.Background(), tt.args.dbName, client)
+			if (err != nil) && errors.Is(err, tt.errType) {
+				t.Errorf("ExtractRepoAndBranchFromDBName() error = %v, errType %v", err, tt.errType)
 				return
 			}
-			if got != tt.want {
-				t.Errorf("ExtractRepoAndBranchFromDBName() got = %v, want %v", got, tt.want)
+			if got != tt.repositoryName {
+				t.Errorf("ExtractRepoAndBranchFromDBName() got = %v, repositoryName %v", got, tt.repositoryName)
 			}
-			if got1 != tt.want1 {
-				t.Errorf("ExtractRepoAndBranchFromDBName() got1 = %v, want %v", got1, tt.want1)
+			if got1 != tt.branchName {
+				t.Errorf("ExtractRepoAndBranchFromDBName() got1 = %v, repositoryName %v", got1, tt.branchName)
 			}
 		})
 	}
@@ -97,25 +98,30 @@ func initializeMockClient(t *testing.T, schemaPath string) *mock.MSClient {
 	return mock.NewMSClient(t, initialDatabases, nil, nil)
 }
 
+type generateLakeFSBranchURIFromRepoAndBranchNameTestCase struct {
+	name string
+	args struct {
+		repoName   string
+		branchName string
+	}
+	lakeFSURI string
+	wantErr   bool
+}
+
 func TestGenerateLakeFSBranchURIFromRepoAndBranchName(t *testing.T) {
 	type args struct {
 		repoName   string
 		branchName string
 	}
-	tests := []struct {
-		name    string
-		args    args
-		want    string
-		wantErr bool
-	}{
+	tests := []generateLakeFSBranchURIFromRepoAndBranchNameTestCase{
 		{
-			name: "Happy flow",
+			name: "Sunny day flow",
 			args: args{
 				repoName:   repoName,
 				branchName: branchName,
 			},
-			want:    fmt.Sprintf("lakefs://%s/%s", repoName, branchName),
-			wantErr: false,
+			lakeFSURI: fmt.Sprintf("lakefs://%s/%s", repoName, branchName),
+			wantErr:   false,
 		},
 		{
 			name: "Empty repo",
@@ -123,8 +129,8 @@ func TestGenerateLakeFSBranchURIFromRepoAndBranchName(t *testing.T) {
 				repoName:   "",
 				branchName: branchName,
 			},
-			want:    "",
-			wantErr: true,
+			lakeFSURI: "",
+			wantErr:   true,
 		},
 		{
 			name: "Empty brnach",
@@ -132,19 +138,19 @@ func TestGenerateLakeFSBranchURIFromRepoAndBranchName(t *testing.T) {
 				repoName:   repoName,
 				branchName: "",
 			},
-			want:    "",
-			wantErr: true,
+			lakeFSURI: "",
+			wantErr:   true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := GenerateLakeFSBranchURIFromRepoAndBranchName(tt.args.repoName, tt.args.branchName)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GenerateLakeFSBranchURIFromRepoAndBranchName() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GenerateLakeFSBranchURIFromRepoAndBranchName() error = %v, errType %v", err, tt.wantErr)
 				return
 			}
-			if got != tt.want {
-				t.Errorf("GenerateLakeFSBranchURIFromRepoAndBranchName() got = %v, want %v", got, tt.want)
+			if got != tt.lakeFSURI {
+				t.Errorf("GenerateLakeFSBranchURIFromRepoAndBranchName() got = %v, repositoryName %v", got, tt.lakeFSURI)
 			}
 		})
 	}

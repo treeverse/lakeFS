@@ -9,17 +9,43 @@ import (
 	"github.com/treeverse/lakefs/pkg/metastore"
 )
 
+type MissingDBError struct {
+	dbName string
+	err    error
+}
+
+func (mdbe MissingDBError) Error() string {
+	return fmt.Sprintf("get database on extractBranchFromSchema from '%s'", mdbe.dbName)
+}
+
+func (mdbe MissingDBError) Unwrap() error {
+	return mdbe.err
+}
+
+type ExtractSourceBranchError struct {
+	locationURI string
+	err         error
+}
+
+func (esbe ExtractSourceBranchError) Error() string {
+	return fmt.Sprintf("get source branch on extractBranchFromSchema from '%s'", esbe.locationURI)
+}
+
+func (esbe ExtractSourceBranchError) Unwrap() error {
+	return esbe.err
+}
+
 // ExtractRepoAndBranchFromDBName extracts the repository and branch in which the metastore resides
 func ExtractRepoAndBranchFromDBName(ctx context.Context, dbName string, client metastore.Client) (string, string, error) {
 	metastoreDB, err := client.GetDatabase(ctx, dbName)
 
 	if err != nil {
-		return "", "", fmt.Errorf("failed to get database on extractBranchFromSchema from '%s': %w", dbName, err)
+		return "", "", MissingDBError{dbName: dbName, err: err}
 	}
 
 	repo, branch, err := metastore.GetRepoAndBranchFromMSLocationURI(metastoreDB.LocationURI)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to get source branch on extractBranchFromSchema from '%s': %w", metastoreDB.LocationURI, err)
+		return "", "", ExtractSourceBranchError{locationURI: metastoreDB.LocationURI, err: err}
 	}
 
 	return repo, branch, nil

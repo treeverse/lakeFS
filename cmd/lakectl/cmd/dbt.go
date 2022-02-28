@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path"
 	"regexp"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/dbtutil"
@@ -23,7 +24,8 @@ type dbtCommandClient interface {
 	Debug() string
 	// Ls performs 'dbt ls' over the given schema and selected materializations
 	Ls(resourceType string, selectStatement []string) []dbtutil.DBTResource
-	// ValidateGenerateSchemaMacro validates that the "generate_schema_name.sql" file was created and used correctly (according to implementation)
+	// ValidateGenerateSchemaMacro validates that the "generate_schema_name.sql" file was created and used correctly (according to implementation).
+	// If invalid, the command will fail.
 	ValidateGenerateSchemaMacro()
 }
 
@@ -48,12 +50,7 @@ var (
 func (d dbtClient) ValidateGenerateSchemaMacro() {
 	err := dbtutil.ValidateGenerateSchemaMacro(d.projectDir, macrosDirName, generateSchemaName, lakectlIdentifier)
 	if err != nil {
-		switch e := err.(type) {
-		case *dbtutil.MissingSchemaIdentifierError:
-			DieFmt(e.Error())
-		default:
-			DieErr(e)
-		}
+		DieErr(err)
 	}
 }
 
@@ -108,13 +105,13 @@ var dbtCreateBranchSchema = &cobra.Command{
 		continueOnError, _ := cmd.Flags().GetBool("continue-on-error")
 		continueOnSchemaExists, _ := cmd.Flags().GetBool(continueOnSchemaFlag)
 
-		if len(toSchema) == 0 {
+		if strings.TrimSpace(toSchema) == "" {
 			toSchema = branchName
 		}
 
 		dbtClient := dbtClient{projectDir: projectRoot}
-		metastoreClient, clientDeferFunc := getMetastoreClient(clientType, "")
-		defer clientDeferFunc()
+		metastoreClient, closeClient := getMetastoreClient(clientType, "")
+		defer closeClient()
 
 		// in order to generate views in new schema dbt should contain a macro script allowing lakectl to dynamically set the schema
 		// this could be skipped by using the skip-views flag
