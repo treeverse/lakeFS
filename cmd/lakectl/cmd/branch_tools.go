@@ -7,10 +7,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/metastore"
 )
 
-func ExtractRepoAndBranchFromDBName(ctx context.Context, clientType, dbName string) (string, string, error) {
-	client, deferFunc := getMetastoreClient(clientType, "")
-	defer deferFunc()
-
+func ExtractRepoAndBranchFromDBName(ctx context.Context, dbName string, client metastore.Client) (string, string, error) {
 	metastoreDB, err := client.GetDatabase(ctx, dbName)
 
 	if err != nil {
