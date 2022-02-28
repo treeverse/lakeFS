@@ -72,7 +72,7 @@ func (d dbtClient) Debug() string {
 			DieErr(e)
 		}
 	}
-	fmt.Printf("dbt debug succeeded with schemaOutput %s\n", schemaOutput)
+	fmt.Println("dbt debug succeeded with schemaOutput:", schemaOutput)
 	return schemaOutput
 }
 
