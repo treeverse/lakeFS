@@ -42,7 +42,7 @@ When you first open the lakeFS UI, you will be asked to create initial admin use
 1. Under _Storage Namespace_, enter `local://`.
  
    In this tutorial, the underlying storage for lakeFS is the local disk. Accordingly, the value for _Storage Namespace_ should simply be `local://`.
-   For a deployment that uses an object store as the underlying storage, this would be a loocation in the store, e.g. `s3://example-bucket/prefix`.
+   For a deployment that uses an object store as the underlying storage, this would be a location in the store, e.g. `s3://example-bucket/prefix`.
    {: .note .note-info }
 
 1. Click _Create Repository_.
