@@ -29,7 +29,7 @@ var noColorRequested = false
 // ErrInvalidValueInList is an error returned when a parameter of type list contains an empty string
 var ErrInvalidValueInList = errors.New("empty string in list")
 
-var accessKeyRegexp = regexp.MustCompile(`^AKIA[I|J][A-Z0-9]{14}Q$`)
+var accessKeyRegexp = regexp.MustCompile(`^AKIAJ[A-Z2-7]{14}Q$`)
 
 const (
 	LakectlInteractive        = "LAKECTL_INTERACTIVE"
