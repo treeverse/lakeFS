@@ -75,7 +75,7 @@ func (d dbtClient) Debug() string {
 }
 
 func (d dbtClient) Ls(resourceType string, selectStatement []string) []dbtutil.DBTResource {
-	resources, err := dbtutil.DbtLsToJson(d.projectDir, resourceType, selectStatement, d)
+	resources, err := dbtutil.DbtLsToJSON(d.projectDir, resourceType, selectStatement, d)
 	if err != nil {
 		DieErr(err)
 	}

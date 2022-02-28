@@ -42,6 +42,15 @@ func (esbe ExtractSourceBranchError) Unwrap() error {
 	return esbe.err
 }
 
+type uriGenerationError struct {
+	repo   string
+	branch string
+}
+
+func (uge uriGenerationError) Error() string {
+	return fmt.Sprintf("failed to generate a valid URI string with repo \"%s\" and branch \"%s\"", uge.repo, uge.branch)
+}
+
 // ExtractRepoAndBranchFromDBName extracts the repository and branch in which the metastore resides
 func ExtractRepoAndBranchFromDBName(ctx context.Context, dbName string, client metastore.Client) (string, string, error) {
 	metastoreDB, err := client.GetDatabase(ctx, dbName)
@@ -61,7 +70,7 @@ func ExtractRepoAndBranchFromDBName(ctx context.Context, dbName string, client m
 // GenerateLakeFSBranchURIFromRepoAndBranchName generates a valid URI from the given repository and branch names
 func GenerateLakeFSBranchURIFromRepoAndBranchName(repoName, branchName string) (string, error) {
 	if len(strings.TrimSpace(repoName)) == 0 || len(strings.TrimSpace(branchName)) == 0 {
-		return "", fmt.Errorf("failed to generate a valid URI string with repo \"%s\" and branch \"%s\"", repoName, branchName)
+		return "", uriGenerationError{repo: repoName, branch: branchName}
 	}
 	return fmt.Sprintf(`lakefs://%s/%s`, repoName, branchName), nil
 }

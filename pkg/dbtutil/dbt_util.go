@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	resourceJsonKeys = "alias,schema"
+	resourceJSONKeys = "alias,schema"
 )
 
 type MissingSchemaIdentifierError struct {
@@ -69,7 +69,8 @@ func DbtDebug(projectRoot string, schemaRegex *regexp.Regexp, executor CommandEx
 }
 
 func DbtRun(projectRoot, schema, schemaEnvVarIdentifier string, selectValues []string, executor CommandExecutor) (string, error) {
-	dbtCmd := exec.Command("dbt", "run", "--select", strings.Join(selectValues, " "))
+	selectedValuesList := strings.Join(selectValues, " ")
+	dbtCmd := exec.Command("dbt", "run", "--select", selectedValuesList)
 	if strings.TrimSpace(schemaEnvVarIdentifier) != "" && strings.TrimSpace(schema) != "" {
 		dbtCmd.Env = append(os.Environ(), schemaEnvVarIdentifier+"="+schema)
 	}
@@ -78,8 +79,8 @@ func DbtRun(projectRoot, schema, schemaEnvVarIdentifier string, selectValues []s
 	return string(output), err
 }
 
-func DbtLsToJson(projectRoot, resourceType string, selectValues []string, executor CommandExecutor) ([]DBTResource, error) {
-	dbtCmd := exec.Command("dbt", "ls", "--resource-type", resourceType, "--select", strings.Join(selectValues, " "), "--output", "json", "--output-keys", resourceJsonKeys)
+func DbtLsToJSON(projectRoot, resourceType string, selectValues []string, executor CommandExecutor) ([]DBTResource, error) {
+	dbtCmd := exec.Command("dbt", "ls", "--resource-type", resourceType, "--select", strings.Join(selectValues, " "), "--output", "json", "--output-keys", resourceJSONKeys)
 	dbtCmd.Dir = projectRoot
 	output, err := executor.ExecuteCommand(dbtCmd)
 	if err != nil {
@@ -96,7 +97,6 @@ func DbtLsToJson(projectRoot, resourceType string, selectValues []string, execut
 			return nil, err
 		}
 		dbtResources = append(dbtResources, m)
-
 	}
 	err = scan.Err()
 	return dbtResources, err

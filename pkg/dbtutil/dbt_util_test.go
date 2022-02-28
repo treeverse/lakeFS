@@ -159,13 +159,13 @@ func TestDbtLsToJson(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := DbtLsToJson(tt.args.projectRoot, tt.args.resourceType, tt.args.selectValues, tt.args.executor)
+			got, err := DbtLsToJSON(tt.args.projectRoot, tt.args.resourceType, tt.args.selectValues, tt.args.executor)
 			if (err != nil) && !errors.As(err, &tt.errType) {
-				t.Errorf("DbtLsToJson() error = %v, expected errType: %v", err, tt.errType)
+				t.Errorf("DbtLsToJSON() error = %v, expected errType: %v", err, tt.errType)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.dbtResources) {
-				t.Errorf("DbtLsToJson() got = %v, schemaName %v", got, tt.dbtResources)
+				t.Errorf("DbtLsToJSON() got = %v, schemaName %v", got, tt.dbtResources)
 			}
 		})
 	}
