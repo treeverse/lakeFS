@@ -8,7 +8,11 @@ import (
 
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/metastore"
+	"github.com/treeverse/lakefs/pkg/uri"
 )
+
+var branchCreatedTemplate = `created branch "{{.Branch.Ref}}" {{.Resp}}
+`
 
 // MissingDBError means that the requested DB is missing/not found
 type MissingDBError struct {
@@ -73,5 +77,10 @@ func CreateBranch(ctx context.Context, sourceLakeFSBranchURI, destinationLakeFSB
 		Source: sourceURI.Ref,
 	})
 	DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
-	Fmt("created branch '%s' %s\n", branchURI.Ref, string(resp.Body))
+	Write(branchCreatedTemplate, struct {
+		Branch *uri.URI
+		Resp   string
+	}{
+		Branch: branchURI, Resp: string(resp.Body),
+	})
 }
