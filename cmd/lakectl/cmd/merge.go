@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"net/http"
+
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
 )
@@ -35,7 +37,7 @@ var mergeCmd = &cobra.Command{
 		if resp != nil && resp.JSON409 != nil {
 			Die("Conflict found.", 1)
 		}
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 
 		Write(mergeCreateTemplate, struct {
 			Merge  FromTo

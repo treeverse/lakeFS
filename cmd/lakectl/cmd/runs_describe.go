@@ -37,7 +37,7 @@ var runsDescribeCmd = &cobra.Command{
 
 		// run result information
 		runsRes, err := client.GetRunWithResponse(ctx, u.Repository, runID)
-		DieOnResponseError(runsRes, err)
+		DieOnErrorOrUnexpectedStatusCode(runsRes, err, http.StatusOK)
 
 		runResult := runsRes.JSON200
 		Write(actionRunResultTemplate, convertRunResultTable(runResult))
@@ -51,7 +51,7 @@ var runsDescribeCmd = &cobra.Command{
 				After:  api.PaginationAfterPtr(after),
 				Amount: api.PaginationAmountPtr(amountForPagination),
 			})
-			DieOnResponseError(runHooksRes, err)
+			DieOnErrorOrUnexpectedStatusCode(runHooksRes, err, http.StatusOK)
 			pagination = runHooksRes.JSON200.Pagination
 			data := struct {
 				Hooks      []api.HookRun
@@ -80,14 +80,14 @@ var runsDescribeCmd = &cobra.Command{
 
 func makeHookLog(ctx context.Context, client api.ClientWithResponsesInterface, repositoryID string, runID string) func(hookRunID string) (string, error) {
 	return func(hookRunID string) (string, error) {
-		res, err := client.GetRunHookOutputWithResponse(ctx, repositoryID, runID, hookRunID)
+		resp, err := client.GetRunHookOutputWithResponse(ctx, repositoryID, runID, hookRunID)
 		if err != nil {
 			return "", err
 		}
-		if res.StatusCode() != http.StatusOK {
-			return "", helpers.ResponseAsError(res)
+		if resp.StatusCode() != http.StatusOK {
+			return "", helpers.ResponseAsError(resp)
 		}
-		return string(res.Body), nil
+		return string(resp.Body), nil
 	}
 }
 

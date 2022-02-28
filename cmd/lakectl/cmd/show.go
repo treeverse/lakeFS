@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"net/http"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -38,7 +39,7 @@ var showCmd = &cobra.Command{
 		case "commit":
 			client := getClient()
 			resp, err := client.GetCommitWithResponse(cmd.Context(), u.Repository, identifier)
-			DieOnResponseError(resp, err)
+			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 
 			commit := resp.JSON200
 			showMetaRangeID, _ := cmd.Flags().GetBool("show-meta-range-id")

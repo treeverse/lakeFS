@@ -1,6 +1,8 @@
 package cmd
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestIsValidAccessKeyID(t *testing.T) {
 	type args struct {

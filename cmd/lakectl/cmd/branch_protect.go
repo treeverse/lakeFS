@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"net/http"
+
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
 )
@@ -24,7 +26,7 @@ var branchProtectListCmd = &cobra.Command{
 		client := getClient()
 		u := MustParseRepoURI("repository", args[0])
 		resp, err := client.GetBranchProtectionRulesWithResponse(cmd.Context(), u.Repository)
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		patterns := make([][]interface{}, len(*resp.JSON200))
 		for i, rule := range *resp.JSON200 {
 			patterns[i] = []interface{}{rule.Pattern}
@@ -48,7 +50,7 @@ var branchProtectAddCmd = &cobra.Command{
 		resp, err := client.CreateBranchProtectionRuleWithResponse(cmd.Context(), u.Repository, api.CreateBranchProtectionRuleJSONRequestBody{
 			Pattern: args[1],
 		})
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
 }
 
@@ -64,7 +66,7 @@ var branchProtectDeleteCmd = &cobra.Command{
 		resp, err := client.DeleteBranchProtectionRuleWithResponse(cmd.Context(), u.Repository, api.DeleteBranchProtectionRuleJSONRequestBody{
 			Pattern: args[1],
 		})
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
 }
 
