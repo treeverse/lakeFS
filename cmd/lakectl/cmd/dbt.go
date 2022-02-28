@@ -20,7 +20,8 @@ import (
 type dbtCommandClient interface {
 	// Run performs 'dbt run' over the given schema and selected materializations
 	Run(schema string, selectValues []string) (string, error)
-	// Debug validates dbt connection using dbt debug, return the schema configured by the target environment (configured in the dbt profiles file)
+	// Debug validates dbt connection using dbt debug and returns the schema
+	// configured by the target environment (configured in the dbt profiles file)
 	Debug() string
 	// Ls performs 'dbt ls' over the given schema and selected materializations
 	Ls(resourceType string, selectStatement []string) []dbtutil.DBTResource
