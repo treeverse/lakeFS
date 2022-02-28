@@ -34,7 +34,7 @@ For more information, see the [official lakeFS documentation](https://docs.lakef
 **In Development**
 
 * **Experiment** - try new tools, upgrade versions, and evaluate code changes in isolation. You can get an isolated snapshot to run and compare experiments by creating a new branch of the data, while others are not exposed.
-* **Debug** - check out specific commits in a repository’s commit history to materialize consistent, historical versions of your data. 
+* **Debug** - checkout specific commits in a repository’s commit history to materialize consistent, historical versions of your data. 
 * **Collaborate** - leverage isolated branches managed by metadata (not copies of files) to work in parallel.
 
 **During Deployment**
