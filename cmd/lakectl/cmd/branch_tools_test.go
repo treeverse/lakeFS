@@ -3,9 +3,10 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"testing"
+
 	"github.com/treeverse/lakefs/pkg/metastore"
 	"github.com/treeverse/lakefs/pkg/metastore/mock"
-	"testing"
 )
 
 const (

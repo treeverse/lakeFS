@@ -4,15 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/dbtutil"
-	"github.com/treeverse/lakefs/pkg/metastore"
-	mserrors "github.com/treeverse/lakefs/pkg/metastore/errors"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
 	"regexp"
+
+	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/pkg/dbtutil"
+	"github.com/treeverse/lakefs/pkg/metastore"
+	mserrors "github.com/treeverse/lakefs/pkg/metastore/errors"
 )
 
 type DbtCommandClient interface {
