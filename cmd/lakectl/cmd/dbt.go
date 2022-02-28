@@ -16,7 +16,7 @@ import (
 	mserrors "github.com/treeverse/lakefs/pkg/metastore/errors"
 )
 
-type DbtCommandClient interface {
+type dbtCommandClient interface {
 	// Run performs 'dbt run' over the given schema and selected materializations
 	Run(schema string, selectValues []string) (string, error)
 	// Debug validates dbt connection using dbt debug, return the schema configured by the target environment (configured in the dbt profiles file)
@@ -27,7 +27,7 @@ type DbtCommandClient interface {
 	ValidateGenerateSchemaMacro()
 }
 
-type DbtClient struct {
+type dbtClient struct {
 	projectDir string
 }
 
@@ -42,10 +42,10 @@ const (
 )
 
 var (
-	noSourceBranchError = errors.New(`given schema has no source lakefs branch associated with it`)
+	errorNoSourceBranch = errors.New(`given schema has no source lakeFS branch associated with it`)
 )
 
-func (d DbtClient) ValidateGenerateSchemaMacro() {
+func (d dbtClient) ValidateGenerateSchemaMacro() {
 	err := dbtutil.ValidateGenerateSchemaMacro(d.projectDir, macrosDirName, generateSchemaName, lakectlIdentifier)
 	if err != nil {
 		switch e := err.(type) {
@@ -57,11 +57,11 @@ func (d DbtClient) ValidateGenerateSchemaMacro() {
 	}
 }
 
-func (d DbtClient) Run(schema string, selectValues []string) (string, error) {
+func (d dbtClient) Run(schema string, selectValues []string) (string, error) {
 	return dbtutil.DbtRun(d.projectDir, schema, lakectlIdentifier, selectValues, d)
 }
 
-func (d DbtClient) Debug() string {
+func (d dbtClient) Debug() string {
 	schemaOutput, err := dbtutil.DbtDebug(d.projectDir, schemaRegex, d)
 	if err != nil {
 		fmt.Println(schemaOutput)
@@ -76,7 +76,7 @@ func (d DbtClient) Debug() string {
 	return schemaOutput
 }
 
-func (d DbtClient) Ls(resourceType string, selectStatement []string) []dbtutil.DBTResource {
+func (d dbtClient) Ls(resourceType string, selectStatement []string) []dbtutil.DBTResource {
 	resources, err := dbtutil.DbtLsToJson(d.projectDir, resourceType, selectStatement, d)
 	if err != nil {
 		DieErr(err)
@@ -84,7 +84,7 @@ func (d DbtClient) Ls(resourceType string, selectStatement []string) []dbtutil.D
 	return resources
 }
 
-func (d DbtClient) ExecuteCommand(cmd *exec.Cmd) ([]byte, error) {
+func (d dbtClient) ExecuteCommand(cmd *exec.Cmd) ([]byte, error) {
 	return cmd.Output()
 }
 
@@ -112,7 +112,7 @@ var dbtCreateBranchSchema = &cobra.Command{
 			toSchema = branchName
 		}
 
-		dbtClient := DbtClient{projectDir: projectRoot}
+		dbtClient := dbtClient{projectDir: projectRoot}
 		metastoreClient, clientDeferFunc := getMetastoreClient(clientType, "")
 		defer clientDeferFunc()
 
@@ -144,15 +144,21 @@ var dbtCreateBranchSchema = &cobra.Command{
 func handleBranchCreation(ctx context.Context, schema, branchName string, metastoreClient metastore.Client) {
 	sourceRepo, sourceBranch, err := ExtractRepoAndBranchFromDBName(ctx, schema, metastoreClient)
 	if err != nil {
-		DieErr(noSourceBranchError)
+		DieErr(errorNoSourceBranch)
 	}
-	sourceBranchUri := GenerateLakeFSBranchURIFromRepoAndBranchName(sourceRepo, sourceBranch)
-	destinationBranchUri := GenerateLakeFSBranchURIFromRepoAndBranchName(sourceRepo, branchName)
-	CreateBranch(ctx, sourceBranchUri, destinationBranchUri)
+	sourceBranchURI, err := GenerateLakeFSBranchURIFromRepoAndBranchName(sourceRepo, sourceBranch)
+	if err != nil {
+		DieErr(err)
+	}
+	destinationBranchURI, err := GenerateLakeFSBranchURIFromRepoAndBranchName(sourceRepo, branchName)
+	if err != nil {
+		DieErr(err)
+	}
+	CreateBranch(ctx, sourceBranchURI, destinationBranchURI)
 }
 
 // copySchemaWithDbtTables create a copy of fromSchema and copies all dbt models materialized as table or incremental
-func copySchemaWithDbtTables(ctx context.Context, continueOnError, continueOnSchemaExists bool, fromSchema, toSchema, branchName, dbfsLocation string, dbtClient DbtCommandClient, client metastore.Client) {
+func copySchemaWithDbtTables(ctx context.Context, continueOnError, continueOnSchemaExists bool, fromSchema, toSchema, branchName, dbfsLocation string, dbtClient dbtCommandClient, client metastore.Client) {
 	err := metastore.CopyDB(ctx, client, client, fromSchema, toSchema, branchName, dbfsLocation)
 	switch {
 	case err == nil:
@@ -171,7 +177,7 @@ func copySchemaWithDbtTables(ctx context.Context, continueOnError, continueOnSch
 	}
 }
 
-func createViews(dbtClient DbtCommandClient, toSchema string) {
+func createViews(dbtClient dbtCommandClient, toSchema string) {
 	output, err := dbtClient.Run(toSchema, []string{"config.materialized:view"})
 	if err != nil {
 		DieFmt("failed creating views with err: %v\nOutput:\n%s", err, output)
@@ -198,7 +204,7 @@ func copyModels(ctx context.Context, models []dbtutil.DBTResource, continueOnErr
 	return nil
 }
 
-func getDbtTables(dbtClient DbtCommandClient) []dbtutil.DBTResource {
+func getDbtTables(dbtClient dbtCommandClient) []dbtutil.DBTResource {
 	materializedSelection := []string{"config.materialized:table", "config.materialized:incremental"}
 	resourceType := "model"
 	return dbtClient.Ls(resourceType, materializedSelection)

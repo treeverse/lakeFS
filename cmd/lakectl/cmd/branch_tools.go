@@ -3,11 +3,13 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/metastore"
 )
 
+// ExtractRepoAndBranchFromDBName extracts the repository and branch in which the metastore resides
 func ExtractRepoAndBranchFromDBName(ctx context.Context, dbName string, client metastore.Client) (string, string, error) {
 	metastoreDB, err := client.GetDatabase(ctx, dbName)
 
@@ -23,13 +25,18 @@ func ExtractRepoAndBranchFromDBName(ctx context.Context, dbName string, client m
 	return repo, branch, nil
 }
 
-func GenerateLakeFSBranchURIFromRepoAndBranchName(repoName, branchName string) string {
-	return fmt.Sprintf(`lakefs://%s/%s`, repoName, branchName)
+// GenerateLakeFSBranchURIFromRepoAndBranchName generates a valid URI from the given repository and branch names
+func GenerateLakeFSBranchURIFromRepoAndBranchName(repoName, branchName string) (string, error) {
+	if len(strings.TrimSpace(repoName)) == 0 || len(strings.TrimSpace(branchName)) == 0 {
+		return "", fmt.Errorf("failed to generate a valid URI string with repo \"%s\" and branch \"%s\"", repoName, branchName)
+	}
+	return fmt.Sprintf(`lakefs://%s/%s`, repoName, branchName), nil
 }
 
-func CreateBranch(ctx context.Context, sourceLakefsBranchUri, destinationLakefsBranchUri string) {
-	branchURI := MustParseRefURI("destination branch uri", destinationLakefsBranchUri)
-	sourceURI := MustParseRefURI("source branch uri", sourceLakefsBranchUri)
+// CreateBranch creates a new branch with the given source and destination branch URIs
+func CreateBranch(ctx context.Context, sourceLakeFSBranchURI, destinationLakeFSBranchURI string) {
+	branchURI := MustParseRefURI("destination branch URI", destinationLakeFSBranchURI)
+	sourceURI := MustParseRefURI("source branch URI", sourceLakeFSBranchURI)
 
 	client := getClient()
 	resp, err := client.CreateBranchWithResponse(ctx, branchURI.Repository, api.CreateBranchJSONRequestBody{
