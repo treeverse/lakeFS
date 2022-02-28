@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/treeverse/lakefs/pkg/api"
@@ -69,6 +70,6 @@ func CreateBranch(ctx context.Context, sourceLakeFSBranchURI, destinationLakeFSB
 		Name:   branchURI.Ref,
 		Source: sourceURI.Ref,
 	})
-	DieOnResponseError(resp, err)
+	DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 	Fmt("created branch '%s' %s\n", branchURI.Ref, string(resp.Body))
 }

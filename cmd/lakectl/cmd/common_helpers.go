@@ -201,14 +201,14 @@ func RetrieveError(response interface{}, err error) error {
 	return helpers.ResponseAsError(response)
 }
 
-func DieOnResponseError(response interface{}, err error) {
+func dieOnResponseError(response interface{}, err error) {
 	retrievedErr := RetrieveError(response, err)
 	if retrievedErr != nil {
 		DieErr(retrievedErr)
 	}
 }
 func DieOnErrorOrUnexpectedStatusCode(response interface{}, err error, expectedStatusCode int) {
-	DieOnResponseError(response, err)
+	dieOnResponseError(response, err)
 	var statusCode int
 	if httpResponse, ok := response.(*http.Response); ok {
 		statusCode = httpResponse.StatusCode
