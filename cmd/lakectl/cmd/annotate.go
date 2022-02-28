@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
@@ -41,25 +40,25 @@ var annotateCmd = &cobra.Command{
 				Prefix: &pfx,
 				After:  api.PaginationAfterPtr(from),
 			}
-			resp, err := client.ListObjectsWithResponse(context, pathURI.Repository, pathURI.Ref, params)
-			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+			listObjectsResp, err := client.ListObjectsWithResponse(context, pathURI.Repository, pathURI.Ref, params)
+			DieOnErrorOrUnexpectedStatusCode(listObjectsResp, err, http.StatusOK)
 			for _, obj := range resp.JSON200.Results {
 				logCommitsParams := &api.LogCommitsParams{
 					Amount:  api.PaginationAmountPtr(1),
 					Objects: &[]string{obj.Path},
 				}
-				resp, err := client.LogCommitsWithResponse(context, pathURI.Repository, pathURI.Ref, logCommitsParams)
+				logCommitsResp, err := client.LogCommitsWithResponse(context, pathURI.Repository, pathURI.Ref, logCommitsParams)
 				DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 				data := objectCommitData{
 					Object: obj.Path,
 				}
-				if len(resp.JSON200.Results) > 0 {
-					data.Commit = resp.JSON200.Results[0]
-					data.CommitMessage = splitOnNewLine(stringTrimLen((resp.JSON200.Results[0].Message), annotateMessageSize))
+				if len(logCommitsResp.JSON200.Results) > 0 {
+					data.Commit = logCommitsResp.JSON200.Results[0]
+					data.CommitMessage = splitOnNewLine(stringTrimLen((logCommitsResp.JSON200.Results[0].Message), annotateMessageSize))
 				}
 				Write(annotateTemplate, data)
 			}
-			pagination := resp.JSON200.Pagination
+			pagination := listObjectsResp.JSON200.Pagination
 			if !pagination.HasMore {
 				break
 			}

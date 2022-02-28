@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
@@ -103,7 +102,7 @@ var authUsersDelete = &cobra.Command{
 		clt := getClient()
 
 		resp, err := clt.DeleteUserWithResponse(cmd.Context(), id)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, defaultResponseOnSwaggerClient)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 		Fmt("User deleted successfully\n")
 	},
 }
@@ -201,7 +200,7 @@ var authUsersPoliciesDetach = &cobra.Command{
 		clt := getClient()
 
 		resp, err := clt.DetachPolicyFromUserWithResponse(cmd.Context(), id, policy)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, defaultResponseOnSwaggerClient)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 
 		Fmt("Policy detached successfully\n")
 	},
@@ -247,7 +246,7 @@ var authUsersCredentialsDelete = &cobra.Command{
 			id = resp.JSON200.User.Id
 		}
 		resp, err := clt.DeleteCredentialsWithResponse(cmd.Context(), id, accessKeyID)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, defaultResponseOnSwaggerClient)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 
 		Fmt("Credentials deleted successfully\n")
 	},
@@ -342,7 +341,7 @@ var authGroupsDelete = &cobra.Command{
 		clt := getClient()
 
 		resp, err := clt.DeleteGroupWithResponse(cmd.Context(), id)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, defaultResponseOnSwaggerClient)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 		Fmt("Group deleted successfully\n")
 	},
 }
@@ -402,7 +401,7 @@ var authGroupsRemoveMember = &cobra.Command{
 		clt := getClient()
 
 		resp, err := clt.DeleteGroupMembershipWithResponse(cmd.Context(), id, user)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, defaultResponseOnSwaggerClient)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 		Fmt("User successfully removed\n")
 	},
 }
@@ -467,7 +466,7 @@ var authGroupsPoliciesDetach = &cobra.Command{
 		clt := getClient()
 
 		resp, err := clt.DetachPolicyFromGroupWithResponse(cmd.Context(), id, policy)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, defaultResponseOnSwaggerClient)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 
 		Fmt("Policy detached successfully\n")
 	},
@@ -586,7 +585,7 @@ var authPoliciesDelete = &cobra.Command{
 		clt := getClient()
 
 		resp, err := clt.DeletePolicyWithResponse(cmd.Context(), id)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, defaultResponseOnSwaggerClient)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 		Fmt("Policy deleted successfully\n")
 	},
 }

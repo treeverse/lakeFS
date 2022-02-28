@@ -18,11 +18,10 @@ import (
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
-	"golang.org/x/term"
-
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/uri"
+	"golang.org/x/term"
 )
 
 var isTerminal = true
@@ -42,8 +41,6 @@ const (
 
 const internalPageSize = 1000          // when retreiving all records, use this page size under the hood
 const defaultAmountArgumentValue = 100 // when no amount is specified, use this value for the argument
-
-const defaultResponseOnSwaggerClient = http.StatusNoContent
 
 const resourceListTemplate = `{{.Table | table -}}
 {{.Pagination | paginate }}
@@ -230,7 +227,7 @@ func DieOnErrorOrUnexpectedStatusCode(response interface{}, err error, expectedS
 	if statusCode != expectedStatusCode {
 		// redirected to not found page
 		if statusCode == http.StatusFound {
-			Die("got not found error, probably wrong endpoint url", 1)
+			Die("got not-found error, probably wrong endpoint url", 1)
 		}
 		Die("got unexpected status code: "+strconv.Itoa(statusCode)+", expected: "+strconv.Itoa(expectedStatusCode), 1)
 	}

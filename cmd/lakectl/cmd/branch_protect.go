@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
-
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
@@ -67,7 +66,7 @@ var branchProtectDeleteCmd = &cobra.Command{
 		resp, err := client.DeleteBranchProtectionRuleWithResponse(cmd.Context(), u.Repository, api.DeleteBranchProtectionRuleJSONRequestBody{
 			Pattern: args[1],
 		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, defaultResponseOnSwaggerClient)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
 }
 

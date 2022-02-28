@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
@@ -90,7 +89,7 @@ var branchDeleteCmd = &cobra.Command{
 		u := MustParseRefURI("branch", args[0])
 		Fmt("Branch: %s\n", u.String())
 		resp, err := client.DeleteBranchWithResponse(cmd.Context(), u.Repository, u.Ref)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, defaultResponseOnSwaggerClient)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
 }
 
@@ -124,7 +123,7 @@ var branchRevertCmd = &cobra.Command{
 				ParentNumber: parentNumber,
 				Ref:          commitRef,
 			})
-			DieOnErrorOrUnexpectedStatusCode(resp, err, defaultResponseOnSwaggerClient)
+			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 			Fmt("commit %s successfully reverted\n", commitRef)
 		}
 	},
@@ -180,7 +179,7 @@ var branchResetCmd = &cobra.Command{
 			return
 		}
 		resp, err := clt.ResetBranchWithResponse(cmd.Context(), u.Repository, u.Ref, api.ResetBranchJSONRequestBody(reset))
-		DieOnErrorOrUnexpectedStatusCode(resp, err, defaultResponseOnSwaggerClient)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
 }
 

@@ -15,7 +15,6 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-
 	"github.com/treeverse/lakefs/pkg/metastore"
 	mserrors "github.com/treeverse/lakefs/pkg/metastore/errors"
 )

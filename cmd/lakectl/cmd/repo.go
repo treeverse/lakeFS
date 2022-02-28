@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
@@ -127,7 +126,7 @@ var repoDeleteCmd = &cobra.Command{
 			DieFmt("Delete Repository '%s' aborted\n", u.Repository)
 		}
 		resp, err := clt.DeleteRepositoryWithResponse(cmd.Context(), u.Repository)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, defaultResponseOnSwaggerClient)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 		Fmt("Repository '%s' deleted\n", u.Repository)
 	},
 }

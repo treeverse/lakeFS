@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
-
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
@@ -83,7 +82,7 @@ var tagCreateCmd = &cobra.Command{
 
 			resp, err := client.DeleteTagWithResponse(ctx, tagURI.Repository, tagURI.Ref)
 			if err != nil && (resp == nil || resp.JSON404 == nil) {
-				DieOnErrorOrUnexpectedStatusCode(resp, err, defaultResponseOnSwaggerClient)
+				DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 			}
 		}
 
@@ -113,7 +112,7 @@ var tagDeleteCmd = &cobra.Command{
 
 		ctx := cmd.Context()
 		resp, err := client.DeleteTagWithResponse(ctx, u.Repository, u.Ref)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, defaultResponseOnSwaggerClient)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
 }
 

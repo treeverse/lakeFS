@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
@@ -71,7 +70,7 @@ Example configuration file:
 		}
 		client := getClient()
 		resp, err := client.SetGarbageCollectionRulesWithResponse(cmd.Context(), u.Repository, body)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, defaultResponseOnSwaggerClient)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
 }
 

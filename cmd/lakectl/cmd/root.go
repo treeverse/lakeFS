@@ -13,7 +13,6 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-
 	"github.com/treeverse/lakefs/cmd/lakectl/cmd/config"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -110,7 +109,6 @@ func getClient() *api.ClientWithResponses {
 		serverEndpoint = strings.TrimRight(serverEndpoint, "/") + api.BaseURL
 	}
 	httpClient := &http.Client{
-
 		// avoid redirect automatically
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
