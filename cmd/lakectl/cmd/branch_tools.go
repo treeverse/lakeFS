@@ -68,7 +68,7 @@ func ExtractRepoAndBranchFromDBName(ctx context.Context, dbName string, client m
 }
 
 // GenerateLakeFSBranchURIFromRepoAndBranchName generates a valid URI from the given repository and branch names
-func GenerateLakeFSBranchURIFromRepoAndBranchName(repoName, branchName string) (string, error) {
+func GenerateLakeFSURI(repoName, branchName string) (string, error) {
 	if len(strings.TrimSpace(repoName)) == 0 || len(strings.TrimSpace(branchName)) == 0 {
 		return "", uriGenerationError{repo: repoName, branch: branchName}
 	}
