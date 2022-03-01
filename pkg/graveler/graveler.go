@@ -91,13 +91,13 @@ type ResolvedRef struct {
 	StagingToken           StagingToken
 }
 
-// MergeStrategy changes from "ours"(dest) or "theirs"(source) are automatically overridden in case of a conflict
+// MergeStrategy changes from dest or source are automatically overridden in case of a conflict
 type MergeStrategy int
 
 const (
 	MergeStrategyNone MergeStrategy = iota
-	MergeStrategyOurs
-	MergeStrategyTheirs
+	MergeStrategyDest
+	MergeStrategySource
 )
 
 type MetaRangeInfo struct {
@@ -1627,11 +1627,11 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 			"base_meta_range":        baseCommit.MetaRangeID,
 		}).Trace("Merge")
 		mergeStrategy := MergeStrategyNone
-		if strategy == "ours" {
-			mergeStrategy = MergeStrategyOurs
+		if strategy == "dest-wins" {
+			mergeStrategy = MergeStrategyDest
 		}
-		if strategy == "theirs" {
-			mergeStrategy = MergeStrategyTheirs
+		if strategy == "source-wins" {
+			mergeStrategy = MergeStrategySource
 		}
 		metaRangeID, err := g.CommittedManager.Merge(ctx, storageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID, mergeStrategy)
 		if err != nil {

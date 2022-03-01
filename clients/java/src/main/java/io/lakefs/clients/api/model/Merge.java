@@ -106,11 +106,11 @@ public class Merge {
   }
 
    /**
-   * In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch (&#39;ours&#39;) or from the source branch(&#39;theirs&#39;). In case no selection is made, the merge process will fail in case of a conflict
+   * In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch (&#39;dest-wins&#39;) or from the source branch(&#39;source-wins&#39;). In case no selection is made, the merge process will fail in case of a conflict
    * @return strategy
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch ('ours') or from the source branch('theirs'). In case no selection is made, the merge process will fail in case of a conflict")
+  @ApiModelProperty(value = "In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch ('dest-wins') or from the source branch('source-wins'). In case no selection is made, the merge process will fail in case of a conflict")
 
   public String getStrategy() {
     return strategy;

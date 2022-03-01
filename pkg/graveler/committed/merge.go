@@ -106,9 +106,9 @@ func (m *merger) destBeforeSource(destValue *graveler.ValueRecord) error {
 	} else {
 		if baseValue != nil && bytes.Equal(destValue.Key, baseValue.Key) { // deleted by source changed by dest
 			switch m.strategy {
-			case graveler.MergeStrategyOurs:
+			case graveler.MergeStrategyDest:
 				break
-			case graveler.MergeStrategyTheirs:
+			case graveler.MergeStrategySource:
 				m.haveDest = m.dest.Next()
 				return nil
 			default: // graveler.MergeStrategyNone
@@ -135,10 +135,10 @@ func (m *merger) sourceBeforeDest(sourceValue *graveler.ValueRecord) error {
 	} else {
 		if baseValue != nil && bytes.Equal(sourceValue.Key, baseValue.Key) { // deleted by dest and changed by source
 			switch m.strategy {
-			case graveler.MergeStrategyOurs:
+			case graveler.MergeStrategyDest:
 				m.haveSource = m.source.Next()
 				return nil
-			case graveler.MergeStrategyTheirs:
+			case graveler.MergeStrategySource:
 				break
 			default: // graveler.MergeStrategyNone
 				return graveler.ErrConflictFound
@@ -198,8 +198,8 @@ func (m *merger) handleAll(iter Iterator, strategyToInclude graveler.MergeStrate
 					if m.strategy == graveler.MergeStrategyNone { // conflict is only reported if no strategy is selected
 						return graveler.ErrConflictFound
 					}
-					// In case of conflict, if the strategy favors the given iter (ours if it's dest, theirs if it's source)
-					// we still want to write the record. Otherwise it will be ignored.
+					// In case of conflict, if the strategy favors the given iter we
+					// still want to write the record. Otherwise it will be ignored.
 					if m.strategy != strategyToInclude {
 						shouldWrietRecord = false
 					}
@@ -301,12 +301,12 @@ func (m *merger) handleBothRanges(sourceRange *Range, destRange *Range) error {
 
 func (m *merger) handleConflict(sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) error {
 	switch m.strategy {
-	case graveler.MergeStrategyOurs:
+	case graveler.MergeStrategyDest:
 		err := m.writeRecord(destValue)
 		if err != nil {
 			return fmt.Errorf("write record: %w", err)
 		}
-	case graveler.MergeStrategyTheirs:
+	case graveler.MergeStrategySource:
 		err := m.writeRecord(sourceValue)
 		if err != nil {
 			return fmt.Errorf("write record: %w", err)
@@ -468,12 +468,12 @@ func (m *merger) merge() error {
 	}
 
 	if m.haveSource {
-		if err := m.handleAll(m.source, graveler.MergeStrategyTheirs); err != nil {
+		if err := m.handleAll(m.source, graveler.MergeStrategySource); err != nil {
 			return err
 		}
 	}
 	if m.haveDest {
-		if err := m.handleAll(m.dest, graveler.MergeStrategyOurs); err != nil {
+		if err := m.handleAll(m.dest, graveler.MergeStrategyDest); err != nil {
 			return err
 		}
 	}

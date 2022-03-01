@@ -121,7 +121,7 @@ func ValidateRequiredStrategy(v interface{}) error {
 		panic(ErrInvalidType)
 	}
 
-	if s != "ours" && s != "theirs" && s != "" {
+	if s != "dest-wins" && s != "source-wins" && s != "" {
 		return ErrInvalidValue
 	}
 	return nil
