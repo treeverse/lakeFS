@@ -10,13 +10,14 @@ has_children: false
 # Create a Repository
 {: .no_toc }
 
+A [repository](../understand/branching-model.md#repositories) contains all of your objects, including the revision history.
+It can be considered the lakeFS analog of a bucket in an object store. Since it has version control qualities, it is also analogous to a repository in Git. 
+
 ## Create the first user
 
-Once you have a running lakeFS instance, we'll need to set up an initial admin user in order to log in to the UI and make our first steps in lakeFS! In this guide, we're going to run an initial setup and then create a new [repository](../understand/branching-model.md#repositories).
+When you first open the lakeFS UI, you will be asked to create initial admin user.
 
-Once we have a repository created, we can start [copying and modifying objects](./add_data.md), [commit](../reference/commands.md#lakectl-commit) and [reset](../reference/commands.md#lakectl-branch-reset) changes - and even communicate with this repository from [Spark](../integrations/spark.md), [Presto/Trino](../integrations/presto_trino.md) or other S3-compatible tools using our [S3 Gateway API](../understand/architecture.md#s3-gateway).
-
-1. Open [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup){:target="_blank"} in your web browser to set up an initial admin user, used to login and send API requests.
+1. Open [http://127.0.0.1:8000/](http://127.0.0.1:8000/){:target="_blank"} in your web browser.
 
    ![Setup]({{ site.baseurl }}/assets/img/setup.png)
 
@@ -24,24 +25,28 @@ Once we have a repository created, we can start [copying and modifying objects](
 
    ![Setup Done]({{ site.baseurl }}/assets/img/setup_done.png)
 
-1. Follow the link and go to the login screen
+1. Follow the link and go to the login screen:
 
    ![Login Screen]({{ site.baseurl }}/assets/img/login.png)
 
 ## Create the repository 
 
-1. Use the credentials from step #2 to login as an administrator
-1. Click `Create Repository`
+1. Use the credentials from the previous step to log in as an administrator.
+
+1. Click _Create Repository_.
     
    ![Create Repository]({{ site.baseurl }}/assets/img/create_repo_local.png)
 
-   A [repository](../understand/branching-model.md#repositories) is lakeFS's basic namespace, akin to S3's Bucket (read more about the data model [here](../understand/branching-model.md)).
-   Since we're using the `local` block adapter, the value used for `Storage Namespace` should be a static `local://`.
-   For a deployment that uses S3 as a block adapter, this would be a bucket name with an optional prefix, e.g. `s3://example-bucket/prefix`.
-   Notice that lakeFS will only manage the data written under that prefix. All actions on the managed data must go through lakeFS endpoint.
-   Data written directly to the bucket under different paths will be accessible in the same way it was before.   
+1. Fill in a repository name.
+
+1. Under _Storage Namespace_, enter `local://`.
+ 
+   In this tutorial, the underlying storage for lakeFS is the local disk. Accordingly, the value for _Storage Namespace_ should simply be `local://`.
+   For a deployment that uses an object store as the underlying storage, this would be a location in the store, e.g. `s3://example-bucket/prefix`.
    {: .note .note-info }
-   
+
+1. Click _Create Repository_.
+
 ### Next steps
 
-You just created your first lakeFS repository! Go to [Copy Files](add_data.md) for adding data to your new repository.
+You just created your first lakeFS repository! You can now [add some data](add_data.md) to it.
