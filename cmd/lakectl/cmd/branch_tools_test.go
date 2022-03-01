@@ -98,7 +98,7 @@ func initializeMockClient(t *testing.T, schemaPath string) *mock.MSClient {
 	return mock.NewMSClient(t, initialDatabases, nil, nil)
 }
 
-type generateLakeFSBranchURIFromRepoAndBranchNameTestCase struct {
+type generateLakeFSURITestCase struct {
 	name string
 	args struct {
 		repoName   string
@@ -108,12 +108,12 @@ type generateLakeFSBranchURIFromRepoAndBranchNameTestCase struct {
 	wantErr   bool
 }
 
-func TestGenerateLakeFSBranchURIFromRepoAndBranchName(t *testing.T) {
+func TestGenerateLakeFSURI(t *testing.T) {
 	type args struct {
 		repoName   string
 		branchName string
 	}
-	tests := []generateLakeFSBranchURIFromRepoAndBranchNameTestCase{
+	tests := []generateLakeFSURITestCase{
 		{
 			name: "Sunny day flow",
 			args: args{
@@ -133,7 +133,7 @@ func TestGenerateLakeFSBranchURIFromRepoAndBranchName(t *testing.T) {
 			wantErr:   true,
 		},
 		{
-			name: "Empty brnach",
+			name: "Empty branch",
 			args: args{
 				repoName:   repoName,
 				branchName: "",
@@ -144,13 +144,13 @@ func TestGenerateLakeFSBranchURIFromRepoAndBranchName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GenerateLakeFSBranchURIFromRepoAndBranchName(tt.args.repoName, tt.args.branchName)
+			got, err := GenerateLakeFSURI(tt.args.repoName, tt.args.branchName)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GenerateLakeFSBranchURIFromRepoAndBranchName() error = %v, errType %v", err, tt.wantErr)
+				t.Errorf("GenerateLakeFSURI() error = %v, errType %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.lakeFSURI {
-				t.Errorf("GenerateLakeFSBranchURIFromRepoAndBranchName() got = %v, repositoryName %v", got, tt.lakeFSURI)
+				t.Errorf("GenerateLakeFSURI() got = %v, repositoryName %v", got, tt.lakeFSURI)
 			}
 		})
 	}
