@@ -1,9 +1,17 @@
 # Changelog
 
+## v0.60.1 - 2022-03-01
+Features: 
+- Log with multiple outputs (#2975)
+
+Bug fixes: 
+- Bugfix/2935 lakectl bug on not found html (#2966)
+
 ## v0.60.0 - 2022-02-27
 Features: 
 - Add a "Default storage namespace" configuration (#2952)
 - lakectl: add a `lakectl doctor` command to run a basic diagnose on lakeFS configuration (#2948)
+
 Bug fixes: 
 - Fix diff performance issues (#2968)
 - Improve memory footprint during openapi object upload (#2963)
