@@ -1548,6 +1548,78 @@ func TestMergeStrategies(t *testing.T) {
 				},
 			},
 		},
+		"source and dest change same entry": {
+			baseRange: []testRange{{
+				rng:     committed.Range{ID: "base:a-a", MinKey: committed.Key("a"), MaxKey: committed.Key("c"), Count: 3, EstimatedSize: 1234},
+				records: []testValueRecord{{key: "a", identity: "a"}, {key: "b", identity: "b"}, {key: "c", identity: "c"}},
+			}},
+			sourceRange: []testRange{{
+				rng:     committed.Range{ID: "source:a-a", MinKey: committed.Key("a"), MaxKey: committed.Key("c"), Count: 3, EstimatedSize: 1234},
+				records: []testValueRecord{{key: "a", identity: "a"}, {key: "b", identity: "b1"}, {key: "c", identity: "c"}},
+			}},
+			destRange: []testRange{{
+				rng:     committed.Range{ID: "dest:a-a", MinKey: committed.Key("a"), MaxKey: committed.Key("c"), Count: 3, EstimatedSize: 1234},
+				records: []testValueRecord{{key: "a", identity: "a"}, {key: "b", identity: "b2"}, {key: "c", identity: "c"}},
+			}},
+			expectedResult: []testRunResult{
+				{
+					mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyNone},
+					conflictExpectedIdx: nil,
+					expectedActions: []writeAction{
+						{
+							action:   actionTypeWriteRecord,
+							key:      "a",
+							identity: "a",
+						},
+					},
+					expectedErr: graveler.ErrConflictFound,
+				},
+				{
+					mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyOurs},
+					conflictExpectedIdx: nil,
+					expectedActions: []writeAction{
+						{
+							action:   actionTypeWriteRecord,
+							key:      "a",
+							identity: "a",
+						},
+						{
+							action:   actionTypeWriteRecord,
+							key:      "b",
+							identity: "b2",
+						},
+						{
+							action:   actionTypeWriteRecord,
+							key:      "c",
+							identity: "c",
+						},
+					},
+					expectedErr: nil,
+				},
+				{
+					mergeStrategies:     []graveler.MergeStrategy{graveler.MergeStrategyTheirs},
+					conflictExpectedIdx: nil,
+					expectedActions: []writeAction{
+						{
+							action:   actionTypeWriteRecord,
+							key:      "a",
+							identity: "a",
+						},
+						{
+							action:   actionTypeWriteRecord,
+							key:      "b",
+							identity: "b1",
+						},
+						{
+							action:   actionTypeWriteRecord,
+							key:      "c",
+							identity: "c",
+						},
+					},
+					expectedErr: nil,
+				},
+			},
+		},
 	}
 
 	runMergeTests(tests, t)
