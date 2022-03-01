@@ -15,10 +15,11 @@ export LAKEFS_SCHEMA=test
 dbt run --select star_rating
 
 unset LAKEFS_SCHEMA
-ANS=$(lakectl dbt create-branch-schema --create-branch --branch testBranchCreation)
+DBT_BRANCH_CREATION_NAME=testbranchcreation
+ANS=$(lakectl dbt create-branch-schema --create-branch --branch ${DBT_BRANCH_CREATION_NAME})
 echo $ANS
 # change schema and test branch creation
-export LAKEFS_SCHEMA=testBranchCreation
+export LAKEFS_SCHEMA=${DBT_BRANCH_CREATION_NAME}
 
 dbt run --select star_rating
 
