@@ -59,7 +59,7 @@ func ExtractRepoAndBranchFromDBName(ctx context.Context, dbName string, client m
 		return "", "", MissingDBError{dbName: dbName, err: err}
 	}
 
-	repo, branch, err := metastore.GetRepoAndBranchFromMSLocationURI(metastoreDB.LocationURI)
+	repo, branch, err := metastore.ExtractRepoAndBranch(metastoreDB.LocationURI)
 	if err != nil {
 		return "", "", ExtractSourceBranchError{locationURI: metastoreDB.LocationURI, err: err}
 	}

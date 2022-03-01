@@ -129,7 +129,7 @@ func TestDbtLsToJson(t *testing.T) {
 				projectRoot:  "nevermind",
 				resourceType: "nevermind",
 				selectValues: []string{"nevermind"},
-				executor:     DummyCommandExecutor{err: nil, output: generateJsonStringFromResources(DBTResources...)},
+				executor:     DummyCommandExecutor{err: nil, output: toJSON(DBTResources...)},
 			},
 			dbtResources: DBTResources,
 			errType:      nil,
@@ -274,7 +274,7 @@ func TestDbtRun(t *testing.T) {
 	}
 }
 
-func generateJsonStringFromResources(resources ...DBTResource) string {
+func toJSON(resources ...DBTResource) string {
 	sb := strings.Builder{}
 	for _, resource := range resources {
 		j, _ := json.Marshal(resource)

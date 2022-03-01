@@ -54,7 +54,7 @@ func GetSymlinkLocation(location, locationPrefix string) (string, error) {
 	return locationPrefix + "/" + u.Host + "/" + p.Ref + "/" + p.Path, nil
 }
 
-func GetRepoAndBranchFromMSLocationURI(metastoreLocationURI string) (string, string, error) {
+func ExtractRepoAndBranch(metastoreLocationURI string) (string, string, error) {
 	u, err := url.Parse(metastoreLocationURI)
 	if err != nil {
 		return "", "", err
