@@ -155,6 +155,13 @@ func (m *merger) sourceBeforeDest(sourceValue *graveler.ValueRecord) error {
 }
 
 // handleAll handles the case where only one Iterator from source or dest remains
+// Since the iterator can be for either the source ot the dest range, the function
+// receives a graveler.MergeStrategy parameter - strategyToInclude - to indicate
+// which strategy favors the given range. In case of a conflict, the configured m.strategy
+// is compared to the given strategyToInclude, and if they match - the conflict will
+// be resolved by taking the value from the given range. If not and the configured
+// m.strategy is other than MergeStrategyNone, the record is ignored. If m.strategy is
+// MergeStrategyNone - a conflict will be reported
 func (m *merger) handleAll(iter Iterator, strategyToInclude graveler.MergeStrategy) error {
 	for {
 		select {
