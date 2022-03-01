@@ -220,6 +220,104 @@ func TestFindMergeBase(t *testing.T) {
 			},
 			Expected: []string{"c2"},
 		},
+		{
+			Name: "no redundant parent access",
+			// ROOT---------R
+			// \
+			//  `---a---c---L
+			//   \     /   /
+			//    `---b---d
+			//
+			// Verifying the fix introduced with https://github.com/treeverse/lakeFS/pull/2968. The following commits tree
+			// will generate multiple accesses to commit 'b' as it is a parent commit for both 'd' and 'c' and per BFS algo,
+			// it will be reached via both paths before ROOT is reached from L.
+			// The abovementioned fix eliminates that
+			Left:  "l",
+			Right: "r",
+			Getter: func() *MockCommitGetter {
+				root := &graveler.Commit{Message: "root", Parents: []graveler.CommitID{}}
+				a := &graveler.Commit{Message: "a", Parents: []graveler.CommitID{"root"}}
+				b := &graveler.Commit{Message: "b", Parents: []graveler.CommitID{"root"}}
+				c := &graveler.Commit{Message: "c", Parents: []graveler.CommitID{"a", "b"}}
+				d := &graveler.Commit{Message: "d", Parents: []graveler.CommitID{"b"}}
+				l := &graveler.Commit{Message: "L", Parents: []graveler.CommitID{"c", "d"}}
+				r := &graveler.Commit{Message: "R", Parents: []graveler.CommitID{"root"}}
+				return newReader(map[graveler.CommitID]*graveler.Commit{
+					"root": root, "a": a, "b": b, "c": c, "d": d, "l": l, "r": r,
+				})
+			},
+			Expected: []string{"root"},
+		},
+		{
+			Name: "complex graph with multiple merges and common ancestor in the middle",
+			//              ---ROOT---
+			//             /   /  \   \
+			//            /   a    b   \
+			//           /     \  /     \
+			//          |       ab       |
+			//          |     /    \     |
+			//          |    /  /\  \    |
+			//          |   /  /  \  \   |
+			//           \ /  |    |  \ /
+			//            l0  |    |  r0
+			//            /\  /    \  /\
+			//           /  l1      r1  \
+			//           \  /\      /\  /
+			//            l2  \    /  r2
+			//            /\  /    \  /\
+			//           /  l3      r3  \
+			//           \  /\      /\  /
+			//            l4  \    /  r4
+			//            /\  /    \  /\
+			//           /  l5      r6  \
+			//           \  /\      /\  /
+			//            l7  \    /  r7
+			//            /\  /    \  /\
+			//           /  l8      r8  \
+			//           \  /\      /\  /
+			//            l9  \    /  r9
+			//             \  /    \  /
+			//             LEFT    RIGHT
+			Left:  "left",
+			Right: "right",
+			Getter: func() *MockCommitGetter {
+				root := &graveler.Commit{Message: "root", Parents: []graveler.CommitID{}}
+				a := &graveler.Commit{Message: "a", Parents: []graveler.CommitID{"root"}}
+				b := &graveler.Commit{Message: "b", Parents: []graveler.CommitID{"root"}}
+				ab := &graveler.Commit{Message: "ab", Parents: []graveler.CommitID{"a", "b"}}
+				l0 := &graveler.Commit{Message: "l0", Parents: []graveler.CommitID{"root", "ab"}}
+				l1 := &graveler.Commit{Message: "l1", Parents: []graveler.CommitID{"ab", "l0"}}
+				l2 := &graveler.Commit{Message: "l2", Parents: []graveler.CommitID{"l0", "l1"}}
+				l3 := &graveler.Commit{Message: "l3", Parents: []graveler.CommitID{"l1", "l2"}}
+				l4 := &graveler.Commit{Message: "l4", Parents: []graveler.CommitID{"l2", "l3"}}
+				l5 := &graveler.Commit{Message: "l5", Parents: []graveler.CommitID{"l3", "l4"}}
+				l6 := &graveler.Commit{Message: "l6", Parents: []graveler.CommitID{"l4", "l5"}}
+				l7 := &graveler.Commit{Message: "l7", Parents: []graveler.CommitID{"l5", "l6"}}
+				l8 := &graveler.Commit{Message: "l8", Parents: []graveler.CommitID{"l6", "l7"}}
+				l9 := &graveler.Commit{Message: "l9", Parents: []graveler.CommitID{"l7", "l8"}}
+				left := &graveler.Commit{Message: "left", Parents: []graveler.CommitID{"l8", "l9"}}
+				r0 := &graveler.Commit{Message: "r0", Parents: []graveler.CommitID{"root", "ab"}}
+				r1 := &graveler.Commit{Message: "r1", Parents: []graveler.CommitID{"ab", "r0"}}
+				r2 := &graveler.Commit{Message: "r2", Parents: []graveler.CommitID{"r0", "r1"}}
+				r3 := &graveler.Commit{Message: "r3", Parents: []graveler.CommitID{"r1", "r2"}}
+				r4 := &graveler.Commit{Message: "r4", Parents: []graveler.CommitID{"r2", "r3"}}
+				r5 := &graveler.Commit{Message: "r5", Parents: []graveler.CommitID{"r3", "r4"}}
+				r6 := &graveler.Commit{Message: "r6", Parents: []graveler.CommitID{"r4", "r5"}}
+				r7 := &graveler.Commit{Message: "r7", Parents: []graveler.CommitID{"r5", "r6"}}
+				r8 := &graveler.Commit{Message: "r8", Parents: []graveler.CommitID{"r6", "r7"}}
+				r9 := &graveler.Commit{Message: "r9", Parents: []graveler.CommitID{"r7", "r8"}}
+				right := &graveler.Commit{Message: "right", Parents: []graveler.CommitID{"r8", "r9"}}
+				return newReader(map[graveler.CommitID]*graveler.Commit{
+					"root": root, "a": a, "b": b, "ab": ab,
+					"l0": l0, "l1": l1, "l2": l2, "l3": l3, "l4": l4,
+					"l5": l5, "l6": l6, "l7": l7, "l8": l8, "l9": l9,
+					"r0": r0, "r1": r1, "r2": r2, "r3": r3, "r4": r4,
+					"r5": r5, "r6": r6, "r7": r7, "r8": r8, "r9": r9,
+					"right": right, "left": left,
+				})
+			},
+			Expected: []string{"ab"},
+		},
 	}
 	for _, cas := range cases {
 		t.Run(cas.Name, func(t *testing.T) {
