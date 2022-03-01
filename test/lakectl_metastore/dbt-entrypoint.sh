@@ -14,6 +14,7 @@ export LAKEFS_SCHEMA=test
 
 dbt run --select star_rating
 
+unset LAKEFS_SCHEMA
 ANS=$(lakectl dbt create-branch-schema --create-branch --branch testBranchCreation)
 echo $ANS
 # change schema and test branch creation
