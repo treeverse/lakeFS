@@ -1851,6 +1851,7 @@ func (g *Graveler) LoadCommits(ctx context.Context, repositoryID RepositoryID, m
 			CreationDate: commit.GetCreationDate().AsTime(),
 			Parents:      parents,
 			Metadata:     commit.GetMetadata(),
+			Generation:   int(commit.GetGeneration()),
 		})
 		if err != nil {
 			return err
@@ -2178,6 +2179,7 @@ func (c *commitValueIterator) setValue() bool {
 		MetaRangeId:  string(commit.MetaRangeID),
 		Metadata:     commit.Metadata,
 		Parents:      commit.Parents.AsStringSlice(),
+		Generation:   int32(commit.Generation),
 	})
 	if err != nil {
 		c.err = err
