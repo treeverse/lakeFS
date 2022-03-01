@@ -14,7 +14,7 @@ func TestLakectlHelp(t *testing.T) {
 
 }
 
-func TestBasicRepoActions(t *testing.T) {
+func TestLakectlBasicRepoActions(t *testing.T) {
 
 	// RunCmdAndVerifySuccess(t, Lakectl()+" repo list", false, "\n", emptyVars)
 
@@ -93,7 +93,7 @@ func TestBasicRepoActions(t *testing.T) {
 	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" repo delete lakefs://"+repoName2+" -y", false, "lakectl_repo_delete_not_found", vars)
 }
 
-func TestCommit(t *testing.T) {
+func TestLakectlCommit(t *testing.T) {
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
