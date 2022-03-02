@@ -144,14 +144,9 @@ func handleBranchCreation(ctx context.Context, schema, branchName string, metast
 	if err != nil {
 		DieErr(errorNoSourceBranch)
 	}
-	sourceBranchURI, err := GenerateLakeFSURI(sourceRepo, sourceBranch)
-	if err != nil {
-		DieErr(err)
-	}
-	destinationBranchURI, err := GenerateLakeFSURI(sourceRepo, branchName)
-	if err != nil {
-		DieErr(err)
-	}
+	sourceBranchURI := GenerateLakeFSURI(sourceRepo, sourceBranch)
+	destinationBranchURI := GenerateLakeFSURI(sourceRepo, branchName)
+
 	CreateBranch(ctx, sourceBranchURI, destinationBranchURI)
 }
 
