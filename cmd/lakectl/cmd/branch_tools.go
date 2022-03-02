@@ -3,9 +3,10 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/metastore"
-	"net/http"
 )
 
 var branchCreatedTemplate = `created branch "{{.Branch}}" {{.Resp}}
