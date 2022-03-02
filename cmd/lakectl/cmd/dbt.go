@@ -144,10 +144,8 @@ func handleBranchCreation(ctx context.Context, schema, branchName string, metast
 	if err != nil {
 		DieErr(errorNoSourceBranch)
 	}
-	sourceBranchURI := GenerateLakeFSURI(sourceRepo, sourceBranch)
-	destinationBranchURI := GenerateLakeFSURI(sourceRepo, branchName)
 
-	CreateBranch(ctx, sourceBranchURI, destinationBranchURI)
+	CreateBranch(ctx, sourceRepo, sourceBranch, branchName)
 }
 
 // copySchemaWithDbtTables create a copy of fromSchema and copies all dbt models materialized as table or incremental

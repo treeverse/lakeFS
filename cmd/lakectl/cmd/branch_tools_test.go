@@ -3,115 +3,87 @@ package cmd
 import (
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/treeverse/lakefs/pkg/metastore"
 	"github.com/treeverse/lakefs/pkg/metastore/mock"
 )
 
-const (
-	dbName     = "source"
-	repoName   = "repo"
-	branchName = "branch"
-)
-
-var (
-	validPath   = fmt.Sprintf("s3://%s/%s/path/to/schema", repoName, branchName)
-	invalidPath = fmt.Sprintf("s3/%s/%s/", repoName, branchName)
-)
-
-type extractRepoAndBranchFromDBNameTestCase struct {
-	name string
-	args struct {
-		dbName string
-	}
-	repositoryName string
-	branchName     string
-	errType        error
-	validPath      bool
-}
-
 func TestExtractRepoAndBranchFromDBName(t *testing.T) {
 	type args struct {
-		dbName string
+		DBName string
 	}
+	type extractRepoAndBranchFromDBNameTestCase struct {
+		Name           string
+		Args           args
+		RepositoryName string
+		BranchName     string
+		Err            error
+		Path           string
+	}
+	const (
+		dbName      = "source"
+		repoName    = "repo"
+		branchName  = "branch"
+		validPath   = "s3://" + repoName + "/" + branchName + "/path/to/schema"
+		invalidPath = "s3/" + repoName + "/" + branchName + "/"
+	)
+	var ()
 	tests := []extractRepoAndBranchFromDBNameTestCase{
 		{
-			name: "Sunny day flow",
-			args: args{
-				dbName: dbName,
+			Name: "Sunny day flow",
+			Args: args{
+				DBName: dbName,
 			},
-			repositoryName: repoName,
-			branchName:     branchName,
-			errType:        nil,
-			validPath:      true,
+			RepositoryName: repoName,
+			BranchName:     branchName,
+			Err:            nil,
+			Path:           validPath,
 		},
 		{
-			name: "Client with no database",
-			args: args{
-				dbName: "db name that doesn't exist",
+			Name: "Client with no database",
+			Args: args{
+				DBName: "db Name that doesn't exist",
 			},
-			repositoryName: "",
-			branchName:     "",
-			errType:        MissingDBError{},
-			validPath:      true,
+			RepositoryName: "",
+			BranchName:     "",
+			Err:            mock.ErrNotFound,
+			Path:           validPath,
 		},
 		{
-			name: "Failed getting repo and branch from uri",
-			args: args{
-				dbName: dbName,
+			Name: "Failed getting repo and branch from uri",
+			Args: args{
+				DBName: dbName,
 			},
-			repositoryName: "",
-			branchName:     "",
-			errType:        ExtractSourceBranchError{},
-			validPath:      false,
+			RepositoryName: "",
+			BranchName:     "",
+			Err:            metastore.ErrInvalidLocation,
+			Path:           invalidPath,
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var schemaPath string
-			if tt.validPath {
-				schemaPath = validPath
-			} else {
-				schemaPath = invalidPath
-			}
-			client := initializeMockClient(t, schemaPath)
-			got, got1, err := ExtractRepoAndBranchFromDBName(context.Background(), tt.args.dbName, client)
-			if (err != nil) && errors.Is(err, tt.errType) {
-				t.Errorf("ExtractRepoAndBranchFromDBName() error = %v, errType %v", err, tt.errType)
+		t.Run(tt.Name, func(t *testing.T) {
+			client := NewMockClient(t, tt.Path, dbName)
+			repo, branch, err := ExtractRepoAndBranchFromDBName(context.Background(), tt.Args.DBName, client)
+			if err != nil && !errors.Is(err, tt.Err) {
+				t.Errorf("ExtractRepoAndBranchFromDBName() error = %v, Err %v", err, tt.Err)
 				return
 			}
-			if got != tt.repositoryName {
-				t.Errorf("ExtractRepoAndBranchFromDBName() got = %v, repositoryName %v", got, tt.repositoryName)
+			if err == nil && tt.Err != nil {
+				t.Errorf("ExtractRepoAndBranchFromDBName() repo = %v, RepositoryName %v, failed with error %v", repo, tt.RepositoryName, err)
 			}
-			if got1 != tt.branchName {
-				t.Errorf("ExtractRepoAndBranchFromDBName() got1 = %v, repositoryName %v", got1, tt.branchName)
+			if repo != tt.RepositoryName {
+				t.Errorf("ExtractRepoAndBranchFromDBName() repo = %v, RepositoryName %v", repo, tt.RepositoryName)
+			}
+			if branch != tt.BranchName {
+				t.Errorf("ExtractRepoAndBranchFromDBName() branch = %v, BranchName %v", branch, tt.BranchName)
 			}
 		})
 	}
 }
 
-func initializeMockClient(t *testing.T, schemaPath string) *mock.MSClient {
+func NewMockClient(t *testing.T, schemaPath, dbName string) *mock.MSClient {
 	initialDatabases := make(map[string]*metastore.Database)
 	initialDatabases[dbName] = &metastore.Database{Name: dbName, LocationURI: schemaPath}
 	return mock.NewMSClient(t, initialDatabases, nil, nil)
-}
-
-type generateLakeFSURITestCase struct {
-	name string
-	args struct {
-		repoName   string
-		branchName string
-	}
-	lakeFSURI string
-	wantErr   bool
-}
-
-func TestGenerateLakeFSURI(t *testing.T) {
-	got := GenerateLakeFSURI(repoName, branchName)
-	expectedURI := fmt.Sprintf("lakefs://%s/%s", repoName, branchName)
-	if got != expectedURI {
-		t.Errorf("GenerateLakeFSURI() got = %v, repositoryName %v", got, expectedURI)
-	}
 }
