@@ -109,49 +109,9 @@ type generateLakeFSURITestCase struct {
 }
 
 func TestGenerateLakeFSURI(t *testing.T) {
-	type args struct {
-		repoName   string
-		branchName string
-	}
-	tests := []generateLakeFSURITestCase{
-		{
-			name: "Sunny day flow",
-			args: args{
-				repoName:   repoName,
-				branchName: branchName,
-			},
-			lakeFSURI: fmt.Sprintf("lakefs://%s/%s", repoName, branchName),
-			wantErr:   false,
-		},
-		{
-			name: "Empty repo",
-			args: args{
-				repoName:   "",
-				branchName: branchName,
-			},
-			lakeFSURI: "",
-			wantErr:   true,
-		},
-		{
-			name: "Empty branch",
-			args: args{
-				repoName:   repoName,
-				branchName: "",
-			},
-			lakeFSURI: "",
-			wantErr:   true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := GenerateLakeFSURI(tt.args.repoName, tt.args.branchName)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GenerateLakeFSURI() error = %v, errType %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.lakeFSURI {
-				t.Errorf("GenerateLakeFSURI() got = %v, repositoryName %v", got, tt.lakeFSURI)
-			}
-		})
+	got := GenerateLakeFSURI(repoName, branchName)
+	expectedURI := fmt.Sprintf("lakefs://%s/%s", repoName, branchName)
+	if got != expectedURI {
+		t.Errorf("GenerateLakeFSURI() got = %v, repositoryName %v", got, expectedURI)
 	}
 }

@@ -3,12 +3,10 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"strings"
-
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/metastore"
 	"github.com/treeverse/lakefs/pkg/uri"
+	"net/http"
 )
 
 var branchCreatedTemplate = `created branch "{{.Branch.Ref}}" {{.Resp}}
@@ -68,11 +66,8 @@ func ExtractRepoAndBranchFromDBName(ctx context.Context, dbName string, client m
 }
 
 // GenerateLakeFSURI generates a valid URI from the given repository and branch names
-func GenerateLakeFSURI(repoName, branchName string) (string, error) {
-	if len(strings.TrimSpace(repoName)) == 0 || len(strings.TrimSpace(branchName)) == 0 {
-		return "", uriGenerationError{repo: repoName, branch: branchName}
-	}
-	return fmt.Sprintf(`lakefs://%s/%s`, repoName, branchName), nil
+func GenerateLakeFSURI(repoName, branchName string) string {
+	return fmt.Sprintf(`lakefs://%s/%s`, repoName, branchName)
 }
 
 // CreateBranch creates a new branch with the given source and destination branch URIs
