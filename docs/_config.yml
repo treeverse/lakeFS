@@ -25,8 +25,8 @@ aux_links:
     - 'https://lakefs.io/blog/'
 
 buttons:
-  'lakeFS Cloud':
-      - 'https://lakefs.io/join-beta/'
+  'Join the beta':
+      - 'https://lakefs.io/cloud-registration/'
 
 # FOOTER
 # use "footer_content" for simple footer
