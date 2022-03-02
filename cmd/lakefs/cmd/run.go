@@ -15,10 +15,12 @@ import (
 	"time"
 
 	"github.com/dlmiddlecote/sqlstats"
+	"github.com/fsnotify/fsnotify"
 	"github.com/go-ldap/ldap/v3"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
@@ -91,6 +93,13 @@ var runCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		logger := logging.Default()
 		cfg := loadConfig()
+		viper.WatchConfig()
+		viper.OnConfigChange(func(in fsnotify.Event) {
+			lvl := viper.GetString(config.LoggingLevelKey)
+			logger.WithField("toLevel", lvl).Info("Changing log level")
+			logging.SetLevel(lvl)
+		})
+
 		ctx := cmd.Context()
 		logger.WithField("version", version.Version).Info("lakeFS run")
 
@@ -118,7 +127,7 @@ var runCmd = &cobra.Command{
 			LockDB: lockdbPool,
 		})
 		if err != nil {
-			logger.WithError(err).Fatal("failed to create c")
+			logger.WithError(err).Fatal("failed to create catalog")
 		}
 		defer func() { _ = c.Close() }()
 

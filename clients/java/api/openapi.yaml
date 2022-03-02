@@ -3128,7 +3128,7 @@ paths:
           description: Internal Server Error
       tags:
       - objects
-      x-validation-exclude-body: false
+      x-validation-exclude-body: true
       x-contentType: multipart/form-data
       x-accepts: application/json
     put:
@@ -5209,12 +5209,15 @@ components:
         blockstore_namespace_example: blockstore_namespace_example
         blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
         blockstore_type: blockstore_type
+        default_namespace_prefix: default_namespace_prefix
       properties:
         blockstore_type:
           type: string
         blockstore_namespace_example:
           type: string
         blockstore_namespace_ValidityRegex:
+          type: string
+        default_namespace_prefix:
           type: string
       required:
       - blockstore_namespace_ValidityRegex

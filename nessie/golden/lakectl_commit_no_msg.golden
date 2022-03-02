@@ -1,19 +1,2 @@
-Error: required flag(s) "message" not set
-Usage:
-  lakectl commit <branch uri> [flags]
-
-Flags:
-  -h, --help             help for commit
-  -m, --message string   commit message
-      --meta strings     key value pair in the form of key=value
-
-Global Flags:
-      --base-uri string     base URI used for lakeFS address parse
-  -c, --config string       config file (default is $HOME/.lakectl.yaml)
-      --log-format string   set logging output format
-      --log-level string    set logging level (default "none")
-      --log-output string   set logging output file
-      --no-color            don't use fancy output colors (default when not attached to an interactive terminal)
-
-required flag(s) "message" not set
+commit with no message without specifying the "--allow-empty-message" flag
 Error executing command.

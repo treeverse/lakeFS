@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"net/http"
+
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
 )
@@ -44,7 +46,7 @@ var runsListCmd = &cobra.Command{
 			Branch: optionalBranch,
 			Commit: optionalCommit,
 		})
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 
 		results := resp.JSON200.Results
 		rows := make([][]interface{}, len(results))

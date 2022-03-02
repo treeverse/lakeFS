@@ -5,13 +5,12 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/signal"
 	"runtime"
 	"strings"
 	"sync"
-	"syscall"
 
 	"github.com/sirupsen/logrus"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 type contextKey string
@@ -97,37 +96,31 @@ func SetLevel(level string) {
 	}
 }
 
-func SetOutput(output string) {
-	if output == "" {
-		return
-	}
-	if output == "-" {
-		defaultLogger.SetOutput(os.Stdout)
-		return
-	}
-
-	handle, err := os.OpenFile(output, os.O_CREATE|os.O_WRONLY, 0755)
-	if err != nil {
-		panic(fmt.Errorf("could not open log file: %w", err))
-	}
-	defaultLogger.SetOutput(handle)
-	// setup signal handler to reopen logfile on SIGHUP
-	sigChannel := make(chan os.Signal, 1)
-	signal.Notify(sigChannel, syscall.SIGHUP)
-	go func(filename string) {
-		for {
-			<-sigChannel
-			defaultLogger.Info("SIGHUP received, rotating log file")
-			defaultLogger.SetOutput(io.Discard)
-			_ = handle.Close()
-			handle, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0755)
-			if err != nil {
-				panic(fmt.Errorf("could not open log file: %w", err))
+func SetOutputs(outputs []string, fileMaxSizeMB, filesKeep int) {
+	var writers []io.Writer
+	for _, output := range outputs {
+		var w io.Writer
+		switch output {
+		case "":
+			continue
+		case "-":
+			w = os.Stdout
+		case "=":
+			w = os.Stderr
+		default:
+			w = &lumberjack.Logger{
+				Filename:   output,
+				MaxSize:    fileMaxSizeMB,
+				MaxBackups: filesKeep,
 			}
-			defaultLogger.SetOutput(handle)
-			defaultLogger.Info("log file was rotated successfully")
 		}
-	}(output)
+		writers = append(writers, w)
+	}
+	if len(writers) == 1 {
+		defaultLogger.SetOutput(writers[0])
+	} else if len(writers) > 1 {
+		defaultLogger.SetOutput(io.MultiWriter(writers...))
+	}
 }
 
 func SetOutputFormat(format string) {

@@ -1,5 +1,34 @@
 # Changelog
 
+## v0.60.1 - 2022-03-01
+Features: 
+- Log with multiple outputs (#2975)
+
+Bug fixes: 
+- Bugfix/2935 lakectl bug on not found html (#2966)
+
+## v0.60.0 - 2022-02-27
+Features: 
+- Add a "Default storage namespace" configuration (#2952)
+- lakectl: add a `lakectl doctor` command to run a basic diagnose on lakeFS configuration (#2948)
+
+Bug fixes: 
+- Fix diff performance issues (#2968)
+- Improve memory footprint during openapi object upload (#2963)
+- Make "Everything Bagel" Jupyter notebook container support S3A  (#2946)
+
+
+## v0.59.0 - 2022-02-15
+- lakectl: Convert windows paths to S3 style paths on upload (#2932)
+- lakectl: Allow empty commit message with a specified flag (#2927)
+- lakefs: Live configuration reload will change logging level (#2949)
+
+## v0.58.1 - 2022-02-09
+- Merge operation optimized by another 20%! (#2884)
+- Improved the output verbosity of the `lakectl dbt` tool. (#2895)
+- Usage examples added in `lakectl repo create` command. (#2900)
+- Fixed misleading errors on branch creation. (#2859)
+
 ## v0.58.0 - 2022-01-26
 
 - Include Jupyter notebook in our everything bagel (#2832)

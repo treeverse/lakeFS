@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/jedib0t/go-pretty/v6/text"
@@ -83,7 +84,7 @@ func printDiffBranch(ctx context.Context, client api.ClientWithResponsesInterfac
 			After:  api.PaginationAfterPtr(after),
 			Amount: api.PaginationAmountPtr(int(pageSize)),
 		})
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 
 		for _, line := range resp.JSON200.Results {
 			FmtDiff(line, false)
@@ -111,7 +112,7 @@ func printDiffRefs(ctx context.Context, client api.ClientWithResponsesInterface,
 			Amount: api.PaginationAmountPtr(amount),
 			Type:   diffType,
 		})
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 
 		for _, line := range resp.JSON200.Results {
 			FmtDiff(line, true)

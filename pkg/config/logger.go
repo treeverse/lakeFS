@@ -6,17 +6,21 @@ import (
 )
 
 const (
-	DefaultLoggingFormat = "text"
-	DefaultLoggingLevel  = "INFO"
-	DefaultLoggingOutput = "-"
+	DefaultLoggingFormat       = "text"
+	DefaultLoggingLevel        = "INFO"
+	DefaultLoggingOutput       = "-"
+	DefaultLoggingFilesKeepKey = 100
 )
 
 func setupLogger() {
 	// set output format
 	logging.SetOutputFormat(viper.GetString(LoggingFormatKey))
 
-	// set output
-	logging.SetOutput(viper.GetString(LoggingOutputKey))
+	// set outputs
+	output := viper.GetStringSlice(LoggingOutputKey)
+	maxSizeMB := viper.GetInt(LoggingFileMaxSizeMBKey)
+	fileKeep := viper.GetInt(LoggingFilesKeepKey)
+	logging.SetOutputs(output, maxSizeMB, fileKeep)
 
 	// set level
 	logging.SetLevel(viper.GetString(LoggingLevelKey))

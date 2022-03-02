@@ -21,7 +21,7 @@ lakeFS supports AWS S3, Azure Blob Storage and Google Cloud Storage (GCS) as its
 {: .pb-5 }
 
 
-## New! lakeFS Demo Environment
+## New! lakeFS Playground
 
 Experience lakeFS first hand with your own isolated environment.
 You can easily integrate it with your existing tools, and feel lakeFS in action in an environment similar to your own.
@@ -34,10 +34,7 @@ You can easily integrate it with your existing tools, and feel lakeFS in action 
 
 ## Why you need lakeFS and what it can do
 
-lakeFS enables data teams to stop worrying about issues that take away much of their time:
-Atomically roll back changes to data, allow testing and validating data before exposing it to consumers and enables traveling back in time, across all collections - for reproducing and debugging issues.
-
-lakeFS enables data teams to stop worrying about issues that take away much of their time:
+With lakeFS data teams can stop worrying about issues that take away much of their time:
 * Roll back changes to data: recover quickly from bugs and mistakes
 * Test and validate data before exposing it to consumers
 * Travel back in time, across collections - for reproducing and debugging issues
@@ -46,8 +43,8 @@ Since lakeFS is compatible with the S3 API, all popular applications will work w
 
 <img src="{{ site.baseurl }}/assets/img/s3_branch.png" alt="lakeFS s3 addressing" width="60%" height="60%" />
 
-## The benefits of lakeFS are:
-* Is it **format agnostic**
+## Benefits of lakeFS
+* It is **format agnostic**
 * Your data **stays in place**
 * It helps you prevent data duplication by using **copy-on-write**
 * It is **highly performant** for huge data lakes

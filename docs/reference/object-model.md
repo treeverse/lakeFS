@@ -149,6 +149,10 @@ The path used to store the contents of an object is then termed a _physical path
 itself on underlying storage is never modified, except to remove it entirely during some
 cleanups.
 
+When creating a lakeFS repository, you assign it with a _storage namespace_. The repository's
+storage namespace is the prefix in the underlying storage where data for this repository
+will be stored.
+
 A lot of what lakeFS does is to manage how lakeFS paths translate to _physical paths_ on the
 object store.  This mapping is generally **not** straightforward.  Importantly (and unlike
 many object stores), lakeFS may map multiple paths to the same object on backing storage, and

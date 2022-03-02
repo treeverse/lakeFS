@@ -1,11 +1,14 @@
-import React, {useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 
 import Form from "react-bootstrap/Form";
 import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
-import {Warnings} from "../../lib/components/controls";
+import {TooltipButton, Warnings} from "../../lib/components/controls";
+import {InfoIcon} from "@primer/octicons-react";
+import Tooltip from "react-bootstrap/Tooltip";
+import {OverlayTrigger} from "react-bootstrap";
 
 const DEFAULT_BLOCKSTORE_EXAMPLE = "e.g. s3://example-bucket/";
 const DEFAULT_BLOCKSTORE_VALIDITY_REGEX = new RegExp(`^s3://`);
@@ -15,19 +18,24 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
     const repoValidityRegex = /^[a-z0-9][a-z0-9-]{2,62}$/;
 
     const [formValid, setFormValid] = useState(false);
-    const [repoValid, setRepoValid] = useState(true);
+    const [repoValid, setRepoValid] = useState(null);
+    const defaultNamespacePrefix = config.default_namespace_prefix
 
-    const [storageNamespaceValid, setStorageNamespaceValid] = useState(true);
+    const [storageNamespaceValid, setStorageNamespaceValid] = useState(defaultNamespacePrefix ? true : null);
     const [defaultBranchValid, setDefaultBranchValid] = useState(true);
 
     const storageNamespaceField = useRef(null);
     const defaultBranchField = useRef(null);
     const repoNameField = useRef(null);
 
-    const checkRepoValidity = () => {
+    const onRepoNameChange = () => {
         const isRepoValid = repoValidityRegex.test(repoNameField.current.value);
         setRepoValid(isRepoValid);
         setFormValid(isRepoValid && storageNamespaceValid && defaultBranchValid);
+        if (isRepoValid && defaultNamespacePrefix) {
+            storageNamespaceField.current.value = defaultNamespacePrefix + "/" + repoNameField.current.value
+            checkStorageNamespaceValidity()
+        }
     };
 
     const checkStorageNamespaceValidity = () => {
@@ -63,20 +71,26 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
             <Form.Group as={Row} controlId="id">
                 <Form.Label column sm={fieldNameOffset}>Repository ID</Form.Label>
                 <Col sm={sm}>
-                    <Form.Control type="text" autoFocus ref={repoNameField} onChange={checkRepoValidity}/>
-                    {!repoValid &&
+                    <Form.Control type="text" autoFocus ref={repoNameField} onChange={onRepoNameChange}/>
+                    {repoValid === false &&
                     <Form.Text className="text-danger">
                         Min 2 characters. Only lowercase alphanumeric characters and {'\'-\''} allowed.
                     </Form.Text>
                     }
                 </Col>
             </Form.Group>
-
             <Form.Group as={Row}>
-                <Form.Label column sm={fieldNameOffset}>Storage Namespace</Form.Label>
+                <Form.Label column sm={fieldNameOffset}>
+                    Storage Namespace&nbsp;
+                    <OverlayTrigger placement="bottom" overlay={<Tooltip style={{"font-size": "s"}}>What should I type here?</Tooltip>}>
+                        <a href="https://docs.lakefs.io/reference/object-model.html#concepts-unique-to-lakefs" target={"_blank"} rel="noopener noreferrer">
+                            <InfoIcon/>
+                        </a>
+                    </OverlayTrigger>
+                </Form.Label>
                 <Col sm={sm}>
-                    <Form.Control type="text" ref={storageNamespaceField} placeholder={storageNamespaceExample} onChange={checkStorageNamespaceValidity}/>
-                    {!storageNamespaceValid &&
+                    <Form.Control type="text" ref={storageNamespaceField} placeholder={storageNamespaceExample} onChange={checkStorageNamespaceValidity} />
+                    {storageNamespaceValid === false &&
                     <Form.Text className="text-danger">
                         {"Can only create repository with storage type: " + storageType}
                     </Form.Text>
@@ -87,7 +101,7 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
                 <Form.Label column sm={fieldNameOffset}>Default Branch</Form.Label>
                 <Col sm={sm}>
                     <Form.Control type="text" ref={defaultBranchField} placeholder="defaultBranch" defaultValue={"main"} onChange={checkDefaultBranchValidity}/>
-                    {!defaultBranchValid &&
+                    {defaultBranchValid === false &&
                     <Form.Text className="text-danger">
                         Invalid Branch.
                     </Form.Text>
