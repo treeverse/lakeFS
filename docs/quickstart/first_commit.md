@@ -11,7 +11,7 @@ has_children: false
 ## Install lakectl
 
 lakeFS comes with its own native CLI client, `lakectl`. 
-Most importantly, you can use it to perform git-like operations like committing, reverting and merging.
+Most importantly, you can use it to perform Git-like operations like committing, reverting and merging.
 
 Follow the below tutorial video to get started with the CLI, or follow the instructions on this page.
 
@@ -68,6 +68,9 @@ lakectl commit lakefs://example-repo/main -m 'added our first file!'
 # Parents: a91f56a7e11be1348fc405053e5234e4af7d6da01ed02f3d9a8ba7b1f71499c8
 ```
 
+**Note**: lakeFS versions <= v0.33.1 used '@' (instead of '/') as separator between repository and branch.
+{: .note }
+
 And finally we can view the log to see the new commit:
 ```
 lakectl log lakefs://example-repo/main
@@ -79,8 +82,9 @@ lakectl log lakefs://example-repo/main
       added our first file! 
 ```
 
-**Note** lakeFS version <= v0.33.1 uses '@' (instead of '/') as separator between repository and branch.
+Congratulations! You have completed your first commit in lakeFS.
 
 ### Next steps
 
-Once you're ready to test lakeFS with a real workflow, it's time to [deploy lakeFS to AWS](../deploy/index.md).
+* Learn how to [deploy lakeFS lakeFS on your cloud](../deploy/index.md).
+* [Join us on Slack](https://lakefs.io/slack){:target="_blank"} to introduce yourself, discover best practices and share your own!
