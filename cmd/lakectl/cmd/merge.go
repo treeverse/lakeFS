@@ -28,12 +28,17 @@ var mergeCmd = &cobra.Command{
 		client := getClient()
 		sourceRef := MustParseRefURI("source ref", args[0])
 		destinationRef := MustParseRefURI("destination ref", args[1])
+		strategy := MustString(cmd.Flags().GetString("strategy"))
 		Fmt("Source: %s\nDestination: %s\n", sourceRef.String(), destinationRef)
 		if destinationRef.Repository != sourceRef.Repository {
 			Die("both references must belong to the same repository", 1)
 		}
 
-		resp, err := client.MergeIntoBranchWithResponse(cmd.Context(), destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, api.MergeIntoBranchJSONRequestBody{})
+		if strategy != "dest-wins" && strategy != "source-wins" && strategy != "" {
+			Die("Invalid strategy value. Expected \"dest-wins\" or \"source-wins\"", 1)
+		}
+
+		resp, err := client.MergeIntoBranchWithResponse(cmd.Context(), destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, api.MergeIntoBranchJSONRequestBody{Strategy: &strategy})
 		if resp != nil && resp.JSON409 != nil {
 			Die("Conflict found.", 1)
 		}
@@ -52,4 +57,5 @@ var mergeCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(mergeCmd)
+	mergeCmd.Flags().String("strategy", "", "In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch (\"dest-wins\") or from the source branch(\"source-wins\"). In case no selection is made, the merge process will fail in case of a conflict")
 }

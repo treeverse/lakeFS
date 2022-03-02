@@ -116,9 +116,12 @@ func embedVariables(s string, vars map[string]string) (string, error) {
 }
 
 func sanitize(output string, vars map[string]string) string {
+	// The order of execution below is important as certain expression can contain others
+	// and so, should be handled first
 	s := normalizeProgramTimestamp(output)
 	s = normalizeRandomObjectKey(s, vars["STORAGE"])
 	s = normalizeCommitID(s)
+	s = normalizeChecksum(s)
 	return strings.ReplaceAll(s, "\r\n", "\n")
 }
 
@@ -135,9 +138,10 @@ func runCmdAndVerifyWithFile(t *testing.T, cmd string, expectFail bool, isTermin
 
 	if *update {
 		result, _ := runShellCommand(cmd, isTerminal)
-		s, err := embedVariables(string(result), vars)
+		s := sanitize(string(result), vars)
+		s, err := embedVariables(s, vars)
 		require.NoError(t, err, "Variable embed failed - %s", err)
-		err = ioutil.WriteFile(goldenFile, []byte(sanitize(s, vars)), 0600)
+		err = ioutil.WriteFile(goldenFile, []byte(s), 0600)
 		require.NoError(t, err, "Failed to write file %s", goldenFile)
 		return
 	}
@@ -175,6 +179,7 @@ var (
 	timeStampRegexp = regexp.MustCompile(`timestamp: \d+\r?\n`)
 	timeRegexp      = regexp.MustCompile(`\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} [-+]\d{4} \w{1,3}`)
 	commitIDRegExp  = regexp.MustCompile(`[\d|a-f]{64}`)
+	checksumRegExp  = regexp.MustCompile(`[\d|a-f]{32}`)
 )
 
 func normalizeProgramTimestamp(output string) string {
@@ -191,5 +196,10 @@ func normalizeRandomObjectKey(output string, objectPrefix string) string {
 
 func normalizeCommitID(output string) string {
 	s := commitIDRegExp.ReplaceAll([]byte(output), []byte("<COMMIT_ID>"))
+	return string(s)
+}
+
+func normalizeChecksum(output string) string {
+	s := checksumRegExp.ReplaceAll([]byte(output), []byte("<CHECKSUM>"))
 	return string(s)
 }

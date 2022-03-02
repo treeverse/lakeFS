@@ -40,6 +40,10 @@ public class Merge {
   @SerializedName(SERIALIZED_NAME_METADATA)
   private Map<String, String> metadata = null;
 
+  public static final String SERIALIZED_NAME_STRATEGY = "strategy";
+  @SerializedName(SERIALIZED_NAME_STRATEGY)
+  private String strategy;
+
 
   public Merge message(String message) {
     
@@ -95,6 +99,29 @@ public class Merge {
   }
 
 
+  public Merge strategy(String strategy) {
+    
+    this.strategy = strategy;
+    return this;
+  }
+
+   /**
+   * In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch (&#39;dest-wins&#39;) or from the source branch(&#39;source-wins&#39;). In case no selection is made, the merge process will fail in case of a conflict
+   * @return strategy
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch ('dest-wins') or from the source branch('source-wins'). In case no selection is made, the merge process will fail in case of a conflict")
+
+  public String getStrategy() {
+    return strategy;
+  }
+
+
+  public void setStrategy(String strategy) {
+    this.strategy = strategy;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -105,12 +132,13 @@ public class Merge {
     }
     Merge merge = (Merge) o;
     return Objects.equals(this.message, merge.message) &&
-        Objects.equals(this.metadata, merge.metadata);
+        Objects.equals(this.metadata, merge.metadata) &&
+        Objects.equals(this.strategy, merge.strategy);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(message, metadata);
+    return Objects.hash(message, metadata, strategy);
   }
 
   @Override
@@ -119,6 +147,7 @@ public class Merge {
     sb.append("class Merge {\n");
     sb.append("    message: ").append(toIndentedString(message)).append("\n");
     sb.append("    metadata: ").append(toIndentedString(metadata)).append("\n");
+    sb.append("    strategy: ").append(toIndentedString(strategy)).append("\n");
     sb.append("}");
     return sb.toString();
   }

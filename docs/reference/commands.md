@@ -2102,7 +2102,8 @@ lakectl merge <source ref> <destination ref> [flags]
 {:.no_toc}
 
 ```
-  -h, --help   help for merge
+  -h, --help              help for merge
+      --strategy string   In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch ("dest-wins") or from the source branch("source-wins"). In case no selection is made, the merge process will fail in case of a conflict
 ```
 
 

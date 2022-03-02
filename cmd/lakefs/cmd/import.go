@@ -216,7 +216,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	if withMerge {
 		fmt.Printf("Merging import changes into lakefs://%s/%s/\n", repoName, repo.DefaultBranch)
 		msg := fmt.Sprintf(onboard.CommitMsgTemplate, stats.CommitRef)
-		commitLog, err := c.Merge(ctx, repoName, onboard.DefaultImportBranchName, repo.DefaultBranch, CommitterName, msg, nil)
+		commitLog, err := c.Merge(ctx, repoName, onboard.DefaultImportBranchName, repo.DefaultBranch, CommitterName, msg, nil, "")
 		if err != nil {
 			fmt.Printf("Merge failed: %s\n", err)
 			return 1

@@ -1,7 +1,0 @@
-Path: upload_file2.txt
-Modified Time: <DATE> <TIME> <TZ>
-Size: 20 bytes
-Human Size: 20 B
-Physical Address: ${STORAGE}/<OBJECT_KEY>
-Checksum: bcd52aa37b0c6151513579d6f21c4414
-Content-Type: application/octet-stream

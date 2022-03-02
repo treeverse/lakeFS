@@ -398,6 +398,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
         metadata={
             "key": "key_example",
         },
+        strategy="strategy_example",
     ) # Merge |  (optional)
 
     # example passing only required values which don't have defaults set

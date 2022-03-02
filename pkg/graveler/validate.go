@@ -115,4 +115,16 @@ func ValidateRepositoryID(v interface{}) error {
 	return nil
 }
 
+func ValidateRequiredStrategy(v interface{}) error {
+	s, ok := v.(string)
+	if !ok {
+		panic(ErrInvalidType)
+	}
+
+	if s != "dest-wins" && s != "source-wins" && s != "" {
+		return ErrInvalidValue
+	}
+	return nil
+}
+
 var ValidateTagIDOptional = validator.MakeValidateOptional(ValidateTagID)

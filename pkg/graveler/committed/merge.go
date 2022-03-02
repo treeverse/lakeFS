@@ -18,6 +18,7 @@ type merger struct {
 	source               Iterator
 	dest                 Iterator
 	haveSource, haveDest bool
+	strategy             graveler.MergeStrategy
 }
 
 // getNextGEKey moves base iterator from its current position to the next greater equal value
@@ -104,7 +105,15 @@ func (m *merger) destBeforeSource(destValue *graveler.ValueRecord) error {
 		m.haveDest = m.dest.Next()
 	} else {
 		if baseValue != nil && bytes.Equal(destValue.Key, baseValue.Key) { // deleted by source changed by dest
-			return graveler.ErrConflictFound
+			switch m.strategy {
+			case graveler.MergeStrategyDest:
+				break
+			case graveler.MergeStrategySource:
+				m.haveDest = m.dest.Next()
+				return nil
+			default: // graveler.MergeStrategyNone
+				return graveler.ErrConflictFound
+			}
 		}
 		// dest added this record
 		err := m.writeRecord(destValue)
@@ -125,7 +134,15 @@ func (m *merger) sourceBeforeDest(sourceValue *graveler.ValueRecord) error {
 		m.haveSource = m.source.Next()
 	} else {
 		if baseValue != nil && bytes.Equal(sourceValue.Key, baseValue.Key) { // deleted by dest and changed by source
-			return graveler.ErrConflictFound
+			switch m.strategy {
+			case graveler.MergeStrategyDest:
+				m.haveSource = m.source.Next()
+				return nil
+			case graveler.MergeStrategySource:
+				break
+			default: // graveler.MergeStrategyNone
+				return graveler.ErrConflictFound
+			}
 		}
 		// source added this record
 		err := m.writeRecord(sourceValue)
@@ -138,7 +155,14 @@ func (m *merger) sourceBeforeDest(sourceValue *graveler.ValueRecord) error {
 }
 
 // handleAll handles the case where only one Iterator from source or dest remains
-func (m *merger) handleAll(iter Iterator) error {
+// Since the iterator can be for either the source ot the dest range, the function
+// receives a graveler.MergeStrategy parameter - strategyToInclude - to indicate
+// which strategy favors the given range. In case of a conflict, the configured m.strategy
+// is compared to the given strategyToInclude, and if they match - the conflict will
+// be resolved by taking the value from the given range. If not and the configured
+// m.strategy is other than MergeStrategyNone, the record is ignored. If m.strategy is
+// MergeStrategyNone - a conflict will be reported
+func (m *merger) handleAll(iter Iterator, strategyToInclude graveler.MergeStrategy) error {
 	for {
 		select {
 		case <-m.ctx.Done():
@@ -169,11 +193,21 @@ func (m *merger) handleAll(iter Iterator) error {
 				return fmt.Errorf("base value GE: %w", err)
 			}
 			if baseValue == nil || !bytes.Equal(baseValue.Identity, iterValue.Identity) {
+				shouldWrietRecord := true
 				if baseValue != nil && bytes.Equal(baseValue.Key, iterValue.Key) { // deleted by one changed by iter
-					return graveler.ErrConflictFound
+					if m.strategy == graveler.MergeStrategyNone { // conflict is only reported if no strategy is selected
+						return graveler.ErrConflictFound
+					}
+					// In case of conflict, if the strategy favors the given iter we
+					// still want to write the record. Otherwise it will be ignored.
+					if m.strategy != strategyToInclude {
+						shouldWrietRecord = false
+					}
 				}
-				if err := m.writeRecord(iterValue); err != nil {
-					return err
+				if shouldWrietRecord {
+					if err := m.writeRecord(iterValue); err != nil {
+						return err
+					}
 				}
 			}
 			if !iter.Next() {
@@ -265,6 +299,26 @@ func (m *merger) handleBothRanges(sourceRange *Range, destRange *Range) error {
 	return nil
 }
 
+func (m *merger) handleConflict(sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) error {
+	switch m.strategy {
+	case graveler.MergeStrategyDest:
+		err := m.writeRecord(destValue)
+		if err != nil {
+			return fmt.Errorf("write record: %w", err)
+		}
+	case graveler.MergeStrategySource:
+		err := m.writeRecord(sourceValue)
+		if err != nil {
+			return fmt.Errorf("write record: %w", err)
+		}
+	default: // graveler.MergeStrategyNone
+		return graveler.ErrConflictFound
+	}
+	m.haveSource = m.source.Next()
+	m.haveDest = m.dest.Next()
+	return nil
+}
+
 // handleBothKeys handles the case where both source and dest iterators are inside range
 func (m *merger) handleBothKeys(sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) error {
 	c := bytes.Compare(sourceValue.Key, destValue.Key)
@@ -287,7 +341,7 @@ func (m *merger) handleBothKeys(sourceValue *graveler.ValueRecord, destValue *gr
 				case bytes.Equal(destValue.Identity, baseValue.Identity):
 					err = m.writeRecord(sourceValue)
 				default: // both changed the same key
-					return graveler.ErrConflictFound
+					return m.handleConflict(sourceValue, destValue)
 				}
 				if err != nil {
 					return fmt.Errorf("write record: %w", err)
@@ -296,7 +350,7 @@ func (m *merger) handleBothKeys(sourceValue *graveler.ValueRecord, destValue *gr
 				m.haveDest = m.dest.Next()
 				return nil
 			} else { // both added the same key with different identity
-				return graveler.ErrConflictFound
+				return m.handleConflict(sourceValue, destValue)
 			}
 		}
 		// record hasn't changed or both added the same record
@@ -414,26 +468,27 @@ func (m *merger) merge() error {
 	}
 
 	if m.haveSource {
-		if err := m.handleAll(m.source); err != nil {
+		if err := m.handleAll(m.source, graveler.MergeStrategySource); err != nil {
 			return err
 		}
 	}
 	if m.haveDest {
-		if err := m.handleAll(m.dest); err != nil {
+		if err := m.handleAll(m.dest, graveler.MergeStrategyDest); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func Merge(ctx context.Context, writer MetaRangeWriter, base Iterator, source Iterator, destination Iterator) error {
+func Merge(ctx context.Context, writer MetaRangeWriter, base Iterator, source Iterator, destination Iterator, strategy graveler.MergeStrategy) error {
 	m := merger{
-		ctx:    ctx,
-		logger: logging.FromContext(ctx),
-		writer: writer,
-		base:   base,
-		source: source,
-		dest:   destination,
+		ctx:      ctx,
+		logger:   logging.FromContext(ctx),
+		writer:   writer,
+		base:     base,
+		source:   source,
+		dest:     destination,
+		strategy: strategy,
 	}
 	return m.merge()
 }
