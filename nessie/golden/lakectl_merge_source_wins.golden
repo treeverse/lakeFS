@@ -1,0 +1,3 @@
+Source: lakefs://${REPO}/${SOURCE_BRANCH}
+Destination: lakefs://${REPO}/${DEST_BRANCH}
+Merged "${SOURCE_BRANCH}" into "${DEST_BRANCH}" to get "<COMMIT_ID>".

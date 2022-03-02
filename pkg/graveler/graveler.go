@@ -91,6 +91,15 @@ type ResolvedRef struct {
 	StagingToken           StagingToken
 }
 
+// MergeStrategy changes from dest or source are automatically overridden in case of a conflict
+type MergeStrategy int
+
+const (
+	MergeStrategyNone MergeStrategy = iota
+	MergeStrategyDest
+	MergeStrategySource
+)
+
 type MetaRangeInfo struct {
 	// URI of metarange file.
 	Address string
@@ -402,8 +411,8 @@ type VersionController interface {
 	// Revert creates a reverse patch to the commit given as 'ref', and applies it as a new commit on the given branch.
 	Revert(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref, parentNumber int, commitParams CommitParams) (CommitID, error)
 
-	// Merge merges 'source' into 'destination' and returns the commit id for the created merge commit, and a summary of results.
-	Merge(ctx context.Context, repositoryID RepositoryID, destination BranchID, source Ref, commitParams CommitParams) (CommitID, error)
+	// Merge merges 'source' into 'destination' and returns the commit id for the created merge commit.
+	Merge(ctx context.Context, repositoryID RepositoryID, destination BranchID, source Ref, commitParams CommitParams, strategy string) (CommitID, error)
 
 	// DiffUncommitted returns iterator to scan the changes made on the branch
 	DiffUncommitted(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (DiffIterator, error)
@@ -645,7 +654,7 @@ type CommittedManager interface {
 	// Merge applies changes from 'source' to 'destination', relative to a merge base 'base' and
 	// returns the ID of the new metarange. This is similar to a git merge operation.
 	// The resulting tree is expected to be immediately addressable.
-	Merge(ctx context.Context, ns StorageNamespace, destination, source, base MetaRangeID) (MetaRangeID, error)
+	Merge(ctx context.Context, ns StorageNamespace, destination, source, base MetaRangeID, strategy MergeStrategy) (MetaRangeID, error)
 
 	// Commit is the act of taking an existing metaRange (snapshot) and applying a set of changes to it.
 	// A change is either an entity to write/overwrite, or a tombstone to mark a deletion
@@ -1550,7 +1559,7 @@ func (g *Graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 			return "", fmt.Errorf("get commit from ref %s: %w", branch.CommitID, err)
 		}
 		// merge from the parent to the top of the branch, with the given ref as the merge base:
-		metaRangeID, err := g.CommittedManager.Merge(ctx, repo.StorageNamespace, branchCommit.MetaRangeID, parentMetaRangeID, commitRecord.MetaRangeID)
+		metaRangeID, err := g.CommittedManager.Merge(ctx, repo.StorageNamespace, branchCommit.MetaRangeID, parentMetaRangeID, commitRecord.MetaRangeID, MergeStrategyNone)
 		if err != nil {
 			if !errors.Is(err, ErrUserVisible) {
 				err = fmt.Errorf("merge: %w", err)
@@ -1583,7 +1592,7 @@ func (g *Graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 	return res.(CommitID), nil
 }
 
-func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destination BranchID, source Ref, commitParams CommitParams) (CommitID, error) {
+func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destination BranchID, source Ref, commitParams CommitParams, strategy string) (CommitID, error) {
 	var preRunID string
 	var storageNamespace StorageNamespace
 	var commit Commit
@@ -1617,7 +1626,14 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 			"destination_meta_range": toCommit.MetaRangeID,
 			"base_meta_range":        baseCommit.MetaRangeID,
 		}).Trace("Merge")
-		metaRangeID, err := g.CommittedManager.Merge(ctx, storageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID)
+		mergeStrategy := MergeStrategyNone
+		if strategy == "dest-wins" {
+			mergeStrategy = MergeStrategyDest
+		}
+		if strategy == "source-wins" {
+			mergeStrategy = MergeStrategySource
+		}
+		metaRangeID, err := g.CommittedManager.Merge(ctx, storageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID, mergeStrategy)
 		if err != nil {
 			if !errors.Is(err, ErrUserVisible) {
 				err = fmt.Errorf("merge in CommitManager: %w", err)

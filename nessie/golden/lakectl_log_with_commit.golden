@@ -3,7 +3,7 @@ ID:            <COMMIT_ID>
 Author:        nessie
 Date:          <DATE> <TIME> <TZ>
 
-	nessie_lakectl:TestCommit
+	${MESSAGE}
 	
 	
 ID:            <COMMIT_ID>

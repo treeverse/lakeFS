@@ -4756,6 +4756,7 @@ components:
         metadata:
           key: metadata
         message: message
+        strategy: strategy
       properties:
         message:
           type: string
@@ -4763,6 +4764,12 @@ components:
           additionalProperties:
             type: string
           type: object
+        strategy:
+          description: In case of a merge conflict, this option will force the merge
+            process to automatically favor changes from the dest branch ('dest-wins')
+            or from the source branch('source-wins'). In case no selection is made,
+            the merge process will fail in case of a conflict
+          type: string
       type: object
     BranchCreation:
       example:

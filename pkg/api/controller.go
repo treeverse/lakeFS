@@ -2783,7 +2783,8 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 		repository, destinationBranch, sourceRef,
 		user.Username,
 		StringValue(body.Message),
-		metadata)
+		metadata,
+		StringValue(body.Strategy))
 
 	var hookAbortErr *graveler.HookAbortError
 	switch {
