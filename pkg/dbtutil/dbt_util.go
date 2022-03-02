@@ -17,21 +17,6 @@ const (
 	resourceJSONKeys = "alias,schema"
 )
 
-type MissingSchemaIdentifierError struct {
-	schemaIdentifier       string
-	generateSchemaFileName string
-}
-
-func (mie MissingSchemaIdentifierError) Error() string {
-	return fmt.Sprintf("generate_schema_name does not contain %s addition. Handle lakefs support to %s or use skip-views flag", mie.schemaIdentifier, mie.generateSchemaFileName)
-}
-
-type MissingSchemaInDebugError struct{}
-
-func (mie MissingSchemaInDebugError) Error() string {
-	return "failed extracting schema from dbt debug message"
-}
-
 type DBTResource struct {
 	Schema string `json:"schema"`
 	Alias  string `json:"alias"`
@@ -48,7 +33,7 @@ func ValidateGenerateSchemaMacro(projectRoot, macrosDirName, generateSchemaFileN
 		return err
 	}
 	if !strings.Contains(string(data), schemaIdentifier) {
-		return MissingSchemaIdentifierError{schemaIdentifier: schemaIdentifier, generateSchemaFileName: generateSchemaFileName}
+		return fmt.Errorf("generate_schema_name does not contain %s addition. Handle lakefs support to %s or use skip-views flag: %w", schemaIdentifier, generateSchemaFileName, err)
 	}
 	return nil
 }
@@ -62,7 +47,7 @@ func DbtDebug(projectRoot string, schemaRegex *regexp.Regexp, executor CommandEx
 	}
 	submatch := schemaRegex.FindSubmatch(output)
 	if submatch == nil || len(submatch) < 2 {
-		return "", MissingSchemaInDebugError{}
+		return "", fmt.Errorf("failed extracting schema from dbt debug message")
 	}
 	schema := submatch[1]
 	return string(schema), nil

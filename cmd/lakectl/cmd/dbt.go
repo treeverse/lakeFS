@@ -63,12 +63,7 @@ func (d dbtClient) Debug() string {
 	schemaOutput, err := dbtutil.DbtDebug(d.projectDir, schemaRegex, d)
 	if err != nil {
 		fmt.Println(schemaOutput)
-		switch e := err.(type) {
-		case *dbtutil.MissingSchemaInDebugError:
-			DieFmt(e.Error())
-		default:
-			DieErr(e)
-		}
+		DieErr(err)
 	}
 	fmt.Println("dbt debug succeeded with schemaOutput:", schemaOutput)
 	return schemaOutput
