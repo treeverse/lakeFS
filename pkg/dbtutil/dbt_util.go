@@ -26,6 +26,8 @@ type CommandExecutor interface {
 	ExecuteCommand(*exec.Cmd) ([]byte, error)
 }
 
+var errSchemaExtraction = fmt.Errorf("failed extracting schema from dbt debug message")
+
 func ValidateGenerateSchemaMacro(projectRoot, macrosDirName, generateSchemaFileName, schemaIdentifier string) error {
 	p := path.Join(projectRoot, macrosDirName, generateSchemaFileName)
 	data, err := ioutil.ReadFile(p)
@@ -47,7 +49,7 @@ func DbtDebug(projectRoot string, schemaRegex *regexp.Regexp, executor CommandEx
 	}
 	submatch := schemaRegex.FindSubmatch(output)
 	if submatch == nil || len(submatch) < 2 {
-		return "", fmt.Errorf("failed extracting schema from dbt debug message")
+		return "", errSchemaExtraction
 	}
 	schema := submatch[1]
 	return string(schema), nil
