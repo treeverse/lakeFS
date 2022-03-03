@@ -147,7 +147,7 @@ type RangeID string
 // StagingToken represents a namespace for writes to apply as uncommitted
 type StagingToken string
 
-// Metadata key/value strings to holds metadata information on value and commit
+// Metadata key/value strings to hold metadata information on value and commit
 type Metadata map[string]string
 
 // Repository represents repository metadata
@@ -308,7 +308,7 @@ type KeyValueStore interface {
 	// Set stores value on repository / branch by key. nil value is a valid value for tombstone
 	Set(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key, value Value, writeConditions ...WriteConditionOption) error
 
-	// Delete value from repository / branch branch by key
+	// Delete value from repository / branch by key
 	Delete(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error
 
 	// List lists values on repository / ref

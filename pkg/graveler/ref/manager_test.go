@@ -788,3 +788,67 @@ func TestManager_FillGenerations(t *testing.T) {
 		}
 	}
 }
+
+func TestManager_ListCommits(t *testing.T) {
+	r := testRefManager(t)
+	ctx := context.Background()
+	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageNamespace: "s3://",
+		CreationDate:     time.Now(),
+		DefaultBranchID:  "main",
+	}, ""))
+	nextCommitNumber := 0
+	addNextCommit := func(parents ...graveler.CommitID) graveler.CommitID {
+		nextCommitNumber++
+		id := "c" + strconv.Itoa(nextCommitNumber)
+		c := graveler.Commit{
+			Message: id,
+			Parents: parents,
+		}
+		cid, err := r.AddCommit(ctx, "repo1", c)
+		testutil.MustDo(t, "Add commit "+id, err)
+		return cid
+	}
+	c1 := addNextCommit()
+	c2 := addNextCommit(c1)
+	c3 := addNextCommit(c1)
+	c4 := addNextCommit(c2)
+	c5 := addNextCommit(c3)
+	c6 := addNextCommit(c5)
+	addNextCommit(c4)
+	addNextCommit(c6, c1)
+	/*
+	 1----2----4---7
+	 | \
+	 |  3----5----6
+	 |             \
+	 ---------------8
+	*/
+
+	iter, err := r.ListCommits(ctx, "repo1")
+	testutil.MustDo(t, "fill generations", err)
+	var lastCommit string
+	var i int
+	for iter.Next() {
+		commit := iter.Value()
+		if i == 0 {
+			gravelerCommitReflection := reflect.Indirect(reflect.ValueOf(graveler.Commit{}))
+			listCommitReflection := reflect.Indirect(reflect.ValueOf(*commit.Commit))
+			listCommitFields := make(map[string]struct{})
+			for i := 0; i < listCommitReflection.NumField(); i++ {
+				listCommitFields[listCommitReflection.Type().Field(i).Name] = struct{}{}
+			}
+			for i := 0; i < gravelerCommitReflection.NumField(); i++ {
+				fieldName := gravelerCommitReflection.Type().Field(i).Name
+				_, exists := listCommitFields[fieldName]
+				if !exists {
+					t.Errorf("missing field: %s in commit response from list commits.", fieldName)
+				}
+			}
+		} else if string(commit.CommitID) < lastCommit {
+			t.Errorf("wrong commitId order for commit number%d in ListCommits response. commitId: %s came after commitId: %s", i, string(commit.CommitID), lastCommit)
+		}
+		lastCommit = string(commit.CommitID)
+		i++
+	}
+}
