@@ -17,12 +17,12 @@ func ExtractRepoAndBranchFromDBName(ctx context.Context, dbName string, client m
 	metastoreDB, err := client.GetDatabase(ctx, dbName)
 
 	if err != nil {
-		return "", "", fmt.Errorf("get database on extractBranchFromSchema from '%s': %w", dbName, err)
+		return "", "", fmt.Errorf("get database from '%s': %w", dbName, err)
 	}
 
 	repo, branch, err := metastore.ExtractRepoAndBranch(metastoreDB.LocationURI)
 	if err != nil {
-		return "", "", fmt.Errorf("get source branch on extractBranchFromSchema from '%s': %w", metastoreDB.LocationURI, err)
+		return "", "", fmt.Errorf("get source branch from '%s': %w", metastoreDB.LocationURI, err)
 	}
 
 	return repo, branch, nil
