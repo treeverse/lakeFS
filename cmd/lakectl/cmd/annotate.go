@@ -9,8 +9,7 @@ import (
 )
 
 const (
-	annotateTemplate = `{{  $val := .Commit}}
-{{ $.Object|ljust 15}} {{ $val.Committer|ljust 20 }} {{ $val.Id | printf "%.16s"|ljust 20 }} {{if $val.CreationDate}}{{ $val.CreationDate|date}}{{end}}  {{ $.CommitMessage |ljust 30 }}
+	annotateTemplate = `{{  $val := .Commit}}{{ $.Object|ljust 15}} {{ $val.Committer|ljust 20 }} {{ $val.Id | printf "%.16s"|ljust 20 }} {{if $val.CreationDate}}{{ $val.CreationDate|date}}{{end}}  {{ $.CommitMessage }}
 `
 	annotateMessageSize = 200
 	ellipsis            = "..."
