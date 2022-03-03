@@ -10,12 +10,12 @@ has_children: false
 # Create a Repository
 {: .no_toc }
 
-A [repository](../understand/branching-model.md#repositories) contains all of your objects, including the revision history.
-It can be considered the lakeFS analog of a bucket in an object store. Since it has version control qualities, it is also analogous to a repository in Git. 
+A _repository_ contains all of your objects, including the revision history.
+It can be considered the lakeFS analog of a bucket in an object store. Since it has version control qualities, it is also analogous to a repository in Git.
 
 ## Create the first user
 
-When you first open the lakeFS UI, you will be asked to create initial admin user.
+When you first open the lakeFS UI, you will be asked to create an initial admin user.
 
 1. Open [http://127.0.0.1:8000/](http://127.0.0.1:8000/){:target="_blank"} in your web browser.
 
