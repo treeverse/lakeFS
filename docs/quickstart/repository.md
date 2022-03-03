@@ -12,7 +12,6 @@ has_children: false
 
 A _repository_ contains all of your objects, including the revision history.
 It can be considered the lakeFS analog of a bucket in an object store. Since it has version control qualities, it is also analogous to a repository in Git.
- 
 
 ## Create the first user
 
