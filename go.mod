@@ -76,7 +76,6 @@ require (
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.7.0
 	github.com/thanhpk/randstr v1.0.4
-	github.com/tidwall/gjson v1.14.0
 	github.com/tsenart/vegeta/v12 v12.8.4
 	github.com/vbauerster/mpb/v5 v5.4.0
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
