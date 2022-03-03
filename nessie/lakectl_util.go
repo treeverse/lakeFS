@@ -122,6 +122,7 @@ func sanitize(output string, vars map[string]string) string {
 	s = normalizeRandomObjectKey(s, vars["STORAGE"])
 	s = normalizeCommitID(s)
 	s = normalizeChecksum(s)
+	s = normalizeShortCommitID(s)
 	return strings.ReplaceAll(s, "\r\n", "\n")
 }
 
@@ -176,10 +177,11 @@ func runCmdAndVerifyResult(t *testing.T, cmd string, expectFail bool, isTerminal
 }
 
 var (
-	timeStampRegexp = regexp.MustCompile(`timestamp: \d+\r?\n`)
-	timeRegexp      = regexp.MustCompile(`\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} [-+]\d{4} \w{1,3}`)
-	commitIDRegExp  = regexp.MustCompile(`[\d|a-f]{64}`)
-	checksumRegExp  = regexp.MustCompile(`[\d|a-f]{32}`)
+	timeStampRegexp     = regexp.MustCompile(`timestamp: \d+\r?\n`)
+	timeRegexp          = regexp.MustCompile(`\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} [-+]\d{4} \w{1,3}`)
+	commitIDRegExp      = regexp.MustCompile(`[\d|a-f]{64}`)
+	shortCommitIDRegExp = regexp.MustCompile(`[\d|a-f]{16}`)
+	checksumRegExp      = regexp.MustCompile(`[\d|a-f]{32}`)
 )
 
 func normalizeProgramTimestamp(output string) string {
@@ -196,6 +198,11 @@ func normalizeRandomObjectKey(output string, objectPrefix string) string {
 
 func normalizeCommitID(output string) string {
 	s := commitIDRegExp.ReplaceAll([]byte(output), []byte("<COMMIT_ID>"))
+	return string(s)
+}
+
+func normalizeShortCommitID(output string) string {
+	s := shortCommitIDRegExp.ReplaceAll([]byte(output), []byte("<COMMIT_ID_16>"))
 	return string(s)
 }
 
