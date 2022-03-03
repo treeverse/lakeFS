@@ -16,15 +16,21 @@ func TestCatSSTCommitHeaders(t *testing.T) {
 	dumpPath := viper.GetString("storage_namespace") + "/" + repo + "/_lakefs/"
 
 	refDumpsResult, err := runShellCommand(Lakectl()+" refs-dump lakefs://"+repo, false)
-	require.NoError(t, err, "Failed to run shell command. Got error: "+err.Error())
+	if err != nil {
+		t.Errorf("Failed to run shell command. Got error: "+err.Error())
+	}
 	commitsMetaRangeId := gjson.Get(string(refDumpsResult), "commits_meta_range_id")
 
 	catSSTResult, err := runShellCommand("aws s3 cp "+dumpPath+commitsMetaRangeId.String()+" - | "+Lakectl()+" cat-sst -f -", false)
-	require.NoError(t, err, "Failed to run shell command. Got error: "+err.Error())
+	if err != nil {
+		t.Errorf("Failed to run shell command. Got error: "+err.Error())
+	}
 
 	// getting all files in dump dir
 	s3LSOutput, err := runShellCommand("aws s3 ls "+dumpPath+" | awk '{print $4}'", false)
-	require.NoError(t, err, "Failed to run shell command. Got error: "+err.Error())
+	if err != nil {
+		t.Errorf("Failed to run shell command. Got error: "+err.Error())
+	}
 
 	filesInDumpDir := strings.Split(string(s3LSOutput), "\n")
 	var commitsRange string
@@ -36,7 +42,9 @@ func TestCatSSTCommitHeaders(t *testing.T) {
 	}
 
 	catSSTResul2, err := runShellCommand("aws s3 cp "+dumpPath+commitsRange+" - | "+Lakectl()+" cat-sst -f -", false)
-	require.NoError(t, err, "Failed to run shell command. Got error: "+err.Error())
+	if err != nil {
+		t.Errorf("Failed to run shell command. Got error: "+err.Error())
+	}
 
 	commitReflection := reflect.Indirect(reflect.ValueOf(graveler.Commit{}))
 	for i := 0; i < commitReflection.NumField(); i++ {
