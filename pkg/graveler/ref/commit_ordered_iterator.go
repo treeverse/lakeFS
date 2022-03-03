@@ -72,7 +72,7 @@ func (iter *OrderedCommitIterator) maybeFetch() {
 		return
 	}
 	psql := sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
-	q := psql.Select("id", "committer", "message", "creation_date", "meta_range_id", "parents", "metadata", "version").
+	q := psql.Select("id", "committer", "message", "creation_date", "meta_range_id", "parents", "metadata", "version", "generation").
 		From("graveler_commits").
 		Where(sq.Eq{"repository_id": iter.repositoryID})
 
