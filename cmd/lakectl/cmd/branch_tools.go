@@ -17,7 +17,7 @@ func ExtractRepoAndBranchFromDBName(ctx context.Context, dbName string, client m
 	metastoreDB, err := client.GetDatabase(ctx, dbName)
 
 	if err != nil {
-		return "", "", fmt.Errorf("get database from '%s': %w", dbName, err)
+		return "", "", err
 	}
 
 	repo, branch, err := metastore.ExtractRepoAndBranch(metastoreDB.LocationURI)
@@ -40,6 +40,7 @@ func CreateBranch(ctx context.Context, repository, sourceBranch, destinationBran
 		Branch string
 		Resp   string
 	}{
-		Branch: destinationBranch, Resp: string(resp.Body),
+		Branch: destinationBranch,
+		Resp:   string(resp.Body),
 	})
 }
