@@ -45,7 +45,7 @@ const (
 )
 
 var (
-	errorNoSourceBranch = errors.New(`given schema has no source lakeFS branch associated with it`)
+	errNoSourceBranch = errors.New(`given schema has no source lakeFS branch associated with it`)
 )
 
 func (d dbtClient) ValidateGenerateSchemaMacro() {
@@ -130,14 +130,14 @@ var dbtCreateBranchSchema = &cobra.Command{
 			createViews(dbtClient, toSchema)
 		}
 
-		fmt.Printf("create-branch-schema done! \nyour new schema is %s\nyou can now edit your dbt profile and run dbt on branch %s\n", toSchema, branchName)
+		fmt.Printf("create-branch-schema done!\nyour new schema is %s\nyou can now edit your dbt profile and run dbt on branch %s\n", toSchema, branchName)
 	},
 }
 
 func handleBranchCreation(ctx context.Context, schema, branchName string, metastoreClient metastore.Client) {
 	sourceRepo, sourceBranch, err := ExtractRepoAndBranchFromDBName(ctx, schema, metastoreClient)
 	if err != nil {
-		DieErr(errorNoSourceBranch)
+		DieErr(errNoSourceBranch)
 	}
 
 	CreateBranch(ctx, sourceRepo, sourceBranch, branchName)

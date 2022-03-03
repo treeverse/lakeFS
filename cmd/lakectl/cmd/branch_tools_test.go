@@ -28,7 +28,6 @@ func TestExtractRepoAndBranchFromDBName(t *testing.T) {
 		validPath   = "s3://" + repoName + "/" + branchName + "/path/to/schema"
 		invalidPath = "s3/" + repoName + "/" + branchName + "/"
 	)
-	var ()
 	tests := []extractRepoAndBranchFromDBNameTestCase{
 		{
 			Name: "Sunny day flow",
@@ -70,7 +69,7 @@ func TestExtractRepoAndBranchFromDBName(t *testing.T) {
 				return
 			}
 			if err == nil && tt.Err != nil {
-				t.Errorf("ExtractRepoAndBranchFromDBName() repo = %v, RepositoryName %v, failed with error %v", repo, tt.RepositoryName, err)
+				t.Errorf("ExtractRepoAndBranchFromDBName() repo = %v, expected error %v but got none", repo, tt.Err)
 			}
 			if repo != tt.RepositoryName {
 				t.Errorf("ExtractRepoAndBranchFromDBName() repo = %v, RepositoryName %v", repo, tt.RepositoryName)
