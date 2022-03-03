@@ -17,19 +17,22 @@ func TestCatSSTCommitHeaders(t *testing.T) {
 
 	refDumpsResult, err := runShellCommand(Lakectl()+" refs-dump lakefs://"+repo, false)
 	if err != nil {
-		t.Errorf("Failed to run shell command. Got error: "+err.Error())
+		t.Errorf("Failed to run shell command. Got error: " + err.Error())
+		t.FailNow()
 	}
 	commitsMetaRangeId := gjson.Get(string(refDumpsResult), "commits_meta_range_id")
 
 	catSSTResult, err := runShellCommand("aws s3 cp "+dumpPath+commitsMetaRangeId.String()+" - | "+Lakectl()+" cat-sst -f -", false)
 	if err != nil {
-		t.Errorf("Failed to run shell command. Got error: "+err.Error())
+		t.Errorf("Failed to run shell command. Got error: " + err.Error())
+		t.FailNow()
 	}
 
 	// getting all files in dump dir
 	s3LSOutput, err := runShellCommand("aws s3 ls "+dumpPath+" | awk '{print $4}'", false)
 	if err != nil {
-		t.Errorf("Failed to run shell command. Got error: "+err.Error())
+		t.Errorf("Failed to run shell command. Got error: " + err.Error())
+		t.FailNow()
 	}
 
 	filesInDumpDir := strings.Split(string(s3LSOutput), "\n")
@@ -43,7 +46,8 @@ func TestCatSSTCommitHeaders(t *testing.T) {
 
 	catSSTResul2, err := runShellCommand("aws s3 cp "+dumpPath+commitsRange+" - | "+Lakectl()+" cat-sst -f -", false)
 	if err != nil {
-		t.Errorf("Failed to run shell command. Got error: "+err.Error())
+		t.Errorf("Failed to run shell command. Got error: " + err.Error())
+		t.FailNow()
 	}
 
 	commitReflection := reflect.Indirect(reflect.ValueOf(graveler.Commit{}))
