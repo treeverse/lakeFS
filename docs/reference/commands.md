@@ -1619,6 +1619,7 @@ lakectl dbt create-branch-schema --branch <branch-name>
       --branch string               requested branch
       --continue-on-error           prevent command from failing when a single table fails
       --continue-on-schema-exists   allow running on existing schema
+      --create-branch               create a new branch for the schema
       --dbfs-location string        
   -h, --help                        help for create-branch-schema
       --project-root string         location of dbt project (default ".")
