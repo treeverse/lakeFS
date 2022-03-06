@@ -19,13 +19,15 @@ remote_theme: pmarsceill/just-the-docs
 aux_links:
   'Docs':
     - 'https://docs.lakefs.io/'
-  'GitHub':
-    - 'https://github.com/treeverse/lakeFS'
   'Blog':
     - 'https://lakefs.io/blog/'
+  'Community':
+    - 'https://lakefs.io/community/'
+  'GitHub':
+    - 'https://github.com/treeverse/lakeFS'
 
 buttons:
-  'Join the beta':
+  'lakeFS Cloud':
       - 'https://lakefs.io/cloud-registration/'
 
 # FOOTER
@@ -40,10 +42,14 @@ footer:
 footer_links:
   'Docs':
     - 'https://docs.lakefs.io/'
-  'GitHub':
-    - 'https://github.com/treeverse/lakeFS'
   'Blog':
     - 'https://lakefs.io/blog/'
+  'GitHub':
+    - 'https://github.com/treeverse/lakeFS'
+  'Community':
+    - 'https://lakefs.io/community/'
+  'lakeFS Cloud':
+      - 'https://lakefs.io/cloud-registration/'
   'Contact':
     - 'https://lakefs.io/contact-us/'
 
