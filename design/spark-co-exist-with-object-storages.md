@@ -1,8 +1,6 @@
-# Spark: co-existing with existing underlying object store - Design Options
+# Spark: co-existing with existing underlying object store - Design proposal
 
-This document includes a proposed solution for https://github.com/treeverse/lakeFS/issues/2625. 
-Its intent is to put an idea in writing (before even testing it), and not to suggest that this is the best design option. 
-To choose a solution, we need to do more research and consider alternatives that will hopefully add less amount of friction.
+This document includes a proposed solution for https://github.com/treeverse/lakeFS/issues/2625.
 
 ## Goals
 
@@ -20,157 +18,178 @@ Make the solution usable by non-lakeFS users by:
 
 ## Non-goals
 
-1. Convert users from [accessing lakeFS from S3 gateway](../docs/integrations/spark.md#access-lakefs-using-the-s3a-gateway) to [accessing lakeFS with lakeFS-specific Hadoop filesystem](../docs/integrations/spark.md#access-lakefs-using-the-lakefs-specific-hadoop-filesystem).  
+1. Convert users from [accessing lakeFS from S3 gateway](../docs/integrations/spark.md#access-lakefs-using-the-s3a-gateway) to [accessing lakeFS with lakeFS-specific Hadoop filesystem](../docs/integrations/spark.md#access-lakefs-using-the-lakefs-specific-hadoop-filesystem).
 
 ## Proposal: Introducing RouterFileSystem
 
 We would like to implement a [HadoopFileSystem](https://github.com/apache/hadoop/blob/2960d83c255a00a549f8809882cd3b73a6266b6d/hadoop-common-project/hadoop-common/src/main/java/org/apache/hadoop/fs/FileSystem.java) 
-that translates object store URIs into lakeFS URIs according to a configurable mapping, and uses a relevant Hadoop file system to 
-perform any file system operation.  
+that translates object store URIs into lakeFS URIs according to a configurable mapping, and uses a relevant (configured) Hadoop file system to 
+perform any file system operation.
+
+For simplicity, this document uses `s3a` as the only URI scheme used inside the Spark application code, but this solution holds for any other URI scheme.  
 
 ### Handle any interaction with the underlying object store
 
-To allow Spark users to integrate with lakeFS without changing their Spark code, `RouterFileSystem` is configured to be 
-the file system for object store URIs with a certain scheme. For example, the following Hadoop configurations make 
-`RouterFileSystem` the file system for URIs with `scheme=s3`:
-```shell
-fs.s3.impl=RouterFileSystem
+To allow Spark users to integrate with lakeFS without changing their Spark code, we configure `RouterFileSystem` as the 
+file system for the URI scheme (or schemes) their Spark application is using. For example, for a Spark application that 
+reads and writes from S3 using `S3AFileSystem`, we configure `RouterFileSystem` to be the file system for URIs with `scheme=s3a`, as follows: 
+```properties
+fs.s3a.impl=RouterFileSystem
 ```
-This will force any file system operation performed on an object URI with `scheme=s3` to go through `RouterFileSystem`.
+This will force any file system operation performed on an object URI with `scheme=s3a` to go through `RouterFileSystem` before it 
+interacts with the underlying storage.
 
 ### URI translation
 
+`RouterFileSystem` has access to a configurable mapping that maps any object store URI to any type of URI. This proposal 
+uses s3 object store paths (with URI `scheme=s3a`) and lakeFS paths as examples.
 
+#### Mapping configurations
 
-`RouterFileSystem` has access to a configurable mapping that maps bucket names into lakeFS repositories and prefixes, e.g.
-```json
-"MapperConfig" : [
-    {
-        "source_bucket_pattern": "bucket-a",
-        "source_key_pattern": "partition_key=*",
-        "mapped_bucket_name": "example-repo",
-        "mapped_prefix": "dev/"
-    }
-]
+The mapping configurations are spark properties of the following form:
+```properties
+routerfs.mapping.${mappingIdx}.${toFsScheme}.replace='^${fromFsScheme}://bucket/prefix'
+routerfs.mapping.${mappingIdx}.${toFsScheme}.with='${toFsScheme}://another-bucket/prefix/*'
 ```
 
-With the mapping above, the URI `s3://bucket-a/partition_key=A/foo.parquet` will be translated into `s3://example-repo/dev/partition_key=A/foo.parquet`.
+Where `mappingIdx` is an unbounded running index initialized for each `toFsScheme`, and `toFsScheme` is a URI scheme that
+uses the `fs.toFsScheme.impl` property to point to the file system that handles the interaction with the underlying storage.
+For example, the following mapping configurations
+```properties
+routerfs.mapping.1.lakefs.replace='^s3a://bucket/prefix'
+routerfs.mapping.1.lakefs.with='lakefs://example-repo/dev/prefix'
+```
+together with 
+```properties
+fs.lakefs.impl=S3AFileSystem
+```
+make `RouterFileSystem` translate `s3a://bucket/prefix/foo.parquet` into `lakefs://example-repo/dev/prefix/foo.parquet`, 
+and later use `S3AFileSystem` to interact with the underlying object storage which is S3 in this case. This example uses
+[S3 gateway](../docs/integrations/spark.md#access-lakefs-using-the-s3a-gateway) as the Spark-lakeFS integration method.
 
-A mapper config can have the following properties:
-| Property              | Description                                                                                 | Required |
-|-----------------------|---------------------------------------------------------------------------------------------|----------|
-| source_bucket_pattern | Requests to buckets matching this pattern will use this profile.                            | Yes      |
-| source_key_pattern    | Requests to keys matching this pattern will use this profile.                               | No       |
-| mapped_bucket_name    | The bucket name to use when routing the request to the destination client                   | No       |
-| mapped_prefix         | An optional string to prepend to the key when routing the request to the destination client | No       |
-The same that we do with [boto-s3-router](https://github.com/treeverse/boto-s3-router)
+##### Multiple mapping configurations   
+
+Each `toFsScheme` can have any number of mapping configurations. E.g., below are two mapping configurations for `toFsScheme=lakefs`.
+```properties
+routerfs.mapping.1.lakefs.replace='^s3a://bucket/prefix'
+routerfs.mapping.1.lakefs.with='lakefs://example-repo/dev/prefix'
+routerfs.mapping.2.lakefs.replace='^s3a://another-bucket'
+routerfs.mapping.2.lakefs.with='lakefs://another-repo/main'
+```
+Mapping configurations applied in order, therefore in case of a conflict in mapping configurations the prior configuration 
+applies. 
+
+##### Multiple `toFsScheme`s (and multiple mapping configuration groups)
+
+With `RouterFileSystem`, Spark users can define any number of `toFsScheme`s. Each forms its own mapping configuration group,
+and allows applying different set of Spark/Hadoop configurations. e.g. credentials, s3 endpoint, etc. Users would typically
+define new `toFsScheme` while trying to migrate a collection from one storage space to another without changing their Spark code.
+
+The example below demonstrates how routerFS mapping configurations and some Hadoop configurations will look like for
+Spark application that accesses s3, MinIO, and lakeFS, but is using s3a as its sole URI scheme. 
+```properties
+# Mapping configurations
+routerfs.mapping.1.lakefs.replace='^s3a://bucket/prefix'
+routerfs.mapping.1.lakefs.with='lakefs://example-repo/dev/prefix'
+routerfs.mapping.1.s3a1.replace='^s3a://bucket'
+routerfs.mapping.1.s3a1.with='s3a1://another-bucket'
+routerfs.mapping.1.minio.replace='^s3a://minio-bucket'
+routerfs.mapping.1.minio.with='minio://another-minio-bucket'
+
+# File System configurations
+fs.s3a.impl=RouterFileSystem
+fs.lakefs.impl=S3AFileSystem
+fs.s3a1.impl=S3AFileSystem
+fs.minio.impl=S3AFileSystem
+```
+
+##### Default mapping configuration 
+
+`RouterFileSystem` requires a default mapping configuration in case that none of the mappings matches a URI. 
+For example, the following default configuration states that in case or a URI with `scheme=s3a` that didn't match the
+`^s3a://bucket/prefix` pattern, `RouterFileSystem` uses the default file system that's configured to be `S3AFileSystem`.  
+
+```properties
+routerfs.mapping.1.lakefs.replace='^s3a://bucket/prefix'
+routerfs.mapping.1.lakefs.with='lakefs://example-repo/dev/prefix'
+
+# Default mapping, should be applied last 
+routerfs.mapping.default.replace='^s3a://'
+routerfs.mapping.default.with='default://'
+
+# File System configurations
+fs.s3a.impl=RouterFileSystem
+fs.lakefs.impl=S3AFileSystem
+fs.default.impl=S3AFileSystem
+```
+
+This configuration is required because otherwise `RouterFileSystem` will get stuck in an infinite loop, by calling itself 
+as the file system for `scheme=s3a` in the example. 
+
+**Note** Hadoop configurations include a `fs.default.impl` and we will need to test that this configuration is working as expected.
 
 ### Invoke file system operations
 
 After translating URIs to their final form, `RouterFileSystem` will use the translated path and its relevant file system to 
-perform file system operations against the relevant object store. 
+perform file system operations against the relevant object store. See example in [Mapping configurations](#mapping-configurations).  
 
-Considering the example above, the relevant object store and file system are S3 and `S3AFileSystem` compatibly. `RouterFileSystem` will use `S3AFileSystem` to perform file system operations against S3. e.g. to open `s3://example-repo/dev/foo.parquet`
+### Getting the relevant File System 
 
-#### Getting the relevant File System 
-
-Given that `RouterFileSystem` is configured as the file system for URIs with a certain scheme (e.g. `scheme=s3`),
-we need to provide a way to get the relevant file system that can perform actual file system operations against the 
-relevant object store, e.g. `S3AFileSystem`. 
-
-define a default file system?
-should be applied last 
-```shell
-routerfs.mapping.default.replace = '^s3a://'
-routerfs.mapping.default.with = 's3a-wrapped://'
-```
-
-There are two ways to do that:
-1. 
-
-##### Using different schemes
-
-Goal -
-find a way to eliminate the need of using per-bucket configurations. why? because it is only supported from for hadoop-aws (includes S3AFileSystem implementation) versions >= [2.8.0](https://hadoop.apache.org/docs/r2.8.0/hadoop-aws/tools/hadoop-aws/index.html#Configurations_different_S3_buckets)
-
-Why do I currently need to use per bucket configurations?
-To do that, we would follow a two-step process: 
-1. add the following Spark configuration:
-```shell
-# fs.underlying.impl=relevant filesystem
-fs.underlying.impl=S3AFileSystem
-``` 
-The configuration above tells Spark that `S3AFileSystem` is the relevant file system for URIs with `scheme=underlying`. 
-
-2. Use a URI with `scheme=underlying` to fetch the relevant file system. 
-```java
-String origPath = "s3://example-repo/dev/foo.parquet";
-String fsGetterPath = "underlying://example-repo/dev/foo.parquet";
-FileSystem underlyingFS = fsGetterPath.getFileSystem(); // S3AFileSystem according to Spark configurations
-// Can later do underlyingFS.open(origPath) 
-```
+`RouterFileSystem` uses the `fs.<toFsScheme>.impl=S3AFileSystem` Hadoop configuration and the FileSystem method 
+[path.getFileSystem()](https://github.com/apache/hadoop/blob/2960d83c255a00a549f8809882cd3b73a6266b6d/hadoop-common-project/hadoop-common/src/main/java/org/apache/hadoop/fs/Path.java#L365)
+to access the correct file system at runtime, according to user configurations.
 
 ### Integrating with lakeFS
 
 `RouterFileSystem` does not change the exiting [integration methods](../docs/integrations/spark.md#two-tiered-spark-support) 
-lakeFS and Spark have. 
-While accessing lakeFS [using the S3 gateway](../docs/integrations/spark.md#access-lakefs-using-the-s3a-gateway) we need 
-to use [per-bucket configurations](../docs/integrations/spark.md#per-bucket-configuration) so that the relevant underlying 
-file system can direct traffic to the lakeFS server for mapped buckets. 
+lakeFS and Spark have. that is, one can use both `S3AFileSystem` and `LakeFSFileSystem` and to read and write objects from lakeFS
+(See configurations reference below). 
 
-#### Example: Read an object managed by lakeFS
-
-![RouterFS with lakeFS URI](diagrams/routerFS_lakefs_path.png)
-
-### How RouterFileSystem works with URIs that are not mapped to lakeFS objects   
-
-`RouterFileSystem` will check the mapping configurations, and won't change paths that are not mapped to lakeFS objects. 
-e.g. given the URI `s3://bucket-b/bar.parquet` and the following mapping configurations:
-```json
-"MapperConfig" : [
-    {
-        "source_bucket_pattern": "bucket-a",
-        "mapped_bucket_name": "example-repo",
-        "mapped_prefix": "dev/"
-    }
-]
+#### Access lakeFS using S3 gateway
+```properties
+routerfs.mapping.1.lakefs.replace='^s3a://bucket/prefix'
+routerfs.mapping.1.lakefs.with='lakefs://example-repo/dev/prefix'
 ```
-`RouterFileSystem` will keep `s3://bucket-b/bar.parquet` as is and continue that process outlined above. 
+together with
+```properties
+fs.lakefs.impl=S3AFileSystem
+```
 
-#### Example: Read an object directly from the object store
+#### Access lakeFS using lakeFS-specific Hadoop FileSystem
 
-![RouterFS with S3 URI](diagrams/routerFS_s3_path.png)
+```properties
+routerfs.mapping.1.lakefs.replace='^s3a://bucket/prefix'
+routerfs.mapping.1.lakefs.with='lakefs://example-repo/dev/prefix'
+```
+together with
+```properties
+fs.lakefs.impl=LakeFSFileSystem
+```
 
-### How to make mapping configurable 
+### Examples
 
-This is TBD. the proposal assumes an accessible configurable mapping. This could be an lakeFS API endpoint that allow 
-set and get mappings.
+#### Read an object managed by lakeFS
+
+![RouterFS with lakeFS URI](diagrams/routerFS-by_lakefs.png)
+
+#### Read an object directly from the object store
+
+![RouterFS with S3 URI](diagrams/routerFS-by_s3.png)
 
 ### Pros & Cons
 
-### Pros 
+### Pros
 
-1. We already have experience developing Hadoop file systems, therefore, the ramp up should not be significant. 
+1. We already have experience developing Hadoop file systems, therefore, the ramp up should not be significant.
 2. `RouterFileSystem` suggests much simpler functionality than what lakeFSFS supports (it only needs to receive calls, translate paths, and route to the right file system), which reduces the estimated number of unknowns unknowns.
 3. It does not change anything related to the existing Spark<>lakeFS integrations.
-4. RouterFileSystem can probably be extended to support non-lakeFS use-cases but with an additional work. 
+4. `RouterFileSystem` can support non-lakeFS use-cases because it does not relay on any lakeFS client.
+5. `RouterFileSystem` and can be developed in a separate repo and delivered as a standalone OSS product, we may be able to contribute it to Spark. 
+6. `RouterFileSystem` does not relay on per-bucket configurations that are only supported for hadoop-aws (includes S3AFileSystem implementation) versions >= [2.8.0](https://hadoop.apache.org/docs/r2.8.0/hadoop-aws/tools/hadoop-aws/index.html#Configurations_different_S3_buckets).  
 
 ### Cons
 
-1. Based on our experience with lakeFSFS, we already know that supporting a hadoop file system is difficult. There are many things that can go wrong in terms of dependency conflicts, and unexpected behaviours working with managed frameworks (i.e. Databricks, EMR)
-2. The suggested method to [getting the relevant underlying filesystem](#getting-the-relevant-file-system) is kind of a hack.
-3. This solution relays on Hadoop per-bucket configurations that are only supported for hadoop-aws (includes S3AFileSystem implementation) versions >= [2.8.0](https://hadoop.apache.org/docs/r2.8.0/hadoop-aws/tools/hadoop-aws/index.html#Configurations_different_S3_buckets)  
-4. It's complex.
-
-## Alternatives considered 
-
-Currently, none. we need to that because the proposed solution adds a notable amount of friction. 
-
-
-
-
-
-
-
-
-
+1. Based on our experience with lakeFSFS, we already know that supporting a hadoop file system is difficult. There are many things that can go wrong in terms of dependency conflicts, and unexpected behaviours working with managed frameworks (i.e. Databricks, EMR) 
+2. It's complex.
+3. `RouterFileSystem` is unaware of the number of mapping configurations every `toFsScheme` has and needs to figure this out at runtime. 
+4. `toFsScheme` may be a confusing concept.
