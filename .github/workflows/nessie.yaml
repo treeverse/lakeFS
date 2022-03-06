@@ -42,7 +42,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.16.2
+          go-version: 1.17.8
         id: go
 
       - name: Cache Go modules and builds
@@ -88,7 +88,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v1
         with:
-          go-version: 1.16.2
+          go-version: 1.17.8
         id: go
 
       - name: Retrieve generated code
@@ -486,7 +486,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v1
         with:
-          go-version: 1.16.2
+          go-version: 1.17.8
         id: go
 
       - name: Start lakeFS for Metastore tests
