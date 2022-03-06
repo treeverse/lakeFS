@@ -509,11 +509,8 @@ func (m *Manager) FillGenerations(ctx context.Context, repositoryID graveler.Rep
 		}
 		nodesQueue = append(nodesQueue, nodesIDsToIterateNextIteration...)
 	}
-	m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
+	_, err = m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		return nil, m.updateCommitGeneration(tx, repositoryID, commitIDToNode)
 	})
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
