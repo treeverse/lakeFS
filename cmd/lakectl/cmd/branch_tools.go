@@ -9,13 +9,12 @@ import (
 	"github.com/treeverse/lakefs/pkg/metastore"
 )
 
-var branchCreatedTemplate = `created branch "{{.Branch}}" {{.Resp}}
+const branchCreatedTemplate = `created branch "{{.Branch}}" {{.Resp}}
 `
 
 // ExtractRepoAndBranchFromDBName extracts the repository and branch in which the metastore resides
 func ExtractRepoAndBranchFromDBName(ctx context.Context, dbName string, client metastore.Client) (string, string, error) {
 	metastoreDB, err := client.GetDatabase(ctx, dbName)
-
 	if err != nil {
 		return "", "", err
 	}

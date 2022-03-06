@@ -20,17 +20,15 @@ var schemaRegex = regexp.MustCompile(`schema: (.+)`)
 var materializedSelection = []string{"config.materialized:table", "config.materialized:incremental"}
 
 const (
-	lakectlIdentifier      = "LAKEFS_SCHEMA"
-	macrosDirName          = "macros"
-	generateSchemaName     = "generate_schema_name.sql"
-	continueOnSchemaFlag   = "continue-on-schema-exists"
-	createLakefsBranchFlag = "create-branch"
-	resourceType           = "model"
+	schemaEnvVarName     = "LAKEFS_SCHEMA"
+	macrosDirName        = "macros"
+	generateSchemaName   = "generate_schema_name.sql"
+	continueOnSchemaFlag = "continue-on-schema-exists"
+	createBranchFlag     = "create-branch"
+	resourceType         = "model"
 )
 
-type commandExecutioner struct{}
-
-func (ce commandExecutioner) ExecuteCommand(cmd *exec.Cmd) ([]byte, error) {
+func ExecuteCommand(cmd *exec.Cmd) ([]byte, error) {
 	return cmd.Output()
 }
 
@@ -46,7 +44,7 @@ var dbtCreateBranchSchema = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		clientType, _ := cmd.Flags().GetString("from-client-type")
 		branchName, _ := cmd.Flags().GetString("branch")
-		shouldCreateBranch, _ := cmd.Flags().GetBool(createLakefsBranchFlag)
+		shouldCreateBranch, _ := cmd.Flags().GetBool(createBranchFlag)
 		toSchema, _ := cmd.Flags().GetString("to-schema")
 		projectRoot, _ := cmd.Flags().GetString("project-root")
 		skipViews, _ := cmd.Flags().GetBool("skip-views")
@@ -64,7 +62,7 @@ var dbtCreateBranchSchema = &cobra.Command{
 		// in order to generate views in new schema dbt should contain a macro script allowing lakectl to dynamically set the schema
 		// this could be skipped by using the skip-views flag
 		if !skipViews {
-			err := ValidateGenerateSchemaMacro(projectRoot, macrosDirName, generateSchemaName, lakectlIdentifier)
+			err := ValidateGenerateSchemaMacro(projectRoot, macrosDirName, generateSchemaName, schemaEnvVarName)
 			if err != nil {
 				DieErr(err)
 			}
@@ -90,7 +88,7 @@ var dbtCreateBranchSchema = &cobra.Command{
 }
 
 func retrieveSchema(projectRoot string) string {
-	schemaOutput, err := DbtDebug(projectRoot, schemaRegex, commandExecutioner{})
+	schemaOutput, err := DBTDebug(projectRoot, schemaRegex, ExecuteCommand)
 	if err != nil {
 		fmt.Println(schemaOutput)
 		DieErr(err)
@@ -121,14 +119,14 @@ func copySchemaWithDbtTables(ctx context.Context, continueOnError, continueOnSch
 		DieFmt("Schema %s exists, change schema or use %s flag", toSchema, continueOnSchemaFlag)
 	}
 
-	models := getDbtTables(projectRoot)
+	models := getDBTTables(projectRoot)
 	if err := copyModels(ctx, models, continueOnError, fromSchema, toSchema, branchName, dbfsLocation, client); err != nil {
 		DieErr(err)
 	}
 }
 
 func createViews(projectRoot, toSchema string) {
-	output, err := DbtRun(projectRoot, toSchema, lakectlIdentifier, []string{"config.materialized:view"}, commandExecutioner{})
+	output, err := DBTRun(projectRoot, toSchema, schemaEnvVarName, []string{"config.materialized:view"}, ExecuteCommand)
 	if err != nil {
 		DieFmt("Failed creating views with err: %v\nOutput:\n%s", err, output)
 	}
@@ -154,8 +152,8 @@ func copyModels(ctx context.Context, models []DBTResource, continueOnError bool,
 	return nil
 }
 
-func getDbtTables(projectRoot string) []DBTResource {
-	resources, err := DbtLsToJSON(projectRoot, resourceType, materializedSelection, commandExecutioner{})
+func getDBTTables(projectRoot string) []DBTResource {
+	resources, err := DBTLsToJSON(projectRoot, resourceType, materializedSelection, ExecuteCommand)
 	if err != nil {
 		DieErr(err)
 	}
@@ -219,7 +217,7 @@ func init() {
 	dbtCreateBranchSchema.Flags().Bool("skip-views", false, "")
 	dbtCreateBranchSchema.Flags().Bool("continue-on-error", false, "prevent command from failing when a single table fails")
 	dbtCreateBranchSchema.Flags().Bool(continueOnSchemaFlag, false, "allow running on existing schema")
-	dbtCreateBranchSchema.Flags().Bool(createLakefsBranchFlag, false, "create a new branch for the schema")
+	dbtCreateBranchSchema.Flags().Bool(createBranchFlag, false, "create a new branch for the schema")
 
 	dbtCmd.AddCommand(dbtGenerateSchemaMacro)
 	dbtGenerateSchemaMacro.Flags().String("project-root", ".", "location of dbt project")

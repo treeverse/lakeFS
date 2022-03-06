@@ -1,9 +1,11 @@
-package cmd
+package cmd_test
 
 import (
 	"context"
 	"errors"
 	"testing"
+
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd"
 
 	"github.com/treeverse/lakefs/pkg/metastore"
 	"github.com/treeverse/lakefs/pkg/metastore/mock"
@@ -63,7 +65,7 @@ func TestExtractRepoAndBranchFromDBName(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
 			client := NewMockClient(t, tt.Path, dbName)
-			repo, branch, err := ExtractRepoAndBranchFromDBName(context.Background(), tt.Args.DBName, client)
+			repo, branch, err := cmd.ExtractRepoAndBranchFromDBName(context.Background(), tt.Args.DBName, client)
 			if err != nil && !errors.Is(err, tt.Err) {
 				t.Errorf("ExtractRepoAndBranchFromDBName() error = %v, Err %v", err, tt.Err)
 				return

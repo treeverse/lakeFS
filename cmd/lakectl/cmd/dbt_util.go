@@ -22,9 +22,7 @@ type DBTResource struct {
 	Alias  string `json:"alias"`
 }
 
-type CommandExecutor interface {
-	ExecuteCommand(*exec.Cmd) ([]byte, error)
-}
+type Executor func(*exec.Cmd) ([]byte, error)
 
 var errSchemaExtraction = fmt.Errorf("failed extracting schema from dbt debug message")
 
@@ -40,10 +38,10 @@ func ValidateGenerateSchemaMacro(projectRoot, macrosDirName, generateSchemaFileN
 	return nil
 }
 
-func DbtDebug(projectRoot string, schemaRegex *regexp.Regexp, executor CommandExecutor) (string, error) {
-	dbtCmd := exec.Command("dbt", "debug")
-	dbtCmd.Dir = projectRoot
-	output, err := executor.ExecuteCommand(dbtCmd)
+func DBTDebug(projectRoot string, schemaRegex *regexp.Regexp, executor Executor) (string, error) {
+	DBTCmd := exec.Command("dbt", "debug")
+	DBTCmd.Dir = projectRoot
+	output, err := executor(DBTCmd)
 	if err != nil {
 		return string(output), err
 	}
@@ -55,26 +53,26 @@ func DbtDebug(projectRoot string, schemaRegex *regexp.Regexp, executor CommandEx
 	return string(schema), nil
 }
 
-func DbtRun(projectRoot, schema, schemaEnvVarIdentifier string, selectValues []string, executor CommandExecutor) (string, error) {
+func DBTRun(projectRoot, schema, schemaEnvVarIdentifier string, selectValues []string, executor Executor) (string, error) {
 	selectedValuesList := strings.Join(selectValues, " ")
-	dbtCmd := exec.Command("dbt", "run", "--select", selectedValuesList)
+	DBTCmd := exec.Command("dbt", "run", "--select", selectedValuesList)
 	if strings.TrimSpace(schemaEnvVarIdentifier) != "" && strings.TrimSpace(schema) != "" {
-		dbtCmd.Env = append(os.Environ(), schemaEnvVarIdentifier+"="+schema)
+		DBTCmd.Env = append(os.Environ(), schemaEnvVarIdentifier+"="+schema)
 	}
-	dbtCmd.Dir = projectRoot
-	output, err := executor.ExecuteCommand(dbtCmd)
+	DBTCmd.Dir = projectRoot
+	output, err := executor(DBTCmd)
 	return string(output), err
 }
 
-func DbtLsToJSON(projectRoot, resourceType string, selectValues []string, executor CommandExecutor) ([]DBTResource, error) {
-	dbtCmd := exec.Command("dbt", "ls", "--resource-type", resourceType, "--select", strings.Join(selectValues, " "), "--output", "json", "--output-keys", resourceJSONKeys)
-	dbtCmd.Dir = projectRoot
-	output, err := executor.ExecuteCommand(dbtCmd)
+func DBTLsToJSON(projectRoot, resourceType string, selectValues []string, executor Executor) ([]DBTResource, error) {
+	DBTCmd := exec.Command("dbt", "ls", "--resource-type", resourceType, "--select", strings.Join(selectValues, " "), "--output", "json", "--output-keys", resourceJSONKeys)
+	DBTCmd.Dir = projectRoot
+	output, err := executor(DBTCmd)
 	if err != nil {
 		fmt.Println(string(output))
 		return nil, err
 	}
-	dbtResources := make([]DBTResource, 0)
+	resources := make([]DBTResource, 0)
 	scan := bufio.NewScanner(bytes.NewReader(output))
 	for scan.Scan() {
 		line := scan.Bytes()
@@ -83,8 +81,8 @@ func DbtLsToJSON(projectRoot, resourceType string, selectValues []string, execut
 		if err != nil {
 			return nil, err
 		}
-		dbtResources = append(dbtResources, m)
+		resources = append(resources, m)
 	}
 	err = scan.Err()
-	return dbtResources, err
+	return resources, err
 }
