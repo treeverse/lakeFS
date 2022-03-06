@@ -28,6 +28,12 @@ type Manager struct {
 	batchExecutor   batch.Batcher
 }
 
+type CommitNode struct {
+	childCommitsIds   []graveler.CommitID
+	notVisitedParents int
+	generation        int
+}
+
 func NewPGRefManager(executor batch.Batcher, db db.Database, addressProvider ident.AddressProvider) *Manager {
 	return &Manager{
 		db:              db,
@@ -387,6 +393,13 @@ func (m *Manager) addCommit(tx db.Tx, repositoryID graveler.RepositoryID, commit
 	return err
 }
 
+func (m *Manager) updateCommitGeneration(tx db.Tx, repositoryID graveler.RepositoryID, commitID graveler.CommitID, generation int) error {
+	_, err := tx.Exec(`UPDATE graveler_commits SET generation=$3 WHERE repository_id=$1 AND id=$2`,
+		repositoryID, commitID, generation)
+
+	return err
+}
+
 func (m *Manager) FindMergeBase(ctx context.Context, repositoryID graveler.RepositoryID, commitIDs ...graveler.CommitID) (*graveler.Commit, error) {
 	const allowedCommitsToCompare = 2
 	if len(commitIDs) != allowedCommitsToCompare {
@@ -412,19 +425,77 @@ func (m *Manager) ListCommits(ctx context.Context, repositoryID graveler.Reposit
 }
 
 func (m *Manager) FillGenerations(ctx context.Context, repositoryID graveler.RepositoryID) error {
-	_, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		return tx.Exec(`WITH RECURSIVE cte AS
-								(
-									SELECT id, 1 AS generation,creation_date
-									FROM graveler_commits
-									WHERE repository_id = $1 AND parents IS NULL OR array_length(parents,1) = 0
-									UNION ALL
-									SELECT DISTINCT(c.id), cte.generation+1 AS generation,c.creation_date
-									FROM graveler_commits c INNER JOIN cte
-									ON cte.id = ANY(c.parents) WHERE repository_id = $1
-								)
-								UPDATE graveler_commits u SET generation = cte.generation FROM cte WHERE u.id = cte.id;`,
-			repositoryID)
-	})
-	return err
+	iter, err := m.ListCommits(ctx, repositoryID)
+	if err != nil {
+		return err
+	}
+	defer iter.Close()
+
+	commitIdToNode := make(map[graveler.CommitID]CommitNode)
+	var rootCommitID graveler.CommitID
+
+	// make a commits "tree" from map data structure
+	for iter.Next() {
+		commit := iter.Value()
+		if len(commit.Parents) == 0 {
+			rootCommitID = commit.CommitID
+		}
+
+		// adding current node as a child to all parents nodes
+		for _, commitParentId := range commit.Parents {
+			commitParentNode, exist := commitIdToNode[commitParentId]
+			var parentCommitChildrenCommitsIds = []graveler.CommitID{commit.CommitID}
+			var parentCommitNotVisitedParents int
+			if exist {
+				parentCommitChildrenCommitsIds = append(commitParentNode.childCommitsIds, commit.CommitID)
+				parentCommitNotVisitedParents = commitParentNode.notVisitedParents
+			}
+			commitIdToNode[commitParentId] = CommitNode{parentCommitChildrenCommitsIds, parentCommitNotVisitedParents, 0}
+		}
+
+		currentNode, exist := commitIdToNode[commit.CommitID]
+		var currentCommitChildrenIds []graveler.CommitID
+		if exist {
+			currentCommitChildrenIds = currentNode.childCommitsIds
+		}
+		commitIdToNode[commit.CommitID] = CommitNode{currentCommitChildrenIds, len(commit.Parents), 0}
+	}
+	if err := iter.Err(); err != nil {
+		return fmt.Errorf("getting value from iterator: %w", err)
+	}
+
+	nodesQueue := make([]graveler.CommitID, 0)
+	nodesQueue = append(nodesQueue, rootCommitID)
+	currentGeneration := 1
+	// update commitNodes' generation in commitIdToNode "tree" using BFS algorithm.
+	// using a queue implementation
+	// adding a node to the queue only after all of its parents were visited in order to avoid redundant visits of nodes
+	for ; len(nodesQueue) > 0; currentGeneration++ {
+		var nodesIdsToIterateNextIteration []graveler.CommitID
+		for len(nodesQueue) > 0 {
+			currentCommitId := nodesQueue[0]
+			currentNode := commitIdToNode[currentCommitId]
+			commitIdToNode[currentCommitId] = CommitNode{currentNode.childCommitsIds, 0, currentGeneration}
+			_, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
+				return nil, m.updateCommitGeneration(tx, repositoryID, currentCommitId, currentGeneration)
+			})
+			if err != nil {
+				return err
+			}
+			nodesQueue = nodesQueue[1:]
+			for _, childNodeId := range currentNode.childCommitsIds {
+				childNode := commitIdToNode[childNodeId]
+				commitIdToNode[childNodeId] = CommitNode{childNode.childCommitsIds, childNode.notVisitedParents - 1, 0}
+				// if all parents already have been visited
+				if childNode.notVisitedParents == 1 {
+					nodesIdsToIterateNextIteration = append(nodesIdsToIterateNextIteration, childNodeId)
+				}
+			}
+		}
+		for _, nodeId := range nodesIdsToIterateNextIteration {
+			nodesQueue = append(nodesQueue, nodeId)
+		}
+	}
+
+	return nil
 }
