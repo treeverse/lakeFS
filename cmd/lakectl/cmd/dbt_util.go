@@ -33,7 +33,7 @@ func ValidateGenerateSchemaMacro(projectRoot, macrosDirName, generateSchemaFileN
 		return err
 	}
 	if !strings.Contains(string(data), schemaIdentifier) {
-		return fmt.Errorf("generate_schema_name does not contain %s addition. Handle lakefs support to %s or use skip-views flag: %w", schemaIdentifier, generateSchemaFileName, err)
+		return fmt.Errorf(`'%s' doesn't include "%s" as the environment variable for schema name identifier: %w`, generateSchemaFileName, schemaIdentifier, err)
 	}
 	return nil
 }
