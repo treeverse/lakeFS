@@ -495,11 +495,10 @@ func (m *Manager) getRootNodes(nodes map[graveler.CommitID]*CommitNode) []gravel
 }
 
 func (m *Manager) mapCommitNodesToChildren(nodes map[graveler.CommitID]*CommitNode) {
-	for commitId, commitNode := range nodes {
+	for commitID, commitNode := range nodes {
 		// adding current node as a child to all parents in commitNode.parentsToVisit
 		for parentID := range commitNode.parentsToVisit {
-			commitParentNode := nodes[parentID]
-			nodes[parentID].children = append(commitParentNode.children, commitId)
+			nodes[parentID].children = append(nodes[parentID].children, commitID)
 		}
 	}
 }
