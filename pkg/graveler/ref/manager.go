@@ -472,13 +472,9 @@ func (m *Manager) createCommitsIDsMap(ctx context.Context, repositoryID graveler
 	defer iter.Close()
 
 	commitIDToNode := make(map[graveler.CommitID]CommitNode)
-	var rootsCommitIDs []graveler.CommitID
 
 	for iter.Next() {
 		commit := iter.Value()
-		if len(commit.Parents) == 0 {
-			rootsCommitIDs = append(rootsCommitIDs, commit.CommitID)
-		}
 		notVisitedParents := map[graveler.CommitID]struct{}{}
 		for _, parentID := range commit.Parents {
 			notVisitedParents[parentID] = struct{}{}
@@ -504,10 +500,9 @@ func (m *Manager) getRootNodes(commitIDToNode map[graveler.CommitID]CommitNode) 
 
 func (m *Manager) mapCommitSNodesToChildren(commitIDToNode map[graveler.CommitID]CommitNode, rootsCommitIDs []graveler.CommitID) map[graveler.CommitID]CommitNode {
 	for commitId, commitNode := range commitIDToNode {
-
 		// adding current node as a child to all parents nodesCommitsIDs
 		for commitParentID := range commitNode.notVisitedParents {
-			commitParentNode, _ := commitIDToNode[commitParentID]
+			commitParentNode := commitIDToNode[commitParentID]
 			commitIDToNode[commitParentID] = CommitNode{childCommitsIDs: append(commitParentNode.childCommitsIDs, commitId), notVisitedParents: commitParentNode.notVisitedParents}
 		}
 	}
