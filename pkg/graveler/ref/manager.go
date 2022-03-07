@@ -395,7 +395,7 @@ func (m *Manager) addCommit(tx db.Tx, repositoryID graveler.RepositoryID, commit
 	return err
 }
 
-func (m *Manager) updateCommitGeneration(tx db.Tx, repositoryID graveler.RepositoryID, nodes map[graveler.CommitID]CommitNode) error {
+func (m *Manager) updateCommitGeneration(tx db.Tx, repositoryID graveler.RepositoryID, nodes map[graveler.CommitID]*CommitNode) error {
 	for len(nodes) != 0 {
 		command := "WITH updated(id, generation) AS (VALUES "
 		var updatingRows int
@@ -453,22 +453,22 @@ func (m *Manager) FillGenerations(ctx context.Context, repositoryID graveler.Rep
 		return err
 	}
 	rootsCommitIDs := m.getRootNodes(nodes)
-	nodes = m.mapCommitNodesToChildren(nodes)
-	nodes = m.addGenerationToNodes(nodes, rootsCommitIDs)
+	m.mapCommitNodesToChildren(nodes)
+	m.addGenerationToNodes(nodes, rootsCommitIDs)
 	_, err = m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		return nil, m.updateCommitGeneration(tx, repositoryID, nodes)
 	})
 	return err
 }
 
-func (m *Manager) createCommitsIDsMap(ctx context.Context, repositoryID graveler.RepositoryID) (map[graveler.CommitID]CommitNode, error) {
+func (m *Manager) createCommitsIDsMap(ctx context.Context, repositoryID graveler.RepositoryID) (map[graveler.CommitID]*CommitNode, error) {
 	iter, err := m.ListCommits(ctx, repositoryID)
 	if err != nil {
 		return nil, err
 	}
 	defer iter.Close()
 
-	nodes := make(map[graveler.CommitID]CommitNode)
+	nodes := make(map[graveler.CommitID]*CommitNode)
 	for iter.Next() {
 		commit := iter.Value()
 		parentsToVisit := map[graveler.CommitID]struct{}{}
@@ -476,7 +476,7 @@ func (m *Manager) createCommitsIDsMap(ctx context.Context, repositoryID graveler
 			parentsToVisit[parentID] = struct{}{}
 		}
 
-		nodes[commit.CommitID] = CommitNode{children: []graveler.CommitID{}, parentsToVisit: parentsToVisit}
+		nodes[commit.CommitID] = &CommitNode{parentsToVisit: parentsToVisit}
 	}
 	if err := iter.Err(); err != nil {
 		return nil, fmt.Errorf("getting value from iterator: %w", err)
@@ -484,7 +484,7 @@ func (m *Manager) createCommitsIDsMap(ctx context.Context, repositoryID graveler
 	return nodes, nil
 }
 
-func (m *Manager) getRootNodes(nodes map[graveler.CommitID]CommitNode) []graveler.CommitID {
+func (m *Manager) getRootNodes(nodes map[graveler.CommitID]*CommitNode) []graveler.CommitID {
 	var rootsCommitIDs []graveler.CommitID
 	for commitID, commit := range nodes {
 		if len(commit.parentsToVisit) == 0 {
@@ -494,34 +494,30 @@ func (m *Manager) getRootNodes(nodes map[graveler.CommitID]CommitNode) []gravele
 	return rootsCommitIDs
 }
 
-func (m *Manager) mapCommitNodesToChildren(nodes map[graveler.CommitID]CommitNode) map[graveler.CommitID]CommitNode {
+func (m *Manager) mapCommitNodesToChildren(nodes map[graveler.CommitID]*CommitNode) {
 	for commitId, commitNode := range nodes {
 		// adding current node as a child to all parents in commitNode.parentsToVisit
 		for parentID := range commitNode.parentsToVisit {
 			commitParentNode := nodes[parentID]
-			nodes[parentID] = CommitNode{children: append(commitParentNode.children, commitId), parentsToVisit: commitParentNode.parentsToVisit}
+			nodes[parentID].children = append(commitParentNode.children, commitId)
 		}
 	}
-	return nodes
 }
 
-func (m *Manager) addGenerationToNodes(nodes map[graveler.CommitID]CommitNode, rootCommits []graveler.CommitID) map[graveler.CommitID]CommitNode {
+func (m *Manager) addGenerationToNodes(nodes map[graveler.CommitID]*CommitNode, rootCommits []graveler.CommitID) {
 	nodesCommitsIDs := rootCommits
 	for currentGeneration := 1; len(nodesCommitsIDs) > 0; currentGeneration++ {
 		var nextIterationNodes []graveler.CommitID
 		for _, nodeCommitID := range nodesCommitsIDs {
 			currentNode := nodes[nodeCommitID]
-			nodes[nodeCommitID] = CommitNode{currentNode.children, make(map[graveler.CommitID]struct{}), currentGeneration}
+			nodes[nodeCommitID].generation = currentGeneration
 			for _, childNodeID := range currentNode.children {
-				childNode := nodes[childNodeID]
-				delete(childNode.parentsToVisit, nodeCommitID)
-				nodes[childNodeID] = CommitNode{children: childNode.children, parentsToVisit: childNode.parentsToVisit}
-				if len(childNode.parentsToVisit) == 0 {
+				delete(nodes[childNodeID].parentsToVisit, nodeCommitID)
+				if len(nodes[childNodeID].parentsToVisit) == 0 {
 					nextIterationNodes = append(nextIterationNodes, childNodeID)
 				}
 			}
 		}
 		nodesCommitsIDs = nextIterationNodes
 	}
-	return nodes
 }
