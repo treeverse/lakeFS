@@ -36,8 +36,8 @@ For this to work, make sure that:
 <div class="tabs">
 <ul>
   <li><a href="#ingest-tabs-1">AWS S3</a></li>
-  <li><a href="#ingest-tabs-2">Google Cloud Storage</a></li>
-  <li><a href="#ingest-tabs-3">Azure Blob</a></li>
+  <li><a href="#ingest-tabs-2">Azure Blob</a></li>
+  <li><a href="#ingest-tabs-3">Google Cloud Storage</a></li>
 </ul>
 <div markdown="1" id="ingest-tabs-1">
 ```shell
@@ -48,6 +48,15 @@ lakectl ingest \
 </div>
 <div markdown="1" id="ingest-tabs-2">
 ```shell
+export AZURE_STORAGE_ACCOUNT="storageAccountName"
+export AZURE_STORAGE_ACCESS_KEY="EXAMPLEroozoo2gaec9fooTieWah6Oshai5Sheofievohthapob0aidee5Shaekahw7loo1aishoonuuquahr3=="
+lakectl ingest \
+   --from https://storageAccountName.blob.core.windows.net/container/optional/prefix/ \
+   --to lakefs://my-repo/ingest-branch/optional/path/
+```
+</div>
+<div markdown="1" id="ingest-tabs-3">
+```shell
 export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.gcs_credentials.json"  # Optional, will fallback to the default configured credentials
 lakectl ingest \
    --from gs://bucket/optional/prefix/ \
@@ -55,15 +64,6 @@ lakectl ingest \
 ```
 
 The `lakectl ingest` command currently supports the standard `GOOGLE_APPLICATION_CREDENTIALS` environment variable [as described in Google Cloud's documentation](https://cloud.google.com/docs/authentication/getting-started).
-</div>
-<div markdown="1" id="ingest-tabs-3">
-```shell
-export AZURE_STORAGE_ACCOUNT="storageAccountName"
-export AZURE_STORAGE_ACCESS_KEY="EXAMPLEroozoo2gaec9fooTieWah6Oshai5Sheofievohthapob0aidee5Shaekahw7loo1aishoonuuquahr3=="
-lakectl ingest \
-   --from https://storageAccountName.blob.core.windows.net/container/optional/prefix/ \
-   --to lakefs://my-repo/ingest-branch/optional/path/
-```
 </div>
 </div>
 
