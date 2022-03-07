@@ -45,6 +45,9 @@ lakectl ingest \
   --from s3://bucket/optional/prefix/ \
   --to lakefs://my-repo/ingest-branch/optional/path/
 ```
+
+The `lakectl ingest` command will attempt to use the current user's existing credentials and will respect instance profiles,
+environment variables and credential files [in the same way that the AWS cli does](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html){: target="_blank" }
 </div>
 <div markdown="1" id="ingest-tabs-2">
 ```shell
@@ -54,6 +57,11 @@ lakectl ingest \
    --from https://storageAccountName.blob.core.windows.net/container/optional/prefix/ \
    --to lakefs://my-repo/ingest-branch/optional/path/
 ```
+
+The `lakectl ingest` command currently supports storage accounts configured through environment variables as shown above.
+
+**Note:** Currently `lakectl import` supports the `http://` and `https://` schemes for Azure storage URIs. `wasb`, `abfs` or `adls` are currently not supported.
+{: .note }
 </div>
 <div markdown="1" id="ingest-tabs-3">
 ```shell
