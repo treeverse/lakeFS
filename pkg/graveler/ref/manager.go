@@ -31,9 +31,9 @@ type Manager struct {
 }
 
 type CommitNode struct {
-	childCommitsIDs   []graveler.CommitID
-	notVisitedParents map[graveler.CommitID]struct{}
-	generation        int
+	children       []graveler.CommitID
+	parentsToVisit map[graveler.CommitID]struct{}
+	generation     int
 }
 
 func NewPGRefManager(executor batch.Batcher, db db.Database, addressProvider ident.AddressProvider) *Manager {
@@ -395,17 +395,17 @@ func (m *Manager) addCommit(tx db.Tx, repositoryID graveler.RepositoryID, commit
 	return err
 }
 
-func (m *Manager) updateCommitGeneration(tx db.Tx, repositoryID graveler.RepositoryID, commitIDToNode map[graveler.CommitID]CommitNode) error {
-	for len(commitIDToNode) != 0 {
+func (m *Manager) updateCommitGeneration(tx db.Tx, repositoryID graveler.RepositoryID, nodes map[graveler.CommitID]CommitNode) error {
+	for len(nodes) != 0 {
 		command := "WITH updated(id, generation) AS (VALUES "
 		var updatingRows int
-		for commitID, commitNode := range commitIDToNode {
+		for commitID, commitNode := range nodes {
 			if updatingRows != 0 {
 				command += ","
 			}
 			command += fmt.Sprintf("('%s', %d)", commitID, commitNode.generation)
 
-			delete(commitIDToNode, commitID)
+			delete(nodes, commitID)
 			updatingRows += 1
 			if updatingRows == BatchUpdateSQLSize {
 				break
@@ -445,21 +445,18 @@ func (m *Manager) ListCommits(ctx context.Context, repositoryID graveler.Reposit
 }
 
 func (m *Manager) FillGenerations(ctx context.Context, repositoryID graveler.RepositoryID) error {
-	// making a commits "tree" from map data structure
-	// 1. Adding all commits to commits' map
-	commitIDToNode, err := m.createCommitsIDsMap(ctx, repositoryID)
+	// update commitNodes' generation in nodes "tree" using BFS algorithm.
+	// using a queue implementation
+	// adding a node to the queue only after all of its parents were visited in order to avoid redundant visits of nodesCommitsIDs
+	nodes, err := m.createCommitsIDsMap(ctx, repositoryID)
 	if err != nil {
 		return err
 	}
-	// 2. get root Nodes
-	rootsCommitIDs := m.getRootNodes(commitIDToNode)
-
-	// 3. mapping nodesCommitsIDs to children
-	commitIDToNode = m.mapCommitSNodesToChildren(commitIDToNode, rootsCommitIDs)
-
-	// 4. update DB with generation in batches
+	rootsCommitIDs := m.getRootNodes(nodes)
+	nodes = m.mapCommitNodesToChildren(nodes)
+	nodes = m.addGenerationToNodes(nodes, rootsCommitIDs)
 	_, err = m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		return nil, m.updateCommitGeneration(tx, repositoryID, commitIDToNode)
+		return nil, m.updateCommitGeneration(tx, repositoryID, nodes)
 	})
 	return err
 }
@@ -471,63 +468,60 @@ func (m *Manager) createCommitsIDsMap(ctx context.Context, repositoryID graveler
 	}
 	defer iter.Close()
 
-	commitIDToNode := make(map[graveler.CommitID]CommitNode)
-
+	nodes := make(map[graveler.CommitID]CommitNode)
 	for iter.Next() {
 		commit := iter.Value()
-		notVisitedParents := map[graveler.CommitID]struct{}{}
+		parentsToVisit := map[graveler.CommitID]struct{}{}
 		for _, parentID := range commit.Parents {
-			notVisitedParents[parentID] = struct{}{}
+			parentsToVisit[parentID] = struct{}{}
 		}
 
-		commitIDToNode[commit.CommitID] = CommitNode{childCommitsIDs: []graveler.CommitID{}, notVisitedParents: notVisitedParents}
+		nodes[commit.CommitID] = CommitNode{children: []graveler.CommitID{}, parentsToVisit: parentsToVisit}
 	}
 	if err := iter.Err(); err != nil {
 		return nil, fmt.Errorf("getting value from iterator: %w", err)
 	}
-	return commitIDToNode, nil
+	return nodes, nil
 }
 
-func (m *Manager) getRootNodes(commitIDToNode map[graveler.CommitID]CommitNode) []graveler.CommitID {
+func (m *Manager) getRootNodes(nodes map[graveler.CommitID]CommitNode) []graveler.CommitID {
 	var rootsCommitIDs []graveler.CommitID
-	for commitID, commit := range commitIDToNode {
-		if len(commit.notVisitedParents) == 0 {
+	for commitID, commit := range nodes {
+		if len(commit.parentsToVisit) == 0 {
 			rootsCommitIDs = append(rootsCommitIDs, commitID)
 		}
 	}
 	return rootsCommitIDs
 }
 
-func (m *Manager) mapCommitSNodesToChildren(commitIDToNode map[graveler.CommitID]CommitNode, rootsCommitIDs []graveler.CommitID) map[graveler.CommitID]CommitNode {
-	for commitId, commitNode := range commitIDToNode {
-		// adding current node as a child to all parents nodesCommitsIDs
-		for commitParentID := range commitNode.notVisitedParents {
-			commitParentNode := commitIDToNode[commitParentID]
-			commitIDToNode[commitParentID] = CommitNode{childCommitsIDs: append(commitParentNode.childCommitsIDs, commitId), notVisitedParents: commitParentNode.notVisitedParents}
+func (m *Manager) mapCommitNodesToChildren(nodes map[graveler.CommitID]CommitNode) map[graveler.CommitID]CommitNode {
+	for commitId, commitNode := range nodes {
+		// adding current node as a child to all parents in commitNode.parentsToVisit
+		for parentID := range commitNode.parentsToVisit {
+			commitParentNode := nodes[parentID]
+			nodes[parentID] = CommitNode{children: append(commitParentNode.children, commitId), parentsToVisit: commitParentNode.parentsToVisit}
 		}
 	}
+	return nodes
+}
 
-	nodesCommitsIDs := rootsCommitIDs
-	// update commitNodes' generation in commitIDToNode "tree" using BFS algorithm.
-	// using a queue implementation
-	// adding a node to the queue only after all of its parents were visited in order to avoid redundant visits of nodesCommitsIDs
+func (m *Manager) addGenerationToNodes(nodes map[graveler.CommitID]CommitNode, rootCommits []graveler.CommitID) map[graveler.CommitID]CommitNode {
+	nodesCommitsIDs := rootCommits
 	for currentGeneration := 1; len(nodesCommitsIDs) > 0; currentGeneration++ {
 		var nextIterationNodes []graveler.CommitID
 		for _, nodeCommitID := range nodesCommitsIDs {
-			currentNode := commitIDToNode[nodeCommitID]
-			commitIDToNode[nodeCommitID] = CommitNode{currentNode.childCommitsIDs, make(map[graveler.CommitID]struct{}), currentGeneration}
-			nodesCommitsIDs = nodesCommitsIDs[1:]
-			for _, childNodeID := range currentNode.childCommitsIDs {
-				childNode := commitIDToNode[childNodeID]
-				delete(childNode.notVisitedParents, nodeCommitID)
-				commitIDToNode[childNodeID] = CommitNode{childCommitsIDs: childNode.childCommitsIDs, notVisitedParents: childNode.notVisitedParents}
-				// if all parents already have been visited
-				if len(childNode.notVisitedParents) == 0 {
+			currentNode := nodes[nodeCommitID]
+			nodes[nodeCommitID] = CommitNode{currentNode.children, make(map[graveler.CommitID]struct{}), currentGeneration}
+			for _, childNodeID := range currentNode.children {
+				childNode := nodes[childNodeID]
+				delete(childNode.parentsToVisit, nodeCommitID)
+				nodes[childNodeID] = CommitNode{children: childNode.children, parentsToVisit: childNode.parentsToVisit}
+				if len(childNode.parentsToVisit) == 0 {
 					nextIterationNodes = append(nextIterationNodes, childNodeID)
 				}
 			}
 		}
 		nodesCommitsIDs = nextIterationNodes
 	}
-	return commitIDToNode
+	return nodes
 }
