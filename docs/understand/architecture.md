@@ -21,9 +21,20 @@ lakeFS is distributed as a single binary encapsulating several logical services:
 
 The server itself is stateless, meaning you can easily add more instances to handle bigger load.
 
-lakeFS stores data in an underlying [S3 bucket](https://aws.amazon.com/s3/){:target="_blank"} with some of its metadata stored in [PostgreSQL](https://www.postgresql.org/){:target="_blank"}. (see [Data Model](data-model.md))
+lakeFS stores data in an underlying object, ([S3](https://aws.amazon.com/s3/), [GCS](https://cloud.google.com/storage) or [ABS](https://azure.microsoft.com/en-us/services/storage/blobs/)) store with some of its metadata stored in [PostgreSQL](https://www.postgresql.org/){:target="_blank"}. (see [Data Model](data-model.md))
 
 ![Architecture]({{ site.baseurl }}/assets/img/arch.png)
+
+## Deployment models
+
+lakeFS releases includes [binaries](https://github.com/treeverse/lakeFS/releases) for common operating systems and a [containerized option](https://hub.docker.com/r/treeverse/lakefs).
+Check out our guides for running lakeFS on [K8S](../deploy/k8s.md), [ECS](../deploy/aws.md#on-ecs), [Google Compute Engine](../deploy/gcp.md#on-google-compute-engine) and [more](../deploy/).
+
+### Load Balancing
+
+lakeFS receives HTTP requests through 3 components: S3 Gateway, OpenApi Gateway and the Frontend UI.
+lakeFS uses a single port that listens to all 3 endpoints, so for most use-cases a single load-balancer pointing
+to lakeFS server(s) would do.
 
 ## lakeFS Components
 
@@ -39,14 +50,16 @@ See the [S3 API Reference](../reference/s3.md) section for information on suppor
 
 The Swagger ([OpenAPI](https://swagger.io/docs/specification/basic-structure/){:target="_blank"}) Server exposes the full set of lakeFS operations (see [Reference](../reference/api.md)). This includes basic CRUD operations against repositories and objects, as well as versioning related operations such as branching, merging, committing and reverting changes to data.
 
-### S3 Storage Adapter
+### Storage Adapter
 
-The S3 Storage Adapter is the component in charge of communication with the underlying S3 bucket. It is logically decoupled from the S3 Gateway to allow for future compatibility with other types of underlying storage such as HDFS or S3-Compatible storage providers.
+The Storage Adapter is the component in charge of communication with the underlying object store. 
+It is logically decoupled from the S3 Gateway to allow for compatibility with other types of underlying storage such as GCS or Azure Blob Storage, or non-production usages such as the local storage adapter.
 
 See the [roadmap](roadmap.md) for information on future plans for storage compatibility. 
 
-### Metadata Index
+### Graveler
 
+Graveler handles lakeFS versioning by translating lakeFS addresses to the actual stored objects.
 To learn about the data model used to store lakeFS metadata, see the [data model section](data-model.md).
 
 ### Authentication & Authorization Service
@@ -57,6 +70,34 @@ The credential scheme, along with the request signing logic are compatible with 
 
 Currently, the auth service manages its own database of users and credentials and does not use IAM in any way. 
 
-### Frontend UI
+### Hooks Engine
+
+The hooks engine enables CI/CD for data by triggering user defined [Actions](../setup/hooks.md) that will run during commit/merge. 
+
+### UI
 
 The UI layer is a simple browser-based client that uses the OpenAPI server. It allows management, exploration and data access to repositories, branches, commits and objects in the system.
+
+## lakeFS Clients
+
+There are several ways of interacting with lakeFS. Many data applications have different use-cases for lakeFS and 
+we try to support as many as possible.
+
+### OpenAPI Generated SDKs
+
+OpenAPI specification can be used to generate lakeFS clients for many programming languages.
+For example, the python [lakefs-client](https://pypi.org/project/lakefs-client/) or the [Java Client](https://search.maven.org/artifact/io.lakefs/api-client).
+
+### lakectl
+
+[lakectl](../reference/commands.md) is a CLI tool that enables lakeFS operations from your preferred terminal.
+
+### Spark Client
+
+The lakeFS [spark-client](../reference/spark-client.md) makes it easy to perform
+ETL operations on lakeFS stored data, like [garbage-collection](../reference/garbage-collection.md) or [export](../reference/export.md).
+
+### lakeFS Hadoop FileSystem
+
+The [filesystem](../integrations/spark.md#access-lakefs-using-the-lakefs-specific-hadoop-filesystem) increases Spark ETL jobs performance by executing the metadata operations on the lakeFS server,
+and all data operations directly through the same underlying object store that lakeFS uses.
