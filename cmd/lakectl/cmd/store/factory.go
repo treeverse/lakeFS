@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/url"
 	"time"
+
+	"github.com/aws/aws-sdk-go/aws"
 )
 
 var (
@@ -45,7 +47,7 @@ func Walk(ctx context.Context, storageURI string, walkFn func(e ObjectStoreEntry
 	}
 	switch uri.Scheme {
 	case "s3":
-		svc, err := GetS3Client()
+		svc, err := GetS3Client(*aws.NewConfig())
 		if err != nil {
 			return err
 		}

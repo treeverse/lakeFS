@@ -12,9 +12,10 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 )
 
-func GetS3Client() (*s3.S3, error) {
+func GetS3Client(config aws.Config) (*s3.S3, error) {
 	sess, err := session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
+		Config:            config,
 	})
 	if err != nil {
 		return nil, err
@@ -25,6 +26,10 @@ func GetS3Client() (*s3.S3, error) {
 
 type S3Walker struct {
 	s3 s3iface.S3API
+}
+
+func (s *S3Walker) SetS3(s3 s3iface.S3API) {
+	s.s3 = s3
 }
 
 func (s *S3Walker) Walk(ctx context.Context, storageURI *url.URL, walkFn func(e ObjectStoreEntry) error) error {
