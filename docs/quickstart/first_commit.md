@@ -15,7 +15,7 @@ Most importantly, you can use it to perform Git-like operations like committing,
 
 Follow the below tutorial video to get started with the CLI, or follow the instructions on this page.
 
-[![IMAGE ALT TEXT](http://img.youtube.com/vi/8nO7RT411nA/0.jpg)](http://www.youtube.com/watch?v=8nO7RT411nA "Install the lakeFS CLI")
+<iframe width="420" height="315" src="https://www.youtube.com/embed/8nO7RT411nA"></iframe>
 
 Here's how to get started with the CLI:
 
