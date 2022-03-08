@@ -23,6 +23,8 @@ The server itself is stateless, meaning you can easily add more instances to han
 
 lakeFS stores data in an underlying object store, ([S3](https://aws.amazon.com/s3/), [GCS](https://cloud.google.com/storage) or [ABS](https://azure.microsoft.com/en-us/services/storage/blobs/)) store, with some of its metadata stored in [PostgreSQL](https://www.postgresql.org/){:target="_blank"} (see [Data Model](data-model.md)).
 
+<!-- The below draw.io diagram source can be found here: https://drive.google.com/file/d/1lctPtGVEmOlCNHi3jiW4XXmyQQFkxzyx/view?usp=sharing -->
+
 ![Architecture]({{ site.baseurl }}/assets/img/arch.png)
 
 ## Ways to deploy lakeFS
