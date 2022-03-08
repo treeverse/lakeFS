@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/lib/pq"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -397,13 +398,13 @@ func (m *Manager) addCommit(tx db.Tx, repositoryID graveler.RepositoryID, commit
 
 func (m *Manager) updateCommitGeneration(tx db.Tx, repositoryID graveler.RepositoryID, nodes map[graveler.CommitID]*CommitNode) error {
 	for len(nodes) != 0 {
-		command := "WITH updated(id, generation) AS (VALUES "
+		command := `WITH updated(id, generation) AS (VALUES `
 		var updatingRows int
-		for commitID, commitNode := range nodes {
+		for commitID, node := range nodes {
 			if updatingRows != 0 {
 				command += ","
 			}
-			command += fmt.Sprintf("('%s', %d)", commitID, commitNode.generation)
+			command += fmt.Sprintf(`(%s, %d)`, pq.QuoteLiteral(string(commitID)), node.generation)
 
 			delete(nodes, commitID)
 			updatingRows += 1
@@ -411,7 +412,7 @@ func (m *Manager) updateCommitGeneration(tx db.Tx, repositoryID graveler.Reposit
 				break
 			}
 		}
-		command += fmt.Sprintf(") UPDATE graveler_commits SET generation = updated.generation FROM updated WHERE (graveler_commits.id=updated.id AND graveler_commits.repository_id='%s');", repositoryID)
+		command += fmt.Sprintf(`) UPDATE graveler_commits SET generation = updated.generation FROM updated WHERE (graveler_commits.id=updated.id AND graveler_commits.repository_id='%s');`, repositoryID)
 		_, err := tx.Exec(command)
 		if err != nil {
 			return err
@@ -448,7 +449,7 @@ func (m *Manager) FillGenerations(ctx context.Context, repositoryID graveler.Rep
 	// update commitNodes' generation in nodes "tree" using BFS algorithm.
 	// using a queue implementation
 	// adding a node to the queue only after all of its parents were visited in order to avoid redundant visits of nodesCommitsIDs
-	nodes, err := m.createCommitsIDsMap(ctx, repositoryID)
+	nodes, err := m.createCommitIDsMap(ctx, repositoryID)
 	if err != nil {
 		return err
 	}
@@ -461,7 +462,7 @@ func (m *Manager) FillGenerations(ctx context.Context, repositoryID graveler.Rep
 	return err
 }
 
-func (m *Manager) createCommitsIDsMap(ctx context.Context, repositoryID graveler.RepositoryID) (map[graveler.CommitID]*CommitNode, error) {
+func (m *Manager) createCommitIDsMap(ctx context.Context, repositoryID graveler.RepositoryID) (map[graveler.CommitID]*CommitNode, error) {
 	iter, err := m.ListCommits(ctx, repositoryID)
 	if err != nil {
 		return nil, err
@@ -479,15 +480,15 @@ func (m *Manager) createCommitsIDsMap(ctx context.Context, repositoryID graveler
 		nodes[commit.CommitID] = &CommitNode{parentsToVisit: parentsToVisit}
 	}
 	if err := iter.Err(); err != nil {
-		return nil, fmt.Errorf("getting value from iterator: %w", err)
+		return nil, err
 	}
 	return nodes, nil
 }
 
 func (m *Manager) getRootNodes(nodes map[graveler.CommitID]*CommitNode) []graveler.CommitID {
 	var rootsCommitIDs []graveler.CommitID
-	for commitID, commit := range nodes {
-		if len(commit.parentsToVisit) == 0 {
+	for commitID, node := range nodes {
+		if len(node.parentsToVisit) == 0 {
 			rootsCommitIDs = append(rootsCommitIDs, commitID)
 		}
 	}
@@ -503,11 +504,11 @@ func (m *Manager) mapCommitNodesToChildren(nodes map[graveler.CommitID]*CommitNo
 	}
 }
 
-func (m *Manager) addGenerationToNodes(nodes map[graveler.CommitID]*CommitNode, rootCommits []graveler.CommitID) {
-	nodesCommitsIDs := rootCommits
-	for currentGeneration := 1; len(nodesCommitsIDs) > 0; currentGeneration++ {
+func (m *Manager) addGenerationToNodes(nodes map[graveler.CommitID]*CommitNode, rootsCommitIDs []graveler.CommitID) {
+	nodesCommitIDs := rootsCommitIDs
+	for currentGeneration := 1; len(nodesCommitIDs) > 0; currentGeneration++ {
 		var nextIterationNodes []graveler.CommitID
-		for _, nodeCommitID := range nodesCommitsIDs {
+		for _, nodeCommitID := range nodesCommitIDs {
 			currentNode := nodes[nodeCommitID]
 			nodes[nodeCommitID].generation = currentGeneration
 			for _, childNodeID := range currentNode.children {
@@ -517,6 +518,6 @@ func (m *Manager) addGenerationToNodes(nodes map[graveler.CommitID]*CommitNode, 
 				}
 			}
 		}
-		nodesCommitsIDs = nextIterationNodes
+		nodesCommitIDs = nextIterationNodes
 	}
 }
