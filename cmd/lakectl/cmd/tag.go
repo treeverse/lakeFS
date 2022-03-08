@@ -69,7 +69,7 @@ var tagCreateCmd = &cobra.Command{
 	Args:    cobra.ExactArgs(tagCreateRequiredArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		tagURI := MustParseRefURI("tag uri", args[0])
-		commitURI :=  MustParseRefURI("commit uri", args[1])
+		commitURI := MustParseRefURI("commit uri", args[1])
 		Fmt("Tag ref: %s\n", tagURI.String())
 
 		client := getClient()
