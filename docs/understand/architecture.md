@@ -74,7 +74,7 @@ Currently, the auth service manages its own database of users and credentials an
 
 The hooks engine enables CI/CD for data by triggering user defined [Actions](../setup/hooks.md) that will run during commit/merge. 
 
-### UI
+### Frontend UI
 
 The UI layer is a simple browser-based client that uses the OpenAPI server. It allows management, exploration and data access to repositories, branches, commits and objects in the system.
 
