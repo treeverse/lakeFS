@@ -61,7 +61,7 @@ func (s *S3Walker) Walk(ctx context.Context, storageURI *url.URL, walkFn func(e 
 		if !aws.BoolValue(result.IsTruncated) {
 			break
 		}
-		continuation = result.ContinuationToken
+		continuation = result.NextContinuationToken
 	}
 	return nil
 }
