@@ -37,9 +37,7 @@ var annotateCmd = &cobra.Command{
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		const delimiter = "/"
 		var paramsDelimiter api.PaginationDelimiter
-		if recursive {
-			paramsDelimiter = ""
-		} else {
+		if !recursive {
 			paramsDelimiter = delimiter
 		}
 		var from string
