@@ -2,7 +2,7 @@
 
 ## Description
 When using dbt alongside lakeFS, the first thing we would want to do is to create a branch to work on. That branch is created with a dbt schema associated with it (it might have the same name of the branch [by default] or a custom one) that is basically a copy of the schema that was associated with the branch which we branched out from but with different name and location.   
-After running dbt over that branch and conducting tests and validations we would want to delete the branch and the schema associated with it, or merge them into master/main/production/other branch or both.  
+After running dbt over that branch and conducting tests and validations we would want to either delete the branch and the schema associated with it, merge them into master/main/production/other branch or both.  
 `lakectl dbt delete-branch-schema` will allow the deletion of a branch and the schema associated with it.  
 `lakectl dbt merge-branch-schema` will allow the merging of a branch to a given branch  and the schema associated with it. 
 ### Why do we need it?
