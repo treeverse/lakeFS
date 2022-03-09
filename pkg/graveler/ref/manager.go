@@ -412,7 +412,7 @@ func (m *Manager) updateCommitGeneration(tx db.Tx, repositoryID graveler.Reposit
 				break
 			}
 		}
-		command += fmt.Sprintf(`) UPDATE graveler_commits SET generation = updated.generation FROM updated WHERE (graveler_commits.id=updated.id AND graveler_commits.repository_id=$1)`)
+		command += `) UPDATE graveler_commits SET generation = updated.generation FROM updated WHERE (graveler_commits.id=updated.id AND graveler_commits.repository_id=$1)`
 		_, err := tx.Exec(command, repositoryID)
 		if err != nil {
 			return err
