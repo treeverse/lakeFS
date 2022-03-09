@@ -21,7 +21,7 @@ lakeFS is distributed as a single binary encapsulating several logical services:
 
 The server itself is stateless, meaning you can easily add more instances to handle bigger load.
 
-lakeFS stores data in an underlying object store, ([S3](https://aws.amazon.com/s3/), [GCS](https://cloud.google.com/storage) or [ABS](https://azure.microsoft.com/en-us/services/storage/blobs/)) store, with some of its metadata stored in [PostgreSQL](https://www.postgresql.org/){:target="_blank"} (see [Data Model](data-model.md)).
+lakeFS stores data in an underlying object store ([S3](https://aws.amazon.com/s3/), [GCS](https://cloud.google.com/storage) or [ABS](https://azure.microsoft.com/en-us/services/storage/blobs/)) store, with some of its metadata stored in [PostgreSQL](https://www.postgresql.org/){:target="_blank"} (see [Data Model](data-model.md)).
 
 <!-- The below draw.io diagram source can be found here: https://drive.google.com/file/d/1lctPtGVEmOlCNHi3jiW4XXmyQQFkxzyx/view?usp=sharing -->
 
@@ -76,14 +76,17 @@ Currently, the auth service manages its own database of users and credentials an
 
 The hooks engine enables CI/CD for data by triggering user defined [Actions](../setup/hooks.md) that will run during commit/merge. 
 
-### Frontend UI
+### UI
 
 The UI layer is a simple browser-based client that uses the OpenAPI server. It allows management, exploration and data access to repositories, branches, commits and objects in the system.
 
+## Applications
+
+As a rule of thumb, lakeFS supports any s3-compatible application. This means that many common data applications work with lakeFS out of the box.
+
 ## lakeFS Clients
 
-There are several ways of interacting with lakeFS. Many data applications have different use-cases for lakeFS and 
-we try to support as many as possible.
+Some data applications require deeper integrations with lakeFS to support different use-cases or enhanced functionality which is provided by lakeFS clients.
 
 ### OpenAPI Generated SDKs
 
@@ -97,7 +100,7 @@ For example, the Python [lakefs-client](https://pypi.org/project/lakefs-client/)
 ### Spark Metadata Client
 
 The lakeFS [Spark Metadata Client](../reference/spark-client.md) makes it easy to perform
-operations related to lakeFS metadata. Examples include [garbage collection](../reference/garbage-collection.md) or [exporting data from lakeFS](../reference/export.md).
+operations related to lakeFS metadata, at scale. Examples include [garbage collection](../reference/garbage-collection.md) or [exporting data from lakeFS](../reference/export.md).
 
 ### lakeFS Hadoop FileSystem
 
