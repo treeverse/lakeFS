@@ -2,8 +2,6 @@ package db
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"strings"
 	"time"
 
@@ -51,16 +49,24 @@ func (d *dbTx) Query(query string, args ...interface{}) (pgx.Rows, error) {
 			"args":  args,
 			"query": queryToString(query),
 		})
+	err = handleSQLError(query, err, log, "query")
 	if err != nil {
-		log.WithError(err).Error("SQL query failed with error")
 		return nil, err
 	}
 	log.Trace("SQL query started successfully")
 	return Logged(rows, start, log), nil
 }
 
-func Select(d Tx, results interface{}, query string, args ...interface{}) error {
+func Select(d *dbTx, results interface{}, query string, args ...interface{}) error {
 	rows, err := d.Query(query, args...)
+	log := d.logger.
+		WithContext(d.ctx).
+		WithFields(logging.Fields{
+			"type":  "select",
+			"args":  args,
+			"query": queryToString(query),
+		})
+	err = handleSQLError(query, err, log, "select")
 	if err != nil {
 		return err
 	}
@@ -81,16 +87,9 @@ func (d *dbTx) Get(dest interface{}, query string, args ...interface{}) error {
 		"query": queryToString(query),
 		"took":  time.Since(start),
 	})
-	if pgxscan.NotFound(err) {
-		// This err comes directly from scany, not directly from pgx, so *must* use
-		// pgxscan.NotFound.
-		log.Trace("SQL query returned no results")
-		return ErrNotFound
-	}
+	err = handleSQLError(query, err, log, "get")
 	if err != nil {
-		dbErrorsCounter.WithLabelValues("get").Inc()
-		log.WithError(err).Error("SQL query failed with error")
-		return fmt.Errorf("query %s: %w", query, err)
+		return err
 	}
 	log.Trace("SQL query executed successfully")
 	return nil
@@ -106,14 +105,9 @@ func (d *dbTx) GetPrimitive(dest interface{}, query string, args ...interface{})
 		"query": queryToString(query),
 		"took":  time.Since(start),
 	})
-	if errors.Is(err, pgx.ErrNoRows) {
-		log.Trace("SQL query returned no results")
-		return ErrNotFound
-	}
+	err = handleSQLError(query, err, log, "get")
 	if err != nil {
-		dbErrorsCounter.WithLabelValues("get").Inc()
-		log.WithError(err).Error("SQL query failed with error")
-		return fmt.Errorf("query %s: %w", query, err)
+		return err
 	}
 	log.Trace("SQL query executed successfully")
 	return nil
@@ -128,12 +122,8 @@ func (d *dbTx) Exec(query string, args ...interface{}) (pgconn.CommandTag, error
 		"query": queryToString(query),
 		"took":  time.Since(start),
 	})
-	if isUniqueViolation(err) {
-		return nil, ErrAlreadyExists
-	}
+	err = handleSQLError(query, err, log, "exec")
 	if err != nil {
-		dbErrorsCounter.WithLabelValues("exec").Inc()
-		log.WithError(err).Error("SQL query failed with error")
 		return res, err
 	}
 	log.Trace("SQL query executed successfully")
