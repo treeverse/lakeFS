@@ -34,10 +34,9 @@ var annotateCmd = &cobra.Command{
 		context := cmd.Context()
 		resp, err := client.ListObjectsWithResponse(context, pathURI.Repository, pathURI.Ref, &api.ListObjectsParams{Prefix: &pfx})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
-		const delimiter = "/"
 		var listObjectsDelimiter api.PaginationDelimiter
 		if !recursive {
-			listObjectsDelimiter = delimiter
+			listObjectsDelimiter = PathDelimiter
 		}
 		var from string
 		for {
