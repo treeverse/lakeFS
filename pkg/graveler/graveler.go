@@ -1880,7 +1880,7 @@ func (g *Graveler) LoadCommits(ctx context.Context, repositoryID RepositoryID, m
 	if iter.Err() != nil {
 		return iter.Err()
 	}
-	// after removing this code, we won't be able to support dump that created using lakFS version that's lower than v0.61.0
+	// TODO(#3022): Remove this code to drop support for dumps created by lakeFS versions below v0.61.0.
 	if missingGenerations {
 		g.log.WithFields(logging.Fields{"repo": repositoryID, "meta_range_id": metaRangeID}).Debug("computing the generation field for loaded commits")
 		return g.RefManager.FillGenerations(ctx, repositoryID)
