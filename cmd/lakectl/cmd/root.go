@@ -105,7 +105,7 @@ func getClient() *api.ClientWithResponses {
 		DieErr(err)
 	}
 	// if no uri to api is set in configuration - set the default
-	if u.Path == "" || u.Path == "/" || !strings.HasSuffix(serverEndpoint, "/"+api.BaseURL) {
+	if u.Path == "" || u.Path == "/" || !strings.HasSuffix(serverEndpoint, api.BaseURL) {
 		serverEndpoint = strings.TrimRight(serverEndpoint, "/") + api.BaseURL
 	}
 	httpClient := &http.Client{
