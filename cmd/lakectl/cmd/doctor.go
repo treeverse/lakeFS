@@ -77,14 +77,14 @@ var doctorCmd = &cobra.Command{
 			return
 		}
 
-		WriteIfVerbose(analyzingMessageTemplate, &UserMessage{"Got error while trying to run a sanity command.\nTrying to analyze error."}, verbose, )
+		WriteIfVerbose(analyzingMessageTemplate, &UserMessage{"Got error while trying to run a sanity command.\nTrying to analyze error."}, verbose)
 		if detailedErr, ok := err.(Detailed); ok {
 			Write(detailedErrorTemplate, detailedErr)
 		} else {
 			Write(errorTemplate, err)
 		}
 
-		WriteIfVerbose(analyzingMessageTemplate, &UserMessage{"Trying to validate access key format."}, verbose, )
+		WriteIfVerbose(analyzingMessageTemplate, &UserMessage{"Trying to validate access key format."}, verbose)
 		accessKeyID := cfg.Values.Credentials.AccessKeyID
 		if !IsValidAccessKeyID(accessKeyID) {
 			Write(analyzingMessageTemplate, &UserMessage{"access_key_id value looks suspicious: " + accessKeyID})
