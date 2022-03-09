@@ -209,3 +209,71 @@ func TestLakectlMergeAndStrategies(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" merge lakefs://"+repoName+"/"+mainBranch+" lakefs://"+repoName+"/"+featureBranch+" --strategy dest-wins", false, "lakectl_merge_source_wins", branchVars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs ls lakefs://"+repoName+"/"+featureBranch+"/", false, "lakectl_fs_ls_1_file", vars)
 }
+
+func TestLakectlAnnotate(t *testing.T) {
+	repoName := generateUniqueRepositoryName()
+	storage := generateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+	}
+
+	// create fresh repo with 'main' branch
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
+
+	path := "aaa/bbb/ccc"
+	vars["FILE_PATH"] = path
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+path, false, "lakectl_fs_upload", vars)
+	path = "aaa/bbb/ddd"
+	vars["FILE_PATH"] = path
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+path, false, "lakectl_fs_upload", vars)
+	commitMessage := "commit #1"
+	vars["MESSAGE"] = commitMessage
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+" -m \""+commitMessage+"\"", false, "lakectl_commit", vars)
+	path = "aaa/bbb/eee"
+	vars["FILE_PATH"] = path
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+path, false, "lakectl_fs_upload", vars)
+	commitMessage = "commit #2"
+	vars["MESSAGE"] = commitMessage
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+" -m \""+commitMessage+"\"", false, "lakectl_commit", vars)
+	path = "aaa/fff/ggg"
+	vars["FILE_PATH"] = path
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+path, false, "lakectl_fs_upload", vars)
+	path = "aaa/fff/ggh"
+	vars["FILE_PATH"] = path
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+path, false, "lakectl_fs_upload", vars)
+	path = "aaa/hhh"
+	vars["FILE_PATH"] = path
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+path, false, "lakectl_fs_upload", vars)
+	path = "iii/jjj"
+	vars["FILE_PATH"] = path
+	commitMessage = "commit #3"
+	vars["MESSAGE"] = commitMessage
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+" -m \""+commitMessage+"\"", false, "lakectl_commit", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+path, false, "lakectl_fs_upload", vars)
+	path = "iii/kkk/lll"
+	vars["FILE_PATH"] = path
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+path, false, "lakectl_fs_upload", vars)
+	path = "mmm"
+	vars["FILE_PATH"] = path
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+path, false, "lakectl_fs_upload", vars)
+	commitMessage = "commit #4"
+	vars["MESSAGE"] = commitMessage
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+" -m \""+commitMessage+"\"", false, "lakectl_commit", vars)
+
+	delete(vars, "FILE_PATH")
+
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" annotate lakefs://"+repoName+"/"+mainBranch+"/", false, "lakectl_annotate_top", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" annotate lakefs://"+repoName+"/"+mainBranch+"/ --recursive", false, "lakectl_annotate_top_recursive", vars)
+
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" annotate lakefs://"+repoName+"/"+mainBranch+"/a", false, "lakectl_annotate_a", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" annotate lakefs://"+repoName+"/"+mainBranch+"/a --recursive", false, "lakectl_annotate_a_recursive", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" annotate lakefs://"+repoName+"/"+mainBranch+"/aa", false, "lakectl_annotate_a", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" annotate lakefs://"+repoName+"/"+mainBranch+"/aaa", false, "lakectl_annotate_a", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" annotate lakefs://"+repoName+"/"+mainBranch+"/aaa/ --recursive", false, "lakectl_annotate_a_recursive", vars)
+
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" annotate lakefs://"+repoName+"/"+mainBranch+"/iii/kkk/l", false, "lakectl_annotate_iiikkklll", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" annotate lakefs://"+repoName+"/"+mainBranch+"/iii/kkk/l --recursive", false, "lakectl_annotate_iiikkklll", vars)
+
+}
