@@ -1,0 +1,12 @@
+
+aaa/bbb/ccc     nessie               <COMMIT_ID_16>     <DATE> <TIME> <TZ>  commit #1                     
+
+aaa/bbb/ddd     nessie               <COMMIT_ID_16>     <DATE> <TIME> <TZ>  commit #1                     
+
+aaa/bbb/eee     nessie               <COMMIT_ID_16>     <DATE> <TIME> <TZ>  commit #2                     
+
+aaa/fff/ggg     nessie               <COMMIT_ID_16>     <DATE> <TIME> <TZ>  commit #3                     
+
+aaa/fff/ggh     nessie               <COMMIT_ID_16>     <DATE> <TIME> <TZ>  commit #3                     
+
+aaa/hhh         nessie               <COMMIT_ID_16>     <DATE> <TIME> <TZ>  commit #3                     

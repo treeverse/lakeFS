@@ -352,7 +352,8 @@ lakectl annotate <path uri> [flags]
 {:.no_toc}
 
 ```
-  -h, --help   help for annotate
+  -h, --help        help for annotate
+  -r, --recursive   recursively annotate all entries under a given path or prefix
 ```
 
 
