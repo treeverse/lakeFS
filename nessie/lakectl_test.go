@@ -265,13 +265,13 @@ func TestLakectlAnnotate(t *testing.T) {
 	delete(vars, "FILE_PATH")
 
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" annotate lakefs://"+repoName+"/"+mainBranch+"/", false, "lakectl_annotate_top", vars)
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" annotate lakefs://"+repoName+"/"+mainBranch+"/ --recursive", false, "lakectl_annotate_top_rec", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" annotate lakefs://"+repoName+"/"+mainBranch+"/ --recursive", false, "lakectl_annotate_top_recursive", vars)
 
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" annotate lakefs://"+repoName+"/"+mainBranch+"/a", false, "lakectl_annotate_a", vars)
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" annotate lakefs://"+repoName+"/"+mainBranch+"/a --recursive", false, "lakectl_annotate_a_rec", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" annotate lakefs://"+repoName+"/"+mainBranch+"/a --recursive", false, "lakectl_annotate_a_recursive", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" annotate lakefs://"+repoName+"/"+mainBranch+"/aa", false, "lakectl_annotate_a", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" annotate lakefs://"+repoName+"/"+mainBranch+"/aaa", false, "lakectl_annotate_a", vars)
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" annotate lakefs://"+repoName+"/"+mainBranch+"/aaa/ --recursive", false, "lakectl_annotate_a_rec", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" annotate lakefs://"+repoName+"/"+mainBranch+"/aaa/ --recursive", false, "lakectl_annotate_a_recursive", vars)
 
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" annotate lakefs://"+repoName+"/"+mainBranch+"/iii/kkk/l", false, "lakectl_annotate_iiikkklll", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" annotate lakefs://"+repoName+"/"+mainBranch+"/iii/kkk/l --recursive", false, "lakectl_annotate_iiikkklll", vars)

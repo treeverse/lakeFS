@@ -353,7 +353,7 @@ lakectl annotate <path uri> [flags]
 
 ```
   -h, --help        help for annotate
-  -r, --recursive   recursively list and annotate all entries under the given path
+  -r, --recursive   recursively annotate all entries under a given path or prefix
 ```
 
 
