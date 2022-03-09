@@ -77,6 +77,9 @@ var doctorCmd = &cobra.Command{
 			return
 		}
 
+		if verbose {
+			Write(analyzingMessageTemplate, &UserMessage{"Got error while trying to run a simple command.\nTrying to analyze error."})
+		}
 		if detailedErr, ok := err.(Detailed); ok {
 			Write(detailedErrorTemplate, detailedErr)
 		} else {
@@ -138,9 +141,6 @@ func ListRepositoriesAndAnalyze(ctx context.Context, verboseMode bool) error {
 
 	switch {
 	case err != nil:
-		if verboseMode {
-			Write(analyzingMessageTemplate, &UserMessage{"Got error while trying to run a simple command.\nTrying to analyze error."})
-		}
 		urlErr := &url.Error{}
 		if errors.As(err, &urlErr) {
 			return &WrongEndpointURIError{msgOnErrWrongEndpointURI, err.Error()}

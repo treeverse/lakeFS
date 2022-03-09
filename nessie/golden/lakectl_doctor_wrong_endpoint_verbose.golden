@@ -1,5 +1,7 @@
 Trying to get endpoint URL and parse it as an URL format.
 Trying to run a simple command using current configuration.
+Got error while trying to run a simple command.
+Trying to analyze error.
 It looks like endpoint url is wrong.
 
 Trying to validate access key format.
