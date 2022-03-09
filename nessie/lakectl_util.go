@@ -118,12 +118,13 @@ func embedVariables(s string, vars map[string]string) (string, error) {
 func sanitize(output string, vars map[string]string) string {
 	// The order of execution below is important as certain expression can contain others
 	// and so, should be handled first
-	s := normalizeProgramTimestamp(output)
+	s := strings.ReplaceAll(output, "\r\n", "\n")
+	s = normalizeProgramTimestamp(s)
 	s = normalizeRandomObjectKey(s, vars["STORAGE"])
 	s = normalizeCommitID(s)
 	s = normalizeChecksum(s)
 	s = normalizeShortCommitID(s)
-	return strings.ReplaceAll(s, "\r\n", "\n")
+	return s
 }
 
 func RunCmdAndVerifySuccessWithFile(t *testing.T, cmd string, isTerminal bool, goldenFile string, vars map[string]string) {
@@ -177,7 +178,7 @@ func runCmdAndVerifyResult(t *testing.T, cmd string, expectFail bool, isTerminal
 }
 
 var (
-	timeStampRegexp     = regexp.MustCompile(`timestamp: \d+\r?\n`)
+	timeStampRegexp     = regexp.MustCompile(`timestamp: \d+\n`)
 	timeRegexp          = regexp.MustCompile(`\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} [-+]\d{4} \w{1,3}`)
 	commitIDRegExp      = regexp.MustCompile(`[\d|a-f]{64}`)
 	shortCommitIDRegExp = regexp.MustCompile(`[\d|a-f]{16}`)
@@ -185,28 +186,23 @@ var (
 )
 
 func normalizeProgramTimestamp(output string) string {
-	s := timeStampRegexp.ReplaceAll([]byte(output), []byte("timestamp: <TIMESTAMP>"))
-	s = timeRegexp.ReplaceAll(s, []byte("<DATE> <TIME> <TZ>"))
-	return string(s)
+	s := timeStampRegexp.ReplaceAllString(output, "timestamp: <TIMESTAMP>")
+	return timeRegexp.ReplaceAllString(s, "<DATE> <TIME> <TZ>")
 }
 
 func normalizeRandomObjectKey(output string, objectPrefix string) string {
 	objectKeyRegExp := regexp.MustCompile(objectPrefix + `/[\d|a-f]{32}`)
-	s := objectKeyRegExp.ReplaceAll([]byte(output), []byte(objectPrefix+"/<OBJECT_KEY>"))
-	return string(s)
+	return objectKeyRegExp.ReplaceAllString(output, objectPrefix+"/<OBJECT_KEY>")
 }
 
 func normalizeCommitID(output string) string {
-	s := commitIDRegExp.ReplaceAll([]byte(output), []byte("<COMMIT_ID>"))
-	return string(s)
+	return commitIDRegExp.ReplaceAllString(output, "<COMMIT_ID>")
 }
 
 func normalizeShortCommitID(output string) string {
-	s := shortCommitIDRegExp.ReplaceAll([]byte(output), []byte("<COMMIT_ID_16>"))
-	return string(s)
+	return shortCommitIDRegExp.ReplaceAllString(output, "<COMMIT_ID_16>")
 }
 
 func normalizeChecksum(output string) string {
-	s := checksumRegExp.ReplaceAll([]byte(output), []byte("<CHECKSUM>"))
-	return string(s)
+	return checksumRegExp.ReplaceAllString(output, "<CHECKSUM>")
 }
