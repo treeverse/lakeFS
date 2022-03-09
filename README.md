@@ -62,7 +62,7 @@ For more information, see the [official lakeFS documentation](https://docs.lakef
    curl https://compose.lakefs.io | docker-compose -f - up
    ```
 
-3. Open [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup) in your web browser to set up an initial admin user, log in and send API requests.
+3. Open [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup) in your web browser to set up an initial admin user.  You will use this user to log in and send API requests.
 
 
 #### Docker (Windows)
