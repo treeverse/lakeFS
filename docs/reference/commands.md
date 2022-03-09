@@ -1741,6 +1741,11 @@ lakectl docs [outfile] [flags]
 
 Run a basic diagnosis of the LakeFS configuration
 
+#### Synopsis
+{:.no_toc}
+
+Checking correctness of access key ID, secret access key and endpoint URL
+
 ```
 lakectl doctor [flags]
 ```
@@ -1749,7 +1754,8 @@ lakectl doctor [flags]
 {:.no_toc}
 
 ```
-  -h, --help   help for doctor
+  -h, --help      help for doctor
+  -v, --verbose   verbose mode
 ```
 
 

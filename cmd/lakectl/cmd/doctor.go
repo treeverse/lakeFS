@@ -61,15 +61,17 @@ var errorTemplate = `{{ .Message |red }}
 var successMessageTemplate = `{{ .Message | green}}
 `
 
-var analayzingMessageTemplate = `{{ .Message }}
+var analyzingMessageTemplate = `{{ .Message }}
 `
 
 // doctorCmd represents the doctor command
 var doctorCmd = &cobra.Command{
 	Use:   "doctor",
 	Short: "Run a basic diagnosis of the LakeFS configuration",
+	Long:  "Checking correctness of access key ID, secret access key and endpoint URL",
 	Run: func(cmd *cobra.Command, args []string) {
-		err := ListRepositoriesAndAnalyze(cmd.Context())
+		verbose, _ := cmd.Flags().GetBool("verbose")
+		err := ListRepositoriesAndAnalyze(cmd.Context(), verbose)
 		if err == nil {
 			Write(successMessageTemplate, &UserMessage{"Valid configuration"})
 			return
@@ -81,29 +83,47 @@ var doctorCmd = &cobra.Command{
 			Write(errorTemplate, err)
 		}
 
+		if verbose {
+			Write(analyzingMessageTemplate, &UserMessage{"Trying to validate access key format."})
+		}
 		accessKeyID := cfg.Values.Credentials.AccessKeyID
 		if !IsValidAccessKeyID(accessKeyID) {
-			Write(analayzingMessageTemplate, &UserMessage{"access_key_id value looks suspicious: " + accessKeyID})
+			Write(analyzingMessageTemplate, &UserMessage{"access_key_id value looks suspicious: " + accessKeyID})
+		} else if verbose {
+			Write(analyzingMessageTemplate, &UserMessage{"Couldn't find a problem with access key format."})
 		}
 
+		if verbose {
+			Write(analyzingMessageTemplate, &UserMessage{"Trying to validate secret access key format."})
+		}
 		secretAccessKey := cfg.Values.Credentials.SecretAccessKey
 		if !IsValidSecretAccessKey(secretAccessKey) {
-			Write(analayzingMessageTemplate, &UserMessage{"secret_access_key value looks suspicious..."})
+			Write(analyzingMessageTemplate, &UserMessage{"secret_access_key value looks suspicious..."})
+		} else if verbose {
+			Write(analyzingMessageTemplate, &UserMessage{"Couldn't find a problem with secret access key format."})
 		}
 
+		if verbose {
+			Write(analyzingMessageTemplate, &UserMessage{"Trying to validate endpoint URL format."})
+		}
 		serverEndpoint := cfg.Values.Server.EndpointURL
 		if !strings.HasSuffix(serverEndpoint, api.BaseURL) {
-			Write(analayzingMessageTemplate, &UserMessage{"Suspicious URI format for server.endpoint_url: " + serverEndpoint + " doesn't end with: `" + api.BaseURL + "`."})
+			Write(analyzingMessageTemplate, &UserMessage{"Suspicious URI format for server.endpoint_url: " + serverEndpoint})
+		} else if verbose {
+			Write(analyzingMessageTemplate, &UserMessage{"Couldn't find a problem with endpoint URL format."})
 		}
 	},
 }
 
-func ListRepositoriesAndAnalyze(ctx context.Context) error {
+func ListRepositoriesAndAnalyze(ctx context.Context, verboseMode bool) error {
 	configFileName := viper.GetViper().ConfigFileUsed()
 	msgOnErrUnknownConfig := "It looks like you have a problem with your `" + configFileName + "` file."
 	msgOnErrWrongEndpointURI := "It looks like endpoint url is wrong."
 	msgOnErrCredential := "It seems like the `access_key_id` or `secret_access_key` you supplied are wrong."
 
+	if verboseMode {
+		Write(analyzingMessageTemplate, &UserMessage{"Trying to get endpoint URL and parse it as an URL format."})
+	}
 	// getClient might die on url.Parse error, so check it first.
 	serverEndpoint := cfg.Values.Server.EndpointURL
 	_, err := url.Parse(serverEndpoint)
@@ -111,10 +131,16 @@ func ListRepositoriesAndAnalyze(ctx context.Context) error {
 		return &WrongEndpointURIError{msgOnErrWrongEndpointURI, err.Error()}
 	}
 	client := getClient()
+	if verboseMode {
+		Write(analyzingMessageTemplate, &UserMessage{"Trying to run a simple command using current configuration."})
+	}
 	resp, err := client.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
 
 	switch {
 	case err != nil:
+		if verboseMode {
+			Write(analyzingMessageTemplate, &UserMessage{"Got error while trying to run a simple command.\nTrying to analyze error."})
+		}
 		urlErr := &url.Error{}
 		if errors.As(err, &urlErr) {
 			return &WrongEndpointURIError{msgOnErrWrongEndpointURI, err.Error()}
@@ -138,4 +164,5 @@ func ListRepositoriesAndAnalyze(ctx context.Context) error {
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(doctorCmd)
+	doctorCmd.Flags().BoolP("verbose", "v", false, "verbose mode")
 }
