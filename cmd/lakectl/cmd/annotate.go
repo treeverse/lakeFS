@@ -37,14 +37,14 @@ var annotateCmd = &cobra.Command{
 		const delimiter = "/"
 		var listObjectsDelimiter api.PaginationDelimiter
 		if !recursive {
-			paramsDelimiter = delimiter
+			listObjectsDelimiter = delimiter
 		}
 		var from string
 		for {
 			params := &api.ListObjectsParams{
 				Prefix:    &pfx,
 				After:     api.PaginationAfterPtr(from),
-				Delimiter: &paramsDelimiter,
+				Delimiter: &listObjectsDelimiter,
 			}
 			listObjectsResp, err := client.ListObjectsWithResponse(context, pathURI.Repository, pathURI.Ref, params)
 			DieOnErrorOrUnexpectedStatusCode(listObjectsResp, err, http.StatusOK)
