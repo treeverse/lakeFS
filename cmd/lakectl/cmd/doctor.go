@@ -77,43 +77,35 @@ var doctorCmd = &cobra.Command{
 			return
 		}
 
-		if verbose {
-			Write(analyzingMessageTemplate, &UserMessage{"Got error while trying to run a simple command.\nTrying to analyze error."})
-		}
+		WriteIfVerbose(analyzingMessageTemplate, &UserMessage{"Got error while trying to run a sanity command.\nTrying to analyze error."}, verbose, )
 		if detailedErr, ok := err.(Detailed); ok {
 			Write(detailedErrorTemplate, detailedErr)
 		} else {
 			Write(errorTemplate, err)
 		}
 
-		if verbose {
-			Write(analyzingMessageTemplate, &UserMessage{"Trying to validate access key format."})
-		}
+		WriteIfVerbose(analyzingMessageTemplate, &UserMessage{"Trying to validate access key format."}, verbose, )
 		accessKeyID := cfg.Values.Credentials.AccessKeyID
 		if !IsValidAccessKeyID(accessKeyID) {
 			Write(analyzingMessageTemplate, &UserMessage{"access_key_id value looks suspicious: " + accessKeyID})
-		} else if verbose {
-			Write(analyzingMessageTemplate, &UserMessage{"Couldn't find a problem with access key format."})
+		} else {
+			WriteIfVerbose(analyzingMessageTemplate, &UserMessage{"Couldn't find a problem with access key format."}, verbose)
 		}
 
-		if verbose {
-			Write(analyzingMessageTemplate, &UserMessage{"Trying to validate secret access key format."})
-		}
+		WriteIfVerbose(analyzingMessageTemplate, &UserMessage{"Trying to validate secret access key format."}, verbose)
 		secretAccessKey := cfg.Values.Credentials.SecretAccessKey
 		if !IsValidSecretAccessKey(secretAccessKey) {
 			Write(analyzingMessageTemplate, &UserMessage{"secret_access_key value looks suspicious..."})
-		} else if verbose {
-			Write(analyzingMessageTemplate, &UserMessage{"Couldn't find a problem with secret access key format."})
+		} else {
+			WriteIfVerbose(analyzingMessageTemplate, &UserMessage{"Couldn't find a problem with secret access key format."}, verbose)
 		}
 
-		if verbose {
-			Write(analyzingMessageTemplate, &UserMessage{"Trying to validate endpoint URL format."})
-		}
+		WriteIfVerbose(analyzingMessageTemplate, &UserMessage{"Trying to validate endpoint URL format."}, verbose)
 		serverEndpoint := cfg.Values.Server.EndpointURL
 		if !strings.HasSuffix(serverEndpoint, api.BaseURL) {
 			Write(analyzingMessageTemplate, &UserMessage{"Suspicious URI format for server.endpoint_url: " + serverEndpoint})
-		} else if verbose {
-			Write(analyzingMessageTemplate, &UserMessage{"Couldn't find a problem with endpoint URL format."})
+		} else {
+			WriteIfVerbose(analyzingMessageTemplate, &UserMessage{"Couldn't find a problem with endpoint URL format."}, verbose)
 		}
 	},
 }
@@ -124,9 +116,7 @@ func ListRepositoriesAndAnalyze(ctx context.Context, verboseMode bool) error {
 	msgOnErrWrongEndpointURI := "It looks like endpoint url is wrong."
 	msgOnErrCredential := "It seems like the `access_key_id` or `secret_access_key` you supplied are wrong."
 
-	if verboseMode {
-		Write(analyzingMessageTemplate, &UserMessage{"Trying to get endpoint URL and parse it as an URL format."})
-	}
+	WriteIfVerbose(analyzingMessageTemplate, &UserMessage{"Trying to get endpoint URL and parse it as an URL format."}, verboseMode)
 	// getClient might die on url.Parse error, so check it first.
 	serverEndpoint := cfg.Values.Server.EndpointURL
 	_, err := url.Parse(serverEndpoint)
@@ -134,9 +124,7 @@ func ListRepositoriesAndAnalyze(ctx context.Context, verboseMode bool) error {
 		return &WrongEndpointURIError{msgOnErrWrongEndpointURI, err.Error()}
 	}
 	client := getClient()
-	if verboseMode {
-		Write(analyzingMessageTemplate, &UserMessage{"Trying to run a simple command using current configuration."})
-	}
+	WriteIfVerbose(analyzingMessageTemplate, &UserMessage{"Trying to run a sanity command using current configuration."}, verboseMode)
 	resp, err := client.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
 
 	switch {

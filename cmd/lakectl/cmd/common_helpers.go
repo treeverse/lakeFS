@@ -157,6 +157,12 @@ func Write(tpl string, data interface{}) {
 	WriteTo(tpl, data, os.Stdout)
 }
 
+func WriteIfVerbose(tpl string, data interface{}, verbose bool) {
+	if verbose {
+		WriteTo(tpl, data, os.Stdout)
+	}
+}
+
 func Die(err string, code int) {
 	WriteTo(DeathMessage, struct{ Error string }{err}, os.Stderr)
 	os.Exit(code)
