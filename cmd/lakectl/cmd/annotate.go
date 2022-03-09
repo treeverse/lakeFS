@@ -92,5 +92,5 @@ func splitOnNewLine(str string) string {
 func init() {
 	rootCmd.AddCommand(annotateCmd)
 
-	annotateCmd.Flags().BoolP("recursive", "r", false, "recursively list and annotate all entries under the given path")
+	annotateCmd.Flags().BoolP("recursive", "r", false, "recursively annotate all entries under a given path or prefix")
 }
