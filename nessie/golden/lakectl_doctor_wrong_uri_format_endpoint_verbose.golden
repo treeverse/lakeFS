@@ -3,10 +3,10 @@ Trying to run a simple command using current configuration.
 Got error while trying to run a simple command.
 Trying to analyze error.
 It looks like endpoint url is wrong.
-Get "/bla/repositories": unsupported protocol scheme ""
+Get "/wrong_uri/api/v1/repositories": unsupported protocol scheme ""
 Trying to validate access key format.
 Couldn't find a problem with access key format.
 Trying to validate secret access key format.
 Couldn't find a problem with secret access key format.
 Trying to validate endpoint URL format.
-Suspicious URI format for server.endpoint_url: wrong_uri/api/v1
+Suspicious URI format for server.endpoint_url: wrong_uri/a
