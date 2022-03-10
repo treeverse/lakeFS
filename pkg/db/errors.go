@@ -31,13 +31,11 @@ func handleSQLError(query string, err error, log logging.Logger, cmdType string)
 
 	// Each error that is added here should be updated also in controller.go:handleAPIError
 	if isUniqueViolation(err) {
-		err = ErrAlreadyExists
-	} else if pgxscan.NotFound(err) || errors.Is(err, pgx.ErrNoRows) {
-		log.Trace("SQL query returned no results")
-		err = ErrNotFound
-	} else {
-		err = fmt.Errorf("query %s: %w", query, err)
+		return ErrAlreadyExists
 	}
-
-	return err
+	if pgxscan.NotFound(err) || errors.Is(err, pgx.ErrNoRows) {
+		log.Trace("SQL query returned no results")
+		return ErrNotFound
+	}
+	return fmt.Errorf("query %s: %w", query, err)
 }
