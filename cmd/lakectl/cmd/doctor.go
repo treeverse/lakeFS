@@ -146,7 +146,7 @@ func ListRepositoriesAndAnalyze(ctx context.Context, verboseMode bool) error {
 	case resp.JSONDefault != nil:
 		return &UnknownConfigError{msgOnErrUnknownConfig, resp.JSONDefault.Message}
 	}
-	return &UnknownConfigError{msgOnErrUnknownConfig, "An unknown error accourd while trying to analyzing LakeCtl configuration."}
+	return &UnknownConfigError{msgOnErrUnknownConfig, "An unknown error accord while trying to analyze LakeCtl configuration."}
 }
 
 //nolint:gochecknoinits
