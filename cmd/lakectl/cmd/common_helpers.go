@@ -26,6 +26,7 @@ import (
 
 var isTerminal = true
 var noColorRequested = false
+var verboseMode = false
 
 // ErrInvalidValueInList is an error returned when a parameter of type list contains an empty string
 var ErrInvalidValueInList = errors.New("empty string in list")
@@ -157,8 +158,8 @@ func Write(tpl string, data interface{}) {
 	WriteTo(tpl, data, os.Stdout)
 }
 
-func WriteIfVerbose(tpl string, data interface{}, verbose bool) {
-	if verbose {
+func WriteIfVerbose(tpl string, data interface{}) {
+	if verboseMode {
 		WriteTo(tpl, data, os.Stdout)
 	}
 }

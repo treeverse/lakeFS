@@ -1,9 +1,9 @@
-Trying to get endpoint URL and parse it as an URL format.
+Trying to get endpoint URL and parse it as a URL format.
 Trying to run a sanity command using current configuration.
 Got error while trying to run a sanity command.
 Trying to analyze error.
 It looks like endpoint url is wrong.
-Get "/wrong_uri/api/v1/repositories": unsupported protocol scheme ""
+Get "/wrong_uri/repositories": unsupported protocol scheme ""
 Trying to validate access key format.
 Couldn't find a problem with access key format.
 Trying to validate secret access key format.

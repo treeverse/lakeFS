@@ -61,6 +61,7 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
       --log-level string     set logging level (default "none")
       --log-output strings   set logging output(s)
       --no-color             don't use fancy output colors (default when not attached to an interactive terminal)
+      --verbose              running in verbose mode
 ```
 
 **note:** The `base-uri` option can be controlled with the `LAKECTL_BASE_URI` environment variable.
@@ -1741,11 +1742,6 @@ lakectl docs [outfile] [flags]
 
 Run a basic diagnosis of the LakeFS configuration
 
-#### Synopsis
-{:.no_toc}
-
-Checking correctness of access key ID, secret access key and endpoint URL
-
 ```
 lakectl doctor [flags]
 ```
@@ -1754,8 +1750,7 @@ lakectl doctor [flags]
 {:.no_toc}
 
 ```
-  -h, --help      help for doctor
-  -v, --verbose   verbose mode
+  -h, --help   help for doctor
 ```
 
 
@@ -2060,7 +2055,6 @@ lakectl ingest --from <object store URI> --to <lakeFS path URI> [--dry-run] [fla
       --from string       prefix to read from (e.g. "s3://bucket/sub/path/"). must not be in a storage namespace
   -h, --help              help for ingest
       --to string         lakeFS path to load objects into (e.g. "lakefs://repo/branch/sub/path/")
-  -v, --verbose           print stats for each individual object staged
 ```
 
 

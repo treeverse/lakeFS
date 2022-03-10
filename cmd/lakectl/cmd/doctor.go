@@ -68,55 +68,54 @@ var analyzingMessageTemplate = `{{ .Message }}
 var doctorCmd = &cobra.Command{
 	Use:   "doctor",
 	Short: "Run a basic diagnosis of the LakeFS configuration",
-	Long:  "Checking correctness of access key ID, secret access key and endpoint URL",
 	Run: func(cmd *cobra.Command, args []string) {
-		verbose, _ := cmd.Flags().GetBool("verbose")
-		err := ListRepositoriesAndAnalyze(cmd.Context(), verbose)
+
+		err := ListRepositoriesAndAnalyze(cmd.Context())
 		if err == nil {
 			Write(successMessageTemplate, &UserMessage{"Valid configuration"})
 			return
 		}
 
-		WriteIfVerbose(analyzingMessageTemplate, &UserMessage{"Got error while trying to run a sanity command.\nTrying to analyze error."}, verbose)
+		WriteIfVerbose(analyzingMessageTemplate, &UserMessage{"Got error while trying to run a sanity command.\nTrying to analyze error."})
 		if detailedErr, ok := err.(Detailed); ok {
 			Write(detailedErrorTemplate, detailedErr)
 		} else {
 			Write(errorTemplate, err)
 		}
 
-		WriteIfVerbose(analyzingMessageTemplate, &UserMessage{"Trying to validate access key format."}, verbose)
+		WriteIfVerbose(analyzingMessageTemplate, &UserMessage{"Trying to validate access key format."})
 		accessKeyID := cfg.Values.Credentials.AccessKeyID
 		if !IsValidAccessKeyID(accessKeyID) {
 			Write(analyzingMessageTemplate, &UserMessage{"access_key_id value looks suspicious: " + accessKeyID})
 		} else {
-			WriteIfVerbose(analyzingMessageTemplate, &UserMessage{"Couldn't find a problem with access key format."}, verbose)
+			WriteIfVerbose(analyzingMessageTemplate, &UserMessage{"Couldn't find a problem with access key format."})
 		}
 
-		WriteIfVerbose(analyzingMessageTemplate, &UserMessage{"Trying to validate secret access key format."}, verbose)
+		WriteIfVerbose(analyzingMessageTemplate, &UserMessage{"Trying to validate secret access key format."})
 		secretAccessKey := cfg.Values.Credentials.SecretAccessKey
 		if !IsValidSecretAccessKey(secretAccessKey) {
 			Write(analyzingMessageTemplate, &UserMessage{"secret_access_key value looks suspicious..."})
 		} else {
-			WriteIfVerbose(analyzingMessageTemplate, &UserMessage{"Couldn't find a problem with secret access key format."}, verbose)
+			WriteIfVerbose(analyzingMessageTemplate, &UserMessage{"Couldn't find a problem with secret access key format."})
 		}
 
-		WriteIfVerbose(analyzingMessageTemplate, &UserMessage{"Trying to validate endpoint URL format."}, verbose)
+		WriteIfVerbose(analyzingMessageTemplate, &UserMessage{"Trying to validate endpoint URL format."})
 		serverEndpoint := cfg.Values.Server.EndpointURL
 		if !strings.HasSuffix(serverEndpoint, api.BaseURL) {
 			Write(analyzingMessageTemplate, &UserMessage{"Suspicious URI format for server.endpoint_url: " + serverEndpoint})
 		} else {
-			WriteIfVerbose(analyzingMessageTemplate, &UserMessage{"Couldn't find a problem with endpoint URL format."}, verbose)
+			WriteIfVerbose(analyzingMessageTemplate, &UserMessage{"Couldn't find a problem with endpoint URL format."})
 		}
 	},
 }
 
-func ListRepositoriesAndAnalyze(ctx context.Context, verboseMode bool) error {
+func ListRepositoriesAndAnalyze(ctx context.Context) error {
 	configFileName := viper.GetViper().ConfigFileUsed()
 	msgOnErrUnknownConfig := "It looks like you have a problem with your `" + configFileName + "` file."
 	msgOnErrWrongEndpointURI := "It looks like endpoint url is wrong."
 	msgOnErrCredential := "It seems like the `access_key_id` or `secret_access_key` you supplied are wrong."
 
-	WriteIfVerbose(analyzingMessageTemplate, &UserMessage{"Trying to get endpoint URL and parse it as an URL format."}, verboseMode)
+	WriteIfVerbose(analyzingMessageTemplate, &UserMessage{"Trying to get endpoint URL and parse it as a URL format."})
 	// getClient might die on url.Parse error, so check it first.
 	serverEndpoint := cfg.Values.Server.EndpointURL
 	_, err := url.Parse(serverEndpoint)
@@ -124,7 +123,7 @@ func ListRepositoriesAndAnalyze(ctx context.Context, verboseMode bool) error {
 		return &WrongEndpointURIError{msgOnErrWrongEndpointURI, err.Error()}
 	}
 	client := getClient()
-	WriteIfVerbose(analyzingMessageTemplate, &UserMessage{"Trying to run a sanity command using current configuration."}, verboseMode)
+	WriteIfVerbose(analyzingMessageTemplate, &UserMessage{"Trying to run a sanity command using current configuration."})
 	resp, err := client.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
 
 	switch {
@@ -152,5 +151,4 @@ func ListRepositoriesAndAnalyze(ctx context.Context, verboseMode bool) error {
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(doctorCmd)
-	doctorCmd.Flags().BoolP("verbose", "v", false, "verbose mode")
 }

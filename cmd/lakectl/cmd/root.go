@@ -105,7 +105,7 @@ func getClient() *api.ClientWithResponses {
 		DieErr(err)
 	}
 	// if no uri to api is set in configuration - set the default
-	if u.Path == "" || u.Path == "/" || !strings.HasSuffix(serverEndpoint, api.BaseURL) {
+	if u.Path == "" || u.Path == "/" {
 		serverEndpoint = strings.TrimRight(serverEndpoint, "/") + api.BaseURL
 	}
 	httpClient := &http.Client{
@@ -156,6 +156,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&logLevel, "log-level", "", "none", "set logging level")
 	rootCmd.PersistentFlags().StringVarP(&logFormat, "log-format", "", "", "set logging output format")
 	rootCmd.PersistentFlags().StringSliceVarP(&logOutputs, "log-output", "", []string{}, "set logging output(s)")
+	rootCmd.PersistentFlags().BoolVar(&verboseMode, "verbose", false, "running in verbose mode")
 }
 
 // initConfig reads in config file and ENV variables if set.
