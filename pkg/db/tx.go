@@ -49,11 +49,10 @@ func (d *dbTx) Query(query string, args ...interface{}) (pgx.Rows, error) {
 			"args":  args,
 			"query": queryToString(query),
 		})
-	err = handleSQLError(query, err, log, "query")
 	if err != nil {
-		return nil, err
+		return nil, d.handleSQLError(err, "query", query)
 	}
-	log.Trace("SQL query started successfully")
+	log.Trace("SQL query executed successfully")
 	return Logged(rows, start, log), nil
 }
 
@@ -66,11 +65,11 @@ func Select(d *dbTx, results interface{}, query string, args ...interface{}) err
 			"args":  args,
 			"query": queryToString(query),
 		})
-	err = handleSQLError(query, err, log, "select")
 	if err != nil {
-		return err
+		return d.handleSQLError(err, "select", query)
 	}
 	defer rows.Close()
+	log.Trace("SQL query executed successfully")
 	return pgxscan.ScanAll(results, rows)
 }
 
@@ -87,9 +86,8 @@ func (d *dbTx) Get(dest interface{}, query string, args ...interface{}) error {
 		"query": queryToString(query),
 		"took":  time.Since(start),
 	})
-	err = handleSQLError(query, err, log, "get")
 	if err != nil {
-		return err
+		return d.handleSQLError(err, "get", query)
 	}
 	log.Trace("SQL query executed successfully")
 	return nil
@@ -105,9 +103,8 @@ func (d *dbTx) GetPrimitive(dest interface{}, query string, args ...interface{})
 		"query": queryToString(query),
 		"took":  time.Since(start),
 	})
-	err = handleSQLError(query, err, log, "get")
 	if err != nil {
-		return err
+		return d.handleSQLError(err, "get", query)
 	}
 	log.Trace("SQL query executed successfully")
 	return nil
@@ -122,9 +119,8 @@ func (d *dbTx) Exec(query string, args ...interface{}) (pgconn.CommandTag, error
 		"query": queryToString(query),
 		"took":  time.Since(start),
 	})
-	err = handleSQLError(query, err, log, "exec")
 	if err != nil {
-		return res, err
+		return res, d.handleSQLError(err, "exec", query)
 	}
 	log.Trace("SQL query executed successfully")
 	return res, err

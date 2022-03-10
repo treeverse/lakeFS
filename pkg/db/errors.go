@@ -7,7 +7,6 @@ import (
 
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/jackc/pgx/v4"
-	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 var (
@@ -21,20 +20,16 @@ func isDialError(err error) bool {
 	return errors.As(err, &netError) && netError.Op == "dial"
 }
 
-func handleSQLError(query string, err error, log logging.Logger, cmdType string) error {
-	if err == nil {
-		return nil
-	}
-
+func (d *dbTx) handleSQLError(err error, cmdType string, query string) error {
 	dbErrorsCounter.WithLabelValues(cmdType).Inc()
-	log.WithError(err).Error("SQL query failed with error")
+	d.logger.WithError(err).Error("SQL query failed with error")
 
 	// Each error that is added here should be updated also in controller.go:handleAPIError
 	if isUniqueViolation(err) {
 		return ErrAlreadyExists
 	}
 	if pgxscan.NotFound(err) || errors.Is(err, pgx.ErrNoRows) {
-		log.Trace("SQL query returned no results")
+		d.logger.Trace("SQL query returned no results")
 		return ErrNotFound
 	}
 	return fmt.Errorf("query %s: %w", query, err)

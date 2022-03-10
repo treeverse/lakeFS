@@ -1638,7 +1638,7 @@ func handleAPIError(w http.ResponseWriter, err error) bool {
 		writeError(w, http.StatusGone, "No data")
 
 	case errors.Is(err, db.ErrAlreadyExists):
-		writeError(w, http.StatusBadRequest, err)
+		writeError(w, http.StatusBadRequest, "Already exists")
 
 	case err != nil:
 		writeError(w, http.StatusInternalServerError, err)
