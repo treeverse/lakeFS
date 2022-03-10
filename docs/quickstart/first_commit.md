@@ -4,7 +4,7 @@ title: Commit the Changes
 parent: Quickstart
 nav_order: 40
 has_children: false
-redirect_from: ./lakefs_cli.html
+redirect_from: quickstart/lakefs_cli.html
 ---
 
 # Commit the Changes
