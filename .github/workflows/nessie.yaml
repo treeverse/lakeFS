@@ -397,7 +397,7 @@ jobs:
         env:
           STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-spark
           REPOSITORY: gateway-test
-          SONNET_JAR: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
+          SONNET_JAR: sonnets-321/target/sonnets-321/scala-2.12/sonnets-321_2.12-0.1.0.jar
         working-directory: test/spark
         run: ./run-test.sh
 
@@ -420,7 +420,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
           USE_DIRECT_ACCESS: "true"
           REPOSITORY: thick-client-test
-          SONNET_JAR: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
+          SONNET_JAR: sonnets-321/target/sonnets-321/scala-2.12/sonnets-321_2.12-0.1.0.jar
         working-directory: test/spark
         run: ./run-test.sh
 
@@ -516,7 +516,7 @@ jobs:
         env:
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
           REPOSITORY: gateway-test
-          SONNET_JAR: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
+          SONNET_JAR: sonnets-321/target/sonnets-321/scala-2.12/sonnets-321_2.12-0.1.0.jar
         working-directory: test/lakectl_metastore
         run: docker-compose run dbt
 
