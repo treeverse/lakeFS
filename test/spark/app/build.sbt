@@ -34,10 +34,10 @@ def generateProject(buildType: BuildType) =
     )
 
 lazy val proj24 = generateProject(new BuildType("246", scala211Version, "2.4.6", "2.7.7"))
-lazy val proj31 = generateProject(new BuildType("311", scala212Version, "3.1.1", "2.7.7"))
+lazy val proj32 = generateProject(new BuildType("321", scala212Version, "3.2.1", "2.7.7"))
 
 lazy val root = (project in file("."))
-  .aggregate(proj24, proj31)
+  .aggregate(proj24, proj32)
   .settings(
       compile / skip := true,
       publish / skip := true,

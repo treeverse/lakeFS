@@ -376,7 +376,7 @@ jobs:
 
       - name: Package Spark App
         working-directory: test/spark/app
-        run: sbt sonnets-311/package
+        run: sbt sonnets-321/package
 
       - name: Start lakeFS for Spark tests
         uses: ./.github/actions/bootstrap-test-lakefs
