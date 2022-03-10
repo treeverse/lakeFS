@@ -3021,13 +3021,6 @@ func StringValue(s *string) string {
 	return *s
 }
 
-func BoolValue(v *bool) bool {
-	if v == nil {
-		return false
-	}
-	return *v
-}
-
 func Int64Value(p *int64) int64 {
 	if p == nil {
 		return 0
