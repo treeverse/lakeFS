@@ -1,6 +1,10 @@
 name: Test
 on:
   push:
+    paths-ignore:
+      - "*.md"
+      - "docs/**"
+      - "design/**"
     branches:
       - master
   pull_request:
