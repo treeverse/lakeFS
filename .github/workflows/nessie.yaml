@@ -341,7 +341,7 @@ jobs:
         run: mvn -Passembly -Djar.finalName=client --batch-mode --update-snapshots package
 
       - name: Test lakeFS S3 with Spark 2.x thick client
-        timeout-minutes: 8
+        timeout-minutes: 9
         env:
           JARS: clients/hadoopfs/
           STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-spark2-client
