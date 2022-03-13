@@ -155,6 +155,7 @@ routerfs.mapping.lakefs.1.with='lakefs://example-repo/dev/prefix'
 ```
 together with
 ```properties
+fs.s3a.impl=RouterFileSystem
 fs.lakefs.impl=S3AFileSystem
 ```
 
@@ -166,10 +167,14 @@ routerfs.mapping.lakefs.1.with='lakefs://example-repo/dev/prefix'
 ```
 together with
 ```properties
+fs.s3a.impl=RouterFileSystem
 fs.lakefs.impl=LakeFSFileSystem
 ```
 
-TODO(Tals): I have a problem here. How would LakeFSFileSystem dynamically retrieve the underlying fs if `fs.s3a.impl=RouterFileSystem`? https://github.com/treeverse/lakeFS/blob/276ee87fe41841589d631aaeec1c4859308001c1/clients/hadoopfs/src/main/java/io/lakefs/LakeFSFileSystem.java#L93
+**Note** There is a (solvable) open item here: during its initialization, LakeFSFileSystem [dynamically fetches](https://github.com/treeverse/lakeFS/blob/276ee87fe41841589d631aaeec1c4859308001c1/clients/hadoopfs/src/main/java/io/lakefs/LakeFSFileSystem.java#L93)
+the underlying file system from the repository storage namespace. The file system configurations above will make `LakeFSFileSystem` 
+fetch `RouterFileSystem` for storage namespaces on s3, preventing from `LakeFSFileSystem` delegate file system operations to 
+the right underlying file system (`S3AFileSystem`). 
 
 ### Examples
 
@@ -194,7 +199,9 @@ TODO(Tals): I have a problem here. How would LakeFSFileSystem dynamically retrie
 
 ### Cons
 
-1. Based on our experience with lakeFSFS, we already know that supporting a hadoop file system is difficult. There are many things that can go wrong in terms of dependency conflicts, and unexpected behaviours working with managed frameworks (i.e. Databricks, EMR) 
+1. Based on our experience with lakeFSFS, we already know that supporting a hadoop file system is difficult. There are many things that can go wrong in terms of dependency conflicts, and unexpected behaviours working with managed frameworks (i.e. Databricks, EMR)
 2. It's complex.
 3. `RouterFileSystem` is unaware of the number of mapping configurations every `toFsScheme` has and needs to figure this out at runtime. 
 4. `toFsScheme` may be a confusing concept.
+5. Requires adjustments of [LakeFSFileSystem](../clients/hadoopfs/src/main/java/io/lakefs/LakeFSFileSystem.java), see [this](#access-lakefs-using-lakefs-specific-hadoop-filesystem) for a reference.
+6. Requires discovery and documentation of limitations some fs operation have in case of overlapping configurations. For example, a recursive delete operation can map paths to different file systems: recursive deletion of /data, while one file system is the complete package, and /data/lakefs is mapped to lakeFS.
