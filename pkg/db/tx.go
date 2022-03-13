@@ -52,7 +52,7 @@ func (d *dbTx) Query(query string, args ...interface{}) (pgx.Rows, error) {
 	if err != nil {
 		return nil, d.handleSQLError(err, "query", query)
 	}
-	log.Trace("SQL query executed successfully")
+	log.Trace("SQL query started successfully")
 	return Logged(rows, start, log), nil
 }
 
