@@ -5,7 +5,7 @@ lazy val baseName = "lakefs-spark"
 lazy val projectVersion = "0.1.6"
 ThisBuild / isSnapshot := false
 
-// Spark versions 2.4.7 and 3.0.1 use different Scala versions.  Changing this is a deep
+// Spark versions 2.4.7 and 3.2.1 use different Scala versions.  Changing this is a deep
 // change, so key the Spark distinction by the Scala distinction.  sbt doesn't appear to
 // support other ways of changing emitted Scala binary versions using the same compiler.
 
@@ -94,7 +94,7 @@ def generateExamplesProject(buildType: BuildType) =
 lazy val spark2Type =
   new BuildType("247", scala211Version, "2.4.7", "0.9.8", "2.7.7", "hadoop2-2.0.1")
 lazy val spark3Type =
-  new BuildType("301", scala212Version, "3.0.1", "0.10.11", "2.7.7", "hadoop2-2.0.1")
+  new BuildType("321", scala212Version, "3.2.1", "0.10.11", "2.7.7", "hadoop2-2.0.1")
 
 lazy val core2 = generateCoreProject(spark2Type)
 lazy val core3 = generateCoreProject(spark3Type)
