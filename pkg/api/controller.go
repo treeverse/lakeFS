@@ -1612,6 +1612,7 @@ func handleAPIError(w http.ResponseWriter, err error) bool {
 	case errors.Is(err, catalog.ErrNotFound),
 		errors.Is(err, graveler.ErrNotFound),
 		errors.Is(err, actions.ErrNotFound),
+		errors.Is(err, auth.ErrNotFound),
 		errors.Is(err, db.ErrNotFound):
 		writeError(w, http.StatusNotFound, err)
 
