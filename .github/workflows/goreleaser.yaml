@@ -8,11 +8,10 @@ on:
       - chore/goreleaser-aws
 
 permissions:
-  content: write
   packages: write
   issues: write
   id-token: write
-  contents: read
+  contents: write
 
 permissions:
   packages: write
