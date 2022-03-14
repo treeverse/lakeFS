@@ -29,23 +29,34 @@ var annotateCmd = &cobra.Command{
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := MustParsePathURI("path", args[0])
+		recursive, _ := cmd.Flags().GetBool("recursive")
 		client := getClient()
 		pfx := api.PaginationPrefix(*pathURI.Path)
 		context := cmd.Context()
 		resp, err := client.ListObjectsWithResponse(context, pathURI.Repository, pathURI.Ref, &api.ListObjectsParams{Prefix: &pfx})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		const delimiter = "/"
+		var listObjectsDelimiter api.PaginationDelimiter
+		if !recursive {
+			listObjectsDelimiter = delimiter
+		}
 		var from string
 		for {
 			params := &api.ListObjectsParams{
-				Prefix: &pfx,
-				After:  api.PaginationAfterPtr(from),
+				Prefix:    &pfx,
+				After:     api.PaginationAfterPtr(from),
+				Delimiter: &listObjectsDelimiter,
 			}
 			listObjectsResp, err := client.ListObjectsWithResponse(context, pathURI.Repository, pathURI.Ref, params)
 			DieOnErrorOrUnexpectedStatusCode(listObjectsResp, err, http.StatusOK)
-			for _, obj := range resp.JSON200.Results {
+			for _, obj := range listObjectsResp.JSON200.Results {
 				logCommitsParams := &api.LogCommitsParams{
-					Amount:  api.PaginationAmountPtr(1),
-					Objects: &[]string{obj.Path},
+					Amount: api.PaginationAmountPtr(1),
+				}
+				if recursive {
+					logCommitsParams.Objects = &[]string{obj.Path}
+				} else {
+					logCommitsParams.Prefixes = &[]string{obj.Path}
 				}
 				logCommitsResp, err := client.LogCommitsWithResponse(context, pathURI.Repository, pathURI.Ref, logCommitsParams)
 				DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
@@ -81,4 +92,6 @@ func splitOnNewLine(str string) string {
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(annotateCmd)
+
+	annotateCmd.Flags().BoolP("recursive", "r", false, "recursively annotate all entries under a given path or prefix")
 }

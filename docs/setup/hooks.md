@@ -57,15 +57,15 @@ Failure of a single `Hook` will stop the execution of the containing `Action` an
 
 Schema of the Action file:
 
-|Property          |Description                                            |Data Type |Required |Default Value
+|Property          | Description                                           |Data Type |Required |Default Value
 |------------------|-------------------------------------------------------|----------|---------|--------------------------------------|
-|name              |Identify the Action file                               |String    |false    | If missing, filename is used instead
-|on                |List of events that will trigger the hooks             |List      |true     |
-|on<event>.branches|Glob pattern list of branches that triggers the hooks  |List      |false    | If empty, Action runs on all branches
-|hooks             |List of hooks to be executed                           |List      |true     |
-|hook.id           |ID of the hook, must be unique within the `Action`     |String    |true     |
-|hook.type         |Type of the hook (currently only `webhook` supported   |String    |true     |
-|hook.properties   |Hook's specific configuration                          |Dictionary|true     |
+|name              | Identify the Action file                              |String    |false    | If missing, filename is used instead
+|on                | List of events that will trigger the hooks            |List      |true     |
+|on<event>.branches| Glob pattern list of branches that triggers the hooks |List      |false    | If empty, Action runs on all branches
+|hooks             | List of hooks to be executed                          |List      |true     |
+|hook.id           | ID of the hook, must be unique within the `Action`    |String    |true     |
+|hook.type         | Type of the hook ([types](#hook-types))               |String    |true     |
+|hook.properties   | Hook's specific configuration                         |Dictionary|true     |
 
 Example:
 
@@ -116,7 +116,7 @@ For example, lakeFS will search and execute all matching `Action` files with the
 
 ## Runs API & CLI
 
-[OpenAPI](../reference/api.md) endpoint and [lakectl](../reference/commands.md#lakectl-actions) expose the results of `Runs` execution per repository, branch, commit and specific `Action`.
+The [lakeFS API](../reference/api.md) and [lakectl](../reference/commands.md#lakectl-actions) expose the results of executions per repository, branch, commit and specific `Action`.
 The endpoint also allows to download the execution log of any executed `Hook` under each `Run` for observability.
 
 
@@ -147,12 +147,12 @@ Moreover, the branch is locked during the execution of `pre_*` hooks, so the web
 
 #### Action file Webhook properties
 
-|Property          |Description                                            |Data Type                                                                                |Required |Default Value|Env Vars Support|
-|------------------|-------------------------------------------------------|-----------------------------------------------------------------------------------------|---------|-------------|----------------|
-|url               |The URL address of the request                         |String                                                                                   |true     |             |no
-|timeout           |Time to wait for response before failing the hook      |String (golang's [Duration](https://golang.org/pkg/time/#Duration.String) representation)|false    | 1m          |no
-|query_params      |List of query params that will be added to the request |Dictionary(String:String or String:List(String)                                          |false    |             |yes
-|headers           |List of query params that will be added to the request |Dictionary(String:String)                                                                |false    |             |yes
+|Property          | Description                                            |Data Type                                                                                |Required |Default Value|Env Vars Support|
+|------------------|--------------------------------------------------------|-----------------------------------------------------------------------------------------|---------|-------------|----------------|
+|url               | The URL address of the request                         |String                                                                                   |true     |             |no
+|timeout           | Time to wait for response before failing the hook      |String (golang's [Duration](https://golang.org/pkg/time/#Duration.String) representation)|false    | 1m          |no
+|query_params      | List of query params that will be added to the request |Dictionary(String:String or String:List(String)                                          |false    |             |yes
+|headers           | Headers to add to the request                          |Dictionary(String:String)                                                                |false    |             |yes
 
 **Secrets & Environment Variables**<br/>
 lakeFS Actions supports secrets by using environment variables.
