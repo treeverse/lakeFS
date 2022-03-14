@@ -106,7 +106,7 @@ var configSetSecretAccessKeyCmd = &cobra.Command{
 // configSetEndpointUrlCmd represents the config set lakefs-endpoint command
 var configSetEndpointUrlCmd = &cobra.Command{
 	Use:   "lakefs-endpoint-url <endpoint url>",
-	Short: "Create/update local lakeFS Endpoint",
+	Short: "Create/update local lakeFS Endpoint Url",
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		

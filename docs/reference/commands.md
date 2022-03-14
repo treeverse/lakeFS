@@ -1662,7 +1662,7 @@ lakectl config set lakefs-access-key-id <access key id> [flags]
 
 ### lakectl config set lakefs-endpoint-url
 
-Create/update local lakeFS Endpoint
+Create/update local lakeFS Endpoint Url
 
 ```
 lakectl config set lakefs-endpoint-url <endpoint url> [flags]
