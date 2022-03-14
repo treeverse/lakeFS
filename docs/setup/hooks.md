@@ -152,7 +152,7 @@ Moreover, the branch is locked during the execution of `pre_*` hooks, so the web
 |url               | The URL address of the request                         |String                                                                                   |true     |             |no
 |timeout           | Time to wait for response before failing the hook      |String (golang's [Duration](https://golang.org/pkg/time/#Duration.String) representation)|false    | 1m          |no
 |query_params      | List of query params that will be added to the request |Dictionary(String:String or String:List(String)                                          |false    |             |yes
-|headers           | Header parameters                                      |Dictionary(String:String)                                                                |false    |             |yes
+|headers           | Headers to add to the request                          |Dictionary(String:String)                                                                |false    |             |yes
 
 **Secrets & Environment Variables**<br/>
 lakeFS Actions supports secrets by using environment variables.
