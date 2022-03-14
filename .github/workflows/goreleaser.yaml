@@ -3,6 +3,9 @@ name: goreleaser
 on:
   release:
     types: [published]
+  push:
+    branch:
+      - chore/goreleaser-aws
 
 permissions:
   id-token: write
