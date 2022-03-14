@@ -59,7 +59,80 @@ var configCmd = &cobra.Command{
 	},
 }
 
+// configSetCmd represents the config command
+var configSetCmd = &cobra.Command{
+	Use:   "set",
+	Short: "Set local lakeFS configuration variables",
+}
+
+// configSetAccessKeyIdCmd represents the config command
+var configSetAccessKeyIdCmd = &cobra.Command{
+	Use:   "lakefs-access-key-id <access key id>",
+	Short: "Create/update local lakeFS Access Key Id",
+	Args:    cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		
+		viper.Set(config.ConfigAccessKeyIDKey, args[0])
+
+		err := viper.SafeWriteConfig()
+		if err != nil {
+			err = viper.WriteConfig()
+		}
+		if err != nil {
+			DieErr(err)
+		}
+	},
+}
+
+// configSetSecretAccessKeyCmd represents the config command
+var configSetSecretAccessKeyCmd = &cobra.Command{
+	Use:   "lakefs-secret-access-key <secret access key>",
+	Short: "Create/update local lakeFS Secret Access Key",
+	Args:    cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		
+		viper.Set(config.ConfigSecretAccessKey, args[0])
+
+		err := viper.SafeWriteConfig()
+		if err != nil {
+			err = viper.WriteConfig()
+		}
+		if err != nil {
+			DieErr(err)
+		}
+	},
+}
+
+// configSetEndpointUrlCmd represents the config command
+var configSetEndpointUrlCmd = &cobra.Command{
+	Use:   "lakefs-endpoint-url <endpoint url>",
+	Short: "Create/update local lakeFS Endpoint",
+	Args:    cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		
+		_, err := url.ParseRequestURI(args[0])
+		if err!=nil{
+			DieErr(err)
+		}
+		viper.Set(config.ConfigServerEndpointURLKey, args[0])
+
+		err = viper.SafeWriteConfig()
+		if err != nil {
+			err = viper.WriteConfig()
+		}
+		if err != nil {
+			DieErr(err)
+		}
+	},
+}
+
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(configCmd)
+	
+	configCmd.AddCommand(configSetCmd)
+	
+	configSetCmd.AddCommand(configSetAccessKeyIdCmd)
+	configSetCmd.AddCommand(configSetSecretAccessKeyCmd)
+	configSetCmd.AddCommand(configSetEndpointUrlCmd)
 }
