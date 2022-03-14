@@ -59,13 +59,13 @@ var configCmd = &cobra.Command{
 	},
 }
 
-// configSetCmd represents the config command
+// configSetCmd represents the config set command
 var configSetCmd = &cobra.Command{
 	Use:   "set",
 	Short: "Set local lakeFS configuration variables",
 }
 
-// configSetAccessKeyIdCmd represents the config command
+// configSetAccessKeyIdCmd represents the config set lakefs-access-key-id  command
 var configSetAccessKeyIdCmd = &cobra.Command{
 	Use:   "lakefs-access-key-id <access key id>",
 	Short: "Create/update local lakeFS Access Key Id",
@@ -84,7 +84,7 @@ var configSetAccessKeyIdCmd = &cobra.Command{
 	},
 }
 
-// configSetSecretAccessKeyCmd represents the config command
+// configSetSecretAccessKeyCmd represents the config set lakefs-secret-access-key command
 var configSetSecretAccessKeyCmd = &cobra.Command{
 	Use:   "lakefs-secret-access-key <secret access key>",
 	Short: "Create/update local lakeFS Secret Access Key",
@@ -103,7 +103,7 @@ var configSetSecretAccessKeyCmd = &cobra.Command{
 	},
 }
 
-// configSetEndpointUrlCmd represents the config command
+// configSetEndpointUrlCmd represents the config set lakefs-endpoint command
 var configSetEndpointUrlCmd = &cobra.Command{
 	Use:   "lakefs-endpoint-url <endpoint url>",
 	Short: "Create/update local lakeFS Endpoint",
