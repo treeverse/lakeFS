@@ -1584,6 +1584,116 @@ lakectl config [flags]
 
 
 
+### lakectl config help
+
+Help about any command
+
+#### Synopsis
+{:.no_toc}
+
+Help provides help for any command in the application.
+Simply type config help [path to command] for full details.
+
+```
+lakectl config help [command] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl config set
+
+Set local lakeFS configuration variables
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for set
+```
+
+
+
+### lakectl config set help
+
+Help about any command
+
+#### Synopsis
+{:.no_toc}
+
+Help provides help for any command in the application.
+Simply type set help [path to command] for full details.
+
+```
+lakectl config set help [command] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl config set lakefs-access-key-id
+
+Create/update local lakeFS Access Key Id
+
+```
+lakectl config set lakefs-access-key-id <access key id> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for lakefs-access-key-id
+```
+
+
+
+### lakectl config set lakefs-endpoint-url
+
+Create/update local lakeFS Endpoint
+
+```
+lakectl config set lakefs-endpoint-url <endpoint url> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for lakefs-endpoint-url
+```
+
+
+
+### lakectl config set lakefs-secret-access-key
+
+Create/update local lakeFS Secret Access Key
+
+```
+lakectl config set lakefs-secret-access-key <secret access key> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for lakefs-secret-access-key
+```
+
+
+
 ### lakectl dbt
 
 Integration with dbt commands
