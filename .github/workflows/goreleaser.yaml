@@ -3,10 +3,6 @@ name: goreleaser
 on:
   release:
     types: [published]
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: Version to publish
 
 permissions:
   id-token: write
@@ -45,11 +41,13 @@ jobs:
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
         with:
-          version: latest
+          #version: 'latest'
+          version: 'v0.1.7-test'
           args: release --rm-dist
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Make lakectl public
-        run: aws s3 cp --recursive --acl public-read "s3://treeverse-clients-us-east/lakectl/$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)" "s3://treeverse-clients-us-east/lakectl/$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)" --metadata-directive REPLACE
+        #run: aws s3 cp --recursive --acl public-read "s3://treeverse-clients-us-east/lakectl/$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)" "s3://treeverse-clients-us-east/lakectl/$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)" --metadata-directive REPLACE
+        run: aws s3 cp --recursive --acl public-read "s3://treeverse-clients-us-east/lakectl/0.1.7-test" "s3://treeverse-clients-us-east/lakectl/0.1.7-test" --metadata-directive REPLACE
 
