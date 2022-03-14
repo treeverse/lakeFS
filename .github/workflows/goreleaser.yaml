@@ -3,10 +3,6 @@ name: goreleaser
 on:
   release:
     types: [published]
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: Version to publish
 
 permissions:
   id-token: write
@@ -21,7 +17,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup UI
+      - name: Setup NodeJS
         uses: actions/setup-node@v1
         with:
           node-version: '14.x'
@@ -30,20 +26,22 @@ jobs:
         uses: actions/setup-go@v2
         with:
 
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v2
-        with:
-          version: latest
-          args: release --rm-dist
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-region: us-east-1
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
 
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v2
+        with:
+          #version: 'latest'
+          version: 'v0.1.7-test'
+          args: release --rm-dist
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Make lakectl public
-        run: aws s3 cp --recursive --acl public-read "s3://treeverse-clients-us-east/lakectl/$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)" "s3://treeverse-clients-us-east/lakectl/$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)" --metadata-directive REPLACE
+        #run: aws s3 cp --recursive --acl public-read "s3://treeverse-clients-us-east/lakectl/$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)" "s3://treeverse-clients-us-east/lakectl/$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)" --metadata-directive REPLACE
+        run: aws s3 cp --recursive --acl public-read "s3://treeverse-clients-us-east/lakectl/0.1.7-test" "s3://treeverse-clients-us-east/lakectl/0.1.7-test" --metadata-directive REPLACE
 
