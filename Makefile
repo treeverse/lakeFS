@@ -66,7 +66,6 @@ clean:
 		pkg/actions/mock \
 		pkg/api/lakefs.gen.go \
 		pkg/graveler/sstable/mock \
-		pkg/webui \
 	    pkg/graveler/committed/mock \
 	    pkg/graveler/mock
 
