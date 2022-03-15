@@ -42,4 +42,5 @@ When creating a new schema for a branch using the `lakectl dbt create-branch-sch
 This is necessary because the branch and the schema might have different names (when using the `--to-schema` flag) and not use the default behavior (which is branch and schema having the same name).
 
 ### Suggestion
+
 When the users start working with lakectl and dbt together they'll also need to map the main/master/production branch they are working with to a schema. If not, the target schema will get mapped to it by default. We can do that by adding a `lakectl dbt map-branch-schema` command.
