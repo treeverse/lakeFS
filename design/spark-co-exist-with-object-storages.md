@@ -184,7 +184,7 @@ the right underlying file system (`S3AFileSystem`).
 
 #### Read an object directly from the object store
 
-![RouterFS with S3 URI](diagrams/routerFS-by_s3.png)
+![RouterFS with S3 URI](diagrams/routerFS_by_s3.png)
 
 ### Pros & Cons
 
