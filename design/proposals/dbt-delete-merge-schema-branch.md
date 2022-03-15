@@ -43,4 +43,4 @@ This is necessary because the branch and the schema might have different names (
 
 ### Suggestion
 
-When the users start working with lakectl and dbt together they'll also need to map the main/master/production branch they are working with to a schema. If not, the target schema will get mapped to it by default. We can do that by adding a `lakectl dbt map-branch-schema` command.
+When the users start working with lakectl and dbt together they'll also need to map the main/master/production branch they are working with to a schema. If not, the dbt profile's target schema will get mapped to that branch by default. We can do that by adding a `lakectl dbt map-branch-schema` command.
