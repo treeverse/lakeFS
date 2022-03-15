@@ -62,7 +62,7 @@ lakeFS enhances processing workflows at each step of the data lifecycle:
 * **Debug** - checkout specific commits in a repository's commit history to materialize consistent, historical versions of your data. See the exact state of your data at the point-in-time of an error to understand its root cause.
 * **Collaborate** - avoid managing data access at the two extremes of either 1) treating your data lake like a shared folder or 2) creating multiple copies of the data to safely collaborate. Instead, leverage isolated branches managed by metadata (not copies of files) to work in parallel.
 
-[Learn more](./usecases/data-devenv.md){:id="user-content-learn-more-env"}
+[Learn more](./usecases/data-devenv.md){:id="user-content-learn-more-env" class="button-clickable"}
 
 ### During Deployment
 * **Version Control** - retain commits for a configurable duration, so readers are able to query data from the latest commit or any other point in time. Writers atomically introduce new data preventing inconsistent data views.
