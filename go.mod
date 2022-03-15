@@ -42,6 +42,7 @@ require (
 	github.com/jamiealquiza/tachymeter v2.0.0+incompatible
 	github.com/jedib0t/go-pretty/v6 v6.2.4
 	github.com/johannesboyne/gofakes3 v0.0.0-20210217223559-02ffa763be97
+	github.com/lib/pq v1.10.0
 	github.com/manifoldco/promptui v0.8.0
 	github.com/matoous/go-nanoid/v2 v2.0.0
 	github.com/minio/minio-go/v7 v7.0.13
@@ -50,7 +51,6 @@ require (
 	github.com/ory/dockertest/v3 v3.8.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.9.0
-	github.com/rakyll/statik v0.1.7
 	github.com/rs/xid v1.2.1
 	github.com/schollz/progressbar/v3 v3.7.4
 	github.com/scritchley/orc v0.0.0-20201124122313-cba38e582ef9
@@ -191,7 +191,6 @@ require (
 	github.com/labstack/gommon v0.3.0 // indirect
 	github.com/lann/builder v0.0.0-20180802200727-47ae307949d0 // indirect
 	github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0 // indirect
-	github.com/lib/pq v1.10.0 // indirect
 	github.com/lunixbochs/vtclean v1.0.0 // indirect
 	github.com/magiconair/properties v1.8.4 // indirect
 	github.com/mailru/easyjson v0.7.6 // indirect
