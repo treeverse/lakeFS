@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"time"
 
@@ -12,7 +13,6 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source"
 	"github.com/golang-migrate/migrate/v4/source/httpfs"
-	"github.com/rakyll/statik/fs"
 	"github.com/treeverse/lakefs/pkg/db/params"
 	"github.com/treeverse/lakefs/pkg/ddl"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -52,12 +52,8 @@ func (d *DatabaseMigrator) Migrate(ctx context.Context) error {
 }
 
 func getStatikSrc() (source.Driver, error) {
-	// statik fs to our migrate source
-	migrationFs, err := fs.NewWithNamespace(ddl.Ddl)
-	if err != nil {
-		return nil, err
-	}
-	return httpfs.New(migrationFs, "/")
+	// fs.FS as migrate source
+	return httpfs.New(http.FS(ddl.Content), "/")
 }
 
 func ValidateSchemaUpToDate(ctx context.Context, dbPool Database, params params.Database) error {

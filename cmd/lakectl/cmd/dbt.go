@@ -16,8 +16,10 @@ import (
 	mserrors "github.com/treeverse/lakefs/pkg/metastore/errors"
 )
 
-var schemaRegex = regexp.MustCompile(`schema: (.+)`)
-var materializedSelection = []string{"config.materialized:table", "config.materialized:incremental"}
+var (
+	schemaRegex           = regexp.MustCompile(`schema: (.+)`)
+	materializedSelection = []string{"config.materialized:table", "config.materialized:incremental"}
+)
 
 const (
 	schemaEnvVarName     = "LAKEFS_SCHEMA"
@@ -186,7 +188,7 @@ generate_schema_name.sql
 {%- endmacro %}
 `
 		//nolint:gosec
-		err := ioutil.WriteFile(macroPath, []byte(generateSchemaData), 0644)
+		err := ioutil.WriteFile(macroPath, []byte(generateSchemaData), 0o644)
 		if err != nil {
 			DieErr(err)
 		}

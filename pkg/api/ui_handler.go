@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"io/fs"
 	"net/http"
 	"os"
 	"path"
@@ -10,12 +11,11 @@ import (
 	"time"
 
 	gomime "github.com/cubewise-code/go-mime"
-	"github.com/rakyll/statik/fs"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/gateway/operations"
 	"github.com/treeverse/lakefs/pkg/gateway/sig"
-	"github.com/treeverse/lakefs/pkg/webui"
+	"github.com/treeverse/lakefs/webui"
 )
 
 // Taken from https://github.com/mytrile/nocache
@@ -37,8 +37,8 @@ var etagHeaders = []string{
 
 func NewUIHandler(authService auth.Service, gatewayDomains []string) http.Handler {
 	mux := http.NewServeMux()
-	staticFiles, _ := fs.NewWithNamespace(webui.Webui)
-	fileServer := http.FileServer(staticFiles)
+	staticFiles, _ := fs.Sub(webui.Content, "dist")
+	fileServer := http.FileServer(http.FS(staticFiles))
 	noCacheFileServer := NoCacheHandler(fileServer)
 	mux.Handle("/", NewHandlerWithDefault(staticFiles, noCacheFileServer, "/", gatewayDomains))
 	return mux
@@ -63,7 +63,7 @@ func NoCacheHandler(handler http.Handler) http.Handler {
 	})
 }
 
-func NewHandlerWithDefault(root http.FileSystem, handler http.Handler, defaultPath string, gatewayDomains []string) http.Handler {
+func NewHandlerWithDefault(root fs.FS, handler http.Handler, defaultPath string, gatewayDomains []string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if isGatewayRequest(r) {
 			// s3 signed request reaching the ui handler, return an error response instead of the default path
