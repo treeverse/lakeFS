@@ -3,6 +3,14 @@ name: goreleaser
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Version to publish
+
+permissions:
+  id-token: write
+  contents: read
 
 permissions:
   packages: write
@@ -27,7 +35,6 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.17.8
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
