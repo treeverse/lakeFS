@@ -537,10 +537,13 @@ jobs:
     name: Test lakeFS metadata client with Spark 3.x
     needs: deploy-image
     runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        spark: [3.2.1, 3.1.2, 3.0.2]
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
-      SPARK_TAG: 3
+      SPARK_TAG: ${{ matrix.spark }}
     steps:
       - name: Check-out code
         uses: actions/checkout@v2
