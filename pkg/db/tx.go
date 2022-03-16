@@ -2,6 +2,8 @@ package db
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -124,6 +126,21 @@ func (d *dbTx) Exec(query string, args ...interface{}) (pgconn.CommandTag, error
 	}
 	log.Trace("SQL query executed successfully")
 	return res, err
+}
+
+func (d *dbTx) handleSQLError(err error, cmdType string, query string) error {
+	dbErrorsCounter.WithLabelValues(cmdType).Inc()
+	d.logger.WithError(err).Error("SQL query failed with error")
+
+	// Each error that is added here should be updated also in controller.go:handleAPIError
+	if isUniqueViolation(err) {
+		return ErrAlreadyExists
+	}
+	if pgxscan.NotFound(err) || errors.Is(err, pgx.ErrNoRows) {
+		d.logger.Trace("SQL query returned no results")
+		return ErrNotFound
+	}
+	return fmt.Errorf("query %s: %w", query, err)
 }
 
 type TxOpt func(*TxOptions)
