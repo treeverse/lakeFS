@@ -90,8 +90,8 @@ func Serve(
 	r.Mount("/metrics", promhttp.Handler())
 	r.Mount("/_pprof/", httputil.ServePPROF("/_pprof/"))
 	r.Mount("/swagger.json", http.HandlerFunc(swaggerSpecHandler))
-	r.Mount("/", NewUIHandler(gatewayDomains))
 	r.Mount(BaseURL, http.HandlerFunc(InvalidAPIEndpointHandler))
+	r.Mount("/", NewUIHandler(gatewayDomains))
 	return r
 }
 
