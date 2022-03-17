@@ -37,7 +37,7 @@ After running dbt over that branch and conducting tests and validations we would
 `lakectl dbt merge-branch-schema --source-branch <source branch name> --destination-branch <destination branch name>`: Merge the source schema (associated with the source branch name) to the destination schema (associated with the destination branch name)
 * Example: `lakectl dbt merge-branch-schema --source-branch dbt_jon --destination-branch master` will merge the schema associated with the `dbt_jon` branch to the schema associated with the `master` branch.
 
-## Required change
+## Required changes
 
 In order to implement the new commands, there's a need to map branches to schemas.
 This is necessary because the branch and the schema might have different names (when adding the `--to-schema <custom name>` flag when creating the schema using the `lakectl dbt create-branch-schema` command) and not use the default behavior (which is the same name for the branch and schema).
