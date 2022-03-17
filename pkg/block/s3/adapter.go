@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"sync"
@@ -96,7 +95,13 @@ func WithTranslator(t block.UploadIDTranslator) func(a *Adapter) {
 
 func WithStatsCollector(s stats.Collector) func(a *Adapter) {
 	return func(a *Adapter) {
-		a.clients = a.clients.WithStatsCollector(s)
+		a.clients.SetStatsCollector(s)
+	}
+}
+
+func WithDiscoverBucketRegion(b bool) func(a *Adapter) {
+	return func(a *Adapter) {
+		a.clients.DiscoverBucketRegion(b)
 	}
 }
 
@@ -131,48 +136,60 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 		Key:          aws.String(qualifiedKey.Key),
 		StorageClass: opts.StorageClass,
 	}
-	sdkRequest, _ := a.clients.Get(ctx, qualifiedKey.StorageNamespace).PutObjectRequest(&putObject)
-	_, err = a.streamToS3(ctx, sdkRequest, sizeBytes, reader)
+	client := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
+	sdkRequest, _ := client.PutObjectRequest(&putObject)
+	headers, err := a.streamToS3(ctx, sdkRequest, sizeBytes, reader)
+	if err != nil {
+		return err
+	}
+	etag := headers.Get("ETag")
+	if etag == "" {
+		return ErrMissingETag
+	}
 	return err
 }
 
-func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (string, error) {
+func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
 	var err error
 	defer reportMetrics("UploadPart", time.Now(), &sizeBytes, &err)
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	uploadID = a.uploadIDTranslator.TranslateUploadID(uploadID)
 	uploadPartObject := s3.UploadPartInput{
 		Bucket:     aws.String(qualifiedKey.StorageNamespace),
 		Key:        aws.String(qualifiedKey.Key),
-		PartNumber: aws.Int64(partNumber),
+		PartNumber: aws.Int64(int64(partNumber)),
 		UploadId:   aws.String(uploadID),
 	}
-	sdkRequest, _ := a.clients.Get(ctx, qualifiedKey.StorageNamespace).UploadPartRequest(&uploadPartObject)
-	etag, err := a.streamToS3(ctx, sdkRequest, sizeBytes, reader)
-
+	client := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
+	sdkRequest, _ := client.UploadPartRequest(&uploadPartObject)
+	headers, err := a.streamToS3(ctx, sdkRequest, sizeBytes, reader)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
+	etag := headers.Get("ETag")
 	if etag == "" {
-		return "", ErrMissingETag
+		return nil, ErrMissingETag
 	}
-	return etag, nil
+	return &block.UploadPartResponse{
+		ETag:             strings.Trim(etag, `"`),
+		ServerSideHeader: extractAmzServerSideHeader(headers),
+	}, nil
 }
 
-func (a *Adapter) streamToS3(ctx context.Context, sdkRequest *request.Request, sizeBytes int64, reader io.Reader) (string, error) {
+func (a *Adapter) streamToS3(ctx context.Context, sdkRequest *request.Request, sizeBytes int64, reader io.Reader) (http.Header, error) {
 	sigTime := time.Now()
 	log := a.log(ctx).WithField("operation", "PutObject")
 
 	if err := sdkRequest.Build(); err != nil {
-		return "", err
+		return nil, err
 	}
 
 	req, err := http.NewRequest(sdkRequest.HTTPRequest.Method, sdkRequest.HTTPRequest.URL.String(), nil)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	req.Header.Set("Content-Encoding", StreamingContentEncoding)
 	req.Header.Set("Transfer-Encoding", "chunked")
@@ -185,19 +202,19 @@ func (a *Adapter) streamToS3(ctx context.Context, sdkRequest *request.Request, s
 	_, err = baseSigner.Sign(req, nil, s3.ServiceName, aws.StringValue(sdkRequest.Config.Region), sigTime)
 	if err != nil {
 		log.WithError(err).Error("failed to sign request")
-		return "", err
+		return nil, err
 	}
 	req.Header.Set("Expect", "100-Continue")
 
 	sigSeed, err := v4.GetSignedRequestSignature(req)
 	if err != nil {
 		log.WithError(err).Error("failed to get seed signature")
-		return "", err
+		return nil, err
 	}
 
-	req.Body = ioutil.NopCloser(&StreamingReader{
+	req.Body = io.NopCloser(&StreamingReader{
 		Reader: reader,
-		Size:   int(sizeBytes),
+		Size:   sizeBytes,
 		Time:   sigTime,
 		StreamSigner: v4.NewStreamSigner(
 			aws.StringValue(sdkRequest.Config.Region),
@@ -213,7 +230,7 @@ func (a *Adapter) streamToS3(ctx context.Context, sdkRequest *request.Request, s
 		log.WithError(err).
 			WithField("url", sdkRequest.HTTPRequest.URL.String()).
 			Error("error making request request")
-		return "", err
+		return nil, err
 	}
 
 	defer func() {
@@ -221,7 +238,7 @@ func (a *Adapter) streamToS3(ctx context.Context, sdkRequest *request.Request, s
 	}()
 
 	if resp.StatusCode != http.StatusOK {
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			err = fmt.Errorf("%w: %d %s (unknown)", ErrS3, resp.StatusCode, resp.Status)
 		} else {
@@ -231,17 +248,11 @@ func (a *Adapter) streamToS3(ctx context.Context, sdkRequest *request.Request, s
 			WithField("url", sdkRequest.HTTPRequest.URL.String()).
 			WithField("status_code", resp.StatusCode).
 			Error("bad S3 PutObject response")
-		return "", err
+		return nil, err
 	}
 
 	a.extractS3Server(resp)
-
-	etag := resp.Header.Get("Etag")
-	// error in case etag is missing - note that empty header value will cause the same error
-	if len(etag) == 0 {
-		return "", ErrMissingETag
-	}
-	return etag, nil
+	return resp.Header, nil
 }
 
 func isErrNotFound(err error) bool {
@@ -262,7 +273,8 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 		Bucket: aws.String(qualifiedKey.StorageNamespace),
 		Key:    aws.String(qualifiedKey.Key),
 	}
-	objectOutput, err := a.clients.Get(ctx, qualifiedKey.StorageNamespace).GetObjectWithContext(ctx, &getObjectInput)
+	client := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
+	objectOutput, err := client.GetObjectWithContext(ctx, &getObjectInput)
 	if isErrNotFound(err) {
 		return nil, adapter.ErrDataNotFound
 	}
@@ -286,7 +298,8 @@ func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, er
 		Bucket: aws.String(qualifiedKey.StorageNamespace),
 		Key:    aws.String(qualifiedKey.Key),
 	}
-	_, err = a.clients.Get(ctx, qualifiedKey.StorageNamespace).HeadObjectWithContext(ctx, &input)
+	client := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
+	_, err = client.HeadObjectWithContext(ctx, &input)
 	if isErrNotFound(err) {
 		return false, nil
 	}
@@ -311,7 +324,8 @@ func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPo
 		Key:    aws.String(qualifiedKey.Key),
 		Range:  aws.String(fmt.Sprintf("bytes=%d-%d", startPosition, endPosition)),
 	}
-	objectOutput, err := a.clients.Get(ctx, qualifiedKey.StorageNamespace).GetObjectWithContext(ctx, &getObjectInput)
+	client := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
+	objectOutput, err := client.GetObjectWithContext(ctx, &getObjectInput)
 	if isErrNotFound(err) {
 		return nil, adapter.ErrDataNotFound
 	}
@@ -380,7 +394,8 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 		Bucket: aws.String(qualifiedKey.StorageNamespace),
 		Key:    aws.String(qualifiedKey.Key),
 	}
-	s3Props, err := a.clients.Get(ctx, qualifiedKey.StorageNamespace).HeadObjectWithContext(ctx, headObjectParams)
+	client := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
+	s3Props, err := client.HeadObjectWithContext(ctx, headObjectParams)
 	if err != nil {
 		return block.Properties{}, err
 	}
@@ -411,57 +426,63 @@ func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {
 	return err
 }
 
-func (a *Adapter) copyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int64, byteRange *string) (string, error) {
+func (a *Adapter) copyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int, byteRange *string) (*block.UploadPartResponse, error) {
 	qualifiedKey, err := resolveNamespace(destinationObj)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	srcKey, err := resolveNamespace(sourceObj)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	uploadID = a.uploadIDTranslator.TranslateUploadID(uploadID)
 	uploadPartCopyObject := s3.UploadPartCopyInput{
 		Bucket:     aws.String(qualifiedKey.StorageNamespace),
 		Key:        aws.String(qualifiedKey.Key),
-		PartNumber: aws.Int64(partNumber),
+		PartNumber: aws.Int64(int64(partNumber)),
 		UploadId:   aws.String(uploadID),
 		CopySource: aws.String(fmt.Sprintf("%s/%s", srcKey.StorageNamespace, srcKey.Key)),
 	}
 	if byteRange != nil {
 		uploadPartCopyObject.CopySourceRange = byteRange
 	}
-	resp, err := a.clients.Get(ctx, qualifiedKey.StorageNamespace).UploadPartCopyWithContext(ctx, &uploadPartCopyObject)
+	client := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
+	req, resp := client.UploadPartCopyRequest(&uploadPartCopyObject)
+	req.SetContext(ctx)
+	err = req.Send()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	if resp == nil || resp.CopyPartResult == nil || resp.CopyPartResult.ETag == nil {
-		return "", ErrMissingETag
+		return nil, ErrMissingETag
 	}
-	return strings.Trim(*resp.CopyPartResult.ETag, "\""), nil
+	etag := strings.Trim(*resp.CopyPartResult.ETag, `"`)
+	// x-amz-server-side-* headers
+	headers := make(http.Header)
+	for k, v := range req.HTTPResponse.Header {
+		if strings.HasPrefix(k, "X-Amz-Server-Side-") {
+			headers[k] = v
+		}
+	}
+	return &block.UploadPartResponse{
+		ETag:             etag,
+		ServerSideHeader: headers,
+	}, nil
 }
 
-func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int64) (string, error) {
+func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
 	var err error
 	defer reportMetrics("UploadCopyPart", time.Now(), nil, &err)
-	etag, err := a.copyPart(ctx, sourceObj, destinationObj, uploadID, partNumber, nil)
-	if err != nil {
-		return "", err
-	}
-	return etag, nil
+	return a.copyPart(ctx, sourceObj, destinationObj, uploadID, partNumber, nil)
 }
 
-func (a *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber, startPosition, endPosition int64) (string, error) {
+func (a *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int, startPosition, endPosition int64) (*block.UploadPartResponse, error) {
 	var err error
 	defer reportMetrics("UploadCopyPartRange", time.Now(), nil, &err)
-	etag, err := a.copyPart(ctx,
+	return a.copyPart(ctx,
 		sourceObj, destinationObj, uploadID, partNumber,
 		aws.String(fmt.Sprintf("bytes=%d-%d", startPosition, endPosition)))
-	if err != nil {
-		return "", err
-	}
-	return etag, nil
 }
 
 func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.ObjectPointer) error {
@@ -488,12 +509,12 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 	return err
 }
 
-func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (string, error) {
+func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
 	var err error
 	defer reportMetrics("CreateMultiPartUpload", time.Now(), nil, &err)
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	input := &s3.CreateMultipartUploadInput{
 		Bucket:       aws.String(qualifiedKey.StorageNamespace),
@@ -501,9 +522,12 @@ func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPoi
 		ContentType:  aws.String(""),
 		StorageClass: opts.StorageClass,
 	}
-	resp, err := a.clients.Get(ctx, qualifiedKey.StorageNamespace).CreateMultipartUploadWithContext(ctx, input)
+	client := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
+	req, resp := client.CreateMultipartUploadRequest(input)
+	req.SetContext(ctx)
+	err = req.Send()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	uploadID := *resp.UploadId
 	uploadID = a.uploadIDTranslator.SetUploadID(uploadID)
@@ -514,7 +538,10 @@ func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPoi
 		"qualified_key":        qualifiedKey.Key,
 		"key":                  obj.Identifier,
 	}).Debug("created multipart upload")
-	return uploadID, err
+	return &block.CreateMultiPartUploadResponse{
+		UploadID:         uploadID,
+		ServerSideHeader: extractAmzServerSideHeader(req.HTTPResponse.Header),
+	}, err
 }
 
 func (a *Adapter) AbortMultiPartUpload(ctx context.Context, obj block.ObjectPointer, uploadID string) error {
@@ -530,7 +557,8 @@ func (a *Adapter) AbortMultiPartUpload(ctx context.Context, obj block.ObjectPoin
 		Key:      aws.String(qualifiedKey.Key),
 		UploadId: aws.String(uploadID),
 	}
-	_, err = a.clients.Get(ctx, qualifiedKey.StorageNamespace).AbortMultipartUploadWithContext(ctx, input)
+	client := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
+	_, err = client.AbortMultipartUploadWithContext(ctx, input)
 	a.uploadIDTranslator.RemoveUploadID(uploadID)
 	a.log(ctx).WithFields(logging.Fields{
 		"upload_id":     uploadID,
@@ -541,20 +569,30 @@ func (a *Adapter) AbortMultiPartUpload(ctx context.Context, obj block.ObjectPoin
 	return err
 }
 
-func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectPointer, uploadID string, multipartList *block.MultipartUploadCompletion) (*string, int64, error) {
+func convertFromBlockMultipartUploadCompletion(multipartList *block.MultipartUploadCompletion) *s3.CompletedMultipartUpload {
+	parts := make([]*s3.CompletedPart, len(multipartList.Part))
+	for i, p := range multipartList.Part {
+		parts[i] = &s3.CompletedPart{
+			ETag:       aws.String(p.ETag),
+			PartNumber: aws.Int64(int64(p.PartNumber)),
+		}
+	}
+	return &s3.CompletedMultipartUpload{Parts: parts}
+}
+
+func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectPointer, uploadID string, multipartList *block.MultipartUploadCompletion) (*block.CompleteMultiPartUploadResponse, error) {
 	var err error
 	defer reportMetrics("CompleteMultiPartUpload", time.Now(), nil, &err)
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
-	cmpu := &s3.CompletedMultipartUpload{Parts: multipartList.Part}
 	translatedUploadID := a.uploadIDTranslator.TranslateUploadID(uploadID)
 	input := &s3.CompleteMultipartUploadInput{
 		Bucket:          aws.String(qualifiedKey.StorageNamespace),
 		Key:             aws.String(qualifiedKey.Key),
 		UploadId:        aws.String(translatedUploadID),
-		MultipartUpload: cmpu,
+		MultipartUpload: convertFromBlockMultipartUploadCompletion(multipartList),
 	}
 	lg := a.log(ctx).WithFields(logging.Fields{
 		"upload_id":            uploadID,
@@ -563,79 +601,29 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 		"qualified_key":        qualifiedKey.Key,
 		"key":                  obj.Identifier,
 	})
-	svc := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
-	resp, err := svc.CompleteMultipartUploadWithContext(ctx, input)
-
+	client := a.clients.Get(ctx, qualifiedKey.StorageNamespace)
+	req, resp := client.CompleteMultipartUploadRequest(input)
+	req.SetContext(ctx)
+	err = req.Send()
 	if err != nil {
 		lg.WithError(err).Error("CompleteMultipartUpload failed")
-		return nil, -1, err
+		return nil, err
 	}
 	lg.Debug("completed multipart upload")
 	a.uploadIDTranslator.RemoveUploadID(translatedUploadID)
 	headInput := &s3.HeadObjectInput{Bucket: &qualifiedKey.StorageNamespace, Key: &qualifiedKey.Key}
-	headResp, err := svc.HeadObjectWithContext(ctx, headInput)
+	headResp, err := client.HeadObjectWithContext(ctx, headInput)
 	if err != nil {
-		return nil, -1, err
-	} else {
-		return resp.ETag, *headResp.ContentLength, err
-	}
-}
-
-func contains(tags []*s3.Tag, pred func(string, string) bool) bool {
-	for _, tag := range tags {
-		if pred(*tag.Key, *tag.Value) {
-			return true
-		}
-	}
-	return false
-}
-
-func isExpirationRule(rule s3.LifecycleRule) bool {
-	return rule.Expiration != nil && // Check for *any* expiration -- not its details.
-		rule.Status != nil && *rule.Status == "Enabled" &&
-		rule.Filter != nil &&
-		rule.Filter.Tag != nil &&
-		*rule.Filter.Tag.Key == ExpireObjectS3Tag &&
-		*rule.Filter.Tag.Value == "1" ||
-		rule.Filter.And != nil &&
-			contains(rule.Filter.And.Tags,
-				func(key string, value string) bool {
-					return key == ExpireObjectS3Tag && value == "1"
-				},
-			)
-}
-
-// ValidateConfiguration on an S3 adapter checks for a usable bucket
-// lifecycle policy: the storageNamespace bucket should expire objects
-// marked with ExpireObjectS3Tag (with _some_ duration, even if
-// nonzero).
-func (a *Adapter) ValidateConfiguration(ctx context.Context, storageNamespace string) error {
-	getLifecycleConfigInput := &s3.GetBucketLifecycleConfigurationInput{Bucket: &storageNamespace}
-	config, err := a.clients.Get(ctx, storageNamespace).GetBucketLifecycleConfigurationWithContext(ctx, getLifecycleConfigInput)
-	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == "NoSuchLifecycleConfiguration" {
-			return fmt.Errorf("%w: bucket %s has no lifecycle configuration", ErrS3, storageNamespace)
-		}
-		return err
-	}
-	a.log(ctx).WithFields(logging.Fields{
-		"Bucket":          storageNamespace,
-		"LifecyclePolicy": config.GoString(),
-	}).Info("S3 bucket lifecycle policy")
-
-	hasMatchingRule := false
-	for _, a := range config.Rules {
-		if isExpirationRule(*a) {
-			hasMatchingRule = true
-			break
-		}
+		return nil, err
 	}
 
-	if !hasMatchingRule {
-		return fmt.Errorf("%w: bucket %s lifecycle rules not configured to expire objects tagged \"%s\"",
-			ErrS3, storageNamespace, ExpireObjectS3Tag)
-	}
-	return nil
+	etag := strings.Trim(aws.StringValue(resp.ETag), `"`)
+	contentLength := aws.Int64Value(headResp.ContentLength)
+	return &block.CompleteMultiPartUploadResponse{
+		ETag:             etag,
+		ContentLength:    contentLength,
+		ServerSideHeader: extractAmzServerSideHeader(req.HTTPResponse.Header),
+	}, nil
 }
 
 func (a *Adapter) BlockstoreType() string {
@@ -672,4 +660,15 @@ func (a *Adapter) extractS3Server(resp *http.Response) {
 	a.respServerLock.Lock()
 	defer a.respServerLock.Unlock()
 	a.respServer = server
+}
+
+func extractAmzServerSideHeader(header http.Header) http.Header {
+	// return additional headers: x-amz-server-side-*
+	h := make(http.Header)
+	for k, v := range header {
+		if strings.HasPrefix(k, "X-Amz-Server-Side-") {
+			h[k] = v
+		}
+	}
+	return h
 }

@@ -1,0 +1,2 @@
+Source ref: lakefs://${REPO}/${SOURCE_BRANCH}
+created branch '${DEST_BRANCH}' <COMMIT_ID>

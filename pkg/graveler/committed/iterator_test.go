@@ -226,6 +226,17 @@ func TestIterator(t *testing.T) {
 							t.Fatalf("failed to get value at %s: %s", string(k), pvi.Err())
 						}
 						v, r := pvi.Value()
+						if v == nil && r != nil {
+							// got range - validate range
+							if string(k) != string(r.MinKey) {
+								t.Errorf("got range with MinKey %s != expected %s", string(v.Key), string(k))
+							}
+							// call next to enter range and receive value
+							if !pvi.Next() {
+								t.Fatalf("failed to get value at %s: %s", string(k), pvi.Err())
+							}
+							v, r = pvi.Value()
+						}
 						if v == nil || r == nil {
 							t.Fatalf("missing value-and-range %+v, %+v", v, r)
 						}

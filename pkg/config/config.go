@@ -29,6 +29,7 @@ const (
 	DefaultBlockStoreS3Region                = "us-east-1"
 	DefaultBlockStoreS3StreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
 	DefaultBlockStoreS3StreamingChunkTimeout = time.Second * 1 // or 1 seconds, whatever comes first
+	DefaultBlockStoreS3DiscoverBucketRegion  = true
 
 	DefaultCommittedLocalCacheRangePercent          = 0.9
 	DefaultCommittedLocalCacheMetaRangePercent      = 0.1
@@ -52,6 +53,8 @@ const (
 	DefaultS3GatewayDomainName = "s3.local.lakefs.io"
 	DefaultS3GatewayRegion     = "us-east-1"
 	DefaultS3MaxRetries        = 5
+
+	DefaultActionsEnabled = true
 
 	DefaultStatsEnabled       = true
 	DefaultStatsAddr          = "https://stats.treeverse.io"
@@ -105,9 +108,13 @@ func NewConfig() (*Config, error) {
 const (
 	ListenAddressKey = "listen_address"
 
-	LoggingFormatKey = "logging.format"
-	LoggingLevelKey  = "logging.level"
-	LoggingOutputKey = "logging.output"
+	LoggingFormatKey        = "logging.format"
+	LoggingLevelKey         = "logging.level"
+	LoggingOutputKey        = "logging.output"
+	LoggingFileMaxSizeMBKey = "logging.file_max_size_mb"
+	LoggingFilesKeepKey     = "logging.files_keep"
+
+	ActionsEnabledKey = "actions.enabled"
 
 	AuthCacheEnabledKey = "auth.cache.enabled"
 	AuthCacheSizeKey    = "auth.cache.size"
@@ -116,10 +123,12 @@ const (
 
 	BlockstoreTypeKey                    = "blockstore.type"
 	BlockstoreLocalPathKey               = "blockstore.local.path"
+	BlockstoreDefaultNamespacePrefixKey  = "blockstore.default_namespace_prefix"
 	BlockstoreS3RegionKey                = "blockstore.s3.region"
 	BlockstoreS3StreamingChunkSizeKey    = "blockstore.s3.streaming_chunk_size"
 	BlockstoreS3StreamingChunkTimeoutKey = "blockstore.s3.streaming_chunk_timeout"
 	BlockstoreS3MaxRetriesKey            = "blockstore.s3.max_retries"
+	BlockstoreS3DiscoverBucketRegionKey  = "blockstore.s3.discover_bucket_region"
 
 	BlockstoreAzureTryTimeoutKey                = "blockstore.azure.try_timeout"
 	BlockstoreAzureStorageAccountKey            = "blockstore.azure.storage_account"
@@ -145,6 +154,12 @@ const (
 	StatsEnabledKey       = "stats.enabled"
 	StatsAddressKey       = "stats.address"
 	StatsFlushIntervalKey = "stats.flush_interval"
+
+	SecurityAuditCheckIntervalKey     = "security.audit_check_interval"
+	DefaultSecurityAuditCheckInterval = 12 * time.Hour
+
+	SecurityAuditCheckURLKey     = "security.audit_check_url"
+	DefaultSecurityAuditCheckURL = "https://audit.lakefs.io/audit"
 )
 
 func setDefaults() {
@@ -153,6 +168,9 @@ func setDefaults() {
 	viper.SetDefault(LoggingFormatKey, DefaultLoggingFormat)
 	viper.SetDefault(LoggingLevelKey, DefaultLoggingLevel)
 	viper.SetDefault(LoggingOutputKey, DefaultLoggingOutput)
+	viper.SetDefault(LoggingFilesKeepKey, DefaultLoggingFilesKeepKey)
+
+	viper.SetDefault(ActionsEnabledKey, DefaultActionsEnabled)
 
 	viper.SetDefault(AuthCacheEnabledKey, DefaultAuthCacheEnabled)
 	viper.SetDefault(AuthCacheSizeKey, DefaultAuthCacheSize)
@@ -164,6 +182,8 @@ func setDefaults() {
 	viper.SetDefault(BlockstoreS3StreamingChunkSizeKey, DefaultBlockStoreS3StreamingChunkSize)
 	viper.SetDefault(BlockstoreS3StreamingChunkTimeoutKey, DefaultBlockStoreS3StreamingChunkTimeout)
 	viper.SetDefault(BlockstoreS3MaxRetriesKey, DefaultS3MaxRetries)
+	viper.SetDefault(BlockstoreS3StreamingChunkSizeKey, DefaultBlockStoreS3StreamingChunkSize)
+	viper.SetDefault(BlockstoreS3DiscoverBucketRegionKey, DefaultBlockStoreS3DiscoverBucketRegion)
 
 	viper.SetDefault(CommittedLocalCacheSizeBytesKey, DefaultCommittedLocalCacheBytes)
 	viper.SetDefault(CommittedLocalCacheDirKey, DefaultCommittedLocalCacheDir)
@@ -188,6 +208,9 @@ func setDefaults() {
 
 	viper.SetDefault(BlockstoreAzureTryTimeoutKey, DefaultAzureTryTimeout)
 	viper.SetDefault(BlockstoreAzureAuthMethod, DefaultAzureAuthMethod)
+
+	viper.SetDefault(SecurityAuditCheckIntervalKey, DefaultSecurityAuditCheckInterval)
+	viper.SetDefault(SecurityAuditCheckURLKey, DefaultSecurityAuditCheckURL)
 }
 
 func reverse(s string) string {
@@ -236,6 +259,10 @@ func (c *Config) GetDatabaseParams() dbparams.Database {
 	}
 }
 
+func (c *Config) GetLDAPConfiguration() *LDAP {
+	return c.values.Auth.LDAP
+}
+
 func (c *Config) GetAwsConfig() *aws.Config {
 	logger := logging.Default().WithField("sdk", "aws")
 	cfg := &aws.Config{
@@ -281,6 +308,10 @@ func (c *Config) GetBlockstoreType() string {
 	return c.values.Blockstore.Type
 }
 
+func (c *Config) GetBlockstoreDefaultNamespacePrefix() string {
+	return c.values.Blockstore.DefaultNamespacePrefix
+}
+
 func (c *Config) GetBlockAdapterS3Params() (blockparams.S3, error) {
 	cfg := c.GetAwsConfig()
 
@@ -288,6 +319,7 @@ func (c *Config) GetBlockAdapterS3Params() (blockparams.S3, error) {
 		AwsConfig:             cfg,
 		StreamingChunkSize:    c.values.Blockstore.S3.StreamingChunkSize,
 		StreamingChunkTimeout: c.values.Blockstore.S3.StreamingChunkTimeout,
+		DiscoverBucketRegion:  c.values.Blockstore.S3.DiscoverBucketRegion,
 	}, nil
 }
 
@@ -348,6 +380,10 @@ func (c *Config) GetS3GatewayFallbackURL() string {
 
 func (c *Config) GetListenAddress() string {
 	return c.values.ListenAddress
+}
+
+func (c *Config) GetActionsEnabled() bool {
+	return c.values.Actions.Enabled
 }
 
 func (c *Config) GetStatsEnabled() bool {
@@ -415,4 +451,16 @@ func (c *Config) GetCommittedBlockStoragePrefix() string {
 
 func (c *Config) ToLoggerFields() logging.Fields {
 	return MapLoggingFields(c.values)
+}
+
+func (c *Config) GetLoggingTraceRequestHeaders() bool {
+	return c.values.Logging.TraceRequestHeaders
+}
+
+func (c *Config) GetSecurityAuditCheckInterval() time.Duration {
+	return c.values.Security.AuditCheckInterval
+}
+
+func (c *Config) GetSecurityAuditCheckURL() string {
+	return c.values.Security.AuditCheckURL
 }

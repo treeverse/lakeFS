@@ -12,17 +12,17 @@ import {RefContextProvider, useRefs} from "../../../../lib/hooks/repo";
 import {useAPIWithPagination} from "../../../../lib/hooks/api";
 import {actions} from "../../../../lib/api";
 import {
-    DotIcon,
     FilterIcon,
     XIcon
 } from "@primer/octicons-react";
-import {Container, Row, Table} from "react-bootstrap";
+import {Table} from "react-bootstrap";
 import {Paginator} from "../../../../lib/components/pagination";
 import {ActionStatusIcon} from "../../../../lib/components/repository/actions";
 import {Route, Switch} from "react-router-dom";
 import {Link} from "../../../../lib/components/nav";
 import {useRouter} from "../../../../lib/hooks/router";
 import RepositoryActionPage from "./run";
+import Alert from "react-bootstrap/Alert";
 
 
 const RunRow = ({ repo, run, onFilterBranch, onFilterCommit }) => {
@@ -112,19 +112,6 @@ const RunTable = ({ repo, runs, nextPage, after, onPaginate, onFilterBranch, onF
     )
 }
 
-const GetStarted = ({onCreateRepo}) => {
-    return (
-        <Container className="m-4 mb-5">
-            <h2 className="mt-2">No actions have been logged!</h2>
-
-            <Row className="pt-2 ml-2">
-                <DotIcon className="mr-1 mt-1"/>
-                See the&nbsp;<a href="https://docs.lakefs.io/setup/hooks.html" target="_blank" rel="noopener noreferrer">docs</a>&nbsp;for information on how to use this feature
-            </Row>
-        </Container>
-    );
-};
-
 const ActionsList = ({ repo, after, onPaginate, branch, commit, onFilterBranch, onFilterCommit }) => {
 
     const [refresh, setRefresh] = useState(false)
@@ -138,7 +125,7 @@ const ActionsList = ({ repo, after, onPaginate, branch, commit, onFilterBranch, 
     if (!!error) content = <Error error={error}/>
 
     else if (loading) content = <Loading/>
-    else if (results.length === 0 && !nextPage) content = <GetStarted />
+    else if (results.length === 0 && !nextPage) content = <Alert variant="info" className={"mt-3"}>No action runs have been logged yet.</Alert>
     else content = (
             <RunTable
                 repo={repo}
@@ -174,8 +161,11 @@ const ActionsList = ({ repo, after, onPaginate, branch, commit, onFilterBranch, 
                     <RefreshButton onClick={doRefresh}/>
                 </ActionGroup>
             </ActionsBar>
-
             {content}
+            <div>
+                {/* eslint-disable-next-line react/jsx-no-target-blank */}
+                Actions can be configured to run when predefined events occur. <a href="https://docs.lakefs.io/setup/hooks.html" target="_blank">Learn more.</a>
+            </div>
         </div>
     )
 }

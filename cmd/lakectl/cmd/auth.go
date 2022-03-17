@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"io"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -63,7 +64,7 @@ var authUsersList = &cobra.Command{
 			After:  api.PaginationAfterPtr(after),
 			Amount: api.PaginationAmountPtr(amount),
 		})
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 
 		users := resp.JSON200.Results
 		rows := make([][]interface{}, len(users))
@@ -87,7 +88,7 @@ var authUsersCreate = &cobra.Command{
 		resp, err := clt.CreateUserWithResponse(cmd.Context(), api.CreateUserJSONRequestBody{
 			Id: id,
 		})
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		user := resp.JSON201
 		Write(userCreatedTemplate, user)
 	},
@@ -101,7 +102,7 @@ var authUsersDelete = &cobra.Command{
 		clt := getClient()
 
 		resp, err := clt.DeleteUserWithResponse(cmd.Context(), id)
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 		Fmt("User deleted successfully\n")
 	},
 }
@@ -125,7 +126,7 @@ var authUsersGroupsList = &cobra.Command{
 			After:  api.PaginationAfterPtr(after),
 			Amount: api.PaginationAmountPtr(amount),
 		})
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 
 		groups := resp.JSON200.Results
 		rows := make([][]interface{}, len(groups))
@@ -160,7 +161,7 @@ var authUsersPoliciesList = &cobra.Command{
 			Amount:    api.PaginationAmountPtr(amount),
 			Effective: &effective,
 		})
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 
 		policies := resp.JSON200.Results
 		rows := make([][]interface{}, 0)
@@ -185,7 +186,7 @@ var authUsersPoliciesAttach = &cobra.Command{
 		policy, _ := cmd.Flags().GetString("policy")
 		clt := getClient()
 		resp, err := clt.AttachPolicyToUserWithResponse(cmd.Context(), id, policy)
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		Fmt("Policy attached successfully\n")
 	},
 }
@@ -199,7 +200,7 @@ var authUsersPoliciesDetach = &cobra.Command{
 		clt := getClient()
 
 		resp, err := clt.DetachPolicyFromUserWithResponse(cmd.Context(), id, policy)
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 
 		Fmt("Policy detached successfully\n")
 	},
@@ -219,12 +220,12 @@ var authUsersCredentialsCreate = &cobra.Command{
 
 		if id == "" {
 			resp, err := clt.GetCurrentUserWithResponse(cmd.Context())
-			DieOnResponseError(resp, err)
+			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 			id = resp.JSON200.User.Id
 		}
 
 		resp, err := clt.CreateCredentialsWithResponse(cmd.Context(), id)
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 
 		credentials := resp.JSON201
 		Write(credentialsCreatedTemplate, credentials)
@@ -241,11 +242,11 @@ var authUsersCredentialsDelete = &cobra.Command{
 
 		if id == "" {
 			resp, err := clt.GetCurrentUserWithResponse(cmd.Context())
-			DieOnResponseError(resp, err)
+			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 			id = resp.JSON200.User.Id
 		}
 		resp, err := clt.DeleteCredentialsWithResponse(cmd.Context(), id, accessKeyID)
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 
 		Fmt("Credentials deleted successfully\n")
 	},
@@ -262,7 +263,7 @@ var authUsersCredentialsList = &cobra.Command{
 		clt := getClient()
 		if id == "" {
 			resp, err := clt.GetCurrentUserWithResponse(cmd.Context())
-			DieOnResponseError(resp, err)
+			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 			id = resp.JSON200.User.Id
 		}
 
@@ -270,7 +271,7 @@ var authUsersCredentialsList = &cobra.Command{
 			After:  api.PaginationAfterPtr(after),
 			Amount: api.PaginationAmountPtr(amount),
 		})
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 
 		credentials := resp.JSON200.Results
 		rows := make([][]interface{}, len(credentials))
@@ -302,7 +303,7 @@ var authGroupsList = &cobra.Command{
 			After:  api.PaginationAfterPtr(after),
 			Amount: api.PaginationAmountPtr(amount),
 		})
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 
 		groups := resp.JSON200.Results
 		rows := make([][]interface{}, len(groups))
@@ -326,7 +327,7 @@ var authGroupsCreate = &cobra.Command{
 		resp, err := clt.CreateGroupWithResponse(cmd.Context(), api.CreateGroupJSONRequestBody{
 			Id: id,
 		})
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		group := resp.JSON201
 		Write(groupCreatedTemplate, group)
 	},
@@ -340,7 +341,7 @@ var authGroupsDelete = &cobra.Command{
 		clt := getClient()
 
 		resp, err := clt.DeleteGroupWithResponse(cmd.Context(), id)
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 		Fmt("Group deleted successfully\n")
 	},
 }
@@ -364,7 +365,7 @@ var authGroupsListMembers = &cobra.Command{
 			After:  api.PaginationAfterPtr(after),
 			Amount: api.PaginationAmountPtr(amount),
 		})
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 
 		users := resp.JSON200.Results
 		rows := make([][]interface{}, len(users))
@@ -386,7 +387,7 @@ var authGroupsAddMember = &cobra.Command{
 		clt := getClient()
 
 		resp, err := clt.AddGroupMembershipWithResponse(cmd.Context(), id, user)
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		Fmt("User successfully added\n")
 	},
 }
@@ -400,7 +401,7 @@ var authGroupsRemoveMember = &cobra.Command{
 		clt := getClient()
 
 		resp, err := clt.DeleteGroupMembershipWithResponse(cmd.Context(), id, user)
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 		Fmt("User successfully removed\n")
 	},
 }
@@ -424,7 +425,7 @@ var authGroupsPoliciesList = &cobra.Command{
 			After:  api.PaginationAfterPtr(after),
 			Amount: api.PaginationAmountPtr(amount),
 		})
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 
 		policies := resp.JSON200.Results
 		rows := make([][]interface{}, 0)
@@ -450,7 +451,7 @@ var authGroupsPoliciesAttach = &cobra.Command{
 		clt := getClient()
 
 		resp, err := clt.AttachPolicyToGroupWithResponse(cmd.Context(), id, policy)
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 
 		Fmt("Policy attached successfully\n")
 	},
@@ -465,7 +466,7 @@ var authGroupsPoliciesDetach = &cobra.Command{
 		clt := getClient()
 
 		resp, err := clt.DetachPolicyFromGroupWithResponse(cmd.Context(), id, policy)
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 
 		Fmt("Policy detached successfully\n")
 	},
@@ -490,7 +491,7 @@ var authPoliciesList = &cobra.Command{
 			After:  api.PaginationAfterPtr(after),
 			Amount: api.PaginationAmountPtr(amount),
 		})
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 
 		policies := resp.JSON200.Results
 		rows := make([][]interface{}, len(policies))
@@ -534,7 +535,7 @@ var authPoliciesCreate = &cobra.Command{
 			Id:        id,
 			Statement: doc.Statement,
 		})
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 
 		createdPolicy := resp.JSON201
 		Write(policyCreatedTemplate, struct {
@@ -561,7 +562,7 @@ var authPoliciesShow = &cobra.Command{
 		clt := getClient()
 
 		resp, err := clt.GetPolicyWithResponse(cmd.Context(), id)
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 
 		policy := *resp.JSON200
 		Write(policyDetailsTemplate, struct {
@@ -584,7 +585,7 @@ var authPoliciesDelete = &cobra.Command{
 		clt := getClient()
 
 		resp, err := clt.DeletePolicyWithResponse(cmd.Context(), id)
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 		Fmt("Policy deleted successfully\n")
 	},
 }

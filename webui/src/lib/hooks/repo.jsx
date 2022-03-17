@@ -1,23 +1,33 @@
 import React, {useContext, useState, createContext, useEffect} from "react";
 
-import {repositories, branches, commits, NotFoundError} from "../api";
+import {repositories, branches, commits, NotFoundError, tags, BadRequestError} from "../api";
 import {useRouter} from "./router";
+import {RefTypeBranch, RefTypeCommit, RefTypeTag} from "../../constants";
 
 
 export const resolveRef = async (repoId, refId) => {
     // try branch
     try {
         const branch = await branches.get(repoId, refId);
-        return {id: branch.id, type: 'branch'};
+        return {id: branch.id, type: RefTypeBranch};
     } catch(error) {
-        if (!(error instanceof NotFoundError)) {
+        if (!(error instanceof NotFoundError) && !(error instanceof BadRequestError)) {
+            throw error;
+        }
+    }
+    // try tag
+    try {
+        const tag = await tags.get(repoId, refId);
+        return {id: tag.id, type: RefTypeTag};
+    } catch(error) {
+        if (!(error instanceof NotFoundError) && !(error instanceof BadRequestError)) {
             throw error;
         }
     }
     // try commit
     try {
         const commit = await commits.get(repoId, refId);
-        return {id: commit.id,  type: 'commit'};
+        return {id: commit.id,  type: RefTypeCommit};
     } catch(error) {
         if (!(error instanceof NotFoundError)) {
             throw error;
@@ -61,8 +71,7 @@ export const RefContextProvider = ({ children }) => {
             try {
                 const repo = await repositories.get(repoId);
                 const reference = await resolveRef(repoId, (!!ref) ? ref : repo.default_branch);
-                let comparedRef = null;
-                if (!!compare) comparedRef = await resolveRef(repoId, compare);
+                const comparedRef = await resolveRef(repoId, (!!compare)? compare : repo.default_branch);
                 setRefState({...refContextInitialState, loading: false, repo, reference, compare: comparedRef});
             } catch (err) {
                 setRefState({...refContextInitialState, loading: false, error: err});

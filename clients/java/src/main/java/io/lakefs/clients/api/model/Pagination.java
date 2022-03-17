@@ -56,6 +56,7 @@ public class Pagination {
    * Next page is available
    * @return hasMore
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "Next page is available")
 
   public Boolean getHasMore() {
@@ -78,6 +79,7 @@ public class Pagination {
    * Token used to retrieve the next page
    * @return nextOffset
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "Token used to retrieve the next page")
 
   public String getNextOffset() {
@@ -101,6 +103,7 @@ public class Pagination {
    * minimum: 0
    * @return results
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "Number of values found in the results")
 
   public Integer getResults() {
@@ -124,6 +127,7 @@ public class Pagination {
    * minimum: 0
    * @return maxPerPage
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "Maximal number of entries per page")
 
   public Integer getMaxPerPage() {

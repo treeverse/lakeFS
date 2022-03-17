@@ -26,6 +26,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/testutil"
+	"github.com/treeverse/lakefs/pkg/version"
 )
 
 const (
@@ -87,18 +88,23 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 	})
 	testutil.MustDo(t, "build catalog", err)
 
+	collector := &nullCollector{}
+
 	// wire actions
 	actionsService := actions.NewService(
 		ctx,
 		conn,
 		catalog.NewActionsSource(c),
 		catalog.NewActionsOutputWriter(c.BlockAdapter),
+		collector,
+		true,
 	)
 	c.SetHooksHandler(actionsService)
 
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
 		Enabled: false,
 	})
+	authenticator := auth.NewBuiltinAuthenticator(authService)
 	meta := auth.NewDBMetadataManager("dev", cfg.GetFixedInstallationID(), conn)
 	migrator := db.NewDatabaseMigrator(dbparams.Database{ConnectionString: handlerDatabaseURI})
 
@@ -106,11 +112,12 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 		_ = c.Close()
 	})
 
-	collector := &nullCollector{}
+	auditChecker := version.NewDefaultAuditChecker(cfg.GetSecurityAuditCheckURL())
 
 	handler := api.Serve(
 		cfg,
 		c,
+		authenticator,
 		authService,
 		c.BlockAdapter,
 		meta,
@@ -118,6 +125,7 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 		collector,
 		nil,
 		actionsService,
+		auditChecker,
 		logging.Default(),
 		nil,
 	)

@@ -29,6 +29,14 @@ func TestStrings(t *testing.T) {
 				S: config.Strings{"value"},
 			},
 		}, {
+			Name: "comma-separated string",
+			Source: map[string]interface{}{
+				"s": "the,quick,brown",
+			},
+			Expected: StringsStruct{
+				S: config.Strings{"the", "quick", "brown"},
+			},
+		}, {
 			Name: "multiple strings",
 			Source: map[string]interface{}{
 				"s": []string{"the", "quick", "brown"},

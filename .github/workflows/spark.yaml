@@ -15,12 +15,6 @@ jobs:
         uses: actions/checkout@v2
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
-      - name: validate format
+      - name: run tests, validate and package
         working-directory: clients/spark
-        run: sbt scalafmtCheck
-      - name: validate unused
-        working-directory: clients/spark
-        run: sbt "scalafix --check"
-      - name: package
-        working-directory: clients/spark
-        run: sbt package
+        run: sbt test scalafmtCheck "scalafix --check" package

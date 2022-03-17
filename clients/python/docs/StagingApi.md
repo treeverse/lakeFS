@@ -60,7 +60,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     api_instance = staging_api.StagingApi(api_client)
     repository = "repository_example" # str | 
     branch = "branch_example" # str | 
-    path = "path_example" # str | 
+    path = "path_example" # str | relative to the branch
 
     # example passing only required values which don't have defaults set
     try:
@@ -78,7 +78,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
  **branch** | **str**|  |
- **path** | **str**|  |
+ **path** | **str**| relative to the branch |
 
 ### Return type
 
@@ -106,7 +106,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **link_physical_address**
-> link_physical_address(repository, branch, path, staging_metadata)
+> ObjectStats link_physical_address(repository, branch, path, staging_metadata)
 
 associate staging on this physical address with a path
 
@@ -124,6 +124,7 @@ import lakefs_client
 from lakefs_client.api import staging_api
 from lakefs_client.model.staging_location import StagingLocation
 from lakefs_client.model.error import Error
+from lakefs_client.model.object_stats import ObjectStats
 from lakefs_client.model.staging_metadata import StagingMetadata
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
@@ -160,7 +161,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     api_instance = staging_api.StagingApi(api_client)
     repository = "repository_example" # str | 
     branch = "branch_example" # str | 
-    path = "path_example" # str | 
+    path = "path_example" # str | relative to the branch
     staging_metadata = StagingMetadata(
         staging=StagingLocation(
             physical_address="physical_address_example",
@@ -171,12 +172,14 @@ with lakefs_client.ApiClient(configuration) as api_client:
         user_metadata={
             "key": "key_example",
         },
+        content_type="content_type_example",
     ) # StagingMetadata | 
 
     # example passing only required values which don't have defaults set
     try:
         # associate staging on this physical address with a path
-        api_instance.link_physical_address(repository, branch, path, staging_metadata)
+        api_response = api_instance.link_physical_address(repository, branch, path, staging_metadata)
+        pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling StagingApi->link_physical_address: %s\n" % e)
 ```
@@ -188,12 +191,12 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
  **branch** | **str**|  |
- **path** | **str**|  |
+ **path** | **str**| relative to the branch |
  **staging_metadata** | [**StagingMetadata**](StagingMetadata.md)|  |
 
 ### Return type
 
-void (empty response body)
+[**ObjectStats**](ObjectStats.md)
 
 ### Authorization
 
@@ -209,7 +212,7 @@ void (empty response body)
 
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**200** | successfully linked |  -  |
+**200** | object metadata |  -  |
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
 **404** | Internal Server Error |  -  |

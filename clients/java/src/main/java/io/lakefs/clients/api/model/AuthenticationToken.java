@@ -44,6 +44,7 @@ public class AuthenticationToken {
    * a JWT token that could be used to authenticate requests
    * @return token
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "a JWT token that could be used to authenticate requests")
 
   public String getToken() {

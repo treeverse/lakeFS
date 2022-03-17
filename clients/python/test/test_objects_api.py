@@ -31,6 +31,13 @@ class TestObjectsApi(unittest.TestCase):
         """
         pass
 
+    def test_delete_objects(self):
+        """Test case for delete_objects
+
+        delete objects  # noqa: E501
+        """
+        pass
+
     def test_get_object(self):
         """Test case for get_object
 
@@ -55,7 +62,7 @@ class TestObjectsApi(unittest.TestCase):
     def test_stage_object(self):
         """Test case for stage_object
 
-        stage an object\"s metadata for the given branch  # noqa: E501
+        stage an object's metadata for the given branch  # noqa: E501
         """
         pass
 

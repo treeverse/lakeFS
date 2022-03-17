@@ -23,9 +23,10 @@ import {linkToPath} from "../../api";
 import {ConfirmationModal} from "../modals";
 import {Paginator} from "../pagination";
 import {Link} from "../nav";
+import {RefTypeBranch, RefTypeCommit} from "../../../constants";
 
 
-const humanSize = (bytes) => {
+export const humanSize = (bytes) => {
     if (!bytes) return '0.0 B';
     const e = Math.floor(Math.log(bytes) / Math.log(1024));
     return (bytes / Math.pow(1024, e)).toFixed(1) + ' ' + ' KMGTP'.charAt(e) + 'B';
@@ -57,12 +58,12 @@ const EntryRowActions = ({ repo, reference, entry, onDelete }) => {
                         as={Dropdown.Item}>
                         <DownloadIcon/> {' '} Download
                     </PathLink>
-                    <Dropdown.Item onClick={(e) => {
+                    {reference.type === RefTypeBranch && <Dropdown.Item onClick={(e) => {
                         e.preventDefault();
                         handleShow();
                     }}>
                         <TrashIcon/> {' '} Delete
-                    </Dropdown.Item>
+                    </Dropdown.Item>}
                 </Dropdown.Menu>
             </Dropdown>
 
@@ -79,7 +80,7 @@ const PathLink = ({repoId, reference, path, children, as = null}) => {
 };
 
 const EntryRow = ({repo, reference, path, entry, onDelete, showActions}) => {
-    let rowClass = 'tree-row ';
+    let rowClass = 'change-entry-row ';
     switch (entry.diff_type) {
         case 'changed':
             rowClass += 'diff-changed';
@@ -185,7 +186,7 @@ const EntryRow = ({repo, reference, path, entry, onDelete, showActions}) => {
                 <td className="tree-modified">
                     {modified}
                 </td>
-                <td className={"tree-row-actions"}>
+                <td className={"change-entry-row-actions"}>
                     {entryActions}
                 </td>
             </tr>
@@ -235,7 +236,7 @@ export const URINavigator = ({ repo, reference, path, relativeTo = "", pathURLBu
                     <strong>{'lakefs://'}</strong>
                     <Link href={{pathname: '/repositories/:repoId/objects', params}}>{repo.id}</Link>
                     <strong>{'/'}</strong>
-                    <Link href={{pathname: '/repositories/:repoId/objects',params, query: {ref: reference.id}}}>{(reference.type === 'commit') ? reference.id.substr(0, 12) : reference.id}</Link>
+                    <Link href={{pathname: '/repositories/:repoId/objects',params, query: {ref: reference.id}}}>{(reference.type === RefTypeCommit) ? reference.id.substr(0, 12) : reference.id}</Link>
                     <strong>{'/'}</strong>
                 </>
             ): (

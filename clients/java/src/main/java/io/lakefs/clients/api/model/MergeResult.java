@@ -49,6 +49,7 @@ public class MergeResult {
    * Get summary
    * @return summary
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public MergeResultSummary getSummary() {
@@ -71,6 +72,7 @@ public class MergeResult {
    * Get reference
    * @return reference
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getReference() {

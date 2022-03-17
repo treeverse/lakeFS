@@ -5,10 +5,9 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 
-	"github.com/treeverse/lakefs/pkg/auth"
+	"github.com/treeverse/lakefs/pkg/auth/keys"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/gateway/errors"
@@ -50,6 +49,7 @@ type Operation struct {
 	BlockStore        block.Adapter
 	Auth              simulator.GatewayAuthService
 	Incr              ActionIncr
+	MatchedHost       bool
 }
 
 func StorageClassFromHeader(header http.Header) *string {
@@ -99,7 +99,7 @@ func (o *Operation) EncodeResponse(w http.ResponseWriter, req *http.Request, ent
 
 func DecodeXMLBody(reader io.Reader, entity interface{}) error {
 	body := reader
-	content, err := ioutil.ReadAll(body)
+	content, err := io.ReadAll(body)
 	if err != nil {
 		return err
 	}
@@ -121,9 +121,12 @@ func (o *Operation) DeleteHeader(w http.ResponseWriter, key string) {
 }
 
 // SetHeaders sets a map of headers on the response while preserving the header's case
-func (o *Operation) SetHeaders(w http.ResponseWriter, headers map[string]string) {
+func (o *Operation) SetHeaders(w http.ResponseWriter, headers http.Header) {
+	h := w.Header()
 	for k, v := range headers {
-		o.SetHeader(w, k, v)
+		for _, val := range v {
+			h.Add(k, val)
+		}
 	}
 }
 
@@ -147,7 +150,7 @@ func (o *Operation) EncodeError(w http.ResponseWriter, req *http.Request, e erro
 
 func generateHostID() string {
 	const generatedHostIDLength = 8
-	return auth.HexStringGenerator(generatedHostIDLength)
+	return keys.HexStringGenerator(generatedHostIDLength)
 }
 
 type AuthorizedOperation struct {
@@ -157,7 +160,8 @@ type AuthorizedOperation struct {
 
 type RepoOperation struct {
 	*AuthorizedOperation
-	Repository *catalog.Repository
+	Repository  *catalog.Repository
+	MatchedHost bool
 }
 
 func (o *RepoOperation) EncodeError(w http.ResponseWriter, req *http.Request, err errors.APIError) *http.Request {
@@ -207,25 +211,26 @@ func (o *PathOperation) EncodeError(w http.ResponseWriter, req *http.Request, er
 }
 
 type OperationHandler interface {
-	RequiredPermissions(req *http.Request) ([]permissions.Permission, error)
+	RequiredPermissions(req *http.Request) (permissions.Node, error)
 	Handle(w http.ResponseWriter, req *http.Request, op *Operation)
 }
 
 type AuthenticatedOperationHandler interface {
-	RequiredPermissions(req *http.Request) ([]permissions.Permission, error)
+	RequiredPermissions(req *http.Request) (permissions.Node, error)
 	Handle(w http.ResponseWriter, req *http.Request, op *AuthorizedOperation)
 }
 
 type RepoOperationHandler interface {
-	RequiredPermissions(req *http.Request, repository string) ([]permissions.Permission, error)
+	RequiredPermissions(req *http.Request, repository string) (permissions.Node, error)
 	Handle(w http.ResponseWriter, req *http.Request, op *RepoOperation)
 }
 
 type BranchOperationHandler interface {
-	RequiredPermissions(req *http.Request, repository, branch string) ([]permissions.Permission, error)
+	RequiredPermissions(req *http.Request, repository, branch string) (permissions.Node, error)
 	Handle(w http.ResponseWriter, req *http.Request, op *RefOperation)
 }
+
 type PathOperationHandler interface {
-	RequiredPermissions(req *http.Request, repository, branch, path string) ([]permissions.Permission, error)
+	RequiredPermissions(req *http.Request, repository, branch, path string) (permissions.Node, error)
 	Handle(w http.ResponseWriter, req *http.Request, op *PathOperation)
 }

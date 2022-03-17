@@ -95,7 +95,7 @@ layout: table_wrappers
                 window.addEventListener("load",  async () => {
                     const pathFirstLevel = location.pathname.split('/')[1];
                     const selectedVersion = pathFirstLevel.startsWith('v') && pathFirstLevel || '';
-                    const selectVersionElm = document.getElementById('selectversion');
+                    const selectVersionElmFirst = document.getElementById('selectversion').firstElementChild;
                     const response = await fetch('/versions.json');
                     if (!response.ok) {
                         return
@@ -108,7 +108,7 @@ layout: table_wrappers
                         if (key === selectedVersion) {
                             el.selected = true;
                         }
-                        selectVersionElm.append(el);
+                        selectVersionElmFirst.after(el);
                     }
                 });
             </script>

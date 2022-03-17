@@ -3,7 +3,7 @@ package sig_test
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -160,8 +160,8 @@ func TestSingleChunkPut(t *testing.T) {
 				t.Errorf("expect not no error, got %v", err)
 			}
 
-			req.Body = ioutil.NopCloser(strings.NewReader(tc.RequestBody))
-			//verify request with our authenticator
+			req.Body = io.NopCloser(strings.NewReader(tc.RequestBody))
+			// verify request with our authenticator
 
 			authenticator := sig.NewV4Authenticator(req)
 			_, err = authenticator.Parse()
@@ -179,7 +179,7 @@ func TestSingleChunkPut(t *testing.T) {
 			}
 
 			// read all
-			_, err = ioutil.ReadAll(req.Body)
+			_, err = io.ReadAll(req.Body)
 			if err != tc.ExpectedReadError {
 				t.Errorf("expect Error %v error, got %s", tc.ExpectedReadError, err)
 			}
@@ -222,7 +222,7 @@ func TestStreaming(t *testing.T) {
 	chunk3 := []byte("0;chunk-signature=b6c6ea8a5354eaf15b3cb7646744f4275b71ea724fed81ceb9323e279d449df9\r\n\r\n")
 	body := append(chunk1, chunk2...)
 	body = append(body, chunk3...)
-	req.Body = ioutil.NopCloser(bytes.NewReader(body))
+	req.Body = io.NopCloser(bytes.NewReader(body))
 
 	// now test it
 	authenticator := sig.NewV4Authenticator(req)
@@ -242,7 +242,7 @@ func TestStreaming(t *testing.T) {
 	if req.ContentLength != int64(chunk1Size+chunk2Size) {
 		t.Fatal("expected content length to be equal to decoded content length")
 	}
-	_, err = ioutil.ReadAll(req.Body)
+	_, err = io.ReadAll(req.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -279,7 +279,7 @@ func TestStreamingLastByteWrong(t *testing.T) {
 	chunk3 := []byte("0;chunk-signature=b6c6ea8a5354eaf15b3cb7646744f4275b71ea724fed81ceb9323e279d449df9\r\n\r\n")
 	body := append(chunk1, chunk2...)
 	body = append(body, chunk3...)
-	req.Body = ioutil.NopCloser(bytes.NewReader(body))
+	req.Body = io.NopCloser(bytes.NewReader(body))
 
 	// now test it
 	authenticator := sig.NewV4Authenticator(req)
@@ -297,7 +297,7 @@ func TestStreamingLastByteWrong(t *testing.T) {
 		t.Errorf("expect not no error, got %v", err)
 	}
 
-	_, err = ioutil.ReadAll(req.Body)
+	_, err = io.ReadAll(req.Body)
 	if err != errors.ErrSignatureDoesNotMatch {
 		t.Errorf("expect %v, got %v", errors.ErrSignatureDoesNotMatch, err)
 	}

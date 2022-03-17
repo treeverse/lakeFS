@@ -51,43 +51,49 @@ const initialAPIState = {
 export const useAPI = (promise, deps = []) => {
     const router = useRouter();
     const [request, setRequest] = useState(initialAPIState);
-    const [ login, setLogin ] = useState(false);
+    const [login, setLogin] = useState(false);
 
     useEffect(() => {
         if (login) {
+            const loginPathname = '/auth/login';
+            if (router.route === loginPathname) {
+                return;
+            }
             router.push({
-                pathname: '/auth/login',
-                query: {next: router.route}
+                pathname: loginPathname,
+                query: {next: router.route},
             });
             setLogin(false);
         }
     }, [login, router])
 
     useEffect(() => {
+        let isMounted = true;
+        setRequest(initialAPIState);
         const execute = async () => {
-            setRequest(initialAPIState);
             try {
                 const response = await promise();
-                // setResponse(response)
-                // setLoading(false)
                 setRequest({
                     loading: false,
                     error: null,
-                    response
+                    response,
                 });
             } catch (error) {
                 if (error instanceof AuthenticationError) {
-                    setLogin(true);
+                    if (isMounted) {
+                        setLogin(true);
+                    }
                     return;
                 }
                 setRequest({
                     loading: false,
                     error,
-                    response: null
+                    response: null,
                 });
             }
-        }
+        };
         execute();
+        return () => isMounted = false;
     }, deps);
     return {...request};
 }

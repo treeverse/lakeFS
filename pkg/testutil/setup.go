@@ -41,6 +41,8 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 	viper.SetDefault("access_key_id", "")
 	viper.SetDefault("secret_access_key", "")
 	viper.SetDefault("storage_namespace", fmt.Sprintf("s3://%s/%s", params.StorageNS, xid.New().String()))
+	viper.SetDefault("version", "dev")
+	viper.SetDefault("lakectl_dir", "..")
 
 	viper.AddConfigPath(".")
 	viper.SetEnvPrefix(strings.ToUpper(params.Name))

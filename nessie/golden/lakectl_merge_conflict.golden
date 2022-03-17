@@ -1,0 +1,4 @@
+Source: lakefs://${REPO}/${SOURCE_BRANCH}
+Destination: lakefs://${REPO}/${DEST_BRANCH}
+Conflict found.
+Error executing command.

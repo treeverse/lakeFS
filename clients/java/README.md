@@ -168,6 +168,7 @@ Class | Method | HTTP request | Description
 *CommitsApi* | [**getCommit**](docs/CommitsApi.md#getCommit) | **GET** /repositories/{repository}/commits/{commitId} | get commit
 *CommitsApi* | [**logBranchCommits**](docs/CommitsApi.md#logBranchCommits) | **GET** /repositories/{repository}/branches/{branch}/commits | get commit log from branch. Deprecated: replaced by logCommits by passing branch name as ref 
 *ConfigApi* | [**getLakeFSVersion**](docs/ConfigApi.md#getLakeFSVersion) | **GET** /config/version | 
+*ConfigApi* | [**getSetupState**](docs/ConfigApi.md#getSetupState) | **GET** /setup_lakefs | check if the lakeFS installation is already set up
 *ConfigApi* | [**getStorageConfig**](docs/ConfigApi.md#getStorageConfig) | **GET** /config/storage | 
 *ConfigApi* | [**setup**](docs/ConfigApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
 *HealthCheckApi* | [**healthCheck**](docs/HealthCheckApi.md#healthCheck) | **GET** /healthcheck | 
@@ -175,6 +176,7 @@ Class | Method | HTTP request | Description
 *MetadataApi* | [**getMetaRange**](docs/MetadataApi.md#getMetaRange) | **GET** /repositories/{repository}/metadata/meta_range/{meta_range} | return URI to a meta-range file
 *MetadataApi* | [**getRange**](docs/MetadataApi.md#getRange) | **GET** /repositories/{repository}/metadata/range/{range} | return URI to a range file
 *ObjectsApi* | [**deleteObject**](docs/ObjectsApi.md#deleteObject) | **DELETE** /repositories/{repository}/branches/{branch}/objects | delete object
+*ObjectsApi* | [**deleteObjects**](docs/ObjectsApi.md#deleteObjects) | **POST** /repositories/{repository}/branches/{branch}/objects/delete | delete objects
 *ObjectsApi* | [**getObject**](docs/ObjectsApi.md#getObject) | **GET** /repositories/{repository}/refs/{ref}/objects | get object content
 *ObjectsApi* | [**getUnderlyingProperties**](docs/ObjectsApi.md#getUnderlyingProperties) | **GET** /repositories/{repository}/refs/{ref}/objects/underlyingProperties | get object properties on underlying storage
 *ObjectsApi* | [**listObjects**](docs/ObjectsApi.md#listObjects) | **GET** /repositories/{repository}/refs/{ref}/objects/ls | list objects under a given prefix
@@ -183,11 +185,14 @@ Class | Method | HTTP request | Description
 *ObjectsApi* | [**uploadObject**](docs/ObjectsApi.md#uploadObject) | **POST** /repositories/{repository}/branches/{branch}/objects | 
 *RefsApi* | [**diffRefs**](docs/RefsApi.md#diffRefs) | **GET** /repositories/{repository}/refs/{leftRef}/diff/{rightRef} | diff references
 *RefsApi* | [**dumpRefs**](docs/RefsApi.md#dumpRefs) | **PUT** /repositories/{repository}/refs/dump | Dump repository refs (tags, commits, branches) to object store
-*RefsApi* | [**logCommits**](docs/RefsApi.md#logCommits) | **GET** /repositories/{repository}/refs/{ref}/commits | get commit log from ref
+*RefsApi* | [**logCommits**](docs/RefsApi.md#logCommits) | **GET** /repositories/{repository}/refs/{ref}/commits | get commit log from ref. If both objects and prefixes are empty, return all commits.
 *RefsApi* | [**mergeIntoBranch**](docs/RefsApi.md#mergeIntoBranch) | **POST** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch} | merge references
 *RefsApi* | [**restoreRefs**](docs/RefsApi.md#restoreRefs) | **PUT** /repositories/{repository}/refs/restore | Restore repository refs (tags, commits, branches) from object store
+*RepositoriesApi* | [**createBranchProtectionRule**](docs/RepositoriesApi.md#createBranchProtectionRule) | **POST** /repositories/{repository}/branch_protection | 
 *RepositoriesApi* | [**createRepository**](docs/RepositoriesApi.md#createRepository) | **POST** /repositories | create repository
+*RepositoriesApi* | [**deleteBranchProtectionRule**](docs/RepositoriesApi.md#deleteBranchProtectionRule) | **DELETE** /repositories/{repository}/branch_protection | 
 *RepositoriesApi* | [**deleteRepository**](docs/RepositoriesApi.md#deleteRepository) | **DELETE** /repositories/{repository} | delete repository
+*RepositoriesApi* | [**getBranchProtectionRules**](docs/RepositoriesApi.md#getBranchProtectionRules) | **GET** /repositories/{repository}/branch_protection | get branch protection rules
 *RepositoriesApi* | [**getRepository**](docs/RepositoriesApi.md#getRepository) | **GET** /repositories/{repository} | get repository
 *RepositoriesApi* | [**listRepositories**](docs/RepositoriesApi.md#listRepositories) | **GET** /repositories | list repositories
 *RetentionApi* | [**getGarbageCollectionRules**](docs/RetentionApi.md#getGarbageCollectionRules) | **GET** /repositories/{repository}/gc/rules | 
@@ -208,6 +213,7 @@ Class | Method | HTTP request | Description
  - [ActionRunList](docs/ActionRunList.md)
  - [AuthenticationToken](docs/AuthenticationToken.md)
  - [BranchCreation](docs/BranchCreation.md)
+ - [BranchProtectionRule](docs/BranchProtectionRule.md)
  - [Commit](docs/Commit.md)
  - [CommitCreation](docs/CommitCreation.md)
  - [CommitList](docs/CommitList.md)
@@ -227,14 +233,18 @@ Class | Method | HTTP request | Description
  - [GroupList](docs/GroupList.md)
  - [HookRun](docs/HookRun.md)
  - [HookRunList](docs/HookRunList.md)
+ - [InlineObject1](docs/InlineObject1.md)
  - [LoginInformation](docs/LoginInformation.md)
  - [Merge](docs/Merge.md)
  - [MergeResult](docs/MergeResult.md)
  - [MergeResultSummary](docs/MergeResultSummary.md)
+ - [ObjectError](docs/ObjectError.md)
+ - [ObjectErrorList](docs/ObjectErrorList.md)
  - [ObjectStageCreation](docs/ObjectStageCreation.md)
  - [ObjectStats](docs/ObjectStats.md)
  - [ObjectStatsList](docs/ObjectStatsList.md)
  - [Pagination](docs/Pagination.md)
+ - [PathList](docs/PathList.md)
  - [Policy](docs/Policy.md)
  - [PolicyList](docs/PolicyList.md)
  - [Ref](docs/Ref.md)
@@ -246,6 +256,7 @@ Class | Method | HTTP request | Description
  - [ResetCreation](docs/ResetCreation.md)
  - [RevertCreation](docs/RevertCreation.md)
  - [Setup](docs/Setup.md)
+ - [SetupState](docs/SetupState.md)
  - [StagingLocation](docs/StagingLocation.md)
  - [StagingMetadata](docs/StagingMetadata.md)
  - [Statement](docs/Statement.md)

@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/rand"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -13,9 +15,12 @@ import (
 	"time"
 
 	"github.com/dlmiddlecote/sqlstats"
+	"github.com/fsnotify/fsnotify"
+	"github.com/go-ldap/ldap/v3"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
@@ -23,6 +28,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/catalog"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/gateway"
 	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
@@ -44,12 +50,56 @@ type Shutter interface {
 	Shutdown(context.Context) error
 }
 
+func newLDAPAuthenticator(cfg *config.LDAP, service auth.Service) *auth.LDAPAuthenticator {
+	const (
+		connectionTimeout = 15 * time.Second
+		requestTimeout    = 7 * time.Second
+	)
+	group := cfg.DefaultUserGroup
+	if group == "" {
+		group = auth.ViewersGroup
+	}
+	return &auth.LDAPAuthenticator{
+		AuthService:       service,
+		BindDN:            cfg.BindDN,
+		BindPassword:      cfg.BindPassword,
+		DefaultUserGroup:  group,
+		UsernameAttribute: cfg.UsernameAttribute,
+		MakeLDAPConn: func(_ context.Context) (*ldap.Conn, error) {
+			c, err := ldap.DialURL(
+				cfg.ServerEndpoint,
+				ldap.DialWithDialer(&net.Dialer{Timeout: connectionTimeout}),
+			)
+			if err != nil {
+				return nil, fmt.Errorf("dial %s: %w", cfg.ServerEndpoint, err)
+			}
+			c.SetTimeout(requestTimeout)
+			// TODO(ariels): Support StartTLS (& other TLS configuration).
+			return c, nil
+		},
+		BaseSearchRequest: ldap.SearchRequest{
+			BaseDN:     cfg.UserBaseDN,
+			Scope:      ldap.ScopeWholeSubtree,
+			Filter:     cfg.UserFilter,
+			Attributes: []string{cfg.UsernameAttribute},
+		},
+	}
+}
+
 // runCmd represents the run command
 var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run lakeFS",
 	Run: func(cmd *cobra.Command, args []string) {
 		logger := logging.Default()
+		cfg := loadConfig()
+		viper.WatchConfig()
+		viper.OnConfigChange(func(in fsnotify.Event) {
+			lvl := viper.GetString(config.LoggingLevelKey)
+			logger.WithField("toLevel", lvl).Info("Changing log level")
+			logging.SetLevel(lvl)
+		})
+
 		ctx := cmd.Context()
 		logger.WithField("version", version.Version).Info("lakeFS run")
 
@@ -77,19 +127,9 @@ var runCmd = &cobra.Command{
 			LockDB: lockdbPool,
 		})
 		if err != nil {
-			logger.WithError(err).Fatal("failed to create c")
+			logger.WithError(err).Fatal("failed to create catalog")
 		}
 		defer func() { _ = c.Close() }()
-
-		// wire actions
-		actionsService := actions.NewService(
-			ctx,
-			dbPool,
-			catalog.NewActionsSource(c),
-			catalog.NewActionsOutputWriter(c.BlockAdapter),
-		)
-		c.SetHooksHandler(actionsService)
-		defer actionsService.Stop()
 
 		multipartsTracker := multiparts.NewTracker(dbPool)
 
@@ -98,6 +138,12 @@ var runCmd = &cobra.Command{
 			dbPool,
 			crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
 			cfg.GetAuthCacheConfig())
+		var authenticator auth.Authenticator = auth.NewBuiltinAuthenticator(authService)
+		ldapConfig := cfg.GetLDAPConfiguration()
+		if ldapConfig != nil {
+			ldapAuthenticator := newLDAPAuthenticator(ldapConfig, authService)
+			authenticator = auth.NewChainAuthenticator(authenticator, ldapAuthenticator)
+		}
 		authMetadataManager := auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
 		blockstoreType := cfg.GetBlockstoreType()
@@ -116,6 +162,27 @@ var runCmd = &cobra.Command{
 		bufferedCollector.SetRuntimeCollector(blockStore.RuntimeStats)
 		// send metadata
 		bufferedCollector.CollectMetadata(metadata)
+
+		// wire actions
+		actionsService := actions.NewService(
+			ctx,
+			dbPool,
+			catalog.NewActionsSource(c),
+			catalog.NewActionsOutputWriter(c.BlockAdapter),
+			bufferedCollector,
+			cfg.GetActionsEnabled(),
+		)
+		c.SetHooksHandler(actionsService)
+		defer actionsService.Stop()
+
+		auditChecker := version.NewDefaultAuditChecker(cfg.GetSecurityAuditCheckURL())
+		defer auditChecker.Close()
+		if version.Version != version.UnreleasedVersion {
+			const maxSecondsToJitter = 12 * 60 * 60                                // 12h in seconds
+			jitter := time.Duration(rand.Int63n(maxSecondsToJitter)) * time.Second //nolint:gosec
+			interval := cfg.GetSecurityAuditCheckInterval() + jitter
+			auditChecker.StartPeriodicCheck(ctx, interval, logger)
+		}
 
 		allowForeign, err := cmd.Flags().GetBool(mismatchedReposFlagName)
 		if err != nil {
@@ -137,6 +204,7 @@ var runCmd = &cobra.Command{
 		apiHandler := api.Serve(
 			cfg,
 			c,
+			authenticator,
 			authService,
 			blockStore,
 			authMetadataManager,
@@ -144,6 +212,7 @@ var runCmd = &cobra.Command{
 			bufferedCollector,
 			cloudMetadataProvider,
 			actionsService,
+			auditChecker,
 			logger.WithField("service", "api_gateway"),
 			cfg.GetS3GatewayDomainNames(),
 		)
@@ -166,6 +235,7 @@ var runCmd = &cobra.Command{
 			cfg.GetS3GatewayDomainNames(),
 			bufferedCollector,
 			s3FallbackURL,
+			cfg.GetLoggingTraceRequestHeaders(),
 		)
 		ctx, cancelFn := context.WithCancel(cmd.Context())
 		go bufferedCollector.Run(ctx)
@@ -263,7 +333,7 @@ func checkMetadataPrefix(ctx context.Context, repo *catalog.Repository, logger l
 			"path":              dummyFile,
 			"storage_namespace": repo.StorageNamespace,
 		}).Fatal("Can't find dummy file in storage namespace, did you run the migration? " +
-			"(http://docs.lakefs.io/reference/upgrade.html#data-migration-for-version-v0500)")
+			"(https://docs.lakefs.io/reference/upgrade.html#data-migration-for-version-v0500)")
 	}
 }
 
@@ -356,7 +426,7 @@ func init() {
 	runCmd.Flags().BoolP(mismatchedReposFlagName, "m", false, "Allow repositories from other object store types")
 	if err := runCmd.Flags().MarkHidden(mismatchedReposFlagName); err != nil {
 		// (internal error)
-		fmt.Fprint(os.Stderr, err)
+		_, _ = fmt.Fprint(os.Stderr, err)
 		os.Exit(internalErrorCode)
 	}
 }

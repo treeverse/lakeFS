@@ -70,10 +70,7 @@ Example configuration file:
 		}
 		client := getClient()
 		resp, err := client.SetGarbageCollectionRulesWithResponse(cmd.Context(), u.Repository, body)
-		DieOnResponseError(resp, err)
-		if resp.StatusCode() != http.StatusNoContent {
-			Die("Failed to update config", 1)
-		}
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
 }
 
@@ -87,7 +84,7 @@ var gcGetConfigCmd = &cobra.Command{
 		isJSON := MustBool(cmd.Flags().GetBool(jsonFlagName))
 		client := getClient()
 		resp, err := client.GetGarbageCollectionRulesWithResponse(cmd.Context(), u.Repository)
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if isJSON {
 			Write("{{ . | json }}", resp.JSON200)
 		} else {

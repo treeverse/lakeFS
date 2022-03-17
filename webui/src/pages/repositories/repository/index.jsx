@@ -4,11 +4,13 @@ import {Redirect, Route, Switch} from "react-router-dom";
 import RepositoryObjectsPage from "./objects";
 import RepositoryChangesPage from "./changes";
 import RepositoryBranchesPage from "./branches";
+import RepositoryTagsPage from "./tags";
 import RepositoryComparePage from "./compare";
 import RepositoryCommitsIndexPage from "./commits";
 import RepositoryActionsIndexPage from "./actions";
 import RepositoryGeneralSettingsPage from "./settings/general";
 import RepositoryRetentionPage from "./settings/retention";
+import RepositorySettingsBranchesPage from "./settings/branches";
 
 
 const RepositoryPage = () => {
@@ -29,6 +31,9 @@ const RepositoryPage = () => {
             <Route path="/repositories/:repoId/branches">
                 <RepositoryBranchesPage/>
             </Route>
+            <Route path="/repositories/:repoId/tags">
+                <RepositoryTagsPage/>
+            </Route>
             <Route path="/repositories/:repoId/compare">
                 <RepositoryComparePage/>
             </Route>
@@ -43,6 +48,9 @@ const RepositoryPage = () => {
             </Route>
             <Route path="/repositories/:repoId/settings/retention">
                 <RepositoryRetentionPage/>
+            </Route>
+            <Route path="/repositories/:repoId/settings/branches">
+                <RepositorySettingsBranchesPage/>
             </Route>
         </Switch>
     )

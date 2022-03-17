@@ -1,11 +1,12 @@
 import React from "react";
 
 import Nav from "react-bootstrap/Nav";
-import {FileDiffIcon, GitCommitIcon, DatabaseIcon, GitBranchIcon, GitCompareIcon, PlayIcon, GearIcon} from "@primer/octicons-react";
+import {FileDiffIcon, GitCommitIcon, DatabaseIcon, GitBranchIcon, GitCompareIcon, PlayIcon, GearIcon, TagIcon} from "@primer/octicons-react";
 
 import {useRefs} from "../../hooks/repo";
 import {Link, NavItem} from "../nav";
 import {useRouter} from "../../hooks/router";
+import {RefTypeBranch} from "../../../constants";
 
 
 
@@ -22,9 +23,20 @@ export const RepositoryNavTabs = ({ active }) => {
         return url;
     };
 
+    const withRefAndCompareContext = (url) => {
+        const params = new URLSearchParams();
+        if (!!reference) {
+            params.append('ref', reference.id)
+            params.append('compare', reference.id);
+        }
+        if (!!params.toString())
+            return `${url}?${params.toString()}`;
+        return url;
+    };
+
     const withBranchContext = (url) => {
         const params = new URLSearchParams();
-        if (!!reference && reference.type === 'branch') params.append('ref', reference.id);
+        if (!!reference && reference.type === RefTypeBranch) params.append('ref', reference.id);
         if (!!params.toString())
             return `${url}?${params.toString()}`;
         return url;
@@ -54,7 +66,10 @@ export const RepositoryNavTabs = ({ active }) => {
             <Link active={active === 'branches'} href={`/repositories/${repoId}/branches`} component={NavItem}>
                 <GitBranchIcon/> Branches
             </Link>
-            <Link active={active === 'compare'} href={withRefContext(`/repositories/${repoId}/compare`)} component={NavItem}>
+            <Link active={active === 'tags'} href={`/repositories/${repoId}/tags`} component={NavItem}>
+                <TagIcon/> Tags
+            </Link>
+            <Link active={active === 'compare'} href={withRefAndCompareContext(`/repositories/${repoId}/compare`)} component={NavItem}>
                 <GitCompareIcon/> Compare
             </Link>
             <Link active={active === 'actions'} href={`/repositories/${repoId}/actions`} component={NavItem}>

@@ -8,7 +8,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/gateway/path"
 )
 
-const SymlinkInputFormat = "org.apache.hadoop.hive.ql.io.SymlinkTextInputFormat"
+const symlinkInputFormat = "org.apache.hadoop.hive.ql.io.SymlinkTextInputFormat"
 
 var ErrInvalidLocation = errors.New("got empty schema or host wile parsing location url, location should be schema://host/path")
 
@@ -52,4 +52,20 @@ func GetSymlinkLocation(location, locationPrefix string) (string, error) {
 		return "", err
 	}
 	return locationPrefix + "/" + u.Host + "/" + p.Ref + "/" + p.Path, nil
+}
+
+func ExtractRepoAndBranch(metastoreLocationURI string) (string, string, error) {
+	u, err := url.Parse(metastoreLocationURI)
+	if err != nil {
+		return "", "", err
+	}
+	if u.Scheme == "" || u.Host == "" {
+		return "", "", ErrInvalidLocation
+	}
+	p, err := path.ResolvePath(u.Path)
+	if err != nil {
+		return "", "", err
+	}
+
+	return u.Host, p.Ref, nil
 }

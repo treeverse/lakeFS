@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"net/http"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
@@ -35,7 +37,7 @@ var branchListCmd = &cobra.Command{
 			After:  api.PaginationAfterPtr(after),
 			Amount: api.PaginationAmountPtr(amount),
 		})
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 
 		refs := resp.JSON200.Results
 		rows := make([][]interface{}, len(refs))
@@ -69,7 +71,7 @@ var branchCreateCmd = &cobra.Command{
 			Name:   u.Ref,
 			Source: sourceURI.Ref,
 		})
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		Fmt("created branch '%s' %s\n", u.Ref, string(resp.Body))
 	},
 }
@@ -87,34 +89,43 @@ var branchDeleteCmd = &cobra.Command{
 		u := MustParseRefURI("branch", args[0])
 		Fmt("Branch: %s\n", u.String())
 		resp, err := client.DeleteBranchWithResponse(cmd.Context(), u.Repository, u.Ref)
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
 }
 
 // lakectl branch revert lakefs://myrepo/main commitId
 var branchRevertCmd = &cobra.Command{
-	Use:   "revert <branch uri> <commit ref to revert>",
+	Use:   "revert <branch uri> <commit ref to revert> [<more commits>...]",
 	Short: "Given a commit, record a new commit to reverse the effect of this commit",
-	Args:  cobra.ExactArgs(branchRevertCmdArgs),
+	Long:  "The commits will be reverted in left-to-right order",
+	Example: `lakectl branch revert lakefs://example-repo/example-branch commitA
+	          Revert the changes done by commitA in example-branch
+		      branch revert lakefs://example-repo/example-branch HEAD~1 HEAD~2 HEAD~3
+		      Revert the changes done by the second last commit to the fourth last commit in example-branch`,
+	Args: cobra.MinimumNArgs(branchRevertCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseRefURI("branch", args[0])
 		Fmt("Branch: %s\n", u.String())
-		commitRef := args[1]
-		clt := getClient()
 		hasParentNumber := cmd.Flags().Changed(ParentNumberFlagName)
 		parentNumber, _ := cmd.Flags().GetInt(ParentNumberFlagName)
 		if hasParentNumber && parentNumber <= 0 {
 			Die("parent number must be non-negative, if specified", 1)
 		}
-		confirmation, err := Confirm(cmd.Flags(), fmt.Sprintf("Are you sure you want to revert the effect of commit %s", commitRef))
+		commits := strings.Join(args[1:], " ")
+		confirmation, err := Confirm(cmd.Flags(), fmt.Sprintf("Are you sure you want to revert the effect of commits %s", commits))
 		if err != nil || !confirmation {
 			Die("Revert aborted", 1)
 		}
-		resp, err := clt.RevertBranchWithResponse(cmd.Context(), u.Repository, u.Ref, api.RevertBranchJSONRequestBody{
-			ParentNumber: parentNumber,
-			Ref:          commitRef,
-		})
-		DieOnResponseError(resp, err)
+		clt := getClient()
+		for i := 1; i < len(args); i++ {
+			commitRef := args[i]
+			resp, err := clt.RevertBranchWithResponse(cmd.Context(), u.Repository, u.Ref, api.RevertBranchJSONRequestBody{
+				ParentNumber: parentNumber,
+				Ref:          commitRef,
+			})
+			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
+			Fmt("commit %s successfully reverted\n", commitRef)
+		}
 	},
 }
 
@@ -168,7 +179,7 @@ var branchResetCmd = &cobra.Command{
 			return
 		}
 		resp, err := clt.ResetBranchWithResponse(cmd.Context(), u.Repository, u.Ref, api.ResetBranchJSONRequestBody(reset))
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
 }
 
@@ -181,7 +192,7 @@ var branchShowCmd = &cobra.Command{
 		u := MustParseRefURI("branch", args[0])
 		Fmt("Branch: %s\n", u.String())
 		resp, err := client.GetBranchWithResponse(cmd.Context(), u.Repository, u.Ref)
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		branch := resp.JSON200
 		Fmt("%s\n", branch)
 	},

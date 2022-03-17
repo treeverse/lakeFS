@@ -2,30 +2,42 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
+	"reflect"
+	"regexp"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/uri"
-
-	"github.com/jedib0t/go-pretty/table"
-	"github.com/jedib0t/go-pretty/text"
+	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
+	"github.com/treeverse/lakefs/pkg/uri"
 	"golang.org/x/term"
 )
 
 var isTerminal = true
 var noColorRequested = false
+var verboseMode = false
+
+// ErrInvalidValueInList is an error returned when a parameter of type list contains an empty string
+var ErrInvalidValueInList = errors.New("empty string in list")
+
+var accessKeyRegexp = regexp.MustCompile(`^AKIA[I|J][A-Z0-9]{14}Q$`)
 
 const (
 	LakectlInteractive        = "LAKECTL_INTERACTIVE"
 	LakectlInteractiveDisable = "no"
-	DeathMessage              = "Error executing command: {{.Error|red}}\n"
+	DeathMessage              = "{{.Error|red}}\nError executing command.\n"
+	DeathMessageWithFields    = "{{.Message|red}}\n{{.Status}}\n"
 )
 
 const internalPageSize = 1000          // when retreiving all records, use this page size under the hood
@@ -146,6 +158,12 @@ func Write(tpl string, data interface{}) {
 	WriteTo(tpl, data, os.Stdout)
 }
 
+func WriteIfVerbose(tpl string, data interface{}) {
+	if verboseMode {
+		WriteTo(tpl, data, os.Stdout)
+	}
+}
+
 func Die(err string, code int) {
 	WriteTo(DeathMessage, struct{ Error string }{err}, os.Stderr)
 	os.Exit(code)
@@ -160,15 +178,22 @@ type APIError interface {
 }
 
 func DieErr(err error) {
-	errData := struct{ Error string }{}
-	apiError, isAPIError := err.(APIError)
-	if isAPIError {
-		errData.Error = apiError.GetPayload().Message
+	type ErrData struct {
+		Error string
 	}
-	if errData.Error == "" {
-		errData.Error = err.Error()
+	var (
+		apiError         APIError
+		userVisibleError helpers.UserVisibleAPIError
+	)
+	apiError, _ = err.(APIError)
+	switch {
+	case errors.As(err, &userVisibleError):
+		WriteTo(DeathMessageWithFields, userVisibleError.APIFields, os.Stderr)
+	case apiError != nil:
+		WriteTo(DeathMessage, ErrData{Error: apiError.GetPayload().Message}, os.Stderr)
+	default:
+		WriteTo(DeathMessage, ErrData{Error: err.Error()}, os.Stderr)
 	}
-	WriteTo(DeathMessage, errData, os.Stderr)
 	os.Exit(1)
 }
 
@@ -176,11 +201,47 @@ type StatusCoder interface {
 	StatusCode() int
 }
 
-func DieOnResponseError(response interface{}, err error) {
+func RetrieveError(response interface{}, err error) error {
 	if err != nil {
-		DieErr(err)
+		return err
 	}
-	err = helpers.ResponseAsError(response)
+	return helpers.ResponseAsError(response)
+}
+
+func dieOnResponseError(response interface{}, err error) {
+	retrievedErr := RetrieveError(response, err)
+	if retrievedErr != nil {
+		DieErr(retrievedErr)
+	}
+}
+func DieOnErrorOrUnexpectedStatusCode(response interface{}, err error, expectedStatusCode int) {
+	dieOnResponseError(response, err)
+	var statusCode int
+	if httpResponse, ok := response.(*http.Response); ok {
+		statusCode = httpResponse.StatusCode
+	} else {
+		r := reflect.Indirect(reflect.ValueOf(response))
+		f := r.FieldByName("HTTPResponse")
+		httpResponse, _ := f.Interface().(*http.Response)
+		if httpResponse != nil {
+			statusCode = httpResponse.StatusCode
+		}
+	}
+
+	if statusCode == 0 {
+		Die("could not get status code from response", 1)
+	}
+	if statusCode != expectedStatusCode {
+		// redirected to not found page
+		if statusCode == http.StatusFound {
+			Die("got not-found error, probably wrong endpoint url", 1)
+		}
+		Die("got unexpected status code: "+strconv.Itoa(statusCode)+", expected: "+strconv.Itoa(expectedStatusCode), 1)
+	}
+}
+
+func DieOnHTTPError(httpResponse *http.Response) {
+	err := helpers.HTTPResponseAsError(httpResponse)
 	if err != nil {
 		DieErr(err)
 	}
@@ -242,4 +303,17 @@ func MustParsePathURI(name, s string) *uri.URI {
 		DieFmt("Invalid '%s': %s", name, uri.ErrInvalidPathURI)
 	}
 	return u
+}
+
+func IsValidAccessKeyID(accessKeyID string) bool {
+	return accessKeyRegexp.MatchString(accessKeyID)
+}
+
+func IsValidSecretAccessKey(secretAccessKey string) bool {
+	return IsBase64(secretAccessKey) && len(secretAccessKey) == 40
+}
+
+func IsBase64(s string) bool {
+	_, err := base64.StdEncoding.DecodeString(s)
+	return err == nil
 }

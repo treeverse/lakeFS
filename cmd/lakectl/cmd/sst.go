@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"time"
 
@@ -23,7 +22,7 @@ func readStdin() (pebblesst.ReadableFile, error) {
 		return os.Stdin, nil
 	}
 	// not seekable - read it into a temp file
-	fh, err := ioutil.TempFile("", "cat-sst-*")
+	fh, err := os.CreateTemp("", "cat-sst-*")
 	if err != nil {
 		return nil, fmt.Errorf("error creating tempfile: %w", err)
 	}
@@ -194,13 +193,15 @@ func formatCommitRangeSSTable(iter committed.ValueIterator, amount int) (*Table,
 			string(metadataJSON),
 			string(parentsJSON),
 			c.MetaRangeId,
+			c.Version,
+			c.Generation,
 		})
 	}
 	if err := iter.Err(); err != nil {
 		return nil, err
 	}
 	return &Table{
-		Headers: []interface{}{"commit ID", "committer", "message", "creation date", "metadata", "parents", "metarange ID"},
+		Headers: []interface{}{"commit ID", "committer", "message", "creation date", "metadata", "parents", "metarange ID", "version", "generation"},
 		Rows:    rows,
 	}, nil
 }

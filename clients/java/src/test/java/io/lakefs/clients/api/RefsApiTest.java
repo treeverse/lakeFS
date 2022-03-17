@@ -56,8 +56,7 @@ public class RefsApiTest {
         String delimiter = null;
         String type = null;
         String diffType = null;
-        DiffList response = api.diffRefs(repository, leftRef, rightRef, after, amount, prefix, delimiter, type, diffType);
-
+                DiffList response = api.diffRefs(repository, leftRef, rightRef, after, amount, prefix, delimiter, type, diffType);
         // TODO: test validations
     }
     
@@ -72,13 +71,12 @@ public class RefsApiTest {
     @Test
     public void dumpRefsTest() throws ApiException {
         String repository = null;
-        RefsDump response = api.dumpRefs(repository);
-
+                RefsDump response = api.dumpRefs(repository);
         // TODO: test validations
     }
     
     /**
-     * get commit log from ref
+     * get commit log from ref. If both objects and prefixes are empty, return all commits.
      *
      * 
      *
@@ -91,8 +89,9 @@ public class RefsApiTest {
         String ref = null;
         String after = null;
         Integer amount = null;
-        CommitList response = api.logCommits(repository, ref, after, amount);
-
+        List<String> objects = null;
+        List<String> prefixes = null;
+                CommitList response = api.logCommits(repository, ref, after, amount, objects, prefixes);
         // TODO: test validations
     }
     
@@ -110,8 +109,7 @@ public class RefsApiTest {
         String sourceRef = null;
         String destinationBranch = null;
         Merge merge = null;
-        MergeResult response = api.mergeIntoBranch(repository, sourceRef, destinationBranch, merge);
-
+                MergeResult response = api.mergeIntoBranch(repository, sourceRef, destinationBranch, merge);
         // TODO: test validations
     }
     
@@ -127,8 +125,7 @@ public class RefsApiTest {
     public void restoreRefsTest() throws ApiException {
         String repository = null;
         RefsDump refsDump = null;
-        api.restoreRefs(repository, refsDump);
-
+                api.restoreRefs(repository, refsDump);
         // TODO: test validations
     }
     

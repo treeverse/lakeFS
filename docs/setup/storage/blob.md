@@ -18,8 +18,8 @@ has_children: false
 ## Authenticate with Secret Key
 {: .no_toc }
 
-In case you want to use the secret key for authentication you will need to use the account key in the configuration
-Go to the `Access Keys` tab and click on `Show Keys` save the values under `Storage account name` and `Key` we will need them in the [installing lakeFS](install.md) step
+If you want lakeFS to authenticate with your storage using the storage account key, go to the `Access Keys` tab and click `Show Keys`. Use the values under `Storage account name` and `Key` in the [lakeFS configuration](../../deploy/azure.html#on-azure-vm).
+
 ## Authenticate with Active Directory
 {: .no_toc }
 

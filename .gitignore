@@ -27,6 +27,9 @@
 .idea/
 .vscode/
 
+### Configuration files that may inculde sensitive information
+.env
+
 # End of https://www.gitignore.io/api/go
 
 # Our binaries

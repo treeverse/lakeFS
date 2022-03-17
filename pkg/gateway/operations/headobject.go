@@ -13,12 +13,11 @@ import (
 
 type HeadObject struct{}
 
-func (controller *HeadObject) RequiredPermissions(_ *http.Request, repoID, _, path string) ([]permissions.Permission, error) {
-	return []permissions.Permission{
-		{
+func (controller *HeadObject) RequiredPermissions(_ *http.Request, repoID, _, path string) (permissions.Node, error) {
+	return permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ReadObjectAction,
-			Resource: permissions.ObjectArn(repoID, path),
-		},
+			Resource: permissions.ObjectArn(repoID, path)},
 	}, nil
 }
 
@@ -46,8 +45,6 @@ func (controller *HeadObject) Handle(w http.ResponseWriter, req *http.Request, o
 	o.SetHeader(w, "Last-Modified", httputil.HeaderTimestamp(entry.CreationDate))
 	o.SetHeader(w, "ETag", httputil.ETag(entry.Checksum))
 	o.SetHeader(w, "Content-Length", fmt.Sprintf("%d", entry.Size))
-
-	// Delete the default content-type header so http.Server will detect it from contents
-	// TODO(ariels): After/if we add content-type support to adapter, use *that*.
-	o.DeleteHeader(w, "Content-Type")
+	o.SetHeader(w, "Content-Type", entry.ContentType)
+	amzMetaWriteHeaders(w, entry.Metadata)
 }

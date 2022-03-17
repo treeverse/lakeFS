@@ -66,12 +66,15 @@ const GroupsContainer = () => {
                         msg={`Are you sure you'd like to delete ${selected.length} groups?`}>
                         Delete Selected
                     </ConfirmationButton>
-
                 </ActionGroup>
                 <ActionGroup orientation="right">
                     <RefreshButton onClick={() => setRefresh(!refresh)}/>
                 </ActionGroup>
             </ActionsBar>
+            <div className="auth-learn-more">
+                A group is a collection of users. <a href="https://docs.lakefs.io/reference/authorization.html#authorization" target="_blank" rel="noopener noreferrer">Learn more.</a>
+            </div>
+
 
             {(!!deleteError) && <Error error={deleteError}/>}
 

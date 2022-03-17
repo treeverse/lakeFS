@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-storage-blob-go/azblob"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -60,15 +59,15 @@ func (m *MultipartBlockWriter) CommitBlockList(ctx context.Context, ids []string
 	return &azblob.BlockBlobCommitBlockListResponse{}, err
 }
 
-func CompleteMultipart(ctx context.Context, parts []*s3.CompletedPart, container azblob.ContainerURL, objName string, retryOptions azblob.RetryReaderOptions) (*string, int64, error) {
+func completeMultipart(ctx context.Context, parts []block.MultipartPart, container azblob.ContainerURL, objName string, retryOptions azblob.RetryReaderOptions) (*block.CompleteMultiPartUploadResponse, error) {
 	sort.Slice(parts, func(i, j int) bool {
-		return *parts[i].PartNumber < *parts[j].PartNumber
+		return parts[i].PartNumber < parts[j].PartNumber
 	})
 	// extract staging blockIDs
 	metaBlockIDs := make([]string, len(parts))
 	for i, part := range parts {
 		// add Quotations marks (") if missing, Etags sent by spark include Quotations marks, Etags sent aws cli don't include Quotations marks
-		etag := strings.Trim(*part.ETag, "\"")
+		etag := strings.Trim(part.ETag, "\"")
 		etag = "\"" + etag + "\""
 		base64Etag := base64.StdEncoding.EncodeToString([]byte(etag))
 		metaBlockIDs[i] = base64Etag
@@ -76,20 +75,23 @@ func CompleteMultipart(ctx context.Context, parts []*s3.CompletedPart, container
 
 	stageBlockIDs, err := getMultipartIDs(ctx, container, objName, metaBlockIDs, retryOptions)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	size, err := getMultipartSize(ctx, container, objName, metaBlockIDs, retryOptions)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	blobURL := container.NewBlockBlobURL(objName)
 
 	res, err := blobURL.CommitBlockList(ctx, stageBlockIDs, azblob.BlobHTTPHeaders{}, azblob.Metadata{}, azblob.BlobAccessConditions{}, azblob.AccessTierNone, azblob.BlobTagsMap{}, azblob.ClientProvidedKeyOptions{})
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	etag := string(res.ETag())
-	return &etag, int64(size), nil
+	return &block.CompleteMultiPartUploadResponse{
+		ETag:          etag,
+		ContentLength: int64(size),
+	}, nil
 }
 
 func getMultipartIDs(ctx context.Context, container azblob.ContainerURL, objName string, base64BlockIDs []string, retryOptions azblob.RetryReaderOptions) ([]string, error) {
@@ -156,17 +158,17 @@ func getMultipartSize(ctx context.Context, container azblob.ContainerURL, objNam
 	return size, nil
 }
 
-func copyPartRange(ctx context.Context, destinationContainer azblob.ContainerURL, destinationObjName string, sourceBlobURL azblob.BlockBlobURL, startPosition, count int64) (string, error) {
+func copyPartRange(ctx context.Context, destinationContainer azblob.ContainerURL, destinationObjName string, sourceBlobURL azblob.BlockBlobURL, startPosition, count int64) (*block.UploadPartResponse, error) {
 	base64BlockID := generateRandomBlockID()
 	_, err := sourceBlobURL.StageBlockFromURL(ctx, base64BlockID, sourceBlobURL.URL(), startPosition, count, azblob.LeaseAccessConditions{}, azblob.ModifiedAccessConditions{}, azblob.ClientProvidedKeyOptions{})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	// add size and id to etag
 	response, err := sourceBlobURL.GetProperties(ctx, azblob.BlobAccessConditions{}, azblob.ClientProvidedKeyOptions{})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	etag := "\"" + hex.EncodeToString(response.ContentMD5()) + "\""
 	size := response.ContentLength()
@@ -175,18 +177,20 @@ func copyPartRange(ctx context.Context, destinationContainer azblob.ContainerURL
 	blobIDsURL := destinationContainer.NewBlockBlobURL(destinationObjName + idSuffix)
 	_, err = blobIDsURL.StageBlock(ctx, base64Etag, strings.NewReader(base64BlockID+"\n"), azblob.LeaseAccessConditions{}, nil, azblob.ClientProvidedKeyOptions{})
 	if err != nil {
-		return "", fmt.Errorf("failed staging part data: %w", err)
+		return nil, fmt.Errorf("failed staging part data: %w", err)
 	}
 
 	// stage size data
-	sizeData := strconv.Itoa(int(size)) + "\n"
+	sizeData := fmt.Sprintf("%d\n", size)
 	blobSizesURL := destinationContainer.NewBlockBlobURL(destinationObjName + sizeSuffix)
 	_, err = blobSizesURL.StageBlock(ctx, base64Etag, strings.NewReader(sizeData), azblob.LeaseAccessConditions{}, nil, azblob.ClientProvidedKeyOptions{})
 	if err != nil {
-		return "", fmt.Errorf("failed staging part data: %w", err)
+		return nil, fmt.Errorf("failed staging part data: %w", err)
 	}
 
-	return etag, nil
+	return &block.UploadPartResponse{
+		ETag: strings.Trim(etag, `"`),
+	}, nil
 }
 
 func generateRandomBlockID() string {

@@ -16,9 +16,11 @@ package io.lakefs.clients.api;
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.Error;
 import java.io.File;
+import io.lakefs.clients.api.model.ObjectErrorList;
 import io.lakefs.clients.api.model.ObjectStageCreation;
 import io.lakefs.clients.api.model.ObjectStats;
 import io.lakefs.clients.api.model.ObjectStatsList;
+import io.lakefs.clients.api.model.PathList;
 import io.lakefs.clients.api.model.UnderlyingObjectProperties;
 import org.junit.Test;
 import org.junit.Ignore;
@@ -50,8 +52,24 @@ public class ObjectsApiTest {
         String repository = null;
         String branch = null;
         String path = null;
-        api.deleteObject(repository, branch, path);
-
+                api.deleteObject(repository, branch, path);
+        // TODO: test validations
+    }
+    
+    /**
+     * delete objects
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void deleteObjectsTest() throws ApiException {
+        String repository = null;
+        String branch = null;
+        PathList pathList = null;
+                ObjectErrorList response = api.deleteObjects(repository, branch, pathList);
         // TODO: test validations
     }
     
@@ -68,8 +86,7 @@ public class ObjectsApiTest {
         String repository = null;
         String ref = null;
         String path = null;
-        File response = api.getObject(repository, ref, path);
-
+                File response = api.getObject(repository, ref, path);
         // TODO: test validations
     }
     
@@ -86,8 +103,7 @@ public class ObjectsApiTest {
         String repository = null;
         String ref = null;
         String path = null;
-        UnderlyingObjectProperties response = api.getUnderlyingProperties(repository, ref, path);
-
+                UnderlyingObjectProperties response = api.getUnderlyingProperties(repository, ref, path);
         // TODO: test validations
     }
     
@@ -108,8 +124,7 @@ public class ObjectsApiTest {
         Integer amount = null;
         String delimiter = null;
         String prefix = null;
-        ObjectStatsList response = api.listObjects(repository, ref, userMetadata, after, amount, delimiter, prefix);
-
+                ObjectStatsList response = api.listObjects(repository, ref, userMetadata, after, amount, delimiter, prefix);
         // TODO: test validations
     }
     
@@ -127,8 +142,7 @@ public class ObjectsApiTest {
         String branch = null;
         String path = null;
         ObjectStageCreation objectStageCreation = null;
-        ObjectStats response = api.stageObject(repository, branch, path, objectStageCreation);
-
+                ObjectStats response = api.stageObject(repository, branch, path, objectStageCreation);
         // TODO: test validations
     }
     
@@ -146,8 +160,7 @@ public class ObjectsApiTest {
         String ref = null;
         String path = null;
         Boolean userMetadata = null;
-        ObjectStats response = api.statObject(repository, ref, path, userMetadata);
-
+                ObjectStats response = api.statObject(repository, ref, path, userMetadata);
         // TODO: test validations
     }
     
@@ -167,8 +180,7 @@ public class ObjectsApiTest {
         String storageClass = null;
         String ifNoneMatch = null;
         File content = null;
-        ObjectStats response = api.uploadObject(repository, branch, path, storageClass, ifNoneMatch, content);
-
+                ObjectStats response = api.uploadObject(repository, branch, path, storageClass, ifNoneMatch, content);
         // TODO: test validations
     }
     

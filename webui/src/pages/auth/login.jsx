@@ -1,15 +1,14 @@
-import React from "react";
-
+import React, {useState} from "react";
 import Layout from "../../lib/components/layout";
 import Row from "react-bootstrap/Row";
 import Card from "react-bootstrap/Card";
 import Form from "react-bootstrap/Form";
 import Col from "react-bootstrap/Col";
-import {useState} from "react";
 import Button from "react-bootstrap/Button";
-import {auth} from "../../lib/api";
+import {auth, setup, SETUP_STATE_INITIALIZED} from "../../lib/api";
 import {Error} from "../../lib/components/controls"
 import {useRouter} from "../../lib/hooks/router";
+import {useAPI} from "../../lib/hooks/api";
 
 const LoginForm = () => {
     const router = useRouter();
@@ -23,25 +22,18 @@ const LoginForm = () => {
                 <Card className="login-widget">
                     <Card.Header>Login</Card.Header>
                     <Card.Body>
-                        <Form onSubmit={(e) => {
+                        <Form onSubmit={async (e) => {
                             e.preventDefault()
-                            auth
-                                .login(e.target.username.value, e.target.password.value)
-                                .then(user => {
-                                    setLoginError(null);
-                                    return router.push((!!next) ? next : '/');
-                                })
-                                .catch(err => {
-                                    setLoginError(err);
-                                })
-
+                            try {
+                                await auth.login(e.target.username.value, e.target.password.value)
+                                setLoginError(null);
+                                router.push(next ? next : '/');
+                            } catch(err) {
+                                setLoginError(err);
+                            }
                         }}>
-
                             <Form.Group controlId="username">
                                 <Form.Control type="text" placeholder="Access Key ID" autoFocus/>
-                                <Form.Text className="text-muted">
-                                    <em>Running lakeFS for the first time? setup initial credentials by running <code>lakefs init</code></em>
-                                </Form.Text>
                             </Form.Group>
 
                             <Form.Group controlId="password">
@@ -61,6 +53,16 @@ const LoginForm = () => {
 
 
 const LoginPage = () => {
+    const router = useRouter();
+    const { response, error, loading } = useAPI(() => {
+        return setup.getState()
+    });
+    if (loading) {
+        return null;
+    }
+    if (!error && response && response.state !== SETUP_STATE_INITIALIZED) {
+        router.push({pathname: '/setup', query: router.query})
+    }
     return (
         <Layout>
             <LoginForm/>

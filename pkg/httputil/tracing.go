@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	MaxBodyBytes                      = 100
+	MaxBodyBytes                      = 750               // Log lines will be < 2KiB
 	RequestTracingMaxRequestBodySize  = 1024 * 1024 * 50  // 50KB
 	RequestTracingMaxResponseBodySize = 1024 * 1024 * 150 // 150KB
 )
@@ -107,7 +107,7 @@ func presentBody(body []byte) string {
 	return string(body)
 }
 
-func TracingMiddleware(requestIDHeaderName string, fields logging.Fields) func(http.Handler) http.Handler {
+func TracingMiddleware(requestIDHeaderName string, fields logging.Fields, traceRequestHeaders bool) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			startTime := time.Now()
@@ -116,10 +116,10 @@ func TracingMiddleware(requestIDHeaderName string, fields logging.Fields) func(h
 
 			// add default fields to context
 			requestFields := logging.Fields{
-				"path":       r.RequestURI,
-				"method":     r.Method,
-				"host":       r.Host,
-				"request_id": reqID,
+				logging.PathFieldKey:      r.RequestURI,
+				logging.MethodFieldKey:    r.Method,
+				logging.HostFieldKey:      r.Host,
+				logging.RequestIDFieldKey: reqID,
 			}
 			for k, v := range fields {
 				requestFields[k] = v
@@ -133,17 +133,20 @@ func TracingMiddleware(requestIDHeaderName string, fields logging.Fields) func(h
 
 			next.ServeHTTP(responseWriter, r) // handle the request
 
-			if logging.Default().IsTracing() {
-				logging.FromContext(r.Context()).WithFields(logging.Fields{
-					"took":             time.Since(startTime),
-					"status_code":      responseWriter.StatusCode,
-					"sent_bytes":       responseWriter.ResponseSize,
-					"request_body":     requestBodyTracer.bodyRecorder.Buffer,
-					"request_headers":  r.Header,
-					"response_body":    presentBody(responseWriter.BodyRecorder.Buffer),
-					"response_headers": responseWriter.Header(),
-				}).Trace("HTTP call ended")
+			traceFields := logging.Fields{
+				"took":             time.Since(startTime),
+				"status_code":      responseWriter.StatusCode,
+				"sent_bytes":       responseWriter.ResponseSize,
+				"request_body":     presentBody(requestBodyTracer.bodyRecorder.Buffer),
+				"response_body":    presentBody(responseWriter.BodyRecorder.Buffer),
+				"response_headers": responseWriter.Header(),
 			}
+			if traceRequestHeaders {
+				traceFields["request_headers"] = r.Header
+			}
+			logging.FromContext(r.Context()).
+				WithFields(traceFields).
+				Trace("HTTP call ended")
 		})
 	}
 }

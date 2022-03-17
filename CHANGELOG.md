@@ -1,7 +1,144 @@
-
 # Changelog
 
-## Unreleased - XXXX-XX-XX
+## v0.61.0 - 2022-03-07
+Features:
+- Add merge strategy (#2922)
+- DBT: add branch creation capability (#2988)
+
+Bug fixes:
+- Fixing performance issue with ref-restore of commits (#2992)
+
+## v0.60.1 - 2022-03-01
+Features: 
+- Log with multiple outputs (#2975)
+
+Bug fixes: 
+- Bugfix/2935 lakectl bug on not found html (#2966)
+
+## v0.60.0 - 2022-02-27
+Features: 
+- Add a "Default storage namespace" configuration (#2952)
+- lakectl: add a `lakectl doctor` command to run a basic diagnose on lakeFS configuration (#2948)
+
+Bug fixes: 
+- Fix diff performance issues (#2968)
+- Improve memory footprint during openapi object upload (#2963)
+- Make "Everything Bagel" Jupyter notebook container support S3A  (#2946)
+
+
+## v0.59.0 - 2022-02-15
+- lakectl: Convert windows paths to S3 style paths on upload (#2932)
+- lakectl: Allow empty commit message with a specified flag (#2927)
+- lakefs: Live configuration reload will change logging level (#2949)
+
+## v0.58.1 - 2022-02-09
+- Merge operation optimized by another 20%! (#2884)
+- Improved the output verbosity of the `lakectl dbt` tool. (#2895)
+- Usage examples added in `lakectl repo create` command. (#2900)
+- Fixed misleading errors on branch creation. (#2859)
+
+## v0.58.0 - 2022-01-26
+
+- Include Jupyter notebook in our everything bagel (#2832)
+- Added branch existence check to createMultiPart (#2835)
+- Align hadoop-aws versions in Hadoop filesystem and shade lakeFS API client (#2843)
+- Remove trailing newline, make `lakectl fs cat` output identical to file (#2845)
+- Prevent Graveler from deleting default branch (#2851)
+- Added lakectl CLI command 'annotate' (blame)  (#2825)
+- Stream output from `lakectl fs cat` rather than copying file to memory (#2852)
+- Switch docker-compose "everything bagel" to use jupyter/pyspark-notebook (#2869)
+- Fix docker-compose "everything bagel" for Windows users (#2871)
+- Disable hooks run configuration (#2881)
+- Add date flag to commit api (#2878)
+
+## v0.57.2 - 2021-12-26
+- Performance: Optimize merge by skipping ranges when source or destination are identical to base (#2822)
+
+## v0.57.1 - 2021-12-20
+- Major performance improvment in merges (#2808)
+
+## v0.57.0 - 2021-12-21
+
+- OpenAPI: Delete multiple objects in a single request (#2788)
+- Performance: Optimize merge by skipping ranges with same bounds (#2737)
+- Security check by lakeFS version and suggest upgrade (#2776)
+- Include dbt in Everything Bagel (#2769)
+
+## v0.56.0 - 2021-12-05
+
+- Fix bug: faulty LDAP username validation (#2774)
+- Fix bug: lakectl metastore create-symlink command (#2747)
+- Fix bug: can't view tag when name is invalid as branch ID (#2723)
+- Fix bug: can't view content diff when comparing non-branch references (#2751)
+- Fix bug: Refresh page after merging from the UI (#2743)
+- UI: Calculate change summary under every prefix (#2744)
+- Improved readability of error messages (#2738)
+
+## v0.55.0 - 2021-11-17
+
+- lakefs-dbt integration: support lakeFS branches in dbt (#2680)
+- UI: explore tags in objects, compare and other views (#2670)
+- UI: View content and size diff between two objects (#2685)
+- Logging: Add request ID fields to all DB and auth logs (#2683)
+- Remove the lakefs diagnose command (#2693)
+- Add an s3 block adapter configuration parameter to disable bucket's region discovery (#2705) 
+- Make lakectl provide meaningful information and exit code in case of a merge conflict (#2700,#2706; Fixes:#2699)
+
+## v0.54.0 - 2021-11-08
+
+- Fix branch creation concurrency bug (#2663)
+- Fix login button required two logins to pass (#2524)
+- Multipart upload content verification failed on s3 encrypted bucket (#2656)
+- Present commit history for a specific file or prefix (#2251)
+- Support S3 API copy-object across buckets (#2162)
+- Add copy-schema to lakectl metastore commands (#2640)
+- UI: New Tags tab (#2655)
+- UI: Add docs link to Setup, Create Repo, Branches, and Admin Pages (#2316)
+- UI: Unifying 3 views into one in uncommitted/compare/commit components (#2602)
+
+## v0.53.1 - 2021-10-21
+
+- Fix ldap auth re-open control connection after it closes, and add timeouts (#2613)
+- Better format server error messages from lakectl (#2609)
+- Fix lakectl crash while reporting some server errors (#2608)
+- Fix Improper Access Control in S3 copy-object, and API restore-refs,dump-refs, get-range, get-metarange ([GHSA-m836-gxwq-j2pm](https://github.com/treeverse/lakeFS/security/advisories/GHSA-m836-gxwq-j2pm))
+
+## v0.53.0 - 2021-10-25
+
+- Add support for LDAP authentication (#2058).
+- Support object content-type and user metadata (#2296).
+- Support multiple commits in lakectl revert (#2345).
+- `lakectl diff`: support two way diff.
+- `lakectl diff`: allow including uncommitted changes in the diff. 
+- Fix Trino AVRO format access via S3 gateway (#2429).
+- Support lakectl fs rm --recursive (#2446).
+- Fix UI list users pagination (#2581).
+- Add tree-view for uncommitted, compare and commit views (#2174)
+
+## v0.52.2 - 2021-10-10
+- Fix nil panic for missing configuration of Airflow hook (#2533)
+- Allow more characters and different length of key/secret for user authorizations (#2501)
+- Fix nil panic for missing configuration of Airflow hook (#2533)
+- Fix failed to merge branch running on Windows locally - access is denied (#2531)
+- Fix UI failed to load on Windows - invalid mime type (#2537)
+- Fix UI path reset on branch change bug in object view (#2441)
+- Fix UI changing the base-branch changes the compared-branch bug (#2440)
+
+## v0.52.0 - 2021-10-04
+
+- Protected Branches (#2181): define rules to prevent direct changes on some of your branches. 
+  Only merges are allowed into protected branches.
+  Combine these with pre-merge hooks to validate your data before it is on your production branches.
+- Fix filter dialog unsearchable bug (#2460)
+- Fix s3 multipart upload location url (#1779)
+
+## v0.51.0 - 2021-09-19
+
+- Add new "AttachStorageNamespace" IAM action.  Controls users' ability to
+  create repositories with particular storage namespaces (bucket names).
+  (#2220)
+- Fix path encoding when checking sigV2 signatures in the S3 gateway.
+- [S3 gateway] Return HTTP 409 (Conflict) when creating existing repo (#2451)
 
 ## v0.50.0 - 2021-09-05
 

@@ -9,6 +9,7 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -49,6 +50,11 @@ const (
 
 	entryTypeObject       = "object"
 	entryTypeCommonPrefix = "common_prefix"
+
+	setupStateInitialized    = "initialized"
+	setupStateNotInitialized = "not_initialized"
+
+	DefaultMaxDeleteObjects = 1000
 )
 
 type actionsHandler interface {
@@ -61,6 +67,7 @@ type actionsHandler interface {
 type Controller struct {
 	Config                *config.Config
 	Catalog               catalog.Interface
+	Authenticator         auth.Authenticator
 	Auth                  auth.Service
 	BlockAdapter          block.Adapter
 	MetadataManager       auth.MetadataManager
@@ -68,10 +75,79 @@ type Controller struct {
 	Collector             stats.Collector
 	CloudMetadataProvider cloud.MetadataProvider
 	Actions               actionsHandler
+	AuditChecker          AuditChecker
 	Logger                logging.Logger
 }
 
-func (c *Controller) Logout(w http.ResponseWriter, r *http.Request) {
+func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body DeleteObjectsJSONRequestBody, repository string, branch string) {
+	ctx := r.Context()
+	c.LogAction(ctx, "delete_objects")
+
+	// limit check
+	if len(body.Paths) > DefaultMaxDeleteObjects {
+		writeError(w, http.StatusInternalServerError, fmt.Errorf("%w, max paths is set to %d",
+			ErrRequestSizeExceeded, DefaultMaxDeleteObjects))
+		return
+	}
+
+	// delete all the files and collect responses
+	var errs []ObjectError
+	for _, objectPath := range body.Paths {
+		// authorize this object deletion
+		if !c.authorize(w, r, permissions.Node{
+			Permission: permissions.Permission{
+				Action:   permissions.DeleteObjectAction,
+				Resource: permissions.ObjectArn(repository, objectPath),
+			},
+		}) {
+			errs = append(errs, ObjectError{
+				Path:       StringPtr(objectPath),
+				StatusCode: http.StatusUnauthorized,
+				Message:    http.StatusText(http.StatusUnauthorized),
+			})
+			continue
+		}
+
+		lg := c.Logger.WithField("path", objectPath)
+		err := c.Catalog.DeleteEntry(ctx, repository, branch, objectPath)
+		switch {
+		case errors.Is(err, catalog.ErrNotFound):
+			lg.Debug("tried to delete a non-existent object")
+		case errors.Is(err, graveler.ErrWriteToProtectedBranch):
+			errs = append(errs, ObjectError{
+				Path:       StringPtr(objectPath),
+				StatusCode: http.StatusForbidden,
+				Message:    err.Error(),
+			})
+		case errors.Is(err, catalog.ErrPathRequiredValue):
+			// issue #1706 - https://github.com/treeverse/lakeFS/issues/1706
+			// Spark trying to delete the path "main/", which we map to branch "main" with an empty path.
+			// Spark expects it to succeed (not deleting anything is a success), instead of returning an error.
+			lg.Debug("tried to delete with an empty branch")
+		case err != nil:
+			lg.WithError(err).Error("failed deleting object")
+			errs = append(errs, ObjectError{
+				Path:       StringPtr(objectPath),
+				StatusCode: http.StatusInternalServerError,
+				Message:    err.Error(),
+			})
+		default:
+			lg.Debug("object set for deletion")
+		}
+	}
+	// no content in case there are no errors
+	if len(errs) == 0 {
+		writeResponse(w, http.StatusNoContent, nil)
+		return
+	}
+	// status ok with list of errors
+	response := ObjectErrorList{
+		Errors: errs,
+	}
+	writeResponse(w, http.StatusOK, response)
+}
+
+func (c *Controller) Logout(w http.ResponseWriter, _ *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     JWTCookieName,
 		Value:    "",
@@ -86,8 +162,8 @@ func (c *Controller) Logout(w http.ResponseWriter, r *http.Request) {
 
 func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSONRequestBody) {
 	ctx := r.Context()
-	_, err := userByAuth(ctx, c.Logger, c.Auth, body.AccessKeyId, body.SecretAccessKey)
-	if errors.Is(err, ErrAuthenticationFailed) {
+	user, err := userByAuth(ctx, c.Logger, c.Authenticator, c.Auth, body.AccessKeyId, body.SecretAccessKey)
+	if errors.Is(err, ErrAuthenticatingRequest) {
 		writeResponse(w, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
 		return
 	}
@@ -95,7 +171,9 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSO
 	loginTime := time.Now()
 	expires := loginTime.Add(DefaultLoginExpiration)
 	secret := c.Auth.SecretStore().SharedSecret()
-	tokenString, err := GenerateJWT(secret, body.AccessKeyId, loginTime, expires)
+	// user.Username will be different from username/access_key_id on
+	// LDAP login.  Use the stored value.
+	tokenString, err := GenerateJWT(secret, user.ID, loginTime, expires)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
@@ -116,8 +194,8 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSO
 }
 
 func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, repository string, branch string, params GetPhysicalAddressParams) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.WriteObjectAction,
 			Resource: permissions.ObjectArn(repository, params.Path),
 		},
@@ -172,8 +250,8 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 }
 
 func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request, body LinkPhysicalAddressJSONRequestBody, repository string, branch string, params LinkPhysicalAddressParams) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.WriteObjectAction,
 			Resource: permissions.ObjectArn(repository, params.Path),
 		},
@@ -213,20 +291,19 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	// Because CreateEntry tracks staging on a database with atomic operations,
 	// _ignore_ the staging token here: no harm done even if a race was lost
 	// against a commit.
-	var metadata catalog.Metadata
+	entryBuilder := catalog.NewDBEntryBuilder().
+		CommonLevel(false).
+		Path(params.Path).
+		PhysicalAddress(*body.Staging.PhysicalAddress).
+		AddressType(catalog.AddressTypeFull).
+		CreationDate(writeTime).
+		Size(body.SizeBytes).
+		Checksum(body.Checksum).
+		ContentType(StringValue(body.ContentType))
 	if body.UserMetadata != nil {
-		metadata = body.UserMetadata.AdditionalProperties
+		entryBuilder.Metadata(body.UserMetadata.AdditionalProperties)
 	}
-	entry := catalog.DBEntry{
-		CommonLevel:     false,
-		Path:            params.Path,
-		PhysicalAddress: *body.Staging.PhysicalAddress,
-		AddressType:     catalog.AddressTypeFull,
-		CreationDate:    writeTime,
-		Size:            body.SizeBytes,
-		Checksum:        body.Checksum,
-		Metadata:        metadata,
-	}
+	entry := entryBuilder.Build()
 
 	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry)
 	if errors.Is(err, catalog.ErrNotFound) {
@@ -238,12 +315,24 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	writeResponse(w, http.StatusOK, nil)
+	metadata := ObjectUserMetadata{AdditionalProperties: entry.Metadata}
+	response := ObjectStats{
+		Checksum:        entry.Checksum,
+		ContentType:     &entry.ContentType,
+		Metadata:        &metadata,
+		Mtime:           entry.CreationDate.Unix(),
+		Path:            entry.Path,
+		PathType:        entryTypeObject,
+		PhysicalAddress: entry.PhysicalAddress,
+		SizeBytes:       Int64Ptr(entry.Size),
+	}
+
+	writeResponse(w, http.StatusOK, response)
 }
 
 func (c *Controller) ListGroups(w http.ResponseWriter, r *http.Request, params ListGroupsParams) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ListGroupsAction,
 			Resource: permissions.All,
 		},
@@ -281,8 +370,8 @@ func (c *Controller) ListGroups(w http.ResponseWriter, r *http.Request, params L
 }
 
 func (c *Controller) CreateGroup(w http.ResponseWriter, r *http.Request, body CreateGroupJSONRequestBody) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.CreateGroupAction,
 			Resource: permissions.GroupArn(body.Id),
 		},
@@ -308,8 +397,8 @@ func (c *Controller) CreateGroup(w http.ResponseWriter, r *http.Request, body Cr
 }
 
 func (c *Controller) DeleteGroup(w http.ResponseWriter, r *http.Request, groupID string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.DeleteGroupAction,
 			Resource: permissions.GroupArn(groupID),
 		},
@@ -331,8 +420,8 @@ func (c *Controller) DeleteGroup(w http.ResponseWriter, r *http.Request, groupID
 }
 
 func (c *Controller) GetGroup(w http.ResponseWriter, r *http.Request, groupID string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ReadGroupAction,
 			Resource: permissions.GroupArn(groupID),
 		},
@@ -358,8 +447,8 @@ func (c *Controller) GetGroup(w http.ResponseWriter, r *http.Request, groupID st
 }
 
 func (c *Controller) ListGroupMembers(w http.ResponseWriter, r *http.Request, groupID string, params ListGroupMembersParams) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ReadGroupAction,
 			Resource: permissions.GroupArn(groupID),
 		},
@@ -395,8 +484,8 @@ func (c *Controller) ListGroupMembers(w http.ResponseWriter, r *http.Request, gr
 }
 
 func (c *Controller) DeleteGroupMembership(w http.ResponseWriter, r *http.Request, groupID string, userID string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.RemoveGroupMemberAction,
 			Resource: permissions.GroupArn(groupID),
 		},
@@ -414,8 +503,8 @@ func (c *Controller) DeleteGroupMembership(w http.ResponseWriter, r *http.Reques
 }
 
 func (c *Controller) AddGroupMembership(w http.ResponseWriter, r *http.Request, groupID string, userID string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.AddGroupMemberAction,
 			Resource: permissions.GroupArn(groupID),
 		},
@@ -432,8 +521,8 @@ func (c *Controller) AddGroupMembership(w http.ResponseWriter, r *http.Request, 
 }
 
 func (c *Controller) ListGroupPolicies(w http.ResponseWriter, r *http.Request, groupID string, params ListGroupPoliciesParams) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ReadGroupAction,
 			Resource: permissions.GroupArn(groupID),
 		},
@@ -485,8 +574,8 @@ func serializePolicy(p *model.Policy) Policy {
 }
 
 func (c *Controller) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Request, groupID string, policyID string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.DetachPolicyAction,
 			Resource: permissions.GroupArn(groupID),
 		},
@@ -503,8 +592,8 @@ func (c *Controller) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Reques
 }
 
 func (c *Controller) AttachPolicyToGroup(w http.ResponseWriter, r *http.Request, groupID string, policyID string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.AttachPolicyAction,
 			Resource: permissions.GroupArn(groupID),
 		},
@@ -522,8 +611,8 @@ func (c *Controller) AttachPolicyToGroup(w http.ResponseWriter, r *http.Request,
 }
 
 func (c *Controller) ListPolicies(w http.ResponseWriter, r *http.Request, params ListPoliciesParams) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ListPoliciesAction,
 			Resource: permissions.All,
 		},
@@ -557,8 +646,8 @@ func (c *Controller) ListPolicies(w http.ResponseWriter, r *http.Request, params
 }
 
 func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body CreatePolicyJSONRequestBody) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.CreatePolicyAction,
 			Resource: permissions.PolicyArn(body.Id),
 		},
@@ -592,8 +681,8 @@ func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body C
 }
 
 func (c *Controller) DeletePolicy(w http.ResponseWriter, r *http.Request, policyID string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.DeletePolicyAction,
 			Resource: permissions.PolicyArn(policyID),
 		},
@@ -614,8 +703,8 @@ func (c *Controller) DeletePolicy(w http.ResponseWriter, r *http.Request, policy
 }
 
 func (c *Controller) GetPolicy(w http.ResponseWriter, r *http.Request, policyID string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ReadPolicyAction,
 			Resource: permissions.PolicyArn(policyID),
 		},
@@ -638,8 +727,8 @@ func (c *Controller) GetPolicy(w http.ResponseWriter, r *http.Request, policyID 
 }
 
 func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, body UpdatePolicyJSONRequestBody, policyID string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.UpdatePolicyAction,
 			Resource: permissions.PolicyArn(policyID),
 		},
@@ -672,8 +761,8 @@ func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, body U
 }
 
 func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params ListUsersParams) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ListUsersAction,
 			Resource: permissions.All,
 		},
@@ -709,8 +798,8 @@ func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params Li
 }
 
 func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body CreateUserJSONRequestBody) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.CreateUserAction,
 			Resource: permissions.UserArn(body.Id),
 		},
@@ -718,12 +807,14 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body Cre
 		return
 	}
 	u := &model.User{
-		CreatedAt: time.Now().UTC(),
-		Username:  body.Id,
+		CreatedAt:    time.Now().UTC(),
+		Username:     body.Id,
+		FriendlyName: nil,
+		Source:       "internal",
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "create_user")
-	err := c.Auth.CreateUser(ctx, u)
+	_, err := c.Auth.CreateUser(ctx, u)
 	if handleAPIError(w, err) {
 		return
 	}
@@ -735,8 +826,8 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body Cre
 }
 
 func (c *Controller) DeleteUser(w http.ResponseWriter, r *http.Request, userID string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.DeleteUserAction,
 			Resource: permissions.UserArn(userID),
 		},
@@ -758,8 +849,8 @@ func (c *Controller) DeleteUser(w http.ResponseWriter, r *http.Request, userID s
 }
 
 func (c *Controller) GetUser(w http.ResponseWriter, r *http.Request, userID string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ReadUserAction,
 			Resource: permissions.UserArn(userID),
 		},
@@ -784,8 +875,8 @@ func (c *Controller) GetUser(w http.ResponseWriter, r *http.Request, userID stri
 }
 
 func (c *Controller) ListUserCredentials(w http.ResponseWriter, r *http.Request, userID string, params ListUserCredentialsParams) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ListCredentialsAction,
 			Resource: permissions.UserArn(userID),
 		},
@@ -821,8 +912,8 @@ func (c *Controller) ListUserCredentials(w http.ResponseWriter, r *http.Request,
 }
 
 func (c *Controller) CreateCredentials(w http.ResponseWriter, r *http.Request, userID string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.CreateCredentialsAction,
 			Resource: permissions.UserArn(userID),
 		},
@@ -844,8 +935,8 @@ func (c *Controller) CreateCredentials(w http.ResponseWriter, r *http.Request, u
 }
 
 func (c *Controller) DeleteCredentials(w http.ResponseWriter, r *http.Request, userID string, accessKeyID string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.DeleteCredentialsAction,
 			Resource: permissions.UserArn(userID),
 		},
@@ -867,8 +958,8 @@ func (c *Controller) DeleteCredentials(w http.ResponseWriter, r *http.Request, u
 }
 
 func (c *Controller) GetCredentials(w http.ResponseWriter, r *http.Request, userID string, accessKeyID string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ReadCredentialsAction,
 			Resource: permissions.UserArn(userID),
 		},
@@ -894,8 +985,8 @@ func (c *Controller) GetCredentials(w http.ResponseWriter, r *http.Request, user
 }
 
 func (c *Controller) ListUserGroups(w http.ResponseWriter, r *http.Request, userID string, params ListUserGroupsParams) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ReadUserAction,
 			Resource: permissions.UserArn(userID),
 		},
@@ -932,8 +1023,8 @@ func (c *Controller) ListUserGroups(w http.ResponseWriter, r *http.Request, user
 }
 
 func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, userID string, params ListUserPoliciesParams) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ReadUserAction,
 			Resource: permissions.UserArn(userID),
 		},
@@ -973,8 +1064,8 @@ func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, us
 }
 
 func (c *Controller) DetachPolicyFromUser(w http.ResponseWriter, r *http.Request, userID string, policyID string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.DetachPolicyAction,
 			Resource: permissions.UserArn(userID),
 		},
@@ -991,8 +1082,8 @@ func (c *Controller) DetachPolicyFromUser(w http.ResponseWriter, r *http.Request
 }
 
 func (c *Controller) AttachPolicyToUser(w http.ResponseWriter, r *http.Request, userID string, policyID string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.AttachPolicyAction,
 			Resource: permissions.UserArn(userID),
 		},
@@ -1010,8 +1101,8 @@ func (c *Controller) AttachPolicyToUser(w http.ResponseWriter, r *http.Request, 
 }
 
 func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ReadStorageConfiguration,
 			Resource: permissions.All,
 		},
@@ -1023,6 +1114,7 @@ func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 		BlockstoreType:                   c.Config.GetBlockstoreType(),
 		BlockstoreNamespaceValidityRegex: info.ValidityRegex,
 		BlockstoreNamespaceExample:       info.Example,
+		DefaultNamespacePrefix:           swag.String(c.Config.GetBlockstoreDefaultNamespacePrefix()),
 	}
 	writeResponse(w, http.StatusOK, response)
 }
@@ -1032,8 +1124,8 @@ func (c *Controller) HealthCheck(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, params ListRepositoriesParams) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ListRepositoriesAction,
 			Resource: permissions.All,
 		},
@@ -1067,12 +1159,20 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 }
 
 func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, body CreateRepositoryJSONRequestBody, params CreateRepositoryParams) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
-			Action:   permissions.CreateRepositoryAction,
-			Resource: permissions.RepoArn(body.Name),
-		},
-	}) {
+	if !c.authorize(w, r, permissions.Node{
+		Type: permissions.NodeTypeAnd,
+		Nodes: []permissions.Node{
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.CreateRepositoryAction,
+					Resource: permissions.RepoArn(body.Name)},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.AttachStorageNamespace,
+					Resource: permissions.StorageNamespace(body.StorageNamespace)},
+			},
+		}}) {
 		return
 	}
 	ctx := r.Context()
@@ -1103,13 +1203,23 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		return
 	}
 
-	err := ensureStorageNamespaceRW(ctx, c.BlockAdapter, body.StorageNamespace)
+	err := ensureStorageNamespace(ctx, c.BlockAdapter, body.StorageNamespace)
 	if err != nil {
+		var retErr error
+		var urlErr *url.Error
+		switch {
+		case errors.As(err, &urlErr) && urlErr.Op == "parse":
+			retErr = err
+		case errors.Is(err, block.ErrInvalidNamespace):
+			retErr = fmt.Errorf("%w, must match: %s", err, c.BlockAdapter.BlockstoreType())
+		default:
+			retErr = ErrFailedToAccessStorage
+		}
 		c.Logger.
 			WithError(err).
 			WithField("storage_namespace", body.StorageNamespace).
 			Warn("Could not access storage namespace")
-		writeError(w, http.StatusBadRequest, "error creating repository: could not access storage namespace")
+		writeError(w, http.StatusBadRequest, fmt.Errorf("failed to create repository: %w", retErr))
 		return
 	}
 
@@ -1128,7 +1238,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 	writeResponse(w, http.StatusCreated, response)
 }
 
-func ensureStorageNamespaceRW(ctx context.Context, adapter block.Adapter, storageNamespace string) error {
+func ensureStorageNamespace(ctx context.Context, adapter block.Adapter, storageNamespace string) error {
 	const (
 		dummyKey  = "dummy"
 		dummyData = "this is dummy data - created by lakeFS in order to check accessibility"
@@ -1140,14 +1250,13 @@ func ensureStorageNamespaceRW(ctx context.Context, adapter block.Adapter, storag
 	if err != nil {
 		return err
 	}
-
 	_, err = adapter.Get(ctx, obj, objLen)
 	return err
 }
 
 func (c *Controller) DeleteRepository(w http.ResponseWriter, r *http.Request, repository string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.DeleteRepositoryAction,
 			Resource: permissions.RepoArn(repository),
 		},
@@ -1169,8 +1278,8 @@ func (c *Controller) DeleteRepository(w http.ResponseWriter, r *http.Request, re
 }
 
 func (c *Controller) GetRepository(w http.ResponseWriter, r *http.Request, repository string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ReadRepositoryAction,
 			Resource: permissions.RepoArn(repository),
 		},
@@ -1199,8 +1308,8 @@ func (c *Controller) GetRepository(w http.ResponseWriter, r *http.Request, repos
 }
 
 func (c *Controller) ListRepositoryRuns(w http.ResponseWriter, r *http.Request, repository string, params ListRepositoryRunsParams) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ReadActionsAction,
 			Resource: permissions.RepoArn(repository),
 		},
@@ -1266,8 +1375,8 @@ func runResultToActionRun(val *actions.RunResult) ActionRun {
 }
 
 func (c *Controller) GetRun(w http.ResponseWriter, r *http.Request, repository string, runID string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ReadActionsAction,
 			Resource: permissions.RepoArn(repository),
 		},
@@ -1305,8 +1414,8 @@ func (c *Controller) GetRun(w http.ResponseWriter, r *http.Request, repository s
 }
 
 func (c *Controller) ListRunHooks(w http.ResponseWriter, r *http.Request, repository string, runID string, params ListRunHooksParams) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ReadActionsAction,
 			Resource: permissions.RepoArn(repository),
 		},
@@ -1366,8 +1475,8 @@ func (c *Controller) ListRunHooks(w http.ResponseWriter, r *http.Request, reposi
 }
 
 func (c *Controller) GetRunHookOutput(w http.ResponseWriter, r *http.Request, repository string, runID string, hookRunID string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ReadActionsAction,
 			Resource: permissions.RepoArn(repository),
 		},
@@ -1409,8 +1518,8 @@ func (c *Controller) GetRunHookOutput(w http.ResponseWriter, r *http.Request, re
 }
 
 func (c *Controller) ListBranches(w http.ResponseWriter, r *http.Request, repository string, params ListBranchesParams) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ListBranchesAction,
 			Resource: permissions.RepoArn(repository),
 		},
@@ -1440,8 +1549,8 @@ func (c *Controller) ListBranches(w http.ResponseWriter, r *http.Request, reposi
 }
 
 func (c *Controller) CreateBranch(w http.ResponseWriter, r *http.Request, body CreateBranchJSONRequestBody, repository string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.CreateBranchAction,
 			Resource: permissions.BranchArn(repository, body.Name),
 		},
@@ -1459,8 +1568,8 @@ func (c *Controller) CreateBranch(w http.ResponseWriter, r *http.Request, body C
 }
 
 func (c *Controller) DeleteBranch(w http.ResponseWriter, r *http.Request, repository string, branch string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.DeleteBranchAction,
 			Resource: permissions.BranchArn(repository, branch),
 		},
@@ -1477,8 +1586,8 @@ func (c *Controller) DeleteBranch(w http.ResponseWriter, r *http.Request, reposi
 }
 
 func (c *Controller) GetBranch(w http.ResponseWriter, r *http.Request, repository string, branch string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ReadBranchAction,
 			Resource: permissions.BranchArn(repository, branch),
 		},
@@ -1511,7 +1620,8 @@ func handleAPIError(w http.ResponseWriter, err error) bool {
 		errors.Is(err, permissions.ErrInvalidServiceName),
 		errors.Is(err, permissions.ErrInvalidAction),
 		errors.Is(err, model.ErrValidationError),
-		errors.Is(err, graveler.ErrInvalidRef):
+		errors.Is(err, graveler.ErrInvalidRef),
+		errors.Is(err, graveler.ErrInvalidValue):
 		writeError(w, http.StatusBadRequest, err)
 
 	case errors.Is(err, graveler.ErrNotUnique):
@@ -1533,8 +1643,8 @@ func handleAPIError(w http.ResponseWriter, err error) bool {
 }
 
 func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body ResetBranchJSONRequestBody, repository string, branch string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.RevertBranchAction,
 			Resource: permissions.BranchArn(repository, branch),
 		},
@@ -1562,8 +1672,8 @@ func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body Re
 }
 
 func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body CommitJSONRequestBody, repository string, branch string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.CreateCommitAction,
 			Resource: permissions.BranchArn(repository, branch),
 		},
@@ -1582,7 +1692,7 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body CommitJ
 		metadata = body.Metadata.AdditionalProperties
 	}
 	committer := user.Username
-	newCommit, err := c.Catalog.Commit(ctx, repository, branch, body.Message, committer, metadata)
+	newCommit, err := c.Catalog.Commit(ctx, repository, branch, body.Message, committer, metadata, body.Date)
 	var hookAbortErr *graveler.HookAbortError
 	if errors.As(err, &hookAbortErr) {
 		c.Logger.
@@ -1611,8 +1721,8 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body CommitJ
 }
 
 func (c *Controller) DiffBranch(w http.ResponseWriter, r *http.Request, repository string, branch string, params DiffBranchParams) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ListObjectsAction,
 			Resource: permissions.RepoArn(repository),
 		},
@@ -1659,8 +1769,8 @@ func (c *Controller) DiffBranch(w http.ResponseWriter, r *http.Request, reposito
 }
 
 func (c *Controller) DeleteObject(w http.ResponseWriter, r *http.Request, repository string, branch string, params DeleteObjectParams) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.DeleteObjectAction,
 			Resource: permissions.ObjectArn(repository, params.Path),
 		},
@@ -1678,8 +1788,8 @@ func (c *Controller) DeleteObject(w http.ResponseWriter, r *http.Request, reposi
 }
 
 func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, repository string, branch string, params UploadObjectParams) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.WriteObjectAction,
 			Resource: permissions.ObjectArn(repository, params.Path),
 		},
@@ -1728,32 +1838,37 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 
 	// write the content
 	file, handler, err := r.FormFile("content")
+	if errors.Is(err, http.ErrMissingFile) {
+		writeError(w, http.StatusInternalServerError, fmt.Errorf("multipart uploads missing key 'content': %w", err))
+		return
+	}
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
 	defer func() { _ = file.Close() }()
+	contentType := handler.Header.Get("Content-Type")
 	blob, err := upload.WriteBlob(ctx, c.BlockAdapter, repo.StorageNamespace, file, handler.Size, block.PutOpts{StorageClass: params.StorageClass})
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	addressType := catalog.AddressTypeFull
-	if blob.RelativePath {
-		addressType = catalog.AddressTypeRelative
-	}
-
 	// write metadata
 	writeTime := time.Now()
-	entry := catalog.DBEntry{
-		Path:            params.Path,
-		PhysicalAddress: blob.PhysicalAddress,
-		AddressType:     addressType,
-		CreationDate:    writeTime,
-		Size:            blob.Size,
-		Checksum:        blob.Checksum,
+	entryBuilder := catalog.NewDBEntryBuilder().
+		Path(params.Path).
+		PhysicalAddress(blob.PhysicalAddress).
+		CreationDate(writeTime).
+		Size(blob.Size).
+		Checksum(blob.Checksum).
+		ContentType(contentType)
+	if blob.RelativePath {
+		entryBuilder.AddressType(catalog.AddressTypeRelative)
+	} else {
+		entryBuilder.AddressType(catalog.AddressTypeFull)
 	}
+	entry := entryBuilder.Build()
 
 	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, graveler.IfAbsent(!allowOverwrite))
 	if errors.Is(err, graveler.ErrPreconditionFailed) {
@@ -1782,13 +1897,14 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		PathType:        entryTypeObject,
 		PhysicalAddress: qk.Format(),
 		SizeBytes:       Int64Ptr(blob.Size),
+		ContentType:     &contentType,
 	}
 	writeResponse(w, http.StatusCreated, response)
 }
 
 func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body StageObjectJSONRequestBody, repository string, branch string, params StageObjectParams) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.WriteObjectAction,
 			Resource: permissions.ObjectArn(repository, params.Path),
 		},
@@ -1824,18 +1940,19 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body St
 		writeTime = time.Unix(*body.Mtime, 0)
 	}
 
-	entry := catalog.DBEntry{
-		CommonLevel:     false,
-		Path:            params.Path,
-		PhysicalAddress: body.PhysicalAddress,
-		AddressType:     catalog.AddressTypeFull,
-		CreationDate:    writeTime,
-		Size:            body.SizeBytes,
-		Checksum:        body.Checksum,
-	}
+	entryBuilder := catalog.NewDBEntryBuilder().
+		CommonLevel(false).
+		Path(params.Path).
+		PhysicalAddress(body.PhysicalAddress).
+		AddressType(catalog.AddressTypeFull).
+		CreationDate(writeTime).
+		Size(body.SizeBytes).
+		Checksum(body.Checksum).
+		ContentType(StringValue(body.ContentType))
 	if body.Metadata != nil {
-		entry.Metadata = body.Metadata.AdditionalProperties
+		entryBuilder.Metadata(body.Metadata.AdditionalProperties)
 	}
+	entry := entryBuilder.Build()
 
 	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry)
 	if handleAPIError(w, err) {
@@ -1848,13 +1965,14 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body St
 		PathType:        entryTypeObject,
 		PhysicalAddress: qk.Format(),
 		SizeBytes:       Int64Ptr(entry.Size),
+		ContentType:     &entry.ContentType,
 	}
 	writeResponse(w, http.StatusCreated, response)
 }
 
 func (c *Controller) RevertBranch(w http.ResponseWriter, r *http.Request, body RevertBranchJSONRequestBody, repository string, branch string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.RevertBranchAction,
 			Resource: permissions.BranchArn(repository, branch),
 		},
@@ -1881,8 +1999,8 @@ func (c *Controller) RevertBranch(w http.ResponseWriter, r *http.Request, body R
 }
 
 func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repository string, commitID string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ReadCommitAction,
 			Resource: permissions.RepoArn(repository),
 		},
@@ -1916,8 +2034,8 @@ func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repositor
 }
 
 func (c *Controller) GetGarbageCollectionRules(w http.ResponseWriter, r *http.Request, repository string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.GetGarbageCollectionRulesAction,
 			Resource: permissions.RepoArn(repository),
 		},
@@ -1938,8 +2056,8 @@ func (c *Controller) GetGarbageCollectionRules(w http.ResponseWriter, r *http.Re
 }
 
 func (c *Controller) SetGarbageCollectionRules(w http.ResponseWriter, r *http.Request, body SetGarbageCollectionRulesJSONRequestBody, repository string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.SetGarbageCollectionRulesAction,
 			Resource: permissions.RepoArn(repository),
 		},
@@ -1962,8 +2080,8 @@ func (c *Controller) SetGarbageCollectionRules(w http.ResponseWriter, r *http.Re
 }
 
 func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *http.Request, body PrepareGarbageCollectionCommitsJSONRequestBody, repository string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.PrepareGarbageCollectionCommitsAction,
 			Resource: permissions.RepoArn(repository),
 		},
@@ -1983,17 +2101,80 @@ func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *h
 	})
 }
 
-func (c *Controller) GetMetaRange(w http.ResponseWriter, r *http.Request, repository string, metaRange string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
-			Action:   permissions.ListObjectsAction,
-			Resource: permissions.RepoArn(repository),
-		},
-		{
-			Action:   permissions.ReadRepositoryAction,
+func (c *Controller) GetBranchProtectionRules(w http.ResponseWriter, r *http.Request, repository string) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.GetBranchProtectionRulesAction,
 			Resource: permissions.RepoArn(repository),
 		},
 	}) {
+		return
+	}
+	ctx := r.Context()
+	rules, err := c.Catalog.GetBranchProtectionRules(ctx, repository)
+	if handleAPIError(w, err) {
+		return
+	}
+	resp := make([]*BranchProtectionRule, 0, len(rules.BranchPatternToBlockedActions))
+	for pattern := range rules.BranchPatternToBlockedActions {
+		resp = append(resp, &BranchProtectionRule{
+			Pattern: pattern,
+		})
+	}
+	writeResponse(w, http.StatusOK, resp)
+}
+
+func (c *Controller) DeleteBranchProtectionRule(w http.ResponseWriter, r *http.Request, body DeleteBranchProtectionRuleJSONRequestBody, repository string) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.SetBranchProtectionRulesAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	err := c.Catalog.DeleteBranchProtectionRule(ctx, repository, body.Pattern)
+	if handleAPIError(w, err) {
+		return
+	}
+	writeResponse(w, http.StatusNoContent, nil)
+}
+
+func (c *Controller) CreateBranchProtectionRule(w http.ResponseWriter, r *http.Request, body CreateBranchProtectionRuleJSONRequestBody, repository string) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.SetBranchProtectionRulesAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	// For now, all protected branches use the same default set of blocked actions. In the future this set will be user configurable.
+	blockedActions := []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_STAGING_WRITE, graveler.BranchProtectionBlockedAction_COMMIT}
+	err := c.Catalog.CreateBranchProtectionRule(ctx, repository, body.Pattern, blockedActions)
+	if handleAPIError(w, err) {
+		return
+	}
+	writeResponse(w, http.StatusNoContent, nil)
+}
+
+func (c *Controller) GetMetaRange(w http.ResponseWriter, r *http.Request, repository string, metaRange string) {
+	if !c.authorize(w, r, permissions.Node{
+		Type: permissions.NodeTypeAnd,
+		Nodes: []permissions.Node{
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ListObjectsAction,
+					Resource: permissions.RepoArn(repository)},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ReadRepositoryAction,
+					Resource: permissions.RepoArn(repository)},
+			},
+		}}) {
 		return
 	}
 	ctx := r.Context()
@@ -2012,16 +2193,20 @@ func (c *Controller) GetMetaRange(w http.ResponseWriter, r *http.Request, reposi
 }
 
 func (c *Controller) GetRange(w http.ResponseWriter, r *http.Request, repository string, pRange string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
-			Action:   permissions.ListObjectsAction,
-			Resource: permissions.RepoArn(repository),
-		},
-		{
-			Action:   permissions.ReadRepositoryAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
+	if !c.authorize(w, r, permissions.Node{
+		Type: permissions.NodeTypeAnd,
+		Nodes: []permissions.Node{
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ListObjectsAction,
+					Resource: permissions.RepoArn(repository)},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ReadRepositoryAction,
+					Resource: permissions.RepoArn(repository)},
+			},
+		}}) {
 		return
 	}
 	ctx := r.Context()
@@ -2039,20 +2224,25 @@ func (c *Controller) GetRange(w http.ResponseWriter, r *http.Request, repository
 }
 
 func (c *Controller) DumpRefs(w http.ResponseWriter, r *http.Request, repository string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
-			Action:   permissions.ListTagsAction,
-			Resource: permissions.RepoArn(repository),
-		},
-		{
-			Action:   permissions.ListBranchesAction,
-			Resource: permissions.RepoArn(repository),
-		},
-		{
-			Action:   permissions.ListCommitsAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
+	if !c.authorize(w, r, permissions.Node{
+		Type: permissions.NodeTypeAnd,
+		Nodes: []permissions.Node{
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ListTagsAction,
+					Resource: permissions.RepoArn(repository)},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ListBranchesAction,
+					Resource: permissions.RepoArn(repository)},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ListCommitsAction,
+					Resource: permissions.RepoArn(repository)},
+			},
+		}}) {
 		return
 	}
 	ctx := r.Context()
@@ -2102,20 +2292,25 @@ func (c *Controller) DumpRefs(w http.ResponseWriter, r *http.Request, repository
 }
 
 func (c *Controller) RestoreRefs(w http.ResponseWriter, r *http.Request, body RestoreRefsJSONRequestBody, repository string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
-			Action:   permissions.CreateTagAction,
-			Resource: permissions.RepoArn(repository),
-		},
-		{
-			Action:   permissions.CreateBranchAction,
-			Resource: permissions.RepoArn(repository),
-		},
-		{
-			Action:   permissions.CreateCommitAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
+	if !c.authorize(w, r, permissions.Node{
+		Type: permissions.NodeTypeAnd,
+		Nodes: []permissions.Node{
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.CreateTagAction,
+					Resource: permissions.RepoArn(repository)},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.CreateBranchAction,
+					Resource: permissions.RepoArn(repository)},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.CreateCommitAction,
+					Resource: permissions.RepoArn(repository)},
+			},
+		}}) {
 		return
 	}
 	ctx := r.Context()
@@ -2127,7 +2322,11 @@ func (c *Controller) RestoreRefs(w http.ResponseWriter, r *http.Request, body Re
 	}
 
 	// ensure no refs currently found
-	_, _, err = c.Catalog.ListCommits(ctx, repo.Name, repo.DefaultBranch, "", 1)
+	_, _, err = c.Catalog.ListCommits(ctx, repo.Name, repo.DefaultBranch, catalog.LogParams{
+		PathList:      make([]catalog.PathRecord, 0),
+		FromReference: "",
+		Limit:         1,
+	})
 	if !errors.Is(err, graveler.ErrNotFound) {
 		writeError(w, http.StatusBadRequest, "can only restore into a bare repository")
 		return
@@ -2151,8 +2350,8 @@ func (c *Controller) RestoreRefs(w http.ResponseWriter, r *http.Request, body Re
 }
 
 func (c *Controller) CreateSymlinkFile(w http.ResponseWriter, r *http.Request, repository string, branch string, params CreateSymlinkFileParams) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.WriteObjectAction,
 			Resource: permissions.ObjectArn(repository, branch),
 		},
@@ -2239,8 +2438,8 @@ func writeSymlink(ctx context.Context, repo *catalog.Repository, branch string, 
 }
 
 func (c *Controller) DiffRefs(w http.ResponseWriter, r *http.Request, repository string, leftRef string, rightRef string, params DiffRefsParams) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ListObjectsAction,
 			Resource: permissions.RepoArn(repository),
 		},
@@ -2289,16 +2488,19 @@ func (c *Controller) DiffRefs(w http.ResponseWriter, r *http.Request, repository
 
 // LogBranchCommits deprecated replaced by LogCommits
 func (c *Controller) LogBranchCommits(w http.ResponseWriter, r *http.Request, repository string, branch string, params LogBranchCommitsParams) {
-	c.logCommitsHelper(w, r, repository, branch, params.After, params.Amount)
+	c.logCommitsHelper(w, r, repository, branch, LogCommitsParams{
+		After:  params.After,
+		Amount: params.Amount,
+	})
 }
 
 func (c *Controller) LogCommits(w http.ResponseWriter, r *http.Request, repository string, ref string, params LogCommitsParams) {
-	c.logCommitsHelper(w, r, repository, ref, params.After, params.Amount)
+	c.logCommitsHelper(w, r, repository, ref, params)
 }
 
-func (c *Controller) logCommitsHelper(w http.ResponseWriter, r *http.Request, repository string, ref string, after *PaginationAfter, amount *PaginationAmount) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+func (c *Controller) logCommitsHelper(w http.ResponseWriter, r *http.Request, repository string, ref string, params LogCommitsParams) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ReadBranchAction,
 			Resource: permissions.BranchArn(repository, ref),
 		},
@@ -2309,7 +2511,11 @@ func (c *Controller) logCommitsHelper(w http.ResponseWriter, r *http.Request, re
 	c.LogAction(ctx, "get_branch_commit_log")
 
 	// get commit log
-	commitLog, hasMore, err := c.Catalog.ListCommits(ctx, repository, ref, paginationAfter(after), paginationAmount(amount))
+	commitLog, hasMore, err := c.Catalog.ListCommits(ctx, repository, ref, catalog.LogParams{
+		PathList:      resolvePathList(params.Objects, params.Prefixes),
+		FromReference: paginationAfter(params.After),
+		Limit:         paginationAmount(params.Amount),
+	})
 	if handleAPIError(w, err) {
 		return
 	}
@@ -2338,8 +2544,8 @@ func (c *Controller) logCommitsHelper(w http.ResponseWriter, r *http.Request, re
 }
 
 func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repository string, ref string, params GetObjectParams) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ReadObjectAction,
 			Resource: permissions.ObjectArn(repository, params.Path),
 		},
@@ -2394,8 +2600,8 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 }
 
 func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, repository string, ref string, params ListObjectsParams) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ListObjectsAction,
 			Resource: permissions.RepoArn(repository),
 		},
@@ -2448,6 +2654,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 				PhysicalAddress: qk.Format(),
 				PathType:        entryTypeObject,
 				SizeBytes:       Int64Ptr(entry.Size),
+				ContentType:     &entry.ContentType,
 			}
 			if (params.UserMetadata == nil || *params.UserMetadata) && entry.Metadata != nil {
 				objStat.Metadata = &ObjectUserMetadata{AdditionalProperties: entry.Metadata}
@@ -2471,8 +2678,8 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 }
 
 func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, repository string, ref string, params StatObjectParams) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ReadObjectAction,
 			Resource: permissions.ObjectArn(repository, params.Path),
 		},
@@ -2504,6 +2711,7 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 		PathType:        entryTypeObject,
 		PhysicalAddress: qk.Format(),
 		SizeBytes:       Int64Ptr(entry.Size),
+		ContentType:     &entry.ContentType,
 	}
 	if (params.UserMetadata == nil || *params.UserMetadata) && entry.Metadata != nil {
 		objStat.Metadata = &ObjectUserMetadata{AdditionalProperties: entry.Metadata}
@@ -2516,8 +2724,8 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 }
 
 func (c *Controller) GetUnderlyingProperties(w http.ResponseWriter, r *http.Request, repository string, ref string, params GetUnderlyingPropertiesParams) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ReadObjectAction,
 			Resource: permissions.ObjectArn(repository, params.Path),
 		},
@@ -2552,8 +2760,8 @@ func (c *Controller) GetUnderlyingProperties(w http.ResponseWriter, r *http.Requ
 }
 
 func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, body MergeIntoBranchJSONRequestBody, repository string, sourceRef string, destinationBranch string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.CreateCommitAction,
 			Resource: permissions.BranchArn(repository, destinationBranch),
 		},
@@ -2575,7 +2783,8 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 		repository, destinationBranch, sourceRef,
 		user.Username,
 		StringValue(body.Message),
-		metadata)
+		metadata,
+		StringValue(body.Strategy))
 
 	var hookAbortErr *graveler.HookAbortError
 	switch {
@@ -2584,42 +2793,18 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 		writeError(w, http.StatusPreconditionFailed, err)
 		return
 	case errors.Is(err, catalog.ErrConflictFound) || errors.Is(err, graveler.ErrConflictFound):
-		writeError(w, http.StatusConflict, newMergeResultFromCatalog(res))
+		writeResponse(w, http.StatusConflict, MergeResult{Reference: res})
 		return
 	}
 	if handleAPIError(w, err) {
 		return
 	}
-
-	response := newMergeResultFromCatalog(res)
-	writeResponse(w, http.StatusOK, response)
-}
-
-func newMergeResultFromCatalog(res *catalog.MergeResult) MergeResult {
-	if res == nil {
-		return MergeResult{}
-	}
-	result := MergeResult{
-		Reference: res.Reference,
-	}
-	for k, v := range res.Summary {
-		switch k {
-		case catalog.DifferenceTypeAdded:
-			result.Summary.Added = v
-		case catalog.DifferenceTypeChanged:
-			result.Summary.Changed = v
-		case catalog.DifferenceTypeRemoved:
-			result.Summary.Removed = v
-		case catalog.DifferenceTypeConflict:
-			result.Summary.Conflict = v
-		}
-	}
-	return result
+	writeResponse(w, http.StatusOK, MergeResult{Reference: res})
 }
 
 func (c *Controller) ListTags(w http.ResponseWriter, r *http.Request, repository string, params ListTagsParams) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ListTagsAction,
 			Resource: permissions.RepoArn(repository),
 		},
@@ -2629,7 +2814,7 @@ func (c *Controller) ListTags(w http.ResponseWriter, r *http.Request, repository
 	ctx := r.Context()
 	c.LogAction(ctx, "list_tags")
 
-	res, hasMore, err := c.Catalog.ListTags(ctx, repository, paginationAmount(params.Amount), paginationAfter(params.After))
+	res, hasMore, err := c.Catalog.ListTags(ctx, repository, paginationPrefix(params.Prefix), paginationAmount(params.Amount), paginationAfter(params.After))
 	if handleAPIError(w, err) {
 		return
 	}
@@ -2649,8 +2834,8 @@ func (c *Controller) ListTags(w http.ResponseWriter, r *http.Request, repository
 }
 
 func (c *Controller) CreateTag(w http.ResponseWriter, r *http.Request, body CreateTagJSONRequestBody, repository string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.CreateTagAction,
 			Resource: permissions.TagArn(repository, body.Id),
 		},
@@ -2672,8 +2857,8 @@ func (c *Controller) CreateTag(w http.ResponseWriter, r *http.Request, body Crea
 }
 
 func (c *Controller) DeleteTag(w http.ResponseWriter, r *http.Request, repository string, tag string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.DeleteTagAction,
 			Resource: permissions.TagArn(repository, tag),
 		},
@@ -2690,8 +2875,8 @@ func (c *Controller) DeleteTag(w http.ResponseWriter, r *http.Request, repositor
 }
 
 func (c *Controller) GetTag(w http.ResponseWriter, r *http.Request, repository string, tag string) {
-	if !c.authorize(w, r, []permissions.Permission{
-		{
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
 			Action:   permissions.ReadTagAction,
 			Resource: permissions.TagArn(repository, tag),
 		},
@@ -2708,6 +2893,21 @@ func (c *Controller) GetTag(w http.ResponseWriter, r *http.Request, repository s
 		CommitId: reference,
 		Id:       tag,
 	}
+	writeResponse(w, http.StatusOK, response)
+}
+
+func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	initialized, err := c.MetadataManager.IsInitialized(ctx)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	state := setupStateNotInitialized
+	if initialized {
+		state = setupStateInitialized
+	}
+	response := SetupState{State: swag.String(state)}
 	writeResponse(w, http.StatusOK, response)
 }
 
@@ -2766,6 +2966,11 @@ func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 	if ok {
 		user.Id = u.Username
 		user.CreationDate = u.CreatedAt.Unix()
+		if u.FriendlyName != nil {
+			user.FriendlyName = u.FriendlyName
+		} else {
+			user.FriendlyName = &u.Username
+		}
 	}
 	response := CurrentUser{
 		User: user,
@@ -2777,10 +2982,28 @@ func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user, ok := ctx.Value(UserContextKey).(*model.User)
 	if !ok || user == nil {
-		writeError(w, http.StatusUnauthorized, ErrAuthenticationFailed)
+		writeError(w, http.StatusUnauthorized, ErrAuthenticatingRequest)
 		return
 	}
-	writeResponse(w, http.StatusOK, VersionConfig{Version: swag.String(version.Version)})
+	// set upgrade recommended based on last security audit check
+	var (
+		upgradeRecommended *bool
+		upgradeURL         *string
+	)
+	lastCheck, _ := c.AuditChecker.LastCheck()
+	if lastCheck != nil {
+		recommendedURL := lastCheck.UpgradeRecommendedURL()
+		if recommendedURL != "" {
+			upgradeRecommended = swag.Bool(true)
+			upgradeURL = swag.String(recommendedURL)
+		}
+	}
+
+	writeResponse(w, http.StatusOK, VersionConfig{
+		UpgradeRecommended: upgradeRecommended,
+		UpgradeUrl:         upgradeURL,
+		Version:            swag.String(version.Version),
+	})
 }
 
 func IsStatusCodeOK(statusCode int) bool {
@@ -2874,9 +3097,40 @@ func paginationAmount(v *PaginationAmount) int {
 	return i
 }
 
+func resolvePathList(objects *[]string, prefixes *[]string) []catalog.PathRecord {
+	var pathRecords []catalog.PathRecord
+	if objects == nil && prefixes == nil {
+		return make([]catalog.PathRecord, 0)
+	}
+	if objects != nil {
+		for _, path := range *objects {
+			if path != "" {
+				path := path
+				pathRecords = append(pathRecords, catalog.PathRecord{
+					Path:     catalog.Path(StringValue(&path)),
+					IsPrefix: false,
+				})
+			}
+		}
+	}
+	if prefixes != nil {
+		for _, path := range *prefixes {
+			if path != "" {
+				path := path
+				pathRecords = append(pathRecords, catalog.PathRecord{
+					Path:     catalog.Path(StringValue(&path)),
+					IsPrefix: true,
+				})
+			}
+		}
+	}
+	return pathRecords
+}
+
 func NewController(
 	cfg *config.Config,
 	catalog catalog.Interface,
+	authenticator auth.Authenticator,
 	authService auth.Service,
 	blockAdapter block.Adapter,
 	metadataManager auth.MetadataManager,
@@ -2884,11 +3138,13 @@ func NewController(
 	collector stats.Collector,
 	cloudMetadataProvider cloud.MetadataProvider,
 	actions actionsHandler,
+	auditChecker AuditChecker,
 	logger logging.Logger,
 ) *Controller {
 	return &Controller{
 		Config:                cfg,
 		Catalog:               catalog,
+		Authenticator:         authenticator,
 		Auth:                  authService,
 		BlockAdapter:          blockAdapter,
 		MetadataManager:       metadataManager,
@@ -2896,6 +3152,7 @@ func NewController(
 		Collector:             collector,
 		CloudMetadataProvider: cloudMetadataProvider,
 		Actions:               actions,
+		AuditChecker:          auditChecker,
 		Logger:                logger,
 	}
 }
@@ -2930,11 +3187,11 @@ func paginationFor(hasMore bool, results interface{}, fieldName string) Paginati
 	return pagination
 }
 
-func (c *Controller) authorize(w http.ResponseWriter, r *http.Request, perms []permissions.Permission) bool {
+func (c *Controller) authorize(w http.ResponseWriter, r *http.Request, perms permissions.Node) bool {
 	ctx := r.Context()
 	user, ok := ctx.Value(UserContextKey).(*model.User)
 	if !ok || user == nil {
-		writeError(w, http.StatusUnauthorized, ErrAuthenticationFailed)
+		writeError(w, http.StatusUnauthorized, ErrAuthenticatingRequest)
 		return false
 	}
 	resp, err := c.Auth.Authorize(ctx, &auth.AuthorizationRequest{

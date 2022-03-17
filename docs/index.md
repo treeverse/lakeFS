@@ -9,9 +9,9 @@ redirect_from: ./downloads.html
 # What is lakeFS
 {: .no_toc }  
 
-lakeFS is an open source platform that delivers resilience and manageability to object-storage based data lakes.
+lakeFS is an open-source project that provides a git-like version control interface for data lakes, with seamless integration to most data tools and frameworks.
 
-With lakeFS you can build repeatable, atomic and versioned data lake operations - from complex ETL jobs to data science and analytics.
+lakeFS enables you to easily implement parallel pipelines for experimentation, reproducibility and CI/CD for data.
 
 lakeFS supports AWS S3, Azure Blob Storage and Google Cloud Storage (GCS) as its underlying storage service. It is [API compatible with S3](reference/s3.md) and works seamlessly with all modern data frameworks such as Spark, Hive, AWS Athena, Presto, etc.
 
@@ -20,15 +20,38 @@ lakeFS supports AWS S3, Azure Blob Storage and Google Cloud Storage (GCS) as its
 
 {: .pb-5 }
 
+
+## New! lakeFS Playground
+
+Experience lakeFS first hand with your own isolated environment.
+You can easily integrate it with your existing tools, and feel lakeFS in action in an environment similar to your own.
+
+<p style="margin-top: 40px;">
+    <a class="btn btn-green" href="https://demo.lakefs.io/" target="_blank">
+        Try lakeFS now without installing
+    </a>
+</p>
+
 ## Why you need lakeFS and what it can do
 
-lakeFS provides a [Git-like branching and committing model](understand/branching-model.md) that scales to exabytes of data by utilizing S3, GCS, or Azure Blob for storage.
-
-This branching model makes your data lake ACID compliant by allowing changes to happen in isolated branches that can be created, merged and rolled back atomically and instantly.
+With lakeFS data teams can stop worrying about issues that take away much of their time:
+* Roll back changes to data: recover quickly from bugs and mistakes
+* Test and validate data before exposing it to consumers
+* Travel back in time, across collections - for reproducing and debugging issues
 
 Since lakeFS is compatible with the S3 API, all popular applications will work without modification, by simply adding the branch name to the object path:
 
 <img src="{{ site.baseurl }}/assets/img/s3_branch.png" alt="lakeFS s3 addressing" width="60%" height="60%" />
+
+## Benefits of lakeFS
+* It is **format agnostic**
+* Your data **stays in place**
+* It helps you prevent data duplication by using **copy-on-write**
+* It is **highly performant** for huge data lakes
+* It includes **configurable garbage collection** capabilities
+* lakeFS is **highly available and production ready**
+
+<img src="{{ site.baseurl }}/assets/img/lakeFS_integration.png" alt="lakeFS integration into data lake" width="60%" height="60%" />
 
 ## Use-cases:
 
@@ -42,7 +65,7 @@ lakeFS enhances processing workflows at each step of the data lifecycle:
 [Learn more](./usecases/data-devenv.md){:id="user-content-learn-more-env"}
 
 ### During Deployment
-* **Version Control** - deploy data safely with CI/CD workflows borrowed from software engineering best practices. Ingest new data onto an isolated branch, perform data validations, then add to production through a merge operation.
+* **Version Control** - retain commits for a configurable duration, so readers are able to query data from the latest commit or any other point in time. Writers atomically introduce new data preventing inconsistent data views.
 * **Test** - define pre-merge and pre-commit hooks to run tests that enforce schema and validate properties of the data to catch issues before they reach production.
 
 [Learn more](./usecases/ci.md){:id="user-content-learn-more-int"}
@@ -52,7 +75,7 @@ lakeFS enhances processing workflows at each step of the data lifecycle:
 * **Troubleshoot** - investigate production errors by starting with a snapshot of the inputs to the failed process. Spend less time re-creating the state of datasets at the time of failure, and more time finding the solution.
 * **Cross-collection Consistency** - provide consumers multiple synchronized collections of data in one atomic, revertable action. Using branches, writers provide consistency guarantees across different logical collections - merging to the main branch only after all relevant datasets have been created or updated successfully.
    
-[Learn more](./usecases/cd.md){:id="user-content-learn-more-dep"}
+[Learn more](./usecases/production.md){:id="user-content-learn-more-dep"}
 
 
 ## Downloads
@@ -68,6 +91,4 @@ Official Docker images are available at [https://hub.docker.com/r/treeverse/lake
 
 ## Next steps
 
-Read about the [branching model](understand/branching-model.md) of lakeFS or run it locally and see how it works for yourself!
-
-Check out the [Quick Start Guide](quickstart/index.md)
+Get started and [set up lakeFS on your preferred cloud environemnt](https://docs.lakefs.io/deploy/)

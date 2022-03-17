@@ -12,7 +12,7 @@ PROTOC=$(DOCKER) run --rm -v $(shell pwd):/mnt $(PROTOC_IMAGE)
 CLIENT_JARS_BUCKET="s3://treeverse-clients-us-east/"
 
 # https://openapi-generator.tech
-OPENAPI_GENERATOR_IMAGE=treeverse/openapi-generator-cli:v5.1.0.1
+OPENAPI_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v5.3.0
 OPENAPI_GENERATOR=$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
 
 ifndef PACKAGE_VERSION
@@ -74,12 +74,12 @@ clean:
 check-licenses: check-licenses-go-mod check-licenses-npm
 
 check-licenses-go-mod:
-	go get github.com/google/go-licenses
+	$(GOCMD) install github.com/google/go-licenses@latest
 	$(GOBINPATH)/go-licenses check ./cmd/$(LAKEFS_BINARY_NAME)
 	$(GOBINPATH)/go-licenses check ./cmd/$(LAKECTL_BINARY_NAME)
 
 check-licenses-npm:
-	go get github.com/senseyeio/diligent/cmd/diligent
+	$(GOCMD) install github.com/senseyeio/diligent/cmd/diligent@latest
 	# The -i arg is a workaround to ignore NPM scoped packages until https://github.com/senseyeio/diligent/issues/77 is fixed
 	$(GOBINPATH)/diligent check -w permissive -i ^@[^/]+?/[^/]+ $(UI_DIR)
 
@@ -109,6 +109,9 @@ go-install: go-mod-download ## Install dependencies
 
 
 client-python: api/swagger.yml  ## Generate SDK for Python client
+	# remove the build folder as it also holds lakefs_client folder which keeps because we skip it during find
+	rm -rf clients/python/build; cd clients/python && \
+		find . -depth -name lakefs_client -prune -o ! \( -name client.py -or -name Gemfile -or -name Gemfile.lock -or -name _config.yml -or -name .openapi-generator-ignore \) -delete
 	$(OPENAPI_GENERATOR) generate \
 		-i /mnt/$< \
 		-g python \
@@ -118,6 +121,7 @@ client-python: api/swagger.yml  ## Generate SDK for Python client
 		-o /mnt/clients/python
 
 client-java: api/swagger.yml  ## Generate SDK for Java (and Scala) client
+	rm -rf clients/java
 	$(OPENAPI_GENERATOR) generate \
 		-i /mnt/$< \
 		-g java \
@@ -125,10 +129,12 @@ client-java: api/swagger.yml  ## Generate SDK for Java (and Scala) client
 		--additional-properties=hideGenerationTimestamp=true,artifactVersion=$(PACKAGE_VERSION),parentArtifactId=lakefs-parent,parentGroupId=io.lakefs,parentVersion=0,groupId=io.lakefs,artifactId='api-client',artifactDescription='lakeFS OpenAPI Java client',artifactUrl=https://github.com/treeverse/lakeFS/tree/master/clients,apiPackage=io.lakefs.clients.api,modelPackage=io.lakefs.clients.api.model,mainPackage=io.lakefs.clients.api,developerEmail=services@treeverse.io,developerName='Treeverse lakeFS dev',developerOrganization='lakefs.io',developerOrganizationUrl='https://lakefs.io',licenseName=apache2,licenseUrl=http://www.apache.org/licenses/,scmConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmDeveloperConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmUrl=https://github.com/treeverse/lakeFS \
 		-o /mnt/clients/java
 
+.PHONY: clients client-python client-java
 clients: client-python client-java
 
 package-python: client-python
-	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python $(PYTHON_IMAGE) ./build-package.sh
+	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python $(PYTHON_IMAGE) /bin/bash -c \
+		"python -m pip install build --user && python -m build --sdist --wheel --outdir dist/"
 
 package: package-python
 
@@ -192,20 +198,22 @@ validate-fmt:  ## Validate go format
 
 .PHONY: validate-proto
 validate-proto: proto  ## build proto and check if diff found
-	git diff --quiet -- pkg/catalog/catalog.pb.go
-	git diff --quiet -- pkg/graveler/committed/committed.pb.go
-	git diff --quiet -- pkg/graveler/graveler.pb.go
+	git diff --quiet -- pkg/catalog/catalog.pb.go || (echo "Modification verification failed! graveler's catalog proto"; false)
+	git diff --quiet -- pkg/graveler/committed/committed.pb.go || (echo "Modification verification failed! graveler's committed proto"; false)
+	git diff --quiet -- pkg/graveler/graveler.pb.go || (echo "Modification verification failed! graveler's proto"; false)
+	git diff --quiet -- pkg/graveler/settings/test_settings.pb.go || (echo "Modification verification failed! graveler's settings test proto"; false)
+
+validate-reference:
+	git diff --quiet -- docs/reference/commands.md || (echo "Modification verification failed! commands docs"; false)
 
 validate-client-python:
-	git diff --quiet -- clients/python/lakefs_client/api
-	git diff --quiet -- clients/python/lakefs_client/model
-	git diff --quiet -- clients/python/.openapi-generator/FILES
+	git diff --quiet -- clients/python || (echo "Modification verification failed! python client"; false)
 
 validate-client-java:
-	git diff --quiet -- clients/java
+	git diff --quiet -- clients/java || (echo "Modification verification failed! java client"; false)
 
 # Run all validation/linting steps
-checks-validator: lint validate-fmt validate-proto validate-client-python validate-client-java
+checks-validator: lint validate-fmt validate-proto validate-client-python validate-client-java validate-reference
 
 $(UI_DIR)/node_modules:
 	cd $(UI_DIR) && $(NPM) install
@@ -226,6 +234,7 @@ proto: ## Build proto (Protocol Buffers) files
 	$(PROTOC) --proto_path=pkg/catalog --go_out=pkg/catalog --go_opt=paths=source_relative catalog.proto
 	$(PROTOC) --proto_path=pkg/graveler/committed --go_out=pkg/graveler/committed --go_opt=paths=source_relative committed.proto
 	$(PROTOC) --proto_path=pkg/graveler --go_out=pkg/graveler --go_opt=paths=source_relative graveler.proto
+	$(PROTOC) --proto_path=pkg/graveler/settings --go_out=pkg/graveler/settings --go_opt=paths=source_relative test_settings.proto
 
 publish-scala: ## sbt publish spark client jars to nexus and s3 bucket
 	cd clients/spark && sbt assembly && sbt s3Upload && sbt publishSigned
@@ -239,4 +248,4 @@ help:  ## Show Help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 # helpers
-gen: gen-api gen-ui gen-ddl gen-mockgen clients
+gen: gen-api gen-ui gen-ddl gen-mockgen clients gen-docs

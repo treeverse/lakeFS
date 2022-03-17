@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -89,7 +88,7 @@ func failHandlerFunc(chan hookResponse) func(http.ResponseWriter, *http.Request)
 
 func hookHandlerFunc(respCh chan hookResponse) func(http.ResponseWriter, *http.Request) {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		data, err := ioutil.ReadAll(request.Body)
+		data, err := io.ReadAll(request.Body)
 		if err != nil {
 			respCh <- hookResponse{path: request.URL.Path, err: err}
 			_, _ = io.WriteString(writer, "Failed")

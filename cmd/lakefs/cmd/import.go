@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/jedib0t/go-pretty/text"
+	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/block/factory"
@@ -19,6 +19,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/onboard"
+	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
@@ -66,6 +67,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	prefixFile, _ := flags.GetString(PrefixesFileFlagName)
 	baseCommit, _ := flags.GetString(BaseCommitFlagName)
 
+	cfg := loadConfig()
 	ctx := cmd.Context()
 	dbParams := cfg.GetDatabaseParams()
 	dbPool := db.BuildDatabaseConnection(ctx, dbParams)
@@ -93,16 +95,6 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	}
 	defer func() { _ = c.Close() }()
 
-	// wire actions into entry catalog
-	actionsService := actions.NewService(
-		ctx,
-		dbPool,
-		catalog.NewActionsSource(c),
-		catalog.NewActionsOutputWriter(c.BlockAdapter),
-	)
-	c.SetHooksHandler(actionsService)
-	defer actionsService.Stop()
-
 	u := uri.Must(uri.Parse(args[0]))
 	if !u.IsRepository() {
 		fmt.Printf("Invalid 'repository': %s\n", uri.ErrInvalidRefURI)
@@ -124,6 +116,21 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 		fmt.Printf("Invalid manifest url. expected format: %s\n", ManifestURLFormat)
 		return 1
 	}
+
+	bufferedCollector := stats.NewBufferedCollector(cfg.GetFixedInstallationID(), cfg)
+	bufferedCollector.SetRuntimeCollector(blockStore.RuntimeStats)
+
+	// wire actions into entry catalog
+	actionsService := actions.NewService(
+		ctx,
+		dbPool,
+		catalog.NewActionsSource(c),
+		catalog.NewActionsOutputWriter(c.BlockAdapter),
+		bufferedCollector,
+		cfg.GetActionsEnabled(),
+	)
+	c.SetHooksHandler(actionsService)
+	defer actionsService.Stop()
 
 	repo, err := getRepository(ctx, c, repoName)
 	if err != nil {
@@ -207,18 +214,18 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	}
 
 	if withMerge {
-		fmt.Printf("Merging import changes into lakefs://%s@%s/\n", repoName, repo.DefaultBranch)
+		fmt.Printf("Merging import changes into lakefs://%s/%s/\n", repoName, repo.DefaultBranch)
 		msg := fmt.Sprintf(onboard.CommitMsgTemplate, stats.CommitRef)
-		commitLog, err := c.Merge(ctx, repoName, onboard.DefaultImportBranchName, repo.DefaultBranch, CommitterName, msg, nil)
+		commitLog, err := c.Merge(ctx, repoName, onboard.DefaultImportBranchName, repo.DefaultBranch, CommitterName, msg, nil, "")
 		if err != nil {
 			fmt.Printf("Merge failed: %s\n", err)
 			return 1
 		}
 		fmt.Println("Merge was completed successfully.")
-		fmt.Printf("To list imported objects, run:\n\t$ lakectl fs ls lakefs://%s@%s/\n", repoName, commitLog.Reference)
+		fmt.Printf("To list imported objects, run:\n\t$ lakectl fs ls lakefs://%s/%s/\n", repoName, commitLog)
 	} else {
-		fmt.Printf("To list imported objects, run:\n\t$ lakectl fs ls lakefs://%s@%s/\n", repoName, stats.CommitRef)
-		fmt.Printf("To merge the changes to your main branch, run:\n\t$ lakectl merge lakefs://%s@%s lakefs://%s@%s\n", repoName, stats.CommitRef, repoName, repo.DefaultBranch)
+		fmt.Printf("To list imported objects, run:\n\t$ lakectl fs ls lakefs://%s/%s/\n", repoName, stats.CommitRef)
+		fmt.Printf("To merge the changes to your main branch, run:\n\t$ lakectl merge lakefs://%s/%s lakefs://%s/%s\n", repoName, stats.CommitRef, repoName, repo.DefaultBranch)
 	}
 
 	return 0

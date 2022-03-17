@@ -44,6 +44,7 @@ public class Error {
    * short message explaining the error
    * @return message
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "short message explaining the error")
 
   public String getMessage() {

@@ -1,6 +1,7 @@
 package catalog
 
 import (
+	"bytes"
 	"context"
 	"crypto"
 	_ "crypto/sha256"
@@ -17,15 +18,18 @@ import (
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/graveler/branch"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/graveler/retention"
+	"github.com/treeverse/lakefs/pkg/graveler/settings"
 	"github.com/treeverse/lakefs/pkg/graveler/sstable"
 	"github.com/treeverse/lakefs/pkg/graveler/staging"
 	"github.com/treeverse/lakefs/pkg/ident"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/pyramid"
 	"github.com/treeverse/lakefs/pkg/pyramid/params"
+	"github.com/treeverse/lakefs/pkg/validator"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -33,6 +37,8 @@ import (
 // causes all old identifiers to change, so while existing installations will continue to
 // function they will be unable to re-use any existing objects.
 const hashAlg = crypto.SHA256
+
+const NumberOfParentsOfNonMergeCommit = 1
 
 type Path string
 
@@ -179,15 +185,16 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	}
 	committedManager := committed.NewCommittedManager(sstableMetaRangeManager)
 
-	stagingManager := staging.NewManager(cfg.DB)
-
 	executor := batch.NewExecutor(logging.Default())
 	go executor.Run(ctx)
 
 	refManager := ref.NewPGRefManager(executor, cfg.DB, ident.NewHexAddressProvider())
 	branchLocker := ref.NewBranchLocker(cfg.LockDB)
 	gcManager := retention.NewGarbageCollectionManager(cfg.DB, tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
-	store := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager)
+	stagingManager := staging.NewManager(cfg.DB)
+	settingManager := settings.NewManager(refManager, branchLocker, adapter, cfg.Config.GetCommittedBlockStoragePrefix())
+	protectedBranchesManager := branch.NewProtectionManager(settingManager)
+	store := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
 
 	return &Catalog{
 		BlockAdapter: tierFSParams.Adapter,
@@ -206,9 +213,9 @@ func (c *Catalog) CreateRepository(ctx context.Context, repository string, stora
 	repositoryID := graveler.RepositoryID(repository)
 	storageNS := graveler.StorageNamespace(storageNamespace)
 	branchID := graveler.BranchID(branch)
-	if err := Validate([]ValidateArg{
-		{"repositoryID", repositoryID, ValidateRepositoryID},
-		{"storageNamespace", storageNS, ValidateStorageNamespace},
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "name", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "storageNamespace", Value: storageNS, Fn: graveler.ValidateStorageNamespace},
 	}); err != nil {
 		return nil, err
 	}
@@ -230,9 +237,9 @@ func (c *Catalog) CreateBareRepository(ctx context.Context, repository string, s
 	repositoryID := graveler.RepositoryID(repository)
 	storageNS := graveler.StorageNamespace(storageNamespace)
 	branchID := graveler.BranchID(defaultBranchID)
-	if err := Validate([]ValidateArg{
-		{"repositoryID", repositoryID, ValidateRepositoryID},
-		{"storageNamespace", storageNS, ValidateStorageNamespace},
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "name", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "storageNamespace", Value: storageNS, Fn: graveler.ValidateStorageNamespace},
 	}); err != nil {
 		return nil, err
 	}
@@ -252,8 +259,8 @@ func (c *Catalog) CreateBareRepository(ctx context.Context, repository string, s
 // GetRepository get repository information
 func (c *Catalog) GetRepository(ctx context.Context, repository string) (*Repository, error) {
 	repositoryID := graveler.RepositoryID(repository)
-	if err := Validate([]ValidateArg{
-		{"repositoryID", repositoryID, ValidateRepositoryID},
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
 	}); err != nil {
 		return nil, err
 	}
@@ -273,8 +280,8 @@ func (c *Catalog) GetRepository(ctx context.Context, repository string) (*Reposi
 // DeleteRepository delete a repository
 func (c *Catalog) DeleteRepository(ctx context.Context, repository string) error {
 	repositoryID := graveler.RepositoryID(repository)
-	if err := Validate([]ValidateArg{
-		{"repositoryID", repositoryID, ValidateRepositoryID},
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
 	}); err != nil {
 		return err
 	}
@@ -342,9 +349,9 @@ func (c *Catalog) ListRepositories(ctx context.Context, limit int, prefix, after
 func (c *Catalog) GetStagingToken(ctx context.Context, repository string, branch string) (*string, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
-	if err := Validate([]ValidateArg{
-		{"repositoryID", repositoryID, ValidateRepositoryID},
-		{"branchID", branchID, ValidateBranchID},
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "branch", Value: branchID, Fn: graveler.ValidateBranchID},
 	}); err != nil {
 		return nil, err
 	}
@@ -363,10 +370,10 @@ func (c *Catalog) CreateBranch(ctx context.Context, repository string, branch st
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	sourceRef := graveler.Ref(sourceBranch)
-	if err := Validate([]ValidateArg{
-		{"repositoryID", repositoryID, ValidateRepositoryID},
-		{"branchID", branchID, ValidateBranchID},
-		{"ref", sourceRef, ValidateRef},
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "branch", Value: branchID, Fn: graveler.ValidateBranchID},
+		{Name: "ref", Value: sourceRef, Fn: graveler.ValidateRef},
 	}); err != nil {
 		return nil, err
 	}
@@ -393,9 +400,9 @@ func (c *Catalog) CreateBranch(ctx context.Context, repository string, branch st
 func (c *Catalog) DeleteBranch(ctx context.Context, repository string, branch string) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
-	if err := Validate([]ValidateArg{
-		{"repositoryID", repositoryID, ValidateRepositoryID},
-		{"branchID", branchID, ValidateBranchID},
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "name", Value: branchID, Fn: graveler.ValidateBranchID},
 	}); err != nil {
 		return err
 	}
@@ -406,8 +413,8 @@ func (c *Catalog) ListBranches(ctx context.Context, repository string, prefix st
 	repositoryID := graveler.RepositoryID(repository)
 	afterBranch := graveler.BranchID(after)
 	prefixBranch := graveler.BranchID(prefix)
-	if err := Validate([]ValidateArg{
-		{"repositoryID", repositoryID, ValidateRepositoryID},
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
 	}); err != nil {
 		return nil, false, err
 	}
@@ -460,9 +467,9 @@ func (c *Catalog) ListBranches(ctx context.Context, repository string, prefix st
 func (c *Catalog) BranchExists(ctx context.Context, repository string, branch string) (bool, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
-	if err := Validate([]ValidateArg{
-		{"repositoryID", repositoryID, ValidateRepositoryID},
-		{"branchID", branchID, ValidateBranchID},
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "name", Value: branchID, Fn: graveler.ValidateBranchID},
 	}); err != nil {
 		return false, err
 	}
@@ -479,9 +486,9 @@ func (c *Catalog) BranchExists(ctx context.Context, repository string, branch st
 func (c *Catalog) GetBranchReference(ctx context.Context, repository string, branch string) (string, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
-	if err := Validate([]ValidateArg{
-		{"repositoryID", repositoryID, ValidateRepositoryID},
-		{"branchID", branchID, ValidateBranchID},
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "branch", Value: branchID, Fn: graveler.ValidateBranchID},
 	}); err != nil {
 		return "", err
 	}
@@ -495,9 +502,9 @@ func (c *Catalog) GetBranchReference(ctx context.Context, repository string, bra
 func (c *Catalog) ResetBranch(ctx context.Context, repository string, branch string) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
-	if err := Validate([]ValidateArg{
-		{"repositoryID", repositoryID, ValidateRepositoryID},
-		{"branchID", branchID, ValidateBranchID},
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "branch", Value: branchID, Fn: graveler.ValidateBranchID},
 	}); err != nil {
 		return err
 	}
@@ -507,9 +514,9 @@ func (c *Catalog) ResetBranch(ctx context.Context, repository string, branch str
 func (c *Catalog) CreateTag(ctx context.Context, repository string, tagID string, ref string) (string, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	tag := graveler.TagID(tagID)
-	if err := Validate([]ValidateArg{
-		{"repositoryID", repositoryID, ValidateRepositoryID},
-		{"tagID", tag, ValidateTagID},
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "tagID", Value: tag, Fn: graveler.ValidateTagID},
 	}); err != nil {
 		return "", err
 	}
@@ -527,22 +534,22 @@ func (c *Catalog) CreateTag(ctx context.Context, repository string, tagID string
 func (c *Catalog) DeleteTag(ctx context.Context, repository string, tagID string) error {
 	repositoryID := graveler.RepositoryID(repository)
 	tag := graveler.TagID(tagID)
-	if err := Validate([]ValidateArg{
-		{"repositoryID", repositoryID, ValidateRepositoryID},
-		{"tagID", tag, ValidateTagID},
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "name", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "tagID", Value: tag, Fn: graveler.ValidateTagID},
 	}); err != nil {
 		return err
 	}
 	return c.Store.DeleteTag(ctx, repositoryID, tag)
 }
 
-func (c *Catalog) ListTags(ctx context.Context, repository string, limit int, after string) ([]*Tag, bool, error) {
+func (c *Catalog) ListTags(ctx context.Context, repository string, prefix string, limit int, after string) ([]*Tag, bool, error) {
 	if limit < 0 || limit > ListTagsLimitMax {
 		limit = ListTagsLimitMax
 	}
 	repositoryID := graveler.RepositoryID(repository)
-	if err := Validate([]ValidateArg{
-		{"repositoryID", repositoryID, ValidateRepositoryID},
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "name", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
 	}); err != nil {
 		return nil, false, err
 	}
@@ -552,19 +559,26 @@ func (c *Catalog) ListTags(ctx context.Context, repository string, limit int, af
 	}
 	defer it.Close()
 	afterTagID := graveler.TagID(after)
-	it.SeekGE(afterTagID)
-
+	prefixTagID := graveler.TagID(prefix)
+	if afterTagID < prefixTagID {
+		it.SeekGE(prefixTagID)
+	} else {
+		it.SeekGE(afterTagID)
+	}
 	var tags []*Tag
 	for it.Next() {
 		v := it.Value()
 		if v.TagID == afterTagID {
 			continue
 		}
-		branch := &Tag{
+		if !strings.HasPrefix(v.TagID.String(), prefix) {
+			break
+		}
+		tag := &Tag{
 			ID:       string(v.TagID),
 			CommitID: v.CommitID.String(),
 		}
-		tags = append(tags, branch)
+		tags = append(tags, tag)
 		if len(tags) >= limit+1 {
 			break
 		}
@@ -584,9 +598,9 @@ func (c *Catalog) ListTags(ctx context.Context, repository string, limit int, af
 func (c *Catalog) GetTag(ctx context.Context, repository string, tagID string) (string, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	tag := graveler.TagID(tagID)
-	if err := Validate([]ValidateArg{
-		{"repositoryID", repositoryID, ValidateRepositoryID},
-		{"tagID", tag, ValidateTagID},
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "name", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "tagID", Value: tag, Fn: graveler.ValidateTagID},
 	}); err != nil {
 		return "", err
 	}
@@ -602,10 +616,10 @@ func (c *Catalog) GetTag(ctx context.Context, repository string, tagID string) (
 func (c *Catalog) GetEntry(ctx context.Context, repository string, reference string, path string, _ GetEntryParams) (*DBEntry, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	refToGet := graveler.Ref(reference)
-	if err := Validate([]ValidateArg{
-		{"repositoryID", repositoryID, ValidateRepositoryID},
-		{"ref", refToGet, ValidateRef},
-		{"path", Path(path), ValidatePath},
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "ref", Value: refToGet, Fn: graveler.ValidateRef},
+		{Name: "path", Value: Path(path), Fn: ValidatePath},
 	}); err != nil {
 		return nil, err
 	}
@@ -621,15 +635,17 @@ func (c *Catalog) GetEntry(ctx context.Context, repository string, reference str
 	return &catalogEntry, nil
 }
 
-func EntryFromCatalogEntry(entry DBEntry) *Entry {
-	return &Entry{
+func newEntryFromCatalogEntry(entry DBEntry) *Entry {
+	ent := &Entry{
 		Address:      entry.PhysicalAddress,
 		AddressType:  addressTypeToProto(entry.AddressType),
 		Metadata:     entry.Metadata,
 		LastModified: timestamppb.New(entry.CreationDate),
 		ETag:         entry.Checksum,
 		Size:         entry.Size,
+		ContentType:  ContentTypeOrDefault(entry.ContentType),
 	}
+	return ent
 }
 
 func addressTypeToProto(t AddressType) Entry_AddressType {
@@ -661,12 +677,12 @@ func addressTypeToCatalog(t Entry_AddressType) AddressType {
 func (c *Catalog) CreateEntry(ctx context.Context, repository string, branch string, entry DBEntry, writeConditions ...graveler.WriteConditionOption) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
-	ent := EntryFromCatalogEntry(entry)
+	ent := newEntryFromCatalogEntry(entry)
 	path := Path(entry.Path)
-	if err := Validate([]ValidateArg{
-		{"repositoryID", repositoryID, ValidateRepositoryID},
-		{"branchID", branchID, ValidateBranchID},
-		{"path", path, ValidatePath},
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "branch", Value: branchID, Fn: graveler.ValidateBranchID},
+		{Name: "path", Value: path, Fn: ValidatePath},
 	}); err != nil {
 		return err
 	}
@@ -678,23 +694,14 @@ func (c *Catalog) CreateEntry(ctx context.Context, repository string, branch str
 	return c.Store.Set(ctx, repositoryID, branchID, key, *value, writeConditions...)
 }
 
-func (c *Catalog) CreateEntries(ctx context.Context, repository string, branch string, entries []DBEntry) error {
-	for _, entry := range entries {
-		if err := c.CreateEntry(ctx, repository, branch, entry); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func (c *Catalog) DeleteEntry(ctx context.Context, repository string, branch string, path string) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	p := Path(path)
-	if err := Validate([]ValidateArg{
-		{"repositoryID", repositoryID, ValidateRepositoryID},
-		{"branchID", branchID, ValidateBranchID},
-		{"path", p, ValidatePath},
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "branch", Value: branchID, Fn: graveler.ValidateBranchID},
+		{Name: "path", Value: p, Fn: ValidatePath},
 	}); err != nil {
 		return err
 	}
@@ -712,11 +719,11 @@ func (c *Catalog) ListEntries(ctx context.Context, repository string, reference 
 	delimiterPath := Path(delimiter)
 	repositoryID := graveler.RepositoryID(repository)
 	refToList := graveler.Ref(reference)
-	if err := Validate([]ValidateArg{
-		{"repositoryID", repositoryID, ValidateRepositoryID},
-		{"ref", refToList, ValidateRef},
-		{"prefix", prefixPath, ValidatePathOptional},
-		{"delimiter", delimiterPath, ValidatePathOptional},
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "ref", Value: refToList, Fn: graveler.ValidateRef},
+		{Name: "prefix", Value: prefixPath, Fn: ValidatePathOptional},
+		{Name: "delimiter", Value: delimiterPath, Fn: ValidatePathOptional},
 	}); err != nil {
 		return nil, false, err
 	}
@@ -756,10 +763,10 @@ func (c *Catalog) ResetEntry(ctx context.Context, repository string, branch stri
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	entryPath := Path(path)
-	if err := Validate([]ValidateArg{
-		{"repositoryID", repositoryID, ValidateRepositoryID},
-		{"branchID", branchID, ValidateBranchID},
-		{"path", entryPath, ValidatePath},
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "branch", Value: branchID, Fn: graveler.ValidateBranchID},
+		{Name: "path", Value: entryPath, Fn: ValidatePath},
 	}); err != nil {
 		return err
 	}
@@ -771,9 +778,9 @@ func (c *Catalog) ResetEntries(ctx context.Context, repository string, branch st
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	prefixPath := Path(prefix)
-	if err := Validate([]ValidateArg{
-		{"repositoryID", repositoryID, ValidateRepositoryID},
-		{"branchID", branchID, ValidateBranchID},
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "branch", Value: branchID, Fn: graveler.ValidateBranchID},
 	}); err != nil {
 		return err
 	}
@@ -781,18 +788,19 @@ func (c *Catalog) ResetEntries(ctx context.Context, repository string, branch st
 	return c.Store.ResetPrefix(ctx, repositoryID, branchID, keyPrefix)
 }
 
-func (c *Catalog) Commit(ctx context.Context, repository string, branch string, message string, committer string, metadata Metadata) (*CommitLog, error) {
+func (c *Catalog) Commit(ctx context.Context, repository, branch, message, committer string, metadata Metadata, date *int64) (*CommitLog, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
-	if err := Validate([]ValidateArg{
-		{"repositoryID", repositoryID, ValidateRepositoryID},
-		{"branchID", branchID, ValidateBranchID},
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "branch", Value: branchID, Fn: graveler.ValidateBranchID},
 	}); err != nil {
 		return nil, err
 	}
 	commitID, err := c.Store.Commit(ctx, repositoryID, branchID, graveler.CommitParams{
 		Committer: committer,
 		Message:   message,
+		Date:      date,
 		Metadata:  map[string]string(metadata),
 	})
 	if err != nil {
@@ -818,8 +826,8 @@ func (c *Catalog) Commit(ctx context.Context, repository string, branch string, 
 
 func (c *Catalog) GetCommit(ctx context.Context, repository string, reference string) (*CommitLog, error) {
 	repositoryID := graveler.RepositoryID(repository)
-	if err := Validate([]ValidateArg{
-		{"repositoryID", repositoryID, ValidateRepositoryID},
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
 	}); err != nil {
 		return nil, err
 	}
@@ -845,12 +853,12 @@ func (c *Catalog) GetCommit(ctx context.Context, repository string, reference st
 	return catalogCommitLog, nil
 }
 
-func (c *Catalog) ListCommits(ctx context.Context, repository string, branch string, fromReference string, limit int) ([]*CommitLog, bool, error) {
+func (c *Catalog) ListCommits(ctx context.Context, repository string, branch string, params LogParams) ([]*CommitLog, bool, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	branchRef := graveler.BranchID(branch)
-	if err := Validate([]ValidateArg{
-		{"repositoryID", repositoryID, ValidateRepositoryID},
-		{"branch", branchRef, ValidateBranchID},
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "branch", Value: branchRef, Fn: graveler.ValidateBranchID},
 	}); err != nil {
 		return nil, false, err
 	}
@@ -864,8 +872,8 @@ func (c *Catalog) ListCommits(ctx context.Context, repository string, branch str
 	}
 	defer it.Close()
 	// skip until 'fromReference' if needed
-	if fromReference != "" {
-		fromCommitID, err := c.dereferenceCommitID(ctx, repositoryID, graveler.Ref(fromReference))
+	if params.FromReference != "" {
+		fromCommitID, err := c.dereferenceCommitID(ctx, repositoryID, graveler.Ref(params.FromReference))
 		if err != nil {
 			return nil, false, fmt.Errorf("from ref: %w", err)
 		}
@@ -881,6 +889,7 @@ func (c *Catalog) ListCommits(ctx context.Context, repository string, branch str
 
 	// collect commits
 	var commits []*CommitLog
+
 	for it.Next() {
 		v := it.Value()
 		commit := &CommitLog{
@@ -895,8 +904,22 @@ func (c *Catalog) ListCommits(ctx context.Context, repository string, branch str
 		for _, parent := range v.Parents {
 			commit.Parents = append(commit.Parents, parent.String())
 		}
-		commits = append(commits, commit)
-		if len(commits) >= limit+1 {
+
+		if len(params.PathList) != 0 && len(v.Parents) == NumberOfParentsOfNonMergeCommit {
+			// if path list isn't empty, and also the current commit isn't a merge commit -
+			// we check if the current commit contains changes to the paths
+			pathInCommit, err := c.pathInCommit(ctx, repositoryID, v, params)
+			if err != nil {
+				return nil, false, err
+			}
+			if pathInCommit {
+				commits = append(commits, commit)
+			}
+		} else if len(params.PathList) == 0 {
+			// if there is no specification of path - we will output all commits
+			commits = append(commits, commit)
+		}
+		if len(commits) >= params.Limit+1 {
 			break
 		}
 	}
@@ -904,11 +927,45 @@ func (c *Catalog) ListCommits(ctx context.Context, repository string, branch str
 		return nil, false, err
 	}
 	hasMore := false
-	if len(commits) > limit {
+	if len(commits) > params.Limit {
 		hasMore = true
-		commits = commits[:limit]
+		commits = commits[:params.Limit]
 	}
 	return commits, hasMore, nil
+}
+
+func (c *Catalog) pathInCommit(ctx context.Context, repositoryID graveler.RepositoryID, commit *graveler.CommitRecord, params LogParams) (bool, error) {
+	// this function checks whether the given commmit contains changes to a list of paths.
+	// it searches the path in the diff between the commit and it's parent, but do so only to commits
+	// that have single parent (not merge commits)
+	left := graveler.Ref(commit.Parents[0])
+	right := graveler.Ref(commit.CommitID)
+	diffIter, err := c.Store.Diff(ctx, repositoryID, left, right)
+	if err != nil {
+		return false, err
+	}
+	defer diffIter.Close()
+
+	for _, path := range params.PathList {
+		key := graveler.Key(path.Path)
+		diffIter.SeekGE(key)
+		if diffIter.Next() {
+			diffKey := diffIter.Value().Key
+			var result bool
+			if path.IsPrefix {
+				result = bytes.HasPrefix(diffKey, key)
+			} else {
+				result = bytes.Equal(diffKey, key)
+			}
+			if result {
+				return true, nil
+			}
+		}
+		if err := diffIter.Err(); err != nil {
+			return false, err
+		}
+	}
+	return false, nil
 }
 
 func (c *Catalog) Revert(ctx context.Context, repository string, branch string, params RevertParams) error {
@@ -920,17 +977,17 @@ func (c *Catalog) Revert(ctx context.Context, repository string, branch string, 
 		Message:   fmt.Sprintf("Revert %s", params.Reference),
 	}
 	parentNumber := params.ParentNumber
-	if err := Validate([]ValidateArg{
-		{"repositoryID", repositoryID, ValidateRepositoryID},
-		{"branchID", branchID, ValidateBranchID},
-		{"ref", reference, ValidateRef},
-		{"committer", commitParams.Committer, ValidateRequiredString},
-		{"message", commitParams.Message, ValidateRequiredString},
-		{"parentNumber", parentNumber, ValidateNonNegativeInt},
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "branch", Value: branchID, Fn: graveler.ValidateBranchID},
+		{Name: "ref", Value: reference, Fn: graveler.ValidateRef},
+		{Name: "committer", Value: commitParams.Committer, Fn: validator.ValidateRequiredString},
+		{Name: "message", Value: commitParams.Message, Fn: validator.ValidateRequiredString},
+		{Name: "parentNumber", Value: parentNumber, Fn: validator.ValidateNonNegativeInt},
 	}); err != nil {
 		return err
 	}
-	_, _, err := c.Store.Revert(ctx, repositoryID, branchID, reference, parentNumber, commitParams)
+	_, err := c.Store.Revert(ctx, repositoryID, branchID, reference, parentNumber, commitParams)
 	return err
 }
 
@@ -938,10 +995,10 @@ func (c *Catalog) Diff(ctx context.Context, repository string, leftReference str
 	repositoryID := graveler.RepositoryID(repository)
 	left := graveler.Ref(leftReference)
 	right := graveler.Ref(rightReference)
-	if err := Validate([]ValidateArg{
-		{"repositoryID", repositoryID, ValidateRepositoryID},
-		{"left", left, ValidateRef},
-		{"right", right, ValidateRef},
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "left", Value: left, Fn: graveler.ValidateRef},
+		{Name: "right", Value: right, Fn: graveler.ValidateRef},
 	}); err != nil {
 		return nil, false, err
 	}
@@ -956,16 +1013,16 @@ func (c *Catalog) Diff(ctx context.Context, repository string, leftReference str
 
 func (c *Catalog) Compare(ctx context.Context, repository, leftReference string, rightReference string, params DiffParams) (Differences, bool, error) {
 	repositoryID := graveler.RepositoryID(repository)
-	from := graveler.Ref(leftReference)
-	to := graveler.Ref(rightReference)
-	if err := Validate([]ValidateArg{
-		{"repositoryID", repositoryID, ValidateRepositoryID},
-		{"from", from, ValidateRef},
-		{"to", to, ValidateRef},
+	left := graveler.Ref(leftReference)
+	right := graveler.Ref(rightReference)
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repositoryName", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "left", Value: left, Fn: graveler.ValidateRef},
+		{Name: "right", Value: right, Fn: graveler.ValidateRef},
 	}); err != nil {
 		return nil, false, err
 	}
-	iter, err := c.Store.Compare(ctx, repositoryID, from, to)
+	iter, err := c.Store.Compare(ctx, repositoryID, left, right)
 	if err != nil {
 		return nil, false, err
 	}
@@ -977,9 +1034,9 @@ func (c *Catalog) Compare(ctx context.Context, repository, leftReference string,
 func (c *Catalog) DiffUncommitted(ctx context.Context, repository, branch, prefix, delimiter string, limit int, after string) (Differences, bool, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
-	if err := Validate([]ValidateArg{
-		{"repositoryID", repositoryID, ValidateRepositoryID},
-		{"branchID", branchID, ValidateBranchID},
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "branch", Value: branchID, Fn: graveler.ValidateBranchID},
 	}); err != nil {
 		return nil, false, err
 	}
@@ -1045,10 +1102,7 @@ func listDiffHelper(it EntryDiffIterator, prefix, delimiter string, limit int, a
 				// a common prefix exists!
 				commonPrefix := prefix + parts[0] + delimiter
 				diffs = append(diffs, Difference{
-					DBEntry: DBEntry{
-						CommonLevel: true,
-						Path:        commonPrefix,
-					},
+					DBEntry: NewDBEntryBuilder().CommonLevel(true).Path(commonPrefix).Build(),
 					// We always return "changed" for common prefixes. Seeing if a common prefix is e.g. deleted is O(N)
 					Type: DifferenceTypeChanged,
 				})
@@ -1084,7 +1138,7 @@ func listDiffHelper(it EntryDiffIterator, prefix, delimiter string, limit int, a
 	return diffs, hasMore, nil
 }
 
-func (c *Catalog) Merge(ctx context.Context, repository string, destinationBranch string, sourceRef string, committer string, message string, metadata Metadata) (*MergeResult, error) {
+func (c *Catalog) Merge(ctx context.Context, repository string, destinationBranch string, sourceRef string, committer string, message string, metadata Metadata, strategy string) (string, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	destination := graveler.BranchID(destinationBranch)
 	source := graveler.Ref(sourceRef)
@@ -1097,37 +1151,25 @@ func (c *Catalog) Merge(ctx context.Context, repository string, destinationBranc
 	if commitParams.Message == "" {
 		commitParams.Message = fmt.Sprintf("Merge '%s' into '%s'", source, destination)
 	}
-	if err := Validate([]ValidateArg{
-		{"repositoryID", repositoryID, ValidateRepositoryID},
-		{"destination", destination, ValidateBranchID},
-		{"source", source, ValidateRef},
-		{"committer", commitParams.Committer, ValidateRequiredString},
-		{"message", commitParams.Message, ValidateRequiredString},
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "destination", Value: destination, Fn: graveler.ValidateBranchID},
+		{Name: "source", Value: source, Fn: graveler.ValidateRef},
+		{Name: "committer", Value: commitParams.Committer, Fn: validator.ValidateRequiredString},
+		{Name: "message", Value: commitParams.Message, Fn: validator.ValidateRequiredString},
+		{Name: "strategy", Value: strategy, Fn: graveler.ValidateRequiredStrategy},
 	}); err != nil {
-		return nil, err
+		return "", err
 	}
-	commitID, summary, err := c.Store.Merge(ctx, repositoryID, destination, source, commitParams)
+	commitID, err := c.Store.Merge(ctx, repositoryID, destination, source, commitParams, strategy)
 	if errors.Is(err, graveler.ErrConflictFound) {
 		// for compatibility with old Catalog
-		return &MergeResult{
-			Summary: map[DifferenceType]int{DifferenceTypeConflict: 1},
-		}, err
+		return "", err
 	}
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	count := make(map[DifferenceType]int)
-	for k, v := range summary.Count {
-		kk, err := catalogDiffType(k)
-		if err != nil {
-			return nil, err
-		}
-		count[kk] = v
-	}
-	return &MergeResult{
-		Summary:   count,
-		Reference: commitID.String(),
-	}, nil
+	return commitID.String(), nil
 }
 
 func (c *Catalog) DumpCommits(ctx context.Context, repositoryID string) (string, error) {
@@ -1182,10 +1224,22 @@ func (c *Catalog) SetGarbageCollectionRules(ctx context.Context, repositoryID st
 	return c.Store.SetGarbageCollectionRules(ctx, graveler.RepositoryID(repositoryID), rules)
 }
 
+func (c *Catalog) GetBranchProtectionRules(ctx context.Context, repositoryID string) (*graveler.BranchProtectionRules, error) {
+	return c.Store.GetBranchProtectionRules(ctx, graveler.RepositoryID(repositoryID))
+}
+
+func (c *Catalog) DeleteBranchProtectionRule(ctx context.Context, repositoryID string, pattern string) error {
+	return c.Store.DeleteBranchProtectionRule(ctx, graveler.RepositoryID(repositoryID), pattern)
+}
+
+func (c *Catalog) CreateBranchProtectionRule(ctx context.Context, repositoryID string, pattern string, blockedActions []graveler.BranchProtectionBlockedAction) error {
+	return c.Store.CreateBranchProtectionRule(ctx, graveler.RepositoryID(repositoryID), pattern, blockedActions)
+}
+
 func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repository string, previousRunID string) (*graveler.GarbageCollectionRunMetadata, error) {
 	repositoryID := graveler.RepositoryID(repository)
-	if err := Validate([]ValidateArg{
-		{"repositoryID", repositoryID, ValidateRepositoryID},
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
 	}); err != nil {
 		return nil, err
 	}
@@ -1219,21 +1273,21 @@ func (c *Catalog) dereferenceCommitID(ctx context.Context, repositoryID graveler
 }
 
 func newCatalogEntryFromEntry(commonPrefix bool, path string, ent *Entry) DBEntry {
-	catEnt := DBEntry{
-		CommonLevel: commonPrefix,
-		Path:        path,
-	}
+	b := NewDBEntryBuilder().
+		CommonLevel(commonPrefix).
+		Path(path)
 	if ent != nil {
-		catEnt.PhysicalAddress = ent.Address
-		catEnt.AddressType = addressTypeToCatalog(ent.AddressType)
-		catEnt.CreationDate = ent.LastModified.AsTime()
-		catEnt.Size = ent.Size
-		catEnt.Checksum = ent.ETag
-		catEnt.Metadata = ent.Metadata
-		catEnt.Expired = false
-		catEnt.AddressType = addressTypeToCatalog(ent.AddressType)
+		b.PhysicalAddress(ent.Address)
+		b.AddressType(addressTypeToCatalog(ent.AddressType))
+		b.CreationDate(ent.LastModified.AsTime())
+		b.Size(ent.Size)
+		b.Checksum(ent.ETag)
+		b.Metadata(ent.Metadata)
+		b.Expired(false)
+		b.AddressType(addressTypeToCatalog(ent.AddressType))
+		b.ContentType(ContentTypeOrDefault(ent.ContentType))
 	}
-	return catEnt
+	return b.Build()
 }
 
 func catalogDiffType(typ graveler.DiffType) (DifferenceType, error) {

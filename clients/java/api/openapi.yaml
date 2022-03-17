@@ -12,6 +12,26 @@ security:
 - cookie_auth: []
 paths:
   /setup_lakefs:
+    get:
+      operationId: getSetupState
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetupState'
+          description: lakeFS setup state
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      security: []
+      summary: check if the lakeFS installation is already set up
+      tags:
+      - config
+      x-accepts: application/json
     post:
       operationId: setup
       requestBody:
@@ -1686,6 +1706,14 @@ paths:
         schema:
           type: string
         style: simple
+      - description: return items prefixed with this value
+        explode: true
+        in: query
+        name: prefix
+        required: false
+        schema:
+          type: string
+        style: form
       - description: return items after this value
         explode: true
         in: query
@@ -2043,6 +2071,26 @@ paths:
           minimum: -1
           type: integer
         style: form
+      - description: list of paths, each element is a path of a specific object
+        explode: true
+        in: query
+        name: objects
+        required: false
+        schema:
+          items:
+            type: string
+          type: array
+        style: form
+      - description: list of paths, each element is a path of a prefix
+        explode: true
+        in: query
+        name: prefixes
+        required: false
+        schema:
+          items:
+            type: string
+          type: array
+        style: form
       responses:
         "200":
           content:
@@ -2068,7 +2116,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      summary: get commit log from ref
+      summary: get commit log from ref. If both objects and prefixes are empty, return
+        all commits.
       tags:
       - refs
       x-accepts: application/json
@@ -2732,7 +2781,8 @@ paths:
         schema:
           type: string
         style: simple
-      - explode: true
+      - description: relative to the ref
+        explode: true
         in: query
         name: path
         required: true
@@ -2815,7 +2865,8 @@ paths:
         schema:
           type: string
         style: simple
-      - explode: true
+      - description: relative to the branch
+        explode: true
         in: query
         name: path
         required: true
@@ -2877,7 +2928,8 @@ paths:
         schema:
           type: string
         style: simple
-      - explode: true
+      - description: relative to the branch
+        explode: true
         in: query
         name: path
         required: true
@@ -2892,7 +2944,11 @@ paths:
         required: true
       responses:
         "200":
-          description: successfully linked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjectStats'
+          description: object metadata
         "400":
           content:
             application/json:
@@ -2946,7 +3002,8 @@ paths:
         schema:
           type: string
         style: simple
-      - explode: true
+      - description: relative to the branch
+        explode: true
         in: query
         name: path
         required: true
@@ -2995,7 +3052,8 @@ paths:
         schema:
           type: string
         style: simple
-      - explode: true
+      - description: relative to the branch
+        explode: true
         in: query
         name: path
         required: true
@@ -3027,7 +3085,7 @@ paths:
             schema:
               properties:
                 content:
-                  description: Object content to upload
+                  description: Only a single file per upload which must be named "content".
                   format: binary
                   type: string
               type: object
@@ -3070,7 +3128,7 @@ paths:
           description: Internal Server Error
       tags:
       - objects
-      x-validation-exclude-body: false
+      x-validation-exclude-body: true
       x-contentType: multipart/form-data
       x-accepts: application/json
     put:
@@ -3090,7 +3148,8 @@ paths:
         schema:
           type: string
         style: simple
-      - explode: true
+      - description: relative to the branch
+        explode: true
         in: query
         name: path
         required: true
@@ -3139,6 +3198,62 @@ paths:
       - objects
       x-contentType: application/json
       x-accepts: application/json
+  /repositories/{repository}/branches/{branch}/objects/delete:
+    post:
+      operationId: deleteObjects
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PathList'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjectErrorList'
+          description: Delete objects response
+        "204":
+          description: all requested objects successfully deleted
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: delete objects
+      tags:
+      - objects
+      x-contentType: application/json
+      x-accepts: application/json
   /repositories/{repository}/refs/{ref}/objects/stat:
     get:
       operationId: statObject
@@ -3158,7 +3273,8 @@ paths:
         schema:
           type: string
         style: simple
-      - explode: true
+      - description: relative to the branch
+        explode: true
         in: query
         name: path
         required: true
@@ -3223,7 +3339,8 @@ paths:
         schema:
           type: string
         style: simple
-      - explode: true
+      - description: relative to the branch
+        explode: true
         in: query
         name: path
         required: true
@@ -3880,6 +3997,136 @@ paths:
       - retention
       x-contentType: application/json
       x-accepts: application/json
+  /repositories/{repository}/branch_protection:
+    delete:
+      operationId: deleteBranchProtectionRule
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        $ref: '#/components/requestBodies/inline_object_1'
+        content:
+          application/json:
+            schema:
+              properties:
+                pattern:
+                  type: string
+              required:
+              - pattern
+              type: object
+        required: true
+      responses:
+        "204":
+          description: branch protection rule deleted successfully
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - repositories
+      x-contentType: application/json
+      x-accepts: application/json
+    get:
+      operationId: getBranchProtectionRules
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/BranchProtectionRule'
+                type: array
+          description: branch protection rules
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: get branch protection rules
+      tags:
+      - repositories
+      x-accepts: application/json
+    post:
+      operationId: createBranchProtectionRule
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BranchProtectionRule'
+        required: true
+      responses:
+        "204":
+          description: branch protection rule created successfully
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - repositories
+      x-contentType: application/json
+      x-accepts: application/json
   /healthcheck:
     get:
       description: check that the API server is up and running
@@ -3973,6 +4220,12 @@ components:
         type: string
       style: form
   requestBodies:
+    inline_object_1:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/inline_object_1'
+      required: true
     inline_object:
       content:
         multipart/form-data:
@@ -4132,6 +4385,20 @@ components:
       - name
       - storage_namespace
       type: object
+    PathList:
+      example:
+        paths:
+        - paths
+        - paths
+      properties:
+        paths:
+          items:
+            description: Object path
+            type: string
+          type: array
+      required:
+      - paths
+      type: object
     ObjectStats:
       example:
         physical_address: physical_address
@@ -4139,6 +4406,7 @@ components:
         metadata:
           key: metadata
         size_bytes: 0
+        content_type: content_type
         checksum: checksum
         path_type: common_prefix
         mtime: 6
@@ -4165,6 +4433,9 @@ components:
           additionalProperties:
             type: string
           type: object
+        content_type:
+          description: Object media type
+          type: string
       required:
       - checksum
       - mtime
@@ -4185,6 +4456,7 @@ components:
           metadata:
             key: metadata
           size_bytes: 0
+          content_type: content_type
           checksum: checksum
           path_type: common_prefix
           mtime: 6
@@ -4193,6 +4465,7 @@ components:
           metadata:
             key: metadata
           size_bytes: 0
+          content_type: content_type
           checksum: checksum
           path_type: common_prefix
           mtime: 6
@@ -4213,6 +4486,7 @@ components:
         metadata:
           key: metadata
         size_bytes: 0
+        content_type: content_type
         checksum: checksum
         mtime: 6
       properties:
@@ -4231,6 +4505,9 @@ components:
           additionalProperties:
             type: string
           type: object
+        content_type:
+          description: Object media type
+          type: string
       required:
       - checksum
       - physical_address
@@ -4455,6 +4732,7 @@ components:
       type: object
     CommitCreation:
       example:
+        date: 0
         metadata:
           key: metadata
         message: message
@@ -4465,6 +4743,11 @@ components:
           additionalProperties:
             type: string
           type: object
+        date:
+          description: set date to override creation date in the commit (Unix Epoch
+            in seconds)
+          format: int64
+          type: integer
       required:
       - message
       type: object
@@ -4473,6 +4756,7 @@ components:
         metadata:
           key: metadata
         message: message
+        strategy: strategy
       properties:
         message:
           type: string
@@ -4480,6 +4764,12 @@ components:
           additionalProperties:
             type: string
           type: object
+        strategy:
+          description: In case of a merge conflict, this option will force the merge
+            process to automatically favor changes from the dest branch ('dest-wins')
+            or from the source branch('source-wins'). In case no selection is made,
+            the merge process will fail in case of a conflict
+          type: string
       type: object
     BranchCreation:
       example:
@@ -4542,8 +4832,45 @@ components:
       required:
       - message
       type: object
+    ObjectError:
+      example:
+        path: path
+        status_code: 0
+        message: message
+      properties:
+        status_code:
+          description: HTTP status code associated for operation on path
+          type: integer
+        message:
+          description: short message explaining status_code
+          type: string
+        path:
+          description: affected path
+          type: string
+      required:
+      - message
+      - status_code
+      type: object
+    ObjectErrorList:
+      example:
+        errors:
+        - path: path
+          status_code: 0
+          message: message
+        - path: path
+          status_code: 0
+          message: message
+      properties:
+        errors:
+          items:
+            $ref: '#/components/schemas/ObjectError'
+          type: array
+      required:
+      - errors
+      type: object
     User:
       example:
+        friendly_name: friendly_name
         id: id
         creation_date: 0
       properties:
@@ -4553,6 +4880,8 @@ components:
           description: Unix Epoch in seconds
           format: int64
           type: integer
+        friendly_name:
+          type: string
       required:
       - creation_date
       - id
@@ -4560,6 +4889,7 @@ components:
     CurrentUser:
       example:
         user:
+          friendly_name: friendly_name
           id: id
           creation_date: 0
       properties:
@@ -4576,6 +4906,16 @@ components:
           type: string
       required:
       - id
+      type: object
+    SetupState:
+      example:
+        state: initialized
+      properties:
+        state:
+          enum:
+          - initialized
+          - not_initialized
+          type: string
       type: object
     AccessKeyCredentials:
       example:
@@ -4714,9 +5054,11 @@ components:
           next_offset: next_offset
           results: 0
         results:
-        - id: id
+        - friendly_name: friendly_name
+          id: id
           creation_date: 0
-        - id: id
+        - friendly_name: friendly_name
+          id: id
           creation_date: 0
       properties:
         pagination:
@@ -4867,12 +5209,15 @@ components:
         blockstore_namespace_example: blockstore_namespace_example
         blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
         blockstore_type: blockstore_type
+        default_namespace_prefix: default_namespace_prefix
       properties:
         blockstore_type:
           type: string
         blockstore_namespace_example:
           type: string
         blockstore_namespace_ValidityRegex:
+          type: string
+        default_namespace_prefix:
           type: string
       required:
       - blockstore_namespace_ValidityRegex
@@ -4882,8 +5227,14 @@ components:
     VersionConfig:
       example:
         version: version
+        upgrade_recommended: true
+        upgrade_url: upgrade_url
       properties:
         version:
+          type: string
+        upgrade_recommended:
+          type: boolean
+        upgrade_url:
           type: string
       type: object
     ActionRun:
@@ -5043,6 +5394,7 @@ components:
         size_bytes: 0
         user_metadata:
           key: user_metadata
+        content_type: content_type
         checksum: checksum
         staging:
           physical_address: physical_address
@@ -5061,6 +5413,9 @@ components:
           additionalProperties:
             type: string
           type: object
+        content_type:
+          description: Object media type
+          type: string
       required:
       - checksum
       - size_bytes
@@ -5132,12 +5487,31 @@ components:
       - branches
       - default_retention_days
       type: object
+    BranchProtectionRule:
+      example:
+        pattern: stable_*
+      properties:
+        pattern:
+          description: fnmatch pattern for the branch name, supporting * and ? wildcards
+          example: stable_*
+          minLength: 1
+          type: string
+      required:
+      - pattern
+      type: object
     inline_object:
       properties:
         content:
-          description: Object content to upload
+          description: Only a single file per upload which must be named "content".
           format: binary
           type: string
+      type: object
+    inline_object_1:
+      properties:
+        pattern:
+          type: string
+      required:
+      - pattern
       type: object
     MergeResult_summary:
       example:

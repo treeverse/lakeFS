@@ -14,6 +14,7 @@ from lakefs_client.model.action_run import ActionRun
 from lakefs_client.model.action_run_list import ActionRunList
 from lakefs_client.model.authentication_token import AuthenticationToken
 from lakefs_client.model.branch_creation import BranchCreation
+from lakefs_client.model.branch_protection_rule import BranchProtectionRule
 from lakefs_client.model.commit import Commit
 from lakefs_client.model.commit_creation import CommitCreation
 from lakefs_client.model.commit_list import CommitList
@@ -33,15 +34,19 @@ from lakefs_client.model.group_creation import GroupCreation
 from lakefs_client.model.group_list import GroupList
 from lakefs_client.model.hook_run import HookRun
 from lakefs_client.model.hook_run_list import HookRunList
+from lakefs_client.model.inline_object1 import InlineObject1
 from lakefs_client.model.login_information import LoginInformation
 from lakefs_client.model.merge import Merge
 from lakefs_client.model.merge_result import MergeResult
 from lakefs_client.model.merge_result_summary import MergeResultSummary
+from lakefs_client.model.object_error import ObjectError
+from lakefs_client.model.object_error_list import ObjectErrorList
 from lakefs_client.model.object_stage_creation import ObjectStageCreation
 from lakefs_client.model.object_stats import ObjectStats
 from lakefs_client.model.object_stats_list import ObjectStatsList
 from lakefs_client.model.object_user_metadata import ObjectUserMetadata
 from lakefs_client.model.pagination import Pagination
+from lakefs_client.model.path_list import PathList
 from lakefs_client.model.policy import Policy
 from lakefs_client.model.policy_list import PolicyList
 from lakefs_client.model.ref import Ref
@@ -53,6 +58,7 @@ from lakefs_client.model.repository_list import RepositoryList
 from lakefs_client.model.reset_creation import ResetCreation
 from lakefs_client.model.revert_creation import RevertCreation
 from lakefs_client.model.setup import Setup
+from lakefs_client.model.setup_state import SetupState
 from lakefs_client.model.staging_location import StagingLocation
 from lakefs_client.model.staging_metadata import StagingMetadata
 from lakefs_client.model.statement import Statement

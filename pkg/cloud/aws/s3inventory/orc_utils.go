@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"time"
@@ -56,7 +55,7 @@ func getTailLength(f *os.File) (int, error) {
 }
 
 func downloadRange(ctx context.Context, svc s3iface.S3API, logger logging.Logger, bucket string, key string, fromByte int64) (*os.File, error) {
-	f, err := ioutil.TempFile("", path.Base(key))
+	f, err := os.CreateTemp("", path.Base(key))
 	if err != nil {
 		return nil, err
 	}

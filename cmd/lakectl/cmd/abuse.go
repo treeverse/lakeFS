@@ -119,7 +119,7 @@ var abuseRandomWritesCmd = &cobra.Command{
 
 		client := getClient()
 		resp, err := client.GetRepositoryWithResponse(cmd.Context(), u.Repository)
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 
 		repo := resp.JSON200
 		storagePrefix := repo.StorageNamespace
@@ -173,19 +173,19 @@ var abuseCreateBranchesCmd = &cobra.Command{
 			currentOffset := api.PaginationAfter(branchPrefix)
 			amount := api.PaginationAmount(paginationAmount)
 			for {
-				res, err := client.ListBranchesWithResponse(cmd.Context(), u.Repository, &api.ListBranchesParams{
+				resp, err := client.ListBranchesWithResponse(cmd.Context(), u.Repository, &api.ListBranchesParams{
 					After:  &currentOffset,
 					Amount: &amount,
 				})
-				DieOnResponseError(res, err)
+				DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 
-				for _, ref := range res.JSON200.Results {
+				for _, ref := range resp.JSON200.Results {
 					if !strings.HasPrefix(ref.Id, branchPrefix) {
 						return
 					}
 					add(ref.Id) // this branch should be deleted!
 				}
-				pagination := res.JSON200.Pagination
+				pagination := resp.JSON200.Pagination
 				if !pagination.HasMore {
 					return
 				}

@@ -154,6 +154,7 @@ public class Diff {
    * Get type
    * @return type
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public TypeEnum getType() {
@@ -176,6 +177,7 @@ public class Diff {
    * Get path
    * @return path
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getPath() {
@@ -198,6 +200,7 @@ public class Diff {
    * Get pathType
    * @return pathType
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public PathTypeEnum getPathType() {

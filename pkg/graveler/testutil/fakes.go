@@ -70,19 +70,19 @@ func (c *CommittedFake) Compare(context.Context, graveler.StorageNamespace, grav
 	return c.DiffIterator, nil
 }
 
-func (c *CommittedFake) Merge(_ context.Context, _ graveler.StorageNamespace, _, _, _ graveler.MetaRangeID) (graveler.MetaRangeID, graveler.DiffSummary, error) {
+func (c *CommittedFake) Merge(_ context.Context, _ graveler.StorageNamespace, _, _, _ graveler.MetaRangeID, strategy graveler.MergeStrategy) (graveler.MetaRangeID, error) {
 	if c.Err != nil {
-		return "", graveler.DiffSummary{}, c.Err
+		return "", c.Err
 	}
-	return c.MetaRangeID, c.DiffSummary, nil
+	return c.MetaRangeID, nil
 }
 
-func (c *CommittedFake) Apply(_ context.Context, _ graveler.StorageNamespace, metaRangeID graveler.MetaRangeID, values graveler.ValueIterator) (graveler.MetaRangeID, graveler.DiffSummary, error) {
+func (c *CommittedFake) Commit(_ context.Context, _ graveler.StorageNamespace, baseMetaRangeID graveler.MetaRangeID, changes graveler.ValueIterator) (graveler.MetaRangeID, graveler.DiffSummary, error) {
 	if c.Err != nil {
 		return "", graveler.DiffSummary{}, c.Err
 	}
-	c.AppliedData.Values = values
-	c.AppliedData.MetaRangeID = metaRangeID
+	c.AppliedData.Values = changes
+	c.AppliedData.MetaRangeID = baseMetaRangeID
 	return c.MetaRangeID, c.DiffSummary, nil
 }
 
@@ -155,7 +155,7 @@ func (s *StagingFake) DropKey(_ context.Context, _ graveler.StagingToken, key gr
 	return nil
 }
 
-func (s *StagingFake) List(context.Context, graveler.StagingToken) (graveler.ValueIterator, error) {
+func (s *StagingFake) List(context.Context, graveler.StagingToken, int) (graveler.ValueIterator, error) {
 	if s.Err != nil {
 		return nil, s.Err
 	}
@@ -201,6 +201,17 @@ type RefsFake struct {
 	StagingToken        graveler.StagingToken
 }
 
+func (m *RefsFake) CreateBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, branch graveler.Branch) error {
+	if m.Branch != nil {
+		return graveler.ErrBranchExists
+	}
+	m.Branch = &graveler.Branch{
+		CommitID:     branch.CommitID,
+		StagingToken: branch.StagingToken,
+	}
+	return nil
+}
+
 func (m *RefsFake) FillGenerations(ctx context.Context, repositoryID graveler.RepositoryID) error {
 	panic("implement me")
 }
@@ -225,6 +236,9 @@ func (m *RefsFake) ResolveRawRef(ctx context.Context, repoID graveler.Repository
 		ref := graveler.Ref(rawRef.BaseRef)
 		if res, ok := m.Refs[ref]; ok {
 			return res, nil
+		}
+		if m.Err != nil {
+			return nil, m.Err
 		}
 	}
 
@@ -744,3 +758,21 @@ func (m *FakeCommitIterator) Err() error {
 }
 
 func (m *FakeCommitIterator) Close() {}
+
+type ProtectedBranchesManagerFake struct {
+	graveler.ProtectedBranchesManager
+	protectedBranches []string
+}
+
+func NewProtectedBranchesManagerFake(protectedBranches ...string) *ProtectedBranchesManagerFake {
+	return &ProtectedBranchesManagerFake{protectedBranches: protectedBranches}
+}
+
+func (p ProtectedBranchesManagerFake) IsBlocked(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, action graveler.BranchProtectionBlockedAction) (bool, error) {
+	for _, branch := range p.protectedBranches {
+		if branch == string(branchID) {
+			return true, nil
+		}
+	}
+	return false, nil
+}

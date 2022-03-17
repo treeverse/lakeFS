@@ -25,6 +25,17 @@ type RevertParams struct {
 	Committer    string
 }
 
+type PathRecord struct {
+	Path     Path
+	IsPrefix bool
+}
+
+type LogParams struct {
+	PathList      []PathRecord
+	FromReference string
+	Limit         int
+}
+
 type ExpireResult struct {
 	Repository        string
 	Branch            string
@@ -78,22 +89,21 @@ type Interface interface {
 
 	CreateTag(ctx context.Context, repository, tagID string, ref string) (string, error)
 	DeleteTag(ctx context.Context, repository, tagID string) error
-	ListTags(ctx context.Context, repository string, limit int, after string) ([]*Tag, bool, error)
+	ListTags(ctx context.Context, repository string, prefix string, limit int, after string) ([]*Tag, bool, error)
 	GetTag(ctx context.Context, repository, tagID string) (string, error)
 
 	// GetEntry returns the current entry for path in repository branch reference.  Returns
 	// the entry with ExpiredError if it has expired from underlying storage.
 	GetEntry(ctx context.Context, repository, reference string, path string, params GetEntryParams) (*DBEntry, error)
 	CreateEntry(ctx context.Context, repository, branch string, entry DBEntry, writeConditions ...graveler.WriteConditionOption) error
-	CreateEntries(ctx context.Context, repository, branch string, entries []DBEntry) error
 	DeleteEntry(ctx context.Context, repository, branch string, path string) error
 	ListEntries(ctx context.Context, repository, reference string, prefix, after string, delimiter string, limit int) ([]*DBEntry, bool, error)
 	ResetEntry(ctx context.Context, repository, branch string, path string) error
 	ResetEntries(ctx context.Context, repository, branch string, prefix string) error
 
-	Commit(ctx context.Context, repository, branch string, message string, committer string, metadata Metadata) (*CommitLog, error)
+	Commit(ctx context.Context, repository, branch, message, committer string, metadata Metadata, date *int64) (*CommitLog, error)
 	GetCommit(ctx context.Context, repository, reference string) (*CommitLog, error)
-	ListCommits(ctx context.Context, repository, branch string, fromReference string, limit int) ([]*CommitLog, bool, error)
+	ListCommits(ctx context.Context, repository, branch string, params LogParams) ([]*CommitLog, bool, error)
 
 	// Revert creates a reverse patch to the given commit, and applies it as a new commit on the given branch.
 	Revert(ctx context.Context, repository, branch string, params RevertParams) error
@@ -102,7 +112,7 @@ type Interface interface {
 	Compare(ctx context.Context, repository, leftReference string, rightReference string, params DiffParams) (Differences, bool, error)
 	DiffUncommitted(ctx context.Context, repository, branch, prefix, delimiter string, limit int, after string) (Differences, bool, error)
 
-	Merge(ctx context.Context, repository, destinationBranch, sourceRef, committer, message string, metadata Metadata) (*MergeResult, error)
+	Merge(ctx context.Context, repository, destinationBranch, sourceRef, committer, message string, metadata Metadata, strategy string) (string, error)
 
 	// dump/load metadata
 	DumpCommits(ctx context.Context, repositoryID string) (string, error)
@@ -119,6 +129,10 @@ type Interface interface {
 	GetGarbageCollectionRules(ctx context.Context, repositoryID string) (*graveler.GarbageCollectionRules, error)
 	SetGarbageCollectionRules(ctx context.Context, repositoryID string, rules *graveler.GarbageCollectionRules) error
 	PrepareExpiredCommits(ctx context.Context, repositoryID string, previousRunID string) (*graveler.GarbageCollectionRunMetadata, error)
+
+	GetBranchProtectionRules(ctx context.Context, repositoryID string) (*graveler.BranchProtectionRules, error)
+	DeleteBranchProtectionRule(ctx context.Context, repositoryID string, pattern string) error
+	CreateBranchProtectionRule(ctx context.Context, repositoryID string, pattern string, blockedActions []graveler.BranchProtectionBlockedAction) error
 
 	io.Closer
 }

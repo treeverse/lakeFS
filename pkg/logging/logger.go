@@ -3,15 +3,14 @@ package logging
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
-	"os/signal"
 	"runtime"
 	"strings"
 	"sync"
-	"syscall"
 
 	"github.com/sirupsen/logrus"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 type contextKey string
@@ -21,6 +20,36 @@ const (
 
 	ProjectDirectoryName = "lakefs"
 	ModuleName           = "github.com/treeverse/lakefs"
+)
+
+// log_fields keys
+const (
+	// RepositoryFieldKey repository name (string)
+	RepositoryFieldKey = "repository"
+	// MatchedHostFieldKey matched host (bool) true when domain extracted from host
+	MatchedHostFieldKey = "matched_host"
+	// RefHostFieldKey reference id (string)
+	RefHostFieldKey = "ref"
+	// PathFieldKey path / request URI (string)
+	PathFieldKey = "path"
+	// UploadIDFieldKey s3 multipart upload ID (string) "upload_id"
+	UploadIDFieldKey = "upload_id"
+	// ListTypeFieldKey s3 list type version (string, ex: v1 or v2)
+	ListTypeFieldKey = "list_type"
+	// PhysicalAddressFieldKey object physical address (string)
+	PhysicalAddressFieldKey = "physical_address"
+	// PartNumberFieldKey s3 multipart upload part number (string)
+	PartNumberFieldKey = "part_number"
+	// RequestIDFieldKey request ID (string) based on the request ID found on context
+	RequestIDFieldKey = "request_id"
+	// HostFieldKey request's host (string)
+	HostFieldKey = "host"
+	// MethodFieldKey request's method (string)
+	MethodFieldKey = "method"
+	// UserFieldKey user's name associated with the request (string)
+	UserFieldKey = "user"
+	// ServiceNameFieldKey service name (string, ex: rest_api)
+	ServiceNameFieldKey = "service_name"
 )
 
 var (
@@ -63,41 +92,35 @@ func SetLevel(level string) {
 		defaultLogger.SetLevel(logrus.PanicLevel)
 	case "null", "none":
 		defaultLogger.SetLevel(logrus.PanicLevel)
-		defaultLogger.SetOutput(ioutil.Discard)
+		defaultLogger.SetOutput(io.Discard)
 	}
 }
 
-func SetOutput(output string) {
-	if output == "" {
-		return
-	}
-	if output == "-" {
-		defaultLogger.SetOutput(os.Stdout)
-		return
-	}
-
-	handle, err := os.OpenFile(output, os.O_CREATE|os.O_WRONLY, 0755)
-	if err != nil {
-		panic(fmt.Errorf("could not open log file: %w", err))
-	}
-	defaultLogger.SetOutput(handle)
-	// setup signal handler to reopen logfile on SIGHUP
-	sigChannel := make(chan os.Signal, 1)
-	signal.Notify(sigChannel, syscall.SIGHUP)
-	go func(filename string) {
-		for {
-			<-sigChannel
-			defaultLogger.Info("SIGHUP received, rotating log file")
-			defaultLogger.SetOutput(ioutil.Discard)
-			_ = handle.Close()
-			handle, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0755)
-			if err != nil {
-				panic(fmt.Errorf("could not open log file: %w", err))
+func SetOutputs(outputs []string, fileMaxSizeMB, filesKeep int) {
+	var writers []io.Writer
+	for _, output := range outputs {
+		var w io.Writer
+		switch output {
+		case "":
+			continue
+		case "-":
+			w = os.Stdout
+		case "=":
+			w = os.Stderr
+		default:
+			w = &lumberjack.Logger{
+				Filename:   output,
+				MaxSize:    fileMaxSizeMB,
+				MaxBackups: filesKeep,
 			}
-			defaultLogger.SetOutput(handle)
-			defaultLogger.Info("log file was rotated successfully")
 		}
-	}(output)
+		writers = append(writers, w)
+	}
+	if len(writers) == 1 {
+		defaultLogger.SetOutput(writers[0])
+	} else if len(writers) > 1 {
+		defaultLogger.SetOutput(io.MultiWriter(writers...))
+	}
 }
 
 func SetOutputFormat(format string) {

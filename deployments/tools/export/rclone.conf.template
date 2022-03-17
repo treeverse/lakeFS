@@ -1,0 +1,22 @@
+[lakefs]
+type = s3
+provider = Other
+env_auth = false
+access_key_id = $lakefs_access_key
+secret_access_key = $lakefs_secret_key
+endpoint = $lakefs_endpoint
+no_check_bucket = true
+force_path_style = true
+
+[s3]
+type = s3
+provider = AWS
+env_auth = false
+access_key_id = $s3_access_key
+secret_access_key = $s3_secret_key
+region =
+endpoint =
+location_constraint =
+acl = private
+server_side_encryption =
+storage_class =

@@ -2,6 +2,7 @@ package config
 
 import (
 	"reflect"
+	"strings"
 	"time"
 )
 
@@ -23,7 +24,7 @@ func DecodeStrings(fromValue reflect.Value, toValue reflect.Value) (interface{},
 		return Strings(fromValue.Interface().([]string)), nil
 	}
 	if fromValue.Type() == stringType {
-		return Strings{fromValue.String()}, nil
+		return Strings(strings.Split(fromValue.String(), ",")), nil
 	}
 	return fromValue.Interface(), nil
 }
@@ -32,6 +33,17 @@ type SecureString string
 
 func (s *SecureString) String() string {
 	return string(*s)
+}
+
+// LDAP holds configuration for authenticating on an LDAP server.
+type LDAP struct {
+	ServerEndpoint    string `mapstructure:"server_endpoint"`
+	BindDN            string `mapstructure:"bind_dn"`
+	BindPassword      string `mapstructure:"bind_password"`
+	DefaultUserGroup  string `mapstructure:"default_user_group"`
+	UsernameAttribute string `mapstructure:"username_attribute"`
+	UserBaseDN        string `mapstructure:"user_base_dn"`
+	UserFilter        string `mapstructure:"user_filter"`
 }
 
 // S3AuthInfo holds S3-style authentication.
@@ -55,10 +67,19 @@ type S3AuthInfo struct {
 type configuration struct {
 	ListenAddress string `mapstructure:"listen_address"`
 
+	Actions struct {
+		// ActionsEnabled set to false will block any hook execution
+		Enabled bool `mapstructure:"enabled"`
+	}
+
 	Logging struct {
-		Format string
-		Level  string
-		Output string
+		Format        string   `mapstructure:"format"`
+		Level         string   `mapstructure:"level"`
+		Output        []string `mapstructure:"output"`
+		FileMaxSizeMB int      `mapstructure:"file_max_size_mb"`
+		FilesKeep     int      `mapstructure:"files_keep"`
+		// TraceRequestHeaders work only on 'trace' level, default is false as it may log sensitive data to the log
+		TraceRequestHeaders bool `mapstructure:"trace_request_headers"`
 	}
 
 	Database struct {
@@ -78,10 +99,13 @@ type configuration struct {
 		Encrypt struct {
 			SecretKey SecureString `mapstructure:"secret_key" validate:"required"`
 		}
+
+		LDAP *LDAP
 	}
 	Blockstore struct {
-		Type  string `validate:"required"`
-		Local *struct {
+		Type                   string `validate:"required"`
+		DefaultNamespacePrefix string `mapstructure:"default_namespace_prefix"`
+		Local                  *struct {
 			Path string
 		}
 		S3 *struct {
@@ -92,6 +116,7 @@ type configuration struct {
 			StreamingChunkTimeout time.Duration `mapstructure:"streaming_chunk_timeout"`
 			MaxRetries            int           `mapstructure:"max_retries"`
 			ForcePathStyle        bool          `mapstructure:"force_path_style"`
+			DiscoverBucketRegion  bool          `mapstructure:"discover_bucket_region"`
 		}
 		Azure *struct {
 			TryTimeout       time.Duration `mapstructure:"try_timeout"`
@@ -140,4 +165,8 @@ type configuration struct {
 	Installation struct {
 		FixedID string `mapstructure:"fixed_id"`
 	}
+	Security struct {
+		AuditCheckInterval time.Duration `mapstructure:"audit_check_interval"`
+		AuditCheckURL      string        `mapstructure:"audit_check_url"`
+	} `mapstructure:"security"`
 }

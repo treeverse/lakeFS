@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"net/http"
+
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
 )
@@ -31,7 +33,7 @@ var tagListCmd = &cobra.Command{
 			After:  api.PaginationAfterPtr(after),
 			Amount: api.PaginationAmountPtr(amount),
 		})
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 
 		refs := resp.JSON200.Results
 		rows := make([][]interface{}, len(refs))
@@ -61,33 +63,39 @@ var tagListCmd = &cobra.Command{
 }
 
 var tagCreateCmd = &cobra.Command{
-	Use:   "create <tag uri> <commit ref>",
-	Short: "Create a new tag in a repository",
-	Args:  cobra.ExactArgs(tagCreateRequiredArgs),
+	Use:     "create <tag uri> <commit uri>",
+	Short:   "Create a new tag in a repository",
+	Example: "lakectl tag create lakefs://example-repo/example-tag lakefs://example-repo/2397cc9a9d04c20a4e5739b42c1dd3d8ba655c0b3a3b974850895a13d8bf9917",
+	Args:    cobra.ExactArgs(tagCreateRequiredArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		tagURI := MustParseRefURI("tag", args[0])
+		tagURI := MustParseRefURI("tag uri", args[0])
+		commitURI := MustParseRefURI("commit uri", args[1])
 		Fmt("Tag ref: %s\n", tagURI.String())
 
 		client := getClient()
-		commitRef := args[1]
 		ctx := cmd.Context()
 		force, _ := cmd.Flags().GetBool("force")
+
+		if tagURI.Repository != commitURI.Repository {
+			Die("both references must belong to the same repository", 1)
+		}
+
 		if force {
 			// checking validity of the commitRef before deleting the old one
-			res, err := client.GetCommitWithResponse(ctx, tagURI.Repository, commitRef)
-			DieOnResponseError(res, err)
+			res, err := client.GetCommitWithResponse(ctx, tagURI.Repository, commitURI.Ref)
+			DieOnErrorOrUnexpectedStatusCode(res, err, http.StatusOK)
 
 			resp, err := client.DeleteTagWithResponse(ctx, tagURI.Repository, tagURI.Ref)
 			if err != nil && (resp == nil || resp.JSON404 == nil) {
-				DieOnResponseError(resp, err)
+				DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 			}
 		}
 
 		resp, err := client.CreateTagWithResponse(ctx, tagURI.Repository, api.CreateTagJSONRequestBody{
 			Id:  tagURI.Ref,
-			Ref: commitRef,
+			Ref: commitURI.Ref,
 		})
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 
 		commitID := *resp.JSON201
 		Fmt("Created tag '%s' (%s)\n", tagURI.Ref, commitID)
@@ -109,7 +117,7 @@ var tagDeleteCmd = &cobra.Command{
 
 		ctx := cmd.Context()
 		resp, err := client.DeleteTagWithResponse(ctx, u.Repository, u.Ref)
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
 }
 
@@ -124,7 +132,7 @@ var tagShowCmd = &cobra.Command{
 
 		ctx := cmd.Context()
 		resp, err := client.GetTagWithResponse(ctx, u.Repository, u.Ref)
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		Fmt("%s %s", resp.JSON200.Id, resp.JSON200.CommitId)
 	},
 }

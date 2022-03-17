@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/glue"
 	"github.com/aws/aws-sdk-go/service/glue/glueiface"
 	"github.com/treeverse/lakefs/pkg/metastore"
+	mserrors "github.com/treeverse/lakefs/pkg/metastore/errors"
 )
 
 const MaxParts = 1000 // max possible 1000
@@ -156,7 +157,7 @@ func (g *MSClient) DropPartition(ctx context.Context, dbName string, tableName s
 	return err
 }
 
-func (g *MSClient) CreateDatabaseIfNotExists(ctx context.Context, database *metastore.Database) error {
+func (g *MSClient) CreateDatabase(ctx context.Context, database *metastore.Database) error {
 	databaseInput := DatabaseLocalToGlue(database)
 	_, err := g.client.CreateDatabaseWithContext(ctx, &glue.CreateDatabaseInput{
 		CatalogId:     aws.String(g.catalogID),
@@ -164,7 +165,7 @@ func (g *MSClient) CreateDatabaseIfNotExists(ctx context.Context, database *meta
 	})
 	var ErrExists *glue.AlreadyExistsException
 	if errors.As(err, &ErrExists) {
-		return nil
+		return mserrors.ErrSchemaExists
 	}
 	return err
 }

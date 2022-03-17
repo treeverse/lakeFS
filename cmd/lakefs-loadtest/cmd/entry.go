@@ -109,13 +109,14 @@ var entryCmd = &cobra.Command{
 					addr := strings.ReplaceAll(uuid.New().String(), "-", "")
 					entryPath := strings.ReplaceAll(id, "-", "") + wid
 					startTime := time.Now()
-					err = c.CreateEntry(ctx, u.Repository, u.Ref, catalog.DBEntry{
-						Path:            entryPath,
-						CreationDate:    time.Now(),
-						Checksum:        addr,
-						PhysicalAddress: addr,
-						AddressType:     catalog.AddressTypeRelative,
-					})
+					err = c.CreateEntry(ctx, u.Repository, u.Ref, catalog.NewDBEntryBuilder().
+						Path(entryPath).
+						CreationDate(time.Now()).
+						Checksum(addr).
+						PhysicalAddress(addr).
+						AddressType(catalog.AddressTypeRelative).
+						Build(),
+					)
 					if err != nil {
 						atomic.AddInt64(&errCount, 1)
 					}

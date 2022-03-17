@@ -27,8 +27,11 @@ This reference uses `.` to denote the nesting of values.
 ## Reference
 
 * `logging.format` `(one of ["json", "text"] : "text")` - Format to output log message in
-* `logging.level` `(one of ["DEBUG", "INFO", "WARN", "ERROR", "NONE"] : "DEBUG")` - Logging level to output
-* `logging.output` `(string : "-")` - Path name to write logs to. `"-"` means Standard Output
+* `logging.level` `(one of ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "NONE"] : "DEBUG")` - Logging level to output
+* `logging.output` `(string : "-")` - A path or paths to write logs to. A `-` means the standard output, `=` means the standard error.
+* `logging.file_max_size_mb` `(int : 100)` - Output file maximum size in megabytes.
+* `logging.files_keep` `(int : 0)` - Numbe of log files to keep, default is all.
+* `actions.enabled` `(bool : true)` - Setting this to false will block hooks from being executed
 * `database.connection_string` `(string : "postgres://localhost:5432/postgres?sslmode=disable")` - PostgreSQL connection string to use
 * `database.max_open_connections` `(int : 25)` - Maximum number of open connections to the database
 * `database.max_idle_connections` `(int : 25)` - Sets the maximum number of connections in the idle connection pool
@@ -42,8 +45,17 @@ This reference uses `.` to denote the nesting of values.
 
    **Note:** It is best to keep this somewhere safe such as KMS or Hashicorp Vault, and provide it to the system at run time
    {: .note }
-
+* <a name="ldap"/>`auth.ldap.server_endpoint` `(string : required)` - If specified, also authenticate users via this LDAP server
+* `auth.ldap.bind_dn` `(string : required)` - Use this DN to bind lakeFS on the LDAP server for searching for users.
+* `auth.ldap.bind_password` `(string : )` - If set, use this password for binding `bind_dn`.
+* `auth.ldap.username_attribute` `(string : required)` - Attribute holding login username on LDAP users, e.g. `cn` or `uid`.
+* `auth.ldap.user_base_dn` `(string : required)` - Base DN for searching for users.  Search looks for users in the subtree below this.
+* `auth.ldap.default_user_group` `(string : )` - Create all LDAP users in this group.  Defaults to `Viewers`.
+* `auth.ldap.user_filter` `(string : )` - Additional filter for users.
 * `blockstore.type` `(one of ["local", "s3", "gs", "azure", "mem"] : required)`.  Block adapter to use. This controls where the underlying data will be stored
+* `blockstore.default_namespace_prefix` `(string : )` - Use this to help your users choose a storage namespace for their repositories. 
+   If specified, the storage namespace will be filled with this default value as a prefix, when creating a repository from the UI.
+   The user may still change it to something else.
 * `blockstore.local.path` `(string: "~/lakefs/data")` - When using the local Block Adapter, which directory to store files in
 * `blockstore.gs.credentials_file` `(string : )` - If specified will be used as a file path of the JSON file that contains your Google service account key
 * `blockstore.gs.credentials_json` `(string : )` - If specified will be used as JSON string that contains your Google service account key (when credentials_file is not set)
@@ -60,6 +72,7 @@ This reference uses `.` to denote the nesting of values.
 * `blockstore.s3.force_path_style` `(boolean : false)` - When true, use path-style S3 URLs (https://<host>/<bucket> instead of https://<bucket>.<host>)
 * `blockstore.s3.streaming_chunk_size` `(int : 1048576)` - Object chunk size to buffer before streaming to blockstore (use a lower value for less reliable networks). Minimum is 8192.
 * `blockstore.s3.streaming_chunk_timeout` `(time duration : "60s")` - Per object chunk timeout for blockstore streaming operations (use a larger value for less reliable networks).
+* `blockstore.s3.discover_bucket_region` `(boolean : true)` - (Can be turned off if the underlying S3 bucket doesn't support the GetBucketRegion API).
 * `committed.local_cache` - an object describing the local (on-disk) cache of metadata from
   permanent storage:
   + `committed.local_cache.size_bytes` (`int` : `1073741824`) - bytes for local cache to use on disk.  The cache may use more storage for short periods of time.
@@ -96,6 +109,7 @@ This reference uses `.` to denote the nesting of values.
 * `gateways.s3.region` `(string : "us-east-1")` - AWS region we're pretending to be. Should match the region configuration used in AWS SDK clients
 * `gateways.s3.fallback_url` `(string)` - If specified, requests with a non-existing repository will be forwarded to this url. This can be useful for using lakeFS side-by-side with S3, with the URL pointing at an [S3Proxy](https://github.com/gaul/s3proxy) instance.
 * `stats.enabled` `(boolean : true)` - Whether or not to periodically collect anonymous usage statistics
+* `security.audit_check_interval` `(duration : 12h)` - Duration in which we check for security audit
 {: .ref-list }
 
 ## Using Environment Variables
@@ -154,7 +168,7 @@ auth:
 blockstore:
   type: s3
   s3:
-    region: us-east-1
+    region: us-east-1 # optional, fallback in case discover from bucket is not supported
     credentials_file: /secrets/aws/credentials
     profile: default
 
@@ -205,9 +219,9 @@ auth:
 blockstore:
   type: s3
   s3:
-    region: us-east-1
     force_path_style: true
     endpoint: http://localhost:9000
+    discover_bucket_region: false
     credentials:
       access_key_id: minioadmin
       secret_access_key: minioadmin

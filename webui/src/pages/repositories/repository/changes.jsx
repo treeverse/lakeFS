@@ -24,20 +24,18 @@ import {ActionGroup, ActionsBar, Error, Loading, RefreshButton} from "../../../l
 import RefDropdown from "../../../lib/components/repository/refDropdown";
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import {formatAlertText} from "../../../lib/components/repository/errors";
-import {ChangeEntryRow} from "../../../lib/components/repository/changes";
-import {Paginator} from "../../../lib/components/pagination";
+import {TreeEntryPaginator, TreeItem} from "../../../lib/components/repository/changes";
 import {useRouter} from "../../../lib/hooks/router";
 import {URINavigator} from "../../../lib/components/repository/tree";
 
 
-const CommitButton = ({ repo, onCommit, enabled = false }) => {
+const CommitButton = ({repo, onCommit, enabled = false}) => {
 
     const textRef = useRef(null);
 
     const [committing, setCommitting] = useState(false)
     const [show, setShow] = useState(false)
     const [metadataFields, setMetadataFields] = useState([])
-
     const hide = () => {
         if (committing) return;
         setShow(false)
@@ -75,21 +73,23 @@ const CommitButton = ({ repo, onCommit, enabled = false }) => {
                                 <Form.Group controlId="message" key={`commit-metadata-field-${f.key}-${f.value}-${i}`}>
                                     <Row>
                                         <Col md={{span: 5}}>
-                                            <Form.Control type="text" placeholder="Key"  defaultValue={f.key} onChange={(e) => {
-                                                metadataFields[i].key = e.currentTarget.value;
-                                                setMetadataFields(metadataFields);
-                                            }}/>
+                                            <Form.Control type="text" placeholder="Key" defaultValue={f.key}
+                                                          onChange={(e) => {
+                                                              metadataFields[i].key = e.currentTarget.value;
+                                                              setMetadataFields(metadataFields);
+                                                          }}/>
                                         </Col>
-                                        <Col md={{ span: 5}}>
-                                            <Form.Control type="text" placeholder="Value"  defaultValue={f.value}  onChange={(e) => {
-                                                metadataFields[i].value = e.currentTarget.value;
-                                                setMetadataFields(metadataFields);
-                                            }}/>
+                                        <Col md={{span: 5}}>
+                                            <Form.Control type="text" placeholder="Value" defaultValue={f.value}
+                                                          onChange={(e) => {
+                                                              metadataFields[i].value = e.currentTarget.value;
+                                                              setMetadataFields(metadataFields);
+                                                          }}/>
                                         </Col>
-                                        <Col md={{ span: 1}}>
+                                        <Col md={{span: 1}}>
                                             <Form.Text>
                                                 <Button size="sm" variant="secondary" onClick={() => {
-                                                    setMetadataFields([...metadataFields.slice(0,i), ...metadataFields.slice(i+1)]);
+                                                    setMetadataFields([...metadataFields.slice(0, i), ...metadataFields.slice(i + 1)]);
                                                 }}>
                                                     <XIcon/>
                                                 </Button>
@@ -126,7 +126,7 @@ const CommitButton = ({ repo, onCommit, enabled = false }) => {
 }
 
 
-const RevertButton =({ onRevert, enabled = false }) => {
+const RevertButton = ({onRevert, enabled = false}) => {
     const [show, setShow] = useState(false)
     const hide = () => setShow(false)
 
@@ -139,7 +139,7 @@ const RevertButton =({ onRevert, enabled = false }) => {
                 onConfirm={() => {
                     onRevert()
                     hide()
-                }} />
+                }}/>
             <Button variant="light" disabled={!enabled} onClick={() => setShow(true)}>
                 <HistoryIcon/> Revert
             </Button>
@@ -147,23 +147,69 @@ const RevertButton =({ onRevert, enabled = false }) => {
     );
 }
 
-const ChangesBrowser = ({ repo, reference, after, prefix, delimiter, onSelectRef, onPaginate }) => {
+export async function appendMoreResults(resultsState, prefix, afterUpdated, setAfterUpdated, setResultsState, getMore) {
+    let resultsFiltered = resultsState.results
+    if (resultsState.prefix !== prefix) {
+        // prefix changed, need to delete previous results
+        setAfterUpdated("")
+        resultsFiltered = []
+    }
+
+    if (resultsFiltered.length > 0 && resultsFiltered.at(-1).path > afterUpdated) {
+        // results already cached
+        return {prefix: prefix, results: resultsFiltered, pagination: resultsState.pagination}
+    }
+
+    const {results, pagination} = await getMore()
+    setResultsState({prefix: prefix, results: resultsFiltered.concat(results), pagination: pagination})
+    return {results: resultsState.results, pagination: pagination}
+}
+
+const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
     const [actionError, setActionError] = useState(null);
     const [internalRefresh, setInternalRefresh] = useState(true);
-    const { push } = useRouter();
+    const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
+    const [resultsState, setResultsState] = useState({prefix: prefix, results:[], pagination:{}}); // current retrieved children of the item
 
+    const delimiter = '/'
 
-    const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
+    const { error, loading, nextPage } = useAPIWithPagination(async () => {
         if (!repo) return
-        return refs.changes(repo.id, reference.id, after, prefix, delimiter)
-    }, [repo.id, reference.id, internalRefresh, after, prefix, delimiter])
+        return await appendMoreResults(resultsState, prefix, afterUpdated, setAfterUpdated, setResultsState,
+            () => refs.changes(repo.id, reference.id, afterUpdated, prefix, delimiter));
+    }, [repo.id, reference.id, internalRefresh, afterUpdated, delimiter, prefix])
 
-    const refresh = () => setInternalRefresh(!internalRefresh)
+    const results = resultsState.results
+
+    const refresh = () => {
+        setResultsState({prefix: prefix, results:[], pagination:{}})
+        setInternalRefresh(!internalRefresh)
+    }
 
     if (!!error) return <Error error={error}/>
     if (loading) return <Loading/>
 
-    const actionErrorDisplay = (!!actionError) ?
+    let onRevert = async (entry) => {
+        branches
+            .revert(repo.id, reference.id, {type: entry.path_type, path: entry.path})
+            .then(refresh)
+            .catch(error => {
+                setActionError(error)
+            })
+    }
+
+    let onNavigate = (entry) => {
+        return {
+            pathname: `/repositories/:repoId/changes`,
+            params: {repoId: repo.id},
+            query: {
+                ref: reference.id,
+                prefix: entry.path,
+            }
+        }
+    }
+
+   const actionErrorDisplay = (!!actionError) ?
         <Error error={actionError} onDismiss={() => setActionError(null)}/> : <></>
 
     return (
@@ -176,6 +222,7 @@ const ChangesBrowser = ({ repo, reference, after, prefix, delimiter, onSelectRef
                         selected={(!!reference) ? reference : null}
                         withCommits={false}
                         withWorkspace={false}
+                        withTags={false}
                         selectRef={onSelectRef}
                     />
                 </ActionGroup>
@@ -205,124 +252,76 @@ const ChangesBrowser = ({ repo, reference, after, prefix, delimiter, onSelectRef
             {actionErrorDisplay}
             <div className="tree-container">
                 {(results.length === 0) ? <Alert variant="info">No changes</Alert> : (
-                <Card>
-                    <Card.Header>
+                    <Card>
+                        <Card.Header>
                         <span className="float-left">
                             {(delimiter !== "") && (
-                                <URINavigator path={prefix} reference={reference} repo={repo} relativeTo={`${reference.id} workspace`} pathURLBuilder={(params, query) => {
-                                    return {
-                                        pathname: '/repositories/:repoId/changes',
-                                        params: params,
-                                        query: {delimiter: "/", ref: reference.id},
-                                    }
-                                }}/>
+                                <URINavigator path={prefix} reference={reference} repo={repo}
+                                              relativeTo={`${reference.id} workspace`}
+                                              pathURLBuilder={(params, query) => {
+                                                  return {
+                                                      pathname: '/repositories/:repoId/changes',
+                                                      params: params,
+                                                      query: {ref: reference.id, prefix: query.path ?? ""},
+                                                  }
+                                              }}/>
                             )}
                         </span>
-                        <span className="float-right">
-                            <Form>
-                                <Form.Switch
-                                    label="Directory View"
-                                    id="changes-directory-view-toggle"
-                                    defaultChecked={(delimiter !== "")}
-                                    onChange={(e) => {
-                                        push({
-                                            pathname: '/repositories/:repoId/changes',
-                                            params: {repoId: repo.id},
-                                            query: {
-                                                ref: reference.id,
-                                                delimiter: (e.target.checked) ? "/" : "",
-                                            }
-                                        })
-                                    }}
-                                />
-                                </Form>
-                        </span>
-                    </Card.Header>
-                    <Card.Body>
-
+                        </Card.Header>
+                        <Card.Body>
                             <Table borderless size="sm">
                                 <tbody>
-                                {results.map(entry => (
-                                    <ChangeEntryRow
-                                        key={entry.path}
-                                        entry={entry}
-                                        relativeTo={prefix}
-                                        showActions={true}
-                                        onRevert={(entry) => {
-                                            branches
-                                                .revert(repo.id, reference.id, {type: entry.path_type, path: entry.path})
-                                                .then(() => {
-                                                    setInternalRefresh(!internalRefresh)
-                                                })
-                                                .catch(error => {
-                                                    setActionError(error)
-                                                })
-                                        }}
-                                        onNavigate={entry => {
-                                            return {
-                                                pathname: '/repositories/:repoId/changes',
-                                                params: {repoId: repo.id},
-                                                query: {
-                                                    delimiter: "/",
-                                                    prefix: entry.path,
-                                                    ref: reference.id
-                                                }
-                                            }
-                                        }}
-                                    />
-                                ))}
+                                {results.map(entry => {
+                                    const committedRef = reference.id + "@"
+                                    const uncommittedRef = reference.id
+                                    return (
+                                        <TreeItem key={entry.path + "-tree-item"} entry={entry} repo={repo}
+                                                  reference={reference}
+                                                  leftDiffRefID={committedRef} rightDiffRefID={uncommittedRef}
+                                                  internalReferesh={internalRefresh}
+                                                  onNavigate={onNavigate} onRevert={onRevert} delimiter={delimiter}
+                                                  relativeTo={prefix}
+                                                  getMore={(afterUpdated, path, useDelimiter= true, amount = -1) => {
+                                                      return refs.changes(repo.id, reference.id, afterUpdated, path, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined)
+                                                  }}/>
+                                        )
+                                })}
+                                { !!nextPage &&
+                                    <TreeEntryPaginator path={""} loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated}/>
+                                }
                                 </tbody>
                             </Table>
-
-
-                            <Paginator onPaginate={onPaginate} nextPage={nextPage} after={after}/>
-
-                    </Card.Body>
-                </Card>
+                        </Card.Body>
+                    </Card>
                 )}
             </div>
-
         </>
     )
 }
 
 const ChangesContainer = () => {
     const router = useRouter();
-    const { repo, reference, loading, error } = useRefs()
-    const { after, prefix, delimiter } = router.query
+    const {repo, reference, loading, error} = useRefs()
+    const {prefix} = router.query
 
     if (loading) return <Loading/>
     if (!!error) return <Error error={error}/>
 
     return (
         <ChangesBrowser
-            after={(!!after) ? after : ""}
             prefix={(!!prefix) ? prefix : ""}
-            delimiter={(!!delimiter) ? delimiter : ""}
             repo={repo}
             reference={reference}
-            onPaginate={after => router.push({
-                pathname: `/repositories/:repoId/changes`,
-                params: {repoId: repo.id},
-                query: {
-                    ref: reference.id,
-                    after: (!!after) ? after : "",
-                    prefix: (!!prefix) ? prefix : "",
-                    delimiter: (!!delimiter) ? delimiter : "",
-                }
-            })}
             onSelectRef={ref => router.push({
                 pathname: `/repositories/:repoId/changes`,
                 params: {repoId: repo.id},
                 query: {
                     ref: ref.id,
-                    delimiter: (delimiter) ? delimiter : "",
                 }
             })}
         />
     )
 }
-
 
 const RepositoryChangesPage = () => {
     return (

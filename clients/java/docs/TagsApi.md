@@ -256,7 +256,7 @@ Name | Type | Description  | Notes
 
 <a name="listTags"></a>
 # **listTags**
-> RefList listTags(repository, after, amount)
+> RefList listTags(repository, prefix, after, amount)
 
 list tags
 
@@ -292,10 +292,11 @@ public class Example {
 
     TagsApi apiInstance = new TagsApi(defaultClient);
     String repository = "repository_example"; // String | 
+    String prefix = "prefix_example"; // String | return items prefixed with this value
     String after = "after_example"; // String | return items after this value
     Integer amount = 100; // Integer | how many items to return
     try {
-      RefList result = apiInstance.listTags(repository, after, amount);
+      RefList result = apiInstance.listTags(repository, prefix, after, amount);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling TagsApi#listTags");
@@ -313,6 +314,7 @@ public class Example {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **String**|  |
+ **prefix** | **String**| return items prefixed with this value | [optional]
  **after** | **String**| return items after this value | [optional]
  **amount** | **Integer**| how many items to return | [optional] [default to 100]
 

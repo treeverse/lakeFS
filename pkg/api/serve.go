@@ -33,8 +33,6 @@ const (
 	extensionValidationExcludeBody = "x-validation-exclude-body"
 )
 
-var ErrInvalidAPIEndpoint = errors.New("invalid API endpoint")
-
 type responseError struct {
 	Message string `json:"message"`
 }
@@ -42,6 +40,7 @@ type responseError struct {
 func Serve(
 	cfg *config.Config,
 	catalog catalog.Interface,
+	authenticator auth.Authenticator,
 	authService auth.Service,
 	blockAdapter block.Adapter,
 	metadataManager auth.MetadataManager,
@@ -49,6 +48,7 @@ func Serve(
 	collector stats.Collector,
 	cloudMetadataProvider cloud.MetadataProvider,
 	actions actionsHandler,
+	auditChecker AuditChecker,
 	logger logging.Logger,
 	gatewayDomains []string,
 ) http.Handler {
@@ -62,14 +62,18 @@ func Serve(
 		OapiRequestValidatorWithOptions(swagger, &openapi3filter.Options{
 			AuthenticationFunc: openapi3filter.NoopAuthenticationFunc,
 		}),
-		AuthMiddleware(logger, swagger, authService),
-		httputil.LoggingMiddleware(RequestIDHeaderName, logging.Fields{"service_name": LoggerServiceName}),
+		httputil.LoggingMiddleware(
+			RequestIDHeaderName,
+			logging.Fields{logging.ServiceNameFieldKey: LoggerServiceName},
+			cfg.GetLoggingTraceRequestHeaders()),
+		AuthMiddleware(logger, swagger, authenticator, authService),
 		MetricsMiddleware(swagger),
 	)
 
 	controller := NewController(
 		cfg,
 		catalog,
+		authenticator,
 		authService,
 		blockAdapter,
 		metadataManager,
@@ -77,6 +81,7 @@ func Serve(
 		collector,
 		cloudMetadataProvider,
 		actions,
+		auditChecker,
 		logger,
 	)
 	HandlerFromMuxWithBaseURL(controller, apiRouter, BaseURL)

@@ -52,6 +52,7 @@ public class RepositoryCreation {
    * Get name
    * @return name
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getName() {
@@ -74,6 +75,7 @@ public class RepositoryCreation {
    * Filesystem URI to store the underlying data in (e.g. \&quot;s3://my-bucket/some/path/\&quot;)
    * @return storageNamespace
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(example = "s3://example-bucket/", required = true, value = "Filesystem URI to store the underlying data in (e.g. \"s3://my-bucket/some/path/\")")
 
   public String getStorageNamespace() {

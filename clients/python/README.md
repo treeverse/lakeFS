@@ -149,6 +149,7 @@ Class | Method | HTTP request | Description
 *CommitsApi* | [**get_commit**](docs/CommitsApi.md#get_commit) | **GET** /repositories/{repository}/commits/{commitId} | get commit
 *CommitsApi* | [**log_branch_commits**](docs/CommitsApi.md#log_branch_commits) | **GET** /repositories/{repository}/branches/{branch}/commits | get commit log from branch. Deprecated: replaced by logCommits by passing branch name as ref 
 *ConfigApi* | [**get_lake_fs_version**](docs/ConfigApi.md#get_lake_fs_version) | **GET** /config/version | 
+*ConfigApi* | [**get_setup_state**](docs/ConfigApi.md#get_setup_state) | **GET** /setup_lakefs | check if the lakeFS installation is already set up
 *ConfigApi* | [**get_storage_config**](docs/ConfigApi.md#get_storage_config) | **GET** /config/storage | 
 *ConfigApi* | [**setup**](docs/ConfigApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
 *HealthCheckApi* | [**health_check**](docs/HealthCheckApi.md#health_check) | **GET** /healthcheck | 
@@ -156,6 +157,7 @@ Class | Method | HTTP request | Description
 *MetadataApi* | [**get_meta_range**](docs/MetadataApi.md#get_meta_range) | **GET** /repositories/{repository}/metadata/meta_range/{meta_range} | return URI to a meta-range file
 *MetadataApi* | [**get_range**](docs/MetadataApi.md#get_range) | **GET** /repositories/{repository}/metadata/range/{range} | return URI to a range file
 *ObjectsApi* | [**delete_object**](docs/ObjectsApi.md#delete_object) | **DELETE** /repositories/{repository}/branches/{branch}/objects | delete object
+*ObjectsApi* | [**delete_objects**](docs/ObjectsApi.md#delete_objects) | **POST** /repositories/{repository}/branches/{branch}/objects/delete | delete objects
 *ObjectsApi* | [**get_object**](docs/ObjectsApi.md#get_object) | **GET** /repositories/{repository}/refs/{ref}/objects | get object content
 *ObjectsApi* | [**get_underlying_properties**](docs/ObjectsApi.md#get_underlying_properties) | **GET** /repositories/{repository}/refs/{ref}/objects/underlyingProperties | get object properties on underlying storage
 *ObjectsApi* | [**list_objects**](docs/ObjectsApi.md#list_objects) | **GET** /repositories/{repository}/refs/{ref}/objects/ls | list objects under a given prefix
@@ -164,11 +166,14 @@ Class | Method | HTTP request | Description
 *ObjectsApi* | [**upload_object**](docs/ObjectsApi.md#upload_object) | **POST** /repositories/{repository}/branches/{branch}/objects | 
 *RefsApi* | [**diff_refs**](docs/RefsApi.md#diff_refs) | **GET** /repositories/{repository}/refs/{leftRef}/diff/{rightRef} | diff references
 *RefsApi* | [**dump_refs**](docs/RefsApi.md#dump_refs) | **PUT** /repositories/{repository}/refs/dump | Dump repository refs (tags, commits, branches) to object store
-*RefsApi* | [**log_commits**](docs/RefsApi.md#log_commits) | **GET** /repositories/{repository}/refs/{ref}/commits | get commit log from ref
+*RefsApi* | [**log_commits**](docs/RefsApi.md#log_commits) | **GET** /repositories/{repository}/refs/{ref}/commits | get commit log from ref. If both objects and prefixes are empty, return all commits.
 *RefsApi* | [**merge_into_branch**](docs/RefsApi.md#merge_into_branch) | **POST** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch} | merge references
 *RefsApi* | [**restore_refs**](docs/RefsApi.md#restore_refs) | **PUT** /repositories/{repository}/refs/restore | Restore repository refs (tags, commits, branches) from object store
+*RepositoriesApi* | [**create_branch_protection_rule**](docs/RepositoriesApi.md#create_branch_protection_rule) | **POST** /repositories/{repository}/branch_protection | 
 *RepositoriesApi* | [**create_repository**](docs/RepositoriesApi.md#create_repository) | **POST** /repositories | create repository
+*RepositoriesApi* | [**delete_branch_protection_rule**](docs/RepositoriesApi.md#delete_branch_protection_rule) | **DELETE** /repositories/{repository}/branch_protection | 
 *RepositoriesApi* | [**delete_repository**](docs/RepositoriesApi.md#delete_repository) | **DELETE** /repositories/{repository} | delete repository
+*RepositoriesApi* | [**get_branch_protection_rules**](docs/RepositoriesApi.md#get_branch_protection_rules) | **GET** /repositories/{repository}/branch_protection | get branch protection rules
 *RepositoriesApi* | [**get_repository**](docs/RepositoriesApi.md#get_repository) | **GET** /repositories/{repository} | get repository
 *RepositoriesApi* | [**list_repositories**](docs/RepositoriesApi.md#list_repositories) | **GET** /repositories | list repositories
 *RetentionApi* | [**get_garbage_collection_rules**](docs/RetentionApi.md#get_garbage_collection_rules) | **GET** /repositories/{repository}/gc/rules | 
@@ -189,6 +194,7 @@ Class | Method | HTTP request | Description
  - [ActionRunList](docs/ActionRunList.md)
  - [AuthenticationToken](docs/AuthenticationToken.md)
  - [BranchCreation](docs/BranchCreation.md)
+ - [BranchProtectionRule](docs/BranchProtectionRule.md)
  - [Commit](docs/Commit.md)
  - [CommitCreation](docs/CommitCreation.md)
  - [CommitList](docs/CommitList.md)
@@ -208,15 +214,19 @@ Class | Method | HTTP request | Description
  - [GroupList](docs/GroupList.md)
  - [HookRun](docs/HookRun.md)
  - [HookRunList](docs/HookRunList.md)
+ - [InlineObject1](docs/InlineObject1.md)
  - [LoginInformation](docs/LoginInformation.md)
  - [Merge](docs/Merge.md)
  - [MergeResult](docs/MergeResult.md)
  - [MergeResultSummary](docs/MergeResultSummary.md)
+ - [ObjectError](docs/ObjectError.md)
+ - [ObjectErrorList](docs/ObjectErrorList.md)
  - [ObjectStageCreation](docs/ObjectStageCreation.md)
  - [ObjectStats](docs/ObjectStats.md)
  - [ObjectStatsList](docs/ObjectStatsList.md)
  - [ObjectUserMetadata](docs/ObjectUserMetadata.md)
  - [Pagination](docs/Pagination.md)
+ - [PathList](docs/PathList.md)
  - [Policy](docs/Policy.md)
  - [PolicyList](docs/PolicyList.md)
  - [Ref](docs/Ref.md)
@@ -228,6 +238,7 @@ Class | Method | HTTP request | Description
  - [ResetCreation](docs/ResetCreation.md)
  - [RevertCreation](docs/RevertCreation.md)
  - [Setup](docs/Setup.md)
+ - [SetupState](docs/SetupState.md)
  - [StagingLocation](docs/StagingLocation.md)
  - [StagingMetadata](docs/StagingMetadata.md)
  - [Statement](docs/Statement.md)

@@ -198,6 +198,18 @@ components:
           type: string
           example: "main"
 
+    PathList:
+      type: object
+      required:
+        - paths
+      properties:
+        paths:
+          type: array
+          items:
+            type: string
+            description: Object path
+
+
     ObjectStats:
       type: object
       required:
@@ -225,6 +237,9 @@ components:
           description: Unix Epoch in seconds
         metadata:
           $ref: "#/components/schemas/ObjectUserMetadata"
+        content_type:
+          type: string
+          description: Object media type
 
     ObjectStatsList:
       type: object
@@ -259,6 +274,9 @@ components:
           description: Unix Epoch in seconds
         metadata:
           $ref: "#/components/schemas/ObjectUserMetadata"
+        content_type:
+          type: string
+          description: Object media type
 
     ObjectUserMetadata:
       type: object
@@ -407,6 +425,10 @@ components:
           type: object
           additionalProperties:
             type: string
+        date:
+          description: set date to override creation date in the commit (Unix Epoch in seconds)
+          type: integer
+          format: int64
 
     Merge:
       type: object
@@ -417,6 +439,9 @@ components:
           type: object
           additionalProperties:
             type: string
+        strategy:
+          description: In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch ('dest-wins') or from the source branch('source-wins'). In case no selection is made, the merge process will fail in case of a conflict
+          type: string
 
     BranchCreation:
       type: object
@@ -472,6 +497,32 @@ components:
           description: short message explaining the error
           type: string
 
+    ObjectError:
+      type: object
+      required:
+        - status_code
+        - message
+      properties:
+        status_code:
+          type: integer
+          description: HTTP status code associated for operation on path
+        message:
+          type: string
+          description: short message explaining status_code
+        path:
+          type: string
+          description: affected path
+
+    ObjectErrorList:
+      type: object
+      required:
+        - errors
+      properties:
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/ObjectError"
+
     User:
       type: object
       required:
@@ -484,6 +535,8 @@ components:
           type: integer
           format: int64
           description: Unix Epoch in seconds
+        friendly_name:
+          type: string
 
     CurrentUser:
       type: object
@@ -500,7 +553,12 @@ components:
           type: string
       required:
         - id
-
+    SetupState:
+      type: object
+      properties:
+        state:
+          type: string
+          enum: [initialized, not_initialized]
     AccessKeyCredentials:
       type: object
       properties:
@@ -702,11 +760,16 @@ components:
           type: string
         blockstore_namespace_ValidityRegex:
           type: string
-
+        default_namespace_prefix:
+          type: string
     VersionConfig:
       type: object
       properties:
         version:
+          type: string
+        upgrade_recommended:
+          type: boolean
+        upgrade_url:
           type: string
 
     ActionRun:
@@ -817,6 +880,9 @@ components:
           type: object
           additionalProperties:
             type: string
+        content_type:
+          type: string
+          description: Object media type
       required:
         - staging
         - checksum
@@ -874,8 +940,34 @@ components:
         - default_retention_days
         - branches
 
+    BranchProtectionRule:
+      type: object
+      properties:
+        pattern:
+          type: string
+          description: fnmatch pattern for the branch name, supporting * and ? wildcards
+          example: "stable_*"
+          minLength: 1
+      required:
+        - pattern
+
 paths:
   /setup_lakefs:
+    get:
+      tags:
+        - config
+      operationId: getSetupState
+      summary: check if the lakeFS installation is already set up
+      security: []
+      responses:
+        200:
+          description: lakeFS setup state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetupState"
+        default:
+          $ref: "#/components/responses/ServerError"
     post:
       tags:
         - config
@@ -1763,6 +1855,7 @@ paths:
       operationId: listTags
       summary: list tags
       parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
       responses:
@@ -1927,10 +2020,24 @@ paths:
       tags:
         - refs
       operationId: logCommits
-      summary: get commit log from ref
+      summary: get commit log from ref. If both objects and prefixes are empty, return all commits.
       parameters:
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
+        - in: query
+          name: objects
+          description: list of paths, each element is a path of a specific object
+          schema:
+            type: array
+            items:
+              type: string
+        - in: query
+          name: prefixes
+          description: list of paths, each element is a path of a prefix
+          schema:
+            type: array
+            items:
+              type: string
       responses:
         200:
           description: commit log
@@ -2304,6 +2411,7 @@ paths:
         description: a reference (could be either a branch or a commit ID)
       - in: query
         name: path
+        description: relative to the ref
         required: true
         schema:
           type: string
@@ -2361,6 +2469,7 @@ paths:
           type: string
       - in: query
         name: path
+        description: relative to the branch
         required: true
         schema:
           type: string
@@ -2407,7 +2516,11 @@ paths:
           # This actually violates HTTP, which requires returning 201 if a new object was
           # created or 200 if an existing object was modified,
           # https://tools.ietf.org/html/rfc7231#section-4.3.4
-          description: successfully linked
+          description: object metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObjectStats"
         400:
           $ref: "#/components/responses/ValidationError"
         401:
@@ -2437,6 +2550,7 @@ paths:
           type: string
       - in: query
         name: path
+        description: relative to the branch
         required: true
         schema:
           type: string
@@ -2470,7 +2584,7 @@ paths:
       tags:
         - objects
       operationId: uploadObject
-      x-validation-exclude-body: false
+      x-validation-exclude-body: true
       requestBody:
         content:
           multipart/form-data:
@@ -2478,7 +2592,7 @@ paths:
               type: object
               properties:
                 content:
-                  description: Object content to upload
+                  description: Only a single file per upload which must be named "content".
                   type: string
                   format: binary
 
@@ -2528,6 +2642,45 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
+  /repositories/{repository}/branches/{branch}/objects/delete:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - objects
+      operationId: deleteObjects
+      summary: delete objects
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PathList"
+      responses:
+        200:
+          description: Delete objects response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObjectErrorList"
+        204:
+          description: all requested objects successfully deleted
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
   /repositories/{repository}/refs/{ref}/objects/stat:
     parameters:
       - in: path
@@ -2543,6 +2696,7 @@ paths:
         description: a reference (could be either a branch or a commit ID)
       - in: query
         name: path
+        description: relative to the branch
         required: true
         schema:
           type: string
@@ -2588,6 +2742,7 @@ paths:
         description: a reference (could be either a branch or a commit ID)
       - in: query
         name: path
+        description: relative to the branch
         required: true
         schema:
           type: string
@@ -2966,6 +3121,76 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GarbageCollectionPrepareResponse"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+  /repositories/{repository}/branch_protection:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - repositories
+      operationId: getBranchProtectionRules
+      summary: get branch protection rules
+      responses:
+        200:
+          description: branch protection rules
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BranchProtectionRule"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+    post:
+      tags:
+        - repositories
+      operationId: createBranchProtectionRule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BranchProtectionRule"
+      responses:
+        204:
+          description: branch protection rule created successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+    delete:
+      tags:
+        - repositories
+      operationId: deleteBranchProtectionRule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pattern:
+                  type: string
+              required:
+                - pattern
+      responses:
+        204:
+          description: branch protection rule deleted successfully
         401:
           $ref: "#/components/responses/Unauthorized"
         404:

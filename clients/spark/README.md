@@ -12,39 +12,22 @@ Read metadata from lakeFS into Spark.
 Two versions are available for the client, compatible with the following Spark/Scala versions:
 1. Spark 2 / Scala 2.11
 1. Spark 3 / Scala 2.12
-
-## Publishing a new version
-We publish the client to Sonatype, and an Uber-Jar of the client to S3.
-To do it, you should trigger the [GitHub Action](https://github.com/treeverse/lakeFS/actions/workflows/publish-spark-metadata-client.yaml).
-
-### Manual publish
-
-1. Have the following files ready:
-
-   1. `~/.sbt/sonatype_credentials`, with the content:
-      ```
-       realm=Sonatype Nexus Repository Manager
-       host=s01.oss.sonatype.org
-       user=<your sonatype username>
-       password=<your sonatype password>
-      ```
-
-   1. `~/.sbt/credentials`, with the content:
-      ```
-      realm=Amazon S3
-      host=treeverse-clients-us-east.s3.amazonaws.com
-      user=<AWS access key>
-      password=<AWS secret key>
-      ```
-1. Increment the version in the build.sbt file.
-
-1. From the lakeFS project root, run:
-   ```bash
-   make publish-scala
-   ```
    
 ## Installation
-The Uber-Jar should be used when running into conflicting dependencies on environments like EMR, Databricks, etc.
+
+### Uber-jar
+The Uber-Jar can be found on a public S3 location:
+
+It should be used when running into conflicting dependencies on environments like EMR, Databricks, etc.
+
+For Spark 2.4.7:
+http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-247/${CLIENT_VERSION}/lakefs-spark-client-247-assembly-${CLIENT_VERSION}.jar
+
+For Spark 3.0.1:
+http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-301/${CLIENT_VERSION}/lakefs-spark-client-301-assembly-${CLIENT_VERSION}.jar
+
+
+### Maven
 Otherwise, the client can be included using Maven coordinates:
 
 For Spark 2.4.7:
@@ -52,6 +35,7 @@ For Spark 2.4.7:
 io.lakefs:lakefs-spark-client-247_2.11:<version>
 ```
 [See available versions](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client-247_2.11).
+
 For Spark 3.0.1:
 ```
 io.lakefs:lakefs-spark-client-301_2.12:<version>
@@ -92,3 +76,33 @@ spark-submit --conf spark.hadoop.lakefs.api.url=https://lakefs.example.com/api/v
 --class io.treeverse.clients.Main export-app example-repo s3://example-bucket/exported-data/ \
 --branch=main
 ```
+
+## Publishing a new version
+We publish the client to Sonatype, and an Uber-Jar of the client to S3.
+To do it, you should trigger the [GitHub Action](https://github.com/treeverse/lakeFS/actions/workflows/publish-spark-metadata-client.yaml).
+
+### Manual publish
+
+1. Have the following files ready:
+
+   1. `~/.sbt/sonatype_credentials`, with the content:
+      ```
+       realm=Sonatype Nexus Repository Manager
+       host=s01.oss.sonatype.org
+       user=<your sonatype username>
+       password=<your sonatype password>
+      ```
+
+   1. `~/.sbt/credentials`, with the content:
+      ```
+      realm=Amazon S3
+      host=treeverse-clients-us-east.s3.amazonaws.com
+      user=<AWS access key>
+      password=<AWS secret key>
+      ```
+1. Increment the version in the build.sbt file.
+
+1. From the lakeFS project root, run:
+   ```bash
+   make publish-scala
+   ```

@@ -59,10 +59,10 @@ func DebugLoggingMiddleware(requestIDHeaderName string, fields logging.Fields) f
 
 			// add default fields to context
 			requestFields := logging.Fields{
-				"path":       r.RequestURI,
-				"method":     r.Method,
-				"host":       r.Host,
-				"request_id": reqID,
+				logging.PathFieldKey:      r.RequestURI,
+				logging.MethodFieldKey:    r.Method,
+				logging.HostFieldKey:      r.Host,
+				logging.RequestIDFieldKey: reqID,
 			}
 			for k, v := range fields {
 				requestFields[k] = v
@@ -80,9 +80,9 @@ func DebugLoggingMiddleware(requestIDHeaderName string, fields logging.Fields) f
 	}
 }
 
-func LoggingMiddleware(requestIDHeaderName string, fields logging.Fields) func(next http.Handler) http.Handler {
+func LoggingMiddleware(requestIDHeaderName string, fields logging.Fields, traceRequestHeaders bool) func(next http.Handler) http.Handler {
 	if logging.Level() == "trace" {
-		return TracingMiddleware(requestIDHeaderName, fields)
+		return TracingMiddleware(requestIDHeaderName, fields, traceRequestHeaders)
 	}
 	return DebugLoggingMiddleware(requestIDHeaderName, fields)
 }

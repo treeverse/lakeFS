@@ -153,7 +153,7 @@ const CreateBranchButton = ({ repo, variant = "success", onCreate = null, childr
 
     return (
         <>
-            <Modal show={show} onHide={hide}>
+            <Modal show={show} onHide={hide} enforceFocus={false}>
                 <Modal.Header closeButton>
                     Create Branch
                 </Modal.Header>
@@ -236,6 +236,9 @@ const BranchList = ({ repo, prefix, after, onPaginate }) => {
                 </ActionGroup>
             </ActionsBar>
             {content}
+            <div className={"mt-2"}>
+                lakeFS uses a Git-like branching model. <a href="https://docs.lakefs.io/understand/branching-model.html" target="_blank" rel="noopener noreferrer">Learn more.</a>
+            </div>
         </div>
     );
 };

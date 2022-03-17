@@ -36,6 +36,9 @@ This will setup a `$HOME/.lakectl.yaml` file with the credentials and API endpoi
 When setting up a new installation and creating initial credentials (see [Quick start](../quickstart/index.md)), the UI
 will provide a link to download a preconfigured configuration file for you.
 
+`lakectl` configuration items can each be controlled by an environment variable. The variable name will have a prefix of
+*LAKECTL_*, followed by the name of the configuration, replacing every '.' with a '_'. Example: `LAKECTL_SERVER_ENDPOINT_URL` 
+controls `server.endpoint_url`.
 ### lakectl
 
 A cli tool to explore manage and work with lakeFS
@@ -51,16 +54,27 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
 {:.no_toc}
 
 ```
-      --base-uri string     base URI used for lakeFS address parse
-  -c, --config string       config file (default is $HOME/.lakectl.yaml)
-  -h, --help                help for lakectl
-      --log-format string   set logging output format
-      --log-level string    set logging level (default "none")
-      --log-output string   set logging output file
-      --no-color            don't use fancy output colors (default when not attached to an interactive terminal)
+      --base-uri string      base URI used for lakeFS address parse
+  -c, --config string        config file (default is $HOME/.lakectl.yaml)
+  -h, --help                 help for lakectl
+      --log-format string    set logging output format
+      --log-level string     set logging level (default "none")
+      --log-output strings   set logging output(s)
+      --no-color             don't use fancy output colors (default when not attached to an interactive terminal)
+      --verbose              run in verbose mode
 ```
 
+**note:** The `base-uri` option can be controlled with the `LAKECTL_BASE_URI` environment variable.
+{: .note .note-warning }
 
+#### Example usage
+{:.no_toc}
+
+```shell
+$ export LAKECTL_BASE_URI="lakefs://my-repo/my-branch"
+# Once set, use relative lakefs uri's:
+$ lakectl fs ls /path
+```
 
 ### lakectl abuse
 
@@ -323,6 +337,24 @@ lakectl actions validate <path>
 
 ```
   -h, --help   help for validate
+```
+
+
+
+### lakectl annotate
+
+List entries under a given path, annotating each with the latest modifying commit
+
+```
+lakectl annotate <path uri> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help        help for annotate
+  -r, --recursive   recursively annotate all entries under a given path or prefix
 ```
 
 
@@ -1227,8 +1259,23 @@ lakectl branch reset <branch uri> [flags]
 
 Given a commit, record a new commit to reverse the effect of this commit
 
+#### Synopsis
+{:.no_toc}
+
+The commits will be reverted in left-to-right order
+
 ```
-lakectl branch revert <branch uri> <commit ref to revert> [flags]
+lakectl branch revert <branch uri> <commit ref to revert> [<more commits>...] [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl branch revert lakefs://example-repo/example-branch commitA
+	          Revert the changes done by commitA in example-branch
+		      branch revert lakefs://example-repo/example-branch HEAD~1 HEAD~2 HEAD~3
+		      Revert the changes done by the second last commit to the fourth last commit in example-branch
 ```
 
 #### Options
@@ -1255,6 +1302,129 @@ lakectl branch show <branch uri> [flags]
 
 ```
   -h, --help   help for show
+```
+
+
+
+### lakectl branch-protect
+
+Create and manage branch protection rules
+
+#### Synopsis
+{:.no_toc}
+
+Define branch protection rules to prevent direct changes. Changes to protected branches can only be done by merging from other branches.
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for branch-protect
+```
+
+
+
+### lakectl branch-protect add
+
+Add a branch protection rule
+
+#### Synopsis
+{:.no_toc}
+
+Add a branch protection rule for a given branch name pattern
+
+```
+lakectl branch-protect add <repo uri> <pattern> [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl branch-protect add lakefs://<repository> 'stable_*'
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for add
+```
+
+
+
+### lakectl branch-protect delete
+
+Delete a branch protection rule
+
+#### Synopsis
+{:.no_toc}
+
+Delete a branch protection rule for a given branch name pattern
+
+```
+lakectl branch-protect delete <repo uri> <pattern> [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl branch-protect delete lakefs://<repository> stable_*
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for delete
+```
+
+
+
+### lakectl branch-protect help
+
+Help about any command
+
+#### Synopsis
+{:.no_toc}
+
+Help provides help for any command in the application.
+Simply type branch-protect help [path to command] for full details.
+
+```
+lakectl branch-protect help [command] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl branch-protect list
+
+List all branch protection rules
+
+```
+lakectl branch-protect list <repo uri> [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl branch-protect list lakefs://<repository>
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for list
 ```
 
 
@@ -1320,9 +1490,10 @@ lakectl commit <branch uri> [flags]
 {:.no_toc}
 
 ```
-  -h, --help             help for commit
-  -m, --message string   commit message
-      --meta strings     key value pair in the form of key=value
+      --allow-empty-message   allow an empty commit message
+  -h, --help                  help for commit
+  -m, --message string        commit message
+      --meta strings          key value pair in the form of key=value
 ```
 
 
@@ -1415,24 +1586,135 @@ lakectl config [flags]
 
 
 
-### lakectl diff
+### lakectl dbt
 
-diff between commits/hashes
+Integration with dbt commands
 
-#### Synopsis
+#### Options
 {:.no_toc}
 
-see the list of paths added/changed/removed in a branch or between two references (could be either commit hash or branch name)
+```
+  -h, --help   help for dbt
+```
+
+
+
+### lakectl dbt create-branch-schema
+
+Creates a new schema dedicated for branch and clones all dbt models to new schema
 
 ```
-lakectl diff <ref uri> [other ref uri] [flags]
+lakectl dbt create-branch-schema [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl dbt create-branch-schema --branch <branch-name>
 ```
 
 #### Options
 {:.no_toc}
 
 ```
-  -h, --help   help for diff
+      --branch string               requested branch
+      --continue-on-error           prevent command from failing when a single table fails
+      --continue-on-schema-exists   allow running on existing schema
+      --create-branch               create a new branch for the schema
+      --dbfs-location string        
+  -h, --help                        help for create-branch-schema
+      --project-root string         location of dbt project (default ".")
+      --skip-views                  
+      --to-schema string            destination schema name [default is branch]
+```
+
+
+
+### lakectl dbt generate-schema-macro
+
+generates the a macro allowing lakectl to run dbt on dynamic schemas
+
+```
+lakectl dbt generate-schema-macro [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl dbt generate-schema-macro
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help                  help for generate-schema-macro
+      --project-root string   location of dbt project (default ".")
+```
+
+
+
+### lakectl dbt help
+
+Help about any command
+
+#### Synopsis
+{:.no_toc}
+
+Help provides help for any command in the application.
+Simply type dbt help [path to command] for full details.
+
+```
+lakectl dbt help [command] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl diff
+
+Show changes between two commits, or the currently uncommitted changes
+
+```
+lakectl diff <ref uri> [ref uri] [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+
+	lakectl diff lakefs://example-repo/example-branch
+	Show uncommitted changes in example-branch.
+
+	lakectl diff lakefs://example-repo/main lakefs://example-repo/dev
+	This shows the differences between master and dev starting at the last common commit.
+	This is similar to the three-dot (...) syntax in git.
+	Uncommitted changes are not shown.
+
+	lakectl diff --two-way lakefs://example-repo/main lakefs://example-repo/dev
+	Show changes between the tips of the main and dev branches.
+	This is similar to the two-dot (..) syntax in git.
+	Uncommitted changes are not shown.
+
+	lakectl diff --two-way lakefs://example-repo/main lakefs://example-repo/dev$
+	Show changes between the tip of the main and the dev branch, including uncommitted changes on dev.
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help      help for diff
+      --two-way   Use two-way diff: show difference between the given refs, regardless of a common ancestor.
 ```
 
 
@@ -1453,6 +1735,23 @@ lakectl docs [outfile] [flags]
 
 ```
   -h, --help   help for docs
+```
+
+
+
+### lakectl doctor
+
+Run a basic diagnosis of the LakeFS configuration
+
+```
+lakectl doctor [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for doctor
 ```
 
 
@@ -1541,7 +1840,9 @@ lakectl fs rm <path uri> [flags]
 {:.no_toc}
 
 ```
-  -h, --help   help for rm
+  -C, --concurrency int   max concurrent single delete operations to send to the lakeFS server (default 50)
+  -h, --help              help for rm
+  -r, --recursive         recursively delete all objects under the specified path
 ```
 
 
@@ -1561,12 +1862,13 @@ lakectl fs stage <path uri> [flags]
 {:.no_toc}
 
 ```
-      --checksum string   Object MD5 checksum as a hexadecimal string
-  -h, --help              help for stage
-      --location string   fully qualified storage location (i.e. "s3://bucket/path/to/object")
-      --meta strings      key value pairs in the form of key=value
-      --mtime int         Object modified time (Unix Epoch in seconds). Defaults to current time
-      --size int          Object size in bytes
+      --checksum string       Object MD5 checksum as a hexadecimal string
+      --content-type string   MIME type of contents
+  -h, --help                  help for stage
+      --location string       fully qualified storage location (i.e. "s3://bucket/path/to/object")
+      --meta strings          key value pairs in the form of key=value
+      --mtime int             Object modified time (Unix Epoch in seconds). Defaults to current time
+      --size int              Object size in bytes
 ```
 
 
@@ -1600,10 +1902,11 @@ lakectl fs upload <path uri> [flags]
 {:.no_toc}
 
 ```
-  -d, --direct          write directly to backing store (faster but requires more credentials)
-  -h, --help            help for upload
-  -r, --recursive       recursively copy all files under local source
-  -s, --source string   local file to upload, or "-" for stdin
+      --content-type string   MIME type of contents
+  -d, --direct                write directly to backing store (faster but requires more credentials)
+  -h, --help                  help for upload
+  -r, --recursive             recursively copy all files under local source
+  -s, --source string         local file to upload, or "-" for stdin
 ```
 
 
@@ -1750,10 +2053,9 @@ lakectl ingest --from <object store URI> --to <lakeFS path URI> [--dry-run] [fla
 ```
   -C, --concurrency int   max concurrent API calls to make to the lakeFS server (default 64)
       --dry-run           only print the paths to be ingested
-      --from string       prefix to read from (e.g. "s3://bucket/sub/path/")
+      --from string       prefix to read from (e.g. "s3://bucket/sub/path/"). must not be in a storage namespace
   -h, --help              help for ingest
       --to string         lakeFS path to load objects into (e.g. "lakefs://repo/branch/sub/path/")
-  -v, --verbose           print stats for each individual object staged
 ```
 
 
@@ -1776,8 +2078,10 @@ lakectl log <branch uri> [flags]
 
 ```
       --after string         show results after this value (used for pagination)
-      --amount int           number of results to return. By default, all results are returned.
+      --amount int           number of results to return. By default, all results are returned
   -h, --help                 help for log
+      --objects strings      show results that contains changes to at least one path in that list of objects. Use comma separator to pass all objects together
+      --prefixes strings     show results that contains changes to at least one path in that list of prefixes. Use comma separator to pass all prefixes together
       --show-meta-range-id   also show meta range ID
 ```
 
@@ -1800,7 +2104,8 @@ lakectl merge <source ref> <destination ref> [flags]
 {:.no_toc}
 
 ```
-  -h, --help   help for merge
+  -h, --help              help for merge
+      --strategy string   In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch ("dest-wins") or from the source branch("source-wins"). In case no selection is made, the merge process will fail in case of a conflict
 ```
 
 
@@ -1825,7 +2130,7 @@ Copy or merge table
 #### Synopsis
 {:.no_toc}
 
-copy or merge table. the destination table will point to the selected branch
+Copy or merge table. the destination table will point to the selected branch
 
 ```
 lakectl metastore copy [flags]
@@ -1883,6 +2188,36 @@ lakectl metastore copy-all [flags]
 
 
 
+### lakectl metastore copy-schema
+
+Copy schema
+
+#### Synopsis
+{:.no_toc}
+
+Copy schema (without tables). the destination schema will point to the selected branch
+
+```
+lakectl metastore copy-schema [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+      --catalog-id string         Glue catalog ID
+      --dbfs-root dbfs:/          dbfs location root will replace dbfs:/ in the location before transforming
+      --from-client-type string   metastore type [hive, glue]
+      --from-schema string        source schema name
+  -h, --help                      help for copy-schema
+      --metastore-uri string      Hive metastore URI
+      --to-branch string          lakeFS branch name
+      --to-client-type string     metastore type [hive, glue]
+      --to-schema string          destination schema name [default is from-branch]
+```
+
+
+
 ### lakectl metastore create-symlink
 
 Create symlink table and data
@@ -1900,15 +2235,16 @@ lakectl metastore create-symlink [flags]
 {:.no_toc}
 
 ```
-      --branch string        lakeFS branch name
-      --catalog-id string    Glue catalog ID
-      --from-schema string   source schema name
-      --from-table string    source table name
-  -h, --help                 help for create-symlink
-      --path string          path to table on lakeFS
-      --repo string          lakeFS repository name
-      --to-schema string     destination schema name
-      --to-table string      destination table name
+      --branch string             lakeFS branch name
+      --catalog-id string         Glue catalog ID
+      --from-client-type string   metastore type [hive, glue]
+      --from-schema string        source schema name
+      --from-table string         source table name
+  -h, --help                      help for create-symlink
+      --path string               path to table on lakeFS
+      --repo string               lakeFS repository name
+      --to-schema string          destination schema name
+      --to-table string           destination table name
 ```
 
 
@@ -2042,7 +2378,7 @@ lakectl refs-restore <repository uri> [flags]
 {:.no_toc}
 
 ```
-aws s3 cp s3://bucket/_lakefs/refs_manifest.json - | lakectl refs-load lakefs://my-bare-repository --manifest -
+aws s3 cp s3://bucket/_lakefs/refs_manifest.json - | lakectl refs-restore lakefs://my-bare-repository --manifest -
 ```
 
 #### Options
@@ -2070,10 +2406,17 @@ Manage and explore repos
 
 ### lakectl repo create
 
-Create a new repository 
+Create a new repository
 
 ```
 lakectl repo create <repository uri> <storage namespace> [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl repo create lakefs://some-repo-name s3://some-bucket-name
 ```
 
 #### Options
@@ -2095,6 +2438,13 @@ Create a new repository with no initial branch or commit
 
 ```
 lakectl repo create-bare <repository uri> <storage namespace> [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl create-bare lakefs://some-repo-name s3://some-bucket-name
 ```
 
 #### Options
@@ -2209,7 +2559,14 @@ Create delete and list tags within a lakeFS repository
 Create a new tag in a repository
 
 ```
-lakectl tag create <tag uri> <commit ref> [flags]
+lakectl tag create <tag uri> <commit uri> [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl tag create lakefs://example-repo/example-tag lakefs://example-repo/2397cc9a9d04c20a4e5739b42c1dd3d8ba655c0b3a3b974850895a13d8bf9917
 ```
 
 #### Options

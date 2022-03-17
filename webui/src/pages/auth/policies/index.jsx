@@ -64,12 +64,14 @@ const PoliciesContainer = () => {
                         msg={`Are you sure you'd like to delete ${selected.length} policies?`}>
                         Delete Selected
                     </ConfirmationButton>
-
                 </ActionGroup>
                 <ActionGroup orientation="right">
                     <RefreshButton onClick={() => setRefresh(!refresh)}/>
                 </ActionGroup>
             </ActionsBar>
+            <div className="auth-learn-more">
+                A policy defines the permissions of a user or a group. <a href="https://docs.lakefs.io/reference/authorization.html#authorization" target="_blank" rel="noopener noreferrer">Learn more.</a>
+            </div>
 
             {(!!deleteError) && <Error error={deleteError}/>}
 

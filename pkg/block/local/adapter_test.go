@@ -2,15 +2,13 @@ package local_test
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/local"
@@ -21,7 +19,7 @@ const testStorageNamespace = "local://test"
 
 func makeAdapter(t *testing.T) *local.Adapter {
 	t.Helper()
-	dir, err := ioutil.TempDir("", "testing-local-adapter-*")
+	dir, err := os.MkdirTemp("", "testing-local-adapter-*")
 	testutil.MustDo(t, "TempDir", err)
 	testutil.MustDo(t, "NewAdapter", os.MkdirAll(dir, 0700))
 	a, err := local.NewAdapter(dir)
@@ -64,7 +62,7 @@ func TestLocalPutExistsGet(t *testing.T) {
 			}
 			reader, err := a.Get(ctx, makePointer(c.path), 0)
 			testutil.MustDo(t, "Get", err)
-			got, err := ioutil.ReadAll(reader)
+			got, err := io.ReadAll(reader)
 			testutil.MustDo(t, "ReadAll", err)
 			if string(got) != contents {
 				t.Errorf("expected to read \"%s\" as written, got \"%s\"", contents, string(got))
@@ -105,24 +103,22 @@ func TestLocalMultipartUpload(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			pointer := makePointer(c.path)
-			uploadID, err := a.CreateMultiPartUpload(ctx, pointer, nil, block.CreateMultiPartUploadOpts{})
+			resp, err := a.CreateMultiPartUpload(ctx, pointer, nil, block.CreateMultiPartUploadOpts{})
 			testutil.MustDo(t, "CreateMultiPartUpload", err)
-			parts := make([]*s3.CompletedPart, 0)
+			parts := make([]block.MultipartPart, len(c.partData))
 			for partNumber, content := range c.partData {
-				cs, err := a.UploadPart(ctx, pointer, 0, strings.NewReader(content), uploadID, int64(partNumber))
+				partResp, err := a.UploadPart(ctx, pointer, 0, strings.NewReader(content), resp.UploadID, partNumber)
 				testutil.MustDo(t, "UploadPart", err)
-				parts = append(parts, &s3.CompletedPart{
-					ETag:       aws.String(cs),
-					PartNumber: aws.Int64(int64(partNumber)),
-				})
+				parts[partNumber].PartNumber = partNumber + 1
+				parts[partNumber].ETag = partResp.ETag
 			}
-			_, _, err = a.CompleteMultiPartUpload(ctx, pointer, uploadID, &block.MultipartUploadCompletion{
+			_, err = a.CompleteMultiPartUpload(ctx, pointer, resp.UploadID, &block.MultipartUploadCompletion{
 				Part: parts,
 			})
 			testutil.MustDo(t, "CompleteMultiPartUpload", err)
 			reader, err := a.Get(ctx, pointer, 0)
 			testutil.MustDo(t, "Get", err)
-			got, err := ioutil.ReadAll(reader)
+			got, err := io.ReadAll(reader)
 			testutil.MustDo(t, "ReadAll", err)
 			expected := strings.Join(c.partData, "")
 			if string(got) != expected {
@@ -143,7 +139,7 @@ func TestLocalCopy(t *testing.T) {
 	testutil.MustDo(t, "Copy", a.Copy(ctx, makePointer("src"), makePointer("export/to/dst")))
 	reader, err := a.Get(ctx, makePointer("export/to/dst"), 0)
 	testutil.MustDo(t, "Get", err)
-	got, err := ioutil.ReadAll(reader)
+	got, err := io.ReadAll(reader)
 	testutil.MustDo(t, "ReadAll", err)
 	if string(got) != contents {
 		t.Errorf("expected to read \"%s\" as written, got \"%s\"", contents, string(got))

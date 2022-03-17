@@ -5,6 +5,7 @@ All URIs are relative to *http://localhost/api/v1*
 Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**delete_object**](ObjectsApi.md#delete_object) | **DELETE** /repositories/{repository}/branches/{branch}/objects | delete object
+[**delete_objects**](ObjectsApi.md#delete_objects) | **POST** /repositories/{repository}/branches/{branch}/objects/delete | delete objects
 [**get_object**](ObjectsApi.md#get_object) | **GET** /repositories/{repository}/refs/{ref}/objects | get object content
 [**get_underlying_properties**](ObjectsApi.md#get_underlying_properties) | **GET** /repositories/{repository}/refs/{ref}/objects/underlyingProperties | get object properties on underlying storage
 [**list_objects**](ObjectsApi.md#list_objects) | **GET** /repositories/{repository}/refs/{ref}/objects/ls | list objects under a given prefix
@@ -64,7 +65,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     api_instance = objects_api.ObjectsApi(api_client)
     repository = "repository_example" # str | 
     branch = "branch_example" # str | 
-    path = "path_example" # str | 
+    path = "path_example" # str | relative to the branch
 
     # example passing only required values which don't have defaults set
     try:
@@ -81,7 +82,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
  **branch** | **str**|  |
- **path** | **str**|  |
+ **path** | **str**| relative to the branch |
 
 ### Return type
 
@@ -102,6 +103,109 @@ void (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | object deleted successfully |  -  |
+**401** | Unauthorized |  -  |
+**404** | Resource Not Found |  -  |
+**0** | Internal Server Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **delete_objects**
+> ObjectErrorList delete_objects(repository, branch, path_list)
+
+delete objects
+
+### Example
+
+* Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
+* Bearer (JWT) Authentication (jwt_token):
+
+```python
+import time
+import lakefs_client
+from lakefs_client.api import objects_api
+from lakefs_client.model.object_error_list import ObjectErrorList
+from lakefs_client.model.error import Error
+from lakefs_client.model.path_list import PathList
+from pprint import pprint
+# Defining the host is optional and defaults to http://localhost/api/v1
+# See configuration.py for a list of all supported configuration parameters.
+configuration = lakefs_client.Configuration(
+    host = "http://localhost/api/v1"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure HTTP basic authorization: basic_auth
+configuration = lakefs_client.Configuration(
+    username = 'YOUR_USERNAME',
+    password = 'YOUR_PASSWORD'
+)
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
+
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_client.Configuration(
+    access_token = 'YOUR_BEARER_TOKEN'
+)
+
+# Enter a context with an instance of the API client
+with lakefs_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = objects_api.ObjectsApi(api_client)
+    repository = "repository_example" # str | 
+    branch = "branch_example" # str | 
+    path_list = PathList(
+        paths=[
+            "paths_example",
+        ],
+    ) # PathList | 
+
+    # example passing only required values which don't have defaults set
+    try:
+        # delete objects
+        api_response = api_instance.delete_objects(repository, branch, path_list)
+        pprint(api_response)
+    except lakefs_client.ApiException as e:
+        print("Exception when calling ObjectsApi->delete_objects: %s\n" % e)
+```
+
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **repository** | **str**|  |
+ **branch** | **str**|  |
+ **path_list** | [**PathList**](PathList.md)|  |
+
+### Return type
+
+[**ObjectErrorList**](ObjectErrorList.md)
+
+### Authorization
+
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Delete objects response |  -  |
+**204** | all requested objects successfully deleted |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **0** | Internal Server Error |  -  |
@@ -159,7 +263,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     api_instance = objects_api.ObjectsApi(api_client)
     repository = "repository_example" # str | 
     ref = "ref_example" # str | a reference (could be either a branch or a commit ID)
-    path = "path_example" # str | 
+    path = "path_example" # str | relative to the ref
 
     # example passing only required values which don't have defaults set
     try:
@@ -177,7 +281,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
  **ref** | **str**| a reference (could be either a branch or a commit ID) |
- **path** | **str**|  |
+ **path** | **str**| relative to the ref |
 
 ### Return type
 
@@ -257,7 +361,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     api_instance = objects_api.ObjectsApi(api_client)
     repository = "repository_example" # str | 
     ref = "ref_example" # str | a reference (could be either a branch or a commit ID)
-    path = "path_example" # str | 
+    path = "path_example" # str | relative to the branch
 
     # example passing only required values which don't have defaults set
     try:
@@ -275,7 +379,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
  **ref** | **str**| a reference (could be either a branch or a commit ID) |
- **path** | **str**|  |
+ **path** | **str**| relative to the branch |
 
 ### Return type
 
@@ -469,7 +573,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     api_instance = objects_api.ObjectsApi(api_client)
     repository = "repository_example" # str | 
     branch = "branch_example" # str | 
-    path = "path_example" # str | 
+    path = "path_example" # str | relative to the branch
     object_stage_creation = ObjectStageCreation(
         physical_address="physical_address_example",
         checksum="checksum_example",
@@ -478,6 +582,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
         metadata=ObjectUserMetadata(
             key="key_example",
         ),
+        content_type="content_type_example",
     ) # ObjectStageCreation | 
 
     # example passing only required values which don't have defaults set
@@ -496,7 +601,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
  **branch** | **str**|  |
- **path** | **str**|  |
+ **path** | **str**| relative to the branch |
  **object_stage_creation** | [**ObjectStageCreation**](ObjectStageCreation.md)|  |
 
 ### Return type
@@ -577,7 +682,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     api_instance = objects_api.ObjectsApi(api_client)
     repository = "repository_example" # str | 
     ref = "ref_example" # str | a reference (could be either a branch or a commit ID)
-    path = "path_example" # str | 
+    path = "path_example" # str | relative to the branch
     user_metadata = True # bool |  (optional) if omitted the server will use the default value of True
 
     # example passing only required values which don't have defaults set
@@ -605,7 +710,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
  **ref** | **str**| a reference (could be either a branch or a commit ID) |
- **path** | **str**|  |
+ **path** | **str**| relative to the branch |
  **user_metadata** | **bool**|  | [optional] if omitted the server will use the default value of True
 
 ### Return type
@@ -686,10 +791,10 @@ with lakefs_client.ApiClient(configuration) as api_client:
     api_instance = objects_api.ObjectsApi(api_client)
     repository = "repository_example" # str | 
     branch = "branch_example" # str | 
-    path = "path_example" # str | 
+    path = "path_example" # str | relative to the branch
     storage_class = "storageClass_example" # str |  (optional)
     if_none_match = "*" # str | Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet (optional)
-    content = open('/path/to/file', 'rb') # file_type | Object content to upload (optional)
+    content = open('/path/to/file', 'rb') # file_type | Only a single file per upload which must be named \\\"content\\\". (optional)
 
     # example passing only required values which don't have defaults set
     try:
@@ -714,10 +819,10 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
  **branch** | **str**|  |
- **path** | **str**|  |
+ **path** | **str**| relative to the branch |
  **storage_class** | **str**|  | [optional]
  **if_none_match** | **str**| Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet | [optional]
- **content** | **file_type**| Object content to upload | [optional]
+ **content** | **file_type**| Only a single file per upload which must be named \\\&quot;content\\\&quot;. | [optional]
 
 ### Return type
 

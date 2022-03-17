@@ -22,7 +22,7 @@ const (
 )
 
 var (
-	V2AuthHeaderRegexp = regexp.MustCompile(`AWS (?P<AccessKeyId>[A-Z0-9]{20}):(?P<Signature>[A-Za-z0-9+/=]+)`)
+	V2AuthHeaderRegexp = regexp.MustCompile(`AWS (?P<AccessKeyId>.{3,20}):(?P<Signature>[A-Za-z0-9+/=]+)`)
 	// Both "interesting" arrays are sorted. so once we extract relevant items by looping on them = the result is sorted
 	interestingHeaders   = [...]string{"content-md5", "content-type", "date"}
 	interestingResources []string // initialized and sorted by the init function
@@ -238,17 +238,11 @@ func (a *V2SigAuthenticator) Verify(creds *model.Credential, bareDomain string) 
 			- QSA(Query String Arguments) - query arguments are searched for "interesting Resources".
 	*/
 
-	/*
-		URI encoding requirements for aws signature are different from what GO does.
-		This logic is taken from https://docs.aws.amazon.com/AWSECommerceService/latest/DG/Query_QueryAuth.html
-		These replacements are necessary for Java. There is no description about GO, but I found the '=' needs treatment as well
-	*/
+	// Prefer the raw path if it exists -- *this* is what SigV2 signs
+	url := a.r.URL
+	rawPath := url.EscapedPath()
 
-	patchedPath := strings.ReplaceAll(a.r.URL.Path, "=", "%3D")
-	patchedPath = strings.ReplaceAll(patchedPath, "+", "%20")
-	patchedPath = strings.ReplaceAll(patchedPath, "*", "%2A")
-	patchedPath = strings.ReplaceAll(patchedPath, "%7E", "~")
-	path := buildPath(a.r.Host, bareDomain, patchedPath)
+	path := buildPath(a.r.Host, bareDomain, rawPath)
 	stringToSign := canonicalString(a.r.Method, a.r.URL.Query(), path, a.r.Header)
 	digest := signCanonicalString(stringToSign, []byte(creds.SecretAccessKey))
 	if !Equal(digest, a.ctx.signature) {

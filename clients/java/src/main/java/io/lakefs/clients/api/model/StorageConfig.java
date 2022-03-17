@@ -41,6 +41,10 @@ public class StorageConfig {
   @SerializedName(SERIALIZED_NAME_BLOCKSTORE_NAMESPACE_VALIDITY_REGEX)
   private String blockstoreNamespaceValidityRegex;
 
+  public static final String SERIALIZED_NAME_DEFAULT_NAMESPACE_PREFIX = "default_namespace_prefix";
+  @SerializedName(SERIALIZED_NAME_DEFAULT_NAMESPACE_PREFIX)
+  private String defaultNamespacePrefix;
+
 
   public StorageConfig blockstoreType(String blockstoreType) {
     
@@ -52,6 +56,7 @@ public class StorageConfig {
    * Get blockstoreType
    * @return blockstoreType
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getBlockstoreType() {
@@ -74,6 +79,7 @@ public class StorageConfig {
    * Get blockstoreNamespaceExample
    * @return blockstoreNamespaceExample
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getBlockstoreNamespaceExample() {
@@ -96,6 +102,7 @@ public class StorageConfig {
    * Get blockstoreNamespaceValidityRegex
    * @return blockstoreNamespaceValidityRegex
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getBlockstoreNamespaceValidityRegex() {
@@ -105,6 +112,29 @@ public class StorageConfig {
 
   public void setBlockstoreNamespaceValidityRegex(String blockstoreNamespaceValidityRegex) {
     this.blockstoreNamespaceValidityRegex = blockstoreNamespaceValidityRegex;
+  }
+
+
+  public StorageConfig defaultNamespacePrefix(String defaultNamespacePrefix) {
+    
+    this.defaultNamespacePrefix = defaultNamespacePrefix;
+    return this;
+  }
+
+   /**
+   * Get defaultNamespacePrefix
+   * @return defaultNamespacePrefix
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+
+  public String getDefaultNamespacePrefix() {
+    return defaultNamespacePrefix;
+  }
+
+
+  public void setDefaultNamespacePrefix(String defaultNamespacePrefix) {
+    this.defaultNamespacePrefix = defaultNamespacePrefix;
   }
 
 
@@ -119,12 +149,13 @@ public class StorageConfig {
     StorageConfig storageConfig = (StorageConfig) o;
     return Objects.equals(this.blockstoreType, storageConfig.blockstoreType) &&
         Objects.equals(this.blockstoreNamespaceExample, storageConfig.blockstoreNamespaceExample) &&
-        Objects.equals(this.blockstoreNamespaceValidityRegex, storageConfig.blockstoreNamespaceValidityRegex);
+        Objects.equals(this.blockstoreNamespaceValidityRegex, storageConfig.blockstoreNamespaceValidityRegex) &&
+        Objects.equals(this.defaultNamespacePrefix, storageConfig.defaultNamespacePrefix);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(blockstoreType, blockstoreNamespaceExample, blockstoreNamespaceValidityRegex);
+    return Objects.hash(blockstoreType, blockstoreNamespaceExample, blockstoreNamespaceValidityRegex, defaultNamespacePrefix);
   }
 
   @Override
@@ -134,6 +165,7 @@ public class StorageConfig {
     sb.append("    blockstoreType: ").append(toIndentedString(blockstoreType)).append("\n");
     sb.append("    blockstoreNamespaceExample: ").append(toIndentedString(blockstoreNamespaceExample)).append("\n");
     sb.append("    blockstoreNamespaceValidityRegex: ").append(toIndentedString(blockstoreNamespaceValidityRegex)).append("\n");
+    sb.append("    defaultNamespacePrefix: ").append(toIndentedString(defaultNamespacePrefix)).append("\n");
     sb.append("}");
     return sb.toString();
   }

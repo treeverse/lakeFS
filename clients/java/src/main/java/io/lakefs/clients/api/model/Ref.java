@@ -48,6 +48,7 @@ public class Ref {
    * Get id
    * @return id
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getId() {
@@ -70,6 +71,7 @@ public class Ref {
    * Get commitId
    * @return commitId
   **/
+  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
   public String getCommitId() {

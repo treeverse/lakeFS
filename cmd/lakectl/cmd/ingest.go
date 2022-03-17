@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -27,7 +28,7 @@ func stageWorker(ctx context.Context, client api.ClientWithResponsesInterface, w
 	for req := range requests {
 		resp, err := client.StageObjectWithResponse(
 			ctx, req.repository, req.branch, req.params, req.body)
-		DieOnResponseError(resp, err)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		responses <- resp
 	}
 }
@@ -126,7 +127,7 @@ var ingestCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	ingestCmd.Flags().String("from", "", "prefix to read from (e.g. \"s3://bucket/sub/path/\")")
+	ingestCmd.Flags().String("from", "", "prefix to read from (e.g. \"s3://bucket/sub/path/\"). must not be in a storage namespace")
 	_ = ingestCmd.MarkFlagRequired("from")
 	ingestCmd.Flags().String("to", "", "lakeFS path to load objects into (e.g. \"lakefs://repo/branch/sub/path/\")")
 	_ = ingestCmd.MarkFlagRequired("to")

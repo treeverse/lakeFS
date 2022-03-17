@@ -17,6 +17,7 @@ import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.CredentialsWithSecret;
 import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.Setup;
+import io.lakefs.clients.api.model.SetupState;
 import io.lakefs.clients.api.model.StorageConfig;
 import io.lakefs.clients.api.model.VersionConfig;
 import org.junit.Test;
@@ -46,8 +47,21 @@ public class ConfigApiTest {
      */
     @Test
     public void getLakeFSVersionTest() throws ApiException {
-        VersionConfig response = api.getLakeFSVersion();
-
+                VersionConfig response = api.getLakeFSVersion();
+        // TODO: test validations
+    }
+    
+    /**
+     * check if the lakeFS installation is already set up
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void getSetupStateTest() throws ApiException {
+                SetupState response = api.getSetupState();
         // TODO: test validations
     }
     
@@ -61,8 +75,7 @@ public class ConfigApiTest {
      */
     @Test
     public void getStorageConfigTest() throws ApiException {
-        StorageConfig response = api.getStorageConfig();
-
+                StorageConfig response = api.getStorageConfig();
         // TODO: test validations
     }
     
@@ -77,8 +90,7 @@ public class ConfigApiTest {
     @Test
     public void setupTest() throws ApiException {
         Setup setup = null;
-        CredentialsWithSecret response = api.setup(setup);
-
+                CredentialsWithSecret response = api.setup(setup);
         // TODO: test validations
     }
     
