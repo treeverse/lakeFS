@@ -203,11 +203,6 @@ func normalizeShortCommitID(output string) string {
 	return shortCommitIDRegExp.ReplaceAllString(output, "<COMMIT_ID_16>")
 }
 
-func normalizeShortCommitID(output string) string {
-	s := shortCommitIDRegExp.ReplaceAll([]byte(output), []byte("<COMMIT_ID_16>"))
-	return string(s)
-}
-
 func normalizeChecksum(output string) string {
 	return checksumRegExp.ReplaceAllString(output, "<CHECKSUM>")
 }
