@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -136,7 +135,7 @@ func (d *dbTx) handleSQLError(err error, cmdType string, query string) error {
 	if isUniqueViolation(err) {
 		return ErrAlreadyExists
 	}
-	if pgxscan.NotFound(err) || errors.Is(err, pgx.ErrNoRows) {
+	if pgxscan.NotFound(err) {
 		d.logger.Trace("SQL query returned no results")
 		return ErrNotFound
 	}
