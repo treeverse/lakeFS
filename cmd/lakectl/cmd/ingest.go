@@ -64,8 +64,8 @@ var ingestCmd = &cobra.Command{
 		if lakefsURI.Path != nil {
 			path = *lakefsURI.Path
 		}
-		if !strings.HasSuffix(path, "/") {
-			path = path + "/" // append a slash if not passed by the user
+		if !strings.HasSuffix(path, PathDelimiter) {
+			path = path + PathDelimiter // append a path delimiter (slash) if not passed by the user
 		}
 		go func() {
 			err := store.Walk(ctx, from, func(e store.ObjectStoreEntry) error {
