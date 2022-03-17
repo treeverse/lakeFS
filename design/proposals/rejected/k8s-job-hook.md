@@ -174,3 +174,8 @@ roleRef:
 
 *Job lifetime* - Once a job is created and executed in the cluster, the lakeFS server will not take ownership of the object. A mechanism should be in place to clean up all jobs lakeFS applied and completed (successfully or not).
 [Automatic Clean-up for Finished Jobs](https://kubernetes.io/docs/concepts/workloads/controllers/ttlafterfinished/) capability is currently found on Kubernetes 1.23 (which we don’t have yet on AWS for example) which can help with that.
+
+
+### Decision
+
+No changes to lakeFS itself required to enable the above, and we will keep it external. Stash the proposal under rejected.
