@@ -51,8 +51,8 @@ func (d *DatabaseMigrator) Migrate(ctx context.Context) error {
 	return nil
 }
 
-func getStatikSrc() (source.Driver, error) {
-	// fs.FS as migrate source
+// newDriverSourceForDDLContent migration driver source with our DDL content
+func newDriverSourceForDDLContent() (source.Driver, error) {
 	return httpfs.New(http.FS(ddl.Content), "/")
 }
 
@@ -72,7 +72,7 @@ func ValidateSchemaUpToDate(ctx context.Context, dbPool Database, params params.
 }
 
 func GetLastMigrationAvailable() (uint, error) {
-	src, err := getStatikSrc()
+	src, err := newDriverSourceForDDLContent()
 	if err != nil {
 		return 0, err
 	}
@@ -96,7 +96,7 @@ func GetLastMigrationAvailable() (uint, error) {
 }
 
 func getMigrate(params params.Database) (*migrate.Migrate, error) {
-	src, err := getStatikSrc()
+	src, err := newDriverSourceForDDLContent()
 	if err != nil {
 		return nil, err
 	}
