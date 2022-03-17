@@ -13,7 +13,7 @@ nav_order: 50
 
 lakeFS requires a PostgreSQL database to synchronize actions on your repositories.
 This section assumes you already have a PostgreSQL database accessible from where you intend to install lakeFS.
-Instructions for creating the database can be found on the deployment instructions for [AWS](./aws.md#creating-the-database-on-aws-rds), [Azure](./azure.md#creating-the-database-on-azure-database) and [GCP](./gcp.md#creating-the-database-on-gcp-sql).
+Instructions for creating the database can be found on the deployment instructions for [AWS](./aws.md#creating-the-database-on-aws-rds){: .button-clickable}, [Azure](./azure.md#creating-the-database-on-azure-database){: .button-clickable} and [GCP](./gcp.md#creating-the-database-on-gcp-sql){: .button-clickable}.
 
 {% include toc.html %}
 
@@ -21,12 +21,12 @@ Instructions for creating the database can be found on the deployment instructio
 
 ## Installing on Docker
 To deploy using Docker, create a yaml configuration file.
-Here is a minimal example, but you can see the [reference](../reference/configuration.md#example-aws-deployment) for the full list of configurations.
+Here is a minimal example, but you can see the [reference](../reference/configuration.md#example-aws-deployment){: .button-clickable} for the full list of configurations.
 <div class="tabs">
 <ul>
-  <li><a href="#docker-tabs-1">AWS</a></li>
-  <li><a href="#docker-tabs-2">Google Cloud</a></li>
-  <li><a href="#docker-tabs-3">Microsoft Azure</a></li>
+  <li><a class="button-clickable" href="#docker-tabs-1">AWS</a></li>
+  <li><a class="button-clickable" href="#docker-tabs-2">Google Cloud</a></li>
+  <li><a class="button-clickable" href="#docker-tabs-3">Microsoft Azure</a></li>
 </ul>
 <div markdown="1" id="docker-tabs-1">
 {% include_relative includes/aws-docker-config.md %}
@@ -54,4 +54,4 @@ You should have a load balancer direct requests to the lakeFS server.
 By default, lakeFS operates on port 8000, and exposes a `/_health` endpoint which you can use for health checks.
 
 ## Next Steps
-Your next step is to [prepare your storage](../setup/storage/index.md). If you already have a storage bucket/container, you are ready to [create your first lakeFS repository](../setup/create-repo.md).
+Your next step is to [prepare your storage](../setup/storage/index.md){: .button-clickable}. If you already have a storage bucket/container, you are ready to [create your first lakeFS repository](../setup/create-repo.md){: .button-clickable}.

@@ -18,9 +18,9 @@ Expected deployment time: 25min
 lakeFS requires a PostgreSQL database to synchronize actions on your repositories.
 We will show you how to create a database on Azure Database, but you can use any PostgreSQL database as long as it's accessible by your lakeFS installation.
 
-If you already have a database, take note of the connection string and skip to the [next step](#install-lakefs-on-azure-vm)
+If you already have a database, take note of the connection string and skip to the [next step](#install-lakefs-on-azure-vm){: .button-clickable}
 
-1. Follow the official [Azure documentation](https://docs.microsoft.com/en-us/azure/postgresql/quickstart-create-server-database-portal){: target="_blank" } on how to create a PostgreSQL instance and connect to it.
+1. Follow the official [Azure documentation](https://docs.microsoft.com/en-us/azure/postgresql/quickstart-create-server-database-portal){: target="_blank" .button-clickable} on how to create a PostgreSQL instance and connect to it.
    Make sure you're using PostgreSQL version >= 11.
 1. Once your Azure Database for PostgreSQL server is set up and the server is in `Available` state, take note of the endpoint and username.
    ![Azure postgres Connection String]({{ site.baseurl }}/assets/img/azure_postgres_conn.png)
@@ -48,7 +48,7 @@ If you already have a database, take note of the connection string and skip to t
          # storage_access_key: [your access key]
    ```
    
-1. [Download the binary](../index.md#downloads) to the Azure Virtual Machine.
+1. [Download the binary](../index.md#downloads){: .button-clickable} to the Azure Virtual Machine.
 1. Run the `lakefs` binary on the machine:
    ```bash
    lakefs --config config.yaml run
@@ -72,14 +72,14 @@ docker run \
   treeverse/lakefs:latest run
 ```
 
-See the [reference](../reference/configuration.md#using-environment-variables) for a complete list of environment variables.
+See the [reference](../reference/configuration.md#using-environment-variables){: .button-clickable} for a complete list of environment variables.
 
 ### On AKS
-See [Kubernetes Deployment](./k8s.md).
+See [Kubernetes Deployment](./k8s.md){: .button-clickable}.
 
 ## Load balancing
 Depending on how you chose to install lakeFS, you should have a load balancer direct requests to the lakeFS server.  
 By default, lakeFS operates on port 8000, and exposes a `/_health` endpoint which you can use for health checks.
 
 ## Next Steps
-Your next step is to [prepare your storage](../setup/storage/index.md). If you already have a storage bucket/container, you are ready to [create your first lakeFS repository](../setup/create-repo.md).
+Your next step is to [prepare your storage](../setup/storage/index.md){: .button-clickable}. If you already have a storage bucket/container, you are ready to [create your first lakeFS repository](../setup/create-repo.md){: .button-clickable}.

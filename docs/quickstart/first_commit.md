@@ -22,7 +22,7 @@ Here's how to get started with the CLI:
 
   1. Download the CLI binary:
 
-     The CLI binary can be downloaded from the official [lakeFS releases](https://github.com/treeverse/lakeFS/releases) published on GitHub under "Assets". Unless you need a specific previous version of the CLI, it is recommended to download the most recently released version.
+     The CLI binary can be downloaded from the official [lakeFS releases](https://github.com/treeverse/lakeFS/releases){: .button-clickable} published on GitHub under "Assets". Unless you need a specific previous version of the CLI, it is recommended to download the most recently released version.
 
       ![Release Assets]({{ site.baseurl }}/assets/img/lakefs-release-asset.png)
 
@@ -87,5 +87,5 @@ Congratulations! You have completed your first commit in lakeFS.
 
 ### Next steps
 
-* Learn how to [deploy lakeFS lakeFS on your cloud](../deploy/index.md).
-* [Join us on Slack](https://lakefs.io/slack){:target="_blank"} to introduce yourself, discover best practices and share your own!
+* Learn how to [deploy lakeFS lakeFS on your cloud](../deploy/index.md){: class="button-clickable"}.
+* [Join us on Slack](https://lakefs.io/slack){:target="_blank" class="button-clickable"} to introduce yourself, discover best practices and share your own!

@@ -17,7 +17,7 @@ It can be considered the lakeFS analog of a bucket in an object store. Since it 
 
 When you first open the lakeFS UI, you will be asked to create an initial admin user.
 
-1. Open [http://127.0.0.1:8000/](http://127.0.0.1:8000/){:target="_blank"} in your web browser.
+1. Open [http://127.0.0.1:8000/](http://127.0.0.1:8000/){:target="_blank" .button-clickable} in your web browser.
 
    ![Setup]({{ site.baseurl }}/assets/img/setup.png)
 
@@ -49,4 +49,4 @@ When you first open the lakeFS UI, you will be asked to create an initial admin 
 
 ### Next steps
 
-You just created your first lakeFS repository! You can now [add some data](add_data.md) to it.
+You just created your first lakeFS repository! You can now [add some data](add_data.md){: .button-clickable} to it.

@@ -23,10 +23,10 @@ Expected deployment time: 25min
 lakeFS requires a PostgreSQL database to synchronize actions on your repositories.
 We will show you how to create a database on AWS RDS, but you can use any PostgreSQL database as long as it's accessible by your lakeFS installation.
 
-If you already have a database, take note of the connection string and skip to the [next step](#install-lakefs-on-ec2)
+If you already have a database, take note of the connection string and skip to the [next step](#install-lakefs-on-ec2){: .button-clickable}
 
-1. Follow the official [AWS documentation](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_GettingStarted.CreatingConnecting.PostgreSQL.html){: target="_blank" } on how to create a PostgreSQL instance and connect to it.
-   You may use the default PostgreSQL engine, or [Aurora PostgreSQL](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Aurora.AuroraPostgreSQL.html){: target="_blank" }. Make sure you're using PostgreSQL version >= 11.
+1. Follow the official [AWS documentation](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_GettingStarted.CreatingConnecting.PostgreSQL.html){: target="_blank" .button-clickable} on how to create a PostgreSQL instance and connect to it.
+   You may use the default PostgreSQL engine, or [Aurora PostgreSQL](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Aurora.AuroraPostgreSQL.html){: target="_blank" .button-clickable}. Make sure you're using PostgreSQL version >= 11.
 2. Once your RDS is set up and the server is in `Available` state, take note of the endpoint and port.
 
    ![RDS Connection String]({{ site.baseurl }}/assets/img/rds_conn.png)
@@ -52,7 +52,7 @@ If you already have a database, take note of the connection string and skip to t
        region: us-east-1 # optional, fallback in case discover from bucket is not supported
    ```
 
-1. [Download the binary](../index.md#downloads) to the EC2 instance.
+1. [Download the binary](../index.md#downloads){: .button-clickable} to the EC2 instance.
 1. Run the `lakefs` binary on the EC2 instance:
    ```bash
    lakefs --config config.yaml run
@@ -73,10 +73,10 @@ docker run \
   treeverse/lakefs:latest run
 ```
 
-See the [reference](../reference/configuration.md#using-environment-variables) for a complete list of environment variables.
+See the [reference](../reference/configuration.md#using-environment-variables){: .button-clickable} for a complete list of environment variables.
 
 ### On EKS
-See [Kubernetes Deployment](./k8s.md).
+See [Kubernetes Deployment](./k8s.md){: .button-clickable}.
 
 ## Load balancing
 Depending on how you chose to install lakeFS, you should have a load balancer direct requests to the lakeFS server.  
@@ -87,8 +87,8 @@ By default, lakeFS operates on port 8000, and exposes a `/_health` endpoint whic
 
 1. Your security groups should allow the load balancer to access the lakeFS server.
 1. Create a target group with a listener for port 8000.
-1. Setup TLS termination using the domain names you wish to use (e.g. `lakefs.example.com` and potentially `s3.lakefs.example.com`, `*.s3.lakefs.example.com` if using [virtual-host addressing](https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html)).
+1. Setup TLS termination using the domain names you wish to use (e.g. `lakefs.example.com` and potentially `s3.lakefs.example.com`, `*.s3.lakefs.example.com` if using [virtual-host addressing](https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html){: .button-clickable}).
 1. Configure the health-check to use the exposed `/_health` URL
 
 ## Next Steps
-Your next step is to [prepare your storage](../setup/storage/index.md). If you already have a storage bucket/container, you are ready to [create your first lakeFS repository](../setup/create-repo.md).
+Your next step is to [prepare your storage](../setup/storage/index.md){: .button-clickable}. If you already have a storage bucket/container, you are ready to [create your first lakeFS repository](../setup/create-repo.md){: .button-clickable}.

@@ -15,7 +15,7 @@ nav_order: 40
 
 lakeFS requires a PostgreSQL database to synchronize actions on your repositories.
 This section assumes you already have a PostgreSQL database accessible from your Kubernetes cluster.
-Instructions for creating the database can be found on the deployment instructions for [AWS](./aws.md#creating-the-database-on-aws-rds), [Azure](./azure.md#creating-the-database-on-azure-database) and [GCP](./gcp.md#creating-the-database-on-gcp-sql).
+Instructions for creating the database can be found on the deployment instructions for [AWS](./aws.md#creating-the-database-on-aws-rds){: .button-clickable}, [Azure](./azure.md#creating-the-database-on-azure-database){: .button-clickable} and [GCP](./gcp.md#creating-the-database-on-gcp-sql){: .button-clickable}.
 
 {% include toc.html %}
 
@@ -23,15 +23,15 @@ Instructions for creating the database can be found on the deployment instructio
 
 ## Installing on Kubernetes
 
-lakeFS can be easily installed on Kubernetes using a [Helm chart](https://github.com/treeverse/charts/tree/master/charts/lakefs).
+lakeFS can be easily installed on Kubernetes using a [Helm chart](https://github.com/treeverse/charts/tree/master/charts/lakefs){: .button-clickable}.
 To install lakeFS with Helm:
 1. Copy the Helm values file relevant to your storage provider:
 
 <div class="tabs">
    <ul>
-     <li><a href="#helm-tabs-1">S3</a></li>
-     <li><a href="#helm-tabs-2">GCS</a></li>
-     <li><a href="#helm-tabs-3">Azure Blob</a></li>
+     <li><a class="button-clickable" href="#helm-tabs-1">S3</a></li>
+     <li><a class="button-clickable" href="#helm-tabs-2">GCS</a></li>
+     <li><a class="button-clickable" href="#helm-tabs-3">Azure Blob</a></li>
    </ul>
    <div markdown="1" id="helm-tabs-1">
 ```yaml
@@ -88,9 +88,9 @@ lakefsConfig: |
    </div>
 </div>
 
-1. Fill in the missing values and save the file as `conf-values.yaml`. For more configuration options, see our Helm chart [README](https://github.com/treeverse/charts/blob/master/charts/lakefs/README.md#custom-configuration){:target="_blank"}.
+1. Fill in the missing values and save the file as `conf-values.yaml`. For more configuration options, see our Helm chart [README](https://github.com/treeverse/charts/blob/master/charts/lakefs/README.md#custom-configuration){:target="_blank" .button-clickable}.
 
-   The `lakefsConfig` parameter is the lakeFS configuration documented [here](https://docs.lakefs.io/reference/configuration.html), but without sensitive information.
+   The `lakefsConfig` parameter is the lakeFS configuration documented [here](https://docs.lakefs.io/reference/configuration.html){: .button-clickable}, but without sensitive information.
    Sensitive information like `databaseConnectionString` is given through separate parameters, and the chart will inject them into Kubernetes secrets.
 
 1. In the directory where you created `conf-values.yaml`, run the following commands:
@@ -102,7 +102,7 @@ lakefsConfig: |
     helm install example-lakefs lakefs/lakefs -f conf-values.yaml
     ```
 
-   *example-lakefs* is the [Helm Release](https://helm.sh/docs/intro/using_helm/#three-big-concepts) name.
+   *example-lakefs* is the [Helm Release](https://helm.sh/docs/intro/using_helm/#three-big-concepts){: .button-clickable} name.
 
 You should give your Kubernetes nodes access to all buckets/containers you intend to use lakeFS with.
 If you can't provide such access, lakeFS can be configured to use an AWS key-pair, an Azure access key, or a Google Cloud credentials file to authenticate (part of the `lakefsConfig` YAML below).
@@ -115,4 +115,4 @@ By default, lakeFS operates on port 8000, and exposes a `/_health` endpoint whic
 
 
 ## Next Steps
-Your next step is to [prepare your storage](../setup/storage/index.md). If you already have a storage bucket/container, you are ready to [create your first lakeFS repository](../setup/create-repo.md).
+Your next step is to [prepare your storage](../setup/storage/index.md){: .button-clickable}. If you already have a storage bucket/container, you are ready to [create your first lakeFS repository](../setup/create-repo.md){: .button-clickable}.

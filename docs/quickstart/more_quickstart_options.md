@@ -16,9 +16,9 @@ has_children: false
 
 ## Docker on Windows
 
-To run a local lakeFS instance using [Docker Compose](https://docs.docker.com/compose/){:target="_blank"}:
+To run a local lakeFS instance using [Docker Compose](https://docs.docker.com/compose/){:target="_blank" .button-clickable}:
 
-1. Ensure you have Docker installed on your computer, and that compose version is 1.25.04 or higher. For more information, please see this [issue](https://github.com/treeverse/lakeFS/issues/894).
+1. Ensure you have Docker installed on your computer, and that compose version is 1.25.04 or higher. For more information, please see this [issue](https://github.com/treeverse/lakeFS/issues/894){: .button-clickable}.
 
 1. Run the following command in your terminal:
 
@@ -26,9 +26,9 @@ To run a local lakeFS instance using [Docker Compose](https://docs.docker.com/co
    Invoke-WebRequest https://compose.lakefs.io | Select-Object -ExpandProperty Content | docker-compose -f - up
    ```
 
-1. Check your installation by opening [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup){:target="_blank"} in your web browser.
+1. Check your installation by opening [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup){:target="_blank" .button-clickable} in your web browser.
 
-1. You are now ready to [creating your first repository](repository.md) in lakeFS.
+1. You are now ready to [creating your first repository](repository.md){: .button-clickable} in lakeFS.
 
 ## On Kubernetes with Helm
 
@@ -40,9 +40,9 @@ To run a local lakeFS instance using [Docker Compose](https://docs.docker.com/co
    helm install my-lakefs lakefs/lakefs
    ```
 
-1. The printed output will help you forward a port to lakeFS, so you can access it from your browser at [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup){:target="_blank"}.
+1. The printed output will help you forward a port to lakeFS, so you can access it from your browser at [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup){:target="_blank" .button-clickable}.
 
-1. Move on to [create your first repository](repository.md) in lakeFS.
+1. Move on to [create your first repository](repository.md){: .button-clickable} in lakeFS.
 
 ## Using the Binary 
 
@@ -52,7 +52,7 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
 
    [Download lakefs](../index.md#downloads){: .btn .btn-green target="_blank"}
 
-1. Install and configure [PostgreSQL](https://www.postgresql.org/download/){:target="_blank"}
+1. Install and configure [PostgreSQL](https://www.postgresql.org/download/){:target="_blank" .button-clickable}
 
 1. Create a configuration file:
     
@@ -83,6 +83,6 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
    ./lakefs --config /path/to/config.yaml run
    ```
 
-1. Check your installation by opening [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup){:target="_blank"} in your web browser.
+1. Check your installation by opening [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup){:target="_blank" .button-clickable} in your web browser.
 
-1. You are now ready to [create your first repository](repository.md) in lakeFS.
+1. You are now ready to [create your first repository](repository.md){: .button-clickable} in lakeFS.

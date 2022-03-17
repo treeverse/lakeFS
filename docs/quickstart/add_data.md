@@ -15,7 +15,7 @@ In this section we will copy a file into lakeFS.
 
 Since lakeFS exposes an S3-compatible API, we can use the AWS CLI to operate on it.
 
-1. If you don't have the AWS CLI installed, follow the [instructions here](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html){:target="_blank"}.
+1. If you don't have the AWS CLI installed, follow the [instructions here](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html){:target="_blank" .button-clickable}.
 1. Configure a new connection profile using the **lakeFS credentials** we generated earlier:
 
    ```bash
@@ -50,4 +50,4 @@ Since lakeFS exposes an S3-compatible API, we can use the AWS CLI to operate on 
 
 ### Next steps
 
-It's time to [commit your changes](first_commit.md) using the lakeFS CLI.
+It's time to [commit your changes](first_commit.md){: .button-clickable} using the lakeFS CLI.
