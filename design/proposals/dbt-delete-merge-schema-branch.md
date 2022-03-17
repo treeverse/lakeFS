@@ -52,6 +52,10 @@ It might cause a problem if, for example, a user branches out of the main branch
 We can allow users to map a branch to a schema by providing a `lakectl dbt map-branch-schema <branch> <schema>` command. 
 * The functionality of this subcommand is not limited to `lakectl dbt` and can be used in the `lakectl metastore` command suite as well. It's still suggested under the `lakectl dbt` command suite to make it easier for dbt users to integrate lakeFS to their development flow.
 
+## Limitations
+
+* The complete process of merge, i.e. both branch and schema merging, is lacking atomicity. That means that the merge can be partially successful. For example, it's possible that the branch merge was successful but the schema merge was not. This will be resolved in future work.
+
 ## Future improvements
 
 ### Switch used schema by branch
