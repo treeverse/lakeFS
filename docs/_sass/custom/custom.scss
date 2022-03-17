@@ -541,11 +541,11 @@ footer {
 		}
 		.row {
 			display: flex;
-			.left,
-			.right {
-				width: 50%;
+			.left {
+				width: 70%;
 			}
 			.right {
+				width: 30%;
 				display: flex;
 				justify-content: flex-end;
 			}

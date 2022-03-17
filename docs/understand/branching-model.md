@@ -19,7 +19,8 @@ At its core, lakeFS uses a Git-like branching model.
 
 ### Repositories
 
-In lakeFS, a repository is a logical namespace used to group together objects, branches and commits. It is the equivalent of a Bucket in S3, and a repository in Git.
+In lakeFS, a _repository_ a logical namespace used to group together objects, branches and commits.
+It can be considered the lakeFS analog of a bucket in an object store. Since it has version control qualities, it is also analogous to a repository in Git.
 
 ### Branches
 

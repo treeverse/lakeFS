@@ -74,12 +74,12 @@ clean:
 check-licenses: check-licenses-go-mod check-licenses-npm
 
 check-licenses-go-mod:
-	go get github.com/google/go-licenses
+	$(GOCMD) install github.com/google/go-licenses@latest
 	$(GOBINPATH)/go-licenses check ./cmd/$(LAKEFS_BINARY_NAME)
 	$(GOBINPATH)/go-licenses check ./cmd/$(LAKECTL_BINARY_NAME)
 
 check-licenses-npm:
-	go get github.com/senseyeio/diligent/cmd/diligent
+	$(GOCMD) install github.com/senseyeio/diligent/cmd/diligent@latest
 	# The -i arg is a workaround to ignore NPM scoped packages until https://github.com/senseyeio/diligent/issues/77 is fixed
 	$(GOBINPATH)/diligent check -w permissive -i ^@[^/]+?/[^/]+ $(UI_DIR)
 

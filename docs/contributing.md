@@ -43,14 +43,6 @@ Our [Go release workflow](https://github.com/treeverse/lakeFS/blob/master/.githu
    1. *Optional* - [PostgreSQL 11](https://www.postgresql.org/docs/11/tutorial-install.html) (useful for running and debugging locally)
 
    * With Apple M1, you can install Java from [Azul Zulu Builds for Java JDK](https://www.azul.com/downloads/?package=jdk).
-   
-1. Install statik:
-
-   ```shell
-   go get github.com/rakyll/statik
-   ```
-
-   Make sure `(go env GOPATH)/bin` is in your `$PATH` (or at least, that the `statik` binary is).
 
 1. Clone the repository from https://github.com/treeverse/lakeFS (gives you read-only access to the repository. To contribute, see the next section).
 1. Build the project:
@@ -94,7 +86,7 @@ lakeFS uses [go fmt](https://golang.org/cmd/gofmt/) as a style guide for Go code
 Open a GitHub pull request with your change. The PR description should include a brief explanation of your change.
 You should also mention the related GitHub issue. If the issue should be automatically closed after the merge, please [link it to the PR](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword).
 
-After submitting your pull request, [GitHub Actions](https://github.com/treeverse/lakeFS/actions) will automatically run tests on your changes and make sure that your updated code builds and runs on Go 1.16.2.
+After submitting your pull request, [GitHub Actions](https://github.com/treeverse/lakeFS/actions) will automatically run tests on your changes and make sure that your updated code builds and runs on Go 1.17.x.
 
 Check back shortly after submitting your pull request to make sure that your code passes these checks. If any of the checks come back with a red X, then do your best to address the errors.
 

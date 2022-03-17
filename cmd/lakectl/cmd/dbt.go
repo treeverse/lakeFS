@@ -1,10 +1,7 @@
 package cmd
 
 import (
-	"bufio"
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -20,17 +17,19 @@ import (
 )
 
 var schemaRegex = regexp.MustCompile(`schema: (.+)`)
+var materializedSelection = []string{"config.materialized:table", "config.materialized:incremental"}
 
 const (
-	lakectlIdentifier    = "LAKEFS_SCHEMA"
+	schemaEnvVarName     = "LAKEFS_SCHEMA"
 	macrosDirName        = "macros"
 	generateSchemaName   = "generate_schema_name.sql"
 	continueOnSchemaFlag = "continue-on-schema-exists"
+	createBranchFlag     = "create-branch"
+	resourceType         = "model"
 )
 
-type model struct {
-	Schema string `json:"schema"`
-	Alias  string `json:"alias"`
+func ExecuteCommand(cmd *exec.Cmd) ([]byte, error) {
+	return cmd.Output()
 }
 
 var dbtCmd = &cobra.Command{
@@ -45,6 +44,7 @@ var dbtCreateBranchSchema = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		clientType, _ := cmd.Flags().GetString("from-client-type")
 		branchName, _ := cmd.Flags().GetString("branch")
+		shouldCreateBranch, _ := cmd.Flags().GetBool(createBranchFlag)
 		toSchema, _ := cmd.Flags().GetString("to-schema")
 		projectRoot, _ := cmd.Flags().GetString("project-root")
 		skipViews, _ := cmd.Flags().GetBool("skip-views")
@@ -52,14 +52,30 @@ var dbtCreateBranchSchema = &cobra.Command{
 		continueOnError, _ := cmd.Flags().GetBool("continue-on-error")
 		continueOnSchemaExists, _ := cmd.Flags().GetBool(continueOnSchemaFlag)
 
+		if strings.TrimSpace(toSchema) == "" {
+			toSchema = branchName
+		}
+
+		metastoreClient, closeClient := getMetastoreClient(clientType, "")
+		defer closeClient()
+
 		// in order to generate views in new schema dbt should contain a macro script allowing lakectl to dynamically set the schema
 		// this could be skipped by using the skip-views flag
 		if !skipViews {
-			validateGenerateSchemaMacro(projectRoot)
+			err := ValidateGenerateSchemaMacro(projectRoot, macrosDirName, generateSchemaName, schemaEnvVarName)
+			if err != nil {
+				DieErr(err)
+			}
 		}
 
-		schema := dbtDebug(projectRoot)
-		copySchemaWithDbtTables(cmd.Context(), continueOnError, continueOnSchemaExists, clientType, schema, toSchema, branchName, projectRoot, dbfsLocation)
+		schema := retrieveSchema(projectRoot)
+		ctx := cmd.Context()
+
+		if shouldCreateBranch {
+			handleBranchCreation(ctx, schema, branchName, metastoreClient)
+		}
+
+		copySchemaWithDbtTables(ctx, continueOnError, continueOnSchemaExists, schema, toSchema, branchName, dbfsLocation, projectRoot, metastoreClient)
 
 		if skipViews {
 			fmt.Println("skipping views")
@@ -67,31 +83,30 @@ var dbtCreateBranchSchema = &cobra.Command{
 			createViews(projectRoot, toSchema)
 		}
 
-		fmt.Printf("create-branch-schema done! \n your new schema is %s\n you could now edit your dbt profile and run dbt on branch %s\n", toSchema, branchName)
+		fmt.Printf("create-branch-schema done!\nyour new schema is %s\nyou can now edit your dbt profile and run dbt on branch %s\n", toSchema, branchName)
 	},
 }
 
-func validateGenerateSchemaMacro(projectRoot string) {
-	p := path.Join(projectRoot, macrosDirName, generateSchemaName)
-	data, err := ioutil.ReadFile(p)
+func retrieveSchema(projectRoot string) string {
+	schemaOutput, err := DBTDebug(projectRoot, schemaRegex, ExecuteCommand)
 	if err != nil {
+		fmt.Println(schemaOutput)
 		DieErr(err)
 	}
+	fmt.Println("dbt debug succeeded with schemaOutput:", schemaOutput)
+	return schemaOutput
+}
 
-	if !strings.Contains(string(data), lakectlIdentifier) {
-		// TODO(Guys): add link to docs
-		DieFmt("generate_schema_name does not contain lakectl addition. handle lakefs support to %s or use skip-views flag", generateSchemaName)
+func handleBranchCreation(ctx context.Context, schema, branchName string, metastoreClient metastore.Client) {
+	sourceRepo, sourceBranch, err := ExtractRepoAndBranchFromDBName(ctx, schema, metastoreClient)
+	if err != nil {
+		DieFmt(`Given schema has no source branch associated with it %s`, err)
 	}
+	CreateBranch(ctx, sourceRepo, sourceBranch, branchName)
 }
 
 // copySchemaWithDbtTables create a copy of fromSchema and copies all dbt models materialized as table or incremental
-func copySchemaWithDbtTables(ctx context.Context, continueOnError, continueOnSchemaExists bool, clientType, fromSchema, toSchema, branchName, projectRoot, dbfsLocation string) {
-	client, clientDeferFunc := getMetastoreClient(clientType, "")
-	defer clientDeferFunc()
-	if len(toSchema) == 0 {
-		toSchema = branchName
-	}
-
+func copySchemaWithDbtTables(ctx context.Context, continueOnError, continueOnSchemaExists bool, fromSchema, toSchema, branchName, dbfsLocation, projectRoot string, client metastore.Client) {
 	err := metastore.CopyDB(ctx, client, client, fromSchema, toSchema, branchName, dbfsLocation)
 	switch {
 	case err == nil:
@@ -101,26 +116,24 @@ func copySchemaWithDbtTables(ctx context.Context, continueOnError, continueOnSch
 	case continueOnSchemaExists:
 		fmt.Printf("schema %s already exists, proceeding with existing schema\n", toSchema)
 	default:
-		DieFmt("schema %s exists, change schema or use %s flag", toSchema, continueOnSchemaFlag)
+		DieFmt("Schema %s exists, change schema or use %s flag", toSchema, continueOnSchemaFlag)
 	}
 
-	models := getDbtTables(projectRoot)
-	if err := CopyModels(ctx, models, continueOnError, fromSchema, toSchema, branchName, dbfsLocation, client); err != nil {
+	models := getDBTTables(projectRoot)
+	if err := copyModels(ctx, models, continueOnError, fromSchema, toSchema, branchName, dbfsLocation, client); err != nil {
 		DieErr(err)
 	}
 }
 
 func createViews(projectRoot, toSchema string) {
-	dbtCmd := exec.Command("dbt", "run", "--select", "config.materialized:view")
-	dbtCmd.Env = append(dbtCmd.Env, lakectlIdentifier+"="+toSchema)
-	dbtCmd.Dir = projectRoot
-	if err := dbtCmd.Run(); err != nil {
-		DieFmt("failed creating views with err: %v", err)
+	output, err := DBTRun(projectRoot, toSchema, schemaEnvVarName, []string{"config.materialized:view"}, ExecuteCommand)
+	if err != nil {
+		DieFmt("Failed creating views with err: %v\nOutput:\n%s", err, output)
 	}
 	fmt.Println("views created")
 }
 
-func CopyModels(ctx context.Context, models []model, continueOnError bool, fromSchema, toSchema, branchName, dbfsLocation string, client metastore.Client) error {
+func copyModels(ctx context.Context, models []DBTResource, continueOnError bool, fromSchema, toSchema, branchName, dbfsLocation string, client metastore.Client) error {
 	for _, m := range models {
 		if fromSchema != m.Schema {
 			fmt.Printf("skipping %s.%s, not in schema: %s", m.Schema, m.Alias, fromSchema)
@@ -139,44 +152,12 @@ func CopyModels(ctx context.Context, models []model, continueOnError bool, fromS
 	return nil
 }
 
-func getDbtTables(projectRoot string) []model {
-	dbtCmd := exec.Command("dbt", "ls", "--resource-type", "model", "--select", "config.materialized:table config.materialized:incremental", "--output", "json", "--output-keys", "alias schema")
-	dbtCmd.Dir = projectRoot
-	output, err := dbtCmd.Output()
+func getDBTTables(projectRoot string) []DBTResource {
+	resources, err := DBTLsToJSON(projectRoot, resourceType, materializedSelection, ExecuteCommand)
 	if err != nil {
-		fmt.Println(string(output))
 		DieErr(err)
 	}
-	models := make([]model, 0)
-	scan := bufio.NewScanner(bytes.NewReader(output))
-	for scan.Scan() {
-		line := scan.Bytes()
-		var m model
-		err = json.Unmarshal(line, &m)
-		if err != nil {
-			DieErr(err)
-		}
-		models = append(models, m)
-	}
-	return models
-}
-
-// dbtDebug validates dbt connection using dbt debug, return the schema configured by the target environment (configured in the dbt profiles file)
-func dbtDebug(projectRoot string) string {
-	dbtCmd := exec.Command("dbt", "debug")
-	dbtCmd.Dir = projectRoot
-	output, err := dbtCmd.Output()
-	if err != nil {
-		fmt.Println(string(output))
-		DieErr(err)
-	}
-	submatch := schemaRegex.FindSubmatch(output)
-	if submatch == nil || len(submatch) < 2 {
-		DieFmt("Failed extracting schema from dbt debug message")
-	}
-	schema := submatch[1]
-	fmt.Printf("dbt debug succeeded with schema %s\n", schema)
-	return string(schema)
+	return resources
 }
 
 var dbtGenerateSchemaMacro = &cobra.Command{
@@ -236,6 +217,7 @@ func init() {
 	dbtCreateBranchSchema.Flags().Bool("skip-views", false, "")
 	dbtCreateBranchSchema.Flags().Bool("continue-on-error", false, "prevent command from failing when a single table fails")
 	dbtCreateBranchSchema.Flags().Bool(continueOnSchemaFlag, false, "allow running on existing schema")
+	dbtCreateBranchSchema.Flags().Bool(createBranchFlag, false, "create a new branch for the schema")
 
 	dbtCmd.AddCommand(dbtGenerateSchemaMacro)
 	dbtGenerateSchemaMacro.Flags().String("project-root", ".", "location of dbt project")

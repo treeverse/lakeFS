@@ -26,6 +26,7 @@ import (
 
 var isTerminal = true
 var noColorRequested = false
+var verboseMode = false
 
 // ErrInvalidValueInList is an error returned when a parameter of type list contains an empty string
 var ErrInvalidValueInList = errors.New("empty string in list")
@@ -162,6 +163,12 @@ func Write(tpl string, data interface{}) {
 	WriteTo(tpl, data, os.Stdout)
 }
 
+func WriteIfVerbose(tpl string, data interface{}) {
+	if verboseMode {
+		WriteTo(tpl, data, os.Stdout)
+	}
+}
+
 func Die(err string, code int) {
 	WriteTo(DeathMessage, struct{ Error string }{err}, os.Stderr)
 	os.Exit(code)
@@ -206,14 +213,14 @@ func RetrieveError(response interface{}, err error) error {
 	return helpers.ResponseAsError(response)
 }
 
-func DieOnResponseError(response interface{}, err error) {
+func dieOnResponseError(response interface{}, err error) {
 	retrievedErr := RetrieveError(response, err)
 	if retrievedErr != nil {
 		DieErr(retrievedErr)
 	}
 }
 func DieOnErrorOrUnexpectedStatusCode(response interface{}, err error, expectedStatusCode int) {
-	DieOnResponseError(response, err)
+	dieOnResponseError(response, err)
 	var statusCode int
 	if httpResponse, ok := response.(*http.Response); ok {
 		statusCode = httpResponse.StatusCode

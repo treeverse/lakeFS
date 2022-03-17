@@ -36,6 +36,7 @@ Flags:
       --log-level string     set logging level (default "none")
       --log-output strings   set logging output(s)
       --no-color             don't use fancy output colors (default when not attached to an interactive terminal)
+      --verbose              run in verbose mode
   -v, --version              version for lakectl
 
 Use "lakectl [command] --help" for more information about a command.

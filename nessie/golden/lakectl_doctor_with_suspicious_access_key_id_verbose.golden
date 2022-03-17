@@ -1,0 +1,12 @@
+Trying to get endpoint URL and parse it as a URL format.
+Trying to run a sanity command using current configuration.
+Got error while trying to run a sanity command.
+Trying to analyze error.
+It seems like the `access_key_id` or `secret_access_key` you supplied are wrong.
+error authenticating request
+Trying to validate access key format.
+access_key_id value looks suspicious: AKIAJOI!COZ5JBYHCSDQ
+Trying to validate secret access key format.
+Couldn't find a problem with secret access key format.
+Trying to validate endpoint URL format.
+Couldn't find a problem with endpoint URL format.

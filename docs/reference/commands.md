@@ -61,6 +61,7 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
       --log-level string     set logging level (default "none")
       --log-output strings   set logging output(s)
       --no-color             don't use fancy output colors (default when not attached to an interactive terminal)
+      --verbose              run in verbose mode
 ```
 
 **note:** The `base-uri` option can be controlled with the `LAKECTL_BASE_URI` environment variable.
@@ -1620,6 +1621,7 @@ lakectl dbt create-branch-schema --branch <branch-name>
       --branch string               requested branch
       --continue-on-error           prevent command from failing when a single table fails
       --continue-on-schema-exists   allow running on existing schema
+      --create-branch               create a new branch for the schema
       --dbfs-location string        
   -h, --help                        help for create-branch-schema
       --project-root string         location of dbt project (default ".")
@@ -2054,7 +2056,6 @@ lakectl ingest --from <object store URI> --to <lakeFS path URI> [--dry-run] [fla
       --from string       prefix to read from (e.g. "s3://bucket/sub/path/"). must not be in a storage namespace
   -h, --help              help for ingest
       --to string         lakeFS path to load objects into (e.g. "lakefs://repo/branch/sub/path/")
-  -v, --verbose           print stats for each individual object staged
 ```
 
 
@@ -2558,14 +2559,14 @@ Create delete and list tags within a lakeFS repository
 Create a new tag in a repository
 
 ```
-lakectl tag create <tag uri> <commit ref> [flags]
+lakectl tag create <tag uri> <commit uri> [flags]
 ```
 
 #### Examples
 {:.no_toc}
 
 ```
-lakectl tag create lakefs://example-repo/example-tag 2397cc9a9d04c20a4e5739b42c1dd3d8ba655c0b3a3b974850895a13d8bf9917
+lakectl tag create lakefs://example-repo/example-tag lakefs://example-repo/2397cc9a9d04c20a4e5739b42c1dd3d8ba655c0b3a3b974850895a13d8bf9917
 ```
 
 #### Options

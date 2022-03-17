@@ -63,21 +63,26 @@ var tagListCmd = &cobra.Command{
 }
 
 var tagCreateCmd = &cobra.Command{
-	Use:     "create <tag uri> <commit ref>",
+	Use:     "create <tag uri> <commit uri>",
 	Short:   "Create a new tag in a repository",
-	Example: "lakectl tag create lakefs://example-repo/example-tag 2397cc9a9d04c20a4e5739b42c1dd3d8ba655c0b3a3b974850895a13d8bf9917",
+	Example: "lakectl tag create lakefs://example-repo/example-tag lakefs://example-repo/2397cc9a9d04c20a4e5739b42c1dd3d8ba655c0b3a3b974850895a13d8bf9917",
 	Args:    cobra.ExactArgs(tagCreateRequiredArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		tagURI := MustParseRefURI("tag", args[0])
+		tagURI := MustParseRefURI("tag uri", args[0])
+		commitURI := MustParseRefURI("commit uri", args[1])
 		Fmt("Tag ref: %s\n", tagURI.String())
 
 		client := getClient()
-		commitRef := args[1]
 		ctx := cmd.Context()
 		force, _ := cmd.Flags().GetBool("force")
+
+		if tagURI.Repository != commitURI.Repository {
+			Die("both references must belong to the same repository", 1)
+		}
+
 		if force {
 			// checking validity of the commitRef before deleting the old one
-			res, err := client.GetCommitWithResponse(ctx, tagURI.Repository, commitRef)
+			res, err := client.GetCommitWithResponse(ctx, tagURI.Repository, commitURI.Ref)
 			DieOnErrorOrUnexpectedStatusCode(res, err, http.StatusOK)
 
 			resp, err := client.DeleteTagWithResponse(ctx, tagURI.Repository, tagURI.Ref)
@@ -88,7 +93,7 @@ var tagCreateCmd = &cobra.Command{
 
 		resp, err := client.CreateTagWithResponse(ctx, tagURI.Repository, api.CreateTagJSONRequestBody{
 			Id:  tagURI.Ref,
-			Ref: commitRef,
+			Ref: commitURI.Ref,
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 

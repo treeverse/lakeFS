@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.61.0 - 2022-03-07
+Features:
+- Add merge strategy (#2922)
+- DBT: add branch creation capability (#2988)
+
+Bug fixes:
+- Fixing performance issue with ref-restore of commits (#2992)
+
 ## v0.60.1 - 2022-03-01
 Features: 
 - Log with multiple outputs (#2975)
