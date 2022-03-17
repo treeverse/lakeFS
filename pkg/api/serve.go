@@ -86,13 +86,12 @@ func Serve(
 	)
 	HandlerFromMuxWithBaseURL(controller, apiRouter, BaseURL)
 
-	uiHandler := NewUIHandler(authService, gatewayDomains)
 	r.Mount("/_health", httputil.ServeHealth())
 	r.Mount("/metrics", promhttp.Handler())
 	r.Mount("/_pprof/", httputil.ServePPROF("/_pprof/"))
 	r.Mount("/swagger.json", http.HandlerFunc(swaggerSpecHandler))
-	r.Mount("/", uiHandler)
 	r.Mount(BaseURL, http.HandlerFunc(InvalidAPIEndpointHandler))
+	r.Mount("/", NewUIHandler(gatewayDomains))
 	return r
 }
 
