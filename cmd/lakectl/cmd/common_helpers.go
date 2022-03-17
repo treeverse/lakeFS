@@ -33,6 +33,11 @@ var ErrInvalidValueInList = errors.New("empty string in list")
 
 var accessKeyRegexp = regexp.MustCompile(`^AKIA[I|J][A-Z0-9]{14}Q$`)
 
+// const values used by lakectl commands
+const (
+	PathDelimiter = "/"
+)
+
 const (
 	LakectlInteractive        = "LAKECTL_INTERACTIVE"
 	LakectlInteractiveDisable = "no"

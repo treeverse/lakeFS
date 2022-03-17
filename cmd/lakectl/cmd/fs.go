@@ -67,9 +67,8 @@ var fsListCmd = &cobra.Command{
 		prefix := *pathURI.Path
 
 		// prefix we need to trim in ls output (non recursive)
-		const delimiter = "/"
 		var trimPrefix string
-		if idx := strings.LastIndex(prefix, delimiter); idx != -1 {
+		if idx := strings.LastIndex(prefix, PathDelimiter); idx != -1 {
 			trimPrefix = prefix[:idx+1]
 		}
 		// delimiter used for listing
@@ -77,7 +76,7 @@ var fsListCmd = &cobra.Command{
 		if recursive {
 			paramsDelimiter = ""
 		} else {
-			paramsDelimiter = delimiter
+			paramsDelimiter = PathDelimiter
 		}
 		var from string
 		for {

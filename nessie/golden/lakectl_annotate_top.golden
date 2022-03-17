@@ -1,6 +1,3 @@
-
-aaa/            nessie               <COMMIT_ID_16>     <DATE> <TIME> <TZ>  commit #3                     
-
-iii/            nessie               <COMMIT_ID_16>     <DATE> <TIME> <TZ>  ${MESSAGE}                     
-
-mmm             nessie               <COMMIT_ID_16>     <DATE> <TIME> <TZ>  ${MESSAGE}                     
+aaa/            nessie               <COMMIT_ID_16>     <DATE> <TIME> <TZ>  commit #3
+iii/            nessie               <COMMIT_ID_16>     <DATE> <TIME> <TZ>  commit #4
+mmm             nessie               <COMMIT_ID_16>     <DATE> <TIME> <TZ>  commit #4

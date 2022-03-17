@@ -9,8 +9,7 @@ import (
 )
 
 const (
-	annotateTemplate = `{{  $val := .Commit}}
-{{ $.Object|ljust 15}} {{ $val.Committer|ljust 20 }} {{ $val.Id | printf "%.16s"|ljust 20 }} {{if $val.CreationDate}}{{ $val.CreationDate|date}}{{end}}  {{ $.CommitMessage |ljust 30 }}
+	annotateTemplate = `{{  $val := .Commit}}{{ $.Object|ljust 15}} {{ $val.Committer|ljust 20 }} {{ $val.Id | printf "%.16s"|ljust 20 }} {{if $val.CreationDate}}{{ $val.CreationDate|date}}{{end}}  {{ $.CommitMessage }}
 `
 	annotateMessageSize = 200
 	ellipsis            = "..."
@@ -35,10 +34,9 @@ var annotateCmd = &cobra.Command{
 		context := cmd.Context()
 		resp, err := client.ListObjectsWithResponse(context, pathURI.Repository, pathURI.Ref, &api.ListObjectsParams{Prefix: &pfx})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
-		const delimiter = "/"
 		var listObjectsDelimiter api.PaginationDelimiter
 		if !recursive {
-			listObjectsDelimiter = delimiter
+			listObjectsDelimiter = PathDelimiter
 		}
 		var from string
 		for {
