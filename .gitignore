@@ -47,8 +47,6 @@
 
 # server excludes
 /pkg/api/gen
-/pkg/webui
-/pkg/ddl/statik.go
 .DS_Store
 
 # recordings
