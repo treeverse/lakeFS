@@ -219,6 +219,7 @@ func dieOnResponseError(response interface{}, err error) {
 		DieErr(retrievedErr)
 	}
 }
+
 func DieOnErrorOrUnexpectedStatusCode(response interface{}, err error, expectedStatusCode int) {
 	dieOnResponseError(response, err)
 	var statusCode int

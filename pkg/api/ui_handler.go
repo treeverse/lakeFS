@@ -2,93 +2,79 @@ package api
 
 import (
 	"fmt"
+	"io/fs"
 	"net/http"
-	"os"
-	"path"
 	"path/filepath"
 	"strings"
-	"time"
 
 	gomime "github.com/cubewise-code/go-mime"
-	"github.com/rakyll/statik/fs"
-	"github.com/treeverse/lakefs/pkg/auth"
-	"github.com/treeverse/lakefs/pkg/gateway/errors"
+	"github.com/go-chi/chi/v5/middleware"
+	gwerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/gateway/operations"
 	"github.com/treeverse/lakefs/pkg/gateway/sig"
-	"github.com/treeverse/lakefs/pkg/webui"
+	"github.com/treeverse/lakefs/webui"
 )
 
-// Taken from https://github.com/mytrile/nocache
-var noCacheHeaders = map[string]string{
-	"Expires":         time.Unix(0, 0).Format(time.RFC1123),
-	"Cache-Control":   "no-cache, private, max-age=0",
-	"Pragma":          "no-cache",
-	"X-Accel-Expires": "0",
+// NotFoundResponseWriter handle page not found to redirect later the response
+// source: https://stackoverflow.com/questions/47285119/how-to-custom-handle-a-file-not-being-found-when-using-go-static-file-server
+type NotFoundResponseWriter struct {
+	http.ResponseWriter
+	Status int
 }
 
-var etagHeaders = []string{
-	"ETag",
-	"If-Modified-Since",
-	"If-Match",
-	"If-None-Match",
-	"If-Range",
-	"If-Unmodified-Since",
+func (w *NotFoundResponseWriter) WriteHeader(status int) {
+	w.Status = status
+	if status != http.StatusNotFound {
+		w.ResponseWriter.WriteHeader(status)
+	}
 }
 
-func NewUIHandler(authService auth.Service, gatewayDomains []string) http.Handler {
-	mux := http.NewServeMux()
-	staticFiles, _ := fs.NewWithNamespace(webui.Webui)
-	fileServer := http.FileServer(staticFiles)
-	noCacheFileServer := NoCacheHandler(fileServer)
-	mux.Handle("/", NewHandlerWithDefault(staticFiles, noCacheFileServer, "/", gatewayDomains))
-	return mux
+func (w *NotFoundResponseWriter) Write(p []byte) (int, error) {
+	if w.Status != http.StatusNotFound {
+		return w.ResponseWriter.Write(p)
+	}
+	// Lie that we have successfully written it
+	return len(p), nil
 }
 
-// NoCacheHandler based on github.com/zenazn/goji's NoCache
-func NoCacheHandler(handler http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Delete any ETag headers that may have been set
-		for _, v := range etagHeaders {
-			if r.Header.Get(v) != "" {
-				r.Header.Del(v)
-			}
-		}
-
-		// Set our NoCache headers
-		for k, v := range noCacheHeaders {
-			w.Header().Set(k, v)
-		}
-
-		handler.ServeHTTP(w, r)
-	})
+func NewUIHandler(gatewayDomains []string) http.Handler {
+	content, err := fs.Sub(webui.Content, "dist")
+	if err != nil {
+		// embedded UI content is missing
+		panic(err)
+	}
+	nocacheContent := middleware.NoCache(
+		http.StripPrefix("/",
+			http.FileServer(
+				http.FS(content))))
+	return NewHandlerWithDefault(nocacheContent, gatewayDomains)
 }
 
-func NewHandlerWithDefault(root http.FileSystem, handler http.Handler, defaultPath string, gatewayDomains []string) http.Handler {
+func NewHandlerWithDefault(handler http.Handler, gatewayDomains []string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if isGatewayRequest(r) {
 			// s3 signed request reaching the ui handler, return an error response instead of the default path
-			o := operations.Operation{}
-			err := errors.Codes[errors.ERRLakeFSWrongEndpoint]
+			err := gwerrors.Codes[gwerrors.ERRLakeFSWrongEndpoint]
 			err.Description = fmt.Sprintf("%s (%v)", err.Description, gatewayDomains)
+			o := operations.Operation{}
 			o.EncodeError(w, r, err)
 			return
 		}
-		urlPath := r.URL.Path
-		if !strings.HasPrefix(urlPath, "/") {
-			urlPath = "/" + urlPath
-			r.URL.Path = urlPath
-		}
-		_, err := root.Open(path.Clean(urlPath))
-		if err != nil && os.IsNotExist(err) {
-			http.Redirect(w, r, defaultPath, http.StatusFound)
-			return
-		}
+
 		// consistent content-type
 		contentType := gomime.TypeByExtension(filepath.Ext(r.URL.Path))
 		if contentType != "" {
 			w.Header().Set("Content-Type", contentType)
 		}
-		handler.ServeHTTP(w, r)
+
+		// handle request, capture page not found for redirect later
+		notFoundWriter := &NotFoundResponseWriter{ResponseWriter: w}
+		handler.ServeHTTP(notFoundWriter, r)
+
+		// redirect to root on page not found
+		if notFoundWriter.Status == http.StatusNotFound {
+			http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+		}
 	})
 }
 
@@ -103,6 +89,5 @@ func isGatewayRequest(r *http.Request) bool {
 			return true
 		}
 	}
-
 	return false
 }

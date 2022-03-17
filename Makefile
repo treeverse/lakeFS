@@ -65,9 +65,7 @@ clean:
 		$(UI_BUILD_DIR) \
 		pkg/actions/mock \
 		pkg/api/lakefs.gen.go \
-		pkg/ddl/statik.go \
 		pkg/graveler/sstable/mock \
-		pkg/webui \
 	    pkg/graveler/committed/mock \
 	    pkg/graveler/mock
 
@@ -104,7 +102,6 @@ go-install: go-mod-download ## Install dependencies
 	$(GOCMD) install github.com/deepmap/oapi-codegen/cmd/oapi-codegen
 	$(GOCMD) install github.com/golang/mock/mockgen
 	$(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint
-	$(GOCMD) install github.com/rakyll/statik
 	$(GOCMD) install google.golang.org/protobuf/cmd/protoc-gen-go
 
 
@@ -222,13 +219,7 @@ $(UI_DIR)/node_modules:
 ui-build: $(UI_DIR)/node_modules  ## Build UI app
 	cd $(UI_DIR) && $(NPM) run build
 
-ui-bundle: ui-build go-install ## Bundle static built UI app
-	$(GOBINPATH)/statik -src=$(UI_BUILD_DIR) -dest=pkg -p=webui -ns=webui -f
-
-gen-ui: ui-bundle
-
-gen-ddl: go-install ## Embed data migration files into the resulting binary
-	$(GOBINPATH)/statik -ns ddl -m -f -p ddl -c "auto-generated SQL files for data migrations" -dest pkg -src pkg/ddl -include '*.sql'
+gen-ui: ui-build
 
 proto: ## Build proto (Protocol Buffers) files
 	$(PROTOC) --proto_path=pkg/catalog --go_out=pkg/catalog --go_opt=paths=source_relative catalog.proto
@@ -248,4 +239,4 @@ help:  ## Show Help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 # helpers
-gen: gen-api gen-ui gen-ddl gen-mockgen clients gen-docs
+gen: gen-api gen-ui gen-mockgen clients gen-docs
