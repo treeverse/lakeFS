@@ -63,7 +63,7 @@ var annotateCmd = &cobra.Command{
 				}
 				if len(logCommitsResp.JSON200.Results) > 0 {
 					data.Commit = logCommitsResp.JSON200.Results[0]
-					data.CommitMessage = splitOnNewLine(stringTrimLen((logCommitsResp.JSON200.Results[0].Message), annotateMessageSize))
+					data.CommitMessage = splitOnNewLine(stringTrimLen(logCommitsResp.JSON200.Results[0].Message, annotateMessageSize))
 				}
 				Write(annotateTemplate, data)
 			}
