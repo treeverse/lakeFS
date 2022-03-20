@@ -31,8 +31,14 @@ func DecodeStrings(fromValue reflect.Value, toValue reflect.Value) (interface{},
 
 type SecureString string
 
-func (s *SecureString) String() string {
-	return string(*s)
+// String returns an elided version.  It is safe to call for logging.
+func (_ SecureString) String() string {
+	return "[SECRET]"
+}
+
+// SecureValue returns the actual value of s as a string.
+func (s SecureString) SecureValue() string {
+	return string(s)
 }
 
 // LDAP holds configuration for authenticating on an LDAP server.
