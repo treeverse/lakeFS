@@ -288,7 +288,7 @@ const GetStarted = ({ onUpload }) => {
 export const Tree = ({ repo, reference, results, after, onPaginate, nextPage, onUpload, onDelete, showActions = false, path = "" }) => {
 
     let body;
-    if (results.length === 0 && path === "") {
+    if (results.length === 0 && path === "" && reference.type === RefTypeBranch) {
         // empty state!
         body = <GetStarted onUpload={onUpload}/>;
     } else {
