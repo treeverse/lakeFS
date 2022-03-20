@@ -125,7 +125,7 @@ func panicOnMetadataUpdate(bl *ref.BranchLocker) {
 	go func() {
 		// ignore panics and release the function call
 		defer func() {
-			recover()
+			_ = recover()
 			close(chDone)
 		}()
 		ctx := context.Background()

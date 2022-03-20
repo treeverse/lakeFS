@@ -220,7 +220,10 @@ func testBatchByKey(t *testing.T) {
 	// reader2 starts
 	go func(te *trackableExecuter) {
 		<-waitRead2 // ensure we start AFTER r1 started a new batch
-		exec.BatchFor("k2", 0, te)
+		_, err := exec.BatchFor("k2", 0, te)
+		if err != nil {
+			t.Errorf("BatchFor error: %s", err)
+		}
 		close(read2Done)
 	}(&te2)
 

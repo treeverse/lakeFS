@@ -136,7 +136,7 @@ func TestEmpty(t *testing.T) {
 	ctx := context.Background()
 	m, _ := prepareTest(t, ctx, nil, nil)
 	emptySettings := &settings.ExampleSettings{}
-	gotSettings, err := m.Get(ctx, "example-repo", "settingKey", emptySettings)
+	_, err := m.Get(ctx, "example-repo", "settingKey", emptySettings)
 	// the key was not set, an error should be returned
 	if err != graveler.ErrNotFound {
 		t.Fatalf("expected error %v, got %v", graveler.ErrNotFound, err)
@@ -152,7 +152,7 @@ func TestEmpty(t *testing.T) {
 		return nil
 	})
 	testutil.Must(t, err)
-	gotSettings, err = m.Get(ctx, "example-repo", "settingKey", emptySettings)
+	gotSettings, err := m.Get(ctx, "example-repo", "settingKey", emptySettings)
 	testutil.Must(t, err)
 	expectedSettings := &settings.ExampleSettings{ExampleInt: 1, ExampleMap: map[string]int32{"boo": 1}}
 	if diff := deep.Equal(expectedSettings, gotSettings); diff != nil {
