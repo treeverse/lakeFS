@@ -10,9 +10,11 @@ import (
 // of strings.
 type Strings []string
 
-var ourStringsType = reflect.TypeOf(Strings{})
-var stringType = reflect.TypeOf("")
-var stringSliceType = reflect.TypeOf([]string{})
+var (
+	ourStringsType  = reflect.TypeOf(Strings{})
+	stringType      = reflect.TypeOf("")
+	stringSliceType = reflect.TypeOf([]string{})
+)
 
 // decodeStrings is a mapstructure.HookFuncType that decodes a single string value or a slice
 // of strings into Strings.
@@ -32,7 +34,7 @@ func DecodeStrings(fromValue reflect.Value, toValue reflect.Value) (interface{},
 type SecureString string
 
 // String returns an elided version.  It is safe to call for logging.
-func (_ SecureString) String() string {
+func (SecureString) String() string {
 	return "[SECRET]"
 }
 
