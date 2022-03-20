@@ -13,7 +13,7 @@ import (
 )
 
 func TestAuthMiddleware(t *testing.T) {
-	handler, deps := setupHandler(t, "mem")
+	handler, deps := setupHandler(t)
 	server := setupServer(t, handler)
 	apiEndpoint := server.URL + api.BaseURL
 	clt := setupClientByEndpoint(t, server.URL, "", "")

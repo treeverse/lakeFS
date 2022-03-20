@@ -84,7 +84,7 @@ var errValueNotUnique = errors.New("value not unique in mapping")
 // be consumed by expandVariables.
 //
 // Notes:
-// - embedVarialbes will fail if 2 different variables maps to the same value. While this is a possible
+// - embedVariables will fail if 2 different variables maps to the same value. While this is a possible
 // scenario (e.g. a file named 'master' in 'master' branch) it cannot be processed by embedVariables
 // - Values are processed from longest to shortest, and so, if certain var value contains another (e.g.
 // VAR1 -> "xy", VAR2 -> "xyz"), the longest option will be considered first. As an example, the string
