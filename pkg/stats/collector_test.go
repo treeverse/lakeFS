@@ -63,8 +63,8 @@ func TestCallHomeCollector_QuickNoTick(t *testing.T) {
 	collector.CollectEvent("foo", "bar")
 	cancelFn()
 
-	go collector.Run(ctx)
-	<-collector.Done()
+	collector.Run(ctx)
+	defer collector.Close()
 
 	counters, ok := <-sender.metrics
 
@@ -79,7 +79,8 @@ func TestCallHomeCollector_Collect(t *testing.T) {
 	sender, ticker, collector := setupTest(0)
 	ctx, cancelFn := context.WithCancel(context.Background())
 
-	go collector.Run(ctx)
+	collector.Run(ctx)
+	defer collector.Close()
 
 	// add metrics
 	collector.CollectEvent("foo", "bar")
@@ -122,7 +123,7 @@ func TestCallHomeCollector_Collect(t *testing.T) {
 	collector.CollectEvent("foo", "bar")
 
 	cancelFn()
-	<-collector.Done()
+	collector.Close()
 
 	counters, ok := <-sender.metrics // ensure we get another "payload"
 	require.True(t, ok)

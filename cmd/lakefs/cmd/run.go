@@ -154,6 +154,8 @@ var runCmd = &cobra.Command{
 		}
 		metadata := stats.NewMetadata(ctx, logger, blockstoreType, authMetadataManager, cloudMetadataProvider)
 		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, cfg)
+		defer bufferedCollector.Close()
+
 		// init block store
 		blockStore, err := factory.BuildBlockAdapter(ctx, bufferedCollector, cfg)
 		if err != nil {
@@ -238,7 +240,7 @@ var runCmd = &cobra.Command{
 			cfg.GetLoggingTraceRequestHeaders(),
 		)
 		ctx, cancelFn := context.WithCancel(cmd.Context())
-		go bufferedCollector.Run(ctx)
+		bufferedCollector.Run(ctx)
 
 		bufferedCollector.CollectEvent("global", "run")
 
@@ -270,7 +272,6 @@ var runCmd = &cobra.Command{
 
 		<-done
 		cancelFn()
-		<-bufferedCollector.Done()
 	},
 }
 

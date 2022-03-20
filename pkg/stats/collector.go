@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/google/uuid"
@@ -74,11 +76,16 @@ type BufferedCollector struct {
 	sender           Sender
 	sendTimeout      time.Duration
 	flushTicker      FlushTicker
-	done             chan bool
 	installationID   string
 	processID        string
 	runtimeCollector func() map[string]string
 	runtimeStats     map[string]string
+	// wg used as a semaphore when 'writes' channel is used. on close, we can wait until the channel is free.
+	wg sync.WaitGroup
+	// closed set to 1 in case 'writes' channel is marked as closed
+	closed int32
+	// wgRuns used as a semaphore when run loop is used
+	wgRun sync.WaitGroup
 }
 
 type BufferedCollectorOpts func(s *BufferedCollector)
@@ -119,7 +126,6 @@ func NewBufferedCollector(installationID string, c *config.Config, opts ...Buffe
 	s := &BufferedCollector{
 		cache:          make(keyIndex),
 		writes:         make(chan primaryKey, collectorEventBufferSize),
-		done:           make(chan bool),
 		sender:         NewDummySender(),
 		sendTimeout:    sendTimeout,
 		runtimeStats:   map[string]string{},
@@ -130,9 +136,9 @@ func NewBufferedCollector(installationID string, c *config.Config, opts ...Buffe
 	for _, opt := range opts {
 		opt(s)
 	}
-
 	return s
 }
+
 func (s *BufferedCollector) getInstallationID() string {
 	return s.installationID
 }
@@ -156,40 +162,78 @@ func (s *BufferedCollector) send(metrics []Metric) {
 	}
 }
 
+func (s *BufferedCollector) isClosed() bool {
+	return atomic.LoadInt32(&s.closed) == 1
+}
+
 func (s *BufferedCollector) CollectEvent(class, action string) {
+	if s.isClosed() {
+		return
+	}
+	s.wg.Add(1)
 	s.writes <- primaryKey{
 		class:  class,
 		action: action,
 	}
+	s.wg.Done()
 }
 
-func (s *BufferedCollector) Done() <-chan bool {
-	return s.done
+func (s *BufferedCollector) Close() {
+	// mark as closed and return in case it was closed
+	if !atomic.CompareAndSwapInt32(&s.closed, 0, 1) {
+		return
+	}
+	// wait for all events to be processed and close the channel
+	// done in the background because our main loop cloud be canceled
+	go func() {
+		s.wg.Wait()
+		close(s.writes)
+	}()
+	// wait for run loop to end
+	s.wgRun.Wait()
+	// drain channel and send cache for the last time
+	for w := range s.writes {
+		s.incr(w)
+	}
+	s.sendCache()
 }
 
 func (s *BufferedCollector) Run(ctx context.Context) {
-	go s.collectHeartbeat(ctx)
-	for {
-		select {
-		case w := <-s.writes: // collect events
-			s.incr(w)
-		case <-s.flushTicker.Tick(): // every N seconds, send the collected events
-			s.handleRuntimeStats()
-			metrics := makeMetrics(s.cache)
-			s.cache = make(keyIndex)
-			go s.send(metrics) // no need to block on this
-		case <-ctx.Done(): // we're done
-			close(s.writes)
-			for w := range s.writes {
+	s.wgRun.Add(1)
+	go func() {
+		defer func() {
+			s.wgRun.Done()
+			// we trigger close after we mark that run ended
+			s.Close()
+		}()
+		for {
+			select {
+			case w, ok := <-s.writes: // collect events
+				if !ok {
+					return
+				}
 				s.incr(w)
+			case <-s.flushTicker.Tick(): // every N seconds, send the collected events
+				s.handleRuntimeStats()
+				s.sendCache()
+			case <-time.After(heartbeatInterval):
+				s.incr(primaryKey{class: "global", action: "heartbeat"})
+			case <-ctx.Done(): // we're done
+				return
 			}
-
-			metrics := makeMetrics(s.cache)
-			s.send(metrics)
-			s.done <- true
-			return
 		}
+	}()
+}
+
+func (s *BufferedCollector) sendCache() {
+	if len(s.cache) == 0 {
+		return
 	}
+	metrics := makeMetrics(s.cache)
+	for k := range s.cache {
+		delete(s.cache, k)
+	}
+	s.send(metrics)
 }
 
 func makeMetrics(counters keyIndex) []Metric {
@@ -215,17 +259,6 @@ func (s *BufferedCollector) CollectMetadata(accountMetadata *Metadata) {
 			WithError(err).
 			WithField("service", "stats_collector").
 			Debug("could not update metadata")
-	}
-}
-
-func (s *BufferedCollector) collectHeartbeat(ctx context.Context) {
-	for {
-		select {
-		case <-time.After(heartbeatInterval):
-			s.CollectEvent("global", "heartbeat")
-		case <-ctx.Done():
-			return
-		}
 	}
 }
 
