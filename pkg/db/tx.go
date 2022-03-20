@@ -128,9 +128,7 @@ func (d *dbTx) Exec(query string, args ...interface{}) (pgconn.CommandTag, error
 }
 
 func (d *dbTx) handleSQLError(err error, cmdType string, query string) error {
-	dbErrorsCounter.WithLabelValues(cmdType).Inc()
-	d.logger.WithError(err).Error("SQL query failed with error")
-
+	d.logger.Trace("SQL operation err:", err)
 	// Each error that is added here should be updated also in controller.go:handleAPIError
 	if isUniqueViolation(err) {
 		return ErrAlreadyExists
@@ -138,6 +136,9 @@ func (d *dbTx) handleSQLError(err error, cmdType string, query string) error {
 	if pgxscan.NotFound(err) {
 		return ErrNotFound
 	}
+
+	dbErrorsCounter.WithLabelValues(cmdType).Inc()
+	d.logger.WithError(err).Error("SQL operation unhandled error")
 	return fmt.Errorf("%s: %w", query, err)
 }
 
