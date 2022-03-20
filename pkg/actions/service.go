@@ -453,6 +453,42 @@ func (s *Service) PostMergeHook(ctx context.Context, record graveler.HookRecord)
 	return nil
 }
 
+func (s *Service) PreCreateTagHook(ctx context.Context, record graveler.HookRecord) error {
+	return s.Run(ctx, record)
+}
+
+func (s *Service) PostCreateTagHook(ctx context.Context, record graveler.HookRecord) error {
+	s.asyncRun(record)
+	return nil
+}
+
+func (s *Service) PreDeleteTagHook(ctx context.Context, record graveler.HookRecord) error {
+	return s.Run(ctx, record)
+}
+
+func (s *Service) PostDeleteTagHook(ctx context.Context, record graveler.HookRecord) error {
+	s.asyncRun(record)
+	return nil
+}
+
+func (s *Service) PreCreateBranchHook(ctx context.Context, record graveler.HookRecord) error {
+	return s.Run(ctx, record)
+}
+
+func (s *Service) PostCreateBranchHook(ctx context.Context, record graveler.HookRecord) error {
+	s.asyncRun(record)
+	return nil
+}
+
+func (s *Service) PreDeleteBranchHook(ctx context.Context, record graveler.HookRecord) error {
+	return s.Run(ctx, record)
+}
+
+func (s *Service) PostDeleteBranchHook(ctx context.Context, record graveler.HookRecord) error {
+	s.asyncRun(record)
+	return nil
+}
+
 func NewHookRunID(actionIdx, hookIdx int) string {
 	return fmt.Sprintf("%04d_%04d", actionIdx, hookIdx)
 }
