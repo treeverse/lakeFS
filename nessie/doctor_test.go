@@ -13,11 +13,10 @@ func TestDoctor(t *testing.T) {
 	endPointURL := viper.GetString("endpoint_url") + "/api/v1"
 
 	defaultConfigPath := "/root/.lakectl.yaml"
-	configFile, err := os.Create(defaultConfigPath)
+	err := os.WriteFile(defaultConfigPath, []byte{}, 0600)
 	if err != nil {
 		t.Fatalf("failed to create lakectl default config: %s", err)
 	}
-	defer configFile.Close()
 
 	RunCmdAndVerifySuccessWithFile(t, LakectlWithParams(accessKeyID, secretAccessKey, endPointURL)+" doctor", false, "lakectl_doctor_ok", emptyVars)
 	RunCmdAndVerifyFailureWithFile(t, lakectlLocation()+" doctor -c not_exits.yaml", false, "lakectl_doctor_not_exists_file", emptyVars)
