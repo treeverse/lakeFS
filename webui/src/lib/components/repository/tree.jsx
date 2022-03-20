@@ -36,7 +36,7 @@ const Na = () => (<span>&mdash;</span>);
 
 const EntryRowActions = ({ repo, reference, entry, onDelete }) => {
     const [show, setShow] = useState(false);
-    const handleClose = () => setShow(false);;
+    const handleClose = () => setShow(false);
     const handleShow = () => setShow(true);
     const deleteConfirmMsg = `are you sure you wish to delete object "${entry.path}"?`
     const onSubmit = () => {

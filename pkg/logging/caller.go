@@ -15,7 +15,7 @@ var (
 
 	// Positions in the call stack when tracing to report the calling method
 	// start at the bottom of the stack before the package-name cache is primed
-	minimumCallerDepth int = 1
+	minimumCallerDepth = 1
 
 	// Used for caller information initialisation
 	callerInitOnce sync.Once
