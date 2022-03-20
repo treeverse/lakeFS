@@ -146,7 +146,7 @@ func TestValidateMissingRequired_SimpleNotMissing(t *testing.T) {
 		DD []rune
 	}
 
-	c := float64(12.34)
+	c := 12.34
 	cases := []struct {
 		Value           s
 		MissingRequired []string

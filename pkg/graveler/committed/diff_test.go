@@ -287,21 +287,21 @@ func TestNextRange(t *testing.T) {
 		if !it.Next() { // move to range k1-k2
 			t.Fatal("expected iterator to have value")
 		}
-		record, rng := it.Value()
+		record, _ := it.Value()
 		if record != nil {
 			t.Errorf("expected record to be nil got %v", record)
 		}
 		if !it.Next() { // move to k1
 			t.Fatalf("expected it.Next() to return true (err %v)", it.Err())
 		}
-		record, rng = it.Value()
+		record, _ = it.Value()
 		if record == nil || string(record.Key) != "k1" {
 			t.Errorf("expected record with key=k1, got record %v", record)
 		}
 		if !it.NextRange() { // move to k3 (moves to end of current range, but can't start a new range because k3 is part of two different ranges)
 			t.Fatalf("expected it.NextRange() to return true (err %v)", it.Err())
 		}
-		record, rng = it.Value()
+		record, rng := it.Value()
 		if rng != nil {
 			t.Errorf("expected range to be nil got range %v", rng)
 		}
@@ -317,7 +317,7 @@ func TestNextRange(t *testing.T) {
 		if !it.Next() { // move to range k6-k7
 			t.Fatalf("expected it.Next() to return true (err %v)", it.Err())
 		}
-		record, rng = it.Value()
+		record, _ = it.Value()
 		if record != nil {
 			t.Errorf("expected record to be nil got record %v", record)
 		}
@@ -498,7 +498,6 @@ func TestDiffSeek(t *testing.T) {
 				t.Fatalf("ranges in diff different than expected. diff=%s", diff)
 			}
 		})
-
 	}
 }
 

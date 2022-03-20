@@ -143,6 +143,7 @@ func TestHooksSuccess(t *testing.T) {
 	require.Equal(t, commitRecord.Metadata.AdditionalProperties, postCommitEvent.Metadata)
 
 	mergeResp, err := client.MergeIntoBranchWithResponse(ctx, repo, branch, mainBranch, api.MergeIntoBranchJSONRequestBody{})
+	require.NoError(t, err)
 
 	webhookData, err = responseWithTimeout(server, 1*time.Minute)
 	require.NoError(t, err)
