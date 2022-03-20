@@ -28,6 +28,10 @@ type ValidateArg struct {
 	Fn    ValidateFunc
 }
 
+type Secured interface {
+	SecureValue() string
+}
+
 func Validate(args []ValidateArg) error {
 	for _, arg := range args {
 		err := arg.Fn(arg.Value)
@@ -43,6 +47,10 @@ func MakeValidateOptional(fn ValidateFunc) ValidateFunc {
 		switch s := v.(type) {
 		case string:
 			if len(s) == 0 {
+				return nil
+			}
+		case Secured:
+			if len(s.SecureValue()) == 0 {
 				return nil
 			}
 		case fmt.Stringer:

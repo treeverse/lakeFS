@@ -10,9 +10,11 @@ import (
 // of strings.
 type Strings []string
 
-var ourStringsType = reflect.TypeOf(Strings{})
-var stringType = reflect.TypeOf("")
-var stringSliceType = reflect.TypeOf([]string{})
+var (
+	ourStringsType  = reflect.TypeOf(Strings{})
+	stringType      = reflect.TypeOf("")
+	stringSliceType = reflect.TypeOf([]string{})
+)
 
 // decodeStrings is a mapstructure.HookFuncType that decodes a single string value or a slice
 // of strings into Strings.
@@ -31,8 +33,14 @@ func DecodeStrings(fromValue reflect.Value, toValue reflect.Value) (interface{},
 
 type SecureString string
 
-func (s *SecureString) String() string {
-	return string(*s)
+// String returns an elided version.  It is safe to call for logging.
+func (SecureString) String() string {
+	return "[SECRET]"
+}
+
+// SecureValue returns the actual value of s as a string.
+func (s SecureString) SecureValue() string {
+	return string(s)
 }
 
 // LDAP holds configuration for authenticating on an LDAP server.
