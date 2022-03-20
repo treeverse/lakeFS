@@ -179,6 +179,11 @@ func (s *BufferedCollector) Run(ctx context.Context) {
 			s.cache = make(keyIndex)
 			go s.send(metrics) // no need to block on this
 		case <-ctx.Done(): // we're done
+			close(s.writes)
+			for w := range s.writes {
+				s.incr(w)
+			}
+
 			metrics := makeMetrics(s.cache)
 			s.send(metrics)
 			s.done <- true
