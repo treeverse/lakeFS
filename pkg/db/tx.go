@@ -136,10 +136,9 @@ func (d *dbTx) handleSQLError(err error, cmdType string, query string) error {
 		return ErrAlreadyExists
 	}
 	if pgxscan.NotFound(err) {
-		d.logger.Trace("SQL query returned no results")
 		return ErrNotFound
 	}
-	return fmt.Errorf("query %s: %w", query, err)
+	return fmt.Errorf("%s: %w", query, err)
 }
 
 type TxOpt func(*TxOptions)

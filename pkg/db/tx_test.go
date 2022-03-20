@@ -3,9 +3,10 @@ package db_test
 import (
 	"context"
 	"errors"
+	"testing"
+
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/db/params"
-	"testing"
 )
 
 func getDB(t *testing.T) db.Database {
@@ -94,9 +95,9 @@ func TestGet(t *testing.T) {
 	t.Run("failure unique", func(t *testing.T) {
 		_, err := d.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			var r R
-			_ = tx.Get(&r, `CREATE TABLE test_table (ID int NOT NULL UNIQUE)`)
-			_ = tx.Get(&r, `INSERT INTO test_table VALUES (1)`)
-			err := tx.Get(&r, `INSERT INTO test_table VALUES (1)`)
+			_ = tx.Get(&r, `CREATE TABLE test_failure_unique (ID int NOT NULL UNIQUE)`)
+			_ = tx.Get(&r, `INSERT INTO test_failure_unique VALUES (1)`)
+			err := tx.Get(&r, `INSERT INTO test_failure_unique VALUES (1)`)
 			return &r, err
 		})
 
