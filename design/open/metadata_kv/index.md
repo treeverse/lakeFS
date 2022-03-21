@@ -38,7 +38,7 @@ after A.  (As usual, these are not a total ordering!)
 * If a write succeeds, successive reads and listings will return the contents of either that
   write or of some other write that did not happen before it.
 
-* A succesful read returns the contents of some write that did not happen after it.
+* A successful read returns the contents of some write that did not happen after it.
 
 * A listing returns the contents of some writes that did not happen after it.
 
@@ -152,7 +152,6 @@ func ListUserGroups(kv Store, userID string) []string {
     ...
     return groupIds
 }
-
 ```
 
 It is possible to create a 2-way index for many-to-many relationships, but this is not generally required - it would be simpler to simply do a scan when needed and filter only the relevant values.
@@ -190,10 +189,10 @@ This is what the proposed implementation will look like:
 We add an additional field to each `Branch` object: In addition to the existing `staging_token`, we add an array of strings named `sealed_tokens`.
 
 1. get branch, find current `staging_token`
-1. use `SetIf()` to update the branch (if not modified by another process): push existing `staging_token` into `sealed_tokens`, set new uuid as `staging_token`. The branch is assuming to be represented by a single key/value pair that contains the `staging_token`, `sealed_tokens` and `commit_id` fields.
+1. use `SetIf()` to update the branch (if not modified by another process): push existing `staging_token` into `sealed_tokens`, set new UUID as `staging_token`. The branch is assuming to be represented by a single key/value pair that contains the `staging_token`, `sealed_tokens` and `commit_id` fields.
 1. take the list of sealed tokens, and using the [`CombinedIterator()`](https://github.com/treeverse/lakeFS/blob/master/pkg/graveler/combined_iterator.go#L11), turn them into a single iterator to be applied on top of the existing commit
 1. Once the commit has been persisted (metaranges and ranges stored in object store, commit itself stored to KV using `Set()`), perform another `SetIf()` that updates the branch key/value pair again: replacing its commit ID with the new value, and clearing `sealed_tokens`, as these have materialized into the new commit.
-1. If `SetIf()` fails, this means another commit is happening/has happened on the same branch. Can either retry or let the caller know.
+1. If `SetIf()` fails, this means another commit is happening/has happened on the same branch. Can either retry (use backoff), and fail the request or let the caller know (fail the request) and let the user retry if needed.
 
 An important property here is delegating safety vs liveness to a single optimistic `SetIf()` operation: if a commit fails somewhere along the process, a subsequent commit would simply pick up where the failed one left off,
 adding the current staging_token into the set of changes to apply. In an environment where there aren't many concurrent commits on the same branch, and that commits mostly succeed - the size of `sealed_tokens` would be relatively small. As an optimization, compaction strategies could be added to merge tokens together, but this *might not be necessary*, at least not for use cases we're familiar with.
@@ -225,7 +224,7 @@ Please note: this *does not violate consistency*, see the [Read flow](#reader-fl
 #### Reading/Listing flow
 
 1. Read the branch's existing staging token(s): if branch exists in the cache, use it! Otherwise, do an amortized read (see [above](#caching-branch-pointers-and-amortized-reads)) and cache the result for a very short duration.
-1. The length of `sealed_list` will typically be *empty* or very small, see ((above)[#committer-flow])
+1. The length of `sealed_token` list will typically be *empty* or very small, see ((above)[#committer-flow])
 1. We now use the existing `CombinedIterator` to read through all staging tokens and underlying commit.
 1. Read the branch's existing staging token(s) **again**. This is always an amortized read, not a cache read. If it hasn't changed - great, no commit has *started while reading* the record, return success to the user. For a system with low contention between writes and commits, this will be the usual case.
 1. If it has changed, we're reading from a stale set of staging tokens. A committer might have already deleted records from it. Retry the process.
@@ -235,7 +234,7 @@ Please note: this *does not violate consistency*, see the [Read flow](#reader-fl
 #### Important Note - exclusion duration
 
 It is important to understand that the current pessimistic approach locks the branch for the entire duration of the commit. 
-This takes time proportional to the amount of changes to be committted and is unbounded. All writes to a branch are blocked for that period of time.
+This takes time proportional to the amount of changes to be committed and is unbounded. All writes to a branch are blocked for that period of time.
 
 With the optimistic version, readers and writers end up retrying in during exactly 2 "constant time" operations during a commit: during the initial update with a new `staging_token`, and again when clearing `sealed_tokens`.
 The duration of these operations is of course, not constant - it is (well, should be) very short, and not proportional to the size of the commit in any way.
