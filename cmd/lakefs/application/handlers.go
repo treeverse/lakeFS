@@ -12,7 +12,7 @@ import (
 	"net/url"
 )
 
-func NewAPIHandler(cmd LakeFsCmd, databaseService *DatabaseService, authService *AuthService, blockStore *BlockStore, c *catalog.Catalog, cloudMetadataProvider cloud.MetadataProvider, actionsService *actions.Service, auditChecker *version.AuditChecker) http.Handler {
+func NewAPIHandler(cmd LakeFsCmdContext, databaseService *DatabaseService, authService *AuthService, blockStore *BlockStore, c *catalog.Catalog, cloudMetadataProvider cloud.MetadataProvider, actionsService *actions.Service, auditChecker *version.AuditChecker) http.Handler {
 	return api.Serve(
 		cmd.cfg,
 		c,
@@ -30,7 +30,7 @@ func NewAPIHandler(cmd LakeFsCmd, databaseService *DatabaseService, authService 
 	)
 }
 
-func NewS3GatewayHandler(cmd LakeFsCmd, multipartsTracker multiparts.Tracker, c *catalog.Catalog, blockStore *BlockStore, authService *AuthService) http.Handler {
+func NewS3GatewayHandler(cmd LakeFsCmdContext, multipartsTracker multiparts.Tracker, c *catalog.Catalog, blockStore *BlockStore, authService *AuthService) http.Handler {
 	cfg := cmd.cfg
 	var err error
 	s3Fallback := cfg.GetS3GatewayFallbackURL()

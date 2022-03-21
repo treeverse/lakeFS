@@ -5,7 +5,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/catalog"
 )
 
-func NewActionsService(cmd LakeFsCmd, dbService *DatabaseService, c *catalog.Catalog, blockStore *BlockStore) *actions.Service {
+func NewActionsService(cmd LakeFsCmdContext, dbService *DatabaseService, c *catalog.Catalog, blockStore *BlockStore) *actions.Service {
 	actionsService := actions.NewService(
 		cmd.ctx,
 		dbService.dbPool,

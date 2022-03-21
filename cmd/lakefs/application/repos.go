@@ -29,7 +29,7 @@ func checkMetadataPrefix(ctx context.Context, repo *catalog.Repository, logger l
 }
 
 // checkRepos iterates on all repos and validates that their settings are correct.
-func CheckRepos(lakeFsCmd LakeFsCmd, authService *AuthService, blockStore *BlockStore, c *catalog.Catalog) {
+func CheckRepos(lakeFsCmd LakeFsCmdContext, authService *AuthService, blockStore *BlockStore, c *catalog.Catalog) {
 	logger := lakeFsCmd.logger
 	ctx := lakeFsCmd.ctx
 	initialized, err := authService.authMetadataManager.IsInitialized(ctx)

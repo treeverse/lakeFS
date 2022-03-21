@@ -6,14 +6,14 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-type LakeFsCmd struct {
+type LakeFsCmdContext struct {
 	ctx    context.Context
 	cfg    *config.Config
 	logger logging.Logger
 }
 
-func NewLakeFsCmd(ctx context.Context, cfg *config.Config, logger logging.Logger) LakeFsCmd {
-	return LakeFsCmd{
+func NewLakeFsCmdContext(ctx context.Context, cfg *config.Config, logger logging.Logger) LakeFsCmdContext {
+	return LakeFsCmdContext{
 		ctx,
 		cfg,
 		logger,

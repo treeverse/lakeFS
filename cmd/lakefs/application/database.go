@@ -28,7 +28,7 @@ func (databaseService DatabaseService) RegisterPrometheusCollector() error {
 	return prometheus.Register(collector)
 }
 
-func (databaseService DatabaseService) NewCatalog(cmd LakeFsCmd) (*catalog.Catalog, error) {
+func (databaseService DatabaseService) NewCatalog(cmd LakeFsCmdContext) (*catalog.Catalog, error) {
 	return catalog.New(cmd.ctx,
 		catalog.Config{
 			Config: cmd.cfg,
@@ -42,7 +42,7 @@ func (databaseService DatabaseService) NewMultipartTracker() multiparts.Tracker 
 	return multiparts.NewTracker(databaseService.dbPool)
 }
 
-func NewDatabaseService(cmd LakeFsCmd) (*DatabaseService, error) {
+func NewDatabaseService(cmd LakeFsCmdContext) (*DatabaseService, error) {
 	dbParams := cmd.cfg.GetDatabaseParams()
 	dbPool := db.BuildDatabaseConnection(cmd.ctx, dbParams)
 	err := db.ValidateSchemaUpToDate(cmd.ctx, dbPool, dbParams)

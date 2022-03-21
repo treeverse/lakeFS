@@ -48,7 +48,7 @@ func NewRootCmd() *cobra.Command {
 				logging.SetLevel(lvl)
 			})
 			ctx := cmd.Context()
-			lakeFsCmd := application.NewLakeFsCmd(ctx, cfg, logger)
+			lakeFsCmd := application.NewLakeFsCmdContext(ctx, cfg, logger)
 			logger.WithField("version", version.Version).Info("lakeFS run")
 
 			databaseService, err := application.NewDatabaseService(lakeFsCmd)
@@ -192,7 +192,7 @@ func init() {
 
 	runCmd.Flags().BoolP(mismatchedReposFlagName, "m", false, "Allow repositories from other object store types")
 	if err := runCmd.Flags().MarkHidden(mismatchedReposFlagName); err != nil {
-		// (common error)
+		// (internal error)
 		_, _ = fmt.Fprint(os.Stderr, err)
 		os.Exit(internalErrorCode)
 	}

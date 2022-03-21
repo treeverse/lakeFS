@@ -18,7 +18,7 @@ type BlockStore struct {
 	bufferedCollector *stats.BufferedCollector
 }
 
-func NewBlockStore(lakeFsCmd LakeFsCmd, authService *AuthService, cloudMetadataProvider cloud.MetadataProvider) (*BlockStore, error) {
+func NewBlockStore(lakeFsCmd LakeFsCmdContext, authService *AuthService, cloudMetadataProvider cloud.MetadataProvider) (*BlockStore, error) {
 	blockstoreType := lakeFsCmd.cfg.GetBlockstoreType()
 	if blockstoreType == "local" || blockstoreType == "mem" {
 		printLocalWarning(os.Stderr, blockstoreType)
@@ -29,15 +29,15 @@ func NewBlockStore(lakeFsCmd LakeFsCmd, authService *AuthService, cloudMetadataP
 
 	bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, lakeFsCmd.cfg)
 	// init block store
-	block, err := factory.BuildBlockAdapter(lakeFsCmd.ctx, bufferedCollector, lakeFsCmd.cfg)
+	blockAdapter, err := factory.BuildBlockAdapter(lakeFsCmd.ctx, bufferedCollector, lakeFsCmd.cfg)
 	if err != nil {
 		return nil, err
 	}
-	bufferedCollector.SetRuntimeCollector(block.RuntimeStats)
+	bufferedCollector.SetRuntimeCollector(blockAdapter.RuntimeStats)
 	// send metadata
 	bufferedCollector.CollectMetadata(metadata)
 	return &BlockStore{
-		block,
+		blockAdapter,
 		blockstoreType,
 		metadata,
 		bufferedCollector,
