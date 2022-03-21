@@ -40,6 +40,7 @@ var ingestCmd = &cobra.Command{
 		ctx := cmd.Context()
 		verbose := MustBool(cmd.Flags().GetBool("verbose"))
 		dryRun := MustBool(cmd.Flags().GetBool("dry-run"))
+		intg := MustString(cmd.Flags().GetString("intg"))
 		from := MustString(cmd.Flags().GetString("from"))
 		to := MustString(cmd.Flags().GetString("to"))
 		concurrency := MustInt(cmd.Flags().GetInt("concurrency"))
@@ -68,7 +69,7 @@ var ingestCmd = &cobra.Command{
 			path = path + PathDelimiter // append a path delimiter (slash) if not passed by the user
 		}
 		go func() {
-			err := store.Walk(ctx, from, func(e store.ObjectStoreEntry) error {
+			err := store.Walk(ctx, intg, from, func(e store.ObjectStoreEntry) error {
 				if dryRun {
 					Fmt("%s\n", e)
 					return nil
@@ -132,6 +133,7 @@ func init() {
 	ingestCmd.Flags().String("to", "", "lakeFS path to load objects into (e.g. \"lakefs://repo/branch/sub/path/\")")
 	_ = ingestCmd.MarkFlagRequired("to")
 	ingestCmd.Flags().Bool("dry-run", false, "only print the paths to be ingested")
+	ingestCmd.Flags().String("intg", "", "integration source which must be used for ingestion")
 	ingestCmd.Flags().BoolP("verbose", "v", false, "print stats for each individual object staged")
 	ingestCmd.Flags().IntP("concurrency", "C", 64, "max concurrent API calls to make to the lakeFS server")
 	rootCmd.AddCommand(ingestCmd)
