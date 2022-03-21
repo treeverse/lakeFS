@@ -13,9 +13,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/dlmiddlecote/sqlstats"
 	"github.com/fsnotify/fsnotify"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/config"
@@ -118,7 +116,7 @@ func NewRootCmd() *cobra.Command {
 			blockStore.CollectRun()
 
 			logging.Default().WithField("listen_address", cfg.GetListenAddress()).Info("starting HTTP server")
-			server := application.NewLakeFsHttpServer(cfg.GetListenAddress(), cfg.GetS3GatewayDomainNames(), s3gatewayHandler, apiHandler)
+			server := application.NewLakeFsHTTPServer(cfg.GetListenAddress(), cfg.GetS3GatewayDomainNames(), s3gatewayHandler, apiHandler)
 			go func() {
 				if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 					fmt.Printf("server failed to listen on %s: %v\n", cfg.GetListenAddress(), err)
@@ -164,25 +162,6 @@ const runBanner = `
 func printWelcome(w io.Writer) {
 	_, _ = fmt.Fprint(w, runBanner)
 	_, _ = fmt.Fprintf(w, "Version %s\n\n", version.Version)
-}
-
-var localWarningBanner = `
-WARNING!
-
-Using the "%s" block adapter.  This is suitable only for testing, but not
-for production.
-`
-
-func printLocalWarning(w io.Writer, adapter string) {
-	_, _ = fmt.Fprintf(w, localWarningBanner, adapter)
-}
-
-func registerPrometheusCollector(db sqlstats.StatsGetter) {
-	collector := sqlstats.NewStatsCollector("lakefs", db)
-	err := prometheus.Register(collector)
-	if err != nil {
-		logging.Default().WithError(err).Error("failed to register db stats collector")
-	}
 }
 
 func gracefulShutdown(ctx context.Context, quit <-chan os.Signal, done chan<- bool, servers ...Shutter) {

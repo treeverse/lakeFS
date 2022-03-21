@@ -14,13 +14,13 @@ import (
 type DatabaseService struct {
 	dbPool     db.Database
 	dbParams   params.Database
-	lockDbPool db.Database
-	Migrator   *db.DatabaseMigrator
+	lockDBPool db.Database
+	migrator   *db.DatabaseMigrator
 }
 
 func (databaseService DatabaseService) Close() {
 	databaseService.dbPool.Close()
-	databaseService.lockDbPool.Close()
+	databaseService.lockDBPool.Close()
 }
 
 func (databaseService DatabaseService) RegisterPrometheusCollector() error {
@@ -33,7 +33,7 @@ func (databaseService DatabaseService) NewCatalog(cmd LakeFsCmd) (*catalog.Catal
 		catalog.Config{
 			Config: cmd.cfg,
 			DB:     databaseService.dbPool,
-			LockDB: databaseService.lockDbPool,
+			LockDB: databaseService.lockDBPool,
 		},
 	)
 }
@@ -45,22 +45,24 @@ func (databaseService DatabaseService) NewMultipartTracker() multiparts.Tracker 
 func NewDatabaseService(cmd LakeFsCmd) (*DatabaseService, error) {
 	dbParams := cmd.cfg.GetDatabaseParams()
 	dbPool := db.BuildDatabaseConnection(cmd.ctx, dbParams)
-	if err := db.ValidateSchemaUpToDate(cmd.ctx, dbPool, dbParams); errors.Is(err, db.ErrSchemaNotCompatible) {
+	err := db.ValidateSchemaUpToDate(cmd.ctx, dbPool, dbParams)
+	switch {
+	case errors.Is(err, db.ErrSchemaNotCompatible):
 		cmd.logger.WithError(err).Fatal("Migration version mismatch, for more information see https://docs.lakefs.io/deploying-aws/upgrade.html")
 		return nil, err
-	} else if errors.Is(err, migrate.ErrNilVersion) {
+	case errors.Is(err, migrate.ErrNilVersion):
 		cmd.logger.Debug("No migration, setup required")
 		return nil, err
-	} else if err != nil {
+	case err != nil:
 		cmd.logger.WithError(err).Warn("Failed on schema validation")
 		return nil, err
 	}
-	lockDbPool := db.BuildDatabaseConnection(cmd.ctx, dbParams)
+	lockDBPool := db.BuildDatabaseConnection(cmd.ctx, dbParams)
 	migrator := db.NewDatabaseMigrator(dbParams)
 	return &DatabaseService{
 		dbPool,
 		dbParams,
-		lockDbPool,
+		lockDBPool,
 		migrator,
 	}, nil
 }

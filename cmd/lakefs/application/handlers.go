@@ -20,7 +20,7 @@ func NewAPIHandler(cmd LakeFsCmd, databaseService *DatabaseService, authService 
 		authService.dbAuthService,
 		blockStore.blockAdapter,
 		authService.authMetadataManager,
-		databaseService.Migrator,
+		databaseService.migrator,
 		blockStore.bufferedCollector,
 		cloudMetadataProvider,
 		actionsService,
