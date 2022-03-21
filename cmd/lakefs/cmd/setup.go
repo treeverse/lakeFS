@@ -84,7 +84,7 @@ var setupCmd = &cobra.Command{
 			credentials.AccessKeyID, credentials.SecretAccessKey)
 
 		cancelFn()
-		<-stats.Done()
+		stats.Close()
 	},
 }
 

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/google/uuid"
@@ -25,6 +27,9 @@ type Collector interface {
 	CollectEvent(class, action string)
 	CollectMetadata(accountMetadata *Metadata)
 	SetInstallationID(installationID string)
+
+	// Close must be called to ensure the delivery of pending stats
+	Close()
 }
 
 type Metric struct {
@@ -74,11 +79,15 @@ type BufferedCollector struct {
 	sender           Sender
 	sendTimeout      time.Duration
 	flushTicker      FlushTicker
-	done             chan bool
 	installationID   string
 	processID        string
 	runtimeCollector func() map[string]string
 	runtimeStats     map[string]string
+
+	pendingWrites   sync.WaitGroup
+	pendingRequests sync.WaitGroup
+	ctxCancelled    int32
+	done            chan bool
 }
 
 type BufferedCollectorOpts func(s *BufferedCollector)
@@ -117,15 +126,18 @@ func NewBufferedCollector(installationID string, c *config.Config, opts ...Buffe
 	processID, moreOpts := getBufferedCollectorArgs(c)
 	opts = append(opts, moreOpts...)
 	s := &BufferedCollector{
-		cache:          make(keyIndex),
-		writes:         make(chan primaryKey, collectorEventBufferSize),
-		done:           make(chan bool),
-		sender:         NewDummySender(),
-		sendTimeout:    sendTimeout,
-		runtimeStats:   map[string]string{},
-		flushTicker:    &TimeTicker{ticker: time.NewTicker(flushInterval)},
-		installationID: installationID,
-		processID:      processID,
+		cache:           make(keyIndex),
+		writes:          make(chan primaryKey, collectorEventBufferSize),
+		sender:          NewDummySender(),
+		sendTimeout:     sendTimeout,
+		runtimeStats:    map[string]string{},
+		flushTicker:     &TimeTicker{ticker: time.NewTicker(flushInterval)},
+		installationID:  installationID,
+		processID:       processID,
+		pendingWrites:   sync.WaitGroup{},
+		pendingRequests: sync.WaitGroup{},
+		ctxCancelled:    0,
+		done:            make(chan bool),
 	}
 	for _, opt := range opts {
 		opt(s)
@@ -142,29 +154,39 @@ func (s *BufferedCollector) incr(k primaryKey) {
 }
 
 func (s *BufferedCollector) send(metrics []Metric) {
-	if len(metrics) == 0 {
-		return
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), s.sendTimeout)
-	defer cancel()
-	err := s.sender.SendEvent(ctx, s.getInstallationID(), s.processID, metrics)
-	if err != nil {
-		logging.Default().
-			WithError(err).
-			WithField("service", "stats_collector").
-			Debug("could not send stats")
-	}
+	s.pendingRequests.Add(1)
+	go func() {
+		defer s.pendingRequests.Done()
+		if len(metrics) == 0 {
+			return
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), s.sendTimeout)
+		defer cancel()
+		err := s.sender.SendEvent(ctx, s.getInstallationID(), s.processID, metrics)
+		if err != nil {
+			logging.Default().
+				WithError(err).
+				WithField("service", "stats_collector").
+				Debug("could not send stats")
+		}
+	}()
 }
 
 func (s *BufferedCollector) CollectEvent(class, action string) {
+	if s.isCtxCancelled() {
+		return
+	}
+	s.pendingWrites.Add(1)
+	defer s.pendingWrites.Done()
+
 	s.writes <- primaryKey{
 		class:  class,
 		action: action,
 	}
 }
 
-func (s *BufferedCollector) Done() <-chan bool {
-	return s.done
+func (s *BufferedCollector) isCtxCancelled() bool {
+	return atomic.LoadInt32(&s.ctxCancelled) == 1
 }
 
 func (s *BufferedCollector) Run(ctx context.Context) {
@@ -177,19 +199,34 @@ func (s *BufferedCollector) Run(ctx context.Context) {
 			s.handleRuntimeStats()
 			metrics := makeMetrics(s.cache)
 			s.cache = make(keyIndex)
-			go s.send(metrics) // no need to block on this
-		case <-ctx.Done(): // we're done
-			close(s.writes)
-			for w := range s.writes {
-				s.incr(w)
-			}
-
-			metrics := makeMetrics(s.cache)
 			s.send(metrics)
-			s.done <- true
+		case <-ctx.Done(): // we're done
+			close(s.done)
 			return
 		}
 	}
+}
+
+func (s *BufferedCollector) Close() {
+	// wait for main loop to exit
+	<-s.done
+
+	// block any new write
+	atomic.StoreInt32(&s.ctxCancelled, 1)
+
+	// wait until all writes were added
+	s.pendingWrites.Wait()
+
+	// drain writes
+	close(s.writes)
+	for w := range s.writes {
+		s.incr(w)
+	}
+	metrics := makeMetrics(s.cache)
+	s.send(metrics)
+
+	// wait for http requests to complete
+	s.pendingRequests.Wait()
 }
 
 func makeMetrics(counters keyIndex) []Metric {

@@ -270,7 +270,7 @@ var runCmd = &cobra.Command{
 
 		<-done
 		cancelFn()
-		<-bufferedCollector.Done()
+		bufferedCollector.Close()
 	},
 }
 
