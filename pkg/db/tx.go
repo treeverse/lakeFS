@@ -51,7 +51,7 @@ func (d *dbTx) Query(query string, args ...interface{}) (pgx.Rows, error) {
 			"query": queryToString(query),
 		})
 	if err != nil {
-		return nil, d.handleSQLError(err, "query", query)
+		return nil, handleSQLError(err, "query", query, log)
 	}
 	log.Trace("SQL query started successfully")
 	return Logged(rows, start, log), nil
@@ -67,7 +67,7 @@ func Select(d *dbTx, results interface{}, query string, args ...interface{}) err
 			"query": queryToString(query),
 		})
 	if err != nil {
-		return d.handleSQLError(err, "select", query)
+		return handleSQLError(err, "select", query, log)
 	}
 	defer rows.Close()
 	log.Trace("SQL query executed successfully")
@@ -88,7 +88,7 @@ func (d *dbTx) Get(dest interface{}, query string, args ...interface{}) error {
 		"took":  time.Since(start),
 	})
 	if err != nil {
-		return d.handleSQLError(err, "get", query)
+		return handleSQLError(err, "get", query, log)
 	}
 	log.Trace("SQL query executed successfully")
 	return nil
@@ -105,7 +105,7 @@ func (d *dbTx) GetPrimitive(dest interface{}, query string, args ...interface{})
 		"took":  time.Since(start),
 	})
 	if err != nil {
-		return d.handleSQLError(err, "get", query)
+		return handleSQLError(err, "get", query, log)
 	}
 	log.Trace("SQL query executed successfully")
 	return nil
@@ -121,14 +121,14 @@ func (d *dbTx) Exec(query string, args ...interface{}) (pgconn.CommandTag, error
 		"took":  time.Since(start),
 	})
 	if err != nil {
-		return res, d.handleSQLError(err, "exec", query)
+		return res, handleSQLError(err, "exec", query, log)
 	}
 	log.Trace("SQL query executed successfully")
 	return res, err
 }
 
-func (d *dbTx) handleSQLError(err error, cmdType string, query string) error {
-	d.logger.Trace("SQL operation err:", err)
+func handleSQLError(err error, cmdType string, query string, log logging.Logger) error {
+	log.WithError(err).Trace("SQL operation error")
 	// Each error that is added here should be updated also in controller.go:handleAPIError
 	if isUniqueViolation(err) {
 		return ErrAlreadyExists
@@ -138,7 +138,7 @@ func (d *dbTx) handleSQLError(err error, cmdType string, query string) error {
 	}
 
 	dbErrorsCounter.WithLabelValues(cmdType).Inc()
-	d.logger.WithError(err).Error("SQL operation unhandled error")
+	log.WithError(err).Error("SQL operation completed with error")
 	return fmt.Errorf("%s: %w", query, err)
 }
 
