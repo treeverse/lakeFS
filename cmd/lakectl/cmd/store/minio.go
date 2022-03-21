@@ -43,7 +43,7 @@ func (m MinioWalker) Walk(ctx context.Context, storageURI *url.URL, walkFn func(
 			return fmt.Errorf("error minioObject: %w", object.Err)
 		}
 
-		addr := fmt.Sprintf("s3://%s/%s/%s", os.Getenv("MINIO_STORAGE_ACCOUNT"), bucket, object.Key)
+		addr := fmt.Sprintf("s3://%s/%s", bucket, object.Key)
 		ent := ObjectStoreEntry{
 			FullKey:     object.Key,
 			RelativeKey: strings.TrimPrefix(object.Key, prefix),
