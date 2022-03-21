@@ -44,8 +44,7 @@ This is necessary because the branch and the schema might have different names (
 
 ### Suggested implementation
 
-The mapping of branches to schemas will be facilitated under the branch's (or more accurately, the commit that this branch is pointing to) metadata property.
-The `schema` key will be used to point to the name of the schema that is configured with the URI of the containing branch: `schema -> <schema name>`.  
+The mapping of branches to schemas will be facilitated under the `_lakefs` directory in the underlying storage.
 When users start working with lakectl and dbt together they'll also need to map the main/master/production branch they are working with to a schema, otherwise they will be blocked from working with `lakectl dbt` commands.
 This is necessary because, as mentioned in the [Background section](#background), when users first initialize a schema it points to the branch's location, but they didn't take any action to **map the branch to the schema**.
 It might cause a problem if, for example, a user branches out of the main branch (the branch that the target schema's location is pointing to), commits changes with the newly created schema, merges the branches and then wants to merge the schemas. The user wouldn't be able to merge the schemas because the main branch is not aware of the schema associated with it.  
