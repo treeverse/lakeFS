@@ -224,7 +224,7 @@ Please note: this *does not violate consistency*, see the [Read flow](#reader-fl
 #### Reading/Listing flow
 
 1. Read the branch's existing staging token(s): if branch exists in the cache, use it! Otherwise, do an amortized read (see [above](#caching-branch-pointers-and-amortized-reads)) and cache the result for a very short duration.
-1. The length of `sealed_list` will typically be *empty* or very small, see ((above)[#committer-flow])
+1. The length of `sealed_token` list will typically be *empty* or very small, see ((above)[#committer-flow])
 1. We now use the existing `CombinedIterator` to read through all staging tokens and underlying commit.
 1. Read the branch's existing staging token(s) **again**. This is always an amortized read, not a cache read. If it hasn't changed - great, no commit has *started while reading* the record, return success to the user. For a system with low contention between writes and commits, this will be the usual case.
 1. If it has changed, we're reading from a stale set of staging tokens. A committer might have already deleted records from it. Retry the process.
