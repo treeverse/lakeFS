@@ -25,11 +25,7 @@ func GetS3Client(config aws.Config) (*s3.S3, error) {
 }
 
 type S3Walker struct {
-	s3 s3iface.S3API
-}
-
-func (s *S3Walker) SetS3(s3 s3iface.S3API) {
-	s.s3 = s3
+	S3 s3iface.S3API
 }
 
 func (s *S3Walker) Walk(ctx context.Context, storageURI *url.URL, walkFn func(e ObjectStoreEntry) error) error {
@@ -38,7 +34,7 @@ func (s *S3Walker) Walk(ctx context.Context, storageURI *url.URL, walkFn func(e 
 	prefix := strings.TrimLeft(storageURI.Path, "/")
 	bucket := storageURI.Host
 	for {
-		result, err := s.s3.ListObjectsV2WithContext(ctx, &s3.ListObjectsV2Input{
+		result, err := s.S3.ListObjectsV2WithContext(ctx, &s3.ListObjectsV2Input{
 			Bucket:            aws.String(bucket),
 			ContinuationToken: continuation,
 			MaxKeys:           aws.Int64(maxKeys),
