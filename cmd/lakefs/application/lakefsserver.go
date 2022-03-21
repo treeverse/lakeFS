@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func NewLakeFsHTTPServer(listenAddress string, s3GatewayDomainNames []string, s3gatewayHandler http.Handler, apiHandler http.Handler) *http.Server {
+func NewLakeFSHTTPServer(listenAddress string, s3GatewayDomainNames []string, s3gatewayHandler http.Handler, apiHandler http.Handler) *http.Server {
 	return &http.Server{
 		Addr: listenAddress,
 		Handler: http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
