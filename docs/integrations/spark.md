@@ -219,14 +219,13 @@ FileSystem.
 
 #### Load the FileSystem JARs
 
-Add the package `io.lakefs:hadoop-lakefs-assembly:<VERSION>` to your Spark job.  Right now
-this is version 0.1.4, so add:
+Add the package `io.lakefs:hadoop-lakefs-assembly:<VERSION>` to your Spark command:
 
 ```
---packages io.lakefs:hadoop-lakefs-assembly:0.1.4
+--packages io.lakefs:hadoop-lakefs-assembly:0.1.6
 ```
 
-to your Spark commandlines.
+The jar is also available on a public S3 location: `s3://treeverse-clients-us-east/hadoop/hadoop-lakefs-assembly-0.1.6.jar`
 
 #### Configure the lakeFS FileSystem and the underlying S3A FileSystem
 
@@ -270,7 +269,7 @@ spark-shell --conf spark.hadoop.fs.s3a.access.key='AKIAIOSFODNN7EXAMPLE' \
               --conf spark.hadoop.fs.lakefs.access.key=AKIAlakefs12345EXAMPLE \
               --conf spark.hadoop.fs.lakefs.secret.key=abc/lakefs/1234567bPxRfiCYEXAMPLEKEY \
               --conf spark.hadoop.fs.lakefs.endpoint=https://lakefs.example.com/api/v1 \
-              --packages io.lakefs:hadoop-lakefs-assembly:0.1.4
+              --packages io.lakefs:hadoop-lakefs-assembly:0.1.6
               ...
 ```
   </div>
