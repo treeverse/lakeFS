@@ -91,4 +91,18 @@ func TestGet(t *testing.T) {
 			t.Errorf("got %s wanted not found", err)
 		}
 	})
+
+	t.Run("failure unique", func(t *testing.T) {
+		_, err := d.Transact(ctx, func(tx db.Tx) (interface{}, error) {
+			var r R
+			_ = tx.Get(&r, `CREATE TABLE test_failure_unique (ID int NOT NULL UNIQUE)`)
+			_ = tx.Get(&r, `INSERT INTO test_failure_unique VALUES (1)`)
+			err := tx.Get(&r, `INSERT INTO test_failure_unique VALUES (1)`)
+			return &r, err
+		})
+
+		if !errors.Is(err, db.ErrAlreadyExists) {
+			t.Errorf("got: %s expected: %s", err, db.ErrAlreadyExists)
+		}
+	})
 }

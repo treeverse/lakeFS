@@ -1611,7 +1611,9 @@ func handleAPIError(w http.ResponseWriter, err error) bool {
 	switch {
 	case errors.Is(err, catalog.ErrNotFound),
 		errors.Is(err, graveler.ErrNotFound),
-		errors.Is(err, actions.ErrNotFound):
+		errors.Is(err, actions.ErrNotFound),
+		errors.Is(err, auth.ErrNotFound),
+		errors.Is(err, db.ErrNotFound):
 		writeError(w, http.StatusNotFound, err)
 
 	case errors.Is(err, graveler.ErrDirtyBranch),
@@ -1632,13 +1634,20 @@ func handleAPIError(w http.ResponseWriter, err error) bool {
 
 	case errors.Is(err, graveler.ErrLockNotAcquired):
 		writeError(w, http.StatusInternalServerError, "branch is currently locked, try again later")
+
 	case errors.Is(err, adapter.ErrDataNotFound):
 		writeError(w, http.StatusGone, "No data")
+
+	case errors.Is(err, db.ErrAlreadyExists):
+		writeError(w, http.StatusBadRequest, "Already exists")
+
 	case err != nil:
 		writeError(w, http.StatusInternalServerError, err)
+
 	default:
 		return false
 	}
+
 	return true
 }
 
