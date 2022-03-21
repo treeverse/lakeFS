@@ -38,6 +38,7 @@ func (c *ActionStatsMockCollector) CollectEvent(class, action string) {
 }
 func (c *ActionStatsMockCollector) CollectMetadata(accountMetadata *stats.Metadata) {}
 func (c *ActionStatsMockCollector) SetInstallationID(installationID string)         {}
+func (c *ActionStatsMockCollector) Close()                                          {}
 
 func TestServiceRun(t *testing.T) {
 	conn, _ := testutil.GetDB(t, databaseURI)

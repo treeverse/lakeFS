@@ -54,6 +54,8 @@ func (m *nullCollector) CollectEvent(_, _ string) {}
 
 func (m *nullCollector) SetInstallationID(_ string) {}
 
+func (m *nullCollector) Close() {}
+
 func TestLocalLoad(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping loadtest tests in short mode")
