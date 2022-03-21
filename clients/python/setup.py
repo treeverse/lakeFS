@@ -31,7 +31,7 @@ setup(
     description="lakeFS API",
     author="Treeverse",
     author_email="services@treeverse.io",
-    url="https://lakefs.io&quot;     project_urls&#x3D;&quot;{&quot;Repository&quot;: &quot;https://github.com/treeverse/lakeFS&quot;}",
+    url="https://github.com/treeverse/lakeFS/tree/master/clients/python",
     keywords=["OpenAPI", "OpenAPI-Generator", "lakeFS API"],
     python_requires=">=3.6",
     install_requires=REQUIRES,
