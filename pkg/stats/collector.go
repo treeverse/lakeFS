@@ -79,6 +79,7 @@ type BufferedCollector struct {
 	sender           Sender
 	sendTimeout      time.Duration
 	flushTicker      FlushTicker
+	heartbeatTicker  FlushTicker
 	installationID   string
 	processID        string
 	runtimeCollector func() map[string]string
@@ -133,6 +134,7 @@ func NewBufferedCollector(installationID string, c *config.Config, opts ...Buffe
 		sendTimeout:     sendTimeout,
 		runtimeStats:    map[string]string{},
 		flushTicker:     &TimeTicker{ticker: time.NewTicker(flushInterval)},
+		heartbeatTicker: &TimeTicker{ticker: time.NewTicker(heartbeatInterval)},
 		installationID:  installationID,
 		processID:       processID,
 		pendingWrites:   sync.WaitGroup{},
@@ -192,22 +194,25 @@ func (s *BufferedCollector) isCtxCancelled() bool {
 }
 
 func (s *BufferedCollector) Run(ctx context.Context) {
-	go s.collectHeartbeat(ctx)
 	atomic.StoreInt32(&s.runCalled, 1)
-	for {
-		select {
-		case w := <-s.writes: // collect events
-			s.incr(w)
-		case <-s.flushTicker.Tick(): // every N seconds, send the collected events
-			s.handleRuntimeStats()
-			metrics := makeMetrics(s.cache)
-			s.cache = make(keyIndex)
-			s.send(metrics)
-		case <-ctx.Done(): // we're done
-			close(s.done)
-			return
+	go func() {
+		for {
+			select {
+			case w := <-s.writes: // collect events
+				s.incr(w)
+			case <-s.heartbeatTicker.Tick():
+				s.CollectEvent("global", "heartbeat")
+			case <-s.flushTicker.Tick(): // every N seconds, send the collected events
+				s.handleRuntimeStats()
+				metrics := makeMetrics(s.cache)
+				s.cache = make(keyIndex)
+				s.send(metrics)
+			case <-ctx.Done(): // we're done
+				close(s.done)
+				return
+			}
 		}
-	}
+	}()
 }
 
 func (s *BufferedCollector) Close() {
@@ -260,17 +265,6 @@ func (s *BufferedCollector) CollectMetadata(accountMetadata *Metadata) {
 			WithError(err).
 			WithField("service", "stats_collector").
 			Debug("could not update metadata")
-	}
-}
-
-func (s *BufferedCollector) collectHeartbeat(ctx context.Context) {
-	for {
-		select {
-		case <-time.After(heartbeatInterval):
-			s.CollectEvent("global", "heartbeat")
-		case <-ctx.Done():
-			return
-		}
 	}
 }
 
