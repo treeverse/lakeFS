@@ -45,19 +45,11 @@ func Walk(ctx context.Context, intg string, storageURI string, walkFn func(e Obj
 	}
 	switch uri.Scheme {
 	case "s3":
-		if intg == "minio" {
-			svc, err := GetMinioClient()
-			if err != nil {
-				return err
-			}
-			walker = &MinioWalker{client: svc}
-		} else {
-			svc, err := GetS3Client()
-			if err != nil {
-				return err
-			}
-			walker = &S3Walker{s3: svc}
+		svc, err := GetS3Client(intg)
+		if err != nil {
+			return err
 		}
+		walker = &S3Walker{s3: svc}
 	case "gs":
 		svc, err := GetGCSClient(ctx)
 		if err != nil {
