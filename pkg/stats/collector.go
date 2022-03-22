@@ -306,6 +306,9 @@ func (s *BufferedCollector) handleRuntimeStats() {
 }
 
 func (s *BufferedCollector) sendRuntimeStats() {
+	s.pendingRequests.Add(1)
+	defer s.pendingRequests.Done()
+
 	m := Metadata{InstallationID: s.installationID}
 	for k, v := range s.runtimeStats {
 		m.Entries = append(m.Entries, MetadataEntry{Name: k, Value: v})
