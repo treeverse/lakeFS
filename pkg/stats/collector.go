@@ -301,20 +301,22 @@ func (s *BufferedCollector) handleRuntimeStats() {
 	}
 
 	if anyChange {
-		go s.sendRuntimeStats()
+		s.sendRuntimeStats()
 	}
 }
 
 func (s *BufferedCollector) sendRuntimeStats() {
 	s.pendingRequests.Add(1)
-	defer s.pendingRequests.Done()
+	go func() {
+		defer s.pendingRequests.Done()
 
-	m := Metadata{InstallationID: s.installationID}
-	for k, v := range s.runtimeStats {
-		m.Entries = append(m.Entries, MetadataEntry{Name: k, Value: v})
-	}
+		m := Metadata{InstallationID: s.installationID}
+		for k, v := range s.runtimeStats {
+			m.Entries = append(m.Entries, MetadataEntry{Name: k, Value: v})
+		}
 
-	s.CollectMetadata(&m)
+		s.CollectMetadata(&m)
+	}()
 }
 
 func getBufferedCollectorArgs(c *config.Config) (processID string, opts []BufferedCollectorOpts) {
