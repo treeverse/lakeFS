@@ -103,7 +103,7 @@ The following process utilizes lakeFS' capability to use existing data in isolat
 During deployment of newly generated data we would like to test its validity against our expectations.  
 The following process utilizes lakeFS's capability to run operations before merging and committing using [hooks](https://docs.lakefs.io/setup/hooks.html), and also dbt's capability to run tests over materialized data:
 1. Setup: create an integration branch and schema using `lakectl dbt create-branch-schema --create-branch --branch dbt_integration`.
-2. Define a pre-commit hook on the `dbt_integration` branch to validate the generated results of the dbt DAG run (these may include running `dbt test`).
+2. Define a post-commit hook on the `dbt_integration` branch to validate the generated results of the dbt DAG run (these may include running `dbt test`).
 3. Define a pre-merge hook on the production branch to validate the integrated data.
 4. Under the `profiles.yml` file, select the relevant target and change its schema name to `dbt_integration`.
 5. `dbt run` your dbt DAG to generate data.
