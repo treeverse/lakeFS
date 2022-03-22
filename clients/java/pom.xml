@@ -6,7 +6,7 @@
     <packaging>jar</packaging>
     <name>api-client</name>
     <version>0.1.0-SNAPSHOT</version>
-    <url>https://github.com/treeverse/lakeFS/tree/master/clients</url>
+    <url>https://lakefs.io</url>
     <description>lakeFS OpenAPI Java client</description>
     <scm>
         <connection>scm:git:git@github.com:treeverse/lakeFS.git</connection>

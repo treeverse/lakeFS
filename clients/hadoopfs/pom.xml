@@ -21,7 +21,7 @@ To export to S3:
     <packaging>jar</packaging>
     <name>hadoop-lakefs${name-suffix}</name>
     <version>0.1.0</version><!--MARKER: keep this comment here, we update the version with the lakeFS version when on deploy-->
-    <url>https://github.com/treeverse/lakeFS/tree/master/clients/hadoopfs</url>
+    <url>https://lakefs.io</url>
     <scm>
         <connection>scm:git:git@github.com:treeverse/lakeFS.git</connection>
         <developerConnection>scm:git:git@github.com:treeverse/lakeFS.git</developerConnection>
