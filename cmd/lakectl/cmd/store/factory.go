@@ -49,7 +49,7 @@ func Walk(ctx context.Context, storageURI string, walkFn func(e ObjectStoreEntry
 		if err != nil {
 			return err
 		}
-		walker = &S3Walker{S3: svc}
+		walker = &S3Walker{s3: svc}
 	case "gs":
 		svc, err := GetGCSClient(ctx)
 		if err != nil {
