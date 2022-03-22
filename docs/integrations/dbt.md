@@ -87,6 +87,29 @@ From your dbt project run:
 lakectl dbt create-branch-schema --branch my-branch --to-schema my_branch   
 ```
 
+## Use Cases
+
+### Development environment: test new dbt models
+
+The following process utilizes lakeFS' capability to use existing data in isolation and without duplicating it:
+1. Use `lakectl dbt create-branch-schema --create-branch --branch dbt_test_new_model` to create a new branch and schema named `dbt_test_new_model`.
+2. Under the `profiles.yml` file, select the relevant target and change its schema name to the newly created schema.
+3. Add your new models.
+4. Select the models you wish to run as explained [here](https://docs.getdbt.com/reference/node-selection/syntax) and `dbt run` them. These models will most likely be those you added and those that are dependent of them. 
+5. Validate the generated data.
+
+### Deployment: test generated data before using it in production
+
+During deployment of newly generated data we would like to test its validity against our expectations.  
+The following process utilizes lakeFS's capability to run operations before merging and committing using [hooks](https://docs.lakefs.io/setup/hooks.html), and also dbt's capability to run tests over materialized data:
+1. Setup: create an integration branch and schema using `lakectl dbt create-branch-schema --create-branch --branch dbt_integration`.
+2. Define a pre-commit hook on the `dbt_integration` branch to validate the generated results of the dbt DAG run (these may include running `dbt test`).
+3. Define a pre-merge hook on the production branch to validate the integrated data.
+4. Under the `profiles.yml` file, select the relevant target and change its schema name to `dbt_integration`.
+5. `dbt run` your dbt DAG to generate data.
+6. Commit.
+7. If successful, merge the `dbt_integration` to the production branch.
+
 Advanced options could be found [here](../reference/commands.md#lakectl-dbt-create-branch-schema)
  
 
