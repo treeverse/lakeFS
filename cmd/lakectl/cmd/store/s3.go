@@ -47,7 +47,7 @@ func (s *S3Walker) Walk(ctx context.Context, storageURI *url.URL, walkFn func(e 
 			addr := fmt.Sprintf("s3://%s/%s", bucket, key)
 			ent := ObjectStoreEntry{
 				FullKey:     key,
-				RelativeKey: strings.TrimPrefix(key, prefix),
+				RelativeKey: strings.TrimPrefix(strings.TrimPrefix(key, prefix), "/"),
 				Address:     addr,
 				ETag:        strings.Trim(aws.StringValue(record.ETag), "\""),
 				Mtime:       aws.TimeValue(record.LastModified),
