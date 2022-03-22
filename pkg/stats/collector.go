@@ -88,6 +88,7 @@ type BufferedCollector struct {
 	pendingRequests sync.WaitGroup
 	ctxCancelled    int32
 	done            chan bool
+	runCalled       int32
 }
 
 type BufferedCollectorOpts func(s *BufferedCollector)
@@ -138,6 +139,7 @@ func NewBufferedCollector(installationID string, c *config.Config, opts ...Buffe
 		pendingRequests: sync.WaitGroup{},
 		ctxCancelled:    0,
 		done:            make(chan bool),
+		runCalled:       0,
 	}
 	for _, opt := range opts {
 		opt(s)
@@ -191,6 +193,7 @@ func (s *BufferedCollector) isCtxCancelled() bool {
 
 func (s *BufferedCollector) Run(ctx context.Context) {
 	go s.collectHeartbeat(ctx)
+	atomic.StoreInt32(&s.runCalled, 1)
 	for {
 		select {
 		case w := <-s.writes: // collect events
@@ -208,6 +211,11 @@ func (s *BufferedCollector) Run(ctx context.Context) {
 }
 
 func (s *BufferedCollector) Close() {
+	if atomic.LoadInt32(&s.runCalled) == 0 {
+		// nothing to do
+		return
+	}
+
 	// wait for main loop to exit
 	<-s.done
 
