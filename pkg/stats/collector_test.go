@@ -40,18 +40,46 @@ func (m *mockTicker) Tick() <-chan time.Time {
 	return m.tc
 }
 
-func TestCallHomeCollector_Collect(t *testing.T) {
+func setupTest(buffer int) (*mockSender, *mockTicker, *stats.BufferedCollector) {
 	sender := &mockSender{metrics: make(chan []stats.Metric, 10), metadata: make(chan stats.Metadata, 10)}
 	ticker := &mockTicker{tc: make(chan time.Time)}
-	ctx, cancelFn := context.WithCancel(context.Background())
 	collector := stats.NewBufferedCollector("installation_id", nil,
 		stats.WithSender(sender),
 		stats.WithTicker(ticker),
-		stats.WithWriteBufferSize(0))
+		stats.WithWriteBufferSize(buffer))
 	collector.SetRuntimeCollector(func() map[string]string {
 		return map[string]string{"runtime": "stat"}
 	})
-	go collector.Run(ctx)
+
+	return sender, ticker, collector
+}
+
+func TestCallHomeCollector_QuickNoTick(t *testing.T) {
+	sender, _, collector := setupTest(10)
+	ctx, cancelFn := context.WithCancel(context.Background())
+
+	// Forcing collector to run last so that we make sure a race between context and collector
+	// isn't impacting what's being sent
+	collector.CollectEvent("foo", "bar")
+	cancelFn()
+
+	collector.Run(ctx)
+	collector.Close()
+
+	counters, ok := <-sender.metrics
+
+	require.True(t, ok)
+	require.Len(t, counters, 1)
+	require.Equal(t, counters[0].Class, "foo")
+	require.Equal(t, counters[0].Name, "bar")
+	require.Equal(t, counters[0].Value, uint64(1))
+}
+
+func TestCallHomeCollector_Collect(t *testing.T) {
+	sender, ticker, collector := setupTest(0)
+	ctx, cancelFn := context.WithCancel(context.Background())
+
+	collector.Run(ctx)
 
 	// add metrics
 	collector.CollectEvent("foo", "bar")
@@ -86,7 +114,6 @@ func TestCallHomeCollector_Collect(t *testing.T) {
 				t.Fatalf("expected count %d for foo/bazzz, got %d", 1, counter.Value)
 			}
 		}
-
 	}
 	if keys != 3 {
 		t.Fatalf("expected all %d keys, got %d", 3, keys)
@@ -95,8 +122,14 @@ func TestCallHomeCollector_Collect(t *testing.T) {
 	collector.CollectEvent("foo", "bar")
 
 	cancelFn()
-	<-collector.Done()
-	<-sender.metrics // ensure we get another "payload"
+	collector.Close()
+
+	counters, ok := <-sender.metrics // ensure we get another "payload"
+	require.True(t, ok)
+	require.Len(t, counters, 1)
+	require.Equal(t, counters[0].Class, "foo")
+	require.Equal(t, counters[0].Name, "bar")
+	require.Equal(t, counters[0].Value, uint64(1))
 
 	m := <-sender.metadata
 	require.Equal(t, "installation_id", m.InstallationID)

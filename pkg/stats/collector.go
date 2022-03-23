@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/google/uuid"
@@ -25,6 +27,9 @@ type Collector interface {
 	CollectEvent(class, action string)
 	CollectMetadata(accountMetadata *Metadata)
 	SetInstallationID(installationID string)
+
+	// Close must be called to ensure the delivery of pending stats
+	Close()
 }
 
 type Metric struct {
@@ -74,11 +79,17 @@ type BufferedCollector struct {
 	sender           Sender
 	sendTimeout      time.Duration
 	flushTicker      FlushTicker
-	done             chan bool
+	heartbeatTicker  FlushTicker
 	installationID   string
 	processID        string
 	runtimeCollector func() map[string]string
 	runtimeStats     map[string]string
+
+	pendingWrites   sync.WaitGroup
+	pendingRequests sync.WaitGroup
+	ctxCancelled    int32
+	done            chan bool
+	runCalled       int32
 }
 
 type BufferedCollectorOpts func(s *BufferedCollector)
@@ -117,15 +128,20 @@ func NewBufferedCollector(installationID string, c *config.Config, opts ...Buffe
 	processID, moreOpts := getBufferedCollectorArgs(c)
 	opts = append(opts, moreOpts...)
 	s := &BufferedCollector{
-		cache:          make(keyIndex),
-		writes:         make(chan primaryKey, collectorEventBufferSize),
-		done:           make(chan bool),
-		sender:         NewDummySender(),
-		sendTimeout:    sendTimeout,
-		runtimeStats:   map[string]string{},
-		flushTicker:    &TimeTicker{ticker: time.NewTicker(flushInterval)},
-		installationID: installationID,
-		processID:      processID,
+		cache:           make(keyIndex),
+		writes:          make(chan primaryKey, collectorEventBufferSize),
+		sender:          NewDummySender(),
+		sendTimeout:     sendTimeout,
+		runtimeStats:    map[string]string{},
+		flushTicker:     &TimeTicker{ticker: time.NewTicker(flushInterval)},
+		heartbeatTicker: &TimeTicker{ticker: time.NewTicker(heartbeatInterval)},
+		installationID:  installationID,
+		processID:       processID,
+		pendingWrites:   sync.WaitGroup{},
+		pendingRequests: sync.WaitGroup{},
+		ctxCancelled:    0,
+		done:            make(chan bool),
+		runCalled:       0,
 	}
 	for _, opt := range opts {
 		opt(s)
@@ -142,49 +158,91 @@ func (s *BufferedCollector) incr(k primaryKey) {
 }
 
 func (s *BufferedCollector) send(metrics []Metric) {
-	if len(metrics) == 0 {
-		return
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), s.sendTimeout)
-	defer cancel()
-	err := s.sender.SendEvent(ctx, s.getInstallationID(), s.processID, metrics)
-	if err != nil {
-		logging.Default().
-			WithError(err).
-			WithField("service", "stats_collector").
-			Debug("could not send stats")
-	}
+	s.pendingRequests.Add(1)
+	go func() {
+		defer s.pendingRequests.Done()
+		if len(metrics) == 0 {
+			return
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), s.sendTimeout)
+		defer cancel()
+		err := s.sender.SendEvent(ctx, s.getInstallationID(), s.processID, metrics)
+		if err != nil {
+			logging.Default().
+				WithError(err).
+				WithField("service", "stats_collector").
+				Debug("could not send stats")
+		}
+	}()
 }
 
 func (s *BufferedCollector) CollectEvent(class, action string) {
+	if s.isCtxCancelled() {
+		return
+	}
+	s.pendingWrites.Add(1)
+	defer s.pendingWrites.Done()
+
 	s.writes <- primaryKey{
 		class:  class,
 		action: action,
 	}
 }
 
-func (s *BufferedCollector) Done() <-chan bool {
-	return s.done
+func (s *BufferedCollector) isCtxCancelled() bool {
+	return atomic.LoadInt32(&s.ctxCancelled) == 1
 }
 
 func (s *BufferedCollector) Run(ctx context.Context) {
-	go s.collectHeartbeat(ctx)
-	for {
-		select {
-		case w := <-s.writes: // collect events
-			s.incr(w)
-		case <-s.flushTicker.Tick(): // every N seconds, send the collected events
-			s.handleRuntimeStats()
-			metrics := makeMetrics(s.cache)
-			s.cache = make(keyIndex)
-			go s.send(metrics) // no need to block on this
-		case <-ctx.Done(): // we're done
-			metrics := makeMetrics(s.cache)
-			s.send(metrics)
-			s.done <- true
-			return
+	atomic.StoreInt32(&s.runCalled, 1)
+	go func() {
+		for {
+			select {
+			case w := <-s.writes: // collect events
+				s.incr(w)
+			case <-s.heartbeatTicker.Tick():
+				s.incr(primaryKey{
+					class:  "global",
+					action: "heartbeat",
+				})
+			case <-s.flushTicker.Tick(): // every N seconds, send the collected events
+				s.handleRuntimeStats()
+				metrics := makeMetrics(s.cache)
+				s.cache = make(keyIndex)
+				s.send(metrics)
+			case <-ctx.Done(): // we're done
+				close(s.done)
+				return
+			}
 		}
+	}()
+}
+
+func (s *BufferedCollector) Close() {
+	if atomic.LoadInt32(&s.runCalled) == 0 {
+		// nothing to do
+		return
 	}
+
+	// wait for main loop to exit
+	<-s.done
+
+	// block any new write
+	atomic.StoreInt32(&s.ctxCancelled, 1)
+
+	// wait until all writes were added
+	s.pendingWrites.Wait()
+
+	// drain writes
+	close(s.writes)
+	for w := range s.writes {
+		s.incr(w)
+	}
+	metrics := makeMetrics(s.cache)
+	s.send(metrics)
+
+	// wait for http requests to complete
+	s.pendingRequests.Wait()
 }
 
 func makeMetrics(counters keyIndex) []Metric {
@@ -210,17 +268,6 @@ func (s *BufferedCollector) CollectMetadata(accountMetadata *Metadata) {
 			WithError(err).
 			WithField("service", "stats_collector").
 			Debug("could not update metadata")
-	}
-}
-
-func (s *BufferedCollector) collectHeartbeat(ctx context.Context) {
-	for {
-		select {
-		case <-time.After(heartbeatInterval):
-			s.CollectEvent("global", "heartbeat")
-		case <-ctx.Done():
-			return
-		}
 	}
 }
 
@@ -259,17 +306,22 @@ func (s *BufferedCollector) handleRuntimeStats() {
 	}
 
 	if anyChange {
-		go s.sendRuntimeStats()
+		s.sendRuntimeStats()
 	}
 }
 
 func (s *BufferedCollector) sendRuntimeStats() {
-	m := Metadata{InstallationID: s.installationID}
-	for k, v := range s.runtimeStats {
-		m.Entries = append(m.Entries, MetadataEntry{Name: k, Value: v})
-	}
+	s.pendingRequests.Add(1)
+	go func() {
+		defer s.pendingRequests.Done()
 
-	s.CollectMetadata(&m)
+		m := Metadata{InstallationID: s.installationID}
+		for k, v := range s.runtimeStats {
+			m.Entries = append(m.Entries, MetadataEntry{Name: k, Value: v})
+		}
+
+		s.CollectMetadata(&m)
+	}()
 }
 
 func getBufferedCollectorArgs(c *config.Config) (processID string, opts []BufferedCollectorOpts) {
