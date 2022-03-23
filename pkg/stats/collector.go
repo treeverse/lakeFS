@@ -201,7 +201,10 @@ func (s *BufferedCollector) Run(ctx context.Context) {
 			case w := <-s.writes: // collect events
 				s.incr(w)
 			case <-s.heartbeatTicker.Tick():
-				s.CollectEvent("global", "heartbeat")
+				s.incr(primaryKey{
+					class:  "global",
+					action: "heartbeat",
+				})
 			case <-s.flushTicker.Tick(): // every N seconds, send the collected events
 				s.handleRuntimeStats()
 				metrics := makeMetrics(s.cache)
