@@ -37,7 +37,7 @@ func (e ObjectStoreEntry) String() string {
 		e.Address, e.RelativeKey, e.ETag, e.Size, e.Mtime)
 }
 
-func Walk(ctx context.Context, intg string, storageURI string, walkFn func(e ObjectStoreEntry) error) error {
+func Walk(ctx context.Context, intgSrc string, storageURI string, walkFn func(e ObjectStoreEntry) error) error {
 	var walker Walker
 	uri, err := url.Parse(storageURI)
 	if err != nil {
@@ -45,7 +45,7 @@ func Walk(ctx context.Context, intg string, storageURI string, walkFn func(e Obj
 	}
 	switch uri.Scheme {
 	case "s3":
-		svc, err := GetS3Client(intg)
+		svc, err := GetS3Client(intgSrc)
 		if err != nil {
 			return err
 		}

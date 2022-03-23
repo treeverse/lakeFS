@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws/credentials"
 	"net/url"
 	"os"
 	"strings"
@@ -14,37 +13,33 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 )
 
-func GetS3Client(intg string) (*s3.S3, error) {
-	if intg == "minio" {
-		// Configure to use MinIO Server
-		accountName, accessKey, secretKey := os.Getenv("MINIO_STORAGE_ACCOUNT"), os.Getenv("MINIO_STORAGE_ACCESS_KEY"), os.Getenv("MINIO_STORAGE_SECRET_ACCESS_KEY")
-		if len(accountName) == 0 || len(accessKey) == 0 || len(secretKey) == 0 {
-			return nil, fmt.Errorf("either the MINIO_STORAGE_ACCOUNT or MINIO_STORAGE_ACCESS_KEY environment variable is not set")
+func GetS3Client(intgSrc string) (*s3.S3, error) {
+	var sess *session.Session
+	var err error
+	if intgSrc == "minio" {
+		s3EndpointUrl := os.Getenv("LAKECTL_S3_ENDPOINT_URL")
+		if len(s3EndpointUrl) == 0 {
+			return nil, fmt.Errorf("LAKECTL_S3_ENDPOINT_URL environment variable is not set")
 		}
 
-		s3MinioConfig := &aws.Config{
-			Credentials:      credentials.NewStaticCredentials(accessKey, secretKey, ""),
-			Endpoint:         aws.String(accountName),
-			Region:           aws.String("us-east-1"),
-			DisableSSL:       aws.Bool(true),
-			S3ForcePathStyle: aws.Bool(true),
-		}
-		sess, err := session.NewSession(s3MinioConfig)
-		if err != nil {
-			return nil, err
-		}
-		svc := s3.New(sess)
-		return svc, nil
-	} else {
-		sess, err := session.NewSessionWithOptions(session.Options{
+		sess, err = session.NewSessionWithOptions(session.Options{
+			Config: aws.Config{
+				Endpoint:         aws.String(s3EndpointUrl),
+				Region:           aws.String("us-east-1"), // Needs region for validation as it is AWS client
+				S3ForcePathStyle: aws.Bool(true),
+			},
 			SharedConfigState: session.SharedConfigEnable,
 		})
-		if err != nil {
-			return nil, err
-		}
-		svc := s3.New(sess)
-		return svc, nil
+	} else {
+		sess, err = session.NewSessionWithOptions(session.Options{
+			SharedConfigState: session.SharedConfigEnable,
+		})
 	}
+	if err != nil {
+		return nil, err
+	}
+	svc := s3.New(sess)
+	return svc, nil
 
 }
 

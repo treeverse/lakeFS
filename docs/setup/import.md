@@ -36,6 +36,7 @@ For this to work, make sure that:
 <div class="tabs">
 <ul>
   <li><a href="#ingest-tabs-1">AWS S3</a></li>
+  <li><a href="#ingest-tabs-1">MinIO Server</a></li>
   <li><a href="#ingest-tabs-2">Azure Blob</a></li>
   <li><a href="#ingest-tabs-3">Google Cloud Storage</a></li>
 </ul>
@@ -51,6 +52,19 @@ environment variables and credential files [in the same way that the AWS cli doe
 </div>
 <div markdown="1" id="ingest-tabs-2">
 ```shell
+export LAKECTL_S3_ENDPOINT_URL="http://127.0.0.1:9000"
+lakectl ingest \
+  --from s3://bucket/optional/prefix/ \
+  --to lakefs://my-repo/ingest-branch/optional/path/
+  --integration-source minio
+```
+
+The `lakectl ingest` command will attempt to use the current user's existing credentials and will respect instance profiles,
+environment variables and credential files [in the same way that the AWS cli does](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html){: target="_blank" }
+It will require you to specify the MinIO server endpoint through `LAKECTL_S3_ENDPOINT_URL` as shown in example above
+</div>
+<div markdown="1" id="ingest-tabs-3">
+```shell
 export AZURE_STORAGE_ACCOUNT="storageAccountName"
 export AZURE_STORAGE_ACCESS_KEY="EXAMPLEroozoo2gaec9fooTieWah6Oshai5Sheofievohthapob0aidee5Shaekahw7loo1aishoonuuquahr3=="
 lakectl ingest \
@@ -63,7 +77,7 @@ The `lakectl ingest` command currently supports storage accounts configured thro
 **Note:** Currently `lakectl import` supports the `http://` and `https://` schemes for Azure storage URIs. `wasb`, `abfs` or `adls` are currently not supported.
 {: .note }
 </div>
-<div markdown="1" id="ingest-tabs-3">
+<div markdown="1" id="ingest-tabs-4">
 ```shell
 export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.gcs_credentials.json"  # Optional, will fallback to the default configured credentials
 lakectl ingest \
