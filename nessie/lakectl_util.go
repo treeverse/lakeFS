@@ -119,7 +119,9 @@ func sanitize(output string, vars map[string]string) string {
 	// The order of execution below is important as certain expression can contain others
 	// and so, should be handled first
 	s := strings.ReplaceAll(output, "\r\n", "\n")
-	s = normalizeProgramTimestamp(s)
+	if _, ok := vars["DATE"]; !ok {
+		s = normalizeProgramTimestamp(s)
+	}
 	s = normalizeRandomObjectKey(s, vars["STORAGE"])
 	s = normalizeCommitID(s)
 	s = normalizeChecksum(s)
