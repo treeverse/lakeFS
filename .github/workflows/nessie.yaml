@@ -455,9 +455,6 @@ jobs:
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
 
-      - name: Copy repository ref
-        run: aws s3 cp --recursive s3://nessie-system-testing-data/golden-files/gc-test-data s3://nessie-system-testing/${{ github.run_number }}-storage-rclone-export
-
       - name: Setup lakeFS for tests
         env:
           STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-storage-rclone-export
