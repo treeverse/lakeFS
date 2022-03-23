@@ -31,6 +31,10 @@ func (s *S3Walker) Walk(ctx context.Context, storageURI *url.URL, walkFn func(e 
 	var continuation *string
 	const maxKeys = 1000
 	prefix := strings.TrimLeft(storageURI.Path, "/")
+	var trimPrefix string
+	if idx := strings.LastIndex(prefix, "/"); idx != -1 {
+		trimPrefix = prefix[:idx+1]
+	}
 	bucket := storageURI.Host
 	for {
 		result, err := s.s3.ListObjectsV2WithContext(ctx, &s3.ListObjectsV2Input{
@@ -47,7 +51,7 @@ func (s *S3Walker) Walk(ctx context.Context, storageURI *url.URL, walkFn func(e 
 			addr := fmt.Sprintf("s3://%s/%s", bucket, key)
 			ent := ObjectStoreEntry{
 				FullKey:     key,
-				RelativeKey: strings.TrimPrefix(strings.TrimPrefix(key, prefix), "/"),
+				RelativeKey: strings.TrimPrefix(key, trimPrefix),
 				Address:     addr,
 				ETag:        strings.Trim(aws.StringValue(record.ETag), "\""),
 				Mtime:       aws.TimeValue(record.LastModified),
