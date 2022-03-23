@@ -118,6 +118,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	}
 
 	bufferedCollector := stats.NewBufferedCollector(cfg.GetFixedInstallationID(), cfg)
+	defer bufferedCollector.Close()
 	bufferedCollector.SetRuntimeCollector(blockStore.RuntimeStats)
 
 	// wire actions into entry catalog

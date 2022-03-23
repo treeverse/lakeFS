@@ -238,7 +238,8 @@ var runCmd = &cobra.Command{
 			cfg.GetLoggingTraceRequestHeaders(),
 		)
 		ctx, cancelFn := context.WithCancel(cmd.Context())
-		go bufferedCollector.Run(ctx)
+		bufferedCollector.Run(ctx)
+		defer bufferedCollector.Close()
 
 		bufferedCollector.CollectEvent("global", "run")
 
@@ -270,7 +271,6 @@ var runCmd = &cobra.Command{
 
 		<-done
 		cancelFn()
-		<-bufferedCollector.Done()
 	},
 }
 
