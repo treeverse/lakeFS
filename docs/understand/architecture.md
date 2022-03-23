@@ -22,7 +22,7 @@ lakeFS is distributed as a single binary encapsulating several logical services:
 The server itself is stateless, meaning you can easily add more instances to handle bigger load.
 
 lakeFS stores data in an underlying object store ([GCS](https://cloud.google.com/storage), [ABS](https://azure.microsoft.com/en-us/services/storage/blobs/),
-[S3](https://aws.amazon.com/s3/) or any S3-compatible stores like [MinIO](https://min.io/) or [Ceph](https://docs.ceph.com/)), with some of its metadata stored in [PostgreSQL](https://www.postgresql.org/){:target="_blank"} (see [Data Model](data-model.md)).
+[S3](https://aws.amazon.com/s3/) or any S3-compatible stores like [MinIO](https://min.io/) or [Ceph](https://docs.ceph.com/)), with some of its metadata stored in [PostgreSQL](https://www.postgresql.org/){:target="_blank"} (see [Versioning internals](../understand/versioning-internals.md)).
 
 <!-- The below draw.io diagram source can be found here: https://drive.google.com/file/d/1lctPtGVEmOlCNHi3jiW4XXmyQQFkxzyx/view?usp=sharing -->
 
@@ -63,7 +63,7 @@ See the [roadmap](roadmap.md) for information on future plans for storage compat
 ### Graveler
 
 Graveler handles lakeFS versioning by translating lakeFS addresses to the actual stored objects.
-To learn about the data model used to store lakeFS metadata, see the [data model section](data-model.md).
+To learn about the data model used to store lakeFS metadata, see the [data model section](versioning-internals.md).
 
 ### Authentication & Authorization Service
 
