@@ -83,9 +83,10 @@ func (a *Action) Validate() error {
 	if !reName.MatchString(a.Name) {
 		return fmt.Errorf("'name' is invalid: %w", ErrInvalidAction)
 	}
-	if len(a.On) == 0 {
+	if a.On == nil || len(a.On) == 0 {
 		return fmt.Errorf("'on' is required: %w", ErrInvalidAction)
 	}
+	// TODO: Add check by hook type for content (brnaches etc.)
 	for o := range a.On {
 		if !supportedEvents[o] {
 			return fmt.Errorf("event '%s' is not supported: %w", o, ErrInvalidAction)

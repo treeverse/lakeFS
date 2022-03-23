@@ -67,6 +67,7 @@ func (h *Hooks) PostMergeHook(_ context.Context, record graveler.HookRecord) err
 
 func (h *Hooks) PreCreateTagHook(_ context.Context, record graveler.HookRecord) error {
 	h.Called = true
+	h.StorageNamespace = record.StorageNamespace
 	h.RepositoryID = record.RepositoryID
 	h.CommitID = record.CommitID
 	h.TagID = record.TagID
@@ -75,6 +76,7 @@ func (h *Hooks) PreCreateTagHook(_ context.Context, record graveler.HookRecord) 
 
 func (h *Hooks) PostCreateTagHook(_ context.Context, record graveler.HookRecord) error {
 	h.Called = true
+	h.StorageNamespace = record.StorageNamespace
 	h.RepositoryID = record.RepositoryID
 	h.CommitID = record.CommitID
 	h.TagID = record.TagID
@@ -83,6 +85,7 @@ func (h *Hooks) PostCreateTagHook(_ context.Context, record graveler.HookRecord)
 
 func (h *Hooks) PreDeleteTagHook(_ context.Context, record graveler.HookRecord) error {
 	h.Called = true
+	h.StorageNamespace = record.StorageNamespace
 	h.RepositoryID = record.RepositoryID
 	h.TagID = record.TagID
 	return h.Err
@@ -90,6 +93,7 @@ func (h *Hooks) PreDeleteTagHook(_ context.Context, record graveler.HookRecord) 
 
 func (h *Hooks) PostDeleteTagHook(_ context.Context, record graveler.HookRecord) error {
 	h.Called = true
+	h.StorageNamespace = record.StorageNamespace
 	h.RepositoryID = record.RepositoryID
 	h.TagID = record.TagID
 	return h.Err
@@ -97,6 +101,7 @@ func (h *Hooks) PostDeleteTagHook(_ context.Context, record graveler.HookRecord)
 
 func (h *Hooks) PreCreateBranchHook(_ context.Context, record graveler.HookRecord) error {
 	h.Called = true
+	h.StorageNamespace = record.StorageNamespace
 	h.RepositoryID = record.RepositoryID
 	h.BranchID = record.BranchID
 	h.CommitID = record.CommitID
@@ -106,6 +111,7 @@ func (h *Hooks) PreCreateBranchHook(_ context.Context, record graveler.HookRecor
 
 func (h *Hooks) PostCreateBranchHook(_ context.Context, record graveler.HookRecord) error {
 	h.Called = true
+	h.StorageNamespace = record.StorageNamespace
 	h.RepositoryID = record.RepositoryID
 	h.BranchID = record.BranchID
 	h.CommitID = record.CommitID
@@ -115,6 +121,7 @@ func (h *Hooks) PostCreateBranchHook(_ context.Context, record graveler.HookReco
 
 func (h *Hooks) PreDeleteBranchHook(_ context.Context, record graveler.HookRecord) error {
 	h.Called = true
+	h.StorageNamespace = record.StorageNamespace
 	h.RepositoryID = record.RepositoryID
 	h.BranchID = record.BranchID
 	return h.Err
@@ -122,6 +129,7 @@ func (h *Hooks) PreDeleteBranchHook(_ context.Context, record graveler.HookRecor
 
 func (h *Hooks) PostDeleteBranchHook(_ context.Context, record graveler.HookRecord) error {
 	h.Called = true
+	h.StorageNamespace = record.StorageNamespace
 	h.RepositoryID = record.RepositoryID
 	h.BranchID = record.BranchID
 	return h.Err
@@ -1423,6 +1431,8 @@ func TestGraveler_PreDeleteTagHook(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// setup
 			ctx := context.Background()
+			expected := expectedCommitID
+			refManager.TagCommitID = &expected
 			g := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager, nil, testutil.NewProtectedBranchesManagerFake())
 			h := &Hooks{Err: tt.err}
 			if tt.hook {
@@ -1536,8 +1546,91 @@ func TestGraveler_PreCreateBranchHook(t *testing.T) {
 			if h.CommitID != sourceCommitID {
 				t.Errorf("Hook commit ID '%s', expected '%s'", h.BranchID, sourceCommitID)
 			}
-			if h.SourceRef != graveler.Ref(sourceBranchID) {
-				t.Errorf("Hook branch ID '%s', expected '%s'", h.TagID, sourceBranchID)
+			if h.BranchID != graveler.BranchID(newBranch) {
+				t.Errorf("Hook branch ID '%s', expected '%s'", h.BranchID, newBranch)
+			}
+		})
+	}
+}
+
+func TestGraveler_PreDeleteBranchHook(t *testing.T) {
+	// prepare graveler
+	conn, _ := tu.GetDB(t, databaseURI)
+	branchLocker := ref.NewBranchLocker(conn)
+	const repositoryID = "repoID"
+	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
+	const sourceCommitID = graveler.CommitID("sourceCommitID")
+	const sourceBranchID = graveler.CommitID("sourceBranchID")
+	committedManager := &testutil.CommittedFake{MetaRangeID: expectedRangeID}
+	values := testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: nil, Value: nil}})
+	stagingManager := &testutil.StagingFake{ValueIterator: values}
+	refManager := &testutil.RefsFake{
+		Refs: map[graveler.Ref]*graveler.ResolvedRef{graveler.Ref(sourceBranchID): {
+			Type:                   graveler.ReferenceTypeBranch,
+			BranchID:               graveler.BranchID(sourceBranchID),
+			ResolvedBranchModifier: 0,
+			CommitID:               sourceCommitID,
+			StagingToken:           "token",
+		}},
+		Branch:       &graveler.Branch{CommitID: sourceBranchID, StagingToken: "token"},
+		StagingToken: "token",
+	}
+	// tests
+	errSomethingBad := errors.New("first error")
+	tests := []struct {
+		name string
+		hook bool
+		err  error
+	}{
+		{
+			name: "without hook",
+			hook: false,
+			err:  nil,
+		},
+		{
+			name: "hook no error",
+			hook: true,
+			err:  nil,
+		},
+		{
+			name: "hook error",
+			hook: true,
+			err:  errSomethingBad,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// setup
+			ctx := context.Background()
+			g := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager, nil, testutil.NewProtectedBranchesManagerFake())
+			h := &Hooks{Err: tt.err}
+			if tt.hook {
+				g.SetHooksHandler(h)
+			}
+
+			err := g.DeleteBranch(ctx, repositoryID, graveler.BranchID(sourceBranchID))
+
+			// verify we got an error
+			if !errors.Is(err, tt.err) {
+				t.Fatalf("Delete branch err=%v, expected=%v", err, tt.err)
+			}
+			var hookErr *graveler.HookAbortError
+			if err != nil && !errors.As(err, &hookErr) {
+				t.Fatalf("Delete branch err=%v, expected HookAbortError", err)
+			}
+
+			// verify that calls made until the first error
+			if tt.hook != h.Called {
+				t.Fatalf("Pre-delete branch hook h.Called=%t, expected=%t", h.Called, tt.hook)
+			}
+			if !h.Called {
+				return
+			}
+			if h.RepositoryID != repositoryID {
+				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryID, repositoryID)
+			}
+			if h.BranchID != graveler.BranchID(sourceBranchID) {
+				t.Errorf("Hook branch ID '%s', expected '%s'", h.BranchID, sourceBranchID)
 			}
 		})
 	}

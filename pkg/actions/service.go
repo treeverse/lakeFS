@@ -114,7 +114,7 @@ func (s *Service) asyncRun(record graveler.HookRecord) {
 
 		// passing the global context for cancelling all runs when lakeFS shuts down
 		if err := s.Run(s.ctx, record); err != nil {
-			logging.Default().WithField("record", record).
+			logging.Default().WithError(err).WithField("record", record).
 				Info("Async run of hook failed")
 		}
 	}()
@@ -457,7 +457,7 @@ func (s *Service) PreCreateTagHook(ctx context.Context, record graveler.HookReco
 	return s.Run(ctx, record)
 }
 
-func (s *Service) PostCreateTagHook(ctx context.Context, record graveler.HookRecord) error {
+func (s *Service) PostCreateTagHook(_ context.Context, record graveler.HookRecord) error {
 	s.asyncRun(record)
 	return nil
 }
@@ -466,7 +466,7 @@ func (s *Service) PreDeleteTagHook(ctx context.Context, record graveler.HookReco
 	return s.Run(ctx, record)
 }
 
-func (s *Service) PostDeleteTagHook(ctx context.Context, record graveler.HookRecord) error {
+func (s *Service) PostDeleteTagHook(_ context.Context, record graveler.HookRecord) error {
 	s.asyncRun(record)
 	return nil
 }
@@ -475,7 +475,7 @@ func (s *Service) PreCreateBranchHook(ctx context.Context, record graveler.HookR
 	return s.Run(ctx, record)
 }
 
-func (s *Service) PostCreateBranchHook(ctx context.Context, record graveler.HookRecord) error {
+func (s *Service) PostCreateBranchHook(_ context.Context, record graveler.HookRecord) error {
 	s.asyncRun(record)
 	return nil
 }
@@ -484,7 +484,7 @@ func (s *Service) PreDeleteBranchHook(ctx context.Context, record graveler.HookR
 	return s.Run(ctx, record)
 }
 
-func (s *Service) PostDeleteBranchHook(ctx context.Context, record graveler.HookRecord) error {
+func (s *Service) PostDeleteBranchHook(_ context.Context, record graveler.HookRecord) error {
 	s.asyncRun(record)
 	return nil
 }

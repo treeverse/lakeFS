@@ -831,14 +831,21 @@ func (g *Graveler) CreateBranch(ctx context.Context, repositoryID RepositoryID, 
 		StagingToken: generateStagingToken(repositoryID, branchID),
 	}
 
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, fmt.Errorf("get repository: %w", err)
+	}
+	storageNamespace := repo.StorageNamespace
+
 	preRunID := NewRunID()
 	err = g.hooks.PreCreateBranchHook(ctx, HookRecord{
-		RunID:        preRunID,
-		EventType:    EventTypePreCreateBranch,
-		SourceRef:    ref,
-		RepositoryID: repositoryID,
-		BranchID:     branchID,
-		CommitID:     reference.CommitID,
+		RunID:            preRunID,
+		StorageNamespace: storageNamespace,
+		EventType:        EventTypePreCreateBranch,
+		SourceRef:        ref,
+		RepositoryID:     repositoryID,
+		BranchID:         branchID,
+		CommitID:         reference.CommitID,
 	})
 	if err != nil {
 		return nil, &HookAbortError{
@@ -855,12 +862,13 @@ func (g *Graveler) CreateBranch(ctx context.Context, repositoryID RepositoryID, 
 
 	postRunID := NewRunID()
 	err = g.hooks.PostCreateBranchHook(ctx, HookRecord{
-		RunID:        postRunID,
-		EventType:    EventTypePostCreateBranch,
-		SourceRef:    ref,
-		RepositoryID: repositoryID,
-		BranchID:     branchID,
-		CommitID:     reference.CommitID,
+		RunID:            postRunID,
+		StorageNamespace: storageNamespace,
+		EventType:        EventTypePostCreateBranch,
+		SourceRef:        ref,
+		RepositoryID:     repositoryID,
+		BranchID:         branchID,
+		CommitID:         reference.CommitID,
 	})
 	if err != nil {
 		g.log.WithError(err).
@@ -931,15 +939,22 @@ func (g *Graveler) CreateTag(ctx context.Context, repositoryID RepositoryID, tag
 	if !errors.Is(err, ErrTagNotFound) {
 		return err
 	}
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return fmt.Errorf("get repository: %w", err)
+	}
+	storageNamespace := repo.StorageNamespace
 
 	// Run pre-hook
 	preRunID := NewRunID()
 	err = g.hooks.PreCreateTagHook(ctx, HookRecord{
-		RunID:        preRunID,
-		EventType:    EventTypePreCreateTag,
-		RepositoryID: repositoryID,
-		CommitID:     commitID,
-		TagID:        tagID,
+		RunID:            preRunID,
+		StorageNamespace: storageNamespace,
+		EventType:        EventTypePreCreateTag,
+		RepositoryID:     repositoryID,
+		CommitID:         commitID,
+		SourceRef:        commitID.Ref(),
+		TagID:            tagID,
 	})
 	if err != nil {
 		return &HookAbortError{
@@ -958,11 +973,14 @@ func (g *Graveler) CreateTag(ctx context.Context, repositoryID RepositoryID, tag
 	// Run post-hook
 	postRunID := NewRunID()
 	err = g.hooks.PostCreateTagHook(ctx, HookRecord{
-		RunID:        postRunID,
-		EventType:    EventTypePostCreateTag,
-		RepositoryID: repositoryID,
-		CommitID:     commitID,
-		TagID:        tagID,
+
+		RunID:            postRunID,
+		StorageNamespace: storageNamespace,
+		EventType:        EventTypePostCreateTag,
+		RepositoryID:     repositoryID,
+		CommitID:         commitID,
+		SourceRef:        commitID.Ref(),
+		TagID:            tagID,
 	})
 	if err != nil {
 		g.log.WithError(err).
@@ -975,18 +993,26 @@ func (g *Graveler) CreateTag(ctx context.Context, repositoryID RepositoryID, tag
 
 func (g *Graveler) DeleteTag(ctx context.Context, repositoryID RepositoryID, tagID TagID) error {
 	// Check that Tag exists before running hook
-	_, err := g.RefManager.GetTag(ctx, repositoryID, tagID)
+	commitID, err := g.RefManager.GetTag(ctx, repositoryID, tagID)
 	if err != nil {
 		return err
 	}
 
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return fmt.Errorf("get repository: %w", err)
+	}
+	storageNamespace := repo.StorageNamespace
+
 	// Run pre-hook
 	preRunID := NewRunID()
 	err = g.hooks.PreDeleteTagHook(ctx, HookRecord{
-		RunID:        preRunID,
-		EventType:    EventTypePreDeleteTag,
-		RepositoryID: repositoryID,
-		TagID:        tagID,
+		RunID:            preRunID,
+		StorageNamespace: storageNamespace,
+		EventType:        EventTypePreDeleteTag,
+		RepositoryID:     repositoryID,
+		SourceRef:        commitID.Ref(),
+		TagID:            tagID,
 	})
 	if err != nil {
 		return &HookAbortError{
@@ -1005,10 +1031,12 @@ func (g *Graveler) DeleteTag(ctx context.Context, repositoryID RepositoryID, tag
 	// Run post-hook
 	postRunID := NewRunID()
 	err = g.hooks.PostDeleteTagHook(ctx, HookRecord{
-		RunID:        postRunID,
-		EventType:    EventTypePostDeleteTag,
-		RepositoryID: repositoryID,
-		TagID:        tagID,
+		RunID:            postRunID,
+		StorageNamespace: storageNamespace,
+		EventType:        EventTypePostDeleteTag,
+		RepositoryID:     repositoryID,
+		SourceRef:        commitID.Ref(),
+		TagID:            tagID,
 	})
 	if err != nil {
 		g.log.WithError(err).
@@ -1053,6 +1081,8 @@ func (g *Graveler) ListBranches(ctx context.Context, repositoryID RepositoryID) 
 
 func (g *Graveler) DeleteBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error {
 	var preRunID string
+	var storageNamespace StorageNamespace
+	var commitID CommitID
 	_, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
 		repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 		if err != nil {
@@ -1065,17 +1095,23 @@ func (g *Graveler) DeleteBranch(ctx context.Context, repositoryID RepositoryID, 
 		if err != nil {
 			return nil, err
 		}
+		commitID = branch.CommitID
 		err = g.StagingManager.Drop(ctx, branch.StagingToken)
 		if err != nil && !errors.Is(err, ErrNotFound) {
 			return nil, err
 		}
 
-		err = g.hooks.PreDeleteBranchHook(ctx, HookRecord{
-			RunID:        preRunID,
-			EventType:    EventTypePreDeleteBranch,
-			RepositoryID: repositoryID,
-			BranchID:     branchID,
-		})
+		storageNamespace = repo.StorageNamespace
+		preRunID = NewRunID()
+		preHookRecord := HookRecord{
+			RunID:            preRunID,
+			StorageNamespace: storageNamespace,
+			EventType:        EventTypePreDeleteBranch,
+			RepositoryID:     repositoryID,
+			SourceRef:        commitID.Ref(),
+			BranchID:         branchID,
+		}
+		err = g.hooks.PreDeleteBranchHook(ctx, preHookRecord)
 		if err != nil {
 			return nil, &HookAbortError{
 				EventType: EventTypePreDeleteBranch,
@@ -1093,10 +1129,12 @@ func (g *Graveler) DeleteBranch(ctx context.Context, repositoryID RepositoryID, 
 
 	postRunID := NewRunID()
 	err = g.hooks.PostDeleteBranchHook(ctx, HookRecord{
-		RunID:        postRunID,
-		EventType:    EventTypePostDeleteBranch,
-		RepositoryID: repositoryID,
-		BranchID:     branchID,
+		RunID:            postRunID,
+		StorageNamespace: storageNamespace,
+		EventType:        EventTypePostDeleteBranch,
+		RepositoryID:     repositoryID,
+		SourceRef:        commitID.Ref(),
+		BranchID:         branchID,
 	})
 	if err != nil {
 		g.log.WithError(err).
@@ -1453,7 +1491,7 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 		RunID:            postRunID,
 		RepositoryID:     repositoryID,
 		StorageNamespace: storageNamespace,
-		SourceRef:        branchID.Ref(),
+		SourceRef:        res.(CommitID).Ref(),
 		BranchID:         branchID,
 		Commit:           commit,
 		CommitID:         newCommitID,
@@ -1845,7 +1883,7 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 		RepositoryID:     repositoryID,
 		StorageNamespace: storageNamespace,
 		BranchID:         destination,
-		SourceRef:        source,
+		SourceRef:        res.(CommitID).Ref(),
 		Commit:           commit,
 		CommitID:         res.(CommitID),
 		PreRunID:         preRunID,

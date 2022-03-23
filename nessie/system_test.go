@@ -9,8 +9,10 @@ import (
 	"net/http"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/rs/xid"
 	"github.com/spf13/viper"
@@ -54,7 +56,7 @@ func setupTest(t *testing.T) (context.Context, logging.Logger, string) {
 }
 
 func createRepositoryForTest(ctx context.Context, t *testing.T) string {
-	name := strings.ToLower(t.Name())
+	name := strings.ToLower(t.Name() + strconv.FormatInt(time.Now().Unix(), 10))
 	return createRepositoryByName(ctx, t, name)
 }
 
