@@ -33,6 +33,8 @@ type User struct {
 	// might not be unique); use it in the user's GUI rather than in
 	// backend code.
 	FriendlyName *string `db:"friendly_name" json:"friendly_name"`
+	Email        *string `db:"email" json:"email"`
+	Password     []byte  `db:"password" json:"password"`
 	Source       string
 }
 

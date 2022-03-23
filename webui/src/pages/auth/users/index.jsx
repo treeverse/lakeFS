@@ -95,7 +95,7 @@ const UsersContainer = () => {
 
             <DataTable
                 results={results}
-                headers={['', 'User ID', 'Created At']}
+                headers={['', 'User ID', 'Created At','Email']}
                 keyFn={user => user.id}
                 rowFn={user => [
                     <Checkbox
@@ -107,7 +107,8 @@ const UsersContainer = () => {
                     <Link href={{pathname: '/auth/users/:userId', params: {userId: user.id}}}>
                         {user.id}
                     </Link>,
-                    <FormattedDate dateValue={user.creation_date}/>
+                    <FormattedDate dateValue={user.creation_date}/>,
+                    <div>{user.email}</div>
                 ]}/>
 
             <Paginator

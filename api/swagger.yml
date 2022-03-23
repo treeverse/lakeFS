@@ -537,6 +537,8 @@ components:
           description: Unix Epoch in seconds
         friendly_name:
           type: string
+        email:
+          type: string
 
     CurrentUser:
       type: object

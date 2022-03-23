@@ -792,6 +792,7 @@ func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params Li
 		response.Results = append(response.Results, User{
 			Id:           u.Username,
 			CreationDate: u.CreatedAt.Unix(),
+			Email:        u.Email,
 		})
 	}
 	writeResponse(w, http.StatusOK, response)
