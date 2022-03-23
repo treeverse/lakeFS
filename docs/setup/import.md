@@ -36,9 +36,9 @@ For this to work, make sure that:
 <div class="tabs">
 <ul>
   <li><a href="#ingest-tabs-1">AWS S3</a></li>
-  <li><a href="#ingest-tabs-1">MinIO Server</a></li>
-  <li><a href="#ingest-tabs-2">Azure Blob</a></li>
-  <li><a href="#ingest-tabs-3">Google Cloud Storage</a></li>
+  <li><a href="#ingest-tabs-2">MinIO Server</a></li>
+  <li><a href="#ingest-tabs-3">Azure Blob</a></li>
+  <li><a href="#ingest-tabs-4">Google Cloud Storage</a></li>
 </ul>
 <div markdown="1" id="ingest-tabs-1">
 ```shell
