@@ -2051,12 +2051,12 @@ lakectl ingest --from <object store URI> --to <lakeFS path URI> [--dry-run] [fla
 {:.no_toc}
 
 ```
-  -C, --concurrency int             max concurrent API calls to make to the lakeFS server (default 64)
-      --dry-run                     only print the paths to be ingested
-      --from string                 prefix to read from (e.g. "s3://bucket/sub/path/"). must not be in a storage namespace
-  -h, --help                        help for ingest
-      --integration-source string   integration source to use for ingestion
-      --to string                   lakeFS path to load objects into (e.g. "lakefs://repo/branch/sub/path/")
+  -C, --concurrency int          max concurrent API calls to make to the lakeFS server (default 64)
+      --dry-run                  only print the paths to be ingested
+      --from string              prefix to read from (e.g. "s3://bucket/sub/path/"). must not be in a storage namespace
+  -h, --help                     help for ingest
+      --s3-endpoint-url string   for ingesting from non-AWS S3 compatible sources which need endpoint (e.g. MinIO)
+      --to string                lakeFS path to load objects into (e.g. "lakefs://repo/branch/sub/path/")
 ```
 
 
