@@ -8,6 +8,7 @@ on:
   pre-commit:
     branches:
       - feature-*
+  post-commit:
 hooks:
   - id: no_temp
     type: webhook
