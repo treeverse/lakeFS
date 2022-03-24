@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"os"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -13,15 +12,10 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 )
 
-func GetS3Client(intgSrc string) (*s3.S3, error) {
+func GetS3Client(s3EndpointUrl string) (*s3.S3, error) {
 	var sess *session.Session
 	var err error
-	if intgSrc == "minio" {
-		s3EndpointUrl := os.Getenv("LAKECTL_S3_ENDPOINT_URL")
-		if len(s3EndpointUrl) == 0 {
-			return nil, fmt.Errorf("LAKECTL_S3_ENDPOINT_URL environment variable is not set")
-		}
-
+	if len(s3EndpointUrl) != 0 {
 		sess, err = session.NewSessionWithOptions(session.Options{
 			Config: aws.Config{
 				Endpoint:         aws.String(s3EndpointUrl),
@@ -40,7 +34,6 @@ func GetS3Client(intgSrc string) (*s3.S3, error) {
 	}
 	svc := s3.New(sess)
 	return svc, nil
-
 }
 
 type S3Walker struct {
