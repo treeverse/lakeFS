@@ -1,7 +1,16 @@
 package nessie
 
 import (
+	"bytes"
+	"net/http"
+	"os"
+	"strconv"
 	"testing"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/store"
 )
 
 var emptyVars = make(map[string]string)
@@ -294,4 +303,109 @@ func TestLakectlAuthUsers(t *testing.T) {
 
 	// Cleanup
 	RunCmdAndVerifySuccess(t, Lakectl()+" auth users delete --id "+userName, false, "User deleted successfully\n", vars)
+}
+
+func TestLakectlIngest(t *testing.T) {
+	repoName := generateUniqueRepositoryName()
+	storage := generateUniqueStorageNamespace(repoName)
+	tempBucketName := "ingest-data-" + repoName
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+	}
+
+	// set-up: creating a dummy bucket and uploading some files into it. Later this bucket will be used as the "from"
+	// location. This is done as the `lakectl ingest` commad runs with local aws settings and can only access the
+	// corresponding region
+
+	s3Client, err := store.GetS3Client()
+	require.NoError(t, err, "Failed to initialize S3 session")
+
+	_, err = s3Client.CreateBucket(&s3.CreateBucketInput{Bucket: aws.String(tempBucketName)})
+	require.NoError(t, err, "Failed to create bucket", tempBucketName)
+
+	defer cleanS3Bucket(s3Client, tempBucketName)
+
+	source := "files/ro_1k"
+	dest := "obj_"
+	destPref := "from-pref"
+	for i := 0; i < 5; i++ {
+		err = putS3Object(s3Client, source, tempBucketName, dest+strconv.Itoa(i))
+		require.NoError(t, err, "File upload failure")
+		err = putS3Object(s3Client, source, tempBucketName, destPref+"/"+dest+strconv.Itoa(i))
+		require.NoError(t, err, "File upload failure")
+	}
+
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" ingest --from s3://"+tempBucketName+" --to lakefs://"+repoName+"/"+mainBranch+"/", false, "lakectl_ingest", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" ingest --from s3://"+tempBucketName+" --to lakefs://"+repoName+"/"+mainBranch+"/to-pref/", false, "lakectl_ingest", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs ls lakefs://"+repoName+"/"+mainBranch+"/", false, "lakectl_fs_ls_after_ingest", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs ls lakefs://"+repoName+"/"+mainBranch+"/ --recursive", false, "lakectl_fs_ls_after_ingest_recursive", vars)
+
+	// rerunning the same ingest command should succeed and have no effect
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" ingest --from s3://"+tempBucketName+" --to lakefs://"+repoName+"/"+mainBranch+"/", false, "lakectl_ingest", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs ls lakefs://"+repoName+"/"+mainBranch+"/", false, "lakectl_fs_ls_after_ingest", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs ls lakefs://"+repoName+"/"+mainBranch+"/ --recursive", false, "lakectl_fs_ls_after_ingest_recursive", vars)
+
+	// 'from' can also be specified with terminating "/"
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" ingest --from s3://"+tempBucketName+"/ --to lakefs://"+repoName+"/"+mainBranch+"/", false, "lakectl_ingest", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs ls lakefs://"+repoName+"/"+mainBranch+"/", false, "lakectl_fs_ls_after_ingest", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs ls lakefs://"+repoName+"/"+mainBranch+"/ --recursive", false, "lakectl_fs_ls_after_ingest_recursive", vars)
+
+}
+
+func putS3Object(client *s3.S3, filePath, bucket, key string) error {
+	upFile, err := os.Open(filePath)
+	if err != nil {
+		return err
+	}
+	defer upFile.Close()
+
+	upFileInfo, _ := upFile.Stat()
+	var fileSize int64 = upFileInfo.Size()
+	fileBuffer := make([]byte, fileSize)
+	upFile.Read(fileBuffer)
+
+	// Put the file object to s3 with the file name
+	_, err = client.PutObject(&s3.PutObjectInput{
+		Bucket:               aws.String(bucket),
+		Key:                  aws.String(key),
+		ACL:                  aws.String("private"),
+		Body:                 bytes.NewReader(fileBuffer),
+		ContentLength:        aws.Int64(fileSize),
+		ContentType:          aws.String(http.DetectContentType(fileBuffer)),
+		ContentDisposition:   aws.String("attachment"),
+		ServerSideEncryption: aws.String("AES256"),
+	})
+
+	return err
+}
+
+func cleanS3Bucket(client *s3.S3, bucket string) error {
+	listObjectsInput := &s3.ListObjectsV2Input{Bucket: aws.String(bucket)}
+	for {
+		listObjectsOutput, err := client.ListObjectsV2(listObjectsInput)
+		if err != nil {
+			return err
+		}
+
+		for _, record := range listObjectsOutput.Contents {
+			_, err := client.DeleteObject(&s3.DeleteObjectInput{
+				Bucket: aws.String(bucket),
+				Key:    record.Key,
+			})
+			if err != nil {
+				return err
+			}
+		}
+
+		if !aws.BoolValue(listObjectsOutput.IsTruncated) {
+			break
+		}
+		listObjectsInput.ContinuationToken = listObjectsOutput.NextContinuationToken
+	}
+	_, err := client.DeleteBucket(&s3.DeleteBucketInput{Bucket: aws.String(bucket)})
+
+	return err
 }
