@@ -158,7 +158,7 @@ lazy val sharedSettings = commonSettings ++ assemblySettings ++ publishSettings
 
 ThisBuild / scmInfo := Some(
   ScmInfo(
-    url("https://github.com/treeverse/lakeFS/clients/spark"),
+    url("https://github.com/treeverse/lakeFS"),
     "scm:git@github.com:treeverse/lakeFS.git"
   )
 )
@@ -203,4 +203,4 @@ ThisBuild / description := "Spark client for lakeFS object metadata."
 ThisBuild / licenses := List(
   "Apache 2" -> new URL("http://www.apache.org/licenses/LICENSE-2.0.txt")
 )
-ThisBuild / homepage := Some(url("https://github.com/treeverse/spark-client"))
+ThisBuild / homepage := Some(url("https://lakefs.io"))

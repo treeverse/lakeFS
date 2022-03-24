@@ -52,6 +52,8 @@ func (m *nullCollector) CollectEvent(_, _ string) {}
 
 func (m *nullCollector) SetInstallationID(_ string) {}
 
+func (m *nullCollector) Close() {}
+
 func createDefaultAdminUser(t testing.TB, clt api.ClientWithResponsesInterface) *authmodel.Credential {
 	t.Helper()
 	res, err := clt.SetupWithResponse(context.Background(), api.SetupJSONRequestBody{
