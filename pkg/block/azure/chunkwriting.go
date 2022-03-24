@@ -200,7 +200,7 @@ func newID() *id {
 func (id *id) next() string {
 	defer atomic.AddUint32(&id.num, 1)
 
-	binary.BigEndian.PutUint32((id.u[len(guuid.UUID{}):]), atomic.LoadUint32(&id.num))
+	binary.BigEndian.PutUint32(id.u[len(guuid.UUID{}):], atomic.LoadUint32(&id.num))
 	str := base64.StdEncoding.EncodeToString(id.u[:])
 	id.all = append(id.all, str)
 

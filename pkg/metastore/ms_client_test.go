@@ -31,6 +31,7 @@ func getCols() []*metastore.FieldSchema {
 func getPartitionValues(n int) []string {
 	return []string{fmt.Sprintf("part=%d", n)}
 }
+
 func getPartitionN(db, table, location string, n int) *metastore.Partition {
 	partitionValue := getPartitionValues(n)
 	return &metastore.Partition{
@@ -49,6 +50,7 @@ func getPartitionN(db, table, location string, n int) *metastore.Partition {
 		},
 	}
 }
+
 func getNPartitions(db, table, location string, n int) map[string]*metastore.Partition {
 	partitions := make(map[string]*metastore.Partition)
 
@@ -73,22 +75,24 @@ func TestMSClient_CopySchema(t *testing.T) {
 		destBranch       string
 		ExpectedLocation string
 		ExpectedError    error
-	}{{
-		TestName:         "with location",
-		SourceName:       "source",
-		DestinationName:  "destination",
-		destBranch:       "branch1",
-		LocationURI:      "s3://example/main/path/to/schema/",
-		ExpectedLocation: "s3://example/branch1/path/to/schema/",
-	}, {
-		TestName:         "table exists",
-		SourceName:       "source",
-		DestinationName:  "source",
-		LocationURI:      "s3://example/path/to/schema/",
-		destBranch:       "branch1",
-		ExpectedLocation: "s3://example/branch1/path/to/schema/",
-		ExpectedError:    mserrors.ErrSchemaExists,
-	},
+	}{
+		{
+			TestName:         "with location",
+			SourceName:       "source",
+			DestinationName:  "destination",
+			destBranch:       "branch1",
+			LocationURI:      "s3://example/main/path/to/schema/",
+			ExpectedLocation: "s3://example/branch1/path/to/schema/",
+		},
+		{
+			TestName:         "table exists",
+			SourceName:       "source",
+			DestinationName:  "source",
+			LocationURI:      "s3://example/path/to/schema/",
+			destBranch:       "branch1",
+			ExpectedLocation: "s3://example/branch1/path/to/schema/",
+			ExpectedError:    mserrors.ErrSchemaExists,
+		},
 		{
 			TestName:         "no location",
 			SourceName:       "source",
@@ -105,15 +109,15 @@ func TestMSClient_CopySchema(t *testing.T) {
 			initialDatabases[tt.SourceName] = &metastore.Database{Name: tt.SourceName, LocationURI: tt.LocationURI}
 			client := mock.NewMSClient(t, initialDatabases, nil, nil)
 
-			err := metastore.CopyDB(nil, client, client, tt.SourceName, tt.DestinationName, tt.destBranch, "")
-
+			ctx := context.Background()
+			err := metastore.CopyDB(ctx, client, client, tt.SourceName, tt.DestinationName, tt.destBranch, "")
 			if !errors.Is(err, tt.ExpectedError) {
 				t.Fatalf("expected err:%s got:%v", tt.ExpectedError, err)
 			}
 			if tt.ExpectedError != nil {
 				return
 			}
-			destDB, err := client.GetDatabase(nil, tt.DestinationName)
+			destDB, err := client.GetDatabase(ctx, tt.DestinationName)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -122,7 +126,6 @@ func TestMSClient_CopySchema(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestMSClient_CopyAndMergeBack(t *testing.T) {

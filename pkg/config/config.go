@@ -252,7 +252,7 @@ func (c *Config) Validate() error {
 
 func (c *Config) GetDatabaseParams() dbparams.Database {
 	return dbparams.Database{
-		ConnectionString:      c.values.Database.ConnectionString.String(),
+		ConnectionString:      c.values.Database.ConnectionString.SecureValue(),
 		MaxOpenConnections:    c.values.Database.MaxOpenConnections,
 		MaxIdleConnections:    c.values.Database.MaxIdleConnections,
 		ConnectionMaxLifetime: c.values.Database.ConnectionMaxLifetime,
@@ -286,9 +286,9 @@ func (c *Config) GetAwsConfig() *aws.Config {
 			secretAccessKey = c.values.Blockstore.S3.Credentials.AccessSecretKey
 		}
 		cfg.Credentials = credentials.NewStaticCredentials(
-			c.values.Blockstore.S3.Credentials.AccessKeyID.String(),
-			secretAccessKey.String(),
-			c.values.Blockstore.S3.Credentials.SessionToken.String(),
+			c.values.Blockstore.S3.Credentials.AccessKeyID.SecureValue(),
+			secretAccessKey.SecureValue(),
+			c.values.Blockstore.S3.Credentials.SessionToken.SecureValue(),
 		)
 	}
 

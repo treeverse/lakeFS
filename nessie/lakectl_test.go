@@ -278,3 +278,20 @@ func TestLakectlAnnotate(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" annotate lakefs://"+repoName+"/"+mainBranch+"/iii/kkk/l --recursive", false, "lakectl_annotate_iiikkklll", vars)
 
 }
+
+func TestLakectlAuthUsers(t *testing.T) {
+	userName := "test_user"
+	vars := map[string]string{
+		"ID": userName,
+	}
+
+	//Not Found
+	RunCmdAndVerifyFailure(t, Lakectl()+" auth users delete --id "+userName, false, "user not found\n404 Not Found\n", vars)
+
+	// Check unique
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" auth users create --id "+userName, false, "lakectl_auth_users_create_success", vars)
+	RunCmdAndVerifyFailure(t, Lakectl()+" auth users create --id "+userName, false, "Already exists\n400 Bad Request\n", vars)
+
+	// Cleanup
+	RunCmdAndVerifySuccess(t, Lakectl()+" auth users delete --id "+userName, false, "User deleted successfully\n", vars)
+}

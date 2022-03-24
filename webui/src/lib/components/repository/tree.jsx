@@ -36,7 +36,7 @@ const Na = () => (<span>&mdash;</span>);
 
 const EntryRowActions = ({ repo, reference, entry, onDelete }) => {
     const [show, setShow] = useState(false);
-    const handleClose = () => setShow(false);;
+    const handleClose = () => setShow(false);
     const handleShow = () => setShow(true);
     const deleteConfirmMsg = `are you sure you wish to delete object "${entry.path}"?`
     const onSubmit = () => {
@@ -288,7 +288,7 @@ const GetStarted = ({ onUpload }) => {
 export const Tree = ({ repo, reference, results, after, onPaginate, nextPage, onUpload, onDelete, showActions = false, path = "" }) => {
 
     let body;
-    if (results.length === 0 && path === "") {
+    if (results.length === 0 && path === "" && reference.type === RefTypeBranch) {
         // empty state!
         body = <GetStarted onUpload={onUpload}/>;
     } else {

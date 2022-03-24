@@ -20,7 +20,6 @@ type hookResponse struct {
 
 type webhookServer struct {
 	s      *http.Server
-	fail   bool
 	respCh chan hookResponse
 	port   int
 	host   string

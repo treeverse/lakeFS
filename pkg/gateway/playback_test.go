@@ -103,6 +103,8 @@ func (m *mockCollector) CollectEvent(string, string) {}
 
 func (m *mockCollector) SetInstallationID(string) {}
 
+func (m *mockCollector) Close() {}
+
 func getBasicHandlerPlayback(t *testing.T, params *PlaybackParams) (http.Handler, *dependencies) {
 	authService := newGatewayAuthFromFile(t, params.RecordingDir)
 	return getBasicHandler(t, authService)

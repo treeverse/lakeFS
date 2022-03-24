@@ -64,7 +64,9 @@ var superuserCmd = &cobra.Command{
 
 		ctx, cancelFn := context.WithCancel(ctx)
 		stats := stats.NewBufferedCollector(metadata.InstallationID, cfg)
-		go stats.Run(ctx)
+		stats.Run(ctx)
+		defer stats.Close()
+
 		stats.CollectMetadata(metadata)
 		stats.CollectEvent("global", "superuser")
 
@@ -72,7 +74,7 @@ var superuserCmd = &cobra.Command{
 			credentials.AccessKeyID, credentials.SecretAccessKey)
 
 		cancelFn()
-		<-stats.Done()
+
 	},
 }
 

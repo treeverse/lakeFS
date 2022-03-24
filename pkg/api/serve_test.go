@@ -52,6 +52,8 @@ func (m *nullCollector) CollectEvent(_, _ string) {}
 
 func (m *nullCollector) SetInstallationID(_ string) {}
 
+func (m *nullCollector) Close() {}
+
 func createDefaultAdminUser(t testing.TB, clt api.ClientWithResponsesInterface) *authmodel.Credential {
 	t.Helper()
 	res, err := clt.SetupWithResponse(context.Background(), api.SetupJSONRequestBody{
@@ -68,16 +70,10 @@ func createDefaultAdminUser(t testing.TB, clt api.ClientWithResponsesInterface) 
 	}
 }
 
-func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
+func setupHandler(t testing.TB, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
 	t.Helper()
 	ctx := context.Background()
 	conn, handlerDatabaseURI := testutil.GetDB(t, databaseURI, opts...)
-	if blockstoreType == "" {
-		blockstoreType = os.Getenv(testutil.EnvKeyUseBlockAdapter)
-	}
-	if blockstoreType == "" {
-		blockstoreType = block.BlockstoreTypeMem
-	}
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
 	cfg, err := config.NewConfig()
 	testutil.MustDo(t, "config", err)
@@ -178,9 +174,9 @@ func shouldUseServerTimeout() bool {
 	return withServerTimeout
 }
 
-func setupClientWithAdmin(t testing.TB, blockstoreType string, opts ...testutil.GetDBOption) (api.ClientWithResponsesInterface, *dependencies) {
+func setupClientWithAdmin(t testing.TB, opts ...testutil.GetDBOption) (api.ClientWithResponsesInterface, *dependencies) {
 	t.Helper()
-	handler, deps := setupHandler(t, blockstoreType, opts...)
+	handler, deps := setupHandler(t, opts...)
 	server := setupServer(t, handler)
 	clt := setupClientByEndpoint(t, server.URL, "", "")
 	cred := createDefaultAdminUser(t, clt)
@@ -189,7 +185,7 @@ func setupClientWithAdmin(t testing.TB, blockstoreType string, opts ...testutil.
 }
 
 func TestInvalidRoute(t *testing.T) {
-	handler, _ := setupHandler(t, "")
+	handler, _ := setupHandler(t)
 	server := setupServer(t, handler)
 	clt := setupClientByEndpoint(t, server.URL, "", "")
 	cred := createDefaultAdminUser(t, clt)
