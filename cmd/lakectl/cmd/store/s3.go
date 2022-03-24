@@ -31,6 +31,20 @@ func (s *S3Walker) Walk(ctx context.Context, storageURI *url.URL, walkFn func(e 
 	var continuation *string
 	const maxKeys = 1000
 	prefix := strings.TrimLeft(storageURI.Path, "/")
+
+	// trimPrefix will be used to hold the actual value needed to be trimmed from the keys returned by the
+	// ListObjects function below. As the prefix itself might contain partial key, it cannot be used for the
+	// trim purpose, as this will create partial object names. The trimPrefix is the 'complete' prefix of the
+	// prefix, i.e. up to the first seperator ("/"), if exists, or an empty string. When the trimPrefix is
+	// trimmed from the key, the remains will be the object name.
+	// Example:
+	// Say we have the following keys:
+	// pref/object
+	// pref/obj/another
+	// If we specify prefix="pref/obj" (both keys will be listed) then trimPrefix="pref/" and the trim result
+	// for the keys will be:
+	// object
+	// obj/another
 	var trimPrefix string
 	if idx := strings.LastIndex(prefix, "/"); idx != -1 {
 		trimPrefix = prefix[:idx+1]
