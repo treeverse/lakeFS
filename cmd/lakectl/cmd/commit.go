@@ -15,6 +15,7 @@ import (
 var errInvalidKeyValueFormat = errors.New(`invalid key/value pair - should be separated by "="`)
 
 const fmtErrEmptyMessage = `commit with no message without specifying the "--allow-empty-message" flag`
+const internalErrorCode = 2
 
 const (
 	dateFlagName              = "epoch-time-seconds"
@@ -106,7 +107,7 @@ func init() {
 	if err := commitCmd.Flags().MarkHidden(dateFlagName); err != nil {
 		// (internal error)
 		_, _ = fmt.Fprint(os.Stderr, err)
-		os.Exit(2)
+		os.Exit(internalErrorCode)
 	}
 
 	commitCmd.Flags().StringSlice(metaFlagName, []string{}, "key value pair in the form of key=value")
