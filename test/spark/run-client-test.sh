@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/bin/bash -aux
 
 # Run Export
-docker-compose run -v  $PWD/../../clients/spark/target/:/target/ -T --no-deps --rm spark-submit bash -c 'spark-submit  --master spark://spark:7077 --conf spark.hadoop.lakefs.api.url=http:/docker.lakefs.io:8000/api/v1   --conf spark.hadoop.lakefs.api.access_key=${TESTER_ACCESS_KEY_ID}   --conf spark.hadoop.fs.s3a.connection.ssl.enabled=false   --conf spark.hadoop.lakefs.api.secret_key=${TESTER_SECRET_ACCESS_KEY}   --class io.treeverse.clients.Main  ${CLIENT_JAR} test-data ${EXPORT_LOCATION}   --branch=main'
+docker-compose run -v  ${CLIENT_JAR}:/client/client.jar -T --no-deps --rm spark-submit bash -c 'spark-submit  --master spark://spark:7077 --conf spark.hadoop.lakefs.api.url=http:/docker.lakefs.io:8000/api/v1   --conf spark.hadoop.lakefs.api.access_key=${TESTER_ACCESS_KEY_ID}   --conf spark.hadoop.fs.s3a.connection.ssl.enabled=false   --conf spark.hadoop.lakefs.api.secret_key=${TESTER_SECRET_ACCESS_KEY}   --class io.treeverse.clients.Main  /client/client.jar test-data ${EXPORT_LOCATION}   --branch=main'
 
 # Validate export
 lakectl_out=$(mktemp)
@@ -17,7 +17,7 @@ if ! diff ${lakectl_out} ${s3_out}; then
   exit 1
 fi
 # Run Garbage Collection 
-docker-compose run  -v  $PWD/../../clients/spark/target/:/target/ -T --no-deps --rm spark-submit bash -c 'spark-submit --master spark://spark:7077 --class io.treeverse.clients.GarbageCollector   -c spark.hadoop.lakefs.api.url=http://docker.lakefs.io:8000/api/v1 -c spark.hadoop.lakefs.api.access_key=${TESTER_ACCESS_KEY_ID}    -c spark.hadoop.lakefs.api.secret_key=${TESTER_SECRET_ACCESS_KEY}     -c spark.hadoop.fs.s3a.access.key=${LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID}   -c spark.hadoop.fs.s3a.secret.key=${LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY} ${CLIENT_JAR} test-data us-east-1'
+docker-compose run  -v  ${CLIENT_JAR}:/client/client.jar -T --no-deps --rm spark-submit bash -c 'spark-submit --master spark://spark:7077 --class io.treeverse.clients.GarbageCollector   -c spark.hadoop.lakefs.api.url=http://docker.lakefs.io:8000/api/v1 -c spark.hadoop.lakefs.api.access_key=${TESTER_ACCESS_KEY_ID}    -c spark.hadoop.lakefs.api.secret_key=${TESTER_SECRET_ACCESS_KEY}     -c spark.hadoop.fs.s3a.access.key=${LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID}   -c spark.hadoop.fs.s3a.secret.key=${LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY} /client/client.jar test-data us-east-1'
 
 
 # Validate Garbage Collection
