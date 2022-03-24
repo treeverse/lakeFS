@@ -1,0 +1,7 @@
+name: invalid parameter for tag event
+on:
+  pre-create-tag:
+    branches:
+hooks:
+  - id: no_temp
+    type: webhook

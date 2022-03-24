@@ -15,6 +15,8 @@ type EventInfo struct {
 	RepositoryID   string            `json:"repository_id"`
 	BranchID       string            `json:"branch_id"`
 	SourceRef      string            `json:"source_ref,omitempty"`
+	TagID          string            `json:"tag_id,omitempty"`
+	CommitID       string            `json:"commit_id,omitempty"`
 	CommitMessage  string            `json:"commit_message"`
 	Committer      string            `json:"committer"`
 	CommitMetadata map[string]string `json:"commit_metadata,omitempty"`
@@ -30,6 +32,8 @@ func marshalEventInformation(actionName, hookID string, record graveler.HookReco
 		RepositoryID:   record.RepositoryID.String(),
 		BranchID:       record.BranchID.String(),
 		SourceRef:      record.SourceRef.String(),
+		TagID:          record.TagID.String(),
+		CommitID:       record.CommitID.String(),
 		CommitMessage:  record.Commit.Message,
 		Committer:      record.Commit.Committer,
 		CommitMetadata: record.Commit.Metadata,

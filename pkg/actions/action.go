@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"path"
+	"reflect"
 	"regexp"
+	"strings"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -65,15 +67,23 @@ var (
 	reName   = regexp.MustCompile(`^\w[\w\-. ]+$`)
 	reHookID = regexp.MustCompile(`^[_a-zA-Z][\-_a-zA-Z0-9]{1,255}$`)
 
-	ErrInvalidAction    = errors.New("invalid action")
-	ErrInvalidEventType = errors.New("invalid event type")
+	ErrInvalidAction         = errors.New("invalid action")
+	ErrInvalidEventParameter = errors.New("invalid event parameter")
 )
 
 var supportedEvents = map[graveler.EventType]bool{
-	graveler.EventTypePreCommit:  true,
-	graveler.EventTypePostMerge:  true,
-	graveler.EventTypePreMerge:   true,
-	graveler.EventTypePostCommit: true,
+	graveler.EventTypePreCommit:        true,
+	graveler.EventTypePostMerge:        true,
+	graveler.EventTypePreMerge:         true,
+	graveler.EventTypePostCommit:       true,
+	graveler.EventTypePreCreateBranch:  true,
+	graveler.EventTypePostCreateBranch: true,
+	graveler.EventTypePreDeleteBranch:  true,
+	graveler.EventTypePostDeleteBranch: true,
+	graveler.EventTypePreCreateTag:     true,
+	graveler.EventTypePostCreateTag:    true,
+	graveler.EventTypePreDeleteTag:     true,
+	graveler.EventTypePostDeleteTag:    true,
 }
 
 func (a *Action) Validate() error {
@@ -83,12 +93,16 @@ func (a *Action) Validate() error {
 	if !reName.MatchString(a.Name) {
 		return fmt.Errorf("'name' is invalid: %w", ErrInvalidAction)
 	}
-	if len(a.On) == 0 {
+	if a.On == nil || len(a.On) == 0 {
 		return fmt.Errorf("'on' is required: %w", ErrInvalidAction)
 	}
 	for o := range a.On {
 		if !supportedEvents[o] {
 			return fmt.Errorf("event '%s' is not supported: %w", o, ErrInvalidAction)
+		}
+		err := validateOnParameters(&a.On)
+		if err != nil {
+			return err
 		}
 	}
 	ids := make(map[string]struct{})
@@ -104,6 +118,35 @@ func (a *Action) Validate() error {
 			return fmt.Errorf("hook[%d] type '%s' unknown: %w", i, hook.ID, ErrInvalidAction)
 		}
 	}
+	return nil
+}
+
+func validateOnParameters(on *map[graveler.EventType]*ActionOn) error {
+	for k, v := range *on {
+		if v == nil {
+			continue
+		}
+		elem := reflect.ValueOf(v).Elem()
+		t := elem.Type()
+
+		for i := 0; i < t.NumField(); i++ {
+			field := t.Field(i).Name
+			switch field {
+			// Add a case for any additional field added to ActionOn struct
+			case "Branches":
+				{
+					if strings.Contains(string(k), "tag") {
+						return fmt.Errorf("'branches' is not supported in tag event types. %w", ErrInvalidEventParameter)
+					}
+				}
+			default:
+				{
+					return fmt.Errorf("should not reach! %s, %w", field, ErrInvalidEventParameter)
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
