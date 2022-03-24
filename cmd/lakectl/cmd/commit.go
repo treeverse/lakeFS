@@ -14,10 +14,10 @@ import (
 
 var errInvalidKeyValueFormat = errors.New(`invalid key/value pair - should be separated by "="`)
 
-const FmtErrEmptyMessage = `commit with no message without specifying the "--allow-empty-message" flag`
+const fmtErrEmptyMessage = `commit with no message without specifying the "--allow-empty-message" flag`
 
 const (
-	dateFlagName              = "date"
+	dateFlagName              = "epoch-time-seconds"
 	messageFlagName           = "message"
 	allowEmptyMessageFlagName = "allow-empty-message"
 	metaFlagName              = "meta"
@@ -47,7 +47,7 @@ var commitCmd = &cobra.Command{
 		date := MustInt64(cmd.Flags().GetInt64(dateFlagName))
 
 		if strings.TrimSpace(message) == "" && !emptyMessageBool {
-			DieFmt(FmtErrEmptyMessage)
+			DieFmt(fmtErrEmptyMessage)
 		}
 
 		datePtr := &date

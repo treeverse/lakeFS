@@ -127,7 +127,7 @@ func TestLakectlCommit(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+filePath, false, "lakectl_fs_upload", vars)
 	commitMessage = "commit with a very old date"
 	vars["MESSAGE"] = commitMessage
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+` -m "`+commitMessage+`" --date 0`, false, "lakectl_commit", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+` -m "`+commitMessage+`" --epoch-time-seconds 0`, false, "lakectl_commit", vars)
 	vars["DATE"] = "1970-01-01 02:00:00 +0200 IST"
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch+" --amount 1", false, "lakectl_log_with_commit_custom_date", vars)
 }
