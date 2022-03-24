@@ -17,7 +17,7 @@ func TestS3Walk(t *testing.T) {
 	const expectedNumObjs = 2100
 	numObjs := 0
 
-	store.Walk(context.Background(), IngestTestBucketPath, func(e store.ObjectStoreEntry) error {
+	store.Walk(context.Background(), "", IngestTestBucketPath, func(e store.ObjectStoreEntry) error {
 		numObjs++
 		return nil
 	})
