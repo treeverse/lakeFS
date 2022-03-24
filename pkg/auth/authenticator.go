@@ -56,6 +56,29 @@ func (ca ChainAuthenticator) AuthenticateUser(ctx context.Context, username, pas
 	return InvalidUserID, err
 }
 
+type EmailAuthenticator struct {
+	AuthService Service
+}
+
+func NewEmailAuthenticator(service Service) *EmailAuthenticator {
+	return &EmailAuthenticator{AuthService: service}
+}
+
+func (e EmailAuthenticator) AuthenticateUser(ctx context.Context, username, password string) (int, error) {
+	user, err := e.AuthService.GetUserByEmail(ctx, username)
+	if err != nil {
+		return InvalidUserID, err
+	}
+
+	if user.Password == nil {
+		return InvalidUserID, ErrNoPassword
+	}
+	if subtle.ConstantTimeCompare([]byte(password), []byte(*user.Password)) != 1 {
+		return InvalidUserID, ErrInvalidPassword
+	}
+	return user.ID, nil
+}
+
 // BuiltinAuthenticator authenticates users by their access key IDs and
 // passwords stored in the auth service.
 type BuiltinAuthenticator struct {

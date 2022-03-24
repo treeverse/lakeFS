@@ -40,6 +40,7 @@ type Service interface {
 	DeleteUser(ctx context.Context, username string) error
 	GetUserByID(ctx context.Context, userID int) (*model.User, error)
 	GetUser(ctx context.Context, username string) (*model.User, error)
+	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
 	ListUsers(ctx context.Context, params *model.PaginationParams) ([]*model.User, *model.Paginator, error)
 
 	// groups
@@ -159,6 +160,15 @@ func getUser(tx db.Tx, username string) (*model.User, error) {
 	return user, nil
 }
 
+func getUserByEmail(tx db.Tx, email string) (*model.User, error) {
+	user := &model.User{}
+	err := tx.Get(user, `SELECT * FROM auth_users WHERE email = $1`, email)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
 func getGroup(tx db.Tx, groupDisplayName string) (*model.Group, error) {
 	group := &model.Group{}
 	err := tx.Get(group, `SELECT * FROM auth_groups WHERE display_name = $1`, groupDisplayName)
@@ -262,6 +272,29 @@ func (s *DBAuthService) GetUser(ctx context.Context, username string) (*model.Us
 	return s.cache.GetUser(username, func() (*model.User, error) {
 		user, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			return getUser(tx, username)
+		}, db.ReadOnly())
+		if err != nil {
+			return nil, err
+		}
+		return user.(*model.User), nil
+	})
+}
+
+func (s *DBAuthService) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
+	return s.cache.GetUser(email, func() (*model.User, error) {
+		user, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
+			user, err := getUserByEmail(tx, email)
+			if err != nil {
+				return nil, err
+			}
+			if user.PasswordEncryptedBytes != nil {
+				password, err := s.decryptSecret(user.PasswordEncryptedBytes)
+				if err != nil {
+					return nil, err
+				}
+				user.Password = &password
+			}
+			return user, err
 		}, db.ReadOnly())
 		if err != nil {
 			return nil, err
