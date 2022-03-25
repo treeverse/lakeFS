@@ -46,7 +46,7 @@ func (s *S3Walker) Walk(ctx context.Context, storageURI *url.URL, walkFn func(e 
 	// obj/another
 	var basePath string
 	if idx := strings.LastIndex(prefix, "/"); idx != -1 {
-		trimPrefix = prefix[:idx+1]
+		basePath = prefix[:idx+1]
 	}
 	bucket := storageURI.Host
 	for {
@@ -64,7 +64,7 @@ func (s *S3Walker) Walk(ctx context.Context, storageURI *url.URL, walkFn func(e 
 			addr := fmt.Sprintf("s3://%s/%s", bucket, key)
 			ent := ObjectStoreEntry{
 				FullKey:     key,
-				RelativeKey: strings.TrimPrefix(key, trimPrefix),
+				RelativeKey: strings.TrimPrefix(key, basePath),
 				Address:     addr,
 				ETag:        strings.Trim(aws.StringValue(record.ETag), "\""),
 				Mtime:       aws.TimeValue(record.LastModified),
