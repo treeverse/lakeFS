@@ -70,12 +70,10 @@ func (e EmailAuthenticator) AuthenticateUser(ctx context.Context, username, pass
 		return InvalidUserID, err
 	}
 
-	if user.Password == nil {
-		return InvalidUserID, ErrNoPassword
+	if err := user.Authenticate(password); err != nil {
+		return InvalidUserID, err
 	}
-	if subtle.ConstantTimeCompare([]byte(password), []byte(*user.Password)) != 1 {
-		return InvalidUserID, ErrInvalidPassword
-	}
+
 	return user.ID, nil
 }
 

@@ -283,18 +283,7 @@ func (s *DBAuthService) GetUser(ctx context.Context, username string) (*model.Us
 func (s *DBAuthService) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
 	return s.cache.GetUser(email, func() (*model.User, error) {
 		user, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-			user, err := getUserByEmail(tx, email)
-			if err != nil {
-				return nil, err
-			}
-			if user.PasswordEncryptedBytes != nil {
-				password, err := s.decryptSecret(user.PasswordEncryptedBytes)
-				if err != nil {
-					return nil, err
-				}
-				user.Password = &password
-			}
-			return user, err
+			return getUserByEmail(tx, email)
 		}, db.ReadOnly())
 		if err != nil {
 			return nil, err

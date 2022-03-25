@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 const (
@@ -32,11 +34,33 @@ type User struct {
 	// Username.  Unlike Username it does not identify the user (it
 	// might not be unique); use it in the user's GUI rather than in
 	// backend code.
-	FriendlyName           *string `db:"friendly_name" json:"friendly_name"`
-	Email                  *string `db:"email" json:"email"`
-	Password               *string `db:"-" json:"-"`
-	PasswordEncryptedBytes []byte  `db:"password" json:"password"`
-	Source                 string
+	FriendlyName      *string `db:"friendly_name" json:"friendly_name"`
+	Email             *string `db:"email" json:"email"`
+	EncryptedPassword []byte  `db:"encrypted_password" json:"encrypted_password"`
+	Source            string
+}
+
+// hashPassword generates a hashed password from a plaintext string
+func hashPassword(password string) ([]byte, error) {
+	pw, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, err
+	}
+	return pw, nil
+}
+
+func (u *User) UpdatePassword(password string) error {
+	pw, err := hashPassword(password)
+	if err != nil {
+		return err
+	}
+	u.EncryptedPassword = pw
+	return nil
+}
+
+// Authenticate a user from a password Returns nil on success, or an error on failure.
+func (u *User) Authenticate(password string) error {
+	return bcrypt.CompareHashAndPassword(u.EncryptedPassword, []byte(password))
 }
 
 // SuperuserConfiguration requests a particular configuration for a superuser.
