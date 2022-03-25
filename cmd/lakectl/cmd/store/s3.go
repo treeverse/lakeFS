@@ -32,16 +32,15 @@ func (s *S3Walker) Walk(ctx context.Context, storageURI *url.URL, walkFn func(e 
 	const maxKeys = 1000
 	prefix := strings.TrimLeft(storageURI.Path, "/")
 
-	// trimPrefix will be used to hold the actual value needed to be trimmed from the keys returned by the
-	// ListObjects function below. As the prefix itself might contain partial key, it cannot be used for the
-	// trim purpose, as this will create partial object names. The trimPrefix is the 'complete' prefix of the
-	// prefix, i.e. up to the first separator ("/"), if exists, or an empty string. When the trimPrefix is
+	// basePath is the path relative to which the walk is done. The key of the resulting entries will be relative to this path.
+	// As the original prefix might not end with a separator, it cannot be used for the
+	// trim purpose, as this will create partial "folder" names. When the basePath is
 	// trimmed from the key, the remains will be the object name.
 	// Example:
 	// Say we have the following keys:
 	// pref/object
 	// pref/obj/another
-	// If we specify prefix="pref/obj" (both keys will be listed) then trimPrefix="pref/" and the trim result
+	// If we specify prefix="pref/obj" (both keys will be listed) then basePath="pref/" and the trim result
 	// for the keys will be:
 	// object
 	// obj/another
