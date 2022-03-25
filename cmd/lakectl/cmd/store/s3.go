@@ -31,7 +31,6 @@ func (s *S3Walker) Walk(ctx context.Context, storageURI *url.URL, walkFn func(e 
 	var continuation *string
 	const maxKeys = 1000
 	prefix := strings.TrimLeft(storageURI.Path, "/")
-<<<<<<< HEAD
 
 	// basePath is the path relative to which the walk is done. The key of the resulting entries will be relative to this path.
 	// As the original prefix might not end with a separator, it cannot be used for the
@@ -48,11 +47,6 @@ func (s *S3Walker) Walk(ctx context.Context, storageURI *url.URL, walkFn func(e 
 	var basePath string
 	if idx := strings.LastIndex(prefix, "/"); idx != -1 {
 		basePath = prefix[:idx+1]
-=======
-	var trimPrefix string
-	if idx := strings.LastIndex(prefix, "/"); idx != -1 {
-		trimPrefix = prefix[:idx+1]
->>>>>>> Fixing store walk function to correctly trim partial prefix
 	}
 	bucket := storageURI.Host
 	for {
