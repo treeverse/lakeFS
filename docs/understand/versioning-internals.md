@@ -1,15 +1,14 @@
 ---
 layout: default
-title: Data Model
+title: Versioning Internals
 parent: Understanding lakeFS
-description: This page explains the lakeFS Data Model
+description: How lakeFS does versioning
 nav_order: 20
 has_children: false
-redirect_from: ../architecture/data-model.html
----
-# Data Model
+redirect_from: ["../architecture/data-model.html","../understand/data-model.html"]
+--- 
+# Versioning Internals
 {: .no_toc }
-
 
 {% include toc.html %}
 
