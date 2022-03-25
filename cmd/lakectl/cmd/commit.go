@@ -2,9 +2,7 @@ package cmd
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -105,9 +103,7 @@ func init() {
 
 	commitCmd.Flags().Int64(dateFlagName, -1, "create commit with a custom unix epoch date in seconds")
 	if err := commitCmd.Flags().MarkHidden(dateFlagName); err != nil {
-		// (internal error)
-		_, _ = fmt.Fprint(os.Stderr, err)
-		os.Exit(internalErrorCode)
+		DieErr(err)
 	}
 
 	commitCmd.Flags().StringSlice(metaFlagName, []string{}, "key value pair in the form of key=value")
