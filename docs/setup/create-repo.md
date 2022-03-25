@@ -47,7 +47,7 @@ When you first open the lakeFS UI, you will be asked to create an initial admin 
 
 1. Set the _Storage Namespace_ to a location in the bucket you've configured in a [previous step](./storage/index.md).
    The _storage namespace_ is a location in the
-   [underlying storage](https://docs.lakefs.io/reference/object-model.html#concepts-unique-to-lakefs)
+   [underlying storage](../understand/object-model.md#concepts-unique-to-lakefs)
    where data for this repository will be stored.
 
 1. Click _Create Repository_.
