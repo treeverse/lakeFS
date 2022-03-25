@@ -31,6 +31,23 @@ func (s *S3Walker) Walk(ctx context.Context, storageURI *url.URL, walkFn func(e 
 	var continuation *string
 	const maxKeys = 1000
 	prefix := strings.TrimLeft(storageURI.Path, "/")
+
+	// basePath is the path relative to which the walk is done. The key of the resulting entries will be relative to this path.
+	// As the original prefix might not end with a separator, it cannot be used for the
+	// trim purpose, as this will create partial "folder" names. When the basePath is
+	// trimmed from the key, the remains will be the object name.
+	// Example:
+	// Say we have the following keys:
+	// pref/object
+	// pref/obj/another
+	// If we specify prefix="pref/obj" (both keys will be listed) then basePath="pref/" and the trim result
+	// for the keys will be:
+	// object
+	// obj/another
+	var basePath string
+	if idx := strings.LastIndex(prefix, "/"); idx != -1 {
+		basePath = prefix[:idx+1]
+	}
 	bucket := storageURI.Host
 	for {
 		result, err := s.s3.ListObjectsV2WithContext(ctx, &s3.ListObjectsV2Input{
@@ -47,7 +64,7 @@ func (s *S3Walker) Walk(ctx context.Context, storageURI *url.URL, walkFn func(e 
 			addr := fmt.Sprintf("s3://%s/%s", bucket, key)
 			ent := ObjectStoreEntry{
 				FullKey:     key,
-				RelativeKey: strings.TrimPrefix(key, prefix),
+				RelativeKey: strings.TrimPrefix(key, basePath),
 				Address:     addr,
 				ETag:        strings.Trim(aws.StringValue(record.ETag), "\""),
 				Mtime:       aws.TimeValue(record.LastModified),
