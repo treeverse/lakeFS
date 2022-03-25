@@ -44,7 +44,7 @@ func (s *S3Walker) Walk(ctx context.Context, storageURI *url.URL, walkFn func(e 
 	// for the keys will be:
 	// object
 	// obj/another
-	var trimPrefix string
+	var basePath string
 	if idx := strings.LastIndex(prefix, "/"); idx != -1 {
 		trimPrefix = prefix[:idx+1]
 	}
