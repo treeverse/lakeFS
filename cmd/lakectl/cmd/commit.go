@@ -13,7 +13,6 @@ import (
 var errInvalidKeyValueFormat = errors.New(`invalid key/value pair - should be separated by "="`)
 
 const fmtErrEmptyMessage = `commit with no message without specifying the "--allow-empty-message" flag`
-const internalErrorCode = 2
 
 const (
 	dateFlagName              = "epoch-time-seconds"
