@@ -1203,21 +1203,28 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		return
 	}
 
-	err := ensureStorageNamespace(ctx, c.BlockAdapter, body.StorageNamespace)
+	err := c.ensureStorageNamespace(ctx, body.StorageNamespace)
 	if err != nil {
+		reason := "unknown"
 		var retErr error
 		var urlErr *url.Error
 		switch {
 		case errors.As(err, &urlErr) && urlErr.Op == "parse":
 			retErr = err
+			reason = "bad_url"
 		case errors.Is(err, block.ErrInvalidNamespace):
 			retErr = fmt.Errorf("%w, must match: %s", err, c.BlockAdapter.BlockstoreType())
+			reason = "invalid_namespace"
+		case errors.Is(err, errStorageNamespaceInUse):
+			retErr = err
+			reason = "already_in_use"
 		default:
 			retErr = ErrFailedToAccessStorage
 		}
 		c.Logger.
 			WithError(err).
 			WithField("storage_namespace", body.StorageNamespace).
+			WithField("reason", reason).
 			Warn("Could not access storage namespace")
 		writeError(w, http.StatusBadRequest, fmt.Errorf("failed to create repository: %w", retErr))
 		return
@@ -1238,7 +1245,9 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 	writeResponse(w, http.StatusCreated, response)
 }
 
-func ensureStorageNamespace(ctx context.Context, adapter block.Adapter, storageNamespace string) error {
+var errStorageNamespaceInUse = errors.New("lakeFS repositories can't share storage namespace")
+
+func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespace string) error {
 	const (
 		dummyKey  = "dummy"
 		dummyData = "this is dummy data - created by lakeFS in order to check accessibility"
@@ -1246,11 +1255,18 @@ func ensureStorageNamespace(ctx context.Context, adapter block.Adapter, storageN
 
 	obj := block.ObjectPointer{StorageNamespace: storageNamespace, Identifier: dummyKey}
 	objLen := int64(len(dummyData))
-	err := adapter.Put(ctx, obj, objLen, strings.NewReader(dummyData), block.PutOpts{})
-	if err != nil {
+	if _, err := c.BlockAdapter.Get(ctx, obj, objLen); err == nil {
+		return fmt.Errorf("found lakeFS objects in the storage namespace(%s): %w",
+			storageNamespace, errStorageNamespaceInUse)
+	} else if !errors.Is(err, adapter.ErrDataNotFound) {
 		return err
 	}
-	_, err = adapter.Get(ctx, obj, objLen)
+
+	if err := c.BlockAdapter.Put(ctx, obj, objLen, strings.NewReader(dummyData), block.PutOpts{}); err != nil {
+		return err
+	}
+
+	_, err := c.BlockAdapter.Get(ctx, obj, objLen)
 	return err
 }
 
@@ -2291,7 +2307,7 @@ func (c *Controller) DumpRefs(w http.ResponseWriter, r *http.Request, repository
 	}
 	err = c.BlockAdapter.Put(ctx, block.ObjectPointer{
 		StorageNamespace: repo.StorageNamespace,
-		Identifier:       "_lakefs/refs_manifest.json",
+		Identifier:       fmt.Sprintf("%s/refs_manifest.json", c.Config.GetCommittedBlockStoragePrefix()),
 	}, int64(len(manifestBytes)), bytes.NewReader(manifestBytes), block.PutOpts{})
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)

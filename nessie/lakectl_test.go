@@ -52,7 +52,8 @@ func TestLakectlBasicRepoActions(t *testing.T) {
 	// }
 
 	// Trying to create the same repo again fails and does not change the list
-	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create_not_unique", vars)
+	newStorage := storage + "/new-storage/"
+	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+newStorage, false, "lakectl_repo_create_not_unique", vars)
 
 	// Fails due to the usage of repos for isolation - nessie creates repos in parallel and
 	// the output of 'repo list' command cannot be well defined
