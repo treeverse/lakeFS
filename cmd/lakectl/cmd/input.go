@@ -123,6 +123,13 @@ func MustInt(v int, err error) int {
 	return v
 }
 
+func MustInt64(v int64, err error) int64 {
+	if err != nil {
+		DieErr(err)
+	}
+	return v
+}
+
 func MustBool(v bool, err error) bool {
 	if err != nil {
 		DieErr(err)

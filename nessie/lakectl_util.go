@@ -102,7 +102,7 @@ func embedVariables(s string, vars map[string]string) (string, error) {
 		vals = append(vals, v)
 	}
 
-	// Sorting the reversed keys (variable values) by descending length in order to handle longer nbames first
+	// Sorting the reversed keys (variable values) by descending length in order to handle longer names first
 	// This will diminish replacing partial names that were used to construct longer names
 	sort.Slice(vals, func(i, j int) bool {
 		return len(vals[i]) > len(vals[j])
@@ -119,7 +119,9 @@ func sanitize(output string, vars map[string]string) string {
 	// The order of execution below is important as certain expression can contain others
 	// and so, should be handled first
 	s := strings.ReplaceAll(output, "\r\n", "\n")
-	s = normalizeProgramTimestamp(s)
+	if _, ok := vars["DATE"]; !ok {
+		s = normalizeProgramTimestamp(s)
+	}
 	s = normalizeRandomObjectKey(s, vars["STORAGE"])
 	s = normalizeCommitID(s)
 	s = normalizeChecksum(s)
@@ -128,31 +130,36 @@ func sanitize(output string, vars map[string]string) string {
 }
 
 func RunCmdAndVerifySuccessWithFile(t *testing.T, cmd string, isTerminal bool, goldenFile string, vars map[string]string) {
-	runCmdAndVerifyWithFile(t, cmd, false, isTerminal, goldenFile, vars)
+	runCmdAndVerifyWithFile(t, cmd, goldenFile, false, isTerminal, vars)
 }
 
 func RunCmdAndVerifyFailureWithFile(t *testing.T, cmd string, isTerminal bool, goldenFile string, vars map[string]string) {
-	runCmdAndVerifyWithFile(t, cmd, true, isTerminal, goldenFile, vars)
+	runCmdAndVerifyWithFile(t, cmd, goldenFile, true, isTerminal, vars)
 }
 
-func runCmdAndVerifyWithFile(t *testing.T, cmd string, expectFail bool, isTerminal bool, goldenFile string, vars map[string]string) {
+func runCmdAndVerifyWithFile(t *testing.T, cmd, goldenFile string, expectFail, isTerminal bool, vars map[string]string) {
 	goldenFile = "golden/" + goldenFile + ".golden"
 
-	if *update {
-		result, _ := runShellCommand(cmd, isTerminal)
-		s := sanitize(string(result), vars)
-		s, err := embedVariables(s, vars)
-		require.NoError(t, err, "Variable embed failed - %s", err)
-		err = ioutil.WriteFile(goldenFile, []byte(s), 0600)
-		require.NoError(t, err, "Failed to write file %s", goldenFile)
-		return
+	switch *update {
+	case true:
+		updateGoldenFile(t, cmd, isTerminal, goldenFile, vars)
+	default:
+		content, err := ioutil.ReadFile(goldenFile)
+		if err != nil {
+			t.Fatal("Failed to read ", goldenFile, err)
+		}
+		expected := sanitize(string(content), vars)
+		runCmdAndVerifyResult(t, cmd, expectFail, isTerminal, expected, vars)
 	}
-	content, err := ioutil.ReadFile(goldenFile)
-	if err != nil {
-		t.Fatal("Failed to read ", goldenFile, err)
-	}
-	expected := sanitize(string(content), vars)
-	runCmdAndVerifyResult(t, cmd, expectFail, isTerminal, expected, vars)
+}
+
+func updateGoldenFile(t *testing.T, cmd string, isTerminal bool, goldenFile string, vars map[string]string) {
+	result, _ := runShellCommand(cmd, isTerminal)
+	s := sanitize(string(result), vars)
+	s, err := embedVariables(s, vars)
+	require.NoError(t, err, "Variable embed failed - %s", err)
+	err = ioutil.WriteFile(goldenFile, []byte(s), 0600)
+	require.NoError(t, err, "Failed to write file %s", goldenFile)
 }
 
 func RunCmdAndVerifySuccess(t *testing.T, cmd string, isTerminal bool, expected string, vars map[string]string) {
