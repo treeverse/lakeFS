@@ -12,13 +12,14 @@ import (
 
 var errInvalidKeyValueFormat = errors.New(`invalid key/value pair - should be separated by "="`)
 
-const FmtErrEmptyMessage = `commit with no message without specifying the "--allow-empty-message" flag`
+const fmtErrEmptyMessage = `commit with no message without specifying the "--allow-empty-message" flag`
 
 const (
-	MessageFlagName           = "message"
-	AllowEmptyMessageFlagName = "allow-empty-message"
-	MetaFlagName              = "meta"
-	CommitCreateTemplate      = `Commit for branch "{{.Branch.Ref}}" completed.
+	dateFlagName              = "epoch-time-seconds"
+	messageFlagName           = "message"
+	allowEmptyMessageFlagName = "allow-empty-message"
+	metaFlagName              = "meta"
+	commitCreateTemplate      = `Commit for branch "{{.Branch.Ref}}" completed.
 
 ID: {{.Commit.Id|yellow}}
 Message: {{.Commit.Message}}
@@ -34,16 +35,22 @@ var commitCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		// validate message
-		kvPairs, err := getKV(cmd, MetaFlagName)
+		kvPairs, err := getKV(cmd, metaFlagName)
 		if err != nil {
 			DieErr(err)
 		}
 
-		message := MustString(cmd.Flags().GetString(MessageFlagName))
-		emptyMessageBool := MustBool(cmd.Flags().GetBool(AllowEmptyMessageFlagName))
+		message := MustString(cmd.Flags().GetString(messageFlagName))
+		emptyMessageBool := MustBool(cmd.Flags().GetBool(allowEmptyMessageFlagName))
+		date := MustInt64(cmd.Flags().GetInt64(dateFlagName))
 
 		if strings.TrimSpace(message) == "" && !emptyMessageBool {
-			DieFmt(FmtErrEmptyMessage)
+			DieFmt(fmtErrEmptyMessage)
+		}
+
+		datePtr := &date
+		if date < 0 {
+			datePtr = nil
 		}
 
 		branchURI := MustParseRefURI("branch", args[0])
@@ -57,11 +64,12 @@ var commitCmd = &cobra.Command{
 		resp, err := client.CommitWithResponse(cmd.Context(), branchURI.Repository, branchURI.Ref, api.CommitJSONRequestBody{
 			Message:  message,
 			Metadata: &metadata,
+			Date:     datePtr,
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 
 		commit := resp.JSON201
-		Write(CommitCreateTemplate, struct {
+		Write(commitCreateTemplate, struct {
 			Branch *uri.URI
 			Commit *api.Commit
 		}{Branch: branchURI, Commit: commit})
@@ -89,8 +97,13 @@ func getKV(cmd *cobra.Command, name string) (map[string]string, error) {
 func init() {
 	rootCmd.AddCommand(commitCmd)
 
-	commitCmd.Flags().Bool(AllowEmptyMessageFlagName, false, "allow an empty commit message")
-	commitCmd.Flags().StringP(MessageFlagName, "m", "", "commit message")
+	commitCmd.Flags().Bool(allowEmptyMessageFlagName, false, "allow an empty commit message")
+	commitCmd.Flags().StringP(messageFlagName, "m", "", "commit message")
 
-	commitCmd.Flags().StringSlice(MetaFlagName, []string{}, "key value pair in the form of key=value")
+	commitCmd.Flags().Int64(dateFlagName, -1, "create commit with a custom unix epoch date in seconds")
+	if err := commitCmd.Flags().MarkHidden(dateFlagName); err != nil {
+		DieErr(err)
+	}
+
+	commitCmd.Flags().StringSlice(metaFlagName, []string{}, "key value pair in the form of key=value")
 }
