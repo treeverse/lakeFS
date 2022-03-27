@@ -67,7 +67,7 @@ Otherwise, add `spark.hadoop.fs.s3a.access.key` and `spark.hadoop.fs.s3a.secret.
 {: .note}
 
 ### Using custom code (notebook/spark)
-Set up lakeFS Spark metadata client with the endpoint and credentials as instructed in the previous [page](./spark-client.md).
+Set up lakeFS Spark metadata client with the endpoint and credentials as instructed in the previous [page](./spark-client.md){: .button-clickable}.
 
 The client exposes the `Exporter` object with 3 export options:
 
@@ -190,6 +190,6 @@ docker run \
 -it treeverse/lakefs-rclone-export:latest example-repo s3://destination-bucket/prefix/ --branch="example-branch"
 ``` 
 
-**Note:** This feature uses [rclone](https://rclone.org/){: target="_blank"},
-and specifically [rclone sync](https://rclone.org/commands/rclone_sync/){: target="_blank"}. This can change the destination path, therefore the s3 destination location must be designated to lakeFS export.
+**Note:** This feature uses [rclone](https://rclone.org/){: target="_blank" .button-clickable},
+and specifically [rclone sync](https://rclone.org/commands/rclone_sync/){: target="_blank" .button-clickable}. This can change the destination path, therefore the s3 destination location must be designated to lakeFS export.
 {: .note}

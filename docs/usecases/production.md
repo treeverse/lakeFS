@@ -19,7 +19,7 @@ Revert in lakeFS is an atomic action that prevents the data consumers from recei
 
 As previously mentioned, with lakeFS the recommended branching schema is to ingest data to a dedicated branch. When streaming data, we can decide to merge the incoming data to main at a given time interval or checkpoint, depending on how we chose to write it from Kafka. 
 
-You can run quality tests for each merge (as discussed in the [During Deployment](./ci.md) section). Alas, tests are not perfect and we might still introduce low quality data to our main branch at some point.
+You can run quality tests for each merge (as discussed in the [During Deployment](./ci.md){: .button-clickable} section). Alas, tests are not perfect and we might still introduce low quality data to our main branch at some point.
 In such a case, we can revert the bad commits from main to the last known high quality commit. This will record new commits reversing the effect of the bad commits.
  
 
@@ -64,5 +64,5 @@ The same logic can apply if the data is ingested in streaming, using standard fo
 <img src="{{ site.baseurl }}/assets/img/branching_8.png" alt="branching_8" width="500px"/>
 
 ## Case Study: Windward
-See how Windward is using lakeFS’ isolation and atomic commits to [achieve consistency](https://medium.com/data-rocks/how-windward-leverages-lakefs-for-resilient-data-ingestion-52b838da2cb8) on top of S3.
+See how Windward is using lakeFS’ isolation and atomic commits to [achieve consistency](https://medium.com/data-rocks/how-windward-leverages-lakefs-for-resilient-data-ingestion-52b838da2cb8){: .button-clickable} on top of S3.
 

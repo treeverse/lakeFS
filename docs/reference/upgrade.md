@@ -11,7 +11,7 @@ redirect_from: ../deploying-aws/upgrade.html
 # Upgrading lakeFS
 {: .no_toc }
 Upgrading lakeFS from a previous version usually just requires re-deploying with the latest image (or downloading the latest version, if you're using the binary).
-There are cases where the database will require a migration - check whether the [release](https://github.com/treeverse/lakeFS/releases) you are upgrading to requires that.
+There are cases where the database will require a migration - check whether the [release](https://github.com/treeverse/lakeFS/releases){: .button-clickable} you are upgrading to requires that.
 
 
 ## When DB migrations are required
@@ -35,7 +35,7 @@ Note that an older version of lakeFS cannot run on a migrated database.
 **Note:** with lakeFS < 0.30.0, you should first upgrade to 0.30.0 following this guide. Then, proceed to upgrade to the newest version.
 {: .note .pb-3 }
 
-Starting version 0.30.0, lakeFS handles your committed metadata in a [new way](https://docs.google.com/document/d/1jzD7-jun-tdU5BGapmnMBe9ovSzBvTNjXCcVztV07A4/edit?usp=sharing){: target="_blank" }, which is more robust and has better performance.
+Starting version 0.30.0, lakeFS handles your committed metadata in a [new way](https://docs.google.com/document/d/1jzD7-jun-tdU5BGapmnMBe9ovSzBvTNjXCcVztV07A4/edit?usp=sharing){: target="_blank" .button-clickable}, which is more robust and has better performance.
 To move your existing data, you will need to run the following upgrade commands.
 
 Verify lakeFS version == 0.30.0 (can skip if using Docker)
@@ -71,7 +71,7 @@ cataloger:
 
 We discovered a bug in the way lakeFS is storing objects in the underlying object store.
 It affects only repositories on Azure and GCP, and not all of these.
-[Issue #2397](https://github.com/treeverse/lakeFS/issues/2397#issuecomment-908397229) describes the repository storage namespaces patterns 
+[Issue #2397](https://github.com/treeverse/lakeFS/issues/2397#issuecomment-908397229){: .button-clickable} describes the repository storage namespaces patterns 
 which are affected by this bug.
 
 When first upgrading to a version greater or equal to v0.50.0, you must follow these steps:
@@ -106,7 +106,7 @@ Or the settings tab in the UI.
 
 #### Migrating Google Storage data with gsutil
 
-[gsutil](https://cloud.google.com/storage/docs/gsutil) is a Python application that lets you access Cloud Storage from the command line.
+[gsutil](https://cloud.google.com/storage/docs/gsutil){: .button-clickable} is a Python application that lets you access Cloud Storage from the command line.
 We can use it for copying the data between the prefixes in the Google bucket, and later on removing it.
 
 For every affected repository, copy its data with:
@@ -118,10 +118,10 @@ Note the double slash after the bucket name.
 
 #### Migrating Azure Blob Storage data with AzCopy
 
-[AzCopy](https://docs.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10) is a command-line utility that you can use to copy blobs or files to or from a storage account.
+[AzCopy](https://docs.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10){: .button-clickable} is a command-line utility that you can use to copy blobs or files to or from a storage account.
 We can use it for copying the data between the prefixes in the Azure storage account container, and later on removing it.
 
-First, you need to acquire an [Account SAS](https://docs.microsoft.com/en-us/azure/storage/common/storage-sas-overview#account-sas).
+First, you need to acquire an [Account SAS](https://docs.microsoft.com/en-us/azure/storage/common/storage-sas-overview#account-sas){: .button-clickable}.
 Using the Azure CLI:
 ```shell
 az storage container generate-sas \

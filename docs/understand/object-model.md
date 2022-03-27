@@ -92,7 +92,7 @@ tip is set to this new commit.  Example branches:
 #### Ref expressions
 
 lakeFS also supports _expressions_ for creating a ref.  These are similar to [revisions in
-Git](https://git-scm.com/docs/gitrevisions#_specifying_revisions); indeed all `~` and `^`
+Git](https://git-scm.com/docs/gitrevisions#_specifying_revisions){: .button-clickable}; indeed all `~` and `^`
 examples at the end of that section will work unchanged in lakeFS.
 
 * A branch or a tag are ref expressions.
@@ -112,9 +112,9 @@ parent of each commit.  Histories go back in time.
 
 The other way to create a commit is to merge an existing commit onto a branch.  To _merge_ a
 source commit into a branch, lakeFS finds the _best_ common ancestor of that source commit and
-the branch tip, called the "base".  Then it performs a [3-way merge](#three-way-merge).  The
+the branch tip, called the "base".  Then it performs a [3-way merge](#three-way-merge){: .button-clickable}.  The
 "best" ancestor is exactly that defined in the documentation for
-[git-merge-base](https://git-scm.com/docs/git-merge-base#_description).  The result of a merge
+[git-merge-base](https://git-scm.com/docs/git-merge-base#_description){: .button-clickable} .  The result of a merge
 is a new commit, with the destination as the first parent and the source as the second.  Thus
 the previous tip of the merge destination is part of the history of the merged object.
 

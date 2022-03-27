@@ -33,7 +33,7 @@ lakectl config
 ```
 
 This will setup a `$HOME/.lakectl.yaml` file with the credentials and API endpoint you've supplied.
-When setting up a new installation and creating initial credentials (see [Quick start](../quickstart/index.md)), the UI
+When setting up a new installation and creating initial credentials (see [Quick start](../quickstart/index.md){: .button-clickable}), the UI
 will provide a link to download a preconfigured configuration file for you.
 
 `lakectl` configuration items can each be controlled by an environment variable. The variable name will have a prefix of

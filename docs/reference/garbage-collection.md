@@ -14,7 +14,7 @@ By default, lakeFS keeps all your objects forever. This allows you to travel bac
 However, sometimes you may want to hard-delete your objects, namely delete them from the underlying storage. 
 Reasons for this include cost-reduction and privacy policies.
 
-Garbage collection rules in lakeFS define for how long to retain objects after they have been deleted (see more information [below](#considerations)).
+Garbage collection rules in lakeFS define for how long to retain objects after they have been deleted (see more information [below](#considerations){: .button-clickable}).
 lakeFS provides a Spark program to hard-delete objects that have been deleted and whose retention period has ended according to the GC rules.
 The GC job does not remove any commits: you will still be able to use commits containing hard-deleted objects,
 but trying to read these objects from lakeFS will result in a `410 Gone` HTTP status.
@@ -71,7 +71,7 @@ http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark
 For Spark 3.0.1: \
 http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-301/${CLIENT_VERSION}/lakefs-spark-client-301-assembly-${CLIENT_VERSION}.jar
 
-`CLIENT_VERSION`s for Spark 2.4.7 can be found [here](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client-247), and for Spark 3.0.1 they can be found [here](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client-301).
+`CLIENT_VERSION`s for Spark 2.4.7 can be found [here](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client-247){: .button-clickable}, and for Spark 3.0.1 they can be found [here](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client-301){: .button-clickable}.
 
 
 Second, you should specify the Uber-jar path instead of `<APPLICATION-JAR-PATH>` and run the following command to make the garbage collector start running:

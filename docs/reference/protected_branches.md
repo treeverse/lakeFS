@@ -10,10 +10,10 @@ has_children: false
 # Branch Protection Rules
 
 Define branch protection rules to prevent direct changes and commits to specific branches.
-Only merges are allowed into protected branches. Together with the power of pre-merge [hooks](../setup/hooks.md),
+Only merges are allowed into protected branches. Together with the power of pre-merge [hooks](../setup/hooks.md){: .button-clickable},
 you can run validations on your data before it reaches your important branches and is exposed to consumers.
 
-You can create rules for a specific branch, or to any branch that matches a name pattern you specify with [glob](https://en.wikipedia.org/wiki/Glob_(programming)) syntax (supporting `?` and `*` wildcards).
+You can create rules for a specific branch, or to any branch that matches a name pattern you specify with [glob](https://en.wikipedia.org/wiki/Glob_(programming)){: .button-clickable} syntax (supporting `?` and `*` wildcards).
 
 ## How it works
 
@@ -21,7 +21,7 @@ When at least one protection rules applies to a branch, the branch is protected.
 1. Object write operations: **upload** and **delete** objects.
 1. Branch operations: **commit** and **reset uncommitted changes**.
 
-To operate on a protected branch, merge commits from other branches into it. Use pre-merge [hooks](../setup/hooks.md)
+To operate on a protected branch, merge commits from other branches into it. Use pre-merge [hooks](../setup/hooks.md){: .button-clickable}
 to validate the changes before they are merged.
 
 Reverting a previous commit using `lakectl branch revert` is **allowed** on a protected branch.
@@ -29,7 +29,7 @@ Reverting a previous commit using `lakectl branch revert` is **allowed** on a pr
 
 ## Managing branch protection rules
 
-This section explains how to use the lakeFS UI to manage rules. You can also use the [command line](./commands.md#lakectl-branch-protect).
+This section explains how to use the lakeFS UI to manage rules. You can also use the [command line](./commands.md#lakectl-branch-protect){: .button-clickable}.
 
 ### Reaching the branch protection rules page 
 

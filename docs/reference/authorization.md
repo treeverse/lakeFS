@@ -37,7 +37,7 @@ logged in via the LDAP server.  Adding this internal user to a group allows
 assigning them a different policy.
 
 Configure the LDAP server using these [fields in
-`auth.ldap`](configuration.html#ldap):
+`auth.ldap`](configuration.html#ldap){: .button-clickable}:
 
 * `server_endpoint`: the `ldaps:` (or `ldap:`) URL of the LDAP server.
 * `bind_dn`, `bind_password`: Credentials for lakeFS to use to query the
@@ -76,7 +76,7 @@ LDAP users log in using the following flow:
 
 ### API Server Authentication
 
-Authenticating against the API server is done using a key-pair, passed via [Basic Access Authentication](https://en.wikipedia.org/wiki/Basic_access_authentication).
+Authenticating against the API server is done using a key-pair, passed via [Basic Access Authentication](https://en.wikipedia.org/wiki/Basic_access_authentication){: .button-clickable}.
 
 All HTTP requests must carry an `Authorization` header with the following structure:
 
@@ -93,16 +93,16 @@ Authorization: Basic bXlfYWNjZXNzX2tleV9pZDpteV9hY2Nlc3Nfc2VjcmV0X2tleQ==
 
 ### S3 Gateway Authentication
 
-To provide API compatibility with Amazon S3, authentication with the S3 Gateway supports both [SIGv2](https://docs.aws.amazon.com/general/latest/gr/signature-version-2.html){:target="_blank"} and [SIGv4](https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html){:target="_blank"}.
+To provide API compatibility with Amazon S3, authentication with the S3 Gateway supports both [SIGv2](https://docs.aws.amazon.com/general/latest/gr/signature-version-2.html){:target="_blank" .button-clickable} and [SIGv4](https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html){:target="_blank" .button-clickable}.
 Clients such as the AWS SDK that implement these authentication methods should work without modification.
 
-See [this example for authenticating with the AWS CLI](../integrations/aws_cli.md).
+See [this example for authenticating with the AWS CLI](../integrations/aws_cli.md){: .button-clickable}.
 
 ## Authorization
 
 ### Authorization Model
 
-Access to resources is managed very much like [AWS IAM](https://docs.aws.amazon.com/IAM/latest/UserGuide/intro-structure.html){:target="_blank"}.
+Access to resources is managed very much like [AWS IAM](https://docs.aws.amazon.com/IAM/latest/UserGuide/intro-structure.html){:target="_blank" .button-clickable}.
 
 There are 4 basic components to the system:
 
@@ -140,7 +140,7 @@ This helps us compose policies together. For example, we could attach a very per
 
 ### Resource naming - ARNs
 
-lakeFS uses [ARN identifier](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_identifiers.html#identifiers-arns){:target="_blank"} - very similar in structure to those used by AWS.
+lakeFS uses [ARN identifier](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_identifiers.html#identifiers-arns){:target="_blank" .button-clickable} - very similar in structure to those used by AWS.
 The resource segment of the ARN supports wildcards: use `*` to match 0 or more characters, or `?` to match exactly one character.
 
 Additionally, the current user's ID is interpolated in runtime into the ARN using the `${user}` placeholder.
@@ -406,7 +406,7 @@ Policy:
 
 ### Additional Policies
 
-The following examples can be used to create additional policies to further limit user access. Use the web UI or the [lakectl auth](./commands.md#lakectl-auth-policies-create) command to create policies.
+The following examples can be used to create additional policies to further limit user access. Use the web UI or the [lakectl auth](./commands.md#lakectl-auth-policies-create){: .button-clickable} command to create policies.
 
 #### Read/write access for a specific repository
 
