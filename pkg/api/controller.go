@@ -1205,24 +1205,27 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 
 	err := c.ensureStorageNamespace(ctx, body.StorageNamespace)
 	if err != nil {
-		msg := "Could not access storage namespace"
+		reason := "unknown"
 		var retErr error
 		var urlErr *url.Error
 		switch {
 		case errors.As(err, &urlErr) && urlErr.Op == "parse":
 			retErr = err
+			reason = "bad_url"
 		case errors.Is(err, block.ErrInvalidNamespace):
 			retErr = fmt.Errorf("%w, must match: %s", err, c.BlockAdapter.BlockstoreType())
-		case errors.Is(err, errorStorageNamespaceInUse):
-			msg = "Storage namespace already in use"
+			reason = "invalid_namespace"
+		case errors.Is(err, errStorageNamespaceInUse):
 			retErr = err
+			reason = "already_in_use"
 		default:
 			retErr = ErrFailedToAccessStorage
 		}
 		c.Logger.
 			WithError(err).
 			WithField("storage_namespace", body.StorageNamespace).
-			Warn(msg)
+			WithField("reason", reason).
+			Warn("Could not access storage namespace")
 		writeError(w, http.StatusBadRequest, fmt.Errorf("failed to create repository: %w", retErr))
 		return
 	}
@@ -1242,7 +1245,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 	writeResponse(w, http.StatusCreated, response)
 }
 
-var errorStorageNamespaceInUse = errors.New("lakeFS repositories can't share storage namespace")
+var errStorageNamespaceInUse = errors.New("lakeFS repositories can't share storage namespace")
 
 func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespace string) error {
 	const (
@@ -1254,7 +1257,7 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespac
 	objLen := int64(len(dummyData))
 	if _, err := c.BlockAdapter.Get(ctx, obj, objLen); err == nil {
 		return fmt.Errorf("found lakeFS objects in the storage namespace(%s): %w",
-			storageNamespace, errorStorageNamespaceInUse)
+			storageNamespace, errStorageNamespaceInUse)
 	} else if !errors.Is(err, adapter.ErrDataNotFound) {
 		return err
 	}

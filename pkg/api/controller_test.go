@@ -187,15 +187,16 @@ func TestController_GetRepoHandler(t *testing.T) {
 	})
 
 	t.Run("use same storage namespace twice", func(t *testing.T) {
+		name := testUniqueRepoName()
 		resp, err := clt.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
-			Name:             "foo1",
-			StorageNamespace: onBlock(deps, "foo1"),
+			Name:             name,
+			StorageNamespace: onBlock(deps, name),
 		})
 		verifyResponseOK(t, resp, err)
 
 		resp, err = clt.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
-			Name:             "foo2",
-			StorageNamespace: onBlock(deps, "foo1"),
+			Name:             name + "_2",
+			StorageNamespace: onBlock(deps, name),
 		})
 		require.NoError(t, err)
 		require.Equal(t, http.StatusBadRequest, resp.StatusCode())
@@ -538,7 +539,7 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 		resp, err := clt.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
 			DefaultBranch:    api.StringPtr("main"),
 			Name:             "my-new-repo",
-			StorageNamespace: onBlock(deps, "foo-bucket"),
+			StorageNamespace: onBlock(deps, "foo-bucket-1"),
 		})
 		verifyResponseOK(t, resp, err)
 
@@ -556,7 +557,7 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 		resp, err := clt.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
 			DefaultBranch:    api.StringPtr("main"),
 			Name:             "repo2",
-			StorageNamespace: onBlock(deps, "foo-bucket"),
+			StorageNamespace: onBlock(deps, "foo-bucket-2"),
 		})
 		if err != nil {
 			t.Fatal(err)
