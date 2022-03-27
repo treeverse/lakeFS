@@ -11,11 +11,11 @@ redirect_from: ../using/kakfa.html
 # Using lakeFS with Kafka
 
 {: .no_toc }
-[Apache Kafka](https://kafka.apache.org/) provides a unified, high-throughput, low-latency platform for handling real-time data feeds.
+[Apache Kafka](https://kafka.apache.org/){: .button-clickable} provides a unified, high-throughput, low-latency platform for handling real-time data feeds.
 
 Different distributions of Kafka have different methods for exporting data to s3, called Kafka Sink Connectors.
 
-Most commonly used for S3 is [Confluent's S3 Sink Connector](https://docs.confluent.io/current/connect/kafka-connect-s3/index.html).
+Most commonly used for S3 is [Confluent's S3 Sink Connector](https://docs.confluent.io/current/connect/kafka-connect-s3/index.html){: .button-clickable}.
 
 Add the following to `connector.properties` file for lakeFS support:
 

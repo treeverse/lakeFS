@@ -11,7 +11,7 @@ redirect_from: ../using/boto.html
 # Using lakeFS with Boto (Python)
 {: .no_toc }
 
-To use Boto with lakeFS alongside S3, check out [Boto S3 Router](https://github.com/treeverse/boto-s3-router){:target="_blank"}. It will route
+To use Boto with lakeFS alongside S3, check out [Boto S3 Router](https://github.com/treeverse/boto-s3-router){:target="_blank" .button-clickable}. It will route
 requests to either S3 or lakeFS according to the provided bucket name.
 {: .note }
 

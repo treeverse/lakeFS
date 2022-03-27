@@ -13,7 +13,7 @@ redirect_from:
 # Using lakeFS with Presto/Trino
 
 {: .no_toc }
-[Presto](https://prestodb.io){:target="_blank"} and [Trino](https://trinodb.io){:target="_blank"} are a distributed SQL query engine designed to query large data sets distributed over one or more heterogeneous data sources.
+[Presto](https://prestodb.io){:target="_blank" .button-clickable} and [Trino](https://trinodb.io){:target="_blank" .button-clickable} are a distributed SQL query engine designed to query large data sets distributed over one or more heterogeneous data sources.
 {: .pb-5 }
 
 ## Table of contents
@@ -23,10 +23,10 @@ redirect_from:
 1. TOC
 {:toc .pb-5 }
 
-Querying data in lakeFS from Presto/Trino is the same as querying data in S3 from Presto/Trino. It is done using the [Presto Hive connector](https://prestodb.io/docs/current/connector/hive.html){:target="_blank"} or [Trino Hive connector](https://trino.io/docs/current/connector/hive.html){:target="_blank"}.
+Querying data in lakeFS from Presto/Trino is the same as querying data in S3 from Presto/Trino. It is done using the [Presto Hive connector](https://prestodb.io/docs/current/connector/hive.html){:target="_blank" .button-clickable} or [Trino Hive connector](https://trino.io/docs/current/connector/hive.html){:target="_blank" .button-clickable}.
 
  **Note** 
- In the following examples we set AWS credentials at runtime, for clarity. In production, these properties should be set using one of Hadoop's standard ways of [Authenticating with S3](https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html#Authenticating_with_S3){:target="_blank"}. 
+ In the following examples we set AWS credentials at runtime, for clarity. In production, these properties should be set using one of Hadoop's standard ways of [Authenticating with S3](https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html#Authenticating_with_S3){:target="_blank" .button-clickable}. 
  {: .note}
 
 ## Configuration
@@ -76,7 +76,7 @@ In file `hive-site.xml` add to the configuration:
 
 ## Examples
 
-Here are some examples based on examples from the [Presto Hive connector examples](https://prestodb.io/docs/current/connector/hive.html#examples){:target="_blank"} and [Trino Hive connector examples](https://trino.io/docs/current/connector/hive.html#examples){:target="_blank"}
+Here are some examples based on examples from the [Presto Hive connector examples](https://prestodb.io/docs/current/connector/hive.html#examples){:target="_blank" .button-clickable} and [Trino Hive connector examples](https://trino.io/docs/current/connector/hive.html#examples){:target="_blank" .button-clickable}
 
 ### Example with schema
 
@@ -121,7 +121,7 @@ WITH (
 )
 ```
 
-### Example of copying a table with [metastore tools](glue_hive_metastore.md):
+### Example of copying a table with [metastore tools](glue_hive_metastore.md){: .button-clickable}:
 
 Copy the created table `page_views` on schema `main` to schema `example_branch` with location `s3a://example/example_branch/page_views/` 
 ```shell

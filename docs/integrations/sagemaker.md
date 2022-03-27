@@ -10,7 +10,7 @@ redirect_from: ../using/sagemaker.html
 
 # Using lakeFS with SageMaker 
 {: .no_toc }
-[Amazon SageMaker](https://aws.amazon.com/sagemaker/) helps prepare, build, train and deploy ML models quickly by bringing together a broad set of capabilities purpose-built for ML.
+[Amazon SageMaker](https://aws.amazon.com/sagemaker/){: .button-clickable} helps prepare, build, train and deploy ML models quickly by bringing together a broad set of capabilities purpose-built for ML.
 
 {% include toc.html %}
 
@@ -74,6 +74,6 @@ session.download_data(path=localpath, bucket=repo, key_prefix = branch + prefix)
 
 **Note:**
 Advanced AWS SageMaker features, like Autopilot jobs, are encapsulated and don't have the option to override the S3 endpoint.
-However, it is possible to [export](../reference/export.md) the required inputs from lakeFS to S3.
-<br/>If you're using SageMaker features that aren't supported by lakeFS, we'd love to [hear](https://join.slack.com/t/lakefs/shared_invite/zt-ks1fwp0w-bgD9PIekW86WF25nE_8_tw) from you.
+However, it is possible to [export](../reference/export.md){: .button-clickable} the required inputs from lakeFS to S3.
+<br/>If you're using SageMaker features that aren't supported by lakeFS, we'd love to [hear](https://join.slack.com/t/lakefs/shared_invite/zt-ks1fwp0w-bgD9PIekW86WF25nE_8_tw){: .button-clickable} from you.
 {: .note}

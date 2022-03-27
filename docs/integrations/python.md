@@ -11,10 +11,10 @@ redirect_from: ../using/python.html
 # Calling the lakeFS API from Python
 {: .no_toc }
 
-The [lakeFS API](../reference/api.md){: target="_blank" } is OpenAPI 3.0 compliant, allowing the generation of clients from multiple languages or directly accessed by any HTTP client.
+The [lakeFS API](../reference/api.md){: target="_blank" .button-clickable} is OpenAPI 3.0 compliant, allowing the generation of clients from multiple languages or directly accessed by any HTTP client.
 
-For Python, this example uses [lakeFS's python package](https://pypi.org/project/lakefs-client/){: target="_blank" }.
-The lakefs-client pacakge was created by [OpenAPI Generator](https://openapi-generator.tech){: target="_blank" } using our OpenAPI definition served by a lakeFS server.
+For Python, this example uses [lakeFS's python package](https://pypi.org/project/lakefs-client/){: target="_blank" .button-clickable}.
+The lakefs-client pacakge was created by [OpenAPI Generator](https://openapi-generator.tech){: target="_blank" .button-clickable} using our OpenAPI definition served by a lakeFS server.
 
 {% include toc.html %}
 
@@ -167,9 +167,9 @@ client.refs.diff_refs(repository='example-repo', left_ref='main', right_ref='exp
 
 ## Python client documentation
 
-For the documentation of lakeFS’s python package, see [https://pydocs.lakefs.io](https://pydocs.lakefs.io)
+For the documentation of lakeFS’s python package, see [https://pydocs.lakefs.io](https://pydocs.lakefs.io){: .button-clickable}
 
 
 ## Full API reference
 
-For a full reference of the lakeFS API, see [lakeFS API](../reference/api.md)
+For a full reference of the lakeFS API, see [lakeFS API](../reference/api.md){: .button-clickable}

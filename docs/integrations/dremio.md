@@ -9,11 +9,11 @@ redirect_from: ../using/dremio.html
 ---
 
 # Using lakeFS with Dremio
-[Dremio](https://www.dremio.com/) is a next-generation data lake engine that liberates your data with live, 
+[Dremio](https://www.dremio.com/){: .button-clickable} is a next-generation data lake engine that liberates your data with live, 
 interactive queries directly on cloud data lake storage, including S3 and lakeFS.
 
 ## Configuration
-Starting from 3.2.3, Dremio supports Minio as an [experimental S3-compatible plugin](https://docs.dremio.com/data-sources/s3.html#configuring-s3-for-minio).
+Starting from 3.2.3, Dremio supports Minio as an [experimental S3-compatible plugin](https://docs.dremio.com/data-sources/s3.html#configuring-s3-for-minio){: .button-clickable}.
 Similarly, we can connect lakeFS with Dremio.
 
 Suppose you already have both lakeFS and Dremio deployed, and want to utilize Dremio to query your data in the lakeFS repositories.

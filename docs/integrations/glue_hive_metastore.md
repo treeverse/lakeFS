@@ -93,7 +93,7 @@ copy and diff could work both on Glue and on Hive.
 create-symlink works only on Glue.
 
 
-**Notice:** If `to-schema` or `to-table` are not specified, the destination branch and source table names will be used as per the [suggested model](#suggested-model).
+**Notice:** If `to-schema` or `to-table` are not specified, the destination branch and source table names will be used as per the [suggested model](#suggested-model){: .button-clickable}.
 {: .note .pb-3 }
 
 **Notice:** Metastore commands can only run on tables located in lakeFS, you should not use tables that are not located in lakeFS.

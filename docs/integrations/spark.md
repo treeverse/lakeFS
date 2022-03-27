@@ -10,7 +10,7 @@ redirect_from: ../using/spark.html
 
 # Using lakeFS with Spark
 {: .no_toc }
-[Apache Spark](https://spark.apache.org/) is a unified analytics engine for big data processing, with built-in modules for streaming, SQL, machine learning and graph processing.
+[Apache Spark](https://spark.apache.org/){: .button-clickable} is a unified analytics engine for big data processing, with built-in modules for streaming, SQL, machine learning and graph processing.
 
 {: .pb-5 }
 
@@ -19,7 +19,7 @@ redirect_from: ../using/spark.html
 **Note** In all following examples we set AWS and lakeFS credentials at runtime, for
 clarity. In production, properties defining AWS credentials should be set using one of
 Hadoop's standard ways of [authenticating with
-S3](https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html#Authenticating_with_S3){:target="_blank"}.
+S3](https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html#Authenticating_with_S3){:target="_blank" .button-clickable}.
 Similarly, properties defining lakeFS credentials should be configured in secure site files,
 not on the command line or inlined in code where they might be exposed.
 {: .note}
@@ -28,9 +28,9 @@ not on the command line or inlined in code where they might be exposed.
 
 lakeFS support in Spark has two tiers:
 
-* Access lakeFS using the [S3A gateway](#access-lakefs-using-the-s3a-gateway).
+* Access lakeFS using the [S3A gateway](#access-lakefs-using-the-s3a-gateway){: .button-clickable}.
 * Access lakeFS using the [lakeFS-specific Hadoop
-  FileSystem](#access-lakefs-using-the-lakefs-specific-hadoop-filesystem).
+  FileSystem](#access-lakefs-using-the-lakefs-specific-hadoop-filesystem){: .button-clickable}.
 
 Using the S3A gateway is easier to configure and may be more suitable for legacy or
 small-scale applications.  Using the lakeFS FileSystem requires somewhat more complex
@@ -63,9 +63,9 @@ In order to configure Spark to work with lakeFS, we set S3 Hadoop configuration 
 Here is how to do it:
 <div class="tabs">
   <ul>
-    <li><a href="#s3-config-tabs-cli">CLI</a></li>
-    <li><a href="#s3-config-tabs-code">Scala</a></li>
-    <li><a href="#s3-config-tabs-xml">XML Configuration</a></li>
+    <li><a href="#s3-config-tabs-cli" class="button-clickable">CLI</a></li>
+    <li><a href="#s3-config-tabs-code" class="button-clickable">Scala</a></li>
+    <li><a href="#s3-config-tabs-xml" class="button-clickable">XML Configuration</a></li>
   </ul>
   <div markdown="1" id="s3-config-tabs-cli">
 ```shell
@@ -116,9 +116,9 @@ For example, to configure only `example-repo` to use lakeFS, set the following c
 
 <div class="tabs">
   <ul>
-    <li><a href="#s3-bucket-config-tabs-cli">CLI</a></li>
-    <li><a href="#s3-bucket-config-tabs-code">Scala</a></li>
-    <li><a href="#s3-bucket-config-tabs-xml">XML Configuration</a></li>
+    <li><a href="#s3-bucket-config-tabs-cli" class="button-clickable">CLI</a></li>
+    <li><a href="#s3-bucket-config-tabs-code" class="button-clickable">Scala</a></li>
+    <li><a href="#s3-bucket-config-tabs-xml" class="button-clickable">XML Configuration</a></li>
   </ul>
   <div markdown="1" id="s3-bucket-config-tabs-cli">
 ```sh
@@ -245,7 +245,7 @@ point at the underlying storage.
 
 When using AWS S3 itself, the default configuration works with us-east-1, so you may still
 need to configure `fs.s3a.endpoint`.  Amazon provides these [S3
-endpoints](https://docs.aws.amazon.com/general/latest/gr/s3.html) you can use.
+endpoints](https://docs.aws.amazon.com/general/latest/gr/s3.html){: .button-clickable} you can use.
 
 **Note:** If not running on AWS, all s3a configuration properties are required!  Unlike when
 using the S3 gateway, when using the lakeFS-specific Hadoop FileSystem you configure `s3a` to
@@ -256,9 +256,9 @@ permissions.
 Here is how to do it:
 <div class="tabs">
   <ul>
-    <li><a href="#lakefs-config-tabs-cli">CLI</a></li>
-    <li><a href="#lakefs-config-tabs-code">Scala</a></li>
-    <li><a href="#lakefs-config-tabs-xml">XML Configuration</a></li>
+    <li><a href="#lakefs-config-tabs-cli" class="button-clickable">CLI</a></li>
+    <li><a href="#lakefs-config-tabs-code" class="button-clickable">Scala</a></li>
+    <li><a href="#lakefs-config-tabs-xml" class="button-clickable">XML Configuration</a></li>
   </ul> 
   <div markdown="1" id="lakefs-config-tabs-cli">
 ```shell
@@ -337,7 +337,7 @@ As above, S3 allows for per-bucket configuration.  You can use this if:
 1. different credentials are required to access data inside that bucket.
 
 Refer to the Hadoop AWS guide on [Configuring different S3 buckets with Per-Bucket
-Configuration](https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html#Configuring_different_S3_buckets_with_Per-Bucket_Configuration).
+Configuration](https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html#Configuring_different_S3_buckets_with_Per-Bucket_Configuration){: .button-clickable}.
 
 There is no need for per-repo configurations in lakeFS when all repositories are on the same
 lakeFS server.  If you need to access repositories that are on *multiple* lakeFS servers,
@@ -376,4 +376,4 @@ The data is now created in lakeFS as new changes in your branch. You can now com
 
 ## Case Study: SimilarWeb
 
-See how SimilarWeb is using lakeFS with Spark to [manage algorithm changes in data pipelines](https://grdoron.medium.com/a-smarter-way-to-manage-algorithm-changes-in-data-pipelines-with-lakefs-a4e284f8c756).
+See how SimilarWeb is using lakeFS with Spark to [manage algorithm changes in data pipelines](https://grdoron.medium.com/a-smarter-way-to-manage-algorithm-changes-in-data-pipelines-with-lakefs-a4e284f8c756){: .button-clickable}.

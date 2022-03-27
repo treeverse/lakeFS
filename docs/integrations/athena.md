@@ -9,19 +9,19 @@ redirect_from: ../using/athena.html
 ---
 
 # Using lakeFS with Amazon Athena
-[Amazon Athena](https://aws.amazon.com/athena/) is an interactive query service that makes it easy to analyze data in Amazon S3 using standard SQL.
+[Amazon Athena](https://aws.amazon.com/athena/){: .button-clickable} is an interactive query service that makes it easy to analyze data in Amazon S3 using standard SQL.
 {:.pb-5 }
 
 Amazon Athena works directly above S3 and can't access lakeFS. Tables created using Athena aren't readable by lakeFS.
-However, tables stored in lakeFS (that were created with [glue/hive](glue_hive_metastore.md)) can be queried by Athena.
+However, tables stored in lakeFS (that were created with [glue/hive](glue_hive_metastore.md){: .button-clickable}) can be queried by Athena.
 
-In order to support querying data from lakeFS with Amazon Athena, we will use `create-symlink`, one of the [metastore commands](glue_hive_metastore.md) in [lakectl](../reference/commands.md).
+In order to support querying data from lakeFS with Amazon Athena, we will use `create-symlink`, one of the [metastore commands](glue_hive_metastore.md){: .button-clickable} in [lakectl](../reference/commands.md){: .button-clickable}.
 `create-symlink` receives a source table, destination table and the location of the table and does two actions:
 1. Creates partitioned directories with symlink files in the underlying S3 bucket.
 1. Creates a table in Glue catalog with symlink format type and location pointing to the created symlinks.
 
 **Note**
-`.lakectl.yaml` file should be configured with the proper hive/glue credentials. [For more information](glue_hive_metastore.md#configurations) 
+`.lakectl.yaml` file should be configured with the proper hive/glue credentials. [For more information](glue_hive_metastore.md#configurations){: .button-clickable} 
 {: .note }
 
 create-symlink receives a table in glue or hive pointing to lakeFS and creates a copy of the table in glue.

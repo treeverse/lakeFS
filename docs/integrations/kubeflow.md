@@ -9,8 +9,8 @@ has_children: false
 ---
 # Using lakeFS with Kubeflow pipelines
 {: .no_toc }
-[Kubeflow](https://www.kubeflow.org/docs/about/kubeflow/) is a project dedicated to making deployments of ML workflows on Kubernetes simple, portable and scalable.
-A Kubeflow pipeline is a portable and scalable definition of an ML workflow composed of steps. Each step in the pipeline is an instance of a component represented as an instance of [ContainerOp](https://kubeflow-pipelines.readthedocs.io/en/latest/source/kfp.dsl.html#kfp.dsl.ContainerOp).
+[Kubeflow](https://www.kubeflow.org/docs/about/kubeflow/){: .button-clickable} is a project dedicated to making deployments of ML workflows on Kubernetes simple, portable and scalable.
+A Kubeflow pipeline is a portable and scalable definition of an ML workflow composed of steps. Each step in the pipeline is an instance of a component represented as an instance of [ContainerOp](https://kubeflow-pipelines.readthedocs.io/en/latest/source/kfp.dsl.html#kfp.dsl.ContainerOp){: .button-clickable}.
 
 {% include toc.html %}
 
@@ -24,8 +24,8 @@ Currently, there are two methods to create lakeFS ContainerOps:
 
 ### Function-based ContainerOps
 
-To implement a [function-based component](https://www.kubeflow.org/docs/components/pipelines/sdk/python-function-components/) that invokes lakeFS operations,
-you should use the [Python OpenAPI client](python.md) lakeFS has. See the example below that demonstrates how to make the client's package available to your ContainerOp.
+To implement a [function-based component](https://www.kubeflow.org/docs/components/pipelines/sdk/python-function-components/){: .button-clickable} that invokes lakeFS operations,
+you should use the [Python OpenAPI client](python.md){: .button-clickable} lakeFS has. See the example below that demonstrates how to make the client's package available to your ContainerOp.
 
 #### Example operations
 {: .no_toc }
@@ -56,12 +56,12 @@ create_branch_op = components.func_to_container_op(
 ```
 
 You can invoke any lakeFS operation supported by lakeFS OpenAPI, for example, you could implement a commit and merge function-based ContainerOps.
-Check out the full API [reference](https://docs.lakefs.io/reference/api.html).
+Check out the full API [reference](https://docs.lakefs.io/reference/api.html){: .button-clickable}.
 
 ### Non-function-based ContainerOps
 
 To implement a non-function based ContainerOp, you should use the [`treeverse/lakectl`](https://hub.docker.com/r/treeverse/lakectl) docker image.
-With this image you can run [lakeFS CLI](../quickstart/first_commit.md) commands to execute the desired lakeFS operation.
+With this image you can run [lakeFS CLI](../quickstart/first_commit.md){: .button-clickable} commands to execute the desired lakeFS operation.
 
 For `lakectl` to work with Kubeflow, you will need to pass your lakeFS configurations as environment variables named:
 
@@ -94,7 +94,7 @@ For `lakectl` to work with Kubeflow, you will need to pass your lakeFS configura
      arguments=['merge', 'lakefs://example-repo/example-branch', 'lakefs://example-repo/main']).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_ACCESS_KEY_ID',value='AKIAIOSFODNN7EXAMPLE')).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY',value='wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY')).add_env_variable(V1EnvVar(name='LAKECTL_SERVER_ENDPOINT_URL',value='https://lakefs.example.com'))
    ```
 
-You can invoke any lakeFS operation supported by `lakectl` by implementing it as a ContainerOp. Check out the complete [CLI reference](https://docs.lakefs.io/reference/commands.html) for the list of supported operations.
+You can invoke any lakeFS operation supported by `lakectl` by implementing it as a ContainerOp. Check out the complete [CLI reference](https://docs.lakefs.io/reference/commands.html){: .button-clickable} for the list of supported operations.
 
 
 **Note**
@@ -122,5 +122,5 @@ def lakectl_pipeline():
 
 
 **Note**
-It is recommended to store credentials as kubernetes secrets and pass them as [environment variables](https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets-as-environment-variables ) to Kubeflow operations using [V1EnvVarSource](https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1EnvVarSource.md).
+It is recommended to store credentials as kubernetes secrets and pass them as [environment variables](https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets-as-environment-variables ){: .button-clickable} to Kubeflow operations using [V1EnvVarSource](https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1EnvVarSource.md){: .button-clickable}.
 {: .note }

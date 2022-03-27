@@ -11,7 +11,7 @@ redirect_from: ../using/databricks.html
 # Using lakeFS with Databricks
 {: .no_toc }
 
-[Databricks](https://databricks.com/) is an Apache Spark-based analytics platform.  
+[Databricks](https://databricks.com/){: .button-clickable} is an Apache Spark-based analytics platform.  
 
 {% include toc.html %}
 
@@ -40,14 +40,14 @@ spark.hadoop.fs.s3a.bucket.<repo-name>.session.token lakefs
 ```
 
 For more information, see
-the [documentation](https://docs.databricks.com/data/data-sources/aws/amazon-s3.html#configuration) from Databricks.
+the [documentation](https://docs.databricks.com/data/data-sources/aws/amazon-s3.html#configuration){: .button-clickable} from Databricks.
 
 ### When running lakeFS inside your VPC
 
 When lakeFS runs inside your private network, your Databricks cluster needs to be able to access it. This can be done by
 setting up a VPC peering between the two VPCs (the one where lakeFS runs, and the one where Databricks runs). For this to
 work on DeltaLake tables, you would also have to
-disable [multi-cluster writes](https://docs.databricks.com/delta/delta-faq.html#what-does-it-mean-that-delta-lake-supports-multi-cluster-writes) with: 
+disable [multi-cluster writes](https://docs.databricks.com/delta/delta-faq.html#what-does-it-mean-that-delta-lake-supports-multi-cluster-writes){: .button-clickable} with: 
 
 ```
 spark.databricks.delta.multiClusterWrites.enabled false
@@ -90,4 +90,4 @@ df.write
 The data is now created in lakeFS as new changes in your branch. You can now commit these changes, or revert them.
 
 ## Case Study: SimilarWeb
-See how SimilarWeb integrated [lakeFS with DataBricks](https://similarweb.engineering/data-versioning-for-customer-reports-using-databricks-and-lakefs/).
+See how SimilarWeb integrated [lakeFS with DataBricks](https://similarweb.engineering/data-versioning-for-customer-reports-using-databricks-and-lakefs/){: .button-clickable}.

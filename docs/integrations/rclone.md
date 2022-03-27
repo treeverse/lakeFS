@@ -9,7 +9,7 @@ redirect_from: ../using/rclone.html
 ---
 # Copying data with rclone
 {: .no_toc }
-[Rclone](https://rclone.org/){:target="_blank"} is a command line program to sync files and directories between cloud providers.
+[Rclone](https://rclone.org/){:target="_blank" .button-clickable} is a command line program to sync files and directories between cloud providers.
 To use it with lakeFS, just create an Rclone remote as describe below, and then use it as you would any other Rclone remote.
 
 {% include toc.html %}

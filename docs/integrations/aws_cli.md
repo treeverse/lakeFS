@@ -10,7 +10,7 @@ redirect_from: ../using/aws_cli.html
 
 # Using lakeFS with AWS CLI
 {: .no_toc}
-The [AWS Command Line Interface](https://aws.amazon.com/cli/) (CLI) is a unified tool to manage your AWS services.
+The [AWS Command Line Interface](https://aws.amazon.com/cli/){: .button-clickable} (CLI) is a unified tool to manage your AWS services.
 With just one tool to download and configure,
 you can control multiple AWS services from the command line and automate them through scripts.
 
@@ -58,7 +58,7 @@ aws s3 --profile lakefs \
   ls s3://example-repo/main/example-directory
 ```
 
-We could use an [alias](aws_cli.md#adding-an-alias) to make it shorter and more convenient.
+We could use an [alias](aws_cli.md#adding-an-alias){: .button-clickable} to make it shorter and more convenient.
 
 ## Examples
 

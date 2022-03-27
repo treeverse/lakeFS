@@ -87,6 +87,6 @@ From your dbt project run:
 lakectl dbt create-branch-schema --branch my-branch --to-schema my_branch   
 ```
 
-Advanced options could be found [here](../reference/commands.md#lakectl-dbt-create-branch-schema)
+Advanced options could be found [here](../reference/commands.md#lakectl-dbt-create-branch-schema){: .button-clickable}
  
 

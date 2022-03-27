@@ -9,12 +9,12 @@ redirect_from: ../using/airflow.html
 ---
 
 # Using lakeFS with Airflow
-[Apache Airflow](https://airflow.apache.org/) is a platform to programmatically author, schedule and monitor workflows.
+[Apache Airflow](https://airflow.apache.org/){: .button-clickable} is a platform to programmatically author, schedule and monitor workflows.
 
 There are some aspects we will need to handle in order to run Airflow with lakeFS:
 
 ## Creating the lakeFS connection
-For authenticating to the lakeFS server, you need to create a new [Airflow Connection](https://airflow.apache.org/docs/apache-airflow/stable/howto/connection.html)
+For authenticating to the lakeFS server, you need to create a new [Airflow Connection](https://airflow.apache.org/docs/apache-airflow/stable/howto/connection.html){: .button-clickable}
 of type HTTP and pass it to your DAG. You can do that using the Airflow UI or the cli.
 Here’s an example Airflow command that does just that:
 
@@ -86,15 +86,15 @@ Sensors are also available if you want to synchronize a running DAG with externa
    )
    ```
 
-For a DAG example that uses all the above, check out the [example DAG](https://github.com/treeverse/airflow-provider-lakeFS/blob/main/lakefs_provider/example_dags/lakefs-dag.py)
+For a DAG example that uses all the above, check out the [example DAG](https://github.com/treeverse/airflow-provider-lakeFS/blob/main/lakefs_provider/example_dags/lakefs-dag.py){: .button-clickable}
 in the airflow-provider-lakeFS repository.
 
 
 ### Performing other operations
 To perform other operations that are not yet supported by the package, you can use:
 
-- SimpleHttpOperator to send [API requests](../reference/api.md) to lakeFS. 
-- BashOperator with [lakeCTL](../quickstart/first_commit.md) commands.
+- SimpleHttpOperator to send [API requests](../reference/api.md){: .button-clickable} to lakeFS. 
+- BashOperator with [lakeCTL](../quickstart/first_commit.md){: .button-clickable} commands.
 For example, deleting a branch using BashOperator:
 ```bash
 commit_extract = BashOperator(

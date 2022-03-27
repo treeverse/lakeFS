@@ -10,7 +10,7 @@ redirect_from: ../using/hive.html
 
 # Using lakeFS with Hive
 {: .no_toc }
-The [Apache Hive ™](https://hive.apache.org/) data warehouse software facilitates reading, writing, and managing large datasets residing in distributed storage using SQL. Structure can be projected onto data already in storage. A command line tool and JDBC driver are provided to connect users to Hive.
+The [Apache Hive ™](https://hive.apache.org/){: .button-clickable} data warehouse software facilitates reading, writing, and managing large datasets residing in distributed storage using SQL. Structure can be projected onto data already in storage. A command line tool and JDBC driver are provided to connect users to Hive.
 
 ## Table of contents
 {: .no_toc .text-delta }
@@ -29,7 +29,7 @@ lakeFS access key: ```fs.s3a.access.key```
 lakeFS secret key: ```fs.s3a.secret.key```
 
  **Note** 
- In the following examples we set AWS credentials at runtime, for clarity. In production, these properties should be set using one of Hadoop's standard ways of [Authenticating with S3](https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html#Authenticating_with_S3){:target="_blank"}. 
+ In the following examples we set AWS credentials at runtime, for clarity. In production, these properties should be set using one of Hadoop's standard ways of [Authenticating with S3](https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html#Authenticating_with_S3){:target="_blank" .button-clickable}. 
  {: .note}
  
 For example, we could add the configurations to the file ``` hdfs-site.xml```:
@@ -56,7 +56,7 @@ For example, we could add the configurations to the file ``` hdfs-site.xml```:
 ```
 
 **Note**
-In this example we set `fs.s3a.path.style.access` to true,  in order to remove the need of additional DNS records for [virtual hosting](https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html)
+In this example we set `fs.s3a.path.style.access` to true,  in order to remove the need of additional DNS records for [virtual hosting](https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html){: .button-clickable}
 `fs.s3a.path.style.access` was introduced in Hadoop 2.8.0
 {: .note}
 

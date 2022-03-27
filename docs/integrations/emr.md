@@ -10,7 +10,7 @@ redirect_from: ../using/emr.html
 
 # Using lakeFS with EMR
 
-[Amazon EMR](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-what-is-emr.html) is a managed cluster platform that simplifies running big data frameworks, such as Apache Hadoop and Apache Spark.
+[Amazon EMR](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-what-is-emr.html){: .button-clickable} is a managed cluster platform that simplifies running big data frameworks, such as Apache Hadoop and Apache Spark.
 
 ## Configuration
 In order to configure Spark on EMR to work with lakeFS we will set the lakeFS credentials and endpoint in the appropriate fields.
@@ -25,7 +25,7 @@ lakeFS secret key: `*.fs.s3a.secret.key`
 EMR will encourage users to use s3:// with Spark as it will use EMR's proprietary driver. Users need to use s3a:// for this guide to work.
 {: .note}
 
-The Spark job reads and writes will be directed to the lakeFS instance, using the [s3 gateway](../understand/architecture.md#s3-gateway).
+The Spark job reads and writes will be directed to the lakeFS instance, using the [s3 gateway](../understand/architecture.md#s3-gateway){: .button-clickable}.
 
 There are 2 options for configuring an EMR cluster to work with lakeFS:
 1. When you create a cluster - All steps will use the cluster configuration.
@@ -138,5 +138,5 @@ aws emr add-steps --cluster-id j-197B3AEGQ9XE4 \
 ```
 
 The Spark context in the running job will already be initialized to use the provided lakeFS configuration.
-There's no need to repeat the configuration steps mentioned in [Using lakeFS with Spark](spark.md#Configuration)
+There's no need to repeat the configuration steps mentioned in [Using lakeFS with Spark](spark.md#Configuration){: .button-clickable}
 {: .note}
