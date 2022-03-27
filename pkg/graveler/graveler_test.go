@@ -717,8 +717,8 @@ func TestGraveler_PreMergeHook(t *testing.T) {
 			if h.BranchID != mergeDestination {
 				t.Errorf("Hook branch (destination) '%s', expected '%s'", h.BranchID, mergeDestination)
 			}
-			if h.SourceRef.String() != expectedCommitID.String() {
-				t.Errorf("Hook source '%s', expected '%s'", h.SourceRef, expectedCommitID)
+			if h.SourceRef.String() != destinationCommitID.String() {
+				t.Errorf("Hook source '%s', expected '%s'", h.SourceRef, destinationCommitID)
 			}
 			if h.Commit.Message != mergeMessage {
 				t.Errorf("Hook merge message '%s', expected '%s'", h.Commit.Message, mergeMessage)

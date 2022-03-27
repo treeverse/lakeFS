@@ -1190,6 +1190,7 @@ func (g *Graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref)
 func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branchID BranchID, params CommitParams) (CommitID, error) {
 	var preRunID string
 	var commit Commit
+	var branch *Branch
 	var storageNamespace StorageNamespace
 	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
 		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_COMMIT)
@@ -1205,7 +1206,7 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 		}
 		storageNamespace = repo.StorageNamespace
 
-		branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+		branch, err = g.RefManager.GetBranch(ctx, repositoryID, branchID)
 		if err != nil {
 			return "", fmt.Errorf("get branch: %w", err)
 		}
@@ -1227,7 +1228,7 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 		err = g.hooks.PreCommitHook(ctx, HookRecord{
 			RunID:            preRunID,
 			EventType:        EventTypePreCommit,
-			SourceRef:        branchID.Ref(),
+			SourceRef:        branch.CommitID.Ref(),
 			RepositoryID:     repositoryID,
 			StorageNamespace: storageNamespace,
 			BranchID:         branchID,
@@ -1297,7 +1298,7 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 		RunID:            postRunID,
 		RepositoryID:     repositoryID,
 		StorageNamespace: storageNamespace,
-		SourceRef:        branchID.Ref(),
+		SourceRef:        branch.CommitID.Ref(),
 		BranchID:         branchID,
 		Commit:           commit,
 		CommitID:         newCommitID,
@@ -1596,6 +1597,7 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 	var preRunID string
 	var storageNamespace StorageNamespace
 	var commit Commit
+	var toCommitID CommitID
 	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, destination, func() (interface{}, error) {
 		repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 		if err != nil {
@@ -1618,6 +1620,7 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 		if err != nil {
 			return nil, err
 		}
+		toCommitID = toCommit.CommitID
 		g.log.WithFields(logging.Fields{
 			"repository":             source,
 			"source":                 source,
@@ -1658,7 +1661,7 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 			RepositoryID:     repositoryID,
 			StorageNamespace: storageNamespace,
 			BranchID:         destination,
-			SourceRef:        fromCommit.CommitID.Ref(),
+			SourceRef:        toCommitID.Ref(),
 			Commit:           commit,
 		})
 		if err != nil {
@@ -1689,7 +1692,7 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 		RepositoryID:     repositoryID,
 		StorageNamespace: storageNamespace,
 		BranchID:         destination,
-		SourceRef:        source,
+		SourceRef:        toCommitID.Ref(),
 		Commit:           commit,
 		CommitID:         res.(CommitID),
 		PreRunID:         preRunID,

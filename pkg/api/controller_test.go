@@ -1907,8 +1907,8 @@ func TestController_ListRepositoryRuns(t *testing.T) {
 		})
 		verifyResponseOK(t, respList, err)
 		runsCount := len(respList.JSON200.Results)
-		if runsCount != contentCount+1 {
-			t.Fatalf("ListRepositoryRuns() got %d results, expected %d+1", runsCount, contentCount)
+		if runsCount != contentCount {
+			t.Fatalf("ListRepositoryRuns() got %d results, expected %d", runsCount, contentCount)
 		}
 	})
 
