@@ -2,6 +2,7 @@ package nessie
 
 import (
 	"testing"
+	"time"
 )
 
 var emptyVars = make(map[string]string)
@@ -128,7 +129,7 @@ func TestLakectlCommit(t *testing.T) {
 	commitMessage = "commit with a very old date"
 	vars["MESSAGE"] = commitMessage
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+` -m "`+commitMessage+`" --epoch-time-seconds 0`, false, "lakectl_commit", vars)
-	vars["DATE"] = "1970-01-01 02:00:00 +0200 IST"
+	vars["DATE"] = time.Unix(0, 0).String()
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch+" --amount 1", false, "lakectl_log_with_commit_custom_date", vars)
 }
 
