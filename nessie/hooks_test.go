@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"testing"
 	"text/template"
 	"time"
@@ -231,7 +232,7 @@ func TestHooksSuccess(t *testing.T) {
 	require.Equal(t, commitRecord.Metadata.AdditionalProperties, preCommitEvent.Metadata)
 	require.NotNil(t, webhookData.queryParams)
 	require.Contains(t, webhookData.queryParams, "check_env_vars")
-	require.Equal(t, webhookData.queryParams["check_env_vars"], []string{"this_is_actions_var"})
+	require.Equal(t, strings.Join(webhookData.queryParams["check_env_vars"], ""), `"this_is_actions_var"`)
 
 	webhookData, err = responseWithTimeout(server, 1*time.Minute)
 	require.NoError(t, err)
@@ -247,7 +248,7 @@ func TestHooksSuccess(t *testing.T) {
 	require.Equal(t, branch, postCommitEvent.BranchID)
 	require.Equal(t, commitRecord.Committer, postCommitEvent.Committer)
 	require.Equal(t, commitRecord.Message, postCommitEvent.CommitMessage)
-	require.Equal(t, branch, postCommitEvent.SourceRef)
+	require.Equal(t, commitResp.JSON201.Id, postCommitEvent.SourceRef)
 	require.Equal(t, commitRecord.Metadata.AdditionalProperties, postCommitEvent.Metadata)
 
 	mergeResp, err := client.MergeIntoBranchWithResponse(ctx, repo, branch, mainBranch, api.MergeIntoBranchJSONRequestBody{})

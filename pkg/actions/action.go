@@ -70,10 +70,18 @@ var (
 )
 
 var supportedEvents = map[graveler.EventType]bool{
-	graveler.EventTypePreCommit:  true,
-	graveler.EventTypePostMerge:  true,
-	graveler.EventTypePreMerge:   true,
-	graveler.EventTypePostCommit: true,
+	graveler.EventTypePreCommit:        true,
+	graveler.EventTypePostMerge:        true,
+	graveler.EventTypePreMerge:         true,
+	graveler.EventTypePostCommit:       true,
+	graveler.EventTypePreCreateBranch:  true,
+	graveler.EventTypePostCreateBranch: true,
+	graveler.EventTypePreDeleteBranch:  true,
+	graveler.EventTypePostDeleteBranch: true,
+	graveler.EventTypePreCreateTag:     true,
+	graveler.EventTypePostCreateTag:    true,
+	graveler.EventTypePreDeleteTag:     true,
+	graveler.EventTypePostDeleteTag:    true,
 }
 
 func (a *Action) Validate() error {
@@ -86,7 +94,7 @@ func (a *Action) Validate() error {
 	if a.On == nil || len(a.On) == 0 {
 		return fmt.Errorf("'on' is required: %w", ErrInvalidAction)
 	}
-	// TODO: Add check by hook type for content (brnaches etc.)
+	// TODO: Add check by hook type for content (branches etc.)
 	for o := range a.On {
 		if !supportedEvents[o] {
 			return fmt.Errorf("event '%s' is not supported: %w", o, ErrInvalidAction)
