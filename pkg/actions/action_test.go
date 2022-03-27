@@ -77,13 +77,6 @@ func TestAction_Match(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "none - on invalid event type",
-			on:      map[graveler.EventType]*actions.ActionOn{},
-			spec:    actions.MatchSpec{EventType: "nothing"},
-			want:    false,
-			wantErr: true,
-		},
-		{
 			name:    "pre-merge - on pre-merge without branch",
 			on:      map[graveler.EventType]*actions.ActionOn{graveler.EventTypePreMerge: {}},
 			spec:    actions.MatchSpec{EventType: graveler.EventTypePreMerge},

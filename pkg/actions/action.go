@@ -83,7 +83,7 @@ func (a *Action) Validate() error {
 	if !reName.MatchString(a.Name) {
 		return fmt.Errorf("'name' is invalid: %w", ErrInvalidAction)
 	}
-	if a.On == nil || len(a.On) == 0 {
+	if len(a.On) == 0 {
 		return fmt.Errorf("'on' is required: %w", ErrInvalidAction)
 	}
 	for o := range a.On {
@@ -108,9 +108,6 @@ func (a *Action) Validate() error {
 }
 
 func (a *Action) Match(spec MatchSpec) (bool, error) {
-	if !supportedEvents[spec.EventType] {
-		return false, ErrInvalidEventType
-	}
 	// at least one matched event definition
 	actionOn := a.On[spec.EventType]
 	// if no action specified - no match
