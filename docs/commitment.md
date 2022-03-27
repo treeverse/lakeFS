@@ -9,7 +9,7 @@ redirect_from: ./understand/licensing.html
 
 # Our commitment to open source
 
-lakeFS is an open source project under the [Apache 2.0 license](https://www.apache.org/licenses/LICENSE-2.0).
+lakeFS is an open source project under the [Apache 2.0 license](https://www.apache.org/licenses/LICENSE-2.0){: .button-clickable}.
 The project was created and is supported by Treeverse, a commercial company, founded by engineers passionate about providing solutions to the evolving world of data engineering.
 
 ***Why did we choose to open the source of our core capabilities?***

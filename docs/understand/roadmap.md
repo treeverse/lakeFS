@@ -28,7 +28,7 @@ Throwaway development or experimentation branches that live for a pre-configured
 ## Use Case: Deployment
 
 ### Repo linking
-The ability to explicitly depend on data residing in another repository. While it is possible to state these cross-links by sticking them in the report’s commit metadata, we think a more explicit and structured approach would be valuable. Stating our dependencies in something that resembles a [pom.xml](https://maven.apache.org/guides/introduction/introduction-to-the-pom.html#:~:text=A%20Project%20Object%20Model%20or,default%20values%20for%20most%20projects.) or [go.mod](https://github.com/golang/go/wiki/Modules#gomod) file would allow us to support better CI and CD integrations that ensure reproducibility without vendoring or copying data.
+The ability to explicitly depend on data residing in another repository. While it is possible to state these cross-links by sticking them in the report’s commit metadata, we think a more explicit and structured approach would be valuable. Stating our dependencies in something that resembles a [pom.xml](https://maven.apache.org/guides/introduction/introduction-to-the-pom.html#:~:text=A%20Project%20Object%20Model%20or,default%20values%20for%20most%20projects.){: .button-clickable} or [go.mod](https://github.com/golang/go/wiki/Modules#gomod){: .button-clickable} file would allow us to support better CI and CD integrations that ensure reproducibility without vendoring or copying data.
 
 [Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/1771){: target="_blank" class="btn" }
 
@@ -68,10 +68,10 @@ Additionally, for CD use cases, it will allow a merge operation to introduce Hiv
 
 ### Support Delta Lake merges and diffs across branches <span>Requires Discussion</span>{: .label .label-yellow }
 
-New data formats ([Apache Hudi](https://hudi.apache.org/){: target="_blank" }, [Apache Iceberg](https://iceberg.apache.org/){: target="_blank" } and most notably, [Delta Lake](https://delta.io/){: target="_blank" }) don't rely simply on a hierarchical directory structure - they are usually accompanied by metadata files.
+New data formats ([Apache Hudi](https://hudi.apache.org/){: target="_blank" .button-clickable}, [Apache Iceberg](https://iceberg.apache.org/){: target="_blank" .button-clickable} and most notably, [Delta Lake](https://delta.io/){: target="_blank" .button-clickable}) don't rely simply on a hierarchical directory structure - they are usually accompanied by metadata files.
 These files contain information about changes made, partition and indexing information, as well as represent small deltas to be applied to the larger, typically columnar data objects.
 
-For Delta Lake in particular, these metadata files represent a [logical transaction log that relies on numerical ordering](https://github.com/delta-io/delta/blob/master/PROTOCOL.md#delta-log-entries).
+For Delta Lake in particular, these metadata files represent a [logical transaction log that relies on numerical ordering](https://github.com/delta-io/delta/blob/master/PROTOCOL.md#delta-log-entries){: .button-clickable}.
 
 Currently, when trying to modify a Delta table from 2 different branches, lakeFS would correctly recognize a conflict: this log diverged into 2 different copies, representing different changes.
 Users would then have to forgo one of the change sets, by either retaining the destination's branch set of changes, or the source's branch.
@@ -132,7 +132,7 @@ Support integration into existing alerting systems that trigger in the event a w
 
 ## Architecture & Operations
 
-_TL;DR_ - After receiving feedback on early versions of lakeFS, project **["lakeFS on the Rocks"](https://docs.google.com/document/d/1jzD7-jun-tdU5BGapmnMBe9ovSzBvTNjXCcVztV07A4/edit?usp=sharing){:target="_blank"}** represents a set of changes to the architecture and data model of lakeFS. The main motivators are simplicity, reduced barriers of entry, scalability -  and the added benefit of having lakeFS adhere more closely to Git in semantics and UX.
+_TL;DR_ - After receiving feedback on early versions of lakeFS, project **["lakeFS on the Rocks"](https://docs.google.com/document/d/1jzD7-jun-tdU5BGapmnMBe9ovSzBvTNjXCcVztV07A4/edit?usp=sharing){:target="_blank" .button-clickable}** represents a set of changes to the architecture and data model of lakeFS. The main motivators are simplicity, reduced barriers of entry, scalability -  and the added benefit of having lakeFS adhere more closely to Git in semantics and UX.
 {: .note .note-warning }
 
 There are 3 big shifts in design:
@@ -152,7 +152,7 @@ Making this store a pluggable component would allow the following:
 1. Flexible production setup: A PostgreSQL option will still be available, but additional implementations will also be possible: running lakeFS as a Raft consensus group, using an other RDBMS types such as MySQL &emdash; or using managed services such as DynamoDB that lakeFS will be able to manage itself
 1. Easier scalability: Scaling RDBMS for very high throughput while keeping it predictable in performance for different loads and access patterns has a very high operational cost.
 
-This release will mark the completion of project **["lakeFS on the Rocks"](https://docs.google.com/document/d/1jzD7-jun-tdU5BGapmnMBe9ovSzBvTNjXCcVztV07A4/edit?usp=sharing){:target="_blank"}**
+This release will mark the completion of project **["lakeFS on the Rocks"](https://docs.google.com/document/d/1jzD7-jun-tdU5BGapmnMBe9ovSzBvTNjXCcVztV07A4/edit?usp=sharing){:target="_blank" .button-clickable}**
 
 [Track and discuss on GitHub](https://github.com/treeverse/lakeFS/pull/1685){: target="_blank" class="btn" }
 
@@ -167,7 +167,7 @@ If you'd like to have data in Snowflake managed by lakeFS, with full branching/m
 
 ### Metadata operations security and access model <span>High Priority</span>{: .label }
 Reduce the operational overhead of managing access control: Currently operators working with both lakeFS and the native object store are required to manage a similar set of access controls for both.
-Moving to a federated access control model using the object store’s native access control facilities (e.g. [IAM](https://aws.amazon.com/iam/)) will help reduce this overhead. This requires more discovery around the different use cases to help design something coherent. If you’re using lakeFS and have strong opinions about access control, please reach out on Slack.
+Moving to a federated access control model using the object store’s native access control facilities (e.g. [IAM](https://aws.amazon.com/iam/){:.button-clickable}) will help reduce this overhead. This requires more discovery around the different use cases to help design something coherent. If you’re using lakeFS and have strong opinions about access control, please reach out on Slack.
 
 [Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/2184){: target="_blank" class="btn" }
 
@@ -189,12 +189,12 @@ Each job will use its native job ID as (part of) a branch name for isolation, wi
 
 ### Native connector: Trino
 
-Currently, the Trino integration works well using the [lakeFS s3 Gateway](architecture.md#s3-gateway). 
+Currently, the Trino integration works well using the [lakeFS s3 Gateway](architecture.md#s3-gateway){: .button-clickable}. 
 
 While easy to integrate and useful out of the box, due to the S3 protocol, it means that the data itself must pass through the lakeFS server.
 
 For larger installations, a native integration where lakeFS handles metadata, returning locations in the underlying object store that Trino can then access directly, would allow reducing the operational overhead and increasing the scalability of lakeFS.
-This would be done in a similar way to the [Native Spark integration](../integrations/spark.md) using the [Hadoop Filesystem implementation](../integrations/spark.md#access-lakefs-using-the-lakefs-specific-hadoop-filesystem).
+This would be done in a similar way to the [Native Spark integration](../integrations/spark.md){: .button-clickable} using the [Hadoop Filesystem implementation](../integrations/spark.md#access-lakefs-using-the-lakefs-specific-hadoop-filesystem){: .button-clickable}.
 
 [Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/2357){: target="_blank" class="btn" }
 
@@ -209,7 +209,7 @@ Committing (along with attaching useful information to the commit) makes a lot o
 
 
 For streaming however, this is currently less clear: There's no obvious point in time to commit, as things never actually "finish successfully".
-[The recommended pattern](../usecases/production.md#example-1-rollback---data-ingested-from-a-kafka-stream) would be to ingest from a stream on a separate branch, periodically committing - storing not only the data added since last commit but also capturing the offset read from the stream, for reproducibility.
+[The recommended pattern](../usecases/production.md#example-1-rollback---data-ingested-from-a-kafka-stream){: .button-clickable} would be to ingest from a stream on a separate branch, periodically committing - storing not only the data added since last commit but also capturing the offset read from the stream, for reproducibility.
 These commits can then be merged into a main branch given they pass all relevant quality checks and other validations using hooks, exposing consumers to validated, clean data.
 
 In practice, implementing such a workflow is a little challenging. Users need to:
@@ -218,6 +218,6 @@ In practice, implementing such a workflow is a little challenging. Users need to
 2. figure out how to attach the correct offset read from the stream broker
 3. Handle writes coming in while the commit is taking place
 
-Ideally, lakeFS should provide tools to automate this, with native support for [Apache Kafka](https://kafka.apache.org/){: target="_blank" }.
+Ideally, lakeFS should provide tools to automate this, with native support for [Apache Kafka](https://kafka.apache.org/){: target="_blank" .button-clickable}.
 
 [Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/2358){: target="_blank" class="btn" }

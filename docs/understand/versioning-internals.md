@@ -20,13 +20,13 @@ Older commits are rarely accessed, while newer commits are accessed very frequen
 
 Since they are immutable - once cached, we only need to evict them when space is running out. There’s no complex invalidation that needs to happen.
 
-In terms of storage format, commits are be stored as [SSTables](https://en.wikipedia.org/wiki/Log-structured_merge-tree){: target="_blank" }, compatible with [RocksDB](https://rocksdb.org/){: target="_blank" }.
+In terms of storage format, commits are be stored as [SSTables](https://en.wikipedia.org/wiki/Log-structured_merge-tree){: target="_blank" .button-clickable}, compatible with [RocksDB](https://rocksdb.org/){: target="_blank" .button-clickable}.
 
 SSTables were chosen as a storage format for 3 major reasons:
 
 1. Extremely high read throughput on modern hardware: using commits representing a 200m object repository (modeled after the S3 inventory of one of our design partners), we were able to achieve close to 500k random GetObject calls / second. This provides a very high throughput/cost ratio, probably as high as can be achieved on public clouds.
 1. Being a known storage format means it’s relatively easy to generate and consume. Storing it in the object store makes it accessible to data engineering tools for analysis and distributed computation, effectively reducing the silo effect of storing it in an operational database.
-1. The SSTable format supports [delta encoding for keys](https://github.com/facebook/rocksdb/wiki/PlainTable-Format#prefix-encoding){: target="_blank" } which makes them very space efficient for data lakes where many keys share the same common prefixes.
+1. The SSTable format supports [delta encoding for keys](https://github.com/facebook/rocksdb/wiki/PlainTable-Format#prefix-encoding){: target="_blank" .button-clickable} which makes them very space efficient for data lakes where many keys share the same common prefixes.
 
 Each lakeFS commit is represented as a set of contiguous, non-overlapping SSTables that make up the entire keyspace of a repository at that commit.
 
@@ -54,7 +54,7 @@ We have 2 additional requirements for the storage format:
 1. Be space and time efficient when creating a commit - assuming a commit changes a single object out of a billion, we don’t want to write a full snapshot of the entire repository. Ideally, we’ll be able to reuse some data files that haven’t changed to make the commit operations (in both space and time) proportional to the size of the difference as opposed to the total size of the repository.
 1. Allow an efficient diff between commits which runs in time proportional to the size of their difference and not their absolute sizes.
 
-To support these requirements, we decided to essentially build a 2-layer [Merkle tree](https://en.wikipedia.org/wiki/Merkle_tree){: target="_blank" } composed of a set of leaf nodes (**"Range"**) addressed by their content address, and a **"Meta Range"**, which is a special range containing all ranges, thus representing an entire consistent view of the keyspace:
+To support these requirements, we decided to essentially build a 2-layer [Merkle tree](https://en.wikipedia.org/wiki/Merkle_tree){: target="_blank" .button-clickable} composed of a set of leaf nodes (**"Range"**) addressed by their content address, and a **"Meta Range"**, which is a special range containing all ranges, thus representing an entire consistent view of the keyspace:
 
 ![Metarange to ranges relationship]({{ site.baseurl }}/assets/img/graveler2.png)
 
@@ -95,7 +95,7 @@ Luckily, this is also much smaller data, compared to the committed dataset.
 
 References and uncommitted data are currently stored on PostgreSQL for its strong consistency and transactional guarantees.
 
-[In the future](roadmap.md#lakefs-on-the-rocks-milestone-3---remove-postgresql) we plan on eliminating the need for an RDBMS by embedding [Raft](https://raft.github.io/){: target="_blank" } to replicate these writes across a cluster of machines, with the data itself being stored in RocksDB. To make operations easier, the replicated RocksDB database will be periodically snapshotted to the underlying object store.
+[In the future](roadmap.md#lakefs-on-the-rocks-milestone-3---remove-postgresql){: .button-clickable} we plan on eliminating the need for an RDBMS by embedding [Raft](https://raft.github.io/){: target="_blank" .button-clickable} to replicate these writes across a cluster of machines, with the data itself being stored in RocksDB. To make operations easier, the replicated RocksDB database will be periodically snapshotted to the underlying object store.
 
-For extremely large installations ( >= millions of read/write operations per second), it will be possible to utilize [multi-Raft](https://pingcap.com/blog/2017-08-15-multi-raft/){: target="_blank" } to shard references across a wider fleet of machines.
+For extremely large installations ( >= millions of read/write operations per second), it will be possible to utilize [multi-Raft](https://pingcap.com/blog/2017-08-15-multi-raft/){: target="_blank" .button-clickable} to shard references across a wider fleet of machines.
 
