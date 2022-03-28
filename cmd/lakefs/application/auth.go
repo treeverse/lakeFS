@@ -53,21 +53,29 @@ func newLDAPAuthenticator(cfg *config.LDAP, service auth.Service) *auth.LDAPAuth
 	}
 }
 
-func (databaseService DatabaseService) NewAuthService(cfg config.Config, version string) *AuthService {
-	dbAuthService := auth.NewDBAuthService(
-		databaseService.dbPool,
-		crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
-		cfg.GetAuthCacheConfig())
+func (databaseService DatabaseService) NewAuthService(cfg *config.Config, version string) *AuthService {
+	dbAuthService := databaseService.NewDBAuthService(cfg)
 	var authenticator auth.Authenticator = auth.NewBuiltinAuthenticator(dbAuthService)
 	ldapConfig := cfg.GetLDAPConfiguration()
 	if ldapConfig != nil {
 		ldapAuthenticator := newLDAPAuthenticator(ldapConfig, dbAuthService)
 		authenticator = auth.NewChainAuthenticator(authenticator, ldapAuthenticator)
 	}
-	authMetadataManager := auth.NewDBMetadataManager(version, cfg.GetFixedInstallationID(), databaseService.dbPool)
+	authMetadataManager := databaseService.NewDBMetadataManager(cfg, version)
 	return &AuthService{
 		authenticator,
 		dbAuthService,
 		authMetadataManager,
 	}
+}
+
+func (databaseService DatabaseService) NewDBAuthService(cfg *config.Config) *auth.DBAuthService {
+	return auth.NewDBAuthService(
+		databaseService.dbPool,
+		crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
+		cfg.GetAuthCacheConfig())
+}
+
+func (databaseService DatabaseService) NewDBMetadataManager(cfg *config.Config, version string) *auth.DBMetadataManager {
+	return auth.NewDBMetadataManager(version, cfg.GetFixedInstallationID(), databaseService.dbPool)
 }

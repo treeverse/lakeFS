@@ -2,11 +2,21 @@ package application
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/uri"
 	"net/url"
+	"strings"
 )
+
+const (
+	ManifestURLFormat = "s3://example-bucket/inventory/YYYY-MM-DDT00-00Z/manifest.json"
+)
+
+var errInvalidManifestURL = errors.New("invalid manifest url")
 
 // checkMetadataPrefix checks for non-migrated repos of issue #2397 (https://github.com/treeverse/lakeFS/issues/2397)
 func checkMetadataPrefix(ctx context.Context, repo *catalog.Repository, logger logging.Logger, adapter block.Adapter, repoStorageType block.StorageType) {
@@ -29,9 +39,9 @@ func checkMetadataPrefix(ctx context.Context, repo *catalog.Repository, logger l
 }
 
 // checkRepos iterates on all repos and validates that their settings are correct.
-func CheckRepos(lakeFsCmd LakeFsCmdContext, authService *AuthService, blockStore *BlockStore, c *catalog.Catalog) {
-	logger := lakeFsCmd.logger
-	ctx := lakeFsCmd.ctx
+func CheckRepos(lakeFsCmdCtx LakeFsCmdContext, authService *AuthService, blockStore *BlockStore, c *catalog.Catalog) {
+	logger := lakeFsCmdCtx.logger
+	ctx := lakeFsCmdCtx.ctx
 	initialized, err := authService.authMetadataManager.IsInitialized(ctx)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to check if lakeFS is initialized")
@@ -71,6 +81,25 @@ func CheckRepos(lakeFsCmd LakeFsCmdContext, authService *AuthService, blockStore
 			}
 		}
 	}
+}
+
+func NewRepository(ctx context.Context, c catalog.Interface, repoName string, manifestURL string) (*catalog.Repository, error) {
+	u := uri.Must(uri.Parse(repoName))
+	if !u.IsRepository() {
+		return nil, uri.ErrInvalidRefURI
+	}
+	validRepoName := u.Repository
+	parsedURL, err := url.Parse(manifestURL)
+	if err != nil || parsedURL.Scheme != "s3" || !strings.HasSuffix(parsedURL.Path, "/manifest.json") {
+		return nil, fmt.Errorf("%w: expected format %s", errInvalidManifestURL, ManifestURLFormat)
+	}
+	repo, err := c.GetRepository(ctx, validRepoName)
+	if err != nil {
+		// TODO: this error looks weird
+		return nil, fmt.Errorf("read repository %s: %w", repoName, err)
+	}
+	// import branch is created on the fly
+	return repo, nil
 }
 
 // checkForeignRepo checks whether a repo storage namespace matches the block adapter.

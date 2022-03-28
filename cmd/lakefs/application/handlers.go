@@ -12,9 +12,9 @@ import (
 	"net/url"
 )
 
-func NewAPIHandler(cmd LakeFsCmdContext, databaseService *DatabaseService, authService *AuthService, blockStore *BlockStore, c *catalog.Catalog, cloudMetadataProvider cloud.MetadataProvider, actionsService *actions.Service, auditChecker *version.AuditChecker) http.Handler {
+func NewAPIHandler(lakeFsCmdCtx LakeFsCmdContext, databaseService *DatabaseService, authService *AuthService, blockStore *BlockStore, c *catalog.Catalog, cloudMetadataProvider cloud.MetadataProvider, actionsService *actions.Service, auditChecker *version.AuditChecker) http.Handler {
 	return api.Serve(
-		cmd.cfg,
+		lakeFsCmdCtx.cfg,
 		c,
 		authService.authenticator,
 		authService.dbAuthService,
@@ -25,20 +25,20 @@ func NewAPIHandler(cmd LakeFsCmdContext, databaseService *DatabaseService, authS
 		cloudMetadataProvider,
 		actionsService,
 		auditChecker,
-		cmd.logger.WithField("service", "api_gateway"),
-		cmd.cfg.GetS3GatewayDomainNames(),
+		lakeFsCmdCtx.logger.WithField("service", "api_gateway"),
+		lakeFsCmdCtx.cfg.GetS3GatewayDomainNames(),
 	)
 }
 
-func NewS3GatewayHandler(cmd LakeFsCmdContext, multipartsTracker multiparts.Tracker, c *catalog.Catalog, blockStore *BlockStore, authService *AuthService) http.Handler {
-	cfg := cmd.cfg
+func NewS3GatewayHandler(lakeFsCmdCtx LakeFsCmdContext, multipartsTracker multiparts.Tracker, c *catalog.Catalog, blockStore *BlockStore, authService *AuthService) http.Handler {
+	cfg := lakeFsCmdCtx.cfg
 	var err error
 	s3Fallback := cfg.GetS3GatewayFallbackURL()
 	var s3FallbackURL *url.URL
 	if s3Fallback != "" {
 		s3FallbackURL, err = url.Parse(s3Fallback)
 		if err != nil {
-			cmd.logger.WithError(err).Fatal("Failed to parse s3 fallback URL")
+			lakeFsCmdCtx.logger.WithError(err).Fatal("Failed to parse s3 fallback URL")
 		}
 	}
 	return gateway.NewHandler(

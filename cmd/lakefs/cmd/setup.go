@@ -3,15 +3,13 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/treeverse/lakefs/cmd/lakefs/application"
+	"github.com/treeverse/lakefs/pkg/auth"
+	"github.com/treeverse/lakefs/pkg/auth/model"
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/auth"
-	"github.com/treeverse/lakefs/pkg/auth/crypt"
-	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/logging"
-	"github.com/treeverse/lakefs/pkg/stats"
-	"github.com/treeverse/lakefs/pkg/version"
 )
 
 // setupCmd initial lakeFS system setup - build database, load initial data and create first superuser
@@ -22,70 +20,26 @@ var setupCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := loadConfig()
 		ctx := cmd.Context()
-
-		dbParams := cfg.GetDatabaseParams()
-		dbPool := db.BuildDatabaseConnection(ctx, dbParams)
-		defer dbPool.Close()
-
-		migrator := db.NewDatabaseMigrator(dbParams)
-		err := migrator.Migrate(ctx)
+		logger := logging.Default()
+		lakeFsCmdContext := application.NewLakeFsCmdContext(ctx, cfg, logger)
+		databaseService := application.NewDatabaseService(lakeFsCmdContext)
+		defer databaseService.Close()
+		err := databaseService.Migrate(ctx)
 		if err != nil {
 			fmt.Printf("Failed to setup DB: %s\n", err)
 			os.Exit(1)
 		}
-
-		userName, err := cmd.Flags().GetString("user-name")
-		if err != nil {
-			fmt.Printf("user-name: %s\n", err)
-			os.Exit(1)
+		userCreator := func(ctx context.Context,
+			authService *auth.DBAuthService,
+			metadataManager *auth.DBMetadataManager,
+			user *User) (*model.Credential, error) {
+			return auth.CreateInitialAdminUserWithKeys(ctx,
+				authService,
+				metadataManager,
+				user.userName, &user.accessKeyID, &user.secretAccessKey)
 		}
-		accessKeyID, err := cmd.Flags().GetString("access-key-id")
-		if err != nil {
-			fmt.Printf("access-key-id: %s\n", err)
-			os.Exit(1)
-		}
-		secretAccessKey, err := cmd.Flags().GetString("secret-access-key")
-		if err != nil {
-			fmt.Printf("secret-access-key: %s\n", err)
-			os.Exit(1)
-		}
+		createUser(cmd, true, databaseService, cfg, ctx, userCreator)
 
-		authService := auth.NewDBAuthService(
-			dbPool,
-			crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
-			cfg.GetAuthCacheConfig())
-		metadataManager := auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
-		cloudMetadataProvider := stats.BuildMetadataProvider(logging.Default(), cfg)
-		metadata := stats.NewMetadata(ctx, logging.Default(), cfg.GetBlockstoreType(), metadataManager, cloudMetadataProvider)
-
-		initialized, err := metadataManager.IsInitialized(ctx)
-		if err != nil {
-			fmt.Printf("Setup failed: %s\n", err)
-			os.Exit(1)
-		}
-		if initialized {
-			fmt.Printf("Setup is already complete.\n")
-			os.Exit(1)
-		}
-
-		credentials, err := auth.CreateInitialAdminUserWithKeys(ctx, authService, metadataManager, userName, &accessKeyID, &secretAccessKey)
-		if err != nil {
-			fmt.Printf("Failed to setup admin user: %s\n", err)
-			os.Exit(1)
-		}
-
-		ctx, cancelFn := context.WithCancel(ctx)
-		stats := stats.NewBufferedCollector(metadata.InstallationID, cfg)
-		stats.Run(ctx)
-		defer stats.Close()
-
-		stats.CollectMetadata(metadata)
-		stats.CollectEvent("global", "init")
-
-		fmt.Printf("credentials:\n  access_key_id: %s\n  secret_access_key: %s\n",
-			credentials.AccessKeyID, credentials.SecretAccessKey)
-
-		cancelFn()
 	},
 }
 

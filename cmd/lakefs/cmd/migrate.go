@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/treeverse/lakefs/cmd/lakefs/application"
+	"github.com/treeverse/lakefs/pkg/logging"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -20,10 +22,16 @@ var versionCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := loadConfig()
 		ctx := cmd.Context()
-		dbParams := cfg.GetDatabaseParams()
-		dbPool := db.BuildDatabaseConnection(ctx, dbParams)
-		defer dbPool.Close()
-		version, _, err := db.MigrateVersion(ctx, dbPool, dbParams)
+		logger := logging.FromContext(ctx)
+		lakeFsCmdCtx := application.NewLakeFsCmdContext(ctx, cfg, logger)
+		databaseService := application.NewDatabaseService(lakeFsCmdCtx)
+		err := databaseService.Migrate(ctx)
+		if err != nil {
+			fmt.Printf("Failed to init database service: %s\n", err)
+			return
+		}
+		defer databaseService.Close()
+		version, _, err := databaseService.MigrateVersion(ctx)
 		if err != nil {
 			fmt.Printf("Failed to get info for schema: %s\n", err)
 			return

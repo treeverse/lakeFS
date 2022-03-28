@@ -2,25 +2,19 @@ package cmd
 
 import (
 	"bufio"
-	"context"
 	"errors"
 	"fmt"
-	"net/url"
-	"os"
-	"strings"
-
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/actions"
+	"github.com/treeverse/lakefs/cmd/lakefs/application"
 	"github.com/treeverse/lakefs/pkg/block/factory"
-	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/cmdutils"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/onboard"
 	"github.com/treeverse/lakefs/pkg/stats"
-	"github.com/treeverse/lakefs/pkg/uri"
+	"os"
 )
 
 const (
@@ -58,96 +52,13 @@ var importBaseCmd = &cobra.Command{
 	},
 }
 
-func runImport(cmd *cobra.Command, args []string) (statusCode int) {
-	flags := cmd.Flags()
-	dryRun, _ := flags.GetBool(DryRunFlagName)
-	manifestURL, _ := flags.GetString(ManifestURLFlagName)
-	withMerge, _ := flags.GetBool(WithMergeFlagName)
-	hideProgress, _ := flags.GetBool(HideProgressFlagName)
-	prefixFile, _ := flags.GetString(PrefixesFileFlagName)
-	baseCommit, _ := flags.GetString(BaseCommitFlagName)
-
-	cfg := loadConfig()
-	ctx := cmd.Context()
-	dbParams := cfg.GetDatabaseParams()
-	dbPool := db.BuildDatabaseConnection(ctx, dbParams)
-	defer dbPool.Close()
-
-	err := db.ValidateSchemaUpToDate(ctx, dbPool, dbParams)
-	if errors.Is(err, db.ErrSchemaNotCompatible) {
-		fmt.Println("Migration version mismatch, for more information see https://docs.lakefs.io/deploying-aws/upgrade.html")
-		return 1
-	}
-	if err != nil {
-		fmt.Printf("%s\n", err)
-		return 1
-	}
-	logger := logging.FromContext(ctx)
-
-	catalogCfg := catalog.Config{
-		Config: cfg,
-		DB:     dbPool,
-	}
-	c, err := catalog.New(ctx, catalogCfg)
-	if err != nil {
-		fmt.Printf("Failed to create c: %s\n", err)
-		return 1
-	}
-	defer func() { _ = c.Close() }()
-
-	u := uri.Must(uri.Parse(args[0]))
-	if !u.IsRepository() {
-		fmt.Printf("Invalid 'repository': %s\n", uri.ErrInvalidRefURI)
-		return 1
-	}
-
-	blockStore, err := factory.BuildBlockAdapter(ctx, nil, cfg)
-	if err != nil {
-		fmt.Printf("Failed to create block adapter: %s\n", err)
-		return 1
-	}
-	if blockStore.BlockstoreType() != "s3" {
-		fmt.Printf("Configuration uses unsupported block adapter: %s. Only s3 is supported.\n", blockStore.BlockstoreType())
-		return 1
-	}
-	repoName := u.Repository
-	parsedURL, err := url.Parse(manifestURL)
-	if err != nil || parsedURL.Scheme != "s3" || !strings.HasSuffix(parsedURL.Path, "/manifest.json") {
-		fmt.Printf("Invalid manifest url. expected format: %s\n", ManifestURLFormat)
-		return 1
-	}
-
-	bufferedCollector := stats.NewBufferedCollector(cfg.GetFixedInstallationID(), cfg)
-	defer bufferedCollector.Close()
-	bufferedCollector.SetRuntimeCollector(blockStore.RuntimeStats)
-
-	// wire actions into entry catalog
-	actionsService := actions.NewService(
-		ctx,
-		dbPool,
-		catalog.NewActionsSource(c),
-		catalog.NewActionsOutputWriter(c.BlockAdapter),
-		bufferedCollector,
-		cfg.GetActionsEnabled(),
-	)
-	c.SetHooksHandler(actionsService)
-	defer actionsService.Stop()
-
-	repo, err := getRepository(ctx, c, repoName)
-	if err != nil {
-		fmt.Println("Error getting repository", err)
-		return 1
-	}
-
-	if dryRun {
-		fmt.Print("Starting import dry run. Will not perform any changes.\n\n")
-	}
+func getPrefixes(prefixFile string) ([]string, error) {
 	var prefixes []string
 	if prefixFile != "" {
 		file, err := os.Open(prefixFile)
 		if err != nil {
 			fmt.Printf("Failed to read prefix filter: %s\n", err)
-			return 1
+			return nil, err
 		}
 		defer func() {
 			_ = file.Close()
@@ -161,15 +72,81 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 		}
 		if err := scanner.Err(); err != nil {
 			fmt.Printf("Failed to read prefix filter: %s\n", err)
-			return 1
+			return nil, err
 		}
 		fmt.Printf("Filtering according to %d prefixes\n", len(prefixes))
+	}
+	return prefixes, nil
+}
+
+func runImport(cmd *cobra.Command, args []string) (statusCode int) {
+	flags := cmd.Flags()
+	dryRun, _ := flags.GetBool(DryRunFlagName)
+	manifestURL, _ := flags.GetString(ManifestURLFlagName)
+	withMerge, _ := flags.GetBool(WithMergeFlagName)
+	hideProgress, _ := flags.GetBool(HideProgressFlagName)
+	prefixFile, _ := flags.GetString(PrefixesFileFlagName)
+	baseCommit, _ := flags.GetString(BaseCommitFlagName)
+	cfg := loadConfig()
+	ctx := cmd.Context()
+	logger := logging.FromContext(ctx)
+	lakeFsCmdContext := application.NewLakeFsCmdContext(ctx, cfg, logger)
+	databaseService := application.NewDatabaseService(lakeFsCmdContext)
+	err := databaseService.ValidateSchemaIsUpToDate(lakeFsCmdContext)
+	defer databaseService.Close()
+	if err != nil {
+		if errors.Is(err, db.ErrSchemaNotCompatible) {
+			fmt.Println("Migration version mismatch, for more information see https://docs.lakefs.io/deploying-aws/upgrade.html")
+		} else {
+			fmt.Printf("%s\n", err)
+		}
+		return 1
+	}
+
+	c, err := databaseService.NewCatalog(lakeFsCmdContext)
+
+	if err != nil {
+		fmt.Printf("Failed to create c: %s\n", err)
+		return 1
+	}
+	defer func() { _ = c.Close() }()
+
+	bufferedCollector := stats.NewBufferedCollector(cfg.GetFixedInstallationID(), cfg)
+	// TODO: are there good reasons why the statsCollector is not set here?
+	blockStore, err := factory.BuildBlockAdapter(ctx, nil, cfg)
+	if err != nil {
+		fmt.Printf("Failed to create block adapter: %s\n", err)
+		return 1
+	}
+	if blockStore.BlockstoreType() != "s3" {
+		fmt.Printf("Configuration uses unsupported block adapter: %s. Only s3 is supported.\n", blockStore.BlockstoreType())
+		return 1
+	}
+	bufferedCollector.SetRuntimeCollector(blockStore.RuntimeStats)
+
+	// wire actions into entry catalog
+	actionsService := application.NewActionsService(lakeFsCmdContext, databaseService, c, bufferedCollector)
+
+	defer actionsService.Stop()
+
+	if dryRun {
+		fmt.Print("Starting import dry run. Will not perform any changes.\n\n")
+	}
+	var prefixes []string
+	prefixes, err = getPrefixes(prefixFile)
+	if err != nil {
+		return 1
+	}
+	repo, err := application.NewRepository(ctx, c, args[0], manifestURL)
+	if err != nil {
+		fmt.Println("Error getting repository", err)
+		return 1
 	}
 
 	importConfig := &onboard.Config{
 		CommitUsername:     CommitterName,
 		InventoryURL:       manifestURL,
-		RepositoryID:       graveler.RepositoryID(repoName),
+		RepositoryID:       graveler.RepositoryID(repo.Name),
 		DefaultBranchID:    graveler.BranchID(repo.DefaultBranch),
 		InventoryGenerator: blockStore,
 		Store:              c.Store,
@@ -215,31 +192,21 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	}
 
 	if withMerge {
-		fmt.Printf("Merging import changes into lakefs://%s/%s/\n", repoName, repo.DefaultBranch)
+		fmt.Printf("Merging import changes into lakefs://%s/%s/\n", repo.Name, repo.DefaultBranch)
 		msg := fmt.Sprintf(onboard.CommitMsgTemplate, stats.CommitRef)
-		commitLog, err := c.Merge(ctx, repoName, onboard.DefaultImportBranchName, repo.DefaultBranch, CommitterName, msg, nil, "")
+		commitLog, err := c.Merge(ctx, repo.Name, onboard.DefaultImportBranchName, repo.DefaultBranch, CommitterName, msg, nil, "")
 		if err != nil {
 			fmt.Printf("Merge failed: %s\n", err)
 			return 1
 		}
 		fmt.Println("Merge was completed successfully.")
-		fmt.Printf("To list imported objects, run:\n\t$ lakectl fs ls lakefs://%s/%s/\n", repoName, commitLog)
+		fmt.Printf("To list imported objects, run:\n\t$ lakectl fs ls lakefs://%s/%s/\n", repo.Name, commitLog)
 	} else {
-		fmt.Printf("To list imported objects, run:\n\t$ lakectl fs ls lakefs://%s/%s/\n", repoName, stats.CommitRef)
-		fmt.Printf("To merge the changes to your main branch, run:\n\t$ lakectl merge lakefs://%s/%s lakefs://%s/%s\n", repoName, stats.CommitRef, repoName, repo.DefaultBranch)
+		fmt.Printf("To list imported objects, run:\n\t$ lakectl fs ls lakefs://%s/%s/\n", repo.Name, stats.CommitRef)
+		fmt.Printf("To merge the changes to your main branch, run:\n\t$ lakectl merge lakefs://%s/%s lakefs://%s/%s\n", repo.Name, stats.CommitRef, repo.Name, repo.DefaultBranch)
 	}
 
 	return 0
-}
-
-func getRepository(ctx context.Context, c catalog.Interface, repoName string) (*catalog.Repository, error) {
-	repo, err := c.GetRepository(ctx, repoName)
-	if err != nil {
-		return nil, fmt.Errorf("read repository %s: %w", repoName, err)
-	}
-
-	// import branch is created on the fly
-	return repo, nil
 }
 
 //nolint:gochecknoinits

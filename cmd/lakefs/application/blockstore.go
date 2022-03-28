@@ -18,18 +18,18 @@ type BlockStore struct {
 	bufferedCollector *stats.BufferedCollector
 }
 
-func NewBlockStore(lakeFsCmd LakeFsCmdContext, authService *AuthService, cloudMetadataProvider cloud.MetadataProvider) (*BlockStore, error) {
-	blockstoreType := lakeFsCmd.cfg.GetBlockstoreType()
+func NewBlockStore(lakeFsCmdCtx LakeFsCmdContext, authService *AuthService, cloudMetadataProvider cloud.MetadataProvider) (*BlockStore, error) {
+	blockstoreType := lakeFsCmdCtx.cfg.GetBlockstoreType()
 	if blockstoreType == "local" || blockstoreType == "mem" {
 		printLocalWarning(os.Stderr, blockstoreType)
-		lakeFsCmd.logger.WithField("adapter_type", blockstoreType).
+		lakeFsCmdCtx.logger.WithField("adapter_type", blockstoreType).
 			Error("Block adapter NOT SUPPORTED for production use")
 	}
-	metadata := stats.NewMetadata(lakeFsCmd.ctx, lakeFsCmd.logger, blockstoreType, authService.authMetadataManager, cloudMetadataProvider)
+	metadata := stats.NewMetadata(lakeFsCmdCtx.ctx, lakeFsCmdCtx.logger, blockstoreType, authService.authMetadataManager, cloudMetadataProvider)
 
-	bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, lakeFsCmd.cfg)
+	bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, lakeFsCmdCtx.cfg)
 	// init block store
-	blockAdapter, err := factory.BuildBlockAdapter(lakeFsCmd.ctx, bufferedCollector, lakeFsCmd.cfg)
+	blockAdapter, err := factory.BuildBlockAdapter(lakeFsCmdCtx.ctx, bufferedCollector, lakeFsCmdCtx.cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -56,6 +56,10 @@ func (blockStore BlockStore) CollectionChannel() <-chan bool {
 
 func (blockStore BlockStore) InstallationID() string {
 	return blockStore.metadata.InstallationID
+}
+
+func (blockStore BlockStore) BufferedCollector() *stats.BufferedCollector {
+	return blockStore.bufferedCollector
 }
 
 var localWarningBanner = `

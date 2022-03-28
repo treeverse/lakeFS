@@ -48,10 +48,10 @@ func NewRootCmd() *cobra.Command {
 				logging.SetLevel(lvl)
 			})
 			ctx := cmd.Context()
-			lakeFsCmd := application.NewLakeFsCmdContext(ctx, cfg, logger)
+			lakeFsCmdCtx := application.NewLakeFsCmdContext(ctx, cfg, logger)
 			logger.WithField("version", version.Version).Info("lakeFS run")
-
-			databaseService, err := application.NewDatabaseService(lakeFsCmd)
+			databaseService := application.NewDatabaseService(lakeFsCmdCtx)
+			err := databaseService.ValidateSchemaIsUpToDate(lakeFsCmdCtx)
 			if err != nil {
 				logger.WithError(err).Fatal("Cannot initialize database pools")
 			}
@@ -60,7 +60,7 @@ func NewRootCmd() *cobra.Command {
 			if err != nil {
 				logging.Default().WithError(err).Error("failed to register db stats collector")
 			}
-			c, err := databaseService.NewCatalog(lakeFsCmd)
+			c, err := databaseService.NewCatalog(lakeFsCmdCtx)
 			if err != nil {
 				logger.WithError(err).Fatal("failed to create catalog")
 			}
@@ -69,15 +69,15 @@ func NewRootCmd() *cobra.Command {
 			multipartsTracker := databaseService.NewMultipartTracker()
 
 			// init authentication
-			authService := databaseService.NewAuthService(*cfg, version.Version)
+			authService := databaseService.NewAuthService(cfg, version.Version)
 			cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
-			blockStore, err := application.NewBlockStore(lakeFsCmd, authService, cloudMetadataProvider)
+			blockStore, err := application.NewBlockStore(lakeFsCmdCtx, authService, cloudMetadataProvider)
 			if err != nil {
 				logger.WithError(err).Fatal("Failed to create block adapter")
 			}
 
 			// wire actions
-			actionsService := application.NewActionsService(lakeFsCmd, databaseService, c, blockStore)
+			actionsService := application.NewActionsService(lakeFsCmdCtx, databaseService, c, blockStore.BufferedCollector())
 			defer actionsService.Stop()
 
 			auditChecker := version.NewDefaultAuditChecker(cfg.GetSecurityAuditCheckURL())
@@ -95,7 +95,7 @@ func NewRootCmd() *cobra.Command {
 				os.Exit(1)
 			}
 			if !allowForeign {
-				application.CheckRepos(lakeFsCmd, authService, blockStore, c)
+				application.CheckRepos(lakeFsCmdCtx, authService, blockStore, c)
 			}
 
 			// update health info with installation ID
@@ -106,9 +106,9 @@ func NewRootCmd() *cobra.Command {
 			quit := make(chan os.Signal, 1)
 			signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
-			apiHandler := application.NewAPIHandler(lakeFsCmd, databaseService, authService, blockStore, c, cloudMetadataProvider, actionsService, auditChecker)
+			apiHandler := application.NewAPIHandler(lakeFsCmdCtx, databaseService, authService, blockStore, c, cloudMetadataProvider, actionsService, auditChecker)
 			// init gateway server
-			s3gatewayHandler := application.NewS3GatewayHandler(lakeFsCmd, multipartsTracker, c, blockStore, authService)
+			s3gatewayHandler := application.NewS3GatewayHandler(lakeFsCmdCtx, multipartsTracker, c, blockStore, authService)
 
 			ctx, cancelFn := context.WithCancel(cmd.Context())
 			go blockStore.RunCollector(ctx)

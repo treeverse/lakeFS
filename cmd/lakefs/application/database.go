@@ -1,6 +1,7 @@
 package application
 
 import (
+	"context"
 	"errors"
 	"github.com/dlmiddlecote/sqlstats"
 	"github.com/golang-migrate/migrate/v4"
@@ -42,27 +43,41 @@ func (databaseService DatabaseService) NewMultipartTracker() multiparts.Tracker 
 	return multiparts.NewTracker(databaseService.dbPool)
 }
 
-func NewDatabaseService(cmd LakeFsCmdContext) (*DatabaseService, error) {
-	dbParams := cmd.cfg.GetDatabaseParams()
-	dbPool := db.BuildDatabaseConnection(cmd.ctx, dbParams)
-	err := db.ValidateSchemaUpToDate(cmd.ctx, dbPool, dbParams)
-	switch {
-	case errors.Is(err, db.ErrSchemaNotCompatible):
-		cmd.logger.WithError(err).Fatal("Migration version mismatch, for more information see https://docs.lakefs.io/deploying-aws/upgrade.html")
-		return nil, err
-	case errors.Is(err, migrate.ErrNilVersion):
-		cmd.logger.Debug("No migration, setup required")
-		return nil, err
-	case err != nil:
-		cmd.logger.WithError(err).Warn("Failed on schema validation")
-		return nil, err
-	}
-	lockDBPool := db.BuildDatabaseConnection(cmd.ctx, dbParams)
+func NewDatabaseService(lakeFsCmdCtx LakeFsCmdContext) *DatabaseService {
+	dbParams := lakeFsCmdCtx.cfg.GetDatabaseParams()
+	dbPool := db.BuildDatabaseConnection(lakeFsCmdCtx.ctx, dbParams)
+
+	lockDBPool := db.BuildDatabaseConnection(lakeFsCmdCtx.ctx, dbParams)
 	migrator := db.NewDatabaseMigrator(dbParams)
 	return &DatabaseService{
 		dbPool,
 		dbParams,
 		lockDBPool,
 		migrator,
-	}, nil
+	}
+}
+
+func (databaseService DatabaseService) ValidateSchemaIsUpToDate(lakeFsCmdCtx LakeFsCmdContext) error {
+	err := db.ValidateSchemaUpToDate(lakeFsCmdCtx.ctx, databaseService.dbPool, databaseService.dbParams)
+	switch {
+	case errors.Is(err, db.ErrSchemaNotCompatible):
+		lakeFsCmdCtx.logger.WithError(err).Fatal("Migration version mismatch, for more information see https://docs.lakefs.io/deploying-aws/upgrade.html")
+		return err
+	case errors.Is(err, migrate.ErrNilVersion):
+		lakeFsCmdCtx.logger.Debug("No migration, setup required")
+		return err
+	case err != nil:
+		lakeFsCmdCtx.logger.WithError(err).Warn("Failed on schema validation")
+		return err
+	}
+	return nil
+}
+
+// TODO: maybe better name? GetMigrateVersion?
+func (databaseService DatabaseService) MigrateVersion(ctx context.Context) (uint, bool, error) {
+	return db.MigrateVersion(ctx, databaseService.dbPool, databaseService.dbParams)
+}
+
+func (databaseService DatabaseService) Migrate(ctx context.Context) error {
+	return databaseService.migrator.Migrate(ctx)
 }
