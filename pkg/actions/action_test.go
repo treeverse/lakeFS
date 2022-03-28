@@ -330,7 +330,7 @@ func TestMatchedActions(t *testing.T) {
 					graveler.EventTypePreCommit: {},
 				}},
 				{Name: "act2", On: map[graveler.EventType]*actions.ActionOn{
-					graveler.EventTypePreCommit: {},
+					graveler.EventTypePreCommit: nil,
 				}},
 			},
 			spec: actions.MatchSpec{
@@ -341,7 +341,7 @@ func TestMatchedActions(t *testing.T) {
 					graveler.EventTypePreCommit: {},
 				}},
 				{Name: "act2", On: map[graveler.EventType]*actions.ActionOn{
-					graveler.EventTypePreCommit: {},
+					graveler.EventTypePreCommit: nil,
 				}},
 			},
 			wantErr: false,

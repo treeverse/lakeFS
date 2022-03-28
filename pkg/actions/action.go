@@ -109,13 +109,13 @@ func (a *Action) Validate() error {
 
 func (a *Action) Match(spec MatchSpec) (bool, error) {
 	// at least one matched event definition
-	actionOn := a.On[spec.EventType]
+	actionOn, ok := a.On[spec.EventType]
 	// if no action specified - no match
-	if actionOn == nil {
+	if !ok {
 		return false, nil
 	}
 	// if no branches spec found - all match
-	if len(actionOn.Branches) == 0 {
+	if actionOn == nil || len(actionOn.Branches) == 0 {
 		return true, nil
 	}
 	// find at least one match
