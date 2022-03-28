@@ -21,6 +21,7 @@ import (
 
 	"github.com/go-test/deep"
 	nanoid "github.com/matoous/go-nanoid/v2"
+	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
@@ -183,6 +184,22 @@ func TestController_GetRepoHandler(t *testing.T) {
 		if repository.DefaultBranch != testBranchName {
 			t.Fatalf("unexpected branch name %s, expected %s", repository.DefaultBranch, testBranchName)
 		}
+	})
+
+	t.Run("use same storage namespace twice", func(t *testing.T) {
+		name := testUniqueRepoName()
+		resp, err := clt.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
+			Name:             name,
+			StorageNamespace: onBlock(deps, name),
+		})
+		verifyResponseOK(t, resp, err)
+
+		resp, err = clt.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
+			Name:             name + "_2",
+			StorageNamespace: onBlock(deps, name),
+		})
+		require.NoError(t, err)
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode())
 	})
 }
 
@@ -522,7 +539,7 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 		resp, err := clt.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
 			DefaultBranch:    api.StringPtr("main"),
 			Name:             "my-new-repo",
-			StorageNamespace: onBlock(deps, "foo-bucket"),
+			StorageNamespace: onBlock(deps, "foo-bucket-1"),
 		})
 		verifyResponseOK(t, resp, err)
 
@@ -540,7 +557,7 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 		resp, err := clt.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
 			DefaultBranch:    api.StringPtr("main"),
 			Name:             "repo2",
-			StorageNamespace: onBlock(deps, "foo-bucket"),
+			StorageNamespace: onBlock(deps, "foo-bucket-2"),
 		})
 		if err != nil {
 			t.Fatal(err)

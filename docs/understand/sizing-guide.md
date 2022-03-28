@@ -101,7 +101,7 @@ while the entire data set usually grows over time.
 This means lakeFS will provide predictable performance: 
 committing 100 changes will take roughly the same amount of time whether the resulting commit contains 500 or 500 million objects.
 
-See [Data Model](data-model.md) for more information.
+See [Data Model](versioning-internals.md) for more information.
 
 Scaling throughput depends very much on the amount of CPU cores available to lakeFS. 
 In many cases it is easier to scale lakeFS across a fleet of smaller cloud instances (or containers) 

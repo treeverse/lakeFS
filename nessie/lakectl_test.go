@@ -2,6 +2,7 @@ package nessie
 
 import (
 	"testing"
+	"time"
 )
 
 var emptyVars = make(map[string]string)
@@ -52,7 +53,8 @@ func TestLakectlBasicRepoActions(t *testing.T) {
 	// }
 
 	// Trying to create the same repo again fails and does not change the list
-	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create_not_unique", vars)
+	newStorage := storage + "/new-storage/"
+	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+newStorage, false, "lakectl_repo_create_not_unique", vars)
 
 	// Fails due to the usage of repos for isolation - nessie creates repos in parallel and
 	// the output of 'repo list' command cannot be well defined
@@ -121,6 +123,15 @@ func TestLakectlCommit(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, "lakectl_log_with_commit", vars)
 	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+" -m \"nessie_lakectl:should fail\"", false, "lakectl_commit_no_change", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, "lakectl_log_with_commit", vars)
+
+	filePath = "ro_1k.3"
+	vars["FILE_PATH"] = filePath
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+filePath, false, "lakectl_fs_upload", vars)
+	commitMessage = "commit with a very old date"
+	vars["MESSAGE"] = commitMessage
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+` -m "`+commitMessage+`" --epoch-time-seconds 0`, false, "lakectl_commit", vars)
+	vars["DATE"] = time.Unix(0, 0).String()
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch+" --amount 1", false, "lakectl_log_with_commit_custom_date", vars)
 }
 
 func TestLakectlMergeAndStrategies(t *testing.T) {
