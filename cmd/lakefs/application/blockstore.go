@@ -3,12 +3,13 @@ package application
 import (
 	"context"
 	"fmt"
+	"io"
+	"os"
+
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/stats"
-	"io"
-	"os"
 )
 
 type BlockStore struct {

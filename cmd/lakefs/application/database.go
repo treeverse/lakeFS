@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"errors"
+
 	"github.com/dlmiddlecote/sqlstats"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/prometheus/client_golang/prometheus"

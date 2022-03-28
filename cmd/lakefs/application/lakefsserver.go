@@ -1,9 +1,10 @@
 package application
 
 import (
+	"net/http"
+
 	"github.com/treeverse/lakefs/pkg/gateway/sig"
 	"github.com/treeverse/lakefs/pkg/httputil"
-	"net/http"
 )
 
 func NewLakeFSHTTPServer(listenAddress string, s3GatewayDomainNames []string, s3gatewayHandler http.Handler, apiHandler http.Handler) *http.Server {

@@ -3,12 +3,13 @@ package application
 import (
 	"context"
 	"fmt"
+	"net"
+	"time"
+
 	"github.com/go-ldap/ldap/v3"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/config"
-	"net"
-	"time"
 )
 
 type AuthService struct {

@@ -1,6 +1,9 @@
 package application
 
 import (
+	"net/http"
+	"net/url"
+
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/catalog"
@@ -8,8 +11,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/gateway"
 	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
 	"github.com/treeverse/lakefs/pkg/version"
-	"net/http"
-	"net/url"
 )
 
 func NewAPIHandler(lakeFsCmdCtx LakeFsCmdContext, databaseService *DatabaseService, authService *AuthService, blockStore *BlockStore, c *catalog.Catalog, cloudMetadataProvider cloud.MetadataProvider, actionsService *actions.Service, auditChecker *version.AuditChecker) http.Handler {
