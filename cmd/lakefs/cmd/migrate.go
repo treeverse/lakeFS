@@ -2,12 +2,13 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/treeverse/lakefs/cmd/lakefs/application"
-	"github.com/treeverse/lakefs/pkg/logging"
+
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/cmd/lakefs/application"
 	"github.com/treeverse/lakefs/pkg/db"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 // migrateCmd represents the migrate command

@@ -3,12 +3,12 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/treeverse/lakefs/cmd/lakefs/application"
-	"github.com/treeverse/lakefs/pkg/auth"
-	"github.com/treeverse/lakefs/pkg/auth/model"
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/cmd/lakefs/application"
+	"github.com/treeverse/lakefs/pkg/auth"
+	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 

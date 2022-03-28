@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"os"
+
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/cmd/lakefs/application"
@@ -14,7 +16,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/onboard"
 	"github.com/treeverse/lakefs/pkg/stats"
-	"os"
 )
 
 const (
