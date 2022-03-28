@@ -33,8 +33,6 @@ name: Test Pre Commit
 description: set of checks to verify that branch is good
 on:
   pre-commit:
-    branches:
-      - feature-*
 hooks:
   - id: test_webhook
     type: webhook

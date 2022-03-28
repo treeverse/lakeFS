@@ -1,3 +1,4 @@
+name: invalid duplicate id
 on:
   pre-merge:
     branches:

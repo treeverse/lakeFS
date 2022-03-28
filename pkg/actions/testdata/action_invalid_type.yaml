@@ -1,3 +1,4 @@
+name: invalid hook type
 on:
   pre-merge:
     branches:
