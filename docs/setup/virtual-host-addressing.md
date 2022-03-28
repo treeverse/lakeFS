@@ -10,7 +10,7 @@ has_children: false
 
 ## Understanding virtual-host addressing
 
-Some systems require S3 endpoints (such as lakeFS' [S3 Gateway](../understand/architecture.md#s3-gateway)) to support [virtual-host style addressing](https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html){: target="_blank" }.
+Some systems require S3 endpoints (such as lakeFS' [S3 Gateway](../understand/architecture.md#s3-gateway){: .button-clickable}) to support [virtual-host style addressing](https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html){: target="_blank" .button-clickable}.
 
 lakeFS supports this, but requires some configuration in order to extract the bucket name (used as the lakeFS repository ID) from the host address.
 
@@ -52,7 +52,7 @@ gateways:
     domain_name: s3.lakefs.example.com
 ```
 
-For more information on how to configure lakeFS, check out the [configuration reference](../reference/configuration.md)
+For more information on how to configure lakeFS, check out the [configuration reference](../reference/configuration.md){: .button-clickable}
 {: .note }
 
 ## Setting up the appropriate DNS records
@@ -66,5 +66,5 @@ This requires 2 CNAME records:
 
 <div class="note">
    <p>For more information on how to configure these, see the official documentation of your DNS provider.</p>
-   <p>On AWS, This could also be done [using ALIAS records](https://aws.amazon.com/premiumsupport/knowledge-center/route-53-create-alias-records/) for a load balancer.</p> 
+   <p>On AWS, This could also be done [using ALIAS records](https://aws.amazon.com/premiumsupport/knowledge-center/route-53-create-alias-records/){: .button-clickable} for a load balancer.</p> 
 </div>

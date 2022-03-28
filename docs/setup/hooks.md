@@ -36,7 +36,7 @@ This allows configuration-as-code inside lakeFS, where `Action` files are declar
    A webhook that reads new Parquet and ORC files to ensure they don't contain a block list of column names (or name prefixes).
    This is useful when we want to avoid accidental PII exposure.
 
-For more examples and configuration samples, check out [lakeFS-hooks](https://github.com/treeverse/lakeFS-hooks) example repo.
+For more examples and configuration samples, check out [lakeFS-hooks](https://github.com/treeverse/lakeFS-hooks){: .button-clickable} example repo.
 
 ## Terminology
 
@@ -57,15 +57,15 @@ Failure of a single `Hook` will stop the execution of the containing `Action` an
 
 Schema of the Action file:
 
-|Property          | Description                                           |Data Type |Required |Default Value
-|------------------|-------------------------------------------------------|----------|---------|--------------------------------------|
-|name              | Identify the Action file                              |String    |false    | If missing, filename is used instead
-|on                | List of events that will trigger the hooks            |List      |true     |
-|on<event>.branches| Glob pattern list of branches that triggers the hooks |List      |false    | If empty, Action runs on all branches
-|hooks             | List of hooks to be executed                          |List      |true     |
-|hook.id           | ID of the hook, must be unique within the `Action`    |String    |true     |
-|hook.type         | Type of the hook ([types](#hook-types))               |String    |true     |
-|hook.properties   | Hook's specific configuration                         |Dictionary|true     |
+|Property          | Description                                                  |Data Type |Required |Default Value
+|------------------|--------------------------------------------------------------|----------|---------|--------------------------------------|
+|name              | Identify the Action file                                     |String    |false    | If missing, filename is used instead
+|on                | List of events that will trigger the hooks                   |List      |true     |
+|on<event>.branches| Glob pattern list of branches that triggers the hooks        |List      |false    | If empty, Action runs on all branches
+|hooks             | List of hooks to be executed                                 |List      |true     |
+|hook.id           | ID of the hook, must be unique within the `Action`           |String    |true     |
+|hook.type         | Type of the hook ([types](#hook-types){: .button-clickable}) |String    |true     |
+|hook.properties   | Hook's specific configuration                                |Dictionary|true     |
 
 Example:
 
@@ -116,7 +116,7 @@ For example, lakeFS will search and execute all matching `Action` files with the
 
 ## Runs API & CLI
 
-The [lakeFS API](../reference/api.md) and [lakectl](../reference/commands.md#lakectl-actions) expose the results of executions per repository, branch, commit and specific `Action`.
+The [lakeFS API](../reference/api.md){: .button-clickable} and [lakectl](../reference/commands.md#lakectl-actions){: .button-clickable} expose the results of executions per repository, branch, commit and specific `Action`.
 The endpoint also allows to download the execution log of any executed `Hook` under each `Run` for observability.
 
 
@@ -133,7 +133,7 @@ Metadata files stored in the metadata section aren't accessible like user stored
 
 ## Hook types
 
-Currently, there are two types of `Hooks` that are supported by lakeFS: [Webhook](#webhooks) and [Airflow](#airflow-hooks).
+Currently, there are two types of `Hooks` that are supported by lakeFS: [Webhook](#webhooks){: .button-clickable} and [Airflow](#airflow-hooks){: .button-clickable}.
 
 ### Webhooks
 
@@ -150,7 +150,7 @@ Moreover, the branch is locked during the execution of `pre_*` hooks, so the web
 |Property          | Description                                            |Data Type                                                                                |Required |Default Value|Env Vars Support|
 |------------------|--------------------------------------------------------|-----------------------------------------------------------------------------------------|---------|-------------|----------------|
 |url               | The URL address of the request                         |String                                                                                   |true     |             |no
-|timeout           | Time to wait for response before failing the hook      |String (golang's [Duration](https://golang.org/pkg/time/#Duration.String) representation)|false    | 1m          |no
+|timeout           | Time to wait for response before failing the hook      |String (golang's [Duration](https://golang.org/pkg/time/#Duration.String){: .button-clickable} representation)|false    | 1m          |no
 |query_params      | List of query params that will be added to the request |Dictionary(String:String or String:List(String)                                          |false    |             |yes
 |headers           | Headers to add to the request                          |Dictionary(String:String)                                                                |false    |             |yes
 
@@ -214,7 +214,7 @@ Example:
 ```
 
 ### Airflow Hooks
-Airflow Hook triggers a DAG run in an Airflow installation using [Airflow's REST API](https://airflow.apache.org/docs/apache-airflow/stable/stable-rest-api-ref.html#operation/post_dag_run).
+Airflow Hook triggers a DAG run in an Airflow installation using [Airflow's REST API](https://airflow.apache.org/docs/apache-airflow/stable/stable-rest-api-ref.html#operation/post_dag_run){: .button-clickable}.
 The hook run succeeds if the DAG was triggered, and fails otherwise.
 
 #### Action file Airflow hook properties
@@ -249,7 +249,7 @@ hooks:
 #### Hook Record in configuration field
 lakeFS will add an entry to the Airflow request configuration property (`conf`) with the event that triggered the action.
 
-The key of the record will be `lakeFS_event` and the value will match the one described [here](#request-body-schema)
+The key of the record will be `lakeFS_event` and the value will match the one described [here](#request-body-schema){: .button-clickable}
 
 
 ## Experimentation
@@ -257,7 +257,7 @@ The key of the record will be `lakeFS_event` and the value will match the one de
 It's sometimes easier to start experimenting with lakeFS webhooks, even before you have a running server to receive the calls.
 There are a couple of online tools that can intercept and display the webhook requests, one of them is Svix.
 
-1. Go to [play.svix.com](https://play.svix.com) and copy the URL address supplied by Svix.
+1. Go to [play.svix.com](https://play.svix.com){: .button-clickable} and copy the URL address supplied by Svix.
 It should look like `https://api.relay.svix.com/api/v1/play/receive/<Random_Gen_String>/`
 
 1. Upload the following action file to lakeFS under the path `_lakefs_actions/test.yaml` in the default branch:

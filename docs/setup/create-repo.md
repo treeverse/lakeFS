@@ -24,7 +24,7 @@ When you first open the lakeFS UI, you will be asked to create an initial admin 
 
    ![Setup]({{ site.baseurl }}/assets/img/setup.png)
 
-   Note: If you already have lakeFS credentials, log in and skip to [creating the repository](#create-the-repository).
+   Note: If you already have lakeFS credentials, log in and skip to [creating the repository](#create-the-repository){: .button-clickable}
    {: .note .pb-3 }
 
 1. Follow the steps to create an initial administrator user. Save the credentials you've received somewhere safe, you won't be able to see them again!
@@ -45,9 +45,9 @@ When you first open the lakeFS UI, you will be asked to create an initial admin 
 
 1. Fill in a repository name.
 
-1. Set the _Storage Namespace_ to a location in the bucket you've configured in a [previous step](./storage/index.md).
+1. Set the _Storage Namespace_ to a location in the bucket you've configured in a [previous step](./storage/index.md){: .button-clickable}.
    The _storage namespace_ is a location in the
-   [underlying storage](../understand/object-model.md#concepts-unique-to-lakefs)
+   [underlying storage](../understand/object-model.md#concepts-unique-to-lakefs){: .button-clickable}
    where data for this repository will be stored.
 
 1. Click _Create Repository_.
@@ -56,6 +56,6 @@ When you first open the lakeFS UI, you will be asked to create an initial admin 
 
 You just created your first lakeFS repository!
 
-* You may now want to [import data](import.md) into your repository.
-* Check out how lakeFS [easily integrates with your other tools](../integrations/index.md).
-* [Join us on Slack](https://lakefs.io/slack){:target="_blank"} to introduce yourself, discover best practices and share your own!
+* You may now want to [import data](import.md){: .button-clickable} into your repository.
+* Check out how lakeFS [easily integrates with your other tools](../integrations/index.md){: .button-clickable}.
+* [Join us on Slack](https://lakefs.io/slack){:target="_blank" .button-clickable} to introduce yourself, discover best practices and share your own!

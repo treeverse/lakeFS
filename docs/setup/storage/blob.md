@@ -10,7 +10,7 @@ has_children: false
 
 # Prepare Your Blob Storage Container
 
-[Create a container in Azure portal](https://docs.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-portal#create-a-container):
+[Create a container in Azure portal](https://docs.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-portal#create-a-container){: .button-clickable}
 
 1. From the Azure portal, Storage Accounts, choose your account, then in the container tab click `+ Container`.
 1. Make sure you block public access
@@ -18,7 +18,7 @@ has_children: false
 ## Authenticate with Secret Key
 {: .no_toc }
 
-If you want lakeFS to authenticate with your storage using the storage account key, go to the `Access Keys` tab and click `Show Keys`. Use the values under `Storage account name` and `Key` in the [lakeFS configuration](../../deploy/azure.html#on-azure-vm).
+If you want lakeFS to authenticate with your storage using the storage account key, go to the `Access Keys` tab and click `Show Keys`. Use the values under `Storage account name` and `Key` in the [lakeFS configuration](../../deploy/azure.html#on-azure-vm){: .button-clickable}.
 
 ## Authenticate with Active Directory
 {: .no_toc }
@@ -29,4 +29,4 @@ First go to the container you created in step 1.
 * Go to the `Role assignments` tab
 * Add the `Storage Blob Data Contributor` role to the Installation running lakeFS.
 
-You are now ready to [create your first lakeFS repository](../create-repo.md).
+You are now ready to [create your first lakeFS repository](../create-repo.md){: .button-clickable}.

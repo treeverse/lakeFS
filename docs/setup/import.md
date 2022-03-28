@@ -7,7 +7,7 @@ nav_order: 20
 has_children: false
 redirect_from: ../reference/import.html
 ---
-This page describes importing from versions >= v0.24.0. For earlier versions, see [mvcc import](import-mvcc.md)
+This page describes importing from versions >= v0.24.0. For earlier versions, see [mvcc import](import-mvcc.md){: .button-clickable}
 {: .note .pb-3 }
 
 # Import data into lakeFS
@@ -17,8 +17,8 @@ This page describes importing from versions >= v0.24.0. For earlier versions, se
 
 ## Use external tools
 
-In order to import existing data to lakeFS, you may choose to copy it using [S3 CLI](../integrations/aws_cli.md#copy-from-a-local-path-to-lakefs) 
-or using tools like [Apache DistCp](../integrations/distcp.md#from-s3-to-lakefs). This is the most straightforward way, and we recommend it if it’s applicable for you.
+In order to import existing data to lakeFS, you may choose to copy it using [S3 CLI](../integrations/aws_cli.md#copy-from-a-local-path-to-lakefs){: .button-clickable} 
+or using tools like [Apache DistCp](../integrations/distcp.md#from-s3-to-lakefs){: .button-clickable}. This is the most straightforward way, and we recommend it if it’s applicable for you.
 
 ## Zero-copy import
 
@@ -35,9 +35,9 @@ For this to work, make sure that:
 
 <div class="tabs">
 <ul>
-  <li><a href="#ingest-tabs-1">AWS S3</a></li>
-  <li><a href="#ingest-tabs-2">Azure Blob</a></li>
-  <li><a href="#ingest-tabs-3">Google Cloud Storage</a></li>
+  <li><a class="button-clickable" href="#ingest-tabs-1">AWS S3</a></li>
+  <li><a class="button-clickable" href="#ingest-tabs-2">Azure Blob</a></li>
+  <li><a class="button-clickable" href="#ingest-tabs-3">Google Cloud Storage</a></li>
 </ul>
 <div markdown="1" id="ingest-tabs-1">
 ```shell
@@ -47,7 +47,7 @@ lakectl ingest \
 ```
 
 The `lakectl ingest` command will attempt to use the current user's existing credentials and will respect instance profiles,
-environment variables and credential files [in the same way that the AWS cli does](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html){: target="_blank" }
+environment variables and credential files [in the same way that the AWS cli does](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html){: target="_blank" .button-clickable}
 </div>
 <div markdown="1" id="ingest-tabs-2">
 ```shell
@@ -71,7 +71,7 @@ lakectl ingest \
    --to lakefs://my-repo/ingest-branch/optional/path/
 ```
 
-The `lakectl ingest` command currently supports the standard `GOOGLE_APPLICATION_CREDENTIALS` environment variable [as described in Google Cloud's documentation](https://cloud.google.com/docs/authentication/getting-started).
+The `lakectl ingest` command currently supports the standard `GOOGLE_APPLICATION_CREDENTIALS` environment variable [as described in Google Cloud's documentation](https://cloud.google.com/docs/authentication/getting-started){: .button-clickable}.
 </div>
 </div>
 
@@ -82,7 +82,7 @@ since it has to paginate through all the objects in the source using API calls.
 
 For S3, we provide a utility as part of the `lakefs` binary, called `lakefs import`.
 
-The lakeFS import tool will use the [S3 Inventory](https://docs.aws.amazon.com/AmazonS3/latest/dev/storage-inventory.html) feature to create lakeFS metadata.
+The lakeFS import tool will use the [S3 Inventory](https://docs.aws.amazon.com/AmazonS3/latest/dev/storage-inventory.html){: .button-clickable} feature to create lakeFS metadata.
 The imported metadata will be committed to a special branch, called `import-from-inventory`.
 
 You should not make any changes or commit anything to branch `import-from-inventory`: it will be operated on only by lakeFS.
@@ -109,7 +109,7 @@ when accessing it through other branches. In a sense, your original bucket becom
 - The inventory should be in Parquet or ORC format.
 - The inventory must contain (at least) the size, last-modified-at, and e-tag columns.
 - The S3 credentials you provided to lakeFS should have GetObject permissions on the source bucket and on the bucket where the inventory is stored.
-- If you want to use the tool for [gradual import](#gradual-import), you should not delete the data for the most recently imported inventory, until a more recent inventory is successfully imported.
+- If you want to use the tool for [gradual import](#gradual-import){: .button-clickable}, you should not delete the data for the most recently imported inventory, until a more recent inventory is successfully imported.
 
 For a step-by-step walkthrough of this process, see the post [3 Ways to Add Data to lakeFS](https://lakefs.io/3-ways-to-add-data-to-lakefs/) on our blog.
 {: .note .note-info }
@@ -155,7 +155,7 @@ lakefs import --with-merge lakefs://example-repo -m s3://example-bucket/path/to/
 
 1. Perform the import from a machine with access to your database, and on the same region of your destination bucket.
 
-1. You can download the `lakefs` binary from [here](https://github.com/treeverse/lakeFS/releases). Make sure you choose one compatible with your installation of lakeFS.
+1. You can download the `lakefs` binary from [here](https://github.com/treeverse/lakeFS/releases){: .button-clickable}. Make sure you choose one compatible with your installation of lakeFS.
 
 1. Use a configuration file like the one used to start your lakeFS installation. This will be used to access your database. An example can be found [here](../reference/configuration.html#example-aws-deployment).
 

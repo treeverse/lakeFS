@@ -29,7 +29,7 @@ Unfortunately, copying data is not always feasible for the following reasons:
 
 To solve this we offer an import tool that does not copy any data, allowing for a more gradual onboarding process.
 
-The lakeFS import tool will use the [S3 Inventory](https://docs.aws.amazon.com/AmazonS3/latest/dev/storage-inventory.html) feature to create lakeFS metadata.
+The lakeFS import tool will use the [S3 Inventory](https://docs.aws.amazon.com/AmazonS3/latest/dev/storage-inventory.html){: .button-clickable} feature to create lakeFS metadata.
 The imported metadata will be reflected in lakeFS under a special branch, called `import-from-inventory`.
 You should not make any changes or commit anything to this branch: it will be operated on only by lakeFS.
 After importing, you will be able to merge this branch into your main branch.
@@ -50,7 +50,7 @@ when accessing it through other branches. In a sense, your original bucket becom
 - The inventory should be in Parquet or ORC format.
 - The inventory must contain (at least) the size, last-modified-at, and e-tag columns.
 - The S3 credentials you provided to lakeFS should have GetObject permissions on the source bucket and on the bucket where the inventory is stored.
-- If you want to use the tool for [gradual import](#gradual-import), you should not delete the data for the most recently imported inventory, until a more recent inventory is successfully imported.
+- If you want to use the tool for [gradual import](#gradual-import){: .button-clickable}, you should not delete the data for the most recently imported inventory, until a more recent inventory is successfully imported.
 
 ### Using the import tool
 
@@ -91,9 +91,9 @@ lakefs import --with-merge lakefs://example-repo -m s3://example-bucket/path/to/
 {: .no_toc }
 1. Perform the import from a machine with access to your database, and on the same region of your destination bucket.
 
-1. You can download the `lakefs` binary from [here](https://github.com/treeverse/lakeFS/releases). Make sure you choose one compatible with your installation of lakeFS.
+1. You can download the `lakefs` binary from [here](https://github.com/treeverse/lakeFS/releases){: .button-clickable}. Make sure you choose one compatible with your installation of lakeFS.
 
-1. Use a configuration file like the one used to start your lakeFS installation. This will be used to access your database. An example can be found [here](http://localhost:4000/reference/configuration.html#example-aws-deployment).
+1. Use a configuration file like the one used to start your lakeFS installation. This will be used to access your database. An example can be found [here](http://localhost:4000/reference/configuration.html#example-aws-deployment){: .button-clickable}.
 
 1. lakeFS version <= v0.33.1 uses '@' (instead of '/') as separator between repository and branch/ref.
 
