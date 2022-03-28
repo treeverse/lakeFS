@@ -122,6 +122,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 		fmt.Printf("Configuration uses unsupported block adapter: %s. Only s3 is supported.\n", blockStore.BlockstoreType())
 		return 1
 	}
+	defer bufferedCollector.Close()
 	bufferedCollector.SetRuntimeCollector(blockStore.RuntimeStats)
 
 	// wire actions into entry catalog

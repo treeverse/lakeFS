@@ -50,9 +50,6 @@ func (blockStore BlockStore) CollectRun() {
 func (blockStore BlockStore) RunCollector(ctx context.Context) {
 	blockStore.bufferedCollector.Run(ctx)
 }
-func (blockStore BlockStore) CollectionChannel() <-chan bool {
-	return blockStore.bufferedCollector.Done()
-}
 
 func (blockStore BlockStore) InstallationID() string {
 	return blockStore.metadata.InstallationID

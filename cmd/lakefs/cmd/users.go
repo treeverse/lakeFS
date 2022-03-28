@@ -91,13 +91,11 @@ func createUser(cmd *cobra.Command, checkFirstSuccesfulInitialization bool,
 func startCollectingAndLogCredentials(ctx context.Context, credentials *model.Credential, metadata *stats.Metadata, cfg *config.Config) {
 	ctx, cancelFn := context.WithCancel(ctx)
 	stats := stats.NewBufferedCollector(metadata.InstallationID, cfg)
-	go stats.Run(ctx)
+	stats.Run(ctx)
+	defer stats.Close()
 	stats.CollectMetadata(metadata)
 	stats.CollectEvent("global", "init")
-
 	fmt.Printf("credentials:\n  access_key_id: %s\n  secret_access_key: %s\n",
 		credentials.AccessKeyID, credentials.SecretAccessKey)
-
 	cancelFn()
-	<-stats.Done()
 }

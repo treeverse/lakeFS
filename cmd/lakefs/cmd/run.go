@@ -111,12 +111,12 @@ func NewRootCmd() *cobra.Command {
 			s3gatewayHandler := application.NewS3GatewayHandler(lakeFsCmdCtx, multipartsTracker, c, blockStore, authService)
 
 			ctx, cancelFn := context.WithCancel(cmd.Context())
-			go blockStore.RunCollector(ctx)
+			blockStore.RunCollector(ctx)
 
 			blockStore.CollectRun()
 
 			logging.Default().WithField("listen_address", cfg.GetListenAddress()).Info("starting HTTP server")
-			server := application.NewLakeFsHTTPServer(cfg.GetListenAddress(), cfg.GetS3GatewayDomainNames(), s3gatewayHandler, apiHandler)
+			server := application.NewLakeFSHTTPServer(cfg.GetListenAddress(), cfg.GetS3GatewayDomainNames(), s3gatewayHandler, apiHandler)
 			go func() {
 				if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 					fmt.Printf("server failed to listen on %s: %v\n", cfg.GetListenAddress(), err)
@@ -128,7 +128,6 @@ func NewRootCmd() *cobra.Command {
 
 			<-done
 			cancelFn()
-			<-blockStore.CollectionChannel()
 		},
 	}
 }
