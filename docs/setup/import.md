@@ -48,7 +48,7 @@ lakectl ingest \
 
 The `lakectl ingest` command will attempt to use the current user's existing credentials and will respect instance profiles,
 environment variables and credential files [in the same way that the AWS cli does](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html){: target="_blank" }
-If you wish to ingest from other S3 compatible storage solution you could use the flag to specify the endpoint `--s3-endpoint-url https://play.min.io`
+Specify an endpoint to ingest from other S3 compatible storage solutions, e.g. add `--s3-endpoint-url https://play.min.io`.
 </div>
 <div markdown="1" id="ingest-tabs-2">
 ```shell
