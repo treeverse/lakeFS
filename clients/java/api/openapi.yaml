@@ -4873,6 +4873,7 @@ components:
         friendly_name: friendly_name
         id: id
         creation_date: 0
+        email: email
       properties:
         id:
           type: string
@@ -4881,6 +4882,8 @@ components:
           format: int64
           type: integer
         friendly_name:
+          type: string
+        email:
           type: string
       required:
       - creation_date
@@ -4892,6 +4895,7 @@ components:
           friendly_name: friendly_name
           id: id
           creation_date: 0
+          email: email
       properties:
         user:
           $ref: '#/components/schemas/User'
@@ -5057,9 +5061,11 @@ components:
         - friendly_name: friendly_name
           id: id
           creation_date: 0
+          email: email
         - friendly_name: friendly_name
           id: id
           creation_date: 0
+          email: email
       properties:
         pagination:
           $ref: '#/components/schemas/Pagination'
