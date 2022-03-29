@@ -36,7 +36,7 @@ You can easily integrate it with your existing tools, and feel lakeFS in action 
 
 With lakeFS data teams can stop worrying about issues that take away much of their time:
 * Roll back changes to data: recover quickly from bugs and mistakes, even on production data
-* Test and validate data before it enters the data lake and before it is exposed to consumers
+* Test and validate data before it's marked production-ready exposed to consumers
 * Travel back in time, across data version and across collections - for reproducing and debugging issues in the data
 
 Since lakeFS is compatible with the S3 API, all popular applications will work without modification, by simply adding the branch name to the object path:
