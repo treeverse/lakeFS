@@ -1,0 +1,7 @@
+common_prefix                                                    from-pref/
+object          <DATE> <TIME> <TZ>    1.0 kB          obj_0
+object          <DATE> <TIME> <TZ>    1.0 kB          obj_1
+object          <DATE> <TIME> <TZ>    1.0 kB          obj_2
+object          <DATE> <TIME> <TZ>    1.0 kB          obj_3
+object          <DATE> <TIME> <TZ>    1.0 kB          obj_4
+common_prefix                                                    to-pref/
