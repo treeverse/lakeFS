@@ -2,7 +2,7 @@ package nessie
 
 import (
 	"testing"
-  "time"
+	"time"
 
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/block"
