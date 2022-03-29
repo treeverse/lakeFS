@@ -1,13 +1,10 @@
 package nessie
 
 import (
-	"strconv"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/cmd/lakectl/cmd/store"
+	"github.com/spf13/viper"
+	"github.com/treeverse/lakefs/pkg/block"
 )
 
 var emptyVars = make(map[string]string)
@@ -302,51 +299,36 @@ func TestLakectlAuthUsers(t *testing.T) {
 	RunCmdAndVerifySuccess(t, Lakectl()+" auth users delete --id "+userName, false, "User deleted successfully\n", vars)
 }
 
-func TestLakectlIngest(t *testing.T) {
+func TestLakectlIngestS3(t *testing.T) {
+	// Specific S3 test - due to the limitation on ingest source type that has to match lakefs underlying block store,
+	// this test can only run on AWS setup, and therefore is skipped for other store types
+	if viper.GetViper().GetString("blockstore_type") != block.BlockstoreTypeS3 {
+		t.Skip()
+	}
+
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
-	tempBucketName := "ingest-data-" + repoName
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
 		"BRANCH":  mainBranch,
 	}
 
-	// set-up: creating a dummy bucket and uploading some files into it. Later this bucket will be used as the "from"
-	// location. This is done as the `lakectl ingest` commad runs with local aws settings and can only access the
-	// corresponding region
-
-	s3Client, err := store.GetS3Client()
-	require.NoError(t, err, "Failed to initialize S3 session")
-
-	_, err = s3Client.CreateBucket(&s3.CreateBucketInput{Bucket: aws.String(tempBucketName)})
-	require.NoError(t, err, "Failed to create bucket", tempBucketName)
-
-	defer cleanS3Bucket(s3Client, tempBucketName)
-
-	source := "files/ro_1k"
-	dest := "obj_"
-	destPref := "from-pref"
-	for i := 0; i < 5; i++ {
-		err = putS3Object(s3Client, source, tempBucketName, dest+strconv.Itoa(i))
-		require.NoError(t, err, "File upload failure")
-		err = putS3Object(s3Client, source, tempBucketName, destPref+"/"+dest+strconv.Itoa(i))
-		require.NoError(t, err, "File upload failure")
-	}
+	const lakectlIngestBucket = "lakectl-ingest-test-data"
 
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" ingest --from s3://"+tempBucketName+" --to lakefs://"+repoName+"/"+mainBranch+"/", false, "lakectl_ingest", vars)
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" ingest --from s3://"+tempBucketName+" --to lakefs://"+repoName+"/"+mainBranch+"/to-pref/", false, "lakectl_ingest", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" ingest --from s3://"+lakectlIngestBucket+" --to lakefs://"+repoName+"/"+mainBranch+"/", false, "lakectl_ingest", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" ingest --from s3://"+lakectlIngestBucket+" --to lakefs://"+repoName+"/"+mainBranch+"/to-pref/", false, "lakectl_ingest", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs ls lakefs://"+repoName+"/"+mainBranch+"/", false, "lakectl_fs_ls_after_ingest", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs ls lakefs://"+repoName+"/"+mainBranch+"/ --recursive", false, "lakectl_fs_ls_after_ingest_recursive", vars)
 
 	// rerunning the same ingest command should succeed and have no effect
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" ingest --from s3://"+tempBucketName+" --to lakefs://"+repoName+"/"+mainBranch+"/", false, "lakectl_ingest", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" ingest --from s3://"+lakectlIngestBucket+" --to lakefs://"+repoName+"/"+mainBranch+"/", false, "lakectl_ingest", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs ls lakefs://"+repoName+"/"+mainBranch+"/", false, "lakectl_fs_ls_after_ingest", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs ls lakefs://"+repoName+"/"+mainBranch+"/ --recursive", false, "lakectl_fs_ls_after_ingest_recursive", vars)
 
 	// 'from' can also be specified with terminating "/"
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" ingest --from s3://"+tempBucketName+"/ --to lakefs://"+repoName+"/"+mainBranch+"/", false, "lakectl_ingest", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" ingest --from s3://"+lakectlIngestBucket+"/ --to lakefs://"+repoName+"/"+mainBranch+"/", false, "lakectl_ingest", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs ls lakefs://"+repoName+"/"+mainBranch+"/", false, "lakectl_fs_ls_after_ingest", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs ls lakefs://"+repoName+"/"+mainBranch+"/ --recursive", false, "lakectl_fs_ls_after_ingest_recursive", vars)
 }
