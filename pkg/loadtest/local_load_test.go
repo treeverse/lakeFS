@@ -113,7 +113,7 @@ func TestLocalLoad(t *testing.T) {
 		actionsService,
 		auditChecker,
 		logging.Default(),
-		*emailer,
+		emailer,
 		nil,
 	)
 

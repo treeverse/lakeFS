@@ -126,7 +126,7 @@ func setupHandler(t testing.TB, opts ...testutil.GetDBOption) (http.Handler, *de
 		actionsService,
 		auditChecker,
 		logging.Default(),
-		*emailer,
+		emailer,
 		nil,
 	)
 

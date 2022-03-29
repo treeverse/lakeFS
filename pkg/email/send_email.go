@@ -20,14 +20,8 @@ type EmailParams struct {
 	Sender   string
 }
 
-func NewEmailer(e EmailParams) *Emailer {
-	return &Emailer{
-		SMTPHost: e.SMTPHost,
-		Port:     e.Port,
-		Username: e.Username,
-		Password: e.Password,
-		Sender:   e.Sender,
-	}
+func NewEmailer(e EmailParams) Emailer {
+	return Emailer(e)
 }
 
 func (e Emailer) SendEmail(receivers []string, subject string, body string, attachmentFilePath ...string) error {

@@ -203,7 +203,6 @@ var runCmd = &cobra.Command{
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 		emailParams, _ := cfg.GetEmailParams()
 		emailer := email.NewEmailer(emailParams)
-
 		apiHandler := api.Serve(
 			cfg,
 			c,
@@ -217,7 +216,7 @@ var runCmd = &cobra.Command{
 			actionsService,
 			auditChecker,
 			logger.WithField("service", "api_gateway"),
-			*emailer,
+			emailer,
 			cfg.GetS3GatewayDomainNames(),
 		)
 
