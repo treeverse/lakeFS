@@ -51,7 +51,7 @@ func Serve(
 	actions actionsHandler,
 	auditChecker AuditChecker,
 	logger logging.Logger,
-	email email.EmailParams,
+	emailer email.Emailer,
 	gatewayDomains []string,
 ) http.Handler {
 	logger.Info("initialize OpenAPI server")
@@ -85,7 +85,7 @@ func Serve(
 		actions,
 		auditChecker,
 		logger,
-		email,
+		emailer,
 	)
 	HandlerFromMuxWithBaseURL(controller, apiRouter, BaseURL)
 
