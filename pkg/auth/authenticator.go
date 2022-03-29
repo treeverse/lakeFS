@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/go-ldap/ldap/v3"
+	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
@@ -40,20 +41,43 @@ func NewChainAuthenticator(auth ...Authenticator) Authenticator {
 type ChainAuthenticator []Authenticator
 
 func (ca ChainAuthenticator) AuthenticateUser(ctx context.Context, username, password string) (int, error) {
-	var (
-		err error
-		id  int
-	)
+	var merr *multierror.Error
 	logger := logging.FromContext(ctx).WithField("username", username)
 	for _, a := range ca {
-		id, err = a.AuthenticateUser(ctx, username, password)
+		id, err := a.AuthenticateUser(ctx, username, password)
 		if err == nil {
 			return id, nil
 		}
 		// TODO(ariels): Add authenticator ID here.
-		logger.WithError(err).Info("Failed to authenticate user")
+		merr = multierror.Append(merr, fmt.Errorf("%s: %w", a, err))
 	}
-	return InvalidUserID, err
+	logger.WithError(merr).Info("Failed to authenticate user")
+	return InvalidUserID, merr
+}
+
+type EmailAuthenticator struct {
+	AuthService Service
+}
+
+func NewEmailAuthenticator(service Service) *EmailAuthenticator {
+	return &EmailAuthenticator{AuthService: service}
+}
+
+func (e EmailAuthenticator) AuthenticateUser(ctx context.Context, username, password string) (int, error) {
+	user, err := e.AuthService.GetUserByEmail(ctx, username)
+	if err != nil {
+		return InvalidUserID, err
+	}
+
+	if err := user.Authenticate(password); err != nil {
+		return InvalidUserID, err
+	}
+
+	return user.ID, nil
+}
+
+func (e EmailAuthenticator) String() string {
+	return "email authenticator"
 }
 
 // BuiltinAuthenticator authenticates users by their access key IDs and
@@ -76,6 +100,10 @@ func (ba *BuiltinAuthenticator) AuthenticateUser(ctx context.Context, username, 
 		return InvalidUserID, ErrInvalidSecretAccessKey
 	}
 	return cred.UserID, nil
+}
+
+func (ba *BuiltinAuthenticator) String() string {
+	return "built in authenticator"
 }
 
 // LDAPAuthenticator authenticates users on an LDAP server.  It currently
@@ -218,4 +246,8 @@ func (la *LDAPAuthenticator) AuthenticateUser(ctx context.Context, username, pas
 		return InvalidUserID, fmt.Errorf("add newly created LDAP user %s to %s: %w", dn, la.DefaultUserGroup, err)
 	}
 	return id, nil
+}
+
+func (la *LDAPAuthenticator) String() string {
+	return "LDAP authenticator"
 }

@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/actions/mock"
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -19,15 +20,17 @@ func TestAction_ReadAction(t *testing.T) {
 	tests := []struct {
 		name     string
 		filename string
-		wantErr  bool
+		errStr   string
+		validate func(*testing.T, *actions.Action)
 	}{
-		{name: "full", filename: "action_full.yaml", wantErr: false},
-		{name: "secrets", filename: "action_secrets.yaml", wantErr: false},
-		{name: "required", filename: "action_required.yaml", wantErr: false},
-		{name: "duplicate id", filename: "action_duplicate_id.yaml", wantErr: true},
-		{name: "invalid id", filename: "action_invalid_id.yaml", wantErr: true},
-		{name: "invalid hook type", filename: "action_invalid_type.yaml", wantErr: true},
-		{name: "invalid yaml", filename: "action_invalid_yaml.yaml", wantErr: true},
+		{name: "full", filename: "action_full.yaml", validate: validateActionFull},
+		{name: "secrets", filename: "action_secrets.yaml"},
+		{name: "required", filename: "action_required.yaml"},
+		{name: "duplicate id", filename: "action_duplicate_id.yaml", errStr: "duplicate ID"},
+		{name: "invalid id", filename: "action_invalid_id.yaml", errStr: "missing ID: invalid action"},
+		{name: "invalid hook type", filename: "action_invalid_type.yaml", errStr: "type 'no_temp' unknown: invalid action"},
+		{name: "invalid event type", filename: "action_invalid_event.yaml", errStr: "event 'not-a-valid-event' is not supported: invalid action"},
+		{name: "invalid yaml", filename: "action_invalid_yaml.yaml", errStr: "yaml: unmarshal errors"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -36,111 +39,132 @@ func TestAction_ReadAction(t *testing.T) {
 				t.Fatalf("Failed to load testdata %s, err=%s", tt.filename, err)
 			}
 			act, err := actions.ParseAction(data)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ParseAction() error = %v, wantErr %t", err, tt.wantErr)
+			require.Equal(t, err != nil, tt.errStr != "")
+			if err != nil {
+				require.Contains(t, err.Error(), tt.errStr)
 			}
 			if err == nil && act == nil {
 				t.Error("ParseAction() no error, missing Action")
+			}
+			if tt.validate != nil {
+				tt.validate(t, act)
 			}
 		})
 	}
 }
 
+func validateActionFull(t *testing.T, act *actions.Action) {
+	t.Helper()
+	require.Contains(t, act.On, graveler.EventTypePreMerge)
+	require.Contains(t, act.On, graveler.EventTypePreCommit)
+	require.Contains(t, act.On, graveler.EventTypePostCommit)
+	require.NotContains(t, act.On, graveler.EventTypePostMerge)
+}
+
 func TestAction_Match(t *testing.T) {
 	tests := []struct {
 		name    string
-		on      actions.OnEvents
+		on      map[graveler.EventType]*actions.ActionOn
 		spec    actions.MatchSpec
 		want    bool
 		wantErr bool
 	}{
 		{
 			name:    "none - on pre-merge without branch",
-			on:      actions.OnEvents{},
+			on:      map[graveler.EventType]*actions.ActionOn{},
 			spec:    actions.MatchSpec{EventType: graveler.EventTypePreMerge},
 			want:    false,
 			wantErr: false,
 		},
 		{
-			name:    "none - on invalid event type",
-			on:      actions.OnEvents{},
-			spec:    actions.MatchSpec{EventType: "nothing"},
-			want:    false,
-			wantErr: true,
-		},
-		{
 			name:    "pre-merge - on pre-merge without branch",
-			on:      actions.OnEvents{PreMerge: &actions.ActionOn{}},
+			on:      map[graveler.EventType]*actions.ActionOn{graveler.EventTypePreMerge: {}},
 			spec:    actions.MatchSpec{EventType: graveler.EventTypePreMerge},
 			want:    true,
 			wantErr: false,
 		},
 		{
 			name:    "pre-merge - on pre-commit without branch",
-			on:      actions.OnEvents{PreMerge: &actions.ActionOn{}},
+			on:      map[graveler.EventType]*actions.ActionOn{graveler.EventTypePreMerge: {}},
 			spec:    actions.MatchSpec{EventType: graveler.EventTypePreCommit},
 			want:    false,
 			wantErr: false,
 		},
 		{
 			name:    "pre-commit - on pre-merge without branch",
-			on:      actions.OnEvents{PreCommit: &actions.ActionOn{}},
+			on:      map[graveler.EventType]*actions.ActionOn{graveler.EventTypePreCommit: {}},
 			spec:    actions.MatchSpec{EventType: graveler.EventTypePreMerge},
 			want:    false,
 			wantErr: false,
 		},
 		{
 			name:    "pre-commit - on pre-commit without branch",
-			on:      actions.OnEvents{PreCommit: &actions.ActionOn{}},
+			on:      map[graveler.EventType]*actions.ActionOn{graveler.EventTypePreCommit: {}},
 			spec:    actions.MatchSpec{EventType: graveler.EventTypePreCommit},
 			want:    true,
 			wantErr: false,
 		},
 		{
-			name:    "both - on pre-commit without branch",
-			on:      actions.OnEvents{PreCommit: &actions.ActionOn{}, PreMerge: &actions.ActionOn{}},
+			name: "both - on pre-commit without branch",
+			on: map[graveler.EventType]*actions.ActionOn{
+				graveler.EventTypePreCommit: {},
+				graveler.EventTypePreMerge:  {},
+			},
 			spec:    actions.MatchSpec{EventType: graveler.EventTypePreCommit},
 			want:    true,
 			wantErr: false,
 		},
 		{
-			name:    "both - on pre-merge without branch",
-			on:      actions.OnEvents{PreCommit: &actions.ActionOn{}, PreMerge: &actions.ActionOn{}},
+			name: "both - on pre-merge without branch",
+			on: map[graveler.EventType]*actions.ActionOn{
+				graveler.EventTypePreCommit: {},
+				graveler.EventTypePreMerge:  {},
+			},
 			spec:    actions.MatchSpec{EventType: graveler.EventTypePreMerge},
 			want:    true,
 			wantErr: false,
 		},
 		{
-			name:    "pre-commit main - on pre-commit main",
-			on:      actions.OnEvents{PreCommit: &actions.ActionOn{Branches: []string{"main"}}},
+			name: "pre-commit main - on pre-commit main",
+			on: map[graveler.EventType]*actions.ActionOn{
+				graveler.EventTypePreCommit: {Branches: []string{"main"}},
+			},
 			spec:    actions.MatchSpec{EventType: graveler.EventTypePreCommit, BranchID: "main"},
 			want:    true,
 			wantErr: false,
 		},
 		{
-			name:    "pre-commit main - on pre-commit x",
-			on:      actions.OnEvents{PreCommit: &actions.ActionOn{Branches: []string{"main"}}},
+			name: "pre-commit main - on pre-commit x",
+			on: map[graveler.EventType]*actions.ActionOn{
+				graveler.EventTypePreCommit: {Branches: []string{"main"}},
+			},
 			spec:    actions.MatchSpec{EventType: graveler.EventTypePreCommit, BranchID: "x"},
 			want:    false,
 			wantErr: false,
 		},
 		{
-			name:    "pre-commit ends with feature - on pre-commit new-feature",
-			on:      actions.OnEvents{PreCommit: &actions.ActionOn{Branches: []string{"*-feature"}}},
+			name: "pre-commit ends with feature - on pre-commit new-feature",
+			on: map[graveler.EventType]*actions.ActionOn{
+				graveler.EventTypePreCommit: {Branches: []string{"*-feature"}},
+			},
 			spec:    actions.MatchSpec{EventType: graveler.EventTypePreCommit, BranchID: "new-feature"},
 			want:    true,
 			wantErr: false,
 		},
 		{
-			name:    "pre-commit branch a1 or b1 - on pre-commit b1",
-			on:      actions.OnEvents{PreCommit: &actions.ActionOn{Branches: []string{"a1", "b1"}}},
+			name: "pre-commit branch a1 or b1 - on pre-commit b1",
+			on: map[graveler.EventType]*actions.ActionOn{
+				graveler.EventTypePreCommit: {Branches: []string{"a1", "b1"}},
+			},
 			spec:    actions.MatchSpec{EventType: graveler.EventTypePreCommit, BranchID: "b1"},
 			want:    true,
 			wantErr: false,
 		},
 		{
-			name:    "pre-commit branch invalid - on pre-commit main",
-			on:      actions.OnEvents{PreCommit: &actions.ActionOn{Branches: []string{"\\"}}},
+			name: "pre-commit branch invalid - on pre-commit main",
+			on: map[graveler.EventType]*actions.ActionOn{
+				graveler.EventTypePreCommit: {Branches: []string{"\\"}},
+			},
 			spec:    actions.MatchSpec{EventType: graveler.EventTypePreCommit, BranchID: "main"},
 			want:    false,
 			wantErr: true,
@@ -201,8 +225,8 @@ func TestLoadActions(t *testing.T) {
 				source.EXPECT().List(gomock.Any(), gomock.Any()).Return([]string{ref1, ref2}, nil)
 				source.EXPECT().Load(gomock.Any(), gomock.Any(), gomock.Eq(ref1)).Return(yaml.Marshal(actions.Action{
 					Name: "some-action",
-					On: actions.OnEvents{
-						PreCommit: &actions.ActionOn{Branches: []string{"main"}},
+					On: map[graveler.EventType]*actions.ActionOn{
+						graveler.EventTypePreCommit: {Branches: []string{"main"}},
 					},
 					Hooks: []actions.ActionHook{
 						{
@@ -225,8 +249,8 @@ func TestLoadActions(t *testing.T) {
 				source.EXPECT().List(gomock.Any(), gomock.Any()).Return([]string{ref1}, nil)
 				source.EXPECT().Load(gomock.Any(), gomock.Any(), gomock.Eq(ref1)).Return(yaml.Marshal(actions.Action{
 					Name: "some-action",
-					On: actions.OnEvents{
-						PreCommit: &actions.ActionOn{Branches: []string{"main"}},
+					On: map[graveler.EventType]*actions.ActionOn{
+						graveler.EventTypePreCommit: {Branches: []string{"main"}},
 					},
 					Hooks: []actions.ActionHook{
 						{
@@ -244,8 +268,8 @@ func TestLoadActions(t *testing.T) {
 			want: []*actions.Action{
 				{
 					Name: "some-action",
-					On: actions.OnEvents{
-						PreCommit: &actions.ActionOn{Branches: []string{"main"}},
+					On: map[graveler.EventType]*actions.ActionOn{
+						graveler.EventTypePreCommit: {Branches: []string{"main"}},
 					},
 					Hooks: []actions.ActionHook{
 						{
@@ -302,23 +326,35 @@ func TestMatchedActions(t *testing.T) {
 		{
 			name: "all",
 			actions: []*actions.Action{
-				{Name: "act1", On: actions.OnEvents{PreCommit: &actions.ActionOn{}}},
-				{Name: "act2", On: actions.OnEvents{PreCommit: &actions.ActionOn{}}},
+				{Name: "act1", On: map[graveler.EventType]*actions.ActionOn{
+					graveler.EventTypePreCommit: {},
+				}},
+				{Name: "act2", On: map[graveler.EventType]*actions.ActionOn{
+					graveler.EventTypePreCommit: nil,
+				}},
 			},
 			spec: actions.MatchSpec{
 				EventType: graveler.EventTypePreCommit,
 			},
 			want: []*actions.Action{
-				{Name: "act1", On: actions.OnEvents{PreCommit: &actions.ActionOn{}}},
-				{Name: "act2", On: actions.OnEvents{PreCommit: &actions.ActionOn{}}},
+				{Name: "act1", On: map[graveler.EventType]*actions.ActionOn{
+					graveler.EventTypePreCommit: {},
+				}},
+				{Name: "act2", On: map[graveler.EventType]*actions.ActionOn{
+					graveler.EventTypePreCommit: nil,
+				}},
 			},
 			wantErr: false,
 		},
 		{
 			name: "none",
 			actions: []*actions.Action{
-				{Name: "act1", On: actions.OnEvents{PreCommit: &actions.ActionOn{}}},
-				{Name: "act2", On: actions.OnEvents{PreCommit: &actions.ActionOn{}}},
+				{Name: "act1", On: map[graveler.EventType]*actions.ActionOn{
+					graveler.EventTypePreCommit: {},
+				}},
+				{Name: "act2", On: map[graveler.EventType]*actions.ActionOn{
+					graveler.EventTypePreCommit: {},
+				}},
 			},
 			spec: actions.MatchSpec{
 				EventType: graveler.EventTypePreMerge,
@@ -329,14 +365,20 @@ func TestMatchedActions(t *testing.T) {
 		{
 			name: "one",
 			actions: []*actions.Action{
-				{Name: "act1", On: actions.OnEvents{PreCommit: &actions.ActionOn{}}},
-				{Name: "act2", On: actions.OnEvents{PreMerge: &actions.ActionOn{}}},
+				{Name: "act1", On: map[graveler.EventType]*actions.ActionOn{
+					graveler.EventTypePreCommit: {},
+				}},
+				{Name: "act2", On: map[graveler.EventType]*actions.ActionOn{
+					graveler.EventTypePreMerge: {},
+				}},
 			},
 			spec: actions.MatchSpec{
 				EventType: graveler.EventTypePreMerge,
 			},
 			want: []*actions.Action{
-				{Name: "act2", On: actions.OnEvents{PreMerge: &actions.ActionOn{}}},
+				{Name: "act2", On: map[graveler.EventType]*actions.ActionOn{
+					graveler.EventTypePreMerge: {},
+				}},
 			},
 			wantErr: false,
 		},
