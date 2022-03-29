@@ -869,6 +869,7 @@ func (g *Graveler) CreateBranch(ctx context.Context, repositoryID RepositoryID, 
 		RepositoryID:     repositoryID,
 		BranchID:         branchID,
 		CommitID:         reference.CommitID,
+		PreRunID:         preRunID,
 	})
 	if err != nil {
 		g.log.WithError(err).
@@ -978,6 +979,7 @@ func (g *Graveler) CreateTag(ctx context.Context, repositoryID RepositoryID, tag
 		CommitID:         commitID,
 		SourceRef:        commitID.Ref(),
 		TagID:            tagID,
+		PreRunID:         preRunID,
 	})
 	if err != nil {
 		g.log.WithError(err).
@@ -1031,6 +1033,7 @@ func (g *Graveler) DeleteTag(ctx context.Context, repositoryID RepositoryID, tag
 		RepositoryID:     repositoryID,
 		SourceRef:        commitID.Ref(),
 		TagID:            tagID,
+		PreRunID:         preRunID,
 	})
 	if err != nil {
 		g.log.WithError(err).
@@ -1075,9 +1078,9 @@ func (g *Graveler) ListBranches(ctx context.Context, repositoryID RepositoryID) 
 
 func (g *Graveler) DeleteBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error {
 	var (
-	    preRunID string
-	    storageNamespace StorageNamespace
-	    commitID CommitID
+		preRunID         string
+		storageNamespace StorageNamespace
+		commitID         CommitID
 	)
 	_, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
 		repo, err := g.RefManager.GetRepository(ctx, repositoryID)
@@ -1131,6 +1134,7 @@ func (g *Graveler) DeleteBranch(ctx context.Context, repositoryID RepositoryID, 
 		RepositoryID:     repositoryID,
 		SourceRef:        commitID.Ref(),
 		BranchID:         branchID,
+		PreRunID:         preRunID,
 	})
 	if err != nil {
 		g.log.WithError(err).

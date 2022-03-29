@@ -3,8 +3,11 @@ package nessie
 import (
 	"bytes"
 	"context"
+	"embed"
 	"encoding/json"
+	"io/fs"
 	"net/http"
+	"strings"
 	"testing"
 	"text/template"
 	"time"
@@ -13,171 +16,50 @@ import (
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
-const actionPreMergeYaml = `
-name: Test Pre Merge
-description: set of checks to verify that branch is good
-on:
-  pre-merge:
-    branches:
-      - main
-hooks:
-  - id: test_webhook
-    type: webhook
-    description: Check webhooks for pre-merge works
-    properties:
-      url: "{{.URL}}/pre-merge"
-`
-
-const actionPreCommitYaml = `
-name: Test Pre Commit
-description: set of checks to verify that branch is good
-on:
-  pre-commit:
-hooks:
-  - id: test_webhook
-    type: webhook
-    description: Check webhooks for pre-commit works
-    properties:
-      url: "{{.URL}}/pre-commit"
-      query_params:
-        check_env_vars: "{{"{{ ENV.ACTIONS_VAR }}"}}"
-`
-
-const actionPostCommitYaml = `
-name: Test Post Commit
-description: set of checks to verify that branch is good
-on:
-  post-commit:
-    branches:
-      - feature-*
-hooks:
-  - id: test_webhook
-    type: webhook
-    description: Check webhooks for post-commit works
-    properties:
-      url: "{{.URL}}/post-commit"
-`
-
-const actionPostMergeYaml = `
-name: Test Post Merge
-description: set of checks to verify that branch is good
-on:
-  post-merge:
-    branches:
-      - main
-hooks:
-  - id: test_webhook
-    type: webhook
-    description: Check webhooks for post-merge works
-    properties:
-      url: "{{.URL}}/post-merge"
-`
-const actionPreCreateTagYaml = `
-name: Test Pre Create Tag
-description: set of checks to verify that branch is good
-on:
-  pre-create-tag:
-hooks:
-  - id: test_webhook
-    type: webhook
-    description: Check webhooks for pre-create tag works
-    properties:
-      url: "{{.URL}}/pre-create-tag"
-`
-const actionPostCreateTagYaml = `
-name: Test Post Create Tag
-description: set of checks to verify that branch is good
-on:
-  post-create-tag:
-hooks:
-  - id: test_webhook
-    type: webhook
-    description: Check webhooks for post-create tag works
-    properties:
-      url: "{{.URL}}/post-create-tag"
-`
-
-const actionPreDeleteTagYaml = `
-name: Test Pre Delete Tag
-description: set of checks to verify that branch is good
-on:
-  pre-delete-tag:
-hooks:
-  - id: test_webhook
-    type: webhook
-    description: Check webhooks for pre-delete tag works
-    properties:
-      url: "{{.URL}}/pre-delete-tag"
-`
-const actionPostDeleteTagYaml = `
-name: Test Post Delete Tag
-description: set of checks to verify that branch is good
-on:
-  post-delete-tag:
-hooks:
-  - id: test_webhook
-    type: webhook
-    description: Check webhooks for post-delete tag works
-    properties:
-      url: "{{.URL}}/post-delete-tag"
-`
-const actionPreCreateBranchYaml = `
-name: Test Pre Create Branch
-description: set of checks to verify that branch is good
-on:
-  pre-create-branch:
-    branches:
-hooks:
-  - id: test_webhook
-    type: webhook
-    description: Check webhooks for pre-create branch works
-    properties:
-      url: "{{.URL}}/pre-create-branch"
-`
-const actionPostCreateBranchYaml = `
-name: Test Post Create Branch
-description: set of checks to verify that branch is good
-on:
-  post-create-branch:
-    branches:
-hooks:
-  - id: test_webhook
-    type: webhook
-    description: Check webhooks for post-create branch works
-    properties:
-      url: "{{.URL}}/post-create-branch"
-`
-
-const actionPreDeleteBranchYaml = `
-name: Test Pre Delete Branch
-description: set of checks to verify that branch is good
-on:
-  pre-delete-branch:
-    branches:
-hooks:
-  - id: test_webhook
-    type: webhook
-    description: Check webhooks for pre-delete branch works
-    properties:
-      url: "{{.URL}}/pre-delete-branch"
-`
-const actionPostDeleteBranchYaml = `
-name: Test Post Delete Branch
-description: set of checks to verify that branch is good
-on:
-  post-delete-branch:
-    branches:
-hooks:
-  - id: test_webhook
-    type: webhook
-    description: Check webhooks for post-delete branch works
-    properties:
-      url: "{{.URL}}/post-delete-branch"
-`
+//go:embed action_files/*.yaml
+var actions embed.FS
 
 func TestHooksSuccess(t *testing.T) {
-	ctx, logger, repo := setupTest(t)
+	ctx, _, repo := setupTest(t)
+	parseAndUploadActions(t, ctx, repo, mainBranch)
+	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, api.CommitJSONRequestBody{
+		Message: "Initial content",
+	})
+	require.NoError(t, err, "failed to commit initial content")
+	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
+
+	_, err = responseWithTimeout(server, 1*time.Minute) // pre-commit action triggered on action upload, flush buffer
+	require.NoError(t, err)
+
+	tests := []struct {
+		name     string
+		testFunc func(*testing.T, context.Context, string)
+		err      error
+	}{
+		{
+			name:     "commit merge test",
+			testFunc: commitMergeTest,
+		},
+		{
+			name:     "create delete branch test",
+			testFunc: CreateDeleteBranchTest,
+		},
+		{
+			name:     "create delete tag test",
+			testFunc: CreateDeleteTagTest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.testFunc(t, ctx, repo)
+		})
+	}
+}
+
+func commitMergeTest(t *testing.T, ctx context.Context, repo string) {
 	const branch = "feature-1"
+	var preCommitEvent, postCommitEvent, preMergeEvent, postMergeEvent webhookEventInfo
 
 	logger.WithField("branch", branch).Info("Create branch")
 	createBranchResp, err := client.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{
@@ -188,23 +70,12 @@ func TestHooksSuccess(t *testing.T) {
 	require.Equal(t, http.StatusCreated, createBranchResp.StatusCode())
 	ref := string(createBranchResp.Body)
 	logger.WithField("branchRef", ref).Info("Branch created")
-	logger.WithField("branch", branch).Info("Upload initial content")
 
-	parseAndUpload(t, ctx, repo, branch, actionPreMergeYaml, "action-pre-merge", "testing_pre_merge")
-	parseAndUpload(t, ctx, repo, branch, actionPreCommitYaml, "action-pre-commit", "testing_pre_commit")
-	parseAndUpload(t, ctx, repo, branch, actionPostCommitYaml, "action-post-commit", "testing_post_commit")
-	parseAndUpload(t, ctx, repo, branch, actionPostMergeYaml, "action-post-merge", "testing_post_merge")
-	parseAndUpload(t, ctx, repo, branch, actionPreCreateTagYaml, "action-pre-create-tag", "testing_pre_create_tag")
-	parseAndUpload(t, ctx, repo, branch, actionPostCreateTagYaml, "action-post-create-tag", "testing_post_create_tag")
-	parseAndUpload(t, ctx, repo, branch, actionPreDeleteTagYaml, "action-pre-delete-tag", "testing_pre_delete_tag")
-	parseAndUpload(t, ctx, repo, branch, actionPostDeleteTagYaml, "action-post-delete-tag", "testing_post_delete_tag")
-	parseAndUpload(t, ctx, repo, branch, actionPreCreateBranchYaml, "action-pre-create-branch", "testing_pre_create_branch")
-	parseAndUpload(t, ctx, repo, branch, actionPostCreateBranchYaml, "action-post-create-branch", "testing_post_create_branch")
-	parseAndUpload(t, ctx, repo, branch, actionPreDeleteBranchYaml, "action-pre-delete-branch", "testing_pre_delete_branch")
-	parseAndUpload(t, ctx, repo, branch, actionPostDeleteBranchYaml, "action-post-delete-branch", "testing_post_delete_branch")
+	resp, err := uploadContent(ctx, repo, branch, "somefile", "")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusCreated, resp.StatusCode())
 
-	logger.WithField("branch", branch).Info("Commit initial content")
-
+	logger.WithField("branch", branch).Info("Commit content")
 	commitResp, err := client.CommitWithResponse(ctx, repo, branch, api.CommitJSONRequestBody{
 		Message: "Initial content",
 	})
@@ -216,7 +87,6 @@ func TestHooksSuccess(t *testing.T) {
 
 	require.NoError(t, webhookData.err, "error on pre commit serving")
 	decoder := json.NewDecoder(bytes.NewReader(webhookData.data))
-	var preCommitEvent, postCommitEvent, preMergeEvent, postMergeEvent webhookEventInfo
 	require.NoError(t, decoder.Decode(&preCommitEvent), "reading pre-commit data")
 
 	commitRecord := commitResp.JSON201
@@ -231,7 +101,7 @@ func TestHooksSuccess(t *testing.T) {
 	require.Equal(t, commitRecord.Metadata.AdditionalProperties, preCommitEvent.Metadata)
 	require.NotNil(t, webhookData.queryParams)
 	require.Contains(t, webhookData.queryParams, "check_env_vars")
-	require.Equal(t, webhookData.queryParams["check_env_vars"], []string{"this_is_actions_var"})
+	require.Equal(t, []string{"this_is_actions_var"}, webhookData.queryParams["check_env_vars"])
 
 	webhookData, err = responseWithTimeout(server, 1*time.Minute)
 	require.NoError(t, err)
@@ -298,105 +168,37 @@ func TestHooksSuccess(t *testing.T) {
 	require.Equal(t, "pre-merge", run.EventType)
 	require.Equal(t, "completed", run.Status)
 	require.Equal(t, "main", run.Branch)
+}
 
-	// Test create / delete tag hooks
-	const tagID = "tag_test_hooks"
-	var preCreateTagEvent, postCreateTagEvent, preDeleteTagEvent, postDeleteTagEvent webhookEventInfo
-	createTagResp, err := client.CreateTagWithResponse(ctx, repo, api.CreateTagJSONRequestBody{
-		Id:  tagID,
-		Ref: commitRecord.Id,
-	})
-
-	require.NoError(t, err, "failed to create tag")
-	require.Equal(t, http.StatusCreated, createTagResp.StatusCode())
-
-	// Testing pre-create tag hook response
-	webhookData, err = responseWithTimeout(server, 1*time.Minute)
-	require.NoError(t, err)
-
-	require.NoError(t, webhookData.err, "error on pre create tag")
-	decoder = json.NewDecoder(bytes.NewReader(webhookData.data))
-	require.NoError(t, decoder.Decode(&preCreateTagEvent), "reading pre-create tag data")
-	require.Equal(t, "pre-create-tag", preCreateTagEvent.EventType)
-	require.Equal(t, "Test Pre Create Tag", preCreateTagEvent.ActionName)
-	require.Equal(t, "test_webhook", preCreateTagEvent.HookID)
-	require.Equal(t, repo, preCreateTagEvent.RepositoryID)
-	require.Equal(t, commitRecord.Id, preCreateTagEvent.CommitID)
-	require.Equal(t, tagID, preCreateTagEvent.TagID)
-
-	// Testing post-create tag hook response
-	webhookData, err = responseWithTimeout(server, 1*time.Minute)
-	require.NoError(t, err)
-
-	require.NoError(t, webhookData.err, "error on post create tag")
-	decoder = json.NewDecoder(bytes.NewReader(webhookData.data))
-	require.NoError(t, decoder.Decode(&postCreateTagEvent), "reading post-create tag data")
-	require.Equal(t, "post-create-tag", postCreateTagEvent.EventType)
-	require.Equal(t, "Test Post Create Tag", postCreateTagEvent.ActionName)
-	require.Equal(t, "test_webhook", postCreateTagEvent.HookID)
-	require.Equal(t, repo, postCreateTagEvent.RepositoryID)
-	require.Equal(t, commitRecord.Id, postCreateTagEvent.CommitID)
-	require.Equal(t, tagID, postCreateTagEvent.TagID)
-
-	// Delete tag
-	deleteTagResp, err := client.DeleteTagWithResponse(ctx, repo, tagID)
-
-	require.NoError(t, err, "failed to delete tag")
-	require.Equal(t, http.StatusNoContent, deleteTagResp.StatusCode())
-
-	// Testing pre-delete tag hook response
-	webhookData, err = responseWithTimeout(server, 1*time.Minute)
-	require.NoError(t, err)
-
-	require.NoError(t, webhookData.err, "error on pre delete tag")
-	decoder = json.NewDecoder(bytes.NewReader(webhookData.data))
-	require.NoError(t, decoder.Decode(&preDeleteTagEvent), "reading pre-delete tag data")
-	require.Equal(t, "pre-delete-tag", preDeleteTagEvent.EventType)
-	require.Equal(t, "Test Pre Delete Tag", preDeleteTagEvent.ActionName)
-	require.Equal(t, "test_webhook", preDeleteTagEvent.HookID)
-	require.Equal(t, repo, preDeleteTagEvent.RepositoryID)
-	require.Equal(t, commitRecord.Id, preDeleteTagEvent.SourceRef)
-	require.Equal(t, tagID, preDeleteTagEvent.TagID)
-
-	// Testing post-delete tag hook response
-	webhookData, err = responseWithTimeout(server, 1*time.Minute)
-	require.NoError(t, err)
-
-	require.NoError(t, webhookData.err, "error on post delete tag")
-	decoder = json.NewDecoder(bytes.NewReader(webhookData.data))
-	require.NoError(t, decoder.Decode(&postDeleteTagEvent), "reading post-delete tag data")
-	require.Equal(t, "post-delete-tag", postDeleteTagEvent.EventType)
-	require.Equal(t, "Test Post Delete Tag", postDeleteTagEvent.ActionName)
-	require.Equal(t, "test_webhook", postDeleteTagEvent.HookID)
-	require.Equal(t, repo, postDeleteTagEvent.RepositoryID)
-	require.Equal(t, commitRecord.Id, postDeleteTagEvent.SourceRef)
-	require.Equal(t, tagID, postDeleteTagEvent.TagID)
-
-	// Test create / delete branch hooks
+func CreateDeleteBranchTest(t *testing.T, ctx context.Context, repo string) {
 	var preCreateBranchEvent, postCreateBranchEvent, preDeleteBranchEvent, postDeleteBranchEvent webhookEventInfo
-	_, _ = preDeleteBranchEvent, postDeleteBranchEvent
 	const testBranch = "test_branch_delete"
-	createBranchResp, err = client.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{
+	createBranchResp, err := client.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{
 		Name:   testBranch,
-		Source: branch,
+		Source: mainBranch,
 	})
 	require.NoError(t, err, "failed to create branch")
 	require.Equal(t, http.StatusCreated, createBranchResp.StatusCode())
 
+	resp, err := client.GetBranchWithResponse(ctx, repo, mainBranch)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode())
+	commitID := resp.JSON200.CommitId
+
 	// Testing pre-create branch hook response
-	webhookData, err = responseWithTimeout(server, 1*time.Minute)
+	webhookData, err := responseWithTimeout(server, 1*time.Minute)
 	require.NoError(t, err)
 
 	require.NoError(t, webhookData.err, "error on pre create branch")
-	decoder = json.NewDecoder(bytes.NewReader(webhookData.data))
+	decoder := json.NewDecoder(bytes.NewReader(webhookData.data))
 	require.NoError(t, decoder.Decode(&preCreateBranchEvent), "reading pre-create branch data")
 	require.Equal(t, "pre-create-branch", preCreateBranchEvent.EventType)
 	require.Equal(t, "Test Pre Create Branch", preCreateBranchEvent.ActionName)
 	require.Equal(t, "test_webhook", preCreateBranchEvent.HookID)
 	require.Equal(t, repo, preCreateBranchEvent.RepositoryID)
-	require.Equal(t, branch, preCreateBranchEvent.SourceRef)
+	require.Equal(t, mainBranch, preCreateBranchEvent.SourceRef)
 	require.Equal(t, testBranch, preCreateBranchEvent.BranchID)
-	require.Equal(t, commitRecord.Id, preCreateBranchEvent.CommitID)
+	require.Equal(t, commitID, preCreateBranchEvent.CommitID)
 
 	// Testing post-create branch hook response
 	webhookData, err = responseWithTimeout(server, 1*time.Minute)
@@ -409,9 +211,9 @@ func TestHooksSuccess(t *testing.T) {
 	require.Equal(t, "Test Post Create Branch", postCreateBranchEvent.ActionName)
 	require.Equal(t, "test_webhook", postCreateBranchEvent.HookID)
 	require.Equal(t, repo, postCreateBranchEvent.RepositoryID)
-	require.Equal(t, branch, postCreateBranchEvent.SourceRef)
+	require.Equal(t, mainBranch, postCreateBranchEvent.SourceRef)
 	require.Equal(t, testBranch, postCreateBranchEvent.BranchID)
-	require.Equal(t, commitRecord.Id, postCreateBranchEvent.CommitID)
+	require.Equal(t, commitID, postCreateBranchEvent.CommitID)
 
 	// Delete branch
 	deleteBranchResp, err := client.DeleteBranchWithResponse(ctx, repo, testBranch)
@@ -446,9 +248,88 @@ func TestHooksSuccess(t *testing.T) {
 	require.Equal(t, testBranch, postCreateBranchEvent.BranchID)
 }
 
-func parseAndUpload(t *testing.T, ctx context.Context, repo, branch, yaml, templateName, actionPath string) {
-	t.Helper()
+func CreateDeleteTagTest(t *testing.T, ctx context.Context, repo string) {
+	const tagID = "tag_test_hooks"
+	var preCreateTagEvent, postCreateTagEvent, preDeleteTagEvent, postDeleteTagEvent webhookEventInfo
 
+	resp, err := client.GetBranchWithResponse(ctx, repo, mainBranch)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode())
+	commitID := resp.JSON200.CommitId
+
+	createTagResp, err := client.CreateTagWithResponse(ctx, repo, api.CreateTagJSONRequestBody{
+		Id:  tagID,
+		Ref: commitID,
+	})
+
+	require.NoError(t, err, "failed to create tag")
+	require.Equal(t, http.StatusCreated, createTagResp.StatusCode())
+
+	// Testing pre-create tag hook response
+	webhookData, err := responseWithTimeout(server, 1*time.Minute)
+	require.NoError(t, err)
+
+	require.NoError(t, webhookData.err, "error on pre create tag")
+	decoder := json.NewDecoder(bytes.NewReader(webhookData.data))
+	require.NoError(t, decoder.Decode(&preCreateTagEvent), "reading pre-create tag data")
+	require.Equal(t, "pre-create-tag", preCreateTagEvent.EventType)
+	require.Equal(t, "Test Pre Create Tag", preCreateTagEvent.ActionName)
+	require.Equal(t, "test_webhook", preCreateTagEvent.HookID)
+	require.Equal(t, repo, preCreateTagEvent.RepositoryID)
+	require.Equal(t, commitID, preCreateTagEvent.CommitID)
+	require.Equal(t, tagID, preCreateTagEvent.TagID)
+
+	// Testing post-create tag hook response
+	webhookData, err = responseWithTimeout(server, 1*time.Minute)
+	require.NoError(t, err)
+
+	require.NoError(t, webhookData.err, "error on post create tag")
+	decoder = json.NewDecoder(bytes.NewReader(webhookData.data))
+	require.NoError(t, decoder.Decode(&postCreateTagEvent), "reading post-create tag data")
+	require.Equal(t, "post-create-tag", postCreateTagEvent.EventType)
+	require.Equal(t, "Test Post Create Tag", postCreateTagEvent.ActionName)
+	require.Equal(t, "test_webhook", postCreateTagEvent.HookID)
+	require.Equal(t, repo, postCreateTagEvent.RepositoryID)
+	require.Equal(t, commitID, postCreateTagEvent.CommitID)
+	require.Equal(t, tagID, postCreateTagEvent.TagID)
+
+	// Delete tag
+	deleteTagResp, err := client.DeleteTagWithResponse(ctx, repo, tagID)
+
+	require.NoError(t, err, "failed to delete tag")
+	require.Equal(t, http.StatusNoContent, deleteTagResp.StatusCode())
+
+	// Testing pre-delete tag hook response
+	webhookData, err = responseWithTimeout(server, 1*time.Minute)
+	require.NoError(t, err)
+
+	require.NoError(t, webhookData.err, "error on pre delete tag")
+	decoder = json.NewDecoder(bytes.NewReader(webhookData.data))
+	require.NoError(t, decoder.Decode(&preDeleteTagEvent), "reading pre-delete tag data")
+	require.Equal(t, "pre-delete-tag", preDeleteTagEvent.EventType)
+	require.Equal(t, "Test Pre Delete Tag", preDeleteTagEvent.ActionName)
+	require.Equal(t, "test_webhook", preDeleteTagEvent.HookID)
+	require.Equal(t, repo, preDeleteTagEvent.RepositoryID)
+	require.Equal(t, commitID, preDeleteTagEvent.SourceRef)
+	require.Equal(t, tagID, preDeleteTagEvent.TagID)
+
+	// Testing post-delete tag hook response
+	webhookData, err = responseWithTimeout(server, 1*time.Minute)
+	require.NoError(t, err)
+
+	require.NoError(t, webhookData.err, "error on post delete tag")
+	decoder = json.NewDecoder(bytes.NewReader(webhookData.data))
+	require.NoError(t, decoder.Decode(&postDeleteTagEvent), "reading post-delete tag data")
+	require.Equal(t, "post-delete-tag", postDeleteTagEvent.EventType)
+	require.Equal(t, "Test Post Delete Tag", postDeleteTagEvent.ActionName)
+	require.Equal(t, "test_webhook", postDeleteTagEvent.HookID)
+	require.Equal(t, repo, postDeleteTagEvent.RepositoryID)
+	require.Equal(t, commitID, postDeleteTagEvent.SourceRef)
+	require.Equal(t, tagID, postDeleteTagEvent.TagID)
+}
+
+func parseAndUploadActions(t *testing.T, ctx context.Context, repo, branch string) {
+	t.Helper()
 	// render actions based on templates
 	docData := struct {
 		URL string
@@ -456,16 +337,26 @@ func parseAndUpload(t *testing.T, ctx context.Context, repo, branch, yaml, templ
 		URL: server.BaseURL(),
 	}
 
-	var doc bytes.Buffer
+	fs.WalkDir(actions, ".", func(path string, d fs.DirEntry, err error) error {
+		var doc bytes.Buffer
+		actionPath := strings.ReplaceAll(d.Name(), "_", "-")
 
-	actionPreMergeTmpl := template.Must(template.New(templateName).Parse(yaml))
-	err := actionPreMergeTmpl.Execute(&doc, docData)
-	require.NoError(t, err)
-	action := doc.String()
+		require.NoError(t, err)
+		if !d.IsDir() {
+			ba, err := actions.ReadFile(path)
+			require.NoError(t, err)
 
-	resp, err := uploadContent(ctx, repo, branch, "_lakefs_actions/"+actionPath, action)
-	require.NoError(t, err)
-	require.Equal(t, http.StatusCreated, resp.StatusCode())
+			actionTmpl := template.Must(template.New(d.Name()).Parse(string(ba)))
+			err = actionTmpl.Execute(&doc, docData)
+			require.NoError(t, err)
+
+			action := doc.String()
+			resp, err := uploadContent(ctx, repo, branch, "_lakefs_actions/"+actionPath, action)
+			require.NoError(t, err)
+			require.Equal(t, http.StatusCreated, resp.StatusCode())
+		}
+		return nil
+	})
 }
 
 type webhookEventInfo struct {
