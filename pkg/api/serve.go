@@ -51,7 +51,7 @@ func Serve(
 	actions actionsHandler,
 	auditChecker AuditChecker,
 	logger logging.Logger,
-	email email.Email,
+	email email.EmailParams,
 	gatewayDomains []string,
 ) http.Handler {
 	logger.Info("initialize OpenAPI server")

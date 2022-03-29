@@ -399,8 +399,8 @@ func (c *Config) GetStatsFlushInterval() time.Duration {
 	return c.values.Stats.FlushInterval
 }
 
-func (c *Config) GetEmailParams() (email.Email, error) {
-	return email.Email{
+func (c *Config) GetEmailParams() (email.EmailParams, error) {
+	return email.EmailParams{
 		SMTPHost: c.values.Email.SMTPHost,
 		Port:     c.values.Email.Port,
 		Username: c.values.Email.Username,

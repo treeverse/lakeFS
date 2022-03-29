@@ -4,7 +4,7 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
-type Email struct {
+type Emailer struct {
 	SMTPHost string
 	Port     int
 	Username string
@@ -12,7 +12,25 @@ type Email struct {
 	Sender   string
 }
 
-func (e Email) SendEmail(receivers []string, subject string, body string, attachmentFilePath ...string) error {
+type EmailParams struct {
+	SMTPHost string
+	Port     int
+	Username string
+	Password string
+	Sender   string
+}
+
+func NewEmailer(e EmailParams) *Emailer {
+	return &Emailer{
+		SMTPHost: e.SMTPHost,
+		Port:     e.Port,
+		Username: e.Username,
+		Password: e.Password,
+		Sender:   e.Sender,
+	}
+}
+
+func (e Emailer) SendEmail(receivers []string, subject string, body string, attachmentFilePath ...string) error {
 	msg := gomail.NewMessage()
 	msg.SetHeader("From", e.Sender)
 	msg.SetHeader("To", receivers...)
