@@ -14,6 +14,7 @@ on:
 permissions:
   id-token: write
   contents: read
+  packages: write
 
 jobs:
   check-secrets:
@@ -85,7 +86,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Setup UI
+      - name: Setup NodeJS
         uses: actions/setup-node@v1
         with:
           node-version: '14.x'
@@ -160,6 +161,7 @@ jobs:
           if [[ -n ${ghr_ref_tag} ]]; then docker push ${ghr_ref_tag#-t }; fi
         env:
           DOCKER_BUILDKIT: '1'
+
       - name: Push to Amazon ECR
         run: |
           set +e

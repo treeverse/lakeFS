@@ -4,12 +4,14 @@ on:
   workflow_dispatch:
     inputs:
       tag:
+        required: false
         description: Tag/version to publish
 
 # These permissions are needed to interact with GitHub's OIDC Token endpoint.
 permissions:
   id-token: write
   contents: read
+  packages: write
 
 jobs:
   deploy-rclone-export-image:
