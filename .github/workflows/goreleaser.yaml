@@ -10,24 +10,6 @@ permissions:
   id-token: write
   contents: write
 
-permissions:
-  packages: write
-  issues: write
-  id-token: write
-  contents: write
-
-permissions:
-  packages: write
-  issues: write
-  id-token: write
-  contents: write
-
-permissions:
-  packages: write
-  issues: write
-  id-token: write
-  contents: write
-
 jobs:
   goreleaser:
     runs-on: ubuntu-20.04
