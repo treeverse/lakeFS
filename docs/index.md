@@ -11,7 +11,7 @@ redirect_from: ./downloads.html
 
 lakeFS is an open-source project that provides a git-like version control interface for data lakes, with seamless integration to most data tools and frameworks.
 
-lakeFS enables you to easily implement parallel pipelines for experimentation, reproducibility and CI/CD for data.
+lakeFS enables you to easily implement staging environments through branching, parallel pipelines for experimentation, data reproducibility, rollback, and data quality validation before it's marked production-ready with pre-merge hooks.
 
 lakeFS supports AWS S3, Azure Blob Storage and Google Cloud Storage (GCS) as its underlying storage service. It is [API compatible with S3](reference/s3.md) and works seamlessly with all modern data frameworks such as Spark, Hive, AWS Athena, Presto, etc.
 
@@ -35,25 +35,16 @@ You can easily integrate it with your existing tools, and feel lakeFS in action 
 ## Why use lakeFS? and what it can do
 
 With lakeFS data teams can stop worrying about issues that take away much of their time:
-* Roll back changes to data: recover quickly from bugs and mistakes
-* Test and validate data before exposing it to consumers
-* Travel back in time, across collections - for reproducing and debugging issues
+* Roll back changes to data: recover quickly from bugs and mistakes, even on production data
+* Test and validate data before it's marked production-ready exposed to consumers
+* Travel back in time, across data versions and across collections - for reproducing and debugging data issues
 
 Since lakeFS is compatible with the S3 API, all popular applications will work without modification, by simply adding the branch name to the object path:
 
 <img src="{{ site.baseurl }}/assets/img/s3_branch.png" alt="lakeFS s3 addressing" width="60%" height="60%" />
 
-## Benefits of lakeFS
-* It is **format agnostic**
-* Your data **stays in place**
-* It helps you prevent data duplication by using **copy-on-write**
-* It is **highly performant** for huge data lakes
-* It includes **configurable garbage collection** capabilities
-* lakeFS is **highly available and production ready**
 
-<img src="{{ site.baseurl }}/assets/img/lakeFS_integration.png" alt="lakeFS integration into data lake" width="60%" height="60%" />
-
-## Use-cases:
+## The lakeFS use-cases:
 
 lakeFS enhances processing workflows at each step of the data lifecycle:
 
@@ -75,6 +66,16 @@ lakeFS enhances processing workflows at each step of the data lifecycle:
 * **Troubleshoot** - investigate production errors by starting with a snapshot of the inputs to the failed process. Spend less time re-creating the state of datasets at the time of failure, and more time finding the solution.
 * **Cross-collection Consistency** - provide consumers multiple synchronized collections of data in one atomic, revertable action. Using branches, writers provide consistency guarantees across different logical collections - merging to the main branch only after all relevant datasets have been created or updated successfully.
    
+## Additional things you should know about lakeFS: 
+* It is **format agnostic**
+* Your data **stays in place**
+* It helps you prevent data duplication by using **copy-on-write**
+* It is **highly performant** for huge data lakes
+* It includes **configurable garbage collection** capabilities
+* lakeFS is **highly available and production ready**
+
+<img src="{{ site.baseurl }}/assets/img/lakeFS_integration.png" alt="lakeFS integration into data lake" width="60%" height="60%" />
+
 [Learn more](./usecases/production.md){:id="user-content-learn-more-dep"}
 
 
