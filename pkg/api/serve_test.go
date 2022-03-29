@@ -109,6 +109,7 @@ func setupHandler(t testing.TB, opts ...testutil.GetDBOption) (http.Handler, *de
 	})
 
 	auditChecker := version.NewDefaultAuditChecker(cfg.GetSecurityAuditCheckURL())
+	email, _ := cfg.GetEmailParams()
 
 	handler := api.Serve(
 		cfg,
@@ -123,6 +124,7 @@ func setupHandler(t testing.TB, opts ...testutil.GetDBOption) (http.Handler, *de
 		actionsService,
 		auditChecker,
 		logging.Default(),
+		email,
 		nil,
 	)
 

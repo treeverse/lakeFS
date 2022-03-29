@@ -96,6 +96,7 @@ func TestLocalLoad(t *testing.T) {
 		_ = c.Close()
 	})
 	auditChecker := version.NewDefaultAuditChecker(conf.GetSecurityAuditCheckURL())
+	email, _ := conf.GetEmailParams()
 
 	handler := api.Serve(
 		conf,
@@ -110,6 +111,7 @@ func TestLocalLoad(t *testing.T) {
 		actionsService,
 		auditChecker,
 		logging.Default(),
+		email,
 		nil,
 	)
 
