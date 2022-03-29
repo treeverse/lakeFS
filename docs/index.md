@@ -11,7 +11,7 @@ redirect_from: ./downloads.html
 
 lakeFS is an open-source project that provides a git-like version control interface for data lakes, with seamless integration to most data tools and frameworks.
 
-lakeFS enables you to easily implement staging environments through branching, parallel pipelines for experimentation, reproducibility and rollback on your data lake, and validate the quality of the data before it enters the data lake with pre-merge hooks.
+lakeFS enables you to easily implement staging environments through branching, parallel pipelines for experimentation, data reproducibility, rollback, and data quality validation before it's marked production-ready with pre-merge hooks.
 
 lakeFS supports AWS S3, Azure Blob Storage and Google Cloud Storage (GCS) as its underlying storage service. It is [API compatible with S3](reference/s3.md) and works seamlessly with all modern data frameworks such as Spark, Hive, AWS Athena, Presto, etc.
 
