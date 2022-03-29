@@ -93,14 +93,14 @@ func (a *Action) Validate() error {
 	if !reName.MatchString(a.Name) {
 		return fmt.Errorf("'name' is invalid: %w", ErrInvalidAction)
 	}
-	if a.On == nil || len(a.On) == 0 {
+	if len(a.On) == 0 {
 		return fmt.Errorf("'on' is required: %w", ErrInvalidAction)
 	}
 	for o := range a.On {
 		if !supportedEvents[o] {
 			return fmt.Errorf("event '%s' is not supported: %w", o, ErrInvalidAction)
 		}
-		err := validateOnParameters(&a.On)
+		err := validateOnParameters(a.On)
 		if err != nil {
 			return err
 		}
@@ -121,8 +121,8 @@ func (a *Action) Validate() error {
 	return nil
 }
 
-func validateOnParameters(on *map[graveler.EventType]*ActionOn) error {
-	for k, v := range *on {
+func validateOnParameters(on map[graveler.EventType]*ActionOn) error {
+	for k, v := range on {
 		if v == nil {
 			continue
 		}

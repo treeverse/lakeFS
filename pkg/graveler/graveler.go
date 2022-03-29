@@ -934,18 +934,18 @@ func (g *Graveler) GetTag(ctx context.Context, repositoryID RepositoryID, tagID 
 }
 
 func (g *Graveler) CreateTag(ctx context.Context, repositoryID RepositoryID, tagID TagID, commitID CommitID) error {
-	// Check that Tag doesn't exist before running hook
-	_, err := g.RefManager.GetTag(ctx, repositoryID, tagID)
-	if !errors.Is(err, ErrTagNotFound) {
-		return err
-	}
 	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 	if err != nil {
 		return fmt.Errorf("get repository: %w", err)
 	}
 	storageNamespace := repo.StorageNamespace
 
-	// Run pre-hook
+	// Check that Tag doesn't exist before running hook
+	_, err = g.RefManager.GetTag(ctx, repositoryID, tagID)
+	if !errors.Is(err, ErrTagNotFound) {
+		return err
+	}
+
 	preRunID := NewRunID()
 	err = g.hooks.PreCreateTagHook(ctx, HookRecord{
 		RunID:            preRunID,
@@ -964,16 +964,13 @@ func (g *Graveler) CreateTag(ctx context.Context, repositoryID RepositoryID, tag
 		}
 	}
 
-	// Create tag
 	err = g.RefManager.CreateTag(ctx, repositoryID, tagID, commitID)
 	if err != nil {
 		return err
 	}
 
-	// Run post-hook
 	postRunID := NewRunID()
 	err = g.hooks.PostCreateTagHook(ctx, HookRecord{
-
 		RunID:            postRunID,
 		StorageNamespace: storageNamespace,
 		EventType:        EventTypePostCreateTag,
@@ -1004,7 +1001,6 @@ func (g *Graveler) DeleteTag(ctx context.Context, repositoryID RepositoryID, tag
 	}
 	storageNamespace := repo.StorageNamespace
 
-	// Run pre-hook
 	preRunID := NewRunID()
 	err = g.hooks.PreDeleteTagHook(ctx, HookRecord{
 		RunID:            preRunID,
@@ -1022,13 +1018,11 @@ func (g *Graveler) DeleteTag(ctx context.Context, repositoryID RepositoryID, tag
 		}
 	}
 
-	// Create tag
 	err = g.RefManager.DeleteTag(ctx, repositoryID, tagID)
 	if err != nil {
 		return err
 	}
 
-	// Run post-hook
 	postRunID := NewRunID()
 	err = g.hooks.PostDeleteTagHook(ctx, HookRecord{
 		RunID:            postRunID,
