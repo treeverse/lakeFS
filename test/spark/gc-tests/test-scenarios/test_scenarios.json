@@ -1,0 +1,149 @@
+[
+  {
+    "policy": {
+      "default_retention_days": 1,
+      "branches": []
+    },
+    "branches": [
+      {
+        "branch_name": "a",
+        "days_ago": 2
+      },
+      {
+        "branch_name": "b",
+        "days_ago": 2
+      }
+    ],
+    "file_deleted": true
+  },
+  {
+    "policy": {
+      "default_retention_days": 5,
+      "branches": [
+        {"branch_id": "a", "retention_days": 1},
+        {"branch_id": "b", "retention_days": 3}
+      ]
+    },
+    "branches": [
+      {
+        "branch_name": "a",
+        "days_ago": 4
+      },
+      {
+        "branch_name": "b",
+        "days_ago": 4
+      }
+    ],
+    "file_deleted": true
+  },
+  {
+    "policy": {
+      "default_retention_days": 5,
+      "branches": [
+        {"branch_id": "a", "retention_days": 1},
+        {"branch_id": "b", "retention_days": 3}
+      ]
+    },
+    "branches": [
+      {
+        "branch_name": "a",
+        "days_ago": 4
+      },
+      {
+        "branch_name": "b",
+        "days_ago": 2
+      }
+    ],
+    "file_deleted": false
+  },
+  {
+    "policy": {
+      "default_retention_days": 5,
+      "branches": []
+    },
+    "branches": [
+      {
+        "branch_name": "a",
+        "days_ago": 4
+      },
+      {
+        "branch_name": "b",
+        "days_ago": 2
+      }
+    ],
+    "file_deleted": false
+  },
+  {
+    "policy": {
+      "default_retention_days": 5,
+      "branches": [
+        {"branch_id": "a", "retention_days": 1},
+        {"branch_id": "b", "retention_days": 3}
+      ]
+    },
+    "branches": [
+      {
+        "branch_name": "a",
+        "days_ago": 1
+      }
+    ],
+    "file_deleted": false
+  },
+  {
+    "policy": {
+      "default_retention_days": 5,
+      "branches": [
+        {"branch_id": "a", "retention_days": 1}
+      ]
+    },
+    "branches": [
+      {
+        "branch_name": "a",
+        "days_ago": 1
+      },
+      {
+        "branch_name": "b",
+        "days_ago": 4
+      }
+    ],
+    "file_deleted": false
+  },
+  {
+    "policy": {
+      "default_retention_days": 5,
+      "branches": [
+        {"branch_id": "a", "retention_days": 1}
+      ]
+    },
+    "branches": [
+      {
+        "branch_name": "a",
+        "days_ago": 1
+      },
+      {
+        "branch_name": "b",
+        "days_ago": 5
+      }
+    ],
+    "file_deleted": true
+  },
+  {
+    "policy": {
+      "default_retention_days": 1,
+      "branches": [
+        {"branch_id": "a", "retention_days": 3}
+      ]
+    },
+    "branches" : [
+      {
+        "branch_name": "a",
+        "days_ago": 2
+      },
+      {
+        "branch_name": "b",
+        "days_ago": -1
+      }
+    ],
+    "file_deleted": false
+  }
+]

@@ -601,6 +601,7 @@ jobs:
       - name: Setup lakeFS for tests
         env:
           STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-spark3-metaclient
+          REPOSITORY: test-data
         working-directory: test/spark
         run: ./setup-client-test.sh
 
