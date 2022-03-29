@@ -32,7 +32,7 @@ You can easily integrate it with your existing tools, and feel lakeFS in action 
     </a>
 </p>
 
-## Why you need lakeFS and what it can do
+## Why use lakeFS? and what it can do
 
 With lakeFS data teams can stop worrying about issues that take away much of their time:
 * Roll back changes to data: recover quickly from bugs and mistakes
