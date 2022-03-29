@@ -138,14 +138,13 @@ var runCmd = &cobra.Command{
 			dbPool,
 			crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
 			cfg.GetAuthCacheConfig())
-		var authenticator auth.Authenticator = auth.NewBuiltinAuthenticator(authService)
-		var emailAuthenticator auth.Authenticator = auth.NewEmailAuthenticator(authService)
+		authenticator := auth.ChainAuthenticator{
+			auth.NewBuiltinAuthenticator(authService),
+			auth.NewEmailAuthenticator(authService),
+		}
 		ldapConfig := cfg.GetLDAPConfiguration()
 		if ldapConfig != nil {
-			ldapAuthenticator := newLDAPAuthenticator(ldapConfig, authService)
-			authenticator = auth.NewChainAuthenticator(emailAuthenticator, authenticator, ldapAuthenticator)
-		} else {
-			authenticator = auth.NewChainAuthenticator(emailAuthenticator, authenticator)
+			authenticator = append(authenticator, newLDAPAuthenticator(ldapConfig, authService))
 		}
 		authMetadataManager := auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)

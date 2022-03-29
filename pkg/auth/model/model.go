@@ -37,7 +37,7 @@ type User struct {
 	FriendlyName      *string `db:"friendly_name" json:"friendly_name"`
 	Email             *string `db:"email" json:"email"`
 	EncryptedPassword []byte  `db:"encrypted_password" json:"encrypted_password"`
-	Source            string
+	Source            string  `db:"source" json:"source"`
 }
 
 // hashPassword generates a hashed password from a plaintext string
