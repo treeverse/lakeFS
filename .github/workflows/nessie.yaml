@@ -644,6 +644,7 @@ jobs:
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
           DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
           NESSIE_TEST_DATA_ACCESS: true,false
+          NESSIE_BLOCKSTORE_TYPE: s3
           NESSIE_STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}
           NESSIE_AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
           NESSIE_AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
@@ -668,6 +669,7 @@ jobs:
           LAKEFS_BLOCKSTORE_TYPE: s3
           DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
           NESSIE_TEST_DATA_ACCESS: true,false
+          NESSIE_BLOCKSTORE_TYPE: s3
           NESSIE_STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-local-api-key
         run: |
           docker-compose -f nessie/ops/docker-compose.yaml down -v
@@ -695,6 +697,7 @@ jobs:
           DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
           LAKEFS_BLOCKSTORE_TYPE: gs
           LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON: ${{ secrets.LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON }}
+          NESSIE_BLOCKSTORE_TYPE: gs
           NESSIE_STORAGE_NAMESPACE: gs://nessie-system-testing/${{ github.run_number }}
       - name: lakeFS Logs on GS failure
         if: ${{ failure() }}
@@ -724,6 +727,7 @@ jobs:
           LAKEFS_BLOCKSTORE_TYPE: azure
           LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT }}
           LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY }}
+          NESSIE_BLOCKSTORE_TYPE: azure
           NESSIE_STORAGE_NAMESPACE: https://${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT }}.blob.core.windows.net/nessie-system-testing/${{ github.run_number }}
       - name: lakeFS Logs on Azure failure
         if: ${{ failure() }}
