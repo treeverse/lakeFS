@@ -2,6 +2,12 @@ name: Docker
 on:
   release:
     types: [published]
+
+# These permissions are needed to interact with GitHub's OIDC Token endpoint.
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   deploy:
     name: Build and push Docker image
@@ -11,7 +17,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Setup UI
+      - name: Setup NodeJS
         uses: actions/setup-node@v1
         with:
           node-version: '14.x'
@@ -33,9 +39,8 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
 
       - name: Extract version
         shell: bash
