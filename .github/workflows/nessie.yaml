@@ -325,8 +325,8 @@ jobs:
 
       - name: Test lakeFS S3 with Spark 2.x
         env:
-          STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-spark
-          REPOSITORY: gateway-test
+          STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-spark2
+          REPOSITORY: gateway-test-spark2
           SONNET_JAR: sonnets-246/target/sonnets-246/scala-2.11/sonnets-246_2.11-0.1.0.jar
         working-directory: test/spark
         run: ./run-test.sh
@@ -396,8 +396,8 @@ jobs:
       - name: Test lakeFS S3 with Spark 3.x
         continue-on-error: true
         env:
-          STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-spark
-          REPOSITORY: gateway-test
+          STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-spark3
+          REPOSITORY: gateway-test-spark3
           SONNET_JAR: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
         working-directory: test/spark
         run: ./run-test.sh
@@ -454,9 +454,6 @@ jobs:
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
-
-      - name: Copy repository ref
-        run: aws s3 cp --recursive s3://nessie-system-testing-data/golden-files/gc-test-data s3://nessie-system-testing/${{ github.run_number }}-storage-rclone-export
 
       - name: Setup lakeFS for tests
         env:

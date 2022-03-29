@@ -13,17 +13,10 @@ import (
 )
 
 type Action struct {
-	Name        string       `yaml:"name"`
-	Description string       `yaml:"description"`
-	On          OnEvents     `yaml:"on"`
-	Hooks       []ActionHook `yaml:"hooks"`
-}
-
-type OnEvents struct {
-	PreMerge   *ActionOn `yaml:"pre-merge"`
-	PostMerge  *ActionOn `yaml:"post-merge"`
-	PreCommit  *ActionOn `yaml:"pre-commit"`
-	PostCommit *ActionOn `yaml:"post-commit"`
+	Name        string                           `yaml:"name"`
+	Description string                           `yaml:"description"`
+	On          map[graveler.EventType]*ActionOn `yaml:"on"`
+	Hooks       []ActionHook                     `yaml:"hooks"`
 }
 
 type ActionOn struct {
@@ -76,6 +69,13 @@ var (
 	ErrInvalidEventType = errors.New("invalid event type")
 )
 
+var supportedEvents = map[graveler.EventType]bool{
+	graveler.EventTypePreCommit:  true,
+	graveler.EventTypePostMerge:  true,
+	graveler.EventTypePreMerge:   true,
+	graveler.EventTypePostCommit: true,
+}
+
 func (a *Action) Validate() error {
 	if a.Name == "" {
 		return fmt.Errorf("'name' is required: %w", ErrInvalidAction)
@@ -83,11 +83,13 @@ func (a *Action) Validate() error {
 	if !reName.MatchString(a.Name) {
 		return fmt.Errorf("'name' is invalid: %w", ErrInvalidAction)
 	}
-	if a.On.PreMerge == nil &&
-		a.On.PostMerge == nil &&
-		a.On.PreCommit == nil &&
-		a.On.PostCommit == nil {
+	if len(a.On) == 0 {
 		return fmt.Errorf("'on' is required: %w", ErrInvalidAction)
+	}
+	for o := range a.On {
+		if !supportedEvents[o] {
+			return fmt.Errorf("event '%s' is not supported: %w", o, ErrInvalidAction)
+		}
 	}
 	ids := make(map[string]struct{})
 	for i, hook := range a.Hooks {
@@ -107,25 +109,13 @@ func (a *Action) Validate() error {
 
 func (a *Action) Match(spec MatchSpec) (bool, error) {
 	// at least one matched event definition
-	var actionOn *ActionOn
-	switch spec.EventType {
-	case graveler.EventTypePreCommit:
-		actionOn = a.On.PreCommit
-	case graveler.EventTypePreMerge:
-		actionOn = a.On.PreMerge
-	case graveler.EventTypePostCommit:
-		actionOn = a.On.PostCommit
-	case graveler.EventTypePostMerge:
-		actionOn = a.On.PostMerge
-	default:
-		return false, ErrInvalidEventType
-	}
+	actionOn, ok := a.On[spec.EventType]
 	// if no action specified - no match
-	if actionOn == nil {
+	if !ok {
 		return false, nil
 	}
 	// if no branches spec found - all match
-	if len(actionOn.Branches) == 0 {
+	if actionOn == nil || len(actionOn.Branches) == 0 {
 		return true, nil
 	}
 	// find at least one match
