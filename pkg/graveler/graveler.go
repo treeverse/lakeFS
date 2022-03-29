@@ -1074,9 +1074,11 @@ func (g *Graveler) ListBranches(ctx context.Context, repositoryID RepositoryID) 
 }
 
 func (g *Graveler) DeleteBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error {
-	var preRunID string
-	var storageNamespace StorageNamespace
-	var commitID CommitID
+	var (
+	    preRunID string
+	    storageNamespace StorageNamespace
+	    commitID CommitID
+	)
 	_, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
 		repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 		if err != nil {
