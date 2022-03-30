@@ -19,6 +19,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	blockparams "github.com/treeverse/lakefs/pkg/block/params"
 	dbparams "github.com/treeverse/lakefs/pkg/db/params"
+	"github.com/treeverse/lakefs/pkg/email"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
 	"github.com/treeverse/lakefs/pkg/logging"
 	pyramidparams "github.com/treeverse/lakefs/pkg/pyramid/params"
@@ -396,6 +397,16 @@ func (c *Config) GetStatsAddress() string {
 
 func (c *Config) GetStatsFlushInterval() time.Duration {
 	return c.values.Stats.FlushInterval
+}
+
+func (c *Config) GetEmailParams() (email.EmailParams, error) {
+	return email.EmailParams{
+		SMTPHost: c.values.Email.SMTPHost,
+		Port:     c.values.Email.Port,
+		Username: c.values.Email.Username,
+		Password: c.values.Email.Password,
+		Sender:   c.values.Email.Sender,
+	}, nil
 }
 
 const floatSumTolerance = 1e-6
