@@ -12,9 +12,18 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 )
 
-func GetS3Client() (*s3.S3, error) {
+func GetS3Client(s3EndpointURL string) (*s3.S3, error) {
+	var config aws.Config
+	if s3EndpointURL != "" {
+		config = aws.Config{
+			Endpoint:         aws.String(s3EndpointURL),
+			Region:           aws.String("us-east-1"), // Needs region for validation as it is AWS client
+			S3ForcePathStyle: aws.Bool(true),
+		}
+	}
 	sess, err := session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
+		Config:            config,
 	})
 	if err != nil {
 		return nil, err
