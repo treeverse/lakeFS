@@ -1,5 +1,5 @@
 name: Test Pre Merge
-description: set of checks to verify that branch is good
+description: a test action description
 on:
   pre-merge:
     branches:

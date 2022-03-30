@@ -1,5 +1,5 @@
 name: Test Post Merge
-description: set of checks to verify that branch is good
+description: a test action description
 on:
   post-merge:
     branches:

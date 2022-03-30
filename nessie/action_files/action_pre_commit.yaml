@@ -1,5 +1,5 @@
 name: Test Pre Commit
-description: set of checks to verify that branch is good
+description: a test action description
 on:
   pre-commit:
 hooks:

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"path"
-	"reflect"
 	"regexp"
 	"strings"
 
@@ -71,19 +70,25 @@ var (
 	ErrInvalidEventParameter = errors.New("invalid event parameter")
 )
 
-var supportedEvents = map[graveler.EventType]bool{
-	graveler.EventTypePreCommit:        true,
-	graveler.EventTypePostMerge:        true,
-	graveler.EventTypePreMerge:         true,
-	graveler.EventTypePostCommit:       true,
-	graveler.EventTypePreCreateBranch:  true,
-	graveler.EventTypePostCreateBranch: true,
-	graveler.EventTypePreDeleteBranch:  true,
-	graveler.EventTypePostDeleteBranch: true,
-	graveler.EventTypePreCreateTag:     true,
-	graveler.EventTypePostCreateTag:    true,
-	graveler.EventTypePreDeleteTag:     true,
-	graveler.EventTypePostDeleteTag:    true,
+func isEventSupported(event graveler.EventType) bool {
+	switch event {
+	case graveler.EventTypePreCommit,
+		graveler.EventTypePostMerge,
+		graveler.EventTypePreMerge,
+		graveler.EventTypePostCommit,
+		graveler.EventTypePreCreateBranch,
+		graveler.EventTypePostCreateBranch,
+		graveler.EventTypePreDeleteBranch,
+		graveler.EventTypePostDeleteBranch,
+		graveler.EventTypePreCreateTag,
+		graveler.EventTypePostCreateTag,
+		graveler.EventTypePreDeleteTag,
+		graveler.EventTypePostDeleteTag:
+		{
+			return true
+		}
+	}
+	return false
 }
 
 func (a *Action) Validate() error {
@@ -97,7 +102,7 @@ func (a *Action) Validate() error {
 		return fmt.Errorf("'on' is required: %w", ErrInvalidAction)
 	}
 	for o := range a.On {
-		if !supportedEvents[o] {
+		if !isEventSupported(o) {
 			return fmt.Errorf("event '%s' is not supported: %w", o, ErrInvalidAction)
 		}
 		err := validateOnParameters(a.On)
@@ -126,23 +131,17 @@ func validateOnParameters(on map[graveler.EventType]*ActionOn) error {
 		if v == nil {
 			continue
 		}
-		elem := reflect.ValueOf(v).Elem()
-		t := elem.Type()
-
-		for i := 0; i < t.NumField(); i++ {
-			field := t.Field(i).Name
-			switch field {
-			// Add a case for any additional field added to ActionOn struct
-			case "Branches":
-				{
-					if strings.Contains(string(k), "tag") {
-						return fmt.Errorf("'branches' is not supported in tag event types. %w", ErrInvalidEventParameter)
-					}
+		switch {
+		// Add a case for any additional field added to ActionOn struct
+		case len(v.Branches) > 0:
+			{
+				if strings.HasSuffix(string(k), "-tag") {
+					return fmt.Errorf("'branches' is not supported in tag event types. %w", ErrInvalidEventParameter)
 				}
-			default:
-				{
-					return fmt.Errorf("should not reach! %s, %w", field, ErrInvalidEventParameter)
-				}
+			}
+		default:
+			{
+				continue // Nothing to do
 			}
 		}
 	}
