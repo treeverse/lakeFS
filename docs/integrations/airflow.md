@@ -18,8 +18,8 @@ There are several steps needed to run Airflow with lakeFS.
 
 To access the lakeFS server and authenticate with it, create a new [Airflow
 Connection](https://airflow.apache.org/docs/apache-airflow/stable/howto/connection.html)
-of type HTTP and pass it to your DAG. You can do that using the Airflow UI
-or the cli.  Here’s an example Airflow command that does just that:
+of type HTTP and add it to your DAG.  You can do that using the Airflow UI
+or the CLI.  Here’s an example Airflow command that does just that:
 
 ```bash
 airflow connections add conn_lakefs --conn-type=HTTP --conn-host=http://<LAKEFS_ENDPOINT> \
@@ -28,7 +28,7 @@ airflow connections add conn_lakefs --conn-type=HTTP --conn-host=http://<LAKEFS_
 
 ## Install the lakeFS Airflow package
 
-You can use `pip` to install the package:
+You can use `pip` to install [the package](https://pypi.org/project/airflow-provider-lakefs/)
 
 ```bash
 pip install airflow-provider-lakefs
