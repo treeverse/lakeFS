@@ -50,7 +50,7 @@ jobs:
           OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}
 
       - name: Publish artifacts
-        run: make publish-scala
+        run: make publish-scala-test # TODO(barak): temporary using test
         env:
           AWS_REGION: us-east-1
           AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME }}
