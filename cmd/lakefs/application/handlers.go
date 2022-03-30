@@ -1,7 +1,6 @@
 package application
 
 import (
-	"github.com/treeverse/lakefs/pkg/email"
 	"net/http"
 	"net/url"
 
@@ -9,6 +8,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/cloud"
+	"github.com/treeverse/lakefs/pkg/email"
 	"github.com/treeverse/lakefs/pkg/gateway"
 	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
 	"github.com/treeverse/lakefs/pkg/version"
