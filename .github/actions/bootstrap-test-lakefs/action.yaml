@@ -29,7 +29,7 @@ runs:
       uses: aws-actions/configure-aws-credentials@v1
       with:
         aws-region: us-east-1
-        role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+        role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
 
     - name: Login to Amazon ECR
       id: login-ecr
