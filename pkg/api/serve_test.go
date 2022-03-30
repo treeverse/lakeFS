@@ -23,6 +23,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
 	dbparams "github.com/treeverse/lakefs/pkg/db/params"
+	"github.com/treeverse/lakefs/pkg/email"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/testutil"
@@ -109,6 +110,8 @@ func setupHandler(t testing.TB, opts ...testutil.GetDBOption) (http.Handler, *de
 	})
 
 	auditChecker := version.NewDefaultAuditChecker(cfg.GetSecurityAuditCheckURL())
+	emailParams, _ := cfg.GetEmailParams()
+	emailer := email.NewEmailer(emailParams)
 
 	handler := api.Serve(
 		cfg,
@@ -123,6 +126,7 @@ func setupHandler(t testing.TB, opts ...testutil.GetDBOption) (http.Handler, *de
 		actionsService,
 		auditChecker,
 		logging.Default(),
+		emailer,
 		nil,
 	)
 

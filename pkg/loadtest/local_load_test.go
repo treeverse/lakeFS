@@ -22,6 +22,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
 	dbparams "github.com/treeverse/lakefs/pkg/db/params"
+	"github.com/treeverse/lakefs/pkg/email"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/testutil"
@@ -96,6 +97,8 @@ func TestLocalLoad(t *testing.T) {
 		_ = c.Close()
 	})
 	auditChecker := version.NewDefaultAuditChecker(conf.GetSecurityAuditCheckURL())
+	emailParams, _ := conf.GetEmailParams()
+	emailer := email.NewEmailer(emailParams)
 
 	handler := api.Serve(
 		conf,
@@ -110,6 +113,7 @@ func TestLocalLoad(t *testing.T) {
 		actionsService,
 		auditChecker,
 		logging.Default(),
+		emailer,
 		nil,
 	)
 
