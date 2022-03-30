@@ -1010,6 +1010,7 @@ func (g *Graveler) DeleteTag(ctx context.Context, repositoryID RepositoryID, tag
 		EventType:        EventTypePreDeleteTag,
 		RepositoryID:     repositoryID,
 		SourceRef:        commitID.Ref(),
+		CommitID:         *commitID,
 		TagID:            tagID,
 	})
 	if err != nil {
@@ -1032,6 +1033,7 @@ func (g *Graveler) DeleteTag(ctx context.Context, repositoryID RepositoryID, tag
 		EventType:        EventTypePostDeleteTag,
 		RepositoryID:     repositoryID,
 		SourceRef:        commitID.Ref(),
+		CommitID:         *commitID,
 		TagID:            tagID,
 		PreRunID:         preRunID,
 	})

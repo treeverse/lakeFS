@@ -13,12 +13,12 @@ type EventInfo struct {
 	ActionName     string            `json:"action_name"`
 	HookID         string            `json:"hook_id"`
 	RepositoryID   string            `json:"repository_id"`
-	BranchID       string            `json:"branch_id"`
+	BranchID       string            `json:"branch_id,omitempty"`
 	SourceRef      string            `json:"source_ref,omitempty"`
 	TagID          string            `json:"tag_id,omitempty"`
 	CommitID       string            `json:"commit_id,omitempty"`
-	CommitMessage  string            `json:"commit_message"`
-	Committer      string            `json:"committer"`
+	CommitMessage  string            `json:"commit_message,omitempty"`
+	Committer      string            `json:"committer,omitempty"`
 	CommitMetadata map[string]string `json:"commit_metadata,omitempty"`
 }
 
