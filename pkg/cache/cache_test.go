@@ -33,7 +33,7 @@ func TestCache(t *testing.T) {
 			return k * k, nil
 		})
 		if err != nil {
-			t.Fatal.("GetOrSet")
+			t.Fatal("GetOrSet")
 		}
 		if actual.(int) != k*k {
 			t.Errorf("got %v != %d at %d", actual, k*k, k)
