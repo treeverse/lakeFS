@@ -1,6 +1,7 @@
 package application
 
 import (
+	"github.com/treeverse/lakefs/pkg/email"
 	"net/http"
 	"net/url"
 
@@ -13,9 +14,11 @@ import (
 	"github.com/treeverse/lakefs/pkg/version"
 )
 
-func NewAPIHandler(lakeFsCmdCtx LakeFsCmdContext, databaseService *DatabaseService, authService *AuthService, blockStore *BlockStore, c *catalog.Catalog, cloudMetadataProvider cloud.MetadataProvider, actionsService *actions.Service, auditChecker *version.AuditChecker) http.Handler {
+func NewAPIHandler(lakeFSCmdCtx LakeFsCmdContext, databaseService *DatabaseService, authService *AuthService, blockStore *BlockStore, c *catalog.Catalog, cloudMetadataProvider cloud.MetadataProvider, actionsService *actions.Service, auditChecker *version.AuditChecker) http.Handler {
+	emailParams, _ := lakeFSCmdCtx.cfg.GetEmailParams()
+	emailer := email.NewEmailer(emailParams)
 	return api.Serve(
-		lakeFsCmdCtx.cfg,
+		lakeFSCmdCtx.cfg,
 		c,
 		authService.authenticator,
 		authService.dbAuthService,
@@ -26,20 +29,21 @@ func NewAPIHandler(lakeFsCmdCtx LakeFsCmdContext, databaseService *DatabaseServi
 		cloudMetadataProvider,
 		actionsService,
 		auditChecker,
-		lakeFsCmdCtx.logger.WithField("service", "api_gateway"),
-		lakeFsCmdCtx.cfg.GetS3GatewayDomainNames(),
+		lakeFSCmdCtx.logger.WithField("service", "api_gateway"),
+		emailer,
+		lakeFSCmdCtx.cfg.GetS3GatewayDomainNames(),
 	)
 }
 
-func NewS3GatewayHandler(lakeFsCmdCtx LakeFsCmdContext, multipartsTracker multiparts.Tracker, c *catalog.Catalog, blockStore *BlockStore, authService *AuthService) http.Handler {
-	cfg := lakeFsCmdCtx.cfg
+func NewS3GatewayHandler(lakeFSCmdCtx LakeFsCmdContext, multipartsTracker multiparts.Tracker, c *catalog.Catalog, blockStore *BlockStore, authService *AuthService) http.Handler {
+	cfg := lakeFSCmdCtx.cfg
 	var err error
 	s3Fallback := cfg.GetS3GatewayFallbackURL()
 	var s3FallbackURL *url.URL
 	if s3Fallback != "" {
 		s3FallbackURL, err = url.Parse(s3Fallback)
 		if err != nil {
-			lakeFsCmdCtx.logger.WithError(err).Fatal("Failed to parse s3 fallback URL")
+			lakeFSCmdCtx.logger.WithError(err).Fatal("Failed to parse s3 fallback URL")
 		}
 	}
 	return gateway.NewHandler(

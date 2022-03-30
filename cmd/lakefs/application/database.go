@@ -30,8 +30,8 @@ func (databaseService DatabaseService) RegisterPrometheusCollector() error {
 	return prometheus.Register(collector)
 }
 
-func (databaseService DatabaseService) NewCatalog(cmd LakeFsCmdContext) (*catalog.Catalog, error) {
-	return catalog.New(cmd.ctx,
+func (databaseService DatabaseService) NewCatalog(ctx context.Context, cmd LakeFsCmdContext) (*catalog.Catalog, error) {
+	return catalog.New(ctx,
 		catalog.Config{
 			Config: cmd.cfg,
 			DB:     databaseService.dbPool,
@@ -44,11 +44,11 @@ func (databaseService DatabaseService) NewMultipartTracker() multiparts.Tracker 
 	return multiparts.NewTracker(databaseService.dbPool)
 }
 
-func NewDatabaseService(lakeFsCmdCtx LakeFsCmdContext) *DatabaseService {
-	dbParams := lakeFsCmdCtx.cfg.GetDatabaseParams()
-	dbPool := db.BuildDatabaseConnection(lakeFsCmdCtx.ctx, dbParams)
+func NewDatabaseService(ctx context.Context, lakeFSCmdCtx LakeFsCmdContext) *DatabaseService {
+	dbParams := lakeFSCmdCtx.cfg.GetDatabaseParams()
+	dbPool := db.BuildDatabaseConnection(ctx, dbParams)
 
-	lockDBPool := db.BuildDatabaseConnection(lakeFsCmdCtx.ctx, dbParams)
+	lockDBPool := db.BuildDatabaseConnection(ctx, dbParams)
 	migrator := db.NewDatabaseMigrator(dbParams)
 	return &DatabaseService{
 		dbPool,
@@ -58,17 +58,17 @@ func NewDatabaseService(lakeFsCmdCtx LakeFsCmdContext) *DatabaseService {
 	}
 }
 
-func (databaseService DatabaseService) ValidateSchemaIsUpToDate(lakeFsCmdCtx LakeFsCmdContext) error {
-	err := db.ValidateSchemaUpToDate(lakeFsCmdCtx.ctx, databaseService.dbPool, databaseService.dbParams)
+func (databaseService DatabaseService) ValidateSchemaIsUpToDate(ctx context.Context, lakeFSCmdCtx LakeFsCmdContext) error {
+	err := db.ValidateSchemaUpToDate(ctx, databaseService.dbPool, databaseService.dbParams)
 	switch {
 	case errors.Is(err, db.ErrSchemaNotCompatible):
-		lakeFsCmdCtx.logger.WithError(err).Fatal("Migration version mismatch, for more information see https://docs.lakefs.io/deploying-aws/upgrade.html")
+		lakeFSCmdCtx.logger.WithError(err).Fatal("Migration version mismatch, for more information see https://docs.lakefs.io/deploying-aws/upgrade.html")
 		return err
 	case errors.Is(err, migrate.ErrNilVersion):
-		lakeFsCmdCtx.logger.Debug("No migration, setup required")
+		lakeFSCmdCtx.logger.Debug("No migration, setup required")
 		return err
 	case err != nil:
-		lakeFsCmdCtx.logger.WithError(err).Warn("Failed on schema validation")
+		lakeFSCmdCtx.logger.WithError(err).Warn("Failed on schema validation")
 		return err
 	}
 	return nil

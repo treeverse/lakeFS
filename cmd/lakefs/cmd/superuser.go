@@ -22,8 +22,8 @@ var superuserCmd = &cobra.Command{
 		dbPool := db.BuildDatabaseConnection(ctx, cfg.GetDatabaseParams())
 		defer dbPool.Close()
 		logger := logging.Default()
-		lakeFsCmdContext := application.NewLakeFsCmdContext(ctx, cfg, logger)
-		databaseService := application.NewDatabaseService(lakeFsCmdContext)
+		lakeFSCmdCtx := application.NewLakeFSCmdContext(cfg, logger)
+		databaseService := application.NewDatabaseService(ctx, lakeFSCmdCtx)
 		defer databaseService.Close()
 		userCreator := func(ctx context.Context,
 			authService *auth.DBAuthService,

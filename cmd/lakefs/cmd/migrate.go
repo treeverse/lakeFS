@@ -24,8 +24,8 @@ var versionCmd = &cobra.Command{
 		cfg := loadConfig()
 		ctx := cmd.Context()
 		logger := logging.FromContext(ctx)
-		lakeFsCmdCtx := application.NewLakeFsCmdContext(ctx, cfg, logger)
-		databaseService := application.NewDatabaseService(lakeFsCmdCtx)
+		lakeFSCmdCtx := application.NewLakeFSCmdContext(cfg, logger)
+		databaseService := application.NewDatabaseService(ctx, lakeFSCmdCtx)
 		err := databaseService.Migrate(ctx)
 		if err != nil {
 			fmt.Printf("Failed to init database service: %s\n", err)

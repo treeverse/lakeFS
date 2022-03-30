@@ -91,9 +91,9 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	cfg := loadConfig()
 	ctx := cmd.Context()
 	logger := logging.FromContext(ctx)
-	lakeFsCmdContext := application.NewLakeFsCmdContext(ctx, cfg, logger)
-	databaseService := application.NewDatabaseService(lakeFsCmdContext)
-	err := databaseService.ValidateSchemaIsUpToDate(lakeFsCmdContext)
+	lakeFSCmdCtx := application.NewLakeFSCmdContext(cfg, logger)
+	databaseService := application.NewDatabaseService(ctx, lakeFSCmdCtx)
+	err := databaseService.ValidateSchemaIsUpToDate(ctx, lakeFSCmdCtx)
 	defer databaseService.Close()
 	if err != nil {
 		if errors.Is(err, db.ErrSchemaNotCompatible) {
@@ -104,7 +104,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 		return 1
 	}
 
-	c, err := databaseService.NewCatalog(lakeFsCmdContext)
+	c, err := databaseService.NewCatalog(ctx, lakeFSCmdCtx)
 
 	if err != nil {
 		fmt.Printf("Failed to create c: %s\n", err)
@@ -127,7 +127,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	bufferedCollector.SetRuntimeCollector(blockStore.RuntimeStats)
 
 	// wire actions into entry catalog
-	actionsService := application.NewActionsService(lakeFsCmdContext, databaseService, c, bufferedCollector)
+	actionsService := application.NewActionsService(ctx, lakeFSCmdCtx, databaseService, c, bufferedCollector)
 
 	defer actionsService.Stop()
 

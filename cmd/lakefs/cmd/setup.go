@@ -21,8 +21,8 @@ var setupCmd = &cobra.Command{
 		cfg := loadConfig()
 		ctx := cmd.Context()
 		logger := logging.Default()
-		lakeFsCmdContext := application.NewLakeFsCmdContext(ctx, cfg, logger)
-		databaseService := application.NewDatabaseService(lakeFsCmdContext)
+		lakeFSCmdCtx := application.NewLakeFSCmdContext(cfg, logger)
+		databaseService := application.NewDatabaseService(ctx, lakeFSCmdCtx)
 		defer databaseService.Close()
 		err := databaseService.Migrate(ctx)
 		if err != nil {
