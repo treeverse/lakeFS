@@ -48,7 +48,12 @@ services:
       - ESTI_ENDPOINT_URL=http://lakefs:8000
       - ESTI_LAKECTL_DIR=/app
     working_dir: /lakefs
-    entrypoint: ["/bin/sh", "./esti/ops/esti-bootstrap.sh"]
+    command:
+      - /bin/sh
+      - -c
+      - |
+        apk add --no-cache util-linux
+        go test -v ./esti --system-tests
     volumes:
       - lakefs-code:/lakefs
       - lakefs-app:/app:ro 
