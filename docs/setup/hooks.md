@@ -7,7 +7,6 @@ nav_order: 30
 has_children: false
 redirect_from: ../hooks.html
 ---
-
 # Configurable Hooks
 {: .no_toc }
 
@@ -16,14 +15,25 @@ redirect_from: ../hooks.html
 Like other version control systems, lakeFS allows the configuration of `Actions` to trigger when predefined events occur.
 
 Supported Events:
-1. `pre_commit` - Action runs when the commit occurs, before the commit is finalized.
-1. `post_commit` - Action runs after the commit is finalized.
-1. `pre_merge` - Action runs when the merge occurs, before the merge is finalized.
-1. `post_merge` - Action runs after the merge is finalized.
+
+| Event                | Description                                                                    |
+|----------------------|--------------------------------------------------------------------------------|
+| `pre_commit`         | Runs when the commit occurs, before the commit is finalized                    |
+| `post_commit`        | Runs after the commit is finalized                                             |
+| `pre_merge`          | Runs on the source branch when the merge occurs, before the merge is finalized |
+| `post_merge`         | Runs on the merge result, after the merge is finalized                         |
+| `pre_create_branch`  | Runs on the source branch prior to creating a new branch                       |
+| `post_create_branch` | Runs on the new branch after the branch was created                            |
+| `pre_delete_branch`  | Runs prior to deleting a branch                                                |
+| `post_delete_branch` | Runs after the branch was deleted                                              |
+| `pre_create_tag`     | Runs prior to creating a new tag                                               |
+| `post_create_tag`    | Runs after the tag was created                                                 |
+| `pre_delete_tag`     | Runs prior to deleting a tag                                                   |
+| `post_delete_tag`    | Runs after the tag was deleted                                                 |
 
 lakeFS `Actions` are handled per repository and cannot be shared between repositories.
 Failure of any `Hook` under any `Action` of a `pre_*` event will result in aborting the lakeFS operation that is taking place.
-On the contrary, `Hook` failures under any `Action` of a `post_*` event will not affect the same operation.
+`Hook` failures under any `Action` of a `post_*` event will not revert the operation.
 
 `Hooks` are managed by `Action` files that are written to a prefix in the lakeFS repository.
 This allows configuration-as-code inside lakeFS, where `Action` files are declarative and written in YAML.
@@ -57,15 +67,15 @@ Failure of a single `Hook` will stop the execution of the containing `Action` an
 
 Schema of the Action file:
 
-|Property          | Description                                           |Data Type |Required |Default Value
-|------------------|-------------------------------------------------------|----------|---------|--------------------------------------|
-|name              | Identify the Action file                              |String    |false    | If missing, filename is used instead
-|on                | List of events that will trigger the hooks            |List      |true     |
-|on<event>.branches| Glob pattern list of branches that triggers the hooks |List      |false    | If empty, Action runs on all branches
-|hooks             | List of hooks to be executed                          |List      |true     |
-|hook.id           | ID of the hook, must be unique within the `Action`    |String    |true     |
-|hook.type         | Type of the hook ([types](#hook-types))               |String    |true     |
-|hook.properties   | Hook's specific configuration                         |Dictionary|true     |
+| Property           | Description                                           | Data Type  | Required | Default Value                                                           |
+|--------------------|-------------------------------------------------------|------------|----------|-------------------------------------------------------------------------|
+| name               | Identify the Action file                              | String     | false    | If missing, filename is used instead                                    |
+| on                 | List of events that will trigger the hooks            | List       | true     |                                                                         |
+| on<event>.branches | Glob pattern list of branches that triggers the hooks | List       | false    | **Not applicable to Tag events.** If empty, Action runs on all branches |
+| hooks              | List of hooks to be executed                          | List       | true     |                                                                         |
+| hook.id            | ID of the hook, must be unique within the `Action`    | String     | true     |                                                                         |
+| hook.type          | Type of the hook ([types](#hook-types))               | String     | true     |                                                                         |
+| hook.properties    | Hook's specific configuration                         | Dictionary | true     |                                                                         |
 
 Example:
 
@@ -103,6 +113,7 @@ For example, if our repository contains a pre-commit hook, every commit would ge
 lakeFS will fetch, parse and filter the repository `Action` files and start to execute the `Hooks` under each `Action`.
 All executed `Hooks` (each with `hook_run_id`) exists in the context of that `Run` (`run_id`).
 
+---
 ## Uploading Action files
 
 `Action` files should be uploaded with the prefix `_lakefs_actions/` to the lakeFS repository.
@@ -131,6 +142,7 @@ There are 2 types of files that are stored in the metadata section of lakeFS rep
 Metadata files stored in the metadata section aren't accessible like user stored files.
 {: .note }
 
+---
 ## Hook types
 
 Currently, there are two types of `Hooks` that are supported by lakeFS: [Webhook](#webhooks) and [Airflow](#airflow-hooks).
@@ -139,7 +151,7 @@ Currently, there are two types of `Hooks` that are supported by lakeFS: [Webhook
 
 A `Webhook` is a `Hook` type that sends an HTTP POST request to the configured URL.
 Any non 2XX response by the responding endpoint will fail the `Hook`, cancel the execution of the following `Hooks` 
-under the same `Action`. For `pre_*` hooks, the triggering operation (commit/merge) will also be aborted.
+under the same `Action`. For `pre_*` hooks, the triggering operation will also be aborted.
 
 **Warning:** You should not use `pre_*` webhooks for long-running tasks, since they block the performed operation.
 Moreover, the branch is locked during the execution of `pre_*` hooks, so the webhook server cannot perform any write operations (like uploading or commits) on the branch.
@@ -147,12 +159,12 @@ Moreover, the branch is locked during the execution of `pre_*` hooks, so the web
 
 #### Action file Webhook properties
 
-|Property          | Description                                            |Data Type                                                                                |Required |Default Value|Env Vars Support|
-|------------------|--------------------------------------------------------|-----------------------------------------------------------------------------------------|---------|-------------|----------------|
-|url               | The URL address of the request                         |String                                                                                   |true     |             |no
-|timeout           | Time to wait for response before failing the hook      |String (golang's [Duration](https://golang.org/pkg/time/#Duration.String) representation)|false    | 1m          |no
-|query_params      | List of query params that will be added to the request |Dictionary(String:String or String:List(String)                                          |false    |             |yes
-|headers           | Headers to add to the request                          |Dictionary(String:String)                                                                |false    |             |yes
+| Property     | Description                                            | Data Type                                                                                 | Required | Default Value | Env Vars Support |
+|--------------|--------------------------------------------------------|-------------------------------------------------------------------------------------------|----------|---------------|------------------|
+| url          | The URL address of the request                         | String                                                                                    | true     |               | no               |
+| timeout      | Time to wait for response before failing the hook      | String (golang's [Duration](https://golang.org/pkg/time/#Duration.String) representation) | false    | 1 minute      | no               |
+| query_params | List of query params that will be added to the request | Dictionary(String:String or String:List(String)                                           | false    |               | yes              |
+| headers      | Headers to add to the request                          | Dictionary(String:String)                                                                 | false    |               | yes              |
 
 **Secrets & Environment Variables**<br/>
 lakeFS Actions supports secrets by using environment variables.
@@ -182,18 +194,23 @@ hooks:
 #### Request body schema
 Upon execution, a webhook will send a request containing a JSON object with the following fields:
 
-|Field             |Description                                                                          |Type  |Example                  |
-|------------------|-------------------------------------------------------------------------------------|------|-------------------------|
-|EventType         |Type of the event that triggered the `Action`                                        |string|pre_commit               |
-|EventTime         |Time of the event that triggered the `Action` (RFC3339)                              |string|2006-01-02T15:04:05Z07:00|
-|ActionName        |Containing `Hook` Action's Name                                                      |string|                         |
-|HookID            |ID of the `Hook`                                                                     |string|                         |
-|RepositoryID      |ID of the Repository                                                                 |string|
-|BranchID          |ID of the Branch                                                                     |string|
-|SourceRef         |Reference to the source that triggered the event (source Branch for commit or merge) |string|
-|CommitMessage     |The message for the commit (or merge) that is taking place                           |string|
-|Committer         |Name of the committer                                                                |string|
-|CommitMetadata    |The metadata for the commit that is taking place                                     |string|
+| Field               | Description                                                | Type   |
+|---------------------|------------------------------------------------------------|--------|
+| event_type          | Type of the event that triggered the `Action`              | string |
+| event_time          | Time of the event that triggered the `Action` (RFC3339)    | string |
+| action_name         | Containing `Hook` Action's Name                            | string |
+| hook_id             | ID of the `Hook`                                           | string |
+| repository_id       | ID of the Repository                                       | string |
+| branch_id[^1]       | ID of the Branch                                           | string |
+| source_ref          | Reference to the source on which the event was triggered   | string |
+| commit_message[^2]  | The message for the commit (or merge) that is taking place | string |
+| committer[^2]       | Name of the committer                                      | string |
+| commit_metadata[^2] | The metadata for the commit that is taking place           | string |
+| tag_id[^3]          | The ID of the created/deleted tag                          | string |
+
+[^1]: N\A for Tag events  
+[^2]: N\A for Tag and Create/Delete Branch events  
+[^3]: Applicable only for Tag events
 
 Example:
 ```json
@@ -218,16 +235,13 @@ Airflow Hook triggers a DAG run in an Airflow installation using [Airflow's REST
 The hook run succeeds if the DAG was triggered, and fails otherwise.
 
 #### Action file Airflow hook properties
-
-
-| Property | Description                                             | Data Type | Example                 | Required |Env Vars Support|
-|----------|---------------------------------------------------------|-----------|-------------------------|----------|----------------|
-| url      | The URL of the Airflow instance                         | String    | "http://localhost:8080" | true     |no
-| dag_id   | The DAG to trigger                                      | String    | "example_dag"           | true     |no
-| username | The name of the Airflow user performing the request     | String    | "admin"                 | true     |no
-| password | The password of the Airflow user performing the request | String    | "admin"                 | true     |yes
-| dag_conf | DAG run configuration that will be passed as is         | JSON      |                         | false    |no
-
+| Property | Description                                             | Data Type | Example                 | Required | Env Vars Support |
+|----------|---------------------------------------------------------|-----------|-------------------------|----------|------------------|
+| url      | The URL of the Airflow instance                         | String    | "http://localhost:8080" | true     | no               |
+| dag_id   | The DAG to trigger                                      | String    | "example_dag"           | true     | no               |
+| username | The name of the Airflow user performing the request     | String    | "admin"                 | true     | no               |
+| password | The password of the Airflow user performing the request | String    | "admin"                 | true     | yes              |
+| dag_conf | DAG run configuration that will be passed as is         | JSON      |                         | false    | no               |
 
 Example:
 ```yaml
@@ -251,7 +265,7 @@ lakeFS will add an entry to the Airflow request configuration property (`conf`) 
 
 The key of the record will be `lakeFS_event` and the value will match the one described [here](#request-body-schema)
 
-
+---
 ## Experimentation
 
 It's sometimes easier to start experimenting with lakeFS webhooks, even before you have a running server to receive the calls.
@@ -299,3 +313,5 @@ It should look like `https://api.relay.svix.com/api/v1/play/receive/<Random_Gen_
 in the Svix endpoint you provided. You can also check the `Actions` tab in the lakeFS UI for more details.
 
 ![Setup]({{ site.baseurl }}/assets/img/svix_play.png)
+
+---
