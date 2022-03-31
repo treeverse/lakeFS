@@ -1,4 +1,4 @@
 Source: lakefs://${REPO}/${SOURCE_BRANCH}
-Desti  nation: lakefs://${REPO}/${DEST_BRANCH}
+Destination: lakefs://${REPO}/${DEST_BRANCH}
 Conflict found.
 Error executing command.
