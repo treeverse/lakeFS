@@ -457,36 +457,32 @@ func (s *Service) PreCreateTagHook(ctx context.Context, record graveler.HookReco
 	return s.Run(ctx, record)
 }
 
-func (s *Service) PostCreateTagHook(_ context.Context, record graveler.HookRecord) error {
+func (s *Service) PostCreateTagHook(_ context.Context, record graveler.HookRecord) {
 	s.asyncRun(record)
-	return nil
 }
 
 func (s *Service) PreDeleteTagHook(ctx context.Context, record graveler.HookRecord) error {
 	return s.Run(ctx, record)
 }
 
-func (s *Service) PostDeleteTagHook(_ context.Context, record graveler.HookRecord) error {
+func (s *Service) PostDeleteTagHook(_ context.Context, record graveler.HookRecord) {
 	s.asyncRun(record)
-	return nil
 }
 
 func (s *Service) PreCreateBranchHook(ctx context.Context, record graveler.HookRecord) error {
 	return s.Run(ctx, record)
 }
 
-func (s *Service) PostCreateBranchHook(_ context.Context, record graveler.HookRecord) error {
+func (s *Service) PostCreateBranchHook(_ context.Context, record graveler.HookRecord) {
 	s.asyncRun(record)
-	return nil
 }
 
 func (s *Service) PreDeleteBranchHook(ctx context.Context, record graveler.HookRecord) error {
 	return s.Run(ctx, record)
 }
 
-func (s *Service) PostDeleteBranchHook(_ context.Context, record graveler.HookRecord) error {
+func (s *Service) PostDeleteBranchHook(_ context.Context, record graveler.HookRecord) {
 	s.asyncRun(record)
-	return nil
 }
 
 func NewHookRunID(actionIdx, hookIdx int) string {

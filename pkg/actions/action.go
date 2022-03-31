@@ -84,9 +84,7 @@ func isEventSupported(event graveler.EventType) bool {
 		graveler.EventTypePostCreateTag,
 		graveler.EventTypePreDeleteTag,
 		graveler.EventTypePostDeleteTag:
-		{
-			return true
-		}
+		return true
 	}
 	return false
 }
@@ -101,11 +99,8 @@ func (a *Action) Validate() error {
 	if len(a.On) == 0 {
 		return fmt.Errorf("'on' is required: %w", ErrInvalidAction)
 	}
-	for o := range a.On {
-		if !isEventSupported(o) {
-			return fmt.Errorf("event '%s' is not supported: %w", o, ErrInvalidAction)
-		}
-		err := validateOnParameters(a.On)
+	for k, v := range a.On {
+		err := validateEvent(k, v)
 		if err != nil {
 			return err
 		}
@@ -126,26 +121,21 @@ func (a *Action) Validate() error {
 	return nil
 }
 
-func validateOnParameters(on map[graveler.EventType]*ActionOn) error {
-	for k, v := range on {
-		if v == nil {
-			continue
-		}
+func validateEvent(event graveler.EventType, on *ActionOn) error {
+	if !isEventSupported(event) {
+		return fmt.Errorf("event '%s' is not supported: %w", event, ErrInvalidAction)
+	}
+	if on != nil {
 		switch {
 		// Add a case for any additional field added to ActionOn struct
-		case len(v.Branches) > 0:
-			{
-				if strings.HasSuffix(string(k), "-tag") {
-					return fmt.Errorf("'branches' is not supported in tag event types. %w", ErrInvalidEventParameter)
-				}
+		case len(on.Branches) > 0:
+			if strings.HasSuffix(string(event), "-tag") {
+				return fmt.Errorf("'branches' is not supported in tag event types. %w", ErrInvalidEventParameter)
 			}
 		default:
-			{
-				continue // Nothing to do
-			}
+			// Nothing to do
 		}
 	}
-
 	return nil
 }
 

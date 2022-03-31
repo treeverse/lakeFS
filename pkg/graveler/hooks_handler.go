@@ -25,29 +25,25 @@ const (
 )
 
 // HookRecord is an aggregation of all necessary fields for all event types
-// Required fields for all event types:
-// RunID
-// EventType
-// RepositoryID
-// StorageNamespace
-// SourceRef - The reference from which the actions files are read from
-// Event specific fields:
-// BranchID - Relevant for all event types except tags. For merge events this will be the ID of the destination branch
-// Commit - Relevant only for commit and merge events. In both it will contain the new commit data created from the operation
-// CommitID - Not relevant in delete branch. In commit and merge will not exist in pre-action. In post actions will contain the new commit ID
-// PreRunID - Exists only in post actions. Contains the ID of the pre-action associated with this post-action
-// TagID - Exists only in tag actions.
 type HookRecord struct {
+	// Required fields for all event types:
 	RunID            string
 	EventType        EventType
 	RepositoryID     RepositoryID
 	StorageNamespace StorageNamespace
-	SourceRef        Ref
-	BranchID         BranchID
-	Commit           Commit
-	CommitID         CommitID
-	PreRunID         string
-	TagID            TagID
+	// The reference which the actions files are read from
+	SourceRef Ref
+	// Event specific fields:
+	// Relevant for all event types except tags. For merge events this will be the ID of the destination branch
+	BranchID BranchID
+	// Relevant only for commit and merge events. In both it will contain the new commit data created from the operation
+	Commit Commit
+	// Not relevant in delete branch. In commit and merge will not exist in pre-action. In post actions will contain the new commit ID
+	CommitID CommitID
+	// Exists only in post actions. Contains the ID of the pre-action associated with this post-action
+	PreRunID string
+	// Exists only in tag actions.
+	TagID TagID
 }
 
 type HooksHandler interface {
@@ -56,13 +52,13 @@ type HooksHandler interface {
 	PreMergeHook(ctx context.Context, record HookRecord) error
 	PostMergeHook(ctx context.Context, record HookRecord) error
 	PreCreateTagHook(ctx context.Context, record HookRecord) error
-	PostCreateTagHook(ctx context.Context, record HookRecord) error
+	PostCreateTagHook(ctx context.Context, record HookRecord)
 	PreDeleteTagHook(ctx context.Context, record HookRecord) error
-	PostDeleteTagHook(ctx context.Context, record HookRecord) error
+	PostDeleteTagHook(ctx context.Context, record HookRecord)
 	PreCreateBranchHook(ctx context.Context, record HookRecord) error
-	PostCreateBranchHook(ctx context.Context, record HookRecord) error
+	PostCreateBranchHook(ctx context.Context, record HookRecord)
 	PreDeleteBranchHook(ctx context.Context, record HookRecord) error
-	PostDeleteBranchHook(ctx context.Context, record HookRecord) error
+	PostDeleteBranchHook(ctx context.Context, record HookRecord)
 }
 
 type HooksNoOp struct{}
@@ -87,32 +83,28 @@ func (h *HooksNoOp) PreCreateTagHook(context.Context, HookRecord) error {
 	return nil
 }
 
-func (h *HooksNoOp) PostCreateTagHook(context.Context, HookRecord) error {
-	return nil
+func (h *HooksNoOp) PostCreateTagHook(context.Context, HookRecord) {
 }
 
 func (h *HooksNoOp) PreDeleteTagHook(context.Context, HookRecord) error {
 	return nil
 }
 
-func (h *HooksNoOp) PostDeleteTagHook(context.Context, HookRecord) error {
-	return nil
+func (h *HooksNoOp) PostDeleteTagHook(context.Context, HookRecord) {
 }
 
 func (h *HooksNoOp) PreCreateBranchHook(context.Context, HookRecord) error {
 	return nil
 }
 
-func (h *HooksNoOp) PostCreateBranchHook(context.Context, HookRecord) error {
-	return nil
+func (h *HooksNoOp) PostCreateBranchHook(context.Context, HookRecord) {
 }
 
 func (h *HooksNoOp) PreDeleteBranchHook(context.Context, HookRecord) error {
 	return nil
 }
 
-func (h *HooksNoOp) PostDeleteBranchHook(context.Context, HookRecord) error {
-	return nil
+func (h *HooksNoOp) PostDeleteBranchHook(context.Context, HookRecord) {
 }
 
 func NewRunID() string {

@@ -375,8 +375,6 @@ func parseAndUploadActions(t *testing.T, ctx context.Context, repo, branch strin
 		URL: server.BaseURL(),
 	}
 
-	// alt impl
-
 	actionsDir, _ := fs.Sub(actions, "action_files")
 	ents, _ := fs.Glob(actionsDir, "*.yaml")
 	for _, ent := range ents {

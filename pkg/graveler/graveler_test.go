@@ -75,13 +75,12 @@ func (h *Hooks) PreCreateTagHook(_ context.Context, record graveler.HookRecord) 
 	return h.Err
 }
 
-func (h *Hooks) PostCreateTagHook(_ context.Context, record graveler.HookRecord) error {
+func (h *Hooks) PostCreateTagHook(_ context.Context, record graveler.HookRecord) {
 	h.Called = true
 	h.StorageNamespace = record.StorageNamespace
 	h.RepositoryID = record.RepositoryID
 	h.CommitID = record.CommitID
 	h.TagID = record.TagID
-	return h.Err
 }
 
 func (h *Hooks) PreDeleteTagHook(_ context.Context, record graveler.HookRecord) error {
@@ -92,12 +91,11 @@ func (h *Hooks) PreDeleteTagHook(_ context.Context, record graveler.HookRecord) 
 	return h.Err
 }
 
-func (h *Hooks) PostDeleteTagHook(_ context.Context, record graveler.HookRecord) error {
+func (h *Hooks) PostDeleteTagHook(_ context.Context, record graveler.HookRecord) {
 	h.Called = true
 	h.StorageNamespace = record.StorageNamespace
 	h.RepositoryID = record.RepositoryID
 	h.TagID = record.TagID
-	return h.Err
 }
 
 func (h *Hooks) PreCreateBranchHook(_ context.Context, record graveler.HookRecord) error {
@@ -110,14 +108,13 @@ func (h *Hooks) PreCreateBranchHook(_ context.Context, record graveler.HookRecor
 	return h.Err
 }
 
-func (h *Hooks) PostCreateBranchHook(_ context.Context, record graveler.HookRecord) error {
+func (h *Hooks) PostCreateBranchHook(_ context.Context, record graveler.HookRecord) {
 	h.Called = true
 	h.StorageNamespace = record.StorageNamespace
 	h.RepositoryID = record.RepositoryID
 	h.BranchID = record.BranchID
 	h.CommitID = record.CommitID
 	h.SourceRef = record.SourceRef
-	return h.Err
 }
 
 func (h *Hooks) PreDeleteBranchHook(_ context.Context, record graveler.HookRecord) error {
@@ -128,12 +125,11 @@ func (h *Hooks) PreDeleteBranchHook(_ context.Context, record graveler.HookRecor
 	return h.Err
 }
 
-func (h *Hooks) PostDeleteBranchHook(_ context.Context, record graveler.HookRecord) error {
+func (h *Hooks) PostDeleteBranchHook(_ context.Context, record graveler.HookRecord) {
 	h.Called = true
 	h.StorageNamespace = record.StorageNamespace
 	h.RepositoryID = record.RepositoryID
 	h.BranchID = record.BranchID
-	return h.Err
 }
 
 func TestGraveler_List(t *testing.T) {
@@ -366,7 +362,7 @@ func TestGraveler_CreateBranch(t *testing.T) {
 	gravel := graveler.NewGraveler(branchLocker, nil,
 		nil,
 		&testutil.RefsFake{
-			Err:      graveler.ErrNotFound,
+			Err:      graveler.ErrBranchNotFound,
 			CommitID: "8888888798e3aeface8e62d1c7072a965314b4",
 		}, nil, nil,
 	)
@@ -1306,6 +1302,56 @@ func TestGraveler_Delete(t *testing.T) {
 	}
 }
 
+func TestGraveler_CreateTag(t *testing.T) {
+	// prepare graveler
+	conn, _ := tu.GetDB(t, databaseURI)
+	branchLocker := ref.NewBranchLocker(conn)
+	const repositoryID = "repoID"
+	const commitID = graveler.CommitID("commitID")
+	const tagID = graveler.TagID("tagID")
+	committedManager := &testutil.CommittedFake{}
+	stagingManager := &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(nil)}
+	refManager := &testutil.RefsFake{
+		Err: graveler.ErrTagNotFound,
+	}
+	// tests
+	errSomethingBad := errors.New("first error")
+	tests := []struct {
+		name string
+		err  error
+	}{
+		{
+			name: "Successful",
+			err:  nil,
+		},
+		{
+			name: "Tag exists",
+			err:  graveler.ErrTagAlreadyExists,
+		},
+		{
+			name: "Other error on get tag",
+			err:  errSomethingBad,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// setup
+			ctx := context.Background()
+
+			if tt.err != nil {
+				refManager.Err = tt.err
+			}
+			g := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager, nil, testutil.NewProtectedBranchesManagerFake())
+			err := g.CreateTag(ctx, repositoryID, tagID, commitID)
+
+			// verify we got an error
+			if !errors.Is(err, tt.err) {
+				t.Fatalf("Create tag err=%v, expected=%v", err, tt.err)
+			}
+		})
+	}
+}
+
 func TestGraveler_PreCreateTagHook(t *testing.T) {
 	// prepare graveler
 	conn, _ := tu.GetDB(t, databaseURI)
@@ -1521,7 +1567,10 @@ func TestGraveler_PreCreateBranchHook(t *testing.T) {
 				g.SetHooksHandler(h)
 			}
 
-			refManager.Branch = nil // WA for CreateBranch fake logic
+			// WA for CreateBranch fake logic
+			refManager.Branch = nil
+			refManager.Err = graveler.ErrBranchNotFound
+
 			newBranch := newBranchPrefix + strconv.Itoa(i)
 			_, err := g.CreateBranch(ctx, repositoryID, graveler.BranchID(newBranch), graveler.Ref(sourceBranchID))
 
