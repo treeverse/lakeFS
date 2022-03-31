@@ -39,7 +39,7 @@ With lakeFS data teams can stop worrying about issues that take away much of the
 * Test and validate your data before propagating it to data consumers.
 * Travel back in time, across data versions and across data collections - for reproducing and debugging data issues.
 
-Since lakeFS is compatible with the S3, Azure Blog and GCP object storage API, all popular applications will work without modification, by simply adding the branch name to the object path:
+Since lakeFS is compatible with the S3 object storage API, all popular applications will work without modification, by simply adding the branch name to the object path:
 
 <img src="{{ site.baseurl }}/assets/img/s3_branch.png" alt="lakeFS s3 addressing" width="60%" height="60%" />
 
