@@ -23,11 +23,10 @@ func lakectlLocation() string {
 }
 
 func LakectlWithParams(accessKeyID, secretAccessKey, endPointURL string) string {
-	lakectlCmdline :=
-		"LAKECTL_CREDENTIALS_ACCESS_KEY_ID=" + accessKeyID +
-			" LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY=" + secretAccessKey +
-			" LAKECTL_SERVER_ENDPOINT_URL=" + endPointURL +
-			" " + lakectlLocation()
+	lakectlCmdline := "LAKECTL_CREDENTIALS_ACCESS_KEY_ID=" + accessKeyID +
+		" LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY=" + secretAccessKey +
+		" LAKECTL_SERVER_ENDPOINT_URL=" + endPointURL +
+		" " + lakectlLocation()
 
 	return lakectlCmdline
 }
@@ -130,14 +129,17 @@ func sanitize(output string, vars map[string]string) string {
 }
 
 func RunCmdAndVerifySuccessWithFile(t *testing.T, cmd string, isTerminal bool, goldenFile string, vars map[string]string) {
+	t.Helper()
 	runCmdAndVerifyWithFile(t, cmd, goldenFile, false, isTerminal, vars)
 }
 
 func RunCmdAndVerifyFailureWithFile(t *testing.T, cmd string, isTerminal bool, goldenFile string, vars map[string]string) {
+	t.Helper()
 	runCmdAndVerifyWithFile(t, cmd, goldenFile, true, isTerminal, vars)
 }
 
 func runCmdAndVerifyWithFile(t *testing.T, cmd, goldenFile string, expectFail, isTerminal bool, vars map[string]string) {
+	t.Helper()
 	goldenFile = "golden/" + goldenFile + ".golden"
 
 	switch *update {
@@ -154,32 +156,36 @@ func runCmdAndVerifyWithFile(t *testing.T, cmd, goldenFile string, expectFail, i
 }
 
 func updateGoldenFile(t *testing.T, cmd string, isTerminal bool, goldenFile string, vars map[string]string) {
+	t.Helper()
 	result, _ := runShellCommand(cmd, isTerminal)
 	s := sanitize(string(result), vars)
 	s, err := embedVariables(s, vars)
 	require.NoError(t, err, "Variable embed failed - %s", err)
-	err = ioutil.WriteFile(goldenFile, []byte(s), 0600)
+	err = ioutil.WriteFile(goldenFile, []byte(s), 0o600)
 	require.NoError(t, err, "Failed to write file %s", goldenFile)
 }
 
 func RunCmdAndVerifySuccess(t *testing.T, cmd string, isTerminal bool, expected string, vars map[string]string) {
+	t.Helper()
 	runCmdAndVerifyResult(t, cmd, false, isTerminal, expected, vars)
 }
 
 func RunCmdAndVerifyFailure(t *testing.T, cmd string, isTerminal bool, expected string, vars map[string]string) {
+	t.Helper()
 	runCmdAndVerifyResult(t, cmd, true, isTerminal, expected, vars)
 }
 
 func runCmdAndVerifyResult(t *testing.T, cmd string, expectFail bool, isTerminal bool, expected string, vars map[string]string) {
+	t.Helper()
 	expanded, err := expandVariables(expected, vars)
 	if err != nil {
-		t.Fatal("Failed to extract variables for", cmd)
+		t.Fatal("Failed to extract variables for:", cmd)
 	}
 	result, err := runShellCommand(cmd, isTerminal)
 	if expectFail {
-		require.Error(t, err, "Expected error in %s command did not occur. Output -%s", cmd, string(result))
+		require.Error(t, err, "Expected error in '%s' command did not occur. Output: %s", cmd, string(result))
 	} else {
-		require.NoError(t, err, "Failed to run %s command - %s", cmd, string(result))
+		require.NoError(t, err, "Failed to run '%s' command - %s", cmd, string(result))
 	}
 	require.Equal(t, expanded, sanitize(string(result), vars), "Unexpected output for %s command", cmd)
 }
