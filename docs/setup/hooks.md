@@ -87,7 +87,6 @@ on:
   pre-merge:
     branches:
       - main
-  post-delete-tag:
 hooks:
   - id: no_temp
     type: webhook
@@ -163,7 +162,7 @@ Moreover, the branch is locked during the execution of `pre_*` hooks, so the web
 | Property     | Description                                            | Data Type                                                                                 | Required | Default Value | Env Vars Support |
 |--------------|--------------------------------------------------------|-------------------------------------------------------------------------------------------|----------|---------------|------------------|
 | url          | The URL address of the request                         | String                                                                                    | true     |               | no               |
-| timeout      | Time to wait for response before failing the hook      | String (golang's [Duration](https://golang.org/pkg/time/#Duration.String) representation) | false    | 1m            | no               |
+| timeout      | Time to wait for response before failing the hook      | String (golang's [Duration](https://golang.org/pkg/time/#Duration.String) representation) | false    | 1 minute      | no               |
 | query_params | List of query params that will be added to the request | Dictionary(String:String or String:List(String)                                           | false    |               | yes              |
 | headers      | Headers to add to the request                          | Dictionary(String:String)                                                                 | false    |               | yes              |
 
@@ -195,19 +194,19 @@ hooks:
 #### Request body schema
 Upon execution, a webhook will send a request containing a JSON object with the following fields:
 
-| Field              | Description                                                | Type   | Example                   |
-|--------------------|------------------------------------------------------------|--------|---------------------------|
-| EventType          | Type of the event that triggered the `Action`              | string | pre_commit                |
-| EventTime          | Time of the event that triggered the `Action` (RFC3339)    | string | 2006-01-02T15:04:05Z07:00 |
-| ActionName         | Containing `Hook` Action's Name                            | string |                           |
-| HookID             | ID of the `Hook`                                           | string |                           |
-| RepositoryID       | ID of the Repository                                       | string |
-| BranchID[^1]       | ID of the Branch (not relevant for Tag events)             | string |
-| SourceRef          | Reference to the source on which the event was triggered   | string |
-| CommitMessage[^2]  | The message for the commit (or merge) that is taking place | string |
-| Committer[^2]      | Name of the committer                                      | string |
-| CommitMetadata[^2] | The metadata for the commit that is taking place           | string |
-| TagID[^3]          | The ID of the created/deleted tag                          | string |
+| Field               | Description                                                | Type   |
+|---------------------|------------------------------------------------------------|--------|
+| event_type          | Type of the event that triggered the `Action`              | string |
+| event_time          | Time of the event that triggered the `Action` (RFC3339)    | string |
+| action_name         | Containing `Hook` Action's Name                            | string |
+| hook_id             | ID of the `Hook`                                           | string |
+| repository_id       | ID of the Repository                                       | string |
+| branch_id[^1]       | ID of the Branch                                           | string |
+| source_ref          | Reference to the source on which the event was triggered   | string |
+| commit_message[^2]  | The message for the commit (or merge) that is taking place | string |
+| committer[^2]       | Name of the committer                                      | string |
+| commit_metadata[^2] | The metadata for the commit that is taking place           | string |
+| tag_id[^3]          | The ID of the created/deleted tag                          | string |
 
 [^1]: N\A for Tag events  
 [^2]: N\A for Tag and Create/Delete Branch events  
