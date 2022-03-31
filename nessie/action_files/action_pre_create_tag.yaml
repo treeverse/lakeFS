@@ -1,0 +1,10 @@
+name: Test Pre Create Tag
+description: a test action description
+on:
+  pre-create-tag:
+hooks:
+  - id: test_webhook
+    type: webhook
+    description: Check webhooks for pre-create tag works
+    properties:
+      url: "{{.URL}}/pre-create-tag"

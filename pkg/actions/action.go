@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path"
 	"regexp"
+	"strings"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -65,15 +66,27 @@ var (
 	reName   = regexp.MustCompile(`^\w[\w\-. ]+$`)
 	reHookID = regexp.MustCompile(`^[_a-zA-Z][\-_a-zA-Z0-9]{1,255}$`)
 
-	ErrInvalidAction    = errors.New("invalid action")
-	ErrInvalidEventType = errors.New("invalid event type")
+	ErrInvalidAction         = errors.New("invalid action")
+	ErrInvalidEventParameter = errors.New("invalid event parameter")
 )
 
-var supportedEvents = map[graveler.EventType]bool{
-	graveler.EventTypePreCommit:  true,
-	graveler.EventTypePostMerge:  true,
-	graveler.EventTypePreMerge:   true,
-	graveler.EventTypePostCommit: true,
+func isEventSupported(event graveler.EventType) bool {
+	switch event {
+	case graveler.EventTypePreCommit,
+		graveler.EventTypePostMerge,
+		graveler.EventTypePreMerge,
+		graveler.EventTypePostCommit,
+		graveler.EventTypePreCreateBranch,
+		graveler.EventTypePostCreateBranch,
+		graveler.EventTypePreDeleteBranch,
+		graveler.EventTypePostDeleteBranch,
+		graveler.EventTypePreCreateTag,
+		graveler.EventTypePostCreateTag,
+		graveler.EventTypePreDeleteTag,
+		graveler.EventTypePostDeleteTag:
+		return true
+	}
+	return false
 }
 
 func (a *Action) Validate() error {
@@ -86,9 +99,10 @@ func (a *Action) Validate() error {
 	if len(a.On) == 0 {
 		return fmt.Errorf("'on' is required: %w", ErrInvalidAction)
 	}
-	for o := range a.On {
-		if !supportedEvents[o] {
-			return fmt.Errorf("event '%s' is not supported: %w", o, ErrInvalidAction)
+	for k, v := range a.On {
+		err := validateEvent(k, v)
+		if err != nil {
+			return err
 		}
 	}
 	ids := make(map[string]struct{})
@@ -102,6 +116,24 @@ func (a *Action) Validate() error {
 		ids[hook.ID] = struct{}{}
 		if _, found := hooks[hook.Type]; !found {
 			return fmt.Errorf("hook[%d] type '%s' unknown: %w", i, hook.ID, ErrInvalidAction)
+		}
+	}
+	return nil
+}
+
+func validateEvent(event graveler.EventType, on *ActionOn) error {
+	if !isEventSupported(event) {
+		return fmt.Errorf("event '%s' is not supported: %w", event, ErrInvalidAction)
+	}
+	if on != nil {
+		switch {
+		// Add a case for any additional field added to ActionOn struct
+		case len(on.Branches) > 0:
+			if strings.HasSuffix(string(event), "-tag") {
+				return fmt.Errorf("'branches' is not supported in tag event types. %w", ErrInvalidEventParameter)
+			}
+		default:
+			// Nothing to do
 		}
 	}
 	return nil

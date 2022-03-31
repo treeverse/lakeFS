@@ -1,0 +1,12 @@
+name: Test Pre Create Branch
+description: a test action description
+on:
+  pre-create-branch:
+    branches:
+      - test_branch_delete
+hooks:
+  - id: test_webhook
+    type: webhook
+    description: Check webhooks for pre-create branch works
+    properties:
+      url: "{{.URL}}/pre-create-branch"

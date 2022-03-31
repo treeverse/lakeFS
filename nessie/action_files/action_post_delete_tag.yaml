@@ -1,0 +1,10 @@
+name: Test Post Delete Tag
+description: a test action description
+on:
+  post-delete-tag:
+hooks:
+  - id: test_webhook
+    type: webhook
+    description: Check webhooks for post-delete tag works
+    properties:
+      url: "{{.URL}}/post-delete-tag"
