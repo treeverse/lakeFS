@@ -1,6 +1,7 @@
 
 ID:            <COMMIT_ID>
-Author:        esti\nDate:          ${DATE}
+Author:        esti
+Date:          ${DATE}
 
 	${MESSAGE}
 	
