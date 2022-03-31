@@ -22,7 +22,7 @@ Available Commands:
   help            Help about any command
   ingest          Ingest objects from an external source into a lakeFS branch (without actually copying them)
   log             Show log of commits
-  merge           Merge & commit changes from source branch into desti  nation branch
+  merge           Merge & commit changes from source branch into destination branch
   metastore       Manage metastore commands
   repo            Manage and explore repos
   show            See detailed information about an entity by ID (commit, user, etc)
