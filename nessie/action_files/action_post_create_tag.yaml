@@ -1,0 +1,10 @@
+name: Test Post Create Tag
+description: a test action description
+on:
+  post-create-tag:
+hooks:
+  - id: test_webhook
+    type: webhook
+    description: Check webhooks for post-create tag works
+    properties:
+      url: "{{.URL}}/post-create-tag"

@@ -1,0 +1,12 @@
+name: Test Post Create Branch
+description: a test action description
+on:
+  post-create-branch:
+    branches:
+      - test_branch_delete
+hooks:
+  - id: test_webhook
+    type: webhook
+    description: Check webhooks for post-create branch works
+    properties:
+      url: "{{.URL}}/post-create-branch"

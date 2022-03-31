@@ -1,0 +1,11 @@
+name: Test Post Delete Branch
+description: a test action description
+on:
+  post-delete-branch:
+    branches:
+hooks:
+  - id: test_webhook
+    type: webhook
+    description: Check webhooks for post-delete branch works
+    properties:
+      url: "{{.URL}}/post-delete-branch"
