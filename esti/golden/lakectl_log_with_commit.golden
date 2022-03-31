@@ -1,14 +1,12 @@
 
 ID:            <COMMIT_ID>
-Author:        esti  
-Date:          <DATE> <TIME> <TZ>
+Author:        esti\nDate:          <DATE> <TIME> <TZ>
 
 	${MESSAGE}
 	
 	
 ID:            <COMMIT_ID>
-Author:        esti  
-Date:          <DATE> <TIME> <TZ>
+Author:        esti\nDate:          <DATE> <TIME> <TZ>
 
 	 
 	
