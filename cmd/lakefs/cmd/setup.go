@@ -1,14 +1,11 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/cmd/lakefs/application"
-	"github.com/treeverse/lakefs/pkg/auth"
-	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -26,20 +23,9 @@ var setupCmd = &cobra.Command{
 		defer databaseService.Close()
 		err := databaseService.Migrate(ctx)
 		if err != nil {
-			fmt.Printf("Failed to setup DB: %s\n", err)
-			os.Exit(1)
+			logger.WithError(err).Fatal("Failed to setup DB")
 		}
-		userCreator := func(ctx context.Context,
-			authService *auth.DBAuthService,
-			metadataManager *auth.DBMetadataManager,
-			user *User) (*model.Credential, error) {
-			return auth.CreateInitialAdminUserWithKeys(ctx,
-				authService,
-				metadataManager,
-				user.userName, &user.accessKeyID, &user.secretAccessKey)
-		}
-		createUser(cmd, true, databaseService, cfg, ctx, userCreator)
-
+		createUser(cmd, InitialSetup, databaseService, cfg, logger, ctx)
 	},
 }
 

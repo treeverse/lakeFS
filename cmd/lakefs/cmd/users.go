@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/cmd/lakefs/application"
@@ -20,6 +20,16 @@ type User struct {
 	userName        string
 	accessKeyID     string
 	secretAccessKey string
+}
+
+type OperationType int
+
+const (
+	InitialSetup OperationType = iota
+	AddSuperUser
+)
+
+type CreateUserOperationType struct {
 }
 
 var errInvalidUserPropertyCommandLineArg = errors.New("invalid user property command line arg")
@@ -53,48 +63,67 @@ func parseUserFromCmdArgs(cmd *cobra.Command) (*User, error) {
 	}, nil
 }
 
-func createUser(cmd *cobra.Command, checkFirstSuccesfulInitialization bool,
+func createUser(cmd *cobra.Command,
+	operationType OperationType,
 	databaseService *application.DatabaseService,
 	cfg *config.Config,
-	ctx context.Context, userCreator UserCreator) {
+	logger logging.Logger,
+	ctx context.Context) {
 	user, err := parseUserFromCmdArgs(cmd)
 	if err != nil {
-		fmt.Printf("%s\n", err)
-		os.Exit(1)
+		logger.WithError(err).Fatal("\n")
 	}
-
 	authService := databaseService.NewDBAuthService(cfg)
 	metadataManager := databaseService.NewDBMetadataManager(cfg, version.Version)
-
 	cloudMetadataProvider := stats.BuildMetadataProvider(logging.Default(), cfg)
 	metadata := stats.NewMetadata(ctx, logging.Default(), cfg.GetBlockstoreType(), metadataManager, cloudMetadataProvider)
-	if checkFirstSuccesfulInitialization {
-		initialized, err := metadataManager.IsInitialized(ctx)
-		if err != nil {
-			fmt.Printf("Setup failed: %s\n", err)
-			os.Exit(1)
-		}
-		if initialized {
-			fmt.Printf("Setup is already complete.\n")
-			os.Exit(1)
-		}
-	}
+	var credentials *model.Credential
 
-	credentials, err := userCreator(ctx, authService, metadataManager, user)
-	if err != nil {
-		fmt.Printf("Failed to setup admin user: %s\n", err)
-		os.Exit(1)
+	if operationType == InitialSetup {
+		ensureIsFirstInitializationOrFail(ctx, logger, metadataManager)
+		credentials, err = auth.CreateInitialAdminUserWithKeys(ctx,
+			authService,
+			metadataManager,
+			user.userName, &user.accessKeyID, &user.secretAccessKey)
+	} else if operationType == AddSuperUser {
+		credentials, err = auth.AddAdminUser(ctx, authService, &model.SuperuserConfiguration{
+			User: model.User{
+				CreatedAt: time.Now(),
+				Username:  user.userName,
+			},
+			AccessKeyID:     user.accessKeyID,
+			SecretAccessKey: user.secretAccessKey,
+		})
 	}
-	startCollectingAndLogCredentials(ctx, credentials, metadata, cfg)
+	if err != nil {
+		logger.WithError(err).Fatal("Failed to setup admin user")
+	}
+	startCollectingAndLogCredentials(ctx, credentials, metadata, cfg, operationType)
 }
 
-func startCollectingAndLogCredentials(ctx context.Context, credentials *model.Credential, metadata *stats.Metadata, cfg *config.Config) {
+func ensureIsFirstInitializationOrFail(ctx context.Context, logger logging.Logger, metadataManager auth.MetadataManager) {
+	initialized, err := metadataManager.IsInitialized(ctx)
+	if err != nil {
+		logger.WithError(err).Fatal("Setup failed")
+	}
+	if initialized {
+		logger.Fatal("Setup is already complete")
+	}
+}
+
+func startCollectingAndLogCredentials(ctx context.Context, credentials *model.Credential, metadata *stats.Metadata, cfg *config.Config, operationType OperationType) {
 	ctx, cancelFn := context.WithCancel(ctx)
 	stats := stats.NewBufferedCollector(metadata.InstallationID, cfg)
 	stats.Run(ctx)
 	defer stats.Close()
 	stats.CollectMetadata(metadata)
-	stats.CollectEvent("global", "init")
+	var eventName string
+	if operationType == InitialSetup {
+		eventName = "init"
+	} else {
+		eventName = "superuser"
+	}
+	stats.CollectEvent("global", eventName)
 	fmt.Printf("credentials:\n  access_key_id: %s\n  secret_access_key: %s\n",
 		credentials.AccessKeyID, credentials.SecretAccessKey)
 	cancelFn()

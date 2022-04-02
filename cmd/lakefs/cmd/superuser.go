@@ -1,13 +1,8 @@
 package cmd
 
 import (
-	"context"
-	"time"
-
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/cmd/lakefs/application"
-	"github.com/treeverse/lakefs/pkg/auth"
-	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
@@ -25,20 +20,7 @@ var superuserCmd = &cobra.Command{
 		lakeFSCmdCtx := application.NewLakeFSCmdContext(cfg, logger)
 		databaseService := application.NewDatabaseService(ctx, lakeFSCmdCtx)
 		defer databaseService.Close()
-		userCreator := func(ctx context.Context,
-			authService *auth.DBAuthService,
-			metadataManager *auth.DBMetadataManager,
-			user *User) (*model.Credential, error) {
-			return auth.AddAdminUser(ctx, authService, &model.SuperuserConfiguration{
-				User: model.User{
-					CreatedAt: time.Now(),
-					Username:  user.userName,
-				},
-				AccessKeyID:     user.accessKeyID,
-				SecretAccessKey: user.secretAccessKey,
-			})
-		}
-		createUser(cmd, false, databaseService, cfg, ctx, userCreator)
+		createUser(cmd, AddSuperUser, databaseService, cfg, logger, ctx)
 	},
 }
 

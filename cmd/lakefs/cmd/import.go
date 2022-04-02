@@ -141,8 +141,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	}
 	repo, err := application.NewRepository(ctx, c, args[0], manifestURL)
 	if err != nil {
-		fmt.Println("Error getting repository", err)
-		return 1
+		logger.WithError(err).Fatal("Error getting repository")
 	}
 
 	importConfig := &onboard.Config{
@@ -158,8 +157,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 
 	importer, err := onboard.CreateImporter(ctx, logger, importConfig)
 	if err != nil {
-		fmt.Printf("Import failed: %s\n", err)
-		return 1
+		logger.WithError(err).Fatal("Import failed")
 	}
 	var multiBar *cmdutils.MultiBar
 	if !hideProgress {
@@ -171,8 +169,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 		if multiBar != nil {
 			multiBar.Stop()
 		}
-		fmt.Printf("Import failed: %s\n", err)
-		return 1
+		logger.WithError(err).Fatal("Import failed")
 	}
 	if multiBar != nil {
 		multiBar.Stop()
@@ -198,8 +195,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 		msg := fmt.Sprintf(onboard.CommitMsgTemplate, stats.CommitRef)
 		commitLog, err := c.Merge(ctx, repo.Name, onboard.DefaultImportBranchName, repo.DefaultBranch, CommitterName, msg, nil, "")
 		if err != nil {
-			fmt.Printf("Merge failed: %s\n", err)
-			return 1
+			logger.WithError(err).Fatal("Merge failed")
 		}
 		fmt.Println("Merge was completed successfully.")
 		fmt.Printf("To list imported objects, run:\n\t$ lakectl fs ls lakefs://%s/%s/\n", repo.Name, commitLog)
