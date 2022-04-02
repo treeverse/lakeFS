@@ -39,7 +39,7 @@ type UserCreator = func(context.Context, *auth.DBAuthService, *auth.DBMetadataMa
 func getUserPropertyFromCmdArgs(cmd *cobra.Command, propertyName string) (*string, error) {
 	propertyValue, err := cmd.Flags().GetString(propertyName)
 	if err != nil {
-		return nil, fmt.Errorf("%w %s: %s", errInvalidUserPropertyCommandLineArg, propertyName, err)
+		return nil, fmt.Errorf("invalid command line arg (%s): %w", propertyName, err)
 	}
 	return &propertyValue, nil
 }
