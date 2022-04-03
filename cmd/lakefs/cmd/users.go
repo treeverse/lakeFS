@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -28,13 +27,6 @@ const (
 	InitialSetup OperationType = iota
 	AddSuperUser
 )
-
-type CreateUserOperationType struct {
-}
-
-var errInvalidUserPropertyCommandLineArg = errors.New("invalid user property command line arg")
-
-type UserCreator = func(context.Context, *auth.DBAuthService, *auth.DBMetadataManager, *User) (*model.Credential, error)
 
 func getUserPropertyFromCmdArgs(cmd *cobra.Command, propertyName string) (*string, error) {
 	propertyValue, err := cmd.Flags().GetString(propertyName)
