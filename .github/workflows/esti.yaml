@@ -729,10 +729,10 @@ jobs:
         env:
           DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
           LAKEFS_BLOCKSTORE_TYPE: azure
-          LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT }}
-          LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY }}
+          LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT: esti
+          LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY2 }}
           ESTI_BLOCKSTORE_TYPE: azure
-          ESTI_STORAGE_NAMESPACE: https://${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT }}.blob.core.windows.net/esti-system-testing/${{ github.run_number }}
+          ESTI_STORAGE_NAMESPACE: https://esti.blob.core.windows.net/esti-system-testing/${{ github.run_number }}
       - name: lakeFS Logs on Azure failure
         if: ${{ failure() }}
         continue-on-error: true
