@@ -23,7 +23,7 @@ func TestCommitSingle(t *testing.T) {
 
 			_, objContent := uploadFileRandomData(ctx, t, repo, mainBranch, objPath, direct)
 			commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, api.CommitJSONRequestBody{
-				Message: "esti:singleCommit",
+				Message: "singleCommit",
 			})
 			require.NoError(t, err, "failed to commit changes")
 			require.NoErrorf(t, verifyResponse(commitResp.HTTPResponse, commitResp.Body),
@@ -101,7 +101,7 @@ func TestCommitInMixedOrder(t *testing.T) {
 			}
 
 			commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, api.CommitJSONRequestBody{
-				Message: "esti:mixedOrderCommit1",
+				Message: "mixedOrderCommit1",
 			})
 			require.NoError(t, err, "failed to commit changes")
 			require.NoErrorf(t, verifyResponse(commitResp.HTTPResponse, commitResp.Body),
@@ -130,7 +130,7 @@ func TestCommitInMixedOrder(t *testing.T) {
 			}
 
 			commitResp, err = client.CommitWithResponse(ctx, repo, mainBranch, api.CommitJSONRequestBody{
-				Message: "esti:mixedOrderCommit2",
+				Message: "mixedOrderCommit2",
 			})
 			require.NoError(t, err, "failed to commit second set of changes")
 			require.NoErrorf(t, verifyResponse(commitResp.HTTPResponse, commitResp.Body),

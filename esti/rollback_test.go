@@ -20,7 +20,7 @@ func TestResetAll(t *testing.T) {
 
 	// commit file
 	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, api.CommitJSONRequestBody{
-		Message: "esti:resetAll",
+		Message: "resetAll",
 	})
 	require.NoError(t, err, "failed to commit changes")
 	require.NoErrorf(t, verifyResponse(commitResp.HTTPResponse, commitResp.Body),
@@ -72,7 +72,7 @@ func TestResetPath(t *testing.T) {
 
 	// commit files
 	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, api.CommitJSONRequestBody{
-		Message: "esti:resetPath",
+		Message: "resetPath",
 	})
 	require.NoError(t, err, "failed to commit changes")
 	require.NoErrorf(t, verifyResponse(commitResp.HTTPResponse, commitResp.Body),
@@ -138,7 +138,7 @@ func TestResetObject(t *testing.T) {
 
 	// commit files
 	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, api.CommitJSONRequestBody{
-		Message: "esti:resetObject",
+		Message: "resetObject",
 	})
 	require.NoError(t, err, "failed to commit changes")
 	require.NoErrorf(t, verifyResponse(commitResp.HTTPResponse, commitResp.Body),
@@ -198,7 +198,7 @@ func TestRevert(t *testing.T) {
 
 	// commit file1
 	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, api.CommitJSONRequestBody{
-		Message: "esti:singleCommit",
+		Message: "singleCommit",
 	})
 
 	require.NoError(t, err, "failed to commit changes")
@@ -215,7 +215,7 @@ func TestRevert(t *testing.T) {
 
 	// commit file2
 	commitResp, err = client.CommitWithResponse(ctx, repo, mainBranch, api.CommitJSONRequestBody{
-		Message: "esti:revert",
+		Message: "revert",
 	})
 	require.NoError(t, err, "failed to commit changes")
 	require.NoErrorf(t, verifyResponse(commitResp.HTTPResponse, commitResp.Body),

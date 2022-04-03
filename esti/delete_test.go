@@ -52,7 +52,7 @@ func TestDeleteCommitted(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, f, "uploaded object found")
 
-	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, api.CommitJSONRequestBody{Message: "esti:singleCommit"})
+	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, api.CommitJSONRequestBody{Message: "singleCommit"})
 	require.NoError(t, err, "commit changes")
 	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
 
@@ -76,7 +76,7 @@ func TestCommitDeleteCommitted(t *testing.T) {
 	assert.True(t, f, "uploaded object found")
 
 	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, api.CommitJSONRequestBody{
-		Message: "esti:singleCommit",
+		Message: "singleCommit",
 	})
 	require.NoError(t, err, "commit new file")
 	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
@@ -86,7 +86,7 @@ func TestCommitDeleteCommitted(t *testing.T) {
 	require.Equal(t, http.StatusNoContent, deleteResp.StatusCode())
 
 	commitResp, err = client.CommitWithResponse(ctx, repo, mainBranch, api.CommitJSONRequestBody{
-		Message: "esti:deleteCommit",
+		Message: "deleteCommit",
 	})
 	require.NoError(t, err, "commit delete file")
 	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
