@@ -721,7 +721,7 @@ jobs:
     steps:
       - name: Check-out code
         uses: actions/checkout@v2
-      - name: Start lakeFS with GS tests
+      - name: Start lakeFS with Azure tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
           compose-file: esti/ops/docker-compose.yaml
