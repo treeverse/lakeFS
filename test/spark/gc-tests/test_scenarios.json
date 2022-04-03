@@ -7,14 +7,15 @@
     "branches": [
       {
         "branch_name": "a",
-        "days_ago": 2
+        "delete_commit_days_ago": 2
       },
       {
         "branch_name": "b",
-        "days_ago": 2
+        "delete_commit_days_ago": 2
       }
     ],
-    "file_deleted": true
+    "file_deleted": true,
+    "description": "The file is deleted according to the default retention policy"
   },
   {
     "policy": {
@@ -27,14 +28,15 @@
     "branches": [
       {
         "branch_name": "a",
-        "days_ago": 4
+        "delete_commit_days_ago": 4
       },
       {
         "branch_name": "b",
-        "days_ago": 4
+        "delete_commit_days_ago": 4
       }
     ],
-    "file_deleted": true
+    "file_deleted": true,
+    "description": "The file is deleted according to branches' retention policies"
   },
   {
     "policy": {
@@ -47,14 +49,15 @@
     "branches": [
       {
         "branch_name": "a",
-        "days_ago": 4
+        "delete_commit_days_ago": 4
       },
       {
         "branch_name": "b",
-        "days_ago": 2
+        "delete_commit_days_ago": 2
       }
     ],
-    "file_deleted": false
+    "file_deleted": false,
+    "description": "The file is not deleted because of the retention policy of the second branch"
   },
   {
     "policy": {
@@ -64,14 +67,15 @@
     "branches": [
       {
         "branch_name": "a",
-        "days_ago": 4
+        "delete_commit_days_ago": 4
       },
       {
         "branch_name": "b",
-        "days_ago": 2
+        "delete_commit_days_ago": 2
       }
     ],
-    "file_deleted": false
+    "file_deleted": false,
+    "description": "The file isn't deleted according to default retention policy"
   },
   {
     "policy": {
@@ -84,10 +88,11 @@
     "branches": [
       {
         "branch_name": "a",
-        "days_ago": 1
+        "delete_commit_days_ago": 1
       }
     ],
-    "file_deleted": false
+    "file_deleted": false,
+    "description": "The file is not deleted as it still exists in the second branch"
   },
   {
     "policy": {
@@ -99,14 +104,15 @@
     "branches": [
       {
         "branch_name": "a",
-        "days_ago": 1
+        "delete_commit_days_ago": 1
       },
       {
         "branch_name": "b",
-        "days_ago": 4
+        "delete_commit_days_ago": 4
       }
     ],
-    "file_deleted": false
+    "file_deleted": false,
+    "description": "The file is not deleted because default retention time keeps it for the second branch"
   },
   {
     "policy": {
@@ -118,14 +124,15 @@
     "branches": [
       {
         "branch_name": "a",
-        "days_ago": 1
+        "delete_commit_days_ago": 1
       },
       {
         "branch_name": "b",
-        "days_ago": 5
+        "delete_commit_days_ago": 5
       }
     ],
-    "file_deleted": true
+    "file_deleted": true,
+    "description": "The file is deleted as the retention policy for the branch permits the deletion from the branch, and the default retention policy permits deletion for the second branch"
   },
   {
     "policy": {
@@ -137,13 +144,32 @@
     "branches" : [
       {
         "branch_name": "a",
-        "days_ago": 2
+        "delete_commit_days_ago": 2
       },
       {
         "branch_name": "b",
-        "days_ago": -1
+        "delete_commit_days_ago": -1
       }
     ],
-    "file_deleted": false
+    "file_deleted": false,
+    "description": "The file is not deleted as the branch retention policy surpass the default retention policy"
+  },
+  {
+    "policy": {
+      "default_retention_days": 1,
+      "branches": []
+    },
+    "branches" : [
+      {
+        "branch_name": "a",
+        "delete_commit_days_ago": -1
+      },
+      {
+        "branch_name": "b",
+        "delete_commit_days_ago": -1
+      }
+    ],
+    "file_deleted": true,
+    "description": "The file is deleted because it's in a dangling commit and the default retention policy has passed"
   }
 ]

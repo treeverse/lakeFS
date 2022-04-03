@@ -1,8 +1,0 @@
-{
-  "default_retention_days": 21,
-  "branches": [
-      {"branch_id": "main", "retention_days": 10},
-      {"branch_id": "b1", "retention_days": 1},
-      {"branch_id": "b2", "retention_days": 3}
-    ]
-}
