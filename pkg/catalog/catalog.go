@@ -173,8 +173,10 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 
 	sstableManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, rangeFS, hashAlg)
 	sstableMetaManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, metaRangeFS, hashAlg)
+
+	committedParams := *cfg.Config.GetCommittedParams()
 	sstableMetaRangeManager, err := committed.NewMetaRangeManager(
-		*cfg.Config.GetCommittedParams(),
+		committedParams,
 		// TODO(ariels): Use separate range managers for metaranges and ranges
 		sstableMetaManager,
 		sstableManager,
@@ -183,7 +185,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		cancelFn()
 		return nil, fmt.Errorf("create SSTable-based metarange manager: %w", err)
 	}
-	committedManager := committed.NewCommittedManager(sstableMetaRangeManager)
+	committedManager := committed.NewCommittedManager(sstableMetaRangeManager, sstableManager, committedParams)
 
 	executor := batch.NewExecutor(logging.Default())
 	go executor.Run(ctx)
@@ -1208,11 +1210,11 @@ func (c *Catalog) LoadTags(ctx context.Context, repositoryID, tagsMetaRangeID st
 	return c.Store.LoadTags(ctx, graveler.RepositoryID(repositoryID), graveler.MetaRangeID(tagsMetaRangeID))
 }
 
-func (c *Catalog) GetMetaRange(ctx context.Context, repositoryID, metaRangeID string) (graveler.MetaRangeInfo, error) {
+func (c *Catalog) GetMetaRange(ctx context.Context, repositoryID, metaRangeID string) (graveler.MetaRangeAddress, error) {
 	return c.Store.GetMetaRange(ctx, graveler.RepositoryID(repositoryID), graveler.MetaRangeID(metaRangeID))
 }
 
-func (c *Catalog) GetRange(ctx context.Context, repositoryID, rangeID string) (graveler.RangeInfo, error) {
+func (c *Catalog) GetRange(ctx context.Context, repositoryID, rangeID string) (graveler.RangeAddress, error) {
 	return c.Store.GetRange(ctx, graveler.RepositoryID(repositoryID), graveler.RangeID(rangeID))
 }
 
