@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.62.0 - 2022-04-03
+
+This release requires running database migration.
+The lakeFS service will not run if the migration version isn't compatible with the binary.
+Before running the new version you will be required to run migrate, with the new version:
+
+```sh
+$ lakefs migrate up
+```
+
+Features:
+- Update `commit ref` to `commit URI` for `lakectl tag create` command (#3017)
+- `lakectl annotate` now defaults to a non-recursive listing (#3001)
+- `lakectl doctor` command improvements. Part of #3002 (#3023)
+- Don't show GetStarted for empty commit (#3041)
+
+Bug fixes:
+- `lakectl annotate` output has superfluous spaces and blank lines (#3007)
+- Fixing restore refs performance issues for old commit dups without "generation" field (#3011)
+- `lakectl config` now hides secret access key (#3039)
+
+
 ## v0.61.0 - 2022-03-07
 Features:
 - Add merge strategy (#2922)
