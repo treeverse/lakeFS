@@ -598,7 +598,11 @@ jobs:
       - name: Copy repository ref
         run: aws s3 cp --recursive s3://nessie-system-testing-data/golden-files/gc-test-data s3://nessie-system-testing/${{ github.run_number }}-spark3-metaclient/exporter
 
-      - name: Setup lakeFS for Exporter tests
+      - name: Setup lakeFS for metadata client tests
+        working-directory: test/spark
+        run: ./setup-test.sh
+
+      - name: Setup Exporter tests
         env:
           STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-spark3-metaclient/exporter
           REPOSITORY: test-data-exporter
@@ -614,7 +618,7 @@ jobs:
         working-directory: test/spark
         run: ./run-exporter-test.sh
 
-      - name: Setup lakeFS for GC tests
+      - name: Setup GC tests
         env:
           STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-spark3-metaclient/gc
           REPOSITORY: test-data-gc
