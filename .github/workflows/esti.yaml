@@ -602,9 +602,6 @@ jobs:
 
       - name: Setup lakeFS for metadata client tests
         working-directory: test/spark
-        env:
-          TESTER_ACCESS_KEY_ID: testerkey
-          TESTER_SECRET_ACCESS_KEY: testersecret
         run: ./setup-test.sh
 
       - name: Copy repository ref
@@ -624,8 +621,6 @@ jobs:
           CLIENT_JAR: ${{steps.import_metaclient.outputs.download-path}}/spark-assembly.jar
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-          TESTER_ACCESS_KEY_ID: testerkey
-          TESTER_SECRET_ACCESS_KEY: testersecret
         working-directory: test/spark
         run: ./run-gc-test.sh
 
@@ -642,8 +637,6 @@ jobs:
           REPOSITORY: test-data-exporter
           CLIENT_JAR: ${{steps.import_metaclient.outputs.download-path}}/spark-assembly.jar
           EXPORT_LOCATION: s3://esti-system-testing/${{ github.run_number }}-spark3-client-export
-          TESTER_ACCESS_KEY_ID: testerkey
-          TESTER_SECRET_ACCESS_KEY: testersecret
         working-directory: test/spark
         run: ./run-exporter-test.sh
 
