@@ -539,6 +539,8 @@ components:
           type: string
         email:
           type: string
+        password:
+          type: string
 
     CurrentUser:
       type: object
@@ -547,6 +549,14 @@ components:
       properties:
         user:
           $ref: "#/components/schemas/User"
+
+    ResetPassword:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
 
     UserCreation:
       type: object
@@ -590,6 +600,24 @@ components:
           $ref: "#/components/schemas/AccessKeyCredentials"
       required:
         - username
+
+      
+    SetPassword:
+      type: object
+      properties:
+        token:
+          description: a new password for the given email
+          type: string
+        newPassword:
+          description: auth token for password reset
+          type: string
+        email:
+          description: email of account to be updated
+          type: string
+      required:
+        - email
+        - token
+        - newPassword
 
     Credentials:
       type: object
@@ -1062,6 +1090,50 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         default:
           $ref: "#/components/responses/ServerError"
+
+  /auth/set_password:
+      post:
+        tags:
+          - auth
+        operationId: setPassword
+        summary: update password for the given password
+        security:
+          - cookie_auth: []
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetPassword"
+        responses:
+          200:
+            description: successful reset
+          401:
+            $ref: "#/components/responses/Unauthorized"
+          default:
+            $ref: "#/components/responses/ServerError"
+ 
+  /auth/reset_password:
+      post:
+        tags:
+          - auth
+        operationId: requestPasswordReset
+        summary: request a token to reset password, sent via email
+        security:
+          - cookie_auth: []
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResetPassword"
+        responses:
+          200:
+            description: successfuly set token
+          401:
+            $ref: "#/components/responses/Unauthorized"
+          default:
+            $ref: "#/components/responses/ServerError"
 
   /auth/users:
     get:
