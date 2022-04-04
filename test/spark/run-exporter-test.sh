@@ -1,6 +1,8 @@
 #!/bin/bash -aux
 
 # Run Export
+echo "Export location: ${EXPORT_LOCATION}"
+echo "Repository: ${REPOSITORY}"
 docker-compose run -v  ${CLIENT_JAR}:/client/client.jar -T --no-deps --rm spark-submit bash -c 'spark-submit  --master spark://spark:7077 --conf spark.hadoop.lakefs.api.url=http:/docker.lakefs.io:8000/api/v1   --conf spark.hadoop.lakefs.api.access_key=${TESTER_ACCESS_KEY_ID}   --conf spark.hadoop.fs.s3a.connection.ssl.enabled=false   --conf spark.hadoop.lakefs.api.secret_key=${TESTER_SECRET_ACCESS_KEY}   --class io.treeverse.clients.Main  /client/client.jar ${REPOSITORY} ${EXPORT_LOCATION}   --branch=main'
 
 # Validate export
