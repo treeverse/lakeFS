@@ -34,7 +34,7 @@ initialize_env() {
 delete_and_commit() {
   local test_case=$1
   local repo=$2
-  echo ${test_case} | jq -c '.branches []' | while read branch_props; do
+  while read branch_props; do
     local branch_name=$(echo ${branch_props} | jq -r '.branch_name')
     local days_ago=$(echo ${branch_props} | jq -r '.delete_commit_days_ago')
     if [[ ${days_ago} -gt -1 ]]
@@ -45,7 +45,7 @@ delete_and_commit() {
     else   # This means that the branch should be deleted
       run_lakectl branch delete "lakefs://${repo}/${branch_name}" -y
     fi
-  done
+  done  < <(${test_case} | jq -c '.branches []')
 }
 
 last_commit_ref() {
@@ -66,7 +66,7 @@ validate_gc_job() {
     echo "Expected the file to remain in the repository but it was removed by the garbage collector"
     return 1
   fi
-  echo ${test_case} | jq -c '.branches []' | while read branch_props; do
+  while read branch_props; do
     local days_ago=$(echo ${branch_props} | jq -r '.delete_commit_days_ago')
     if [[ ${days_ago} -gt -1 ]]; then
       local branch_name=$(echo ${branch_props} | jq -r '.branch_name')
@@ -81,7 +81,7 @@ validate_gc_job() {
         fi
       done
     fi
-  done
+  done < <(${test_case} | jq -c '.branches []')
 }
 
 clean_main_branch() {
