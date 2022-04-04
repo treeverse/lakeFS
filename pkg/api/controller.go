@@ -3041,7 +3041,10 @@ func (c *Controller) SetPassword(w http.ResponseWriter, r *http.Request, body Se
 		writeError(w, http.StatusForbidden, err)
 	}
 	u := model.User{}
-	u.UpdatePassword(body.NewPassword)
+	err = u.UpdatePassword(body.NewPassword)
+	if err != nil {
+		writeError(w, http.StatusServiceUnavailable, err)
+	}
 	err = c.Auth.UpdatePassword(r.Context(), body.Email, string(u.EncryptedPassword))
 	if err != nil {
 		writeError(w, http.StatusConflict, err)
