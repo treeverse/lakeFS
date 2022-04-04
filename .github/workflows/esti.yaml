@@ -609,14 +609,14 @@ jobs:
 
       - name: Setup GC tests
         env:
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark3-metaclient/gc
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark3-${{ matrix.spark }}-metaclient/gc
           REPOSITORY: test-data-gc
         working-directory: test/spark
         run: ./setup-gc-test.sh
 
       - name: Test GC with Spark 3.x
         env:
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark3-metaclient/gc
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark3-${{ matrix.spark }}-metaclient/gc
           REPOSITORY: test-data-gc
           CLIENT_JAR: ${{steps.import_metaclient.outputs.download-path}}/spark-assembly.jar
         working-directory: test/spark
