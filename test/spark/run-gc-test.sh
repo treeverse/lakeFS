@@ -7,7 +7,7 @@ run_lakectl() {
 }
 
 run_gc () {
-  docker-compose run -v ${CLIENT_JAR}:/client/client.jar -T --no-deps --rm spark-submit bash -c 'spark-submit --master spark://spark:7077 --class io.treeverse.clients.GarbageCollector -c spark.hadoop.lakefs.api.url=http://docker.lakefs.io:8000/api/v1 -c spark.hadoop.lakefs.api.access_key=${TESTER_ACCESS_KEY_ID} -c spark.hadoop.lakefs.api.secret_key=${TESTER_SECRET_ACCESS_KEY} -c spark.hadoop.fs.s3a.access.key=${LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID} -c spark.hadoop.fs.s3a.secret.key=${LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY} /client/client.jar $1 us-east-1'
+  docker-compose run -v ${CLIENT_JAR}:/client/client.jar -T --no-deps --rm spark-submit bash -c "spark-submit --master spark://spark:7077 --class io.treeverse.clients.GarbageCollector -c spark.hadoop.lakefs.api.url=http://docker.lakefs.io:8000/api/v1 -c spark.hadoop.lakefs.api.access_key=${AWS_ACCESS_KEY_ID} -c spark.hadoop.lakefs.api.secret_key=${AWS_SECRET_ACCESS_KEY} -c spark.hadoop.fs.s3a.access.key=${LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID} -c spark.hadoop.fs.s3a.secret.key=${LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY} /client/client.jar $1 us-east-1"
 }
 
 clean_repo() {
@@ -116,7 +116,7 @@ while read test_case; do
     failed_tests+=("${test_description}")
   fi
   clean_repo ${REPOSITORY}
-done < <(jq -c '.[]' /local/gc-tests/test_scenarios.json)
+done < <(jq -c '.[]' gc-tests/test_scenarios.json)
 
 clean_main_branch ${REPOSITORY}
 
