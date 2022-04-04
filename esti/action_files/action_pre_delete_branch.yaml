@@ -1,0 +1,11 @@
+name: Test Pre Delete Branch
+description: a test action description
+on:
+  pre-delete-branch:
+    branches:
+hooks:
+  - id: test_webhook
+    type: webhook
+    description: Check webhooks for pre-delete branch works
+    properties:
+      url: "{{.URL}}/pre-delete-branch"

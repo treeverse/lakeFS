@@ -4,7 +4,14 @@ on:
   workflow_dispatch:
     inputs:
       tag:
+        required: false
         description: Tag/version to publish
+
+# These permissions are needed to interact with GitHub's OIDC Token endpoint.
+permissions:
+  id-token: write
+  contents: read
+  packages: write
 
 jobs:
   deploy-rclone-export-image:
@@ -17,9 +24,8 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
 
       - name: Extract version
         shell: bash
@@ -36,8 +42,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: Export ECR parameters
-        run: |
-          echo "ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}" >> $GITHUB_ENV
+        run: echo "ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}" >> $GITHUB_ENV
 
       - name: Build and Push to Amazon ECR
         run: |

@@ -76,5 +76,5 @@ if ! diff ${lakectl_out} ${s3_out}; then
   exit 1
 fi
 
-# Delete files at destination in case of multiple nessie runs
+# Delete files at destination in case of multiple runs, each one produce output under different folder
 aws s3 rm ${EXPORT_LOCATION} --recursive

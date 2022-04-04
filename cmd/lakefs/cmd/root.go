@@ -102,6 +102,7 @@ func initConfig() {
 	} else {
 		logger.Info("Config loaded")
 	}
+
 	err = cfg.Validate()
 	if err != nil {
 		logger.WithError(err).Fatal("Invalid config")

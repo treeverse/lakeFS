@@ -20,6 +20,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
+	"github.com/treeverse/lakefs/pkg/email"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
@@ -50,6 +51,7 @@ func Serve(
 	actions actionsHandler,
 	auditChecker AuditChecker,
 	logger logging.Logger,
+	emailer email.Emailer,
 	gatewayDomains []string,
 ) http.Handler {
 	logger.Info("initialize OpenAPI server")
@@ -83,6 +85,7 @@ func Serve(
 		actions,
 		auditChecker,
 		logger,
+		emailer,
 	)
 	HandlerFromMuxWithBaseURL(controller, apiRouter, BaseURL)
 

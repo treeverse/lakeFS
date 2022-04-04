@@ -28,6 +28,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
+	"github.com/treeverse/lakefs/pkg/email"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -77,6 +78,7 @@ type Controller struct {
 	Actions               actionsHandler
 	AuditChecker          AuditChecker
 	Logger                logging.Logger
+	Emailer               email.Emailer
 }
 
 func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body DeleteObjectsJSONRequestBody, repository string, branch string) {
@@ -3166,6 +3168,7 @@ func NewController(
 	actions actionsHandler,
 	auditChecker AuditChecker,
 	logger logging.Logger,
+	emailer email.Emailer,
 ) *Controller {
 	return &Controller{
 		Config:                cfg,
@@ -3180,6 +3183,7 @@ func NewController(
 		Actions:               actions,
 		AuditChecker:          auditChecker,
 		Logger:                logger,
+		Emailer:               emailer,
 	}
 }
 

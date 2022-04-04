@@ -35,7 +35,7 @@ For this to work, make sure that:
 
 <div class="tabs">
 <ul>
-  <li><a href="#ingest-tabs-1">AWS S3</a></li>
+  <li><a href="#ingest-tabs-1">AWS S3 or S3 API Compatible storage</a></li>
   <li><a href="#ingest-tabs-2">Azure Blob</a></li>
   <li><a href="#ingest-tabs-3">Google Cloud Storage</a></li>
 </ul>
@@ -48,6 +48,7 @@ lakectl ingest \
 
 The `lakectl ingest` command will attempt to use the current user's existing credentials and will respect instance profiles,
 environment variables and credential files [in the same way that the AWS cli does](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html){: target="_blank" }
+Specify an endpoint to ingest from other S3 compatible storage solutions, e.g. add `--s3-endpoint-url https://play.min.io`.
 </div>
 <div markdown="1" id="ingest-tabs-2">
 ```shell

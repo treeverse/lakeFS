@@ -37,9 +37,10 @@ const SettingsContainer = () => {
                 </h4>
             </div>
             <div>
-                Define branch protection rules to prevent direct changes.
+                Define branch protection rules to prevent direct changes.&nbsp;
+                Changes to protected branches can only be done by merging from other branches.&nbsp;
                 {/* eslint-disable-next-line react/jsx-no-target-blank */}
-                Changes to protected branches can only be done by merging from other branches. <a href="https://docs.lakefs.io/reference/protected_branches.html" target="_blank">Learn more.</a>
+                <a href="https://docs.lakefs.io/reference/protected_branches.html" target="_blank">Learn more.</a>
             </div>
             {loading || rulesLoading ? <div className={"mt-3 ml-1 pr-5"}><Loading/></div> :
                 <div className={"row mt-3 ml-1 pr-5"}>

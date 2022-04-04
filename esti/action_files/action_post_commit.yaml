@@ -1,0 +1,12 @@
+name: Test Post Commit
+description: a test action description
+on:
+  post-commit:
+    branches:
+      - feature-*
+hooks:
+  - id: test_webhook
+    type: webhook
+    description: Check webhooks for post-commit works
+    properties:
+      url: "{{.URL}}/post-commit"

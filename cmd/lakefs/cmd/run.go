@@ -30,6 +30,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
+	"github.com/treeverse/lakefs/pkg/email"
 	"github.com/treeverse/lakefs/pkg/gateway"
 	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
 	"github.com/treeverse/lakefs/pkg/gateway/sig"
@@ -202,7 +203,8 @@ var runCmd = &cobra.Command{
 		done := make(chan bool, 1)
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-
+		emailParams, _ := cfg.GetEmailParams()
+		emailer := email.NewEmailer(emailParams)
 		apiHandler := api.Serve(
 			cfg,
 			c,
@@ -216,6 +218,7 @@ var runCmd = &cobra.Command{
 			actionsService,
 			auditChecker,
 			logger.WithField("service", "api_gateway"),
+			emailer,
 			cfg.GetS3GatewayDomainNames(),
 		)
 
