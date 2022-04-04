@@ -1,0 +1,745 @@
+name: Esti
+on:
+  pull_request:
+  push:
+    paths-ignore:
+      - "*.md"
+      - "docs/**"
+      - "webui/**"
+      - "design/**"
+    branches:
+      - master
+
+# These permissions are needed to interact with GitHub's OIDC Token endpoint.
+permissions:
+  id-token: write
+  contents: read
+  packages: write
+
+jobs:
+  check-secrets:
+    name: Check if secrets are available.
+    outputs:
+      secretsavailable: ${{ steps.enablejobs.outputs.secretsavailable }}
+    runs-on: ubuntu-20.04
+    steps:
+      - id: enablejobs
+        env:
+          ENABLE_NEXT_JOBS: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        run: |
+          echo "Enable next jobs based on secrets existence: ${{ env.ENABLE_NEXT_JOBS != '' }}"
+          echo "::set-output name=secretsavailable::${{ env.ENABLE_NEXT_JOBS != '' }}"
+
+  gen-code:
+    name: Generate code from latest lakeFS app
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v2
+
+      # No way to share code between workflows :-( If you change this, find and change the
+      # same code wherever "Find Go module and build caches" appears!
+      - name: Find Go module and build caches
+        run: |
+          echo GOMODCACHE=`go env GOMODCACHE` >> $GITHUB_ENV
+          echo GOCACHE=`go env GOCACHE` >> $GITHUB_ENV
+          cat $GITHUB_ENV
+
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17.8
+        id: go
+
+      - name: Cache Go modules and builds
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-go-modules
+        with:
+          path: |
+            ${{ env.GOMODCACHE }}
+            ${{ env.GOCACHE }}
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('go.mod', 'go.sum') }}
+          restore-keys:
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+
+      - name: Generate code
+        run: |
+          make -j3 gen-api gen-ui
+          tar -cf /tmp/generated.tar.gz .
+      - name: Store generated code
+        uses: actions/upload-artifact@v2
+        with:
+          name: generated-code
+          path: /tmp/generated.tar.gz
+
+  deploy-image:
+    name: Build and push Docker image
+    needs: [check-secrets, gen-code]
+    if: needs.check-secrets.outputs.secretsavailable == 'true'
+    runs-on: ubuntu-20.04
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@v1
+        with:
+          node-version: '14.x'
+
+      - name: Setup Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.17.8
+        id: go
+
+      - name: Retrieve generated code
+        uses: actions/download-artifact@v2
+        with:
+          name: generated-code
+          path: /tmp/
+
+      - name: Unpack generated code
+        run: tar -xf /tmp/generated.tar.gz
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+
+      - name: Extract version
+        shell: bash
+        run: echo "::set-output name=tag::sha-$(git rev-parse --short HEAD | sed s/^v//g)"
+        id: version
+
+      - name: Extract db schema version from ddl migration files
+        run: echo "::set-output name=dbschema_version::$( (cd pkg/ddl/ && ls -d *.up.sql) | sed -nE '$s/^0*([0-9]+).*/\1/p' )"
+        id: schema
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Export ECR parameters
+        run: |
+          echo "ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}" >> $GITHUB_ENV
+          echo "ECR_REPOSITORY_LAKEFS=lakefs" >> $GITHUB_ENV
+
+      - name: Login to GitHub Docker Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Pull last built docker image cache
+        run: |
+          docker pull ghcr.io/${GITHUB_REPOSITORY,,}/build-cache-2:${{ steps.version.outputs.tag }} || \
+          docker pull ghcr.io/${GITHUB_REPOSITORY,,}/build-cache-2 || \
+          true
+      - name: Build Docker image with cache and push
+        run: |
+          set -ex
+          ghr=ghcr.io/${GITHUB_REPOSITORY,,}/build-cache-2
+          ghr_build_tag="-t ${ghr}:${{ steps.version.outputs.tag }}"
+          if [[ -n $GITHUB_REF ]]; then
+              ghr_ref_tag="-t ${ghr}:${GITHUB_REF##*/}"
+          else
+              ghr_ref_tag=''
+          fi
+          ecr_tag="-t $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}"
+          docker build . \
+              ${ghr_ref_tag} ${ghr_build_tag} ${ecr_tag} \
+              --build-arg VERSION=${{ steps.version.outputs.tag }} \
+              --label db-schema-version=${{ steps.schema.outputs.dbschema_version }} \
+              --cache-from=${ghr}
+          docker push ${ghr_build_tag#-t }
+          if [[ -n ${ghr_ref_tag} ]]; then docker push ${ghr_ref_tag#-t }; fi
+        env:
+          DOCKER_BUILDKIT: '1'
+
+      - name: Push to Amazon ECR
+        run: |
+          set +e
+          describe_image="$( aws ecr describe-images --repository-name $ECR_REPOSITORY_LAKEFS --image-ids imageTag=${{ steps.version.outputs.tag }})"
+          if [ $? -eq 0 ]; then
+            echo "Image exists"
+          else
+            echo "Image doesn't exist"
+            docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}
+          fi
+
+  deploy-rclone-export-image:
+    name: Build and push rclone export Docker image
+    needs: check-secrets
+    if: needs.check-secrets.outputs.secretsavailable == 'true'
+    runs-on: ubuntu-20.04
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+
+      - name: Extract version
+        shell: bash
+        run: echo "::set-output name=tag::sha-$(git rev-parse --short HEAD | sed s/^v//g)"
+        id: version
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Export ECR parameters
+        run: |
+          echo "ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}" >> $GITHUB_ENV
+
+      - name: Build and Push to Amazon ECR
+        run: |
+          docker build deployments/tools/export -t $ECR_REGISTRY/lakefs-rclone-export:${{ steps.version.outputs.tag }}
+          docker push $ECR_REGISTRY/lakefs-rclone-export:${{ steps.version.outputs.tag }}
+        env:
+          DOCKER_BUILDKIT: '1'
+
+  hadoopfs-tests:
+    name: Test lakeFS Hadoop FileSystem
+    needs: deploy-image
+    runs-on: ubuntu-20.04
+    env:
+      TAG: ${{ needs.deploy-image.outputs.tag }}
+      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v2
+      - name: Start lakeFS for contract tests
+        uses: ./.github/actions/bootstrap-test-lakefs
+        with:
+          compose-directory: test/lakefsfs_contract
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_BLOCKSTORE_TYPE: s3
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: minio
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: minio123
+      - name: Setup contract tests
+        working-directory: test/lakefsfs_contract
+        run: ./setup-test.sh
+        env:
+          AWS_ACCESS_KEY_ID: minio
+          AWS_SECRET_ACCESS_KEY: minio123
+          STORAGE_NAMESPACE: s3://test-bucket/data
+          REPOSITORY: lakefsfs-contract-test
+      - name: Build and test hadoopfs
+        working-directory: clients/hadoopfs
+        run: mvn --quiet --batch-mode --update-snapshots -P'!treeverse-signing',contract-tests verify
+
+  hadoopfs-s3a-mpu:
+    name: Test lakeFS multipart upload with Hadoop S3A
+    needs: deploy-image
+    runs-on: ubuntu-20.04
+    env:
+      TAG: ${{ needs.deploy-image.outputs.tag }}
+      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v2
+
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+
+      - name: Start lakeFS for Spark tests
+        uses: ./.github/actions/bootstrap-test-lakefs
+        with:
+          compose-directory: test/spark
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_BLOCKSTORE_TYPE: s3
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+      - name: Setup lakeFS for tests
+        working-directory: test/spark
+        run: ./setup-test.sh
+
+      - name: Test lakeFS multipart upload with Hadoop S3A
+        env:
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-s3a-mpu
+          REPOSITORY: s3a-mpu-test
+          AWS_ACCESS_KEY_ID: ${{ secrets.TESTER_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.TESTER_SECRET_ACCESS_KEY }}
+          # TODO(ariels): This depends on an actual DNS lookup
+          #     (*.local.lakefs.io is 127.0.0.1) because it runs outside of
+          #     a Docker container.  Bypass this somehow.
+          ENDPOINT: "http://s3.local.lakefs.io:8000"
+        working-directory: test/spark/s3a-multipart
+        run: docker-compose exec -T lakefs lakectl repo create "lakefs://${REPOSITORY}" ${STORAGE_NAMESPACE} -d main && sbt "run s3a://${REPOSITORY}/main/multipart.out"
+
+      - name: lakeFS logs on failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        working-directory: test/spark
+        run: docker-compose logs --tail=1000 lakefs
+
+      - name: Verify lakeFS performed a multipart upload
+        working-directory: test/spark
+        run: set -o pipefail && docker-compose logs --tail=5000 -- lakefs 2>&1 | fgrep CompleteMultiPartUpload
+
+  spark2:
+    name: Test lakeFS with Spark 2.x
+    needs: deploy-image
+    runs-on: ubuntu-20.04
+    env:
+      TAG: ${{ needs.deploy-image.outputs.tag }}
+      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      SPARK_TAG: 2
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v2
+
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+
+      - name: Package Spark App
+        working-directory: test/spark/app
+        run: sbt sonnets-246/package
+
+      - name: Start lakeFS for Spark tests
+        uses: ./.github/actions/bootstrap-test-lakefs
+        with:
+          compose-directory: test/spark
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_BLOCKSTORE_TYPE: s3
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+      - name: Setup lakeFS for tests
+        working-directory: test/spark
+        run: ./setup-test.sh
+
+      - name: Test lakeFS S3 with Spark 2.x
+        env:
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark2
+          REPOSITORY: gateway-test-spark2
+          SONNET_JAR: sonnets-246/target/sonnets-246/scala-2.11/sonnets-246_2.11-0.1.0.jar
+        working-directory: test/spark
+        run: ./run-test.sh
+
+      - name: lakeFS Logs on Spark with gateway failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        working-directory: test/spark
+        run: docker-compose logs --tail=1000 lakefs
+
+      - name: Build Spark direct-access client
+        working-directory: clients/hadoopfs
+        run: mvn -Passembly -Djar.finalName=client --batch-mode --update-snapshots package
+
+      - name: Test lakeFS S3 with Spark 2.x thick client
+        timeout-minutes: 8
+        env:
+          JARS: clients/hadoopfs/
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark2-client
+          AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          USE_DIRECT_ACCESS: "true"
+          REPOSITORY: thick-client-test
+          SONNET_JAR: sonnets-246/target/sonnets-246/scala-2.11/sonnets-246_2.11-0.1.0.jar
+        working-directory: test/spark
+        run: ./run-test.sh
+
+      - name: lakeFS Logs on Spark 2.x with client failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        working-directory: test/spark
+        run: docker-compose logs --tail=1000 lakefs
+
+  spark3:
+    name: Test lakeFS with Spark 3.x
+    needs: deploy-image
+    runs-on: ubuntu-20.04
+    env:
+      TAG: ${{ needs.deploy-image.outputs.tag }}
+      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      SPARK_TAG: 3
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v2
+
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+
+      - name: Package Spark App
+        working-directory: test/spark/app
+        run: sbt sonnets-311/package
+
+      - name: Start lakeFS for Spark tests
+        uses: ./.github/actions/bootstrap-test-lakefs
+        with:
+          compose-directory: test/spark
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_BLOCKSTORE_TYPE: s3
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+      - name: Setup lakeFS for tests
+        working-directory: test/spark
+        run: ./setup-test.sh
+
+      - name: Test lakeFS S3 with Spark 3.x
+        continue-on-error: true
+        env:
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark3
+          REPOSITORY: gateway-test-spark3
+          SONNET_JAR: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
+        working-directory: test/spark
+        run: ./run-test.sh
+
+      - name: lakeFS Logs on Spark with gateway failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        working-directory: test/spark
+        run: docker-compose logs --tail=1000 lakefs
+
+      - name: Build Spark direct-access client
+        working-directory: clients/hadoopfs
+        run: mvn -Passembly -Djar.finalName=client --batch-mode --update-snapshots package
+
+      - name: Test lakeFS S3 with Spark 3.x thick client
+        timeout-minutes: 8
+        env:
+          JARS: clients/hadoopfs/
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark3-client
+          AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          USE_DIRECT_ACCESS: "true"
+          REPOSITORY: thick-client-test
+          SONNET_JAR: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
+        working-directory: test/spark
+        run: ./run-test.sh
+
+      - name: lakeFS Logs on Spark with client failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        working-directory: test/spark
+        run: docker-compose logs --tail=1000 lakefs
+
+  export:
+    name: Test lakeFS rclone export functionality
+    needs: [deploy-image, deploy-rclone-export-image]
+    runs-on: ubuntu-20.04
+    env:
+      LAKEFS_TAG: ${{ needs.deploy-image.outputs.tag }}
+      EXPORT_TAG: ${{ needs.deploy-rclone-export-image.outputs.tag }}
+      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-storage-rclone-export
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v2
+
+      - name: Start lakeFS for export tests
+        uses: ./.github/actions/bootstrap-test-lakefs
+        with:
+          compose-directory: test/rclone_export
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_BLOCKSTORE_TYPE: s3
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+
+      - name: Setup lakeFS for tests
+        env:
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-storage-rclone-export
+        working-directory: test/rclone_export
+        run: ./setup-test.sh
+
+      - name: Test rclone export
+        env:
+          EXPORT_LOCATION: s3://esti-system-testing/${{ github.run_number }}-rclone-export-dest
+          S3_ACCESS_KEY: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          S3_SECRET_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+        working-directory: test/rclone_export
+        run: ./run-test.sh
+
+
+  metastore-client-with-trino:
+    name: Test metastore client commands using trino and dbt
+    needs: [gen-code, deploy-image]
+    runs-on: ubuntu-20.04
+    env:
+      TAG: ${{ needs.deploy-image.outputs.tag }}
+      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v2
+
+      - name: Setup Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.17.8
+        id: go
+
+      - name: Start lakeFS for Metastore tests
+        uses: ./.github/actions/bootstrap-test-lakefs
+        with:
+          compose-directory: test/lakectl_metastore
+        env:
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-metaclient
+          LAKEFS_BLOCKSTORE_TYPE: s3
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          LAKECTL_METASTORE_GLUE_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          LAKECTL_METASTORE_GLUE_CREDENTIALS_ACCESS_SECRET_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+      - name: Build lakectl for dbt container
+        run:  go build -o test/lakectl_metastore/etc/lakectl ./cmd/lakectl
+
+      - name: Setup lakeFS for tests
+        working-directory: test/lakectl_metastore
+        env:
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-metaclient
+        run: ./setup-test.sh
+
+      - name: Test using DBT and lakectl metastore commands
+        env:
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          REPOSITORY: gateway-test
+          SONNET_JAR: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
+        working-directory: test/lakectl_metastore
+        run: docker-compose run dbt
+
+      - name: lakeFS Logs on Spark with gateway failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        working-directory: test/lakectl_metastore
+        run: docker-compose logs --tail=1000 lakefs
+
+      - name: dbt Logs with failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        working-directory: test/lakectl_metastore
+        run: docker-compose logs --tail=1000 dbt
+
+  build-spark3-metadata-client:
+    name: Build metadata client for Spark 3.x
+    runs-on: ubuntu-20.04
+    needs: check-secrets
+    env:
+      TAG: ${{ needs.deploy-image.outputs.tag }}
+      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v2
+
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+
+      - name: Package Metaclient
+        working-directory: clients/spark
+        run: sbt lakefs-spark-client-301/assembly
+
+      - name: Prepare Metaclient location for export
+        # upload-artifact cannot take a working-directory option (that only
+        # applies to "run" steps), so copy the compiled metaclient to a
+        # known location.
+        working-directory: clients/spark
+        run: |
+          mkdir -p /tmp/export
+          cp target/core-301/scala-2.12/lakefs-spark-client-301-assembly*.jar /tmp/export/spark-assembly.jar
+
+      - name: Export Metaclient
+        uses: actions/upload-artifact@v3
+        with:
+          name: metaclient-3x
+          path: /tmp/export/
+          if-no-files-found: error
+          retention-days: 7
+
+  metadata-client-spark3:
+    name: Test lakeFS metadata client with Spark 3.x
+    needs: [deploy-image, build-spark3-metadata-client]
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        spark: [3.2.1, 3.1.2, 3.0.2]
+    env:
+      SPARK_TAG: ${{ matrix.spark }}
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v2
+
+      - name: Import Metaclient
+        id: import_metaclient
+        uses: actions/download-artifact@v3
+        with:
+          name: metaclient-3x
+          path: test/spark/metaclient
+
+      - name: Start lakeFS for Spark tests
+        uses: ./.github/actions/bootstrap-test-lakefs
+        with:
+          compose-directory: test/spark
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_BLOCKSTORE_TYPE: s3
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+      - name: Copy repository ref
+        run: aws s3 cp --recursive s3://esti-system-testing-data/golden-files/gc-test-data s3://esti-system-testing/${{ github.run_number }}-spark3-metaclient
+
+      - name: Setup lakeFS for tests
+        env:
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark3-metaclient
+        working-directory: test/spark
+        run: ./setup-client-test.sh
+
+      - name: Test lakeFS S3 with Spark 3.x
+        env:
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark3-metaclient
+          REPOSITORY: test-data
+          CLIENT_JAR: ${{steps.import_metaclient.outputs.download-path}}/spark-assembly.jar
+          EXPORT_LOCATION: s3://esti-system-testing/${{ github.run_number }}-spark3-client-export
+        working-directory: test/spark
+        run: ./run-client-test.sh
+
+      - name: lakeFS Logs on Spark with gateway failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        working-directory: test/spark
+        run: docker-compose logs --tail=1000 lakefs
+
+  run-system-aws-s3:
+    name: Run latest lakeFS app on AWS S3
+    needs: [gen-code, deploy-image]
+    runs-on: ubuntu-20.04
+    env:
+      TAG: ${{ needs.deploy-image.outputs.tag }}
+      # Setting Account_ID as a secret as a way to avoid specifying it here
+      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v2
+
+      - name: Start lakeFS with S3 tests
+        uses: ./.github/actions/bootstrap-test-lakefs
+        with:
+          compose-file: esti/ops/docker-compose.yaml
+          compose-flags: "--quiet-pull --exit-code-from=esti"
+        env:
+          LAKEFS_BLOCKSTORE_TYPE: s3
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
+          ESTI_TEST_DATA_ACCESS: true,false
+          ESTI_BLOCKSTORE_TYPE: s3
+          ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}
+          ESTI_AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          ESTI_AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          ESTI_VERSION: ${{ steps.version.outputs.tag }}
+
+      - name: Check files in S3 bucket
+        run: |
+            FILES_COUNT=`aws s3 ls s3://esti-system-testing/${{ github.run_number }} --recursive | wc -l`
+            [ $FILES_COUNT -gt 5 ]
+      - name: lakeFS Logs on s3 failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        run: docker-compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
+      - name: Export DB
+        if: ${{ always() }}
+        run: |
+            cd esti/ops
+            docker-compose ps -q postgres && docker-compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://esti-system-testing/${{ github.run_number }}/dump.gz
+      - name: Run lakeFS S3 to use with local API key
+        env:
+          LAKEFS_STATS_ENABLED: "false"
+          LAKEFS_BLOCKSTORE_TYPE: s3
+          DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
+          ESTI_TEST_DATA_ACCESS: true,false
+          ESTI_BLOCKSTORE_TYPE: s3
+          ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-local-api-key
+        run: |
+          docker-compose -f esti/ops/docker-compose.yaml down -v
+          docker-compose -f esti/ops/docker-compose.yaml up --quiet-pull --exit-code-from=esti
+
+  run-system-gcp-gs:
+    name: Run latest lakeFS app on Google Cloud Platform and Google Cloud Storage
+    needs: [gen-code, deploy-image]
+    runs-on: ubuntu-20.04
+    env:
+      TAG: ${{ needs.deploy-image.outputs.tag }}
+      # Setting Account_ID as a secret as a way to avoid specifying it here
+      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v2
+      - name: Start lakeFS with GS tests
+        uses: ./.github/actions/bootstrap-test-lakefs
+        with:
+          compose-file: esti/ops/docker-compose.yaml
+          compose-flags: "--quiet-pull --exit-code-from=esti"
+        env:
+          DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
+          LAKEFS_BLOCKSTORE_TYPE: gs
+          LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON: ${{ secrets.LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON }}
+          ESTI_BLOCKSTORE_TYPE: gs
+          ESTI_STORAGE_NAMESPACE: gs://esti-system-testing/${{ github.run_number }}
+      - name: lakeFS Logs on GS failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        run: docker-compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
+
+  run-system-azure-abfs:
+    name: Run latest lakeFS app on Azure with Azure blobstore
+    needs: [gen-code, deploy-image]
+    runs-on: ubuntu-20.04
+    env:
+      TAG: ${{ needs.deploy-image.outputs.tag }}
+      # Setting Account_ID as a secret as a way to avoid specifying it here
+      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v2
+      - name: Start lakeFS with Azure tests
+        uses: ./.github/actions/bootstrap-test-lakefs
+        with:
+          compose-file: esti/ops/docker-compose.yaml
+          compose-flags: "--quiet-pull --exit-code-from=esti"
+        env:
+          DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
+          LAKEFS_BLOCKSTORE_TYPE: azure
+          LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT: esti
+          LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY2 }}
+          ESTI_BLOCKSTORE_TYPE: azure
+          ESTI_STORAGE_NAMESPACE: https://esti.blob.core.windows.net/esti-system-testing/${{ github.run_number }}
+      - name: lakeFS Logs on Azure failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        run: docker-compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
+      - name: See the env when we would have tried to publish coverage
+        run: env
+        # uses: codecov/codecov-action@v1
+        # with:
+        #   files: ./esti-cover.out
+        #   fail_ci_if_error: false
