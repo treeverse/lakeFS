@@ -45,7 +45,7 @@ delete_and_commit() {
     else   # This means that the branch should be deleted
       run_lakectl branch delete "lakefs://${repo}/${branch_name}" -y
     fi
-  done  < <(${test_case} | jq -c '.branches []')
+  done  < <(echo ${test_case} | jq -c '.branches []')
 }
 
 last_commit_ref() {
@@ -81,7 +81,7 @@ validate_gc_job() {
         fi
       done
     fi
-  done < <(${test_case} | jq -c '.branches []')
+  done < <(echo ${test_case} | jq -c '.branches []')
 }
 
 clean_main_branch() {
