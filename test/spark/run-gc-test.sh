@@ -110,12 +110,14 @@ while read test_case; do
   echo "Test: ${test_description}"
   initialize_env ${REPOSITORY}
   file_existing_ref=$(last_commit_ref ${REPOSITORY} a)
-  echo "${test_case}" | jq --raw-output '.policy' | run_lakectl gc set-config lakefs://${REPOSITORY} -f -
+  echo "${test_case}" | jq --raw-output '.policy' > policy.json
+  run_lakectl gc set-config lakefs://${REPOSITORY} -f /local/policy.json
   delete_and_commit "${test_case}" ${REPOSITORY}
   run_gc ${REPOSITORY}
   if ! validate_gc_job "${test_case}" ${REPOSITORY} ${file_existing_ref}; then
     failed_tests+=("${test_description}")
   fi
+  rm -f policy.json
   clean_repo ${REPOSITORY}
 done < <(jq -c '.[]' gc-tests/test_scenarios.json)
 
