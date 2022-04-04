@@ -152,7 +152,7 @@
       }
     ],
     "file_deleted": false,
-    "description": "The file is not deleted as the branch retention policy surpass the default retention policy"
+    "description": "The file is not deleted as the branch retention policy overrules the default retention policy"
   },
   {
     "policy": {
