@@ -21,8 +21,12 @@ const (
 	JWTCookieName          = "access_token"
 )
 
-func GenerateJWT(secret []byte, userID int, issuedAt, expiresAt time.Time) (string, error) {
+// Be aware! The aud field should *only* be used for new applications! Otherwise it should be passed as an empty string, so it supports
+// backward compatibility.
+
+func GenerateJWT(aud string, secret []byte, userID int, issuedAt, expiresAt time.Time) (string, error) {
 	claims := &jwt.StandardClaims{
+		Audience:  aud,
 		Subject:   fmt.Sprint(userID),
 		IssuedAt:  issuedAt.Unix(),
 		ExpiresAt: expiresAt.Unix(),

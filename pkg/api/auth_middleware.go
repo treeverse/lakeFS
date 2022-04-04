@@ -119,7 +119,7 @@ func userByToken(ctx context.Context, logger logging.Logger, authService auth.Se
 		return nil, ErrAuthenticatingRequest
 	}
 	claims, ok := token.Claims.(*jwt.StandardClaims)
-	if !ok || !token.Valid {
+	if !ok || !token.Valid || len(claims.Audience) > 0 { // For backward compatibility as audiance was not set initially
 		return nil, ErrAuthenticatingRequest
 	}
 	const base = 10
@@ -153,4 +153,23 @@ func userByAuth(ctx context.Context, logger logging.Logger, authenticator auth.A
 		return nil, ErrAuthenticatingRequest
 	}
 	return user, nil
+}
+
+func VerifyResetPasswordToken(authService auth.Service, tokenString string) error {
+	claims := &jwt.StandardClaims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("%w: %s", ErrUnexpectedSigningMethod, token.Header["alg"])
+		}
+		return authService.SecretStore().SharedSecret(), nil
+	})
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	claims, ok := token.Claims.(*jwt.StandardClaims)
+	if !ok || !token.Valid || strings.Compare(claims.Audience, ResetPasswordAudience) != 0 {
+		return ErrAuthenticatingRequest
+	}
+	return err
 }
