@@ -3,6 +3,7 @@
 set -o pipefail
 
 run_lakectl() {
+  echo "lakectl variables: $@"
   docker-compose exec -T lakefs lakectl "$@"
 }
 
