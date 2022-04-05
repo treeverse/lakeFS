@@ -27,17 +27,33 @@ import org.junit.Test;
 
 
 /**
- * Model tests for ResetPassword
+ * Model tests for UpdatePasswordByToken
  */
-public class ResetPasswordTest {
-    private final ResetPassword model = new ResetPassword();
+public class UpdatePasswordByTokenTest {
+    private final UpdatePasswordByToken model = new UpdatePasswordByToken();
 
     /**
-     * Model tests for ResetPassword
+     * Model tests for UpdatePasswordByToken
      */
     @Test
-    public void testResetPassword() {
-        // TODO: test ResetPassword
+    public void testUpdatePasswordByToken() {
+        // TODO: test UpdatePasswordByToken
+    }
+
+    /**
+     * Test the property 'token'
+     */
+    @Test
+    public void tokenTest() {
+        // TODO: test token
+    }
+
+    /**
+     * Test the property 'newPassword'
+     */
+    @Test
+    public void newPasswordTest() {
+        // TODO: test newPassword
     }
 
     /**

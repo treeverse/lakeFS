@@ -149,14 +149,14 @@ paths:
       tags:
       - auth
       x-accepts: application/json
-  /auth/password/reset:
+  /auth/password:
     post:
       operationId: setPassword
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SetPassword'
+              $ref: '#/components/schemas/UpdatePasswordByToken'
         required: true
       responses:
         "200":
@@ -182,22 +182,40 @@ paths:
       x-accepts: application/json
   /auth/password/forgot:
     post:
-      operationId: requestPasswordReset
+      operationId: passwordForgot
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ResetPassword'
+              $ref: '#/components/schemas/ForgotPasswordRequest'
         required: true
       responses:
         "200":
-          description: successfuly set token
+          description: password reset request submitted
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: bad request
         "401":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
         default:
           content:
             application/json:
@@ -206,7 +224,7 @@ paths:
           description: Internal Server Error
       security:
       - cookie_auth: []
-      summary: request a token to reset password, sent via email
+      summary: forgot password - request to start password reset flow
       tags:
       - auth
       x-contentType: application/json
@@ -4964,7 +4982,7 @@ components:
       required:
       - user
       type: object
-    ResetPassword:
+    ForgotPasswordRequest:
       example:
         email: email
       properties:
@@ -5026,20 +5044,20 @@ components:
       required:
       - username
       type: object
-    SetPassword:
+    UpdatePasswordByToken:
       example:
         newPassword: newPassword
         email: email
         token: token
       properties:
         token:
-          description: auth token for password reset
+          description: token used for authentification
           type: string
         newPassword:
-          description: a new password for the given email
+          description: the new password to be updated
           type: string
         email:
-          description: email of account to be updated
+          description: email of user to be updated
           type: string
       required:
       - email

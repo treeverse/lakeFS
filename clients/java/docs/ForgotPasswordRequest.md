@@ -1,6 +1,6 @@
 
 
-# ResetPassword
+# ForgotPasswordRequest
 
 
 ## Properties

@@ -25,6 +25,7 @@ from lakefs_client.model.current_user import CurrentUser
 from lakefs_client.model.diff import Diff
 from lakefs_client.model.diff_list import DiffList
 from lakefs_client.model.error import Error
+from lakefs_client.model.forgot_password_request import ForgotPasswordRequest
 from lakefs_client.model.garbage_collection_prepare_request import GarbageCollectionPrepareRequest
 from lakefs_client.model.garbage_collection_prepare_response import GarbageCollectionPrepareResponse
 from lakefs_client.model.garbage_collection_rule import GarbageCollectionRule
@@ -56,9 +57,7 @@ from lakefs_client.model.repository import Repository
 from lakefs_client.model.repository_creation import RepositoryCreation
 from lakefs_client.model.repository_list import RepositoryList
 from lakefs_client.model.reset_creation import ResetCreation
-from lakefs_client.model.reset_password import ResetPassword
 from lakefs_client.model.revert_creation import RevertCreation
-from lakefs_client.model.set_password import SetPassword
 from lakefs_client.model.setup import Setup
 from lakefs_client.model.setup_state import SetupState
 from lakefs_client.model.staging_location import StagingLocation
@@ -68,6 +67,7 @@ from lakefs_client.model.storage_config import StorageConfig
 from lakefs_client.model.storage_uri import StorageURI
 from lakefs_client.model.tag_creation import TagCreation
 from lakefs_client.model.underlying_object_properties import UnderlyingObjectProperties
+from lakefs_client.model.update_password_by_token import UpdatePasswordByToken
 from lakefs_client.model.user import User
 from lakefs_client.model.user_creation import UserCreation
 from lakefs_client.model.user_list import UserList

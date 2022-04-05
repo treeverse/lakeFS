@@ -137,8 +137,8 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**list_users**](docs/AuthApi.md#list_users) | **GET** /auth/users | list users
 *AuthApi* | [**login**](docs/AuthApi.md#login) | **POST** /auth/login | perform a login
 *AuthApi* | [**logout**](docs/AuthApi.md#logout) | **POST** /auth/logout | logs out a cookie-authenticated user
-*AuthApi* | [**request_password_reset**](docs/AuthApi.md#request_password_reset) | **POST** /auth/password/forgot | request a token to reset password, sent via email
-*AuthApi* | [**set_password**](docs/AuthApi.md#set_password) | **POST** /auth/password/reset | update password for the given password
+*AuthApi* | [**password_forgot**](docs/AuthApi.md#password_forgot) | **POST** /auth/password/forgot | forgot password - request to start password reset flow
+*AuthApi* | [**set_password**](docs/AuthApi.md#set_password) | **POST** /auth/password | update password for the given password
 *AuthApi* | [**update_policy**](docs/AuthApi.md#update_policy) | **PUT** /auth/policies/{policyId} | update policy
 *BranchesApi* | [**create_branch**](docs/BranchesApi.md#create_branch) | **POST** /repositories/{repository}/branches | create branch
 *BranchesApi* | [**delete_branch**](docs/BranchesApi.md#delete_branch) | **DELETE** /repositories/{repository}/branches/{branch} | delete branch
@@ -207,6 +207,7 @@ Class | Method | HTTP request | Description
  - [Diff](docs/Diff.md)
  - [DiffList](docs/DiffList.md)
  - [Error](docs/Error.md)
+ - [ForgotPasswordRequest](docs/ForgotPasswordRequest.md)
  - [GarbageCollectionPrepareRequest](docs/GarbageCollectionPrepareRequest.md)
  - [GarbageCollectionPrepareResponse](docs/GarbageCollectionPrepareResponse.md)
  - [GarbageCollectionRule](docs/GarbageCollectionRule.md)
@@ -238,9 +239,7 @@ Class | Method | HTTP request | Description
  - [RepositoryCreation](docs/RepositoryCreation.md)
  - [RepositoryList](docs/RepositoryList.md)
  - [ResetCreation](docs/ResetCreation.md)
- - [ResetPassword](docs/ResetPassword.md)
  - [RevertCreation](docs/RevertCreation.md)
- - [SetPassword](docs/SetPassword.md)
  - [Setup](docs/Setup.md)
  - [SetupState](docs/SetupState.md)
  - [StagingLocation](docs/StagingLocation.md)
@@ -250,6 +249,7 @@ Class | Method | HTTP request | Description
  - [StorageURI](docs/StorageURI.md)
  - [TagCreation](docs/TagCreation.md)
  - [UnderlyingObjectProperties](docs/UnderlyingObjectProperties.md)
+ - [UpdatePasswordByToken](docs/UpdatePasswordByToken.md)
  - [User](docs/User.md)
  - [UserCreation](docs/UserCreation.md)
  - [UserList](docs/UserList.md)

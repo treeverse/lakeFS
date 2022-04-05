@@ -33,14 +33,14 @@ import io.lakefs.clients.api.model.CredentialsList;
 import io.lakefs.clients.api.model.CredentialsWithSecret;
 import io.lakefs.clients.api.model.CurrentUser;
 import io.lakefs.clients.api.model.Error;
+import io.lakefs.clients.api.model.ForgotPasswordRequest;
 import io.lakefs.clients.api.model.Group;
 import io.lakefs.clients.api.model.GroupCreation;
 import io.lakefs.clients.api.model.GroupList;
 import io.lakefs.clients.api.model.LoginInformation;
 import io.lakefs.clients.api.model.Policy;
 import io.lakefs.clients.api.model.PolicyList;
-import io.lakefs.clients.api.model.ResetPassword;
-import io.lakefs.clients.api.model.SetPassword;
+import io.lakefs.clients.api.model.UpdatePasswordByToken;
 import io.lakefs.clients.api.model.User;
 import io.lakefs.clients.api.model.UserCreation;
 import io.lakefs.clients.api.model.UserList;
@@ -3798,21 +3798,24 @@ public class AuthApi {
         return localVarCall;
     }
     /**
-     * Build call for requestPasswordReset
-     * @param resetPassword  (required)
+     * Build call for passwordForgot
+     * @param forgotPasswordRequest  (required)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> successfuly set token </td><td>  -  </td></tr>
+        <tr><td> 200 </td><td> password reset request submitted </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> bad request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 500 </td><td> Internal Server Error </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call requestPasswordResetCall(ResetPassword resetPassword, final ApiCallback _callback) throws ApiException {
-        Object localVarPostBody = resetPassword;
+    public okhttp3.Call passwordForgotCall(ForgotPasswordRequest forgotPasswordRequest, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = forgotPasswordRequest;
 
         // create path and map variables
         String localVarPath = "/auth/password/forgot";
@@ -3842,79 +3845,88 @@ public class AuthApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call requestPasswordResetValidateBeforeCall(ResetPassword resetPassword, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call passwordForgotValidateBeforeCall(ForgotPasswordRequest forgotPasswordRequest, final ApiCallback _callback) throws ApiException {
         
-        // verify the required parameter 'resetPassword' is set
-        if (resetPassword == null) {
-            throw new ApiException("Missing the required parameter 'resetPassword' when calling requestPasswordReset(Async)");
+        // verify the required parameter 'forgotPasswordRequest' is set
+        if (forgotPasswordRequest == null) {
+            throw new ApiException("Missing the required parameter 'forgotPasswordRequest' when calling passwordForgot(Async)");
         }
         
 
-        okhttp3.Call localVarCall = requestPasswordResetCall(resetPassword, _callback);
+        okhttp3.Call localVarCall = passwordForgotCall(forgotPasswordRequest, _callback);
         return localVarCall;
 
     }
 
     /**
-     * request a token to reset password, sent via email
+     * forgot password - request to start password reset flow
      * 
-     * @param resetPassword  (required)
+     * @param forgotPasswordRequest  (required)
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> successfuly set token </td><td>  -  </td></tr>
+        <tr><td> 200 </td><td> password reset request submitted </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> bad request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 500 </td><td> Internal Server Error </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public void requestPasswordReset(ResetPassword resetPassword) throws ApiException {
-        requestPasswordResetWithHttpInfo(resetPassword);
+    public void passwordForgot(ForgotPasswordRequest forgotPasswordRequest) throws ApiException {
+        passwordForgotWithHttpInfo(forgotPasswordRequest);
     }
 
     /**
-     * request a token to reset password, sent via email
+     * forgot password - request to start password reset flow
      * 
-     * @param resetPassword  (required)
+     * @param forgotPasswordRequest  (required)
      * @return ApiResponse&lt;Void&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> successfuly set token </td><td>  -  </td></tr>
+        <tr><td> 200 </td><td> password reset request submitted </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> bad request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 500 </td><td> Internal Server Error </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<Void> requestPasswordResetWithHttpInfo(ResetPassword resetPassword) throws ApiException {
-        okhttp3.Call localVarCall = requestPasswordResetValidateBeforeCall(resetPassword, null);
+    public ApiResponse<Void> passwordForgotWithHttpInfo(ForgotPasswordRequest forgotPasswordRequest) throws ApiException {
+        okhttp3.Call localVarCall = passwordForgotValidateBeforeCall(forgotPasswordRequest, null);
         return localVarApiClient.execute(localVarCall);
     }
 
     /**
-     * request a token to reset password, sent via email (asynchronously)
+     * forgot password - request to start password reset flow (asynchronously)
      * 
-     * @param resetPassword  (required)
+     * @param forgotPasswordRequest  (required)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> successfuly set token </td><td>  -  </td></tr>
+        <tr><td> 200 </td><td> password reset request submitted </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> bad request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 500 </td><td> Internal Server Error </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call requestPasswordResetAsync(ResetPassword resetPassword, final ApiCallback<Void> _callback) throws ApiException {
+    public okhttp3.Call passwordForgotAsync(ForgotPasswordRequest forgotPasswordRequest, final ApiCallback<Void> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = requestPasswordResetValidateBeforeCall(resetPassword, _callback);
+        okhttp3.Call localVarCall = passwordForgotValidateBeforeCall(forgotPasswordRequest, _callback);
         localVarApiClient.executeAsync(localVarCall, _callback);
         return localVarCall;
     }
     /**
      * Build call for setPassword
-     * @param setPassword  (required)
+     * @param updatePasswordByToken  (required)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -3926,11 +3938,11 @@ public class AuthApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call setPasswordCall(SetPassword setPassword, final ApiCallback _callback) throws ApiException {
-        Object localVarPostBody = setPassword;
+    public okhttp3.Call setPasswordCall(UpdatePasswordByToken updatePasswordByToken, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = updatePasswordByToken;
 
         // create path and map variables
-        String localVarPath = "/auth/password/reset";
+        String localVarPath = "/auth/password";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -3957,15 +3969,15 @@ public class AuthApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call setPasswordValidateBeforeCall(SetPassword setPassword, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call setPasswordValidateBeforeCall(UpdatePasswordByToken updatePasswordByToken, final ApiCallback _callback) throws ApiException {
         
-        // verify the required parameter 'setPassword' is set
-        if (setPassword == null) {
-            throw new ApiException("Missing the required parameter 'setPassword' when calling setPassword(Async)");
+        // verify the required parameter 'updatePasswordByToken' is set
+        if (updatePasswordByToken == null) {
+            throw new ApiException("Missing the required parameter 'updatePasswordByToken' when calling setPassword(Async)");
         }
         
 
-        okhttp3.Call localVarCall = setPasswordCall(setPassword, _callback);
+        okhttp3.Call localVarCall = setPasswordCall(updatePasswordByToken, _callback);
         return localVarCall;
 
     }
@@ -3973,7 +3985,7 @@ public class AuthApi {
     /**
      * update password for the given password
      * 
-     * @param setPassword  (required)
+     * @param updatePasswordByToken  (required)
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
@@ -3983,14 +3995,14 @@ public class AuthApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public void setPassword(SetPassword setPassword) throws ApiException {
-        setPasswordWithHttpInfo(setPassword);
+    public void setPassword(UpdatePasswordByToken updatePasswordByToken) throws ApiException {
+        setPasswordWithHttpInfo(updatePasswordByToken);
     }
 
     /**
      * update password for the given password
      * 
-     * @param setPassword  (required)
+     * @param updatePasswordByToken  (required)
      * @return ApiResponse&lt;Void&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -4001,15 +4013,15 @@ public class AuthApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<Void> setPasswordWithHttpInfo(SetPassword setPassword) throws ApiException {
-        okhttp3.Call localVarCall = setPasswordValidateBeforeCall(setPassword, null);
+    public ApiResponse<Void> setPasswordWithHttpInfo(UpdatePasswordByToken updatePasswordByToken) throws ApiException {
+        okhttp3.Call localVarCall = setPasswordValidateBeforeCall(updatePasswordByToken, null);
         return localVarApiClient.execute(localVarCall);
     }
 
     /**
      * update password for the given password (asynchronously)
      * 
-     * @param setPassword  (required)
+     * @param updatePasswordByToken  (required)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -4021,9 +4033,9 @@ public class AuthApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call setPasswordAsync(SetPassword setPassword, final ApiCallback<Void> _callback) throws ApiException {
+    public okhttp3.Call setPasswordAsync(UpdatePasswordByToken updatePasswordByToken, final ApiCallback<Void> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = setPasswordValidateBeforeCall(setPassword, _callback);
+        okhttp3.Call localVarCall = setPasswordValidateBeforeCall(updatePasswordByToken, _callback);
         localVarApiClient.executeAsync(localVarCall, _callback);
         return localVarCall;
     }

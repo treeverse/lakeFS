@@ -13,11 +13,11 @@ import sys
 import unittest
 
 import lakefs_client
-from lakefs_client.model.reset_password import ResetPassword
+from lakefs_client.model.update_password_by_token import UpdatePasswordByToken
 
 
-class TestResetPassword(unittest.TestCase):
-    """ResetPassword unit test stubs"""
+class TestUpdatePasswordByToken(unittest.TestCase):
+    """UpdatePasswordByToken unit test stubs"""
 
     def setUp(self):
         pass
@@ -25,10 +25,10 @@ class TestResetPassword(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def testResetPassword(self):
-        """Test ResetPassword"""
+    def testUpdatePasswordByToken(self):
+        """Test UpdatePasswordByToken"""
         # FIXME: construct object with mandatory attributes with example values
-        # model = ResetPassword()  # noqa: E501
+        # model = UpdatePasswordByToken()  # noqa: E501
         pass
 
 

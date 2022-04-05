@@ -20,14 +20,14 @@ import io.lakefs.clients.api.model.CredentialsList;
 import io.lakefs.clients.api.model.CredentialsWithSecret;
 import io.lakefs.clients.api.model.CurrentUser;
 import io.lakefs.clients.api.model.Error;
+import io.lakefs.clients.api.model.ForgotPasswordRequest;
 import io.lakefs.clients.api.model.Group;
 import io.lakefs.clients.api.model.GroupCreation;
 import io.lakefs.clients.api.model.GroupList;
 import io.lakefs.clients.api.model.LoginInformation;
 import io.lakefs.clients.api.model.Policy;
 import io.lakefs.clients.api.model.PolicyList;
-import io.lakefs.clients.api.model.ResetPassword;
-import io.lakefs.clients.api.model.SetPassword;
+import io.lakefs.clients.api.model.UpdatePasswordByToken;
 import io.lakefs.clients.api.model.User;
 import io.lakefs.clients.api.model.UserCreation;
 import io.lakefs.clients.api.model.UserList;
@@ -512,7 +512,7 @@ public class AuthApiTest {
     }
     
     /**
-     * request a token to reset password, sent via email
+     * forgot password - request to start password reset flow
      *
      * 
      *
@@ -520,9 +520,9 @@ public class AuthApiTest {
      *          if the Api call fails
      */
     @Test
-    public void requestPasswordResetTest() throws ApiException {
-        ResetPassword resetPassword = null;
-                api.requestPasswordReset(resetPassword);
+    public void passwordForgotTest() throws ApiException {
+        ForgotPasswordRequest forgotPasswordRequest = null;
+                api.passwordForgot(forgotPasswordRequest);
         // TODO: test validations
     }
     
@@ -536,8 +536,8 @@ public class AuthApiTest {
      */
     @Test
     public void setPasswordTest() throws ApiException {
-        SetPassword setPassword = null;
-                api.setPassword(setPassword);
+        UpdatePasswordByToken updatePasswordByToken = null;
+                api.setPassword(updatePasswordByToken);
         // TODO: test validations
     }
     

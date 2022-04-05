@@ -25,81 +25,27 @@ import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
 
 /**
- * SetPassword
+ * ForgotPasswordRequest
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class SetPassword {
-  public static final String SERIALIZED_NAME_TOKEN = "token";
-  @SerializedName(SERIALIZED_NAME_TOKEN)
-  private String token;
-
-  public static final String SERIALIZED_NAME_NEW_PASSWORD = "newPassword";
-  @SerializedName(SERIALIZED_NAME_NEW_PASSWORD)
-  private String newPassword;
-
+public class ForgotPasswordRequest {
   public static final String SERIALIZED_NAME_EMAIL = "email";
   @SerializedName(SERIALIZED_NAME_EMAIL)
   private String email;
 
 
-  public SetPassword token(String token) {
-    
-    this.token = token;
-    return this;
-  }
-
-   /**
-   * auth token for password reset
-   * @return token
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "auth token for password reset")
-
-  public String getToken() {
-    return token;
-  }
-
-
-  public void setToken(String token) {
-    this.token = token;
-  }
-
-
-  public SetPassword newPassword(String newPassword) {
-    
-    this.newPassword = newPassword;
-    return this;
-  }
-
-   /**
-   * a new password for the given email
-   * @return newPassword
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "a new password for the given email")
-
-  public String getNewPassword() {
-    return newPassword;
-  }
-
-
-  public void setNewPassword(String newPassword) {
-    this.newPassword = newPassword;
-  }
-
-
-  public SetPassword email(String email) {
+  public ForgotPasswordRequest email(String email) {
     
     this.email = email;
     return this;
   }
 
    /**
-   * email of account to be updated
+   * Get email
    * @return email
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "email of account to be updated")
+  @ApiModelProperty(required = true, value = "")
 
   public String getEmail() {
     return email;
@@ -119,23 +65,19 @@ public class SetPassword {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    SetPassword setPassword = (SetPassword) o;
-    return Objects.equals(this.token, setPassword.token) &&
-        Objects.equals(this.newPassword, setPassword.newPassword) &&
-        Objects.equals(this.email, setPassword.email);
+    ForgotPasswordRequest forgotPasswordRequest = (ForgotPasswordRequest) o;
+    return Objects.equals(this.email, forgotPasswordRequest.email);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(token, newPassword, email);
+    return Objects.hash(email);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class SetPassword {\n");
-    sb.append("    token: ").append(toIndentedString(token)).append("\n");
-    sb.append("    newPassword: ").append(toIndentedString(newPassword)).append("\n");
+    sb.append("class ForgotPasswordRequest {\n");
     sb.append("    email: ").append(toIndentedString(email)).append("\n");
     sb.append("}");
     return sb.toString();

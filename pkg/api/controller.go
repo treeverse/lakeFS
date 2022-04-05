@@ -56,6 +56,10 @@ const (
 	setupStateNotInitialized = "not_initialized"
 
 	DefaultMaxDeleteObjects = 1000
+
+	ResetPasswordAudience = "password_reset"
+	tokenExpiryDuration   = 5 * time.Minute
+	loginAudiance         = ""
 )
 
 type actionsHandler interface {
@@ -162,8 +166,6 @@ func (c *Controller) Logout(w http.ResponseWriter, _ *http.Request) {
 	writeResponse(w, http.StatusOK, nil)
 }
 
-const loginAudiance = ""
-
 func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSONRequestBody) {
 	ctx := r.Context()
 	user, err := userByAuth(ctx, c.Logger, c.Authenticator, c.Auth, body.AccessKeyId, body.SecretAccessKey)
@@ -177,9 +179,9 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSO
 	secret := c.Auth.SecretStore().SharedSecret()
 	// user.Username will be different from username/access_key_id on
 	// LDAP login.  Use the stored value.
-	// audiance set here to be an empty string for backward compatibility
+	// audiance and email set here to be an empty string for backward compatibility
 	tokenString, err :=
-		GenerateJWT(loginAudiance, secret, user.ID, loginTime, expires)
+		GenerateJWT(secret, loginAudiance, user.ID, "", loginTime, expires)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
@@ -3010,10 +3012,11 @@ func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, http.StatusOK, response)
 }
 
-const ResetPasswordAudience = "password reset request"
-const tokenExpiryTime = 5 // minutes
+func (c *Controller) sendResetPasswordEmail(email []string, token string) error {
+	return c.Emailer.SendEmail(email, token, token, []string{})
+}
 
-func (c *Controller) RequestPasswordReset(w http.ResponseWriter, r *http.Request, body RequestPasswordResetJSONRequestBody) {
+func (c *Controller) PasswordForgot(w http.ResponseWriter, r *http.Request, body PasswordForgotJSONRequestBody) {
 	user, err := c.Auth.GetUserByEmail(r.Context(), body.Email)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
@@ -3025,13 +3028,13 @@ func (c *Controller) RequestPasswordReset(w http.ResponseWriter, r *http.Request
 	}
 	secret := c.Auth.SecretStore().SharedSecret()
 	currentTime := time.Now()
-	token, err := GenerateJWT(ResetPasswordAudience, secret, -1, currentTime, currentTime.Add(time.Minute*tokenExpiryTime))
+	token, err := GenerateJWT(secret, ResetPasswordAudience, auth.InvalidUserID, body.Email, currentTime, currentTime.Add(tokenExpiryDuration))
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
 	// TODO (@shimi9276) create template for sending the email with link for reset
-	err = c.Emailer.SendEmail([]string{body.Email}, token, token, []string{})
+	err = c.sendResetPasswordEmail([]string{body.Email}, token)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
 		return
@@ -3040,18 +3043,21 @@ func (c *Controller) RequestPasswordReset(w http.ResponseWriter, r *http.Request
 }
 
 func (c *Controller) SetPassword(w http.ResponseWriter, r *http.Request, body SetPasswordJSONRequestBody) {
-	err := VerifyResetPasswordToken(c.Auth, body.Token)
+	claims, err := VerifyResetPasswordToken(c.Auth, body.Token)
 	if err != nil {
 		writeError(w, http.StatusForbidden, err)
 		return
 	}
-	u := model.User{}
-	err = u.UpdatePassword(body.NewPassword)
+	if strings.Compare(claims.Id, body.Email) != 0 {
+		writeError(w, http.StatusForbidden, "Unautherized to switch password for given email")
+		return
+	}
+	p, err := model.HashPassword(body.NewPassword)
 	if err != nil {
 		writeError(w, http.StatusServiceUnavailable, err)
 		return
 	}
-	err = c.Auth.UpdatePassword(r.Context(), body.Email, string(u.EncryptedPassword))
+	err = c.Auth.UpdatePassword(r.Context(), body.Email, string(p))
 	if err != nil {
 		writeError(w, http.StatusConflict, err)
 	}

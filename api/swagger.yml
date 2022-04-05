@@ -548,7 +548,7 @@ components:
         user:
           $ref: "#/components/schemas/User"
 
-    ResetPassword:
+    ForgotPasswordRequest:
       type: object
       required:
         - email
@@ -600,17 +600,17 @@ components:
         - username
 
       
-    SetPassword:
+    UpdatePasswordByToken:
       type: object
       properties:
         token:
-          description: auth token for password reset
+          description: token used for authentification
           type: string
         newPassword:
-          description: a new password for the given email
+          description: the new password to be updated
           type: string
         email:
-          description: email of account to be updated
+          description: email of user to be updated
           type: string
       required:
         - email
@@ -1089,7 +1089,7 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
-  /auth/password/reset:
+  /auth/password:
       post:
         tags:
           - auth
@@ -1102,7 +1102,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SetPassword"
+                $ref: "#/components/schemas/UpdatePasswordByToken"
         responses:
           200:
             description: successful reset
@@ -1115,8 +1115,8 @@ paths:
       post:
         tags:
           - auth
-        operationId: requestPasswordReset
-        summary: request a token to reset password, sent via email
+        operationId: passwordForgot
+        summary: forgot password - request to start password reset flow
         security:
           - cookie_auth: []
         requestBody:
@@ -1124,12 +1124,22 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ResetPassword"
+                $ref: "#/components/schemas/ForgotPasswordRequest"
         responses:
           200:
-            description: successfuly set token
+            description: password reset request submitted
+          400:
+            description: bad request
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/Error"
           401:
             $ref: "#/components/responses/Unauthorized"
+          404:
+            $ref: "#/components/responses/NotFound"
+          500:
+            $ref: "#/components/responses/ServerError"
           default:
             $ref: "#/components/responses/ServerError"
 

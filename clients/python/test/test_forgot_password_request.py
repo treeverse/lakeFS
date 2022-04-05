@@ -13,11 +13,11 @@ import sys
 import unittest
 
 import lakefs_client
-from lakefs_client.model.set_password import SetPassword
+from lakefs_client.model.forgot_password_request import ForgotPasswordRequest
 
 
-class TestSetPassword(unittest.TestCase):
-    """SetPassword unit test stubs"""
+class TestForgotPasswordRequest(unittest.TestCase):
+    """ForgotPasswordRequest unit test stubs"""
 
     def setUp(self):
         pass
@@ -25,10 +25,10 @@ class TestSetPassword(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def testSetPassword(self):
-        """Test SetPassword"""
+    def testForgotPasswordRequest(self):
+        """Test ForgotPasswordRequest"""
         # FIXME: construct object with mandatory attributes with example values
-        # model = SetPassword()  # noqa: E501
+        # model = ForgotPasswordRequest()  # noqa: E501
         pass
 
 

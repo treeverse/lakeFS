@@ -227,10 +227,10 @@ class TestAuthApi(unittest.TestCase):
         """
         pass
 
-    def test_request_password_reset(self):
-        """Test case for request_password_reset
+    def test_password_forgot(self):
+        """Test case for password_forgot
 
-        request a token to reset password, sent via email  # noqa: E501
+        forgot password - request to start password reset flow  # noqa: E501
         """
         pass
 

@@ -16,6 +16,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
+const loginTokenAudience = ""
+
 // extractSecurityRequirements using Swagger returns an array of security requirements set for the request.
 func extractSecurityRequirements(router routers.Router, r *http.Request) (openapi3.SecurityRequirements, error) {
 	// Find route
@@ -107,7 +109,7 @@ func checkSecurityRequirements(r *http.Request, securityRequirements openapi3.Se
 	return nil, nil
 }
 
-func userByToken(ctx context.Context, logger logging.Logger, authService auth.Service, tokenString string) (*model.User, error) {
+func verifyToken(authService auth.Service, tokenString string) (*jwt.StandardClaims, error) {
 	claims := &jwt.StandardClaims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -116,12 +118,19 @@ func userByToken(ctx context.Context, logger logging.Logger, authService auth.Se
 		return authService.SecretStore().SharedSecret(), nil
 	})
 	if err != nil {
-		return nil, ErrAuthenticatingRequest
+		return nil, err
 	}
 	claims, ok := token.Claims.(*jwt.StandardClaims)
-	// For backward compatibility as audiance was not set initially
-	if !ok || !token.Valid || len(claims.Audience) > 0 {
+	if !ok || !token.Valid {
 		return nil, ErrAuthenticatingRequest
+	}
+	return claims, nil
+}
+
+func userByToken(ctx context.Context, logger logging.Logger, authService auth.Service, tokenString string) (*model.User, error) {
+	claims, err := verifyToken(authService, tokenString)
+	if err != nil || strings.Compare(claims.Audience, loginTokenAudience) != 0 {
+		return nil, err
 	}
 	const base = 10
 	const bitSize = 32
@@ -156,21 +165,10 @@ func userByAuth(ctx context.Context, logger logging.Logger, authenticator auth.A
 	return user, nil
 }
 
-func VerifyResetPasswordToken(authService auth.Service, tokenString string) error {
-	claims := &jwt.StandardClaims{}
-	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("%w: %s", ErrUnexpectedSigningMethod, token.Header["alg"])
-		}
-		return authService.SecretStore().SharedSecret(), nil
-	})
-	if err != nil {
-		fmt.Println(err)
-		return err
+func VerifyResetPasswordToken(authService auth.Service, tokenString string) (*jwt.StandardClaims, error) {
+	claims, err := verifyToken(authService, tokenString)
+	if err != nil || strings.Compare(claims.Audience, ResetPasswordAudience) != 0 {
+		return nil, ErrAuthenticatingRequest
 	}
-	claims, ok := token.Claims.(*jwt.StandardClaims)
-	if !ok || !token.Valid || strings.Compare(claims.Audience, ResetPasswordAudience) != 0 {
-		return ErrAuthenticatingRequest
-	}
-	return err
+	return claims, err
 }

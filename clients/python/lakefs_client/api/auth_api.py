@@ -28,14 +28,14 @@ from lakefs_client.model.credentials_list import CredentialsList
 from lakefs_client.model.credentials_with_secret import CredentialsWithSecret
 from lakefs_client.model.current_user import CurrentUser
 from lakefs_client.model.error import Error
+from lakefs_client.model.forgot_password_request import ForgotPasswordRequest
 from lakefs_client.model.group import Group
 from lakefs_client.model.group_creation import GroupCreation
 from lakefs_client.model.group_list import GroupList
 from lakefs_client.model.login_information import LoginInformation
 from lakefs_client.model.policy import Policy
 from lakefs_client.model.policy_list import PolicyList
-from lakefs_client.model.reset_password import ResetPassword
-from lakefs_client.model.set_password import SetPassword
+from lakefs_client.model.update_password_by_token import UpdatePasswordByToken
 from lakefs_client.model.user import User
 from lakefs_client.model.user_creation import UserCreation
 from lakefs_client.model.user_list import UserList
@@ -1767,23 +1767,23 @@ class AuthApi(object):
             },
             api_client=api_client
         )
-        self.request_password_reset_endpoint = _Endpoint(
+        self.password_forgot_endpoint = _Endpoint(
             settings={
                 'response_type': None,
                 'auth': [
                     'cookie_auth'
                 ],
                 'endpoint_path': '/auth/password/forgot',
-                'operation_id': 'request_password_reset',
+                'operation_id': 'password_forgot',
                 'http_method': 'POST',
                 'servers': None,
             },
             params_map={
                 'all': [
-                    'reset_password',
+                    'forgot_password_request',
                 ],
                 'required': [
-                    'reset_password',
+                    'forgot_password_request',
                 ],
                 'nullable': [
                 ],
@@ -1798,13 +1798,13 @@ class AuthApi(object):
                 'allowed_values': {
                 },
                 'openapi_types': {
-                    'reset_password':
-                        (ResetPassword,),
+                    'forgot_password_request':
+                        (ForgotPasswordRequest,),
                 },
                 'attribute_map': {
                 },
                 'location_map': {
-                    'reset_password': 'body',
+                    'forgot_password_request': 'body',
                 },
                 'collection_format_map': {
                 }
@@ -1825,17 +1825,17 @@ class AuthApi(object):
                 'auth': [
                     'cookie_auth'
                 ],
-                'endpoint_path': '/auth/password/reset',
+                'endpoint_path': '/auth/password',
                 'operation_id': 'set_password',
                 'http_method': 'POST',
                 'servers': None,
             },
             params_map={
                 'all': [
-                    'set_password',
+                    'update_password_by_token',
                 ],
                 'required': [
-                    'set_password',
+                    'update_password_by_token',
                 ],
                 'nullable': [
                 ],
@@ -1850,13 +1850,13 @@ class AuthApi(object):
                 'allowed_values': {
                 },
                 'openapi_types': {
-                    'set_password':
-                        (SetPassword,),
+                    'update_password_by_token':
+                        (UpdatePasswordByToken,),
                 },
                 'attribute_map': {
                 },
                 'location_map': {
-                    'set_password': 'body',
+                    'update_password_by_token': 'body',
                 },
                 'collection_format_map': {
                 }
@@ -3837,21 +3837,21 @@ class AuthApi(object):
         kwargs['_host_index'] = kwargs.get('_host_index')
         return self.logout_endpoint.call_with_http_info(**kwargs)
 
-    def request_password_reset(
+    def password_forgot(
         self,
-        reset_password,
+        forgot_password_request,
         **kwargs
     ):
-        """request a token to reset password, sent via email  # noqa: E501
+        """forgot password - request to start password reset flow  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.request_password_reset(reset_password, async_req=True)
+        >>> thread = api.password_forgot(forgot_password_request, async_req=True)
         >>> result = thread.get()
 
         Args:
-            reset_password (ResetPassword):
+            forgot_password_request (ForgotPasswordRequest):
 
         Keyword Args:
             _return_http_data_only (bool): response data without head status
@@ -3898,13 +3898,13 @@ class AuthApi(object):
             '_check_return_type', True
         )
         kwargs['_host_index'] = kwargs.get('_host_index')
-        kwargs['reset_password'] = \
-            reset_password
-        return self.request_password_reset_endpoint.call_with_http_info(**kwargs)
+        kwargs['forgot_password_request'] = \
+            forgot_password_request
+        return self.password_forgot_endpoint.call_with_http_info(**kwargs)
 
     def set_password(
         self,
-        set_password,
+        update_password_by_token,
         **kwargs
     ):
         """update password for the given password  # noqa: E501
@@ -3912,11 +3912,11 @@ class AuthApi(object):
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.set_password(set_password, async_req=True)
+        >>> thread = api.set_password(update_password_by_token, async_req=True)
         >>> result = thread.get()
 
         Args:
-            set_password (SetPassword):
+            update_password_by_token (UpdatePasswordByToken):
 
         Keyword Args:
             _return_http_data_only (bool): response data without head status
@@ -3963,8 +3963,8 @@ class AuthApi(object):
             '_check_return_type', True
         )
         kwargs['_host_index'] = kwargs.get('_host_index')
-        kwargs['set_password'] = \
-            set_password
+        kwargs['update_password_by_token'] = \
+            update_password_by_token
         return self.set_password_endpoint.call_with_http_info(**kwargs)
 
     def update_policy(

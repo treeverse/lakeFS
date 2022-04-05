@@ -27,33 +27,17 @@ import org.junit.Test;
 
 
 /**
- * Model tests for SetPassword
+ * Model tests for ForgotPasswordRequest
  */
-public class SetPasswordTest {
-    private final SetPassword model = new SetPassword();
+public class ForgotPasswordRequestTest {
+    private final ForgotPasswordRequest model = new ForgotPasswordRequest();
 
     /**
-     * Model tests for SetPassword
+     * Model tests for ForgotPasswordRequest
      */
     @Test
-    public void testSetPassword() {
-        // TODO: test SetPassword
-    }
-
-    /**
-     * Test the property 'token'
-     */
-    @Test
-    public void tokenTest() {
-        // TODO: test token
-    }
-
-    /**
-     * Test the property 'newPassword'
-     */
-    @Test
-    public void newPasswordTest() {
-        // TODO: test newPassword
+    public void testForgotPasswordRequest() {
+        // TODO: test ForgotPasswordRequest
     }
 
     /**

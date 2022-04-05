@@ -33,8 +33,8 @@ Method | HTTP request | Description
 [**list_users**](AuthApi.md#list_users) | **GET** /auth/users | list users
 [**login**](AuthApi.md#login) | **POST** /auth/login | perform a login
 [**logout**](AuthApi.md#logout) | **POST** /auth/logout | logs out a cookie-authenticated user
-[**request_password_reset**](AuthApi.md#request_password_reset) | **POST** /auth/password/forgot | request a token to reset password, sent via email
-[**set_password**](AuthApi.md#set_password) | **POST** /auth/password/reset | update password for the given password
+[**password_forgot**](AuthApi.md#password_forgot) | **POST** /auth/password/forgot | forgot password - request to start password reset flow
+[**set_password**](AuthApi.md#set_password) | **POST** /auth/password | update password for the given password
 [**update_policy**](AuthApi.md#update_policy) | **PUT** /auth/policies/{policyId} | update policy
 
 
@@ -2791,10 +2791,10 @@ void (empty response body)
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **request_password_reset**
-> request_password_reset(reset_password)
+# **password_forgot**
+> password_forgot(forgot_password_request)
 
-request a token to reset password, sent via email
+forgot password - request to start password reset flow
 
 ### Example
 
@@ -2804,7 +2804,7 @@ request a token to reset password, sent via email
 import time
 import lakefs_client
 from lakefs_client.api import auth_api
-from lakefs_client.model.reset_password import ResetPassword
+from lakefs_client.model.forgot_password_request import ForgotPasswordRequest
 from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
@@ -2828,16 +2828,16 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
-    reset_password = ResetPassword(
+    forgot_password_request = ForgotPasswordRequest(
         email="email_example",
-    ) # ResetPassword | 
+    ) # ForgotPasswordRequest | 
 
     # example passing only required values which don't have defaults set
     try:
-        # request a token to reset password, sent via email
-        api_instance.request_password_reset(reset_password)
+        # forgot password - request to start password reset flow
+        api_instance.password_forgot(forgot_password_request)
     except lakefs_client.ApiException as e:
-        print("Exception when calling AuthApi->request_password_reset: %s\n" % e)
+        print("Exception when calling AuthApi->password_forgot: %s\n" % e)
 ```
 
 
@@ -2845,7 +2845,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **reset_password** | [**ResetPassword**](ResetPassword.md)|  |
+ **forgot_password_request** | [**ForgotPasswordRequest**](ForgotPasswordRequest.md)|  |
 
 ### Return type
 
@@ -2865,14 +2865,17 @@ void (empty response body)
 
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**200** | successfuly set token |  -  |
+**200** | password reset request submitted |  -  |
+**400** | bad request |  -  |
 **401** | Unauthorized |  -  |
+**404** | Resource Not Found |  -  |
+**500** | Internal Server Error |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **set_password**
-> set_password(set_password)
+> set_password(update_password_by_token)
 
 update password for the given password
 
@@ -2884,7 +2887,7 @@ update password for the given password
 import time
 import lakefs_client
 from lakefs_client.api import auth_api
-from lakefs_client.model.set_password import SetPassword
+from lakefs_client.model.update_password_by_token import UpdatePasswordByToken
 from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
@@ -2908,16 +2911,16 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
-    set_password = SetPassword(
+    update_password_by_token = UpdatePasswordByToken(
         token="token_example",
         new_password="new_password_example",
         email="email_example",
-    ) # SetPassword | 
+    ) # UpdatePasswordByToken | 
 
     # example passing only required values which don't have defaults set
     try:
         # update password for the given password
-        api_instance.set_password(set_password)
+        api_instance.set_password(update_password_by_token)
     except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->set_password: %s\n" % e)
 ```
@@ -2927,7 +2930,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **set_password** | [**SetPassword**](SetPassword.md)|  |
+ **update_password_by_token** | [**UpdatePasswordByToken**](UpdatePasswordByToken.md)|  |
 
 ### Return type
 
