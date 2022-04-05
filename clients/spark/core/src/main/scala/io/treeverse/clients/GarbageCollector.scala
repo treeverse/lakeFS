@@ -366,10 +366,9 @@ object S3BulkDeleter {
     val addSuffixSlash = if (key.endsWith("/")) key else key.concat("/")
     val snPrefix =
       if (addSuffixSlash.startsWith("/")) addSuffixSlash.substring(1) else addSuffixSlash
-
     println("addressDFLocation: " + addressDFLocation)
     val df = spark.read
-      .parquet(addressDFLocation)
+      .parquet(addressDFLocation.replaceAll("//", "/"))
       .where(col("run_id") === runID)
       .where(col("relative") === true)
     val res =
