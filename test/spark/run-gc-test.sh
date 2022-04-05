@@ -34,7 +34,7 @@ initialize_env() {
 delete_and_commit() {
   local test_case=$1
   local repo=$2
-  while read branch_props; do
+  while read -r branch_props; do
     local branch_name=$(echo ${branch_props} | jq -r '.branch_name')
     local days_ago=$(echo ${branch_props} | jq -r '.delete_commit_days_ago')
     if [[ ${days_ago} -gt -1 ]]
@@ -66,7 +66,7 @@ validate_gc_job() {
     echo "Expected the file to remain in the repository but it was removed by the garbage collector"
     return 1
   fi
-  while read branch_props; do
+  while read -r branch_props; do
     local days_ago=$(echo ${branch_props} | jq -r '.delete_commit_days_ago')
     if [[ ${days_ago} -gt -1 ]]; then
       local branch_name=$(echo ${branch_props} | jq -r '.branch_name')
@@ -95,14 +95,6 @@ clean_main_branch() {
 #################################
 ######## Tests Execution ########
 #################################
-i=0
-
-while [ $i -le 5 ]
-do
-  echo Number: $i
-  ((i++))
-done
-
 day_in_seconds=86400
 current_epoch_in_seconds=$(date +%s)
 
@@ -112,7 +104,7 @@ run_lakectl fs upload "lakefs://${REPOSITORY}/main/not_deleted_file3" -s /local/
 run_lakectl commit "lakefs://${REPOSITORY}/main" -m "add three files not to be deleted" --epoch-time-seconds 0
 
 failed_tests=()
-while read test_case; do
+while read -r test_case; do
   test_description=$(echo "${test_case}" | jq -r '.description')
   echo "Test: ${test_description}"
   initialize_env ${REPOSITORY}
