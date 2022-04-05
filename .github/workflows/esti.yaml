@@ -605,18 +605,18 @@ jobs:
         run: ./setup-test.sh
 
       - name: Copy repository ref
-        run: aws s3 cp --recursive s3://esti-system-testing-data/golden-files/gc-test-data s3://esti-system-testing/${{ github.run_number }}-spark3-metaclient/exporter
+        run: aws s3 cp --recursive s3://esti-system-testing-data/golden-files/gc-test-data s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark }}-metaclient/exporter
 
       - name: Setup GC tests
         env:
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark3-${{ matrix.spark }}-metaclient/gc
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark }}-metaclient/garbage
           REPOSITORY: test-data-gc
         working-directory: test/spark
         run: ./setup-gc-test.sh
 
       - name: Test GC with Spark 3.x
         env:
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark3-${{ matrix.spark }}-metaclient/gc
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark }}-metaclient/garbage
           REPOSITORY: test-data-gc
           CLIENT_JAR: ${{steps.import_metaclient.outputs.download-path}}/spark-assembly.jar
         working-directory: test/spark
@@ -624,17 +624,17 @@ jobs:
 
       - name: Setup Exporter tests
         env:
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark3-metaclient/exporter
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark }}-metaclient/exporter
           REPOSITORY: test-data-exporter
         working-directory: test/spark
         run: ./setup-exporter-test.sh
 
       - name: Test Exporter with Spark 3.x
         env:
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark3-metaclient/exporter
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark }}-metaclient/exporter
           REPOSITORY: test-data-exporter
           CLIENT_JAR: ${{steps.import_metaclient.outputs.download-path}}/spark-assembly.jar
-          EXPORT_LOCATION: s3://esti-system-testing/${{ github.run_number }}-spark3-client-export
+          EXPORT_LOCATION: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark }}-client-export
         working-directory: test/spark
         run: ./run-exporter-test.sh
 
