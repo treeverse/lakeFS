@@ -3011,7 +3011,7 @@ func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 }
 
 const ResetPasswordAudience = "password reset request"
-const tokenExpiryTime = 5 //minutes
+const tokenExpiryTime = 5 // minutes
 
 func (c *Controller) RequestPasswordReset(w http.ResponseWriter, r *http.Request, body RequestPasswordResetJSONRequestBody) {
 	user, err := c.Auth.GetUserByEmail(r.Context(), body.Email)
@@ -3027,7 +3027,7 @@ func (c *Controller) RequestPasswordReset(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		return
 	}
-	//TODO (@shimi9276) create template for sending the email with link for reset
+	// TODO (@shimi9276) create template for sending the email with link for reset
 	err = c.Emailer.SendEmail([]string{body.Email}, token, token, []string{})
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)

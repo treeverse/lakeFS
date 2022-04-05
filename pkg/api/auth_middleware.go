@@ -119,7 +119,8 @@ func userByToken(ctx context.Context, logger logging.Logger, authService auth.Se
 		return nil, ErrAuthenticatingRequest
 	}
 	claims, ok := token.Claims.(*jwt.StandardClaims)
-	if !ok || !token.Valid || len(claims.Audience) > 0 { // For backward compatibility as audiance was not set initially
+	// For backward compatibility as audiance was not set initially
+	if !ok || !token.Valid || len(claims.Audience) > 0 {
 		return nil, ErrAuthenticatingRequest
 	}
 	const base = 10
