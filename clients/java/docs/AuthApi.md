@@ -33,6 +33,8 @@ Method | HTTP request | Description
 [**listUsers**](AuthApi.md#listUsers) | **GET** /auth/users | list users
 [**login**](AuthApi.md#login) | **POST** /auth/login | perform a login
 [**logout**](AuthApi.md#logout) | **POST** /auth/logout | logs out a cookie-authenticated user
+[**requestPasswordReset**](AuthApi.md#requestPasswordReset) | **POST** /auth/password/forgot | request a token to reset password, sent via email
+[**setPassword**](AuthApi.md#setPassword) | **POST** /auth/password/reset | update password for the given password
 [**updatePolicy**](AuthApi.md#updatePolicy) | **PUT** /auth/policies/{policyId} | update policy
 
 
@@ -2331,6 +2333,142 @@ null (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | successful logout |  -  |
+**401** | Unauthorized |  -  |
+**0** | Internal Server Error |  -  |
+
+<a name="requestPasswordReset"></a>
+# **requestPasswordReset**
+> requestPasswordReset(resetPassword)
+
+request a token to reset password, sent via email
+
+### Example
+```java
+// Import classes:
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("http://localhost/api/v1");
+    
+    // Configure API key authorization: cookie_auth
+    ApiKeyAuth cookie_auth = (ApiKeyAuth) defaultClient.getAuthentication("cookie_auth");
+    cookie_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //cookie_auth.setApiKeyPrefix("Token");
+
+    AuthApi apiInstance = new AuthApi(defaultClient);
+    ResetPassword resetPassword = new ResetPassword(); // ResetPassword | 
+    try {
+      apiInstance.requestPasswordReset(resetPassword);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling AuthApi#requestPasswordReset");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **resetPassword** | [**ResetPassword**](ResetPassword.md)|  |
+
+### Return type
+
+null (empty response body)
+
+### Authorization
+
+[cookie_auth](../README.md#cookie_auth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | successfuly set token |  -  |
+**401** | Unauthorized |  -  |
+**0** | Internal Server Error |  -  |
+
+<a name="setPassword"></a>
+# **setPassword**
+> setPassword(setPassword)
+
+update password for the given password
+
+### Example
+```java
+// Import classes:
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("http://localhost/api/v1");
+    
+    // Configure API key authorization: cookie_auth
+    ApiKeyAuth cookie_auth = (ApiKeyAuth) defaultClient.getAuthentication("cookie_auth");
+    cookie_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //cookie_auth.setApiKeyPrefix("Token");
+
+    AuthApi apiInstance = new AuthApi(defaultClient);
+    SetPassword setPassword = new SetPassword(); // SetPassword | 
+    try {
+      apiInstance.setPassword(setPassword);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling AuthApi#setPassword");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **setPassword** | [**SetPassword**](SetPassword.md)|  |
+
+### Return type
+
+null (empty response body)
+
+### Authorization
+
+[cookie_auth](../README.md#cookie_auth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | successful reset |  -  |
 **401** | Unauthorized |  -  |
 **0** | Internal Server Error |  -  |
 

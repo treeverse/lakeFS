@@ -149,6 +149,68 @@ paths:
       tags:
       - auth
       x-accepts: application/json
+  /auth/password/reset:
+    post:
+      operationId: setPassword
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetPassword'
+        required: true
+      responses:
+        "200":
+          description: successful reset
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      security:
+      - cookie_auth: []
+      summary: update password for the given password
+      tags:
+      - auth
+      x-contentType: application/json
+      x-accepts: application/json
+  /auth/password/forgot:
+    post:
+      operationId: requestPasswordReset
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPassword'
+        required: true
+      responses:
+        "200":
+          description: successfuly set token
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      security:
+      - cookie_auth: []
+      summary: request a token to reset password, sent via email
+      tags:
+      - auth
+      x-contentType: application/json
+      x-accepts: application/json
   /auth/users:
     get:
       operationId: listUsers
@@ -4902,6 +4964,15 @@ components:
       required:
       - user
       type: object
+    ResetPassword:
+      example:
+        email: email
+      properties:
+        email:
+          type: string
+      required:
+      - email
+      type: object
     UserCreation:
       example:
         id: id
@@ -4954,6 +5025,26 @@ components:
           $ref: '#/components/schemas/AccessKeyCredentials'
       required:
       - username
+      type: object
+    SetPassword:
+      example:
+        newPassword: newPassword
+        email: email
+        token: token
+      properties:
+        token:
+          description: auth token for password reset
+          type: string
+        newPassword:
+          description: a new password for the given email
+          type: string
+        email:
+          description: email of account to be updated
+          type: string
+      required:
+      - email
+      - newPassword
+      - token
       type: object
     Credentials:
       example:

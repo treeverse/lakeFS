@@ -156,6 +156,8 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**listUsers**](docs/AuthApi.md#listUsers) | **GET** /auth/users | list users
 *AuthApi* | [**login**](docs/AuthApi.md#login) | **POST** /auth/login | perform a login
 *AuthApi* | [**logout**](docs/AuthApi.md#logout) | **POST** /auth/logout | logs out a cookie-authenticated user
+*AuthApi* | [**requestPasswordReset**](docs/AuthApi.md#requestPasswordReset) | **POST** /auth/password/forgot | request a token to reset password, sent via email
+*AuthApi* | [**setPassword**](docs/AuthApi.md#setPassword) | **POST** /auth/password/reset | update password for the given password
 *AuthApi* | [**updatePolicy**](docs/AuthApi.md#updatePolicy) | **PUT** /auth/policies/{policyId} | update policy
 *BranchesApi* | [**createBranch**](docs/BranchesApi.md#createBranch) | **POST** /repositories/{repository}/branches | create branch
 *BranchesApi* | [**deleteBranch**](docs/BranchesApi.md#deleteBranch) | **DELETE** /repositories/{repository}/branches/{branch} | delete branch
@@ -254,7 +256,9 @@ Class | Method | HTTP request | Description
  - [RepositoryCreation](docs/RepositoryCreation.md)
  - [RepositoryList](docs/RepositoryList.md)
  - [ResetCreation](docs/ResetCreation.md)
+ - [ResetPassword](docs/ResetPassword.md)
  - [RevertCreation](docs/RevertCreation.md)
+ - [SetPassword](docs/SetPassword.md)
  - [Setup](docs/Setup.md)
  - [SetupState](docs/SetupState.md)
  - [StagingLocation](docs/StagingLocation.md)

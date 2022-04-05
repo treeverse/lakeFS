@@ -58,8 +58,10 @@ docs/Repository.md
 docs/RepositoryCreation.md
 docs/RepositoryList.md
 docs/ResetCreation.md
+docs/ResetPassword.md
 docs/RetentionApi.md
 docs/RevertCreation.md
+docs/SetPassword.md
 docs/Setup.md
 docs/SetupState.md
 docs/StagingApi.md
@@ -142,7 +144,9 @@ lakefs_client/model/repository.py
 lakefs_client/model/repository_creation.py
 lakefs_client/model/repository_list.py
 lakefs_client/model/reset_creation.py
+lakefs_client/model/reset_password.py
 lakefs_client/model/revert_creation.py
+lakefs_client/model/set_password.py
 lakefs_client/model/setup.py
 lakefs_client/model/setup_state.py
 lakefs_client/model/staging_location.py
@@ -221,8 +225,10 @@ test/test_repository.py
 test/test_repository_creation.py
 test/test_repository_list.py
 test/test_reset_creation.py
+test/test_reset_password.py
 test/test_retention_api.py
 test/test_revert_creation.py
+test/test_set_password.py
 test/test_setup.py
 test/test_setup_state.py
 test/test_staging_api.py

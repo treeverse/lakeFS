@@ -227,6 +227,20 @@ class TestAuthApi(unittest.TestCase):
         """
         pass
 
+    def test_request_password_reset(self):
+        """Test case for request_password_reset
+
+        request a token to reset password, sent via email  # noqa: E501
+        """
+        pass
+
+    def test_set_password(self):
+        """Test case for set_password
+
+        update password for the given password  # noqa: E501
+        """
+        pass
+
     def test_update_policy(self):
         """Test case for update_policy
 
