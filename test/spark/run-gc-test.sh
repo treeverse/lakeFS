@@ -96,10 +96,11 @@ clean_main_branch() {
 ######## Tests Execution ########
 #################################
 i=0
-while [$i -le 5]
+
+while [ $i -le 5 ]
 do
-  echo "Number $i time"
-  i=$(( $i + 1 ))
+  echo Number: $i
+  ((i++))
 done
 
 day_in_seconds=86400
