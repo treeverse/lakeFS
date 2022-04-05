@@ -285,7 +285,10 @@ object GarbageCollector {
       .partitionBy("run_id")
       .mode(SaveMode.Overwrite)
       .parquet(gcAddressesLocation)
-    println("Expired addresses: " + expiredAddresses.toString())
+
+    println("Expired addresses:")
+    expiredAddresses.show()
+
     S3BulkDeleter.remove(repo, gcAddressesLocation, runID, region, spark)
   }
 }
@@ -367,14 +370,9 @@ object S3BulkDeleter {
     val snPrefix =
       if (addSuffixSlash.startsWith("/")) addSuffixSlash.substring(1) else addSuffixSlash
     println("addressDFLocation: " + addressDFLocation)
-    val lastIndexOfSlashes = addressDFLocation.lastIndexOf("//")
-    var correctAddress = addressDFLocation
-    if(lastIndexOfSlashes > 4) {
-      correctAddress = "s3a://" + correctAddress.substring(6).replaceAll("//", "/")
-    }
-    println("correctAddress: " + correctAddress)
+
     val df = spark.read
-      .parquet(correctAddress)
+      .parquet(addressDFLocation)
       .where(col("run_id") === runID)
       .where(col("relative") === true)
     val res =
