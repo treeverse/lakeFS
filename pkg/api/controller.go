@@ -3016,21 +3016,25 @@ const tokenExpiryTime = 5 // minutes
 func (c *Controller) RequestPasswordReset(w http.ResponseWriter, r *http.Request, body RequestPasswordResetJSONRequestBody) {
 	user, err := c.Auth.GetUserByEmail(r.Context(), body.Email)
 	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
 	if strings.Compare(*user.Email, body.Email) != 0 {
 		writeError(w, http.StatusNotFound, "No such email")
+		return
 	}
 	secret := c.Auth.SecretStore().SharedSecret()
 	currentTime := time.Now()
 	token, err := GenerateJWT(ResetPasswordAudience, secret, -1, currentTime, currentTime.Add(time.Minute*tokenExpiryTime))
 	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
 	// TODO (@shimi9276) create template for sending the email with link for reset
 	err = c.Emailer.SendEmail([]string{body.Email}, token, token, []string{})
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
+		return
 	}
 	writeResponse(w, http.StatusOK, err)
 }
@@ -3039,11 +3043,13 @@ func (c *Controller) SetPassword(w http.ResponseWriter, r *http.Request, body Se
 	err := VerifyResetPasswordToken(c.Auth, body.Token)
 	if err != nil {
 		writeError(w, http.StatusForbidden, err)
+		return
 	}
 	u := model.User{}
 	err = u.UpdatePassword(body.NewPassword)
 	if err != nil {
 		writeError(w, http.StatusServiceUnavailable, err)
+		return
 	}
 	err = c.Auth.UpdatePassword(r.Context(), body.Email, string(u.EncryptedPassword))
 	if err != nil {
