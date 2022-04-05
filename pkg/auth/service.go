@@ -963,8 +963,8 @@ func (s *DBAuthService) Authorize(ctx context.Context, req *AuthorizationRequest
 
 func (s *DBAuthService) UpdatePassword(ctx context.Context, email string, newPassword string) error {
 	_, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		x, err := tx.Exec(`UPDATE auth_users SET encrypted_password = $1 WHERE email = $2`, newPassword, email)
-		return x, err
+		exec, err := tx.Exec(`UPDATE auth_users SET encrypted_password = $1 WHERE email = $2`, newPassword, email)
+		return exec, err
 	})
 	return err
 }
