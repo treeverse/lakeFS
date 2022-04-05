@@ -87,7 +87,7 @@ func (c *CommittedFake) Commit(_ context.Context, _ graveler.StorageNamespace, b
 	return c.MetaRangeID, c.DiffSummary, nil
 }
 
-func (c *CommittedFake) FlushToMetaRange(context.Context, graveler.StorageNamespace, graveler.ValueIterator, graveler.Metadata) (*graveler.MetaRangeID, error) {
+func (c *CommittedFake) WriteMetaRangeByIterator(context.Context, graveler.StorageNamespace, graveler.ValueIterator, graveler.Metadata) (*graveler.MetaRangeID, error) {
 	if c.Err != nil {
 		return nil, c.Err
 	}
@@ -99,7 +99,7 @@ func (c *CommittedFake) WriteRange(context.Context, graveler.StorageNamespace, g
 }
 
 func (c *CommittedFake) WriteMetaRange(context.Context, graveler.StorageNamespace, []*graveler.RangeInfo) (*graveler.MetaRangeInfo, error) {
-	return &graveler.MetaRangeInfo{ID: string(c.MetaRangeID)}, nil
+	return &graveler.MetaRangeInfo{ID: c.MetaRangeID}, nil
 }
 
 func (c *CommittedFake) GetMetaRange(ctx context.Context, ns graveler.StorageNamespace, metaRangeID graveler.MetaRangeID) (graveler.MetaRangeAddress, error) {

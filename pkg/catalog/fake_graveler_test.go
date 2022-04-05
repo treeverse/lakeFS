@@ -205,7 +205,7 @@ func WriteMetaRange(ctx context.Context, ns graveler.StorageNamespace, ranges []
 	panic("implement me")
 }
 
-func FlushToMetaRange(ctx context.Context, repositoryID graveler.RepositoryID, it graveler.ValueIterator) (*graveler.MetaRangeID, error) {
+func WriteMetaRangeByIterator(ctx context.Context, repositoryID graveler.RepositoryID, it graveler.ValueIterator) (*graveler.MetaRangeID, error) {
 	panic("implement me")
 }
 
@@ -274,7 +274,7 @@ func (g *FakeGraveler) AddCommitNoLock(_ context.Context, _ graveler.RepositoryI
 	panic("implement me")
 }
 
-func (g *FakeGraveler) FlushToMetaRange(_ context.Context, _ graveler.RepositoryID, _ graveler.ValueIterator) (*graveler.MetaRangeID, error) {
+func (g *FakeGraveler) WriteMetaRangeByIterator(_ context.Context, _ graveler.RepositoryID, _ graveler.ValueIterator) (*graveler.MetaRangeID, error) {
 	panic("implement me")
 }
 

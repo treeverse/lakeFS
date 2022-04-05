@@ -7,9 +7,8 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/treeverse/lakefs/pkg/logging"
-
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 type committedManager struct {
@@ -100,9 +99,9 @@ func (c *committedManager) WriteRange(ctx context.Context, ns graveler.StorageNa
 	}
 
 	return &graveler.RangeInfo{
-		ID:                      string(info.RangeID),
-		First:                   graveler.Key(info.First),
-		Last:                    graveler.Key(info.Last),
+		ID:                      graveler.RangeID(info.RangeID),
+		MinKey:                  graveler.Key(info.First),
+		MaxKey:                  graveler.Key(info.Last),
 		Count:                   info.Count,
 		EstimatedRangeSizeBytes: info.EstimatedRangeSizeBytes,
 	}, nil
@@ -117,14 +116,14 @@ func (c *committedManager) WriteMetaRange(ctx context.Context, ns graveler.Stora
 	}()
 
 	sort.Slice(ranges, func(i, j int) bool {
-		return bytes.Compare(ranges[i].First, ranges[j].First) < 0
+		return bytes.Compare(ranges[i].MinKey, ranges[j].MinKey) < 0
 	})
 
 	for _, r := range ranges {
 		if err := writer.WriteRange(Range{
 			ID:            ID(r.ID),
-			MinKey:        Key(r.First),
-			MaxKey:        Key(r.Last),
+			MinKey:        Key(r.MinKey),
+			MaxKey:        Key(r.MaxKey),
 			EstimatedSize: r.EstimatedRangeSizeBytes,
 			Count:         int64(r.Count),
 			Tombstone:     false,
@@ -140,11 +139,11 @@ func (c *committedManager) WriteMetaRange(ctx context.Context, ns graveler.Stora
 	}
 
 	return &graveler.MetaRangeInfo{
-		ID: string(*id),
+		ID: *id,
 	}, nil
 }
 
-func (c *committedManager) FlushToMetaRange(ctx context.Context, ns graveler.StorageNamespace, it graveler.ValueIterator, metadata graveler.Metadata) (*graveler.MetaRangeID, error) {
+func (c *committedManager) WriteMetaRangeByIterator(ctx context.Context, ns graveler.StorageNamespace, it graveler.ValueIterator, metadata graveler.Metadata) (*graveler.MetaRangeID, error) {
 	writer := c.metaRangeManager.NewWriter(ctx, ns, metadata)
 	defer func() {
 		if err := writer.Abort(); err != nil {

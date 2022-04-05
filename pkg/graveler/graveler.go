@@ -100,23 +100,23 @@ const (
 	MergeStrategySource
 )
 
-// URI of metarange file.
+// MetaRangeAddress is the URI of a metarange file.
 type MetaRangeAddress string
 
-// URI of range file.
+// RangeAddress is the URI of a range file.
 type RangeAddress string
 
 // RangeInfo contains information on a Range
 type RangeInfo struct {
 	// ID is the identifier for the written Range.
-	// Calculated by an hash function to all keys and values' identity.
-	ID string
+	// Calculated by a hash function to all keys and values' identity.
+	ID RangeID
 
-	// First is the first key in the Range.
-	First Key
+	// MinKey is the first key in the Range.
+	MinKey Key
 
-	// Last is the last key in the Range.
-	Last Key
+	// MaxKey is the last key in the Range.
+	MaxKey Key
 
 	// Count is the number of records in the Range.
 	Count int
@@ -129,7 +129,7 @@ type RangeInfo struct {
 type MetaRangeInfo struct {
 	// ID is the identifier for the written MetaRange.
 	// Calculated by an hash function to all keys and values' identity.
-	ID string
+	ID MetaRangeID
 }
 
 type WriteCondition struct {
@@ -403,9 +403,9 @@ type VersionController interface {
 	// WriteMetaRange creates a new MetaRange from the given Ranges.
 	WriteMetaRange(ctx context.Context, repositoryID RepositoryID, ranges []*RangeInfo) (*MetaRangeInfo, error)
 
-	// FlushToMetaRange accepts a ValueIterator and writes the entire iterator to a new MetaRange
+	// WriteMetaRangeByIterator accepts a ValueIterator and writes the entire iterator to a new MetaRange
 	// and returns the result ID.
-	FlushToMetaRange(ctx context.Context, repositoryID RepositoryID, it ValueIterator) (*MetaRangeID, error)
+	WriteMetaRangeByIterator(ctx context.Context, repositoryID RepositoryID, it ValueIterator) (*MetaRangeID, error)
 
 	// AddCommitToBranchHead creates a commit in the branch from the given pre-existing tree.
 	// Returns ErrMetaRangeNotFound if the referenced metaRangeID doesn't exist.
@@ -666,8 +666,8 @@ type CommittedManager interface {
 	// Exists returns true if a MetaRange matching ID exists in namespace ns.
 	Exists(ctx context.Context, ns StorageNamespace, id MetaRangeID) (bool, error)
 
-	// FlushToMetaRange flushes the iterator to a new MetaRange and returns the created ID.
-	FlushToMetaRange(ctx context.Context, ns StorageNamespace, it ValueIterator, metadata Metadata) (*MetaRangeID, error)
+	// WriteMetaRangeByIterator flushes the iterator to a new MetaRange and returns the created ID.
+	WriteMetaRangeByIterator(ctx context.Context, ns StorageNamespace, it ValueIterator, metadata Metadata) (*MetaRangeID, error)
 
 	// WriteRange creates a new Range from the iterator values.
 	// Keeps Range closing logic, so might not flush all values to the range.
@@ -849,12 +849,12 @@ func (g *Graveler) WriteMetaRange(ctx context.Context, repositoryID RepositoryID
 	return g.CommittedManager.WriteMetaRange(ctx, repo.StorageNamespace, ranges)
 }
 
-func (g *Graveler) FlushToMetaRange(ctx context.Context, repositoryID RepositoryID, it ValueIterator) (*MetaRangeID, error) {
+func (g *Graveler) WriteMetaRangeByIterator(ctx context.Context, repositoryID RepositoryID, it ValueIterator) (*MetaRangeID, error) {
 	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, err
 	}
-	return g.CommittedManager.FlushToMetaRange(ctx, repo.StorageNamespace, it, nil)
+	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repo.StorageNamespace, it, nil)
 }
 
 func (g *Graveler) DeleteRepository(ctx context.Context, repositoryID RepositoryID) error {
@@ -2031,7 +2031,7 @@ func (g *Graveler) DumpCommits(ctx context.Context, repositoryID RepositoryID) (
 	if err != nil {
 		return nil, err
 	}
-	return g.CommittedManager.FlushToMetaRange(ctx, repo.StorageNamespace,
+	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repo.StorageNamespace,
 		commitsToValueIterator(iter),
 		Metadata{
 			EntityTypeKey:             EntityTypeCommit,
@@ -2055,7 +2055,7 @@ func (g *Graveler) DumpBranches(ctx context.Context, repositoryID RepositoryID) 
 	if err != nil {
 		return nil, err
 	}
-	return g.CommittedManager.FlushToMetaRange(ctx, repo.StorageNamespace,
+	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repo.StorageNamespace,
 		branchesToValueIterator(iter),
 		Metadata{
 			EntityTypeKey:             EntityTypeBranch,
@@ -2079,7 +2079,7 @@ func (g *Graveler) DumpTags(ctx context.Context, repositoryID RepositoryID) (*Me
 	if err != nil {
 		return nil, err
 	}
-	return g.CommittedManager.FlushToMetaRange(ctx, repo.StorageNamespace,
+	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repo.StorageNamespace,
 		tagsToValueIterator(iter),
 		Metadata{
 			EntityTypeKey:             EntityTypeTag,
