@@ -95,6 +95,12 @@ clean_main_branch() {
 #################################
 ######## Tests Execution ########
 #################################
+i=0
+while [$i -le 5]
+do
+  echo "Number $i time"
+  i=$(( $i + 1 ))
+done
 
 day_in_seconds=86400
 current_epoch_in_seconds=$(date +%s)
