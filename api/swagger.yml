@@ -539,8 +539,6 @@ components:
           type: string
         email:
           type: string
-        password:
-          type: string
 
     CurrentUser:
       type: object
@@ -606,10 +604,10 @@ components:
       type: object
       properties:
         token:
-          description: a new password for the given email
+          description: auth token for password reset
           type: string
         newPassword:
-          description: auth token for password reset
+          description: a new password for the given email
           type: string
         email:
           description: email of account to be updated
@@ -1091,7 +1089,7 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
-  /auth/set_password:
+  /auth/password/reset:
       post:
         tags:
           - auth
@@ -1113,7 +1111,7 @@ paths:
           default:
             $ref: "#/components/responses/ServerError"
  
-  /auth/reset_password:
+  /auth/password/forgot:
       post:
         tags:
           - auth
