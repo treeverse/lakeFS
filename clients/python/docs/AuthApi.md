@@ -34,7 +34,7 @@ Method | HTTP request | Description
 [**login**](AuthApi.md#login) | **POST** /auth/login | perform a login
 [**logout**](AuthApi.md#logout) | **POST** /auth/logout | logs out a cookie-authenticated user
 [**password_forgot**](AuthApi.md#password_forgot) | **POST** /auth/password/forgot | forgot password - request to start password reset flow
-[**update_password**](AuthApi.md#update_password) | **POST** /auth/password | update password for the given password
+[**update_password**](AuthApi.md#update_password) | **POST** /auth/password | Update user password by reset_password token
 [**update_policy**](AuthApi.md#update_policy) | **PUT** /auth/policies/{policyId} | update policy
 
 
@@ -2868,7 +2868,6 @@ void (empty response body)
 **200** | password reset request submitted |  -  |
 **400** | bad request |  -  |
 **401** | Unauthorized |  -  |
-**404** | Resource Not Found |  -  |
 **500** | Internal Server Error |  -  |
 **0** | Internal Server Error |  -  |
 
@@ -2877,7 +2876,7 @@ void (empty response body)
 # **update_password**
 > update_password(update_password_by_token)
 
-update password for the given password
+Update user password by reset_password token
 
 ### Example
 
@@ -2919,7 +2918,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        # update password for the given password
+        # Update user password by reset_password token
         api_instance.update_password(update_password_by_token)
     except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->update_password: %s\n" % e)

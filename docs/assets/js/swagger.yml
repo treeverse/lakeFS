@@ -1094,7 +1094,7 @@ paths:
         tags:
           - auth
         operationId: updatePassword
-        summary: update password for the given password
+        summary: Update user password by reset_password token
         security:
           - cookie_auth: []
         requestBody:
@@ -1136,8 +1136,6 @@ paths:
                   $ref: "#/components/schemas/Error"
           401:
             $ref: "#/components/responses/Unauthorized"
-          404:
-            $ref: "#/components/responses/NotFound"
           500:
             $ref: "#/components/responses/ServerError"
           default:

@@ -34,7 +34,7 @@ Method | HTTP request | Description
 [**login**](AuthApi.md#login) | **POST** /auth/login | perform a login
 [**logout**](AuthApi.md#logout) | **POST** /auth/logout | logs out a cookie-authenticated user
 [**passwordForgot**](AuthApi.md#passwordForgot) | **POST** /auth/password/forgot | forgot password - request to start password reset flow
-[**updatePassword**](AuthApi.md#updatePassword) | **POST** /auth/password | update password for the given password
+[**updatePassword**](AuthApi.md#updatePassword) | **POST** /auth/password | Update user password by reset_password token
 [**updatePolicy**](AuthApi.md#updatePolicy) | **PUT** /auth/policies/{policyId} | update policy
 
 
@@ -2403,7 +2403,6 @@ null (empty response body)
 **200** | password reset request submitted |  -  |
 **400** | bad request |  -  |
 **401** | Unauthorized |  -  |
-**404** | Resource Not Found |  -  |
 **500** | Internal Server Error |  -  |
 **0** | Internal Server Error |  -  |
 
@@ -2411,7 +2410,7 @@ null (empty response body)
 # **updatePassword**
 > updatePassword(updatePasswordByToken)
 
-update password for the given password
+Update user password by reset_password token
 
 ### Example
 ```java

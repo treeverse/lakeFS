@@ -3907,7 +3907,7 @@ class AuthApi(object):
         update_password_by_token,
         **kwargs
     ):
-        """update password for the given password  # noqa: E501
+        """Update user password by reset_password token  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True

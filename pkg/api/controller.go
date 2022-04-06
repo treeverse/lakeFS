@@ -180,8 +180,7 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSO
 	// user.Username will be different from username/access_key_id on
 	// LDAP login.  Use the stored value.
 	// Audience and email set here to be an empty string for backward compatibility
-	tokenString, err :=
-		GenerateJWT(secret, LoginAudience, user.ID, *user.Email, loginTime, expires)
+	tokenString, err := GenerateJWTLogin(secret, user.ID, loginTime, expires)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
@@ -3015,26 +3014,32 @@ func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 func (c *Controller) sendResetPasswordEmail(email []string, token string) error {
 	err := c.Emailer.SendEmail(email, token, token, []string{})
 	if err != nil {
-		c.Logger.Error("Error sending email")
+		c.Logger.
+			WithError(err).
+			WithFields(logging.Fields{
+				"email": email,
+			}).Debug("Error sending email")
 		return err
 	}
-	c.Logger.Info("Succefully sent email")
+	c.Logger.WithFields(logging.Fields{
+		"email": email,
+	}).Info("Succefully sent email")
 	return err
 }
 
 func (c *Controller) PasswordForgot(w http.ResponseWriter, r *http.Request, body PasswordForgotJSONRequestBody) {
 	user, err := c.Auth.GetUserByEmail(r.Context(), body.Email)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
+		writeError(w, http.StatusForbidden, http.StatusText(http.StatusForbidden))
 		return
 	}
 	if *user.Email != body.Email {
-		writeError(w, http.StatusNotFound, "No such email")
+		writeError(w, http.StatusForbidden, http.StatusText(http.StatusForbidden))
 		return
 	}
 	secret := c.Auth.SecretStore().SharedSecret()
 	currentTime := time.Now()
-	token, err := GenerateJWT(secret, ResetPasswordAudience, auth.InvalidUserID, body.Email, currentTime, currentTime.Add(tokenExpiryDuration))
+	token, err := GenerateJWTResetPassword(secret, ResetPasswordAudience, user.ID, body.Email, currentTime, currentTime.Add(tokenExpiryDuration))
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
@@ -3054,19 +3059,14 @@ func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body
 		writeError(w, http.StatusForbidden, err)
 		return
 	}
-	if strings.Compare(claims.Id, body.Email) != 0 {
-		writeError(w, http.StatusForbidden, "Unauthorized to switch password for given email")
+	if claims.Id != body.Email {
+		writeError(w, http.StatusForbidden, "Unauthorized update password")
 		return
 	}
-	p, err := model.HashPassword(body.NewPassword)
+	err = c.Auth.HashAndUpdatePassword(r.Context(), body.Email, body.NewPassword)
 	if err != nil {
-		writeError(w, http.StatusServiceUnavailable, err)
+		writeError(w, http.StatusInternalServerError, err)
 		return
-	}
-
-	err = c.Auth.UpdatePassword(r.Context(), body.Email, p)
-	if err != nil {
-		writeError(w, http.StatusConflict, err)
 	}
 	writeResponse(w, http.StatusCreated, err)
 }

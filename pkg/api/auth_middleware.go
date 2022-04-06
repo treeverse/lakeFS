@@ -116,11 +116,11 @@ func verifyToken(authService auth.Service, tokenString string) (*jwt.StandardCla
 		return authService.SecretStore().SharedSecret(), nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, ErrAuthenticatingRequest
 	}
 	claims, ok := token.Claims.(*jwt.StandardClaims)
 	if !ok || !token.Valid {
-		return nil, ErrAuthenticatingRequest
+		return nil, err
 	}
 	return claims, nil
 }

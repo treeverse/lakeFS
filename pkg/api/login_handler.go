@@ -21,10 +21,24 @@ const (
 	JWTCookieName          = "access_token"
 )
 
-// Be aware! The aud field should *only* be used for new applications! Otherwise it should be passed as an empty string i.e. pass LoginAudience or the proper audience,
-// so it supports backward compatibility. As well Id field contains the email and not the Id for backward compatibility. The secret field is the secret key
-// used for encryption and set in the config file
-func GenerateJWT(secret []byte, aud string, userID int, email string, issuedAt, expiresAt time.Time) (string, error) {
+func generateJWT(claims *jwt.StandardClaims, secret []byte) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString(secret)
+}
+
+// GenerateJWTLogin supports backward compatibilty for creating a login jwt. The audience is set to LoginAudience which is
+// an empty string and no email is passed to support the ability of login for users via user/access keys which don't have an email set
+func GenerateJWTLogin(secret []byte, userID int, issuedAt, expiresAt time.Time) (string, error) {
+	claims := &jwt.StandardClaims{
+		Audience:  LoginAudience,
+		Subject:   fmt.Sprint(userID),
+		IssuedAt:  issuedAt.Unix(),
+		ExpiresAt: expiresAt.Unix(),
+	}
+	return generateJWT(claims, secret)
+}
+
+func GenerateJWTResetPassword(secret []byte, aud string, userID int, email string, issuedAt, expiresAt time.Time) (string, error) {
 	claims := &jwt.StandardClaims{
 		Audience:  aud,
 		Subject:   fmt.Sprint(userID),
@@ -32,6 +46,5 @@ func GenerateJWT(secret []byte, aud string, userID int, email string, issuedAt, 
 		ExpiresAt: expiresAt.Unix(),
 		Id:        email,
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(secret)
+	return generateJWT(claims, secret)
 }

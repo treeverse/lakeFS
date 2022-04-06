@@ -3809,7 +3809,6 @@ public class AuthApi {
         <tr><td> 200 </td><td> password reset request submitted </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> bad request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 500 </td><td> Internal Server Error </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
@@ -3869,7 +3868,6 @@ public class AuthApi {
         <tr><td> 200 </td><td> password reset request submitted </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> bad request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 500 </td><td> Internal Server Error </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
@@ -3890,7 +3888,6 @@ public class AuthApi {
         <tr><td> 200 </td><td> password reset request submitted </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> bad request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 500 </td><td> Internal Server Error </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
@@ -3913,7 +3910,6 @@ public class AuthApi {
         <tr><td> 200 </td><td> password reset request submitted </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> bad request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 500 </td><td> Internal Server Error </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
@@ -3983,7 +3979,7 @@ public class AuthApi {
     }
 
     /**
-     * update password for the given password
+     * Update user password by reset_password token
      * 
      * @param updatePasswordByToken  (required)
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
@@ -4000,7 +3996,7 @@ public class AuthApi {
     }
 
     /**
-     * update password for the given password
+     * Update user password by reset_password token
      * 
      * @param updatePasswordByToken  (required)
      * @return ApiResponse&lt;Void&gt;
@@ -4019,7 +4015,7 @@ public class AuthApi {
     }
 
     /**
-     * update password for the given password (asynchronously)
+     * Update user password by reset_password token (asynchronously)
      * 
      * @param updatePasswordByToken  (required)
      * @param _callback The callback to be executed when the API call finishes

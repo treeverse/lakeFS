@@ -527,7 +527,7 @@ public class AuthApiTest {
     }
     
     /**
-     * update password for the given password
+     * Update user password by reset_password token
      *
      * 
      *
