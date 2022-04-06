@@ -2,6 +2,10 @@
 
 set -o pipefail
 
+_jq(row) {
+ echo ${row} | base64 --decode | jq -r ${1}
+}
+
 run_lakectl() {
   echo "lakectl variables: $@"
   docker-compose exec -T lakefs lakectl "$@"
@@ -34,7 +38,8 @@ initialize_env() {
 delete_and_commit() {
   local test_case=$1
   local repo=$2
-  while read -r branch_props; do
+  for branch_props in $(echo ${test_case} | jq -r '.branches [] | @base64'); do
+    branch_props=$(_jq ${branch_props})
     local branch_name=$(echo ${branch_props} | jq -r '.branch_name')
     local days_ago=$(echo ${branch_props} | jq -r '.delete_commit_days_ago')
     if [[ ${days_ago} -gt -1 ]]
@@ -45,7 +50,7 @@ delete_and_commit() {
     else   # This means that the branch should be deleted
       run_lakectl branch delete "lakefs://${repo}/${branch_name}" -y
     fi
-  done  < <(echo ${test_case} | jq -c '.branches []')
+  done
 }
 
 last_commit_ref() {
@@ -66,7 +71,8 @@ validate_gc_job() {
     echo "Expected the file to remain in the repository but it was removed by the garbage collector"
     return 1
   fi
-  while read -r branch_props; do
+  for branch_props in $(echo ${test_case} | jq -r '.branches [] | @base64'); do
+    branch_props=$(_jq ${branch_props})
     local days_ago=$(echo ${branch_props} | jq -r '.delete_commit_days_ago')
     if [[ ${days_ago} -gt -1 ]]; then
       local branch_name=$(echo ${branch_props} | jq -r '.branch_name')
@@ -81,7 +87,7 @@ validate_gc_job() {
         fi
       done
     fi
-  done < <(echo ${test_case} | jq -c '.branches []')
+  done
 }
 
 clean_main_branch() {
@@ -104,7 +110,8 @@ run_lakectl fs upload "lakefs://${REPOSITORY}/main/not_deleted_file3" -s /local/
 run_lakectl commit "lakefs://${REPOSITORY}/main" -m "add three files not to be deleted" --epoch-time-seconds 0
 
 failed_tests=()
-while read -r test_case; do
+for test_case in $(jq -r '.[] | @base64' gc-tests/test_scenarios.json); do
+  test_case=$(_jq ${test_case})
   test_description=$(echo "${test_case}" | jq -r '.description')
   echo "Test: ${test_description}"
   initialize_env ${REPOSITORY}
@@ -118,7 +125,7 @@ while read -r test_case; do
   fi
   rm -f policy.json
   clean_repo ${REPOSITORY}
-done < <(jq -c '.[]' gc-tests/test_scenarios.json)
+done
 
 clean_main_branch ${REPOSITORY}
 
