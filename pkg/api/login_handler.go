@@ -21,8 +21,8 @@ const (
 	JWTCookieName          = "access_token"
 )
 
-// Be aware! The aud field should *only* be used for new applications! Otherwise it should be passed as an empty string, so it supports
-// backward compatibility. As well Id field contains the email and not the Id for backward compatibility. The secret field is the secret key
+// Be aware! The aud field should *only* be used for new applications! Otherwise it should be passed as an empty string i.e. pass LoginAudience or the proper audience,
+// so it supports backward compatibility. As well Id field contains the email and not the Id for backward compatibility. The secret field is the secret key
 // used for encryption and set in the config file
 func GenerateJWT(secret []byte, aud string, userID int, email string, issuedAt, expiresAt time.Time) (string, error) {
 	claims := &jwt.StandardClaims{

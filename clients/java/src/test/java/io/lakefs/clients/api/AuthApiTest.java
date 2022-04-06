@@ -535,9 +535,9 @@ public class AuthApiTest {
      *          if the Api call fails
      */
     @Test
-    public void setPasswordTest() throws ApiException {
+    public void updatePasswordTest() throws ApiException {
         UpdatePasswordByToken updatePasswordByToken = null;
-                api.setPassword(updatePasswordByToken);
+                api.updatePassword(updatePasswordByToken);
         // TODO: test validations
     }
     

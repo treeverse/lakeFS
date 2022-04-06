@@ -234,8 +234,8 @@ class TestAuthApi(unittest.TestCase):
         """
         pass
 
-    def test_set_password(self):
-        """Test case for set_password
+    def test_update_password(self):
+        """Test case for update_password
 
         update password for the given password  # noqa: E501
         """

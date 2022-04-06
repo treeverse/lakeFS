@@ -3925,7 +3925,7 @@ public class AuthApi {
         return localVarCall;
     }
     /**
-     * Build call for setPassword
+     * Build call for updatePassword
      * @param updatePasswordByToken  (required)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
@@ -3933,12 +3933,12 @@ public class AuthApi {
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> successful reset </td><td>  -  </td></tr>
+        <tr><td> 201 </td><td> successful reset </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call setPasswordCall(UpdatePasswordByToken updatePasswordByToken, final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call updatePasswordCall(UpdatePasswordByToken updatePasswordByToken, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = updatePasswordByToken;
 
         // create path and map variables
@@ -3969,15 +3969,15 @@ public class AuthApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call setPasswordValidateBeforeCall(UpdatePasswordByToken updatePasswordByToken, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call updatePasswordValidateBeforeCall(UpdatePasswordByToken updatePasswordByToken, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'updatePasswordByToken' is set
         if (updatePasswordByToken == null) {
-            throw new ApiException("Missing the required parameter 'updatePasswordByToken' when calling setPassword(Async)");
+            throw new ApiException("Missing the required parameter 'updatePasswordByToken' when calling updatePassword(Async)");
         }
         
 
-        okhttp3.Call localVarCall = setPasswordCall(updatePasswordByToken, _callback);
+        okhttp3.Call localVarCall = updatePasswordCall(updatePasswordByToken, _callback);
         return localVarCall;
 
     }
@@ -3990,13 +3990,13 @@ public class AuthApi {
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> successful reset </td><td>  -  </td></tr>
+        <tr><td> 201 </td><td> successful reset </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public void setPassword(UpdatePasswordByToken updatePasswordByToken) throws ApiException {
-        setPasswordWithHttpInfo(updatePasswordByToken);
+    public void updatePassword(UpdatePasswordByToken updatePasswordByToken) throws ApiException {
+        updatePasswordWithHttpInfo(updatePasswordByToken);
     }
 
     /**
@@ -4008,13 +4008,13 @@ public class AuthApi {
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> successful reset </td><td>  -  </td></tr>
+        <tr><td> 201 </td><td> successful reset </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<Void> setPasswordWithHttpInfo(UpdatePasswordByToken updatePasswordByToken) throws ApiException {
-        okhttp3.Call localVarCall = setPasswordValidateBeforeCall(updatePasswordByToken, null);
+    public ApiResponse<Void> updatePasswordWithHttpInfo(UpdatePasswordByToken updatePasswordByToken) throws ApiException {
+        okhttp3.Call localVarCall = updatePasswordValidateBeforeCall(updatePasswordByToken, null);
         return localVarApiClient.execute(localVarCall);
     }
 
@@ -4028,14 +4028,14 @@ public class AuthApi {
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> successful reset </td><td>  -  </td></tr>
+        <tr><td> 201 </td><td> successful reset </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call setPasswordAsync(UpdatePasswordByToken updatePasswordByToken, final ApiCallback<Void> _callback) throws ApiException {
+    public okhttp3.Call updatePasswordAsync(UpdatePasswordByToken updatePasswordByToken, final ApiCallback<Void> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = setPasswordValidateBeforeCall(updatePasswordByToken, _callback);
+        okhttp3.Call localVarCall = updatePasswordValidateBeforeCall(updatePasswordByToken, _callback);
         localVarApiClient.executeAsync(localVarCall, _callback);
         return localVarCall;
     }

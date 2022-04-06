@@ -1819,14 +1819,14 @@ class AuthApi(object):
             },
             api_client=api_client
         )
-        self.set_password_endpoint = _Endpoint(
+        self.update_password_endpoint = _Endpoint(
             settings={
                 'response_type': None,
                 'auth': [
                     'cookie_auth'
                 ],
                 'endpoint_path': '/auth/password',
-                'operation_id': 'set_password',
+                'operation_id': 'update_password',
                 'http_method': 'POST',
                 'servers': None,
             },
@@ -3902,7 +3902,7 @@ class AuthApi(object):
             forgot_password_request
         return self.password_forgot_endpoint.call_with_http_info(**kwargs)
 
-    def set_password(
+    def update_password(
         self,
         update_password_by_token,
         **kwargs
@@ -3912,7 +3912,7 @@ class AuthApi(object):
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.set_password(update_password_by_token, async_req=True)
+        >>> thread = api.update_password(update_password_by_token, async_req=True)
         >>> result = thread.get()
 
         Args:
@@ -3965,7 +3965,7 @@ class AuthApi(object):
         kwargs['_host_index'] = kwargs.get('_host_index')
         kwargs['update_password_by_token'] = \
             update_password_by_token
-        return self.set_password_endpoint.call_with_http_info(**kwargs)
+        return self.update_password_endpoint.call_with_http_info(**kwargs)
 
     def update_policy(
         self,

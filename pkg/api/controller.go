@@ -59,7 +59,7 @@ const (
 
 	ResetPasswordAudience = "password_reset"
 	tokenExpiryDuration   = 5 * time.Minute
-	loginAudiance         = ""
+	LoginAudience         = ""
 )
 
 type actionsHandler interface {
@@ -179,9 +179,9 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSO
 	secret := c.Auth.SecretStore().SharedSecret()
 	// user.Username will be different from username/access_key_id on
 	// LDAP login.  Use the stored value.
-	// audiance and email set here to be an empty string for backward compatibility
+	// Audience and email set here to be an empty string for backward compatibility
 	tokenString, err :=
-		GenerateJWT(secret, loginAudiance, user.ID, "", loginTime, expires)
+		GenerateJWT(secret, LoginAudience, user.ID, *user.Email, loginTime, expires)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
@@ -3013,7 +3013,13 @@ func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Controller) sendResetPasswordEmail(email []string, token string) error {
-	return c.Emailer.SendEmail(email, token, token, []string{})
+	err := c.Emailer.SendEmail(email, token, token, []string{})
+	if err != nil {
+		c.Logger.Error("Error sending email")
+		return err
+	}
+	c.Logger.Info("Succefully sent email")
+	return err
 }
 
 func (c *Controller) PasswordForgot(w http.ResponseWriter, r *http.Request, body PasswordForgotJSONRequestBody) {
@@ -3022,7 +3028,7 @@ func (c *Controller) PasswordForgot(w http.ResponseWriter, r *http.Request, body
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
-	if strings.Compare(*user.Email, body.Email) != 0 {
+	if *user.Email != body.Email {
 		writeError(w, http.StatusNotFound, "No such email")
 		return
 	}
@@ -3042,7 +3048,7 @@ func (c *Controller) PasswordForgot(w http.ResponseWriter, r *http.Request, body
 	writeResponse(w, http.StatusOK, err)
 }
 
-func (c *Controller) SetPassword(w http.ResponseWriter, r *http.Request, body SetPasswordJSONRequestBody) {
+func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body UpdatePasswordJSONRequestBody) {
 	claims, err := VerifyResetPasswordToken(c.Auth, body.Token)
 	if err != nil {
 		writeError(w, http.StatusForbidden, err)
@@ -3057,11 +3063,12 @@ func (c *Controller) SetPassword(w http.ResponseWriter, r *http.Request, body Se
 		writeError(w, http.StatusServiceUnavailable, err)
 		return
 	}
-	err = c.Auth.UpdatePassword(r.Context(), body.Email, string(p))
+
+	err = c.Auth.UpdatePassword(r.Context(), body.Email, p)
 	if err != nil {
 		writeError(w, http.StatusConflict, err)
 	}
-	writeResponse(w, http.StatusOK, err)
+	writeResponse(w, http.StatusCreated, err)
 }
 
 func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {

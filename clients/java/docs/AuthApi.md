@@ -34,7 +34,7 @@ Method | HTTP request | Description
 [**login**](AuthApi.md#login) | **POST** /auth/login | perform a login
 [**logout**](AuthApi.md#logout) | **POST** /auth/logout | logs out a cookie-authenticated user
 [**passwordForgot**](AuthApi.md#passwordForgot) | **POST** /auth/password/forgot | forgot password - request to start password reset flow
-[**setPassword**](AuthApi.md#setPassword) | **POST** /auth/password | update password for the given password
+[**updatePassword**](AuthApi.md#updatePassword) | **POST** /auth/password | update password for the given password
 [**updatePolicy**](AuthApi.md#updatePolicy) | **PUT** /auth/policies/{policyId} | update policy
 
 
@@ -2407,9 +2407,9 @@ null (empty response body)
 **500** | Internal Server Error |  -  |
 **0** | Internal Server Error |  -  |
 
-<a name="setPassword"></a>
-# **setPassword**
-> setPassword(updatePasswordByToken)
+<a name="updatePassword"></a>
+# **updatePassword**
+> updatePassword(updatePasswordByToken)
 
 update password for the given password
 
@@ -2437,9 +2437,9 @@ public class Example {
     AuthApi apiInstance = new AuthApi(defaultClient);
     UpdatePasswordByToken updatePasswordByToken = new UpdatePasswordByToken(); // UpdatePasswordByToken | 
     try {
-      apiInstance.setPassword(updatePasswordByToken);
+      apiInstance.updatePassword(updatePasswordByToken);
     } catch (ApiException e) {
-      System.err.println("Exception when calling AuthApi#setPassword");
+      System.err.println("Exception when calling AuthApi#updatePassword");
       System.err.println("Status code: " + e.getCode());
       System.err.println("Reason: " + e.getResponseBody());
       System.err.println("Response headers: " + e.getResponseHeaders());
@@ -2471,7 +2471,7 @@ null (empty response body)
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**200** | successful reset |  -  |
+**201** | successful reset |  -  |
 **401** | Unauthorized |  -  |
 **0** | Internal Server Error |  -  |
 

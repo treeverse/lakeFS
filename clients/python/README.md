@@ -138,7 +138,7 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**login**](docs/AuthApi.md#login) | **POST** /auth/login | perform a login
 *AuthApi* | [**logout**](docs/AuthApi.md#logout) | **POST** /auth/logout | logs out a cookie-authenticated user
 *AuthApi* | [**password_forgot**](docs/AuthApi.md#password_forgot) | **POST** /auth/password/forgot | forgot password - request to start password reset flow
-*AuthApi* | [**set_password**](docs/AuthApi.md#set_password) | **POST** /auth/password | update password for the given password
+*AuthApi* | [**update_password**](docs/AuthApi.md#update_password) | **POST** /auth/password | update password for the given password
 *AuthApi* | [**update_policy**](docs/AuthApi.md#update_policy) | **PUT** /auth/policies/{policyId} | update policy
 *BranchesApi* | [**create_branch**](docs/BranchesApi.md#create_branch) | **POST** /repositories/{repository}/branches | create branch
 *BranchesApi* | [**delete_branch**](docs/BranchesApi.md#delete_branch) | **DELETE** /repositories/{repository}/branches/{branch} | delete branch

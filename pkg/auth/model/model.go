@@ -41,13 +41,6 @@ type User struct {
 }
 
 // hashPassword generates a hashed password from a plaintext string
-func HashPassword(password string) ([]byte, error) {
-	pw, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return nil, err
-	}
-	return pw, nil
-}
 
 func (u *User) UpdatePassword(password string) error {
 	pw, err := HashPassword(password)
@@ -56,6 +49,14 @@ func (u *User) UpdatePassword(password string) error {
 	}
 	u.EncryptedPassword = pw
 	return nil
+}
+
+func HashPassword(password string) ([]byte, error) {
+	pw, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, err
+	}
+	return pw, nil
 }
 
 // Authenticate a user from a password Returns nil on success, or an error on failure.

@@ -151,7 +151,7 @@ paths:
       x-accepts: application/json
   /auth/password:
     post:
-      operationId: setPassword
+      operationId: updatePassword
       requestBody:
         content:
           application/json:
@@ -159,7 +159,7 @@ paths:
               $ref: '#/components/schemas/UpdatePasswordByToken'
         required: true
       responses:
-        "200":
+        "201":
           description: successful reset
         "401":
           content:

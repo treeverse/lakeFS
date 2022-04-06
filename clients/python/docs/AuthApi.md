@@ -34,7 +34,7 @@ Method | HTTP request | Description
 [**login**](AuthApi.md#login) | **POST** /auth/login | perform a login
 [**logout**](AuthApi.md#logout) | **POST** /auth/logout | logs out a cookie-authenticated user
 [**password_forgot**](AuthApi.md#password_forgot) | **POST** /auth/password/forgot | forgot password - request to start password reset flow
-[**set_password**](AuthApi.md#set_password) | **POST** /auth/password | update password for the given password
+[**update_password**](AuthApi.md#update_password) | **POST** /auth/password | update password for the given password
 [**update_policy**](AuthApi.md#update_policy) | **PUT** /auth/policies/{policyId} | update policy
 
 
@@ -2874,8 +2874,8 @@ void (empty response body)
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **set_password**
-> set_password(update_password_by_token)
+# **update_password**
+> update_password(update_password_by_token)
 
 update password for the given password
 
@@ -2920,9 +2920,9 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # example passing only required values which don't have defaults set
     try:
         # update password for the given password
-        api_instance.set_password(update_password_by_token)
+        api_instance.update_password(update_password_by_token)
     except lakefs_client.ApiException as e:
-        print("Exception when calling AuthApi->set_password: %s\n" % e)
+        print("Exception when calling AuthApi->update_password: %s\n" % e)
 ```
 
 
@@ -2950,7 +2950,7 @@ void (empty response body)
 
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**200** | successful reset |  -  |
+**201** | successful reset |  -  |
 **401** | Unauthorized |  -  |
 **0** | Internal Server Error |  -  |
 

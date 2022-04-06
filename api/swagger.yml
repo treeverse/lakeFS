@@ -1093,7 +1093,7 @@ paths:
       post:
         tags:
           - auth
-        operationId: setPassword
+        operationId: updatePassword
         summary: update password for the given password
         security:
           - cookie_auth: []
@@ -1104,7 +1104,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdatePasswordByToken"
         responses:
-          200:
+          201:
             description: successful reset
           401:
             $ref: "#/components/responses/Unauthorized"
