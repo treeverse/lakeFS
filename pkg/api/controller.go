@@ -3049,7 +3049,7 @@ func (c *Controller) SetPassword(w http.ResponseWriter, r *http.Request, body Se
 		return
 	}
 	if strings.Compare(claims.Id, body.Email) != 0 {
-		writeError(w, http.StatusForbidden, "Unautherized to switch password for given email")
+		writeError(w, http.StatusForbidden, "Unauthorized to switch password for given email")
 		return
 	}
 	p, err := model.HashPassword(body.NewPassword)
