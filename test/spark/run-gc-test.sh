@@ -2,8 +2,8 @@
 
 set -o pipefail
 
-_jq(row) {
- echo ${row} | base64 --decode | jq -r ${1}
+_jq() {
+ echo ${1} | base64 --decode | jq -r '.'
 }
 
 run_lakectl() {
