@@ -6,6 +6,7 @@ import GroupsIndexPage from "./groups";
 import UsersIndexPage from "./users";
 import PoliciesIndexPage from "./policies";
 import LoginPage from "./login";
+import ResetPasswordPage from "./reset-password";
 
 const Auth = () => {
     return (
@@ -15,6 +16,9 @@ const Auth = () => {
             </Route>
             <Route path="/auth/login">
                 <LoginPage/>
+            </Route>
+            <Route path="/auth/resetpassword">
+                <ResetPasswordPage/>
             </Route>
 
             <Route path="/auth/credentials">

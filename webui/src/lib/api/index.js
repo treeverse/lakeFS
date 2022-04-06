@@ -764,9 +764,14 @@ class Config {
         }
     }
     async getLakeFSVersion() {
-        const response = await apiRequest('/config/version', {
-            method: 'GET',
-        });
+        try {
+            const response = await apiRequest('/config/version', {
+                method: 'GET',
+            });
+        } catch (e) {
+            // return an empty response in case we are not logged in
+            return Promise.resolve({})
+        }
         switch (response.status) {
             case 200:
                 return await response.json();
