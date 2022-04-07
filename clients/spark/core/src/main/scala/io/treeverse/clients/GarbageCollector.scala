@@ -249,13 +249,14 @@ object GarbageCollector {
   }
 
   def main(args: Array[String]) {
-    val spark = SparkSession.builder().getOrCreate()
     if (args.length != 2) {
       Console.err.println(
         "Usage: ... <repo_name> <region>"
       )
       System.exit(1)
     }
+
+    val spark = SparkSession.builder().appName("GarbageCollector").getOrCreate()
 
     val repo = args(0)
     val region = args(1)
@@ -290,6 +291,8 @@ object GarbageCollector {
     expiredAddresses.show()
 
     S3BulkDeleter.remove(repo, gcAddressesLocation, runID, region, spark)
+
+    spark.close()
   }
 }
 
