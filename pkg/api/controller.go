@@ -57,10 +57,6 @@ const (
 	setupStateNotInitialized = "not_initialized"
 
 	DefaultMaxDeleteObjects = 1000
-	tokenExpiryDuration     = 6 * time.Hour
-
-	ResetPasswordAudience = "password_reset"
-	LoginAudience         = ""
 )
 
 type actionsHandler interface {
@@ -178,9 +174,9 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSO
 	loginTime := time.Now()
 	expires := loginTime.Add(DefaultLoginExpiration)
 	secret := c.Auth.SecretStore().SharedSecret()
+
 	// user.Username will be different from username/access_key_id on
 	// LDAP login.  Use the stored value.
-
 	tokenString, err := GenerateJWTLogin(secret, user.ID, loginTime, expires)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
@@ -3049,7 +3045,7 @@ func (c *Controller) ForgotPassword(w http.ResponseWriter, r *http.Request, body
 	email := StringValue(user.Email)
 	secret := c.Auth.SecretStore().SharedSecret()
 	currentTime := time.Now()
-	token, err := GenerateJWTResetPassword(secret, user.ID, email, currentTime, currentTime.Add(tokenExpiryDuration))
+	token, err := GenerateJWTResetPassword(secret, user.ID, email, currentTime, currentTime.Add(DefaultResetPasswordExpiration))
 	if err != nil {
 		c.Logger.WithError(err).WithField("email", email).Debug("failed to create a token")
 		writeError(w, http.StatusInternalServerError, err)

@@ -17,8 +17,13 @@ type LoginResponseData struct {
 }
 
 const (
-	DefaultLoginExpiration = time.Hour * 24 * 7
-	JWTCookieName          = "access_token"
+	DefaultLoginExpiration         = 7 * 24 * time.Hour
+	DefaultResetPasswordExpiration = 6 * time.Hour
+
+	JWTCookieName = "access_token"
+
+	LoginAudience         = "login"
+	ResetPasswordAudience = "password_reset"
 )
 
 func generateJWT(claims *jwt.StandardClaims, secret []byte) (string, error) {
@@ -27,8 +32,8 @@ func generateJWT(claims *jwt.StandardClaims, secret []byte) (string, error) {
 }
 
 // GenerateJWTLogin creates a jwt token which can be used for authentication during login only, i.e. it will not work for password reset.
-// It supports backward compatibility for creating a login jwt. The audience is set to LoginAudience which is
-// an empty string and no email is passed to support the ability of login for users via user/access keys which don't have an email set
+// It supports backward compatibility for creating a login jwt. The audience is not set for login token. Any audience will make the token
+// invalid for login. No email is passed to support the ability of login for users via user/access keys which don't have an email yet
 func GenerateJWTLogin(secret []byte, userID int, issuedAt, expiresAt time.Time) (string, error) {
 	claims := &jwt.StandardClaims{
 		Audience:  LoginAudience,
