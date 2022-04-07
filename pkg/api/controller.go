@@ -3011,21 +3011,21 @@ func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, http.StatusOK, response)
 }
 
-func (c *Controller) sendResetPasswordEmail(email []string, token string) error {
-	err := c.Emailer.SendEmail(email, token, token, []string{})
+func (c *Controller) sendResetPasswordEmail(email string, token string) error {
+	err := c.Emailer.SendEmail([]string{email}, token, token, nil)
 	if err != nil {
 		c.Logger.WithError(err).WithField("email", email).Debug("failed sending reset password email")
 		return err
 	}
 	c.Logger.WithField("email", email).Info("Successfully sent reset password email")
-	return err
+	return nil
 }
 
 func (c *Controller) PasswordForgot(w http.ResponseWriter, r *http.Request, body PasswordForgotJSONRequestBody) {
 	user, err := c.Auth.GetUserByEmail(r.Context(), body.Email)
 	if err != nil {
-		writeError(w, http.StatusNoContent, http.StatusText(http.StatusNoContent))
 		c.Logger.WithError(err).WithField("request_body", body).Debug("failed to retrieve user by email")
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 	secret := c.Auth.SecretStore().SharedSecret()
@@ -3037,11 +3037,12 @@ func (c *Controller) PasswordForgot(w http.ResponseWriter, r *http.Request, body
 		return
 	}
 	// TODO (@shimi9276) create template for sending the email with link for reset
-	err = c.sendResetPasswordEmail([]string{body.Email}, token)
+	err = c.sendResetPasswordEmail(*user.Email, token)
 	if err != nil {
-		writeError(w, http.StatusNoContent, err)
+		c.Logger.WithError(err).WithField("email", user.Email).Debug("failed sending reset password email")
 		return
 	}
+	c.Logger.WithField("email", user.Email).Info("Successfully sent reset password email")
 	writeResponse(w, http.StatusNoContent, err)
 }
 
@@ -3060,11 +3061,11 @@ func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body
 	}
 	err = c.Auth.HashAndUpdatePassword(r.Context(), claims.Subject, body.NewPassword)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
+		writeError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		c.Logger.WithError(err).WithField("email", claims.Subject).Debug("failed to update password")
 		return
 	}
-	writeResponse(w, http.StatusCreated, err)
+	w.WriteHeader(http.StatusCreated)
 }
 
 func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {

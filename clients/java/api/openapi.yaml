@@ -190,8 +190,8 @@ paths:
               $ref: '#/components/schemas/ForgotPasswordRequest'
         required: true
       responses:
-        "200":
-          description: password reset request submitted
+        "204":
+          description: No content
         "400":
           content:
             application/json:
@@ -209,7 +209,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-          description: no content
+          description: Internal Server Error
       security:
       - cookie_auth: []
       summary: forgot password - request to start password reset flow

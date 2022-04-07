@@ -2400,10 +2400,10 @@ null (empty response body)
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**200** | password reset request submitted |  -  |
+**204** | No content |  -  |
 **400** | bad request |  -  |
 **500** | Internal Server Error |  -  |
-**0** | no content |  -  |
+**0** | Internal Server Error |  -  |
 
 <a name="updatePassword"></a>
 # **updatePassword**
