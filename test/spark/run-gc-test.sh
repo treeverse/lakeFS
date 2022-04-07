@@ -32,7 +32,7 @@ initialize_env() {
   local test_id=$2
   run_lakectl branch create "lakefs://${repo}/a" -s "lakefs://${repo}/main"
   run_lakectl fs upload "lakefs://${repo}/a/file${test_id}" -s /local/gc-tests/sample_file
-  local existing_ref=$(run_lakectl commit "lakefs://${repo}/a" -m "uploaded file" --epoch-time-seconds 0 | grep "ID: " | awk '{ print $2 }')
+  local existing_ref=$(run_lakectl commit "lakefs://${repo}/a" -m "uploaded file${test_id}" --epoch-time-seconds 0 | grep "ID: " | awk '{ print $2 }')
   run_lakectl branch create "lakefs://${repo}/b" -s "lakefs://${repo}/a"
   echo "EXISTING_REF: ${existing_ref}"
 }
