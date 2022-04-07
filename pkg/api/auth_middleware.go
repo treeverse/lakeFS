@@ -120,14 +120,14 @@ func verifyToken(authService auth.Service, tokenString string) (*jwt.StandardCla
 	}
 	claims, ok := token.Claims.(*jwt.StandardClaims)
 	if !ok || !token.Valid {
-		return nil, err
+		return nil, ErrAuthenticatingRequest
 	}
 	return claims, nil
 }
 
 func userByToken(ctx context.Context, logger logging.Logger, authService auth.Service, tokenString string) (*model.User, error) {
 	claims, err := verifyToken(authService, tokenString)
-	if err != nil || claims.Audience != LoginAudience {
+	if err != nil || claims.VerifyAudience(LoginAudience, true) {
 		return nil, ErrAuthenticatingRequest
 	}
 	const base = 10
@@ -165,8 +165,8 @@ func userByAuth(ctx context.Context, logger logging.Logger, authenticator auth.A
 
 func VerifyResetPasswordToken(authService auth.Service, tokenString string) (*jwt.StandardClaims, error) {
 	claims, err := verifyToken(authService, tokenString)
-	if err != nil || claims.Audience != ResetPasswordAudience {
+	if err != nil || claims.VerifyAudience(ResetPasswordAudience, true) {
 		return nil, ErrAuthenticatingRequest
 	}
-	return claims, err
+	return claims, nil
 }

@@ -56,9 +56,9 @@ const (
 	setupStateNotInitialized = "not_initialized"
 
 	DefaultMaxDeleteObjects = 1000
+	tokenExpiryDuration     = 6 * time.Hour
 
 	ResetPasswordAudience = "password_reset"
-	tokenExpiryDuration   = 6 * time.Hour
 	LoginAudience         = ""
 )
 
@@ -179,7 +179,7 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSO
 	secret := c.Auth.SecretStore().SharedSecret()
 	// user.Username will be different from username/access_key_id on
 	// LDAP login.  Use the stored value.
-	// Audience and email set here to be an empty string for backward compatibility
+
 	tokenString, err := GenerateJWTLogin(secret, user.ID, loginTime, expires)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
@@ -3014,28 +3014,18 @@ func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 func (c *Controller) sendResetPasswordEmail(email []string, token string) error {
 	err := c.Emailer.SendEmail(email, token, token, []string{})
 	if err != nil {
-		c.Logger.
-			WithError(err).
-			WithFields(logging.Fields{
-				"email": email,
-			}).Debug("Error sending email")
+		c.Logger.WithError(err).WithField("email", email).Debug("failed sending reset password email")
 		return err
 	}
-	c.Logger.WithFields(logging.Fields{
-		"email": email,
-	}).Info("Successfully sent email")
+	c.Logger.WithField("email", email).Info("Successfully sent reset password email")
 	return err
 }
 
 func (c *Controller) PasswordForgot(w http.ResponseWriter, r *http.Request, body PasswordForgotJSONRequestBody) {
 	user, err := c.Auth.GetUserByEmail(r.Context(), body.Email)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
-		return
-	}
-	if *user.Email != body.Email {
-		writeError(w, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
-
+		writeError(w, http.StatusNoContent, http.StatusText(http.StatusNoContent))
+		c.Logger.WithError(err).WithField("request_body", body).Debug("failed to retrieve user by email")
 		return
 	}
 	secret := c.Auth.SecretStore().SharedSecret()
@@ -3043,35 +3033,35 @@ func (c *Controller) PasswordForgot(w http.ResponseWriter, r *http.Request, body
 	token, err := GenerateJWTResetPassword(secret, ResetPasswordAudience, user.ID, body.Email, currentTime, currentTime.Add(tokenExpiryDuration))
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
+		c.Logger.WithError(err).WithField("email", *user.Email).Debug("failed to create a token")
 		return
 	}
 	// TODO (@shimi9276) create template for sending the email with link for reset
 	err = c.sendResetPasswordEmail([]string{body.Email}, token)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err)
+		writeError(w, http.StatusNoContent, err)
 		return
 	}
-	writeResponse(w, http.StatusOK, err)
+	writeResponse(w, http.StatusNoContent, err)
 }
 
 func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body UpdatePasswordJSONRequestBody) {
 	claims, err := VerifyResetPasswordToken(c.Auth, body.Token)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, err)
+		c.Logger.WithError(err).WithField("token", body.Token).Debug("failed to verify token")
 		return
 	}
-	user, err := c.Auth.GetUserByEmail(r.Context(), claims.Id)
+	user, err := c.Auth.GetUserByEmail(r.Context(), claims.Subject)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
+		writeError(w, http.StatusNotFound, http.StatusText(http.StatusNotFound))
+		c.Logger.WithError(err).WithField("email", user.Email).Debug("failed to retrieve user by email")
 		return
 	}
-	if claims.Id != *user.Email {
-		writeError(w, http.StatusUnauthorized, "Unauthorized update password")
-		return
-	}
-	err = c.Auth.HashAndUpdatePassword(r.Context(), claims.Id, body.NewPassword)
+	err = c.Auth.HashAndUpdatePassword(r.Context(), claims.Subject, body.NewPassword)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
+		c.Logger.WithError(err).WithField("email", claims.Subject).Debug("failed to update password")
 		return
 	}
 	writeResponse(w, http.StatusCreated, err)

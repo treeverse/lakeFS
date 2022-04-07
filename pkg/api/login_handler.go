@@ -39,13 +39,14 @@ func GenerateJWTLogin(secret []byte, userID int, issuedAt, expiresAt time.Time) 
 	return generateJWT(claims, secret)
 }
 
+// GenerateJWTResetPassword creates a jwt token with the field subject set the email passed.
 func GenerateJWTResetPassword(secret []byte, aud string, userID int, email string, issuedAt, expiresAt time.Time) (string, error) {
 	claims := &jwt.StandardClaims{
 		Audience:  aud,
-		Subject:   fmt.Sprint(userID),
+		Subject:   email,
 		IssuedAt:  issuedAt.Unix(),
 		ExpiresAt: expiresAt.Unix(),
-		Id:        email,
+		Id:        fmt.Sprint(userID),
 	}
 	return generateJWT(claims, secret)
 }

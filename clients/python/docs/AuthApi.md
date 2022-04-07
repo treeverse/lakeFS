@@ -2867,9 +2867,8 @@ void (empty response body)
 |-------------|-------------|------------------|
 **200** | password reset request submitted |  -  |
 **400** | bad request |  -  |
-**401** | Unauthorized |  -  |
 **500** | Internal Server Error |  -  |
-**0** | Internal Server Error |  -  |
+**0** | no content |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 

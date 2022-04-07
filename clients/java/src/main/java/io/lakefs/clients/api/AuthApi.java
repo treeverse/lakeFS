@@ -3808,9 +3808,8 @@ public class AuthApi {
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> password reset request submitted </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> bad request </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 500 </td><td> Internal Server Error </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> no content </td><td>  -  </td></tr>
      </table>
      */
     public okhttp3.Call passwordForgotCall(ForgotPasswordRequest forgotPasswordRequest, final ApiCallback _callback) throws ApiException {
@@ -3867,9 +3866,8 @@ public class AuthApi {
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> password reset request submitted </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> bad request </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 500 </td><td> Internal Server Error </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> no content </td><td>  -  </td></tr>
      </table>
      */
     public void passwordForgot(ForgotPasswordRequest forgotPasswordRequest) throws ApiException {
@@ -3887,9 +3885,8 @@ public class AuthApi {
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> password reset request submitted </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> bad request </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 500 </td><td> Internal Server Error </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> no content </td><td>  -  </td></tr>
      </table>
      */
     public ApiResponse<Void> passwordForgotWithHttpInfo(ForgotPasswordRequest forgotPasswordRequest) throws ApiException {
@@ -3909,9 +3906,8 @@ public class AuthApi {
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> password reset request submitted </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> bad request </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 500 </td><td> Internal Server Error </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> no content </td><td>  -  </td></tr>
      </table>
      */
     public okhttp3.Call passwordForgotAsync(ForgotPasswordRequest forgotPasswordRequest, final ApiCallback<Void> _callback) throws ApiException {

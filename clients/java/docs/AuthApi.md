@@ -2402,9 +2402,8 @@ null (empty response body)
 |-------------|-------------|------------------|
 **200** | password reset request submitted |  -  |
 **400** | bad request |  -  |
-**401** | Unauthorized |  -  |
 **500** | Internal Server Error |  -  |
-**0** | Internal Server Error |  -  |
+**0** | no content |  -  |
 
 <a name="updatePassword"></a>
 # **updatePassword**

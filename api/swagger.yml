@@ -1134,12 +1134,14 @@ paths:
               application/json:
                 schema:
                   $ref: "#/components/schemas/Error"
-          401:
-            $ref: "#/components/responses/Unauthorized"
           500:
             $ref: "#/components/responses/ServerError"
           default:
-            $ref: "#/components/responses/ServerError"
+            description: no content
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/Error"
 
   /auth/users:
     get:
