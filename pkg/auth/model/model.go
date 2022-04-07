@@ -52,11 +52,7 @@ func (u *User) UpdatePassword(password string) error {
 }
 
 func HashPassword(password string) ([]byte, error) {
-	pw, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return nil, err
-	}
-	return pw, nil
+	return bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 }
 
 // Authenticate a user from a password Returns nil on success, or an error on failure.

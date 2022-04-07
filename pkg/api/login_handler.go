@@ -26,7 +26,8 @@ func generateJWT(claims *jwt.StandardClaims, secret []byte) (string, error) {
 	return token.SignedString(secret)
 }
 
-// GenerateJWTLogin supports backward compatibilty for creating a login jwt. The audience is set to LoginAudience which is
+// GenerateJWTLogin creates a jwt token which can be used for authentication during login only, i.e. it will not work for password reset.
+// It supports backward compatibility for creating a login jwt. The audience is set to LoginAudience which is
 // an empty string and no email is passed to support the ability of login for users via user/access keys which don't have an email set
 func GenerateJWTLogin(secret []byte, userID int, issuedAt, expiresAt time.Time) (string, error) {
 	claims := &jwt.StandardClaims{

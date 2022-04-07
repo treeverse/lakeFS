@@ -604,10 +604,10 @@ components:
       type: object
       properties:
         token:
-          description: token used for authentification
+          description: token used for authentication
           type: string
         newPassword:
-          description: the new password to be updated
+          description: new password to update
           type: string
         email:
           description: email of user to be updated

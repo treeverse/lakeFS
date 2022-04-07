@@ -3023,18 +3023,19 @@ func (c *Controller) sendResetPasswordEmail(email []string, token string) error 
 	}
 	c.Logger.WithFields(logging.Fields{
 		"email": email,
-	}).Info("Succefully sent email")
+	}).Info("Successfully sent email")
 	return err
 }
 
 func (c *Controller) PasswordForgot(w http.ResponseWriter, r *http.Request, body PasswordForgotJSONRequestBody) {
 	user, err := c.Auth.GetUserByEmail(r.Context(), body.Email)
 	if err != nil {
-		writeError(w, http.StatusForbidden, http.StatusText(http.StatusForbidden))
+		writeError(w, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
 		return
 	}
 	if *user.Email != body.Email {
-		writeError(w, http.StatusForbidden, http.StatusText(http.StatusForbidden))
+		writeError(w, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
+
 		return
 	}
 	secret := c.Auth.SecretStore().SharedSecret()
