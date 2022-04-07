@@ -65,6 +65,7 @@ clean:
 		$(UI_BUILD_DIR) \
 		pkg/actions/mock \
 		pkg/api/lakefs.gen.go \
+		pkg/auth/client.gen.go \
 		pkg/graveler/sstable/mock \
 	    pkg/graveler/committed/mock \
 	    pkg/graveler/mock
@@ -137,6 +138,7 @@ package: package-python
 
 gen-api: go-install ## Run the swagger code generator
 	$(GOGENERATE) ./pkg/api
+	$(GOGENERATE) ./pkg/auth
 
 .PHONY: gen-mockgen
 gen-mockgen: go-install ## Run the generator for inline commands
