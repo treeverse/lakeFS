@@ -41,7 +41,6 @@ type User struct {
 }
 
 // hashPassword generates a hashed password from a plaintext string
-
 func (u *User) UpdatePassword(password string) error {
 	pw, err := HashPassword(password)
 	if err != nil {

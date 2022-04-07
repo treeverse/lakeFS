@@ -3030,7 +3030,7 @@ func (c *Controller) PasswordForgot(w http.ResponseWriter, r *http.Request, body
 	}
 	secret := c.Auth.SecretStore().SharedSecret()
 	currentTime := time.Now()
-	token, err := GenerateJWTResetPassword(secret, ResetPasswordAudience, user.ID, body.Email, currentTime, currentTime.Add(tokenExpiryDuration))
+	token, err := GenerateJWTResetPassword(secret, user.ID, body.Email, currentTime, currentTime.Add(tokenExpiryDuration))
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		c.Logger.WithError(err).WithField("email", *user.Email).Debug("failed to create a token")
