@@ -34,7 +34,7 @@ initialize_env() {
   run_lakectl fs upload "lakefs://${repo}/a/file${test_id}" -s /local/gc-tests/sample_file
   local existing_ref=$(run_lakectl commit "lakefs://${repo}/a" -m "uploaded file" --epoch-time-seconds 0 | grep "ID: " | awk '{ print $2 }')
   run_lakectl branch create "lakefs://${repo}/b" -s "lakefs://${repo}/a"
-  echo "${existing_ref}"
+  echo "EXISTING_REF: ${existing_ref}"
 }
 
 delete_and_commit() {
@@ -120,7 +120,7 @@ for test_case in $(jq -r '.[] | @base64' gc-tests/test_scenarios.json); do
   ((test_id++))
   test_description=$(echo "${test_case}" | jq -r '.description')
   echo "Test: ${test_description}"
-  file_existing_ref=$(initialize_env ${REPOSITORY} ${test_id})
+  file_existing_ref=$(initialize_env ${REPOSITORY} ${test_id}  | grep "^EXISTING_REF: " | awk '{ print $2 }')
 #  file_existing_ref=$(last_commit_ref ${REPOSITORY} a)
   echo "${test_case}" | jq --raw-output '.policy' > policy.json
   run_lakectl gc set-config lakefs://${REPOSITORY} -f /local/policy.json
