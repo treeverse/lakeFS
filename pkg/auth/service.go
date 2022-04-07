@@ -986,7 +986,7 @@ func (a *APIAuthService) CreateUser(ctx context.Context, user *model.User) (int,
 		return InvalidUserID, err
 	}
 
-	return int(resp.JSON201.Id), nil
+	return resp.JSON201.Id, nil
 }
 
 func (a *APIAuthService) DeleteUser(ctx context.Context, username string) error {
@@ -1014,7 +1014,7 @@ func (a *APIAuthService) GetUserByID(ctx context.Context, userID int) (*model.Us
 		}
 		u := resp.JSON200
 		return &model.User{
-			ID:                int(u.Id),
+			ID:                u.Id,
 			CreatedAt:         time.Unix(u.CreationDate, 0),
 			Username:          u.Name,
 			FriendlyName:      u.FriendlyName,
@@ -1036,7 +1036,7 @@ func (a *APIAuthService) GetUser(ctx context.Context, username string) (*model.U
 		}
 		u := resp.JSON200
 		return &model.User{
-			ID:                int(u.Id),
+			ID:                u.Id,
 			CreatedAt:         time.Unix(u.CreationDate, 0),
 			Username:          u.Name,
 			FriendlyName:      u.FriendlyName,
@@ -1058,7 +1058,7 @@ func (a *APIAuthService) GetUserByEmail(ctx context.Context, email string) (*mod
 		}
 		u := resp.JSON200
 		user := &model.User{
-			ID:           int(u.Id),
+			ID:           u.Id,
 			CreatedAt:    time.Unix(u.CreationDate, 0),
 			Username:     u.Name,
 			FriendlyName: u.FriendlyName,
