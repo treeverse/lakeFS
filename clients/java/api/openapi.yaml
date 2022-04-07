@@ -5040,22 +5040,22 @@ components:
       type: object
     UpdatePasswordByToken:
       example:
+        newpasswordConfirm: newpasswordConfirm
         newPassword: newPassword
-        email: email
         token: token
       properties:
         token:
-          description: token used for authentification
+          description: token used for authentication
           type: string
         newPassword:
-          description: the new password to be updated
+          description: new password to update
           type: string
-        email:
-          description: email of user to be updated
+        newpasswordConfirm:
+          description: new password confirmation
           type: string
       required:
-      - email
       - newPassword
+      - newpasswordConfirm
       - token
       type: object
     Credentials:

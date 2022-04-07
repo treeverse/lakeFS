@@ -7,9 +7,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**token** | **String** | token used for authentification | 
-**newPassword** | **String** | the new password to be updated | 
-**email** | **String** | email of user to be updated | 
+**token** | **String** | token used for authentication | 
+**newPassword** | **String** | new password to update | 
+**newpasswordConfirm** | **String** | new password confirmation | 
 
 
 

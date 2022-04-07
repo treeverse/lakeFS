@@ -58,7 +58,7 @@ const (
 	DefaultMaxDeleteObjects = 1000
 
 	ResetPasswordAudience = "password_reset"
-	tokenExpiryDuration   = 5 * time.Minute
+	tokenExpiryDuration   = 6 * time.Hour
 	LoginAudience         = ""
 )
 
@@ -3057,14 +3057,19 @@ func (c *Controller) PasswordForgot(w http.ResponseWriter, r *http.Request, body
 func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body UpdatePasswordJSONRequestBody) {
 	claims, err := VerifyResetPasswordToken(c.Auth, body.Token)
 	if err != nil {
-		writeError(w, http.StatusForbidden, err)
+		writeError(w, http.StatusUnauthorized, err)
 		return
 	}
-	if claims.Id != body.Email {
-		writeError(w, http.StatusForbidden, "Unauthorized update password")
+	user, err := c.Auth.GetUserByEmail(r.Context(), claims.Id)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
 		return
 	}
-	err = c.Auth.HashAndUpdatePassword(r.Context(), body.Email, body.NewPassword)
+	if claims.Id != *user.Email {
+		writeError(w, http.StatusUnauthorized, "Unauthorized update password")
+		return
+	}
+	err = c.Auth.HashAndUpdatePassword(r.Context(), claims.Id, body.NewPassword)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return

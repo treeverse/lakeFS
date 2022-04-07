@@ -84,7 +84,7 @@ class UpdatePasswordByToken(ModelNormal):
         return {
             'token': (str,),  # noqa: E501
             'new_password': (str,),  # noqa: E501
-            'email': (str,),  # noqa: E501
+            'newpassword_confirm': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -95,7 +95,7 @@ class UpdatePasswordByToken(ModelNormal):
     attribute_map = {
         'token': 'token',  # noqa: E501
         'new_password': 'newPassword',  # noqa: E501
-        'email': 'email',  # noqa: E501
+        'newpassword_confirm': 'newpasswordConfirm',  # noqa: E501
     }
 
     read_only_vars = {
@@ -105,13 +105,13 @@ class UpdatePasswordByToken(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, token, new_password, email, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, token, new_password, newpassword_confirm, *args, **kwargs):  # noqa: E501
         """UpdatePasswordByToken - a model defined in OpenAPI
 
         Args:
-            token (str): token used for authentification
-            new_password (str): the new password to be updated
-            email (str): email of user to be updated
+            token (str): token used for authentication
+            new_password (str): new password to update
+            newpassword_confirm (str): new password confirmation
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -173,7 +173,7 @@ class UpdatePasswordByToken(ModelNormal):
 
         self.token = token
         self.new_password = new_password
-        self.email = email
+        self.newpassword_confirm = newpassword_confirm
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -194,13 +194,13 @@ class UpdatePasswordByToken(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, token, new_password, email, *args, **kwargs):  # noqa: E501
+    def __init__(self, token, new_password, newpassword_confirm, *args, **kwargs):  # noqa: E501
         """UpdatePasswordByToken - a model defined in OpenAPI
 
         Args:
-            token (str): token used for authentification
-            new_password (str): the new password to be updated
-            email (str): email of user to be updated
+            token (str): token used for authentication
+            new_password (str): new password to update
+            newpassword_confirm (str): new password confirmation
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -260,7 +260,7 @@ class UpdatePasswordByToken(ModelNormal):
 
         self.token = token
         self.new_password = new_password
-        self.email = email
+        self.newpassword_confirm = newpassword_confirm
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

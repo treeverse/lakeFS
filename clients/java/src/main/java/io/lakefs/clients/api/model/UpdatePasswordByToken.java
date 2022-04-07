@@ -37,9 +37,9 @@ public class UpdatePasswordByToken {
   @SerializedName(SERIALIZED_NAME_NEW_PASSWORD)
   private String newPassword;
 
-  public static final String SERIALIZED_NAME_EMAIL = "email";
-  @SerializedName(SERIALIZED_NAME_EMAIL)
-  private String email;
+  public static final String SERIALIZED_NAME_NEWPASSWORD_CONFIRM = "newpasswordConfirm";
+  @SerializedName(SERIALIZED_NAME_NEWPASSWORD_CONFIRM)
+  private String newpasswordConfirm;
 
 
   public UpdatePasswordByToken token(String token) {
@@ -49,11 +49,11 @@ public class UpdatePasswordByToken {
   }
 
    /**
-   * token used for authentification
+   * token used for authentication
    * @return token
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "token used for authentification")
+  @ApiModelProperty(required = true, value = "token used for authentication")
 
   public String getToken() {
     return token;
@@ -72,11 +72,11 @@ public class UpdatePasswordByToken {
   }
 
    /**
-   * the new password to be updated
+   * new password to update
    * @return newPassword
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "the new password to be updated")
+  @ApiModelProperty(required = true, value = "new password to update")
 
   public String getNewPassword() {
     return newPassword;
@@ -88,26 +88,26 @@ public class UpdatePasswordByToken {
   }
 
 
-  public UpdatePasswordByToken email(String email) {
+  public UpdatePasswordByToken newpasswordConfirm(String newpasswordConfirm) {
     
-    this.email = email;
+    this.newpasswordConfirm = newpasswordConfirm;
     return this;
   }
 
    /**
-   * email of user to be updated
-   * @return email
+   * new password confirmation
+   * @return newpasswordConfirm
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "email of user to be updated")
+  @ApiModelProperty(required = true, value = "new password confirmation")
 
-  public String getEmail() {
-    return email;
+  public String getNewpasswordConfirm() {
+    return newpasswordConfirm;
   }
 
 
-  public void setEmail(String email) {
-    this.email = email;
+  public void setNewpasswordConfirm(String newpasswordConfirm) {
+    this.newpasswordConfirm = newpasswordConfirm;
   }
 
 
@@ -122,12 +122,12 @@ public class UpdatePasswordByToken {
     UpdatePasswordByToken updatePasswordByToken = (UpdatePasswordByToken) o;
     return Objects.equals(this.token, updatePasswordByToken.token) &&
         Objects.equals(this.newPassword, updatePasswordByToken.newPassword) &&
-        Objects.equals(this.email, updatePasswordByToken.email);
+        Objects.equals(this.newpasswordConfirm, updatePasswordByToken.newpasswordConfirm);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(token, newPassword, email);
+    return Objects.hash(token, newPassword, newpasswordConfirm);
   }
 
   @Override
@@ -136,7 +136,7 @@ public class UpdatePasswordByToken {
     sb.append("class UpdatePasswordByToken {\n");
     sb.append("    token: ").append(toIndentedString(token)).append("\n");
     sb.append("    newPassword: ").append(toIndentedString(newPassword)).append("\n");
-    sb.append("    email: ").append(toIndentedString(email)).append("\n");
+    sb.append("    newpasswordConfirm: ").append(toIndentedString(newpasswordConfirm)).append("\n");
     sb.append("}");
     return sb.toString();
   }
