@@ -127,7 +127,7 @@ func verifyToken(authService auth.Service, tokenString string) (*jwt.StandardCla
 
 func userByToken(ctx context.Context, logger logging.Logger, authService auth.Service, tokenString string) (*model.User, error) {
 	claims, err := verifyToken(authService, tokenString)
-	if err != nil || claims.VerifyAudience(LoginAudience, true) {
+	if err != nil || !claims.VerifyAudience(LoginAudience, true) {
 		return nil, ErrAuthenticatingRequest
 	}
 	const base = 10
