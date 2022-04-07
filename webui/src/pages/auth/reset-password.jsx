@@ -11,13 +11,28 @@ import {
 } from "@primer/octicons-react";
 import {Error} from "../../lib/components/controls";
 import {auth} from "../../lib/api";
+import validator from "validator/es";
 
 const TOKEN = "token";
 
 const RequestResetPasswordForm = () => {
+
+    const onEmailChange = () => {
+        if (validator.isEmail(email.current.value)) {
+            setFormValid(true);
+            setEmailValid(true);
+        } else {
+            setFormValid(false);
+            setEmailValid(false);
+        }
+    };
+
     const [reqResetPwdError, setReqResetPwdError] = React.useState(null);
     const [riskAccepted, setRiskAccepted] = React.useState(false);
     const [resetReqSent, setResetReqSent] = React.useState(false);
+    const [formValid, setFormValid] = useState(false);
+    const [emailValid, setEmailValid] = useState(null);
+    const email = useRef(null);
 
     if (resetReqSent) {
         return (
@@ -57,7 +72,12 @@ const RequestResetPasswordForm = () => {
                                 }
                             }}>
                                 <Form.Group controlId="email">
-                                    <Form.Control type="text" placeholder="Email" autoFocus/>
+                                    <Form.Control type="text" placeholder="Email" autoFocus ref={email} onChange={onEmailChange}/>
+                                    {emailValid === false &&
+                                    <Form.Text className="text-danger">
+                                        Invalid email address
+                                    </Form.Text>
+                                    }
                                 </Form.Group>
 
                                 {(!!reqResetPwdError) && <Error error={reqResetPwdError}/>}
@@ -69,7 +89,7 @@ const RequestResetPasswordForm = () => {
                                     <label className="accept-risk-label">I understand the risks listed above</label>
                                 </div>
 
-                                <Button variant="primary" type="submit" className="reset-pwd">Reset Password</Button>
+                                <Button variant="primary" type="submit" className="reset-pwd" disabled={!formValid}>Reset Password</Button>
                             </Form>
                         </Card.Body>
                     </Card>
