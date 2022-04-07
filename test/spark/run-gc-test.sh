@@ -122,6 +122,8 @@ for test_case in $(jq -r '.[] | @base64' gc-tests/test_scenarios.json); do
   run_gc ${REPOSITORY}
   if ! validate_gc_job "${test_case}" ${REPOSITORY} ${file_existing_ref}; then
     failed_tests+=("${test_description}")
+  else
+    echo "Test: ${test_description} - SUCCEEDED"
   fi
   rm -f policy.json
   clean_repo ${REPOSITORY}
