@@ -95,13 +95,17 @@ lazy val spark2Type =
   new BuildType("247", scala211Version, "2.4.7", "0.9.8", "2.7.7", "hadoop2-2.0.1")
 lazy val spark3Type =
   new BuildType("301", scala212Version, "3.0.1", "0.10.11", "2.7.7", "hadoop2-2.0.1")
+lazy val spark312Type =
+  new BuildType("312", scala212Version, "3.1.2", "0.10.11", "3.2.1", "hadoop2-2.0.1")
 
 lazy val core2 = generateCoreProject(spark2Type)
 lazy val core3 = generateCoreProject(spark3Type)
+lazy val core312 = generateCoreProject(spark312Type)
 lazy val examples2 = generateExamplesProject(spark2Type).dependsOn(core2)
 lazy val examples3 = generateExamplesProject(spark3Type).dependsOn(core3)
+lazy val examples312 = generateExamplesProject(spark312Type).dependsOn(core312)
 
-lazy val root = (project in file(".")).aggregate(core2, core3, examples2, examples3)
+lazy val root = (project in file(".")).aggregate(core2, core3, core312, examples2, examples3, examples312)
 
 lazy val assemblySettings = Seq(
   assembly / assemblyMergeStrategy := (_ => MergeStrategy.first),
