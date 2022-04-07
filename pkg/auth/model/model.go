@@ -40,7 +40,6 @@ type User struct {
 	Source            string  `db:"source" json:"source"`
 }
 
-// hashPassword generates a hashed password from a plaintext string
 func (u *User) UpdatePassword(password string) error {
 	pw, err := HashPassword(password)
 	if err != nil {
@@ -50,6 +49,7 @@ func (u *User) UpdatePassword(password string) error {
 	return nil
 }
 
+// hashPassword generates a hashed password from a plaintext string
 func HashPassword(password string) ([]byte, error) {
 	return bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 }
