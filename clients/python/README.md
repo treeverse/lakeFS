@@ -122,6 +122,7 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**delete_user**](docs/AuthApi.md#delete_user) | **DELETE** /auth/users/{userId} | delete user
 *AuthApi* | [**detach_policy_from_group**](docs/AuthApi.md#detach_policy_from_group) | **DELETE** /auth/groups/{groupId}/policies/{policyId} | detach policy from group
 *AuthApi* | [**detach_policy_from_user**](docs/AuthApi.md#detach_policy_from_user) | **DELETE** /auth/users/{userId}/policies/{policyId} | detach policy from user
+*AuthApi* | [**forgot_password**](docs/AuthApi.md#forgot_password) | **POST** /auth/password/forgot | forgot password request initiates the password reset process
 *AuthApi* | [**get_credentials**](docs/AuthApi.md#get_credentials) | **GET** /auth/users/{userId}/credentials/{accessKeyId} | get credentials
 *AuthApi* | [**get_current_user**](docs/AuthApi.md#get_current_user) | **GET** /user | get current user
 *AuthApi* | [**get_group**](docs/AuthApi.md#get_group) | **GET** /auth/groups/{groupId} | get group
@@ -137,7 +138,6 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**list_users**](docs/AuthApi.md#list_users) | **GET** /auth/users | list users
 *AuthApi* | [**login**](docs/AuthApi.md#login) | **POST** /auth/login | perform a login
 *AuthApi* | [**logout**](docs/AuthApi.md#logout) | **POST** /auth/logout | logs out a cookie-authenticated user
-*AuthApi* | [**password_forgot**](docs/AuthApi.md#password_forgot) | **POST** /auth/password/forgot | forgot password - request to start password reset flow
 *AuthApi* | [**update_password**](docs/AuthApi.md#update_password) | **POST** /auth/password | Update user password by reset_password token
 *AuthApi* | [**update_policy**](docs/AuthApi.md#update_policy) | **PUT** /auth/policies/{policyId} | update policy
 *BranchesApi* | [**create_branch**](docs/BranchesApi.md#create_branch) | **POST** /repositories/{repository}/branches | create branch

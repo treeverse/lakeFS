@@ -1115,8 +1115,8 @@ paths:
       post:
         tags:
           - auth
-        operationId: passwordForgot
-        summary: forgot password - request to start password reset flow
+        operationId: forgotPassword
+        summary: forgot password request initiates the password reset process
         security:
           - cookie_auth: []
         requestBody:
@@ -1134,8 +1134,6 @@ paths:
               application/json:
                 schema:
                   $ref: "#/components/schemas/Error"
-          500:
-            $ref: "#/components/responses/ServerError"
           default:
             $ref: "#/components/responses/ServerError"
 

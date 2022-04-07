@@ -266,6 +266,21 @@ public class AuthApiTest {
     }
     
     /**
+     * forgot password request initiates the password reset process
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void forgotPasswordTest() throws ApiException {
+        ForgotPasswordRequest forgotPasswordRequest = null;
+                api.forgotPassword(forgotPasswordRequest);
+        // TODO: test validations
+    }
+    
+    /**
      * get credentials
      *
      * 
@@ -508,21 +523,6 @@ public class AuthApiTest {
     @Test
     public void logoutTest() throws ApiException {
                 api.logout();
-        // TODO: test validations
-    }
-    
-    /**
-     * forgot password - request to start password reset flow
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void passwordForgotTest() throws ApiException {
-        ForgotPasswordRequest forgotPasswordRequest = null;
-                api.passwordForgot(forgotPasswordRequest);
         // TODO: test validations
     }
     

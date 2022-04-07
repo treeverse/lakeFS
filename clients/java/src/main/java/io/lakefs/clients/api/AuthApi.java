@@ -1824,6 +1824,121 @@ public class AuthApi {
         return localVarCall;
     }
     /**
+     * Build call for forgotPassword
+     * @param forgotPasswordRequest  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> No content </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> bad request </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call forgotPasswordCall(ForgotPasswordRequest forgotPasswordRequest, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = forgotPasswordRequest;
+
+        // create path and map variables
+        String localVarPath = "/auth/password/forgot";
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        localVarHeaderParams.put("Content-Type", localVarContentType);
+
+        String[] localVarAuthNames = new String[] { "cookie_auth" };
+        return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call forgotPasswordValidateBeforeCall(ForgotPasswordRequest forgotPasswordRequest, final ApiCallback _callback) throws ApiException {
+        
+        // verify the required parameter 'forgotPasswordRequest' is set
+        if (forgotPasswordRequest == null) {
+            throw new ApiException("Missing the required parameter 'forgotPasswordRequest' when calling forgotPassword(Async)");
+        }
+        
+
+        okhttp3.Call localVarCall = forgotPasswordCall(forgotPasswordRequest, _callback);
+        return localVarCall;
+
+    }
+
+    /**
+     * forgot password request initiates the password reset process
+     * 
+     * @param forgotPasswordRequest  (required)
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> No content </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> bad request </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public void forgotPassword(ForgotPasswordRequest forgotPasswordRequest) throws ApiException {
+        forgotPasswordWithHttpInfo(forgotPasswordRequest);
+    }
+
+    /**
+     * forgot password request initiates the password reset process
+     * 
+     * @param forgotPasswordRequest  (required)
+     * @return ApiResponse&lt;Void&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> No content </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> bad request </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<Void> forgotPasswordWithHttpInfo(ForgotPasswordRequest forgotPasswordRequest) throws ApiException {
+        okhttp3.Call localVarCall = forgotPasswordValidateBeforeCall(forgotPasswordRequest, null);
+        return localVarApiClient.execute(localVarCall);
+    }
+
+    /**
+     * forgot password request initiates the password reset process (asynchronously)
+     * 
+     * @param forgotPasswordRequest  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> No content </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> bad request </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call forgotPasswordAsync(ForgotPasswordRequest forgotPasswordRequest, final ApiCallback<Void> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = forgotPasswordValidateBeforeCall(forgotPasswordRequest, _callback);
+        localVarApiClient.executeAsync(localVarCall, _callback);
+        return localVarCall;
+    }
+    /**
      * Build call for getCredentials
      * @param userId  (required)
      * @param accessKeyId  (required)
@@ -3794,125 +3909,6 @@ public class AuthApi {
     public okhttp3.Call logoutAsync(final ApiCallback<Void> _callback) throws ApiException {
 
         okhttp3.Call localVarCall = logoutValidateBeforeCall(_callback);
-        localVarApiClient.executeAsync(localVarCall, _callback);
-        return localVarCall;
-    }
-    /**
-     * Build call for passwordForgot
-     * @param forgotPasswordRequest  (required)
-     * @param _callback Callback for upload/download progress
-     * @return Call to execute
-     * @throws ApiException If fail to serialize the request body object
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> No content </td><td>  -  </td></tr>
-        <tr><td> 400 </td><td> bad request </td><td>  -  </td></tr>
-        <tr><td> 500 </td><td> Internal Server Error </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public okhttp3.Call passwordForgotCall(ForgotPasswordRequest forgotPasswordRequest, final ApiCallback _callback) throws ApiException {
-        Object localVarPostBody = forgotPasswordRequest;
-
-        // create path and map variables
-        String localVarPath = "/auth/password/forgot";
-
-        List<Pair> localVarQueryParams = new ArrayList<Pair>();
-        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
-        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
-        Map<String, String> localVarCookieParams = new HashMap<String, String>();
-        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
-
-        final String[] localVarAccepts = {
-            "application/json"
-        };
-        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
-        if (localVarAccept != null) {
-            localVarHeaderParams.put("Accept", localVarAccept);
-        }
-
-        final String[] localVarContentTypes = {
-            "application/json"
-        };
-        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        localVarHeaderParams.put("Content-Type", localVarContentType);
-
-        String[] localVarAuthNames = new String[] { "cookie_auth" };
-        return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
-    }
-
-    @SuppressWarnings("rawtypes")
-    private okhttp3.Call passwordForgotValidateBeforeCall(ForgotPasswordRequest forgotPasswordRequest, final ApiCallback _callback) throws ApiException {
-        
-        // verify the required parameter 'forgotPasswordRequest' is set
-        if (forgotPasswordRequest == null) {
-            throw new ApiException("Missing the required parameter 'forgotPasswordRequest' when calling passwordForgot(Async)");
-        }
-        
-
-        okhttp3.Call localVarCall = passwordForgotCall(forgotPasswordRequest, _callback);
-        return localVarCall;
-
-    }
-
-    /**
-     * forgot password - request to start password reset flow
-     * 
-     * @param forgotPasswordRequest  (required)
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> No content </td><td>  -  </td></tr>
-        <tr><td> 400 </td><td> bad request </td><td>  -  </td></tr>
-        <tr><td> 500 </td><td> Internal Server Error </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public void passwordForgot(ForgotPasswordRequest forgotPasswordRequest) throws ApiException {
-        passwordForgotWithHttpInfo(forgotPasswordRequest);
-    }
-
-    /**
-     * forgot password - request to start password reset flow
-     * 
-     * @param forgotPasswordRequest  (required)
-     * @return ApiResponse&lt;Void&gt;
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> No content </td><td>  -  </td></tr>
-        <tr><td> 400 </td><td> bad request </td><td>  -  </td></tr>
-        <tr><td> 500 </td><td> Internal Server Error </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public ApiResponse<Void> passwordForgotWithHttpInfo(ForgotPasswordRequest forgotPasswordRequest) throws ApiException {
-        okhttp3.Call localVarCall = passwordForgotValidateBeforeCall(forgotPasswordRequest, null);
-        return localVarApiClient.execute(localVarCall);
-    }
-
-    /**
-     * forgot password - request to start password reset flow (asynchronously)
-     * 
-     * @param forgotPasswordRequest  (required)
-     * @param _callback The callback to be executed when the API call finishes
-     * @return The request call
-     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> No content </td><td>  -  </td></tr>
-        <tr><td> 400 </td><td> bad request </td><td>  -  </td></tr>
-        <tr><td> 500 </td><td> Internal Server Error </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public okhttp3.Call passwordForgotAsync(ForgotPasswordRequest forgotPasswordRequest, final ApiCallback<Void> _callback) throws ApiException {
-
-        okhttp3.Call localVarCall = passwordForgotValidateBeforeCall(forgotPasswordRequest, _callback);
         localVarApiClient.executeAsync(localVarCall, _callback);
         return localVarCall;
     }

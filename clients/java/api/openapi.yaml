@@ -182,7 +182,7 @@ paths:
       x-accepts: application/json
   /auth/password/forgot:
     post:
-      operationId: passwordForgot
+      operationId: forgotPassword
       requestBody:
         content:
           application/json:
@@ -198,12 +198,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: bad request
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Internal Server Error
         default:
           content:
             application/json:
@@ -212,7 +206,7 @@ paths:
           description: Internal Server Error
       security:
       - cookie_auth: []
-      summary: forgot password - request to start password reset flow
+      summary: forgot password request initiates the password reset process
       tags:
       - auth
       x-contentType: application/json
