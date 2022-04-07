@@ -3013,7 +3013,6 @@ func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 
 func (c *Controller) sendResetPasswordEmail(email string, token string) error {
 	return c.Emailer.SendEmail([]string{email}, token, token, nil)
-
 }
 
 func (c *Controller) PasswordForgot(w http.ResponseWriter, r *http.Request, body PasswordForgotJSONRequestBody) {
