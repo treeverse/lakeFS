@@ -35,7 +35,7 @@ object Sonnets {
     val input = args.applyOrElse(0, (_: Any) => "s3a://example/main/sonnets.txt")
     val output = args.applyOrElse(1, (_: Any) => "s3a://example/main/sonnets-wordcount")
     val sc = spark.sparkContext
-    sc.setLogLevel("TRACE")
+    sc.setLogLevel("INFO")
     import spark.implicits._
     val sonnets = sc.textFile(input)
     val partitions = 7

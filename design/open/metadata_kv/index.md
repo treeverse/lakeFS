@@ -177,12 +177,12 @@ Getting this right means we have to take care of the following:
 1. Ensure all staged changes that finished successfully before the commit started are applied as part of the commit (causality)
 1. Ensure acknowledged writes end up either in a resulting commit, or staged to be committed (no lost writes)
 
-To do this, we will employ 2 mechanisms:
+To do this, we will employ 3 mechanisms:
 
 1. [Optimistic Concurrency Control](https://en.wikipedia.org/wiki/Optimistic_concurrency_control) on the branch pointer using `SetIf()`
 1. Reliance on write [idempotency](https://en.wikipedia.org/wiki/Idempotence) provided by Graveler (i.e., Writing the same exact entry, with the same identity - will not appear as a change)
-
-This is what the proposed implementation will look like:
+1. Lock freedom (see [_non-blocking
+algorithms_](https://en.wikipedia.org/wiki/Non-blocking_algorithm))
 
 #### Committer flow
 
@@ -191,14 +191,41 @@ We add an additional field to each `Branch` object: In addition to the existing 
 1. get branch, find current `staging_token`
 1. use `SetIf()` to update the branch (if not modified by another process): push existing `staging_token` into `sealed_tokens`, set new UUID as `staging_token`. The branch is assuming to be represented by a single key/value pair that contains the `staging_token`, `sealed_tokens` and `commit_id` fields.
 1. take the list of sealed tokens, and using the [`CombinedIterator()`](https://github.com/treeverse/lakeFS/blob/master/pkg/graveler/combined_iterator.go#L11), turn them into a single iterator to be applied on top of the existing commit
-1. Once the commit has been persisted (metaranges and ranges stored in object store, commit itself stored to KV using `Set()`), perform another `SetIf()` that updates the branch key/value pair again: replacing its commit ID with the new value, and clearing `sealed_tokens`, as these have materialized into the new commit.
-1. If `SetIf()` fails, this means another commit is happening/has happened on the same branch. Can either retry (use backoff), and fail the request or let the caller know (fail the request) and let the user retry if needed.
+1. [_optional_] Once the commit has been persisted (metaranges and ranges
+   stored in object store, commit itself stored to KV using `Set()`),
+   attempt a "fast-path commit": perform another `SetIf()` that updates the
+   branch key/value pair again: replacing its commit ID with the new value,
+   and clearing `sealed_tokens`, as these have materialized into the new
+   commit.n
+1. If fast-path commit isn't used or its `SetIf()` fails, repeatedly attempt
+   a "full commit": Regardless of concurrent commits racing against this
+   one, the 2 `sealed_tokens` will overlap: a _suffix_ of the
+   to-be-committed `sealed_tokens` will be a _prefix_ of the current
+   `sealed_tokens` on the branch.
+   
+   The 2 edge cases are:
+   
+   * _identical_ `sealed_tokens`: no concurrent commits won a race against
+	 this commit.
+   * _nonoverlapping_ `sealed_tokens`: a concurrent **later** commit won a
+     race against this commit and committed all data that it intended to
+     commit.  This is an "empty commit" state, and can be handled as an
+     error or not depending on business logic.
 
-An important property here is delegating safety vs liveness to a single optimistic `SetIf()` operation: if a commit fails somewhere along the process, a subsequent commit would simply pick up where the failed one left off,
-adding the current staging_token into the set of changes to apply. In an environment where there aren't many concurrent commits on the same branch, and that commits mostly succeed - the size of `sealed_tokens` would be relatively small. As an optimization, compaction strategies could be added to merge tokens together, but this *might not be necessary*, at least not for use cases we're familiar with.
-This assumption must be tested - we should expose good metrics and log this information: how many `sealed_tokens` each branch holds. If we do see cases where this grows big, we might have to prioritize compaction.
+   In other cases a concurrent **earlier** commit won a race against this
+   commit and committed _some_ of its data.  But it is still safe to commit:
+   trim the prefix of the current `sealed_tokens` that is a suffix of the
+   to-be-committed `sealed_tokens`, and `SetIf` the branch to this new
+   record.  If this update fails, everything is correct and safe and we can
+   apply business logic: retry a new full commit multiple times or
+   immediately abort with an error.
 
-*Note: for branches that receive many frequent commits (i.e. streaming use cases) we can actually recognize contention: if we have a retry loop where we try to commit and fail because `SetIf()` returns an error, we can add some exponential backoff within the internal retry loop noted above. This could be helpful to help prevent "retry storms" where high contention results in even higher contention.*
+The "overlapping `sealed_tokens`" commit method gives lock freedom (if we
+count per-thread time as number of KV operations performed by the thread):
+at least one thread makes progress after it makes 3 KV operations.
+Furthermore, the number of retries that a thread can make is at most the
+number of concurrent preceding commits.
+
 
 ![Committer Flow](./committer_flow.png)
 

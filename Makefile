@@ -55,7 +55,7 @@ GIT_REF=$(shell git rev-parse --short HEAD --)
 REVISION=$(GIT_REF)$(DIRTY)
 export REVISION
 
-.PHONY: all clean nessie lint test gen help
+.PHONY: all clean esti lint test gen help
 all: build
 
 clean:
@@ -155,8 +155,8 @@ build: gen docs ## Download dependencies and build the default binary
 lint: go-install  ## Lint code
 	$(GOBINPATH)/golangci-lint run $(GOLANGCI_LINT_FLAGS)
 
-nessie: ## run nessie (system testing)
-	$(GOTEST) -v ./nessie --args --system-tests
+esti: ## run esti (system testing)
+	$(GOTEST) -v ./esti --args --system-tests
 
 test: test-go test-hadoopfs  ## Run tests for the project
 

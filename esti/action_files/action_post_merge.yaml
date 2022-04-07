@@ -1,0 +1,12 @@
+name: Test Post Merge
+description: a test action description
+on:
+  post-merge:
+    branches:
+      - main
+hooks:
+  - id: test_webhook
+    type: webhook
+    description: Check webhooks for post-merge works
+    properties:
+      url: "{{.URL}}/post-merge"

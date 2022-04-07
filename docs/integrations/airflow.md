@@ -9,30 +9,38 @@ redirect_from: ../using/airflow.html
 ---
 
 # Using lakeFS with Airflow
+
 [Apache Airflow](https://airflow.apache.org/) is a platform to programmatically author, schedule and monitor workflows.
 
-There are some aspects we will need to handle in order to run Airflow with lakeFS:
+There are several steps needed to run Airflow with lakeFS.
 
-## Creating the lakeFS connection
-For authenticating to the lakeFS server, you need to create a new [Airflow Connection](https://airflow.apache.org/docs/apache-airflow/stable/howto/connection.html)
-of type HTTP and pass it to your DAG. You can do that using the Airflow UI or the cli.
-Here’s an example Airflow command that does just that:
+## Create a lakeFS connection on Airflow
+
+To access the lakeFS server and authenticate with it, create a new [Airflow
+Connection](https://airflow.apache.org/docs/apache-airflow/stable/howto/connection.html)
+of type HTTP and add it to your DAG.  You can do that using the Airflow UI
+or the CLI.  Here’s an example Airflow command that does just that:
 
 ```bash
 airflow connections add conn_lakefs --conn-type=HTTP --conn-host=http://<LAKEFS_ENDPOINT> \
- --conn-extra='{"access_key_id":"<LAKEFS_ACCESS_KEY_ID>","secret_access_key":"<LAKEFS_SECRET_ACCESS_KEY>"}'
+    --conn-extra='{"access_key_id":"<LAKEFS_ACCESS_KEY_ID>","secret_access_key":"<LAKEFS_SECRET_ACCESS_KEY>"}'
 ```
 
-## Installing lakeFS Airflow package
-Installing the package using `pip`:
+## Install the lakeFS Airflow package
+
+You can use `pip` to install [the package](https://pypi.org/project/airflow-provider-lakefs/)
 
 ```bash
 pip install airflow-provider-lakefs
 ```
 
-## Using the package
-The package exposes several operations for interacting with a lakeFS server:
-1. `CreateBranchOperator` creates a new lakeFS branch from the source branch (defaults to main).
+## Use the package
+
+### Operators
+
+The package exposes several operations to interact with a lakeFS server:
+
+1. `CreateBranchOperator` creates a new lakeFS branch from the source branch (`main` by default).
 
    ```python
    task_create_branch = CreateBranchOperator(
@@ -64,8 +72,11 @@ The package exposes several operations for interacting with a lakeFS server:
      metadata={'committer': 'airflow-operator'}
    )
    ```
-   
-Sensors are also available if you want to synchronize a running DAG with external operations:
+
+### Sensors
+
+Sensors are also available that allow synchronizing a running DAG with external operations:
+
 1. `CommitSensor` waits until a commit has been applied to the branch
    
    ```python
@@ -75,7 +86,7 @@ Sensors are also available if you want to synchronize a running DAG with externa
        task_id='sense_commit'
    )
    ```
-1. `FileSensor` waits until a given file is present in a branch.
+1. `FileSensor` waits until a given file is present on a branch.
 
    ```python
    task_sense_file = FileSensor(
@@ -86,12 +97,14 @@ Sensors are also available if you want to synchronize a running DAG with externa
    )
    ```
 
-For a DAG example that uses all the above, check out the [example DAG](https://github.com/treeverse/airflow-provider-lakeFS/blob/main/lakefs_provider/example_dags/lakefs-dag.py)
-in the airflow-provider-lakeFS repository.
+### Example
 
+This [example DAG](https://github.com/treeverse/airflow-provider-lakeFS/blob/main/lakefs_provider/example_dags/lakefs-dag.py)
+in the airflow-provider-lakeFS repository shows how to use all of these.
 
 ### Performing other operations
-To perform other operations that are not yet supported by the package, you can use:
+
+Sometimes an operator might not yet be supported by airflow-provider-lakeFS. You can directly access lakeFS by using:
 
 - SimpleHttpOperator to send [API requests](../reference/api.md) to lakeFS. 
 - BashOperator with [lakeCTL](../quickstart/first_commit.md) commands.

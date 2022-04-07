@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"strconv"
 	"testing"
 
 	"github.com/go-test/deep"
@@ -23,6 +24,7 @@ type Hooks struct {
 	SourceRef        graveler.Ref
 	CommitID         graveler.CommitID
 	Commit           graveler.Commit
+	TagID            graveler.TagID
 }
 
 func (h *Hooks) PreCommitHook(_ context.Context, record graveler.HookRecord) error {
@@ -62,6 +64,72 @@ func (h *Hooks) PostMergeHook(_ context.Context, record graveler.HookRecord) err
 	h.CommitID = record.CommitID
 	h.Commit = record.Commit
 	return h.Err
+}
+
+func (h *Hooks) PreCreateTagHook(_ context.Context, record graveler.HookRecord) error {
+	h.Called = true
+	h.StorageNamespace = record.StorageNamespace
+	h.RepositoryID = record.RepositoryID
+	h.CommitID = record.CommitID
+	h.TagID = record.TagID
+	return h.Err
+}
+
+func (h *Hooks) PostCreateTagHook(_ context.Context, record graveler.HookRecord) {
+	h.Called = true
+	h.StorageNamespace = record.StorageNamespace
+	h.RepositoryID = record.RepositoryID
+	h.CommitID = record.CommitID
+	h.TagID = record.TagID
+}
+
+func (h *Hooks) PreDeleteTagHook(_ context.Context, record graveler.HookRecord) error {
+	h.Called = true
+	h.StorageNamespace = record.StorageNamespace
+	h.RepositoryID = record.RepositoryID
+	h.TagID = record.TagID
+	return h.Err
+}
+
+func (h *Hooks) PostDeleteTagHook(_ context.Context, record graveler.HookRecord) {
+	h.Called = true
+	h.StorageNamespace = record.StorageNamespace
+	h.RepositoryID = record.RepositoryID
+	h.TagID = record.TagID
+}
+
+func (h *Hooks) PreCreateBranchHook(_ context.Context, record graveler.HookRecord) error {
+	h.Called = true
+	h.StorageNamespace = record.StorageNamespace
+	h.RepositoryID = record.RepositoryID
+	h.BranchID = record.BranchID
+	h.CommitID = record.CommitID
+	h.SourceRef = record.SourceRef
+	return h.Err
+}
+
+func (h *Hooks) PostCreateBranchHook(_ context.Context, record graveler.HookRecord) {
+	h.Called = true
+	h.StorageNamespace = record.StorageNamespace
+	h.RepositoryID = record.RepositoryID
+	h.BranchID = record.BranchID
+	h.CommitID = record.CommitID
+	h.SourceRef = record.SourceRef
+}
+
+func (h *Hooks) PreDeleteBranchHook(_ context.Context, record graveler.HookRecord) error {
+	h.Called = true
+	h.StorageNamespace = record.StorageNamespace
+	h.RepositoryID = record.RepositoryID
+	h.BranchID = record.BranchID
+	return h.Err
+}
+
+func (h *Hooks) PostDeleteBranchHook(_ context.Context, record graveler.HookRecord) {
+	h.Called = true
+	h.StorageNamespace = record.StorageNamespace
+	h.RepositoryID = record.RepositoryID
+	h.BranchID = record.BranchID
 }
 
 func TestGraveler_List(t *testing.T) {
@@ -294,7 +362,7 @@ func TestGraveler_CreateBranch(t *testing.T) {
 	gravel := graveler.NewGraveler(branchLocker, nil,
 		nil,
 		&testutil.RefsFake{
-			Err:      graveler.ErrNotFound,
+			Err:      graveler.ErrBranchNotFound,
 			CommitID: "8888888798e3aeface8e62d1c7072a965314b4",
 		}, nil, nil,
 	)
@@ -1229,6 +1297,390 @@ func TestGraveler_Delete(t *testing.T) {
 			// validate removed from staging
 			if !bytes.Equal(tt.fields.StagingManager.LastRemovedKey, tt.expectedRemovedKey) {
 				t.Errorf("unexpected removed key got = %s, expected = %s ", tt.fields.StagingManager.LastRemovedKey, tt.expectedRemovedKey)
+			}
+		})
+	}
+}
+
+func TestGraveler_CreateTag(t *testing.T) {
+	// prepare graveler
+	conn, _ := tu.GetDB(t, databaseURI)
+	branchLocker := ref.NewBranchLocker(conn)
+	const repositoryID = "repoID"
+	const commitID = graveler.CommitID("commitID")
+	const tagID = graveler.TagID("tagID")
+	committedManager := &testutil.CommittedFake{}
+	stagingManager := &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(nil)}
+	refManager := &testutil.RefsFake{
+		Err: graveler.ErrTagNotFound,
+	}
+	// tests
+	errSomethingBad := errors.New("first error")
+	tests := []struct {
+		name string
+		err  error
+	}{
+		{
+			name: "Successful",
+			err:  nil,
+		},
+		{
+			name: "Tag exists",
+			err:  graveler.ErrTagAlreadyExists,
+		},
+		{
+			name: "Other error on get tag",
+			err:  errSomethingBad,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// setup
+			ctx := context.Background()
+
+			if tt.err != nil {
+				refManager.Err = tt.err
+			}
+			g := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager, nil, testutil.NewProtectedBranchesManagerFake())
+			err := g.CreateTag(ctx, repositoryID, tagID, commitID)
+
+			// verify we got an error
+			if !errors.Is(err, tt.err) {
+				t.Fatalf("Create tag err=%v, expected=%v", err, tt.err)
+			}
+		})
+	}
+}
+
+func TestGraveler_PreCreateTagHook(t *testing.T) {
+	// prepare graveler
+	conn, _ := tu.GetDB(t, databaseURI)
+	branchLocker := ref.NewBranchLocker(conn)
+	const repositoryID = "repoID"
+	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
+	const expectedCommitID = graveler.CommitID("expectedCommitID")
+	const expectedTagID = graveler.TagID("expectedTagID")
+	committedManager := &testutil.CommittedFake{MetaRangeID: expectedRangeID}
+	stagingManager := &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(nil)}
+	refManager := &testutil.RefsFake{
+		CommitID: expectedCommitID,
+		Branch:   &graveler.Branch{CommitID: expectedCommitID},
+		Err:      graveler.ErrTagNotFound,
+		Commits: map[graveler.CommitID]*graveler.Commit{
+			expectedCommitID: {MetaRangeID: expectedRangeID},
+		},
+	}
+	// tests
+	errSomethingBad := errors.New("first error")
+	tests := []struct {
+		name string
+		hook bool
+		err  error
+	}{
+		{
+			name: "without hook",
+			hook: false,
+			err:  nil,
+		},
+		{
+			name: "hook no error",
+			hook: true,
+			err:  nil,
+		},
+		{
+			name: "hook error",
+			hook: true,
+			err:  errSomethingBad,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// setup
+			ctx := context.Background()
+			g := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager, nil, testutil.NewProtectedBranchesManagerFake())
+			h := &Hooks{Err: tt.err}
+			if tt.hook {
+				g.SetHooksHandler(h)
+			}
+
+			err := g.CreateTag(ctx, repositoryID, expectedTagID, expectedCommitID)
+
+			// verify we got an error
+			if !errors.Is(err, tt.err) {
+				t.Fatalf("Create tag err=%v, expected=%v", err, tt.err)
+			}
+			var hookErr *graveler.HookAbortError
+			if err != nil && !errors.As(err, &hookErr) {
+				t.Fatalf("Create tag err=%v, expected HookAbortError", err)
+			}
+
+			// verify that calls made until the first error
+			if tt.hook != h.Called {
+				t.Fatalf("Pre-create tag hook h.Called=%t, expected=%t", h.Called, tt.hook)
+			}
+			if !h.Called {
+				return
+			}
+			if h.RepositoryID != repositoryID {
+				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryID, repositoryID)
+			}
+			if h.CommitID != expectedCommitID {
+				t.Errorf("Hook commit ID '%s', expected '%s'", h.BranchID, expectedCommitID)
+			}
+			if h.TagID != expectedTagID {
+				t.Errorf("Hook tag ID '%s', expected '%s'", h.TagID, expectedTagID)
+			}
+		})
+	}
+}
+
+func TestGraveler_PreDeleteTagHook(t *testing.T) {
+	// prepare graveler
+	conn, _ := tu.GetDB(t, databaseURI)
+	branchLocker := ref.NewBranchLocker(conn)
+	const repositoryID = "repoID"
+	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
+	const expectedCommitID = graveler.CommitID("expectedCommitID")
+	const expectedTagID = graveler.TagID("expectedTagID")
+	committedManager := &testutil.CommittedFake{MetaRangeID: expectedRangeID}
+	stagingManager := &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(nil)}
+	refManager := &testutil.RefsFake{
+		CommitID: expectedCommitID,
+		Branch:   &graveler.Branch{CommitID: expectedCommitID},
+		Commits: map[graveler.CommitID]*graveler.Commit{
+			expectedCommitID: {MetaRangeID: expectedRangeID},
+		},
+	}
+	// tests
+	errSomethingBad := errors.New("first error")
+	tests := []struct {
+		name string
+		hook bool
+		err  error
+	}{
+		{
+			name: "without hook",
+			hook: false,
+			err:  nil,
+		},
+		{
+			name: "hook no error",
+			hook: true,
+			err:  nil,
+		},
+		{
+			name: "hook error",
+			hook: true,
+			err:  errSomethingBad,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// setup
+			ctx := context.Background()
+			expected := expectedCommitID
+			refManager.TagCommitID = &expected
+			g := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager, nil, testutil.NewProtectedBranchesManagerFake())
+			h := &Hooks{Err: tt.err}
+			if tt.hook {
+				g.SetHooksHandler(h)
+			}
+
+			err := g.DeleteTag(ctx, repositoryID, expectedTagID)
+
+			// verify we got an error
+			if !errors.Is(err, tt.err) {
+				t.Fatalf("Delete tag err=%v, expected=%v", err, tt.err)
+			}
+			var hookErr *graveler.HookAbortError
+			if err != nil && !errors.As(err, &hookErr) {
+				t.Fatalf("Delete Tag err=%v, expected HookAbortError", err)
+			}
+
+			// verify that calls made until the first error
+			if tt.hook != h.Called {
+				t.Fatalf("Pre delete Tag hook h.Called=%t, expected=%t", h.Called, tt.hook)
+			}
+			if !h.Called {
+				return
+			}
+			if h.RepositoryID != repositoryID {
+				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryID, repositoryID)
+			}
+			if h.TagID != expectedTagID {
+				t.Errorf("Hook tag ID '%s', expected '%s'", h.TagID, expectedTagID)
+			}
+		})
+	}
+}
+
+func TestGraveler_PreCreateBranchHook(t *testing.T) {
+	// prepare graveler
+	conn, _ := tu.GetDB(t, databaseURI)
+	branchLocker := ref.NewBranchLocker(conn)
+	const repositoryID = "repoID"
+	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
+	const sourceCommitID = graveler.CommitID("sourceCommitID")
+	const sourceBranchID = graveler.CommitID("sourceBranchID")
+	const newBranchPrefix = "newBranch-"
+	committedManager := &testutil.CommittedFake{MetaRangeID: expectedRangeID}
+	stagingManager := &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(nil)}
+	refManager := &testutil.RefsFake{
+		Refs: map[graveler.Ref]*graveler.ResolvedRef{graveler.Ref(sourceBranchID): {
+			Type:                   graveler.ReferenceTypeBranch,
+			BranchID:               graveler.BranchID(sourceBranchID),
+			ResolvedBranchModifier: 0,
+			CommitID:               sourceCommitID,
+			StagingToken:           "",
+		}},
+	}
+	// tests
+	errSomethingBad := errors.New("first error")
+	tests := []struct {
+		name string
+		hook bool
+		err  error
+	}{
+		{
+			name: "without hook",
+			hook: false,
+			err:  nil,
+		},
+		{
+			name: "hook no error",
+			hook: true,
+			err:  nil,
+		},
+		{
+			name: "hook error",
+			hook: true,
+			err:  errSomethingBad,
+		},
+	}
+	for i, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// setup
+			ctx := context.Background()
+			g := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager, nil, testutil.NewProtectedBranchesManagerFake())
+			h := &Hooks{Err: tt.err}
+			if tt.hook {
+				g.SetHooksHandler(h)
+			}
+
+			// WA for CreateBranch fake logic
+			refManager.Branch = nil
+			refManager.Err = graveler.ErrBranchNotFound
+
+			newBranch := newBranchPrefix + strconv.Itoa(i)
+			_, err := g.CreateBranch(ctx, repositoryID, graveler.BranchID(newBranch), graveler.Ref(sourceBranchID))
+
+			// verify we got an error
+			if !errors.Is(err, tt.err) {
+				t.Fatalf("Create branch err=%v, expected=%v", err, tt.err)
+			}
+			var hookErr *graveler.HookAbortError
+			if err != nil && !errors.As(err, &hookErr) {
+				t.Fatalf("Create branch err=%v, expected HookAbortError", err)
+			}
+
+			// verify that calls made until the first error
+			if tt.hook != h.Called {
+				t.Fatalf("Pre-create branch hook h.Called=%t, expected=%t", h.Called, tt.hook)
+			}
+			if !h.Called {
+				return
+			}
+			if h.RepositoryID != repositoryID {
+				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryID, repositoryID)
+			}
+			if h.CommitID != sourceCommitID {
+				t.Errorf("Hook commit ID '%s', expected '%s'", h.BranchID, sourceCommitID)
+			}
+			if h.BranchID != graveler.BranchID(newBranch) {
+				t.Errorf("Hook branch ID '%s', expected '%s'", h.BranchID, newBranch)
+			}
+		})
+	}
+}
+
+func TestGraveler_PreDeleteBranchHook(t *testing.T) {
+	// prepare graveler
+	conn, _ := tu.GetDB(t, databaseURI)
+	branchLocker := ref.NewBranchLocker(conn)
+	const repositoryID = "repoID"
+	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
+	const sourceCommitID = graveler.CommitID("sourceCommitID")
+	const sourceBranchID = graveler.CommitID("sourceBranchID")
+	committedManager := &testutil.CommittedFake{MetaRangeID: expectedRangeID}
+	values := testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: nil, Value: nil}})
+	stagingManager := &testutil.StagingFake{ValueIterator: values}
+	refManager := &testutil.RefsFake{
+		Refs: map[graveler.Ref]*graveler.ResolvedRef{graveler.Ref(sourceBranchID): {
+			Type:                   graveler.ReferenceTypeBranch,
+			BranchID:               graveler.BranchID(sourceBranchID),
+			ResolvedBranchModifier: 0,
+			CommitID:               sourceCommitID,
+			StagingToken:           "token",
+		}},
+		Branch:       &graveler.Branch{CommitID: sourceBranchID, StagingToken: "token"},
+		StagingToken: "token",
+	}
+	// tests
+	errSomethingBad := errors.New("first error")
+	tests := []struct {
+		name string
+		hook bool
+		err  error
+	}{
+		{
+			name: "without hook",
+			hook: false,
+			err:  nil,
+		},
+		{
+			name: "hook no error",
+			hook: true,
+			err:  nil,
+		},
+		{
+			name: "hook error",
+			hook: true,
+			err:  errSomethingBad,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// setup
+			ctx := context.Background()
+			g := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager, nil, testutil.NewProtectedBranchesManagerFake())
+			h := &Hooks{Err: tt.err}
+			if tt.hook {
+				g.SetHooksHandler(h)
+			}
+
+			err := g.DeleteBranch(ctx, repositoryID, graveler.BranchID(sourceBranchID))
+
+			// verify we got an error
+			if !errors.Is(err, tt.err) {
+				t.Fatalf("Delete branch err=%v, expected=%v", err, tt.err)
+			}
+			var hookErr *graveler.HookAbortError
+			if err != nil && !errors.As(err, &hookErr) {
+				t.Fatalf("Delete branch err=%v, expected HookAbortError", err)
+			}
+
+			// verify that calls made until the first error
+			if tt.hook != h.Called {
+				t.Fatalf("Pre-delete branch hook h.Called=%t, expected=%t", h.Called, tt.hook)
+			}
+			if !h.Called {
+				return
+			}
+			if h.RepositoryID != repositoryID {
+				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryID, repositoryID)
+			}
+			if h.BranchID != graveler.BranchID(sourceBranchID) {
+				t.Errorf("Hook branch ID '%s', expected '%s'", h.BranchID, sourceBranchID)
 			}
 		})
 	}
