@@ -32,7 +32,7 @@ initialize_env() {
   local test_id=$2
   run_lakectl branch create "lakefs://${repo}/a" -s "lakefs://${repo}/main"
   run_lakectl fs upload "lakefs://${repo}/a/file${test_id}" -s /local/gc-tests/sample_file
-  local existing_ref=$(run_lakectl commit "lakefs://${repo}/a" -m "uploaded file${test_id}" --epoch-time-seconds 0 | grep "ID: " | awk '{ print $2 }')
+  local existing_ref=$(run_lakectl commit "lakefs://${repo}/a" -m "uploaded file ${test_id}" --epoch-time-seconds 0 | grep "ID: " | awk '{ print $2 }')
   run_lakectl branch create "lakefs://${repo}/b" -s "lakefs://${repo}/a"
   echo "EXISTING_REF: ${existing_ref}"
 }
@@ -47,7 +47,9 @@ delete_and_commit() {
     local days_ago=$(echo ${branch_props} | jq -r '.delete_commit_days_ago')
     if [[ ${days_ago} -gt -1 ]]
     then
+      run_lakectl fs ls "lakefs://${repo}/${branch_name}"
       run_lakectl fs rm "lakefs://${repo}/${branch_name}/file${test_id}"
+      run_lakectl fs ls "lakefs://${repo}/${branch_name}"
       epoch_commit_date_in_seconds=$(( ${current_epoch_in_seconds} - ${day_in_seconds} * ${days_ago} ))
       run_lakectl commit "lakefs://${repo}/${branch_name}" --allow-empty-message --epoch-time-seconds ${epoch_commit_date_in_seconds}
     else   # This means that the branch should be deleted
