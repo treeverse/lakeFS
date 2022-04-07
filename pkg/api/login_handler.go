@@ -23,7 +23,7 @@ const (
 	JWTCookieName = "access_token"
 
 	LoginAudience         = "login"
-	ResetPasswordAudience = "password_reset"
+	ResetPasswordAudience = "reset_password"
 )
 
 func generateJWT(claims *jwt.StandardClaims, secret []byte) (string, error) {
