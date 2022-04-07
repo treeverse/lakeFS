@@ -1,15 +1,20 @@
 package auth
 
+//go:generate oapi-codegen -package auth -generate "types,client,spec"  -o client.gen.go api/swagger.yml
+
 import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"reflect"
 	"strings"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
+	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/georgysavva/scany/pgxscan"
+	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/keys"
 	"github.com/treeverse/lakefs/pkg/auth/model"
@@ -958,4 +963,626 @@ func (s *DBAuthService) Authorize(ctx context.Context, req *AuthorizationRequest
 
 	// we're allowed!
 	return &AuthorizationResponse{Allowed: true}, nil
+}
+
+type APIAuthService struct {
+	apiClient   *ClientWithResponses
+	secretStore crypt.SecretStore
+	cache       Cache
+}
+
+func (a *APIAuthService) SecretStore() crypt.SecretStore {
+	return a.secretStore
+}
+
+func (a *APIAuthService) CreateUser(ctx context.Context, user *model.User) (int, error) {
+	resp, err := a.apiClient.CreateUserWithResponse(ctx, CreateUserJSONRequestBody{
+		Username: user.Username,
+	})
+	if err != nil {
+		return InvalidUserID, err
+	}
+	if err := expectedStatusCode(resp, 201); err != nil {
+		return InvalidUserID, err
+	}
+
+	return int(resp.JSON201.Id), nil
+}
+
+func (a *APIAuthService) DeleteUser(ctx context.Context, username string) error {
+	u, err := a.GetUser(ctx, username)
+	if err != nil {
+		return err
+	}
+	resp, err := a.apiClient.DeleteUserWithResponse(ctx, u.ID)
+	if err != nil {
+		return err
+	}
+	return expectedStatusCode(resp, 204)
+}
+
+func (a *APIAuthService) GetUserByID(ctx context.Context, userID int) (*model.User, error) {
+	return a.cache.GetUserByID(userID, func() (*model.User, error) {
+		resp, err := a.apiClient.GetUserByIdWithResponse(ctx, userID)
+		if err != nil {
+			return nil, err
+		}
+		// TODO(Guys): consider  support 404 in this case
+
+		if err := expectedStatusCode(resp, 200); err != nil {
+			return nil, err
+		}
+		u := resp.JSON200
+		return &model.User{
+			ID:                int(u.Id),
+			CreatedAt:         time.Unix(u.CreationDate, 0),
+			Username:          u.Name,
+			FriendlyName:      u.FriendlyName,
+			Email:             u.Email,
+			EncryptedPassword: nil,
+			Source:            "",
+		}, nil
+	})
+}
+
+func (a *APIAuthService) GetUser(ctx context.Context, username string) (*model.User, error) {
+	return a.cache.GetUser(username, func() (*model.User, error) {
+		resp, err := a.apiClient.GetUserByNameWithResponse(ctx, &GetUserByNameParams{UserName: username})
+		if err != nil {
+			return nil, err
+		}
+		if err := expectedStatusCode(resp, 200); err != nil {
+			return nil, err
+		}
+		u := resp.JSON200
+		return &model.User{
+			ID:                int(u.Id),
+			CreatedAt:         time.Unix(u.CreationDate, 0),
+			Username:          u.Name,
+			FriendlyName:      u.FriendlyName,
+			Email:             u.Email,
+			EncryptedPassword: nil,
+			Source:            "",
+		}, nil
+	})
+}
+
+func (a *APIAuthService) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
+	return a.cache.GetUser(email, func() (*model.User, error) {
+		resp, err := a.apiClient.GetUserByEmailWithResponse(ctx, &GetUserByEmailParams{Email: email})
+		if err != nil {
+			return nil, err
+		}
+		if err := expectedStatusCode(resp, 200); err != nil {
+			return nil, err
+		}
+		u := resp.JSON200
+		user := &model.User{
+			ID:           int(u.Id),
+			CreatedAt:    time.Unix(u.CreationDate, 0),
+			Username:     u.Name,
+			FriendlyName: u.FriendlyName,
+			Email:        u.Email,
+			Source:       getNonRequiredString(u.Source),
+		}
+		if u.EncryptedPassword != nil {
+			user.EncryptedPassword = *u.EncryptedPassword
+		}
+		return user, err
+	})
+}
+
+// getNonRequiredString returns empty string in case of nil
+func getNonRequiredString(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
+
+func toPagination(paginator Pagination) *model.Paginator {
+	// TODO(Guys): validate this is really whats needed
+	return &model.Paginator{
+		Amount:        paginator.Results,
+		NextPageToken: paginator.NextOffset,
+	}
+}
+func (a *APIAuthService) ListUsers(ctx context.Context, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
+	paginationPrefix := PaginationPrefix(params.Prefix)
+	paginationAfter := PaginationAfter(params.After)
+	paginationAmount := PaginationAmount(params.Amount)
+	resp, err := a.apiClient.ListUsersWithResponse(ctx, &ListUsersParams{
+		Prefix: &paginationPrefix,
+		After:  &paginationAfter,
+		Amount: &paginationAmount,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	if err := expectedStatusCode(resp, 200); err != nil {
+		return nil, nil, err
+	}
+	pagination := resp.JSON200.Pagination
+	results := resp.JSON200.Results
+	users := make([]*model.User, len(results))
+	for i, r := range results {
+		users[i] = &model.User{
+			ID:                0,
+			CreatedAt:         time.Unix(r.CreationDate, 0),
+			Username:          r.Name,
+			FriendlyName:      r.FriendlyName,
+			Email:             r.Email,
+			EncryptedPassword: nil,
+			Source:            getNonRequiredString(r.Source),
+		}
+	}
+	return users, toPagination(pagination), nil
+}
+
+func (a *APIAuthService) CreateGroup(ctx context.Context, group *model.Group) error {
+	resp, err := a.apiClient.CreateGroupWithResponse(ctx, CreateGroupJSONRequestBody{
+		Id: group.DisplayName,
+	})
+	if err != nil {
+		return err
+	}
+	return expectedStatusCode(resp, 201)
+}
+
+var ErrUnexpectedStatusCode = errors.New("unexpected status code")
+
+// TODO(Guys): handle this better, we should use helpers.ResponseAsError but it causes import cycle
+// expectedStatusCode returns ErrUnexpectedStatusCode if the response status code is not as expected
+func expectedStatusCode(resp openapi3filter.StatusCoder, expectedStatusCode int) error {
+	if resp.StatusCode() != expectedStatusCode {
+		return fmt.Errorf("%w - got %d expected %d", ErrUnexpectedStatusCode, resp.StatusCode(), expectedStatusCode)
+	}
+	return nil
+}
+
+func paginationPrefix(prefix string) *PaginationPrefix {
+	p := PaginationPrefix(prefix)
+	return &p
+}
+func paginationAfter(after string) *PaginationAfter {
+	p := PaginationAfter(after)
+	return &p
+}
+func paginationAmount(amount int) *PaginationAmount {
+	p := PaginationAmount(amount)
+	return &p
+}
+
+func (a *APIAuthService) DeleteGroup(ctx context.Context, groupDisplayName string) error {
+	resp, err := a.apiClient.DeleteGroupWithResponse(ctx, groupDisplayName)
+	if err != nil {
+		return err
+	}
+	return expectedStatusCode(resp, 204)
+}
+
+func (a *APIAuthService) GetGroup(ctx context.Context, groupDisplayName string) (*model.Group, error) {
+	resp, err := a.apiClient.GetGroupWithResponse(ctx, groupDisplayName)
+	if err != nil {
+		return nil, err
+	}
+	if err := expectedStatusCode(resp, 200); err != nil {
+		return nil, err
+	}
+	return &model.Group{
+		CreatedAt:   time.Unix(resp.JSON200.CreationDate, 0),
+		DisplayName: resp.JSON200.Name,
+	}, nil
+}
+
+func (a *APIAuthService) ListGroups(ctx context.Context, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error) {
+	resp, err := a.apiClient.ListGroupsWithResponse(ctx, &ListGroupsParams{
+		Prefix: paginationPrefix(params.Prefix),
+		After:  paginationAfter(params.After),
+		Amount: paginationAmount(params.Amount),
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	if err := expectedStatusCode(resp, 200); err != nil {
+		return nil, nil, err
+	}
+	groups := make([]*model.Group, len(resp.JSON200.Results))
+
+	for i, r := range resp.JSON200.Results {
+		groups[i] = &model.Group{
+			ID:          0,
+			CreatedAt:   time.Unix(r.CreationDate, 0),
+			DisplayName: r.Name,
+		}
+	}
+	return groups, toPagination(resp.JSON200.Pagination), nil
+}
+
+func (a *APIAuthService) AddUserToGroup(ctx context.Context, username, groupDisplayName string) error {
+	resp, err := a.apiClient.AddGroupMembershipWithResponse(ctx, groupDisplayName, username)
+	if err != nil {
+		return err
+	}
+	return expectedStatusCode(resp, 201)
+}
+
+func (a *APIAuthService) RemoveUserFromGroup(ctx context.Context, username, groupDisplayName string) error {
+	resp, err := a.apiClient.DeleteGroupMembershipWithResponse(ctx, username, groupDisplayName)
+	if err != nil {
+		return err
+	}
+	return expectedStatusCode(resp, 204)
+}
+
+func (a *APIAuthService) ListUserGroups(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error) {
+	resp, err := a.apiClient.ListUserGroupsWithResponse(ctx, username, &ListUserGroupsParams{
+		Prefix: paginationPrefix(params.Prefix),
+		After:  paginationAfter(params.After),
+		Amount: paginationAmount(params.Amount),
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	if err := expectedStatusCode(resp, 200); err != nil {
+		return nil, nil, err
+	}
+	userGroups := make([]*model.Group, len(resp.JSON200.Results))
+
+	for i, r := range resp.JSON200.Results {
+		userGroups[i] = &model.Group{
+			ID:          0,
+			CreatedAt:   time.Unix(r.CreationDate, 0),
+			DisplayName: r.Name,
+		}
+	}
+	return userGroups, toPagination(resp.JSON200.Pagination), nil
+}
+
+func (a *APIAuthService) ListGroupUsers(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
+	resp, err := a.apiClient.ListGroupMembersWithResponse(ctx, groupDisplayName, &ListGroupMembersParams{
+		Prefix: paginationPrefix(params.Prefix),
+		After:  paginationAfter(params.After),
+		Amount: paginationAmount(params.Amount),
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	if err := expectedStatusCode(resp, 200); err != nil {
+		return nil, nil, err
+	}
+	members := make([]*model.User, len(resp.JSON200.Results))
+
+	for i, r := range resp.JSON200.Results {
+		members[i] = &model.User{
+			ID:           0,
+			CreatedAt:    time.Unix(r.CreationDate, 0),
+			Username:     r.Name,
+			FriendlyName: r.FriendlyName,
+			Email:        r.Email,
+		}
+	}
+	return members, toPagination(resp.JSON200.Pagination), nil
+}
+
+func (a *APIAuthService) WritePolicy(ctx context.Context, policy *model.Policy) error {
+	stmts := make([]Statement, 0, len(policy.Statement))
+	for i, s := range policy.Statement {
+		stmts[i] = Statement{
+			Action:   s.Action,
+			Effect:   s.Effect,
+			Resource: s.Resource,
+		}
+	}
+	createdAt := policy.CreatedAt.Unix()
+
+	resp, err := a.apiClient.CreatePolicyWithResponse(ctx, CreatePolicyJSONRequestBody{
+		CreationDate: &createdAt,
+		Name:         policy.DisplayName,
+		Statement:    stmts,
+	})
+	if err != nil {
+		return err
+	}
+	return expectedStatusCode(resp, 201)
+}
+
+func serializePolicyToModalPolicy(p Policy) *model.Policy {
+	stmts := make(model.Statements, len(p.Statement))
+	for i, apiStatement := range p.Statement {
+		stmts[i] = model.Statement{
+			Effect:   apiStatement.Effect,
+			Action:   apiStatement.Action,
+			Resource: apiStatement.Resource,
+		}
+	}
+	var creationTime time.Time
+	if p.CreationDate != nil {
+		creationTime = time.Unix(*p.CreationDate, 0)
+	}
+	return &model.Policy{
+		ID:          0,
+		CreatedAt:   creationTime,
+		DisplayName: p.Name,
+		Statement:   stmts,
+	}
+}
+
+func (a *APIAuthService) GetPolicy(ctx context.Context, policyDisplayName string) (*model.Policy, error) {
+	resp, err := a.apiClient.GetPolicyWithResponse(ctx, policyDisplayName)
+	if err != nil {
+		return nil, err
+	}
+	if err := expectedStatusCode(resp, 200); err != nil {
+		return nil, err
+	}
+
+	return serializePolicyToModalPolicy(*resp.JSON200), nil
+}
+
+func (a *APIAuthService) DeletePolicy(ctx context.Context, policyDisplayName string) error {
+	resp, err := a.apiClient.DeletePolicyWithResponse(ctx, policyDisplayName)
+	if err != nil {
+		return err
+	}
+	return expectedStatusCode(resp, 204)
+}
+
+func (a *APIAuthService) ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+	resp, err := a.apiClient.ListPoliciesWithResponse(ctx, &ListPoliciesParams{
+		Prefix: paginationPrefix(params.Prefix),
+		After:  paginationAfter(params.After),
+		Amount: paginationAmount(params.Amount),
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	if err := expectedStatusCode(resp, 200); err != nil {
+		return nil, nil, err
+	}
+	policies := make([]*model.Policy, len(resp.JSON200.Results))
+
+	for i, r := range resp.JSON200.Results {
+		policies[i] = serializePolicyToModalPolicy(r)
+	}
+	return policies, toPagination(resp.JSON200.Pagination), nil
+}
+
+func (a *APIAuthService) CreateCredentials(ctx context.Context, username string) (*model.Credential, error) {
+	resp, err := a.apiClient.CreateCredentialsWithResponse(ctx, username)
+	if err != nil {
+		return nil, err
+	}
+	if err := expectedStatusCode(resp, 201); err != nil {
+		return nil, err
+	}
+	credentials := resp.JSON201
+	return &model.Credential{
+		UserID:          0,
+		AccessKeyID:     credentials.AccessKeyId,
+		SecretAccessKey: credentials.SecretAccessKey,
+		IssuedDate:      time.Unix(credentials.CreationDate, 0),
+	}, err
+}
+
+func (a *APIAuthService) AddCredentials(ctx context.Context, username, accessKeyID, secretAccessKey string) (*model.Credential, error) {
+	// TODO(Guys): decide if we want to support this - We do! for ldap, we could not support in globalIAM
+	panic("implement me")
+}
+
+func (a *APIAuthService) DeleteCredentials(ctx context.Context, username, accessKeyID string) error {
+	resp, err := a.apiClient.DeleteCredentialsWithResponse(ctx, username, accessKeyID)
+	if err != nil {
+		return err
+	}
+	return expectedStatusCode(resp, 204)
+}
+
+func (a *APIAuthService) GetCredentialsForUser(ctx context.Context, username, accessKeyID string) (*model.Credential, error) {
+	resp, err := a.apiClient.GetCredentialsForUserWithResponse(ctx, username, accessKeyID)
+	if err != nil {
+		return nil, err
+	}
+	if err := expectedStatusCode(resp, 200); err != nil {
+		return nil, err
+	}
+	credentials := resp.JSON200
+	return &model.Credential{
+		AccessKeyID: credentials.AccessKeyId,
+		IssuedDate:  time.Unix(credentials.CreationDate, 0),
+		UserID:      0,
+	}, nil
+}
+
+func (a *APIAuthService) GetCredentials(ctx context.Context, accessKeyID string) (*model.Credential, error) {
+	return a.cache.GetCredential(accessKeyID, func() (*model.Credential, error) {
+		resp, err := a.apiClient.GetCredentialsWithResponse(ctx, accessKeyID)
+		if err != nil {
+			return nil, err
+		}
+		if err := expectedStatusCode(resp, 200); err != nil {
+			return nil, err
+		}
+		credentials := resp.JSON200
+		return &model.Credential{
+			AccessKeyID:                   credentials.AccessKeyId,
+			SecretAccessKey:               credentials.SecretAccessKey,
+			SecretAccessKeyEncryptedBytes: nil,
+			IssuedDate:                    time.Unix(credentials.CreationDate, 0),
+			UserID:                        credentials.UserId,
+		}, nil
+	})
+}
+
+func (a *APIAuthService) ListUserCredentials(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Credential, *model.Paginator, error) {
+	resp, err := a.apiClient.ListUserCredentialsWithResponse(ctx, username, &ListUserCredentialsParams{
+		Prefix: paginationPrefix(params.Prefix),
+		After:  paginationAfter(params.After),
+		Amount: paginationAmount(params.Amount),
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	if err := expectedStatusCode(resp, 200); err != nil {
+		return nil, nil, err
+	}
+
+	credentials := make([]*model.Credential, len(resp.JSON200.Results))
+
+	for i, r := range resp.JSON200.Results {
+		credentials[i] = &model.Credential{
+			AccessKeyID: r.AccessKeyId,
+			IssuedDate:  time.Unix(r.CreationDate, 0),
+			UserID:      0,
+		}
+	}
+	return credentials, toPagination(resp.JSON200.Pagination), nil
+}
+
+func (a *APIAuthService) AttachPolicyToUser(ctx context.Context, policyDisplayName, username string) error {
+	resp, err := a.apiClient.AttachPolicyToUserWithResponse(ctx, username, policyDisplayName)
+	if err != nil {
+		return err
+	}
+	return expectedStatusCode(resp, 201)
+}
+
+func (a *APIAuthService) DetachPolicyFromUser(ctx context.Context, policyDisplayName, username string) error {
+	resp, err := a.apiClient.DetachPolicyFromUserWithResponse(ctx, policyDisplayName, username)
+	if err != nil {
+		return err
+	}
+	return expectedStatusCode(resp, 204)
+}
+
+func (a *APIAuthService) listUserPolicies(ctx context.Context, username string, params *model.PaginationParams, effective bool) ([]*model.Policy, *model.Paginator, error) {
+	resp, err := a.apiClient.ListUserPoliciesWithResponse(ctx, username, &ListUserPoliciesParams{
+		Prefix:    paginationPrefix(params.Prefix),
+		After:     paginationAfter(params.After),
+		Amount:    paginationAmount(params.Amount),
+		Effective: &effective,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	if err := expectedStatusCode(resp, 200); err != nil {
+		return nil, nil, err
+	}
+	policies := make([]*model.Policy, len(resp.JSON200.Results))
+
+	for i, r := range resp.JSON200.Results {
+		policies[i] = serializePolicyToModalPolicy(r)
+	}
+	return policies, toPagination(resp.JSON200.Pagination), nil
+}
+
+func (a *APIAuthService) ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+	return a.listUserPolicies(ctx, username, params, false)
+}
+
+func (a *APIAuthService) ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+	if params.Amount == -1 {
+		// read through the cache when requesting the full list
+		policies, err := a.cache.GetUserPolicies(username, func() ([]*model.Policy, error) {
+			policies, _, err := a.listUserPolicies(ctx, username, params, true)
+			return policies, err
+		})
+		if err != nil {
+			return nil, nil, err
+		}
+		return policies, &model.Paginator{Amount: len(policies)}, nil
+	}
+	return a.listUserPolicies(ctx, username, params, true)
+}
+
+func (a *APIAuthService) AttachPolicyToGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error {
+	resp, err := a.apiClient.AttachPolicyToGroupWithResponse(ctx, groupDisplayName, policyDisplayName)
+	if err != nil {
+		return err
+	}
+	return expectedStatusCode(resp, 201)
+}
+
+func (a *APIAuthService) DetachPolicyFromGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error {
+	resp, err := a.apiClient.DetachPolicyFromUserWithResponse(ctx, groupDisplayName, policyDisplayName)
+	if err != nil {
+		return err
+	}
+	return expectedStatusCode(resp, 204)
+}
+
+func (a *APIAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+	resp, err := a.apiClient.ListGroupPoliciesWithResponse(ctx, groupDisplayName, &ListGroupPoliciesParams{
+		Prefix: paginationPrefix(params.Prefix),
+		After:  paginationAfter(params.After),
+		Amount: paginationAmount(params.Amount),
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	if err := expectedStatusCode(resp, 200); err != nil {
+		return nil, nil, err
+	}
+	policies := make([]*model.Policy, len(resp.JSON200.Results))
+
+	for i, r := range resp.JSON200.Results {
+		policies[i] = serializePolicyToModalPolicy(r)
+	}
+	return policies, toPagination(resp.JSON200.Pagination), nil
+}
+
+func (a *APIAuthService) Authorize(ctx context.Context, req *AuthorizationRequest) (*AuthorizationResponse, error) {
+	policies, _, err := a.ListEffectivePolicies(ctx, req.Username, &model.PaginationParams{
+		After:  "", // all
+		Amount: -1, // all
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	allowed := checkPermissions(req.RequiredPermissions, req.Username, policies)
+
+	if allowed != CheckAllow {
+		return &AuthorizationResponse{
+			Allowed: false,
+			Error:   ErrInsufficientPermissions,
+		}, nil
+	}
+
+	// we're allowed!
+	return &AuthorizationResponse{Allowed: true}, nil
+}
+
+func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore, cacheConf params.ServiceCache) (*APIAuthService, error) {
+	// TODO(Guys): currently token is used, maybe we should consider using APIKey
+	basicAuthProvider, err := securityprovider.NewSecurityProviderBearerToken(token)
+	if err != nil {
+		return nil, err
+	}
+	httpClient := &http.Client{
+		// avoid redirect automatically
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+	client, err := NewClientWithResponses(
+		apiEndpoint,
+		WithRequestEditorFn(basicAuthProvider.Intercept),
+		WithHTTPClient(httpClient),
+	)
+	if err != nil {
+		return nil, err
+	}
+	logging.Default().Info("initialized Auth service")
+	var cache Cache
+	if cacheConf.Enabled {
+		cache = NewLRUCache(cacheConf.Size, cacheConf.TTL, cacheConf.EvictionJitter)
+	} else {
+		cache = &DummyCache{}
+	}
+	return &APIAuthService{
+		apiClient:   client,
+		secretStore: secretStore,
+		cache:       cache,
+	}, nil
 }

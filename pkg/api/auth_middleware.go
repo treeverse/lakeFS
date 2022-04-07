@@ -123,7 +123,7 @@ func userByToken(ctx context.Context, logger logging.Logger, authService auth.Se
 		return nil, ErrAuthenticatingRequest
 	}
 	const base = 10
-	const bitSize = 32
+	const bitSize = 64
 	id, err := strconv.ParseInt(claims.Subject, base, bitSize)
 	if err != nil {
 		logger.WithField("subject", claims.Subject).Info("could not parse user ID on token")
