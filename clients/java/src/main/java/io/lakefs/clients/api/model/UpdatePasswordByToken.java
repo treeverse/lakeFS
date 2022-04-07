@@ -37,9 +37,9 @@ public class UpdatePasswordByToken {
   @SerializedName(SERIALIZED_NAME_NEW_PASSWORD)
   private String newPassword;
 
-  public static final String SERIALIZED_NAME_NEWPASSWORD_CONFIRM = "newpasswordConfirm";
-  @SerializedName(SERIALIZED_NAME_NEWPASSWORD_CONFIRM)
-  private String newpasswordConfirm;
+  public static final String SERIALIZED_NAME_NEW_PASSWORD_CONFIRM = "newPasswordConfirm";
+  @SerializedName(SERIALIZED_NAME_NEW_PASSWORD_CONFIRM)
+  private String newPasswordConfirm;
 
 
   public UpdatePasswordByToken token(String token) {
@@ -88,26 +88,26 @@ public class UpdatePasswordByToken {
   }
 
 
-  public UpdatePasswordByToken newpasswordConfirm(String newpasswordConfirm) {
+  public UpdatePasswordByToken newPasswordConfirm(String newPasswordConfirm) {
     
-    this.newpasswordConfirm = newpasswordConfirm;
+    this.newPasswordConfirm = newPasswordConfirm;
     return this;
   }
 
    /**
    * new password confirmation
-   * @return newpasswordConfirm
+   * @return newPasswordConfirm
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "new password confirmation")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "new password confirmation")
 
-  public String getNewpasswordConfirm() {
-    return newpasswordConfirm;
+  public String getNewPasswordConfirm() {
+    return newPasswordConfirm;
   }
 
 
-  public void setNewpasswordConfirm(String newpasswordConfirm) {
-    this.newpasswordConfirm = newpasswordConfirm;
+  public void setNewPasswordConfirm(String newPasswordConfirm) {
+    this.newPasswordConfirm = newPasswordConfirm;
   }
 
 
@@ -122,12 +122,12 @@ public class UpdatePasswordByToken {
     UpdatePasswordByToken updatePasswordByToken = (UpdatePasswordByToken) o;
     return Objects.equals(this.token, updatePasswordByToken.token) &&
         Objects.equals(this.newPassword, updatePasswordByToken.newPassword) &&
-        Objects.equals(this.newpasswordConfirm, updatePasswordByToken.newpasswordConfirm);
+        Objects.equals(this.newPasswordConfirm, updatePasswordByToken.newPasswordConfirm);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(token, newPassword, newpasswordConfirm);
+    return Objects.hash(token, newPassword, newPasswordConfirm);
   }
 
   @Override
@@ -136,7 +136,7 @@ public class UpdatePasswordByToken {
     sb.append("class UpdatePasswordByToken {\n");
     sb.append("    token: ").append(toIndentedString(token)).append("\n");
     sb.append("    newPassword: ").append(toIndentedString(newPassword)).append("\n");
-    sb.append("    newpasswordConfirm: ").append(toIndentedString(newpasswordConfirm)).append("\n");
+    sb.append("    newPasswordConfirm: ").append(toIndentedString(newPasswordConfirm)).append("\n");
     sb.append("}");
     return sb.toString();
   }

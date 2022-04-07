@@ -165,7 +165,7 @@ func userByAuth(ctx context.Context, logger logging.Logger, authenticator auth.A
 
 func VerifyResetPasswordToken(authService auth.Service, tokenString string) (*jwt.StandardClaims, error) {
 	claims, err := verifyToken(authService, tokenString)
-	if err != nil || claims.VerifyAudience(ResetPasswordAudience, true) {
+	if err != nil || !claims.VerifyAudience(ResetPasswordAudience, true) {
 		return nil, ErrAuthenticatingRequest
 	}
 	return claims, nil

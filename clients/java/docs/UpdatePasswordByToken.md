@@ -9,7 +9,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **token** | **String** | token used for authentication | 
 **newPassword** | **String** | new password to update | 
-**newpasswordConfirm** | **String** | new password confirmation | 
+**newPasswordConfirm** | **String** | new password confirmation |  [optional]
 
 
 

@@ -609,7 +609,7 @@ components:
         newPassword:
           description: new password to update
           type: string
-        newpasswordConfirm:
+        newPasswordConfirm:
           description: new password confirmation
           type: string
       required:

@@ -5028,7 +5028,7 @@ components:
       type: object
     UpdatePasswordByToken:
       example:
-        newpasswordConfirm: newpasswordConfirm
+        newPasswordConfirm: newPasswordConfirm
         newPassword: newPassword
         token: token
       properties:
@@ -5038,7 +5038,7 @@ components:
         newPassword:
           description: new password to update
           type: string
-        newpasswordConfirm:
+        newPasswordConfirm:
           description: new password confirmation
           type: string
       required:

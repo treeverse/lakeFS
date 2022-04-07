@@ -84,7 +84,7 @@ class UpdatePasswordByToken(ModelNormal):
         return {
             'token': (str,),  # noqa: E501
             'new_password': (str,),  # noqa: E501
-            'newpassword_confirm': (str,),  # noqa: E501
+            'new_password_confirm': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -95,7 +95,7 @@ class UpdatePasswordByToken(ModelNormal):
     attribute_map = {
         'token': 'token',  # noqa: E501
         'new_password': 'newPassword',  # noqa: E501
-        'newpassword_confirm': 'newpasswordConfirm',  # noqa: E501
+        'new_password_confirm': 'newPasswordConfirm',  # noqa: E501
     }
 
     read_only_vars = {
@@ -105,13 +105,12 @@ class UpdatePasswordByToken(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, token, new_password, newpassword_confirm, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, token, new_password, *args, **kwargs):  # noqa: E501
         """UpdatePasswordByToken - a model defined in OpenAPI
 
         Args:
             token (str): token used for authentication
             new_password (str): new password to update
-            newpassword_confirm (str): new password confirmation
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -144,6 +143,7 @@ class UpdatePasswordByToken(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            new_password_confirm (str): new password confirmation. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -173,7 +173,6 @@ class UpdatePasswordByToken(ModelNormal):
 
         self.token = token
         self.new_password = new_password
-        self.newpassword_confirm = newpassword_confirm
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -194,13 +193,12 @@ class UpdatePasswordByToken(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, token, new_password, newpassword_confirm, *args, **kwargs):  # noqa: E501
+    def __init__(self, token, new_password, *args, **kwargs):  # noqa: E501
         """UpdatePasswordByToken - a model defined in OpenAPI
 
         Args:
             token (str): token used for authentication
             new_password (str): new password to update
-            newpassword_confirm (str): new password confirmation
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -233,6 +231,7 @@ class UpdatePasswordByToken(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            new_password_confirm (str): new password confirmation. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -260,7 +259,6 @@ class UpdatePasswordByToken(ModelNormal):
 
         self.token = token
         self.new_password = new_password
-        self.newpassword_confirm = newpassword_confirm
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
