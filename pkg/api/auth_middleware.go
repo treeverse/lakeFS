@@ -132,14 +132,18 @@ func userByToken(ctx context.Context, logger logging.Logger, authService auth.Se
 	const bitSize = 32
 	id, err := strconv.ParseInt(claims.Subject, base, bitSize)
 	if err != nil {
-		logger.WithField("subject", claims.Subject).Info("could not parse user ID on token")
+		logger.WithFields(logging.Fields{
+			"subject":  claims.Subject,
+			"token_id": claims.Id,
+		}).Info("could not parse user ID on token")
 		return nil, ErrAuthenticatingRequest
 	}
 	userData, err := authService.GetUserByID(ctx, int(id))
 	if err != nil {
 		logger.WithFields(logging.Fields{
-			"user_id": id,
-			"subject": claims.Subject,
+			"token_id": claims.Id,
+			"user_id":  id,
+			"subject":  claims.Subject,
 		}).Debug("could not find user id by credentials")
 		return nil, ErrAuthenticatingRequest
 	}
