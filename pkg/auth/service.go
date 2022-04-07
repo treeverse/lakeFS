@@ -1135,6 +1135,7 @@ var ErrUnexpectedStatusCode = errors.New("unexpected status code")
 // expectedStatusCode returns ErrUnexpectedStatusCode if the response status code is not as expected
 func expectedStatusCode(resp openapi3filter.StatusCoder, expectedStatusCode int) error {
 	if resp.StatusCode() != expectedStatusCode {
+
 		return fmt.Errorf("%w - got %d expected %d", ErrUnexpectedStatusCode, resp.StatusCode(), expectedStatusCode)
 	}
 	return nil

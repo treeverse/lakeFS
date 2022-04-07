@@ -7,26 +7,17 @@ info:
 
 servers:
   - url: "/api/v1"
-    description: lakeFS server endpoint
+    description: lakeFS authentication endpoint
 
 security:
   - jwt_token: []
-  - basic_auth: []
-  - cookie_auth: []
 
 components:
   securitySchemes:
-    basic_auth:
-      type: http
-      scheme: basic
     jwt_token:
       type: http
       scheme: bearer
       bearerFormat: JWT
-    cookie_auth:
-      type: apiKey
-      in: cookie
-      name: access_token
 
   parameters:
     PaginationPrefix:
@@ -136,15 +127,6 @@ components:
         encryptedPassword:
           type: string
           format: byte
-
-    CurrentUser:
-      type: object
-      required:
-        - user
-      properties:
-        user:
-          $ref: "#/components/schemas/User"
-
     UserCreation:
       type: object
       properties:
@@ -167,35 +149,7 @@ components:
         state:
           type: string
           enum: [initialized, not_initialized]
-    AccessKeyCredentials:
-      type: object
-      properties:
-        # Example values as seen on
-        # https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html
-        access_key_id:
-          description: access key ID to set for user for use in integration testing.
-          example: AKIAIOSFODNN7EXAMPLE
-          type: string
-          minLength: 1
-        secret_access_key:
-          description: secret access key to set for user for use in integration testing.
-          example: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-          type: string
-          minLength: 1
-      required:
-        - access_key_id
-        - secret_access_key
 
-    Setup:
-      type: object
-      properties:
-        username:
-          description: an identifier for the user (e.g. jane.doe)
-          type: string
-        key:
-          $ref: "#/components/schemas/AccessKeyCredentials"
-      required:
-        - username
 
     Credentials:
       type: object
@@ -280,26 +234,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/User"
-
-    LoginInformation:
-      type: object
-      required:
-        - access_key_id
-        - secret_access_key
-      properties:
-        access_key_id:
-          type: string
-        secret_access_key:
-          type: string
-
-    AuthenticationToken:
-      type: object
-      required:
-        - token
-      properties:
-        token:
-          description: a JWT token that could be used to authenticate requests
-          type: string
 
     GroupCreation:
       type: object
@@ -419,7 +353,7 @@ paths:
       tags:
         - auth
       operationId: getUserByName
-      summary: get user
+      summary: get user by name
       responses:
         200:
           description: user
@@ -445,7 +379,7 @@ paths:
       tags:
         - auth
       operationId: getUserByEmail
-      summary: get user
+      summary: get user by email
       responses:
         200:
           description: user
@@ -460,7 +394,6 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
-
   /auth/users/{userId}:
     parameters:
       - in: path
@@ -472,7 +405,7 @@ paths:
       tags:
         - auth
       operationId: getUserById
-      summary: get user
+      summary: get user by ID
       responses:
         200:
           description: user
@@ -863,7 +796,6 @@ paths:
 
   /auth/credentials/{accessKeyId}:
     parameters:
-
       - in: path
         name: accessKeyId
         required: true
