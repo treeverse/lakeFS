@@ -30,10 +30,11 @@ clean_repo() {
 initialize_env() {
   local repo=$1
   local test_id=$2
-  run_lakectl branch create "lakefs://${repo}/a${test_id}" -s "lakefs://${repo}/main"
+  run_lakectl branch create "lakefs://${repo}/a" -s "lakefs://${repo}/main"
   run_lakectl fs upload "lakefs://${repo}/a/file${test_id}" -s /local/gc-tests/sample_file
-  run_lakectl commit "lakefs://${repo}/a${test_id}" -m "uploaded file" --epoch-time-seconds 0
-  run_lakectl branch create "lakefs://${repo}/b${test_id}" -s "lakefs://${repo}/a${test_id}"
+  local existing_ref=$(run_lakectl commit "lakefs://${repo}/a" -m "uploaded file" --epoch-time-seconds 0 | grep "ID: " | awk '{ print $2 }')
+  run_lakectl branch create "lakefs://${repo}/b" -s "lakefs://${repo}/a"
+  echo "${existing_ref}"
 }
 
 delete_and_commit() {
@@ -42,7 +43,7 @@ delete_and_commit() {
   local test_id=$3
   for branch_props in $(echo ${test_case} | jq -r '.branches [] | @base64'); do
     branch_props=$(_jq ${branch_props})
-    local branch_name="$(echo ${branch_props} | jq -r '.branch_name')${test_id}"
+    local branch_name=$(echo ${branch_props} | jq -r '.branch_name')
     local days_ago=$(echo ${branch_props} | jq -r '.delete_commit_days_ago')
     if [[ ${days_ago} -gt -1 ]]
     then
@@ -78,7 +79,7 @@ validate_gc_job() {
     branch_props=$(_jq ${branch_props})
     local days_ago=$(echo ${branch_props} | jq -r '.delete_commit_days_ago')
     if [[ ${days_ago} -gt -1 ]]; then
-      local branch_name="$(echo ${branch_props} | jq -r '.branch_name')${test_id}"
+      local branch_name=$(echo ${branch_props} | jq -r '.branch_name')
       for location in \
         lakefs://${repo}/${branch_name}/not_deleted_file1 \
         lakefs://${repo}/${branch_name}/not_deleted_file2 \
@@ -119,8 +120,8 @@ for test_case in $(jq -r '.[] | @base64' gc-tests/test_scenarios.json); do
   ((test_id++))
   test_description=$(echo "${test_case}" | jq -r '.description')
   echo "Test: ${test_description}"
-  initialize_env ${REPOSITORY} ${test_id}
-  file_existing_ref=$(last_commit_ref ${REPOSITORY} "a${test_id}")
+  file_existing_ref=$(initialize_env ${REPOSITORY} ${test_id})
+#  file_existing_ref=$(last_commit_ref ${REPOSITORY} a)
   echo "${test_case}" | jq --raw-output '.policy' > policy.json
   run_lakectl gc set-config lakefs://${REPOSITORY} -f /local/policy.json
   delete_and_commit "${test_case}" ${REPOSITORY} ${test_id}
