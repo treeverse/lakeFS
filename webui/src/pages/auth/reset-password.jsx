@@ -46,8 +46,7 @@ const RequestResetPasswordForm = () => {
                             <Form onSubmit={async (e) => {
                                 e.preventDefault()
                                 try {
-                                    // TODO: call activate reset password process endpoint
-                                    // await auth.login(e.target.username.value, e.target.password.value)
+                                    await auth.passwordForgot(e.target.email.value)
                                     setReqResetPwdError(null);
                                     setResetReqSent(true)
                                 } catch (err) {
@@ -88,7 +87,7 @@ const ResetEmailSent = () => {
     )
 }
 
-const ResetPasswordForm = () => {
+const ResetPasswordForm = ({token}) => {
 
     const onConfirmPasswordChange = () => {
         setPwdConfirmValid(true)
@@ -115,18 +114,18 @@ const ResetPasswordForm = () => {
                         <Form onSubmit={async (e) => {
                             e.preventDefault()
                             try {
-                                // TODO: call reset password endpoint
-                                // await auth.login(e.target.username.value, e.target.password.value)
+                                await auth.password(token, e.target.newPassword.value,
+                                    e.target.confirmPassword.value)
                                 setResetPwdError(null);
                             } catch (err) {
                                 setResetPwdError(err);
                             }
                         }}>
-                            <Form.Group controlId="new-password">
+                            <Form.Group controlId="newPassword">
                                 <Form.Control type="password" placeholder="New Password" ref={newPwdField}/>
                             </Form.Group>
 
-                            <Form.Group controlId="confirm-password">
+                            <Form.Group controlId="confirmPassword">
                                 <Form.Control type="password" placeholder="Confirm Password" ref={confirmPasswordField} onChange={onConfirmPasswordChange}/>
                                 {pwdConfirmValid === false &&
                                 <Form.Text className="text-danger">
@@ -154,7 +153,7 @@ const ResetPasswordPage = () => {
     return (
         <Layout>
             {
-                !!token ? <ResetPasswordForm/> : <RequestResetPasswordForm/>
+                !!token ? <ResetPasswordForm token={token}/> : <RequestResetPasswordForm/>
             }
         </Layout>
     );

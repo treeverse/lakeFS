@@ -118,6 +118,36 @@ export class MergeError extends Error {
 // actual actions:
 class Auth {
 
+    async password(token, newPassword, newPasswordConfirm) {
+        const response = await fetch(`${API_ENDPOINT}/auth/password`, {
+            headers: new Headers(defaultAPIHeaders),
+            method: 'POST',
+            body: json({token: token, newPassword: newPassword, newPasswordConfirm: newPasswordConfirm})
+        });
+
+        if (response.status === 401) {
+            throw new AuthorizationError('user unauthorized');
+        }
+        if (response.status !== 201) {
+            throw new Error('unknown authentication error');
+        }
+    }
+
+    async passwordForgot(email) {
+        const response = await fetch(`${API_ENDPOINT}/auth/password/forgot`, {
+            headers: new Headers(defaultAPIHeaders),
+            method: 'POST',
+            body: json({email: email})
+        });
+
+        if (response.status === 400) {
+            throw new BadRequestError("invalid email");
+        }
+        if (response.status !== 204) {
+            throw new Error('unknown authentication error');
+        }
+    }
+
     async login(accessKeyId, secretAccessKey) {
         const response = await fetch(`${API_ENDPOINT}/auth/login`, {
             headers: new Headers(defaultAPIHeaders),
