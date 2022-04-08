@@ -268,10 +268,12 @@ object GarbageCollector {
     val res = new ApiClient(apiURL, accessKey, secretKey)
       .prepareGarbageCollectionCommits(repo, previousRunID)
     val runID = res.getRunId
+    println("apiURL: " + apiURL)
 
     val gcCommitsLocation = ApiClient.translateS3(new URI(res.getGcCommitsLocation)).toString
+    println("gcCommitsLocation: " + gcCommitsLocation)
     val gcAddressesLocation = ApiClient.translateS3(new URI(res.getGcAddressesLocation)).toString
-
+    println("gcAddressesLocation: " + gcAddressesLocation)
     val expiredAddresses = getExpiredAddresses(repo,
                                                runID,
                                                gcCommitsLocation,
@@ -283,6 +285,10 @@ object GarbageCollector {
       .partitionBy("run_id")
       .mode(SaveMode.Overwrite)
       .parquet(gcAddressesLocation)
+
+    println("Expired addresses:")
+    expiredAddresses.show()
+
     S3BulkDeleter.remove(repo, gcAddressesLocation, runID, region, spark)
   }
 }
@@ -356,12 +362,14 @@ object S3BulkDeleter {
     val accessKey = hc.get(LAKEFS_CONF_API_ACCESS_KEY_KEY)
     val secretKey = hc.get(LAKEFS_CONF_API_SECRET_KEY_KEY)
     val storageNamespace = new ApiClient(apiURL, accessKey, secretKey).getStorageNamespace(repo)
+    println("storageNamespace: " + storageNamespace)
     val uri = new URI(storageNamespace)
     val bucket = uri.getHost
     val key = uri.getPath
     val addSuffixSlash = if (key.endsWith("/")) key else key.concat("/")
     val snPrefix =
       if (addSuffixSlash.startsWith("/")) addSuffixSlash.substring(1) else addSuffixSlash
+    println("addressDFLocation: " + addressDFLocation)
 
     val df = spark.read
       .parquet(addressDFLocation)

@@ -599,23 +599,44 @@ jobs:
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+
+      - name: Setup lakeFS for metadata client tests
+        working-directory: test/spark
+        run: ./setup-test.sh
+
       - name: Copy repository ref
-        run: aws s3 cp --recursive s3://esti-system-testing-data/golden-files/gc-test-data s3://esti-system-testing/${{ github.run_number }}-spark3-metaclient
+        run: aws s3 cp --recursive s3://esti-system-testing-data/golden-files/gc-test-data s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark }}-metaclient/exporter
 
-      - name: Setup lakeFS for tests
+      - name: Setup GC tests
         env:
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark3-metaclient
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark }}-metaclient/garbage
+          REPOSITORY: test-data-gc-${{ matrix.spark }}
         working-directory: test/spark
-        run: ./setup-client-test.sh
+        run: ./setup-gc-test.sh
 
-      - name: Test lakeFS S3 with Spark 3.x
+      - name: Test GC with Spark 3.x
         env:
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark3-metaclient
-          REPOSITORY: test-data
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark }}-metaclient/garbage
+          REPOSITORY: test-data-gc-${{ matrix.spark }}
           CLIENT_JAR: ${{steps.import_metaclient.outputs.download-path}}/spark-assembly.jar
-          EXPORT_LOCATION: s3://esti-system-testing/${{ github.run_number }}-spark3-client-export
         working-directory: test/spark
-        run: ./run-client-test.sh
+        run: ./run-gc-test.sh
+
+      - name: Setup Exporter tests
+        env:
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark }}-metaclient/exporter
+          REPOSITORY: test-data-exporter
+        working-directory: test/spark
+        run: ./setup-exporter-test.sh
+
+      - name: Test Exporter with Spark 3.x
+        env:
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark }}-metaclient/exporter
+          REPOSITORY: test-data-exporter
+          CLIENT_JAR: ${{steps.import_metaclient.outputs.download-path}}/spark-assembly.jar
+          EXPORT_LOCATION: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark }}-client-export
+        working-directory: test/spark
+        run: ./run-exporter-test.sh
 
       - name: lakeFS Logs on Spark with gateway failure
         if: ${{ failure() }}
