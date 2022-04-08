@@ -6,7 +6,6 @@ import Form from "react-bootstrap/Form";
 import Col from "react-bootstrap/Col";
 import Button from "react-bootstrap/Button";
 import {
-    AlertIcon,
     MailIcon
 } from "@primer/octicons-react";
 import {Error} from "../../lib/components/controls";
@@ -24,7 +23,6 @@ const RequestResetPasswordForm = () => {
     };
 
     const [reqResetPwdError, setReqResetPwdError] = useState(null);
-    const [riskAccepted, setRiskAccepted] = useState(false);
     const [resetReqSent, setResetReqSent] = useState(false);
     const [formValid, setFormValid] = useState(false);
     const [emailValid, setEmailValid] = useState(null);
@@ -42,16 +40,6 @@ const RequestResetPasswordForm = () => {
         return (
             <Row>
                 <Col md={{offset: 4, span: 4}}>
-                    <div className="reset-pwd-risks">
-                        <div className="risk-icon">
-                            <AlertIcon size={20}/>
-                        </div>
-                        <div className="warn-message">
-                            We don&#39;t store plain text passwords, therefore, once reset, they&#39;ll be lost.<br/>
-                            Please make sure you have access to your mailbox.<br/>
-                            Your reset link will be available for 6 hours.
-                        </div>
-                    </div>
                     <Card className="request-reset-pwd-widget">
                         <Card.Header>Reset Password</Card.Header>
                         <Card.Body>
@@ -76,13 +64,6 @@ const RequestResetPasswordForm = () => {
                                 </Form.Group>
 
                                 {(!!reqResetPwdError) && <Error error={reqResetPwdError}/>}
-
-                                <div>
-                                    <input type="checkbox" checked={riskAccepted} onChange={() => {
-                                        setRiskAccepted(!riskAccepted);
-                                    }}/>
-                                    <label className="accept-risk-label">I understand the risks listed above</label>
-                                </div>
 
                                 <Button variant="primary" type="submit" className="reset-pwd" disabled={!formValid}>Reset Password</Button>
                             </Form>
