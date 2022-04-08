@@ -323,13 +323,29 @@ object S3BulkDeleter {
     res.getDeletedObjects.asScala.map(_.getKey())
   }
 
-  private def getS3Client(region: String, numRetries: Int): AmazonS3 = {
+  private def getS3Client(hc: Configuration, region: String, numRetries: Int): AmazonS3 = {
+    import org.apache.hadoop.fs.s3a.Constants
+    import org.apache.hadoop.fs.s3a.auth.AssumedRoleCredentialProvider
+
     val configuration = new ClientConfiguration().withMaxErrorRetry(numRetries)
-    AmazonS3ClientBuilder
+
+    // TODO(ariels): Support different per-bucket configuration methods.
+    //     Possibly pre-generate a FileSystem to access the desired bucket,
+    //     and query for its credentials provider.  And cache them, in case
+    //     some objects live in different buckets.
+    val credentialsProvider = if (hc.get(Constants.AWS_CREDENTIALS_PROVIDER) == AssumedRoleCredentialProvider.NAME)
+      Some(new AssumedRoleCredentialProvider(null, hc)) else None
+
+    val builder = AmazonS3ClientBuilder
       .standard()
       .withClientConfiguration(configuration)
       .withRegion(region)
-      .build()
+    val builderWithCredentials = credentialsProvider match {
+      case Some(cp) => builder.withCredentials(cp)
+      case None => builder
+    }
+
+    builderWithCredentials.build
   }
 
   def bulkRemove(
@@ -342,6 +358,7 @@ object S3BulkDeleter {
       snPrefix: String
   ): Dataset[String] = {
     import spark.implicits._
+    val s3Client = getS3Client(spark.sparkContext.hadoopConfiguration, region, numRetries)
     val repartitionedKeys = repartitionBySize(readKeysDF, bulkSize, "address")
     val bulkedKeyStrings = repartitionedKeys
       .select("address")
@@ -350,7 +367,7 @@ object S3BulkDeleter {
       .mapPartitions(iter => {
         iter
           .grouped(bulkSize)
-          .flatMap(delObjIteration(bucket, _, getS3Client(region, numRetries), snPrefix))
+          .flatMap(delObjIteration(bucket, _, s3Client, snPrefix))
       })
   }
 
