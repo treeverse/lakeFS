@@ -11,12 +11,12 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{SparkSession, _}
-import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration
-import software.amazon.awssdk.core.retry.RetryPolicy
-import software.amazon.awssdk.core.retry.backoff.BackoffStrategy
-import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.s3.S3Client
-import software.amazon.awssdk.services.s3.model.{Delete, DeleteObjectsRequest, ObjectIdentifier}
+
+
+
+import com.amazonaws.ClientConfiguration
+import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
+import com.amazonaws.services.s3.model
 
 import java.net.URI
 import collection.JavaConverters._
@@ -306,26 +306,22 @@ object S3BulkDeleter {
   private def delObjIteration(
       bucket: String,
       keys: Seq[String],
-      s3Client: S3Client,
+      s3Client: AmazonS3,
       snPrefix: String
   ): Seq[String] = {
-    if (keys.isEmpty) None
-    val removeKeys =
-      keys.map(x => ObjectIdentifier.builder().key(snPrefix.concat(x)).build()).asJava
-    val delObj = Delete.builder().objects(removeKeys).build()
-    val delObjReq = DeleteObjectsRequest.builder.delete(delObj).bucket(bucket).build()
+    if (keys.isEmpty) return Seq.empty
+    val removeKeys = keys.map(x => snPrefix.concat(x)).map(k => new model.DeleteObjectsRequest.KeyVersion(k)).asJava
+    val delObjReq = new model.DeleteObjectsRequest(bucket).withKeys(removeKeys)
     val res = s3Client.deleteObjects(delObjReq)
-    res.deleted().asScala.map(_.key())
+    res.getDeletedObjects.asScala.map(_.getKey())
   }
 
-  private def getS3Client(region: String, numRetries: Int) = {
-    val retryPolicy = RetryPolicy
-      .builder()
-      .backoffStrategy(BackoffStrategy.defaultThrottlingStrategy())
-      .numRetries(numRetries)
-      .build()
-    val configuration = ClientOverrideConfiguration.builder().retryPolicy(retryPolicy).build()
-    S3Client.builder.region(Region.of(region)).overrideConfiguration(configuration).build
+  private def getS3Client(region: String, numRetries: Int): AmazonS3 = {
+    val configuration = new ClientConfiguration().withMaxErrorRetry(numRetries)
+    AmazonS3ClientBuilder.standard().
+      withClientConfiguration(configuration).
+      withRegion(region).
+      build()
   }
 
   def bulkRemove(

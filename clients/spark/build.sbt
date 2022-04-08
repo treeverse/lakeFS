@@ -50,7 +50,10 @@ def generateCoreProject(buildType: BuildType) =
         "com.google.guava" % "guava" % "16.0.1",
         "com.google.guava" % "failureaccess" % "1.0.1",
         "org.rogach" %% "scallop" % "4.0.3",
-        "software.amazon.awssdk" % "s3" % "2.15.15",
+        // hadoop-aws provides AWS SDK at version >= 1.7.4.  So declare this
+        // version, but ask to use whatever is provided so we do not
+        // override what it selects.
+        "com.amazonaws" % "aws-java-sdk-bundle" % "1.12.140" % "provided",
         // Snappy is JNI :-(.  However it does claim to work with
         // ClassLoaders, and (even more importantly!) using a preloaded JNI
         // version will probably continue to work because the C language API
