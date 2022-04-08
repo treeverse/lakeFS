@@ -12,6 +12,9 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{SparkSession, _}
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.amazonaws.ClientConfiguration
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
 import com.amazonaws.services.s3.model
@@ -288,7 +291,7 @@ object GarbageCollector {
     println("Expired addresses:")
     expiredAddresses.show()
 
-    S3BulkDeleter.remove(repo, gcAddressesLocation, runID, region, spark)
+    S3BulkDeleter.remove(repo, gcAddressesLocation, expiredAddresses, runID, region, spark)
 
     spark.close()
   }
@@ -308,10 +311,13 @@ object S3BulkDeleter {
       snPrefix: String
   ): Seq[String] = {
     if (keys.isEmpty) return Seq.empty
-    val removeKeys = keys
-      .map(x => snPrefix.concat(x))
-      .map(k => new model.DeleteObjectsRequest.KeyVersion(k))
-      .asJava
+    val removeKeyNames = keys.map(x => snPrefix.concat(x))
+
+    val log = LoggerFactory.getLogger("bulk-delete")
+    log.info("remove keys: {}", removeKeyNames.mkString(", "))
+
+    val removeKeys = removeKeyNames.map(k => new model.DeleteObjectsRequest.KeyVersion(k)).asJava
+
     val delObjReq = new model.DeleteObjectsRequest(bucket).withKeys(removeKeys)
     val res = s3Client.deleteObjects(delObjReq)
     res.getDeletedObjects.asScala.map(_.getKey())
@@ -351,6 +357,7 @@ object S3BulkDeleter {
   def remove(
       repo: String,
       addressDFLocation: String,
+      expiredAddresses: Dataset[Row],
       runID: String,
       region: String,
       spark: SparkSession
@@ -372,8 +379,7 @@ object S3BulkDeleter {
       if (addSuffixSlash.startsWith("/")) addSuffixSlash.substring(1) else addSuffixSlash
     println("addressDFLocation: " + addressDFLocation)
 
-    val df = spark.read
-      .parquet(addressDFLocation)
+    val df = expiredAddresses
       .where(col("run_id") === runID)
       .where(col("relative") === true)
     val res =
@@ -382,18 +388,18 @@ object S3BulkDeleter {
         .collect()
   }
 
-  def main(args: Array[String]): Unit = {
-    if (args.length != 4) {
-      Console.err.println(
-        "Usage: ... <repo_name> <runID> <region> s3://storageNamespace/prepared_addresses_table"
-      )
-      System.exit(1)
-    }
-    val repo = args(0)
-    val runID = args(1)
-    val region = args(2)
-    val addressesDFLocation = args(3)
-    val spark = SparkSession.builder().getOrCreate()
-    remove(repo, addressesDFLocation, runID, region, spark)
-  }
+  // def main(args: Array[String]): Unit = {
+  //   if (args.length != 4) {
+  //     Console.err.println(
+  //       "Usage: ... <repo_name> <runID> <region> s3://storageNamespace/prepared_addresses_table"
+  //     )
+  //     System.exit(1)
+  //   }
+  //   val repo = args(0)
+  //   val runID = args(1)
+  //   val region = args(2)
+  //   val addressesDFLocation = args(3)
+  //   val spark = SparkSession.builder().getOrCreate()
+  //   remove(repo, addressesDFLocation, runID, region, spark)
+  // }
 }

@@ -53,7 +53,7 @@ def generateCoreProject(buildType: BuildType) =
         // hadoop-aws provides AWS SDK at version >= 1.7.4.  So declare this
         // version, but ask to use whatever is provided so we do not
         // override what it selects.
-        "com.amazonaws" % "aws-java-sdk-bundle" % "1.12.140" % "provided",
+        "com.amazonaws" % "aws-java-sdk-bundle" % "1.12.194" % "provided",
         // Snappy is JNI :-(.  However it does claim to work with
         // ClassLoaders, and (even more importantly!) using a preloaded JNI
         // version will probably continue to work because the C language API
@@ -85,9 +85,7 @@ def generateExamplesProject(buildType: BuildType) =
       scalacOptions += "-Ywarn-unused-import",
       libraryDependencies ++= Seq(
         "org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
-        "software.amazon.awssdk" % "bom" % "2.15.15",
-        "software.amazon.awssdk" % "s3" % "2.15.15",
-        "com.amazonaws" % "aws-java-sdk" % "1.7.4" // should match hadoop-aws version(!)
+        "com.amazonaws" % "aws-java-sdk-bundle" % "1.12.194"
       ),
       assembly / mainClass := Some("io.treeverse.examples.List"),
       target := file(s"target/examples-${buildType.name}/"),
