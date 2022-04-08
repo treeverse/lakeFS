@@ -67,13 +67,5 @@ func (e Emailer) SendEmailWithLimit(receivers []string, subject string, body str
 		err := ErrRateLimitExceeded
 		return err
 	}
-	msg := gomail.NewMessage()
-	msg.SetHeader("From", e.Params.Sender)
-	msg.SetHeader("To", receivers...)
-	msg.SetHeader("Subject", subject)
-	msg.SetBody("text/html", body)
-	for _, f := range attachmentFilePath {
-		msg.Attach(f)
-	}
-	return e.Dialer.DialAndSend(msg)
+	return e.SendEmail(receivers, subject, body, attachmentFilePath)
 }
