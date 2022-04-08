@@ -401,13 +401,13 @@ func (c *Config) GetStatsFlushInterval() time.Duration {
 
 func (c *Config) GetEmailParams() (email.EmailParams, error) {
 	return email.EmailParams{
-		SMTPHost:  c.values.Email.SMTPHost,
-		Port:      c.values.Email.Port,
-		Username:  c.values.Email.Username,
-		Password:  c.values.Email.Password,
-		Sender:    c.values.Email.Sender,
-		RateLimit: c.values.Email.RateLimit,
-		Burst:     c.values.Email.Burst,
+		SMTPHost:   c.values.Email.SMTPHost,
+		Port:       c.values.Email.Port,
+		Username:   c.values.Email.Username,
+		Password:   c.values.Email.Password,
+		Sender:     c.values.Email.Sender,
+		LimitEvery: c.values.Email.LimitEvery,
+		Burst:      c.values.Email.Burst,
 	}, nil
 }
 
