@@ -58,12 +58,6 @@ delete_and_commit() {
   done
 }
 
-#last_commit_ref() {
-#  local repo=$1
-#  local branch=$2
-#  run_lakectl log lakefs://${repo}/${branch}${test_id} --amount 1 | grep "ID: " | awk '{ print $2 }'
-#}
-
 validate_gc_job() {
   local test_case=$1
   local repo=$2
@@ -107,7 +101,7 @@ clean_main_branch() {
 #################################
 ######## Tests Execution ########
 #################################
-day_in_seconds=86400
+day_in_seconds=100000 # rounded up from 86400
 current_epoch_in_seconds=$(date +%s)
 
 run_lakectl fs upload "lakefs://${REPOSITORY}/main/not_deleted_file1" -s /local/gc-tests/sample_file
@@ -123,7 +117,6 @@ for test_case in $(jq -r '.[] | @base64' gc-tests/test_scenarios.json); do
   test_description=$(echo "${test_case}" | jq -r '.description')
   echo "Test: ${test_description}"
   file_existing_ref=$(initialize_env ${REPOSITORY} ${test_id}  | grep "^EXISTING_REF: " | awk '{ print $2 }')
-#  file_existing_ref=$(last_commit_ref ${REPOSITORY} a)
   echo "${test_case}" | jq --raw-output '.policy' > policy.json
   run_lakectl gc set-config lakefs://${REPOSITORY} -f /local/policy.json
   delete_and_commit "${test_case}" ${REPOSITORY} ${test_id}
