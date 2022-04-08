@@ -14,4 +14,6 @@ var (
 	ErrInvalidAPIEndpoint = errors.New("invalid API endpoint")
 
 	ErrRequestSizeExceeded = errors.New("request size exceeded")
+
+	ErrRateLimitExceeded = errors.New("rate limit exceeded")
 )

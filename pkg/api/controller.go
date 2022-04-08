@@ -3026,7 +3026,12 @@ func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Controller) sendResetPasswordEmail(email string, token string) error {
-	return c.Emailer.SendEmail([]string{email}, token, token, nil)
+	if c.Emailer.Limiter.Allow() {
+		return c.Emailer.SendEmail([]string{email}, token, token, nil)
+	}
+	err := ErrRateLimitExceeded
+	c.Logger.WithError(err).WithField("email", email).Debug("Email sending rate limit was exceeded")
+	return err
 }
 
 func (c *Controller) ForgotPassword(w http.ResponseWriter, r *http.Request, body ForgotPasswordJSONRequestBody) {

@@ -178,10 +178,12 @@ type configuration struct {
 		AuditCheckURL      string        `mapstructure:"audit_check_url"`
 	} `mapstructure:"security"`
 	Email struct {
-		SMTPHost string `mapstructure:"smtp_host"`
-		Port     int    `mapstructure:"port"`
-		Username string `mapstructure:"username"`
-		Password string `mapstructure:"password"`
-		Sender   string `mapstructure:"sender"`
+		SMTPHost  string  `mapstructure:"smtp_host"`
+		Port      int     `mapstructure:"port"`
+		Username  string  `mapstructure:"username"`
+		Password  string  `mapstructure:"password"`
+		Sender    string  `mapstructure:"sender"`
+		RateLimit float64 `mapstructure:"rate_limit"`
+		Burst     int     `mapstructure:"burst"`
 	}
 }
