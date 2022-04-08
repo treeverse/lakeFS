@@ -1,6 +1,6 @@
 #!/bin/bash -ex
 #
-# setup-exporter-test.sh - set up lakeFS to run Spark app tests.  Run once per lakeFS.
+# setup-exporter-test.sh - set up lakeFS to run Spark exporter tests.
 
 docker-compose exec -T lakefs /app/wait-for localhost:8000
 
