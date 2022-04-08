@@ -33,7 +33,7 @@ initialize_env() {
   local repo=$1
   local test_id=$2
   run_lakectl branch create "lakefs://${repo}/a${test_id}" -s "lakefs://${repo}/main"
-  run_lakectl fs upload "lakefs://${repo}/a${test_id}/file${test_id}" -s gc-tests/sample_file
+  run_lakectl fs upload "lakefs://${repo}/a${test_id}/file${test_id}" -s /local/gc-tests/sample_file
   local existing_ref=$(run_lakectl commit "lakefs://${repo}/a${test_id}" -m "uploaded file ${test_id}" --epoch-time-seconds 0 | grep "ID: " | awk '{ print $2 }')
   run_lakectl branch create "lakefs://${repo}/b${test_id}" -s "lakefs://${repo}/${existing_ref}"
   echo "EXISTING_REF: ${existing_ref}"
@@ -58,11 +58,11 @@ delete_and_commit() {
   done
 }
 
-last_commit_ref() {
-  local repo=$1
-  local branch=$2
-  run_lakectl log lakefs://${repo}/${branch}${test_id} --amount 1 | grep "ID: " | awk '{ print $2 }'
-}
+#last_commit_ref() {
+#  local repo=$1
+#  local branch=$2
+#  run_lakectl log lakefs://${repo}/${branch}${test_id} --amount 1 | grep "ID: " | awk '{ print $2 }'
+#}
 
 validate_gc_job() {
   local test_case=$1
@@ -110,9 +110,9 @@ clean_main_branch() {
 day_in_seconds=86400
 current_epoch_in_seconds=$(date +%s)
 
-run_lakectl fs upload "lakefs://${REPOSITORY}/main/not_deleted_file1" -s gc-tests/sample_file
-run_lakectl fs upload "lakefs://${REPOSITORY}/main/not_deleted_file2" -s gc-tests/sample_file
-run_lakectl fs upload "lakefs://${REPOSITORY}/main/not_deleted_file3" -s gc-tests/sample_file
+run_lakectl fs upload "lakefs://${REPOSITORY}/main/not_deleted_file1" -s /local/gc-tests/sample_file
+run_lakectl fs upload "lakefs://${REPOSITORY}/main/not_deleted_file2" -s /local/gc-tests/sample_file
+run_lakectl fs upload "lakefs://${REPOSITORY}/main/not_deleted_file3" -s /local/gc-tests/sample_file
 run_lakectl commit "lakefs://${REPOSITORY}/main" -m "add three files not to be deleted" --epoch-time-seconds 0
 
 test_id=0
@@ -125,7 +125,7 @@ for test_case in $(jq -r '.[] | @base64' gc-tests/test_scenarios.json); do
   file_existing_ref=$(initialize_env ${REPOSITORY} ${test_id}  | grep "^EXISTING_REF: " | awk '{ print $2 }')
 #  file_existing_ref=$(last_commit_ref ${REPOSITORY} a)
   echo "${test_case}" | jq --raw-output '.policy' > policy.json
-  run_lakectl gc set-config lakefs://${REPOSITORY} -f policy.json
+  run_lakectl gc set-config lakefs://${REPOSITORY} -f /local/policy.json
   delete_and_commit "${test_case}" ${REPOSITORY} ${test_id}
   run_gc ${REPOSITORY}
   if ! validate_gc_job "${test_case}" ${REPOSITORY} ${file_existing_ref} ${test_id}; then
