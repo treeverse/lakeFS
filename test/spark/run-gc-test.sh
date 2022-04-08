@@ -2,6 +2,8 @@
 
 set -o pipefail
 
+REPOSITORY=${REPOSITORY//./-}
+
 _jq() {
  echo ${1} | base64 --decode | jq -r '.'
 }
@@ -30,10 +32,10 @@ clean_repo() {
 initialize_env() {
   local repo=$1
   local test_id=$2
-  run_lakectl branch create "lakefs://${repo}/a" -s "lakefs://${repo}/main"
-  run_lakectl fs upload "lakefs://${repo}/a/file${test_id}" -s /local/gc-tests/sample_file
-  local existing_ref=$(run_lakectl commit "lakefs://${repo}/a" -m "uploaded file ${test_id}" --epoch-time-seconds 0 | grep "ID: " | awk '{ print $2 }')
-  run_lakectl branch create "lakefs://${repo}/b" -s "lakefs://${repo}/a"
+  run_lakectl branch create "lakefs://${repo}/a${test_id}" -s "lakefs://${repo}/main"
+  run_lakectl fs upload "lakefs://${repo}/a${test_id}/file${test_id}" -s gc-tests/sample_file
+  local existing_ref=$(run_lakectl commit "lakefs://${repo}/a${test_id}" -m "uploaded file ${test_id}" --epoch-time-seconds 0 | grep "ID: " | awk '{ print $2 }')
+  run_lakectl branch create "lakefs://${repo}/b${test_id}" -s "lakefs://${repo}/${existing_ref}"
   echo "EXISTING_REF: ${existing_ref}"
 }
 
@@ -43,13 +45,11 @@ delete_and_commit() {
   local test_id=$3
   for branch_props in $(echo ${test_case} | jq -r '.branches [] | @base64'); do
     branch_props=$(_jq ${branch_props})
-    local branch_name=$(echo ${branch_props} | jq -r '.branch_name')
+    local branch_name="$(echo ${branch_props} | jq -r '.branch_name')${test_id}"
     local days_ago=$(echo ${branch_props} | jq -r '.delete_commit_days_ago')
     if [[ ${days_ago} -gt -1 ]]
     then
-      run_lakectl fs ls "lakefs://${repo}/${branch_name}"
       run_lakectl fs rm "lakefs://${repo}/${branch_name}/file${test_id}"
-      run_lakectl fs ls "lakefs://${repo}/${branch_name}"
       epoch_commit_date_in_seconds=$(( ${current_epoch_in_seconds} - ${day_in_seconds} * ${days_ago} ))
       run_lakectl commit "lakefs://${repo}/${branch_name}" --allow-empty-message --epoch-time-seconds ${epoch_commit_date_in_seconds}
     else   # This means that the branch should be deleted
@@ -61,7 +61,7 @@ delete_and_commit() {
 last_commit_ref() {
   local repo=$1
   local branch=$2
-  run_lakectl log lakefs://${repo}/${branch} --amount 1 | grep "ID: " | awk '{ print $2 }'
+  run_lakectl log lakefs://${repo}/${branch}${test_id} --amount 1 | grep "ID: " | awk '{ print $2 }'
 }
 
 validate_gc_job() {
@@ -81,7 +81,7 @@ validate_gc_job() {
     branch_props=$(_jq ${branch_props})
     local days_ago=$(echo ${branch_props} | jq -r '.delete_commit_days_ago')
     if [[ ${days_ago} -gt -1 ]]; then
-      local branch_name=$(echo ${branch_props} | jq -r '.branch_name')
+      local branch_name="$(echo ${branch_props} | jq -r '.branch_name')${test_id}"
       for location in \
         lakefs://${repo}/${branch_name}/not_deleted_file1 \
         lakefs://${repo}/${branch_name}/not_deleted_file2 \
@@ -110,9 +110,9 @@ clean_main_branch() {
 day_in_seconds=86400
 current_epoch_in_seconds=$(date +%s)
 
-run_lakectl fs upload "lakefs://${REPOSITORY}/main/not_deleted_file1" -s /local/gc-tests/sample_file
-run_lakectl fs upload "lakefs://${REPOSITORY}/main/not_deleted_file2" -s /local/gc-tests/sample_file
-run_lakectl fs upload "lakefs://${REPOSITORY}/main/not_deleted_file3" -s /local/gc-tests/sample_file
+run_lakectl fs upload "lakefs://${REPOSITORY}/main/not_deleted_file1" -s gc-tests/sample_file
+run_lakectl fs upload "lakefs://${REPOSITORY}/main/not_deleted_file2" -s gc-tests/sample_file
+run_lakectl fs upload "lakefs://${REPOSITORY}/main/not_deleted_file3" -s gc-tests/sample_file
 run_lakectl commit "lakefs://${REPOSITORY}/main" -m "add three files not to be deleted" --epoch-time-seconds 0
 
 test_id=0
@@ -125,7 +125,7 @@ for test_case in $(jq -r '.[] | @base64' gc-tests/test_scenarios.json); do
   file_existing_ref=$(initialize_env ${REPOSITORY} ${test_id}  | grep "^EXISTING_REF: " | awk '{ print $2 }')
 #  file_existing_ref=$(last_commit_ref ${REPOSITORY} a)
   echo "${test_case}" | jq --raw-output '.policy' > policy.json
-  run_lakectl gc set-config lakefs://${REPOSITORY} -f /local/policy.json
+  run_lakectl gc set-config lakefs://${REPOSITORY} -f policy.json
   delete_and_commit "${test_case}" ${REPOSITORY} ${test_id}
   run_gc ${REPOSITORY}
   if ! validate_gc_job "${test_case}" ${REPOSITORY} ${file_existing_ref} ${test_id}; then
