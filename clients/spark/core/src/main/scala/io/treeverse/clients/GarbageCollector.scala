@@ -12,8 +12,6 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{SparkSession, _}
 
-
-
 import com.amazonaws.ClientConfiguration
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
 import com.amazonaws.services.s3.model
@@ -310,7 +308,10 @@ object S3BulkDeleter {
       snPrefix: String
   ): Seq[String] = {
     if (keys.isEmpty) return Seq.empty
-    val removeKeys = keys.map(x => snPrefix.concat(x)).map(k => new model.DeleteObjectsRequest.KeyVersion(k)).asJava
+    val removeKeys = keys
+      .map(x => snPrefix.concat(x))
+      .map(k => new model.DeleteObjectsRequest.KeyVersion(k))
+      .asJava
     val delObjReq = new model.DeleteObjectsRequest(bucket).withKeys(removeKeys)
     val res = s3Client.deleteObjects(delObjReq)
     res.getDeletedObjects.asScala.map(_.getKey())
@@ -318,10 +319,11 @@ object S3BulkDeleter {
 
   private def getS3Client(region: String, numRetries: Int): AmazonS3 = {
     val configuration = new ClientConfiguration().withMaxErrorRetry(numRetries)
-    AmazonS3ClientBuilder.standard().
-      withClientConfiguration(configuration).
-      withRegion(region).
-      build()
+    AmazonS3ClientBuilder
+      .standard()
+      .withClientConfiguration(configuration)
+      .withRegion(region)
+      .build()
   }
 
   def bulkRemove(
