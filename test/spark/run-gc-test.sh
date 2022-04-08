@@ -111,11 +111,10 @@ run_lakectl fs upload "lakefs://${REPOSITORY}/main/not_deleted_file2" -s /local/
 run_lakectl fs upload "lakefs://${REPOSITORY}/main/not_deleted_file3" -s /local/gc-tests/sample_file
 run_lakectl commit "lakefs://${REPOSITORY}/main" -m "add three files not to be deleted" --epoch-time-seconds 0
 
-test_id=0
 failed_tests=()
 for test_case in $(jq -r '.[] | @base64' gc-tests/test_scenarios.json); do
   test_case=$(_jq ${test_case})
-  ((test_id++))
+  test_id=$(echo "${test_case}" | jq -r '.id')
   test_description=$(echo "${test_case}" | jq -r '.description')
   echo "Test: ${test_description}"
   file_existing_ref=$(initialize_env ${REPOSITORY} ${test_id}  | grep "^EXISTING_REF: " | awk '{ print $2 }')

@@ -1,5 +1,6 @@
 [
   {
+    "id": 1,
     "policy": {
       "default_retention_days": 1,
       "branches": []
@@ -18,6 +19,7 @@
     "description": "The file is deleted according to the default retention policy"
   },
   {
+    "id": 2,
     "policy": {
       "default_retention_days": 5,
       "branches": [
@@ -39,6 +41,7 @@
     "description": "The file is deleted according to branches' retention policies"
   },
   {
+    "id": 3,
     "policy": {
       "default_retention_days": 5,
       "branches": [
@@ -60,6 +63,7 @@
     "description": "The file is not deleted because of the retention policy of the second branch"
   },
   {
+    "id": 4,
     "policy": {
       "default_retention_days": 5,
       "branches": []
@@ -78,6 +82,7 @@
     "description": "The file isn't deleted according to default retention policy"
   },
   {
+    "id": 5,
     "policy": {
       "default_retention_days": 5,
       "branches": [
@@ -95,6 +100,7 @@
     "description": "The file is not deleted as it still exists in the second branch"
   },
   {
+    "id": 6,
     "policy": {
       "default_retention_days": 5,
       "branches": [
@@ -115,6 +121,7 @@
     "description": "The file is not deleted because default retention time keeps it for the second branch"
   },
   {
+    "id": 7,
     "policy": {
       "default_retention_days": 5,
       "branches": [
@@ -135,6 +142,7 @@
     "description": "The file is deleted as the retention policy for the branch permits the deletion from the branch, and the default retention policy permits deletion for the second branch"
   },
   {
+    "id": 8,
     "policy": {
       "default_retention_days": 1,
       "branches": [
@@ -155,6 +163,7 @@
     "description": "The file is not deleted as the branch retention policy overrules the default retention policy"
   },
   {
+    "id": 9,
     "policy": {
       "default_retention_days": 1,
       "branches": []
