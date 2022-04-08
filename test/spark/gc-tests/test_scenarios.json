@@ -6,11 +6,11 @@
     },
     "branches": [
       {
-        "branch_name": "a",
+        "branch_name": "a1",
         "delete_commit_days_ago": 2
       },
       {
-        "branch_name": "b",
+        "branch_name": "b1",
         "delete_commit_days_ago": 2
       }
     ],
@@ -21,17 +21,17 @@
     "policy": {
       "default_retention_days": 5,
       "branches": [
-        {"branch_id": "a", "retention_days": 1},
-        {"branch_id": "b", "retention_days": 3}
+        {"branch_id": "a2", "retention_days": 1},
+        {"branch_id": "b2", "retention_days": 3}
       ]
     },
     "branches": [
       {
-        "branch_name": "a",
+        "branch_name": "a2",
         "delete_commit_days_ago": 4
       },
       {
-        "branch_name": "b",
+        "branch_name": "b2",
         "delete_commit_days_ago": 4
       }
     ],
@@ -42,17 +42,17 @@
     "policy": {
       "default_retention_days": 5,
       "branches": [
-        {"branch_id": "a", "retention_days": 1},
-        {"branch_id": "b", "retention_days": 3}
+        {"branch_id": "a3", "retention_days": 1},
+        {"branch_id": "b3", "retention_days": 3}
       ]
     },
     "branches": [
       {
-        "branch_name": "a",
+        "branch_name": "a3",
         "delete_commit_days_ago": 4
       },
       {
-        "branch_name": "b",
+        "branch_name": "b3",
         "delete_commit_days_ago": 2
       }
     ],
@@ -66,11 +66,11 @@
     },
     "branches": [
       {
-        "branch_name": "a",
+        "branch_name": "a4",
         "delete_commit_days_ago": 4
       },
       {
-        "branch_name": "b",
+        "branch_name": "b4",
         "delete_commit_days_ago": 2
       }
     ],
@@ -81,13 +81,13 @@
     "policy": {
       "default_retention_days": 5,
       "branches": [
-        {"branch_id": "a", "retention_days": 1},
-        {"branch_id": "b", "retention_days": 3}
+        {"branch_id": "a5", "retention_days": 1},
+        {"branch_id": "b5", "retention_days": 3}
       ]
     },
     "branches": [
       {
-        "branch_name": "a",
+        "branch_name": "a5",
         "delete_commit_days_ago": 1
       }
     ],
@@ -98,16 +98,16 @@
     "policy": {
       "default_retention_days": 5,
       "branches": [
-        {"branch_id": "a", "retention_days": 1}
+        {"branch_id": "a6", "retention_days": 1}
       ]
     },
     "branches": [
       {
-        "branch_name": "a",
+        "branch_name": "a6",
         "delete_commit_days_ago": 1
       },
       {
-        "branch_name": "b",
+        "branch_name": "b6",
         "delete_commit_days_ago": 4
       }
     ],
@@ -118,16 +118,16 @@
     "policy": {
       "default_retention_days": 5,
       "branches": [
-        {"branch_id": "a", "retention_days": 1}
+        {"branch_id": "a7", "retention_days": 1}
       ]
     },
     "branches": [
       {
-        "branch_name": "a",
+        "branch_name": "a7",
         "delete_commit_days_ago": 1
       },
       {
-        "branch_name": "b",
+        "branch_name": "b7",
         "delete_commit_days_ago": 5
       }
     ],
@@ -138,16 +138,16 @@
     "policy": {
       "default_retention_days": 1,
       "branches": [
-        {"branch_id": "a", "retention_days": 3}
+        {"branch_id": "a8", "retention_days": 3}
       ]
     },
     "branches" : [
       {
-        "branch_name": "a",
+        "branch_name": "a8",
         "delete_commit_days_ago": 2
       },
       {
-        "branch_name": "b",
+        "branch_name": "b8",
         "delete_commit_days_ago": -1
       }
     ],
@@ -161,11 +161,11 @@
     },
     "branches" : [
       {
-        "branch_name": "a",
+        "branch_name": "a9",
         "delete_commit_days_ago": -1
       },
       {
-        "branch_name": "b",
+        "branch_name": "b9",
         "delete_commit_days_ago": -1
       }
     ],

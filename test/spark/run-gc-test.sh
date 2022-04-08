@@ -45,7 +45,7 @@ delete_and_commit() {
   local test_id=$3
   for branch_props in $(echo ${test_case} | jq -r '.branches [] | @base64'); do
     branch_props=$(_jq ${branch_props})
-    local branch_name="$(echo ${branch_props} | jq -r '.branch_name')${test_id}"
+    local branch_name=$(echo ${branch_props} | jq -r '.branch_name')
     local days_ago=$(echo ${branch_props} | jq -r '.delete_commit_days_ago')
     if [[ ${days_ago} -gt -1 ]]
     then
@@ -77,7 +77,7 @@ validate_gc_job() {
     branch_props=$(_jq ${branch_props})
     local days_ago=$(echo ${branch_props} | jq -r '.delete_commit_days_ago')
     if [[ ${days_ago} -gt -1 ]]; then
-      local branch_name="$(echo ${branch_props} | jq -r '.branch_name')${test_id}"
+      local branch_name=$(echo ${branch_props} | jq -r '.branch_name')
       for location in \
         lakefs://${repo}/${branch_name}/not_deleted_file1 \
         lakefs://${repo}/${branch_name}/not_deleted_file2 \
