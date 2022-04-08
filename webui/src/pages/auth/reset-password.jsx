@@ -13,23 +13,19 @@ import {Error} from "../../lib/components/controls";
 import {auth} from "../../lib/api";
 import validator from "validator/es";
 
-const TOKEN = "token";
+const TOKEN_PARAM_NAME = "token";
 
 const RequestResetPasswordForm = () => {
 
     const onEmailChange = () => {
-        if (validator.isEmail(email.current.value)) {
-            setFormValid(true);
-            setEmailValid(true);
-        } else {
-            setFormValid(false);
-            setEmailValid(false);
-        }
+        const isValid = validator.isEmail(email.current.value);
+        setFormValid(isValid);
+        setEmailValid(isValid);
     };
 
-    const [reqResetPwdError, setReqResetPwdError] = React.useState(null);
-    const [riskAccepted, setRiskAccepted] = React.useState(false);
-    const [resetReqSent, setResetReqSent] = React.useState(false);
+    const [reqResetPwdError, setReqResetPwdError] = useState(null);
+    const [riskAccepted, setRiskAccepted] = useState(false);
+    const [resetReqSent, setResetReqSent] = useState(false);
     const [formValid, setFormValid] = useState(false);
     const [emailValid, setEmailValid] = useState(null);
     const email = useRef(null);
@@ -64,7 +60,6 @@ const RequestResetPasswordForm = () => {
                                 try {
                                     // TODO: call activate reset password process endpoint
                                     // await auth.login(e.target.username.value, e.target.password.value)
-                                    console.log("submit request to start reset pwd process")
                                     setReqResetPwdError(null);
                                     setResetReqSent(true)
                                 } catch (err) {
@@ -116,8 +111,7 @@ const ResetPasswordForm = () => {
 
     const onConfirmPasswordChange = () => {
         setPwdConfirmValid(true)
-        if (newPwdField.current != null) {
-            console.log("here")
+        if (newPwdField.current !== null) {
             const isPasswordMatch = newPwdField.current.value === confirmPasswordField.current.value;
             setPwdConfirmValid(isPasswordMatch);
             setFormValid(isPasswordMatch)
@@ -125,9 +119,9 @@ const ResetPasswordForm = () => {
     };
 
     const [formValid, setFormValid] = useState(false);
-    const [pwdConfirmValid, setPwdConfirmValid] = React.useState(null);
+    const [pwdConfirmValid, setPwdConfirmValid] = useState(null);
 
-    const [resetPwdError, setResetPwdError] = React.useState(null);
+    const [resetPwdError, setResetPwdError] = useState(null);
     const newPwdField = useRef(null);
     const confirmPasswordField = useRef(null);
 
@@ -174,7 +168,7 @@ const ResetPasswordForm = () => {
 const ResetPasswordPage = () => {
     let queryString = window.location.search;
     let params = new URLSearchParams(queryString);
-    const token = params.get(TOKEN);
+    const token = params.get(TOKEN_PARAM_NAME);
 
     return (
         <Layout>

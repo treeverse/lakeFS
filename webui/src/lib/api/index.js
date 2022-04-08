@@ -769,7 +769,7 @@ class Config {
                 method: 'GET',
             });
         } catch (e) {
-            // return an empty response in case we are not logged in
+            // avoid crush in case we are not logged in
             return Promise.resolve({})
         }
         switch (response.status) {
