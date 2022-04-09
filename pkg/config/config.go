@@ -63,6 +63,9 @@ const (
 
 	DefaultAzureTryTimeout = 10 * time.Minute
 	DefaultAzureAuthMethod = "access-key"
+
+	DefaultEmailLimitEvery = time.Minute
+	DefaultEmailBurst      = 10
 )
 
 var (
@@ -161,6 +164,9 @@ const (
 
 	SecurityAuditCheckURLKey     = "security.audit_check_url"
 	DefaultSecurityAuditCheckURL = "https://audit.lakefs.io/audit"
+
+	EmailLimitEvery = "email.limit_every"
+	EmailBurst      = "email.burst"
 )
 
 func setDefaults() {
@@ -212,6 +218,8 @@ func setDefaults() {
 
 	viper.SetDefault(SecurityAuditCheckIntervalKey, DefaultSecurityAuditCheckInterval)
 	viper.SetDefault(SecurityAuditCheckURLKey, DefaultSecurityAuditCheckURL)
+	viper.SetDefault(EmailLimitEvery, DefaultEmailLimitEvery)
+	viper.SetDefault(EmailBurst, DefaultEmailBurst)
 }
 
 func reverse(s string) string {

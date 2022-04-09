@@ -14,14 +14,7 @@ type Emailer struct {
 	Limiter *rate.Limiter
 }
 
-var (
-	ErrRateLimitExceeded = errors.New("rate limit exceeded")
-)
-
-const (
-	defaultRateLimit = 1.0 / 60.0
-	defaultBurstRate = 10
-)
+var ErrRateLimitExceeded = errors.New("rate limit exceeded")
 
 type EmailParams struct {
 	SMTPHost   string
@@ -29,20 +22,13 @@ type EmailParams struct {
 	Username   string
 	Password   string
 	Sender     string
-	LimitEvery float64
+	LimitEvery time.Duration
 	Burst      int
 }
 
 func NewEmailer(e EmailParams) Emailer {
 	d := gomail.NewDialer(e.SMTPHost, e.Port, e.Username, e.Password)
-	if e.LimitEvery == 0 {
-		e.LimitEvery = defaultRateLimit
-	}
-	if e.Burst == 0 {
-		e.Burst = defaultBurstRate
-	}
-	limit := float64(time.Second) / float64(e.LimitEvery)
-	l := rate.NewLimiter(rate.Limit(limit), e.Burst)
+	l := rate.NewLimiter(rate.Every(e.LimitEvery), e.Burst)
 	return Emailer{
 		Params:  e,
 		Dialer:  d,
@@ -64,8 +50,7 @@ func (e Emailer) SendEmail(receivers []string, subject string, body string, atta
 
 func (e Emailer) SendEmailWithLimit(receivers []string, subject string, body string, attachmentFilePath []string) error {
 	if !e.Limiter.Allow() {
-		err := ErrRateLimitExceeded
-		return err
+		return ErrRateLimitExceeded
 	}
 	return e.SendEmail(receivers, subject, body, attachmentFilePath)
 }
