@@ -165,7 +165,7 @@ const (
 	SecurityAuditCheckURLKey     = "security.audit_check_url"
 	DefaultSecurityAuditCheckURL = "https://audit.lakefs.io/audit"
 
-	EmailLimitEveryKey = "email.limit_every"
+	EmailLimitEveryKey = "email.limit_every_duration"
 	EmailBurstKey      = "email.burst"
 )
 
