@@ -414,7 +414,7 @@ func (c *Config) GetEmailParams() (email.EmailParams, error) {
 		Username:           c.values.Email.Username,
 		Password:           c.values.Email.Password,
 		Sender:             c.values.Email.Sender,
-		LimitEveryDuration: c.values.Email.LimitEvery,
+		LimitEveryDuration: c.values.Email.LimitEveryDuration,
 		Burst:              c.values.Email.Burst,
 	}, nil
 }
