@@ -64,8 +64,8 @@ const (
 	DefaultAzureTryTimeout = 10 * time.Minute
 	DefaultAzureAuthMethod = "access-key"
 
-	DefaultEmailLimitEvery = time.Minute
-	DefaultEmailBurst      = 10
+	DefaultEmailLimitEveryDuration = time.Minute
+	DefaultEmailBurst              = 10
 )
 
 var (
@@ -218,7 +218,7 @@ func setDefaults() {
 
 	viper.SetDefault(SecurityAuditCheckIntervalKey, DefaultSecurityAuditCheckInterval)
 	viper.SetDefault(SecurityAuditCheckURLKey, DefaultSecurityAuditCheckURL)
-	viper.SetDefault(EmailLimitEveryDurationKey, DefaultEmailLimitEvery)
+	viper.SetDefault(EmailLimitEveryDurationKey, DefaultEmailLimitEveryDuration)
 	viper.SetDefault(EmailBurstKey, DefaultEmailBurst)
 }
 
