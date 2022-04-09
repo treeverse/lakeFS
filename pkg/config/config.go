@@ -165,8 +165,8 @@ const (
 	SecurityAuditCheckURLKey     = "security.audit_check_url"
 	DefaultSecurityAuditCheckURL = "https://audit.lakefs.io/audit"
 
-	EmailLimitEveryKey = "email.limit_every_duration"
-	EmailBurstKey      = "email.burst"
+	EmailLimitEveryDurationKey = "email.limit_every_duration"
+	EmailBurstKey              = "email.burst"
 )
 
 func setDefaults() {
@@ -218,7 +218,7 @@ func setDefaults() {
 
 	viper.SetDefault(SecurityAuditCheckIntervalKey, DefaultSecurityAuditCheckInterval)
 	viper.SetDefault(SecurityAuditCheckURLKey, DefaultSecurityAuditCheckURL)
-	viper.SetDefault(EmailLimitEveryKey, DefaultEmailLimitEvery)
+	viper.SetDefault(EmailLimitEveryDurationKey, DefaultEmailLimitEvery)
 	viper.SetDefault(EmailBurstKey, DefaultEmailBurst)
 }
 

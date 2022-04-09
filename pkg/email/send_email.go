@@ -26,10 +26,10 @@ type EmailParams struct {
 	Burst              int
 }
 
-func NewEmailer(e EmailParams) Emailer {
+func NewEmailer(e EmailParams) *Emailer {
 	dialer := gomail.NewDialer(e.SMTPHost, e.Port, e.Username, e.Password)
 	limiter := rate.NewLimiter(rate.Every(e.LimitEveryDuration), e.Burst)
-	return Emailer{
+	return &Emailer{
 		Params:  e,
 		Dialer:  dialer,
 		Limiter: limiter,
