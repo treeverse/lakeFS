@@ -7,12 +7,12 @@ import io.treeverse.clients.LakeFSContext.{
   LAKEFS_CONF_API_URL_KEY
 }
 import org.apache.hadoop.conf.Configuration
+import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{SparkSession, _}
 
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amazonaws.ClientConfiguration
@@ -23,8 +23,25 @@ import java.net.URI
 import collection.JavaConverters._
 
 object GarbageCollector {
+  type ConfMap = List[(String, String)]
 
   case class APIConfigurations(apiURL: String, accessKey: String, secretKey: String)
+
+  /**
+   * @return a serializable summary of values in hc starting with prefix.
+   */
+  def getHadoopConfigurationValues(hc: Configuration, prefix: String): ConfMap =
+    hc.iterator.asScala
+      .filter(_.getKey.startsWith(prefix))
+      .map(e => (e.getKey, e.getValue))
+      .toList
+      .asInstanceOf[ConfMap]
+
+  def configurationFromValues(v: Broadcast[ConfMap]) = {
+    val hc = new Configuration()
+    v.value.foreach({ case (k, v) => hc.set(k, v) })
+    hc
+  }
 
   def getCommitsDF(runID: String, commitDFLocation: String, spark: SparkSession): Dataset[Row] = {
     spark.read
@@ -36,7 +53,8 @@ object GarbageCollector {
   private def getRangeTuples(
       commitID: String,
       repo: String,
-      conf: APIConfigurations
+      conf: APIConfigurations,
+      hcValues: Broadcast[ConfMap]
   ): Set[(String, Array[Byte], Array[Byte])] = {
     val location =
       new ApiClient(conf.apiURL, conf.accessKey, conf.secretKey).getMetaRangeURL(repo, commitID)
@@ -44,7 +62,7 @@ object GarbageCollector {
     if (location == "") Set()
     else
       SSTableReader
-        .forMetaRange(new Configuration(), location)
+        .forMetaRange(configurationFromValues(hcValues), ApiClient.translateS3String(location))
         .newIterator()
         .map(range =>
           (new String(range.id), range.message.minKey.toByteArray, range.message.maxKey.toByteArray)
@@ -55,10 +73,11 @@ object GarbageCollector {
   def getRangesDFFromCommits(
       commits: Dataset[Row],
       repo: String,
-      conf: APIConfigurations
+      conf: APIConfigurations,
+      hcValues: Broadcast[ConfMap]
   ): Dataset[Row] = {
     val get_range_tuples = udf((commitID: String) => {
-      getRangeTuples(commitID, repo, conf).toSeq
+      getRangeTuples(commitID, repo, conf, hcValues).toSeq
     })
 
     commits.distinct
@@ -75,12 +94,13 @@ object GarbageCollector {
   def getRangeAddresses(
       rangeID: String,
       conf: APIConfigurations,
-      repo: String
+      repo: String,
+      hcValues: Broadcast[ConfMap]
   ): Seq[String] = {
     val location =
       new ApiClient(conf.apiURL, conf.accessKey, conf.secretKey).getRangeURL(repo, rangeID)
     SSTableReader
-      .forRange(new Configuration(), location)
+      .forRange(configurationFromValues(hcValues), ApiClient.translateS3String(location))
       .newIterator()
       .map(a => a.message.address)
       .toSeq
@@ -89,7 +109,8 @@ object GarbageCollector {
   def getEntryTuples(
       rangeID: String,
       conf: APIConfigurations,
-      repo: String
+      repo: String,
+      hcValues: Broadcast[ConfMap]
   ): Set[(String, String, Boolean, Long)] = {
     def getSeconds(ts: Option[Timestamp]): Long = {
       ts.getOrElse(0).asInstanceOf[Timestamp].seconds
@@ -98,7 +119,7 @@ object GarbageCollector {
     val location =
       new ApiClient(conf.apiURL, conf.accessKey, conf.secretKey).getRangeURL(repo, rangeID)
     SSTableReader
-      .forRange(new Configuration(), location)
+      .forRange(configurationFromValues(hcValues), ApiClient.translateS3String(location))
       .newIterator()
       .map(a =>
         (
@@ -120,17 +141,18 @@ object GarbageCollector {
       leftRangeIDs: Set[String],
       rightRangeIDs: Set[String],
       conf: APIConfigurations,
-      repo: String
+      repo: String,
+      hcValues: Broadcast[ConfMap]
   ): Set[(String, String, Boolean, Long)] = {
-    distinctEntryTuples(leftRangeIDs, conf, repo)
+    distinctEntryTuples(leftRangeIDs, conf, repo, hcValues)
 
-    val leftTuples = distinctEntryTuples(leftRangeIDs, conf, repo)
-    val rightTuples = distinctEntryTuples(rightRangeIDs, conf, repo)
+    val leftTuples = distinctEntryTuples(leftRangeIDs, conf, repo, hcValues)
+    val rightTuples = distinctEntryTuples(rightRangeIDs, conf, repo, hcValues)
     leftTuples -- rightTuples
   }
 
-  private def distinctEntryTuples(rangeIDs: Set[String], conf: APIConfigurations, repo: String) = {
-    val tuples = rangeIDs.map((rangeID: String) => getEntryTuples(rangeID, conf, repo))
+  private def distinctEntryTuples(rangeIDs: Set[String], conf: APIConfigurations, repo: String, hcValues: Broadcast[ConfMap]) = {
+    val tuples = rangeIDs.map((rangeID: String) => getEntryTuples(rangeID, conf, repo, hcValues))
     if (tuples.isEmpty) Set[(String, String, Boolean, Long)]() else tuples.reduce(_.union(_))
   }
 
@@ -142,10 +164,11 @@ object GarbageCollector {
   def getExpiredEntriesFromRanges(
       ranges: Dataset[Row],
       conf: APIConfigurations,
-      repo: String
+      repo: String,
+      hcValues: Broadcast[ConfMap]
   ): Dataset[Row] = {
     val left_anti_join_addresses = udf((x: Seq[String], y: Seq[String]) => {
-      leftAntiJoinAddresses(x.toSet, y.toSet, conf, repo).toSeq
+      leftAntiJoinAddresses(x.toSet, y.toSet, conf, repo, hcValues).toSeq
     })
     val expiredRangesDF = ranges.where("expired")
     val activeRangesDF = ranges.where("!expired")
@@ -214,14 +237,15 @@ object GarbageCollector {
       runID: String,
       commitDFLocation: String,
       spark: SparkSession,
-      conf: APIConfigurations
+      conf: APIConfigurations,
+      hcValues: Broadcast[ConfMap]
   ): Dataset[Row] = {
     val commitsDF = getCommitsDF(runID, commitDFLocation, spark)
-    val rangesDF = getRangesDFFromCommits(commitsDF, repo, conf)
-    val expired = getExpiredEntriesFromRanges(rangesDF, conf, repo)
+    val rangesDF = getRangesDFFromCommits(commitsDF, repo, conf, hcValues)
+    val expired = getExpiredEntriesFromRanges(rangesDF, conf, repo, hcValues)
 
     val activeRangesDF = rangesDF.where("!expired")
-    subtractDeduplications(expired, activeRangesDF, conf, repo, spark)
+    subtractDeduplications(expired, activeRangesDF, conf, repo, spark, hcValues)
   }
 
   private def subtractDeduplications(
@@ -229,13 +253,14 @@ object GarbageCollector {
       activeRangesDF: Dataset[Row],
       conf: APIConfigurations,
       repo: String,
-      spark: SparkSession
+      spark: SparkSession,
+      hcValues: Broadcast[ConfMap]
   ): Dataset[Row] = {
     val activeRangesRDD: RDD[String] =
       activeRangesDF.select("range_id").rdd.distinct().map(x => x.getString(0))
     val activeAddresses: RDD[String] = activeRangesRDD
       .flatMap(range => {
-        getRangeAddresses(range, conf, repo)
+        getRangeAddresses(range, conf, repo, hcValues)
       })
       .distinct()
     val activeAddressesRows: RDD[Row] = activeAddresses.map(x => Row(x))
@@ -264,11 +289,15 @@ object GarbageCollector {
     val previousRunID =
       "" //args(2) // TODO(Guys): get previous runID from arguments or from storage
     val hc = spark.sparkContext.hadoopConfiguration
+
+    val hcValues = spark.sparkContext.broadcast(getHadoopConfigurationValues(hc, "fs."))
+
     val apiURL = hc.get(LAKEFS_CONF_API_URL_KEY)
     val accessKey = hc.get(LAKEFS_CONF_API_ACCESS_KEY_KEY)
     val secretKey = hc.get(LAKEFS_CONF_API_SECRET_KEY_KEY)
-    val res = new ApiClient(apiURL, accessKey, secretKey)
-      .prepareGarbageCollectionCommits(repo, previousRunID)
+    val apiClient = new ApiClient(apiURL, accessKey, secretKey)
+
+    val res = apiClient.prepareGarbageCollectionCommits(repo, previousRunID)
     val runID = res.getRunId
     println("apiURL: " + apiURL)
 
@@ -280,7 +309,8 @@ object GarbageCollector {
                                                runID,
                                                gcCommitsLocation,
                                                spark,
-                                               APIConfigurations(apiURL, accessKey, secretKey)
+                                               APIConfigurations(apiURL, accessKey, secretKey),
+                                               hcValues
                                               ).withColumn("run_id", lit(runID))
     spark.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
     expiredAddresses.write
@@ -291,13 +321,13 @@ object GarbageCollector {
     println("Expired addresses:")
     expiredAddresses.show()
 
-    S3BulkDeleter.remove(repo, gcAddressesLocation, expiredAddresses, runID, region, spark)
+    val storageNamespace = new ApiClient(apiURL, accessKey, secretKey).getStorageNamespace(repo)
+
+    remove(storageNamespace, gcAddressesLocation, expiredAddresses, runID, region, hcValues)
 
     spark.close()
   }
-}
 
-object S3BulkDeleter {
   private def repartitionBySize(df: DataFrame, maxSize: Int, column: String): DataFrame = {
     val nRows = df.count()
     val nPartitions = math.max(1, math.floor(nRows / maxSize)).toInt
@@ -323,7 +353,7 @@ object S3BulkDeleter {
     res.getDeletedObjects.asScala.map(_.getKey())
   }
 
-  private def getS3Client(hc: Configuration, region: String, numRetries: Int): AmazonS3 = {
+  private def getS3Client(hc: Configuration, bucket: String, region: String, numRetries: Int): AmazonS3 = {
     import org.apache.hadoop.fs.s3a.Constants
     import org.apache.hadoop.fs.s3a.auth.AssumedRoleCredentialProvider
 
@@ -334,7 +364,7 @@ object S3BulkDeleter {
     //     and query for its credentials provider.  And cache them, in case
     //     some objects live in different buckets.
     val credentialsProvider = if (hc.get(Constants.AWS_CREDENTIALS_PROVIDER) == AssumedRoleCredentialProvider.NAME)
-      Some(new AssumedRoleCredentialProvider(null, hc)) else None
+      Some(new AssumedRoleCredentialProvider(new java.net.URI("s3a://" + bucket), hc)) else None
 
     val builder = AmazonS3ClientBuilder
       .standard()
@@ -351,20 +381,21 @@ object S3BulkDeleter {
   def bulkRemove(
       readKeysDF: DataFrame,
       bulkSize: Int,
-      spark: SparkSession,
       bucket: String,
       region: String,
       numRetries: Int,
-      snPrefix: String
+      snPrefix: String,
+      hcValues: Broadcast[ConfMap]
   ): Dataset[String] = {
+    val spark = org.apache.spark.sql.SparkSession.active
     import spark.implicits._
-    val s3Client = getS3Client(spark.sparkContext.hadoopConfiguration, region, numRetries)
     val repartitionedKeys = repartitionBySize(readKeysDF, bulkSize, "address")
     val bulkedKeyStrings = repartitionedKeys
       .select("address")
       .map(_.getString(0)) // get address as string (address is in index 0 of row)
     bulkedKeyStrings
       .mapPartitions(iter => {
+        val s3Client = getS3Client(configurationFromValues(hcValues), bucket, region, numRetries)
         iter
           .grouped(bulkSize)
           .flatMap(delObjIteration(bucket, _, s3Client, snPrefix))
@@ -372,21 +403,16 @@ object S3BulkDeleter {
   }
 
   def remove(
-      repo: String,
+      storageNamespace: String,
       addressDFLocation: String,
       expiredAddresses: Dataset[Row],
       runID: String,
       region: String,
-      spark: SparkSession
+      hcValues: Broadcast[ConfMap]
   ) = {
     val MaxBulkSize = 1000
     val awsRetries = 1000
 
-    val hc = spark.sparkContext.hadoopConfiguration
-    val apiURL = hc.get(LAKEFS_CONF_API_URL_KEY)
-    val accessKey = hc.get(LAKEFS_CONF_API_ACCESS_KEY_KEY)
-    val secretKey = hc.get(LAKEFS_CONF_API_SECRET_KEY_KEY)
-    val storageNamespace = new ApiClient(apiURL, accessKey, secretKey).getStorageNamespace(repo)
     println("storageNamespace: " + storageNamespace)
     val uri = new URI(storageNamespace)
     val bucket = uri.getHost
@@ -400,7 +426,7 @@ object S3BulkDeleter {
       .where(col("run_id") === runID)
       .where(col("relative") === true)
     val res =
-      bulkRemove(df, MaxBulkSize, spark, bucket, region, awsRetries, snPrefix)
+      bulkRemove(df, MaxBulkSize, bucket, region, awsRetries, snPrefix, hcValues)
         .toDF("addresses")
         .collect()
   }
