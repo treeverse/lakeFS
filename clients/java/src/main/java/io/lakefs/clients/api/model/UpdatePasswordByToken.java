@@ -37,10 +37,6 @@ public class UpdatePasswordByToken {
   @SerializedName(SERIALIZED_NAME_NEW_PASSWORD)
   private String newPassword;
 
-  public static final String SERIALIZED_NAME_NEW_PASSWORD_CONFIRM = "newPasswordConfirm";
-  @SerializedName(SERIALIZED_NAME_NEW_PASSWORD_CONFIRM)
-  private String newPasswordConfirm;
-
 
   public UpdatePasswordByToken token(String token) {
     
@@ -88,29 +84,6 @@ public class UpdatePasswordByToken {
   }
 
 
-  public UpdatePasswordByToken newPasswordConfirm(String newPasswordConfirm) {
-    
-    this.newPasswordConfirm = newPasswordConfirm;
-    return this;
-  }
-
-   /**
-   * new password confirmation
-   * @return newPasswordConfirm
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "new password confirmation")
-
-  public String getNewPasswordConfirm() {
-    return newPasswordConfirm;
-  }
-
-
-  public void setNewPasswordConfirm(String newPasswordConfirm) {
-    this.newPasswordConfirm = newPasswordConfirm;
-  }
-
-
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -121,13 +94,12 @@ public class UpdatePasswordByToken {
     }
     UpdatePasswordByToken updatePasswordByToken = (UpdatePasswordByToken) o;
     return Objects.equals(this.token, updatePasswordByToken.token) &&
-        Objects.equals(this.newPassword, updatePasswordByToken.newPassword) &&
-        Objects.equals(this.newPasswordConfirm, updatePasswordByToken.newPasswordConfirm);
+        Objects.equals(this.newPassword, updatePasswordByToken.newPassword);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(token, newPassword, newPasswordConfirm);
+    return Objects.hash(token, newPassword);
   }
 
   @Override
@@ -136,7 +108,6 @@ public class UpdatePasswordByToken {
     sb.append("class UpdatePasswordByToken {\n");
     sb.append("    token: ").append(toIndentedString(token)).append("\n");
     sb.append("    newPassword: ").append(toIndentedString(newPassword)).append("\n");
-    sb.append("    newPasswordConfirm: ").append(toIndentedString(newPasswordConfirm)).append("\n");
     sb.append("}");
     return sb.toString();
   }

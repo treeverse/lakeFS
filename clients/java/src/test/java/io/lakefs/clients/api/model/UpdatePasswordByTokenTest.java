@@ -56,12 +56,4 @@ public class UpdatePasswordByTokenTest {
         // TODO: test newPassword
     }
 
-    /**
-     * Test the property 'newPasswordConfirm'
-     */
-    @Test
-    public void newPasswordConfirmTest() {
-        // TODO: test newPasswordConfirm
-    }
-
 }
