@@ -96,6 +96,8 @@ lazy val spark2Type =
   new BuildType("247", scala211Version, "2.4.7", "0.9.8", "2.7.7", "hadoop2-2.0.1")
 lazy val spark3Type =
   new BuildType("301", scala212Version, "3.0.1", "0.10.11", "2.7.7", "hadoop2-2.0.1")
+
+// EMR-6.5.0 beta, managed GC
 lazy val spark312Type =
   new BuildType("312", scala212Version, "3.1.2", "0.10.11", "3.2.1", "hadoop2-2.0.1")
 

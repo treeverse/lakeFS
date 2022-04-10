@@ -432,19 +432,5 @@ object GarbageCollector {
 
     bulkRemove(df, MaxBulkSize, bucket, region, awsRetries, snPrefix, hcValues).toDF("addresses")
   }
-
-  // def main(args: Array[String]): Unit = {
-  //   if (args.length != 4) {
-  //     Console.err.println(
-  //       "Usage: ... <repo_name> <runID> <region> s3://storageNamespace/prepared_addresses_table"
-  //     )
-  //     System.exit(1)
-  //   }
-  //   val repo = args(0)
-  //   val runID = args(1)
-  //   val region = args(2)
-  //   val addressesDFLocation = args(3)
-  //   val spark = SparkSession.builder().getOrCreate()
-  //   remove(repo, addressesDFLocation, runID, region, spark)
-  // }
 }
+
