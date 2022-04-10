@@ -211,6 +211,37 @@ paths:
       - auth
       x-contentType: application/json
       x-accepts: application/json
+  /auth/invite/user:
+    post:
+      operationId: inviteUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InviteUserRequest'
+        required: true
+      responses:
+        "201":
+          description: User created and email sent
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: bad request
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      security:
+      - cookie_auth: []
+      summary: creates user with the given email
+      tags:
+      - auth
+      x-contentType: application/json
+      x-accepts: application/json
   /auth/users:
     get:
       operationId: listUsers
@@ -4972,6 +5003,19 @@ components:
           type: string
       required:
       - email
+      type: object
+    InviteUserRequest:
+      example:
+        id: id
+        email: email
+      properties:
+        email:
+          type: string
+        id:
+          type: string
+      required:
+      - email
+      - id
       type: object
     UserCreation:
       example:

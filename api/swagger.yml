@@ -556,6 +556,17 @@ components:
         email:
           type: string
 
+    InviteUserRequest:
+      type: object
+      required:
+        - email
+        - id
+      properties:
+        email:
+          type: string
+        id: # named Id to support backward compatibility with create user
+          type: string
+        
     UserCreation:
       type: object
       properties:
@@ -1136,6 +1147,34 @@ paths:
                   $ref: "#/components/schemas/Error"
           default:
             $ref: "#/components/responses/ServerError"
+
+
+  /auth/invite/user:
+      post:
+        tags:
+          - auth
+        operationId: inviteUser
+        summary: creates user with the given email
+        security:
+          - cookie_auth: []
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InviteUserRequest"
+        responses:
+          201:
+            description: User created and email sent
+          400:
+            description: bad request
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/Error"
+          default:
+            $ref: "#/components/responses/ServerError"
+
 
   /auth/users:
     get:

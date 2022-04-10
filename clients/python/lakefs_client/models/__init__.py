@@ -36,6 +36,7 @@ from lakefs_client.model.group_list import GroupList
 from lakefs_client.model.hook_run import HookRun
 from lakefs_client.model.hook_run_list import HookRunList
 from lakefs_client.model.inline_object1 import InlineObject1
+from lakefs_client.model.invite_user_request import InviteUserRequest
 from lakefs_client.model.login_information import LoginInformation
 from lakefs_client.model.merge import Merge
 from lakefs_client.model.merge_result import MergeResult

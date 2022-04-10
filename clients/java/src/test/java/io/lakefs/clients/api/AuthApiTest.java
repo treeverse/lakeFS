@@ -24,6 +24,7 @@ import io.lakefs.clients.api.model.ForgotPasswordRequest;
 import io.lakefs.clients.api.model.Group;
 import io.lakefs.clients.api.model.GroupCreation;
 import io.lakefs.clients.api.model.GroupList;
+import io.lakefs.clients.api.model.InviteUserRequest;
 import io.lakefs.clients.api.model.LoginInformation;
 import io.lakefs.clients.api.model.Policy;
 import io.lakefs.clients.api.model.PolicyList;
@@ -352,6 +353,21 @@ public class AuthApiTest {
     public void getUserTest() throws ApiException {
         String userId = null;
                 User response = api.getUser(userId);
+        // TODO: test validations
+    }
+    
+    /**
+     * creates user with the given email
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void inviteUserTest() throws ApiException {
+        InviteUserRequest inviteUserRequest = null;
+                api.inviteUser(inviteUserRequest);
         // TODO: test validations
     }
     

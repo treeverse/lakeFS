@@ -24,6 +24,7 @@ Method | HTTP request | Description
 [**get_group**](AuthApi.md#get_group) | **GET** /auth/groups/{groupId} | get group
 [**get_policy**](AuthApi.md#get_policy) | **GET** /auth/policies/{policyId} | get policy
 [**get_user**](AuthApi.md#get_user) | **GET** /auth/users/{userId} | get user
+[**invite_user**](AuthApi.md#invite_user) | **POST** /auth/invite/user | creates user with the given email
 [**list_group_members**](AuthApi.md#list_group_members) | **GET** /auth/groups/{groupId}/members | list group members
 [**list_group_policies**](AuthApi.md#list_group_policies) | **GET** /auth/groups/{groupId}/policies | list group policies
 [**list_groups**](AuthApi.md#list_groups) | **GET** /auth/groups | list groups
@@ -1889,6 +1890,87 @@ Name | Type | Description  | Notes
 **200** | user |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**0** | Internal Server Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **invite_user**
+> invite_user(invite_user_request)
+
+creates user with the given email
+
+### Example
+
+* Api Key Authentication (cookie_auth):
+
+```python
+import time
+import lakefs_client
+from lakefs_client.api import auth_api
+from lakefs_client.model.invite_user_request import InviteUserRequest
+from lakefs_client.model.error import Error
+from pprint import pprint
+# Defining the host is optional and defaults to http://localhost/api/v1
+# See configuration.py for a list of all supported configuration parameters.
+configuration = lakefs_client.Configuration(
+    host = "http://localhost/api/v1"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
+
+# Enter a context with an instance of the API client
+with lakefs_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = auth_api.AuthApi(api_client)
+    invite_user_request = InviteUserRequest(
+        email="email_example",
+        id="id_example",
+    ) # InviteUserRequest | 
+
+    # example passing only required values which don't have defaults set
+    try:
+        # creates user with the given email
+        api_instance.invite_user(invite_user_request)
+    except lakefs_client.ApiException as e:
+        print("Exception when calling AuthApi->invite_user: %s\n" % e)
+```
+
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **invite_user_request** | [**InviteUserRequest**](InviteUserRequest.md)|  |
+
+### Return type
+
+void (empty response body)
+
+### Authorization
+
+[cookie_auth](../README.md#cookie_auth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**201** | User created and email sent |  -  |
+**400** | bad request |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

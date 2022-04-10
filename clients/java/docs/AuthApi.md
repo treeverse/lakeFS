@@ -24,6 +24,7 @@ Method | HTTP request | Description
 [**getGroup**](AuthApi.md#getGroup) | **GET** /auth/groups/{groupId} | get group
 [**getPolicy**](AuthApi.md#getPolicy) | **GET** /auth/policies/{policyId} | get policy
 [**getUser**](AuthApi.md#getUser) | **GET** /auth/users/{userId} | get user
+[**inviteUser**](AuthApi.md#inviteUser) | **POST** /auth/invite/user | creates user with the given email
 [**listGroupMembers**](AuthApi.md#listGroupMembers) | **GET** /auth/groups/{groupId}/members | list group members
 [**listGroupPolicies**](AuthApi.md#listGroupPolicies) | **GET** /auth/groups/{groupId}/policies | list group policies
 [**listGroups**](AuthApi.md#listGroups) | **GET** /auth/groups | list groups
@@ -1604,6 +1605,74 @@ Name | Type | Description  | Notes
 **200** | user |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**0** | Internal Server Error |  -  |
+
+<a name="inviteUser"></a>
+# **inviteUser**
+> inviteUser(inviteUserRequest)
+
+creates user with the given email
+
+### Example
+```java
+// Import classes:
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("http://localhost/api/v1");
+    
+    // Configure API key authorization: cookie_auth
+    ApiKeyAuth cookie_auth = (ApiKeyAuth) defaultClient.getAuthentication("cookie_auth");
+    cookie_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //cookie_auth.setApiKeyPrefix("Token");
+
+    AuthApi apiInstance = new AuthApi(defaultClient);
+    InviteUserRequest inviteUserRequest = new InviteUserRequest(); // InviteUserRequest | 
+    try {
+      apiInstance.inviteUser(inviteUserRequest);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling AuthApi#inviteUser");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **inviteUserRequest** | [**InviteUserRequest**](InviteUserRequest.md)|  |
+
+### Return type
+
+null (empty response body)
+
+### Authorization
+
+[cookie_auth](../README.md#cookie_auth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**201** | User created and email sent |  -  |
+**400** | bad request |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="listGroupMembers"></a>

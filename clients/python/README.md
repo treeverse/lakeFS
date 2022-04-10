@@ -128,6 +128,7 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**get_group**](docs/AuthApi.md#get_group) | **GET** /auth/groups/{groupId} | get group
 *AuthApi* | [**get_policy**](docs/AuthApi.md#get_policy) | **GET** /auth/policies/{policyId} | get policy
 *AuthApi* | [**get_user**](docs/AuthApi.md#get_user) | **GET** /auth/users/{userId} | get user
+*AuthApi* | [**invite_user**](docs/AuthApi.md#invite_user) | **POST** /auth/invite/user | creates user with the given email
 *AuthApi* | [**list_group_members**](docs/AuthApi.md#list_group_members) | **GET** /auth/groups/{groupId}/members | list group members
 *AuthApi* | [**list_group_policies**](docs/AuthApi.md#list_group_policies) | **GET** /auth/groups/{groupId}/policies | list group policies
 *AuthApi* | [**list_groups**](docs/AuthApi.md#list_groups) | **GET** /auth/groups | list groups
@@ -218,6 +219,7 @@ Class | Method | HTTP request | Description
  - [HookRun](docs/HookRun.md)
  - [HookRunList](docs/HookRunList.md)
  - [InlineObject1](docs/InlineObject1.md)
+ - [InviteUserRequest](docs/InviteUserRequest.md)
  - [LoginInformation](docs/LoginInformation.md)
  - [Merge](docs/Merge.md)
  - [MergeResult](docs/MergeResult.md)

@@ -164,6 +164,13 @@ class TestAuthApi(unittest.TestCase):
         """
         pass
 
+    def test_invite_user(self):
+        """Test case for invite_user
+
+        creates user with the given email  # noqa: E501
+        """
+        pass
+
     def test_list_group_members(self):
         """Test case for list_group_members
 
