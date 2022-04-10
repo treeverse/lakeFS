@@ -6,8 +6,7 @@ import (
 )
 
 const (
-	ResetPasswordPath = "/auth/resetpassword?token="
-
+	ResetPasswordPath  = "/auth/resetpassword?token="
 	ResetEmailTemplate = `Hello, <br>
 	A request has been received to change the password to your account,  <br>
 	Click on this link to reset your password <br>
@@ -20,7 +19,6 @@ const (
 
 	The LakeFS team <br>
 	`
-
 	ResetPasswordEmailSubject = "Reset Password Request for your Lakefs account"
 )
 
