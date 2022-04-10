@@ -44,7 +44,7 @@ func (c *CatalogRepoActions) Progress() []*cmdutils.Progress {
 
 // EntryCatalog is a facet for a catalog.Store
 type EntryCatalog interface {
-	WriteMetaRange(ctx context.Context, repositoryID graveler.RepositoryID, it graveler.ValueIterator) (*graveler.MetaRangeID, error)
+	WriteMetaRangeByIterator(ctx context.Context, repositoryID graveler.RepositoryID, it graveler.ValueIterator) (*graveler.MetaRangeID, error)
 	AddCommitToBranchHead(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, commit graveler.Commit) (graveler.CommitID, error)
 	List(ctx context.Context, repositoryID graveler.RepositoryID, ref graveler.Ref) (graveler.ValueIterator, error)
 	AddCommit(ctx context.Context, repositoryID graveler.RepositoryID, commit graveler.Commit) (graveler.CommitID, error)
@@ -94,7 +94,7 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, _ boo
 	defer listIt.Close()
 
 	listingIterator := catalog.NewEntryListingIterator(catalog.NewValueToEntryIterator(listIt), "", "")
-	c.createdMetaRangeID, err = c.entryCatalog.WriteMetaRange(ctx, c.repoID,
+	c.createdMetaRangeID, err = c.entryCatalog.WriteMetaRangeByIterator(ctx, c.repoID,
 		catalog.NewEntryToValueIterator(newPrefixMergeIterator(
 			NewValueToEntryIterator(invIt, c.progress), listingIterator, c.prefixes)))
 	if err != nil {

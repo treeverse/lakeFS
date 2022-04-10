@@ -102,4 +102,7 @@ type RangeWriter interface {
 
 	// Abort terminates the non-closed file and removes all traces.
 	Abort() error
+
+	// ShouldBreakAtKey returns true if should break range after the given key
+	ShouldBreakAtKey(key graveler.Key, params *Params) bool
 }

@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/treeverse/lakefs/pkg/graveler"
+
 	"github.com/go-test/deep"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -74,6 +76,8 @@ func (f *FakeRangeWriter) SetMetadata(key, value string) {
 }
 
 func (*FakeRangeWriter) GetApproximateSize() uint64 { return 0 }
+
+func (*FakeRangeWriter) ShouldBreakAtKey(graveler.Key, *committed.Params) bool { return false }
 
 func (f *FakeRangeWriter) Close() (*committed.WriteResult, error) {
 	if f.closed {

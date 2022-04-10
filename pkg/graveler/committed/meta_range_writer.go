@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"hash/fnv"
 	"sort"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -141,19 +140,7 @@ func (w *GeneralMetaRangeWriter) Close() (*graveler.MetaRangeID, error) {
 
 // shouldBreakAtKey returns true if should break range after the given key
 func (w *GeneralMetaRangeWriter) shouldBreakAtKey(key graveler.Key) bool {
-	approximateSize := w.rangeWriter.GetApproximateSize()
-	if approximateSize < w.params.MinRangeSizeBytes {
-		return false
-	}
-	if approximateSize >= w.params.MaxRangeSizeBytes {
-		return true
-	}
-
-	h := fnv.New64a()
-	// FNV always reads all bytes and never fails; ignore its return values
-	_, _ = h.Write(key)
-	r := h.Sum64() % uint64(w.params.RangeSizeEntriesRaggedness)
-	return r == 0
+	return w.rangeWriter.ShouldBreakAtKey(key, w.params)
 }
 
 // writeRangesToMetaRange writes all ranges to a MetaRange and returns the MetaRangeID
