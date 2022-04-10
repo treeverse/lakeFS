@@ -112,6 +112,7 @@ components:
       properties:
         id:
           type: integer
+          format: int64
         name:
           type: string
         creation_date:
@@ -193,8 +194,6 @@ components:
           type: integer
           format: int64
           description: Unix Epoch in seconds
-        user_id:
-          type: integer
 
     Group:
       type: object
@@ -401,6 +400,7 @@ paths:
         required: true
         schema:
           type: integer
+          format: int64
     get:
       tags:
         - auth

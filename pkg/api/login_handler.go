@@ -21,7 +21,7 @@ const (
 	JWTCookieName          = "access_token"
 )
 
-func GenerateJWT(secret []byte, userID int, issuedAt, expiresAt time.Time) (string, error) {
+func GenerateJWT(secret []byte, userID int64, issuedAt, expiresAt time.Time) (string, error) {
 	claims := &jwt.StandardClaims{
 		Subject:   fmt.Sprint(userID),
 		IssuedAt:  issuedAt.Unix(),

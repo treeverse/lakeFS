@@ -1,6 +1,6 @@
 package auth
 
-//go:generate oapi-codegen -package auth -generate "types,client,spec"  -o client.gen.go ../../api/authorization.yml
+//go:generate oapi-codegen -package auth -generate "types,client"  -o client.gen.go ../../api/authorization.yml
 
 import (
 	"context"
@@ -41,9 +41,9 @@ type Service interface {
 	SecretStore() crypt.SecretStore
 
 	// users
-	CreateUser(ctx context.Context, user *model.User) (int, error)
+	CreateUser(ctx context.Context, user *model.User) (int64, error)
 	DeleteUser(ctx context.Context, username string) error
-	GetUserByID(ctx context.Context, userID int) (*model.User, error)
+	GetUserByID(ctx context.Context, userID int64) (*model.User, error)
 	GetUser(ctx context.Context, username string) (*model.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
 	ListUsers(ctx context.Context, params *model.PaginationParams) ([]*model.User, *model.Paginator, error)
@@ -249,12 +249,12 @@ func (s *DBAuthService) DB() db.Database {
 	return s.db
 }
 
-func (s *DBAuthService) CreateUser(ctx context.Context, user *model.User) (int, error) {
+func (s *DBAuthService) CreateUser(ctx context.Context, user *model.User) (int64, error) {
 	id, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		if err := model.ValidateAuthEntityID(user.Username); err != nil {
 			return nil, err
 		}
-		var id int
+		var id int64
 		err := tx.Get(&id,
 			`INSERT INTO auth_users (display_name, created_at, friendly_name, source) VALUES ($1, $2, $3, $4) RETURNING id`,
 			user.Username, user.CreatedAt, user.FriendlyName, user.Source)
@@ -263,7 +263,7 @@ func (s *DBAuthService) CreateUser(ctx context.Context, user *model.User) (int, 
 	if err != nil {
 		return InvalidUserID, err
 	}
-	return id.(int), err
+	return id.(int64), err
 }
 
 func (s *DBAuthService) DeleteUser(ctx context.Context, username string) error {
@@ -297,7 +297,7 @@ func (s *DBAuthService) GetUserByEmail(ctx context.Context, email string) (*mode
 	})
 }
 
-func (s *DBAuthService) GetUserByID(ctx context.Context, userID int) (*model.User, error) {
+func (s *DBAuthService) GetUserByID(ctx context.Context, userID int64) (*model.User, error) {
 	return s.cache.GetUserByID(userID, func() (*model.User, error) {
 		user, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			user := &model.User{}
@@ -975,7 +975,7 @@ func (a *APIAuthService) SecretStore() crypt.SecretStore {
 	return a.secretStore
 }
 
-func (a *APIAuthService) CreateUser(ctx context.Context, user *model.User) (int, error) {
+func (a *APIAuthService) CreateUser(ctx context.Context, user *model.User) (int64, error) {
 	resp, err := a.apiClient.CreateUserWithResponse(ctx, CreateUserJSONRequestBody{
 		Username: user.Username,
 	})
@@ -1001,7 +1001,7 @@ func (a *APIAuthService) DeleteUser(ctx context.Context, username string) error 
 	return validateResponse(resp, 204)
 }
 
-func (a *APIAuthService) GetUserByID(ctx context.Context, userID int) (*model.User, error) {
+func (a *APIAuthService) GetUserByID(ctx context.Context, userID int64) (*model.User, error) {
 	return a.cache.GetUserByID(userID, func() (*model.User, error) {
 		resp, err := a.apiClient.GetUserByIdWithResponse(ctx, userID)
 		if err != nil {
@@ -1129,10 +1129,13 @@ func (a *APIAuthService) CreateGroup(ctx context.Context, group *model.Group) er
 
 var ErrUnexpectedStatusCode = errors.New("unexpected status code")
 
-// TODO(Guys): handle this better, we should use helpers.ResponseAsError but it causes import cycle
 // validateResponse returns ErrUnexpectedStatusCode if the response status code is not as expected
 func validateResponse(resp openapi3filter.StatusCoder, expectedStatusCode int) error {
-	switch resp.StatusCode() {
+	statusCode := resp.StatusCode()
+	if statusCode == expectedStatusCode {
+		return nil
+	}
+	switch statusCode {
 	case http.StatusNotFound:
 		return ErrNotFound
 	case http.StatusBadRequest:
@@ -1140,11 +1143,8 @@ func validateResponse(resp openapi3filter.StatusCoder, expectedStatusCode int) e
 	case http.StatusUnauthorized:
 		return ErrInsufficientPermissions
 	default:
-		if resp.StatusCode() != expectedStatusCode {
-			return fmt.Errorf("%w - got %d expected %d", ErrUnexpectedStatusCode, resp.StatusCode(), expectedStatusCode)
-		}
+		return fmt.Errorf("%w - got %d expected %d", ErrUnexpectedStatusCode, statusCode, expectedStatusCode)
 	}
-	return nil
 }
 
 func paginationPrefix(prefix string) *PaginationPrefix {
@@ -1416,7 +1416,7 @@ func (a *APIAuthService) GetCredentials(ctx context.Context, accessKeyID string)
 			SecretAccessKey:               credentials.SecretAccessKey,
 			SecretAccessKeyEncryptedBytes: nil,
 			IssuedDate:                    time.Unix(credentials.CreationDate, 0),
-			UserID:                        credentials.UserId,
+			UserID:                        0,
 		}, nil
 	})
 }
