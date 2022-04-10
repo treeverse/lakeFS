@@ -114,9 +114,8 @@ const ResetPasswordForm = ({token}) => {
                         <Form onSubmit={async (e) => {
                             e.preventDefault()
                             try {
-                                await auth.password(token, e.target.newPassword.value,
-                                    e.target.confirmPassword.value)
                                 setResetPwdError(null);
+                                await auth.updatePasswordByToken(token, e.target.newPassword.value)
                             } catch (err) {
                                 setResetPwdError(err);
                             }

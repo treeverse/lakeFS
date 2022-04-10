@@ -118,11 +118,11 @@ export class MergeError extends Error {
 // actual actions:
 class Auth {
 
-    async password(token, newPassword, newPasswordConfirm) {
+    async updatePasswordByToken(token, newPassword) {
         const response = await fetch(`${API_ENDPOINT}/auth/password`, {
             headers: new Headers(defaultAPIHeaders),
             method: 'POST',
-            body: json({token: token, newPassword: newPassword, newPasswordConfirm: newPasswordConfirm})
+            body: json({token: token, newPassword: newPassword})
         });
 
         if (response.status === 401) {
@@ -144,7 +144,7 @@ class Auth {
             throw new BadRequestError("invalid email");
         }
         if (response.status !== 204) {
-            throw new Error('unknown authentication error');
+            throw new Error('failed to request password reset');
         }
     }
 
