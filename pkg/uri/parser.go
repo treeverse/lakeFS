@@ -38,11 +38,11 @@ func (u *URI) IsRepository() bool {
 }
 
 func (u *URI) IsRef() bool {
-	return len(u.Repository) > 0 && len(u.Ref) > 0 && u.Path == nil && validator.ReValidRepositoryID.MatchString(u.Repository) && validator.ReValidBranchID.MatchString(u.Ref)
+	return len(u.Repository) > 0 && len(u.Ref) > 0 && u.Path == nil && validator.ReValidRepositoryID.MatchString(u.Repository) && validator.ReValidRef.MatchString(u.Ref)
 }
 
 func (u *URI) IsFullyQualified() bool {
-	return len(u.Repository) > 0 && len(u.Ref) > 0 && u.Path != nil && validator.ReValidRepositoryID.MatchString(u.Repository) && validator.ReValidBranchID.MatchString(u.Ref)
+	return len(u.Repository) > 0 && len(u.Ref) > 0 && u.Path != nil && validator.ReValidRepositoryID.MatchString(u.Repository) && validator.ReValidRef.MatchString(u.Ref)
 }
 
 func (u *URI) GetPath() string {
