@@ -1,6 +1,6 @@
 package auth
 
-//go:generate oapi-codegen -package auth -generate "types,client,spec"  -o client.gen.go api/swagger.yml
+//go:generate oapi-codegen -package auth -generate "types,client,spec"  -o client.gen.go ../../api/authorization.yml
 
 import (
 	"context"
@@ -982,7 +982,7 @@ func (a *APIAuthService) CreateUser(ctx context.Context, user *model.User) (int,
 	if err != nil {
 		return InvalidUserID, err
 	}
-	if err := expectedStatusCode(resp, 201); err != nil {
+	if err := validateResponse(resp, 201); err != nil {
 		return InvalidUserID, err
 	}
 
@@ -998,7 +998,7 @@ func (a *APIAuthService) DeleteUser(ctx context.Context, username string) error 
 	if err != nil {
 		return err
 	}
-	return expectedStatusCode(resp, 204)
+	return validateResponse(resp, 204)
 }
 
 func (a *APIAuthService) GetUserByID(ctx context.Context, userID int) (*model.User, error) {
@@ -1007,9 +1007,7 @@ func (a *APIAuthService) GetUserByID(ctx context.Context, userID int) (*model.Us
 		if err != nil {
 			return nil, err
 		}
-		// TODO(Guys): consider  support 404 in this case
-
-		if err := expectedStatusCode(resp, 200); err != nil {
+		if err := validateResponse(resp, 200); err != nil {
 			return nil, err
 		}
 		u := resp.JSON200
@@ -1031,7 +1029,7 @@ func (a *APIAuthService) GetUser(ctx context.Context, username string) (*model.U
 		if err != nil {
 			return nil, err
 		}
-		if err := expectedStatusCode(resp, 200); err != nil {
+		if err := validateResponse(resp, 200); err != nil {
 			return nil, err
 		}
 		u := resp.JSON200
@@ -1053,7 +1051,7 @@ func (a *APIAuthService) GetUserByEmail(ctx context.Context, email string) (*mod
 		if err != nil {
 			return nil, err
 		}
-		if err := expectedStatusCode(resp, 200); err != nil {
+		if err := validateResponse(resp, 200); err != nil {
 			return nil, err
 		}
 		u := resp.JSON200
@@ -1099,7 +1097,7 @@ func (a *APIAuthService) ListUsers(ctx context.Context, params *model.Pagination
 	if err != nil {
 		return nil, nil, err
 	}
-	if err := expectedStatusCode(resp, 200); err != nil {
+	if err := validateResponse(resp, 200); err != nil {
 		return nil, nil, err
 	}
 	pagination := resp.JSON200.Pagination
@@ -1126,17 +1124,25 @@ func (a *APIAuthService) CreateGroup(ctx context.Context, group *model.Group) er
 	if err != nil {
 		return err
 	}
-	return expectedStatusCode(resp, 201)
+	return validateResponse(resp, 201)
 }
 
 var ErrUnexpectedStatusCode = errors.New("unexpected status code")
 
 // TODO(Guys): handle this better, we should use helpers.ResponseAsError but it causes import cycle
-// expectedStatusCode returns ErrUnexpectedStatusCode if the response status code is not as expected
-func expectedStatusCode(resp openapi3filter.StatusCoder, expectedStatusCode int) error {
-	if resp.StatusCode() != expectedStatusCode {
-
-		return fmt.Errorf("%w - got %d expected %d", ErrUnexpectedStatusCode, resp.StatusCode(), expectedStatusCode)
+// validateResponse returns ErrUnexpectedStatusCode if the response status code is not as expected
+func validateResponse(resp openapi3filter.StatusCoder, expectedStatusCode int) error {
+	switch resp.StatusCode() {
+	case http.StatusNotFound:
+		return ErrNotFound
+	case http.StatusBadRequest:
+		return ErrAlreadyExists
+	case http.StatusUnauthorized:
+		return ErrInsufficientPermissions
+	default:
+		if resp.StatusCode() != expectedStatusCode {
+			return fmt.Errorf("%w - got %d expected %d", ErrUnexpectedStatusCode, resp.StatusCode(), expectedStatusCode)
+		}
 	}
 	return nil
 }
@@ -1159,7 +1165,7 @@ func (a *APIAuthService) DeleteGroup(ctx context.Context, groupDisplayName strin
 	if err != nil {
 		return err
 	}
-	return expectedStatusCode(resp, 204)
+	return validateResponse(resp, 204)
 }
 
 func (a *APIAuthService) GetGroup(ctx context.Context, groupDisplayName string) (*model.Group, error) {
@@ -1167,7 +1173,7 @@ func (a *APIAuthService) GetGroup(ctx context.Context, groupDisplayName string) 
 	if err != nil {
 		return nil, err
 	}
-	if err := expectedStatusCode(resp, 200); err != nil {
+	if err := validateResponse(resp, 200); err != nil {
 		return nil, err
 	}
 	return &model.Group{
@@ -1185,7 +1191,7 @@ func (a *APIAuthService) ListGroups(ctx context.Context, params *model.Paginatio
 	if err != nil {
 		return nil, nil, err
 	}
-	if err := expectedStatusCode(resp, 200); err != nil {
+	if err := validateResponse(resp, 200); err != nil {
 		return nil, nil, err
 	}
 	groups := make([]*model.Group, len(resp.JSON200.Results))
@@ -1205,7 +1211,7 @@ func (a *APIAuthService) AddUserToGroup(ctx context.Context, username, groupDisp
 	if err != nil {
 		return err
 	}
-	return expectedStatusCode(resp, 201)
+	return validateResponse(resp, 201)
 }
 
 func (a *APIAuthService) RemoveUserFromGroup(ctx context.Context, username, groupDisplayName string) error {
@@ -1213,7 +1219,7 @@ func (a *APIAuthService) RemoveUserFromGroup(ctx context.Context, username, grou
 	if err != nil {
 		return err
 	}
-	return expectedStatusCode(resp, 204)
+	return validateResponse(resp, 204)
 }
 
 func (a *APIAuthService) ListUserGroups(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error) {
@@ -1225,7 +1231,7 @@ func (a *APIAuthService) ListUserGroups(ctx context.Context, username string, pa
 	if err != nil {
 		return nil, nil, err
 	}
-	if err := expectedStatusCode(resp, 200); err != nil {
+	if err := validateResponse(resp, 200); err != nil {
 		return nil, nil, err
 	}
 	userGroups := make([]*model.Group, len(resp.JSON200.Results))
@@ -1249,7 +1255,7 @@ func (a *APIAuthService) ListGroupUsers(ctx context.Context, groupDisplayName st
 	if err != nil {
 		return nil, nil, err
 	}
-	if err := expectedStatusCode(resp, 200); err != nil {
+	if err := validateResponse(resp, 200); err != nil {
 		return nil, nil, err
 	}
 	members := make([]*model.User, len(resp.JSON200.Results))
@@ -1285,7 +1291,7 @@ func (a *APIAuthService) WritePolicy(ctx context.Context, policy *model.Policy) 
 	if err != nil {
 		return err
 	}
-	return expectedStatusCode(resp, 201)
+	return validateResponse(resp, 201)
 }
 
 func serializePolicyToModalPolicy(p Policy) *model.Policy {
@@ -1314,7 +1320,7 @@ func (a *APIAuthService) GetPolicy(ctx context.Context, policyDisplayName string
 	if err != nil {
 		return nil, err
 	}
-	if err := expectedStatusCode(resp, 200); err != nil {
+	if err := validateResponse(resp, 200); err != nil {
 		return nil, err
 	}
 
@@ -1326,7 +1332,7 @@ func (a *APIAuthService) DeletePolicy(ctx context.Context, policyDisplayName str
 	if err != nil {
 		return err
 	}
-	return expectedStatusCode(resp, 204)
+	return validateResponse(resp, 204)
 }
 
 func (a *APIAuthService) ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
@@ -1338,7 +1344,7 @@ func (a *APIAuthService) ListPolicies(ctx context.Context, params *model.Paginat
 	if err != nil {
 		return nil, nil, err
 	}
-	if err := expectedStatusCode(resp, 200); err != nil {
+	if err := validateResponse(resp, 200); err != nil {
 		return nil, nil, err
 	}
 	policies := make([]*model.Policy, len(resp.JSON200.Results))
@@ -1354,7 +1360,7 @@ func (a *APIAuthService) CreateCredentials(ctx context.Context, username string)
 	if err != nil {
 		return nil, err
 	}
-	if err := expectedStatusCode(resp, 201); err != nil {
+	if err := validateResponse(resp, 201); err != nil {
 		return nil, err
 	}
 	credentials := resp.JSON201
@@ -1376,7 +1382,7 @@ func (a *APIAuthService) DeleteCredentials(ctx context.Context, username, access
 	if err != nil {
 		return err
 	}
-	return expectedStatusCode(resp, 204)
+	return validateResponse(resp, 204)
 }
 
 func (a *APIAuthService) GetCredentialsForUser(ctx context.Context, username, accessKeyID string) (*model.Credential, error) {
@@ -1384,7 +1390,7 @@ func (a *APIAuthService) GetCredentialsForUser(ctx context.Context, username, ac
 	if err != nil {
 		return nil, err
 	}
-	if err := expectedStatusCode(resp, 200); err != nil {
+	if err := validateResponse(resp, 200); err != nil {
 		return nil, err
 	}
 	credentials := resp.JSON200
@@ -1401,7 +1407,7 @@ func (a *APIAuthService) GetCredentials(ctx context.Context, accessKeyID string)
 		if err != nil {
 			return nil, err
 		}
-		if err := expectedStatusCode(resp, 200); err != nil {
+		if err := validateResponse(resp, 200); err != nil {
 			return nil, err
 		}
 		credentials := resp.JSON200
@@ -1424,7 +1430,7 @@ func (a *APIAuthService) ListUserCredentials(ctx context.Context, username strin
 	if err != nil {
 		return nil, nil, err
 	}
-	if err := expectedStatusCode(resp, 200); err != nil {
+	if err := validateResponse(resp, 200); err != nil {
 		return nil, nil, err
 	}
 
@@ -1445,7 +1451,7 @@ func (a *APIAuthService) AttachPolicyToUser(ctx context.Context, policyDisplayNa
 	if err != nil {
 		return err
 	}
-	return expectedStatusCode(resp, 201)
+	return validateResponse(resp, 201)
 }
 
 func (a *APIAuthService) DetachPolicyFromUser(ctx context.Context, policyDisplayName, username string) error {
@@ -1453,7 +1459,7 @@ func (a *APIAuthService) DetachPolicyFromUser(ctx context.Context, policyDisplay
 	if err != nil {
 		return err
 	}
-	return expectedStatusCode(resp, 204)
+	return validateResponse(resp, 204)
 }
 
 func (a *APIAuthService) listUserPolicies(ctx context.Context, username string, params *model.PaginationParams, effective bool) ([]*model.Policy, *model.Paginator, error) {
@@ -1466,7 +1472,7 @@ func (a *APIAuthService) listUserPolicies(ctx context.Context, username string, 
 	if err != nil {
 		return nil, nil, err
 	}
-	if err := expectedStatusCode(resp, 200); err != nil {
+	if err := validateResponse(resp, 200); err != nil {
 		return nil, nil, err
 	}
 	policies := make([]*model.Policy, len(resp.JSON200.Results))
@@ -1501,7 +1507,7 @@ func (a *APIAuthService) AttachPolicyToGroup(ctx context.Context, policyDisplayN
 	if err != nil {
 		return err
 	}
-	return expectedStatusCode(resp, 201)
+	return validateResponse(resp, 201)
 }
 
 func (a *APIAuthService) DetachPolicyFromGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error {
@@ -1509,7 +1515,7 @@ func (a *APIAuthService) DetachPolicyFromGroup(ctx context.Context, policyDispla
 	if err != nil {
 		return err
 	}
-	return expectedStatusCode(resp, 204)
+	return validateResponse(resp, 204)
 }
 
 func (a *APIAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
@@ -1521,7 +1527,7 @@ func (a *APIAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName
 	if err != nil {
 		return nil, nil, err
 	}
-	if err := expectedStatusCode(resp, 200); err != nil {
+	if err := validateResponse(resp, 200); err != nil {
 		return nil, nil, err
 	}
 	policies := make([]*model.Policy, len(resp.JSON200.Results))
