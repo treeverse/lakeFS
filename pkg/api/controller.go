@@ -2932,7 +2932,7 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	state := setupStateNotInitialized
-	if initialized {
+	if initialized || c.Config.IsAuthTypeAPI() {
 		state = setupStateInitialized
 	}
 	response := SetupState{State: swag.String(state)}

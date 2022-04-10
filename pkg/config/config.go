@@ -480,6 +480,10 @@ func (c *Config) GetAuthAPIEndpoint() string {
 	return c.values.Auth.API.Endpoint
 }
 
+func (c *Config) IsAuthTypeAPI() bool {
+	return c.values.Auth.API.Endpoint != ""
+}
+
 func (c *Config) GetAuthAPIToken() string {
 	return c.values.Auth.API.Token
 }

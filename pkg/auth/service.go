@@ -1209,7 +1209,7 @@ func (a *APIAuthService) AddUserToGroup(ctx context.Context, username, groupDisp
 }
 
 func (a *APIAuthService) RemoveUserFromGroup(ctx context.Context, username, groupDisplayName string) error {
-	resp, err := a.apiClient.DeleteGroupMembershipWithResponse(ctx, username, groupDisplayName)
+	resp, err := a.apiClient.DeleteGroupMembershipWithResponse(ctx, groupDisplayName, username)
 	if err != nil {
 		return err
 	}
@@ -1267,7 +1267,7 @@ func (a *APIAuthService) ListGroupUsers(ctx context.Context, groupDisplayName st
 }
 
 func (a *APIAuthService) WritePolicy(ctx context.Context, policy *model.Policy) error {
-	stmts := make([]Statement, 0, len(policy.Statement))
+	stmts := make([]Statement, len(policy.Statement))
 	for i, s := range policy.Statement {
 		stmts[i] = Statement{
 			Action:   s.Action,
@@ -1449,7 +1449,7 @@ func (a *APIAuthService) AttachPolicyToUser(ctx context.Context, policyDisplayNa
 }
 
 func (a *APIAuthService) DetachPolicyFromUser(ctx context.Context, policyDisplayName, username string) error {
-	resp, err := a.apiClient.DetachPolicyFromUserWithResponse(ctx, policyDisplayName, username)
+	resp, err := a.apiClient.DetachPolicyFromUserWithResponse(ctx, username, policyDisplayName)
 	if err != nil {
 		return err
 	}
@@ -1505,7 +1505,7 @@ func (a *APIAuthService) AttachPolicyToGroup(ctx context.Context, policyDisplayN
 }
 
 func (a *APIAuthService) DetachPolicyFromGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error {
-	resp, err := a.apiClient.DetachPolicyFromUserWithResponse(ctx, groupDisplayName, policyDisplayName)
+	resp, err := a.apiClient.DetachPolicyFromGroupWithResponse(ctx, groupDisplayName, policyDisplayName)
 	if err != nil {
 		return err
 	}

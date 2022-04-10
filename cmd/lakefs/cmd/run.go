@@ -136,7 +136,7 @@ var runCmd = &cobra.Command{
 
 		// init authentication
 		var authService auth.Service
-		if cfg.GetAuthAPIEndpoint() != "" {
+		if cfg.IsAuthTypeAPI() {
 			authService, err = auth.NewAPIAuthService(
 				cfg.GetAuthAPIEndpoint(),
 				cfg.GetAuthAPIToken(),
