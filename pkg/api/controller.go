@@ -802,6 +802,10 @@ func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params Li
 	writeResponse(w, http.StatusOK, response)
 }
 
+func (c *Controller) InviteUser(w http.ResponseWriter, r *http.Request, body InviteUserJSONRequestBody) {
+
+}
+
 func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body CreateUserJSONRequestBody) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
