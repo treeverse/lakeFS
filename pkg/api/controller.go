@@ -9,6 +9,7 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"net/mail"
 	"net/url"
 	"path/filepath"
 	"reflect"
@@ -78,7 +79,7 @@ type Controller struct {
 	Actions               actionsHandler
 	AuditChecker          AuditChecker
 	Logger                logging.Logger
-	Emailer               email.Emailer
+	Emailer               *email.Emailer
 }
 
 func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body DeleteObjectsJSONRequestBody, repository string, branch string) {
@@ -173,9 +174,10 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSO
 	loginTime := time.Now()
 	expires := loginTime.Add(DefaultLoginExpiration)
 	secret := c.Auth.SecretStore().SharedSecret()
+
 	// user.Username will be different from username/access_key_id on
 	// LDAP login.  Use the stored value.
-	tokenString, err := GenerateJWT(secret, user.ID, loginTime, expires)
+	tokenString, err := GenerateJWTLogin(secret, user.ID, loginTime, expires)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
@@ -1168,14 +1170,17 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.CreateRepositoryAction,
-					Resource: permissions.RepoArn(body.Name)},
+					Resource: permissions.RepoArn(body.Name),
+				},
 			},
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.AttachStorageNamespace,
-					Resource: permissions.StorageNamespace(body.StorageNamespace)},
+					Resource: permissions.StorageNamespace(body.StorageNamespace),
+				},
 			},
-		}}) {
+		},
+	}) {
 		return
 	}
 	ctx := r.Context()
@@ -2195,14 +2200,17 @@ func (c *Controller) GetMetaRange(w http.ResponseWriter, r *http.Request, reposi
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.ListObjectsAction,
-					Resource: permissions.RepoArn(repository)},
+					Resource: permissions.RepoArn(repository),
+				},
 			},
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.ReadRepositoryAction,
-					Resource: permissions.RepoArn(repository)},
+					Resource: permissions.RepoArn(repository),
+				},
 			},
-		}}) {
+		},
+	}) {
 		return
 	}
 	ctx := r.Context()
@@ -2227,14 +2235,17 @@ func (c *Controller) GetRange(w http.ResponseWriter, r *http.Request, repository
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.ListObjectsAction,
-					Resource: permissions.RepoArn(repository)},
+					Resource: permissions.RepoArn(repository),
+				},
 			},
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.ReadRepositoryAction,
-					Resource: permissions.RepoArn(repository)},
+					Resource: permissions.RepoArn(repository),
+				},
 			},
-		}}) {
+		},
+	}) {
 		return
 	}
 	ctx := r.Context()
@@ -2258,19 +2269,23 @@ func (c *Controller) DumpRefs(w http.ResponseWriter, r *http.Request, repository
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.ListTagsAction,
-					Resource: permissions.RepoArn(repository)},
+					Resource: permissions.RepoArn(repository),
+				},
 			},
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.ListBranchesAction,
-					Resource: permissions.RepoArn(repository)},
+					Resource: permissions.RepoArn(repository),
+				},
 			},
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.ListCommitsAction,
-					Resource: permissions.RepoArn(repository)},
+					Resource: permissions.RepoArn(repository),
+				},
 			},
-		}}) {
+		},
+	}) {
 		return
 	}
 	ctx := r.Context()
@@ -2326,19 +2341,23 @@ func (c *Controller) RestoreRefs(w http.ResponseWriter, r *http.Request, body Re
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.CreateTagAction,
-					Resource: permissions.RepoArn(repository)},
+					Resource: permissions.RepoArn(repository),
+				},
 			},
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.CreateBranchAction,
-					Resource: permissions.RepoArn(repository)},
+					Resource: permissions.RepoArn(repository),
+				},
 			},
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.CreateCommitAction,
-					Resource: permissions.RepoArn(repository)},
+					Resource: permissions.RepoArn(repository),
+				},
 			},
-		}}) {
+		},
+	}) {
 		return
 	}
 	ctx := r.Context()
@@ -3006,6 +3025,64 @@ func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, http.StatusOK, response)
 }
 
+func (c *Controller) sendResetPasswordEmail(email string, token string) error {
+	return c.Emailer.SendEmailWithLimit([]string{email}, token, token, nil)
+}
+
+func (c *Controller) ForgotPassword(w http.ResponseWriter, r *http.Request, body ForgotPasswordJSONRequestBody) {
+	addr, err := mail.ParseAddress(body.Email)
+	if err != nil {
+		c.Logger.WithError(err).WithField("email", body.Email).Debug("forgot password with invalid email")
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	user, err := c.Auth.GetUserByEmail(r.Context(), addr.Address)
+	if err != nil {
+		c.Logger.WithError(err).WithField("email", addr.Address).Debug("failed to retrieve user by email")
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	email := StringValue(user.Email)
+	secret := c.Auth.SecretStore().SharedSecret()
+	currentTime := time.Now()
+	token, err := GenerateJWTResetPassword(secret, user.ID, email, currentTime, currentTime.Add(DefaultResetPasswordExpiration))
+	if err != nil {
+		c.Logger.WithError(err).WithField("email", email).Debug("failed to create a token")
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	// TODO (@shimi9276) create template for sending the email with link for reset
+	err = c.sendResetPasswordEmail(email, token)
+	if err != nil {
+		c.Logger.WithError(err).WithField("email", email).Warn("failed sending reset password email")
+	} else {
+		c.Logger.WithField("email", email).Info("reset password email sent")
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body UpdatePasswordJSONRequestBody) {
+	claims, err := VerifyResetPasswordToken(c.Auth, body.Token)
+	if err != nil {
+		c.Logger.WithError(err).WithField("token", body.Token).Debug("failed to verify token")
+		writeError(w, http.StatusUnauthorized, err)
+		return
+	}
+	user, err := c.Auth.GetUserByEmail(r.Context(), claims.Subject)
+	if err != nil {
+		c.Logger.WithError(err).WithField("email", user.Email).Debug("failed to retrieve user by email")
+		writeError(w, http.StatusNotFound, http.StatusText(http.StatusNotFound))
+		return
+	}
+	err = c.Auth.HashAndUpdatePassword(r.Context(), claims.Subject, body.NewPassword)
+	if err != nil {
+		c.Logger.WithError(err).WithField("email", claims.Subject).Debug("failed to update password")
+		writeError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+		return
+	}
+	w.WriteHeader(http.StatusCreated)
+}
+
 func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user, ok := ctx.Value(UserContextKey).(*model.User)
@@ -3168,7 +3245,7 @@ func NewController(
 	actions actionsHandler,
 	auditChecker AuditChecker,
 	logger logging.Logger,
-	emailer email.Emailer,
+	emailer *email.Emailer,
 ) *Controller {
 	return &Controller{
 		Config:                cfg,

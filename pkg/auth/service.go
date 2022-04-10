@@ -18,6 +18,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthorizationRequest struct {
@@ -68,6 +69,7 @@ type Service interface {
 	GetCredentialsForUser(ctx context.Context, username, accessKeyID string) (*model.Credential, error)
 	GetCredentials(ctx context.Context, accessKeyID string) (*model.Credential, error)
 	ListUserCredentials(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Credential, *model.Paginator, error)
+	HashAndUpdatePassword(ctx context.Context, email string, password string) error
 
 	// policy<->user attachments
 	AttachPolicyToUser(ctx context.Context, policyDisplayName, username string) error
@@ -958,4 +960,13 @@ func (s *DBAuthService) Authorize(ctx context.Context, req *AuthorizationRequest
 
 	// we're allowed!
 	return &AuthorizationResponse{Allowed: true}, nil
+}
+
+func (s *DBAuthService) HashAndUpdatePassword(ctx context.Context, email string, password string) error {
+	pw, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	_, err = s.db.Exec(ctx, `UPDATE auth_users SET encrypted_password = $1 WHERE email = $2`, pw, email)
+	return err
 }
