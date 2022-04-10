@@ -85,7 +85,7 @@ func Serve(
 		actions,
 		auditChecker,
 		logger,
-		*emailer,
+		emailer,
 	)
 	HandlerFromMuxWithBaseURL(controller, apiRouter, BaseURL)
 

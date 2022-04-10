@@ -3245,7 +3245,7 @@ func NewController(
 	actions actionsHandler,
 	auditChecker AuditChecker,
 	logger logging.Logger,
-	emailer email.Emailer,
+	emailer *email.Emailer,
 ) *Controller {
 	return &Controller{
 		Config:                cfg,
@@ -3260,7 +3260,7 @@ func NewController(
 		Actions:               actions,
 		AuditChecker:          auditChecker,
 		Logger:                logger,
-		Emailer:               emailer,
+		Emailer:               *emailer,
 	}
 }
 
