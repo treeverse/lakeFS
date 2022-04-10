@@ -30,6 +30,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/email"
+	"github.com/treeverse/lakefs/pkg/email/template"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -3025,8 +3026,13 @@ func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, http.StatusOK, response)
 }
 
-func (c *Controller) sendResetPasswordEmail(email string, token string) error {
-	return c.Emailer.SendEmailWithLimit([]string{email}, token, token, nil)
+func (c *Controller) sendResetPasswordEmail(email string, host string, token string) error {
+	t, err := template.BuildResetPasswordEmailTemplate(template.ResetEmailTemplate, host, token)
+	if err != nil {
+		return err
+	}
+	return c.Emailer.SendEmailWithLimit([]string{email}, template.ResetPasswordEmailSubject, t, nil)
+
 }
 
 func (c *Controller) ForgotPassword(w http.ResponseWriter, r *http.Request, body ForgotPasswordJSONRequestBody) {
@@ -3052,7 +3058,7 @@ func (c *Controller) ForgotPassword(w http.ResponseWriter, r *http.Request, body
 		return
 	}
 	// TODO (@shimi9276) create template for sending the email with link for reset
-	err = c.sendResetPasswordEmail(email, token)
+	err = c.sendResetPasswordEmail(email, r.Host, token)
 	if err != nil {
 		c.Logger.WithError(err).WithField("email", email).Warn("failed sending reset password email")
 	} else {
