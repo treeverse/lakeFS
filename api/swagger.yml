@@ -548,6 +548,14 @@ components:
         user:
           $ref: "#/components/schemas/User"
 
+    ForgotPasswordRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+
     UserCreation:
       type: object
       properties:
@@ -590,6 +598,24 @@ components:
           $ref: "#/components/schemas/AccessKeyCredentials"
       required:
         - username
+
+      
+    UpdatePasswordByToken:
+      type: object
+      properties:
+        token:
+          description: token used for authentication
+          type: string
+        newPassword:
+          description: new password to update
+          type: string
+        newPasswordConfirm:
+          description: new password confirmation
+          type: string
+      required:
+        - token
+        - newPassword
+        - newpasswordConfirm
 
     Credentials:
       type: object
@@ -1062,6 +1088,54 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         default:
           $ref: "#/components/responses/ServerError"
+
+  /auth/password:
+      post:
+        tags:
+          - auth
+        operationId: updatePassword
+        summary: Update user password by reset_password token
+        security:
+          - cookie_auth: []
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdatePasswordByToken"
+        responses:
+          201:
+            description: successful reset
+          401:
+            $ref: "#/components/responses/Unauthorized"
+          default:
+            $ref: "#/components/responses/ServerError"
+ 
+  /auth/password/forgot:
+      post:
+        tags:
+          - auth
+        operationId: forgotPassword
+        summary: forgot password request initiates the password reset process
+        security:
+          - cookie_auth: []
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForgotPasswordRequest"
+        responses:
+          204:
+            description: No content
+          400:
+            description: bad request
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/Error"
+          default:
+            $ref: "#/components/responses/ServerError"
 
   /auth/users:
     get:
