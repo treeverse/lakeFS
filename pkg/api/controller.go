@@ -79,7 +79,7 @@ type Controller struct {
 	Actions               actionsHandler
 	AuditChecker          AuditChecker
 	Logger                logging.Logger
-	Emailer               email.Emailer
+	Emailer               *email.Emailer
 }
 
 func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body DeleteObjectsJSONRequestBody, repository string, branch string) {
@@ -3260,7 +3260,7 @@ func NewController(
 		Actions:               actions,
 		AuditChecker:          auditChecker,
 		Logger:                logger,
-		Emailer:               *emailer,
+		Emailer:               emailer,
 	}
 }
 
