@@ -13,8 +13,6 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{SparkSession, _}
 
-import org.slf4j.LoggerFactory;
-
 import com.amazonaws.ClientConfiguration
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
 import com.amazonaws.services.s3.model
@@ -323,7 +321,14 @@ object GarbageCollector {
 
     val storageNamespace = new ApiClient(apiURL, accessKey, secretKey).getStorageNamespace(repo)
 
-    remove(storageNamespace, gcAddressesLocation, expiredAddresses, runID, region, hcValues)
+    val removed = remove(storageNamespace, gcAddressesLocation, expiredAddresses, runID, region, hcValues)
+
+    // BUG(ariels): Write to some other location!
+    removed.withColumn("run_id", lit(runID))
+      .write
+      .partitionBy("run_id")
+      .mode(SaveMode.Overwrite)
+      .parquet(gcAddressesLocation + ".deleted")
 
     spark.close()
   }
@@ -343,8 +348,7 @@ object GarbageCollector {
     if (keys.isEmpty) return Seq.empty
     val removeKeyNames = keys.map(x => snPrefix.concat(x))
 
-    val log = LoggerFactory.getLogger("bulk-delete")
-    log.info("remove keys: {}", removeKeyNames.mkString(", "))
+    println("Remove keys:", removeKeyNames.take(100).mkString(", "))
 
     val removeKeys = removeKeyNames.map(k => new model.DeleteObjectsRequest.KeyVersion(k)).asJava
 
@@ -425,10 +429,8 @@ object GarbageCollector {
     val df = expiredAddresses
       .where(col("run_id") === runID)
       .where(col("relative") === true)
-    val res =
-      bulkRemove(df, MaxBulkSize, bucket, region, awsRetries, snPrefix, hcValues)
-        .toDF("addresses")
-        .collect()
+
+    bulkRemove(df, MaxBulkSize, bucket, region, awsRetries, snPrefix, hcValues).toDF("addresses")
   }
 
   // def main(args: Array[String]): Unit = {
