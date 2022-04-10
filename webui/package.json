@@ -11,7 +11,7 @@
     "@primer/octicons-react": "^13.0.0",
     "bootstrap": "^4.6.0",
     "http-proxy-middleware": "^1.1.1",
-    "moment": "^2.29.1",
+    "moment": "^2.29.2",
     "react": "^17.0.0",
     "react-bootstrap": "^1.5.2",
     "react-diff-viewer": "^3.1.1",
