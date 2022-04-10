@@ -2222,9 +2222,9 @@ func (c *Controller) GetMetaRange(w http.ResponseWriter, r *http.Request, reposi
 	}
 
 	response := StorageURI{
-		Location: metarange.Address,
+		Location: string(metarange),
 	}
-	w.Header().Set("Location", metarange.Address)
+	w.Header().Set("Location", string(metarange))
 	writeResponse(w, http.StatusOK, response)
 }
 
@@ -2256,9 +2256,9 @@ func (c *Controller) GetRange(w http.ResponseWriter, r *http.Request, repository
 		return
 	}
 	response := StorageURI{
-		Location: rng.Address,
+		Location: string(rng),
 	}
-	w.Header().Set("Location", rng.Address)
+	w.Header().Set("Location", string(rng))
 	writeResponse(w, http.StatusOK, response)
 }
 
