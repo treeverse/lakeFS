@@ -8,6 +8,11 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
+type Email interface {
+	SendEmail(receivers []string, subject string, body string, attachmentFilePath []string) error
+	SendEmailWithLimit(receivers []string, subject string, body string, attachmentFilePath []string) error
+}
+
 type Emailer struct {
 	Params  EmailParams
 	Dialer  *gomail.Dialer
