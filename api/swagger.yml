@@ -609,13 +609,10 @@ components:
         newPassword:
           description: new password to update
           type: string
-        newPasswordConfirm:
-          description: new password confirmation
-          type: string
       required:
         - token
         - newPassword
-        - newpasswordConfirm
+
 
     Credentials:
       type: object
