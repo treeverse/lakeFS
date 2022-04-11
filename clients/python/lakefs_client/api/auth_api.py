@@ -37,6 +37,7 @@ from lakefs_client.model.login_information import LoginInformation
 from lakefs_client.model.policy import Policy
 from lakefs_client.model.policy_list import PolicyList
 from lakefs_client.model.update_password_by_token import UpdatePasswordByToken
+from lakefs_client.model.update_username_and_password_with_token import UpdateUsernameAndPasswordWithToken
 from lakefs_client.model.user import User
 from lakefs_client.model.user_creation import UserCreation
 from lakefs_client.model.user_list import UserList
@@ -1970,6 +1971,58 @@ class AuthApi(object):
                 'location_map': {
                     'policy_id': 'path',
                     'policy': 'body',
+                },
+                'collection_format_map': {
+                }
+            },
+            headers_map={
+                'accept': [
+                    'application/json'
+                ],
+                'content_type': [
+                    'application/json'
+                ]
+            },
+            api_client=api_client
+        )
+        self.update_username_and_password_endpoint = _Endpoint(
+            settings={
+                'response_type': None,
+                'auth': [
+                    'cookie_auth'
+                ],
+                'endpoint_path': '/auth/username/password',
+                'operation_id': 'update_username_and_password',
+                'http_method': 'POST',
+                'servers': None,
+            },
+            params_map={
+                'all': [
+                    'update_username_and_password_with_token',
+                ],
+                'required': [
+                    'update_username_and_password_with_token',
+                ],
+                'nullable': [
+                ],
+                'enum': [
+                ],
+                'validation': [
+                ]
+            },
+            root_map={
+                'validations': {
+                },
+                'allowed_values': {
+                },
+                'openapi_types': {
+                    'update_username_and_password_with_token':
+                        (UpdateUsernameAndPasswordWithToken,),
+                },
+                'attribute_map': {
+                },
+                'location_map': {
+                    'update_username_and_password_with_token': 'body',
                 },
                 'collection_format_map': {
                 }
@@ -4153,4 +4206,69 @@ class AuthApi(object):
         kwargs['policy'] = \
             policy
         return self.update_policy_endpoint.call_with_http_info(**kwargs)
+
+    def update_username_and_password(
+        self,
+        update_username_and_password_with_token,
+        **kwargs
+    ):
+        """Update username and password by reset_password token  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+
+        >>> thread = api.update_username_and_password(update_username_and_password_with_token, async_req=True)
+        >>> result = thread.get()
+
+        Args:
+            update_username_and_password_with_token (UpdateUsernameAndPasswordWithToken):
+
+        Keyword Args:
+            _return_http_data_only (bool): response data without head status
+                code and headers. Default is True.
+            _preload_content (bool): if False, the urllib3.HTTPResponse object
+                will be returned without reading/decoding response data.
+                Default is True.
+            _request_timeout (int/float/tuple): timeout setting for this request. If
+                one number provided, it will be total request timeout. It can also
+                be a pair (tuple) of (connection, read) timeouts.
+                Default is None.
+            _check_input_type (bool): specifies if type checking
+                should be done one the data sent to the server.
+                Default is True.
+            _check_return_type (bool): specifies if type checking
+                should be done one the data received from the server.
+                Default is True.
+            _host_index (int/None): specifies the index of the server
+                that we want to use.
+                Default is read from the configuration.
+            async_req (bool): execute request asynchronously
+
+        Returns:
+            None
+                If the method is called asynchronously, returns the request
+                thread.
+        """
+        kwargs['async_req'] = kwargs.get(
+            'async_req', False
+        )
+        kwargs['_return_http_data_only'] = kwargs.get(
+            '_return_http_data_only', True
+        )
+        kwargs['_preload_content'] = kwargs.get(
+            '_preload_content', True
+        )
+        kwargs['_request_timeout'] = kwargs.get(
+            '_request_timeout', None
+        )
+        kwargs['_check_input_type'] = kwargs.get(
+            '_check_input_type', True
+        )
+        kwargs['_check_return_type'] = kwargs.get(
+            '_check_return_type', True
+        )
+        kwargs['_host_index'] = kwargs.get('_host_index')
+        kwargs['update_username_and_password_with_token'] = \
+            update_username_and_password_with_token
+        return self.update_username_and_password_endpoint.call_with_http_info(**kwargs)
 

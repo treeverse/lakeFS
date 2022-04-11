@@ -27,17 +27,17 @@ import org.junit.Test;
 
 
 /**
- * Model tests for InviteUserRequest
+ * Model tests for UpdateUsernameAndPasswordWithToken
  */
-public class InviteUserRequestTest {
-    private final InviteUserRequest model = new InviteUserRequest();
+public class UpdateUsernameAndPasswordWithTokenTest {
+    private final UpdateUsernameAndPasswordWithToken model = new UpdateUsernameAndPasswordWithToken();
 
     /**
-     * Model tests for InviteUserRequest
+     * Model tests for UpdateUsernameAndPasswordWithToken
      */
     @Test
-    public void testInviteUserRequest() {
-        // TODO: test InviteUserRequest
+    public void testUpdateUsernameAndPasswordWithToken() {
+        // TODO: test UpdateUsernameAndPasswordWithToken
     }
 
     /**
@@ -46,6 +46,30 @@ public class InviteUserRequestTest {
     @Test
     public void emailTest() {
         // TODO: test email
+    }
+
+    /**
+     * Test the property 'token'
+     */
+    @Test
+    public void tokenTest() {
+        // TODO: test token
+    }
+
+    /**
+     * Test the property 'newUsername'
+     */
+    @Test
+    public void newUsernameTest() {
+        // TODO: test newUsername
+    }
+
+    /**
+     * Test the property 'newPassword'
+     */
+    @Test
+    public void newPasswordTest() {
+        // TODO: test newPassword
     }
 
 }

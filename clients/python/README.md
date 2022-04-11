@@ -141,6 +141,7 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**logout**](docs/AuthApi.md#logout) | **POST** /auth/logout | logs out a cookie-authenticated user
 *AuthApi* | [**update_password**](docs/AuthApi.md#update_password) | **POST** /auth/password | Update user password by reset_password token
 *AuthApi* | [**update_policy**](docs/AuthApi.md#update_policy) | **PUT** /auth/policies/{policyId} | update policy
+*AuthApi* | [**update_username_and_password**](docs/AuthApi.md#update_username_and_password) | **POST** /auth/username/password | Update username and password by reset_password token
 *BranchesApi* | [**create_branch**](docs/BranchesApi.md#create_branch) | **POST** /repositories/{repository}/branches | create branch
 *BranchesApi* | [**delete_branch**](docs/BranchesApi.md#delete_branch) | **DELETE** /repositories/{repository}/branches/{branch} | delete branch
 *BranchesApi* | [**diff_branch**](docs/BranchesApi.md#diff_branch) | **GET** /repositories/{repository}/branches/{branch}/diff | diff branch
@@ -252,6 +253,7 @@ Class | Method | HTTP request | Description
  - [TagCreation](docs/TagCreation.md)
  - [UnderlyingObjectProperties](docs/UnderlyingObjectProperties.md)
  - [UpdatePasswordByToken](docs/UpdatePasswordByToken.md)
+ - [UpdateUsernameAndPasswordWithToken](docs/UpdateUsernameAndPasswordWithToken.md)
  - [User](docs/User.md)
  - [UserCreation](docs/UserCreation.md)
  - [UserList](docs/UserList.md)

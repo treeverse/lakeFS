@@ -560,13 +560,32 @@ components:
       type: object
       required:
         - email
-        - id
+        # - id
       properties:
         email:
           type: string
-        id: # named Id to support backward compatibility with create user
+        # id: # named Id to support backward compatibility with create user
+        #   type: string
+    
+
+    UpdateUsernameAndPasswordWithToken:
+      type: object
+      required:
+        - email
+        - token
+        - newUsername
+        - newPassword
+      properties:
+        email:
           type: string
-        
+        token:
+          type: string
+        newUsername:
+          type: string
+        newPassword:
+          type: string
+          
+
     UserCreation:
       type: object
       properties:
@@ -1114,6 +1133,29 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UpdatePasswordByToken"
+        responses:
+          201:
+            description: successful reset
+          401:
+            $ref: "#/components/responses/Unauthorized"
+          default:
+            $ref: "#/components/responses/ServerError"
+  
+
+  /auth/username/password:
+      post:
+        tags:
+          - auth
+        operationId: updateUsernameAndPassword
+        summary: Update username and password by reset_password token
+        security:
+          - cookie_auth: []
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateUsernameAndPasswordWithToken"
         responses:
           201:
             description: successful reset

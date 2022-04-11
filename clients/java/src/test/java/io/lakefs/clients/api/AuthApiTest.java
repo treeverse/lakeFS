@@ -29,6 +29,7 @@ import io.lakefs.clients.api.model.LoginInformation;
 import io.lakefs.clients.api.model.Policy;
 import io.lakefs.clients.api.model.PolicyList;
 import io.lakefs.clients.api.model.UpdatePasswordByToken;
+import io.lakefs.clients.api.model.UpdateUsernameAndPasswordWithToken;
 import io.lakefs.clients.api.model.User;
 import io.lakefs.clients.api.model.UserCreation;
 import io.lakefs.clients.api.model.UserList;
@@ -570,6 +571,21 @@ public class AuthApiTest {
         String policyId = null;
         Policy policy = null;
                 Policy response = api.updatePolicy(policyId, policy);
+        // TODO: test validations
+    }
+    
+    /**
+     * Update username and password by reset_password token
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void updateUsernameAndPasswordTest() throws ApiException {
+        UpdateUsernameAndPasswordWithToken updateUsernameAndPasswordWithToken = null;
+                api.updateUsernameAndPassword(updateUsernameAndPasswordWithToken);
         // TODO: test validations
     }
     

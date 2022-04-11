@@ -37,6 +37,7 @@ Method | HTTP request | Description
 [**logout**](AuthApi.md#logout) | **POST** /auth/logout | logs out a cookie-authenticated user
 [**updatePassword**](AuthApi.md#updatePassword) | **POST** /auth/password | Update user password by reset_password token
 [**updatePolicy**](AuthApi.md#updatePolicy) | **PUT** /auth/policies/{policyId} | update policy
+[**updateUsernameAndPassword**](AuthApi.md#updateUsernameAndPassword) | **POST** /auth/username/password | Update username and password by reset_password token
 
 
 <a name="addGroupMembership"></a>
@@ -2619,6 +2620,74 @@ Name | Type | Description  | Notes
 |-------------|-------------|------------------|
 **200** | policy |  -  |
 **400** | Validation Error |  -  |
+**401** | Unauthorized |  -  |
+**0** | Internal Server Error |  -  |
+
+<a name="updateUsernameAndPassword"></a>
+# **updateUsernameAndPassword**
+> updateUsernameAndPassword(updateUsernameAndPasswordWithToken)
+
+Update username and password by reset_password token
+
+### Example
+```java
+// Import classes:
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("http://localhost/api/v1");
+    
+    // Configure API key authorization: cookie_auth
+    ApiKeyAuth cookie_auth = (ApiKeyAuth) defaultClient.getAuthentication("cookie_auth");
+    cookie_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //cookie_auth.setApiKeyPrefix("Token");
+
+    AuthApi apiInstance = new AuthApi(defaultClient);
+    UpdateUsernameAndPasswordWithToken updateUsernameAndPasswordWithToken = new UpdateUsernameAndPasswordWithToken(); // UpdateUsernameAndPasswordWithToken | 
+    try {
+      apiInstance.updateUsernameAndPassword(updateUsernameAndPasswordWithToken);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling AuthApi#updateUsernameAndPassword");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **updateUsernameAndPasswordWithToken** | [**UpdateUsernameAndPasswordWithToken**](UpdateUsernameAndPasswordWithToken.md)|  |
+
+### Return type
+
+null (empty response body)
+
+### Authorization
+
+[cookie_auth](../README.md#cookie_auth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**201** | successful reset |  -  |
 **401** | Unauthorized |  -  |
 **0** | Internal Server Error |  -  |
 

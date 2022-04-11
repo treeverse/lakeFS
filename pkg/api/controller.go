@@ -812,7 +812,12 @@ func (c *Controller) isAuthorizedToCreateUser(w http.ResponseWriter, r *http.Req
 }
 
 func (c *Controller) InviteUser(w http.ResponseWriter, r *http.Request, body InviteUserJSONRequestBody) {
-	if !c.isAuthorizedToCreateUser(w, r, body.Id) {
+	initUserId, err := nanoid.New()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	if !c.isAuthorizedToCreateUser(w, r, initUserId) {
 		return
 	}
 	initPassword, err := nanoid.New()
@@ -828,14 +833,15 @@ func (c *Controller) InviteUser(w http.ResponseWriter, r *http.Request, body Inv
 	}
 	u := &model.User{
 		CreatedAt:         time.Now().UTC(),
-		Username:          body.Id,
 		FriendlyName:      nil,
+		Username:          initUserId,
 		Email:             &body.Email,
 		EncryptedPassword: hp,
 		Source:            "internal",
 	}
 	response, err := c.updateUserInDB(w, r, u)
 	if err != nil {
+		fmt.Println(err)
 		return
 	}
 	user, err := c.Auth.GetUserByEmail(r.Context(), body.Email)
@@ -3124,26 +3130,58 @@ func (c *Controller) ForgotPassword(w http.ResponseWriter, r *http.Request, body
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body UpdatePasswordJSONRequestBody) {
+func (c *Controller) UpdateUsernameAndPassword(w http.ResponseWriter, r *http.Request, body UpdateUsernameAndPasswordJSONRequestBody) {
+	err := c.updatePassword(w, r, body.Token, body.NewPassword)
+	if err != nil {
+		return
+	}
 	claims, err := VerifyResetPasswordToken(c.Auth, body.Token)
 	if err != nil {
 		c.Logger.WithError(err).WithField("token", body.Token).Debug("failed to verify token")
 		writeError(w, http.StatusUnauthorized, err)
 		return
 	}
+	if body.Email != claims.Subject {
+		c.Logger.WithError(err).WithField("email", body.Email).Debug("emails mismatch")
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	err = c.Auth.UpdateUsername(r.Context(), claims.Subject, body.NewUsername)
+	if err != nil {
+		c.Logger.WithError(err).WithField("username", body.NewUsername).Debug("failed to update new username")
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	w.WriteHeader(http.StatusCreated)
+}
+
+func (c *Controller) updatePassword(w http.ResponseWriter, r *http.Request, token string, newPassword string) error {
+	claims, err := VerifyResetPasswordToken(c.Auth, token)
+	if err != nil {
+		c.Logger.WithError(err).WithField("token", token).Debug("failed to verify token")
+		writeError(w, http.StatusUnauthorized, err)
+		return err
+	}
 	user, err := c.Auth.GetUserByEmail(r.Context(), claims.Subject)
 	if err != nil {
 		c.Logger.WithError(err).WithField("email", user.Email).Debug("failed to retrieve user by email")
 		writeError(w, http.StatusNotFound, http.StatusText(http.StatusNotFound))
-		return
+		return err
 	}
-	err = c.Auth.HashAndUpdatePassword(r.Context(), claims.Subject, body.NewPassword)
+	err = c.Auth.HashAndUpdatePassword(r.Context(), claims.Subject, newPassword)
 	if err != nil {
 		c.Logger.WithError(err).WithField("email", claims.Subject).Debug("failed to update password")
 		writeError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
-		return
+		return err
 	}
-	w.WriteHeader(http.StatusCreated)
+	return err
+}
+
+func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body UpdatePasswordJSONRequestBody) {
+	err := c.updatePassword(w, r, body.Token, body.NewPassword)
+	if err == nil {
+		w.WriteHeader(http.StatusCreated)
+	}
 }
 
 func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {

@@ -180,6 +180,37 @@ paths:
       - auth
       x-contentType: application/json
       x-accepts: application/json
+  /auth/username/password:
+    post:
+      operationId: updateUsernameAndPassword
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUsernameAndPasswordWithToken'
+        required: true
+      responses:
+        "201":
+          description: successful reset
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      security:
+      - cookie_auth: []
+      summary: Update username and password by reset_password token
+      tags:
+      - auth
+      x-contentType: application/json
+      x-accepts: application/json
   /auth/password/forgot:
     post:
       operationId: forgotPassword
@@ -5006,16 +5037,33 @@ components:
       type: object
     InviteUserRequest:
       example:
-        id: id
         email: email
       properties:
         email:
           type: string
-        id:
+      required:
+      - email
+      type: object
+    UpdateUsernameAndPasswordWithToken:
+      example:
+        newUsername: newUsername
+        newPassword: newPassword
+        email: email
+        token: token
+      properties:
+        email:
+          type: string
+        token:
+          type: string
+        newUsername:
+          type: string
+        newPassword:
           type: string
       required:
       - email
-      - id
+      - newPassword
+      - newUsername
+      - token
       type: object
     UserCreation:
       example:

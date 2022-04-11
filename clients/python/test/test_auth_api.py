@@ -255,6 +255,13 @@ class TestAuthApi(unittest.TestCase):
         """
         pass
 
+    def test_update_username_and_password(self):
+        """Test case for update_username_and_password
+
+        Update username and password by reset_password token  # noqa: E501
+        """
+        pass
+
 
 if __name__ == '__main__':
     unittest.main()
