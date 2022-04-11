@@ -33,17 +33,18 @@ const LoginForm = () => {
                             }
                         }}>
                             <Form.Group controlId="username">
-                                <Form.Control type="text" placeholder="Access Key ID" autoFocus/>
+                                <Form.Control type="text" placeholder="Email / Access Key ID" autoFocus/>
                             </Form.Group>
 
                             <Form.Group controlId="password">
-                                <Form.Control type="password" placeholder="Secret Access Key"/>
+                                <Form.Control type="password" placeholder="Password / Secret Access Key"/>
                             </Form.Group>
 
                             {(!!loginError) && <Error error={loginError}/>}
 
                             <Button variant="primary" type="submit">Login</Button>
                         </Form>
+                        <Button variant="link" className="reset-pwd" onClick={()=> {router.push("/auth/resetpassword")}}>Reset password</Button>
                     </Card.Body>
                 </Card>
             </Col>
