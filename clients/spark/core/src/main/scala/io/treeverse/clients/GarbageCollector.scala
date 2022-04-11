@@ -51,11 +51,11 @@ object GarbageCollector {
   private def getRangeTuples(
       commitID: String,
       repo: String,
-      conf: APIConfigurations,
+      apiConf: APIConfigurations,
       hcValues: Broadcast[ConfMap]
   ): Set[(String, Array[Byte], Array[Byte])] = {
     val location =
-      new ApiClient(conf.apiURL, conf.accessKey, conf.secretKey).getMetaRangeURL(repo, commitID)
+      new ApiClient(apiConf.apiURL, apiConf.accessKey, apiConf.secretKey).getMetaRangeURL(repo, commitID)
     // continue on empty location, empty location is a result of a commit with no metaRangeID (e.g 'Repository created' commit)
     if (location == "") Set()
     else
@@ -71,11 +71,11 @@ object GarbageCollector {
   def getRangesDFFromCommits(
       commits: Dataset[Row],
       repo: String,
-      conf: APIConfigurations,
+      apiConf: APIConfigurations,
       hcValues: Broadcast[ConfMap]
   ): Dataset[Row] = {
     val get_range_tuples = udf((commitID: String) => {
-      getRangeTuples(commitID, repo, conf, hcValues).toSeq
+      getRangeTuples(commitID, repo, apiConf, hcValues).toSeq
     })
 
     commits.distinct
@@ -91,12 +91,12 @@ object GarbageCollector {
 
   def getRangeAddresses(
       rangeID: String,
-      conf: APIConfigurations,
+      apiConf: APIConfigurations,
       repo: String,
       hcValues: Broadcast[ConfMap]
   ): Seq[String] = {
     val location =
-      new ApiClient(conf.apiURL, conf.accessKey, conf.secretKey).getRangeURL(repo, rangeID)
+      new ApiClient(apiConf.apiURL, apiConf.accessKey, apiConf.secretKey).getRangeURL(repo, rangeID)
     SSTableReader
       .forRange(configurationFromValues(hcValues), ApiClient.translateS3String(location))
       .newIterator()
@@ -106,7 +106,7 @@ object GarbageCollector {
 
   def getEntryTuples(
       rangeID: String,
-      conf: APIConfigurations,
+      apiConf: APIConfigurations,
       repo: String,
       hcValues: Broadcast[ConfMap]
   ): Set[(String, String, Boolean, Long)] = {
@@ -115,7 +115,7 @@ object GarbageCollector {
     }
 
     val location =
-      new ApiClient(conf.apiURL, conf.accessKey, conf.secretKey).getRangeURL(repo, rangeID)
+      new ApiClient(apiConf.apiURL, apiConf.accessKey, apiConf.secretKey).getRangeURL(repo, rangeID)
     SSTableReader
       .forRange(configurationFromValues(hcValues), ApiClient.translateS3String(location))
       .newIterator()
@@ -132,25 +132,25 @@ object GarbageCollector {
 
   /** @param leftRangeIDs
    *  @param rightRangeIDs
-   *  @param conf
+   *  @param apiConf
    *  @return tuples of type (key, address, isRelative, lastModified) for every address existing in leftRanges and not in rightRanges
    */
   def leftAntiJoinAddresses(
       leftRangeIDs: Set[String],
       rightRangeIDs: Set[String],
-      conf: APIConfigurations,
+      apiConf: APIConfigurations,
       repo: String,
       hcValues: Broadcast[ConfMap]
   ): Set[(String, String, Boolean, Long)] = {
-    distinctEntryTuples(leftRangeIDs, conf, repo, hcValues)
+    distinctEntryTuples(leftRangeIDs, apiConf, repo, hcValues)
 
-    val leftTuples = distinctEntryTuples(leftRangeIDs, conf, repo, hcValues)
-    val rightTuples = distinctEntryTuples(rightRangeIDs, conf, repo, hcValues)
+    val leftTuples = distinctEntryTuples(leftRangeIDs, apiConf, repo, hcValues)
+    val rightTuples = distinctEntryTuples(rightRangeIDs, apiConf, repo, hcValues)
     leftTuples -- rightTuples
   }
 
-  private def distinctEntryTuples(rangeIDs: Set[String], conf: APIConfigurations, repo: String, hcValues: Broadcast[ConfMap]) = {
-    val tuples = rangeIDs.map((rangeID: String) => getEntryTuples(rangeID, conf, repo, hcValues))
+  private def distinctEntryTuples(rangeIDs: Set[String], apiConf: APIConfigurations, repo: String, hcValues: Broadcast[ConfMap]) = {
+    val tuples = rangeIDs.map((rangeID: String) => getEntryTuples(rangeID, apiConf, repo, hcValues))
     if (tuples.isEmpty) Set[(String, String, Boolean, Long)]() else tuples.reduce(_.union(_))
   }
 
@@ -161,12 +161,12 @@ object GarbageCollector {
    */
   def getExpiredEntriesFromRanges(
       ranges: Dataset[Row],
-      conf: APIConfigurations,
+      apiConf: APIConfigurations,
       repo: String,
       hcValues: Broadcast[ConfMap]
   ): Dataset[Row] = {
     val left_anti_join_addresses = udf((x: Seq[String], y: Seq[String]) => {
-      leftAntiJoinAddresses(x.toSet, y.toSet, conf, repo, hcValues).toSeq
+      leftAntiJoinAddresses(x.toSet, y.toSet, apiConf, repo, hcValues).toSeq
     })
     val expiredRangesDF = ranges.where("expired")
     val activeRangesDF = ranges.where("!expired")
@@ -235,21 +235,21 @@ object GarbageCollector {
       runID: String,
       commitDFLocation: String,
       spark: SparkSession,
-      conf: APIConfigurations,
+      apiConf: APIConfigurations,
       hcValues: Broadcast[ConfMap]
   ): Dataset[Row] = {
     val commitsDF = getCommitsDF(runID, commitDFLocation, spark)
-    val rangesDF = getRangesDFFromCommits(commitsDF, repo, conf, hcValues)
-    val expired = getExpiredEntriesFromRanges(rangesDF, conf, repo, hcValues)
+    val rangesDF = getRangesDFFromCommits(commitsDF, repo, apiConf, hcValues)
+    val expired = getExpiredEntriesFromRanges(rangesDF, apiConf, repo, hcValues)
 
     val activeRangesDF = rangesDF.where("!expired")
-    subtractDeduplications(expired, activeRangesDF, conf, repo, spark, hcValues)
+    subtractDeduplications(expired, activeRangesDF, apiConf, repo, spark, hcValues)
   }
 
   private def subtractDeduplications(
       expired: Dataset[Row],
       activeRangesDF: Dataset[Row],
-      conf: APIConfigurations,
+      apiConf: APIConfigurations,
       repo: String,
       spark: SparkSession,
       hcValues: Broadcast[ConfMap]
@@ -258,7 +258,7 @@ object GarbageCollector {
       activeRangesDF.select("range_id").rdd.distinct().map(x => x.getString(0))
     val activeAddresses: RDD[String] = activeRangesRDD
       .flatMap(range => {
-        getRangeAddresses(range, conf, repo, hcValues)
+        getRangeAddresses(range, apiConf, repo, hcValues)
       })
       .distinct()
     val activeAddressesRows: RDD[Row] = activeAddresses.map(x => Row(x))
