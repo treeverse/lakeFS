@@ -3142,8 +3142,8 @@ func (c *Controller) UpdateUsernameAndPassword(w http.ResponseWriter, r *http.Re
 		return
 	}
 	if body.Email != claims.Subject {
-		c.Logger.WithError(err).WithField("email", body.Email).Debug("emails mismatch")
-		writeError(w, http.StatusBadRequest, err)
+		c.Logger.Debug("email mismatch")
+		writeError(w, http.StatusBadRequest, "email mismatch")
 		return
 	}
 	err = c.Auth.UpdateUsername(r.Context(), claims.Subject, body.NewUsername)
