@@ -30,15 +30,15 @@ If you wish to add additional tests to the test suit of GC, update the `gc-tests
 Example:
 ```json lines
 {
-    "id": 3,   ## Notice the id
+    "id": 3,   // Notice the id
     "policy": {
       "default_retention_days": 5,
-      "branches": [                               ## Notice the branches names
+      "branches": [                               // Notice the branches names
         {"branch_id": "a3", "retention_days": 1},  
         {"branch_id": "b3", "retention_days": 3}
       ]
     },
-    "branches": [                                 ## Notice the branches names
+    "branches": [                                 // Notice the branches names
       {
         "branch_name": "a3",
         "delete_commit_days_ago": 4
