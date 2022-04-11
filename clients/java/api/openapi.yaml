@@ -4240,6 +4240,26 @@ paths:
       tags:
       - config
       x-accepts: application/json
+  /config/emailer:
+    get:
+      description: retrieve emailer config
+      operationId: getEmailConfig
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+          description: emailer configuration
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+      tags:
+      - config
+      x-accepts: application/json
 components:
   parameters:
     PaginationPrefix:

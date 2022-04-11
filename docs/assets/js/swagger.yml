@@ -3295,6 +3295,7 @@ paths:
                 $ref: "#/components/schemas/VersionConfig"
         401:
           $ref: "#/components/responses/Unauthorized"
+          
   /config/storage:
     get:
       tags:
@@ -3308,5 +3309,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StorageConfig"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+
+  /config/emailer:
+    get:
+      tags:
+        - config
+      operationId: getEmailConfig
+      description: retrieve emailer config
+      responses:
+        200:
+          description: emailer configuration
+          content:
+            application/json:
+              schema:
+                type: object
         401:
           $ref: "#/components/responses/Unauthorized"

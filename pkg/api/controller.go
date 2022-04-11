@@ -1124,6 +1124,22 @@ func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, http.StatusOK, response)
 }
 
+func (c *Controller) GetEmailConfig(w http.ResponseWriter, r *http.Request) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.ReadEmailConfiguration,
+			Resource: permissions.All,
+		},
+	}) {
+		return
+	}
+	if len(c.Emailer.Params.SMTPHost) == 0 {
+		writeError(w, http.StatusNotFound, "No Emailer set")
+		return
+	}
+	writeResponse(w, http.StatusOK, c.Emailer.Params)
+}
+
 func (c *Controller) HealthCheck(w http.ResponseWriter, _ *http.Request) {
 	writeResponse(w, http.StatusNoContent, nil)
 }

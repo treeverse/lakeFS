@@ -34,6 +34,7 @@ const (
 	ReadTagAction            = "fs:ReadTag"
 	ListTagsAction           = "fs:ListTags"
 	ReadStorageConfiguration = "fs:ReadConfig"
+	ReadEmailConfiguration   = "fs:ReadConfig"
 
 	ReadUserAction          = "auth:ReadUser"
 	CreateUserAction        = "auth:CreateUser"

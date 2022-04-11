@@ -40,6 +40,20 @@ public class ConfigApiTest {
     /**
      * 
      *
+     * retrieve emailer config
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void getEmailConfigTest() throws ApiException {
+                Object response = api.getEmailConfig();
+        // TODO: test validations
+    }
+    
+    /**
+     * 
+     *
      * get version of lakeFS server
      *
      * @throws ApiException
