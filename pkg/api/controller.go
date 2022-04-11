@@ -802,17 +802,68 @@ func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params Li
 	writeResponse(w, http.StatusOK, response)
 }
 
-func (c *Controller) InviteUser(w http.ResponseWriter, r *http.Request, body InviteUserJSONRequestBody) {
+func (c *Controller) isAuthorizedToCreateUser(w http.ResponseWriter, r *http.Request, username string) bool {
+	return c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.CreateUserAction,
+			Resource: permissions.UserArn(username),
+		},
+	})
+}
 
+func (c *Controller) InviteUser(w http.ResponseWriter, r *http.Request, body InviteUserJSONRequestBody) {
+	if !c.isAuthorizedToCreateUser(w, r, body.Id) {
+		return
+	}
+	initPassword, err := nanoid.New()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	hp, err := model.HashPassword(initPassword)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	u := &model.User{
+		CreatedAt:         time.Now().UTC(),
+		Username:          body.Id,
+		FriendlyName:      nil,
+		Email:             &body.Email,
+		EncryptedPassword: hp,
+		Source:            "internal",
+	}
+	response, err := c.updateUserInDB(w, r, u)
+	if err != nil {
+		return
+	}
+	user, err := c.Auth.GetUserByEmail(r.Context(), body.Email)
+	var id int
+	if err != nil {
+		id = user.ID
+	} else {
+		id = -1
+	}
+	secret := c.Auth.SecretStore().SharedSecret()
+	currentTime := time.Now()
+	token, err := GenerateJWTResetPassword(secret, id, body.Email, currentTime, currentTime.Add(DefaultResetPasswordExpiration))
+	if err != nil {
+		c.Logger.WithError(err).WithField("email", body.Email).Debug("failed to create a token")
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	err = c.sendResetPasswordEmail(body.Email, token)
+	if err != nil {
+		c.Logger.WithError(err).WithField("email", body.Email).Warn("failed sending reset password email")
+	} else {
+		c.Logger.WithField("email", body.Email).Info("reset password email sent")
+	}
+	writeResponse(w, http.StatusCreated, response)
 }
 
 func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body CreateUserJSONRequestBody) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.CreateUserAction,
-			Resource: permissions.UserArn(body.Id),
-		},
-	}) {
+	if !c.isAuthorizedToCreateUser(w, r, body.Id) {
 		return
 	}
 	u := &model.User{
@@ -821,17 +872,25 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body Cre
 		FriendlyName: nil,
 		Source:       "internal",
 	}
-	ctx := r.Context()
-	c.LogAction(ctx, "create_user")
-	_, err := c.Auth.CreateUser(ctx, u)
-	if handleAPIError(w, err) {
+	response, err := c.updateUserInDB(w, r, u)
+	if err != nil {
 		return
 	}
-	response := User{
-		Id:           u.Username,
-		CreationDate: u.CreatedAt.Unix(),
-	}
 	writeResponse(w, http.StatusCreated, response)
+}
+
+func (c *Controller) updateUserInDB(w http.ResponseWriter, r *http.Request, user *model.User) (*User, error) {
+	ctx := r.Context()
+	c.LogAction(ctx, "create_user")
+	_, err := c.Auth.CreateUser(ctx, user)
+	if handleAPIError(w, err) {
+		return nil, err
+	}
+	response := User{
+		Id:           user.Username,
+		CreationDate: user.CreatedAt.Unix(),
+	}
+	return &response, nil
 }
 
 func (c *Controller) DeleteUser(w http.ResponseWriter, r *http.Request, userID string) {
