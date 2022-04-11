@@ -1,36 +1,37 @@
 package api
 
 import (
+	"bytes"
 	"encoding/xml"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
-func TestNewUIHandler_StatusCodes(t *testing.T) {
-	handler := NewUIHandler(nil)
-	tests := []struct {
-		name           string
-		url            string
-		wantStatusCode int
-	}{
-		{name: "root", url: "/", wantStatusCode: http.StatusOK},
-		{name: "robots", url: "/robots.txt", wantStatusCode: http.StatusOK},
-		{name: "index", url: "/index.html", wantStatusCode: http.StatusMovedPermanently},
-		{name: "noplace", url: "/noplace", wantStatusCode: http.StatusTemporaryRedirect},
+func testHTTPGetPage(t *testing.T, handler http.Handler, url string) *httptest.ResponseRecorder {
+	rr := httptest.NewRecorder()
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		t.Fatalf("Failed fetching url '%s': %s", url, err)
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			rr := httptest.NewRecorder()
-			req, err := http.NewRequest(http.MethodGet, tt.url, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
-			handler.ServeHTTP(rr, req)
-			if rr.Code != tt.wantStatusCode {
-				t.Fatalf("Request StatusCode=%d, expected=%d", rr.Code, tt.wantStatusCode)
-			}
-		})
+	handler.ServeHTTP(rr, req)
+	return rr
+}
+
+func TestNewUIHandler_SPA(t *testing.T) {
+	handler := NewUIHandler(nil)
+
+	rrMain := testHTTPGetPage(t, handler, "/")
+	if rrMain.Code != http.StatusOK {
+		t.Fatalf("Request main page, StatusCode=%d, expected=%d", rrMain.Code, http.StatusOK)
+	}
+	rrNoPlace := testHTTPGetPage(t, handler, "/no-place")
+	if rrMain.Code != http.StatusOK {
+		t.Fatalf("Request no-place page, StatusCode=%d, expected=%d", rrMain.Code, http.StatusOK)
+	}
+	// main page and non-existing one should have the same content
+	if !bytes.Equal(rrMain.Body.Bytes(), rrNoPlace.Body.Bytes()) {
+		t.Fatal("Main page and non-existing content should match")
 	}
 }
 
