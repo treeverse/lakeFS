@@ -1491,8 +1491,8 @@ func (a *APIAuthService) ListEffectivePolicies(ctx context.Context, username str
 	if params.Amount == -1 {
 		// read through the cache when requesting the full list
 		policies, err := a.cache.GetUserPolicies(username, func() ([]*model.Policy, error) {
-			policies, _, err := a.listUserPolicies(ctx, username, params, true)
-			return policies, err
+			p, _, err := a.listUserPolicies(ctx, username, params, true)
+			return p, err
 		})
 		if err != nil {
 			return nil, nil, err
