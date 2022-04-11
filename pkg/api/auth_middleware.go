@@ -115,11 +115,7 @@ func verifyToken(authService auth.Service, tokenString string) (*jwt.StandardCla
 		}
 		return authService.SecretStore().SharedSecret(), nil
 	})
-	if err != nil {
-		return nil, ErrAuthenticatingRequest
-	}
-	claims, ok := token.Claims.(*jwt.StandardClaims)
-	if !ok || !token.Valid {
+	if err != nil || !token.Valid {
 		return nil, ErrAuthenticatingRequest
 	}
 	return claims, nil
@@ -131,6 +127,7 @@ func userByToken(ctx context.Context, logger logging.Logger, authService auth.Se
 	if err != nil || !claims.VerifyAudience(LoginAudience, false) {
 		return nil, ErrAuthenticatingRequest
 	}
+
 	const base = 10
 	const bitSize = 32
 	id, err := strconv.ParseInt(claims.Subject, base, bitSize)
