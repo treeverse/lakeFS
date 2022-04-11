@@ -9,15 +9,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/block"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
-	"github.com/rs/xid"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api"
-	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -39,9 +39,9 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 	viper.SetDefault("setup_lakefs_timeout", defaultSetupTimeout)
 	viper.SetDefault("endpoint_url", "http://localhost:8000")
 	viper.SetDefault("s3_endpoint", "s3.local.lakefs.io:8000")
-	viper.SetDefault("access_key_id", "")
-	viper.SetDefault("secret_access_key", "")
-	viper.SetDefault("storage_namespace", fmt.Sprintf("s3://%s/%s", params.StorageNS, xid.New().String()))
+	viper.SetDefault("access_key_id", params.AdminAccessKeyID)
+	viper.SetDefault("secret_access_key", params.AdminSecretAccessKey)
+	viper.SetDefault("storage_namespace", fmt.Sprintf("s3://%s", params.StorageNS))
 	viper.SetDefault("blockstore_type", block.BlockstoreTypeS3)
 	viper.SetDefault("version", "dev")
 	viper.SetDefault("lakectl_dir", "..")

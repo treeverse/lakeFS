@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -28,6 +29,21 @@ const minHTTPErrorStatusCode = 400
 var errNotVerified = errors.New("lakeFS failed")
 
 var nonAlphanumericSequence = regexp.MustCompile("[^a-zA-Z0-9]+")
+
+func skipOnSchema(t *testing.T, rawURL string) {
+	namespaceURL, err := url.Parse(viper.GetString("storage_namespace"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	pathURL, err := url.Parse(rawURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if namespaceURL.Scheme != pathURL.Scheme {
+		t.Skip("Skip test on different URL schema type")
+	}
+}
 
 // verifyResponse returns an error based on failed if resp failed to perform action.  It uses
 // body in errors.
@@ -75,10 +91,7 @@ func generateUniqueRepositoryName() string {
 }
 
 func generateUniqueStorageNamespace(repoName string) string {
-	storageNamespace := viper.GetString("storage_namespace")
-	if !strings.HasSuffix(storageNamespace, "/") {
-		storageNamespace += "/"
-	}
+	storageNamespace := fmt.Sprintf("%s/%s/", viper.GetString("storage_namespace"), xid.New().String())
 	return storageNamespace + repoName
 }
 

@@ -1,7 +1,6 @@
 package esti
 
 import (
-	"os"
 	"testing"
 
 	"github.com/spf13/viper"
@@ -11,12 +10,6 @@ func TestDoctor(t *testing.T) {
 	accessKeyID := viper.GetString("access_key_id")
 	secretAccessKey := viper.GetString("secret_access_key")
 	endPointURL := viper.GetString("endpoint_url") + "/api/v1"
-
-	defaultConfigPath := "/root/.lakectl.yaml"
-	err := os.WriteFile(defaultConfigPath, []byte{}, 0600)
-	if err != nil {
-		t.Fatalf("failed to create lakectl default config: %s", err)
-	}
 
 	RunCmdAndVerifySuccessWithFile(t, LakectlWithParams(accessKeyID, secretAccessKey, endPointURL)+" doctor", false, "lakectl_doctor_ok", emptyVars)
 	RunCmdAndVerifyFailureWithFile(t, lakectlLocation()+" doctor -c not_exits.yaml", false, "lakectl_doctor_not_exists_file", emptyVars)

@@ -50,7 +50,7 @@ func TestMultipartUpload(t *testing.T) {
 	getResp, err := client.GetObjectWithResponse(ctx, repo, mainBranch, &api.GetObjectParams{Path: file})
 	require.NoError(t, err, "failed to get object")
 	require.Equal(t, http.StatusOK, getResp.StatusCode())
-	require.Equal(t, getResp.Body, partsConcat, "uploaded object did not match")
+	require.Equal(t, partsConcat, getResp.Body, "uploaded object did not match")
 }
 
 func uploadMultipartParts(t *testing.T, logger logging.Logger, resp *s3.CreateMultipartUploadOutput, parts [][]byte) []*s3.CompletedPart {

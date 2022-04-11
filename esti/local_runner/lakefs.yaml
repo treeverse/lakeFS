@@ -1,0 +1,11 @@
+database:
+  connection_string: "postgres://lakefs:lakefs@localhost:5433/postgres?sslmode=disable"
+
+auth:
+  encrypt:
+    secret_key: "10a718b3f285d89c36e9864494cdd1507f3bc85b342df24736ea81f9a1134bcc"
+
+blockstore:
+  type: local
+  local:
+    path: /tmp

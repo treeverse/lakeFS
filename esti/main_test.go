@@ -70,7 +70,7 @@ func TestMain(m *testing.M) {
 		StorageNS: "esti-system-testing",
 	}
 	if *useLocalCredentials {
-		params.AdminAccessKeyID = "AKIAIOSFODNN7EXAMPLE"
+		params.AdminAccessKeyID = "AKIAIOSFDNN7EXAMPLEQ"
 		params.AdminSecretAccessKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 	}
 	logger, client, svc = testutil.SetupTestingEnv(&params)
