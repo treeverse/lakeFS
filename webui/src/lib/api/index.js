@@ -129,7 +129,7 @@ class Auth {
             throw new AuthorizationError('user unauthorized');
         }
         if (response.status !== 201) {
-            throw new Error('unknown authentication error');
+            throw new Error('failed to update password');
         }
     }
 
@@ -794,8 +794,9 @@ class Config {
         }
     }
     async getLakeFSVersion() {
+        let response;
         try {
-            const response = await apiRequest('/config/version', {
+            response = await apiRequest('/config/version', {
                 method: 'GET',
             });
         } catch (e) {
