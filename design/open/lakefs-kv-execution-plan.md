@@ -65,8 +65,8 @@ When a complete data model / functionality completes the transition we can exclu
 
 ## Milestone
 
-- implement adapter k/v for Postgres
-- feature flag (internal) used for kv development
-- each milestone will include migrate db that will use the new kv format. will support only the part we decided as feature complete and will no longer control by the feature flag.
-- for each step: implement the new models to k/v and migrate code
-- implement adapter k/v for other implementations
+- Implement adapter k/v for Postgres
+- Feature flag (internal) used for kv development
+- Each milestone will include migrate db that will use the new kv format. will support only the part we decided as feature complete and will no longer be controlled by the feature flag.
+- For each step: implement the new models to k/v and migrate code
+- Implement adapter k/v for other implementations
