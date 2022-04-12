@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt"
+	"github.com/google/uuid"
 )
 
 type LoginRequestData struct {
@@ -36,6 +37,7 @@ func generateJWT(claims *jwt.StandardClaims, secret []byte) (string, error) {
 // invalid for login. No email is passed to support the ability of login for users via user/access keys which don't have an email yet
 func GenerateJWTLogin(secret []byte, userID int, issuedAt, expiresAt time.Time) (string, error) {
 	claims := &jwt.StandardClaims{
+		Id:        uuid.NewString(),
 		Audience:  LoginAudience,
 		Subject:   fmt.Sprint(userID),
 		IssuedAt:  issuedAt.Unix(),
@@ -47,11 +49,11 @@ func GenerateJWTLogin(secret []byte, userID int, issuedAt, expiresAt time.Time) 
 // GenerateJWTResetPassword creates a jwt token with the field subject set the email passed.
 func GenerateJWTResetPassword(secret []byte, userID int, email string, issuedAt, expiresAt time.Time) (string, error) {
 	claims := &jwt.StandardClaims{
+		Id:        uuid.NewString(),
 		Audience:  ResetPasswordAudience,
 		Subject:   email,
 		IssuedAt:  issuedAt.Unix(),
 		ExpiresAt: expiresAt.Unix(),
-		Id:        fmt.Sprint(userID),
 	}
 	return generateJWT(claims, secret)
 }
