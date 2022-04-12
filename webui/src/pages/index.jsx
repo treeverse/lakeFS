@@ -23,6 +23,7 @@ export const IndexPage = () => {
                 <Route path="/setup">
                     <Setup/>
                 </Route>
+                <Redirect to="/repositories" />
             </Switch>
         </Router>
     );
