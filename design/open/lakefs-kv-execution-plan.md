@@ -16,7 +16,7 @@ Key/value format can be done using ProtoBuf / JSON.
 ## Per package changes
 
 For the following packages we should handle the move from 'db' package to 'kv'.
-During development it should enable a configuration flag to switch between using kv and db implementation.
+During development, allow an internal configuration flag to switch between using kv and db implementation.
 Any move transition should support migration from old Postgres data to new Postgres data format.
 When a complete data model / functionality completes the transition we can exclude the 'option' to swtich from/to and just use the new format.
 
