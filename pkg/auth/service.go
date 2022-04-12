@@ -992,11 +992,7 @@ func (a *APIAuthService) CreateUser(ctx context.Context, user *model.User) (int6
 }
 
 func (a *APIAuthService) DeleteUser(ctx context.Context, username string) error {
-	u, err := a.GetUser(ctx, username)
-	if err != nil {
-		return err
-	}
-	resp, err := a.apiClient.DeleteUserWithResponse(ctx, u.ID)
+	resp, err := a.apiClient.DeleteUserWithResponse(ctx, username)
 	if err != nil {
 		return err
 	}
@@ -1005,14 +1001,18 @@ func (a *APIAuthService) DeleteUser(ctx context.Context, username string) error 
 
 func (a *APIAuthService) GetUserByID(ctx context.Context, userID int64) (*model.User, error) {
 	return a.cache.GetUserByID(userID, func() (*model.User, error) {
-		resp, err := a.apiClient.GetUserByIdWithResponse(ctx, userID)
+		resp, err := a.apiClient.ListUsersWithResponse(ctx, &ListUsersParams{Id: &userID})
 		if err != nil {
 			return nil, err
 		}
 		if err := a.validateResponse(resp, http.StatusOK); err != nil {
 			return nil, err
 		}
-		u := resp.JSON200
+		results := resp.JSON200.Results
+		if len(results) == 0 {
+			return nil, ErrNotFound
+		}
+		u := results[0]
 		return &model.User{
 			ID:                u.Id,
 			CreatedAt:         time.Unix(u.CreationDate, 0),
@@ -1027,20 +1027,14 @@ func (a *APIAuthService) GetUserByID(ctx context.Context, userID int64) (*model.
 
 func (a *APIAuthService) GetUser(ctx context.Context, username string) (*model.User, error) {
 	return a.cache.GetUser(username, func() (*model.User, error) {
-		resp, err := a.apiClient.ListUsersWithResponse(ctx, &ListUsersParams{Username: &username})
+		resp, err := a.apiClient.GetUserWithResponse(ctx, username)
 		if err != nil {
 			return nil, err
 		}
 		if err := a.validateResponse(resp, http.StatusOK); err != nil {
 			return nil, err
 		}
-		results := resp.JSON200.Results
-		if len(results) == 0 {
-			return nil, ErrNotFound
-		}
-		u := results[0]
-		// TODO(Guys): handle more than one user
-
+		u := resp.JSON200
 		return &model.User{
 			ID:                u.Id,
 			CreatedAt:         time.Unix(u.CreationDate, 0),

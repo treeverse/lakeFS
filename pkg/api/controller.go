@@ -2952,7 +2952,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
-	if initialized {
+	if initialized || c.Config.IsAuthTypeAPI() {
 		writeError(w, http.StatusConflict, "lakeFS already initialized")
 		return
 	}

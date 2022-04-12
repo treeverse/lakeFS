@@ -297,9 +297,10 @@ paths:
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
         - in: query
-          name: username
+          name: id
           schema:
-            type: string
+            type: integer
+            format: int64
         - in: query
           name: email
           schema:
@@ -350,13 +351,12 @@ paths:
         name: userId
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     get:
       tags:
         - auth
-      operationId: getUserById
-      summary: get user by ID
+      operationId: getUser
+      summary: get user
       responses:
         200:
           description: user
