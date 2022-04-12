@@ -5,13 +5,11 @@ High level overview of the interface described in https://github.com/treeverse/l
 
 ## Transform from using db to kv package
 
-High level interface described in the kv proposal, we should consider taking the DynamoDB interface to address the way we communicate `set-if` functionality while marshal the same value without fetching data first.
-
-Key/value format can be done using ProtoBuf / JSON.
-
-- key format based on path - a format with escaping should be supported to enable easy way to encode values as part of the key
-- each model should include version as part of the model information
-- migrate from old model to new one without downtime
+High level API described in the kv proposal, we should consider taking the DynamoDB API to address the way we communicate `set-if` functionality while marshal the same value without fetching data first.
+Key/value format can be done using ProtoBuf / JSON - discussion and information will be part of a design document.
+Each data currently stored using 'db' in a table will be migrated to a key value format.
+Key will be based on the identity and lookup properties of the data.
+Value will encode the data with additional version information to enable future data migration.
 
 ## Per package changes
 
