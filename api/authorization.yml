@@ -144,12 +144,6 @@ components:
           format: byte
       required:
         - username
-    SetupState:
-      type: object
-      properties:
-        state:
-          type: string
-          enum: [initialized, not_initialized]
 
 
     Credentials:
@@ -302,6 +296,15 @@ paths:
         - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
+        - in: query
+          name: username
+          schema:
+            type: string
+        - in: query
+          name: email
+          schema:
+            type: string
+
       responses:
         200:
           description: user list
@@ -338,58 +341,6 @@ paths:
                 $ref: "#/components/schemas/Error"
         401:
           $ref: "#/components/responses/Unauthorized"
-        default:
-          $ref: "#/components/responses/ServerError"
-
-  /auth/userbyname:
-    parameters:
-      - in: query
-        name: userName
-        required: true
-        schema:
-          type: string
-    get:
-      tags:
-        - auth
-      operationId: getUserByName
-      summary: get user by name
-      responses:
-        200:
-          description: user
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/User"
-        401:
-          $ref: "#/components/responses/Unauthorized"
-        404:
-          $ref: "#/components/responses/NotFound"
-        default:
-          $ref: "#/components/responses/ServerError"
-
-  /auth/userbyemail:
-    parameters:
-      - in: query
-        name: email
-        required: true
-        schema:
-          type: string
-    get:
-      tags:
-        - auth
-      operationId: getUserByEmail
-      summary: get user by email
-      responses:
-        200:
-          description: user
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/User"
-        401:
-          $ref: "#/components/responses/Unauthorized"
-        404:
-          $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -730,6 +681,15 @@ paths:
           $ref: "#/components/responses/ServerError"
 
     post:
+      parameters:
+        - in: query
+          name: access_key
+          schema:
+            type: string
+        - in: query
+          name: secret_key
+          schema:
+            type: string
       tags:
         - auth
       operationId: createCredentials
