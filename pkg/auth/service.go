@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-openapi/swag"
+
 	sq "github.com/Masterminds/squirrel"
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/georgysavva/scany/pgxscan"
@@ -1071,7 +1073,7 @@ func (a *APIAuthService) GetUserByEmail(ctx context.Context, email string) (*mod
 			Username:     u.Name,
 			FriendlyName: u.FriendlyName,
 			Email:        u.Email,
-			Source:       getNonRequiredString(u.Source),
+			Source:       swag.StringValue(u.Source),
 		}
 
 		if u.EncryptedPassword != nil {
@@ -1079,14 +1081,6 @@ func (a *APIAuthService) GetUserByEmail(ctx context.Context, email string) (*mod
 		}
 		return user, err
 	})
-}
-
-// getNonRequiredString returns empty string in case of nil
-func getNonRequiredString(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
 }
 
 func toPagination(paginator Pagination) *model.Paginator {
@@ -1122,7 +1116,7 @@ func (a *APIAuthService) ListUsers(ctx context.Context, params *model.Pagination
 			FriendlyName:      r.FriendlyName,
 			Email:             r.Email,
 			EncryptedPassword: nil,
-			Source:            getNonRequiredString(r.Source),
+			Source:            swag.StringValue(r.Source),
 		}
 	}
 	return users, toPagination(pagination), nil
