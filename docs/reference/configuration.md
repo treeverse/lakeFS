@@ -107,6 +107,8 @@ This reference uses `.` to denote the nesting of values.
 + `email.username` `(string)` - A string representing the username of the specific account at the SMTP. It's recommended to provide this value at runtime from a secret vault of some sort.
 + `email.password` `(string)` - A string representing the password of the account. It's recommended to provide this value at runtime from a secret vault of some sort.
 + `email.sender` `(string)` - A string representing the email account which is set as the sender.
++ `email.limit_every_duration` `(duration : 1m)` - Average time to wait between sending emails. The zero value means no duration and therefore no emails can be sent.
++ `email.burst` `(int: 10)` - Maximal burst of emails before applying `limit_every`.
 * `gateways.s3.domain_name` `(string : "s3.local.lakefs.io")` - a FQDN
   representing the S3 endpoint used by S3 clients to call this server
   (`*.s3.local.lakefs.io` always resolves to 127.0.0.1, useful for

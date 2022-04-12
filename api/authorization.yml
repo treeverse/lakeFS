@@ -128,6 +128,16 @@ components:
         encryptedPassword:
           type: string
           format: byte
+
+    UserPassword:
+      type: object
+      required:
+        - encryptedPassword
+      properties:
+        encryptedPassword:
+          type: string
+          format: byte
+
     UserCreation:
       type: object
       properties:
@@ -382,6 +392,34 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /auth/users/{userId}/password:
+    parameters:
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+    put:
+      tags:
+        - auth
+      operationId: updatePassword
+      summary: update users password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserPassword"
+      responses:
+        200:
+          description: password updated succesfully
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
         default:
           $ref: "#/components/responses/ServerError"
 

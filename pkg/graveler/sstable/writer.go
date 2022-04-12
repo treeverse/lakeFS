@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"hash"
+	"hash/fnv"
 	"strconv"
 
 	"github.com/cockroachdb/pebble/sstable"
@@ -159,4 +160,21 @@ func (dw *DiskWriter) Close() (*committed.WriteResult, error) {
 		Count:                   dw.count,
 		EstimatedRangeSizeBytes: dw.w.EstimatedSize(),
 	}, nil
+}
+
+// shouldBreakAtKey returns true if should break range after the given key
+func (dw *DiskWriter) ShouldBreakAtKey(key graveler.Key, params *committed.Params) bool {
+	approximateSize := dw.GetApproximateSize()
+	if approximateSize < params.MinRangeSizeBytes {
+		return false
+	}
+	if approximateSize >= params.MaxRangeSizeBytes {
+		return true
+	}
+
+	h := fnv.New64a()
+	// FNV always reads all bytes and never fails; ignore its return values
+	_, _ = h.Write(key)
+	r := h.Sum64() % uint64(params.RangeSizeEntriesRaggedness)
+	return r == 0
 }

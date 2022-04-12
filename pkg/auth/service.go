@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/go-openapi/swag"
+	"golang.org/x/crypto/bcrypt"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
@@ -75,6 +76,7 @@ type Service interface {
 	GetCredentialsForUser(ctx context.Context, username, accessKeyID string) (*model.Credential, error)
 	GetCredentials(ctx context.Context, accessKeyID string) (*model.Credential, error)
 	ListUserCredentials(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Credential, *model.Paginator, error)
+	HashAndUpdatePassword(ctx context.Context, username string, password string) error
 
 	// policy<->user attachments
 	AttachPolicyToUser(ctx context.Context, policyDisplayName, username string) error
@@ -867,6 +869,15 @@ func (s *DBAuthService) GetCredentials(ctx context.Context, accessKeyID string) 
 	})
 }
 
+func (s *DBAuthService) HashAndUpdatePassword(ctx context.Context, username string, password string) error {
+	pw, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	_, err = s.db.Exec(ctx, `UPDATE auth_users SET encrypted_password = $1 WHERE display_name = $2`, pw, username)
+	return err
+}
+
 func interpolateUser(resource string, username string) string {
 	return strings.ReplaceAll(resource, "${user}", username)
 }
@@ -1114,6 +1125,15 @@ func (a *APIAuthService) ListUsers(ctx context.Context, params *model.Pagination
 		}
 	}
 	return users, toPagination(pagination), nil
+}
+
+func (a *APIAuthService) HashAndUpdatePassword(ctx context.Context, username string, password string) error {
+	encryptedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	resp, err := a.apiClient.UpdatePasswordWithResponse(ctx, username, UpdatePasswordJSONRequestBody{EncryptedPassword: encryptedPassword})
+	return a.validateResponse(resp, http.StatusOK)
 }
 
 func (a *APIAuthService) CreateGroup(ctx context.Context, group *model.Group) error {
