@@ -1363,7 +1363,7 @@ func (a *APIAuthService) ListPolicies(ctx context.Context, params *model.Paginat
 }
 
 func (a *APIAuthService) CreateCredentials(ctx context.Context, username string) (*model.Credential, error) {
-	resp, err := a.apiClient.CreateCredentialsWithResponse(ctx, username, nil)
+	resp, err := a.apiClient.CreateCredentialsWithResponse(ctx, username, &CreateCredentialsParams{})
 	if err != nil {
 		return nil, err
 	}
