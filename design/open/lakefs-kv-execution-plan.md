@@ -51,7 +51,7 @@ When a complete data model / functionality completes the transition we can exclu
 
 ## Global changes
 
-- Transition from db to kb should include a configuration flag that enables the use of 'kv' vs the current 'db' implementation.
+- Transition from db to kv should include a configuration flag that enables the use of 'kv' vs the current 'db' implementation.
   As complete features move to use kv, and migration plan is implemented, we can remove the flag check for the feature and just enable the new functionality.
 - Migrate from current DDL to kv will be supported only for Postgres and dropped when all features works using kv.
 - Basic dump/restore functionality should be supported for the k/v implementation, how do we migrate the information - discovery
