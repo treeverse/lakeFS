@@ -17,14 +17,14 @@ type PlayBackMockConf struct {
 	BareDomain      string `json:"bare_domain"`
 	AccessKeyID     string `json:"access_key_id"`
 	SecretAccessKey string `json:"access_secret_key"`
-	UserID          int    `json:"user_id"`
+	UserID          int64  `json:"user_id"`
 	Region          string `json:"region"`
 }
 
 // a limited service interface for the gateway, used by simulation playback
 type GatewayAuthService interface {
 	GetCredentials(ctx context.Context, accessKey string) (*model.Credential, error)
-	GetUserByID(ctx context.Context, userID int) (*model.User, error)
+	GetUserByID(ctx context.Context, userID int64) (*model.User, error)
 	Authorize(ctx context.Context, req *auth.AuthorizationRequest) (*auth.AuthorizationResponse, error)
 }
 
@@ -141,7 +141,7 @@ func (m *PlayBackMockConf) GetCredentials(_ context.Context, accessKey string) (
 	return aCred, nil
 }
 
-func (m *PlayBackMockConf) GetUserByID(_ context.Context, userID int) (*model.User, error) {
+func (m *PlayBackMockConf) GetUserByID(ctx context.Context, userID int64) (*model.User, error) {
 	return &model.User{
 		CreatedAt: time.Now(),
 		Username:  "user",
