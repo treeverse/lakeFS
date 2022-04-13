@@ -1052,8 +1052,8 @@ func (a *APIAuthService) GetUser(ctx context.Context, username string) (*model.U
 			Username:          u.Name,
 			FriendlyName:      u.FriendlyName,
 			Email:             u.Email,
-			EncryptedPassword: nil,
-			Source:            "",
+			EncryptedPassword: u.EncryptedPassword,
+			Source:            swag.StringValue(u.Source),
 		}, nil
 	})
 }
@@ -1073,17 +1073,15 @@ func (a *APIAuthService) GetUserByEmail(ctx context.Context, email string) (*mod
 		}
 		u := results[0]
 		user := &model.User{
-			ID:           u.Id,
-			CreatedAt:    time.Unix(u.CreationDate, 0),
-			Username:     u.Name,
-			FriendlyName: u.FriendlyName,
-			Email:        u.Email,
-			Source:       swag.StringValue(u.Source),
+			ID:                u.Id,
+			CreatedAt:         time.Unix(u.CreationDate, 0),
+			Username:          u.Name,
+			FriendlyName:      u.FriendlyName,
+			Email:             u.Email,
+			EncryptedPassword: u.EncryptedPassword,
+			Source:            swag.StringValue(u.Source),
 		}
 
-		if u.EncryptedPassword != nil {
-			user.EncryptedPassword = *u.EncryptedPassword
-		}
 		return user, err
 	})
 }
