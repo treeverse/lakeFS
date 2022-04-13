@@ -27,25 +27,17 @@ import org.junit.Test;
 
 
 /**
- * Model tests for UserCreation
+ * Model tests for AuthCapabilities
  */
-public class UserCreationTest {
-    private final UserCreation model = new UserCreation();
+public class AuthCapabilitiesTest {
+    private final AuthCapabilities model = new AuthCapabilities();
 
     /**
-     * Model tests for UserCreation
+     * Model tests for AuthCapabilities
      */
     @Test
-    public void testUserCreation() {
-        // TODO: test UserCreation
-    }
-
-    /**
-     * Test the property 'id'
-     */
-    @Test
-    public void idTest() {
-        // TODO: test id
+    public void testAuthCapabilities() {
+        // TODO: test AuthCapabilities
     }
 
     /**
@@ -54,6 +46,14 @@ public class UserCreationTest {
     @Test
     public void inviteUserTest() {
         // TODO: test inviteUser
+    }
+
+    /**
+     * Test the property 'forgotPassword'
+     */
+    @Test
+    public void forgotPasswordTest() {
+        // TODO: test forgotPassword
     }
 
 }

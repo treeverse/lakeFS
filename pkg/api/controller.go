@@ -82,6 +82,10 @@ type Controller struct {
 	Emailer               *email.Emailer
 }
 
+func (c *Controller) GetAuthCapabilities(w http.ResponseWriter, r *http.Request) {
+	// TODO implement me
+}
+
 func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body DeleteObjectsJSONRequestBody, repository string, branch string) {
 	ctx := r.Context()
 	c.LogAction(ctx, "delete_objects")
@@ -822,6 +826,9 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body Cre
 	_, err := c.Auth.CreateUser(ctx, u)
 	if handleAPIError(w, err) {
 		return
+	}
+	if swag.BoolValue(body.InviteUser) {
+		// TODO(Guys): Invite user
 	}
 	response := User{
 		Id:           u.Username,
