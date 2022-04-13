@@ -20,7 +20,6 @@ const Auth = () => {
             <Route path="/auth/resetpassword">
                 <ResetPasswordPage/>
             </Route>
-
             <Route path="/auth/credentials">
                 <CredentialsPage/>
             </Route>
@@ -33,6 +32,7 @@ const Auth = () => {
             <Route path="/auth/policies">
                 <PoliciesIndexPage/>
             </Route>
+            <Redirect to="/auth/credentials" />
         </Switch>
     )
 }
