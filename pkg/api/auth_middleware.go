@@ -107,7 +107,7 @@ func checkSecurityRequirements(r *http.Request, securityRequirements openapi3.Se
 	return nil, nil
 }
 
-func userByToken(ctx context.Context, logger logging.Logger, authService auth.Service, tokenString string) (*model.User, error) {
+func verifyToken(authService auth.Service, tokenString string) (*jwt.StandardClaims, error) {
 	claims := &jwt.StandardClaims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -115,25 +115,35 @@ func userByToken(ctx context.Context, logger logging.Logger, authService auth.Se
 		}
 		return authService.SecretStore().SharedSecret(), nil
 	})
-	if err != nil {
+	if err != nil || !token.Valid {
 		return nil, ErrAuthenticatingRequest
 	}
-	claims, ok := token.Claims.(*jwt.StandardClaims)
-	if !ok || !token.Valid {
+	return claims, nil
+}
+
+func userByToken(ctx context.Context, logger logging.Logger, authService auth.Service, tokenString string) (*model.User, error) {
+	claims, err := verifyToken(authService, tokenString)
+	// make sure no audience is set for login token
+	if err != nil || !claims.VerifyAudience(LoginAudience, false) {
 		return nil, ErrAuthenticatingRequest
 	}
+
 	const base = 10
 	const bitSize = 32
 	id, err := strconv.ParseInt(claims.Subject, base, bitSize)
 	if err != nil {
-		logger.WithField("subject", claims.Subject).Info("could not parse user ID on token")
+		logger.WithFields(logging.Fields{
+			"subject":  claims.Subject,
+			"token_id": claims.Id,
+		}).Info("could not parse user ID on token")
 		return nil, ErrAuthenticatingRequest
 	}
 	userData, err := authService.GetUserByID(ctx, int(id))
 	if err != nil {
 		logger.WithFields(logging.Fields{
-			"user_id": id,
-			"subject": claims.Subject,
+			"token_id": claims.Id,
+			"user_id":  id,
+			"subject":  claims.Subject,
 		}).Debug("could not find user id by credentials")
 		return nil, ErrAuthenticatingRequest
 	}
@@ -153,4 +163,12 @@ func userByAuth(ctx context.Context, logger logging.Logger, authenticator auth.A
 		return nil, ErrAuthenticatingRequest
 	}
 	return user, nil
+}
+
+func VerifyResetPasswordToken(authService auth.Service, tokenString string) (*jwt.StandardClaims, error) {
+	claims, err := verifyToken(authService, tokenString)
+	if err != nil || !claims.VerifyAudience(ResetPasswordAudience, true) {
+		return nil, ErrAuthenticatingRequest
+	}
+	return claims, nil
 }

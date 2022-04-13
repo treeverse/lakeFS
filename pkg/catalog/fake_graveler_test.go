@@ -68,11 +68,11 @@ func (g *FakeGraveler) DumpTags(ctx context.Context, repositoryID graveler.Repos
 	panic("implement me")
 }
 
-func (g *FakeGraveler) GetMetaRange(ctx context.Context, repositoryID graveler.RepositoryID, metaRangeID graveler.MetaRangeID) (graveler.MetaRangeInfo, error) {
+func (g *FakeGraveler) GetMetaRange(ctx context.Context, repositoryID graveler.RepositoryID, metaRangeID graveler.MetaRangeID) (graveler.MetaRangeAddress, error) {
 	panic("implement me")
 }
 
-func (g *FakeGraveler) GetRange(ctx context.Context, repositoryID graveler.RepositoryID, rangeID graveler.RangeID) (graveler.RangeInfo, error) {
+func (g *FakeGraveler) GetRange(ctx context.Context, repositoryID graveler.RepositoryID, rangeID graveler.RangeID) (graveler.RangeAddress, error) {
 	panic("implement me")
 }
 
@@ -197,6 +197,18 @@ func (g *FakeGraveler) Commit(ctx context.Context, repositoryID graveler.Reposit
 	panic("implement me")
 }
 
+func WriteRange(ctx context.Context, ns graveler.StorageNamespace, it graveler.ValueIterator) (*graveler.RangeInfo, error) {
+	panic("implement me")
+}
+
+func WriteMetaRange(ctx context.Context, ns graveler.StorageNamespace, ranges []*graveler.RangeInfo) (*graveler.MetaRangeInfo, error) {
+	panic("implement me")
+}
+
+func WriteMetaRangeByIterator(ctx context.Context, repositoryID graveler.RepositoryID, it graveler.ValueIterator) (*graveler.MetaRangeID, error) {
+	panic("implement me")
+}
+
 func (g *FakeGraveler) GetCommit(ctx context.Context, repositoryID graveler.RepositoryID, commitID graveler.CommitID) (*graveler.Commit, error) {
 	panic("implement me")
 }
@@ -262,7 +274,7 @@ func (g *FakeGraveler) AddCommitNoLock(_ context.Context, _ graveler.RepositoryI
 	panic("implement me")
 }
 
-func (g *FakeGraveler) WriteMetaRange(_ context.Context, _ graveler.RepositoryID, _ graveler.ValueIterator) (*graveler.MetaRangeID, error) {
+func (g *FakeGraveler) WriteMetaRangeByIterator(_ context.Context, _ graveler.RepositoryID, _ graveler.ValueIterator) (*graveler.MetaRangeID, error) {
 	panic("implement me")
 }
 

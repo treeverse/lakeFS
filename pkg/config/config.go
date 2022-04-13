@@ -63,6 +63,9 @@ const (
 
 	DefaultAzureTryTimeout = 10 * time.Minute
 	DefaultAzureAuthMethod = "access-key"
+
+	DefaultEmailLimitEveryDuration = time.Minute
+	DefaultEmailBurst              = 10
 )
 
 var (
@@ -161,6 +164,9 @@ const (
 
 	SecurityAuditCheckURLKey     = "security.audit_check_url"
 	DefaultSecurityAuditCheckURL = "https://audit.lakefs.io/audit"
+
+	EmailLimitEveryDurationKey = "email.limit_every_duration"
+	EmailBurstKey              = "email.burst"
 )
 
 func setDefaults() {
@@ -212,6 +218,8 @@ func setDefaults() {
 
 	viper.SetDefault(SecurityAuditCheckIntervalKey, DefaultSecurityAuditCheckInterval)
 	viper.SetDefault(SecurityAuditCheckURLKey, DefaultSecurityAuditCheckURL)
+	viper.SetDefault(EmailLimitEveryDurationKey, DefaultEmailLimitEveryDuration)
+	viper.SetDefault(EmailBurstKey, DefaultEmailBurst)
 }
 
 func reverse(s string) string {
@@ -401,11 +409,13 @@ func (c *Config) GetStatsFlushInterval() time.Duration {
 
 func (c *Config) GetEmailParams() (email.EmailParams, error) {
 	return email.EmailParams{
-		SMTPHost: c.values.Email.SMTPHost,
-		Port:     c.values.Email.Port,
-		Username: c.values.Email.Username,
-		Password: c.values.Email.Password,
-		Sender:   c.values.Email.Sender,
+		SMTPHost:           c.values.Email.SMTPHost,
+		Port:               c.values.Email.Port,
+		Username:           c.values.Email.Username,
+		Password:           c.values.Email.Password,
+		Sender:             c.values.Email.Sender,
+		LimitEveryDuration: c.values.Email.LimitEveryDuration,
+		Burst:              c.values.Email.Burst,
 	}, nil
 }
 

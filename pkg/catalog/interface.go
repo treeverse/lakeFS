@@ -123,8 +123,8 @@ type Interface interface {
 	LoadTags(ctx context.Context, repositoryID, tagsMetaRangeID string) error
 
 	// forward metadata for thick clients
-	GetMetaRange(ctx context.Context, repositoryID, metaRangeID string) (graveler.MetaRangeInfo, error)
-	GetRange(ctx context.Context, repositoryID, rangeID string) (graveler.RangeInfo, error)
+	GetMetaRange(ctx context.Context, repositoryID, metaRangeID string) (graveler.MetaRangeAddress, error)
+	GetRange(ctx context.Context, repositoryID, rangeID string) (graveler.RangeAddress, error)
 
 	GetGarbageCollectionRules(ctx context.Context, repositoryID string) (*graveler.GarbageCollectionRules, error)
 	SetGarbageCollectionRules(ctx context.Context, repositoryID string, rules *graveler.GarbageCollectionRules) error

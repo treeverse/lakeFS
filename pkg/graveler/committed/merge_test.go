@@ -1632,10 +1632,12 @@ func runMergeTests(tests testCases, t *testing.T) {
 					metaRangeManager.EXPECT().NewMetaRangeIterator(gomock.Any(), gomock.Any(), sourceKey).Return(createIter(tst.sourceRange), nil)
 					metaRangeManager.EXPECT().NewMetaRangeIterator(gomock.Any(), gomock.Any(), destKey).Return(createIter(tst.destRange), nil)
 
+					rangeManager := mock.NewMockRangeManager(ctrl)
+
 					writer.EXPECT().Abort()
 					metaRangeId := graveler.MetaRangeID("merge")
 					writer.EXPECT().Close().Return(&metaRangeId, nil).AnyTimes()
-					committedManager := committed.NewCommittedManager(metaRangeManager)
+					committedManager := committed.NewCommittedManager(metaRangeManager, rangeManager, params)
 					_, err := committedManager.Merge(ctx, "ns", "dest", "source", "base", graveler.MergeStrategy(mergeStrategy))
 					if err != expectedResult.expectedErr {
 						t.Fatal(err)

@@ -28,7 +28,7 @@ import Container from "react-bootstrap/Container";
 import {Link} from "../../lib/components/nav";
 import {useRouter} from "../../lib/hooks/router";
 
-import {Route, Switch} from "react-router-dom";
+import {Redirect, Route, Switch} from "react-router-dom";
 import RepositoryPage from './repository';
 import Alert from "react-bootstrap/Alert";
 

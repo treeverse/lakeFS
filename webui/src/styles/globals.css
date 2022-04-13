@@ -22,8 +22,16 @@
   padding-top: 7px;
 }
 
-.card.login-widget,.card.setup-widget {
+.card.login-widget,.card.setup-widget, .reset-pwd-widget, .request-reset-pwd-widget {
   margin-top: 130px;
+}
+
+.card.login-widget .reset-pwd{
+  font-size: 15px;
+  position: absolute;
+  bottom: 21px;
+  right: 19px;
+  padding-right: 0px;
 }
 
 .action-bar {
@@ -448,4 +456,11 @@ td .form-group {
 .change-summary-icon {
   margin-left: 0.125rem;
   padding: .1rem;
+}
+
+.reset-req-sent {
+  align-items: center;
+  text-align: center;
+  margin-top: 50%;
+  font-size: 18px;
 }

@@ -23,6 +23,7 @@ type CommittedFake struct {
 	DiffIterator  graveler.DiffIterator
 	Err           error
 	MetaRangeID   graveler.MetaRangeID
+	RangeInfo     graveler.RangeInfo
 	DiffSummary   graveler.DiffSummary
 	AppliedData   AppliedData
 }
@@ -86,23 +87,27 @@ func (c *CommittedFake) Commit(_ context.Context, _ graveler.StorageNamespace, b
 	return c.MetaRangeID, c.DiffSummary, nil
 }
 
-func (c *CommittedFake) WriteMetaRange(ctx context.Context, ns graveler.StorageNamespace, it graveler.ValueIterator, metadata graveler.Metadata) (*graveler.MetaRangeID, error) {
+func (c *CommittedFake) WriteMetaRangeByIterator(context.Context, graveler.StorageNamespace, graveler.ValueIterator, graveler.Metadata) (*graveler.MetaRangeID, error) {
 	if c.Err != nil {
 		return nil, c.Err
 	}
 	return &c.MetaRangeID, nil
 }
 
-func (c *CommittedFake) GetMetaRange(ctx context.Context, ns graveler.StorageNamespace, metaRangeID graveler.MetaRangeID) (graveler.MetaRangeInfo, error) {
-	return graveler.MetaRangeInfo{
-		Address: fmt.Sprintf("fake://prefix/%s(metarange)", metaRangeID),
-	}, nil
+func (c *CommittedFake) WriteRange(context.Context, graveler.StorageNamespace, graveler.ValueIterator) (*graveler.RangeInfo, error) {
+	return &c.RangeInfo, nil
 }
 
-func (c *CommittedFake) GetRange(ctx context.Context, ns graveler.StorageNamespace, rangeID graveler.RangeID) (graveler.RangeInfo, error) {
-	return graveler.RangeInfo{
-		Address: fmt.Sprintf("fake://prefix/%s(range)", rangeID),
-	}, nil
+func (c *CommittedFake) WriteMetaRange(context.Context, graveler.StorageNamespace, []*graveler.RangeInfo) (*graveler.MetaRangeInfo, error) {
+	return &graveler.MetaRangeInfo{ID: c.MetaRangeID}, nil
+}
+
+func (c *CommittedFake) GetMetaRange(ctx context.Context, ns graveler.StorageNamespace, metaRangeID graveler.MetaRangeID) (graveler.MetaRangeAddress, error) {
+	return graveler.MetaRangeAddress(fmt.Sprintf("fake://prefix/%s(metarange)", metaRangeID)), nil
+}
+
+func (c *CommittedFake) GetRange(ctx context.Context, ns graveler.StorageNamespace, rangeID graveler.RangeID) (graveler.RangeAddress, error) {
+	return graveler.RangeAddress(fmt.Sprintf("fake://prefix/%s(range)", rangeID)), nil
 }
 
 type StagingFake struct {

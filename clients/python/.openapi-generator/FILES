@@ -22,6 +22,7 @@ docs/CurrentUser.md
 docs/Diff.md
 docs/DiffList.md
 docs/Error.md
+docs/ForgotPasswordRequest.md
 docs/GarbageCollectionPrepareRequest.md
 docs/GarbageCollectionPrepareResponse.md
 docs/GarbageCollectionRule.md
@@ -71,6 +72,7 @@ docs/StorageURI.md
 docs/TagCreation.md
 docs/TagsApi.md
 docs/UnderlyingObjectProperties.md
+docs/UpdatePasswordByToken.md
 docs/User.md
 docs/UserCreation.md
 docs/UserList.md
@@ -111,6 +113,7 @@ lakefs_client/model/current_user.py
 lakefs_client/model/diff.py
 lakefs_client/model/diff_list.py
 lakefs_client/model/error.py
+lakefs_client/model/forgot_password_request.py
 lakefs_client/model/garbage_collection_prepare_request.py
 lakefs_client/model/garbage_collection_prepare_response.py
 lakefs_client/model/garbage_collection_rule.py
@@ -152,6 +155,7 @@ lakefs_client/model/storage_config.py
 lakefs_client/model/storage_uri.py
 lakefs_client/model/tag_creation.py
 lakefs_client/model/underlying_object_properties.py
+lakefs_client/model/update_password_by_token.py
 lakefs_client/model/user.py
 lakefs_client/model/user_creation.py
 lakefs_client/model/user_list.py
@@ -185,6 +189,7 @@ test/test_current_user.py
 test/test_diff.py
 test/test_diff_list.py
 test/test_error.py
+test/test_forgot_password_request.py
 test/test_garbage_collection_prepare_request.py
 test/test_garbage_collection_prepare_response.py
 test/test_garbage_collection_rule.py
@@ -234,6 +239,7 @@ test/test_storage_uri.py
 test/test_tag_creation.py
 test/test_tags_api.py
 test/test_underlying_object_properties.py
+test/test_update_password_by_token.py
 test/test_user.py
 test/test_user_creation.py
 test/test_user_list.py

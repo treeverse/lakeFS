@@ -11,7 +11,6 @@ import (
 	"os"
 	"reflect"
 	"regexp"
-	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -24,9 +23,11 @@ import (
 	"golang.org/x/term"
 )
 
-var isTerminal = true
-var noColorRequested = false
-var verboseMode = false
+var (
+	isTerminal       = true
+	noColorRequested = false
+	verboseMode      = false
+)
 
 // ErrInvalidValueInList is an error returned when a parameter of type list contains an empty string
 var ErrInvalidValueInList = errors.New("empty string in list")
@@ -45,8 +46,10 @@ const (
 	DeathMessageWithFields    = "{{.Message|red}}\n{{.Status}}\n"
 )
 
-const internalPageSize = 1000          // when retreiving all records, use this page size under the hood
-const defaultAmountArgumentValue = 100 // when no amount is specified, use this value for the argument
+const (
+	internalPageSize           = 1000 // when retreiving all records, use this page size under the hood
+	defaultAmountArgumentValue = 100  // when no amount is specified, use this value for the argument
+)
 
 const resourceListTemplate = `{{.Table | table -}}
 {{.Pagination | paginate }}
@@ -238,11 +241,7 @@ func DieOnErrorOrUnexpectedStatusCode(response interface{}, err error, expectedS
 		Die("could not get status code from response", 1)
 	}
 	if statusCode != expectedStatusCode {
-		// redirected to not found page
-		if statusCode == http.StatusFound {
-			Die("got not-found error, probably wrong endpoint url", 1)
-		}
-		Die("got unexpected status code: "+strconv.Itoa(statusCode)+", expected: "+strconv.Itoa(expectedStatusCode), 1)
+		DieFmt("got unexpected status code: %d, expected: %d", statusCode, expectedStatusCode)
 	}
 }
 
