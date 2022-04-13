@@ -1,21 +1,26 @@
-package template
+package email
 
 import (
+	"html/template"
 	"strings"
-	"text/template"
 )
 
 const (
 	ResetPasswordPath  = "/auth/resetpassword?token="
 	ResetEmailTemplate = `Hello, <br>
-	A request has been received to change the password to your account,  <br>
-	Click on this link to reset your password <br>
-	{{.Host}}{{.ResetPasswordPath}}{{.Tkn}} <br>
-	If you did not initiate this request you can please diregard this email. <br>
-	Thanks  <br>
-	The LakeFS team <br>
+A request has been received to change the password to your account,  <br>
+Click on this link to reset your password <br>
+{{.Host}}{{.ResetPasswordPath}}{{.Tkn}} <br>
+If you did not initiate this request you can please disregard this email. <br>
+Thanks  <br>
+The LakeFS team <br>
 	`
 	ResetPasswordEmailSubject = "Reset Password Request for your Lakefs account"
+)
+
+var (
+	templ = template.New("resetPasswordtemplate")
+	t     = template.Must(templ.Parse(ResetEmailTemplate))
 )
 
 type Link struct {

@@ -30,7 +30,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/email"
-	"github.com/treeverse/lakefs/pkg/email/template"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -3026,12 +3025,12 @@ func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, http.StatusOK, response)
 }
 
-func (c *Controller) sendResetPasswordEmail(email string, host string, token string) error {
-	t, err := template.BuildResetPasswordEmailTemplate(template.ResetEmailTemplate, host, token)
+func (c *Controller) sendResetPasswordEmail(emailAddr string, host string, token string) error {
+	t, err := email.BuildResetPasswordEmailTemplate(email.ResetEmailTemplate, host, token)
 	if err != nil {
 		return err
 	}
-	return c.Emailer.SendEmailWithLimit([]string{email}, template.ResetPasswordEmailSubject, t, nil)
+	return c.Emailer.SendEmailWithLimit([]string{emailAddr}, email.ResetPasswordEmailSubject, t, nil)
 
 }
 
