@@ -3,7 +3,7 @@ database:
 
 auth:
   encrypt:
-    secret_key: "10a718b3f285d89c36e9864494cdd1507f3bc85b342df24736ea81f9a1134bcc"
+    secret_key: "some random value that should be replaced for production environments"
 
 blockstore:
   type: local
