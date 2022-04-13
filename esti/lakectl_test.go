@@ -137,6 +137,23 @@ func TestLakectlCommit(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch+" --amount 1", false, "lakectl_log_with_commit_custom_date", vars)
 }
 
+func TestLakectlBranchAndTagValidation(t *testing.T) {
+	repoName := generateUniqueRepositoryName()
+	storage := generateUniqueStorageNamespace(repoName)
+	validTagName := "my.valid.tag"
+
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+		"TAG":     validTagName,
+	}
+	invalidBranchName := "my.invalid.branch"
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
+	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" branch create lakefs://"+repoName+"/"+invalidBranchName+" --source lakefs://"+repoName+"/"+mainBranch, false, "lakectl_branch_create_invalid", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" tag create lakefs://"+repoName+"/"+validTagName+" lakefs://"+repoName+"/"+mainBranch, false, "lakectl_tag_create", vars)
+}
+
 func TestLakectlMergeAndStrategies(t *testing.T) {
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
