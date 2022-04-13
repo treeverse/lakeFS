@@ -235,6 +235,7 @@ Airflow Hook triggers a DAG run in an Airflow installation using [Airflow's REST
 The hook run succeeds if the DAG was triggered, and fails otherwise.
 
 #### Action file Airflow hook properties
+
 | Property | Description                                             | Data Type | Example                 | Required | Env Vars Support |
 |----------|---------------------------------------------------------|-----------|-------------------------|----------|------------------|
 | url      | The URL of the Airflow instance                         | String    | "http://localhost:8080" | true     | no               |
