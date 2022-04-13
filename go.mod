@@ -1,6 +1,6 @@
 module github.com/treeverse/lakefs
 
-go 1.18
+go 1.17
 
 require (
 	cloud.google.com/go v0.88.0
@@ -76,7 +76,6 @@ require (
 )
 
 require (
-	github.com/PerformLine/go-stockutil v1.9.3
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba
 )
 
