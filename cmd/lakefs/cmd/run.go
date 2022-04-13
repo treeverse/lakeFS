@@ -135,10 +135,22 @@ var runCmd = &cobra.Command{
 		multipartsTracker := multiparts.NewTracker(dbPool)
 
 		// init authentication
-		authService := auth.NewDBAuthService(
-			dbPool,
-			crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
-			cfg.GetAuthCacheConfig())
+		var authService auth.Service
+		if cfg.IsAuthTypeAPI() {
+			authService, err = auth.NewAPIAuthService(
+				cfg.GetAuthAPIEndpoint(),
+				cfg.GetAuthAPIToken(),
+				crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
+				cfg.GetAuthCacheConfig(), nil)
+			if err != nil {
+				logger.WithError(err).Fatal("failed to create authentication service")
+			}
+		} else {
+			authService = auth.NewDBAuthService(
+				dbPool,
+				crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
+				cfg.GetAuthCacheConfig())
+		}
 		authenticator := auth.ChainAuthenticator{
 			auth.NewBuiltinAuthenticator(authService),
 			auth.NewEmailAuthenticator(authService),

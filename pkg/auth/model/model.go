@@ -27,7 +27,7 @@ type Paginator struct {
 }
 
 type User struct {
-	ID        int       `db:"id"`
+	ID        int64     `db:"id"`
 	CreatedAt time.Time `db:"created_at"`
 	Username  string    `db:"display_name" json:"display_name"`
 	// FriendlyName, if set, is a shorter name for the user than
@@ -114,7 +114,7 @@ type Credential struct {
 	SecretAccessKey               string    `db:"-" json:"-"`
 	SecretAccessKeyEncryptedBytes []byte    `db:"secret_access_key" json:"-"`
 	IssuedDate                    time.Time `db:"issued_date"`
-	UserID                        int       `db:"user_id"`
+	UserID                        int64     `db:"user_id"`
 }
 
 // For JSON serialization:

@@ -2951,7 +2951,7 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	state := setupStateNotInitialized
-	if initialized {
+	if initialized || c.Config.IsAuthTypeAPI() {
 		state = setupStateInitialized
 	}
 	response := SetupState{State: swag.String(state)}
@@ -2971,7 +2971,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
-	if initialized {
+	if initialized || c.Config.IsAuthTypeAPI() {
 		writeError(w, http.StatusConflict, "lakeFS already initialized")
 		return
 	}
@@ -3045,7 +3045,7 @@ func (c *Controller) ForgotPassword(w http.ResponseWriter, r *http.Request, body
 	email := StringValue(user.Email)
 	secret := c.Auth.SecretStore().SharedSecret()
 	currentTime := time.Now()
-	token, err := GenerateJWTResetPassword(secret, user.ID, email, currentTime, currentTime.Add(DefaultResetPasswordExpiration))
+	token, err := GenerateJWTResetPassword(secret, email, currentTime, currentTime.Add(DefaultResetPasswordExpiration))
 	if err != nil {
 		c.Logger.WithError(err).WithField("email", email).Debug("failed to create a token")
 		writeError(w, http.StatusInternalServerError, err)
@@ -3068,15 +3068,17 @@ func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body
 		writeError(w, http.StatusUnauthorized, err)
 		return
 	}
-	user, err := c.Auth.GetUserByEmail(r.Context(), claims.Subject)
+	tokenEmail := claims.Subject
+	user, err := c.Auth.GetUserByEmail(r.Context(), tokenEmail)
 	if err != nil {
-		c.Logger.WithError(err).WithField("email", user.Email).Debug("failed to retrieve user by email")
+		c.Logger.WithError(err).WithField("email", tokenEmail).Debug("failed to retrieve user by email")
 		writeError(w, http.StatusNotFound, http.StatusText(http.StatusNotFound))
 		return
 	}
-	err = c.Auth.HashAndUpdatePassword(r.Context(), claims.Subject, body.NewPassword)
+
+	err = c.Auth.HashAndUpdatePassword(r.Context(), user.Username, body.NewPassword)
 	if err != nil {
-		c.Logger.WithError(err).WithField("email", claims.Subject).Debug("failed to update password")
+		c.Logger.WithError(err).WithField("username", user.Username).Debug("failed to update password")
 		writeError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
 	}

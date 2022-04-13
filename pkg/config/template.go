@@ -107,7 +107,10 @@ type configuration struct {
 		Encrypt struct {
 			SecretKey SecureString `mapstructure:"secret_key" validate:"required"`
 		}
-
+		API struct {
+			Endpoint string
+			Token    string
+		}
 		LDAP *LDAP
 	}
 	Blockstore struct {
