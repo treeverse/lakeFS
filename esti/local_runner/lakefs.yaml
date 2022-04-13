@@ -8,4 +8,4 @@ auth:
 blockstore:
   type: local
   local:
-    path: /tmp
+    path: /tmp/lakefs
