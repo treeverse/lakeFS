@@ -52,8 +52,8 @@ delete_and_commit() {
       run_lakectl fs rm "lakefs://${repo}/${branch_name}/file${test_id}"
       epoch_commit_date_in_seconds=$(( ${current_epoch_in_seconds} - ${day_in_seconds} * ${days_ago} ))
       run_lakectl commit "lakefs://${repo}/${branch_name}" --allow-empty-message --epoch-time-seconds ${epoch_commit_date_in_seconds}
-      run_lakectl fs upload "lakefs://${repo}/${branch_name}/file${test_id}not_deleted" -s /local/gc-tests/sample_file
-      run_lakectl commit "lakefs://${repo}/${branch_name}" -m "not deleted file commit: ${test_id}" --epoch-time-seconds ${epoch_commit_date_in_seconds} # This is for the previous commit to be the HEAD of the branch outside the retention time (according to GC https://github.com/treeverse/lakeFS/issues/1932)
+#      run_lakectl fs upload "lakefs://${repo}/${branch_name}/file${test_id}not_deleted" -s /local/gc-tests/sample_file
+#      run_lakectl commit "lakefs://${repo}/${branch_name}" -m "not deleted file commit: ${test_id}" --epoch-time-seconds ${epoch_commit_date_in_seconds} # This is for the previous commit to be the HEAD of the branch outside the retention time (according to GC https://github.com/treeverse/lakeFS/issues/1932)
     else   # This means that the branch should be deleted
       run_lakectl branch delete "lakefs://${repo}/${branch_name}" -y
     fi
