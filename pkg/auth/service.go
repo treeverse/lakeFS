@@ -1131,6 +1131,9 @@ func (a *APIAuthService) HashAndUpdatePassword(ctx context.Context, username str
 		return err
 	}
 	resp, err := a.apiClient.UpdatePasswordWithResponse(ctx, username, UpdatePasswordJSONRequestBody{EncryptedPassword: encryptedPassword})
+	if err != nil {
+		return err
+	}
 	return a.validateResponse(resp, http.StatusOK)
 }
 
@@ -1143,8 +1146,6 @@ func (a *APIAuthService) CreateGroup(ctx context.Context, group *model.Group) er
 	}
 	return a.validateResponse(resp, http.StatusCreated)
 }
-
-var ErrUnexpectedStatusCode = errors.New("unexpected status code")
 
 // validateResponse returns ErrUnexpectedStatusCode if the response status code is not as expected
 func (a *APIAuthService) validateResponse(resp openapi3filter.StatusCoder, expectedStatusCode int) error {
