@@ -117,6 +117,19 @@ export class MergeError extends Error {
 
 // actual actions:
 class Auth {
+    async getAuthCapabilities() {
+        const response = await apiRequest('/auth/capabilities', {
+            method: 'GET',
+        });
+        switch (response.status) {
+            case 200:
+                return await response.json();
+            case 401:
+                throw new NotFoundError('unauthorized to view auth capabilities');
+            default:
+                throw new Error('Unknown');
+        }
+    }
 
     async updatePasswordByToken(token, newPassword) {
         const response = await fetch(`${API_ENDPOINT}/auth/password`, {
@@ -195,8 +208,9 @@ class Auth {
         return response.json();
     }
 
-    async createUser(userId) {
-        const response = await apiRequest(`/auth/users`, {method: 'POST', body: json({id: userId})});
+    async createUser(userId, inviteUser = false) {
+        const response = await apiRequest(`/auth/users`,
+            {method: 'POST', body: json({id: userId, inviteUser: inviteUser})});
         if (response.status !== 201) {
             throw new Error(await extractError(response));
         }

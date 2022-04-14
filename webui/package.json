@@ -11,6 +11,7 @@
     "@primer/octicons-react": "^13.0.0",
     "bootstrap": "^4.6.0",
     "http-proxy-middleware": "^1.1.1",
+    "jwt-decode": "^3.1.2",
     "moment": "^2.29.2",
     "react": "^17.0.0",
     "react-bootstrap": "^1.5.2",
