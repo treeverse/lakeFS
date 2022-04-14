@@ -83,14 +83,13 @@ type Controller struct {
 }
 
 func (c *Controller) GetAuthCapabilities(w http.ResponseWriter, r *http.Request) {
-	var inviteUser, forgotPassword bool
-	if c.Emailer.Params.SMTPHost != "" {
-		inviteUser, forgotPassword = true, true
+	{
+		emailSupported := c.Emailer.Params.SMTPHost != ""
+		writeResponse(w, http.StatusOK, AuthCapabilities{
+			InviteUser:     &emailSupported,
+			ForgotPassword: &emailSupported,
+		})
 	}
-	writeResponse(w, http.StatusOK, AuthCapabilities{
-		InviteUser:     &inviteUser,
-		ForgotPassword: &forgotPassword,
-	})
 }
 
 func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body DeleteObjectsJSONRequestBody, repository string, branch string) {
@@ -828,35 +827,35 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body Cre
 		FriendlyName: nil,
 		Source:       "internal",
 	}
-	var e string
+	ctx := r.Context()
+	c.LogAction(ctx, "create_user")
+	var userEmail string
 	invite := swag.BoolValue(body.InviteUser)
 	if invite {
 		normalizedEmail, err := regexp.Compile(body.Id)
+		e := normalizedEmail.String()
+		userEmail = strings.ToLower(e)
 		if err != nil {
 			return
 		}
+		u.Username = userEmail
+		u.Email = &userEmail
+
 		p, err := nanoid.New()
 		if err != nil {
 			return
 		}
-		hp, err := model.HashPassword(p)
+		err = u.UpdatePassword(p)
 		if err != nil {
 			return
 		}
-
-		e = normalizedEmail.String()
-		u.Username = e
-		u.Email = &e
-		u.EncryptedPassword = hp
 	}
-	ctx := r.Context()
-	c.LogAction(ctx, "create_user")
 	_, err := c.Auth.CreateUser(ctx, u)
-	if handleAPIError(w, err) {
+	if handleAPIError(w, err) { //Notice that `handleAPIError` writes a response in case of error. Same for following cases
 		return
 	}
 	if invite {
-		err = c.resetPasswordRequest(ctx, e)
+		err = c.resetPasswordRequest(ctx, userEmail)
 		if err != nil {
 			return
 		}
@@ -3066,7 +3065,7 @@ func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 func (c *Controller) resetPasswordRequest(ctx context.Context, email string) error {
 	addr, err := mail.ParseAddress(email)
 	if err != nil {
-		c.Logger.WithError(err).WithField("email", email).Debug("forgot password with invalid email")
+		c.Logger.WithError(err).WithField("email", email).Debug("reset password with invalid email")
 		return err
 	}
 	user, err := c.Auth.GetUserByEmail(ctx, addr.Address)
@@ -3086,6 +3085,7 @@ func (c *Controller) resetPasswordRequest(ctx context.Context, email string) err
 	err = c.Emailer.SendEmailWithLimit([]string{email}, token, token, nil)
 	if err != nil {
 		c.Logger.WithError(err).WithField("email", email).Warn("failed sending reset password email")
+		fmt.Println(err)
 	} else {
 		c.Logger.WithField("email", email).Info("reset password email sent")
 	}
