@@ -83,13 +83,13 @@ type Controller struct {
 }
 
 func (c *Controller) GetAuthCapabilities(w http.ResponseWriter, r *http.Request) {
-	var invite_user, forgot_password bool
+	var inviteUser, forgotPassword bool
 	if c.Emailer.Params.SMTPHost != "" {
-		invite_user, forgot_password = true, true
+		inviteUser, forgotPassword = true, true
 	}
 	writeResponse(w, http.StatusOK, AuthCapabilities{
-		InviteUser:     &invite_user,
-		ForgotPassword: &forgot_password,
+		InviteUser:     &inviteUser,
+		ForgotPassword: &forgotPassword,
 	})
 }
 
@@ -856,7 +856,7 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body Cre
 		return
 	}
 	if invite {
-		err = c.resetPasswordRequest(ctx, e, "")
+		err = c.resetPasswordRequest(ctx, e)
 		if err != nil {
 			return
 		}
@@ -3063,7 +3063,7 @@ func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, http.StatusOK, response)
 }
 
-func (c *Controller) resetPasswordRequest(ctx context.Context, email string, tmpl string) error {
+func (c *Controller) resetPasswordRequest(ctx context.Context, email string) error {
 	addr, err := mail.ParseAddress(email)
 	if err != nil {
 		c.Logger.WithError(err).WithField("email", email).Debug("forgot password with invalid email")
@@ -3093,7 +3093,7 @@ func (c *Controller) resetPasswordRequest(ctx context.Context, email string, tmp
 }
 
 func (c *Controller) ForgotPassword(w http.ResponseWriter, r *http.Request, body ForgotPasswordJSONRequestBody) {
-	err := c.resetPasswordRequest(r.Context(), body.Email, "")
+	err := c.resetPasswordRequest(r.Context(), body.Email)
 	if err != nil {
 		return
 	}
