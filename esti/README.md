@@ -7,7 +7,7 @@ The following guide explains how to set up and execute the system tests infrastr
 
 ## Running system tests
 
-A couple or pre-requisites before we start:
+A couple of prerequisites before we start:
 
 * Go over our [contributing](https://docs.lakefs.io/contributing.html) page and make sure you have a working lakeFS environment.
 * Ensure docker and docker-compose are installed on your system (we are using docker-compose to load a containerized postgres DB)
