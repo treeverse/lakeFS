@@ -30,6 +30,7 @@ var errNotVerified = errors.New("lakeFS failed")
 
 var nonAlphanumericSequence = regexp.MustCompile("[^a-zA-Z0-9]+")
 
+// skipOnSchema matches the rawURL schema to the current tested storage namespace schema
 func skipOnSchema(t *testing.T, rawURL string) {
 	namespaceURL, err := url.Parse(viper.GetString("storage_namespace"))
 	if err != nil {
