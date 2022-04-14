@@ -1,6 +1,6 @@
 # System and Integration Testing
 
-When a pull request is being committed / merged, we run a several test suites to ensure nothing got broken due to the introduced changes.
+When a pull request is being committed / merged, we run several test suites to ensure nothing got broken due to the introduced changes.
 Since these are system level tests, we created an infrastructure which deploys lakeFS on a VM and executes the tests using different clients on various storage adapters.
 
 The following guide explains how to set up and execute the system tests infrastructure in order to optimize the development process, and enable debugging of the tests in a local environment.
