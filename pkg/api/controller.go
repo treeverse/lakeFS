@@ -3063,10 +3063,6 @@ func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, http.StatusOK, response)
 }
 
-// func (c *Controller) sendEmail(email string, token string) error {
-// 	return c.Emailer.SendEmailWithLimit([]string{email}, token, token, nil)
-// }
-
 func (c *Controller) resetPasswordRequest(ctx context.Context, email string, tmpl string) error {
 	addr, err := mail.ParseAddress(email)
 	if err != nil {
@@ -3097,34 +3093,6 @@ func (c *Controller) resetPasswordRequest(ctx context.Context, email string, tmp
 }
 
 func (c *Controller) ForgotPassword(w http.ResponseWriter, r *http.Request, body ForgotPasswordJSONRequestBody) {
-	// addr, err := mail.ParseAddress(body.Email)
-	// if err != nil {
-	// 	c.Logger.WithError(err).WithField("email", body.Email).Debug("forgot password with invalid email")
-	// 	w.WriteHeader(http.StatusNoContent)
-	// 	return
-	// }
-	// user, err := c.Auth.GetUserByEmail(r.Context(), addr.Address)
-	// if err != nil {
-	// 	c.Logger.WithError(err).WithField("email", addr.Address).Debug("failed to retrieve user by email")
-	// 	w.WriteHeader(http.StatusNoContent)
-	// 	return
-	// }
-	// email := StringValue(user.Email)
-	// secret := c.Auth.SecretStore().SharedSecret()
-	// currentTime := time.Now()
-	// token, err := GenerateJWTResetPassword(secret, email, currentTime, currentTime.Add(DefaultResetPasswordExpiration))
-	// if err != nil {
-	// 	c.Logger.WithError(err).WithField("email", email).Debug("failed to create a token")
-	// 	writeError(w, http.StatusInternalServerError, err)
-	// 	return
-	// }
-	// // TODO (@shimi9276) create template for sending the email with link for reset
-	// err = c.sendResetPasswordEmail(email, token)
-	// if err != nil {
-	// 	c.Logger.WithError(err).WithField("email", email).Warn("failed sending reset password email")
-	// } else {
-	// 	c.Logger.WithField("email", email).Info("reset password email sent")
-	// }
 	err := c.resetPasswordRequest(r.Context(), body.Email, "")
 	if err != nil {
 		return
