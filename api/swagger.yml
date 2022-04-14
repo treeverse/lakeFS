@@ -1150,7 +1150,6 @@ paths:
         - auth
       operationId: getAuthCapabilities
       summary: list authentication capabilities supported
-
       responses:
         200:
           description: auth capabilities
