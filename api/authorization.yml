@@ -199,6 +199,9 @@ components:
           type: integer
           format: int64
           description: Unix Epoch in seconds
+        user_id:
+          type: integer
+          format: int64
 
     Group:
       type: object

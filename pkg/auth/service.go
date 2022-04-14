@@ -1451,7 +1451,7 @@ func (a *APIAuthService) GetCredentials(ctx context.Context, accessKeyID string)
 			SecretAccessKey:               credentials.SecretAccessKey,
 			SecretAccessKeyEncryptedBytes: nil,
 			IssuedDate:                    time.Unix(credentials.CreationDate, 0),
-			UserID:                        0,
+			UserID:                        credentials.UserId,
 		}, nil
 	})
 }
