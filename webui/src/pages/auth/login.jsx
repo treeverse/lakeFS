@@ -44,7 +44,8 @@ const LoginForm = () => {
 
                             <Button variant="primary" type="submit">Login</Button>
                         </Form>
-                        <Button variant="link" className="reset-pwd" onClick={()=> {router.push("/auth/resetpassword")}}>Reset password</Button>
+                        {/*Enable once https://github.com/treeverse/lakeFS/pull/3208 is checked in*/}
+                        {/*<Button variant="link" className="reset-pwd" onClick={()=> {router.push("/auth/resetpassword")}}>Reset password</Button>*/}
                     </Card.Body>
                 </Card>
             </Col>
