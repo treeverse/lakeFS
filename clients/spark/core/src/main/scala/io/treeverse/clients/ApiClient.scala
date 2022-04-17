@@ -13,6 +13,9 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.Callable
 
 private object ApiClient {
+  def translateS3String(uri: String): String =
+    raw"^s3:/".r.replaceAllIn(uri, "s3a")
+
   def translateS3(uri: URI): URI =
     if (uri.getScheme == "s3")
       new URI("s3a",
