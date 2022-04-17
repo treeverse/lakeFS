@@ -48,7 +48,8 @@ public class CommitsApiTest {
         String repository = null;
         String branch = null;
         CommitCreation commitCreation = null;
-                Commit response = api.commit(repository, branch, commitCreation);
+        String sourceMetarange = null;
+                Commit response = api.commit(repository, branch, commitCreation, sourceMetarange);
         // TODO: test validations
     }
     
@@ -80,9 +81,10 @@ public class CommitsApiTest {
     public void logBranchCommitsTest() throws ApiException {
         String repository = null;
         String branch = null;
+        String sourceMetarange = null;
         String after = null;
         Integer amount = null;
-                CommitList response = api.logBranchCommits(repository, branch, after, amount);
+                CommitList response = api.logBranchCommits(repository, branch, sourceMetarange, after, amount);
         // TODO: test validations
     }
     

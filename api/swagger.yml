@@ -976,6 +976,63 @@ components:
       required:
         - pattern
 
+    StageRangeCreation:
+      type: object
+      required:
+        - fromSourceURI
+        - after
+        - prepend
+      properties:
+        fromSourceURI:
+          type: string
+          description: The source location of the ingested files. Must match the lakeFS installation blockstore type.
+          example: s3://my-bucket/production/collections/
+        after:
+          type: string
+          description: Only objects after this key would be ingested.
+          example: production/collections/some/file.parquet
+        prepend:
+          type: string
+          description: A prefix to prepend to ingested objects.
+          example: collections/
+
+    RangeMetadata:
+      type: object
+      required:
+         - id
+         - min_key
+         - max_key
+         - count
+      properties:
+        id:
+          type: string
+          description: ID of the created range.
+          example: 480e19972a6fbe98ab8e81ae5efdfd1a29037587e91244e87abd4adefffdb01c
+        min_key:
+          type: string
+          description: First key in the range.
+          example: production/collections/some/file_1.parquet
+        max_key:
+          type: string
+          description: Last key in the range.
+          example: production/collections/some/file_8229.parquet
+        count:
+          type: integer
+          description: Number of records in the range.
+        estimated_size:
+          type: integer
+          description: Estimated size of the range in bytes
+
+    MetaRangeCreation:
+      type: object
+      properties:
+        ranges:
+          type: array
+          items:
+            $ref: '#/components/schemas/RangeMetadata'
+      required:
+        - ranges
+
 paths:
   /setup_lakefs:
     get:
@@ -2137,6 +2194,12 @@ paths:
         required: true
         schema:
           type: string
+      - in: query
+        name: source_metarange
+        required: false
+        description: Ths source metarange to commit. Branch must not have unstaged changes.
+        schema:
+          type: string
     get:
       deprecated: true
       tags:
@@ -2606,6 +2669,79 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StagingLocation"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/branches/metaranges:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    post:
+        tags:
+          - import
+        operationId: createMetaRange
+        summary: create a lakeFS metarange file from the given ranges
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetaRangeCreation"
+        responses:
+          201:
+            description: metarange metadata
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    id:
+                      description: The id of the created metarange
+                      type: string
+          400:
+            $ref: "#/components/responses/ValidationError"
+          401:
+            $ref: "#/components/responses/Unauthorized"
+          404:
+            $ref: "#/components/responses/NotFound"
+          default:
+            $ref: "#/components/responses/ServerError"
+
+
+  /repositories/{repository}/branches/ranges:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+         - import
+      operationId: ingestRange
+      summary: create a lakeFS range file from the source uri
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StageRangeCreation"
+      responses:
+        201:
+          description: range metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RangeMetadata"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
 

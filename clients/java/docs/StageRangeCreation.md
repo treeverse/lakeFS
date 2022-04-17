@@ -1,0 +1,15 @@
+
+
+# StageRangeCreation
+
+
+## Properties
+
+Name | Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+**fromSourceURI** | **String** | The source location of the ingested files. Must match the lakeFS installation blockstore type. | 
+**after** | **String** | Only objects after this key would be ingested. | 
+**prepend** | **String** | A prefix to prepend to ingested objects. | 
+
+
+

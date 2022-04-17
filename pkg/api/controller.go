@@ -82,6 +82,14 @@ type Controller struct {
 	Emailer               *email.Emailer
 }
 
+func (c *Controller) IngestRange(w http.ResponseWriter, r *http.Request, body IngestRangeJSONRequestBody, repository string) {
+
+}
+
+func (c *Controller) CreateMetaRange(w http.ResponseWriter, r *http.Request, body CreateMetaRangeJSONRequestBody, repository string) {
+	panic("implement me")
+}
+
 func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body DeleteObjectsJSONRequestBody, repository string, branch string) {
 	ctx := r.Context()
 	c.LogAction(ctx, "delete_objects")
@@ -1704,7 +1712,7 @@ func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body Re
 	writeResponse(w, http.StatusNoContent, nil)
 }
 
-func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body CommitJSONRequestBody, repository string, branch string) {
+func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body CommitJSONRequestBody, repository string, branch string, params CommitParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.CreateCommitAction,

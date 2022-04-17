@@ -11,7 +11,7 @@ Method | HTTP request | Description
 
 <a name="commit"></a>
 # **commit**
-> Commit commit(repository, branch, commitCreation)
+> Commit commit(repository, branch, commitCreation, sourceMetarange)
 
 create commit
 
@@ -49,8 +49,9 @@ public class Example {
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | 
     CommitCreation commitCreation = new CommitCreation(); // CommitCreation | 
+    String sourceMetarange = "sourceMetarange_example"; // String | Ths source metarange to commit. Branch must not have unstaged changes.
     try {
-      Commit result = apiInstance.commit(repository, branch, commitCreation);
+      Commit result = apiInstance.commit(repository, branch, commitCreation, sourceMetarange);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling CommitsApi#commit");
@@ -70,6 +71,7 @@ Name | Type | Description  | Notes
  **repository** | **String**|  |
  **branch** | **String**|  |
  **commitCreation** | [**CommitCreation**](CommitCreation.md)|  |
+ **sourceMetarange** | **String**| Ths source metarange to commit. Branch must not have unstaged changes. | [optional]
 
 ### Return type
 
@@ -177,7 +179,7 @@ Name | Type | Description  | Notes
 
 <a name="logBranchCommits"></a>
 # **logBranchCommits**
-> CommitList logBranchCommits(repository, branch, after, amount)
+> CommitList logBranchCommits(repository, branch, sourceMetarange, after, amount)
 
 get commit log from branch. Deprecated: replaced by logCommits by passing branch name as ref 
 
@@ -214,10 +216,11 @@ public class Example {
     CommitsApi apiInstance = new CommitsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | 
+    String sourceMetarange = "sourceMetarange_example"; // String | Ths source metarange to commit. Branch must not have unstaged changes.
     String after = "after_example"; // String | return items after this value
     Integer amount = 100; // Integer | how many items to return
     try {
-      CommitList result = apiInstance.logBranchCommits(repository, branch, after, amount);
+      CommitList result = apiInstance.logBranchCommits(repository, branch, sourceMetarange, after, amount);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling CommitsApi#logBranchCommits");
@@ -236,6 +239,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **String**|  |
  **branch** | **String**|  |
+ **sourceMetarange** | **String**| Ths source metarange to commit. Branch must not have unstaged changes. | [optional]
  **after** | **String**| return items after this value | [optional]
  **amount** | **Integer**| how many items to return | [optional] [default to 100]
 
