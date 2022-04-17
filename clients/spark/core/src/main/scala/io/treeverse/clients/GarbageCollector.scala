@@ -19,23 +19,22 @@ import com.amazonaws.services.s3.model
 import java.net.URI
 import collection.JavaConverters._
 
-/**
- * Interface for a companion object that builds an S3 client.  The object
- * io.treeverse.clients.conditional.S3ClientBuilder -- conditionally defined
- * in a separate file according to the supported Hadoop version --
- * implements this trait.  (Scala requires companion objects to be defined
- * in the same file, so it is not a companion.)
+/** Interface for a companion object that builds an S3 client.  The object
+ *  io.treeverse.clients.conditional.S3ClientBuilder -- conditionally defined
+ *  in a separate file according to the supported Hadoop version --
+ *  implements this trait.  (Scala requires companion objects to be defined
+ *  in the same file, so it is not a companion.)
  */
 trait S3ClientBuilder extends Serializable {
-  /**
-   * Return a configured Amazon S3 client similar to the one S3A would use.
-   * On Hadoop versions >=3, S3A can assume a role, and the returned S3
-   * client will similarly assume that role.
+
+  /** Return a configured Amazon S3 client similar to the one S3A would use.
+   *  On Hadoop versions >=3, S3A can assume a role, and the returned S3
+   *  client will similarly assume that role.
    *
-   * @param hc (partial) Hadoop configuration of fs.s3a.
-   * @param bucket that this client will access.
-   * @param region to find this bucket.
-   * @param numRetries number of times to retry on AWS.
+   *  @param hc (partial) Hadoop configuration of fs.s3a.
+   *  @param bucket that this client will access.
+   *  @param region to find this bucket.
+   *  @param numRetries number of times to retry on AWS.
    */
   def build(hc: Configuration, bucket: String, region: String, numRetries: Int): AmazonS3
 }
@@ -45,8 +44,7 @@ object GarbageCollector {
 
   case class APIConfigurations(apiURL: String, accessKey: String, secretKey: String)
 
-  /**
-   * @return a serializable summary of values in hc starting with prefix.
+  /** @return a serializable summary of values in hc starting with prefix.
    */
   def getHadoopConfigurationValues(hc: Configuration, prefix: String): ConfMap =
     hc.iterator.asScala
@@ -75,7 +73,8 @@ object GarbageCollector {
       hcValues: Broadcast[ConfMap]
   ): Set[(String, Array[Byte], Array[Byte])] = {
     val location =
-      new ApiClient(apiConf.apiURL, apiConf.accessKey, apiConf.secretKey).getMetaRangeURL(repo, commitID)
+      new ApiClient(apiConf.apiURL, apiConf.accessKey, apiConf.secretKey)
+        .getMetaRangeURL(repo, commitID)
     // continue on empty location, empty location is a result of a commit with no metaRangeID (e.g 'Repository created' commit)
     if (location == "") Set()
     else
@@ -169,7 +168,12 @@ object GarbageCollector {
     leftTuples -- rightTuples
   }
 
-  private def distinctEntryTuples(rangeIDs: Set[String], apiConf: APIConfigurations, repo: String, hcValues: Broadcast[ConfMap]) = {
+  private def distinctEntryTuples(
+      rangeIDs: Set[String],
+      apiConf: APIConfigurations,
+      repo: String,
+      hcValues: Broadcast[ConfMap]
+  ) = {
     val tuples = rangeIDs.map((rangeID: String) => getEntryTuples(rangeID, apiConf, repo, hcValues))
     if (tuples.isEmpty) Set[(String, String, Boolean, Long)]() else tuples.reduce(_.union(_))
   }
@@ -341,10 +345,12 @@ object GarbageCollector {
 
     val storageNamespace = new ApiClient(apiURL, accessKey, secretKey).getStorageNamespace(repo)
 
-    val removed = remove(storageNamespace, gcAddressesLocation, expiredAddresses, runID, region, hcValues)
+    val removed =
+      remove(storageNamespace, gcAddressesLocation, expiredAddresses, runID, region, hcValues)
 
     // BUG(ariels): Write to some other location!
-    removed.withColumn("run_id", lit(runID))
+    removed
+      .withColumn("run_id", lit(runID))
       .write
       .partitionBy("run_id")
       .mode(SaveMode.Overwrite)
@@ -377,7 +383,13 @@ object GarbageCollector {
     res.getDeletedObjects.asScala.map(_.getKey())
   }
 
-  private def getS3Client(hc: Configuration, bucket: String, region: String, numRetries: Int): AmazonS3 = io.treeverse.clients.conditional.S3ClientBuilder.build(hc, bucket, region, numRetries)
+  private def getS3Client(
+      hc: Configuration,
+      bucket: String,
+      region: String,
+      numRetries: Int
+  ): AmazonS3 =
+    io.treeverse.clients.conditional.S3ClientBuilder.build(hc, bucket, region, numRetries)
 
   def bulkRemove(
       readKeysDF: DataFrame,

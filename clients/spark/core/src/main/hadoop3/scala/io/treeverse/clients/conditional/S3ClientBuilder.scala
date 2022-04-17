@@ -15,8 +15,10 @@ object S3ClientBuilder extends io.treeverse.clients.S3ClientBuilder {
     //     Possibly pre-generate a FileSystem to access the desired bucket,
     //     and query for its credentials provider.  And cache them, in case
     //     some objects live in different buckets.
-    val credentialsProvider = if (hc.get(Constants.AWS_CREDENTIALS_PROVIDER) == AssumedRoleCredentialProvider.NAME)
-      Some(new AssumedRoleCredentialProvider(new java.net.URI("s3a://" + bucket), hc)) else None
+    val credentialsProvider =
+      if (hc.get(Constants.AWS_CREDENTIALS_PROVIDER) == AssumedRoleCredentialProvider.NAME)
+        Some(new AssumedRoleCredentialProvider(new java.net.URI("s3a://" + bucket), hc))
+      else None
 
     val builder = AmazonS3ClientBuilder
       .standard()
@@ -24,7 +26,7 @@ object S3ClientBuilder extends io.treeverse.clients.S3ClientBuilder {
       .withRegion(region)
     val builderWithCredentials = credentialsProvider match {
       case Some(cp) => builder.withCredentials(cp)
-      case None => builder
+      case None     => builder
     }
 
     builderWithCredentials.build
