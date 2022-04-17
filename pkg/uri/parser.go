@@ -16,10 +16,11 @@ const (
 )
 
 var (
-	ErrMalformedURI   = errors.New("malformed lakefs uri")
-	ErrInvalidRepoURI = errors.New("not a valid repo uri")
-	ErrInvalidRefURI  = errors.New("not a valid ref uri")
-	ErrInvalidPathURI = errors.New("not a valid path uri")
+	ErrMalformedURI     = errors.New("malformed lakefs uri")
+	ErrInvalidRepoURI   = errors.New("not a valid repo uri")
+	ErrInvalidRefURI    = errors.New("not a valid ref uri")
+	ErrInvalidBranchURI = errors.New("not a valid branch uri")
+	ErrInvalidPathURI   = errors.New("not a valid path uri")
 )
 
 type URI struct {
@@ -38,11 +39,15 @@ func (u *URI) IsRepository() bool {
 }
 
 func (u *URI) IsRef() bool {
+	return len(u.Repository) > 0 && len(u.Ref) > 0 && u.Path == nil && validator.ReValidRepositoryID.MatchString(u.Repository) && validator.ReValidRef.MatchString(u.Ref)
+}
+
+func (u *URI) IsBranch() bool {
 	return len(u.Repository) > 0 && len(u.Ref) > 0 && u.Path == nil && validator.ReValidRepositoryID.MatchString(u.Repository) && validator.ReValidBranchID.MatchString(u.Ref)
 }
 
 func (u *URI) IsFullyQualified() bool {
-	return len(u.Repository) > 0 && len(u.Ref) > 0 && u.Path != nil && validator.ReValidRepositoryID.MatchString(u.Repository) && validator.ReValidBranchID.MatchString(u.Ref)
+	return len(u.Repository) > 0 && len(u.Ref) > 0 && u.Path != nil && validator.ReValidRepositoryID.MatchString(u.Repository) && validator.ReValidRef.MatchString(u.Ref)
 }
 
 func (u *URI) GetPath() string {
