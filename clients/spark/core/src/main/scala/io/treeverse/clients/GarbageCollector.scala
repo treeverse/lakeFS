@@ -13,12 +13,32 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{SparkSession, _}
 
-import com.amazonaws.ClientConfiguration
-import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
+import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.model
 
 import java.net.URI
 import collection.JavaConverters._
+
+/**
+ * Interface for a companion object that builds an S3 client.  The object
+ * io.treeverse.clients.conditional.S3ClientBuilder -- conditionally defined
+ * in a separate file according to the supported Hadoop version --
+ * implements this trait.  (Scala requires companion objects to be defined
+ * in the same file, so it is not a companion.)
+ */
+trait S3ClientBuilder extends Serializable {
+  /**
+   * Return a configured Amazon S3 client similar to the one S3A would use.
+   * On Hadoop versions >=3, S3A can assume a role, and the returned S3
+   * client will similarly assume that role.
+   *
+   * @param hc (partial) Hadoop configuration of fs.s3a.
+   * @param bucket that this client will access.
+   * @param region to find this bucket.
+   * @param numRetries number of times to retry on AWS.
+   */
+  def build(hc: Configuration, bucket: String, region: String, numRetries: Int): AmazonS3
+}
 
 object GarbageCollector {
   type ConfMap = List[(String, String)]
@@ -357,30 +377,7 @@ object GarbageCollector {
     res.getDeletedObjects.asScala.map(_.getKey())
   }
 
-  private def getS3Client(hc: Configuration, bucket: String, region: String, numRetries: Int): AmazonS3 = {
-    import org.apache.hadoop.fs.s3a.Constants
-    import org.apache.hadoop.fs.s3a.auth.AssumedRoleCredentialProvider
-
-    val configuration = new ClientConfiguration().withMaxErrorRetry(numRetries)
-
-    // TODO(ariels): Support different per-bucket configuration methods.
-    //     Possibly pre-generate a FileSystem to access the desired bucket,
-    //     and query for its credentials provider.  And cache them, in case
-    //     some objects live in different buckets.
-    val credentialsProvider = if (hc.get(Constants.AWS_CREDENTIALS_PROVIDER) == AssumedRoleCredentialProvider.NAME)
-      Some(new AssumedRoleCredentialProvider(new java.net.URI("s3a://" + bucket), hc)) else None
-
-    val builder = AmazonS3ClientBuilder
-      .standard()
-      .withClientConfiguration(configuration)
-      .withRegion(region)
-    val builderWithCredentials = credentialsProvider match {
-      case Some(cp) => builder.withCredentials(cp)
-      case None => builder
-    }
-
-    builderWithCredentials.build
-  }
+  private def getS3Client(hc: Configuration, bucket: String, region: String, numRetries: Int): AmazonS3 = io.treeverse.clients.conditional.S3ClientBuilder.build(hc, bucket, region, numRetries)
 
   def bulkRemove(
       readKeysDF: DataFrame,
@@ -433,4 +430,3 @@ object GarbageCollector {
     bulkRemove(df, MaxBulkSize, bucket, region, awsRetries, snPrefix, hcValues).toDF("addresses")
   }
 }
-
