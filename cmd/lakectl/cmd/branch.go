@@ -55,7 +55,7 @@ var branchCreateCmd = &cobra.Command{
 	Short: "Create a new branch in a repository",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseRefURI("branch", args[0])
+		u := MustParseBranchURI("branch", args[0])
 		client := getClient()
 		sourceRawURI, _ := cmd.Flags().GetString("source")
 		sourceURI, err := uri.ParseWithBaseURI(sourceRawURI, baseURI)
@@ -86,7 +86,7 @@ var branchDeleteCmd = &cobra.Command{
 			Die("Delete branch aborted", 1)
 		}
 		client := getClient()
-		u := MustParseRefURI("branch", args[0])
+		u := MustParseBranchURI("branch", args[0])
 		Fmt("Branch: %s\n", u.String())
 		resp, err := client.DeleteBranchWithResponse(cmd.Context(), u.Repository, u.Ref)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
@@ -104,7 +104,7 @@ var branchRevertCmd = &cobra.Command{
 		      Revert the changes done by the second last commit to the fourth last commit in example-branch`,
 	Args: cobra.MinimumNArgs(branchRevertCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseRefURI("branch", args[0])
+		u := MustParseBranchURI("branch", args[0])
 		Fmt("Branch: %s\n", u.String())
 		hasParentNumber := cmd.Flags().Changed(ParentNumberFlagName)
 		parentNumber, _ := cmd.Flags().GetInt(ParentNumberFlagName)
@@ -140,7 +140,7 @@ var branchResetCmd = &cobra.Command{
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
-		u := MustParseRefURI("branch", args[0])
+		u := MustParseBranchURI("branch", args[0])
 		Fmt("Branch: %s\n", u.String())
 		prefix, err := cmd.Flags().GetString("prefix")
 		if err != nil {
@@ -189,7 +189,7 @@ var branchShowCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		u := MustParseRefURI("branch", args[0])
+		u := MustParseBranchURI("branch", args[0])
 		Fmt("Branch: %s\n", u.String())
 		resp, err := client.GetBranchWithResponse(cmd.Context(), u.Repository, u.Ref)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
