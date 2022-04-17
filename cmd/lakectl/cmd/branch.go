@@ -51,9 +51,10 @@ var branchListCmd = &cobra.Command{
 }
 
 var branchCreateCmd = &cobra.Command{
-	Use:   "create <ref uri>",
-	Short: "Create a new branch in a repository",
-	Args:  cobra.ExactArgs(1),
+	Use:     "create <branch uri> -s <source ref uri>",
+	Short:   "Create a new branch in a repository",
+	Example: "lakectl branch create lakefs://example-repo/new-branch -s lakefs://example-repo/main",
+	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseBranchURI("branch", args[0])
 		client := getClient()
@@ -77,9 +78,10 @@ var branchCreateCmd = &cobra.Command{
 }
 
 var branchDeleteCmd = &cobra.Command{
-	Use:   "delete <branch uri>",
-	Short: "Delete a branch in a repository, along with its uncommitted changes (CAREFUL)",
-	Args:  cobra.ExactArgs(1),
+	Use:     "delete <branch uri>",
+	Short:   "Delete a branch in a repository, along with its uncommitted changes (CAREFUL)",
+	Example: "lakectl branch delete lakefs://example-repo/example-branch",
+	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		confirmation, err := Confirm(cmd.Flags(), "Are you sure you want to delete branch")
 		if err != nil || !confirmation {
@@ -131,11 +133,12 @@ var branchRevertCmd = &cobra.Command{
 
 // lakectl branch reset lakefs://myrepo/main --commit commitId --prefix path --object path
 var branchResetCmd = &cobra.Command{
-	Use:   "reset <branch uri> [flags]",
-	Short: "Reset changes to specified commit, or reset uncommitted changes - all changes, or by path",
+	Use:     "reset <branch uri> [--prefix|--object]",
+	Example: "lakectl branch reset lakefs://example-repo/example-branch",
+	Short:   "Reset uncommitted changes - all of them, or by path",
 	Long: `reset changes.  There are four different ways to reset changes:
   1. reset all uncommitted changes - reset lakefs://myrepo/main 
-  2. reset uncommitted changes under specific path -	reset lakefs://myrepo/main --prefix path
+  2. reset uncommitted changes under specific path - reset lakefs://myrepo/main --prefix path
   3. reset uncommitted changes for specific object - reset lakefs://myrepo/main --object path`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -184,9 +187,10 @@ var branchResetCmd = &cobra.Command{
 }
 
 var branchShowCmd = &cobra.Command{
-	Use:   "show <branch uri>",
-	Short: "Show branch latest commit reference",
-	Args:  cobra.ExactArgs(1),
+	Use:     "show <branch uri>",
+	Example: "lakectl branch show lakefs://example-repo/example-branch",
+	Short:   "Show branch latest commit reference",
+	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		u := MustParseBranchURI("branch", args[0])
