@@ -1288,7 +1288,6 @@ This endpoint does not need any parameter.
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | auth capabilities |  -  |
-**401** | Unauthorized |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="getCredentials"></a>

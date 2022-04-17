@@ -221,12 +221,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/AuthCapabilities'
           description: auth capabilities
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Unauthorized
         default:
           content:
             application/json:

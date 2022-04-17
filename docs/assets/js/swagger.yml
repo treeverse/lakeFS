@@ -1157,8 +1157,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthCapabilities"
-        401:
-          $ref: "#/components/responses/Unauthorized"
         default:
           $ref: "#/components/responses/ServerError"
 
