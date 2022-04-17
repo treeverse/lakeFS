@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.63.0 - 2022-04-17
+
+- Authenticate using an external service (#3178)
+- Fixed bug in repository name validation (#3155)
+- Fixed bug in some argument validations (#3185)
+
 ## v0.62.0 - 2022-04-03
 
 This release requires running database migration.
