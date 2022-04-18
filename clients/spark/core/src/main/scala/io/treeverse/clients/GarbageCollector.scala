@@ -19,11 +19,11 @@ import com.amazonaws.services.s3.model
 import java.net.URI
 import collection.JavaConverters._
 
-/** Interface for a companion object that builds an S3 client.  The object
- *  io.treeverse.clients.conditional.S3ClientBuilder -- conditionally defined
- *  in a separate file according to the supported Hadoop version --
+/** Interface to build an S3 client.  The object
+ *  io.treeverse.clients.conditional.S3ClientBuilder -- conditionally
+ *  defined in a separate file according to the supported Hadoop version --
  *  implements this trait.  (Scala requires companion objects to be defined
- *  in the same file, so it is not a companion.)
+ *  in the same file, so it cannot be a companion.)
  */
 trait S3ClientBuilder extends Serializable {
 
