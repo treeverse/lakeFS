@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Postgres env vars
-
-
 # System tests env vars
 export TEST_WEBHOOK_HOST="localhost"
 export ESTI_SETUP_LAKEFS="true"

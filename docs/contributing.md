@@ -81,7 +81,12 @@ make checks-validator
 ```
 lakeFS uses [go fmt](https://golang.org/cmd/gofmt/) as a style guide for Go code.
 
-Created a system test as part of the change? Want to ensure our CI job passes before pushing the changes remotely? Use [this](https://github.com/treeverse/lakeFS/blob/master/esti/README.md)  guide to enable local execution of our system tests
+Run system-tests:
+```shell
+make system-tests
+```
+
+Want to dive deeper into our system tests infrastructure? Need to debug the tests? Follow [this](https://github.com/treeverse/lakeFS/blob/master/esti/README.md) documentation
 {: .note .note-info }
 
 ## Submitting a pull request

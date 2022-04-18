@@ -10,13 +10,14 @@ The following guide explains how to set up and execute the system tests infrastr
 A couple of prerequisites before we start:
 
 * Go over our [contributing](https://docs.lakefs.io/contributing.html) page and make sure you have a working lakeFS environment.
-* Ensure docker and docker-compose are installed on your system (we are using docker-compose to load a containerized postgres DB)
+* Docker and docker-compose (we are using docker-compose to load a containerized postgres DB)
+* Curl
 
 ### Running lakeFS
 
 *Before running the tests we need to run a lakeFS instance configured for local execution of system tests*
 
-Under _**esti/local_runner**_ you will find the following
+Under _**esti/scripts**_ you will find the following
 
 1. **lakefs.yaml**
    1. Contains the lakeFS configuration required for local test execution
@@ -31,28 +32,29 @@ Under _**esti/local_runner**_ you will find the following
    
 
 To run lakeFS for testing simply execute the following command in a shell console:
-   ```shell
-   ./runner.sh -r lakefs 
-   ```
-The lakeFS server will run in the console and logs will be piped to both stdout and /tmp/lakefs.log
+```shell
+   esti/scripts/runner.sh -r lakefs 
+```
+The lakeFS server will run in the console and logs will be piped to both stdout and in a temporary file in the form of lakefs_<XXX>.log
 
 ### Executing tests
+
 To run all the tests under the system tests folder, execute the following command in a new shell console:
-   ```shell
-   ./runner.sh -r test
-   ```
-The tests will run, with the output piped to both stdout and /tmp/tests.log
+```shell
+   esti/scripts/runner.sh -r test
+```
+The tests will run, with the output piped to both stdout and in a temporary file in the form of lakefs_tests_<XXX>.log
 
 The system test infrastructure allows additional flags and parameters to be passed for execution.
 For example to run a specific test (by regex) we can use:
 ```shell
-   ./runner.sh -r test -test.run TestHooksSuccess
-   ```
+   esti/scripts/runner.sh -r test -test.run TestHooksSuccess
+```
 This command will execute all tests which match the given string regex (in this case it will run a single test by that name)  
 For a full list of arguments run: 
 ```shell
-   ./runner.sh -r test --help
-   ```
+   esti/scripts/runner.sh -r test --help
+```
 
 ---
 
@@ -71,28 +73,29 @@ Notes:
 To debug the tests and server code we must create run configurations for both lakeFS and the system tests.
 
 ### LakeFS run configuration
+
 1. From the '**Run**' menu select '**Edit Configurations...**', then '**Add New Configuration**' (the plus sign) and create a new '**go build**' configuration  
-    ![](../docs/assets/img/debugging/go_build.png)
+    ![](img/go_build.png)
 2. Copy the configuration from the following screenshot
    1. Add basic environment variables from the _set_env_vars.sh_ script's lakeFS section
    2. Add additional / modify environment variables as needed
-   
-   ![](../docs/assets/img/debugging/lakefs_config.png)
+   ![](img/lakefs_config.png)
 3. Create a before launch, external tool to load the postgres docker image
-![](../docs/assets/img/debugging/postgres.png)
+   ![](img/postgres.png)
 4. Press 'Apply', make sure the configuration is saved (it is not grayed out on the left side menu) and press 'OK'
 5. Try to execute the target (either by run / debug) and verify lakeFS server is running
 
 ### System tests run configuration
+
 1. From the '**Run**' menu select '**Edit Configurations...**', and then '**Add New Configuration**' (the plus sign) and create a new '**go test**' configuration
 
-   ![](../docs/assets/img/debugging/go_test.png)
+   ![](img/go_test.png)
 2. Copy the configuration from the following screenshot
     1. Add basic environment variables from the _set_env_vars.sh_ script's System tests section
     2. Add additional / modify environment variables as needed
     3. To filter tests, you can provide a regular expression in the '**Pattern**' text box or alternatively provide the proper command line argument in the '**Prgram arguments**' text box
    
-    ![](../docs/assets/img/debugging/esti_config.png)
+    ![](img/esti_config.png)
 3. Press 'Apply', make sure the configuration is saved (it is not grayed out on the left side menu) and press 'OK'
 4. Try to execute the target (either by run / debug) and verify tests are running
 

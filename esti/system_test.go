@@ -30,8 +30,8 @@ var errNotVerified = errors.New("lakeFS failed")
 
 var nonAlphanumericSequence = regexp.MustCompile("[^a-zA-Z0-9]+")
 
-// skipOnSchema matches the rawURL schema to the current tested storage namespace schema
-func skipOnSchema(t *testing.T, rawURL string) {
+// skipOnSchemaMismatch matches the rawURL schema to the current tested storage namespace schema
+func skipOnSchemaMismatch(t *testing.T, rawURL string) {
 	namespaceURL, err := url.Parse(viper.GetString("storage_namespace"))
 	if err != nil {
 		t.Fatal(err)
@@ -92,7 +92,8 @@ func generateUniqueRepositoryName() string {
 }
 
 func generateUniqueStorageNamespace(repoName string) string {
-	storageNamespace := fmt.Sprintf("%s/%s/", viper.GetString("storage_namespace"), xid.New().String())
+	ns := strings.TrimRight(viper.GetString("storage_namespace"), "/")
+	storageNamespace := fmt.Sprintf("%s/%s/", ns, xid.New().String())
 	return storageNamespace + repoName
 }
 
