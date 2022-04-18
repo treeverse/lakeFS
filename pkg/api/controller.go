@@ -37,7 +37,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/version"
-	"golang.org/x/text/unicode/norm"
 )
 
 type contextKey string
@@ -812,27 +811,35 @@ func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params Li
 }
 
 func normalizeAndSetToLowercase(s string) string {
-	normalize := norm.NFC.String(s)
-	return strings.ToLower(normalize)
-}
-
-func setUsernameAndEmail(user *model.User, email string) {
-	user.Username = email
-	user.Email = &email
+	return strings.ToLower(s)
 }
 
 func (c *Controller) inviteUserRequest(ctx context.Context, email string) error {
-	return c.resetPasswordRequest(ctx, email)
+	secret := c.Auth.SecretStore().SharedSecret()
+	currentTime := time.Now()
+	token, err := GenerateJWTResetPassword(secret, email, currentTime, currentTime.Add(DefaultResetPasswordExpiration))
+	if err != nil {
+		c.Logger.WithError(err).WithField("email", email).Debug("failed to create a token")
+		return err
+	}
+	// TODO (@shimi9276) create template for sending the email with link for invite using the passed template
+	err = c.Emailer.SendEmailWithLimit([]string{email}, token, token, nil)
+	if err != nil {
+		return err
+	} else {
+		c.Logger.WithField("email", email).Info("invite email sent")
+	}
+	return nil
 }
 
 func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body CreateUserJSONRequestBody) {
+	normalizedEmail := normalizeAndSetToLowercase(body.Id)
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.CreateUserAction,
-			Resource: permissions.UserArn(body.Id),
+			Resource: permissions.UserArn(normalizedEmail),
 		},
 	}) {
-		writeResponse(w, http.StatusUnauthorized, nil)
 		return
 	}
 	u := &model.User{
@@ -841,11 +848,10 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body Cre
 		FriendlyName: nil,
 		Source:       "internal",
 	}
-	normalizedEmail := normalizeAndSetToLowercase(body.Id)
 	invite := swag.BoolValue(body.InviteUser)
-
 	if invite {
-		setUsernameAndEmail(u, normalizedEmail)
+		u.Username = normalizedEmail
+		u.Email = &body.Id
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "create_user")
@@ -856,9 +862,9 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body Cre
 	}
 
 	if invite {
-		err = c.inviteUserRequest(ctx, normalizedEmail)
+		err = c.inviteUserRequest(ctx, body.Id)
 		if handleAPIError(w, err) {
-			c.Logger.WithError(err).WithField("email", normalizedEmail).Warn("failed sending reset password email during invite user")
+			c.Logger.WithError(err).WithField("email", body.Id).Warn("failed sending invite email")
 			return
 		}
 	}
@@ -3065,7 +3071,6 @@ func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Controller) resetPasswordRequest(ctx context.Context, email string) error {
-	email = normalizeAndSetToLowercase(email)
 	addr, err := mail.ParseAddress(email)
 	if err != nil {
 		return err
@@ -3082,7 +3087,7 @@ func (c *Controller) resetPasswordRequest(ctx context.Context, email string) err
 		c.Logger.WithError(err).WithField("email", email).Debug("failed to create a token")
 		return err
 	}
-	// TODO (@shimi9276) create template for sending the email with link for reset and invite using the passed template
+	// TODO (@shimi9276) create template for sending the email with link for reset using the passed template
 	err = c.Emailer.SendEmailWithLimit([]string{email}, token, token, nil)
 	if err != nil {
 		return err
@@ -3093,10 +3098,9 @@ func (c *Controller) resetPasswordRequest(ctx context.Context, email string) err
 }
 
 func (c *Controller) ForgotPassword(w http.ResponseWriter, r *http.Request, body ForgotPasswordJSONRequestBody) {
-	normalizedEmail := normalizeAndSetToLowercase(body.Email)
-	err := c.resetPasswordRequest(r.Context(), normalizedEmail)
-	if err != nil {
-		c.Logger.WithError(err).WithField("email", normalizedEmail).Debug("failed sending reset password email")
+	err := c.resetPasswordRequest(r.Context(), body.Email)
+	if handleAPIError(w, err) {
+		c.Logger.WithError(err).WithField("email", body.Email).Debug("failed sending reset password email")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -3109,14 +3113,17 @@ func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body
 		writeError(w, http.StatusUnauthorized, err)
 		return
 	}
-	normalizedEmail := normalizeAndSetToLowercase(claims.Subject)
-	user, err := c.Auth.GetUserByEmail(r.Context(), normalizedEmail)
+	user, err := c.Auth.GetUserByEmail(r.Context(), claims.Subject)
 	if err != nil {
-		c.Logger.WithError(err).WithField("email", normalizedEmail).Debug("failed to retrieve user by email")
+		c.Logger.WithError(err).WithField("email", claims.Subject).Debug("failed to retrieve user by email")
 		writeError(w, http.StatusNotFound, http.StatusText(http.StatusNotFound))
 		return
 	}
-
+	if user.Username != normalizeAndSetToLowercase(claims.Subject) {
+		c.Logger.WithError(err).WithField("email", claims.Subject).Debug("username mismatch")
+		writeError(w, http.StatusNotFound, http.StatusText(http.StatusNotFound))
+		return
+	}
 	err = c.Auth.HashAndUpdatePassword(r.Context(), user.Username, body.NewPassword)
 	if err != nil {
 		c.Logger.WithError(err).WithField("username", user.Username).Debug("failed to update password")
