@@ -1,8 +1,8 @@
 openapi: "3.0.0"
 
 info:
-  description: lakeFS authentication HTTP API
-  title: lakeFS authentication API
+  title: lakeFS authorization API
+  description: authorization API used to manages users, groups, credentials and policies
   version: 0.1.0
 
 servers:

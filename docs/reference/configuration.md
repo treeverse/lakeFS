@@ -42,6 +42,8 @@ This reference uses `.` to denote the nesting of values.
 * `auth.cache.ttl` `(time duration : "20s")` - How long to store an item in the auth cache. Using a higher value reduces load on the database, but will cause changes longer to take effect for cached users.
 * `auth.cache.jitter` `(time duration : "3s")` - A random amount of time between 0 and this value is added to each item's TTL. This is done to avoid a large bulk of keys expiring at once and overwhelming the database.
 * `auth.encrypt.secret_key` `(string : required)` - A random (cryptographically safe) generated string that is used for encryption and HMAC signing
+* `auth.api.endpoint` `(string: https://external.service/api/v1)` - URL to external Authorization Service described at [authorization.yml](https://github.com/treeverse/lakeFS/blob/master/api/authorization.yml);
+* `auth.api.token` `(string: eyJhbGciOiJIUzI1NiIsInR5...)` - API token used to authenticate requests to api endpoint
 
    **Note:** It is best to keep this somewhere safe such as KMS or Hashicorp Vault, and provide it to the system at run time
    {: .note }
@@ -78,13 +80,13 @@ This reference uses `.` to denote the nesting of values.
   + `committed.local_cache.size_bytes` (`int` : `1073741824`) - bytes for local cache to use on disk.  The cache may use more storage for short periods of time.
   + `committed.local_cache.dir` (`string`, `~/lakefs/local_tier`) - directory to store local cache.
   +	`committed.local_cache.range_proportion` (`float` : `0.9`) - proportion of local cache to
-	use for storing ranges (leaves of committed metadata storage).
+    use for storing ranges (leaves of committed metadata storage).
   + `committed.local_cache.range.open_readers` (`int` : `500`) - maximal number of unused open
     SSTable readers to keep for ranges.
   + `committed.local_cache.range.num_shards` (`int` : `30`) - sharding factor for open SSTable
     readers for ranges.  Should be at least `sqrt(committed.local_cache.range.open_readers)`.
   + `committed.local_cache.metarange_proportion` (`float` : `0.1`) - proportion of local cache
-	to use for storing metaranges (roots of committed metadata storage).
+    to use for storing metaranges (roots of committed metadata storage).
   + `committed.local_cache.metarange.open_readers` (`int` : `50`) - maximal number of unused open
     SSTable readers to keep for metaranges.
   + `committed.local_cache.metarange.num_shards` (`int` : `10`) - sharding factor for open
