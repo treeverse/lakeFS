@@ -810,20 +810,23 @@ func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params Li
 	writeResponse(w, http.StatusOK, response)
 }
 
-func normalizeAndSetToLowercase(s string) string {
-	return strings.ToLower(s)
-}
-
-func (c *Controller) inviteUserRequest(ctx context.Context, email string) error {
+func (c *Controller) generateResetPasswordToken(email string) (*string, error) {
 	secret := c.Auth.SecretStore().SharedSecret()
 	currentTime := time.Now()
 	token, err := GenerateJWTResetPassword(secret, email, currentTime, currentTime.Add(DefaultResetPasswordExpiration))
 	if err != nil {
-		c.Logger.WithError(err).WithField("email", email).Debug("failed to create a token")
+		return nil, err
+	}
+	return &token, nil
+}
+
+func (c *Controller) inviteUserRequest(email string) error {
+	// TODO (@shimi9276) create template for sending the email with link for invite using the passed template
+	token, err := c.generateResetPasswordToken(email)
+	if err != nil {
 		return err
 	}
-	// TODO (@shimi9276) create template for sending the email with link for invite using the passed template
-	err = c.Emailer.SendEmailWithLimit([]string{email}, token, token, nil)
+	err = c.Emailer.SendEmailWithLimit([]string{email}, *token, *token, nil)
 	if err != nil {
 		return err
 	} else {
@@ -833,38 +836,47 @@ func (c *Controller) inviteUserRequest(ctx context.Context, email string) error 
 }
 
 func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body CreateUserJSONRequestBody) {
-	normalizedEmail := normalizeAndSetToLowercase(body.Id)
+	invite := swag.BoolValue(body.InviteUser)
+	id := body.Id
+	var addr *mail.Address
+	var err error
+	if invite {
+		addr, err = mail.ParseAddress(body.Id)
+		if handleAPIError(w, err) {
+			c.Logger.WithError(err).WithField("email", body.Id).Warn("failed parsing email")
+			return
+		}
+		id = strings.ToLower(addr.Address)
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.CreateUserAction,
-			Resource: permissions.UserArn(normalizedEmail),
+			Resource: permissions.UserArn(id),
 		},
 	}) {
 		return
 	}
 	u := &model.User{
 		CreatedAt:    time.Now().UTC(),
-		Username:     body.Id,
+		Username:     id,
 		FriendlyName: nil,
 		Source:       "internal",
 	}
-	invite := swag.BoolValue(body.InviteUser)
 	if invite {
-		u.Username = normalizedEmail
-		u.Email = &body.Id
+		u.Email = &addr.Address
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "create_user")
-	_, err := c.Auth.CreateUser(ctx, u)
+	_, err = c.Auth.CreateUser(ctx, u)
 
 	if handleAPIError(w, err) {
 		return
 	}
 
 	if invite {
-		err = c.inviteUserRequest(ctx, body.Id)
+		err = c.inviteUserRequest(id)
 		if handleAPIError(w, err) {
-			c.Logger.WithError(err).WithField("email", body.Id).Warn("failed sending invite email")
+			c.Logger.WithError(err).WithField("email", id).Warn("failed sending invite email")
 			return
 		}
 	}
@@ -3080,20 +3092,17 @@ func (c *Controller) resetPasswordRequest(ctx context.Context, email string) err
 		return err
 	}
 	email = StringValue(user.Email)
-	secret := c.Auth.SecretStore().SharedSecret()
-	currentTime := time.Now()
-	token, err := GenerateJWTResetPassword(secret, email, currentTime, currentTime.Add(DefaultResetPasswordExpiration))
-	if err != nil {
-		c.Logger.WithError(err).WithField("email", email).Debug("failed to create a token")
-		return err
-	}
 	// TODO (@shimi9276) create template for sending the email with link for reset using the passed template
-	err = c.Emailer.SendEmailWithLimit([]string{email}, token, token, nil)
+	token, err := c.generateResetPasswordToken(email)
 	if err != nil {
 		return err
-	} else {
-		c.Logger.WithField("email", email).Info("reset password email sent")
 	}
+	err = c.Emailer.SendEmailWithLimit([]string{email}, *token, *token, nil)
+	if err != nil {
+		return err
+	}
+	c.Logger.WithField("email", email).Info("reset password email sent")
+
 	return nil
 }
 
@@ -3116,11 +3125,6 @@ func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body
 	user, err := c.Auth.GetUserByEmail(r.Context(), claims.Subject)
 	if err != nil {
 		c.Logger.WithError(err).WithField("email", claims.Subject).Debug("failed to retrieve user by email")
-		writeError(w, http.StatusNotFound, http.StatusText(http.StatusNotFound))
-		return
-	}
-	if user.Username != normalizeAndSetToLowercase(claims.Subject) {
-		c.Logger.WithError(err).WithField("email", claims.Subject).Debug("username mismatch")
 		writeError(w, http.StatusNotFound, http.StatusText(http.StatusNotFound))
 		return
 	}
