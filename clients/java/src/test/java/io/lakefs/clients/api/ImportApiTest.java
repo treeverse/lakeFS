@@ -15,9 +15,9 @@ package io.lakefs.clients.api;
 
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.Error;
-import io.lakefs.clients.api.model.InlineResponse201;
+import io.lakefs.clients.api.model.IngestRangeCreationResponse;
 import io.lakefs.clients.api.model.MetaRangeCreation;
-import io.lakefs.clients.api.model.RangeMetadata;
+import io.lakefs.clients.api.model.MetaRangeCreationResponse;
 import io.lakefs.clients.api.model.StageRangeCreation;
 import org.junit.Test;
 import org.junit.Ignore;
@@ -48,7 +48,7 @@ public class ImportApiTest {
     public void createMetaRangeTest() throws ApiException {
         String repository = null;
         MetaRangeCreation metaRangeCreation = null;
-                InlineResponse201 response = api.createMetaRange(repository, metaRangeCreation);
+                MetaRangeCreationResponse response = api.createMetaRange(repository, metaRangeCreation);
         // TODO: test validations
     }
     
@@ -64,7 +64,7 @@ public class ImportApiTest {
     public void ingestRangeTest() throws ApiException {
         String repository = null;
         StageRangeCreation stageRangeCreation = null;
-                RangeMetadata response = api.ingestRange(repository, stageRangeCreation);
+                IngestRangeCreationResponse response = api.ingestRange(repository, stageRangeCreation);
         // TODO: test validations
     }
     

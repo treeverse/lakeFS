@@ -9,7 +9,7 @@ Method | HTTP request | Description
 
 
 # **create_meta_range**
-> InlineResponse201 create_meta_range(repository, meta_range_creation)
+> MetaRangeCreationResponse create_meta_range(repository, meta_range_creation)
 
 create a lakeFS metarange file from the given ranges
 
@@ -24,7 +24,7 @@ import time
 import lakefs_client
 from lakefs_client.api import import_api
 from lakefs_client.model.meta_range_creation import MetaRangeCreation
-from lakefs_client.model.inline_response201 import InlineResponse201
+from lakefs_client.model.meta_range_creation_response import MetaRangeCreationResponse
 from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
@@ -91,7 +91,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**InlineResponse201**](InlineResponse201.md)
+[**MetaRangeCreationResponse**](MetaRangeCreationResponse.md)
 
 ### Authorization
 
@@ -116,7 +116,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **ingest_range**
-> RangeMetadata ingest_range(repository, stage_range_creation)
+> IngestRangeCreationResponse ingest_range(repository, stage_range_creation)
 
 create a lakeFS range file from the source uri
 
@@ -130,8 +130,8 @@ create a lakeFS range file from the source uri
 import time
 import lakefs_client
 from lakefs_client.api import import_api
+from lakefs_client.model.ingest_range_creation_response import IngestRangeCreationResponse
 from lakefs_client.model.stage_range_creation import StageRangeCreation
-from lakefs_client.model.range_metadata import RangeMetadata
 from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
@@ -171,6 +171,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
         from_source_uri="s3://my-bucket/production/collections/",
         after="production/collections/some/file.parquet",
         prepend="collections/",
+        continuation_token="continuation_token_example",
     ) # StageRangeCreation | 
 
     # example passing only required values which don't have defaults set
@@ -192,7 +193,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**RangeMetadata**](RangeMetadata.md)
+[**IngestRangeCreationResponse**](IngestRangeCreationResponse.md)
 
 ### Authorization
 

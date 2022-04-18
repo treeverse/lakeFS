@@ -11,7 +11,7 @@ Name | Type | Description | Notes
 **minKey** | **String** | First key in the range. | 
 **maxKey** | **String** | Last key in the range. | 
 **count** | **Integer** | Number of records in the range. | 
-**estimatedSize** | **Integer** | Estimated size of the range in bytes |  [optional]
+**estimatedSize** | **Integer** | Estimated size of the range in bytes | 
 
 
 

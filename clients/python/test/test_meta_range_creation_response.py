@@ -13,11 +13,11 @@ import sys
 import unittest
 
 import lakefs_client
-from lakefs_client.model.inline_response201 import InlineResponse201
+from lakefs_client.model.meta_range_creation_response import MetaRangeCreationResponse
 
 
-class TestInlineResponse201(unittest.TestCase):
-    """InlineResponse201 unit test stubs"""
+class TestMetaRangeCreationResponse(unittest.TestCase):
+    """MetaRangeCreationResponse unit test stubs"""
 
     def setUp(self):
         pass
@@ -25,10 +25,10 @@ class TestInlineResponse201(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def testInlineResponse201(self):
-        """Test InlineResponse201"""
+    def testMetaRangeCreationResponse(self):
+        """Test MetaRangeCreationResponse"""
         # FIXME: construct object with mandatory attributes with example values
-        # model = InlineResponse201()  # noqa: E501
+        # model = MetaRangeCreationResponse()  # noqa: E501
         pass
 
 

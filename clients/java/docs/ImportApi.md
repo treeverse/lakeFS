@@ -10,7 +10,7 @@ Method | HTTP request | Description
 
 <a name="createMetaRange"></a>
 # **createMetaRange**
-> InlineResponse201 createMetaRange(repository, metaRangeCreation)
+> MetaRangeCreationResponse createMetaRange(repository, metaRangeCreation)
 
 create a lakeFS metarange file from the given ranges
 
@@ -48,7 +48,7 @@ public class Example {
     String repository = "repository_example"; // String | 
     MetaRangeCreation metaRangeCreation = new MetaRangeCreation(); // MetaRangeCreation | 
     try {
-      InlineResponse201 result = apiInstance.createMetaRange(repository, metaRangeCreation);
+      MetaRangeCreationResponse result = apiInstance.createMetaRange(repository, metaRangeCreation);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ImportApi#createMetaRange");
@@ -70,7 +70,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**InlineResponse201**](InlineResponse201.md)
+[**MetaRangeCreationResponse**](MetaRangeCreationResponse.md)
 
 ### Authorization
 
@@ -92,7 +92,7 @@ Name | Type | Description  | Notes
 
 <a name="ingestRange"></a>
 # **ingestRange**
-> RangeMetadata ingestRange(repository, stageRangeCreation)
+> IngestRangeCreationResponse ingestRange(repository, stageRangeCreation)
 
 create a lakeFS range file from the source uri
 
@@ -130,7 +130,7 @@ public class Example {
     String repository = "repository_example"; // String | 
     StageRangeCreation stageRangeCreation = new StageRangeCreation(); // StageRangeCreation | 
     try {
-      RangeMetadata result = apiInstance.ingestRange(repository, stageRangeCreation);
+      IngestRangeCreationResponse result = apiInstance.ingestRange(repository, stageRangeCreation);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ImportApi#ingestRange");
@@ -152,7 +152,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**RangeMetadata**](RangeMetadata.md)
+[**IngestRangeCreationResponse**](IngestRangeCreationResponse.md)
 
 ### Authorization
 

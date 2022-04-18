@@ -152,8 +152,8 @@ public class RangeMetadata {
    * Estimated size of the range in bytes
    * @return estimatedSize
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "Estimated size of the range in bytes")
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "Estimated size of the range in bytes")
 
   public Integer getEstimatedSize() {
     return estimatedSize;

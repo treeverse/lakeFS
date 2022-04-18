@@ -25,16 +25,16 @@ import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
 
 /**
- * InlineResponse201
+ * MetaRangeCreationResponse
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class InlineResponse201 {
+public class MetaRangeCreationResponse {
   public static final String SERIALIZED_NAME_ID = "id";
   @SerializedName(SERIALIZED_NAME_ID)
   private String id;
 
 
-  public InlineResponse201 id(String id) {
+  public MetaRangeCreationResponse id(String id) {
     
     this.id = id;
     return this;
@@ -65,8 +65,8 @@ public class InlineResponse201 {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    InlineResponse201 inlineResponse201 = (InlineResponse201) o;
-    return Objects.equals(this.id, inlineResponse201.id);
+    MetaRangeCreationResponse metaRangeCreationResponse = (MetaRangeCreationResponse) o;
+    return Objects.equals(this.id, metaRangeCreationResponse.id);
   }
 
   @Override
@@ -77,7 +77,7 @@ public class InlineResponse201 {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class InlineResponse201 {\n");
+    sb.append("class MetaRangeCreationResponse {\n");
     sb.append("    id: ").append(toIndentedString(id)).append("\n");
     sb.append("}");
     return sb.toString();

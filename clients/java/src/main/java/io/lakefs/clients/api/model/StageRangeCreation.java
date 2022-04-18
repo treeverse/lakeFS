@@ -41,6 +41,10 @@ public class StageRangeCreation {
   @SerializedName(SERIALIZED_NAME_PREPEND)
   private String prepend;
 
+  public static final String SERIALIZED_NAME_CONTINUATION_TOKEN = "continuation_token";
+  @SerializedName(SERIALIZED_NAME_CONTINUATION_TOKEN)
+  private String continuationToken;
+
 
   public StageRangeCreation fromSourceURI(String fromSourceURI) {
     
@@ -111,6 +115,29 @@ public class StageRangeCreation {
   }
 
 
+  public StageRangeCreation continuationToken(String continuationToken) {
+    
+    this.continuationToken = continuationToken;
+    return this;
+  }
+
+   /**
+   * Opaque. Client should pass the continuation_token received from server to continue creation ranges from the same key.
+   * @return continuationToken
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "Opaque. Client should pass the continuation_token received from server to continue creation ranges from the same key.")
+
+  public String getContinuationToken() {
+    return continuationToken;
+  }
+
+
+  public void setContinuationToken(String continuationToken) {
+    this.continuationToken = continuationToken;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -122,12 +149,13 @@ public class StageRangeCreation {
     StageRangeCreation stageRangeCreation = (StageRangeCreation) o;
     return Objects.equals(this.fromSourceURI, stageRangeCreation.fromSourceURI) &&
         Objects.equals(this.after, stageRangeCreation.after) &&
-        Objects.equals(this.prepend, stageRangeCreation.prepend);
+        Objects.equals(this.prepend, stageRangeCreation.prepend) &&
+        Objects.equals(this.continuationToken, stageRangeCreation.continuationToken);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(fromSourceURI, after, prepend);
+    return Objects.hash(fromSourceURI, after, prepend, continuationToken);
   }
 
   @Override
@@ -137,6 +165,7 @@ public class StageRangeCreation {
     sb.append("    fromSourceURI: ").append(toIndentedString(fromSourceURI)).append("\n");
     sb.append("    after: ").append(toIndentedString(after)).append("\n");
     sb.append("    prepend: ").append(toIndentedString(prepend)).append("\n");
+    sb.append("    continuationToken: ").append(toIndentedString(continuationToken)).append("\n");
     sb.append("}");
     return sb.toString();
   }

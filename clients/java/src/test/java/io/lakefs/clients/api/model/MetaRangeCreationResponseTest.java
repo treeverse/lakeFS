@@ -27,17 +27,17 @@ import org.junit.Test;
 
 
 /**
- * Model tests for InlineResponse201
+ * Model tests for MetaRangeCreationResponse
  */
-public class InlineResponse201Test {
-    private final InlineResponse201 model = new InlineResponse201();
+public class MetaRangeCreationResponseTest {
+    private final MetaRangeCreationResponse model = new MetaRangeCreationResponse();
 
     /**
-     * Model tests for InlineResponse201
+     * Model tests for MetaRangeCreationResponse
      */
     @Test
-    public void testInlineResponse201() {
-        // TODO: test InlineResponse201
+    public void testMetaRangeCreationResponse() {
+        // TODO: test MetaRangeCreationResponse
     }
 
     /**

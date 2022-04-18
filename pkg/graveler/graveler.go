@@ -329,6 +329,8 @@ type CommitParams struct {
 	// Date (Unix Epoch in seconds) is used to override commits creation date
 	Date     *int64
 	Metadata Metadata
+	// If SourceMetaRange exists, use it directly. Fail if branch has uncommitted changes
+	SourceMetaRange *MetaRangeID
 }
 
 type KeyValueStore interface {
@@ -395,13 +397,6 @@ type VersionController interface {
 	// Commit the staged data and returns a commit ID that references that change
 	//   ErrNothingToCommit in case there is no data in stage
 	Commit(ctx context.Context, repositoryID RepositoryID, branchID BranchID, commitParams CommitParams) (CommitID, error)
-
-	// WriteRange creates a new Range from the iterator values.
-	// Keeps Range closing logic, so might not flush all values to the range.
-	WriteRange(ctx context.Context, repositoryID RepositoryID, it ValueIterator) (*RangeInfo, error)
-
-	// WriteMetaRange creates a new MetaRange from the given Ranges.
-	WriteMetaRange(ctx context.Context, repositoryID RepositoryID, ranges []*RangeInfo) (*MetaRangeInfo, error)
 
 	// WriteMetaRangeByIterator accepts a ValueIterator and writes the entire iterator to a new MetaRange
 	// and returns the result ID.
@@ -493,6 +488,11 @@ type Plumbing interface {
 	GetMetaRange(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) (MetaRangeAddress, error)
 	// GetRange returns information where rangeID is stored.
 	GetRange(ctx context.Context, repositoryID RepositoryID, rangeID RangeID) (RangeAddress, error)
+	// WriteRange creates a new Range from the iterator values.
+	// Keeps Range closing logic, so might not flush all values to the range.
+	WriteRange(ctx context.Context, repositoryID RepositoryID, it ValueIterator) (*RangeInfo, error)
+	// WriteMetaRange creates a new MetaRange from the given Ranges.
+	WriteMetaRange(ctx context.Context, repositoryID RepositoryID, ranges []*RangeInfo) (*MetaRangeInfo, error)
 }
 
 type Dumper interface {
@@ -1460,6 +1460,16 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 			commit.Parents = CommitParents{branch.CommitID}
 		}
 
+		if params.SourceMetaRange != nil {
+			empty, err := g.stagingEmpty(ctx, branch)
+			if err != nil {
+				return nil, fmt.Errorf("checking empty branch: %w", err)
+			}
+			if !empty {
+				return nil, ErrCommitMetaRangeDirtyBranch
+			}
+		}
+
 		preRunID = NewRunID()
 		err = g.hooks.PreCommitHook(ctx, HookRecord{
 			RunID:            preRunID,
@@ -1489,15 +1499,19 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 			parentGeneration = commit.Generation
 		}
 		commit.Generation = parentGeneration + 1
-		changes, err := g.StagingManager.List(ctx, branch.StagingToken, ListingMaxBatchSize)
-		if err != nil {
-			return "", fmt.Errorf("staging list: %w", err)
-		}
-		defer changes.Close()
+		if params.SourceMetaRange != nil {
+			commit.MetaRangeID = *params.SourceMetaRange
+		} else {
+			changes, err := g.StagingManager.List(ctx, branch.StagingToken, ListingMaxBatchSize)
+			if err != nil {
+				return "", fmt.Errorf("staging list: %w", err)
+			}
+			defer changes.Close()
 
-		commit.MetaRangeID, _, err = g.CommittedManager.Commit(ctx, storageNamespace, branchMetaRangeID, changes)
-		if err != nil {
-			return "", fmt.Errorf("commit: %w", err)
+			commit.MetaRangeID, _, err = g.CommittedManager.Commit(ctx, storageNamespace, branchMetaRangeID, changes)
+			if err != nil {
+				return "", fmt.Errorf("commit: %w", err)
+			}
 		}
 
 		// add commit

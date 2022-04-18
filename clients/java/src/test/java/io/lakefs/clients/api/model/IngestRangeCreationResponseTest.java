@@ -18,6 +18,8 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import io.lakefs.clients.api.model.Pagination;
+import io.lakefs.clients.api.model.RangeMetadata;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
@@ -27,49 +29,33 @@ import org.junit.Test;
 
 
 /**
- * Model tests for StageRangeCreation
+ * Model tests for IngestRangeCreationResponse
  */
-public class StageRangeCreationTest {
-    private final StageRangeCreation model = new StageRangeCreation();
+public class IngestRangeCreationResponseTest {
+    private final IngestRangeCreationResponse model = new IngestRangeCreationResponse();
 
     /**
-     * Model tests for StageRangeCreation
+     * Model tests for IngestRangeCreationResponse
      */
     @Test
-    public void testStageRangeCreation() {
-        // TODO: test StageRangeCreation
+    public void testIngestRangeCreationResponse() {
+        // TODO: test IngestRangeCreationResponse
     }
 
     /**
-     * Test the property 'fromSourceURI'
+     * Test the property 'range'
      */
     @Test
-    public void fromSourceURITest() {
-        // TODO: test fromSourceURI
+    public void rangeTest() {
+        // TODO: test range
     }
 
     /**
-     * Test the property 'after'
+     * Test the property 'pagination'
      */
     @Test
-    public void afterTest() {
-        // TODO: test after
-    }
-
-    /**
-     * Test the property 'prepend'
-     */
-    @Test
-    public void prependTest() {
-        // TODO: test prepend
-    }
-
-    /**
-     * Test the property 'continuationToken'
-     */
-    @Test
-    public void continuationTokenTest() {
-        // TODO: test continuationToken
+    public void paginationTest() {
+        // TODO: test pagination
     }
 
 }

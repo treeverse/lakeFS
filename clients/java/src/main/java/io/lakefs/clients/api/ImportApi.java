@@ -28,9 +28,9 @@ import java.io.IOException;
 
 
 import io.lakefs.clients.api.model.Error;
-import io.lakefs.clients.api.model.InlineResponse201;
+import io.lakefs.clients.api.model.IngestRangeCreationResponse;
 import io.lakefs.clients.api.model.MetaRangeCreation;
-import io.lakefs.clients.api.model.RangeMetadata;
+import io.lakefs.clients.api.model.MetaRangeCreationResponse;
 import io.lakefs.clients.api.model.StageRangeCreation;
 
 import java.lang.reflect.Type;
@@ -130,7 +130,7 @@ public class ImportApi {
      * 
      * @param repository  (required)
      * @param metaRangeCreation  (required)
-     * @return InlineResponse201
+     * @return MetaRangeCreationResponse
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
@@ -142,8 +142,8 @@ public class ImportApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public InlineResponse201 createMetaRange(String repository, MetaRangeCreation metaRangeCreation) throws ApiException {
-        ApiResponse<InlineResponse201> localVarResp = createMetaRangeWithHttpInfo(repository, metaRangeCreation);
+    public MetaRangeCreationResponse createMetaRange(String repository, MetaRangeCreation metaRangeCreation) throws ApiException {
+        ApiResponse<MetaRangeCreationResponse> localVarResp = createMetaRangeWithHttpInfo(repository, metaRangeCreation);
         return localVarResp.getData();
     }
 
@@ -152,7 +152,7 @@ public class ImportApi {
      * 
      * @param repository  (required)
      * @param metaRangeCreation  (required)
-     * @return ApiResponse&lt;InlineResponse201&gt;
+     * @return ApiResponse&lt;MetaRangeCreationResponse&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
@@ -164,9 +164,9 @@ public class ImportApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<InlineResponse201> createMetaRangeWithHttpInfo(String repository, MetaRangeCreation metaRangeCreation) throws ApiException {
+    public ApiResponse<MetaRangeCreationResponse> createMetaRangeWithHttpInfo(String repository, MetaRangeCreation metaRangeCreation) throws ApiException {
         okhttp3.Call localVarCall = createMetaRangeValidateBeforeCall(repository, metaRangeCreation, null);
-        Type localVarReturnType = new TypeToken<InlineResponse201>(){}.getType();
+        Type localVarReturnType = new TypeToken<MetaRangeCreationResponse>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
@@ -188,10 +188,10 @@ public class ImportApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call createMetaRangeAsync(String repository, MetaRangeCreation metaRangeCreation, final ApiCallback<InlineResponse201> _callback) throws ApiException {
+    public okhttp3.Call createMetaRangeAsync(String repository, MetaRangeCreation metaRangeCreation, final ApiCallback<MetaRangeCreationResponse> _callback) throws ApiException {
 
         okhttp3.Call localVarCall = createMetaRangeValidateBeforeCall(repository, metaRangeCreation, _callback);
-        Type localVarReturnType = new TypeToken<InlineResponse201>(){}.getType();
+        Type localVarReturnType = new TypeToken<MetaRangeCreationResponse>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
     }
@@ -267,7 +267,7 @@ public class ImportApi {
      * 
      * @param repository  (required)
      * @param stageRangeCreation  (required)
-     * @return RangeMetadata
+     * @return IngestRangeCreationResponse
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
@@ -279,8 +279,8 @@ public class ImportApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public RangeMetadata ingestRange(String repository, StageRangeCreation stageRangeCreation) throws ApiException {
-        ApiResponse<RangeMetadata> localVarResp = ingestRangeWithHttpInfo(repository, stageRangeCreation);
+    public IngestRangeCreationResponse ingestRange(String repository, StageRangeCreation stageRangeCreation) throws ApiException {
+        ApiResponse<IngestRangeCreationResponse> localVarResp = ingestRangeWithHttpInfo(repository, stageRangeCreation);
         return localVarResp.getData();
     }
 
@@ -289,7 +289,7 @@ public class ImportApi {
      * 
      * @param repository  (required)
      * @param stageRangeCreation  (required)
-     * @return ApiResponse&lt;RangeMetadata&gt;
+     * @return ApiResponse&lt;IngestRangeCreationResponse&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
@@ -301,9 +301,9 @@ public class ImportApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<RangeMetadata> ingestRangeWithHttpInfo(String repository, StageRangeCreation stageRangeCreation) throws ApiException {
+    public ApiResponse<IngestRangeCreationResponse> ingestRangeWithHttpInfo(String repository, StageRangeCreation stageRangeCreation) throws ApiException {
         okhttp3.Call localVarCall = ingestRangeValidateBeforeCall(repository, stageRangeCreation, null);
-        Type localVarReturnType = new TypeToken<RangeMetadata>(){}.getType();
+        Type localVarReturnType = new TypeToken<IngestRangeCreationResponse>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
@@ -325,10 +325,10 @@ public class ImportApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call ingestRangeAsync(String repository, StageRangeCreation stageRangeCreation, final ApiCallback<RangeMetadata> _callback) throws ApiException {
+    public okhttp3.Call ingestRangeAsync(String repository, StageRangeCreation stageRangeCreation, final ApiCallback<IngestRangeCreationResponse> _callback) throws ApiException {
 
         okhttp3.Call localVarCall = ingestRangeValidateBeforeCall(repository, stageRangeCreation, _callback);
-        Type localVarReturnType = new TypeToken<RangeMetadata>(){}.getType();
+        Type localVarReturnType = new TypeToken<IngestRangeCreationResponse>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
     }

@@ -216,7 +216,7 @@ func testCommitEntries(t *testing.T, ctx context.Context, cat catalog.Interface,
 			})
 		testutil.MustDo(t, "create entry "+p, err)
 	}
-	commit, err := cat.Commit(ctx, params.repo, params.branch, "commit"+params.commitName, params.user, nil, nil)
+	commit, err := cat.Commit(ctx, params.repo, params.branch, "commit"+params.commitName, params.user, nil, nil, nil)
 	testutil.MustDo(t, "commit", err)
 	return commit.Reference
 }
@@ -246,7 +246,7 @@ func TestController_CommitsGetBranchCommitLogHandler(t *testing.T) {
 			p := "foo/bar" + n
 			err := deps.catalog.CreateEntry(ctx, "repo2", "main", catalog.DBEntry{Path: p, PhysicalAddress: onBlock(deps, "bar"+n+"addr"), CreationDate: time.Now(), Size: int64(i) + 1, Checksum: "cksum" + n})
 			testutil.MustDo(t, "create entry "+p, err)
-			_, err = deps.catalog.Commit(ctx, "repo2", "main", "commit"+n, "some_user", nil, nil)
+			_, err = deps.catalog.Commit(ctx, "repo2", "main", "commit"+n, "some_user", nil, nil, nil)
 			testutil.MustDo(t, "commit "+p, err)
 		}
 		resp, err := clt.LogCommitsWithResponse(ctx, "repo2", "main", &api.LogCommitsParams{})
@@ -469,7 +469,7 @@ func TestController_GetCommitHandler(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, "foo1", onBlock(deps, "foo1"), "main")
 		testutil.Must(t, err)
 		testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, "foo1", "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
-		commit1, err := deps.catalog.Commit(ctx, "foo1", "main", "some message", DefaultUserID, nil, nil)
+		commit1, err := deps.catalog.Commit(ctx, "foo1", "main", "some message", DefaultUserID, nil, nil, nil)
 		testutil.Must(t, err)
 		reference1, err := deps.catalog.GetBranchReference(ctx, "foo1", "main")
 		if err != nil {
@@ -661,7 +661,7 @@ func TestController_ListBranchesHandler(t *testing.T) {
 
 		// create first dummy commit on main so that we can create branches from it
 		testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo2", "main", catalog.DBEntry{Path: "a/b"}))
-		_, err = deps.catalog.Commit(ctx, "repo2", "main", "first commit", "test", nil, nil)
+		_, err = deps.catalog.Commit(ctx, "repo2", "main", "first commit", "test", nil, nil, nil)
 		testutil.Must(t, err)
 
 		for i := 0; i < 7; i++ {
@@ -715,7 +715,7 @@ func TestController_ListTagsHandler(t *testing.T) {
 	_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "foo1"), "main")
 	testutil.Must(t, err)
 	testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo1", "main", catalog.DBEntry{Path: "obj1"}))
-	commitLog, err := deps.catalog.Commit(ctx, "repo1", "main", "first commit", "test", nil, nil)
+	commitLog, err := deps.catalog.Commit(ctx, "repo1", "main", "first commit", "test", nil, nil, nil)
 	testutil.Must(t, err)
 	const createTagLen = 7
 	var createdTags []api.Ref
@@ -795,7 +795,7 @@ func TestController_GetBranchHandler(t *testing.T) {
 		testutil.Must(t, err)
 		// create first dummy commit on main so that we can create branches from it
 		testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo1", testBranch, catalog.DBEntry{Path: "a/b"}))
-		_, err = deps.catalog.Commit(ctx, "repo1", testBranch, "first commit", "test", nil, nil)
+		_, err = deps.catalog.Commit(ctx, "repo1", testBranch, "first commit", "test", nil, nil, nil)
 		testutil.Must(t, err)
 
 		resp, err := clt.GetBranchWithResponse(ctx, "repo1", testBranch)
@@ -878,7 +878,7 @@ func TestController_CreateBranchHandler(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "foo1"), "main")
 		testutil.Must(t, err)
 		testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo1", "main", catalog.DBEntry{Path: "a/b"}))
-		_, err = deps.catalog.Commit(ctx, "repo1", "main", "first commit", "test", nil, nil)
+		_, err = deps.catalog.Commit(ctx, "repo1", "main", "first commit", "test", nil, nil, nil)
 		testutil.Must(t, err)
 
 		const newBranchName = "main2"
@@ -897,7 +897,7 @@ func TestController_CreateBranchHandler(t *testing.T) {
 		uploadResp, err := uploadObjectHelper(t, ctx, clt, path, strings.NewReader(content), "repo1", newBranchName)
 		verifyResponseOK(t, uploadResp, err)
 
-		if _, err := deps.catalog.Commit(ctx, "repo1", "main2", "commit 1", "some_user", nil, nil); err != nil {
+		if _, err := deps.catalog.Commit(ctx, "repo1", "main2", "commit 1", "some_user", nil, nil, nil); err != nil {
 			t.Fatalf("failed to commit 'repo1': %s", err)
 		}
 		resp2, err := clt.DiffRefsWithResponse(ctx, "repo1", "main", newBranchName, &api.DiffRefsParams{})
@@ -1068,7 +1068,7 @@ func TestController_UploadObject(t *testing.T) {
 		}
 
 		// commit
-		_, err = deps.catalog.Commit(ctx, "my-new-repo", "another-branch", "a commit!", "user1", nil, nil)
+		_, err = deps.catalog.Commit(ctx, "my-new-repo", "another-branch", "a commit!", "user1", nil, nil, nil)
 		testutil.Must(t, err)
 
 		// overwrite after commit
@@ -1110,7 +1110,7 @@ func TestController_DeleteBranchHandler(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, "my-new-repo", onBlock(deps, "foo1"), "main")
 		testutil.Must(t, err)
 		testutil.Must(t, deps.catalog.CreateEntry(ctx, "my-new-repo", "main", catalog.DBEntry{Path: "a/b"}))
-		_, err = deps.catalog.Commit(ctx, "my-new-repo", "main", "first commit", "test", nil, nil)
+		_, err = deps.catalog.Commit(ctx, "my-new-repo", "main", "first commit", "test", nil, nil, nil)
 		testutil.Must(t, err)
 
 		_, err = deps.catalog.CreateBranch(ctx, "my-new-repo", "main2", "main")
@@ -2008,7 +2008,7 @@ func TestController_MergeIntoExplicitBranch(t *testing.T) {
 	testutil.Must(t, err)
 	err = deps.catalog.CreateEntry(ctx, repo, "branch1", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"})
 	testutil.Must(t, err)
-	_, err = deps.catalog.Commit(ctx, repo, "branch1", "some message", DefaultUserID, nil, nil)
+	_, err = deps.catalog.Commit(ctx, repo, "branch1", "some message", DefaultUserID, nil, nil, nil)
 	testutil.Must(t, err)
 
 	// test branch with mods
@@ -2039,7 +2039,7 @@ func TestController_CreateTag(t *testing.T) {
 	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
 	testutil.Must(t, err)
 	testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
-	commit1, err := deps.catalog.Commit(ctx, repo, "main", "some message", DefaultUserID, nil, nil)
+	commit1, err := deps.catalog.Commit(ctx, repo, "main", "some message", DefaultUserID, nil, nil, nil)
 	testutil.Must(t, err)
 
 	t.Run("ref", func(t *testing.T) {
@@ -2114,7 +2114,7 @@ func TestController_Revert(t *testing.T) {
 	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
 	testutil.Must(t, err)
 	testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
-	_, err = deps.catalog.Commit(ctx, repo, "main", "some message", DefaultUserID, nil, nil)
+	_, err = deps.catalog.Commit(ctx, repo, "main", "some message", DefaultUserID, nil, nil, nil)
 	testutil.Must(t, err)
 
 	t.Run("ref", func(t *testing.T) {

@@ -61,7 +61,7 @@ var commitCmd = &cobra.Command{
 			AdditionalProperties: kvPairs,
 		}
 		client := getClient()
-		resp, err := client.CommitWithResponse(cmd.Context(), branchURI.Repository, branchURI.Ref, api.CommitJSONRequestBody{
+		resp, err := client.CommitWithResponse(cmd.Context(), branchURI.Repository, branchURI.Ref, &api.CommitParams{}, api.CommitJSONRequestBody{
 			Message:  message,
 			Metadata: &metadata,
 			Date:     datePtr,

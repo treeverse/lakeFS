@@ -85,6 +85,7 @@ class StageRangeCreation(ModelNormal):
             'from_source_uri': (str,),  # noqa: E501
             'after': (str,),  # noqa: E501
             'prepend': (str,),  # noqa: E501
+            'continuation_token': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -96,6 +97,7 @@ class StageRangeCreation(ModelNormal):
         'from_source_uri': 'fromSourceURI',  # noqa: E501
         'after': 'after',  # noqa: E501
         'prepend': 'prepend',  # noqa: E501
+        'continuation_token': 'continuation_token',  # noqa: E501
     }
 
     read_only_vars = {
@@ -144,6 +146,7 @@ class StageRangeCreation(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            continuation_token (str): Opaque. Client should pass the continuation_token received from server to continue creation ranges from the same key.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -233,6 +236,7 @@ class StageRangeCreation(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            continuation_token (str): Opaque. Client should pass the continuation_token received from server to continue creation ranges from the same key.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

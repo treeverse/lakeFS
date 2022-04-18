@@ -3086,7 +3086,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_201'
+                $ref: '#/components/schemas/MetaRangeCreationResponse'
           description: metarange metadata
         "400":
           content:
@@ -3139,7 +3139,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RangeMetadata'
+                $ref: '#/components/schemas/IngestRangeCreationResponse'
           description: range metadata
         "400":
           content:
@@ -5718,6 +5718,7 @@ components:
     StageRangeCreation:
       example:
         fromSourceURI: s3://my-bucket/production/collections/
+        continuation_token: continuation_token
         prepend: collections/
         after: production/collections/some/file.parquet
       properties:
@@ -5733,6 +5734,10 @@ components:
         prepend:
           description: A prefix to prepend to ingested objects.
           example: collections/
+          type: string
+        continuation_token:
+          description: Opaque. Client should pass the continuation_token received
+            from server to continue creation ranges from the same key.
           type: string
       required:
       - after
@@ -5767,9 +5772,29 @@ components:
           type: integer
       required:
       - count
+      - estimated_size
       - id
       - max_key
       - min_key
+      type: object
+    IngestRangeCreationResponse:
+      example:
+        pagination:
+          max_per_page: 0
+          has_more: true
+          next_offset: next_offset
+          results: 0
+        range:
+          max_key: production/collections/some/file_8229.parquet
+          count: 0
+          estimated_size: 6
+          id: 480e19972a6fbe98ab8e81ae5efdfd1a29037587e91244e87abd4adefffdb01c
+          min_key: production/collections/some/file_1.parquet
+      properties:
+        range:
+          $ref: '#/components/schemas/RangeMetadata'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
       type: object
     MetaRangeCreation:
       example:
@@ -5792,7 +5817,7 @@ components:
       required:
       - ranges
       type: object
-    inline_response_201:
+    MetaRangeCreationResponse:
       example:
         id: id
       properties:

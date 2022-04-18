@@ -23,9 +23,9 @@ from lakefs_client.model_utils import (  # noqa: F401
     validate_and_convert_types
 )
 from lakefs_client.model.error import Error
-from lakefs_client.model.inline_response201 import InlineResponse201
+from lakefs_client.model.ingest_range_creation_response import IngestRangeCreationResponse
 from lakefs_client.model.meta_range_creation import MetaRangeCreation
-from lakefs_client.model.range_metadata import RangeMetadata
+from lakefs_client.model.meta_range_creation_response import MetaRangeCreationResponse
 from lakefs_client.model.stage_range_creation import StageRangeCreation
 
 
@@ -42,7 +42,7 @@ class ImportApi(object):
         self.api_client = api_client
         self.create_meta_range_endpoint = _Endpoint(
             settings={
-                'response_type': (InlineResponse201,),
+                'response_type': (MetaRangeCreationResponse,),
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
@@ -102,7 +102,7 @@ class ImportApi(object):
         )
         self.ingest_range_endpoint = _Endpoint(
             settings={
-                'response_type': (RangeMetadata,),
+                'response_type': (IngestRangeCreationResponse,),
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
@@ -201,7 +201,7 @@ class ImportApi(object):
             async_req (bool): execute request asynchronously
 
         Returns:
-            InlineResponse201
+            MetaRangeCreationResponse
                 If the method is called asynchronously, returns the request
                 thread.
         """
@@ -270,7 +270,7 @@ class ImportApi(object):
             async_req (bool): execute request asynchronously
 
         Returns:
-            RangeMetadata
+            IngestRangeCreationResponse
                 If the method is called asynchronously, returns the request
                 thread.
         """

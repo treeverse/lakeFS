@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/cmd/lakectl/cmd/store"
+	"github.com/treeverse/lakefs/pkg/ingest/store"
 )
 
 // Currently, this test accesses the following bucket, and so AWS should be configured to allow it

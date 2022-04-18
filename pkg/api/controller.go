@@ -82,14 +82,6 @@ type Controller struct {
 	Emailer               *email.Emailer
 }
 
-func (c *Controller) IngestRange(w http.ResponseWriter, r *http.Request, body IngestRangeJSONRequestBody, repository string) {
-
-}
-
-func (c *Controller) CreateMetaRange(w http.ResponseWriter, r *http.Request, body CreateMetaRangeJSONRequestBody, repository string) {
-	panic("implement me")
-}
-
 func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body DeleteObjectsJSONRequestBody, repository string, branch string) {
 	ctx := r.Context()
 	c.LogAction(ctx, "delete_objects")
@@ -1712,6 +1704,79 @@ func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body Re
 	writeResponse(w, http.StatusNoContent, nil)
 }
 
+func (c *Controller) IngestRange(w http.ResponseWriter, r *http.Request, body IngestRangeJSONRequestBody, repository string) {
+	if !c.authorize(w, r, permissions.Node{
+		Type: permissions.NodeTypeAnd,
+		Nodes: []permissions.Node{
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ImportFromStorage,
+					Resource: permissions.StorageNamespace(body.FromSourceURI),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.WriteObjectAction,
+					Resource: permissions.ObjectArn(repository, body.Prepend),
+				},
+			},
+		},
+	}) {
+		return
+	}
+
+	contToken := ""
+	if body.ContinuationToken != nil {
+		contToken = *body.ContinuationToken
+	}
+	info, mark, err := c.Catalog.WriteRange(r.Context(), repository, body.FromSourceURI, body.Prepend, body.After, contToken)
+	if handleAPIError(w, err) {
+		return
+	}
+
+	writeResponse(w, http.StatusCreated, IngestRangeCreationResponse{
+		Range: &RangeMetadata{
+			Id:            string(info.ID),
+			MinKey:        string(info.MinKey),
+			MaxKey:        string(info.MaxKey),
+			Count:         info.Count,
+			EstimatedSize: int(info.EstimatedRangeSizeBytes),
+		},
+		Pagination: &Pagination{
+			HasMore:    mark.HasMore,
+			NextOffset: mark.ContinuationToken,
+		},
+	})
+}
+
+func (c *Controller) CreateMetaRange(w http.ResponseWriter, r *http.Request, body CreateMetaRangeJSONRequestBody, repository string) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.CreateMetaRangeAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ranges := make([]*graveler.RangeInfo, 0, len(body.Ranges))
+	for _, r := range body.Ranges {
+		ranges = append(ranges, &graveler.RangeInfo{
+			ID:                      graveler.RangeID(r.Id),
+			MinKey:                  graveler.Key(r.MinKey),
+			MaxKey:                  graveler.Key(r.MaxKey),
+			Count:                   r.Count,
+			EstimatedRangeSizeBytes: uint64(r.EstimatedSize),
+		})
+	}
+	info, err := c.Catalog.WriteMetaRange(r.Context(), repository, ranges)
+	if handleAPIError(w, err) {
+		return
+	}
+	writeResponse(w, http.StatusCreated, MetaRangeCreationResponse{
+		Id: StringPtr(string(info.ID)),
+	})
+}
+
 func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body CommitJSONRequestBody, repository string, branch string, params CommitParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
@@ -1733,7 +1798,7 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body CommitJ
 		metadata = body.Metadata.AdditionalProperties
 	}
 	committer := user.Username
-	newCommit, err := c.Catalog.Commit(ctx, repository, branch, body.Message, committer, metadata, body.Date)
+	newCommit, err := c.Catalog.Commit(ctx, repository, branch, body.Message, committer, metadata, body.Date, params.SourceMetarange)
 	var hookAbortErr *graveler.HookAbortError
 	if errors.As(err, &hookAbortErr) {
 		c.Logger.

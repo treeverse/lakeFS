@@ -995,6 +995,9 @@ components:
           type: string
           description: A prefix to prepend to ingested objects.
           example: collections/
+        continuation_token:
+          type: string
+          description: Opaque. Client should pass the continuation_token received from server to continue creation ranges from the same key.
 
     RangeMetadata:
       type: object
@@ -1003,6 +1006,7 @@ components:
          - min_key
          - max_key
          - count
+         - estimated_size
       properties:
         id:
           type: string
@@ -1023,6 +1027,14 @@ components:
           type: integer
           description: Estimated size of the range in bytes
 
+    IngestRangeCreationResponse:
+      type: object
+      properties:
+        range:
+          $ref: '#/components/schemas/RangeMetadata'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
     MetaRangeCreation:
       type: object
       properties:
@@ -1032,6 +1044,13 @@ components:
             $ref: '#/components/schemas/RangeMetadata'
       required:
         - ranges
+
+    MetaRangeCreationResponse:
+      type: object
+      properties:
+        id:
+          description: The id of the created metarange
+          type: string
 
 paths:
   /setup_lakefs:
@@ -2696,11 +2715,7 @@ paths:
             content:
               application/json:
                 schema:
-                  type: object
-                  properties:
-                    id:
-                      description: The id of the created metarange
-                      type: string
+                  $ref: "#/components/schemas/MetaRangeCreationResponse"
           400:
             $ref: "#/components/responses/ValidationError"
           401:
@@ -2735,7 +2750,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RangeMetadata"
+                $ref: "#/components/schemas/IngestRangeCreationResponse"
+
         400:
           $ref: "#/components/responses/ValidationError"
         401:
