@@ -14,14 +14,19 @@ ThisBuild / isSnapshot := false
 lazy val scala211Version = "2.11.12"
 lazy val scala212Version = "2.12.12"
 
-def settingsToCompileIn(dir: String) = {
-  Seq(
+def settingsToCompileIn(dir: String, flavour: String = "") = {
+  lazy val allSettings = Seq(
     Compile / scalaSource := (ThisBuild / baseDirectory).value / dir / "src" / "main" / "scala",
     Test / scalaSource := (ThisBuild / baseDirectory).value / dir / "src" / "test" / "scala",
     Compile / resourceDirectory := (ThisBuild / baseDirectory).value / dir / "src" / "main" / "resources",
     Compile / PB.includePaths += (Compile / resourceDirectory).value,
     Compile / PB.protoSources += (Compile / resourceDirectory).value
   )
+  lazy val flavourSettings = if (flavour != "")
+    Seq(Compile / unmanagedSourceDirectories += (ThisBuild / baseDirectory).value /dir / "src" / "main" / flavour / "scala")
+  else
+    Seq()
+  allSettings ++ flavourSettings
 }
 
 def generateCoreProject(buildType: BuildType) =
@@ -29,7 +34,7 @@ def generateCoreProject(buildType: BuildType) =
     .settings(
       sharedSettings,
       s3UploadSettings,
-      settingsToCompileIn("core"),
+      settingsToCompileIn("core", buildType.hadoopFlavour),
       scalaVersion := buildType.scalaVersion,
       semanticdbEnabled := true, // enable SemanticDB
       semanticdbVersion := scalafixSemanticdb.revision,
@@ -78,7 +83,7 @@ def generateExamplesProject(buildType: BuildType) =
   Project(s"${baseName}-examples-${buildType.name}", file(s"examples"))
     .settings(
       sharedSettings,
-      settingsToCompileIn("examples"),
+      settingsToCompileIn("examples", buildType.hadoopFlavour),
       scalaVersion := buildType.scalaVersion,
       semanticdbEnabled := true, // enable SemanticDB
       semanticdbVersion := scalafixSemanticdb.revision,
@@ -93,13 +98,13 @@ def generateExamplesProject(buildType: BuildType) =
     )
 
 lazy val spark2Type =
-  new BuildType("247", scala211Version, "2.4.7", "0.9.8", "2.7.7", "hadoop2-2.0.1")
+  new BuildType("247", scala211Version, "2.4.7", "0.9.8", "2.7.7", "hadoop2", "hadoop2-2.0.1")
 lazy val spark3Type =
-  new BuildType("301", scala212Version, "3.0.1", "0.10.11", "2.7.7", "hadoop2-2.0.1")
+  new BuildType("301", scala212Version, "3.0.1", "0.10.11", "2.7.7", "hadoop2", "hadoop2-2.0.1")
 
 // EMR-6.5.0 beta, managed GC
 lazy val spark312Type =
-  new BuildType("312", scala212Version, "3.1.2", "0.10.11", "3.2.1", "hadoop2-2.0.1")
+  new BuildType("312-hadoop3", scala212Version, "3.1.2", "0.10.11", "3.2.1", "hadoop3", "hadoop2-2.0.1")
 
 lazy val core2 = generateCoreProject(spark2Type)
 lazy val core3 = generateCoreProject(spark3Type)
