@@ -550,7 +550,9 @@ jobs:
 
       - name: Package Metaclient
         working-directory: clients/spark
-        run: sbt lakefs-spark-client-301/assembly
+        run: |
+          sbt lakefs-spark-client-301/assembly
+          sbt lakefs-spark-client-312-hadoop3/assembly
 
       - name: Prepare Metaclient location for export
         # upload-artifact cannot take a working-directory option (that only
@@ -560,6 +562,7 @@ jobs:
         run: |
           mkdir -p /tmp/export
           cp target/core-301/scala-2.12/lakefs-spark-client-301-assembly*.jar /tmp/export/spark-assembly.jar
+          cp target/core-312-hadoop3/scala-2.12/lakefs-spark-client-312-hadoop3-assembly*.jar /tmp/export/spark-assembly-hadoop3.jar
 
       - name: Export Metaclient
         uses: actions/upload-artifact@v3
@@ -575,9 +578,15 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        spark: [3.2.1, 3.1.2, 3.0.2]
+        spark:
+          - version: 3.2.1
+            suffix: "-hadoop3"
+          - version: 3.1.2
+            suffix: ""
+          - version: 3.0.2
+            suffix: ""
     env:
-      SPARK_TAG: ${{ matrix.spark }}
+      SPARK_TAG: ${{ matrix.spark.version }}
     steps:
       - name: Check-out code
         uses: actions/checkout@v2
@@ -605,36 +614,36 @@ jobs:
         run: ./setup-test.sh
 
       - name: Copy repository ref
-        run: aws s3 cp --recursive s3://esti-system-testing-data/golden-files/gc-test-data s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark }}-metaclient/exporter
+        run: aws s3 cp --recursive s3://esti-system-testing-data/golden-files/gc-test-data s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.version }}-metaclient/exporter
 
       - name: Setup GC tests
         env:
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark }}-metaclient/garbage
-          REPOSITORY: test-data-gc-${{ matrix.spark }}
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.version }}-metaclient/garbage
+          REPOSITORY: test-data-gc-${{ matrix.spark.version }}
         working-directory: test/spark
         run: ./setup-gc-test.sh
 
       - name: Test GC with Spark 3.x
         env:
           STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark }}-metaclient/garbage
-          REPOSITORY: test-data-gc-${{ matrix.spark }}
-          CLIENT_JAR: ${{steps.import_metaclient.outputs.download-path}}/spark-assembly.jar
+          REPOSITORY: test-data-gc-${{ matrix.spark.version }}
+          CLIENT_JAR: ${{steps.import_metaclient.outputs.download-path}}/spark-assembly${{ matrix.spark.suffix }}.jar
         working-directory: test/spark
         run: ./run-gc-test.sh
 
       - name: Setup Exporter tests
         env:
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark }}-metaclient/exporter
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.version }}-metaclient/exporter
           REPOSITORY: test-data-exporter
         working-directory: test/spark
         run: ./setup-exporter-test.sh
 
       - name: Test Exporter with Spark 3.x
         env:
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark }}-metaclient/exporter
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.version }}-metaclient/exporter
           REPOSITORY: test-data-exporter
-          CLIENT_JAR: ${{steps.import_metaclient.outputs.download-path}}/spark-assembly.jar
-          EXPORT_LOCATION: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark }}-client-export
+          CLIENT_JAR: ${{steps.import_metaclient.outputs.download-path}}/spark-assembly${{ matrix.spark.suffix }}.jar
+          EXPORT_LOCATION: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.version }}-client-export
         working-directory: test/spark
         run: ./run-exporter-test.sh
 
