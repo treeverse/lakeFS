@@ -30,7 +30,7 @@ The folloiwng steps will be required for each pacakge that uses the 'db' layer:
         - metadata information: installation id, version and etc
         - authorization information: users, group, policy, credentials and etc
     pkg/actions
-        - actions information: runs, hooks, status (
+        - actions information: runs, hooks, status
     pkg/gateway/multiparts
         - tracking gateway multipart requests
 
