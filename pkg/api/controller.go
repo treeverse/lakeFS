@@ -810,14 +810,10 @@ func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params Li
 	writeResponse(w, http.StatusOK, response)
 }
 
-func (c *Controller) generateResetPasswordToken(email string) (*string, error) {
+func (c *Controller) generateResetPasswordToken(email string) (string, error) {
 	secret := c.Auth.SecretStore().SharedSecret()
 	currentTime := time.Now()
-	token, err := GenerateJWTResetPassword(secret, email, currentTime, currentTime.Add(DefaultResetPasswordExpiration))
-	if err != nil {
-		return nil, err
-	}
-	return &token, nil
+	return GenerateJWTResetPassword(secret, email, currentTime, currentTime.Add(DefaultResetPasswordExpiration))
 }
 
 func (c *Controller) inviteUserRequest(email string) error {
@@ -826,27 +822,27 @@ func (c *Controller) inviteUserRequest(email string) error {
 	if err != nil {
 		return err
 	}
-	err = c.Emailer.SendEmailWithLimit([]string{email}, *token, *token, nil)
+	err = c.Emailer.SendEmailWithLimit([]string{email}, token, token, nil)
 	if err != nil {
 		return err
-	} else {
-		c.Logger.WithField("email", email).Info("invite email sent")
 	}
+	c.Logger.WithField("email", email).Info("invite email sent")
 	return nil
 }
 
 func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body CreateUserJSONRequestBody) {
 	invite := swag.BoolValue(body.InviteUser)
 	id := body.Id
-	var addr *mail.Address
-	var err error
+	var email *string
 	if invite {
-		addr, err = mail.ParseAddress(body.Id)
-		if handleAPIError(w, err) {
-			c.Logger.WithError(err).WithField("email", body.Id).Warn("failed parsing email")
+		addr, err := mail.ParseAddress(body.Id)
+		if err != nil {
+			c.Logger.WithError(err).WithField("userID", id).Warn("failed parsing email")
+			writeError(w, http.StatusBadRequest, "Invalid email format")
 			return
 		}
 		id = strings.ToLower(addr.Address)
+		email = &body.Id
 	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
@@ -861,22 +857,21 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body Cre
 		Username:     id,
 		FriendlyName: nil,
 		Source:       "internal",
-	}
-	if invite {
-		u.Email = &addr.Address
+		Email:        email,
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "create_user")
-	_, err = c.Auth.CreateUser(ctx, u)
+	_, err := c.Auth.CreateUser(ctx, u)
 
 	if handleAPIError(w, err) {
+		c.Logger.WithError(err).WithField("email", id).Warn("failed creating user")
 		return
 	}
 
 	if invite {
-		err = c.inviteUserRequest(id)
+		err = c.inviteUserRequest(*u.Email)
 		if handleAPIError(w, err) {
-			c.Logger.WithError(err).WithField("email", id).Warn("failed sending invite email")
+			c.Logger.WithError(err).WithField("email", *u.Email).Warn("failed sending invite email")
 			return
 		}
 	}
@@ -3097,7 +3092,7 @@ func (c *Controller) resetPasswordRequest(ctx context.Context, email string) err
 	if err != nil {
 		return err
 	}
-	err = c.Emailer.SendEmailWithLimit([]string{email}, *token, *token, nil)
+	err = c.Emailer.SendEmailWithLimit([]string{email}, token, token, nil)
 	if err != nil {
 		return err
 	}
