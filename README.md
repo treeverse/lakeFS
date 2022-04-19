@@ -71,7 +71,7 @@ You can try lakeFS:
 
 * Without installing, using the [lakeFS Playground](https://demo.lakefs.io).
 * [On Kubernetes](https://docs.lakefs.io/quickstart/more_quickstart_options.html#on-kubernetes-with-helm).
-* [With docker-compose on Windows](https://docs.lakefs.io/quickstart/more_quickstart_options.html#docker-on-windows).
+* [With Docker Compose on Windows](https://docs.lakefs.io/quickstart/more_quickstart_options.html#docker-on-windows).
 * By [running the binary directly](https://docs.lakefs.io/quickstart/more_quickstart_options.html#using-the-binary).
 
 ### Setting up a repository
