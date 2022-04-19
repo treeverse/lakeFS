@@ -842,7 +842,7 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body Cre
 			return
 		}
 		id = strings.ToLower(addr.Address)
-		email = &body.Id
+		email = &addr.Address
 	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
@@ -864,7 +864,7 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body Cre
 	_, err := c.Auth.CreateUser(ctx, u)
 
 	if handleAPIError(w, err) {
-		c.Logger.WithError(err).WithField("email", id).Warn("failed creating user")
+		c.Logger.WithError(err).WithField("email", u.ID).Warn("failed creating user")
 		return
 	}
 
