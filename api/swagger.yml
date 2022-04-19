@@ -2213,12 +2213,6 @@ paths:
         required: true
         schema:
           type: string
-      - in: query
-        name: source_metarange
-        required: false
-        description: Ths source metarange to commit. Branch must not have uncommitted changes.
-        schema:
-          type: string
     get:
       deprecated: true
       tags:
@@ -2244,6 +2238,13 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
     post:
+      parameters:
+        - in: query
+          name: source_metarange
+          required: false
+          description: The source metarange to commit. Branch must not have uncommitted changes.
+          schema:
+            type: string
       tags:
         - commits
       operationId: commit

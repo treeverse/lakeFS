@@ -2202,15 +2202,6 @@ paths:
         schema:
           type: string
         style: simple
-      - description: Ths source metarange to commit. Branch must not have uncommitted
-          changes.
-        explode: true
-        in: query
-        name: source_metarange
-        required: false
-        schema:
-          type: string
-        style: form
       - description: return items after this value
         explode: true
         in: query
@@ -2278,7 +2269,7 @@ paths:
         schema:
           type: string
         style: simple
-      - description: Ths source metarange to commit. Branch must not have uncommitted
+      - description: The source metarange to commit. Branch must not have uncommitted
           changes.
         explode: true
         in: query

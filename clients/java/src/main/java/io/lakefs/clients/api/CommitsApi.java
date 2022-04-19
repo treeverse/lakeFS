@@ -62,7 +62,7 @@ public class CommitsApi {
      * @param repository  (required)
      * @param branch  (required)
      * @param commitCreation  (required)
-     * @param sourceMetarange Ths source metarange to commit. Branch must not have uncommitted changes. (optional)
+     * @param sourceMetarange The source metarange to commit. Branch must not have uncommitted changes. (optional)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -143,7 +143,7 @@ public class CommitsApi {
      * @param repository  (required)
      * @param branch  (required)
      * @param commitCreation  (required)
-     * @param sourceMetarange Ths source metarange to commit. Branch must not have uncommitted changes. (optional)
+     * @param sourceMetarange The source metarange to commit. Branch must not have uncommitted changes. (optional)
      * @return Commit
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -168,7 +168,7 @@ public class CommitsApi {
      * @param repository  (required)
      * @param branch  (required)
      * @param commitCreation  (required)
-     * @param sourceMetarange Ths source metarange to commit. Branch must not have uncommitted changes. (optional)
+     * @param sourceMetarange The source metarange to commit. Branch must not have uncommitted changes. (optional)
      * @return ApiResponse&lt;Commit&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -194,7 +194,7 @@ public class CommitsApi {
      * @param repository  (required)
      * @param branch  (required)
      * @param commitCreation  (required)
-     * @param sourceMetarange Ths source metarange to commit. Branch must not have uncommitted changes. (optional)
+     * @param sourceMetarange The source metarange to commit. Branch must not have uncommitted changes. (optional)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -354,7 +354,6 @@ public class CommitsApi {
      * Build call for logBranchCommits
      * @param repository  (required)
      * @param branch  (required)
-     * @param sourceMetarange Ths source metarange to commit. Branch must not have uncommitted changes. (optional)
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
      * @param _callback Callback for upload/download progress
@@ -371,7 +370,7 @@ public class CommitsApi {
      * @deprecated
      */
     @Deprecated
-    public okhttp3.Call logBranchCommitsCall(String repository, String branch, String sourceMetarange, String after, Integer amount, final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call logBranchCommitsCall(String repository, String branch, String after, Integer amount, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = null;
 
         // create path and map variables
@@ -384,10 +383,6 @@ public class CommitsApi {
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
         Map<String, String> localVarCookieParams = new HashMap<String, String>();
         Map<String, Object> localVarFormParams = new HashMap<String, Object>();
-
-        if (sourceMetarange != null) {
-            localVarQueryParams.addAll(localVarApiClient.parameterToPair("source_metarange", sourceMetarange));
-        }
 
         if (after != null) {
             localVarQueryParams.addAll(localVarApiClient.parameterToPair("after", after));
@@ -417,7 +412,7 @@ public class CommitsApi {
 
     @Deprecated
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call logBranchCommitsValidateBeforeCall(String repository, String branch, String sourceMetarange, String after, Integer amount, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call logBranchCommitsValidateBeforeCall(String repository, String branch, String after, Integer amount, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'repository' is set
         if (repository == null) {
@@ -430,7 +425,7 @@ public class CommitsApi {
         }
         
 
-        okhttp3.Call localVarCall = logBranchCommitsCall(repository, branch, sourceMetarange, after, amount, _callback);
+        okhttp3.Call localVarCall = logBranchCommitsCall(repository, branch, after, amount, _callback);
         return localVarCall;
 
     }
@@ -440,7 +435,6 @@ public class CommitsApi {
      * 
      * @param repository  (required)
      * @param branch  (required)
-     * @param sourceMetarange Ths source metarange to commit. Branch must not have uncommitted changes. (optional)
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
      * @return CommitList
@@ -456,8 +450,8 @@ public class CommitsApi {
      * @deprecated
      */
     @Deprecated
-    public CommitList logBranchCommits(String repository, String branch, String sourceMetarange, String after, Integer amount) throws ApiException {
-        ApiResponse<CommitList> localVarResp = logBranchCommitsWithHttpInfo(repository, branch, sourceMetarange, after, amount);
+    public CommitList logBranchCommits(String repository, String branch, String after, Integer amount) throws ApiException {
+        ApiResponse<CommitList> localVarResp = logBranchCommitsWithHttpInfo(repository, branch, after, amount);
         return localVarResp.getData();
     }
 
@@ -466,7 +460,6 @@ public class CommitsApi {
      * 
      * @param repository  (required)
      * @param branch  (required)
-     * @param sourceMetarange Ths source metarange to commit. Branch must not have uncommitted changes. (optional)
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
      * @return ApiResponse&lt;CommitList&gt;
@@ -482,8 +475,8 @@ public class CommitsApi {
      * @deprecated
      */
     @Deprecated
-    public ApiResponse<CommitList> logBranchCommitsWithHttpInfo(String repository, String branch, String sourceMetarange, String after, Integer amount) throws ApiException {
-        okhttp3.Call localVarCall = logBranchCommitsValidateBeforeCall(repository, branch, sourceMetarange, after, amount, null);
+    public ApiResponse<CommitList> logBranchCommitsWithHttpInfo(String repository, String branch, String after, Integer amount) throws ApiException {
+        okhttp3.Call localVarCall = logBranchCommitsValidateBeforeCall(repository, branch, after, amount, null);
         Type localVarReturnType = new TypeToken<CommitList>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
@@ -493,7 +486,6 @@ public class CommitsApi {
      * 
      * @param repository  (required)
      * @param branch  (required)
-     * @param sourceMetarange Ths source metarange to commit. Branch must not have uncommitted changes. (optional)
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
      * @param _callback The callback to be executed when the API call finishes
@@ -510,9 +502,9 @@ public class CommitsApi {
      * @deprecated
      */
     @Deprecated
-    public okhttp3.Call logBranchCommitsAsync(String repository, String branch, String sourceMetarange, String after, Integer amount, final ApiCallback<CommitList> _callback) throws ApiException {
+    public okhttp3.Call logBranchCommitsAsync(String repository, String branch, String after, Integer amount, final ApiCallback<CommitList> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = logBranchCommitsValidateBeforeCall(repository, branch, sourceMetarange, after, amount, _callback);
+        okhttp3.Call localVarCall = logBranchCommitsValidateBeforeCall(repository, branch, after, amount, _callback);
         Type localVarReturnType = new TypeToken<CommitList>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;

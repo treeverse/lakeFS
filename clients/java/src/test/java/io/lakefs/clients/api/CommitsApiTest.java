@@ -81,10 +81,9 @@ public class CommitsApiTest {
     public void logBranchCommitsTest() throws ApiException {
         String repository = null;
         String branch = null;
-        String sourceMetarange = null;
         String after = null;
         Integer amount = null;
-                CommitList response = api.logBranchCommits(repository, branch, sourceMetarange, after, amount);
+                CommitList response = api.logBranchCommits(repository, branch, after, amount);
         // TODO: test validations
     }
     

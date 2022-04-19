@@ -69,7 +69,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
         },
         date=1,
     ) # CommitCreation | 
-    source_metarange = "source_metarange_example" # str | Ths source metarange to commit. Branch must not have uncommitted changes. (optional)
+    source_metarange = "source_metarange_example" # str | The source metarange to commit. Branch must not have uncommitted changes. (optional)
 
     # example passing only required values which don't have defaults set
     try:
@@ -97,7 +97,7 @@ Name | Type | Description  | Notes
  **repository** | **str**|  |
  **branch** | **str**|  |
  **commit_creation** | [**CommitCreation**](CommitCreation.md)|  |
- **source_metarange** | **str**| Ths source metarange to commit. Branch must not have uncommitted changes. | [optional]
+ **source_metarange** | **str**| The source metarange to commit. Branch must not have uncommitted changes. | [optional]
 
 ### Return type
 
@@ -273,7 +273,6 @@ with lakefs_client.ApiClient(configuration) as api_client:
     api_instance = commits_api.CommitsApi(api_client)
     repository = "repository_example" # str | 
     branch = "branch_example" # str | 
-    source_metarange = "source_metarange_example" # str | Ths source metarange to commit. Branch must not have uncommitted changes. (optional)
     after = "after_example" # str | return items after this value (optional)
     amount = 100 # int | how many items to return (optional) if omitted the server will use the default value of 100
 
@@ -289,7 +288,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # and optional values
     try:
         # get commit log from branch. Deprecated: replaced by logCommits by passing branch name as ref 
-        api_response = api_instance.log_branch_commits(repository, branch, source_metarange=source_metarange, after=after, amount=amount)
+        api_response = api_instance.log_branch_commits(repository, branch, after=after, amount=amount)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling CommitsApi->log_branch_commits: %s\n" % e)
@@ -302,7 +301,6 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
  **branch** | **str**|  |
- **source_metarange** | **str**| Ths source metarange to commit. Branch must not have uncommitted changes. | [optional]
  **after** | **str**| return items after this value | [optional]
  **amount** | **int**| how many items to return | [optional] if omitted the server will use the default value of 100
 
