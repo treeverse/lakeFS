@@ -85,7 +85,7 @@ Stay up to date and get lakeFS support via:
 - Share your lakeFS experience and get support on [our Slack](https://lakefs.io/slack).
 - Follow us and join the conversation on [Twitter](https://twitter.com/lakeFS).
 - Learn from video tutorials on [our YouTube channel](https://lakefs.io/youtube).
-- Feel free [contact us](https://lakefs.io/contact-us/) about anything else.
+- Feel free to [contact us](https://lakefs.io/contact-us/) about anything else.
 
 ## More information
 
