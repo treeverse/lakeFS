@@ -17,10 +17,16 @@ func TestS3Walk(t *testing.T) {
 	const expectedNumObjs = 2100
 	numObjs := 0
 
-	store.Walk(context.Background(), "", IngestTestBucketPath, func(e store.ObjectStoreEntry) error {
+	walker, err := store.GetWalker(context.Background(), store.WalkerOptions{
+		S3EndpointURL: "",
+		StorageURI:    IngestTestBucketPath,
+	})
+	require.NoError(t, err)
+	err = walker.Walk(context.Background(), store.WalkOptions{}, func(e store.ObjectStoreEntry) error {
 		numObjs++
 		return nil
 	})
 
+	require.NoError(t, err)
 	require.Equal(t, expectedNumObjs, numObjs, "Wrong number of objects detected by Walk function")
 }

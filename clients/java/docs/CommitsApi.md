@@ -49,7 +49,7 @@ public class Example {
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | 
     CommitCreation commitCreation = new CommitCreation(); // CommitCreation | 
-    String sourceMetarange = "sourceMetarange_example"; // String | Ths source metarange to commit. Branch must not have unstaged changes.
+    String sourceMetarange = "sourceMetarange_example"; // String | Ths source metarange to commit. Branch must not have uncommitted changes.
     try {
       Commit result = apiInstance.commit(repository, branch, commitCreation, sourceMetarange);
       System.out.println(result);
@@ -71,7 +71,7 @@ Name | Type | Description  | Notes
  **repository** | **String**|  |
  **branch** | **String**|  |
  **commitCreation** | [**CommitCreation**](CommitCreation.md)|  |
- **sourceMetarange** | **String**| Ths source metarange to commit. Branch must not have unstaged changes. | [optional]
+ **sourceMetarange** | **String**| Ths source metarange to commit. Branch must not have uncommitted changes. | [optional]
 
 ### Return type
 
@@ -216,7 +216,7 @@ public class Example {
     CommitsApi apiInstance = new CommitsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | 
-    String sourceMetarange = "sourceMetarange_example"; // String | Ths source metarange to commit. Branch must not have unstaged changes.
+    String sourceMetarange = "sourceMetarange_example"; // String | Ths source metarange to commit. Branch must not have uncommitted changes.
     String after = "after_example"; // String | return items after this value
     Integer amount = 100; // Integer | how many items to return
     try {
@@ -239,7 +239,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **String**|  |
  **branch** | **String**|  |
- **sourceMetarange** | **String**| Ths source metarange to commit. Branch must not have unstaged changes. | [optional]
+ **sourceMetarange** | **String**| Ths source metarange to commit. Branch must not have uncommitted changes. | [optional]
  **after** | **String**| return items after this value | [optional]
  **amount** | **Integer**| how many items to return | [optional] [default to 100]
 

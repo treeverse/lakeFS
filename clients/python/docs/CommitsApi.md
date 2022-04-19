@@ -69,7 +69,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
         },
         date=1,
     ) # CommitCreation | 
-    source_metarange = "source_metarange_example" # str | Ths source metarange to commit. Branch must not have unstaged changes. (optional)
+    source_metarange = "source_metarange_example" # str | Ths source metarange to commit. Branch must not have uncommitted changes. (optional)
 
     # example passing only required values which don't have defaults set
     try:
@@ -97,7 +97,7 @@ Name | Type | Description  | Notes
  **repository** | **str**|  |
  **branch** | **str**|  |
  **commit_creation** | [**CommitCreation**](CommitCreation.md)|  |
- **source_metarange** | **str**| Ths source metarange to commit. Branch must not have unstaged changes. | [optional]
+ **source_metarange** | **str**| Ths source metarange to commit. Branch must not have uncommitted changes. | [optional]
 
 ### Return type
 
@@ -273,7 +273,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     api_instance = commits_api.CommitsApi(api_client)
     repository = "repository_example" # str | 
     branch = "branch_example" # str | 
-    source_metarange = "source_metarange_example" # str | Ths source metarange to commit. Branch must not have unstaged changes. (optional)
+    source_metarange = "source_metarange_example" # str | Ths source metarange to commit. Branch must not have uncommitted changes. (optional)
     after = "after_example" # str | return items after this value (optional)
     amount = 100 # int | how many items to return (optional) if omitted the server will use the default value of 100
 
@@ -302,7 +302,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
  **branch** | **str**|  |
- **source_metarange** | **str**| Ths source metarange to commit. Branch must not have unstaged changes. | [optional]
+ **source_metarange** | **str**| Ths source metarange to commit. Branch must not have uncommitted changes. | [optional]
  **after** | **str**| return items after this value | [optional]
  **amount** | **int**| how many items to return | [optional] if omitted the server will use the default value of 100
 

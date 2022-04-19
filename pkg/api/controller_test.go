@@ -493,7 +493,7 @@ func TestController_CommitHandler(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("commit non-existent commit", func(t *testing.T) {
-		resp, err := clt.CommitWithResponse(ctx, "foo1", "main", api.CommitJSONRequestBody{
+		resp, err := clt.CommitWithResponse(ctx, "foo1", "main", &api.CommitParams{}, api.CommitJSONRequestBody{
 			Message: "some message",
 		})
 		testutil.Must(t, err)
@@ -510,7 +510,7 @@ func TestController_CommitHandler(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, "foo1", onBlock(deps, "foo1"), "main")
 		testutil.MustDo(t, "create repo foo1", err)
 		testutil.MustDo(t, "commit bar on foo1", deps.catalog.CreateEntry(ctx, "foo1", "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
-		resp, err := clt.CommitWithResponse(ctx, "foo1", "main", api.CommitJSONRequestBody{
+		resp, err := clt.CommitWithResponse(ctx, "foo1", "main", &api.CommitParams{}, api.CommitJSONRequestBody{
 			Message: "some message",
 		})
 		verifyResponseOK(t, resp, err)
@@ -521,7 +521,7 @@ func TestController_CommitHandler(t *testing.T) {
 		testutil.MustDo(t, "create repo foo2", err)
 		testutil.MustDo(t, "commit bar on foo2", deps.catalog.CreateEntry(ctx, "foo2", "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
 		date := int64(1642626109)
-		resp, err := clt.CommitWithResponse(ctx, "foo2", "main", api.CommitJSONRequestBody{
+		resp, err := clt.CommitWithResponse(ctx, "foo2", "main", &api.CommitParams{}, api.CommitJSONRequestBody{
 			Message: "some message",
 			Date:    &date,
 		})
@@ -1896,7 +1896,7 @@ func TestController_ListRepositoryRuns(t *testing.T) {
 	uploadResp, err := uploadObjectHelper(t, ctx, clt, "_lakefs_actions/pre_commit.yaml", strings.NewReader(actionContent), "repo9", "main")
 	verifyResponseOK(t, uploadResp, err)
 	// commit
-	respCommit, err := clt.CommitWithResponse(ctx, "repo9", "main", api.CommitJSONRequestBody{
+	respCommit, err := clt.CommitWithResponse(ctx, "repo9", "main", &api.CommitParams{}, api.CommitJSONRequestBody{
 		Message: "pre-commit action",
 	})
 	verifyResponseOK(t, respCommit, err)
@@ -1913,7 +1913,7 @@ func TestController_ListRepositoryRuns(t *testing.T) {
 		content := fmt.Sprintf("content-%d", i)
 		uploadResp, err := uploadObjectHelper(t, ctx, clt, content, strings.NewReader(content), "repo9", "work")
 		verifyResponseOK(t, uploadResp, err)
-		respCommit, err := clt.CommitWithResponse(ctx, "repo9", "work", api.CommitJSONRequestBody{Message: content})
+		respCommit, err := clt.CommitWithResponse(ctx, "repo9", "work", &api.CommitParams{}, api.CommitJSONRequestBody{Message: content})
 		verifyResponseOK(t, respCommit, err)
 		commitIDs = append(commitIDs, respCommit.JSON201.Id)
 	}
@@ -1977,7 +1977,7 @@ func TestController_MergeDiffWithParent(t *testing.T) {
 	resp, err := uploadObjectHelper(t, ctx, clt, "file1", strings.NewReader(content), repoName, "work")
 	verifyResponseOK(t, resp, err)
 
-	commitResp, err := clt.CommitWithResponse(ctx, repoName, "work", api.CommitJSONRequestBody{Message: "file 1 commit to work"})
+	commitResp, err := clt.CommitWithResponse(ctx, repoName, "work", &api.CommitParams{}, api.CommitJSONRequestBody{Message: "file 1 commit to work"})
 	verifyResponseOK(t, commitResp, err)
 
 	mergeResp, err := clt.MergeIntoBranchWithResponse(ctx, repoName, "work", "main", api.MergeIntoBranchJSONRequestBody{

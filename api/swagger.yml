@@ -2216,7 +2216,7 @@ paths:
       - in: query
         name: source_metarange
         required: false
-        description: Ths source metarange to commit. Branch must not have unstaged changes.
+        description: Ths source metarange to commit. Branch must not have uncommitted changes.
         schema:
           type: string
     get:

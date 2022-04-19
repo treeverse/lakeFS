@@ -39,7 +39,7 @@ func TestSanityAPI(t *testing.T) {
 	require.Len(t, entries, numOfFiles, "repository should have files")
 
 	log.Debug("commit changes")
-	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, api.CommitJSONRequestBody{
+	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &api.CommitParams{}, api.CommitJSONRequestBody{
 		Message: "first commit",
 	})
 	require.NoError(t, err, "initial commit")
@@ -113,7 +113,7 @@ func TestSanityAPI(t *testing.T) {
 	require.Len(t, diffResp.JSON200.Results, 0, "no changes should be found as we didn't commit anything")
 
 	log.Debug("branch1 - commit changes")
-	commitResp, err = client.CommitWithResponse(ctx, repo, "branch1", api.CommitJSONRequestBody{
+	commitResp, err = client.CommitWithResponse(ctx, repo, "branch1", &api.CommitParams{}, api.CommitJSONRequestBody{
 		Message: "3 changes",
 	})
 	require.NoError(t, err, "commit 3 changes")

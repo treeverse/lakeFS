@@ -62,7 +62,7 @@ public class CommitsApi {
      * @param repository  (required)
      * @param branch  (required)
      * @param commitCreation  (required)
-     * @param sourceMetarange Ths source metarange to commit. Branch must not have unstaged changes. (optional)
+     * @param sourceMetarange Ths source metarange to commit. Branch must not have uncommitted changes. (optional)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -143,7 +143,7 @@ public class CommitsApi {
      * @param repository  (required)
      * @param branch  (required)
      * @param commitCreation  (required)
-     * @param sourceMetarange Ths source metarange to commit. Branch must not have unstaged changes. (optional)
+     * @param sourceMetarange Ths source metarange to commit. Branch must not have uncommitted changes. (optional)
      * @return Commit
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -168,7 +168,7 @@ public class CommitsApi {
      * @param repository  (required)
      * @param branch  (required)
      * @param commitCreation  (required)
-     * @param sourceMetarange Ths source metarange to commit. Branch must not have unstaged changes. (optional)
+     * @param sourceMetarange Ths source metarange to commit. Branch must not have uncommitted changes. (optional)
      * @return ApiResponse&lt;Commit&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -194,7 +194,7 @@ public class CommitsApi {
      * @param repository  (required)
      * @param branch  (required)
      * @param commitCreation  (required)
-     * @param sourceMetarange Ths source metarange to commit. Branch must not have unstaged changes. (optional)
+     * @param sourceMetarange Ths source metarange to commit. Branch must not have uncommitted changes. (optional)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -354,7 +354,7 @@ public class CommitsApi {
      * Build call for logBranchCommits
      * @param repository  (required)
      * @param branch  (required)
-     * @param sourceMetarange Ths source metarange to commit. Branch must not have unstaged changes. (optional)
+     * @param sourceMetarange Ths source metarange to commit. Branch must not have uncommitted changes. (optional)
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
      * @param _callback Callback for upload/download progress
@@ -440,7 +440,7 @@ public class CommitsApi {
      * 
      * @param repository  (required)
      * @param branch  (required)
-     * @param sourceMetarange Ths source metarange to commit. Branch must not have unstaged changes. (optional)
+     * @param sourceMetarange Ths source metarange to commit. Branch must not have uncommitted changes. (optional)
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
      * @return CommitList
@@ -466,7 +466,7 @@ public class CommitsApi {
      * 
      * @param repository  (required)
      * @param branch  (required)
-     * @param sourceMetarange Ths source metarange to commit. Branch must not have unstaged changes. (optional)
+     * @param sourceMetarange Ths source metarange to commit. Branch must not have uncommitted changes. (optional)
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
      * @return ApiResponse&lt;CommitList&gt;
@@ -493,7 +493,7 @@ public class CommitsApi {
      * 
      * @param repository  (required)
      * @param branch  (required)
-     * @param sourceMetarange Ths source metarange to commit. Branch must not have unstaged changes. (optional)
+     * @param sourceMetarange Ths source metarange to commit. Branch must not have uncommitted changes. (optional)
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
      * @param _callback The callback to be executed when the API call finishes

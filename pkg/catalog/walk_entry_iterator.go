@@ -35,7 +35,7 @@ var errItClosed = errors.New("iterator closed")
 
 func newWalkEntryIterator(ctx context.Context, fromSourceURI, prepend, after, continuationToken string) (*walkEntryIterator, error) {
 	if prepend != "" && prepend[len(prepend)-1:] != "/" {
-		prepend = prepend + "/"
+		prepend += "/"
 	}
 
 	it := walkEntryIterator{
