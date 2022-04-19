@@ -8,7 +8,7 @@ High level overview of the interface described in https://github.com/treeverse/l
 High level API described in the kv proposal, we should consider taking the DynamoDB API to address the way we communicate `set-if` functionality while marshal the same value without fetching data first.
 Key/value format can be done using ProtoBuf / JSON - discussion and information will be part of a design document.
 Each data currently stored using 'db' in a table will be migrated to a key value format. This is the first migration that will be supported on postgres. When all data is migrated from the current tables to kv, the migration will support data format changes inside the key/value.
-Migrating from postgres to alternative implementation will not be part of this implementaion as it will require to dump/resource of all data stored into the kv, not just ref store.
+Migrating from postgres to alternative implementation will not be part of this implementation as it will require to dump/restore of all data stored into the kv, not just ref store.
 Key will be based on the identity and lookup properties of the data.
 Value will encode the data with additional version information to enable future data migration.
 
