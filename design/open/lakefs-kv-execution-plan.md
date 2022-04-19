@@ -70,5 +70,6 @@ The folloiwng steps will be required for each pacakge that uses the 'db' layer:
 
 - Implement adapter k/v for Postgres. Unit test. Performance test.
 - Implement authorization, actions and multi part using kv. Include feature flag to control which implementation is active and migrate information to move from db to kv version. Unit test.
+- Reimplement diagnostics similar functionality over kv. Current implementation perform several queries over the database to report information that may help us diagnose issues. We should apply the same queries or implementation specific queries that will help identify issues in the underlying storage.
 - Implement graveler staging over kv, using kv to manage branch locking for commit and merge. Feature flag. Migrate information from db to kv for graveler (commit log, staging, ref-dump and restore). Unit test. Performance test.
 - Integration testing. Remove old implementation.
