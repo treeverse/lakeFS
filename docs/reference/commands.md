@@ -1147,7 +1147,14 @@ Create delete and list branches within a lakeFS repository
 Create a new branch in a repository
 
 ```
-lakectl branch create <ref uri> [flags]
+lakectl branch create <branch uri> -s <source ref uri> [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl branch create lakefs://example-repo/new-branch -s lakefs://example-repo/main
 ```
 
 #### Options
@@ -1166,6 +1173,13 @@ Delete a branch in a repository, along with its uncommitted changes (CAREFUL)
 
 ```
 lakectl branch delete <branch uri> [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl branch delete lakefs://example-repo/example-branch
 ```
 
 #### Options
@@ -1229,18 +1243,25 @@ lakectl branch list lakefs://<repository>
 
 ### lakectl branch reset
 
-Reset changes to specified commit, or reset uncommitted changes - all changes, or by path
+Reset uncommitted changes - all of them, or by path
 
 #### Synopsis
 {:.no_toc}
 
 reset changes.  There are four different ways to reset changes:
   1. reset all uncommitted changes - reset lakefs://myrepo/main 
-  2. reset uncommitted changes under specific path -	reset lakefs://myrepo/main --prefix path
+  2. reset uncommitted changes under specific path - reset lakefs://myrepo/main --prefix path
   3. reset uncommitted changes for specific object - reset lakefs://myrepo/main --object path
 
 ```
-lakectl branch reset <branch uri> [flags]
+lakectl branch reset <branch uri> [--prefix|--object] [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl branch reset lakefs://example-repo/example-branch
 ```
 
 #### Options
@@ -1295,6 +1316,13 @@ Show branch latest commit reference
 
 ```
 lakectl branch show <branch uri> [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl branch show lakefs://example-repo/example-branch
 ```
 
 #### Options

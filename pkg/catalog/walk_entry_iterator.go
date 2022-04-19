@@ -33,13 +33,16 @@ type EntryWithMarker struct {
 // used to determined the reason for the end of the walk
 var errItClosed = errors.New("iterator closed")
 
+// buffer size of the buffer between reading entries from the blockstore Walk and passing it on
+const bufferSize = 100
+
 func newWalkEntryIterator(ctx context.Context, fromSourceURI, prepend, after, continuationToken string) (*walkEntryIterator, error) {
 	if prepend != "" && prepend[len(prepend)-1:] != "/" {
 		prepend += "/"
 	}
 
 	it := walkEntryIterator{
-		entries: make(chan EntryWithMarker, 100),
+		entries: make(chan EntryWithMarker, bufferSize),
 
 		done:   make(chan bool),
 		closed: atomic.NewBool(false),
