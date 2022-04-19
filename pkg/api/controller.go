@@ -864,7 +864,7 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body Cre
 	_, err := c.Auth.CreateUser(ctx, u)
 
 	if handleAPIError(w, err) {
-		c.Logger.WithError(err).WithField("email", u.ID).Warn("failed creating user")
+		c.Logger.WithError(err).WithField("user ID", u.ID).Warn("failed creating user")
 		return
 	}
 
