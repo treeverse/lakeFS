@@ -133,7 +133,7 @@ lazy val s3UploadSettings = Seq(
     (assemblyOutputPath in assembly).value ->
       s"${name.value}/${version.value}/${(assemblyJarName in assembly).value}"
   ),
-  s3Upload / s3Host := "bobotreeverse-clients-us-east.s3.amazonaws.com",
+  s3Upload / s3Host := "treeverse-clients-us-east.s3.amazonaws.com",
   s3Upload / s3Progress := true
 )
 

@@ -13,9 +13,10 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.Callable
 
 private object ApiClient {
-  def translateS3String(uri: String): String =
-    raw"^s3:/".r.replaceAllIn(uri, "s3a")
-
+  /**
+   * Translate the protocol of uri from "standard"-ish "s3" to "s3a", to
+   * trigger processing by S3AFileSystem.
+   */
   def translateS3(uri: URI): URI =
     if (uri.getScheme == "s3")
       new URI("s3a",
@@ -69,6 +70,10 @@ class ApiClient(apiUrl: String, accessKey: String, secretKey: String) {
     )
   }
 
+  /**
+   * Query lakeFS for a URL to the metarange of commitID of repoName and
+   * translate that URL to use an appropriate Hadoop FileSystem.
+   */
   def getMetaRangeURL(repoName: String, commitID: String): String = {
     val commit = commitsApi.getCommit(repoName, commitID)
     val metaRangeID = commit.getMetaRangeId
@@ -79,6 +84,10 @@ class ApiClient(apiUrl: String, accessKey: String, secretKey: String) {
     } else ""
   }
 
+  /**
+   * Query lakeFS for a URL to the range of rangeID of repoName and
+   * translate that URL to use an appropriate Hadoop FileSystem.
+   */
   def getRangeURL(repoName: String, rangeID: String): String = {
     val range = metadataApi.getRange(repoName, rangeID)
     val location = range.getLocation

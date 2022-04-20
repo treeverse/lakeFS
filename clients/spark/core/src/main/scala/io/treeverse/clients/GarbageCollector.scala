@@ -31,7 +31,7 @@ object GarbageCollector {
   def getHadoopConfigurationValues(hc: Configuration, prefix: String): ConfMap =
     hc.iterator.asScala
       .filter(_.getKey.startsWith(prefix))
-      .map(e => (e.getKey, e.getValue))
+      .map(entry => (entry.getKey, entry.getValue))
       .toList
       .asInstanceOf[ConfMap]
 
@@ -60,7 +60,7 @@ object GarbageCollector {
     if (location == "") Set()
     else
       SSTableReader
-        .forMetaRange(configurationFromValues(hcValues), ApiClient.translateS3String(location))
+        .forMetaRange(configurationFromValues(hcValues), location)
         .newIterator()
         .map(range =>
           (new String(range.id), range.message.minKey.toByteArray, range.message.maxKey.toByteArray)
@@ -98,7 +98,7 @@ object GarbageCollector {
     val location =
       new ApiClient(apiConf.apiURL, apiConf.accessKey, apiConf.secretKey).getRangeURL(repo, rangeID)
     SSTableReader
-      .forRange(configurationFromValues(hcValues), ApiClient.translateS3String(location))
+      .forRange(configurationFromValues(hcValues), location)
       .newIterator()
       .map(a => a.message.address)
       .toSeq
@@ -117,7 +117,7 @@ object GarbageCollector {
     val location =
       new ApiClient(apiConf.apiURL, apiConf.accessKey, apiConf.secretKey).getRangeURL(repo, rangeID)
     SSTableReader
-      .forRange(configurationFromValues(hcValues), ApiClient.translateS3String(location))
+      .forRange(configurationFromValues(hcValues), location)
       .newIterator()
       .map(a =>
         (
@@ -288,6 +288,11 @@ object GarbageCollector {
       "" //args(2) // TODO(Guys): get previous runID from arguments or from storage
     val hc = spark.sparkContext.hadoopConfiguration
 
+    // Spark operators will need to generate configured FileSystems to read
+    // ranges and metaranges.  They will not have a JobContext to let them
+    // do that.  Transmit (all) Hadoop filesystem configuration values to
+    // let them generate a (close-enough) Hadoop configuration to build the
+    // needed FileSystems.
     val hcValues = spark.sparkContext.broadcast(getHadoopConfigurationValues(hc, "fs."))
 
     val apiURL = hc.get(LAKEFS_CONF_API_URL_KEY)
