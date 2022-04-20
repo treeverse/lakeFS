@@ -3106,6 +3106,7 @@ func (c *Controller) ForgotPassword(w http.ResponseWriter, r *http.Request, body
 	if err != nil {
 		c.Logger.WithError(err).WithField("email", body.Email).Debug("failed sending reset password email")
 		writeError(w, http.StatusBadRequest, "bad request")
+		return
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
