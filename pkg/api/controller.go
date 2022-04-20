@@ -3078,11 +3078,7 @@ func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Controller) resetPasswordRequest(ctx context.Context, email string) error {
-	addr, err := mail.ParseAddress(email)
-	if err != nil {
-		return err
-	}
-	user, err := c.Auth.GetUserByEmail(ctx, addr.Address)
+	user, err := c.Auth.GetUserByEmail(ctx, email)
 	if err != nil {
 		return err
 	}
@@ -3102,11 +3098,14 @@ func (c *Controller) resetPasswordRequest(ctx context.Context, email string) err
 }
 
 func (c *Controller) ForgotPassword(w http.ResponseWriter, r *http.Request, body ForgotPasswordJSONRequestBody) {
-	err := c.resetPasswordRequest(r.Context(), body.Email)
+	addr, err := mail.ParseAddress(body.Email)
 	if err != nil {
-		c.Logger.WithError(err).WithField("email", body.Email).Debug("failed sending reset password email")
 		writeError(w, http.StatusBadRequest, "bad request")
 		return
+	}
+	err = c.resetPasswordRequest(r.Context(), addr.Address)
+	if err != nil {
+		c.Logger.WithError(err).WithField("email", body.Email).Debug("failed sending reset password email")
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
