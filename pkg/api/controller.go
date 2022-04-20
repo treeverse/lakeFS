@@ -837,7 +837,7 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body Cre
 	if invite {
 		addr, err := mail.ParseAddress(body.Id)
 		if err != nil {
-			c.Logger.WithError(err).WithField("userID", id).Warn("failed parsing email")
+			c.Logger.WithError(err).WithField("user_id", id).Warn("failed parsing email")
 			writeError(w, http.StatusBadRequest, "Invalid email format")
 			return
 		}
@@ -864,7 +864,7 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body Cre
 	_, err := c.Auth.CreateUser(ctx, u)
 
 	if handleAPIError(w, err) {
-		c.Logger.WithError(err).WithField("user ID", u.ID).Warn("failed creating user")
+		c.Logger.WithError(err).WithField("user_id", u.ID).Warn("failed creating user")
 		return
 	}
 
@@ -3103,9 +3103,8 @@ func (c *Controller) resetPasswordRequest(ctx context.Context, email string) err
 
 func (c *Controller) ForgotPassword(w http.ResponseWriter, r *http.Request, body ForgotPasswordJSONRequestBody) {
 	err := c.resetPasswordRequest(r.Context(), body.Email)
-	if handleAPIError(w, err) {
+	if err != nil {
 		c.Logger.WithError(err).WithField("email", body.Email).Debug("failed sending reset password email")
-		return
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
