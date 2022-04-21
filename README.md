@@ -1,3 +1,4 @@
+This is a dummy PR for testing.
 <p align="center">
   <img src="docs/assets/img/logo_large.png"/>
 </p>
