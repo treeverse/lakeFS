@@ -3100,7 +3100,7 @@ func (c *Controller) resetPasswordRequest(ctx context.Context, email string) err
 func (c *Controller) ForgotPassword(w http.ResponseWriter, r *http.Request, body ForgotPasswordJSONRequestBody) {
 	addr, err := mail.ParseAddress(body.Email)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "bad request")
+		writeError(w, http.StatusBadRequest, "invalid email")
 		return
 	}
 	err = c.resetPasswordRequest(r.Context(), addr.Address)
