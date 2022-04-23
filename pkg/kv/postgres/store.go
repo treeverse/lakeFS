@@ -16,6 +16,7 @@ type Driver struct{}
 type Store struct {
 	Pool   *pgxpool.Pool
 	Params *Params
+	closed bool
 }
 
 type Entries struct {
@@ -192,7 +193,11 @@ func (s *Store) Scan(ctx context.Context, start []byte) (kv.Entries, error) {
 }
 
 func (s *Store) Close() {
+	if s.closed {
+		return
+	}
 	s.Pool.Close()
+	s.closed = true
 }
 
 // Next read the next key/value on any error entry will be nil, err will be set by trying to scan the results
