@@ -18,35 +18,29 @@ type MockStore struct {
 	DSN    string
 }
 
-func (m *MockStore) Get(ctx context.Context, key []byte) ([]byte, error) {
-	//TODO implement me
-	panic("implement me")
+var errNotImplemented = errors.New("not implemented")
+
+func (m *MockStore) Get(_ context.Context, _ []byte) ([]byte, error) {
+	return nil, errNotImplemented
 }
 
-func (m *MockStore) Set(ctx context.Context, key, value []byte) error {
-	//TODO implement me
-	panic("implement me")
+func (m *MockStore) Set(_ context.Context, _, _ []byte) error {
+	return errNotImplemented
 }
 
-func (m *MockStore) SetIf(ctx context.Context, key, value, valuePredicate []byte) error {
-	//TODO implement me
-	panic("implement me")
+func (m *MockStore) SetIf(_ context.Context, _, _, _ []byte) error {
+	return errNotImplemented
 }
 
-func (m *MockStore) Delete(ctx context.Context, key []byte) error {
-	//TODO implement me
-	panic("implement me")
+func (m *MockStore) Delete(_ context.Context, _ []byte) error {
+	return errNotImplemented
 }
 
-func (m *MockStore) Scan(ctx context.Context, start []byte) (kv.Entries, error) {
-	//TODO implement me
-	panic("implement me")
+func (m *MockStore) Scan(_ context.Context, _ []byte) (kv.Entries, error) {
+	return nil, errNotImplemented
 }
 
-func (m *MockStore) Close() {
-	//TODO implement me
-	panic("implement me")
-}
+func (m *MockStore) Close() {}
 
 func (m *MockDriver) Open(_ context.Context, dsn string) (kv.Store, error) {
 	if m.Err != nil {
@@ -60,6 +54,7 @@ func (m *MockDriver) Open(_ context.Context, dsn string) (kv.Store, error) {
 
 func TestRegister(t *testing.T) {
 	ctx := context.Background()
+
 	t.Run("open", func(t *testing.T) {
 		md := &MockDriver{Name: "md"}
 		kv.Register("md", md)
@@ -81,6 +76,7 @@ func TestRegister(t *testing.T) {
 			t.Fatalf("Open unknown driver err=%v, expected=%s", err, kv.ErrUnknownDriver)
 		}
 	})
+
 	t.Run("no_driver", func(t *testing.T) {
 		defer func() {
 			if r := recover(); r == nil {
@@ -89,6 +85,7 @@ func TestRegister(t *testing.T) {
 		}()
 		kv.Register("nil", nil)
 	})
+
 	t.Run("no_name", func(t *testing.T) {
 		defer func() {
 			if r := recover(); r == nil {
