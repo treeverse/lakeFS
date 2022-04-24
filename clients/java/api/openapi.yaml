@@ -204,12 +204,32 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      security:
-      - cookie_auth: []
+      security: []
       summary: forgot password request initiates the password reset process
       tags:
       - auth
       x-contentType: application/json
+      x-accepts: application/json
+  /auth/capabilities:
+    get:
+      operationId: getAuthCapabilities
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthCapabilities'
+          description: auth capabilities
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      security: []
+      summary: list authentication capabilities supported
+      tags:
+      - auth
       x-accepts: application/json
   /auth/users:
     get:
@@ -4975,10 +4995,13 @@ components:
       type: object
     UserCreation:
       example:
+        invite_user: true
         id: id
       properties:
         id:
           type: string
+        invite_user:
+          type: boolean
       required:
       - id
       type: object
@@ -5135,6 +5158,16 @@ components:
       required:
       - pagination
       - results
+      type: object
+    AuthCapabilities:
+      example:
+        invite_user: true
+        forgot_password: true
+      properties:
+        invite_user:
+          type: boolean
+        forgot_password:
+          type: boolean
       type: object
     UserList:
       example:

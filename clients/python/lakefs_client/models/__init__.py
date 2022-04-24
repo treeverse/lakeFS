@@ -12,6 +12,7 @@
 from lakefs_client.model.access_key_credentials import AccessKeyCredentials
 from lakefs_client.model.action_run import ActionRun
 from lakefs_client.model.action_run_list import ActionRunList
+from lakefs_client.model.auth_capabilities import AuthCapabilities
 from lakefs_client.model.authentication_token import AuthenticationToken
 from lakefs_client.model.branch_creation import BranchCreation
 from lakefs_client.model.branch_protection_rule import BranchProtectionRule

@@ -6,6 +6,7 @@ docs/ActionRun.md
 docs/ActionRunList.md
 docs/ActionsApi.md
 docs/AuthApi.md
+docs/AuthCapabilities.md
 docs/AuthenticationToken.md
 docs/BranchCreation.md
 docs/BranchProtectionRule.md
@@ -100,6 +101,7 @@ lakefs_client/model/__init__.py
 lakefs_client/model/access_key_credentials.py
 lakefs_client/model/action_run.py
 lakefs_client/model/action_run_list.py
+lakefs_client/model/auth_capabilities.py
 lakefs_client/model/authentication_token.py
 lakefs_client/model/branch_creation.py
 lakefs_client/model/branch_protection_rule.py
@@ -173,6 +175,7 @@ test/test_action_run.py
 test/test_action_run_list.py
 test/test_actions_api.py
 test/test_auth_api.py
+test/test_auth_capabilities.py
 test/test_authentication_token.py
 test/test_branch_creation.py
 test/test_branch_protection_rule.py
