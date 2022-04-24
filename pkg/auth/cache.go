@@ -14,7 +14,7 @@ type UserPoliciesSetFn func() ([]*model.Policy, error)
 type Cache interface {
 	GetCredential(accessKeyID string, setFn CredentialSetFn) (*model.Credential, error)
 	GetUser(username string, setFn UserSetFn) (*model.User, error)
-	GetUserByID(userID int, setFn UserSetFn) (*model.User, error)
+	GetUserByID(userID int64, setFn UserSetFn) (*model.User, error)
 	GetUserPolicies(userID string, setFn UserPoliciesSetFn) ([]*model.Policy, error)
 }
 
@@ -49,7 +49,7 @@ func (c *LRUCache) GetUser(username string, setFn UserSetFn) (*model.User, error
 	return v.(*model.User), nil
 }
 
-func (c *LRUCache) GetUserByID(userID int, setFn UserSetFn) (*model.User, error) {
+func (c *LRUCache) GetUserByID(userID int64, setFn UserSetFn) (*model.User, error) {
 	v, err := c.userCache.GetOrSet(userID, func() (interface{}, error) { return setFn() })
 	if err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func (d *DummyCache) GetUser(username string, setFn UserSetFn) (*model.User, err
 	return setFn()
 }
 
-func (d *DummyCache) GetUserByID(userID int, setFn UserSetFn) (*model.User, error) {
+func (d *DummyCache) GetUserByID(userID int64, setFn UserSetFn) (*model.User, error) {
 	return setFn()
 }
 

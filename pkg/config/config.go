@@ -485,3 +485,15 @@ func (c *Config) GetSecurityAuditCheckInterval() time.Duration {
 func (c *Config) GetSecurityAuditCheckURL() string {
 	return c.values.Security.AuditCheckURL
 }
+
+func (c *Config) GetAuthAPIEndpoint() string {
+	return c.values.Auth.API.Endpoint
+}
+
+func (c *Config) IsAuthTypeAPI() bool {
+	return c.values.Auth.API.Endpoint != ""
+}
+
+func (c *Config) GetAuthAPIToken() string {
+	return c.values.Auth.API.Token
+}

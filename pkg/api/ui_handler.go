@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"net/http"
@@ -15,42 +16,18 @@ import (
 	"github.com/treeverse/lakefs/webui"
 )
 
-// NotFoundResponseWriter handle page not found to redirect later the response
-// source: https://stackoverflow.com/questions/47285119/how-to-custom-handle-a-file-not-being-found-when-using-go-static-file-server
-type NotFoundResponseWriter struct {
-	http.ResponseWriter
-	Status int
-}
-
-func (w *NotFoundResponseWriter) WriteHeader(status int) {
-	w.Status = status
-	if status != http.StatusNotFound {
-		w.ResponseWriter.WriteHeader(status)
-	}
-}
-
-func (w *NotFoundResponseWriter) Write(p []byte) (int, error) {
-	if w.Status != http.StatusNotFound {
-		return w.ResponseWriter.Write(p)
-	}
-	// Lie that we have successfully written it
-	return len(p), nil
-}
-
 func NewUIHandler(gatewayDomains []string) http.Handler {
 	content, err := fs.Sub(webui.Content, "dist")
 	if err != nil {
 		// embedded UI content is missing
 		panic(err)
 	}
-	nocacheContent := middleware.NoCache(
-		http.StripPrefix("/",
-			http.FileServer(
-				http.FS(content))))
-	return NewHandlerWithDefault(nocacheContent, gatewayDomains)
+	fileSystem := http.FS(content)
+	nocacheContent := middleware.NoCache(http.StripPrefix("/", http.FileServer(fileSystem)))
+	return NewHandlerWithDefault(fileSystem, nocacheContent, gatewayDomains)
 }
 
-func NewHandlerWithDefault(handler http.Handler, gatewayDomains []string) http.Handler {
+func NewHandlerWithDefault(fileSystem http.FileSystem, handler http.Handler, gatewayDomains []string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if isGatewayRequest(r) {
 			// s3 signed request reaching the ui handler, return an error response instead of the default path
@@ -61,6 +38,13 @@ func NewHandlerWithDefault(handler http.Handler, gatewayDomains []string) http.H
 			return
 		}
 
+		// serve root content in case of file not found
+		// the client side react browser router handles the rendering
+		_, err := fileSystem.Open(r.URL.Path)
+		if errors.Is(err, fs.ErrNotExist) {
+			r.URL.Path = "/"
+		}
+
 		// consistent content-type
 		contentType := gomime.TypeByExtension(filepath.Ext(r.URL.Path))
 		if contentType != "" {
@@ -68,13 +52,7 @@ func NewHandlerWithDefault(handler http.Handler, gatewayDomains []string) http.H
 		}
 
 		// handle request, capture page not found for redirect later
-		notFoundWriter := &NotFoundResponseWriter{ResponseWriter: w}
-		handler.ServeHTTP(notFoundWriter, r)
-
-		// redirect to root on page not found
-		if notFoundWriter.Status == http.StatusNotFound {
-			http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
-		}
+		handler.ServeHTTP(w, r)
 	})
 }
 

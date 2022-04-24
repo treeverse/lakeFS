@@ -52,6 +52,7 @@ const RepositoryPage = () => {
             <Route path="/repositories/:repoId/settings/branches">
                 <RepositorySettingsBranchesPage/>
             </Route>
+            <Redirect from="/repositories/:repoId" to="/repositories/:repoId/objects" />
         </Switch>
     )
 };

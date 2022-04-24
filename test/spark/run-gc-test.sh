@@ -79,9 +79,9 @@ validate_gc_job() {
     if [[ ${days_ago} -gt -1 ]]; then
       local branch_name=$(echo ${branch_props} | jq -r '.branch_name')
       for location in \
-        lakefs://${repo}/${branch_name}/not_deleted_file1 \
-        lakefs://${repo}/${branch_name}/not_deleted_file2 \
-        lakefs://${repo}/${branch_name}/not_deleted_file3
+        lakefs://${repo}/main/not_deleted_file1 \
+        lakefs://${repo}/main/not_deleted_file2 \
+        lakefs://${repo}/main/not_deleted_file3
       do
         if ! run_lakectl fs cat ${location} > /dev/null; then
           echo "expected ${location} to exist"

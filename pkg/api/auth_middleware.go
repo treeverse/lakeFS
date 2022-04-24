@@ -129,7 +129,7 @@ func userByToken(ctx context.Context, logger logging.Logger, authService auth.Se
 	}
 
 	const base = 10
-	const bitSize = 32
+	const bitSize = 64
 	id, err := strconv.ParseInt(claims.Subject, base, bitSize)
 	if err != nil {
 		logger.WithFields(logging.Fields{
@@ -138,7 +138,7 @@ func userByToken(ctx context.Context, logger logging.Logger, authService auth.Se
 		}).Info("could not parse user ID on token")
 		return nil, ErrAuthenticatingRequest
 	}
-	userData, err := authService.GetUserByID(ctx, int(id))
+	userData, err := authService.GetUserByID(ctx, id)
 	if err != nil {
 		logger.WithFields(logging.Fields{
 			"token_id": claims.Id,
