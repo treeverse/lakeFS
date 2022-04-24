@@ -1,47 +1,8 @@
 package config
 
 import (
-	"reflect"
-	"strings"
 	"time"
 )
-
-// Strings is a []string that mapstructure can deserialize from a single string or from a list
-// of strings.
-type Strings []string
-
-var (
-	ourStringsType  = reflect.TypeOf(Strings{})
-	stringType      = reflect.TypeOf("")
-	stringSliceType = reflect.TypeOf([]string{})
-)
-
-// decodeStrings is a mapstructure.HookFuncType that decodes a single string value or a slice
-// of strings into Strings.
-func DecodeStrings(fromValue reflect.Value, toValue reflect.Value) (interface{}, error) {
-	if toValue.Type() != ourStringsType {
-		return fromValue.Interface(), nil
-	}
-	if fromValue.Type() == stringSliceType {
-		return Strings(fromValue.Interface().([]string)), nil
-	}
-	if fromValue.Type() == stringType {
-		return Strings(strings.Split(fromValue.String(), ",")), nil
-	}
-	return fromValue.Interface(), nil
-}
-
-type SecureString string
-
-// String returns an elided version.  It is safe to call for logging.
-func (SecureString) String() string {
-	return "[SECRET]"
-}
-
-// SecureValue returns the actual value of s as a string.
-func (s SecureString) SecureValue() string {
-	return string(s)
-}
 
 // LDAP holds configuration for authenticating on an LDAP server.
 type LDAP struct {
