@@ -839,9 +839,7 @@ class AuthApi(object):
         self.forgot_password_endpoint = _Endpoint(
             settings={
                 'response_type': None,
-                'auth': [
-                    'cookie_auth'
-                ],
+                'auth': [],
                 'endpoint_path': '/auth/password/forgot',
                 'operation_id': 'forgot_password',
                 'http_method': 'POST',
@@ -891,11 +889,7 @@ class AuthApi(object):
         self.get_auth_capabilities_endpoint = _Endpoint(
             settings={
                 'response_type': (AuthCapabilities,),
-                'auth': [
-                    'basic_auth',
-                    'cookie_auth',
-                    'jwt_token'
-                ],
+                'auth': [],
                 'endpoint_path': '/auth/capabilities',
                 'operation_id': 'get_auth_capabilities',
                 'http_method': 'GET',

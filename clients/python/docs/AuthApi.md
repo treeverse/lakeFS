@@ -1363,7 +1363,6 @@ forgot password request initiates the password reset process
 
 ### Example
 
-* Api Key Authentication (cookie_auth):
 
 ```python
 import time
@@ -1378,19 +1377,9 @@ configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
-# The client must configure the authentication and authorization parameters
-# in accordance with the API server security policy.
-# Examples for each auth method are provided below, use the example that
-# satisfies your auth use case.
-
-# Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     forgot_password_request = ForgotPasswordRequest(
@@ -1418,7 +1407,7 @@ void (empty response body)
 
 ### Authorization
 
-[cookie_auth](../README.md#cookie_auth)
+No authorization required
 
 ### HTTP request headers
 
@@ -1443,9 +1432,6 @@ list authentication capabilities supported
 
 ### Example
 
-* Basic Authentication (basic_auth):
-* Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
 
 ```python
 import time
@@ -1460,30 +1446,9 @@ configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
-# The client must configure the authentication and authorization parameters
-# in accordance with the API server security policy.
-# Examples for each auth method are provided below, use the example that
-# satisfies your auth use case.
-
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
-
-# Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
 
 # Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
 
@@ -1506,7 +1471,7 @@ This endpoint does not need any parameter.
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
+No authorization required
 
 ### HTTP request headers
 

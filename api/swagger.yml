@@ -1124,8 +1124,7 @@ paths:
           - auth
         operationId: forgotPassword
         summary: forgot password request initiates the password reset process
-        security:
-          - cookie_auth: []
+        security: []
         requestBody:
           required: true
           content:
@@ -1150,6 +1149,7 @@ paths:
         - auth
       operationId: getAuthCapabilities
       summary: list authentication capabilities supported
+      security: []
       responses:
         200:
           description: auth capabilities
