@@ -8,6 +8,7 @@ import (
 
 	"github.com/ory/dockertest/v3"
 
+	_ "github.com/treeverse/lakefs/pkg/kv/mem"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
