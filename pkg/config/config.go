@@ -497,3 +497,7 @@ func (c *Config) IsAuthTypeAPI() bool {
 func (c *Config) GetAuthAPIToken() string {
 	return c.values.Auth.API.Token
 }
+
+func (c *Config) GetCookieDomain() string {
+	return c.values.Auth.CookieDomain
+}

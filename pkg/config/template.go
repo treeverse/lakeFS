@@ -111,7 +111,8 @@ type configuration struct {
 			Endpoint string
 			Token    string
 		}
-		LDAP *LDAP
+		LDAP         *LDAP
+		CookieDomain string `mapstructure:"cookie_domain"`
 	}
 	Blockstore struct {
 		Type                   string `validate:"required"`
