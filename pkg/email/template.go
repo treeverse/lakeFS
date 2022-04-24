@@ -42,17 +42,17 @@ type Link struct {
 }
 
 func buildURL(host string, path string, qParams map[string]string) (*string, error) {
-	baseUrl, err := url.Parse(host)
+	baseURL, err := url.Parse(host)
 	if err != nil {
 		return nil, err
 	}
-	baseUrl.Path = path
+	baseURL.Path = path
 	params := url.Values{}
 	for prm, value := range qParams {
 		params.Add(prm, value)
 	}
-	baseUrl.RawQuery = params.Encode()
-	url := baseUrl.String()
+	baseURL.RawQuery = params.Encode()
+	url := baseURL.String()
 	return &url, nil
 }
 
