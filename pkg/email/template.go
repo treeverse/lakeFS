@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	ResetPasswordPath = "/auth/resetpassword"
-	InviteUserPath    = "/auth/users/create"
+	ResetPasswordPath = "/auth/resetpassword" //#nosec
+	InviteUserPath    = "/auth/users/create"  //#nosec
 
 	ResetPasswordEmailSubject = "Reset Password Request for your LakeFS account"
 	InviteUserWEmailSubject   = "You have been invited to LakeFS"
