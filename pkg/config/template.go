@@ -190,4 +190,5 @@ type configuration struct {
 		LimitEveryDuration time.Duration `mapstructure:"limit_every_duration"`
 		Burst              int           `mapstructure:"burst"`
 	}
+	KVStore bool `mapstructure:"kv_store"`
 }

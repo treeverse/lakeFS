@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -66,6 +67,8 @@ const (
 
 	DefaultEmailLimitEveryDuration = time.Minute
 	DefaultEmailBurst              = 10
+
+	DefaultKVStore = false
 )
 
 var (
@@ -167,6 +170,8 @@ const (
 
 	EmailLimitEveryDurationKey = "email.limit_every_duration"
 	EmailBurstKey              = "email.burst"
+
+	KVStoreKey = "kv_store"
 )
 
 func setDefaults() {
@@ -220,6 +225,8 @@ func setDefaults() {
 	viper.SetDefault(SecurityAuditCheckURLKey, DefaultSecurityAuditCheckURL)
 	viper.SetDefault(EmailLimitEveryDurationKey, DefaultEmailLimitEveryDuration)
 	viper.SetDefault(EmailBurstKey, DefaultEmailBurst)
+
+	viper.SetDefault(KVStoreKey, DefaultKVStore)
 }
 
 func reverse(s string) string {
@@ -500,4 +507,13 @@ func (c *Config) GetAuthAPIToken() string {
 
 func (c *Config) GetCookieDomain() string {
 	return c.values.Auth.CookieDomain
+}
+
+func (c *Config) GetKVStoreEnabled() bool {
+	return c.values.KVStore
+}
+
+func (c *Config) GetConfigAsJson() ([]byte, error) {
+	js, err := json.MarshalIndent(c.values, "", "\t")
+	return js, err
 }
