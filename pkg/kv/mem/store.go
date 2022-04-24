@@ -62,11 +62,22 @@ func (s *Store) Set(_ context.Context, key, value []byte) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if _, found := s.m[string(key)]; !found {
-		s.keys = append(s.keys, string(key))
-		sort.Strings(s.keys)
+		s.insertNewKey(key)
 	}
 	s.m[string(key)] = value
 	return nil
+}
+
+// insertNewKey insert new key into keys - insert into sorted slice
+func (s *Store) insertNewKey(key []byte) {
+	idx := sort.SearchStrings(s.keys, string(key))
+	if idx == len(s.keys) {
+		s.keys = append(s.keys, string(key))
+	} else {
+		s.keys = append(s.keys, "")
+		copy(s.keys[idx+1:], s.keys[idx:])
+		s.keys[idx] = string(key)
+	}
 }
 
 func (s *Store) SetIf(_ context.Context, key, value, valuePredicate []byte) error {
@@ -83,8 +94,7 @@ func (s *Store) SetIf(_ context.Context, key, value, valuePredicate []byte) erro
 		if curr != nil {
 			return kv.ErrNotFound
 		}
-		s.keys = append(s.keys, string(key))
-		sort.Strings(s.keys)
+		s.insertNewKey(key)
 	} else if !bytes.Equal(valuePredicate, curr) {
 		return kv.ErrNotFound
 	}
@@ -109,7 +119,7 @@ func (s *Store) Delete(_ context.Context, key []byte) error {
 	return nil
 }
 
-func (s *Store) Scan(ctx context.Context, start []byte) (kv.Entries, error) {
+func (s *Store) Scan(_ context.Context, start []byte) (kv.Entries, error) {
 	return &Entries{
 		store: s,
 		first: true,

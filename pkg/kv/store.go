@@ -12,24 +12,18 @@ var (
 	ErrDriverConfiguration = errors.New("driver configuration")
 	ErrOperationFailed     = errors.New("operation failed")
 	ErrConnectFailed       = errors.New("connect failed")
-	ErrMigrateFailed       = errors.New("migrate failed")
+	ErrSetupFailed         = errors.New("setup failed")
 	ErrMissingKey          = errors.New("missing key")
 	ErrMissingValue        = errors.New("missing value")
 	ErrNotFound            = errors.New("not found")
 	ErrClosedEntries       = errors.New("closed entries")
 )
 
-type Entry struct {
-	Key   []byte
-	Value []byte
-}
-
+// Driver define the root interface to access the kv database.
+// Each kv provider implements a driver which provides Store instance.
 type Driver interface {
-	// Open access to the database store. migrate kv if needed
+	// Open access to the database store. migrate kv if needed.
 	Open(ctx context.Context, dsn string) (Store, error)
-
-	// Destroy will delete kv from storage
-	// Destroy(ctx context.Context, name string) error
 }
 
 type Store interface {
@@ -39,13 +33,13 @@ type Store interface {
 	// Set stores the given value, overwriting an existing value if one exists
 	Set(ctx context.Context, key, value []byte) error
 
-	// SetIf returns an ErrPredicateFailed error if the valuePredicate passed
+	// SetIf returns an ErrNotFound error if the key with valuePredicate passed
 	//  doesn't match the currently stored value. SetIf is a simple compare-and-swap operator:
-	//  valuePredicate is either the existing value, or an opaque value representing it (hash, index, etc).
+	//  valuePredicate is either the existing value, or nil for no key.
 	//  this is intentionally simplistic: we can model a better abstraction on top, keeping this interface simple for implementors
 	SetIf(ctx context.Context, key, value, valuePredicate []byte) error
 
-	// Delete will delete the key, if any
+	// Delete will delete the key, or ErrNotFound if key doesn't exist
 	Delete(ctx context.Context, key []byte) error
 
 	// Scan returns entries that can be read by key order, starting at or after the `start` position
@@ -55,13 +49,29 @@ type Store interface {
 	Close()
 }
 
+// Entries used to enumerate over Scan results
 type Entries interface {
+	// Next should be called first before access Entry.
+	// it will process the next entry and return true if it was successful, and false when none or error
 	Next() bool
+
+	// Entry current entry read after calling Next, set to nil in case of an error or no more entries
 	Entry() *Entry
+
+	// Err set to last error by reading or parse the next entry
 	Err() error
+
+	// Close should be called at the end of processing entries, required to release resources used to scan entries
 	Close()
 }
 
+// Entry holds a pair of key/value
+type Entry struct {
+	Key   []byte
+	Value []byte
+}
+
+// map drivers implementation
 var (
 	drivers   = make(map[string]Driver)
 	driversMu sync.RWMutex

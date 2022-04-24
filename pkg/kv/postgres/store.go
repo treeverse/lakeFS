@@ -67,10 +67,9 @@ func (d *Driver) Open(ctx context.Context, name string) (kv.Store, error) {
 
 	params := parseStoreConfig(config.ConnConfig.RuntimeParams)
 
-	// migrate database
-	err = migrateDatabase(ctx, conn, params)
+	err = setupKeyValueDatabase(ctx, conn, params)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %s", kv.ErrMigrateFailed, err)
+		return nil, fmt.Errorf("%w: %s", kv.ErrSetupFailed, err)
 	}
 	store := &Store{
 		Pool:   pool,
@@ -94,7 +93,8 @@ func parseStoreConfig(runtimeParams map[string]string) *Params {
 	return p
 }
 
-func migrateDatabase(ctx context.Context, conn *pgxpool.Conn, params *Params) error {
+// setupKeyValueDatabase setup everything required to enable kv over postgres
+func setupKeyValueDatabase(ctx context.Context, conn *pgxpool.Conn, params *Params) error {
 	_, err := conn.Exec(ctx, `CREATE TABLE IF NOT EXISTS `+params.TableName+` (
     key BYTEA NOT NULL PRIMARY KEY,
     value BYTEA NOT NULL);`)
@@ -112,7 +112,7 @@ func (s *Store) Get(ctx context.Context, key []byte) ([]byte, error) {
 		return nil, kv.ErrNotFound
 	}
 	if err != nil {
-		return nil, fmt.Errorf("%w: %s", kv.ErrOperationFailed, err)
+		return nil, fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
 	}
 	return val, nil
 }
@@ -127,7 +127,7 @@ func (s *Store) Set(ctx context.Context, key, value []byte) error {
 	_, err := s.Pool.Exec(ctx, `INSERT INTO `+s.Params.TableName+`(key,value) VALUES($1,$2)
 			ON CONFLICT (key) DO UPDATE SET value = $2`, key, value)
 	if err != nil {
-		return fmt.Errorf("%w: %s", kv.ErrOperationFailed, err)
+		return fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
 	}
 	return nil
 }
@@ -151,7 +151,7 @@ func (s *Store) SetIf(ctx context.Context, key, value, valuePredicate []byte) er
 		res, err = s.Pool.Exec(ctx, `UPDATE `+s.Params.TableName+` SET value=$2 WHERE key=$1 AND value=$3`, key, value, valuePredicate)
 	}
 	if err != nil {
-		return fmt.Errorf("%w: %s", kv.ErrOperationFailed, err)
+		return fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
 	}
 	if res.RowsAffected() != 1 {
 		return kv.ErrNotFound
@@ -165,7 +165,7 @@ func (s *Store) Delete(ctx context.Context, key []byte) error {
 	}
 	res, err := s.Pool.Exec(ctx, `DELETE FROM `+s.Params.TableName+` WHERE key=$1`, key)
 	if err != nil {
-		return fmt.Errorf("%w: %s", kv.ErrOperationFailed, err)
+		return fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
 	}
 	if res.RowsAffected() != 1 {
 		return kv.ErrNotFound
@@ -184,7 +184,7 @@ func (s *Store) Scan(ctx context.Context, start []byte) (kv.Entries, error) {
 		rows, err = s.Pool.Query(ctx, `SELECT key,value FROM `+s.Params.TableName+` WHERE key >= $1 ORDER BY key`, start)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("%w: %s", kv.ErrOperationFailed, err)
+		return nil, fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
 	}
 	return &Entries{
 		rows: rows,
@@ -201,14 +201,16 @@ func (s *Store) Close() {
 
 // Next read the next key/value on any error entry will be nil, err will be set by trying to scan the results
 func (e *Entries) Next() bool {
+	if e.err != nil {
+		return false
+	}
 	e.entry = nil
-	e.err = nil
 	if !e.rows.Next() {
 		return false
 	}
 	var ent kv.Entry
 	if err := e.rows.Scan(&ent.Key, &ent.Value); err != nil {
-		e.err = fmt.Errorf("%w: %s", kv.ErrOperationFailed, err)
+		e.err = fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
 		return false
 	}
 	e.entry = &ent
@@ -225,7 +227,7 @@ func (e *Entries) Err() error {
 		return e.err
 	}
 	if err := e.rows.Err(); err != nil {
-		e.err = fmt.Errorf("%w: %s", kv.ErrOperationFailed, err)
+		e.err = fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
 		return err
 	}
 	return nil
