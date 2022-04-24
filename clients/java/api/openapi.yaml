@@ -204,8 +204,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      security:
-      - cookie_auth: []
+      security: []
       summary: forgot password request initiates the password reset process
       tags:
       - auth
@@ -227,6 +226,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
+      security: []
       summary: list authentication capabilities supported
       tags:
       - auth
