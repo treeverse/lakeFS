@@ -25,9 +25,8 @@ func TestDriver(t *testing.T, name string, dsn string) {
 func testDriverOpen(t *testing.T, ms makeStore) {
 	ctx := context.Background()
 	store1 := ms(t, ctx)
-	store1.Close()
-
 	store2 := ms(t, ctx)
+	store1.Close()
 	store2.Close()
 }
 
