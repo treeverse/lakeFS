@@ -58,8 +58,9 @@ func buildURL(host string, path string, qParams map[string]string) (*string, err
 
 func BuildEmailTemplate(tmpl *template.Template, host string, path string, token string) (*string, error) {
 	builder := &strings.Builder{}
-	params := make(map[string]string)
-	params["token"] = token
+	params := map[string]string{
+		"token": token,
+	}
 	url, err := buildURL(host, path, params)
 	if err != nil {
 		return nil, err
