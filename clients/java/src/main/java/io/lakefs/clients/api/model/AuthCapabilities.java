@@ -25,43 +25,20 @@ import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
 
 /**
- * UserCreation
+ * AuthCapabilities
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class UserCreation {
-  public static final String SERIALIZED_NAME_ID = "id";
-  @SerializedName(SERIALIZED_NAME_ID)
-  private String id;
-
+public class AuthCapabilities {
   public static final String SERIALIZED_NAME_INVITE_USER = "invite_user";
   @SerializedName(SERIALIZED_NAME_INVITE_USER)
   private Boolean inviteUser;
 
-
-  public UserCreation id(String id) {
-    
-    this.id = id;
-    return this;
-  }
-
-   /**
-   * Get id
-   * @return id
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-
-  public String getId() {
-    return id;
-  }
+  public static final String SERIALIZED_NAME_FORGOT_PASSWORD = "forgot_password";
+  @SerializedName(SERIALIZED_NAME_FORGOT_PASSWORD)
+  private Boolean forgotPassword;
 
 
-  public void setId(String id) {
-    this.id = id;
-  }
-
-
-  public UserCreation inviteUser(Boolean inviteUser) {
+  public AuthCapabilities inviteUser(Boolean inviteUser) {
     
     this.inviteUser = inviteUser;
     return this;
@@ -84,6 +61,29 @@ public class UserCreation {
   }
 
 
+  public AuthCapabilities forgotPassword(Boolean forgotPassword) {
+    
+    this.forgotPassword = forgotPassword;
+    return this;
+  }
+
+   /**
+   * Get forgotPassword
+   * @return forgotPassword
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+
+  public Boolean getForgotPassword() {
+    return forgotPassword;
+  }
+
+
+  public void setForgotPassword(Boolean forgotPassword) {
+    this.forgotPassword = forgotPassword;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -92,22 +92,22 @@ public class UserCreation {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    UserCreation userCreation = (UserCreation) o;
-    return Objects.equals(this.id, userCreation.id) &&
-        Objects.equals(this.inviteUser, userCreation.inviteUser);
+    AuthCapabilities authCapabilities = (AuthCapabilities) o;
+    return Objects.equals(this.inviteUser, authCapabilities.inviteUser) &&
+        Objects.equals(this.forgotPassword, authCapabilities.forgotPassword);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, inviteUser);
+    return Objects.hash(inviteUser, forgotPassword);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class UserCreation {\n");
-    sb.append("    id: ").append(toIndentedString(id)).append("\n");
+    sb.append("class AuthCapabilities {\n");
     sb.append("    inviteUser: ").append(toIndentedString(inviteUser)).append("\n");
+    sb.append("    forgotPassword: ").append(toIndentedString(forgotPassword)).append("\n");
     sb.append("}");
     return sb.toString();
   }

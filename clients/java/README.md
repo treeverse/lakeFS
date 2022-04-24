@@ -142,6 +142,7 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**detachPolicyFromGroup**](docs/AuthApi.md#detachPolicyFromGroup) | **DELETE** /auth/groups/{groupId}/policies/{policyId} | detach policy from group
 *AuthApi* | [**detachPolicyFromUser**](docs/AuthApi.md#detachPolicyFromUser) | **DELETE** /auth/users/{userId}/policies/{policyId} | detach policy from user
 *AuthApi* | [**forgotPassword**](docs/AuthApi.md#forgotPassword) | **POST** /auth/password/forgot | forgot password request initiates the password reset process
+*AuthApi* | [**getAuthCapabilities**](docs/AuthApi.md#getAuthCapabilities) | **GET** /auth/capabilities | list authentication capabilities supported
 *AuthApi* | [**getCredentials**](docs/AuthApi.md#getCredentials) | **GET** /auth/users/{userId}/credentials/{accessKeyId} | get credentials
 *AuthApi* | [**getCurrentUser**](docs/AuthApi.md#getCurrentUser) | **GET** /user | get current user
 *AuthApi* | [**getGroup**](docs/AuthApi.md#getGroup) | **GET** /auth/groups/{groupId} | get group
@@ -213,6 +214,7 @@ Class | Method | HTTP request | Description
  - [AccessKeyCredentials](docs/AccessKeyCredentials.md)
  - [ActionRun](docs/ActionRun.md)
  - [ActionRunList](docs/ActionRunList.md)
+ - [AuthCapabilities](docs/AuthCapabilities.md)
  - [AuthenticationToken](docs/AuthenticationToken.md)
  - [BranchCreation](docs/BranchCreation.md)
  - [BranchProtectionRule](docs/BranchProtectionRule.md)

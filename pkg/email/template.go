@@ -30,8 +30,8 @@ type Link struct {
 }
 
 func BuildResetPasswordEmailTemplate(tpl string, host string, token string) (string, error) {
-	templ := template.New("resetPasswordtemplate")
-	t := template.Must(templ.Parse(tpl))
+	// templ := template.New("resetPasswordtemplate")
+	// t := template.Must(templ.Parse(tpl))
 	builder := &strings.Builder{}
 	l := Link{Host: host, ResetPasswordPath: ResetPasswordPath, Tkn: token}
 	err := t.Execute(builder, l)
