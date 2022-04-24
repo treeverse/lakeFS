@@ -3099,7 +3099,6 @@ func (c *Controller) resetPasswordRequest(ctx context.Context, emailAddr string)
 		return err
 	}
 	c.Logger.WithField("email", emailAddr).Info("reset password email sent")
-
 	return nil
 }
 
