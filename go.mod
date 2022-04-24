@@ -32,6 +32,7 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.2
 	github.com/golangci/golangci-lint v1.38.0
+	github.com/google/flatbuffers v2.0.0+incompatible
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-multierror v1.1.0
 	github.com/hnlq715/golang-lru v0.3.0
@@ -75,7 +76,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 )
 
-require golang.org/x/time v0.0.0-20220224211638-0e9765cccd65 // indirect
+require golang.org/x/time v0.0.0-20220224211638-0e9765cccd65
 
 require (
 	4d63.com/gochecknoglobals v0.0.0-20201008074935-acfc0b28355a // indirect

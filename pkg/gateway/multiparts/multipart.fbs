@@ -1,0 +1,19 @@
+// flatbuffers tracker schema
+
+namespace multiparts;
+
+table MetadataFB {
+    key:string (key);
+    value:string;
+}
+
+table MultipartUploadFB {
+  upload_id:string;
+  path:string;
+  creation_date:ulong;
+  physical_address:string;
+  metadata:[MetadataFB];
+  content_type:string;
+}
+
+root_type MultipartUploadFB;
