@@ -53,6 +53,7 @@ func (m *MockDriver) Open(_ context.Context, dsn string) (kv.Store, error) {
 }
 
 func TestRegister(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 
 	t.Run("open", func(t *testing.T) {

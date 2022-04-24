@@ -14,16 +14,16 @@ import (
 type makeStore func(t *testing.T, ctx context.Context) kv.Store
 
 func TestDriver(t *testing.T, name string, dsn string) {
-	ctx := context.Background()
 	ms := makeStoreByName(name, dsn)
-	t.Run("Driver_Open", func(t *testing.T) { testDriverOpen(t, ctx, ms) })
-	t.Run("Store_SetGet", func(t *testing.T) { testStoreSetGet(t, ctx, ms) })
-	t.Run("Store_SetIf", func(t *testing.T) { testStoreSetIf(t, ctx, ms) })
-	t.Run("Store_Delete", func(t *testing.T) { testStoreDelete(t, ctx, ms) })
-	t.Run("Store_Scan", func(t *testing.T) { testStoreScan(t, ctx, ms) })
+	t.Run("Driver_Open", func(t *testing.T) { testDriverOpen(t, ms) })
+	t.Run("Store_SetGet", func(t *testing.T) { testStoreSetGet(t, ms) })
+	t.Run("Store_SetIf", func(t *testing.T) { testStoreSetIf(t, ms) })
+	t.Run("Store_Delete", func(t *testing.T) { testStoreDelete(t, ms) })
+	t.Run("Store_Scan", func(t *testing.T) { testStoreScan(t, ms) })
 }
 
-func testDriverOpen(t *testing.T, ctx context.Context, ms makeStore) {
+func testDriverOpen(t *testing.T, ms makeStore) {
+	ctx := context.Background()
 	store1 := ms(t, ctx)
 	store1.Close()
 
@@ -31,7 +31,8 @@ func testDriverOpen(t *testing.T, ctx context.Context, ms makeStore) {
 	store2.Close()
 }
 
-func testStoreSetGet(t *testing.T, ctx context.Context, ms makeStore) {
+func testStoreSetGet(t *testing.T, ms makeStore) {
+	ctx := context.Background()
 	store := ms(t, ctx)
 	defer store.Close()
 
@@ -47,10 +48,12 @@ func testStoreSetGet(t *testing.T, ctx context.Context, ms makeStore) {
 
 	// get test key with value1
 	val, err := store.Get(ctx, testKey)
-	if err != nil {
+	switch {
+	case err != nil:
 		t.Fatalf("failed to get key '%s': %s", testKey, err)
-	}
-	if !bytes.Equal(testValue1, val) {
+	case val == nil:
+		t.Fatalf("got value with nil")
+	case !bytes.Equal(testValue1, val):
 		t.Fatalf("key='%s' value='%s' doesn't match, expected='%s'", testKey, val, testValue1)
 	}
 
@@ -80,7 +83,8 @@ func testStoreSetGet(t *testing.T, ctx context.Context, ms makeStore) {
 	}
 }
 
-func testStoreDelete(t *testing.T, ctx context.Context, ms makeStore) {
+func testStoreDelete(t *testing.T, ms makeStore) {
+	ctx := context.Background()
 	store := ms(t, ctx)
 	defer store.Close()
 
@@ -105,7 +109,8 @@ func testStoreDelete(t *testing.T, ctx context.Context, ms makeStore) {
 	})
 }
 
-func testStoreSetIf(t *testing.T, ctx context.Context, ms makeStore) {
+func testStoreSetIf(t *testing.T, ms makeStore) {
+	ctx := context.Background()
 	store := ms(t, ctx)
 	defer store.Close()
 
@@ -158,7 +163,8 @@ func testStoreSetIf(t *testing.T, ctx context.Context, ms makeStore) {
 	})
 }
 
-func testStoreScan(t *testing.T, ctx context.Context, ms makeStore) {
+func testStoreScan(t *testing.T, ms makeStore) {
+	ctx := context.Background()
 	store := ms(t, ctx)
 	defer store.Close()
 
@@ -178,8 +184,13 @@ func testStoreScan(t *testing.T, ctx context.Context, ms makeStore) {
 		var entries []kv.Entry
 		for scan.Next() {
 			ent := scan.Entry()
-			if ent == nil {
+			switch {
+			case ent == nil:
 				t.Fatal("scan got nil entry")
+			case ent.Key == nil:
+				t.Fatal("Key is nil while scan item", len(entries))
+			case ent.Value == nil:
+				t.Fatal("Value is nil while scan item", len(entries))
 			}
 			if !bytes.HasPrefix(ent.Key, scanKeyPrefix) {
 				break
@@ -204,8 +215,13 @@ func testStoreScan(t *testing.T, ctx context.Context, ms makeStore) {
 		var entries []kv.Entry
 		for scan.Next() {
 			ent := scan.Entry()
-			if ent == nil {
+			switch {
+			case ent == nil:
 				t.Fatal("scan got nil entry")
+			case ent.Key == nil:
+				t.Fatal("scan got entry with nil Key")
+			case ent.Value == nil:
+				t.Fatal("scan got entry with nil Value")
 			}
 			if !bytes.HasPrefix(ent.Key, []byte("scan-key-")) {
 				break

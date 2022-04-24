@@ -38,15 +38,14 @@ func init() {
 }
 
 func (d *Driver) Open(ctx context.Context, name string) (kv.Store, error) {
-	// TODO(barak): name format - we need to accept a connection string to the db + params related to db + params related to kv
-	// TODO(barak): handle reuse - open the same kv - reuse the pool
+	// TODO(barak): should we handle Open reuse the same store based on name
 	config, err := pgxpool.ParseConfig(name)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %s", kv.ErrDriverConfiguration, err)
 	}
 	pool, err := pgxpool.ConnectConfig(ctx, config)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %s", kv.ErrConnectFailed, err)
 	}
 	defer func() {
 		// if we return before store uses the pool, free it
@@ -58,12 +57,12 @@ func (d *Driver) Open(ctx context.Context, name string) (kv.Store, error) {
 	// acquire connection and make sure we reach the database
 	conn, err := pool.Acquire(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %s", kv.ErrConnectFailed, err)
 	}
 	defer conn.Release()
 	err = conn.Conn().Ping(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %s", kv.ErrConnectFailed, err)
 	}
 
 	params := parseStoreConfig(config.ConnConfig.RuntimeParams)
@@ -71,7 +70,7 @@ func (d *Driver) Open(ctx context.Context, name string) (kv.Store, error) {
 	// migrate database
 	err = migrateDatabase(ctx, conn, params)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %s", kv.ErrMigrateFailed, err)
 	}
 	store := &Store{
 		Pool:   pool,

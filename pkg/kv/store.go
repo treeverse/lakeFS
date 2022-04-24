@@ -8,12 +8,15 @@ import (
 )
 
 var (
-	ErrUnknownDriver   = errors.New("unknown driver")
-	ErrOperationFailed = errors.New("operation failed")
-	ErrMissingKey      = errors.New("missing key")
-	ErrMissingValue    = errors.New("missing value")
-	ErrNotFound        = errors.New("not found")
-	ErrClosedEntries   = errors.New("closed entries")
+	ErrUnknownDriver       = errors.New("unknown driver")
+	ErrDriverConfiguration = errors.New("driver configuration")
+	ErrOperationFailed     = errors.New("operation failed")
+	ErrConnectFailed       = errors.New("connect failed")
+	ErrMigrateFailed       = errors.New("migrate failed")
+	ErrMissingKey          = errors.New("missing key")
+	ErrMissingValue        = errors.New("missing value")
+	ErrNotFound            = errors.New("not found")
+	ErrClosedEntries       = errors.New("closed entries")
 )
 
 type Entry struct {
