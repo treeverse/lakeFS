@@ -19,6 +19,7 @@ Method | HTTP request | Description
 [**detach_policy_from_group**](AuthApi.md#detach_policy_from_group) | **DELETE** /auth/groups/{groupId}/policies/{policyId} | detach policy from group
 [**detach_policy_from_user**](AuthApi.md#detach_policy_from_user) | **DELETE** /auth/users/{userId}/policies/{policyId} | detach policy from user
 [**forgot_password**](AuthApi.md#forgot_password) | **POST** /auth/password/forgot | forgot password request initiates the password reset process
+[**get_auth_capabilities**](AuthApi.md#get_auth_capabilities) | **GET** /auth/capabilities | list authentication capabilities supported
 [**get_credentials**](AuthApi.md#get_credentials) | **GET** /auth/users/{userId}/credentials/{accessKeyId} | get credentials
 [**get_current_user**](AuthApi.md#get_current_user) | **GET** /user | get current user
 [**get_group**](AuthApi.md#get_group) | **GET** /auth/groups/{groupId} | get group
@@ -665,6 +666,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     api_instance = auth_api.AuthApi(api_client)
     user_creation = UserCreation(
         id="id_example",
+        invite_user=True,
     ) # UserCreation |  (optional)
 
     # example passing only required values which don't have defaults set
@@ -1361,7 +1363,6 @@ forgot password request initiates the password reset process
 
 ### Example
 
-* Api Key Authentication (cookie_auth):
 
 ```python
 import time
@@ -1376,19 +1377,9 @@ configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
-# The client must configure the authentication and authorization parameters
-# in accordance with the API server security policy.
-# Examples for each auth method are provided below, use the example that
-# satisfies your auth use case.
-
-# Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     forgot_password_request = ForgotPasswordRequest(
@@ -1416,7 +1407,7 @@ void (empty response body)
 
 ### Authorization
 
-[cookie_auth](../README.md#cookie_auth)
+No authorization required
 
 ### HTTP request headers
 
@@ -1430,6 +1421,69 @@ void (empty response body)
 |-------------|-------------|------------------|
 **204** | No content |  -  |
 **400** | bad request |  -  |
+**0** | Internal Server Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **get_auth_capabilities**
+> AuthCapabilities get_auth_capabilities()
+
+list authentication capabilities supported
+
+### Example
+
+
+```python
+import time
+import lakefs_client
+from lakefs_client.api import auth_api
+from lakefs_client.model.error import Error
+from lakefs_client.model.auth_capabilities import AuthCapabilities
+from pprint import pprint
+# Defining the host is optional and defaults to http://localhost/api/v1
+# See configuration.py for a list of all supported configuration parameters.
+configuration = lakefs_client.Configuration(
+    host = "http://localhost/api/v1"
+)
+
+
+# Enter a context with an instance of the API client
+with lakefs_client.ApiClient() as api_client:
+    # Create an instance of the API class
+    api_instance = auth_api.AuthApi(api_client)
+
+    # example, this endpoint has no required or optional parameters
+    try:
+        # list authentication capabilities supported
+        api_response = api_instance.get_auth_capabilities()
+        pprint(api_response)
+    except lakefs_client.ApiException as e:
+        print("Exception when calling AuthApi->get_auth_capabilities: %s\n" % e)
+```
+
+
+### Parameters
+This endpoint does not need any parameter.
+
+### Return type
+
+[**AuthCapabilities**](AuthCapabilities.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | auth capabilities |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

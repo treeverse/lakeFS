@@ -82,6 +82,14 @@ type Controller struct {
 	Emailer               *email.Emailer
 }
 
+func (c *Controller) GetAuthCapabilities(w http.ResponseWriter, r *http.Request) {
+	emailSupported := c.Emailer.Params.SMTPHost != ""
+	writeResponse(w, http.StatusOK, AuthCapabilities{
+		InviteUser:     &emailSupported,
+		ForgotPassword: &emailSupported,
+	})
+}
+
 func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body DeleteObjectsJSONRequestBody, repository string, branch string) {
 	ctx := r.Context()
 	c.LogAction(ctx, "delete_objects")
@@ -802,26 +810,70 @@ func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params Li
 	writeResponse(w, http.StatusOK, response)
 }
 
+func (c *Controller) generateResetPasswordToken(email string) (string, error) {
+	secret := c.Auth.SecretStore().SharedSecret()
+	currentTime := time.Now()
+	return GenerateJWTResetPassword(secret, email, currentTime, currentTime.Add(DefaultResetPasswordExpiration))
+}
+
+func (c *Controller) inviteUserRequest(email string) error {
+	// TODO (@shimi9276) create template for sending the email with link for invite using the passed template
+	token, err := c.generateResetPasswordToken(email)
+	if err != nil {
+		return err
+	}
+	err = c.Emailer.SendEmailWithLimit([]string{email}, token, token, nil)
+	if err != nil {
+		return err
+	}
+	c.Logger.WithField("email", email).Info("invite email sent")
+	return nil
+}
+
 func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body CreateUserJSONRequestBody) {
+	invite := swag.BoolValue(body.InviteUser)
+	id := body.Id
+	var email *string
+	if invite {
+		addr, err := mail.ParseAddress(body.Id)
+		if err != nil {
+			c.Logger.WithError(err).WithField("user_id", id).Warn("failed parsing email")
+			writeError(w, http.StatusBadRequest, "Invalid email format")
+			return
+		}
+		id = strings.ToLower(addr.Address)
+		email = &addr.Address
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.CreateUserAction,
-			Resource: permissions.UserArn(body.Id),
+			Resource: permissions.UserArn(id),
 		},
 	}) {
 		return
 	}
 	u := &model.User{
 		CreatedAt:    time.Now().UTC(),
-		Username:     body.Id,
+		Username:     id,
 		FriendlyName: nil,
 		Source:       "internal",
+		Email:        email,
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "create_user")
 	_, err := c.Auth.CreateUser(ctx, u)
+
 	if handleAPIError(w, err) {
+		c.Logger.WithError(err).WithField("user_id", u.ID).Warn("failed creating user")
 		return
+	}
+
+	if invite {
+		err = c.inviteUserRequest(*u.Email)
+		if handleAPIError(w, err) {
+			c.Logger.WithError(err).WithField("email", *u.Email).Warn("failed sending invite email")
+			return
+		}
 	}
 	response := User{
 		Id:           u.Username,
@@ -3025,38 +3077,35 @@ func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, http.StatusOK, response)
 }
 
-func (c *Controller) sendResetPasswordEmail(email string, token string) error {
-	return c.Emailer.SendEmailWithLimit([]string{email}, token, token, nil)
+func (c *Controller) resetPasswordRequest(ctx context.Context, email string) error {
+	user, err := c.Auth.GetUserByEmail(ctx, email)
+	if err != nil {
+		return err
+	}
+	email = StringValue(user.Email)
+	// TODO (@shimi9276) create template for sending the email with link for reset using the passed template
+	token, err := c.generateResetPasswordToken(email)
+	if err != nil {
+		return err
+	}
+	err = c.Emailer.SendEmailWithLimit([]string{email}, token, token, nil)
+	if err != nil {
+		return err
+	}
+	c.Logger.WithField("email", email).Info("reset password email sent")
+
+	return nil
 }
 
 func (c *Controller) ForgotPassword(w http.ResponseWriter, r *http.Request, body ForgotPasswordJSONRequestBody) {
 	addr, err := mail.ParseAddress(body.Email)
 	if err != nil {
-		c.Logger.WithError(err).WithField("email", body.Email).Debug("forgot password with invalid email")
-		w.WriteHeader(http.StatusNoContent)
+		writeError(w, http.StatusBadRequest, "invalid email")
 		return
 	}
-	user, err := c.Auth.GetUserByEmail(r.Context(), addr.Address)
+	err = c.resetPasswordRequest(r.Context(), addr.Address)
 	if err != nil {
-		c.Logger.WithError(err).WithField("email", addr.Address).Debug("failed to retrieve user by email")
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-	email := StringValue(user.Email)
-	secret := c.Auth.SecretStore().SharedSecret()
-	currentTime := time.Now()
-	token, err := GenerateJWTResetPassword(secret, email, currentTime, currentTime.Add(DefaultResetPasswordExpiration))
-	if err != nil {
-		c.Logger.WithError(err).WithField("email", email).Debug("failed to create a token")
-		writeError(w, http.StatusInternalServerError, err)
-		return
-	}
-	// TODO (@shimi9276) create template for sending the email with link for reset
-	err = c.sendResetPasswordEmail(email, token)
-	if err != nil {
-		c.Logger.WithError(err).WithField("email", email).Warn("failed sending reset password email")
-	} else {
-		c.Logger.WithField("email", email).Info("reset password email sent")
+		c.Logger.WithError(err).WithField("email", body.Email).Debug("failed sending reset password email")
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -3068,14 +3117,12 @@ func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body
 		writeError(w, http.StatusUnauthorized, err)
 		return
 	}
-	tokenEmail := claims.Subject
-	user, err := c.Auth.GetUserByEmail(r.Context(), tokenEmail)
+	user, err := c.Auth.GetUserByEmail(r.Context(), claims.Subject)
 	if err != nil {
-		c.Logger.WithError(err).WithField("email", tokenEmail).Debug("failed to retrieve user by email")
+		c.Logger.WithError(err).WithField("email", claims.Subject).Debug("failed to retrieve user by email")
 		writeError(w, http.StatusNotFound, http.StatusText(http.StatusNotFound))
 		return
 	}
-
 	err = c.Auth.HashAndUpdatePassword(r.Context(), user.Username, body.NewPassword)
 	if err != nil {
 		c.Logger.WithError(err).WithField("username", user.Username).Debug("failed to update password")

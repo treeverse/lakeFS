@@ -129,6 +129,13 @@ class TestAuthApi(unittest.TestCase):
         """
         pass
 
+    def test_get_auth_capabilities(self):
+        """Test case for get_auth_capabilities
+
+        list authentication capabilities supported  # noqa: E501
+        """
+        pass
+
     def test_get_credentials(self):
         """Test case for get_credentials
 

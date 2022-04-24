@@ -19,6 +19,7 @@ Method | HTTP request | Description
 [**detachPolicyFromGroup**](AuthApi.md#detachPolicyFromGroup) | **DELETE** /auth/groups/{groupId}/policies/{policyId} | detach policy from group
 [**detachPolicyFromUser**](AuthApi.md#detachPolicyFromUser) | **DELETE** /auth/users/{userId}/policies/{policyId} | detach policy from user
 [**forgotPassword**](AuthApi.md#forgotPassword) | **POST** /auth/password/forgot | forgot password request initiates the password reset process
+[**getAuthCapabilities**](AuthApi.md#getAuthCapabilities) | **GET** /auth/capabilities | list authentication capabilities supported
 [**getCredentials**](AuthApi.md#getCredentials) | **GET** /auth/users/{userId}/credentials/{accessKeyId} | get credentials
 [**getCurrentUser**](AuthApi.md#getCurrentUser) | **GET** /user | get current user
 [**getGroup**](AuthApi.md#getGroup) | **GET** /auth/groups/{groupId} | get group
@@ -1160,7 +1161,6 @@ forgot password request initiates the password reset process
 import io.lakefs.clients.api.ApiClient;
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.Configuration;
-import io.lakefs.clients.api.auth.*;
 import io.lakefs.clients.api.models.*;
 import io.lakefs.clients.api.AuthApi;
 
@@ -1168,12 +1168,6 @@ public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
     defaultClient.setBasePath("http://localhost/api/v1");
-    
-    // Configure API key authorization: cookie_auth
-    ApiKeyAuth cookie_auth = (ApiKeyAuth) defaultClient.getAuthentication("cookie_auth");
-    cookie_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //cookie_auth.setApiKeyPrefix("Token");
 
     AuthApi apiInstance = new AuthApi(defaultClient);
     ForgotPasswordRequest forgotPasswordRequest = new ForgotPasswordRequest(); // ForgotPasswordRequest | 
@@ -1202,7 +1196,7 @@ null (empty response body)
 
 ### Authorization
 
-[cookie_auth](../README.md#cookie_auth)
+No authorization required
 
 ### HTTP request headers
 
@@ -1214,6 +1208,63 @@ null (empty response body)
 |-------------|-------------|------------------|
 **204** | No content |  -  |
 **400** | bad request |  -  |
+**0** | Internal Server Error |  -  |
+
+<a name="getAuthCapabilities"></a>
+# **getAuthCapabilities**
+> AuthCapabilities getAuthCapabilities()
+
+list authentication capabilities supported
+
+### Example
+```java
+// Import classes:
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("http://localhost/api/v1");
+
+    AuthApi apiInstance = new AuthApi(defaultClient);
+    try {
+      AuthCapabilities result = apiInstance.getAuthCapabilities();
+      System.out.println(result);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling AuthApi#getAuthCapabilities");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+This endpoint does not need any parameter.
+
+### Return type
+
+[**AuthCapabilities**](AuthCapabilities.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | auth capabilities |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="getCredentials"></a>
