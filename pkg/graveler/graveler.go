@@ -1491,12 +1491,12 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 		var branchMetaRangeID MetaRangeID
 		var parentGeneration int
 		if branch.CommitID != "" {
-			commit, err := g.RefManager.GetCommit(ctx, repositoryID, branch.CommitID)
+			branchCommit, err := g.RefManager.GetCommit(ctx, repositoryID, branch.CommitID)
 			if err != nil {
 				return "", fmt.Errorf("get commit: %w", err)
 			}
-			branchMetaRangeID = commit.MetaRangeID
-			parentGeneration = commit.Generation
+			branchMetaRangeID = branchCommit.MetaRangeID
+			parentGeneration = branchCommit.Generation
 		}
 		commit.Generation = parentGeneration + 1
 		if params.SourceMetaRange != nil {

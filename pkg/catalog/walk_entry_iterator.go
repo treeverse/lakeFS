@@ -22,7 +22,7 @@ type walkEntryIterator struct {
 }
 
 // Mark stands for pagination information when listing objects from the blockstore.
-// It is used for server-client communication on the status of range ingestions.
+// It is used for server-client communication on the status of range ingestion.
 type Mark store.Mark
 
 type EntryWithMarker struct {
@@ -30,7 +30,7 @@ type EntryWithMarker struct {
 	Mark
 }
 
-// used to determined the reason for the end of the walk
+// used to determine the reason for the end of the walk
 var errItClosed = errors.New("iterator closed")
 
 // buffer size of the buffer between reading entries from the blockstore Walk and passing it on
