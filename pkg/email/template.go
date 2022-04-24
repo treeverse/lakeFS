@@ -2,38 +2,73 @@ package email
 
 import (
 	"html/template"
+	"net/url"
 	"strings"
 )
 
 const (
-	ResetPasswordPath  = "/auth/resetpassword?token="
-	ResetEmailTemplate = `Hello, <br>
+	ResetPasswordPath = "/auth/resetpassword"
+	InviteUserPath    = "/auth/users/create"
+
+	ResetPasswordEmailSubject = "Reset Password Request for your LakeFS account"
+	InviteUserWEmailSubject   = "You have been invited to LakeFS"
+
+	inviteUserTemplate = `Hello, <br>
+You have been invited to join LakeFS <br>
+Click on this link to set up your account <br>
+{{.URL}} <br>
+Thanks <br>
+The LakeFS team <br>
+`
+
+	resetEmailTemplate = `Hello, <br>
 A request has been received to change the password to your account,  <br>
 Click on this link to reset your password <br>
-{{.Host}}{{.ResetPasswordPath}}{{.Tkn}} <br>
+{{.URL}} <br>
 If you did not initiate this request you can please disregard this email. <br>
 Thanks  <br>
 The LakeFS team <br>
 	`
-	ResetPasswordEmailSubject = "Reset Password Request for your Lakefs account"
 )
 
 var (
-	templ = template.New("resetPasswordtemplate")
-	t     = template.Must(templ.Parse(ResetEmailTemplate))
+	templ              = template.New("template")
+	ResetEmailTemplate = template.Must(templ.Parse(resetEmailTemplate))
+	InviteUserTemplate = template.Must(templ.Parse(inviteUserTemplate))
 )
 
 type Link struct {
-	Host              string
-	ResetPasswordPath string
-	Tkn               string
+	URL string
 }
 
-func BuildResetPasswordEmailTemplate(tpl string, host string, token string) (string, error) {
-	// templ := template.New("resetPasswordtemplate")
-	// t := template.Must(templ.Parse(tpl))
+func buildURL(host string, path string, qParams map[string]string) (*string, error) {
+	baseUrl, err := url.Parse(host)
+	if err != nil {
+		return nil, err
+	}
+	baseUrl.Path = path
+	params := url.Values{}
+	for prm, value := range qParams {
+		params.Add(prm, value)
+	}
+	baseUrl.RawQuery = params.Encode()
+	url := baseUrl.String()
+	return &url, nil
+}
+
+func BuildEmailTemplate(tmpl *template.Template, host string, path string, token string) (*string, error) {
 	builder := &strings.Builder{}
-	l := Link{Host: host, ResetPasswordPath: ResetPasswordPath, Tkn: token}
-	err := t.Execute(builder, l)
-	return builder.String(), err
+	params := make(map[string]string)
+	params["token"] = token
+	url, err := buildURL(host, path, params)
+	if err != nil {
+		return nil, err
+	}
+	l := Link{URL: *url}
+	err = tmpl.Execute(builder, l)
+	if err != nil {
+		return nil, err
+	}
+	t := builder.String()
+	return &t, nil
 }

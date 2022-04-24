@@ -24,6 +24,7 @@ type EmailParams struct {
 	Sender             string
 	LimitEveryDuration time.Duration
 	Burst              int
+	BaseURLEndpoint    string
 }
 
 func NewEmailer(e EmailParams) *Emailer {

@@ -188,5 +188,6 @@ type configuration struct {
 		Sender             string        `mapstructure:"sender"`
 		LimitEveryDuration time.Duration `mapstructure:"limit_every_duration"`
 		Burst              int           `mapstructure:"burst"`
+		BaseURLEndpoint    string        `mapstructure:"base_host_endpoint"`
 	}
 }

@@ -66,6 +66,7 @@ const (
 
 	DefaultEmailLimitEveryDuration = time.Minute
 	DefaultEmailBurst              = 10
+	DefaultEmailBaseURLEnpoint     = "http://127.0.0.1:8000"
 )
 
 var (
@@ -167,6 +168,7 @@ const (
 
 	EmailLimitEveryDurationKey = "email.limit_every_duration"
 	EmailBurstKey              = "email.burst"
+	EmailBaseURLEnpointKey     = "email.base_host_endpoint"
 )
 
 func setDefaults() {
@@ -220,6 +222,7 @@ func setDefaults() {
 	viper.SetDefault(SecurityAuditCheckURLKey, DefaultSecurityAuditCheckURL)
 	viper.SetDefault(EmailLimitEveryDurationKey, DefaultEmailLimitEveryDuration)
 	viper.SetDefault(EmailBurstKey, DefaultEmailBurst)
+	viper.SetDefault(EmailBaseURLEnpointKey, DefaultEmailBaseURLEnpoint)
 }
 
 func reverse(s string) string {
@@ -416,6 +419,7 @@ func (c *Config) GetEmailParams() (email.EmailParams, error) {
 		Sender:             c.values.Email.Sender,
 		LimitEveryDuration: c.values.Email.LimitEveryDuration,
 		Burst:              c.values.Email.Burst,
+		BaseURLEndpoint:    c.values.Email.BaseURLEndpoint,
 	}, nil
 }
 
