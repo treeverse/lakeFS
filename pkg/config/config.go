@@ -66,8 +66,6 @@ const (
 
 	DefaultEmailLimitEveryDuration = time.Minute
 	DefaultEmailBurst              = 10
-
-	DefaultKVStoreEnabled = false
 )
 
 var (
@@ -169,8 +167,6 @@ const (
 
 	EmailLimitEveryDurationKey = "email.limit_every_duration"
 	EmailBurstKey              = "email.burst"
-
-	KVStoreEnabledKey = "database.kv_enabled"
 )
 
 func setDefaults() {
@@ -224,8 +220,6 @@ func setDefaults() {
 	viper.SetDefault(SecurityAuditCheckURLKey, DefaultSecurityAuditCheckURL)
 	viper.SetDefault(EmailLimitEveryDurationKey, DefaultEmailLimitEveryDuration)
 	viper.SetDefault(EmailBurstKey, DefaultEmailBurst)
-
-	viper.SetDefault(KVStoreKey, DefaultKVStoreEnabled)
 }
 
 func reverse(s string) string {
@@ -271,7 +265,7 @@ func (c *Config) GetDatabaseParams() dbparams.Database {
 		MaxOpenConnections:    c.values.Database.MaxOpenConnections,
 		MaxIdleConnections:    c.values.Database.MaxIdleConnections,
 		ConnectionMaxLifetime: c.values.Database.ConnectionMaxLifetime,
-		DBType:                c.values.Database.DBType,
+		Type:                  c.values.Database.Type,
 		KVEnabled:             c.values.Database.KVEnabled,
 	}
 }

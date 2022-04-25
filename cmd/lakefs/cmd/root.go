@@ -109,8 +109,8 @@ func initConfig() {
 	}
 
 	logger.WithFields(cfg.ToLoggerFields()).Info("Config")
-	if viper.GetBool("database.alpha_kv_enabled") {
-		logger.Error("USING KV EXPERIMENTAL FLAG!!! USE AT YOUR OWN RISK!!!")
+	if cfg.GetDatabaseParams().KVEnabled {
+		logger.Warn("USING KV EXPERIMENTAL FLAG!!! USE AT YOUR OWN RISK!!!")
 	}
 }
 
