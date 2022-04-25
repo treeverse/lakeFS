@@ -39,7 +39,7 @@ type Store interface {
 	//  this is intentionally simplistic: we can model a better abstraction on top, keeping this interface simple for implementors
 	SetIf(ctx context.Context, key, value, valuePredicate []byte) error
 
-	// Delete will delete the key, or ErrNotFound if key doesn't exist
+	// Delete will delete the key, no error in if key doesn't exist
 	Delete(ctx context.Context, key []byte) error
 
 	// Scan returns entries that can be read by key order, starting at or after the `start` position

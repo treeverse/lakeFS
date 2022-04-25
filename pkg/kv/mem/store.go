@@ -109,7 +109,7 @@ func (s *Store) Delete(_ context.Context, key []byte) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if _, found := s.m[string(key)]; !found {
-		return kv.ErrNotFound
+		return nil
 	}
 	idx := sort.SearchStrings(s.keys, string(key))
 	if idx < len(s.keys) && s.keys[idx] == string(key) {

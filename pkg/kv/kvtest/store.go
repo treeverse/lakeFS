@@ -8,10 +8,17 @@ import (
 	"testing"
 
 	"github.com/go-test/deep"
+	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/treeverse/lakefs/pkg/kv"
 )
 
 type makeStore func(t *testing.T, ctx context.Context) kv.Store
+
+var runTestID = nanoid.MustGenerate("abcdef1234567890", 8)
+
+func uniqueKey(k string) []byte {
+	return []byte(k + "-" + runTestID)
+}
 
 func TestDriver(t *testing.T, name string, dsn string) {
 	ms := makeStoreByName(name, dsn)
@@ -35,9 +42,9 @@ func testStoreSetGet(t *testing.T, ms makeStore) {
 	store := ms(t, ctx)
 	defer store.Close()
 
-	testKey := []byte("key")
-	testValue1 := []byte("value1")
-	testValue2 := []byte("value2")
+	testKey := uniqueKey("key")
+	testValue1 := []byte("value")
+	testValue2 := []byte("a different kind of value")
 
 	// set test key with value1
 	err := store.Set(ctx, testKey, testValue1)
@@ -72,8 +79,8 @@ func testStoreSetGet(t *testing.T, ms makeStore) {
 	}
 
 	// get a missing key
-	const keyNotExists = "key-not-exists"
-	val3, err := store.Get(ctx, []byte(keyNotExists))
+	keyNotExists := uniqueKey("key-not-exists")
+	val3, err := store.Get(ctx, keyNotExists)
 	if !errors.Is(err, kv.ErrNotFound) {
 		t.Fatalf("get key='%s' err=%s, expected not found", keyNotExists, err)
 	}
@@ -83,12 +90,13 @@ func testStoreSetGet(t *testing.T, ms makeStore) {
 }
 
 func testStoreDelete(t *testing.T, ms makeStore) {
+	t.Parallel()
 	ctx := context.Background()
 	store := ms(t, ctx)
 	defer store.Close()
 
 	t.Run("exists", func(t *testing.T) {
-		keyToDel := []byte("key-to-delete")
+		keyToDel := uniqueKey("key-to-delete")
 		err := store.Set(ctx, keyToDel, []byte("value to delete"))
 		if err != nil {
 			t.Fatalf("failed to set key='%s': %s", keyToDel, err)
@@ -100,10 +108,10 @@ func testStoreDelete(t *testing.T, ms makeStore) {
 	})
 
 	t.Run("non_exists", func(t *testing.T) {
-		keyToDel := []byte("missing-key-to-delete")
+		keyToDel := uniqueKey("missing-key-to-delete")
 		err := store.Delete(ctx, keyToDel)
-		if !errors.Is(err, kv.ErrNotFound) {
-			t.Fatalf("delete missing key '%s', err=%v expected=%s", keyToDel, err, kv.ErrNotFound)
+		if err != nil {
+			t.Fatalf("delete missing key '%s', err=%v expected nil", keyToDel, err)
 		}
 	})
 }
@@ -115,7 +123,7 @@ func testStoreSetIf(t *testing.T, ms makeStore) {
 
 	t.Run("previous_value", func(t *testing.T) {
 		// setup initial value
-		key := []byte("setIfKey1")
+		key := uniqueKey("setIfKey1")
 		value := []byte("val1")
 		err := store.Set(ctx, key, value)
 		if err != nil {
@@ -146,7 +154,7 @@ func testStoreSetIf(t *testing.T, ms makeStore) {
 
 	t.Run("no_previous_key", func(t *testing.T) {
 		// setIf without previous value
-		key := []byte("setIfKey2")
+		key := uniqueKey("setIfKey2")
 		value := []byte("val1")
 		err := store.SetIf(ctx, key, value, nil)
 		if err != nil {
@@ -168,13 +176,12 @@ func testStoreScan(t *testing.T, ms makeStore) {
 	defer store.Close()
 
 	// setup sample data
-	const samplePrefix = "scan"
+	samplePrefix := uniqueKey("scan")
 	const sampleItems = 10
-	sampleData := setupSampleData(t, ctx, store, samplePrefix, sampleItems)
+	sampleData := setupSampleData(t, ctx, store, string(samplePrefix), sampleItems)
 
 	t.Run("full", func(t *testing.T) {
-		scanKeyPrefix := []byte("scan-key")
-		scan, err := store.Scan(ctx, scanKeyPrefix)
+		scan, err := store.Scan(ctx, samplePrefix)
 		if err != nil {
 			t.Fatal("failed to scan", err)
 		}
@@ -191,7 +198,7 @@ func testStoreScan(t *testing.T, ms makeStore) {
 			case ent.Value == nil:
 				t.Fatal("Value is nil while scan item", len(entries))
 			}
-			if !bytes.HasPrefix(ent.Key, scanKeyPrefix) {
+			if !bytes.HasPrefix(ent.Key, samplePrefix) {
 				break
 			}
 			entries = append(entries, *ent)
@@ -205,7 +212,8 @@ func testStoreScan(t *testing.T, ms makeStore) {
 	})
 
 	t.Run("part", func(t *testing.T) {
-		scan, err := store.Scan(ctx, []byte("scan-key-5"))
+		fromKey := append(samplePrefix, []byte("-key-5")...)
+		scan, err := store.Scan(ctx, fromKey)
 		if err != nil {
 			t.Fatal("failed to scan", err)
 		}
@@ -222,10 +230,11 @@ func testStoreScan(t *testing.T, ms makeStore) {
 			case ent.Value == nil:
 				t.Fatal("scan got entry with nil Value")
 			}
-			if !bytes.HasPrefix(ent.Key, []byte("scan-key-")) {
+			if !bytes.HasPrefix(ent.Key, samplePrefix) {
 				break
 			}
 			entries = append(entries, *ent)
+			t.Fail()
 		}
 		if err := scan.Err(); err != nil {
 			t.Fatal("scan ended with an error", err)

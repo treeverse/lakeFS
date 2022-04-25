@@ -163,12 +163,9 @@ func (s *Store) Delete(ctx context.Context, key []byte) error {
 	if key == nil {
 		return kv.ErrMissingKey
 	}
-	res, err := s.Pool.Exec(ctx, `DELETE FROM `+s.Params.TableName+` WHERE key=$1`, key)
+	_, err := s.Pool.Exec(ctx, `DELETE FROM `+s.Params.TableName+` WHERE key=$1`, key)
 	if err != nil {
 		return fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
-	}
-	if res.RowsAffected() != 1 {
-		return kv.ErrNotFound
 	}
 	return nil
 }
