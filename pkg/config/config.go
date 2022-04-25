@@ -1,7 +1,6 @@
 package config
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -68,7 +67,7 @@ const (
 	DefaultEmailLimitEveryDuration = time.Minute
 	DefaultEmailBurst              = 10
 
-	DefaultKVStore = false
+	DefaultKVStoreEnabled = false
 )
 
 var (
@@ -171,7 +170,7 @@ const (
 	EmailLimitEveryDurationKey = "email.limit_every_duration"
 	EmailBurstKey              = "email.burst"
 
-	KVStoreKey = "kv_store"
+	KVStoreKey = "database.alpha_kv_enabled"
 )
 
 func setDefaults() {
@@ -226,7 +225,7 @@ func setDefaults() {
 	viper.SetDefault(EmailLimitEveryDurationKey, DefaultEmailLimitEveryDuration)
 	viper.SetDefault(EmailBurstKey, DefaultEmailBurst)
 
-	viper.SetDefault(KVStoreKey, DefaultKVStore)
+	viper.SetDefault(KVStoreKey, DefaultKVStoreEnabled)
 }
 
 func reverse(s string) string {
@@ -272,6 +271,8 @@ func (c *Config) GetDatabaseParams() dbparams.Database {
 		MaxOpenConnections:    c.values.Database.MaxOpenConnections,
 		MaxIdleConnections:    c.values.Database.MaxIdleConnections,
 		ConnectionMaxLifetime: c.values.Database.ConnectionMaxLifetime,
+		DBType:                c.values.Database.DBType,
+		KVEnabled:             c.values.Database.KVEnabled,
 	}
 }
 
@@ -507,13 +508,4 @@ func (c *Config) GetAuthAPIToken() string {
 
 func (c *Config) GetCookieDomain() string {
 	return c.values.Auth.CookieDomain
-}
-
-func (c *Config) GetKVStoreEnabled() bool {
-	return c.values.KVStore
-}
-
-func (c *Config) GetConfigAsJSON() ([]byte, error) {
-	js, err := json.MarshalIndent(c.values, "", "\t")
-	return js, err
 }
