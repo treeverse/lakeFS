@@ -72,6 +72,13 @@ type Entry struct {
 	Value []byte
 }
 
+func (e *Entry) String() string {
+	if e == nil {
+		return "Entry{nil}"
+	}
+	return fmt.Sprintf("Entry{%s, %s}", e.Key, e.Value)
+}
+
 // map drivers implementation
 var (
 	drivers   = make(map[string]Driver)
@@ -93,7 +100,7 @@ func Register(name string, driver Driver) {
 	drivers[name] = driver
 }
 
-func Open(ctx context.Context, name string, dsn string) (Store, error) {
+func Open(ctx context.Context, name, dsn string) (Store, error) {
 	driversMu.RLock()
 	d, ok := drivers[name]
 	driversMu.RUnlock()
@@ -101,11 +108,4 @@ func Open(ctx context.Context, name string, dsn string) (Store, error) {
 		return nil, fmt.Errorf("%w: %s", ErrUnknownDriver, name)
 	}
 	return d.Open(ctx, dsn)
-}
-
-func (e *Entry) String() string {
-	if e == nil {
-		return "Entry{nil}"
-	}
-	return fmt.Sprintf("Entry{%s, %s}", e.Key, e.Value)
 }

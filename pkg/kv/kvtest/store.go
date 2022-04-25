@@ -20,7 +20,27 @@ func uniqueKey(k string) []byte {
 	return []byte(k + "-" + runTestID)
 }
 
-func TestDriver(t *testing.T, name string, dsn string) {
+func setupSampleData(t *testing.T, ctx context.Context, store kv.Store, prefix string, items int) []kv.Entry {
+	t.Helper()
+	entries := make([]kv.Entry, 0, items)
+	for i := 0; i < items; i++ {
+		entry := sampleEntry(prefix, i)
+		err := store.Set(ctx, entry.Key, entry.Value)
+		if err != nil {
+			t.Fatalf("failed to setup data with '%s': %s", entry, err)
+		}
+		entries = append(entries, entry)
+	}
+	return entries
+}
+
+func sampleEntry(prefix string, n int) kv.Entry {
+	k := fmt.Sprintf("%s-key-%04d", prefix, n)
+	v := fmt.Sprintf("%s-value-%04d", prefix, n)
+	return kv.Entry{Key: []byte(k), Value: []byte(v)}
+}
+
+func TestDriver(t *testing.T, name, dsn string) {
 	ms := makeStoreByName(name, dsn)
 	t.Run("Driver_Open", func(t *testing.T) { testDriverOpen(t, ms) })
 	t.Run("Store_SetGet", func(t *testing.T) { testStoreSetGet(t, ms) })
@@ -246,7 +266,7 @@ func testStoreScan(t *testing.T, ms makeStore) {
 	})
 }
 
-func makeStoreByName(name string, dsn string) makeStore {
+func makeStoreByName(name, dsn string) makeStore {
 	return func(t *testing.T, ctx context.Context) kv.Store {
 		t.Helper()
 		store, err := kv.Open(ctx, name, dsn)
@@ -296,24 +316,4 @@ func testStoreMissingArgument(t *testing.T, ms makeStore) {
 			t.Errorf("Delete using nil key - err=%v, expected %s", err, kv.ErrMissingKey)
 		}
 	})
-}
-
-func setupSampleData(t *testing.T, ctx context.Context, store kv.Store, prefix string, items int) []kv.Entry {
-	t.Helper()
-	entries := make([]kv.Entry, 0, items)
-	for i := 0; i < items; i++ {
-		entry := sampleEntry(prefix, i)
-		err := store.Set(ctx, entry.Key, entry.Value)
-		if err != nil {
-			t.Fatalf("failed to setup data with '%s': %s", entry, err)
-		}
-		entries = append(entries, entry)
-	}
-	return entries
-}
-
-func sampleEntry(prefix string, n int) kv.Entry {
-	k := fmt.Sprintf("%s-key-%04d", prefix, n)
-	v := fmt.Sprintf("%s-value-%04d", prefix, n)
-	return kv.Entry{Key: []byte(k), Value: []byte(v)}
 }
