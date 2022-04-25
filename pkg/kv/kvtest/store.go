@@ -48,6 +48,7 @@ func TestDriver(t *testing.T, name, dsn string) {
 	t.Run("Store_Delete", func(t *testing.T) { testStoreDelete(t, ms) })
 	t.Run("Store_Scan", func(t *testing.T) { testStoreScan(t, ms) })
 	t.Run("Store_MissingArgument", func(t *testing.T) { testStoreMissingArgument(t, ms) })
+	t.Run("ScanPrefix", func(t *testing.T) { testScanPrefix(t, ms) })
 }
 
 func testDriverOpen(t *testing.T, ms makeStore) {
@@ -322,4 +323,47 @@ func testStoreMissingArgument(t *testing.T, ms makeStore) {
 			t.Errorf("Delete using nil key - err=%v, expected %s", err, kv.ErrMissingKey)
 		}
 	})
+}
+
+func testScanPrefix(t *testing.T, ms makeStore) {
+	ctx := context.Background()
+	store := ms(t, ctx)
+
+	// setup data - use the last set to scan
+	var (
+		sampleData   []kv.Entry
+		samplePrefix []byte
+	)
+	const sampleItems = 100
+	const numberOfSets = 3
+	for i := 0; i < numberOfSets; i++ {
+		samplePrefix = uniqueKey("scan-prefix")
+		sampleData = setupSampleData(t, ctx, store, string(samplePrefix), sampleItems)
+	}
+
+	scan, err := kv.ScanPrefix(ctx, store, samplePrefix)
+	if err != nil {
+		t.Fatal("ScanPrefix failed", err)
+	}
+	defer scan.Close()
+
+	var entries []kv.Entry
+	for scan.Next() {
+		ent := scan.Entry()
+		switch {
+		case ent == nil:
+			t.Fatal("ScanPrefix got nil entry")
+		case ent.Key == nil:
+			t.Fatal("ScanPrefix Key is nil on entry", len(entries))
+		case ent.Value == nil:
+			t.Fatal("ScanPrefix Value is nil on entry", len(entries))
+		}
+		entries = append(entries, *ent)
+	}
+	if err := scan.Err(); err != nil {
+		t.Fatal("ScanPrefix ended with an error", err)
+	}
+	if diff := deep.Equal(entries, sampleData); diff != nil {
+		t.Fatal("ScanPrefix entries didn't match:", diff)
+	}
 }
