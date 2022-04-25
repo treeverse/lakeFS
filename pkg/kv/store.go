@@ -8,16 +8,16 @@ import (
 )
 
 var (
-	ErrUnknownDriver       = errors.New("unknown driver")
-	ErrDriverConfiguration = errors.New("driver configuration")
-	ErrOperationFailed     = errors.New("operation failed")
+	ErrClosedEntries       = errors.New("closed entries")
 	ErrConnectFailed       = errors.New("connect failed")
-	ErrSetupFailed         = errors.New("setup failed")
+	ErrDriverConfiguration = errors.New("driver configuration")
 	ErrMissingKey          = errors.New("missing key")
 	ErrMissingValue        = errors.New("missing value")
 	ErrNotFound            = errors.New("not found")
-	ErrClosedEntries       = errors.New("closed entries")
+	ErrOperationFailed     = errors.New("operation failed")
 	ErrPredicateFailed     = errors.New("predicate failed")
+	ErrSetupFailed         = errors.New("setup failed")
+	ErrUnknownDriver       = errors.New("unknown driver")
 )
 
 // Driver define the root interface to access the kv database.
@@ -38,7 +38,7 @@ type Store interface {
 
 	// SetIf returns an ErrPredicateFailed error if the key with valuePredicate passed
 	//  doesn't match the currently stored value. SetIf is a simple compare-and-swap operator:
-	//  valuePredicate is either the existing value, or nil for no key.
+	//  valuePredicate is either the existing value, or nil for no previous key exists.
 	//  this is intentionally simplistic: we can model a better abstraction on top, keeping this interface simple for implementors
 	SetIf(ctx context.Context, key, value, valuePredicate []byte) error
 
@@ -48,23 +48,24 @@ type Store interface {
 	// Scan returns entries that can be read by key order, starting at or after the `start` position
 	Scan(ctx context.Context, start []byte) (Entries, error)
 
-	// Close access to the database store
+	// Close access to the database store. After calling Close the instance is unusable.
 	Close()
 }
 
 // Entries used to enumerate over Scan results
 type Entries interface {
 	// Next should be called first before access Entry.
-	// it will process the next entry and return true if it was successful, and false when none or error
+	// it will process the next entry and return true if it was successful, and false when none or error.
 	Next() bool
 
-	// Entry current entry read after calling Next, set to nil in case of an error or no more entries
+	// Entry current entry read after calling Next, set to nil in case of an error or no more entries.
 	Entry() *Entry
 
-	// Err set to last error by reading or parse the next entry
+	// Err set to last error by reading or parse the next entry.
 	Err() error
 
-	// Close should be called at the end of processing entries, required to release resources used to scan entries
+	// Close should be called at the end of processing entries, required to release resources used to scan entries.
+	// After calling 'Close' the instance should not be used as the behaviour will not be defined.
 	Close()
 }
 
