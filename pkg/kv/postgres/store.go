@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync/atomic"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
@@ -16,7 +17,7 @@ type Driver struct{}
 type Store struct {
 	Pool   *pgxpool.Pool
 	Params *Params
-	closed bool
+	closed int64
 }
 
 type Entries struct {
@@ -189,11 +190,9 @@ func (s *Store) Scan(ctx context.Context, start []byte) (kv.Entries, error) {
 }
 
 func (s *Store) Close() {
-	if s.closed {
-		return
+	if atomic.CompareAndSwapInt64(&s.closed, 0, 1) {
+		s.Pool.Close()
 	}
-	s.Pool.Close()
-	s.closed = true
 }
 
 // Next read the next key/value on any error entry will be nil, err will be set by trying to scan the results

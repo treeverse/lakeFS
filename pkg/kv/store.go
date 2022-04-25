@@ -88,6 +88,7 @@ var (
 	driversMu sync.RWMutex
 )
 
+// Register 'driver' implementation under 'name'. Panic in case of empty name, nil driver or name already registered.
 func Register(name string, driver Driver) {
 	if name == "" {
 		panic("kv store register name is missing")
@@ -103,6 +104,8 @@ func Register(name string, driver Driver) {
 	drivers[name] = driver
 }
 
+// Open lookup driver with 'name' and return Store based on 'dsn' (data source name).
+// Failed with ErrUnknownDriver in case 'name' is not registered
 func Open(ctx context.Context, name, dsn string) (Store, error) {
 	driversMu.RLock()
 	d, ok := drivers[name]
