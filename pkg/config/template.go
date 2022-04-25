@@ -95,7 +95,7 @@ type configuration struct {
 		MaxOpenConnections    int32         `mapstructure:"max_open_connections"`
 		MaxIdleConnections    int32         `mapstructure:"max_idle_connections"`
 		ConnectionMaxLifetime time.Duration `mapstructure:"connection_max_lifetime"`
-		DBType                string        `mapstructure:"type"`
+		Type                string        `mapstructure:"type"`
 		KVEnabled             bool          `mapstructure:"alpha_kv_enabled"`
 	}
 
