@@ -132,6 +132,7 @@ func (e *Entries) Next() bool {
 		return false
 	}
 	if e.start == nil {
+		e.entry = nil
 		return false
 	}
 	e.store.mu.RLock()
@@ -139,6 +140,7 @@ func (e *Entries) Next() bool {
 	idx := sort.SearchStrings(e.store.keys, string(e.start))
 	if idx == len(e.store.keys) {
 		e.start = nil
+		e.entry = nil
 		return false
 	}
 	// point to the entry we found
