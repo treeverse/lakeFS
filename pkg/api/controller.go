@@ -195,6 +195,7 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSO
 		Name:     JWTCookieName,
 		Value:    tokenString,
 		Path:     "/",
+		Domain:   c.Config.GetCookieDomain(), // if not configured will return empty string which will resolve by setting the cookie on the current domain
 		Expires:  expires,
 		HttpOnly: true,
 		SameSite: http.SameSiteStrictMode,
