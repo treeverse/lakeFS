@@ -513,7 +513,7 @@ func (c *Config) GetKVStoreEnabled() bool {
 	return c.values.KVStore
 }
 
-func (c *Config) GetConfigAsJson() ([]byte, error) {
+func (c *Config) GetConfigAsJSON() ([]byte, error) {
 	js, err := json.MarshalIndent(c.values, "", "\t")
 	return js, err
 }

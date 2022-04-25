@@ -52,7 +52,7 @@ func loadConfig() *config.Config {
 		os.Exit(1)
 	}
 	logger := logging.Default().WithField("phase", "startup")
-	prettyCfg, err := cfg.GetConfigAsJson()
+	prettyCfg, err := cfg.GetConfigAsJSON()
 	if err != nil {
 		fmt.Println("Failed getting configuration JSON", err)
 		os.Exit(1)
