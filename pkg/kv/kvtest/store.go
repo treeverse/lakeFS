@@ -142,51 +142,57 @@ func testStoreSetIf(t *testing.T, ms makeStore) {
 	store := ms(t, ctx)
 	defer store.Close()
 
-	t.Run("previous_value", func(t *testing.T) {
-		// setup initial value
-		key := uniqueKey("setIfKey1")
-		value := []byte("val1")
-		err := store.Set(ctx, key, value)
+	t.Run("set_first", func(t *testing.T) {
+		key := uniqueKey("set-if-first")
+		val := []byte("v")
+		err := store.SetIf(ctx, key, val, nil)
 		if err != nil {
-			t.Fatalf("failed to set key=%s, value=%s: %s", key, value, err)
-		}
-
-		// should set new value if old value is kept
-		newValue := []byte("val2")
-		err = store.SetIf(ctx, key, newValue, value)
-		if err != nil {
-			t.Fatalf("failed to setIf key=%s value=%s pred=%s: %s", key, newValue, value, err)
-		}
-
-		// should NOT set new value if old value is not kept
-		newValue = []byte("val3")
-		err = store.SetIf(ctx, key, newValue, value)
-		if !errors.Is(err, kv.ErrPredicateFailed) {
-			t.Fatalf("setIf err=%s, key=%s, value=%s, pred=%s, expected err=%s", err, key, newValue, value, kv.ErrPredicateFailed)
-		}
-
-		// should NOT set new value if try conditional nil
-		newValue = []byte("val4")
-		err = store.SetIf(ctx, key, newValue, nil)
-		if !errors.Is(err, kv.ErrPredicateFailed) {
-			t.Fatalf("setIf err=%s, key=%s, value=%s, pred=%s, expected err=%s", err, key, newValue, value, kv.ErrPredicateFailed)
+			t.Fatalf("SetIf without previous key - key=%s value=%s pred=nil: %s", key, val, err)
 		}
 	})
 
-	t.Run("no_previous_key", func(t *testing.T) {
-		// setIf without previous value
-		key := uniqueKey("setIfKey2")
-		value := []byte("val1")
-		err := store.SetIf(ctx, key, value, nil)
+	t.Run("set_exists", func(t *testing.T) {
+		key := uniqueKey("set-if-exists")
+		val1 := []byte("v1")
+		err := store.Set(ctx, key, val1)
 		if err != nil {
-			t.Fatalf("setIf without previous key - key=%s, value=%s: %s", key, value, err)
+			t.Fatalf("Set while testing SetIf - key=%s value=%s: %s", key, val1, err)
 		}
 
-		// should fail if we try to do the same again - as the value updated to 'val1'
-		err = store.SetIf(ctx, key, value, nil)
+		val2 := []byte("v2")
+		err = store.SetIf(ctx, key, val2, val1)
+		if err != nil {
+			t.Fatalf("SetIf with previous value - key=%s value=%s pred=%s: %s", key, val2, val1, err)
+		}
+	})
+
+	t.Run("fail_predicate_value", func(t *testing.T) {
+		key := uniqueKey("fail-predicate-value")
+		val1 := []byte("v1")
+		err := store.Set(ctx, key, val1)
+		if err != nil {
+			t.Fatalf("Set while testing fail predicate - key=%s value=%s: %s", key, val1, err)
+		}
+
+		val2 := []byte("v2")
+		err = store.SetIf(ctx, key, val2, val2)
 		if !errors.Is(err, kv.ErrPredicateFailed) {
-			t.Fatalf("setIf with nil while key/value exists - err=%v, key=%s value=%s, expected err=%s",
-				err, key, value, kv.ErrPredicateFailed)
+			t.Fatalf("SetIf err=%v - key=%s, value=%s, pred=%s, expected err=%s", err, key, val2, val2, kv.ErrPredicateFailed)
+		}
+	})
+
+	t.Run("fail_predicate_nil", func(t *testing.T) {
+		key := uniqueKey("fail-predicate-nil")
+		val1 := []byte("v1")
+		err := store.Set(ctx, key, val1)
+		if err != nil {
+			t.Fatalf("Set while testing fail predicate - key=%s value=%s: %s", key, val1, err)
+		}
+
+		val2 := []byte("v2")
+		err = store.SetIf(ctx, key, val2, nil)
+		if !errors.Is(err, kv.ErrPredicateFailed) {
+			t.Fatalf("SetIf err=%v - key=%s, value=%s, pred=nil, expected err=%s", err, key, val2, kv.ErrPredicateFailed)
 		}
 	})
 }
