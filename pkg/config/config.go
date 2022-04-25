@@ -170,7 +170,7 @@ const (
 	EmailLimitEveryDurationKey = "email.limit_every_duration"
 	EmailBurstKey              = "email.burst"
 
-	KVStoreKey = "database.alpha_kv_enabled"
+	KVStoreEnabledKey = "database.kv_enabled"
 )
 
 func setDefaults() {
