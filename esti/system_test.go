@@ -38,7 +38,7 @@ func skipOnSchemaMismatch(t *testing.T, rawURL string) {
 	}
 	pathURL, err := url.Parse(rawURL)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatal("Failed to parse rawURL", err)
 	}
 
 	if namespaceURL.Scheme != pathURL.Scheme {
