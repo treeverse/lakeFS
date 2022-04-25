@@ -20,8 +20,8 @@ var (
 	ErrUnknownDriver       = errors.New("unknown driver")
 )
 
-// Driver define the root interface to access the kv database.
-// Each kv provider implements a driver which provides Store instance.
+// Driver is the interface to access a kv database as a Store.
+// Each kv provider implements a Driver.
 type Driver interface {
 	// Open opens access to the database store. Implementations give access to the same storage based on the dsn.
 	// Implementation can return the same Storage instance based on dsn or new one as long as it provides access to
