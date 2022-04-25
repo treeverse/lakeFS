@@ -34,7 +34,7 @@ var nonAlphanumericSequence = regexp.MustCompile("[^a-zA-Z0-9]+")
 func skipOnSchemaMismatch(t *testing.T, rawURL string) {
 	namespaceURL, err := url.Parse(viper.GetString("storage_namespace"))
 	if err != nil {
-		t.Fatal(err)
+		t.Fatal("Failed to parse configured storage_namespace", err)
 	}
 	pathURL, err := url.Parse(rawURL)
 	if err != nil {
