@@ -17,7 +17,7 @@ type makeStore func(t *testing.T, ctx context.Context) kv.Store
 var runTestID = nanoid.MustGenerate("abcdef1234567890", 8)
 
 func uniqueKey(k string) []byte {
-	return []byte(k + "-" + runTestID)
+	return []byte(runTestID + "-" + k)
 }
 
 func setupSampleData(t *testing.T, ctx context.Context, store kv.Store, prefix string, items int) []kv.Entry {
