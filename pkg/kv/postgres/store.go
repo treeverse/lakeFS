@@ -195,7 +195,7 @@ func (s *Store) Close() {
 	}
 }
 
-// Next read the next key/value on any error entry will be nil, err will be set by trying to scan the results
+// Next reads the next key/value.
 func (e *Entries) Next() bool {
 	if e.err != nil {
 		return false
