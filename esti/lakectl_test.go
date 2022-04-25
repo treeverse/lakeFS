@@ -3,9 +3,6 @@ package esti
 import (
 	"testing"
 	"time"
-
-	"github.com/spf13/viper"
-	"github.com/treeverse/lakefs/pkg/block"
 )
 
 var emptyVars = make(map[string]string)
@@ -344,9 +341,7 @@ func TestLakectlAuthUsers(t *testing.T) {
 func TestLakectlIngestS3(t *testing.T) {
 	// Specific S3 test - due to the limitation on ingest source type that has to match lakefs underlying block store,
 	// this test can only run on AWS setup, and therefore is skipped for other store types
-	if viper.GetViper().GetString("blockstore_type") != block.BlockstoreTypeS3 {
-		t.Skip()
-	}
+	skipOnSchemaMismatch(t, IngestTestBucketPath)
 
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)

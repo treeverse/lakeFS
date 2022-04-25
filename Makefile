@@ -177,6 +177,9 @@ fast-test:  ## Run tests without race detector (faster)
 test-html: test  ## Run tests with HTML for the project
 	$(GOTOOL) cover -html=cover.out
 
+system-tests: # Run system tests locally
+	./esti/scripts/runner.sh -r all
+
 build-docker: build ## Build Docker image file (Docker required)
 	$(DOCKER) build -t treeverse/$(DOCKER_IMAGE):$(DOCKER_TAG) .
 
