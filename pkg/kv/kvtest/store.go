@@ -27,6 +27,7 @@ func TestDriver(t *testing.T, name string, dsn string) {
 	t.Run("Store_SetIf", func(t *testing.T) { testStoreSetIf(t, ms) })
 	t.Run("Store_Delete", func(t *testing.T) { testStoreDelete(t, ms) })
 	t.Run("Store_Scan", func(t *testing.T) { testStoreScan(t, ms) })
+	t.Run("Store_MissingArgument", func(t *testing.T) { testStoreMissingArgument(t, ms) })
 }
 
 func testDriverOpen(t *testing.T, ms makeStore) {
@@ -140,15 +141,15 @@ func testStoreSetIf(t *testing.T, ms makeStore) {
 		// should NOT set new value if old value is not kept
 		newValue = []byte("val3")
 		err = store.SetIf(ctx, key, newValue, value)
-		if !errors.Is(err, kv.ErrNotFound) {
-			t.Fatalf("setIf err=%s, key=%s, value=%s, pred=%s, expected err=%s", err, key, newValue, value, kv.ErrNotFound)
+		if !errors.Is(err, kv.ErrPredicateFailed) {
+			t.Fatalf("setIf err=%s, key=%s, value=%s, pred=%s, expected err=%s", err, key, newValue, value, kv.ErrPredicateFailed)
 		}
 
 		// should NOT set new value if try conditional nil
 		newValue = []byte("val4")
 		err = store.SetIf(ctx, key, newValue, nil)
-		if !errors.Is(err, kv.ErrNotFound) {
-			t.Fatalf("setIf err=%s, key=%s, value=%s, pred=%s, expected err=%s", err, key, newValue, value, kv.ErrNotFound)
+		if !errors.Is(err, kv.ErrPredicateFailed) {
+			t.Fatalf("setIf err=%s, key=%s, value=%s, pred=%s, expected err=%s", err, key, newValue, value, kv.ErrPredicateFailed)
 		}
 	})
 
@@ -163,9 +164,9 @@ func testStoreSetIf(t *testing.T, ms makeStore) {
 
 		// should fail if we try to do the same again - as the value updated to 'val1'
 		err = store.SetIf(ctx, key, value, nil)
-		if !errors.Is(err, kv.ErrNotFound) {
+		if !errors.Is(err, kv.ErrPredicateFailed) {
 			t.Fatalf("setIf with nil while key/value exists - err=%v, key=%s value=%s, expected err=%s",
-				err, key, value, kv.ErrNotFound)
+				err, key, value, kv.ErrPredicateFailed)
 		}
 	})
 }
@@ -177,7 +178,7 @@ func testStoreScan(t *testing.T, ms makeStore) {
 
 	// setup sample data
 	samplePrefix := uniqueKey("scan")
-	const sampleItems = 10
+	const sampleItems = 100
 	sampleData := setupSampleData(t, ctx, store, string(samplePrefix), sampleItems)
 
 	t.Run("full", func(t *testing.T) {
@@ -212,7 +213,8 @@ func testStoreScan(t *testing.T, ms makeStore) {
 	})
 
 	t.Run("part", func(t *testing.T) {
-		fromKey := append(samplePrefix, []byte("-key-5")...)
+		const fromIndex = 5
+		fromKey := append(samplePrefix, []byte(fmt.Sprintf("-key-%04d", fromIndex))...)
 		scan, err := store.Scan(ctx, fromKey)
 		if err != nil {
 			t.Fatal("failed to scan", err)
@@ -234,12 +236,11 @@ func testStoreScan(t *testing.T, ms makeStore) {
 				break
 			}
 			entries = append(entries, *ent)
-			t.Fail()
 		}
 		if err := scan.Err(); err != nil {
 			t.Fatal("scan ended with an error", err)
 		}
-		if diff := deep.Equal(entries, sampleData[5:]); diff != nil {
+		if diff := deep.Equal(entries, sampleData[fromIndex:]); diff != nil {
 			t.Fatal("scan data didn't match:", diff)
 		}
 	})
@@ -254,6 +255,47 @@ func makeStoreByName(name string, dsn string) makeStore {
 		}
 		return store
 	}
+}
+
+func testStoreMissingArgument(t *testing.T, ms makeStore) {
+	ctx := context.Background()
+	store := ms(t, ctx)
+
+	t.Run("Get", func(t *testing.T) {
+		_, err := store.Get(ctx, nil)
+		if !errors.Is(err, kv.ErrMissingKey) {
+			t.Errorf("Get using nil key - err=%v, expected %s", err, kv.ErrMissingKey)
+		}
+	})
+
+	t.Run("Set", func(t *testing.T) {
+		if err := store.Set(ctx, nil, []byte("v")); !errors.Is(err, kv.ErrMissingKey) {
+			t.Errorf("Set using nil key - err=%v, expected %s", err, kv.ErrMissingKey)
+		}
+
+		key := uniqueKey("test-missing-argument")
+		if err := store.Set(ctx, key, nil); !errors.Is(err, kv.ErrMissingValue) {
+			t.Errorf("Set using nil value - err=%v, expected %s", err, kv.ErrMissingValue)
+		}
+	})
+
+	t.Run("SetIf", func(t *testing.T) {
+		if err := store.SetIf(ctx, nil, []byte("v"), []byte("p")); !errors.Is(err, kv.ErrMissingKey) {
+			t.Errorf("SetIf using nil key - err=%v, expected %s", err, kv.ErrMissingKey)
+		}
+
+		key := uniqueKey("test-missing-argument")
+		if err := store.SetIf(ctx, key, nil, []byte("p")); !errors.Is(err, kv.ErrMissingValue) {
+			t.Errorf("SetIf using nil value - err=%v, expected %s", err, kv.ErrMissingValue)
+		}
+	})
+
+	t.Run("Delete", func(t *testing.T) {
+		err := store.Delete(ctx, nil)
+		if !errors.Is(err, kv.ErrMissingKey) {
+			t.Errorf("Delete using nil key - err=%v, expected %s", err, kv.ErrMissingKey)
+		}
+	})
 }
 
 func setupSampleData(t *testing.T, ctx context.Context, store kv.Store, prefix string, items int) []kv.Entry {
@@ -271,7 +313,7 @@ func setupSampleData(t *testing.T, ctx context.Context, store kv.Store, prefix s
 }
 
 func sampleEntry(prefix string, n int) kv.Entry {
-	k := fmt.Sprintf("%s-key-%d", prefix, n)
-	v := fmt.Sprintf("%s-value-%d", prefix, n)
+	k := fmt.Sprintf("%s-key-%04d", prefix, n)
+	v := fmt.Sprintf("%s-value-%04d", prefix, n)
 	return kv.Entry{Key: []byte(k), Value: []byte(v)}
 }

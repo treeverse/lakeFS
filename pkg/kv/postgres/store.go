@@ -154,7 +154,7 @@ func (s *Store) SetIf(ctx context.Context, key, value, valuePredicate []byte) er
 		return fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
 	}
 	if res.RowsAffected() != 1 {
-		return kv.ErrNotFound
+		return kv.ErrPredicateFailed
 	}
 	return nil
 }

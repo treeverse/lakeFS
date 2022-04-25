@@ -17,6 +17,7 @@ var (
 	ErrMissingValue        = errors.New("missing value")
 	ErrNotFound            = errors.New("not found")
 	ErrClosedEntries       = errors.New("closed entries")
+	ErrPredicateFailed     = errors.New("predicate failed")
 )
 
 // Driver define the root interface to access the kv database.
@@ -33,7 +34,7 @@ type Store interface {
 	// Set stores the given value, overwriting an existing value if one exists
 	Set(ctx context.Context, key, value []byte) error
 
-	// SetIf returns an ErrNotFound error if the key with valuePredicate passed
+	// SetIf returns an ErrPredicateFailed error if the key with valuePredicate passed
 	//  doesn't match the currently stored value. SetIf is a simple compare-and-swap operator:
 	//  valuePredicate is either the existing value, or nil for no key.
 	//  this is intentionally simplistic: we can model a better abstraction on top, keeping this interface simple for implementors

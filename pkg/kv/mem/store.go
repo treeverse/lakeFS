@@ -92,11 +92,11 @@ func (s *Store) SetIf(_ context.Context, key, value, valuePredicate []byte) erro
 	curr := s.m[string(key)]
 	if valuePredicate == nil {
 		if curr != nil {
-			return kv.ErrNotFound
+			return kv.ErrPredicateFailed
 		}
 		s.insertNewKey(key)
 	} else if !bytes.Equal(valuePredicate, curr) {
-		return kv.ErrNotFound
+		return kv.ErrPredicateFailed
 	}
 	s.m[string(key)] = value
 	return nil
