@@ -17,7 +17,7 @@ type Store struct {
 	mu   sync.RWMutex
 }
 
-type Entries struct {
+type EntriesIterator struct {
 	entry *kv.Entry
 	err   error
 	start []byte
@@ -88,9 +88,9 @@ func (s *Store) SetIf(_ context.Context, key, value, valuePredicate []byte) erro
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	curr := s.m[string(key)]
+	curr, currOK := s.m[string(key)]
 	if valuePredicate == nil {
-		if curr != nil {
+		if currOK {
 			return kv.ErrPredicateFailed
 		}
 		s.insertNewKey(key)
@@ -118,8 +118,8 @@ func (s *Store) Delete(_ context.Context, key []byte) error {
 	return nil
 }
 
-func (s *Store) Scan(_ context.Context, start []byte) (kv.Entries, error) {
-	return &Entries{
+func (s *Store) Scan(_ context.Context, start []byte) (kv.EntriesIterator, error) {
+	return &EntriesIterator{
 		store: s,
 		start: start,
 	}, nil
@@ -127,7 +127,7 @@ func (s *Store) Scan(_ context.Context, start []byte) (kv.Entries, error) {
 
 func (s *Store) Close() {}
 
-func (e *Entries) Next() bool {
+func (e *EntriesIterator) Next() bool {
 	if e.err != nil {
 		return false
 	}
@@ -159,14 +159,14 @@ func (e *Entries) Next() bool {
 	return true
 }
 
-func (e *Entries) Entry() *kv.Entry {
+func (e *EntriesIterator) Entry() *kv.Entry {
 	return e.entry
 }
 
-func (e *Entries) Err() error {
+func (e *EntriesIterator) Err() error {
 	return e.err
 }
 
-func (e *Entries) Close() {
+func (e *EntriesIterator) Close() {
 	e.err = kv.ErrClosedEntries
 }

@@ -36,7 +36,7 @@ func (m *MockStore) Delete(_ context.Context, _ []byte) error {
 	return errNotImplemented
 }
 
-func (m *MockStore) Scan(_ context.Context, _ []byte) (kv.Entries, error) {
+func (m *MockStore) Scan(_ context.Context, _ []byte) (kv.EntriesIterator, error) {
 	return nil, errNotImplemented
 }
 

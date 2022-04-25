@@ -46,14 +46,14 @@ type Store interface {
 	Delete(ctx context.Context, key []byte) error
 
 	// Scan returns entries that can be read by key order, starting at or after the `start` position
-	Scan(ctx context.Context, start []byte) (Entries, error)
+	Scan(ctx context.Context, start []byte) (EntriesIterator, error)
 
 	// Close access to the database store. After calling Close the instance is unusable.
 	Close()
 }
 
-// Entries used to enumerate over Scan results
-type Entries interface {
+// EntriesIterator used to enumerate over Scan results
+type EntriesIterator interface {
 	// Next should be called first before access Entry.
 	// it will process the next entry and return true if it was successful, and false when none or error.
 	Next() bool

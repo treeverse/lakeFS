@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync/atomic"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
@@ -15,12 +14,12 @@ import (
 type Driver struct{}
 
 type Store struct {
-	Pool   *pgxpool.Pool
-	Params *Params
-	closed int64
+	Pool           *pgxpool.Pool
+	Params         *Params
+	TableSanitized string
 }
 
-type Entries struct {
+type EntriesIterator struct {
 	rows  pgx.Rows
 	entry *kv.Entry
 	err   error
@@ -67,21 +66,22 @@ func (d *Driver) Open(ctx context.Context, name string) (kv.Store, error) {
 	}
 
 	params := parseStoreConfig(config.ConnConfig.RuntimeParams)
-
 	err = setupKeyValueDatabase(ctx, conn, params)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", kv.ErrSetupFailed, err)
 	}
 	store := &Store{
-		Pool:   pool,
-		Params: params,
+		Pool:           pool,
+		Params:         params,
+		TableSanitized: pgx.Identifier{params.TableName}.Sanitize(),
 	}
 	pool = nil
 	return store, nil
 }
 
 type Params struct {
-	TableName string
+	TableName          string
+	SanitizedTableName string
 }
 
 func parseStoreConfig(runtimeParams map[string]string) *Params {
@@ -91,12 +91,13 @@ func parseStoreConfig(runtimeParams map[string]string) *Params {
 	if tableName, ok := runtimeParams[paramTableName]; ok {
 		p.TableName = tableName
 	}
+	p.SanitizedTableName = pgx.Identifier{p.TableName}.Sanitize()
 	return p
 }
 
 // setupKeyValueDatabase setup everything required to enable kv over postgres
 func setupKeyValueDatabase(ctx context.Context, conn *pgxpool.Conn, params *Params) error {
-	_, err := conn.Exec(ctx, `CREATE TABLE IF NOT EXISTS `+params.TableName+` (
+	_, err := conn.Exec(ctx, `CREATE TABLE IF NOT EXISTS `+params.SanitizedTableName+` (
     key BYTEA NOT NULL PRIMARY KEY,
     value BYTEA NOT NULL);`)
 	return err
@@ -106,7 +107,7 @@ func (s *Store) Get(ctx context.Context, key []byte) ([]byte, error) {
 	if key == nil {
 		return nil, kv.ErrMissingKey
 	}
-	row := s.Pool.QueryRow(ctx, `SELECT value FROM `+s.Params.TableName+` WHERE key = $1`, key)
+	row := s.Pool.QueryRow(ctx, `SELECT value FROM `+s.Params.SanitizedTableName+` WHERE key = $1`, key)
 	var val []byte
 	err := row.Scan(&val)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -125,7 +126,7 @@ func (s *Store) Set(ctx context.Context, key, value []byte) error {
 	if value == nil {
 		return kv.ErrMissingValue
 	}
-	_, err := s.Pool.Exec(ctx, `INSERT INTO `+s.Params.TableName+`(key,value) VALUES($1,$2)
+	_, err := s.Pool.Exec(ctx, `INSERT INTO `+s.Params.SanitizedTableName+`(key,value) VALUES($1,$2)
 			ON CONFLICT (key) DO UPDATE SET value = $2`, key, value)
 	if err != nil {
 		return fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
@@ -146,10 +147,10 @@ func (s *Store) SetIf(ctx context.Context, key, value, valuePredicate []byte) er
 	)
 	if valuePredicate == nil {
 		// use insert to make sure there was no previous value before
-		res, err = s.Pool.Exec(ctx, `INSERT INTO `+s.Params.TableName+`(key,value) VALUES($1,$2) ON CONFLICT DO NOTHING`, key, value)
+		res, err = s.Pool.Exec(ctx, `INSERT INTO `+s.Params.SanitizedTableName+`(key,value) VALUES($1,$2) ON CONFLICT DO NOTHING`, key, value)
 	} else {
 		// update just in case the previous value was same as predicate value
-		res, err = s.Pool.Exec(ctx, `UPDATE `+s.Params.TableName+` SET value=$2 WHERE key=$1 AND value=$3`, key, value, valuePredicate)
+		res, err = s.Pool.Exec(ctx, `UPDATE `+s.Params.SanitizedTableName+` SET value=$2 WHERE key=$1 AND value=$3`, key, value, valuePredicate)
 	}
 	if err != nil {
 		return fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
@@ -164,39 +165,37 @@ func (s *Store) Delete(ctx context.Context, key []byte) error {
 	if key == nil {
 		return kv.ErrMissingKey
 	}
-	_, err := s.Pool.Exec(ctx, `DELETE FROM `+s.Params.TableName+` WHERE key=$1`, key)
+	_, err := s.Pool.Exec(ctx, `DELETE FROM `+s.Params.SanitizedTableName+` WHERE key=$1`, key)
 	if err != nil {
 		return fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
 	}
 	return nil
 }
 
-func (s *Store) Scan(ctx context.Context, start []byte) (kv.Entries, error) {
+func (s *Store) Scan(ctx context.Context, start []byte) (kv.EntriesIterator, error) {
 	var (
 		rows pgx.Rows
 		err  error
 	)
 	if start == nil {
-		rows, err = s.Pool.Query(ctx, `SELECT key,value FROM `+s.Params.TableName+` ORDER BY key`)
+		rows, err = s.Pool.Query(ctx, `SELECT key,value FROM `+s.Params.SanitizedTableName+` ORDER BY key`)
 	} else {
-		rows, err = s.Pool.Query(ctx, `SELECT key,value FROM `+s.Params.TableName+` WHERE key >= $1 ORDER BY key`, start)
+		rows, err = s.Pool.Query(ctx, `SELECT key,value FROM `+s.Params.SanitizedTableName+` WHERE key >= $1 ORDER BY key`, start)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
 	}
-	return &Entries{
+	return &EntriesIterator{
 		rows: rows,
 	}, nil
 }
 
 func (s *Store) Close() {
-	if atomic.CompareAndSwapInt64(&s.closed, 0, 1) {
-		s.Pool.Close()
-	}
+	s.Pool.Close()
 }
 
 // Next reads the next key/value.
-func (e *Entries) Next() bool {
+func (e *EntriesIterator) Next() bool {
 	if e.err != nil {
 		return false
 	}
@@ -213,12 +212,12 @@ func (e *Entries) Next() bool {
 	return true
 }
 
-func (e *Entries) Entry() *kv.Entry {
+func (e *EntriesIterator) Entry() *kv.Entry {
 	return e.entry
 }
 
 // Err return the last scan error or the cursor error
-func (e *Entries) Err() error {
+func (e *EntriesIterator) Err() error {
 	if e.err != nil {
 		return e.err
 	}
@@ -229,7 +228,7 @@ func (e *Entries) Err() error {
 	return nil
 }
 
-func (e *Entries) Close() {
+func (e *EntriesIterator) Close() {
 	e.rows.Close()
 	e.entry = nil
 	e.err = kv.ErrClosedEntries
