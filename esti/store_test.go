@@ -12,6 +12,9 @@ import (
 const IngestTestBucketPath = "s3://esti-system-testing-data/ingest-test-data/"
 
 func TestS3Walk(t *testing.T) {
+	// Specific S3 test, this test can only run on AWS setup, and therefore is skipped for other store types
+	skipOnSchemaMismatch(t, IngestTestBucketPath)
+
 	// Test bucket was uploaded with 2100 as the test is written. If the test fails on this number,
 	// make sure there were no changes made to the bucket, or update this number accordingly
 	const expectedNumObjs = 2100

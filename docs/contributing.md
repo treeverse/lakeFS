@@ -69,6 +69,8 @@ Our [Go release workflow](https://github.com/treeverse/lakeFS/blob/master/.githu
 
 Once you've made the necessary changes to the code, make sure tests pass:
 
+Run unit tests:
+
 ```shell
 make test
 ```
@@ -78,8 +80,16 @@ Check linting rules are passing:
 ```shell
 make checks-validator
 ```
-
 lakeFS uses [go fmt](https://golang.org/cmd/gofmt/) as a style guide for Go code.
+
+Run system-tests:
+
+```shell
+make system-tests
+```
+
+Want to dive deeper into our system tests infrastructure? Need to debug the tests? Follow [this](https://github.com/treeverse/lakeFS/blob/master/esti/README.md) documentation.
+{: .note .note-info }
 
 ## Submitting a pull request
 
