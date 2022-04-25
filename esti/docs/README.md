@@ -10,8 +10,8 @@ The following guide explains how to set up and execute the system tests infrastr
 A couple of prerequisites before we start:
 
 * Go over our [contributing](https://docs.lakefs.io/contributing.html) page and make sure you have a working lakeFS environment.
-* Docker and docker-compose (we are using docker-compose to load a containerized postgres DB)
-* Curl
+* [Docker](https://www.docker.com/) and [docker-compose](https://docs.docker.com/compose/install/) (we are using docker-compose to load a containerized postgres DB)
+* [Curl](https://curl.se/)
 
 ### Running lakeFS
 
@@ -61,7 +61,7 @@ For a full list of arguments run:
 Notes:
 1. By default, tests are performing lakeFS setup using predefined credentials. As consequence:
    1. Tests that validate creation of access key id and secret access key will not test this functionality
-   2. This will require stopping and re-running the lakeFS server on each tests execution
+   2. This will require stopping and re-running the lakeFS server on each test execution
 2. To run tests on an already existing lakeFS instance (after initial setup has occurred):
    1. Modify the ESTI_SETUP_LAKEFS environment variable from 'true' to 'false'
    2. Use cautiously as some test preconditions will cause tests to fail on existing lakeFS environments
