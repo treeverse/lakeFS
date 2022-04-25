@@ -21,7 +21,6 @@ type Entries struct {
 	entry *kv.Entry
 	err   error
 	start []byte
-	first bool
 	store *Store
 }
 
@@ -122,7 +121,6 @@ func (s *Store) Delete(_ context.Context, key []byte) error {
 func (s *Store) Scan(_ context.Context, start []byte) (kv.Entries, error) {
 	return &Entries{
 		store: s,
-		first: true,
 		start: start,
 	}, nil
 }
@@ -130,6 +128,9 @@ func (s *Store) Scan(_ context.Context, start []byte) (kv.Entries, error) {
 func (s *Store) Close() {}
 
 func (e *Entries) Next() bool {
+	if e.err != nil {
+		return false
+	}
 	if e.start == nil {
 		return false
 	}

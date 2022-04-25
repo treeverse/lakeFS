@@ -23,7 +23,9 @@ var (
 // Driver define the root interface to access the kv database.
 // Each kv provider implements a driver which provides Store instance.
 type Driver interface {
-	// Open access to the database store. migrate kv if needed.
+	// Open access to the database store. Implementation should give access to the same storage based on the dsn.
+	// Implementation can return the same Storage instance based on dsn or new one as long as it provides access to
+	// the same storage.
 	Open(ctx context.Context, dsn string) (Store, error)
 }
 
