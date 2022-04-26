@@ -104,6 +104,15 @@ func Register(name string, driver Driver) {
 	drivers[name] = driver
 }
 
+// UnregisterAllDrivers remove all loaded drivers, used for test code.
+func UnregisterAllDrivers() {
+	driversMu.Lock()
+	defer driversMu.Unlock()
+	for k := range drivers {
+		delete(drivers, k)
+	}
+}
+
 // Open lookup driver with 'name' and return Store based on 'dsn' (data source name).
 // Failed with ErrUnknownDriver in case 'name' is not registered
 func Open(ctx context.Context, name, dsn string) (Store, error) {
@@ -114,4 +123,15 @@ func Open(ctx context.Context, name, dsn string) (Store, error) {
 		return nil, fmt.Errorf("%w: %s", ErrUnknownDriver, name)
 	}
 	return d.Open(ctx, dsn)
+}
+
+// Drivers returns a list of registered drive names
+func Drivers() []string {
+	driversMu.RLock()
+	defer driversMu.RUnlock()
+	names := make([]string, 0, len(drivers))
+	for name := range drivers {
+		names = append(names, name)
+	}
+	return names
 }

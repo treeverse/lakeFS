@@ -271,6 +271,39 @@ func testStoreScan(t *testing.T, ms makeStore) {
 			t.Fatal("scan data didn't match:", diff)
 		}
 	})
+
+	t.Run("part", func(t *testing.T) {
+		const fromIndex = 5
+		fromKey := append(samplePrefix, []byte(fmt.Sprintf("-key-%04d", fromIndex))...)
+		scan, err := store.Scan(ctx, fromKey)
+		if err != nil {
+			t.Fatal("failed to scan", err)
+		}
+		defer scan.Close()
+
+		var entries []kv.Entry
+		for scan.Next() {
+			ent := scan.Entry()
+			switch {
+			case ent == nil:
+				t.Fatal("scan got nil entry")
+			case ent.Key == nil:
+				t.Fatal("scan got entry with nil Key")
+			case ent.Value == nil:
+				t.Fatal("scan got entry with nil Value")
+			}
+			if !bytes.HasPrefix(ent.Key, samplePrefix) {
+				break
+			}
+			entries = append(entries, *ent)
+		}
+		if err := scan.Err(); err != nil {
+			t.Fatal("scan ended with an error", err)
+		}
+		if diff := deep.Equal(entries, sampleData[fromIndex:]); diff != nil {
+			t.Fatal("scan data didn't match:", diff)
+		}
+	})
 }
 
 func makeStoreByName(name, dsn string) makeStore {
@@ -287,6 +320,7 @@ func makeStoreByName(name, dsn string) makeStore {
 func testStoreMissingArgument(t *testing.T, ms makeStore) {
 	ctx := context.Background()
 	store := ms(t, ctx)
+	defer store.Close()
 
 	t.Run("Get", func(t *testing.T) {
 		_, err := store.Get(ctx, nil)
@@ -328,6 +362,7 @@ func testStoreMissingArgument(t *testing.T, ms makeStore) {
 func testScanPrefix(t *testing.T, ms makeStore) {
 	ctx := context.Background()
 	store := ms(t, ctx)
+	defer store.Close()
 
 	// setup data - use the last set to scan
 	var (

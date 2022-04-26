@@ -3,7 +3,10 @@ package kv_test
 import (
 	"context"
 	"errors"
+	"sort"
 	"testing"
+
+	"github.com/go-test/deep"
 
 	"github.com/treeverse/lakefs/pkg/kv"
 )
@@ -95,4 +98,16 @@ func TestRegister(t *testing.T) {
 		}()
 		kv.Register("", &MockDriver{Name: "empty"})
 	})
+}
+
+func TestDrivers(t *testing.T) {
+	kv.UnregisterAllDrivers()
+	kv.Register("driver1", &MockDriver{Name: "driver1"})
+	kv.Register("driver2", &MockDriver{Name: "driver2"})
+	all := kv.Drivers()
+	sort.Strings(all)
+	expectedDrivers := []string{"driver1", "driver2"}
+	if diff := deep.Equal(all, expectedDrivers); diff != nil {
+		t.Fatalf("Drivers diff = %s", diff)
+	}
 }
