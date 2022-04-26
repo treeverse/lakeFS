@@ -79,6 +79,7 @@ To debug the tests and server code we must create run configurations for both la
 2. Copy the configuration from the following screenshot
    1. Add basic environment variables from the _set_env_vars.sh_ script's lakeFS section
    2. Add additional / modify environment variables as needed
+   
    ![](img/lakefs_config.png)
 3. Create a before launch, external tool to load the postgres docker image
    ![](img/postgres.png)
@@ -91,11 +92,11 @@ To debug the tests and server code we must create run configurations for both la
 
    ![](img/go_test.png)
 2. Copy the configuration from the following screenshot
-    1. Add basic environment variables from the _set_env_vars.sh_ script's System tests section
-    2. Add additional / modify environment variables as needed
-    3. To filter tests, you can provide a regular expression in the '**Pattern**' text box or alternatively provide the proper command line argument in the '**Prgram arguments**' text box
+   1. Add basic environment variables from the _set_env_vars.sh_ script's System tests section
+   2. Add additional / modify environment variables as needed
+   3. To filter tests, you can provide a regular expression in the '**Pattern**' text box or alternatively provide the proper command line argument in the '**Prgram arguments**' text box
    
-    ![](img/esti_config.png)
+   ![](img/esti_config.png)
 3. Press 'Apply', make sure the configuration is saved (it is not grayed out on the left side menu) and press 'OK'
 4. Try to execute the target (either by run / debug) and verify tests are running
 

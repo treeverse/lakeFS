@@ -88,7 +88,7 @@ Run system-tests:
 make system-tests
 ```
 
-Want to dive deeper into our system tests infrastructure? Need to debug the tests? Follow [this](https://github.com/treeverse/lakeFS/blob/master/esti/README.md) documentation.
+Want to dive deeper into our system tests infrastructure? Need to debug the tests? Follow [this](https://github.com/treeverse/lakeFS/blob/master/esti/docs/README.md) documentation.
 {: .note .note-info }
 
 ## Submitting a pull request
