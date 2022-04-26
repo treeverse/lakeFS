@@ -60,7 +60,8 @@ objects to be dropped rapidly.
 ## Sample flow
 
 * User configures lakeFSFS and configures LakeFSOutputCommitter as the
-  OutputCommitter for `lakefs` protocol Paths.
+  OutputCommitter for `lakefs` protocol Paths.  **Possibly** lakeFSFS will
+  set up this OutputCommitter by default.
 * **Setup (job/task TBD)**: Create a new branch for this job/task.  Its name
   is predictable from the job ID and/or task ID, so can be easily found
   again.  Immediately delete the entire subree of the intended output
@@ -84,7 +85,11 @@ objects to be dropped rapidly.
   we use lakeFS capabilities and guarantees.  Analyzing correctness becomes
   simpler.
 * **Fast**: No data copies, just only (required) metadata operations.  Cost
-  of commit is linear in the number of objects it touches.
+  of commit is linear in the number of objects it touches.  Total time to
+  write is close to 3* faster than the existing FileOutputCommitter in v1
+  mode, close to 2* faster than the existing FileOutputCommitter in v2 mode
+  (which is unsafe in various cases), and about as fast as the magic
+  OutputCommitter _if_ lakeFSFS supported it.
 * **Good semantics**: Spark commits will be lakeFS commits.  The history of
   a Spark job appears right in lakeFS history.  Metadata even includes some
   data lineage -- and in future we can easily add more, for instance as
