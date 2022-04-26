@@ -1,8 +1,10 @@
 package email
 
 import (
+	"embed"
 	"html/template"
 	"net/url"
+	"path"
 	"strings"
 )
 
@@ -10,66 +12,62 @@ const (
 	ResetPasswordPath = "/auth/resetpassword" //#nosec
 	InviteUserPath    = "/auth/users/create"  //#nosec
 
-	ResetPasswordEmailSubject = "Reset Password Request for your LakeFS account"
-	InviteUserWEmailSubject   = "You have been invited to LakeFS"
-
-	inviteUserTemplate = `Hello, <br>
-You have been invited to join LakeFS <br>
-Click on this link to set up your account <br>
-{{.URL}} <br>
-Thanks <br>
-The LakeFS team <br>
-`
-
-	resetEmailTemplate = `Hello, <br>
-A request has been received to change the password to your account,  <br>
-Click on this link to reset your password <br>
-{{.URL}} <br>
-If you did not initiate this request you can please disregard this email. <br>
-Thanks  <br>
-The LakeFS team <br>
-	`
+	ResetPasswordEmailSubject = "Reset Password Request for your lakeFS account"
+	InviteUserWEmailSubject   = "You have been invited to lakeFS"
 )
 
 var (
-	templ              = template.New("template")
-	ResetEmailTemplate = template.Must(templ.Parse(resetEmailTemplate))
-	InviteUserTemplate = template.Must(templ.Parse(inviteUserTemplate))
+	//go:embed invite_user_template.html reset_email_template.html
+	f                  embed.FS
+	inviteTemplate, _  = f.ReadFile("invite_user_template.html")
+	resetTemplate, _   = f.ReadFile("reset_email_template.html")
+	resetEmailTemplate = template.Must(template.New("resetEmailTemplate").Parse(string(resetTemplate)))
+	inviteUserTemplate = template.Must(template.New("inviteUserTemplate").Parse(string(inviteTemplate)))
 )
 
-type Link struct {
+type TemplateParams struct {
 	URL string
 }
 
-func buildURL(host string, path string, qParams map[string]string) (*string, error) {
-	baseURL, err := url.Parse(host)
+// buildURL takes in the baseURL that was configured for email purposes and adds to it the relevant path and params to
+// create a URL string that directs to the proper page, while passing the nessacery params
+func buildURL(baseURL string, pth string, qParams map[string]string) (*string, error) {
+	u, err := url.Parse(baseURL)
 	if err != nil {
 		return nil, err
 	}
-	baseURL.Path = path
-	params := url.Values{}
+	u.Path = path.Join(u.Path, pth)
+	params := u.Query()
 	for prm, value := range qParams {
 		params.Add(prm, value)
 	}
-	baseURL.RawQuery = params.Encode()
-	url := baseURL.String()
+	u.RawQuery = params.Encode()
+	url := u.String()
 	return &url, nil
 }
 
-func BuildEmailTemplate(tmpl *template.Template, host string, path string, token string) (*string, error) {
-	builder := &strings.Builder{}
+func buildEmailTemplate(tmpl *template.Template, host string, path string, token string) (string, error) {
 	params := map[string]string{
 		"token": token,
 	}
 	url, err := buildURL(host, path, params)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	l := Link{URL: *url}
-	err = tmpl.Execute(builder, l)
+	var builder strings.Builder
+	l := TemplateParams{URL: *url}
+	err = tmpl.Execute(&builder, l)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	t := builder.String()
-	return &t, nil
+	return t, nil
+}
+
+func ConstructResetPasswordEmailTemplate(host string, token string) (string, error) {
+	return buildEmailTemplate(resetEmailTemplate, host, ResetPasswordPath, token)
+}
+
+func ConstructInviteUserEmailTemplate(host string, token string) (string, error) {
+	return buildEmailTemplate(inviteUserTemplate, host, InviteUserPath, token)
 }

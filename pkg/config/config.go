@@ -66,7 +66,7 @@ const (
 
 	DefaultEmailLimitEveryDuration = time.Minute
 	DefaultEmailBurst              = 10
-	DefaultEmailBaseURLEnpoint     = "http://127.0.0.1:8000"
+	DefaultEmailBaseURLEnpoint     = "http://localhost:8000"
 )
 
 var (
@@ -168,7 +168,7 @@ const (
 
 	EmailLimitEveryDurationKey = "email.limit_every_duration"
 	EmailBurstKey              = "email.burst"
-	EmailBaseURLEnpointKey     = "email.base_host_endpoint"
+	EmailBaseURLEnpointKey     = "email.lakefs_base_URL_endpoint"
 )
 
 func setDefaults() {
@@ -412,14 +412,14 @@ func (c *Config) GetStatsFlushInterval() time.Duration {
 
 func (c *Config) GetEmailParams() (email.EmailParams, error) {
 	return email.EmailParams{
-		SMTPHost:           c.values.Email.SMTPHost,
-		Port:               c.values.Email.Port,
-		Username:           c.values.Email.Username,
-		Password:           c.values.Email.Password,
-		Sender:             c.values.Email.Sender,
-		LimitEveryDuration: c.values.Email.LimitEveryDuration,
-		Burst:              c.values.Email.Burst,
-		BaseURLEndpoint:    c.values.Email.BaseURLEndpoint,
+		SMTPHost:              c.values.Email.SMTPHost,
+		Port:                  c.values.Email.Port,
+		Username:              c.values.Email.Username,
+		Password:              c.values.Email.Password,
+		Sender:                c.values.Email.Sender,
+		LimitEveryDuration:    c.values.Email.LimitEveryDuration,
+		Burst:                 c.values.Email.Burst,
+		LakefsBaseURLEndpoint: c.values.Email.LakefsBaseURLEndpoint,
 	}, nil
 }
 

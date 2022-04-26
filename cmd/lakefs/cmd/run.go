@@ -243,6 +243,12 @@ var runCmd = &cobra.Command{
 				logger.WithError(err).Fatal("Failed to parse s3 fallback URL")
 			}
 		}
+
+		_, err = url.Parse(emailParams.LakefsBaseURLEndpoint)
+		if err != nil {
+			logger.WithError(err).Fatal("Failed to parse lakefs base url for email")
+		}
+
 		s3gatewayHandler := gateway.NewHandler(
 			cfg.GetS3GatewayRegion(),
 			c,

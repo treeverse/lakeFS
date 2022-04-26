@@ -17,14 +17,14 @@ type Emailer struct {
 var ErrRateLimitExceeded = errors.New("rate limit exceeded")
 
 type EmailParams struct {
-	SMTPHost           string
-	Port               int
-	Username           string
-	Password           string
-	Sender             string
-	LimitEveryDuration time.Duration
-	Burst              int
-	BaseURLEndpoint    string
+	SMTPHost              string
+	Port                  int
+	Username              string
+	Password              string
+	Sender                string
+	LimitEveryDuration    time.Duration
+	Burst                 int
+	LakefsBaseURLEndpoint string
 }
 
 func NewEmailer(e EmailParams) *Emailer {
