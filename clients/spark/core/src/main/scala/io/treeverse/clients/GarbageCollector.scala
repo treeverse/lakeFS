@@ -366,7 +366,7 @@ object GarbageCollector {
 
   private def repartitionBySize(df: DataFrame, maxSize: Int, column: String): DataFrame = {
     val nRows = df.count()
-    val nPartitions = math.max(1, math.floor(nRows / maxSize)).toInt
+    val nPartitions = math.max(1, math.ceil(nRows / maxSize)).toInt
     df.repartitionByRange(nPartitions, col(column))
   }
 
