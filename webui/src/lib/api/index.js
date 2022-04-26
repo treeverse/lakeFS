@@ -129,11 +129,11 @@ class Auth {
         }
     }
 
-    async updatePasswordByToken(token, newPassword) {
+    async updatePasswordByToken(token, newPassword, email = "") {
         const response = await fetch(`${API_ENDPOINT}/auth/password`, {
             headers: new Headers(defaultAPIHeaders),
             method: 'POST',
-            body: json({token: token, newPassword: newPassword})
+            body: json({token: token, newPassword: newPassword, email: email})
         });
 
         if (response.status === 401) {

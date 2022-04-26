@@ -60,7 +60,7 @@ const CreateUserWithPasswordForm = ({token, email}) => {
                         <Form id='activate-user' onSubmit={async (e) => {
                             e.preventDefault();
                             try {
-                                await auth.updatePasswordByToken(token, e.target.password.value);
+                                await auth.updatePasswordByToken(token, e.target.password.value, email);
                                 setReqActivateUserError(null);
                                 router.push("/auth/login");
                             } catch (err) {
