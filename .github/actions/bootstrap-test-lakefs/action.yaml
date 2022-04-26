@@ -20,24 +20,27 @@ runs:
       with:
         name: generated-code
         path: /tmp/
+
     - name: Unpack generated code
       shell: bash
       run: tar -xf /tmp/generated.tar.gz
+
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
-        aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1
+        role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+
     - name: Login to Amazon ECR
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v1
+
     - name: Start docker-compose
+      shell: bash
+      working-directory: ${{ inputs.compose-directory }}
       env:
         LAKEFS_STATS_ENABLED: "false"
         LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.docker.lakefs.io:8000
       run: |
         [[ -z "${{ inputs.compose-file }}" ]] && flags="" || flags="-f ${{ inputs.compose-file }}"
         docker-compose ${flags} up ${{ inputs.compose-flags }}
-      shell: bash
-      working-directory: ${{ inputs.compose-directory }}

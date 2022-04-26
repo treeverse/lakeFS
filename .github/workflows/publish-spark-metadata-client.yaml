@@ -9,26 +9,35 @@ jobs:
     steps:
       - name: Check-out code
         uses: actions/checkout@v2
+
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
-      - name: validate format
+
+      - name: Validate format
         working-directory: clients/spark
         run: sbt scalafmtCheck
-      - name: validate unused
+
+      - name: Validate unused
         working-directory: clients/spark
-        run: sbt "scalafix --check"
+        run: sbt scalafix --check
+
       - name: Install secret key for signing
         run: |
           echo -e '${{ secrets.OSSRH_GPG_SECRET_KEY }}' | gpg --batch --import
           gpg --list-secret-keys --keyid-format LONG
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+
       - name: Prepare publish credentials
         run: |
           mkdir -p ~/.sbt
           cat << EOS > ~/.sbt/credentials
-          realm=Amazon S3" > ~/.sbt/credentials
+          realm=Amazon S3
           host=treeverse-clients-us-east.s3.amazonaws.com
-          user=${AWS_ACCESS_KEY_ID}
-          password=${AWS_SECRET_ACCESS_KEY}
           EOS
           cat << EOS > ~/.sbt/sonatype_credentials
           realm=Sonatype Nexus Repository Manager
@@ -37,14 +46,12 @@ jobs:
           password=${OSSRH_TOKEN}
           EOS
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}
+
       - name: Publish artifacts
         run: make publish-scala
         env:
           AWS_REGION: us-east-1
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME }}
 
