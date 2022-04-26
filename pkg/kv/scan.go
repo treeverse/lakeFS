@@ -42,7 +42,7 @@ func (b *PrefixIterator) Close() {
 	b.Iterator.Close()
 }
 
-// ScanPrefix helper iterator to scan set of keys by prefix
+// ScanPrefix returns an iterator on store that scan the set of keys that start with prefix
 func ScanPrefix(ctx context.Context, store Store, prefix []byte) (EntriesIterator, error) {
 	iter, err := store.Scan(ctx, prefix)
 	if err != nil {
