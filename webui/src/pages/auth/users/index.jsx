@@ -44,7 +44,7 @@ const UsersContainer = () => {
     useEffect(() => { setSelected([]); }, [refresh, after]);
 
     const authCapabilities = useAPI(() => auth.getAuthCapabilities());
-    if (!!error) return <Error error={error}/>;
+    if (error) return <Error error={error}/>;
     if (loading) return <Loading/>;
     if (authCapabilities.loading) return <Loading/>;
 

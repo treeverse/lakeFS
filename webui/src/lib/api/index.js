@@ -124,8 +124,6 @@ class Auth {
         switch (response.status) {
             case 200:
                 return await response.json();
-            case 401:
-                throw new NotFoundError('unauthorized to view auth capabilities');
             default:
                 throw new Error('Unknown');
         }
@@ -210,7 +208,7 @@ class Auth {
 
     async createUser(userId, inviteUser = false) {
         const response = await apiRequest(`/auth/users`,
-            {method: 'POST', body: json({id: userId, inviteUser: inviteUser})});
+            {method: 'POST', body: json({id: userId, invite_user: inviteUser})});
         if (response.status !== 201) {
             throw new Error(await extractError(response));
         }

@@ -9,22 +9,31 @@ import {auth} from "../../../lib/api";
 import {ActionGroup, ActionsBar, Error} from "../../../lib/components/controls";
 import Button from "react-bootstrap/Button";
 import {useRouter} from "../../../lib/hooks/router";
-import jwt_decode from "jwt-decode";
 
 const TOKEN_PARAM_NAME = "token";
+const EMAIL_PARAM_NAME = "email";
 
-const CreateUserWithPasswordForm = ({token}) => {
+const CreateUserWithPasswordForm = ({token, email}) => {
 
     const router = useRouter();
-    const decoded = jwt_decode(token);
-    const invitedUserEmail = decoded.sub;
 
     const onConfirmPasswordChange = () => {
-        setPwdConfirmValid(true)
-        if (newPwdField.current !== null) {
+        if (newPwdField.current.value && newPwdField.current.value.length > 0) {
             const isPasswordMatch = newPwdField.current.value === confirmPasswordField.current.value;
+            setFormValid(isPasswordMatch);
             setPwdConfirmValid(isPasswordMatch);
-            setFormValid(isPasswordMatch)
+        } else {
+            setPwdConfirmValid(true);
+        }
+    };
+
+    const onPasswordChange = () => {
+        if (confirmPasswordField.current.value && confirmPasswordField.current.value.length > 0) {
+            const isPasswordMatch = newPwdField.current.value === confirmPasswordField.current.value;
+            setFormValid(isPasswordMatch);
+            setPwdConfirmValid(isPasswordMatch);
+        } else {
+            setPwdConfirmValid(true);
         }
     };
 
@@ -49,9 +58,9 @@ const CreateUserWithPasswordForm = ({token}) => {
                     <Card.Header>Activate User</Card.Header>
                     <Card.Body>
                         <Form id='activate-user' onSubmit={async (e) => {
-                            e.preventDefault()
+                            e.preventDefault();
                             try {
-                                await auth.passwordForgot(e.target.email.value)
+                                await auth.updatePasswordByToken(token, e.target.password.value);
                                 setReqActivateUserError(null);
                                 router.push("/auth/login");
                             } catch (err) {
@@ -59,11 +68,11 @@ const CreateUserWithPasswordForm = ({token}) => {
                             }
                         }}>
                             <Form.Group controlId="email">
-                                <Form.Control type="text" placeholder={invitedUserEmail} disabled={true}/>
+                                <Form.Control type="text" placeholder={email} disabled={true}/>
                             </Form.Group>
 
                             <Form.Group controlId="password">
-                                <Form.Control type="password" placeholder="Password" ref={newPwdField}/>
+                                <Form.Control type="password" placeholder="Password" ref={newPwdField} onChange={onPasswordChange}/>
                             </Form.Group>
 
                             <Form.Group controlId="confirmPassword">
@@ -82,7 +91,7 @@ const CreateUserWithPasswordForm = ({token}) => {
                 <ActionsBar>
                     <ActionGroup orientation="right">
                         <Button form='activate-user' type="submit" className="create-user" disabled={!formValid}>Create</Button>
-                        <Button className="cancel-create-user" onClick={() => {router.push("/auth/login");}}>Cancel</Button>
+                        <Button className="cancel-create-user" onClick={() => {router.push("/");}}>Cancel</Button>
                     </ActionGroup>
                 </ActionsBar>
             </Col>
@@ -92,15 +101,16 @@ const CreateUserWithPasswordForm = ({token}) => {
 
 
 export const CreateUserPage = () => {
-    let queryString = window.location.search;
-    let params = new URLSearchParams(queryString);
+    const queryString = window.location.search;
+    const params = new URLSearchParams(queryString);
     const token = params.get(TOKEN_PARAM_NAME);
+    const invitedUserEmail = params.get(EMAIL_PARAM_NAME);
 
     return (
         <Layout>
             {
                 !!token ?
-                    <CreateUserWithPasswordForm token={token}/> :
+                    <CreateUserWithPasswordForm token={token} email={invitedUserEmail}/> :
                     <Route>
                         <Redirect to="/auth/login"/>
                     </Route>
