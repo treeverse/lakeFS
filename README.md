@@ -1,4 +1,3 @@
-gaga This is a dummy PR for testing.njnnnj
 <p align="center">
   <img src="docs/assets/img/logo_large.png"/>
 </p>
