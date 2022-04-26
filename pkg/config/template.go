@@ -95,6 +95,10 @@ type configuration struct {
 		MaxOpenConnections    int32         `mapstructure:"max_open_connections"`
 		MaxIdleConnections    int32         `mapstructure:"max_idle_connections"`
 		ConnectionMaxLifetime time.Duration `mapstructure:"connection_max_lifetime"`
+		// KVEnabled Development flag to switch between postgres DB and KV store implementations
+		KVEnabled bool `mapstructure:"kv_enabled"`
+		// Type  Name of the KV Store driver DB implementation which is available according to the kv package Drivers function
+		Type string `mapstructure:"type"`
 	}
 
 	Auth struct {
