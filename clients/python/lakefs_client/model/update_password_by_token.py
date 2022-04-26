@@ -84,6 +84,7 @@ class UpdatePasswordByToken(ModelNormal):
         return {
             'token': (str,),  # noqa: E501
             'new_password': (str,),  # noqa: E501
+            'email': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -94,6 +95,7 @@ class UpdatePasswordByToken(ModelNormal):
     attribute_map = {
         'token': 'token',  # noqa: E501
         'new_password': 'newPassword',  # noqa: E501
+        'email': 'email',  # noqa: E501
     }
 
     read_only_vars = {
@@ -141,6 +143,7 @@ class UpdatePasswordByToken(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            email (str): optional user email to match the token for verification. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -228,6 +231,7 @@ class UpdatePasswordByToken(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            email (str): optional user email to match the token for verification. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

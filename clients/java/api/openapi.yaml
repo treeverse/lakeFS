@@ -5052,6 +5052,7 @@ components:
     UpdatePasswordByToken:
       example:
         newPassword: newPassword
+        email: email
         token: token
       properties:
         token:
@@ -5059,6 +5060,9 @@ components:
           type: string
         newPassword:
           description: new password to update
+          type: string
+        email:
+          description: optional user email to match the token for verification
           type: string
       required:
       - newPassword

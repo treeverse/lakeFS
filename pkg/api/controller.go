@@ -3118,6 +3118,16 @@ func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body
 		writeError(w, http.StatusUnauthorized, err)
 		return
 	}
+
+	// verify provided email matched the token
+	requestEmail := StringValue(body.Email)
+	if requestEmail != "" && requestEmail != claims.Subject {
+		c.Logger.WithError(err).WithFields(logging.Fields{
+			"token":         body.Token,
+			"request_email": requestEmail,
+		}).Debug("requested email doesn't match the email provided in verified token")
+	}
+
 	user, err := c.Auth.GetUserByEmail(r.Context(), claims.Subject)
 	if err != nil {
 		c.Logger.WithError(err).WithField("email", claims.Subject).Debug("failed to retrieve user by email")
