@@ -56,4 +56,12 @@ public class UpdatePasswordByTokenTest {
         // TODO: test newPassword
     }
 
+    /**
+     * Test the property 'email'
+     */
+    @Test
+    public void emailTest() {
+        // TODO: test email
+    }
+
 }

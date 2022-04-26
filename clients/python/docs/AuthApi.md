@@ -2965,6 +2965,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     update_password_by_token = UpdatePasswordByToken(
         token="token_example",
         new_password="new_password_example",
+        email="email_example",
     ) # UpdatePasswordByToken | 
 
     # example passing only required values which don't have defaults set
