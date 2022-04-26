@@ -12,7 +12,7 @@ trap 'rm -f -- $s3_out $lakectl_out' INT TERM EXIT
 
 docker-compose exec -T lakefs lakectl fs ls --recursive --no-color "lakefs://${REPOSITORY}/main/" | awk '{print $8}' | sort > ${lakectl_out}
 
-aws s3 ls --recursive ${EXPORT_LOCATION} | awk '{print $4}'| cut -d/ -f 2-  | grep -v EXPORT_ | sort > ${s3_out}
+aws s3 ls --recursive ${EXPORT_LOCATION}/ | awk '{print $4}'| cut -d/ -f 3-  | grep -v EXPORT_ | sort > ${s3_out}
 
 if ! diff ${lakectl_out} ${s3_out}; then
   echo "The export's location and lakeFS should contain same objects"
