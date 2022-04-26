@@ -39,6 +39,7 @@ type WalkOptions struct {
 
 type Mark struct {
 	ContinuationToken string
+	LastKey           string
 	HasMore           bool
 }
 
@@ -62,6 +63,13 @@ type WalkerWrapper struct {
 	uri    *url.URL
 }
 
+func NewWrapper(walker Walker, uri *url.URL) *WalkerWrapper {
+	return &WalkerWrapper{
+		walker: walker,
+		uri:    uri,
+	}
+}
+
 func (ww *WalkerWrapper) Walk(ctx context.Context, opts WalkOptions, walkFn func(e ObjectStoreEntry) error) error {
 	return ww.walker.Walk(ctx, ww.uri, opts, walkFn)
 }
@@ -70,7 +78,9 @@ func (ww *WalkerWrapper) Marker() Mark {
 	return ww.walker.Marker()
 }
 
-func GetWalker(ctx context.Context, opts WalkerOptions) (*WalkerWrapper, error) {
+type WalkerFactory struct{}
+
+func (WalkerFactory) GetWalker(ctx context.Context, opts WalkerOptions) (*WalkerWrapper, error) {
 	var walker Walker
 	uri, err := url.Parse(opts.StorageURI)
 	if err != nil {
@@ -82,7 +92,7 @@ func GetWalker(ctx context.Context, opts WalkerOptions) (*WalkerWrapper, error) 
 		if err != nil {
 			return nil, err
 		}
-		walker = &S3Walker{s3: svc, hasMore: true}
+		walker = &S3Walker{s3: svc, mark: Mark{HasMore: true}}
 	case "gs":
 		svc, err := GetGCSClient(ctx)
 		if err != nil {
@@ -98,8 +108,5 @@ func GetWalker(ctx context.Context, opts WalkerOptions) (*WalkerWrapper, error) 
 		return nil, fmt.Errorf("%w: for scheme: %s", ErrNoStorageAdapter, uri.Scheme)
 	}
 
-	return &WalkerWrapper{
-		walker: walker,
-		uri:    uri,
-	}, nil
+	return NewWrapper(walker, uri), nil
 }

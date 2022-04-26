@@ -39,15 +39,14 @@ func NewAzureBlobWalker() (*AzureBlobWalker, error) {
 	}
 
 	return &AzureBlobWalker{
-		client:  svc,
-		hasMore: true,
+		client: svc,
+		mark:   Mark{HasMore: true},
 	}, nil
 }
 
 type AzureBlobWalker struct {
-	client     pipeline.Pipeline
-	currMarker *string
-	hasMore    bool
+	client pipeline.Pipeline
+	mark   Mark
 }
 
 // extractAzurePrefix takes a URL that looks like this: https://storageaccount.blob.core.windows.net/container/prefix
@@ -85,13 +84,18 @@ func (a *AzureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, op Walk
 		if err != nil {
 			return err
 		}
-		a.currMarker = marker.Val
+		if marker.Val == nil {
+			a.mark.ContinuationToken = ""
+		} else {
+			a.mark.ContinuationToken = *marker.Val
+		}
 		marker = listBlob.NextMarker
 		for _, blobInfo := range listBlob.Segment.BlobItems {
 			// skipping everything in the page which is before 'After' (without forgetting the possible empty string key!)
 			if op.After != "" && blobInfo.Name <= op.After {
 				continue
 			}
+			a.mark.LastKey = blobInfo.Name
 			if err := walkFn(ObjectStoreEntry{
 				FullKey:     blobInfo.Name,
 				RelativeKey: strings.TrimPrefix(blobInfo.Name, prefix),
@@ -105,19 +109,13 @@ func (a *AzureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, op Walk
 		}
 	}
 
-	a.hasMore = false
-	a.currMarker = nil
+	a.mark = Mark{
+		HasMore: true,
+	}
 
 	return nil
 }
 
 func (a *AzureBlobWalker) Marker() Mark {
-	marker := ""
-	if a.currMarker != nil {
-		marker = *a.currMarker
-	}
-	return Mark{
-		ContinuationToken: marker,
-		HasMore:           a.hasMore,
-	}
+	return a.mark
 }

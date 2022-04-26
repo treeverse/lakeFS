@@ -17,8 +17,8 @@ func GetGCSClient(ctx context.Context) (*storage.Client, error) {
 }
 
 type GCSWalker struct {
-	client  *storage.Client
-	hasMore bool
+	client *storage.Client
+	mark   Mark
 }
 
 func (w *GCSWalker) Walk(ctx context.Context, storageURI *url.URL, op WalkOptions, walkFn func(e ObjectStoreEntry) error) error {
@@ -45,6 +45,10 @@ func (w *GCSWalker) Walk(ctx context.Context, storageURI *url.URL, op WalkOption
 			continue
 		}
 
+		w.mark = Mark{
+			LastKey: attrs.Name,
+			HasMore: true,
+		}
 		if err := walkFn(ObjectStoreEntry{
 			FullKey:     attrs.Name,
 			RelativeKey: strings.TrimPrefix(attrs.Name, prefix),
@@ -56,15 +60,14 @@ func (w *GCSWalker) Walk(ctx context.Context, storageURI *url.URL, op WalkOption
 			return err
 		}
 	}
-	w.hasMore = false
+	w.mark = Mark{
+		LastKey: "",
+		HasMore: false,
+	}
 
 	return nil
 }
 
 func (w *GCSWalker) Marker() Mark {
-	return Mark{
-		// irrelevant value for GCS walker
-		ContinuationToken: "",
-		HasMore:           w.hasMore,
-	}
+	return w.mark
 }

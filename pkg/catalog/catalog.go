@@ -10,6 +10,8 @@ import (
 	"io"
 	"strings"
 
+	"github.com/treeverse/lakefs/pkg/ingest/store"
+
 	"github.com/cockroachdb/pebble"
 	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/pkg/batch"
@@ -101,16 +103,18 @@ const (
 )
 
 type Config struct {
-	Config *config.Config
-	DB     db.Database
-	LockDB db.Database
+	Config        *config.Config
+	DB            db.Database
+	LockDB        db.Database
+	WalkerFactory WalkerFactory
 }
 
 type Catalog struct {
-	BlockAdapter block.Adapter
-	Store        Store
-	log          logging.Logger
-	managers     []io.Closer
+	BlockAdapter  block.Adapter
+	Store         Store
+	log           logging.Logger
+	walkerFactory WalkerFactory
+	managers      []io.Closer
 }
 
 const (
@@ -143,6 +147,10 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		cancelFn()
 		return nil, fmt.Errorf("build block adapter: %w", err)
 	}
+	if cfg.WalkerFactory == nil {
+		cfg.WalkerFactory = store.WalkerFactory{}
+	}
+
 	tierFSParams, err := cfg.Config.GetCommittedTierFSParams(adapter)
 	if err != nil {
 		cancelFn()
@@ -199,10 +207,11 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	store := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
 
 	return &Catalog{
-		BlockAdapter: tierFSParams.Adapter,
-		Store:        store,
-		log:          logging.Default().WithField("service_name", "entry_catalog"),
-		managers:     []io.Closer{sstableManager, sstableMetaManager, &ctxCloser{cancelFn}},
+		BlockAdapter:  tierFSParams.Adapter,
+		Store:         store,
+		log:           logging.Default().WithField("service_name", "entry_catalog"),
+		walkerFactory: cfg.WalkerFactory,
+		managers:      []io.Closer{sstableManager, sstableMetaManager, &ctxCloser{cancelFn}},
 	}, nil
 }
 
@@ -800,18 +809,18 @@ func (c *Catalog) Commit(ctx context.Context, repository, branch, message, commi
 		return nil, err
 	}
 
-	var metarangeID *graveler.MetaRangeID
+	params := graveler.CommitParams{
+		Committer: committer,
+		Message:   message,
+		Date:      date,
+		Metadata:  map[string]string(metadata),
+	}
 	if sourceMetarange != nil {
 		x := graveler.MetaRangeID(*sourceMetarange)
-		metarangeID = &x
+		params.SourceMetaRange = &x
 	}
-	commitID, err := c.Store.Commit(ctx, repositoryID, branchID, graveler.CommitParams{
-		Committer:       committer,
-		Message:         message,
-		Date:            date,
-		SourceMetaRange: metarangeID,
-		Metadata:        map[string]string(metadata),
-	})
+
+	commitID, err := c.Store.Commit(ctx, repositoryID, branchID, params)
 	if err != nil {
 		return nil, err
 	}
@@ -1226,7 +1235,7 @@ func (c *Catalog) GetRange(ctx context.Context, repositoryID, rangeID string) (g
 }
 
 func (c *Catalog) WriteRange(ctx context.Context, repositoryID, fromSourceURI, prepend, after, continuationToken string) (*graveler.RangeInfo, *Mark, error) {
-	it, err := newWalkEntryIterator(ctx, fromSourceURI, prepend, after, continuationToken)
+	it, err := NewWalkEntryIterator(ctx, c.walkerFactory, fromSourceURI, prepend, after, continuationToken)
 	if err != nil {
 		return nil, nil, fmt.Errorf("creating walk iterator: %w", err)
 	}

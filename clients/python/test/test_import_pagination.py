@@ -14,14 +14,10 @@ import unittest
 
 import lakefs_client
 from lakefs_client.model.import_pagination import ImportPagination
-from lakefs_client.model.range_metadata import RangeMetadata
-globals()['ImportPagination'] = ImportPagination
-globals()['RangeMetadata'] = RangeMetadata
-from lakefs_client.model.ingest_range_creation_response import IngestRangeCreationResponse
 
 
-class TestIngestRangeCreationResponse(unittest.TestCase):
-    """IngestRangeCreationResponse unit test stubs"""
+class TestImportPagination(unittest.TestCase):
+    """ImportPagination unit test stubs"""
 
     def setUp(self):
         pass
@@ -29,10 +25,10 @@ class TestIngestRangeCreationResponse(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def testIngestRangeCreationResponse(self):
-        """Test IngestRangeCreationResponse"""
+    def testImportPagination(self):
+        """Test ImportPagination"""
         # FIXME: construct object with mandatory attributes with example values
-        # model = IngestRangeCreationResponse()  # noqa: E501
+        # model = ImportPagination()  # noqa: E501
         pass
 
 

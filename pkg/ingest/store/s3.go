@@ -33,8 +33,8 @@ func GetS3Client(s3EndpointURL string) (*s3.S3, error) {
 }
 
 type S3Walker struct {
-	s3      s3iface.S3API
-	hasMore bool
+	s3   s3iface.S3API
+	mark Mark
 }
 
 func (s *S3Walker) Walk(ctx context.Context, storageURI *url.URL, op WalkOptions, walkFn func(e ObjectStoreEntry) error) error {
@@ -81,6 +81,10 @@ func (s *S3Walker) Walk(ctx context.Context, storageURI *url.URL, op WalkOptions
 				Mtime:       aws.TimeValue(record.LastModified),
 				Size:        aws.Int64Value(record.Size),
 			}
+			s.mark = Mark{
+				LastKey: key,
+				HasMore: true,
+			}
 			err := walkFn(ent)
 			if err != nil {
 				return err
@@ -91,14 +95,13 @@ func (s *S3Walker) Walk(ctx context.Context, storageURI *url.URL, op WalkOptions
 		}
 		continuation = result.NextContinuationToken
 	}
-	s.hasMore = false
+	s.mark = Mark{
+		LastKey: "",
+		HasMore: false,
+	}
 	return nil
 }
 
 func (s *S3Walker) Marker() Mark {
-	return Mark{
-		// irrelevant value for S3 walker
-		ContinuationToken: "",
-		HasMore:           s.hasMore,
-	}
+	return s.mark
 }

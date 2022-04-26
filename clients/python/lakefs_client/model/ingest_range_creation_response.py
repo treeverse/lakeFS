@@ -31,9 +31,9 @@ from lakefs_client.exceptions import ApiAttributeError
 
 
 def lazy_import():
-    from lakefs_client.model.pagination import Pagination
+    from lakefs_client.model.import_pagination import ImportPagination
     from lakefs_client.model.range_metadata import RangeMetadata
-    globals()['Pagination'] = Pagination
+    globals()['ImportPagination'] = ImportPagination
     globals()['RangeMetadata'] = RangeMetadata
 
 
@@ -91,7 +91,7 @@ class IngestRangeCreationResponse(ModelNormal):
         lazy_import()
         return {
             'range': (RangeMetadata,),  # noqa: E501
-            'pagination': (Pagination,),  # noqa: E501
+            'pagination': (ImportPagination,),  # noqa: E501
         }
 
     @cached_property
@@ -146,7 +146,7 @@ class IngestRangeCreationResponse(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             range (RangeMetadata): [optional]  # noqa: E501
-            pagination (Pagination): [optional]  # noqa: E501
+            pagination (ImportPagination): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -229,7 +229,7 @@ class IngestRangeCreationResponse(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             range (RangeMetadata): [optional]  # noqa: E501
-            pagination (Pagination): [optional]  # noqa: E501
+            pagination (ImportPagination): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

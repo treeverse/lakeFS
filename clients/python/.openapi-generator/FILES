@@ -34,6 +34,7 @@ docs/HealthCheckApi.md
 docs/HookRun.md
 docs/HookRunList.md
 docs/ImportApi.md
+docs/ImportPagination.md
 docs/IngestRangeCreationResponse.md
 docs/InlineObject1.md
 docs/LoginInformation.md
@@ -130,6 +131,7 @@ lakefs_client/model/group_creation.py
 lakefs_client/model/group_list.py
 lakefs_client/model/hook_run.py
 lakefs_client/model/hook_run_list.py
+lakefs_client/model/import_pagination.py
 lakefs_client/model/ingest_range_creation_response.py
 lakefs_client/model/inline_object1.py
 lakefs_client/model/login_information.py
@@ -213,6 +215,7 @@ test/test_health_check_api.py
 test/test_hook_run.py
 test/test_hook_run_list.py
 test/test_import_api.py
+test/test_import_pagination.py
 test/test_ingest_range_creation_response.py
 test/test_inline_object1.py
 test/test_login_information.py

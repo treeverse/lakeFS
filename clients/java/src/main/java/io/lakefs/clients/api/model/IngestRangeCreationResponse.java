@@ -20,7 +20,7 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.lakefs.clients.api.model.Pagination;
+import io.lakefs.clients.api.model.ImportPagination;
 import io.lakefs.clients.api.model.RangeMetadata;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -37,7 +37,7 @@ public class IngestRangeCreationResponse {
 
   public static final String SERIALIZED_NAME_PAGINATION = "pagination";
   @SerializedName(SERIALIZED_NAME_PAGINATION)
-  private Pagination pagination;
+  private ImportPagination pagination;
 
 
   public IngestRangeCreationResponse range(RangeMetadata range) {
@@ -63,7 +63,7 @@ public class IngestRangeCreationResponse {
   }
 
 
-  public IngestRangeCreationResponse pagination(Pagination pagination) {
+  public IngestRangeCreationResponse pagination(ImportPagination pagination) {
     
     this.pagination = pagination;
     return this;
@@ -76,12 +76,12 @@ public class IngestRangeCreationResponse {
   @javax.annotation.Nullable
   @ApiModelProperty(value = "")
 
-  public Pagination getPagination() {
+  public ImportPagination getPagination() {
     return pagination;
   }
 
 
-  public void setPagination(Pagination pagination) {
+  public void setPagination(ImportPagination pagination) {
     this.pagination = pagination;
   }
 

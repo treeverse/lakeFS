@@ -417,12 +417,13 @@ func TestGraveler_Commit(t *testing.T) {
 		ProtectedBranchesManager *testutil.ProtectedBranchesManagerFake
 	}
 	type args struct {
-		ctx          context.Context
-		repositoryID graveler.RepositoryID
-		branchID     graveler.BranchID
-		committer    string
-		message      string
-		metadata     graveler.Metadata
+		ctx             context.Context
+		repositoryID    graveler.RepositoryID
+		branchID        graveler.BranchID
+		committer       string
+		message         string
+		metadata        graveler.Metadata
+		sourceMetarange *graveler.MetaRangeID
 	}
 	tests := []struct {
 		name        string
@@ -432,7 +433,7 @@ func TestGraveler_Commit(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			name: "valid commit",
+			name: "valid commit without source metarange",
 			fields: fields{
 				CommittedManager: &testutil.CommittedFake{MetaRangeID: expectedRangeID},
 				StagingManager:   &testutil.StagingFake{ValueIterator: values},
@@ -450,6 +451,47 @@ func TestGraveler_Commit(t *testing.T) {
 			},
 			want:        expectedCommitID,
 			expectedErr: nil,
+		},
+		{
+			name: "valid commit with source metarange",
+			fields: fields{
+				CommittedManager: &testutil.CommittedFake{MetaRangeID: expectedRangeID},
+				StagingManager:   &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{})},
+				RefManager: &testutil.RefsFake{CommitID: expectedCommitID,
+					Branch:  &graveler.Branch{CommitID: expectedCommitID},
+					Commits: map[graveler.CommitID]*graveler.Commit{expectedCommitID: {MetaRangeID: expectedRangeID}}},
+			},
+			args: args{
+				ctx:             nil,
+				repositoryID:    "repo",
+				branchID:        "branch",
+				committer:       "committer",
+				message:         "a message",
+				metadata:        graveler.Metadata{},
+				sourceMetarange: &expectedRangeID,
+			},
+			want:        expectedCommitID,
+			expectedErr: nil,
+		},
+		{
+			name: "commit with source metarange an unempty staging",
+			fields: fields{
+				CommittedManager: &testutil.CommittedFake{MetaRangeID: expectedRangeID},
+				StagingManager:   &testutil.StagingFake{ValueIterator: values},
+				RefManager: &testutil.RefsFake{CommitID: expectedCommitID,
+					Branch:  &graveler.Branch{CommitID: expectedCommitID},
+					Commits: map[graveler.CommitID]*graveler.Commit{expectedCommitID: {MetaRangeID: expectedRangeID}}},
+			},
+			args: args{
+				ctx:             nil,
+				repositoryID:    "repo",
+				branchID:        "branch",
+				committer:       "committer",
+				message:         "a message",
+				metadata:        graveler.Metadata{},
+				sourceMetarange: &expectedRangeID,
+			},
+			expectedErr: graveler.ErrCommitMetaRangeDirtyBranch,
 		},
 		{
 			name: "fail on staging",
@@ -564,9 +606,10 @@ func TestGraveler_Commit(t *testing.T) {
 			g := graveler.NewGraveler(branchLocker, tt.fields.CommittedManager, tt.fields.StagingManager, tt.fields.RefManager, nil, tt.fields.ProtectedBranchesManager)
 
 			got, err := g.Commit(context.Background(), tt.args.repositoryID, tt.args.branchID, graveler.CommitParams{
-				Committer: tt.args.committer,
-				Message:   tt.args.message,
-				Metadata:  tt.args.metadata,
+				Committer:       tt.args.committer,
+				Message:         tt.args.message,
+				Metadata:        tt.args.metadata,
+				SourceMetaRange: tt.args.sourceMetarange,
 			})
 			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("unexpected err got = %v, wanted = %v", err, tt.expectedErr)
@@ -574,10 +617,14 @@ func TestGraveler_Commit(t *testing.T) {
 			if err != nil {
 				return
 			}
-			if diff := deep.Equal(tt.fields.CommittedManager.AppliedData, testutil.AppliedData{
+			expectedAppliedData := testutil.AppliedData{
 				Values:      values,
 				MetaRangeID: expectedRangeID,
-			}); diff != nil {
+			}
+			if tt.args.sourceMetarange != nil {
+				expectedAppliedData = testutil.AppliedData{}
+			}
+			if diff := deep.Equal(tt.fields.CommittedManager.AppliedData, expectedAppliedData); diff != nil {
 				t.Errorf("unexpected apply data %s", diff)
 			}
 

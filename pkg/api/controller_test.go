@@ -19,6 +19,8 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/catalog/testutils"
+
 	"github.com/go-test/deep"
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/require"
@@ -514,6 +516,46 @@ func TestController_CommitHandler(t *testing.T) {
 			Message: "some message",
 		})
 		verifyResponseOK(t, resp, err)
+	})
+
+	t.Run("commit success with source metarange", func(t *testing.T) {
+		_, err := deps.catalog.CreateRepository(ctx, "foo1", onBlock(deps, "foo1"), "main")
+		testutil.MustDo(t, "create repo foo1", err)
+
+		_, err = deps.catalog.CreateBranch(ctx, "foo1", "foo-branch", "main")
+
+		testutil.MustDo(t, "commit bar on foo1", deps.catalog.CreateEntry(ctx, "foo1", "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
+		resp, err := clt.CommitWithResponse(ctx, "foo1", "main", &api.CommitParams{}, api.CommitJSONRequestBody{
+			Message: "some message",
+		})
+		verifyResponseOK(t, resp, err)
+
+		resp, err = clt.CommitWithResponse(ctx, "foo1", "foo-branch", &api.CommitParams{SourceMetarange: &resp.JSON201.MetaRangeId}, api.CommitJSONRequestBody{
+			Message: "some message",
+		})
+		verifyResponseOK(t, resp, err)
+	})
+
+	t.Run("commit failure with source metarange and dirty branch", func(t *testing.T) {
+		_, err := deps.catalog.CreateRepository(ctx, "foo1", onBlock(deps, "foo1"), "main")
+		testutil.MustDo(t, "create repo foo1", err)
+
+		_, err = deps.catalog.CreateBranch(ctx, "foo1", "foo-branch", "main")
+
+		testutil.MustDo(t, "commit bar on foo1", deps.catalog.CreateEntry(ctx, "foo1", "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
+		resp, err := clt.CommitWithResponse(ctx, "foo1", "main", &api.CommitParams{}, api.CommitJSONRequestBody{
+			Message: "some message",
+		})
+		verifyResponseOK(t, resp, err)
+
+		testutil.MustDo(t, "commit bar on foo1", deps.catalog.CreateEntry(ctx, "foo1", "foo-branch", catalog.DBEntry{Path: "foo/bar/2", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
+		resp, err = clt.CommitWithResponse(ctx, "foo1", "foo-branch", &api.CommitParams{SourceMetarange: &resp.JSON201.MetaRangeId}, api.CommitJSONRequestBody{
+			Message: "some message",
+		})
+
+		require.NoError(t, err)
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode())
+		require.Contains(t, resp.JSON400.Message, graveler.ErrCommitMetaRangeDirtyBranch.Error())
 	})
 
 	t.Run("commit success - with creation date", func(t *testing.T) {
@@ -1147,6 +1189,133 @@ func TestController_DeleteBranchHandler(t *testing.T) {
 		if resp.JSON404 == nil {
 			t.Fatal("DeleteBranch expected not found")
 		}
+	})
+}
+
+func TestController_IngestRangeHandler(t *testing.T) {
+	const (
+		fromSourceURI           = "https://valid.uri"
+		uriPrefix               = "take/from/here"
+		fromSourceURIWithPrefix = fromSourceURI + "/" + uriPrefix
+		after                   = "some/key/to/start/after"
+		continuationToken       = "opaque"
+		prepend                 = "some/logical/prefix"
+	)
+
+	ctx := context.Background()
+	token := continuationToken
+
+	setup := func(count int, err error) (api.ClientWithResponsesInterface, *testutils.FakeWalker) {
+		w := testutils.NewFakeWalker(count, count, uriPrefix, after, continuationToken, fromSourceURIWithPrefix, err)
+		clt, deps := setupClientWithAdminAndWalkerFactory(t, testutils.FakeFactory{Walker: w})
+
+		// setup test data
+		_, err = deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "foo1"), "main")
+		testutil.Must(t, err)
+
+		return clt, w
+	}
+
+	t.Run("successful ingestion no pagination", func(t *testing.T) {
+		count := 1000
+		clt, w := setup(count, nil)
+
+		resp, err := clt.IngestRangeWithResponse(ctx, "repo1", api.IngestRangeJSONRequestBody{
+			After:             after,
+			FromSourceURI:     fromSourceURIWithPrefix,
+			Prepend:           prepend,
+			ContinuationToken: &token,
+		})
+
+		verifyResponseOK(t, resp, err)
+		require.NotNil(t, resp.JSON201.Range)
+		require.NotNil(t, resp.JSON201.Pagination)
+		require.Equal(t, count, resp.JSON201.Range.Count)
+		require.Equal(t, strings.Replace(w.Entries[0].FullKey, uriPrefix, prepend, 1), resp.JSON201.Range.MinKey)
+		require.Equal(t, strings.Replace(w.Entries[count-1].FullKey, uriPrefix, prepend, 1), resp.JSON201.Range.MaxKey)
+		require.False(t, resp.JSON201.Pagination.HasMore)
+		require.Empty(t, resp.JSON201.Pagination.LastKey)
+		require.Empty(t, resp.JSON201.Pagination.ContinuationToken)
+	})
+
+	t.Run("successful ingestion with pagination", func(t *testing.T) {
+		// force splitting the range before
+		count := 200_000
+		clt, w := setup(count, nil)
+
+		resp, err := clt.IngestRangeWithResponse(ctx, "repo1", api.IngestRangeJSONRequestBody{
+			After:             after,
+			FromSourceURI:     fromSourceURIWithPrefix,
+			Prepend:           prepend,
+			ContinuationToken: &token,
+		})
+
+		verifyResponseOK(t, resp, err)
+		require.NotNil(t, resp.JSON201.Range)
+		require.NotNil(t, resp.JSON201.Pagination)
+		require.Less(t, resp.JSON201.Range.Count, count)
+		require.Equal(t, strings.Replace(w.Entries[0].FullKey, uriPrefix, prepend, 1), resp.JSON201.Range.MinKey)
+		require.Equal(t, strings.Replace(w.Entries[resp.JSON201.Range.Count-1].FullKey, uriPrefix, prepend, 1), resp.JSON201.Range.MaxKey)
+		require.True(t, resp.JSON201.Pagination.HasMore)
+		require.Equal(t, w.Entries[resp.JSON201.Range.Count-1].FullKey, resp.JSON201.Pagination.LastKey)
+		require.Equal(t, testutils.ContinuationTokenOpaque, *resp.JSON201.Pagination.ContinuationToken)
+	})
+
+	t.Run("error during walk", func(t *testing.T) {
+		// force splitting the range before
+		count := 10
+		expectedErr := errors.New("failed reading for object store")
+		clt, _ := setup(count, expectedErr)
+
+		resp, err := clt.IngestRangeWithResponse(ctx, "repo1", api.IngestRangeJSONRequestBody{
+			After:             after,
+			FromSourceURI:     fromSourceURIWithPrefix,
+			Prepend:           prepend,
+			ContinuationToken: &token,
+		})
+
+		require.NoError(t, err)
+		require.Equal(t, http.StatusInternalServerError, resp.StatusCode())
+		require.Contains(t, string(resp.Body), expectedErr.Error())
+	})
+}
+
+func TestController_WriteMetaRangeHandler(t *testing.T) {
+	ctx := context.Background()
+	clt, deps := setupClientWithAdmin(t)
+
+	// setup test data
+	_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "foo1"), "main")
+	testutil.Must(t, err)
+
+	t.Run("successful metarange creation", func(t *testing.T) {
+		resp, err := clt.CreateMetaRangeWithResponse(ctx, "repo1", api.CreateMetaRangeJSONRequestBody{
+			Ranges: []api.RangeMetadata{
+				{Count: 11355, EstimatedSize: 123465897, Id: "FirstRangeID", MaxKey: "1", MinKey: "2"},
+				{Count: 13123, EstimatedSize: 123465897, Id: "SecondRangeID", MaxKey: "3", MinKey: "4"},
+				{Count: 10123, EstimatedSize: 123465897, Id: "SecondRangeID", MaxKey: "5", MinKey: "6"},
+			},
+		})
+
+		verifyResponseOK(t, resp, err)
+		require.NotNil(t, resp.JSON201)
+		require.NotNil(t, resp.JSON201.Id)
+		require.NotEmpty(t, *resp.JSON201.Id)
+
+		respMR, err := clt.GetMetaRangeWithResponse(ctx, "repo1", *resp.JSON201.Id)
+		verifyResponseOK(t, respMR, err)
+		require.NotNil(t, respMR.JSON200)
+		require.NotEmpty(t, respMR.JSON200.Location)
+	})
+
+	t.Run("missing ranges", func(t *testing.T) {
+		resp, err := clt.CreateMetaRangeWithResponse(ctx, "repo1", api.CreateMetaRangeJSONRequestBody{
+			Ranges: []api.RangeMetadata{},
+		})
+
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON400)
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode())
 	})
 }
 

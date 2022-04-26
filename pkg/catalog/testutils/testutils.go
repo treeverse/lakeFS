@@ -2,9 +2,17 @@ package testutils
 
 import (
 	"bytes"
+	"context"
+	"errors"
+	"fmt"
+	"net/url"
+	"sort"
+	"time"
 
+	"github.com/thanhpk/randstr"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/ingest/store"
 )
 
 type FakeValueIterator struct {
@@ -99,3 +107,94 @@ func (f *FakeEntryIterator) Err() error {
 }
 
 func (f *FakeEntryIterator) Close() {}
+
+type FakeFactory struct {
+	Walker *FakeWalker
+}
+
+func (f FakeFactory) GetWalker(_ context.Context, op store.WalkerOptions) (*store.WalkerWrapper, error) {
+	u, _ := url.Parse(op.StorageURI)
+	return store.NewWrapper(f.Walker, u), nil
+}
+
+func NewFakeWalker(count, max int, uriPrefix, expectedAfter, expectedContinuationToken, expectedFromSourceURIWithPrefix string, err error) *FakeWalker {
+	w := &FakeWalker{
+		Max:                             max,
+		uriPrefix:                       uriPrefix,
+		expectedAfter:                   expectedAfter,
+		expectedContinuationToken:       expectedContinuationToken,
+		expectedFromSourceURIWithPrefix: expectedFromSourceURIWithPrefix,
+		err:                             err,
+	}
+	w.createEntries(count)
+	return w
+}
+
+type FakeWalker struct {
+	Entries                         []store.ObjectStoreEntry
+	curr                            int
+	Max                             int
+	uriPrefix                       string
+	expectedAfter                   string
+	expectedContinuationToken       string
+	expectedFromSourceURIWithPrefix string
+	err                             error
+}
+
+func (w *FakeWalker) createEntries(count int) {
+	ents := make([]store.ObjectStoreEntry, count)
+	for i := 0; i < count; i++ {
+		relativeKey := randstr.Base64(64)
+		fullkey := w.uriPrefix + "/" + relativeKey
+		ents[i] = store.ObjectStoreEntry{
+			RelativeKey: relativeKey,
+			FullKey:     fullkey,
+			Address:     w.expectedFromSourceURIWithPrefix + "/" + relativeKey,
+			ETag:        "some_etag",
+			Mtime:       time.Time{},
+			Size:        132,
+		}
+	}
+	sort.Slice(ents[:], func(i, j int) bool {
+		return ents[i].RelativeKey < ents[j].RelativeKey
+	})
+	w.Entries = ents
+}
+
+func (w *FakeWalker) Walk(_ context.Context, storageURI *url.URL, op store.WalkOptions, walkFn func(e store.ObjectStoreEntry) error) error {
+	if w.expectedAfter != op.After {
+		return errors.New(fmt.Sprintf("after; expected %s, got %s", w.expectedAfter, op.After))
+	}
+	if w.expectedContinuationToken != op.ContinuationToken {
+		return errors.New(fmt.Sprintf("continuationToken; expected %s, got %s", w.expectedContinuationToken, op.ContinuationToken))
+	}
+	if w.expectedFromSourceURIWithPrefix != storageURI.String() {
+		return errors.New(fmt.Sprintf("fromSourceURIWithPrefix; expected %s, got %s", w.expectedFromSourceURIWithPrefix, storageURI.String()))
+	}
+	if w.err != nil {
+		return w.err
+	}
+
+	for i, e := range w.Entries {
+		w.curr = i
+		if err := walkFn(e); err != nil {
+			if i < w.Max {
+				return fmt.Errorf("didn't expect walk err: %w", err)
+			}
+			if i >= w.Max && !errors.Is(err, catalog.ErrItClosed) {
+				return errors.New(fmt.Sprintf("expected error; expected (%s), got (%s)", catalog.ErrItClosed, err))
+			}
+		}
+	}
+	return nil
+}
+
+const ContinuationTokenOpaque = "FakeContToken"
+
+func (w *FakeWalker) Marker() store.Mark {
+	return store.Mark{
+		LastKey:           w.Entries[w.curr].FullKey,
+		HasMore:           w.curr < len(w.Entries)-1,
+		ContinuationToken: ContinuationTokenOpaque,
+	}
+}

@@ -122,6 +122,22 @@ components:
           minimum: 0
           description: Maximal number of entries per page
 
+    ImportPagination:
+      type: object
+      required:
+        - has_more
+        - last_key
+      properties:
+        has_more:
+          type: boolean
+          description: More keys to be ingested.
+        continuation_token:
+          type: string
+          description: Opaque. Token used to import the next range.
+        last_key:
+          type: string
+          description: Last object store key that was ingested.
+
     Repository:
       type: object
       required:
@@ -1033,7 +1049,7 @@ components:
         range:
           $ref: '#/components/schemas/RangeMetadata'
         pagination:
-          $ref: '#/components/schemas/Pagination'
+          $ref: '#/components/schemas/ImportPagination'
 
     MetaRangeCreation:
       type: object
@@ -1042,6 +1058,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RangeMetadata'
+          minItems: 1
       required:
         - ranges
 

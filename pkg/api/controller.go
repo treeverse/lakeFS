@@ -1641,6 +1641,7 @@ func handleAPIError(w http.ResponseWriter, err error) bool {
 		writeError(w, http.StatusNotFound, err)
 
 	case errors.Is(err, graveler.ErrDirtyBranch),
+		errors.Is(err, graveler.ErrCommitMetaRangeDirtyBranch),
 		errors.Is(err, catalog.ErrNoDifferenceWasFound),
 		errors.Is(err, graveler.ErrNoChanges),
 		errors.Is(err, permissions.ErrInvalidServiceName),
@@ -1742,9 +1743,10 @@ func (c *Controller) IngestRange(w http.ResponseWriter, r *http.Request, body In
 			Count:         info.Count,
 			EstimatedSize: int(info.EstimatedRangeSizeBytes),
 		},
-		Pagination: &Pagination{
-			HasMore:    mark.HasMore,
-			NextOffset: mark.ContinuationToken,
+		Pagination: &ImportPagination{
+			HasMore:           mark.HasMore,
+			ContinuationToken: &mark.ContinuationToken,
+			LastKey:           mark.LastKey,
 		},
 	})
 }

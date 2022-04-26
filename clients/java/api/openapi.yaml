@@ -4473,6 +4473,25 @@ components:
       - next_offset
       - results
       type: object
+    ImportPagination:
+      example:
+        continuation_token: continuation_token
+        has_more: true
+        last_key: last_key
+      properties:
+        has_more:
+          description: More keys to be ingested.
+          type: boolean
+        continuation_token:
+          description: Opaque. Token used to import the next range.
+          type: string
+        last_key:
+          description: Last object store key that was ingested.
+          type: string
+      required:
+      - has_more
+      - last_key
+      type: object
     Repository:
       example:
         default_branch: default_branch
@@ -5771,10 +5790,9 @@ components:
     IngestRangeCreationResponse:
       example:
         pagination:
-          max_per_page: 0
+          continuation_token: continuation_token
           has_more: true
-          next_offset: next_offset
-          results: 0
+          last_key: last_key
         range:
           max_key: production/collections/some/file_8229.parquet
           count: 0
@@ -5785,7 +5803,7 @@ components:
         range:
           $ref: '#/components/schemas/RangeMetadata'
         pagination:
-          $ref: '#/components/schemas/Pagination'
+          $ref: '#/components/schemas/ImportPagination'
       type: object
     MetaRangeCreation:
       example:
@@ -5804,6 +5822,7 @@ components:
         ranges:
           items:
             $ref: '#/components/schemas/RangeMetadata'
+          minItems: 1
           type: array
       required:
       - ranges

@@ -31,12 +31,17 @@ type EntryWithMarker struct {
 }
 
 // used to determine the reason for the end of the walk
-var errItClosed = errors.New("iterator closed")
+var ErrItClosed = errors.New("iterator closed")
 
 // buffer size of the buffer between reading entries from the blockstore Walk and passing it on
 const bufferSize = 100
 
-func newWalkEntryIterator(ctx context.Context, fromSourceURI, prepend, after, continuationToken string) (*walkEntryIterator, error) {
+// WalkerFactory provides an abstraction for creating Walker
+type WalkerFactory interface {
+	GetWalker(ctx context.Context, opts store.WalkerOptions) (*store.WalkerWrapper, error)
+}
+
+func NewWalkEntryIterator(ctx context.Context, factory WalkerFactory, fromSourceURI, prepend, after, continuationToken string) (*walkEntryIterator, error) {
 	if prepend != "" && prepend[len(prepend)-1:] != "/" {
 		prepend += "/"
 	}
@@ -49,7 +54,7 @@ func newWalkEntryIterator(ctx context.Context, fromSourceURI, prepend, after, co
 		err:    atomic.NewError(nil),
 	}
 	var err error
-	it.walker, err = store.GetWalker(ctx, store.WalkerOptions{StorageURI: fromSourceURI})
+	it.walker, err = factory.GetWalker(ctx, store.WalkerOptions{StorageURI: fromSourceURI})
 	if err != nil {
 		return nil, fmt.Errorf("creating object-store walker: %w", err)
 	}
@@ -60,7 +65,7 @@ func newWalkEntryIterator(ctx context.Context, fromSourceURI, prepend, after, co
 			ContinuationToken: continuationToken,
 		}, func(e store.ObjectStoreEntry) error {
 			if it.closed.Load() {
-				return errItClosed
+				return ErrItClosed
 			}
 
 			it.entries <- EntryWithMarker{
@@ -79,46 +84,57 @@ func newWalkEntryIterator(ctx context.Context, fromSourceURI, prepend, after, co
 			}
 			return nil
 		})
-		if err == nil {
-			it.curr.Mark = Mark{
-				ContinuationToken: "",
-				HasMore:           false,
-			}
-		} else if !errors.Is(err, errItClosed) {
+		if !errors.Is(err, ErrItClosed) {
 			it.err.Store(err)
 		}
+		close(it.entries)
 		close(it.done)
 	}()
 
 	return &it, nil
 }
 
-func (it walkEntryIterator) Next() bool {
+func (it *walkEntryIterator) Next() bool {
 	if it.err.Load() != nil || it.closed.Load() {
 		return false
 	}
 
 	var ok bool
-	it.curr, ok = <-it.entries
+
+	select {
+	case it.curr, ok = <-it.entries:
+	case <-it.done:
+		// making sure not to miss entries
+		it.curr, ok = <-it.entries
+		if !ok {
+			// entries were exhausted
+			it.curr.Mark = Mark{
+				LastKey: it.curr.LastKey,
+				HasMore: false,
+			}
+		}
+	}
+
 	return ok
 }
 
-func (it walkEntryIterator) SeekGE(Path) {
+func (it *walkEntryIterator) SeekGE(Path) {
 	// unsupported
 }
 
-func (it walkEntryIterator) Value() *EntryRecord {
-	return &it.curr.EntryRecord
+func (it *walkEntryIterator) Value() *EntryRecord {
+	rec := it.curr.EntryRecord
+	return &rec
 }
 
-func (it walkEntryIterator) Err() error {
+func (it *walkEntryIterator) Err() error {
 	return it.err.Load()
 }
 
-func (it walkEntryIterator) Close() {
+func (it *walkEntryIterator) Close() {
 	it.closed.Store(true)
 
-	// non-block read of last entry that might got in
+	// non-block read of last entry that might got in and is now blocking the main thread
 	select {
 	case <-it.entries:
 		// do nothing
@@ -129,6 +145,6 @@ func (it walkEntryIterator) Close() {
 	<-it.done
 }
 
-func (it walkEntryIterator) Marker() Mark {
+func (it *walkEntryIterator) Marker() Mark {
 	return it.curr.Mark
 }

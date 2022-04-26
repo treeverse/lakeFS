@@ -18,8 +18,6 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.lakefs.clients.api.model.ImportPagination;
-import io.lakefs.clients.api.model.RangeMetadata;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
@@ -29,33 +27,41 @@ import org.junit.Test;
 
 
 /**
- * Model tests for IngestRangeCreationResponse
+ * Model tests for ImportPagination
  */
-public class IngestRangeCreationResponseTest {
-    private final IngestRangeCreationResponse model = new IngestRangeCreationResponse();
+public class ImportPaginationTest {
+    private final ImportPagination model = new ImportPagination();
 
     /**
-     * Model tests for IngestRangeCreationResponse
+     * Model tests for ImportPagination
      */
     @Test
-    public void testIngestRangeCreationResponse() {
-        // TODO: test IngestRangeCreationResponse
+    public void testImportPagination() {
+        // TODO: test ImportPagination
     }
 
     /**
-     * Test the property 'range'
+     * Test the property 'hasMore'
      */
     @Test
-    public void rangeTest() {
-        // TODO: test range
+    public void hasMoreTest() {
+        // TODO: test hasMore
     }
 
     /**
-     * Test the property 'pagination'
+     * Test the property 'continuationToken'
      */
     @Test
-    public void paginationTest() {
-        // TODO: test pagination
+    public void continuationTokenTest() {
+        // TODO: test continuationToken
+    }
+
+    /**
+     * Test the property 'lastKey'
+     */
+    @Test
+    public void lastKeyTest() {
+        // TODO: test lastKey
     }
 
 }
