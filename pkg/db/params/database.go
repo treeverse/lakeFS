@@ -8,4 +8,6 @@ type Database struct {
 	MaxOpenConnections    int32
 	MaxIdleConnections    int32
 	ConnectionMaxLifetime time.Duration
+	Type                  string
+	KVEnabled             bool
 }

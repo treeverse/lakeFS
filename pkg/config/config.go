@@ -265,6 +265,8 @@ func (c *Config) GetDatabaseParams() dbparams.Database {
 		MaxOpenConnections:    c.values.Database.MaxOpenConnections,
 		MaxIdleConnections:    c.values.Database.MaxIdleConnections,
 		ConnectionMaxLifetime: c.values.Database.ConnectionMaxLifetime,
+		Type:                  c.values.Database.Type,
+		KVEnabled:             c.values.Database.KVEnabled,
 	}
 }
 
