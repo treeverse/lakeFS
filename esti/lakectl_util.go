@@ -125,6 +125,7 @@ func sanitize(output string, vars map[string]string) string {
 	s = normalizeCommitID(s)
 	s = normalizeChecksum(s)
 	s = normalizeShortCommitID(s)
+	s = normalizeEndpoint(s, vars["LAKEFS_ENDPOINT"])
 	return s
 }
 
@@ -196,6 +197,7 @@ var (
 	commitIDRegExp      = regexp.MustCompile(`[\d|a-f]{64}`)
 	shortCommitIDRegExp = regexp.MustCompile(`[\d|a-f]{16}`)
 	checksumRegExp      = regexp.MustCompile(`[\d|a-f]{32}`)
+	endpointRegExp      = regexp.MustCompile(`http(s)?:\/\/([a-z])+(\:[0-9]{2,4})?\/api\/v[0-9].`)
 )
 
 func normalizeProgramTimestamp(output string) string {
@@ -218,4 +220,8 @@ func normalizeShortCommitID(output string) string {
 
 func normalizeChecksum(output string) string {
 	return checksumRegExp.ReplaceAllString(output, "<CHECKSUM>")
+}
+
+func normalizeEndpoint(output string, endpoint string) string {
+	return endpointRegExp.ReplaceAllString(output, endpoint)
 }

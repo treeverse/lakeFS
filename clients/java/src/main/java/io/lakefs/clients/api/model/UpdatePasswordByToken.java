@@ -37,6 +37,10 @@ public class UpdatePasswordByToken {
   @SerializedName(SERIALIZED_NAME_NEW_PASSWORD)
   private String newPassword;
 
+  public static final String SERIALIZED_NAME_EMAIL = "email";
+  @SerializedName(SERIALIZED_NAME_EMAIL)
+  private String email;
+
 
   public UpdatePasswordByToken token(String token) {
     
@@ -84,6 +88,29 @@ public class UpdatePasswordByToken {
   }
 
 
+  public UpdatePasswordByToken email(String email) {
+    
+    this.email = email;
+    return this;
+  }
+
+   /**
+   * optional user email to match the token for verification
+   * @return email
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "optional user email to match the token for verification")
+
+  public String getEmail() {
+    return email;
+  }
+
+
+  public void setEmail(String email) {
+    this.email = email;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -94,12 +121,13 @@ public class UpdatePasswordByToken {
     }
     UpdatePasswordByToken updatePasswordByToken = (UpdatePasswordByToken) o;
     return Objects.equals(this.token, updatePasswordByToken.token) &&
-        Objects.equals(this.newPassword, updatePasswordByToken.newPassword);
+        Objects.equals(this.newPassword, updatePasswordByToken.newPassword) &&
+        Objects.equals(this.email, updatePasswordByToken.email);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(token, newPassword);
+    return Objects.hash(token, newPassword, email);
   }
 
   @Override
@@ -108,6 +136,7 @@ public class UpdatePasswordByToken {
     sb.append("class UpdatePasswordByToken {\n");
     sb.append("    token: ").append(toIndentedString(token)).append("\n");
     sb.append("    newPassword: ").append(toIndentedString(newPassword)).append("\n");
+    sb.append("    email: ").append(toIndentedString(email)).append("\n");
     sb.append("}");
     return sb.toString();
   }

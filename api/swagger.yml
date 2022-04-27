@@ -611,6 +611,9 @@ components:
         newPassword:
           description: new password to update
           type: string
+        email:
+          description: optional user email to match the token for verification
+          type: string
       required:
         - token
         - newPassword
