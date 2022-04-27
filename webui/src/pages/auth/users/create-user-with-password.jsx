@@ -20,7 +20,7 @@ const CreateUserWithPasswordForm = ({token, email}) => {
         const v1 = newPwdField.current.value || '';
         const v2 = confirmPasswordField.current.value || '';
         if (v1.length > 0 && v2.length > 0 || v2.length > 0 && v1.length > 0) {
-            const isPasswordMatch = v1 == v2;
+            const isPasswordMatch = v1 === v2;
             setFormValid(isPasswordMatch);
             setPwdConfirmValid(isPasswordMatch);
         } else {
