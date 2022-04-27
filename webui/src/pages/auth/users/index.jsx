@@ -8,7 +8,7 @@ import {useAPI, useAPIWithPagination} from "../../../lib/hooks/api";
 import {auth, BadRequestError, config, extractError, NotFoundError} from "../../../lib/api";
 import useUser from "../../../lib/hooks/user";
 import {ConfirmationButton} from "../../../lib/components/modals";
-import {EntityCreateModal, UserInviteModal} from "../../../lib/components/auth/forms";
+import {EntityActionModal, EntityCreateModal, UserInviteModal} from "../../../lib/components/auth/forms";
 import {Paginator} from "../../../lib/components/pagination";
 import {useRouter} from "../../../lib/hooks/router";
 import {Link} from "../../../lib/components/nav";
@@ -72,10 +72,10 @@ const UsersContainer = () => {
 
             {(!!deleteError) && <Error error={deleteError}/>}
 
-            <EntityCreateModal
+            <EntityActionModal
                 show={showCreate}
                 onHide={() => setShowCreate(false)}
-                onCreate={userId => {
+                onAction={userId => {
                     return auth.createUser(userId).then(() => {
                         setSelected([]);
                         setShowCreate(false);
@@ -83,24 +83,25 @@ const UsersContainer = () => {
                     });
                 }}
                 title={canInviteUsers ? "Create Integration User" : "Create User"}
-                idPlaceholder={canInviteUsers ? "Integration Name (e.g. Spark)" : "Username (e.g. 'jane.doe')"}
+                placeholder={canInviteUsers ? "Integration Name (e.g. Spark)" : "Username (e.g. 'jane.doe')"}
+                actionName={"Create"}
             />
 
-            <UserInviteModal
+            <EntityActionModal
                 show={showInvite}
                 onHide={() => setShowInvite(false)}
-                onInvite={userEmail => {
+                onAction={async (userEmail) => {
                     if (!validator.isEmail(userEmail)) {
-                        return Promise.reject("Invalid email address")
-                    }
-                    return auth.createUser(userEmail, true).then(() => {
-                        setSelected([]);
-                        setShowInvite(false);
-                        setRefresh(!refresh);
-                    });
+                    throw new Error("Invalid email address");
+                }
+                    await auth.createUser(userEmail, true);
+                    setSelected([]);
+                    setShowInvite(false);
+                    setRefresh(!refresh);
                 }}
-                title="Invite User"
-                emailPlaceholder="Email"
+                title={"Invite User"}
+                placeholder={"Email"}
+                actionName={"Invite"}
             />
 
             <DataTable

@@ -14,22 +14,13 @@ const TOKEN_PARAM_NAME = "token";
 const EMAIL_PARAM_NAME = "email";
 
 const CreateUserWithPasswordForm = ({token, email}) => {
-
     const router = useRouter();
 
-    const onConfirmPasswordChange = () => {
-        if (newPwdField.current.value && newPwdField.current.value.length > 0) {
-            const isPasswordMatch = newPwdField.current.value === confirmPasswordField.current.value;
-            setFormValid(isPasswordMatch);
-            setPwdConfirmValid(isPasswordMatch);
-        } else {
-            setPwdConfirmValid(true);
-        }
-    };
-
     const onPasswordChange = () => {
-        if (confirmPasswordField.current.value && confirmPasswordField.current.value.length > 0) {
-            const isPasswordMatch = newPwdField.current.value === confirmPasswordField.current.value;
+        const v1 = newPwdField.current.value || '';
+        const v2 = confirmPasswordField.current.value || '';
+        if (v1.length > 0 && v2 != '' || v2.length > 0 && v1 != '') {
+            const isPasswordMatch = v1 == v2;
             setFormValid(isPasswordMatch);
             setPwdConfirmValid(isPasswordMatch);
         } else {
@@ -76,7 +67,7 @@ const CreateUserWithPasswordForm = ({token, email}) => {
                             </Form.Group>
 
                             <Form.Group controlId="confirmPassword">
-                                <Form.Control type="password" placeholder="Confirm Password" ref={confirmPasswordField} onChange={onConfirmPasswordChange}/>
+                                <Form.Control type="password" placeholder="Confirm Password" ref={confirmPasswordField} onChange={onPasswordChange}/>
                                 {pwdConfirmValid === false &&
                                 <Form.Text className="text-danger">
                                     Your password and confirmation password do not match.

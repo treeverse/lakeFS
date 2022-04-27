@@ -93,32 +93,6 @@ export const AttachModal = ({ show, searchFn, onAttach, onHide, addText = "Add",
     );
 };
 
-export const EntityCreateModal = ({ show, onHide, onCreate, title, idPlaceholder }) => {
-    return (
-        <EntityActionModal
-            show={show}
-            onHide={onHide}
-            onAction={onCreate}
-            title={title}
-            placeholder={idPlaceholder}
-            actionName={"Create"}
-        />
-    )
-}
-
-export const UserInviteModal = ({ show, onHide, onInvite, title, emailPlaceholder }) => {
-    return (
-        <EntityActionModal
-            show={show}
-            onHide={onHide}
-            onAction={onInvite}
-            title={title}
-            placeholder={emailPlaceholder}
-            actionName={"Invite"}
-        />
-    )
-}
-
 export const EntityActionModal = ({ show, onHide, onAction, title, placeholder, actionName }) => {
     const [error, setError] = useState(null);
     const idField = useRef(null);

@@ -13,10 +13,7 @@ import {useAPI} from "../../lib/hooks/api";
 const LoginForm = () => {
     const router = useRouter();
     const [loginError, setLoginError] = useState(null);
-    const { response, error, loading } = useAPI(() => {
-        return auth.getAuthCapabilities()
-    });
-
+    const { response, error, loading } = useAPI(() => auth.getAuthCapabilities());
     if (loading) {
         return null;
     }
@@ -66,9 +63,7 @@ const LoginForm = () => {
 
 const LoginPage = () => {
     const router = useRouter();
-    const { response, error, loading } = useAPI(() => {
-        return setup.getState()
-    });
+    const { response, error, loading } = useAPI(() => setup.getState());
     if (loading) {
         return null;
     }
