@@ -244,9 +244,9 @@ var runCmd = &cobra.Command{
 			}
 		}
 
-		lakefsBaseUrl := emailParams.LakefsBaseURL
-		if lakefsBaseUrl != "" {
-			_, err := url.Parse(lakefsBaseUrl)
+		lakefsBaseURL := emailParams.LakefsBaseURL
+		if lakefsBaseURL != "" {
+			_, err := url.Parse(lakefsBaseURL)
 			if err != nil {
 				logger.WithError(err).Warn("Failed to parse lakefs base url for email, check the value in 'email.lakefs_base_url'")
 			}
