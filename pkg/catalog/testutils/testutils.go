@@ -191,7 +191,7 @@ func (w *FakeWalker) Walk(_ context.Context, storageURI *url.URL, op store.WalkO
 				return fmt.Errorf("didn't expect walk err: %w", err)
 			}
 			if i >= w.Max && !errors.Is(err, catalog.ErrItClosed) {
-				return errors.New(fmt.Sprintf("expected error; expected (%s), got (%s)", catalog.ErrItClosed, err))
+				return fmt.Errorf("expected error; expected (%s), got: %w", catalog.ErrItClosed, err)
 			}
 		}
 	}
