@@ -9,7 +9,6 @@ import {auth} from "../../../lib/api";
 import {ActionGroup, ActionsBar, Error} from "../../../lib/components/controls";
 import Button from "react-bootstrap/Button";
 import {useRouter} from "../../../lib/hooks/router";
-import { useSearchParams } from 'react-router-dom';
 
 const TOKEN_PARAM_NAME = "token";
 const EMAIL_PARAM_NAME = "email";
@@ -94,13 +93,10 @@ const CreateUserWithPasswordForm = ({token, email}) => {
 
 export const ActivateInvitedUserPage = () => {
 
-    // const queryString = window.location.search;
-    // const params = new URLSearchParams(queryString);
-    // const token = params.get(TOKEN_PARAM_NAME);
-    // const invitedUserEmail = params.get(EMAIL_PARAM_NAME);
-    const [searchParams] = useSearchParams();
-    const token = searchParams.get(TOKEN_PARAM_NAME);
-    const invitedUserEmail = searchParams.get(EMAIL_PARAM_NAME);
+    const queryString = window.location.search;
+    const params = new URLSearchParams(queryString);
+    const token = params.get(TOKEN_PARAM_NAME);
+    const invitedUserEmail = params.get(EMAIL_PARAM_NAME);
 
     return (
         <Layout>
