@@ -63,11 +63,3 @@ func buildEmailTemplate(tmpl *template.Template, host string, path string, token
 	t := builder.String()
 	return t, nil
 }
-
-func ConstructResetPasswordEmailTemplate(host string, token string) (string, error) {
-	return buildEmailTemplate(resetEmailTemplate, host, ResetPasswordURLPath, token)
-}
-
-func ConstructInviteUserEmailTemplate(host string, token string) (string, error) {
-	return buildEmailTemplate(inviteUserTemplate, host, InviteUserURLPath, token)
-}
