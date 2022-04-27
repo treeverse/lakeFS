@@ -271,9 +271,13 @@ jobs:
         working-directory: test/spark
         run: ./setup-test.sh
 
+      - name: Generate uniquifying value
+        id: unique
+        run:  echo "::set-output name=value::$RANDOM"
+
       - name: Test lakeFS multipart upload with Hadoop S3A
         env:
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-s3a-mpu
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-s3a-mpu/${{ steps.unique.outputs.value }}
           REPOSITORY: s3a-mpu-test
           AWS_ACCESS_KEY_ID: ${{ secrets.TESTER_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.TESTER_SECRET_ACCESS_KEY }}
@@ -282,7 +286,7 @@ jobs:
           #     a Docker container.  Bypass this somehow.
           ENDPOINT: "http://s3.local.lakefs.io:8000"
         working-directory: test/spark/s3a-multipart
-        run: docker-compose exec -T lakefs lakectl repo create "lakefs://${REPOSITORY}" ${STORAGE_NAMESPACE} -d main && sbt "run s3a://${REPOSITORY}/main/multipart.out"
+        run: docker-compose exec -T lakefs lakectl repo create "lakefs://${REPOSITORY}" "${STORAGE_NAMESPACE}" -d main && sbt "run s3a://${REPOSITORY}/main/multipart.out"
 
       - name: lakeFS logs on failure
         if: ${{ failure() }}
@@ -327,9 +331,13 @@ jobs:
         working-directory: test/spark
         run: ./setup-test.sh
 
+      - name: Generate uniquifying value
+        id: unique
+        run:  echo "::set-output name=value::$RANDOM"
+
       - name: Test lakeFS S3 with Spark 2.x
         env:
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark2
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark2/${{ steps.unique.outputs.value }}
           REPOSITORY: gateway-test-spark2
           SONNET_JAR: sonnets-246/target/sonnets-246/scala-2.11/sonnets-246_2.11-0.1.0.jar
         working-directory: test/spark
@@ -349,7 +357,7 @@ jobs:
         timeout-minutes: 8
         env:
           JARS: clients/hadoopfs/
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark2-client
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark2-client/${{ steps.unique.outputs.value }}
           AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
           USE_DIRECT_ACCESS: "true"
@@ -383,6 +391,10 @@ jobs:
         working-directory: test/spark/app
         run: sbt sonnets-311/package
 
+      - name: Generate uniquifying value
+        id: unique
+        run:  echo "::set-output name=value::$RANDOM"
+
       - name: Start lakeFS for Spark tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
@@ -400,7 +412,7 @@ jobs:
       - name: Test lakeFS S3 with Spark 3.x
         continue-on-error: true
         env:
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark3
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark3/${{ steps.unique.outputs.value }}
           REPOSITORY: gateway-test-spark3
           SONNET_JAR: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
         working-directory: test/spark
@@ -420,7 +432,7 @@ jobs:
         timeout-minutes: 8
         env:
           JARS: clients/hadoopfs/
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark3-client
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark3-client/${{ steps.unique.outputs.value }}
           AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
           USE_DIRECT_ACCESS: "true"
@@ -443,7 +455,7 @@ jobs:
       LAKEFS_TAG: ${{ needs.deploy-image.outputs.tag }}
       EXPORT_TAG: ${{ needs.deploy-rclone-export-image.outputs.tag }}
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
-      STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-storage-rclone-export
+
     steps:
       - name: Check-out code
         uses: actions/checkout@v2
@@ -459,15 +471,19 @@ jobs:
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
 
+      - name: Generate uniquifying value
+        id: unique
+        run:  echo "::set-output name=value::$RANDOM"
+
       - name: Setup lakeFS for tests
         env:
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-storage-rclone-export
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-storage-rclone-export/${{ steps.unique.outputs.value }}
         working-directory: test/rclone_export
         run: ./setup-test.sh
 
       - name: Test rclone export
         env:
-          EXPORT_LOCATION: s3://esti-system-testing/${{ github.run_number }}-rclone-export-dest
+          EXPORT_LOCATION: s3://esti-system-testing/${{ github.run_number }}-rclone-export-dest/${{ steps.unique.outputs.value }}
           S3_ACCESS_KEY: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           S3_SECRET_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
         working-directory: test/rclone_export
@@ -491,13 +507,17 @@ jobs:
           go-version: 1.17.8
         id: go
 
+      - name: Generate uniquifying value
+        id: unique
+        run:  echo "::set-output name=value::$RANDOM"
+
       - name: Start lakeFS for Metastore tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
           compose-directory: test/lakectl_metastore
         env:
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-metaclient
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-metaclient/${{ steps.unique.outputs.value }}
           LAKEFS_BLOCKSTORE_TYPE: s3
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -511,7 +531,7 @@ jobs:
       - name: Setup lakeFS for tests
         working-directory: test/lakectl_metastore
         env:
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-metaclient
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-metaclient/${{ steps.unique.outputs.value }}
         run: ./setup-test.sh
 
       - name: Test using DBT and lakectl metastore commands
@@ -572,8 +592,8 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  metadata-client-spark3:
-    name: Test lakeFS metadata client with Spark 3.x
+  metadata-client-gc-spark3:
+    name: Test lakeFS metadata client GC with Spark 3.x
     needs: [deploy-image, build-spark3-metadata-client]
     runs-on: ubuntu-20.04
     strategy:
@@ -598,6 +618,76 @@ jobs:
           name: metaclient-3x
           path: test/spark/metaclient
 
+      - name: Generate uniquifying value
+        id: unique
+        run:  echo "::set-output name=value::$RANDOM"
+
+      - name: Start lakeFS for Spark tests
+        uses: ./.github/actions/bootstrap-test-lakefs
+        with:
+          compose-directory: test/spark
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_BLOCKSTORE_TYPE: s3
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+
+      - name: Setup lakeFS for metadata client tests
+        working-directory: test/spark
+        run: ./setup-test.sh
+
+      - name: Setup GC tests
+        env:
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.version }}-metaclient/garbage/${{ steps.unique.outputs.value }}
+          REPOSITORY: test-data-gc-${{ matrix.spark.version }}
+        working-directory: test/spark
+        run: ./setup-gc-test.sh
+
+      - name: Test GC with Spark 3.x
+        env:
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark }}-metaclient/garbage/${{ steps.unique.outputs.value }}
+          REPOSITORY: test-data-gc-${{ matrix.spark.version }}
+          CLIENT_JAR: ${{steps.import_metaclient.outputs.download-path}}/spark-assembly${{ matrix.spark.suffix }}.jar
+        working-directory: test/spark
+        run: ./run-gc-test.sh
+
+      - name: lakeFS Logs on Spark with gateway failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        working-directory: test/spark
+        run: docker-compose logs --tail=1000 lakefs
+
+  metadata-client-export-spark3:
+    name: Test lakeFS metadata client export with Spark 3.x
+    needs: [deploy-image, build-spark3-metadata-client]
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        spark:
+          - version: 3.2.1
+            suffix: "-hadoop3"
+          - version: 3.1.2
+            suffix: ""
+          - version: 3.0.2
+            suffix: ""
+    env:
+      SPARK_TAG: ${{ matrix.spark.version }}
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v2
+
+      - name: Import Metaclient
+        id: import_metaclient
+        uses: actions/download-artifact@v3
+        with:
+          name: metaclient-3x
+          path: test/spark/metaclient
+
+      - name: Generate uniquifying value
+        id: unique
+        run:  echo "::set-output name=value::$RANDOM"
+
       - name: Start lakeFS for Spark tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
@@ -614,36 +704,21 @@ jobs:
         run: ./setup-test.sh
 
       - name: Copy repository ref
-        run: aws s3 cp --recursive s3://esti-system-testing-data/golden-files/gc-test-data s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.version }}-metaclient/exporter
-
-      - name: Setup GC tests
-        env:
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.version }}-metaclient/garbage
-          REPOSITORY: test-data-gc-${{ matrix.spark.version }}
-        working-directory: test/spark
-        run: ./setup-gc-test.sh
-
-      - name: Test GC with Spark 3.x
-        env:
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark }}-metaclient/garbage
-          REPOSITORY: test-data-gc-${{ matrix.spark.version }}
-          CLIENT_JAR: ${{steps.import_metaclient.outputs.download-path}}/spark-assembly${{ matrix.spark.suffix }}.jar
-        working-directory: test/spark
-        run: ./run-gc-test.sh
+        run: aws s3 cp --recursive s3://esti-system-testing-data/golden-files/gc-test-data s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.version }}-metaclient/exporter/${{ steps.unique.outputs.value }}
 
       - name: Setup Exporter tests
         env:
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.version }}-metaclient/exporter
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.version }}-metaclient/exporter/${{ steps.unique.outputs.value }}
           REPOSITORY: test-data-exporter
         working-directory: test/spark
         run: ./setup-exporter-test.sh
 
       - name: Test Exporter with Spark 3.x
         env:
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.version }}-metaclient/exporter
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.version }}-metaclient/exporter/${{ steps.unique.outputs.value }}
           REPOSITORY: test-data-exporter
           CLIENT_JAR: ${{steps.import_metaclient.outputs.download-path}}/spark-assembly${{ matrix.spark.suffix }}.jar
-          EXPORT_LOCATION: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.version }}-client-export
+          EXPORT_LOCATION: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.version }}-client-export/${{ steps.unique.outputs.value }}
         working-directory: test/spark
         run: ./run-exporter-test.sh
 
@@ -667,6 +742,10 @@ jobs:
       - name: Check-out code
         uses: actions/checkout@v2
 
+      - name: Generate uniquifying value
+        id: unique
+        run:  echo "::set-output name=value::$RANDOM"
+
       - name: Start lakeFS with S3 tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
@@ -679,14 +758,14 @@ jobs:
           DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
           ESTI_TEST_DATA_ACCESS: true,false
           ESTI_BLOCKSTORE_TYPE: s3
-          ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}
+          ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}
           ESTI_AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           ESTI_AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
           ESTI_VERSION: ${{ steps.version.outputs.tag }}
 
       - name: Check files in S3 bucket
         run: |
-            FILES_COUNT=`aws s3 ls s3://esti-system-testing/${{ github.run_number }} --recursive | wc -l`
+            FILES_COUNT=`aws s3 ls s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }} --recursive | wc -l`
             [ $FILES_COUNT -gt 5 ]
       - name: lakeFS Logs on s3 failure
         if: ${{ failure() }}
@@ -696,7 +775,7 @@ jobs:
         if: ${{ always() }}
         run: |
             cd esti/ops
-            docker-compose ps -q postgres && docker-compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://esti-system-testing/${{ github.run_number }}/dump.gz
+            docker-compose ps -q postgres && docker-compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}/dump.gz
       - name: Run lakeFS S3 to use with local API key
         env:
           LAKEFS_STATS_ENABLED: "false"
@@ -704,7 +783,7 @@ jobs:
           DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
           ESTI_TEST_DATA_ACCESS: true,false
           ESTI_BLOCKSTORE_TYPE: s3
-          ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-local-api-key
+          ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-local-api-key/${{ steps.unique.outputs.value }}
         run: |
           docker-compose -f esti/ops/docker-compose.yaml down -v
           docker-compose -f esti/ops/docker-compose.yaml up --quiet-pull --exit-code-from=esti
@@ -722,6 +801,11 @@ jobs:
     steps:
       - name: Check-out code
         uses: actions/checkout@v2
+
+      - name: Generate uniquifying value
+        id: unique
+        run:  echo "::set-output name=value::$RANDOM"
+
       - name: Start lakeFS with GS tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
@@ -732,7 +816,7 @@ jobs:
           LAKEFS_BLOCKSTORE_TYPE: gs
           LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON: ${{ secrets.LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON }}
           ESTI_BLOCKSTORE_TYPE: gs
-          ESTI_STORAGE_NAMESPACE: gs://esti-system-testing/${{ github.run_number }}
+          ESTI_STORAGE_NAMESPACE: gs://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}
       - name: lakeFS Logs on GS failure
         if: ${{ failure() }}
         continue-on-error: true
@@ -751,6 +835,11 @@ jobs:
     steps:
       - name: Check-out code
         uses: actions/checkout@v2
+
+      - name: Generate uniquifying value
+        id: unique
+        run:  echo "::set-output name=value::$RANDOM"
+
       - name: Start lakeFS with Azure tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
@@ -762,7 +851,7 @@ jobs:
           LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT: esti
           LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY2 }}
           ESTI_BLOCKSTORE_TYPE: azure
-          ESTI_STORAGE_NAMESPACE: https://esti.blob.core.windows.net/esti-system-testing/${{ github.run_number }}
+          ESTI_STORAGE_NAMESPACE: https://esti.blob.core.windows.net/esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}
       - name: lakeFS Logs on Azure failure
         if: ${{ failure() }}
         continue-on-error: true
