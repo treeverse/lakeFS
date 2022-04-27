@@ -6,7 +6,6 @@ import {AuthLayout} from "../../../lib/components/auth/layout";
 import {useAPIWithPagination} from "../../../lib/hooks/api";
 import {auth} from "../../../lib/api";
 import {ConfirmationButton} from "../../../lib/components/modals";
-import {EntityCreateModal} from "../../../lib/components/auth/forms";
 import {Paginator} from "../../../lib/components/pagination";
 import {
     ActionGroup,
@@ -21,6 +20,7 @@ import {Route, Switch} from "react-router-dom";
 import {useRouter} from "../../../lib/hooks/router";
 import {Link} from "../../../lib/components/nav";
 import GroupPage from "./group";
+import {EntityActionModal} from "../../../lib/components/auth/forms";
 
 
 const GroupsContainer = () => {
@@ -78,10 +78,10 @@ const GroupsContainer = () => {
 
             {(!!deleteError) && <Error error={deleteError}/>}
 
-            <EntityCreateModal
+            <EntityActionModal
                 show={showCreate}
                 onHide={() => setShowCreate(false)}
-                onCreate={groupId => {
+                onAction={groupId => {
                     return auth.createGroup(groupId).then(() => {
                         setSelected([]);
                         setShowCreate(false);
@@ -89,7 +89,8 @@ const GroupsContainer = () => {
                     });
                 }}
                 title="Create Group"
-                idPlaceholder="Group Name (e.g. 'DataTeam')"
+                placeholder="Group Name (e.g. 'DataTeam')"
+                actionName={"Create"}
             />
 
             <DataTable

@@ -93,8 +93,7 @@ export const AttachModal = ({ show, searchFn, onAttach, onHide, addText = "Add",
     );
 };
 
-
-export const EntityCreateModal = ({ show, onHide, onCreate, title, idPlaceholder }) => {
+export const EntityActionModal = ({ show, onHide, onAction, title, placeholder, actionName }) => {
     const [error, setError] = useState(null);
     const idField = useRef(null);
 
@@ -104,7 +103,7 @@ export const EntityCreateModal = ({ show, onHide, onCreate, title, idPlaceholder
     });
 
     const onSubmit = () => {
-        onCreate(idField.current.value).catch(err => setError(err));
+        onAction(idField.current.value).catch(err => setError(err));
     };
 
     return (
@@ -118,7 +117,7 @@ export const EntityCreateModal = ({ show, onHide, onCreate, title, idPlaceholder
                     e.preventDefault()
                     onSubmit()
                 }}>
-                    <FormControl ref={idField} autoFocus placeholder={idPlaceholder} type="text"/>
+                    <FormControl ref={idField} autoFocus placeholder={placeholder} type="text"/>
                 </Form>
 
                 {(!!error) && <Error className="mt-3" error={error}/>}
@@ -126,7 +125,7 @@ export const EntityCreateModal = ({ show, onHide, onCreate, title, idPlaceholder
             </Modal.Body>
 
             <Modal.Footer>
-                <Button onClick={onSubmit} variant="success">Create</Button>
+                <Button onClick={onSubmit} variant="success">{actionName}</Button>
                 <Button onClick={onHide} variant="secondary">Cancel</Button>
             </Modal.Footer>
         </Modal>

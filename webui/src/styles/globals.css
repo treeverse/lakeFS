@@ -26,6 +26,10 @@
   margin-top: 130px;
 }
 
+.card.create-invited-user-widget {
+  margin-bottom: 10px;
+}
+
 .card.login-widget .reset-pwd{
   font-size: 15px;
   position: absolute;
@@ -463,4 +467,36 @@ td .form-group {
   text-align: center;
   margin-top: 50%;
   font-size: 18px;
+}
+
+.invited-welcome-msg {
+  align-items: center;
+  padding-top: 200px;
+  padding-bottom: 0px;
+}
+
+.invited-welcome-msg .title {
+  text-align: left;
+  padding-bottom: 30px;
+  font-size: 30px;
+  font-weight: bold;
+  color: #2ce5b5;
+}
+
+.invited-welcome-msg .body {
+  text-align: left;
+  font-size: 20px;
+  padding-bottom: 40px;
+}
+
+.action-bar .btn {
+  border: transparent;
+}
+
+.action-bar .btn.create-user {
+  background-color: #258c82;
+}
+
+.action-bar .btn.cancel-create-user {
+  background-color: #7e7e7e;
 }

@@ -13,7 +13,12 @@ import {useAPI} from "../../lib/hooks/api";
 const LoginForm = () => {
     const router = useRouter();
     const [loginError, setLoginError] = useState(null);
+    const { response, error, loading } = useAPI(() => auth.getAuthCapabilities());
+    if (loading) {
+        return null;
+    }
 
+    const showResetPwd = !error && response && response.forgot_password;
     const { next } = router.query;
 
     return (
@@ -44,8 +49,10 @@ const LoginForm = () => {
 
                             <Button variant="primary" type="submit">Login</Button>
                         </Form>
-                        {/*Enable once https://github.com/treeverse/lakeFS/pull/3208 is checked in*/}
-                        {/*<Button variant="link" className="reset-pwd" onClick={()=> {router.push("/auth/resetpassword")}}>Reset password</Button>*/}
+                        { showResetPwd ?
+                            <Button variant="link" className="reset-pwd" onClick={()=> {router.push("/auth/resetpassword")}}>Reset password</Button>
+                            : ""
+                        }
                     </Card.Body>
                 </Card>
             </Col>
@@ -56,9 +63,7 @@ const LoginForm = () => {
 
 const LoginPage = () => {
     const router = useRouter();
-    const { response, error, loading } = useAPI(() => {
-        return setup.getState()
-    });
+    const { response, error, loading } = useAPI(() => setup.getState());
     if (loading) {
         return null;
     }
