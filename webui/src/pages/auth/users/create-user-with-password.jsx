@@ -91,7 +91,7 @@ const CreateUserWithPasswordForm = ({token, email}) => {
 }
 
 
-export const CreateUserPage = () => {
+export const ActivateInvitedUserPage = () => {
     const queryString = window.location.search;
     const params = new URLSearchParams(queryString);
     const token = params.get(TOKEN_PARAM_NAME);
@@ -110,4 +110,4 @@ export const CreateUserPage = () => {
     );
 };
 
-export default CreateUserPage;
+export default ActivateInvitedUserPage;

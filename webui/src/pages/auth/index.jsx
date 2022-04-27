@@ -7,7 +7,7 @@ import UsersIndexPage from "./users";
 import PoliciesIndexPage from "./policies";
 import LoginPage from "./login";
 import ResetPasswordPage from "./reset-password";
-import CreateUserPage from "./users/create-user-with-password";
+import ActivateInvitedUserPage from "./users/create-user-with-password";
 
 const Auth = () => {
     return (
@@ -28,7 +28,7 @@ const Auth = () => {
                 <UsersIndexPage/>
             </Route>
             <Route path="/auth/users/create">
-                <CreateUserPage/>
+                <ActivateInvitedUserPage/>
             </Route>
             <Route path="/auth/groups">
                 <GroupsIndexPage/>
