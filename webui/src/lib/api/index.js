@@ -117,12 +117,23 @@ export class MergeError extends Error {
 
 // actual actions:
 class Auth {
+    async getAuthCapabilities() {
+        const response = await apiRequest('/auth/capabilities', {
+            method: 'GET',
+        });
+        switch (response.status) {
+            case 200:
+                return await response.json();
+            default:
+                throw new Error('Unknown');
+        }
+    }
 
-    async updatePasswordByToken(token, newPassword) {
+    async updatePasswordByToken(token, newPassword, email) {
         const response = await fetch(`${API_ENDPOINT}/auth/password`, {
             headers: new Headers(defaultAPIHeaders),
             method: 'POST',
-            body: json({token: token, newPassword: newPassword})
+            body: json({token: token, newPassword: newPassword, email: email})
         });
 
         if (response.status === 401) {
@@ -195,8 +206,9 @@ class Auth {
         return response.json();
     }
 
-    async createUser(userId) {
-        const response = await apiRequest(`/auth/users`, {method: 'POST', body: json({id: userId})});
+    async createUser(userId, inviteUser = false) {
+        const response = await apiRequest(`/auth/users`,
+            {method: 'POST', body: json({id: userId, invite_user: inviteUser})});
         if (response.status !== 201) {
             throw new Error(await extractError(response));
         }
