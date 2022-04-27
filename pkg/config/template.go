@@ -193,5 +193,6 @@ type configuration struct {
 		Sender             string        `mapstructure:"sender"`
 		LimitEveryDuration time.Duration `mapstructure:"limit_every_duration"`
 		Burst              int           `mapstructure:"burst"`
+		LakefsBaseURL      string        `mapstructure:"lakefs_base_url"`
 	}
 }

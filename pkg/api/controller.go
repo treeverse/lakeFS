@@ -817,17 +817,20 @@ func (c *Controller) generateResetPasswordToken(email string) (string, error) {
 	return GenerateJWTResetPassword(secret, email, currentTime, currentTime.Add(DefaultResetPasswordExpiration))
 }
 
-func (c *Controller) inviteUserRequest(email string) error {
-	// TODO (@shimi9276) create template for sending the email with link for invite using the passed template
-	token, err := c.generateResetPasswordToken(email)
+func (c *Controller) inviteUserRequest(emailAddr string) error {
+	token, err := c.generateResetPasswordToken(emailAddr)
 	if err != nil {
 		return err
 	}
-	err = c.Emailer.SendEmailWithLimit([]string{email}, token, token, nil)
+	params := map[string]string{
+		"token": token,
+		"email": emailAddr,
+	}
+	err = c.Emailer.SendInviteUserEmail([]string{emailAddr}, params)
 	if err != nil {
 		return err
 	}
-	c.Logger.WithField("email", email).Info("invite email sent")
+	c.Logger.WithField("email", emailAddr).Info("invite email sent")
 	return nil
 }
 
@@ -3078,23 +3081,24 @@ func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, http.StatusOK, response)
 }
 
-func (c *Controller) resetPasswordRequest(ctx context.Context, email string) error {
-	user, err := c.Auth.GetUserByEmail(ctx, email)
+func (c *Controller) resetPasswordRequest(ctx context.Context, emailAddr string) error {
+	user, err := c.Auth.GetUserByEmail(ctx, emailAddr)
 	if err != nil {
 		return err
 	}
-	email = StringValue(user.Email)
-	// TODO (@shimi9276) create template for sending the email with link for reset using the passed template
-	token, err := c.generateResetPasswordToken(email)
+	emailAddr = StringValue(user.Email)
+	token, err := c.generateResetPasswordToken(emailAddr)
 	if err != nil {
 		return err
 	}
-	err = c.Emailer.SendEmailWithLimit([]string{email}, token, token, nil)
+	params := map[string]string{
+		"token": token,
+	}
+	err = c.Emailer.SendResetPasswordEmail([]string{emailAddr}, params)
 	if err != nil {
 		return err
 	}
-	c.Logger.WithField("email", email).Info("reset password email sent")
-
+	c.Logger.WithField("email", emailAddr).Info("reset password email sent")
 	return nil
 }
 
