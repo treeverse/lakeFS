@@ -74,29 +74,47 @@ temporary objects to be dropped rapidly.
 
 # How
 
+## Conflict modes
+
+Spark supports multiple "save modes": Append, Overwrite, ErrorIfExists, and
+Ignore.  These impact conflict resolution.  We will initially support just
+overwrite modes: an entire previous table will be deleted on write.
+
 ## Sample flow
 
 * User configures lakeFSFS and configures LakeFSOutputCommitter as the
   OutputCommitter for `lakefs` protocol Paths.  **Possibly** lakeFSFS will
   set up this OutputCommitter by default.
+
+  Successive steps are controlled by Spark/Hadoop to output, and correspond
+  to the Hadoop OutputCommitter protocol.
 * **Setup (job/task TBD)**: Create a new branch for this job/task.  Its name
   is predictable from the job ID and/or task ID, so can be easily found
-  again.  Immediately delete the entire subree of the intended output
-  path, and possibly delete branches of previous tasks.
+  again.  In "overwrite" mode, immediately delete the entire subtree of the
+  intended output path, and possibly delete branches of previous tasks.
+  This handles cases where the names of the objects written by the output
+  format change, for instance because of repartitioning to a smaller (or
+  different) number of partitions or because of nondeterminism in the names
+  of the objects.
 * **Write objects**: Everything is written to its correct path on the branch.
 * **[HOC] Commit**: Merge back to the original branch.
 
 ## Properties
 
 * The merge is performed by lakeFS so it is **atomic**.
-* In the **single-writer case** the merge succeeds: no other operations occur on the subtree.
+* In the **single-writer case** the merge succeeds: no other operations
+  occur on the subtree.
 * **In-place updates** work: the old objects are deleted and replaced by new
   objects.  This is true regardess of partitioning etc.
-* **Multiple writers** are detected: the first to HOC-commit succeeds, the
-  others fail when their lakeFS merge fails due to a conflict.
+* **Multiple writers** are detected and the first fails.  The first to
+  HOC-commit succeeds.  But all the others fail: they deleted the same
+  previous files, or created a conflicting file (at least their `_SUCCESS`
+  indicator).  So their lakeFS merge fails due to a conflict with the first
+  (successful) merge.
 * (Conflicting) **non-OutputCommitter writes are detected** and clearly
-  handled.  LakeFSOutputCommitter cab achieve its correct semantics
-  regardless of other writers used.
+  handled.  As long as other writes create _one_ object with an overlapping
+  name the merge will fail.  So LakeFSOutputCommitter can achieve its
+  correct semantics regardless of other writers used.
 * **Clearly correct by construction**: Rather than rely on single atomic
   operations and carefully tailoring operations to Spark retry mechanisms,
   we use lakeFS capabilities and guarantees.  Analyzing correctness becomes
@@ -138,6 +156,11 @@ is resolvable per documentation but will require some work.
 
 ## Future work
 
+### More conflict resolution and save modes
+
+Support all 4 Spark "save modes": Append, Overwrite, ErrorIfExists, and
+Ignore.
+
 ### Multiple writers
 
 We can support multiple concurrent writers and allow all writers to succeed
@@ -152,7 +175,7 @@ Now change LakeFSOutputCommitter to loop during HOC commit:
   branch has not moved_.
 * On failure:
   - Merge the source branch into the task branch using the "destination
-	wins" strategy and delete all added files under the prefix (or add and
+	wins"[^2] strategy and delete all added files under the prefix (or add and
 	use a new "merge but *never* copy from source branch" strategy).
   - Go back and attempt another merge.
 
@@ -161,7 +184,11 @@ lakeFS, with no additional DB.  We can even add cooperation by means of
 various locking hints, _informing_ multiple jobs about attempting to update
 the same paths but keeping things safe regardless.
 
+[^2]: 	Whenever there is a conflict, we want the task branch (which will become
+    the "latest writer" after a successful HOC commit) to win.
+
 
 [magic]:  https://hadoop.apache.org/docs/stable/hadoop-aws/tools/hadoop-aws/committers.html#The_Magic_Committer
 [staging]:  https://hadoop.apache.org/docs/stable/hadoop-aws/tools/hadoop-aws/committers.html#The_Staging_Committer
 [lakefs-commit]:  https://docs.lakefs.io/understand/object-model.html#commits
+
