@@ -18,11 +18,12 @@ const (
 
 var (
 	//go:embed invite_user_template.html
-	invite string
+	inviteEmailContent string
+	inviteUserTemplate = template.Must(template.New("inviteUserTemplate").Parse(inviteEmailContent))
+
 	//go:embed reset_email_template.html
-	reset              string
-	resetEmailTemplate = template.Must(template.New("resetEmailTemplate").Parse(reset))
-	inviteUserTemplate = template.Must(template.New("inviteUserTemplate").Parse(invite))
+	resetEmailContent  string
+	resetEmailTemplate = template.Must(template.New("resetEmailTemplate").Parse(resetEmailContent))
 )
 
 type TemplateParams struct {
@@ -42,11 +43,10 @@ func buildURL(baseURL string, pth string, values map[string]string) (string, err
 		params.Add(prm, value)
 	}
 	u.RawQuery = params.Encode()
-	url := u.String()
-	return url, nil
+	return u.String(), nil
 }
 
-func buildEmailTemplate(tmpl *template.Template, host string, path string, token string) (string, error) {
+func buildEmailByTemplate(tmpl *template.Template, host string, path string, token string) (string, error) {
 	params := map[string]string{
 		"token": token,
 	}

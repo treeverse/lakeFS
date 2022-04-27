@@ -822,7 +822,7 @@ func (c *Controller) inviteUserRequest(emailAddr string) error {
 	if err != nil {
 		return err
 	}
-	err = c.Emailer.SendInviterUserEmail([]string{emailAddr}, token)
+	err = c.Emailer.SendInviteUserEmail([]string{emailAddr}, token)
 	if err != nil {
 		return err
 	}
