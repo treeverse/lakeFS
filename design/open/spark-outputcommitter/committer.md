@@ -3,6 +3,16 @@
 Add a Hadoop OutputCommitter that uses _existing_ lakeFS operations for
 **atomic** commits that are efficient and safely concurrent.
 
+## Terminology
+
+lakeFS and Hadoop both use the term "commit", but with different meanings.
+In this document:
+  * A [_lakeFS commit_][lakefs-commit] is a revision entry in the lakeFS
+    repository log.
+  * A [_Hadoop OutputCommitter commit_][hadoop-commit] (_HOC commit_ for
+    short) is the action taken by a Hadoop OutputCommitter to finish writing
+    all objects of a job to their final locations.
+
 # Why <a href="#user-content-why" id="user-content-why">#</a>
 
 ## Issues with existing OutputCommitters
@@ -13,6 +23,10 @@ Hadoop file, for example a partitioned Parquet file) atomically.
 Hadoop comes with several OutputCommitter algorithms.  For S3 these try to
 bridge the gap between the Hadoop assumed semantics of a POSIX-ish
 filesystem (HDFS) and the actual semantics of an object store (S3).
+
+Of course, any Hadoop OutputCommitter that is unrelated to lakeFS can only
+ever perform HOC commits.  Any lakeFS commits on the written data will need
+to be separately managed by user code or manually.
 
 The best correct committer is probably the [magic committer][magic].  It
 works using only S3 (with its current consistency guarantees!), without
@@ -49,11 +63,14 @@ trees, and the magic committer is most other cases.
 
 We propose to leverage the atomic capabilities of lakeFS to write a specific
 OutputCommitter for lakeFSFS.  In the initial version, it will branch out,
-prepare the desired output, and merge back in to commit.  Aborting will be
-done by dropping the branch (or repurposing it if the same job ID is
-requested again).  Regular lakeFS retention can handle dropping data
-objects; we might want to add file patterns to retention to allow temporary
-objects to be dropped rapidly.
+prepare the desired output, and merge back in as part of the HOC commit.[^1]
+Aborting will be done by dropping the branch (or repurposing it if the same
+job ID is requested again).  Regular lakeFS retention can handle dropping
+data objects; we might want to add file patterns to retention to allow
+temporary objects to be dropped rapidly.
+
+[^1]: A merge is a type of commit, of course, so in this model HOC commits
+	*are* lakeFS commits!
 
 # How
 
@@ -67,7 +84,7 @@ objects to be dropped rapidly.
   again.  Immediately delete the entire subree of the intended output
   path, and possibly delete branches of previous tasks.
 * **Write objects**: Everything is written to its correct path on the branch.
-* **Commit**: Merge back to the original branch.
+* **[HOC] Commit**: Merge back to the original branch.
 
 ## Properties
 
@@ -75,8 +92,8 @@ objects to be dropped rapidly.
 * In the **single-writer case** the merge succeeds: no other operations occur on the subtree.
 * **In-place updates** work: the old objects are deleted and replaced by new
   objects.  This is true regardess of partitioning etc.
-* **Multiple writers** are detected: the first to commit succeeds, the
-  others fail.
+* **Multiple writers** are detected: the first to HOC-commit succeeds, the
+  others fail when their lakeFS merge fails due to a conflict.
 * (Conflicting) **non-OutputCommitter writes are detected** and clearly
   handled.  LakeFSOutputCommitter cab achieve its correct semantics
   regardless of other writers used.
@@ -85,15 +102,16 @@ objects to be dropped rapidly.
   we use lakeFS capabilities and guarantees.  Analyzing correctness becomes
   simpler.
 * **Fast**: No data copies, just only (required) metadata operations.  Cost
-  of commit is linear in the number of objects it touches.  Total time to
-  write is close to 3* faster than the existing FileOutputCommitter in v1
-  mode, close to 2* faster than the existing FileOutputCommitter in v2 mode
-  (which is unsafe in various cases), and about as fast as the magic
-  OutputCommitter _if_ lakeFSFS supported it.
-* **Good semantics**: Spark commits will be lakeFS commits.  The history of
-  a Spark job appears right in lakeFS history.  Metadata even includes some
+  of the lakeFS commit is linear in the number of objects it touches (and a
+  fast operation to add many thousands objects).  Total time to write is
+  close to 3* faster than the existing FileOutputCommitter in v1 mode, close
+  to 2* faster than the existing FileOutputCommitter in v2 mode (which is
+  unsafe in various cases), and about as fast as the magic OutputCommitter
+  _if_ lakeFSFS supported it.
+* **Good semantics**: HOC commits will be lakeFS commits.  The history of a
+  Spark job appears right in lakeFS history.  Metadata even includes some
   data lineage -- and in future we can easily add more, for instance as
-  merge commit user metadata.
+  merge (lakeFS) commit user metadata.
 
 ### Implementation details
 
@@ -126,9 +144,9 @@ We can support multiple concurrent writers and allow all writers to succeed
 (keeping the results of the last writer).
 
 We add a "merge-if" operation to lakeFS: atomically merge branch B into
-branch A if branch A is at a given commit.
+branch A if branch A is at a given lakeFS commit.
 
-Now change LakeFSOutputCommitter to loop during commit:
+Now change LakeFSOutputCommitter to loop during HOC commit:
 
 * Attempt to merge the task branch into the source branch _if the source
   branch has not moved_.
@@ -146,3 +164,4 @@ the same paths but keeping things safe regardless.
 
 [magic]:  https://hadoop.apache.org/docs/stable/hadoop-aws/tools/hadoop-aws/committers.html#The_Magic_Committer
 [staging]:  https://hadoop.apache.org/docs/stable/hadoop-aws/tools/hadoop-aws/committers.html#The_Staging_Committer
+[lakefs-commit]:  https://docs.lakefs.io/understand/object-model.html#commits
