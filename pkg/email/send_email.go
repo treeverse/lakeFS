@@ -57,7 +57,7 @@ func (e *Emailer) SendEmailWithLimit(receivers []string, subject string, body st
 }
 
 func (e *Emailer) SendResetPasswordEmail(receivers []string, token string) error {
-	body, err := buildEmailTemplate(resetEmailTemplate, e.Params.LakefsBaseURL, InviteUserURLPath, token)
+	body, err := buildEmailTemplate(resetEmailTemplate, e.Params.LakefsBaseURL, ResetPasswordURLPath, token)
 	if err != nil {
 		return err
 	}
