@@ -495,7 +495,8 @@ func TestController_CommitHandler(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("commit non-existent commit", func(t *testing.T) {
-		resp, err := clt.CommitWithResponse(ctx, "foo1", "main", &api.CommitParams{}, api.CommitJSONRequestBody{
+		repo := "foo1"
+		resp, err := clt.CommitWithResponse(ctx, repo, "main", &api.CommitParams{}, api.CommitJSONRequestBody{
 			Message: "some message",
 		})
 		testutil.Must(t, err)
@@ -509,47 +510,50 @@ func TestController_CommitHandler(t *testing.T) {
 	})
 
 	t.Run("commit success", func(t *testing.T) {
-		_, err := deps.catalog.CreateRepository(ctx, "foo1", onBlock(deps, "foo1"), "main")
-		testutil.MustDo(t, "create repo foo1", err)
-		testutil.MustDo(t, "commit bar on foo1", deps.catalog.CreateEntry(ctx, "foo1", "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
-		resp, err := clt.CommitWithResponse(ctx, "foo1", "main", &api.CommitParams{}, api.CommitJSONRequestBody{
+		repo := "foo2"
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		testutil.MustDo(t, "create repo foo2", err)
+		testutil.MustDo(t, "commit bar on foo2", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
+		resp, err := clt.CommitWithResponse(ctx, repo, "main", &api.CommitParams{}, api.CommitJSONRequestBody{
 			Message: "some message",
 		})
 		verifyResponseOK(t, resp, err)
 	})
 
 	t.Run("commit success with source metarange", func(t *testing.T) {
-		_, err := deps.catalog.CreateRepository(ctx, "foo1", onBlock(deps, "foo1"), "main")
-		testutil.MustDo(t, "create repo foo1", err)
+		repo := "foo3"
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main")
+		testutil.MustDo(t, "create repo foo3", err)
 
-		_, err = deps.catalog.CreateBranch(ctx, "foo1", "foo-branch", "main")
+		_, err = deps.catalog.CreateBranch(ctx, repo, "foo-branch", "main")
 
-		testutil.MustDo(t, "commit bar on foo1", deps.catalog.CreateEntry(ctx, "foo1", "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
-		resp, err := clt.CommitWithResponse(ctx, "foo1", "main", &api.CommitParams{}, api.CommitJSONRequestBody{
+		testutil.MustDo(t, "commit bar on foo1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
+		resp, err := clt.CommitWithResponse(ctx, repo, "main", &api.CommitParams{}, api.CommitJSONRequestBody{
 			Message: "some message",
 		})
 		verifyResponseOK(t, resp, err)
 
-		resp, err = clt.CommitWithResponse(ctx, "foo1", "foo-branch", &api.CommitParams{SourceMetarange: &resp.JSON201.MetaRangeId}, api.CommitJSONRequestBody{
+		resp, err = clt.CommitWithResponse(ctx, repo, "foo-branch", &api.CommitParams{SourceMetarange: &resp.JSON201.MetaRangeId}, api.CommitJSONRequestBody{
 			Message: "some message",
 		})
 		verifyResponseOK(t, resp, err)
 	})
 
 	t.Run("commit failure with source metarange and dirty branch", func(t *testing.T) {
-		_, err := deps.catalog.CreateRepository(ctx, "foo1", onBlock(deps, "foo1"), "main")
-		testutil.MustDo(t, "create repo foo1", err)
+		repo := "foo4"
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main")
+		testutil.MustDo(t, "create repo foo4", err)
 
-		_, err = deps.catalog.CreateBranch(ctx, "foo1", "foo-branch", "main")
+		_, err = deps.catalog.CreateBranch(ctx, repo, "foo-branch", "main")
 
-		testutil.MustDo(t, "commit bar on foo1", deps.catalog.CreateEntry(ctx, "foo1", "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
-		resp, err := clt.CommitWithResponse(ctx, "foo1", "main", &api.CommitParams{}, api.CommitJSONRequestBody{
+		testutil.MustDo(t, "commit bar on foo4", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
+		resp, err := clt.CommitWithResponse(ctx, repo, "main", &api.CommitParams{}, api.CommitJSONRequestBody{
 			Message: "some message",
 		})
 		verifyResponseOK(t, resp, err)
 
-		testutil.MustDo(t, "commit bar on foo1", deps.catalog.CreateEntry(ctx, "foo1", "foo-branch", catalog.DBEntry{Path: "foo/bar/2", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
-		resp, err = clt.CommitWithResponse(ctx, "foo1", "foo-branch", &api.CommitParams{SourceMetarange: &resp.JSON201.MetaRangeId}, api.CommitJSONRequestBody{
+		testutil.MustDo(t, "commit bar on foo4", deps.catalog.CreateEntry(ctx, repo, "foo-branch", catalog.DBEntry{Path: "foo/bar/2", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
+		resp, err = clt.CommitWithResponse(ctx, repo, "foo-branch", &api.CommitParams{SourceMetarange: &resp.JSON201.MetaRangeId}, api.CommitJSONRequestBody{
 			Message: "some message",
 		})
 
@@ -559,11 +563,12 @@ func TestController_CommitHandler(t *testing.T) {
 	})
 
 	t.Run("commit success - with creation date", func(t *testing.T) {
-		_, err := deps.catalog.CreateRepository(ctx, "foo2", onBlock(deps, "foo2"), "main")
-		testutil.MustDo(t, "create repo foo2", err)
-		testutil.MustDo(t, "commit bar on foo2", deps.catalog.CreateEntry(ctx, "foo2", "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
+		repo := "repo5"
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		testutil.MustDo(t, "create repo foo5", err)
+		testutil.MustDo(t, "commit bar on foo5", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
 		date := int64(1642626109)
-		resp, err := clt.CommitWithResponse(ctx, "foo2", "main", &api.CommitParams{}, api.CommitJSONRequestBody{
+		resp, err := clt.CommitWithResponse(ctx, repo, "main", &api.CommitParams{}, api.CommitJSONRequestBody{
 			Message: "some message",
 			Date:    &date,
 		})

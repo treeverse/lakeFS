@@ -141,10 +141,15 @@ type FakeWalker struct {
 	err                             error
 }
 
+const (
+	randomKeyLength = 64
+	entrySize       = 132
+)
+
 func (w *FakeWalker) createEntries(count int) {
 	ents := make([]store.ObjectStoreEntry, count)
 	for i := 0; i < count; i++ {
-		relativeKey := randstr.Base64(64)
+		relativeKey := randstr.Base64(randomKeyLength)
 		fullkey := w.uriPrefix + "/" + relativeKey
 		ents[i] = store.ObjectStoreEntry{
 			RelativeKey: relativeKey,
@@ -152,24 +157,28 @@ func (w *FakeWalker) createEntries(count int) {
 			Address:     w.expectedFromSourceURIWithPrefix + "/" + relativeKey,
 			ETag:        "some_etag",
 			Mtime:       time.Time{},
-			Size:        132,
+			Size:        entrySize,
 		}
 	}
-	sort.Slice(ents[:], func(i, j int) bool {
+	sort.Slice(ents, func(i, j int) bool {
 		return ents[i].RelativeKey < ents[j].RelativeKey
 	})
 	w.Entries = ents
 }
 
+var (
+	errUnexpectedValue = errors.New("unexpected value")
+)
+
 func (w *FakeWalker) Walk(_ context.Context, storageURI *url.URL, op store.WalkOptions, walkFn func(e store.ObjectStoreEntry) error) error {
 	if w.expectedAfter != op.After {
-		return errors.New(fmt.Sprintf("after; expected %s, got %s", w.expectedAfter, op.After))
+		return fmt.Errorf("(after) expected %s, got %s: %w", w.expectedAfter, op.After, errUnexpectedValue)
 	}
 	if w.expectedContinuationToken != op.ContinuationToken {
-		return errors.New(fmt.Sprintf("continuationToken; expected %s, got %s", w.expectedContinuationToken, op.ContinuationToken))
+		return fmt.Errorf("(continuationToken) expected %s, got %s: %w", w.expectedContinuationToken, op.ContinuationToken, errUnexpectedValue)
 	}
 	if w.expectedFromSourceURIWithPrefix != storageURI.String() {
-		return errors.New(fmt.Sprintf("fromSourceURIWithPrefix; expected %s, got %s", w.expectedFromSourceURIWithPrefix, storageURI.String()))
+		return fmt.Errorf("(fromSourceURIWithPrefix) expected %s, got %s: %w", w.expectedFromSourceURIWithPrefix, storageURI.String(), errUnexpectedValue)
 	}
 	if w.err != nil {
 		return w.err
@@ -192,9 +201,13 @@ func (w *FakeWalker) Walk(_ context.Context, storageURI *url.URL, op store.WalkO
 const ContinuationTokenOpaque = "FakeContToken"
 
 func (w *FakeWalker) Marker() store.Mark {
+	token := ""
+	if w.curr < len(w.Entries)-1 {
+		token = ContinuationTokenOpaque
+	}
 	return store.Mark{
 		LastKey:           w.Entries[w.curr].FullKey,
 		HasMore:           w.curr < len(w.Entries)-1,
-		ContinuationToken: ContinuationTokenOpaque,
+		ContinuationToken: token,
 	}
 }
