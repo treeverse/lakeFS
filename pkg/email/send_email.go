@@ -56,16 +56,16 @@ func (e *Emailer) SendEmailWithLimit(receivers []string, subject string, body st
 	return e.SendEmail(receivers, subject, body, attachmentFilePath)
 }
 
-func (e *Emailer) SendResetPasswordEmail(receivers []string, token string) error {
-	body, err := buildEmailByTemplate(resetEmailTemplate, e.Params.LakefsBaseURL, ResetPasswordURLPath, token)
+func (e *Emailer) SendResetPasswordEmail(receivers []string, params map[string]string) error {
+	body, err := buildEmailByTemplate(resetEmailTemplate, e.Params.LakefsBaseURL, ResetPasswordURLPath, params)
 	if err != nil {
 		return err
 	}
 	return e.SendEmailWithLimit(receivers, resetPasswordEmailSubject, body, nil)
 }
 
-func (e *Emailer) SendInviteUserEmail(receivers []string, token string) error {
-	body, err := buildEmailByTemplate(inviteUserTemplate, e.Params.LakefsBaseURL, InviteUserURLPath, token)
+func (e *Emailer) SendInviteUserEmail(receivers []string, params map[string]string) error {
+	body, err := buildEmailByTemplate(inviteUserTemplate, e.Params.LakefsBaseURL, InviteUserURLPath, params)
 	if err != nil {
 		return err
 	}

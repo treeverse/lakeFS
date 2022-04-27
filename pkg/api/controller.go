@@ -822,7 +822,11 @@ func (c *Controller) inviteUserRequest(emailAddr string) error {
 	if err != nil {
 		return err
 	}
-	err = c.Emailer.SendInviteUserEmail([]string{emailAddr}, token)
+	params := map[string]string{
+		"token": token,
+		"email": emailAddr,
+	}
+	err = c.Emailer.SendInviteUserEmail([]string{emailAddr}, params)
 	if err != nil {
 		return err
 	}
@@ -3087,7 +3091,10 @@ func (c *Controller) resetPasswordRequest(ctx context.Context, emailAddr string)
 	if err != nil {
 		return err
 	}
-	err = c.Emailer.SendResetPasswordEmail([]string{emailAddr}, token)
+	params := map[string]string{
+		"token": token,
+	}
+	err = c.Emailer.SendResetPasswordEmail([]string{emailAddr}, params)
 	if err != nil {
 		return err
 	}
