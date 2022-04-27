@@ -68,6 +68,7 @@ func (c *committedManager) WriteRange(ctx context.Context, ns graveler.StorageNa
 	if err != nil {
 		return nil, fmt.Errorf("failed creating range writer: %w", err)
 	}
+	writer.SetMetadata(MetadataTypeKey, MetadataRangesType)
 
 	defer func() {
 		if err := writer.Abort(); err != nil {
