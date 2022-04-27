@@ -1,7 +1,7 @@
 package email
 
 import (
-	"embed"
+	_ "embed"
 	"html/template"
 	"net/url"
 	"path"
@@ -9,20 +9,20 @@ import (
 )
 
 const (
-	ResetPasswordPath = "/auth/resetpassword" //#nosec
-	InviteUserPath    = "/auth/users/create"  //#nosec
+	ResetPasswordURLPath = "/auth/resetpassword" //#nosec
+	InviteUserURLPath    = "/auth/users/create"  //#nosec
 
-	ResetPasswordEmailSubject = "Reset Password Request for your lakeFS account"
-	InviteUserWEmailSubject   = "You have been invited to lakeFS"
+	resetPasswordEmailSubject = "Reset Password Request for your lakeFS account"
+	inviteUserWEmailSubject   = "You have been invited to lakeFS"
 )
 
 var (
-	//go:embed invite_user_template.html reset_email_template.html
-	f                  embed.FS
-	inviteTemplate, _  = f.ReadFile("invite_user_template.html")
-	resetTemplate, _   = f.ReadFile("reset_email_template.html")
-	resetEmailTemplate = template.Must(template.New("resetEmailTemplate").Parse(string(resetTemplate)))
-	inviteUserTemplate = template.Must(template.New("inviteUserTemplate").Parse(string(inviteTemplate)))
+	//go:embed invite_user_template.html
+	invite string
+	//go:embed reset_email_template.html
+	reset              string
+	resetEmailTemplate = template.Must(template.New("resetEmailTemplate").Parse(reset))
+	inviteUserTemplate = template.Must(template.New("inviteUserTemplate").Parse(invite))
 )
 
 type TemplateParams struct {
@@ -31,19 +31,19 @@ type TemplateParams struct {
 
 // buildURL takes in the baseURL that was configured for email purposes and adds to it the relevant path and params to
 // create a URL string that directs to the proper page, while passing the nessacery params
-func buildURL(baseURL string, pth string, qParams map[string]string) (*string, error) {
+func buildURL(baseURL string, pth string, values map[string]string) (string, error) {
 	u, err := url.Parse(baseURL)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	u.Path = path.Join(u.Path, pth)
 	params := u.Query()
-	for prm, value := range qParams {
+	for prm, value := range values {
 		params.Add(prm, value)
 	}
 	u.RawQuery = params.Encode()
 	url := u.String()
-	return &url, nil
+	return url, nil
 }
 
 func buildEmailTemplate(tmpl *template.Template, host string, path string, token string) (string, error) {
@@ -55,7 +55,7 @@ func buildEmailTemplate(tmpl *template.Template, host string, path string, token
 		return "", err
 	}
 	var builder strings.Builder
-	l := TemplateParams{URL: *url}
+	l := TemplateParams{URL: url}
 	err = tmpl.Execute(&builder, l)
 	if err != nil {
 		return "", err
@@ -65,9 +65,9 @@ func buildEmailTemplate(tmpl *template.Template, host string, path string, token
 }
 
 func ConstructResetPasswordEmailTemplate(host string, token string) (string, error) {
-	return buildEmailTemplate(resetEmailTemplate, host, ResetPasswordPath, token)
+	return buildEmailTemplate(resetEmailTemplate, host, ResetPasswordURLPath, token)
 }
 
 func ConstructInviteUserEmailTemplate(host string, token string) (string, error) {
-	return buildEmailTemplate(inviteUserTemplate, host, InviteUserPath, token)
+	return buildEmailTemplate(inviteUserTemplate, host, InviteUserURLPath, token)
 }

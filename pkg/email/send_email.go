@@ -17,14 +17,14 @@ type Emailer struct {
 var ErrRateLimitExceeded = errors.New("rate limit exceeded")
 
 type EmailParams struct {
-	SMTPHost              string
-	Port                  int
-	Username              string
-	Password              string
-	Sender                string
-	LimitEveryDuration    time.Duration
-	Burst                 int
-	LakefsBaseURLEndpoint string
+	SMTPHost           string
+	Port               int
+	Username           string
+	Password           string
+	Sender             string
+	LimitEveryDuration time.Duration
+	Burst              int
+	LakefsBaseURL      string
 }
 
 func NewEmailer(e EmailParams) *Emailer {
@@ -54,4 +54,20 @@ func (e *Emailer) SendEmailWithLimit(receivers []string, subject string, body st
 		return ErrRateLimitExceeded
 	}
 	return e.SendEmail(receivers, subject, body, attachmentFilePath)
+}
+
+func (e *Emailer) SendResetPasswordEmail(receivers []string, token string) error {
+	body, err := ConstructResetPasswordEmailTemplate(e.Params.LakefsBaseURL, token)
+	if err != nil {
+		return err
+	}
+	return e.SendEmailWithLimit(receivers, resetPasswordEmailSubject, body, nil)
+}
+
+func (e *Emailer) SendInviterUserEmail(receivers []string, token string) error {
+	body, err := ConstructInviteUserEmailTemplate(e.Params.LakefsBaseURL, token)
+	if err != nil {
+		return err
+	}
+	return e.SendEmailWithLimit(receivers, inviteUserWEmailSubject, body, nil)
 }

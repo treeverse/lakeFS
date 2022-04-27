@@ -821,11 +821,7 @@ func (c *Controller) inviteUserRequest(emailAddr string) error {
 	if err != nil {
 		return err
 	}
-	emailBody, err := email.ConstructInviteUserEmailTemplate(c.Emailer.Params.LakefsBaseURLEndpoint, token)
-	if err != nil {
-		return err
-	}
-	err = c.Emailer.SendEmailWithLimit([]string{emailAddr}, email.InviteUserWEmailSubject, emailBody, nil)
+	err = c.Emailer.SendInviterUserEmail([]string{emailAddr}, token)
 	if err != nil {
 		return err
 	}
@@ -3090,11 +3086,7 @@ func (c *Controller) resetPasswordRequest(ctx context.Context, emailAddr string)
 	if err != nil {
 		return err
 	}
-	emailBody, err := email.ConstructResetPasswordEmailTemplate(c.Emailer.Params.LakefsBaseURLEndpoint, token)
-	if err != nil {
-		return err
-	}
-	err = c.Emailer.SendEmailWithLimit([]string{emailAddr}, email.ResetPasswordEmailSubject, emailBody, nil)
+	err = c.Emailer.SendResetPasswordEmail([]string{emailAddr}, token)
 	if err != nil {
 		return err
 	}

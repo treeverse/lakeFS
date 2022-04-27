@@ -66,7 +66,7 @@ const (
 
 	DefaultEmailLimitEveryDuration = time.Minute
 	DefaultEmailBurst              = 10
-	DefaultEmailBaseURLEnpoint     = "http://localhost:8000"
+	DefaultLakefsEmailBaseURL      = "http://localhost:8000"
 )
 
 var (
@@ -168,7 +168,7 @@ const (
 
 	EmailLimitEveryDurationKey = "email.limit_every_duration"
 	EmailBurstKey              = "email.burst"
-	EmailBaseURLEnpointKey     = "email.lakefs_base_URL_endpoint"
+	LakefsEmailBaseURLKey      = "email.lakefs_base_url"
 )
 
 func setDefaults() {
@@ -222,7 +222,7 @@ func setDefaults() {
 	viper.SetDefault(SecurityAuditCheckURLKey, DefaultSecurityAuditCheckURL)
 	viper.SetDefault(EmailLimitEveryDurationKey, DefaultEmailLimitEveryDuration)
 	viper.SetDefault(EmailBurstKey, DefaultEmailBurst)
-	viper.SetDefault(EmailBaseURLEnpointKey, DefaultEmailBaseURLEnpoint)
+	viper.SetDefault(LakefsEmailBaseURLKey, DefaultLakefsEmailBaseURL)
 }
 
 func reverse(s string) string {
@@ -412,14 +412,14 @@ func (c *Config) GetStatsFlushInterval() time.Duration {
 
 func (c *Config) GetEmailParams() (email.EmailParams, error) {
 	return email.EmailParams{
-		SMTPHost:              c.values.Email.SMTPHost,
-		Port:                  c.values.Email.Port,
-		Username:              c.values.Email.Username,
-		Password:              c.values.Email.Password,
-		Sender:                c.values.Email.Sender,
-		LimitEveryDuration:    c.values.Email.LimitEveryDuration,
-		Burst:                 c.values.Email.Burst,
-		LakefsBaseURLEndpoint: c.values.Email.LakefsBaseURLEndpoint,
+		SMTPHost:           c.values.Email.SMTPHost,
+		Port:               c.values.Email.Port,
+		Username:           c.values.Email.Username,
+		Password:           c.values.Email.Password,
+		Sender:             c.values.Email.Sender,
+		LimitEveryDuration: c.values.Email.LimitEveryDuration,
+		Burst:              c.values.Email.Burst,
+		LakefsBaseURL:      c.values.Email.LakefsBaseURL,
 	}, nil
 }
 

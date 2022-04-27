@@ -244,9 +244,12 @@ var runCmd = &cobra.Command{
 			}
 		}
 
-		_, err = url.Parse(emailParams.LakefsBaseURLEndpoint)
-		if err != nil {
-			logger.WithError(err).Fatal("Failed to parse lakefs base url for email")
+		lakefsBaseUrl := emailParams.LakefsBaseURL
+		if lakefsBaseUrl != "" {
+			_, err := url.Parse(lakefsBaseUrl)
+			if err != nil {
+				logger.WithError(err).Warn("Failed to parse lakefs base url for email, check the value in 'email.lakefs_base_url'")
+			}
 		}
 
 		s3gatewayHandler := gateway.NewHandler(
