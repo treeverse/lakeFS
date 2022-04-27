@@ -8,7 +8,7 @@ import {useAPI, useAPIWithPagination} from "../../../lib/hooks/api";
 import {auth, BadRequestError, config, extractError, NotFoundError} from "../../../lib/api";
 import useUser from "../../../lib/hooks/user";
 import {ConfirmationButton} from "../../../lib/components/modals";
-import {EntityActionModal, EntityCreateModal, UserInviteModal} from "../../../lib/components/auth/forms";
+import {EntityActionModal} from "../../../lib/components/auth/forms";
 import {Paginator} from "../../../lib/components/pagination";
 import {useRouter} from "../../../lib/hooks/router";
 import {Link} from "../../../lib/components/nav";
