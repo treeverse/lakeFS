@@ -24,11 +24,11 @@ const Auth = () => {
             <Route path="/auth/credentials">
                 <CredentialsPage/>
             </Route>
-            <Route exact path="/auth/users">
-                <UsersIndexPage/>
-            </Route>
             <Route path="/auth/users/create">
                 <ActivateInvitedUserPage/>
+            </Route>
+            <Route path="/auth/users">
+                <UsersIndexPage/>
             </Route>
             <Route path="/auth/groups">
                 <GroupsIndexPage/>
