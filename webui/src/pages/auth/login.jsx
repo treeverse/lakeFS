@@ -71,7 +71,7 @@ const LoginPage = () => {
         router.push({pathname: '/setup', query: router.query})
     }
     return (
-        <Layout>
+        <Layout logged={false}>
             <LoginForm/>
         </Layout>
     );
