@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	ErrNoStorageAdapter = errors.New("no storage adapter found")
+	ErrNotSupported = errors.New("no storage adapter found")
 )
 
 type ObjectStoreEntry struct {
@@ -78,9 +78,11 @@ func (ww *WalkerWrapper) Marker() Mark {
 	return ww.walker.Marker()
 }
 
-type WalkerFactory struct{}
+var DefaultFactory = walkerFactory{}
 
-func (WalkerFactory) GetWalker(ctx context.Context, opts WalkerOptions) (*WalkerWrapper, error) {
+type walkerFactory struct{}
+
+func (walkerFactory) GetWalker(ctx context.Context, opts WalkerOptions) (*WalkerWrapper, error) {
 	var walker Walker
 	uri, err := url.Parse(opts.StorageURI)
 	if err != nil {
@@ -105,7 +107,7 @@ func (WalkerFactory) GetWalker(ctx context.Context, opts WalkerOptions) (*Walker
 			return nil, err
 		}
 	default:
-		return nil, fmt.Errorf("%w: for scheme: %s", ErrNoStorageAdapter, uri.Scheme)
+		return nil, fmt.Errorf("%w: for scheme: %s", ErrNotSupported, uri.Scheme)
 	}
 
 	return NewWrapper(walker, uri), nil

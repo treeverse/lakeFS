@@ -142,7 +142,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, 
 }
 
 func setupHandler(t testing.TB, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
-	return setupHandlerWithWalkerFactory(t, store.WalkerFactory{}, opts...)
+	return setupHandlerWithWalkerFactory(t, store.DefaultFactory, opts...)
 }
 
 func setupClientByEndpoint(t testing.TB, endpointURL string, accessKeyID, secretAccessKey string) api.ClientWithResponsesInterface {
@@ -187,7 +187,7 @@ func shouldUseServerTimeout() bool {
 
 func setupClientWithAdmin(t testing.TB, opts ...testutil.GetDBOption) (api.ClientWithResponsesInterface, *dependencies) {
 	t.Helper()
-	return setupClientWithAdminAndWalkerFactory(t, store.WalkerFactory{}, opts...)
+	return setupClientWithAdminAndWalkerFactory(t, store.DefaultFactory, opts...)
 }
 
 func setupClientWithAdminAndWalkerFactory(t testing.TB, factory catalog.WalkerFactory, opts ...testutil.GetDBOption) (api.ClientWithResponsesInterface, *dependencies) {

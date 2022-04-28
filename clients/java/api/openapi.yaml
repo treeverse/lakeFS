@@ -5763,7 +5763,7 @@ components:
         min_key: production/collections/some/file_1.parquet
       properties:
         id:
-          description: ID of the created range.
+          description: ID of the range.
           example: 480e19972a6fbe98ab8e81ae5efdfd1a29037587e91244e87abd4adefffdb01c
           type: string
         min_key:

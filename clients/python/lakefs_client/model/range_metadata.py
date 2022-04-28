@@ -113,7 +113,7 @@ class RangeMetadata(ModelNormal):
         """RangeMetadata - a model defined in OpenAPI
 
         Args:
-            id (str): ID of the created range.
+            id (str): ID of the range.
             min_key (str): First key in the range.
             max_key (str): Last key in the range.
             count (int): Number of records in the range.
@@ -206,7 +206,7 @@ class RangeMetadata(ModelNormal):
         """RangeMetadata - a model defined in OpenAPI
 
         Args:
-            id (str): ID of the created range.
+            id (str): ID of the range.
             min_key (str): First key in the range.
             max_key (str): Last key in the range.
             count (int): Number of records in the range.

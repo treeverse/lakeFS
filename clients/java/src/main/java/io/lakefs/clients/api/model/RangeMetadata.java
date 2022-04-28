@@ -57,11 +57,11 @@ public class RangeMetadata {
   }
 
    /**
-   * ID of the created range.
+   * ID of the range.
    * @return id
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(example = "480e19972a6fbe98ab8e81ae5efdfd1a29037587e91244e87abd4adefffdb01c", required = true, value = "ID of the created range.")
+  @ApiModelProperty(example = "480e19972a6fbe98ab8e81ae5efdfd1a29037587e91244e87abd4adefffdb01c", required = true, value = "ID of the range.")
 
   public String getId() {
     return id;
