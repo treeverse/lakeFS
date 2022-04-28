@@ -16,4 +16,6 @@ var (
 	ErrInvalidAccessKeyID      = errors.New("invalid access key ID")
 	ErrInvalidSecretAccessKey  = errors.New("invalid secret access key")
 	ErrUnexpectedStatusCode    = errors.New("unexpected status code")
+	ErrUnexpectedSigningMethod = errors.New("unexpected signing method")
+	ErrInvalidToken            = errors.New("invalid token")
 )

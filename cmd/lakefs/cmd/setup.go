@@ -50,10 +50,7 @@ var setupCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		authService := auth.NewDBAuthService(
-			dbPool,
-			crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
-			cfg.GetAuthCacheConfig())
+		authService := auth.NewDBAuthService(dbPool, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), cfg.GetAuthCacheConfig(), logging.Default().WithField("service", "auth_service"))
 		metadataManager := auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
 		cloudMetadataProvider := stats.BuildMetadataProvider(logging.Default(), cfg)
 		metadata := stats.NewMetadata(ctx, logging.Default(), cfg.GetBlockstoreType(), metadataManager, cloudMetadataProvider)

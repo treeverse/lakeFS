@@ -149,7 +149,8 @@ var runCmd = &cobra.Command{
 			authService = auth.NewDBAuthService(
 				dbPool,
 				crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
-				cfg.GetAuthCacheConfig())
+				cfg.GetAuthCacheConfig(),
+				logger.WithField("service", "auth_service"))
 		}
 		authenticator := auth.ChainAuthenticator{
 			auth.NewBuiltinAuthenticator(authService),
@@ -217,22 +218,7 @@ var runCmd = &cobra.Command{
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 		emailParams, _ := cfg.GetEmailParams()
 		emailer := email.NewEmailer(emailParams)
-		apiHandler := api.Serve(
-			cfg,
-			c,
-			authenticator,
-			authService,
-			blockStore,
-			authMetadataManager,
-			migrator,
-			bufferedCollector,
-			cloudMetadataProvider,
-			actionsService,
-			auditChecker,
-			logger.WithField("service", "api_gateway"),
-			emailer,
-			cfg.GetS3GatewayDomainNames(),
-		)
+		apiHandler := api.Serve(cfg, c, authenticator, authService, blockStore, authMetadataManager, migrator, bufferedCollector, cloudMetadataProvider, actionsService, auditChecker, logger.WithField("service", "api_gateway"), emailer, cfg.GetS3GatewayDomainNames())
 
 		// init gateway server
 		s3Fallback := cfg.GetS3GatewayFallbackURL()

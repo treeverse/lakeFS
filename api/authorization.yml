@@ -299,6 +299,19 @@ components:
           items:
             $ref: "#/components/schemas/Policy"
 
+    ClaimTokenId:
+      type: object
+      required:
+        - token_id
+        - expires_at
+      properties:
+        token_id:
+          type: string
+        expires_at:
+          type: integer
+          format: int64
+          description: Unix Epoch in seconds
+
 paths:
   /auth/users:
     get:
@@ -998,6 +1011,31 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /auth/tokenid/claim:
+    post:
+      tags:
+        - auth
+      operationId: claimTokenId
+      summary: claim a token ID, returns validation error if already claimed
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClaimTokenId"
+      responses:
+        201:
+          description: token id claimed
+        400:
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        401:
+          $ref: "#/components/responses/Unauthorized"
         default:
           $ref: "#/components/responses/ServerError"
 

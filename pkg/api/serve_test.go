@@ -100,7 +100,7 @@ func setupHandler(t testing.TB, opts ...testutil.GetDBOption) (http.Handler, *de
 
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
 		Enabled: false,
-	})
+	}, logging.Default())
 	authenticator := auth.NewBuiltinAuthenticator(authService)
 	meta := auth.NewDBMetadataManager("dev", cfg.GetFixedInstallationID(), conn)
 	migrator := db.NewDatabaseMigrator(dbparams.Database{ConnectionString: handlerDatabaseURI})
@@ -113,22 +113,7 @@ func setupHandler(t testing.TB, opts ...testutil.GetDBOption) (http.Handler, *de
 	emailParams, _ := cfg.GetEmailParams()
 	emailer := email.NewEmailer(emailParams)
 
-	handler := api.Serve(
-		cfg,
-		c,
-		authenticator,
-		authService,
-		c.BlockAdapter,
-		meta,
-		migrator,
-		collector,
-		nil,
-		actionsService,
-		auditChecker,
-		logging.Default(),
-		emailer,
-		nil,
-	)
+	handler := api.Serve(cfg, c, authenticator, authService, c.BlockAdapter, meta, migrator, collector, nil, actionsService, auditChecker, logging.Default(), emailer, nil)
 
 	return handler, &dependencies{
 		blocks:      c.BlockAdapter,

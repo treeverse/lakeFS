@@ -71,7 +71,7 @@ func setupService(t testing.TB, opts ...testutil.GetDBOption) auth.Service {
 	adb, _ := testutil.GetDB(t, databaseURI, opts...)
 	authService := auth.NewDBAuthService(adb, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
 		Enabled: false,
-	})
+	}, logging.Default())
 	return authService
 }
 
@@ -720,19 +720,19 @@ func BenchmarkDBAuthService_ListEffectivePolicies(b *testing.B) {
 	adb, _ := testutil.GetDB(b, databaseURI)
 	serviceWithoutCache := auth.NewDBAuthService(adb, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
 		Enabled: false,
-	})
+	}, logging.Default())
 	serviceWithCache := auth.NewDBAuthService(adb, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
 		Enabled:        true,
 		Size:           1024,
 		TTL:            20 * time.Second,
 		EvictionJitter: 3 * time.Second,
-	})
+	}, logging.Default())
 	serviceWithCacheLowTTL := auth.NewDBAuthService(adb, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
 		Enabled:        true,
 		Size:           1024,
 		TTL:            1 * time.Millisecond,
 		EvictionJitter: 1 * time.Millisecond,
-	})
+	}, logging.Default())
 	userName := userWithPolicies(b, serviceWithoutCache, userPoliciesForTesting)
 
 	b.Run("without_cache", func(b *testing.B) {
