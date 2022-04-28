@@ -299,7 +299,7 @@ components:
           items:
             $ref: "#/components/schemas/Policy"
 
-    ClaimTokeId:
+    ClaimTokenId:
       type: object
       required:
         - token_id
@@ -1024,7 +1024,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ClaimTokeId"
+              $ref: "#/components/schemas/ClaimTokenId"
       responses:
         201:
           description: token id claimed
