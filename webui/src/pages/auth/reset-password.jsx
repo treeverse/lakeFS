@@ -5,17 +5,15 @@ import Card from "react-bootstrap/Card";
 import Form from "react-bootstrap/Form";
 import Col from "react-bootstrap/Col";
 import Button from "react-bootstrap/Button";
-import {
-    MailIcon
-} from "@primer/octicons-react";
+import {MailIcon} from "@primer/octicons-react";
 import {Error} from "../../lib/components/controls";
 import {auth} from "../../lib/api";
 import validator from "validator/es";
+import {useRouter} from "../../lib/hooks/router";
 
 const TOKEN_PARAM_NAME = "token";
 
 const RequestResetPasswordForm = () => {
-
     const onEmailChange = () => {
         const isValid = validator.isEmail(email.current.value);
         setFormValid(isValid);
@@ -44,11 +42,11 @@ const RequestResetPasswordForm = () => {
                         <Card.Header>Reset Password</Card.Header>
                         <Card.Body>
                             <Form onSubmit={async (e) => {
-                                e.preventDefault()
+                                e.preventDefault();
                                 try {
-                                    await auth.passwordForgot(e.target.email.value)
+                                    await auth.passwordForgot(e.target.email.value);
                                     setReqResetPwdError(null);
-                                    setResetReqSent(true)
+                                    setResetReqSent(true);
                                 } catch (err) {
                                     setReqResetPwdError(err);
                                 }
@@ -88,6 +86,7 @@ const ResetEmailSent = () => {
 }
 
 const ResetPasswordForm = ({token}) => {
+    const router = useRouter();
 
     const onConfirmPasswordChange = () => {
         setPwdConfirmValid(true)
@@ -116,6 +115,7 @@ const ResetPasswordForm = ({token}) => {
                             try {
                                 setResetPwdError(null);
                                 await auth.updatePasswordByToken(token, e.target.newPassword.value)
+                                router.push('/auth/login');
                             } catch (err) {
                                 setResetPwdError(err);
                             }
