@@ -145,14 +145,14 @@ const ResetPasswordForm = ({token}) => {
 }
 
 const ResetPasswordPage = () => {
-    let queryString = window.location.search;
-    let params = new URLSearchParams(queryString);
+    const queryString = window.location.search;
+    const params = new URLSearchParams(queryString);
     const token = params.get(TOKEN_PARAM_NAME);
-
     return (
-        <Layout>
-            {
-                !!token ? <ResetPasswordForm token={token}/> : <RequestResetPasswordForm/>
+        <Layout logged={false}>
+            {token
+                ? <ResetPasswordForm token={token}/>
+                : <RequestResetPasswordForm/>
             }
         </Layout>
     );
