@@ -9,29 +9,33 @@ import (
 )
 
 type Emailer struct {
-	Params  EmailParams
+	Params  Params
 	Dialer  *gomail.Dialer
 	Limiter *rate.Limiter
 }
 
 var ErrRateLimitExceeded = errors.New("rate limit exceeded")
 
-type EmailParams struct {
+type Params struct {
 	SMTPHost           string
-	Port               int
+	SMTPPort           int
+	UseSSL             bool
 	Username           string
 	Password           string
+	LocalName          string
 	Sender             string
 	LimitEveryDuration time.Duration
 	Burst              int
 	LakefsBaseURL      string
 }
 
-func NewEmailer(e EmailParams) *Emailer {
-	dialer := gomail.NewDialer(e.SMTPHost, e.Port, e.Username, e.Password)
-	limiter := rate.NewLimiter(rate.Every(e.LimitEveryDuration), e.Burst)
+func NewEmailer(p Params) *Emailer {
+	dialer := gomail.NewDialer(p.SMTPHost, p.SMTPPort, p.Username, p.Password)
+	dialer.SSL = p.UseSSL
+	dialer.LocalName = p.LocalName
+	limiter := rate.NewLimiter(rate.Every(p.LimitEveryDuration), p.Burst)
 	return &Emailer{
-		Params:  e,
+		Params:  p,
 		Dialer:  dialer,
 		Limiter: limiter,
 	}

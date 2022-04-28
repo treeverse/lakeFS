@@ -187,9 +187,11 @@ type configuration struct {
 	} `mapstructure:"security"`
 	Email struct {
 		SMTPHost           string        `mapstructure:"smtp_host"`
-		Port               int           `mapstructure:"port"`
+		SMTPPort           int           `mapstructure:"smtp_port"`
+		UseSSL             bool          `mapstructure:"use_ssl"`
 		Username           string        `mapstructure:"username"`
 		Password           string        `mapstructure:"password"`
+		LocalName          string        `mapstructure:"local_name"`
 		Sender             string        `mapstructure:"sender"`
 		LimitEveryDuration time.Duration `mapstructure:"limit_every_duration"`
 		Burst              int           `mapstructure:"burst"`

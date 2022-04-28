@@ -412,12 +412,13 @@ func (c *Config) GetStatsFlushInterval() time.Duration {
 	return c.values.Stats.FlushInterval
 }
 
-func (c *Config) GetEmailParams() (email.EmailParams, error) {
-	return email.EmailParams{
+func (c *Config) GetEmailParams() (email.Params, error) {
+	return email.Params{
 		SMTPHost:           c.values.Email.SMTPHost,
-		Port:               c.values.Email.Port,
+		SMTPPort:           c.values.Email.SMTPPort,
 		Username:           c.values.Email.Username,
 		Password:           c.values.Email.Password,
+		LocalName:          c.values.Email.LocalName,
 		Sender:             c.values.Email.Sender,
 		LimitEveryDuration: c.values.Email.LimitEveryDuration,
 		Burst:              c.values.Email.Burst,

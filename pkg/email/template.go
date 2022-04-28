@@ -47,12 +47,12 @@ func buildURL(baseURL string, pth string, values map[string]string) (string, err
 }
 
 func buildEmailByTemplate(tmpl *template.Template, host string, path string, params map[string]string) (string, error) {
-	url, err := buildURL(host, path, params)
+	u, err := buildURL(host, path, params)
 	if err != nil {
 		return "", err
 	}
 	var builder strings.Builder
-	l := TemplateParams{URL: url}
+	l := TemplateParams{URL: u}
 	err = tmpl.Execute(&builder, l)
 	if err != nil {
 		return "", err
