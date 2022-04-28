@@ -50,7 +50,7 @@ func TestImport(t *testing.T) {
 		t.Skip()
 	}
 
-	ctx, _, repoName := setupTest(t)
+	ctx, log, repoName := setupTest(t)
 
 	hasMore := true
 	after := ""
@@ -65,6 +65,7 @@ func TestImport(t *testing.T) {
 			Prepend:           prefixImport,
 		})
 		require.NoError(t, err, "failed to ingest range")
+		log.Info("Ingest range response body: %s", resp.Body)
 		require.Equal(t, http.StatusCreated, resp.StatusCode())
 
 		ranges = append(ranges, *resp.JSON201.Range)
