@@ -6,11 +6,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/golang-jwt/jwt"
-
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/routers"
 	"github.com/getkin/kin-openapi/routers/legacy"
+	"github.com/golang-jwt/jwt"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -159,12 +158,9 @@ func VerifyResetPasswordToken(ctx context.Context, authService auth.Service, tok
 	}
 	tokenID := claims.Id
 	tokenExpiresAt := claims.ExpiresAt
-	claimed, err := authService.ClaimTokenIDOnce(ctx, tokenID, tokenExpiresAt)
+	err = authService.ClaimTokenIDOnce(ctx, tokenID, tokenExpiresAt)
 	if err != nil {
 		return nil, err
-	}
-	if !claimed {
-		return nil, ErrInvalidToken
 	}
 	return claims, nil
 }

@@ -91,7 +91,7 @@ type Service interface {
 	// authorize user for an action
 	Authorize(ctx context.Context, req *AuthorizationRequest) (*AuthorizationResponse, error)
 
-	ClaimTokenIDOnce(ctx context.Context, tokenID string, expiresAt int64) (bool, error)
+	ClaimTokenIDOnce(ctx context.Context, tokenID string, expiresAt int64) error
 }
 
 var psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
@@ -981,16 +981,16 @@ func (s *DBAuthService) Authorize(ctx context.Context, req *AuthorizationRequest
 	return &AuthorizationResponse{Allowed: true}, nil
 }
 
-func (s *DBAuthService) ClaimTokenIDOnce(ctx context.Context, tokenID string, expiresAt int64) (bool, error) {
+func (s *DBAuthService) ClaimTokenIDOnce(ctx context.Context, tokenID string, expiresAt int64) error {
 	tokenExpiresAt := time.Unix(expiresAt, 0)
 	canUseToken, err := s.markTokenSingleUse(ctx, tokenID, tokenExpiresAt)
 	if err != nil {
-		return false, err
+		return err
 	}
 	if !canUseToken {
-		return false, nil
+		return ErrInvalidToken
 	}
-	return true, nil
+	return nil
 }
 
 // markTokenSingleUse returns true if token is valid for single use
@@ -1648,22 +1648,18 @@ func (a *APIAuthService) Authorize(ctx context.Context, req *AuthorizationReques
 	return &AuthorizationResponse{Allowed: true}, nil
 }
 
-func (a *APIAuthService) ClaimTokenIDOnce(ctx context.Context, tokenID string, expiresAt int64) (bool, error) {
+func (a *APIAuthService) ClaimTokenIDOnce(ctx context.Context, tokenID string, expiresAt int64) error {
 	res, err := a.apiClient.ClaimTokenIdWithResponse(ctx, ClaimTokenIdJSONRequestBody{
-		Expires: expiresAt,
-		TokenId: tokenID,
+		ExpiresAt: expiresAt,
+		TokenId:   tokenID,
 	})
 	if err != nil {
-		return false, err
+		return err
 	}
 	if res.StatusCode() == http.StatusBadRequest {
-		return false, nil
+		return ErrInvalidToken
 	}
-	a.validateResponse(res, http.StatusCreated)
-	if err := a.validateResponse(res, http.StatusCreated); err != nil {
-		return false, err
-	}
-	return true, nil
+	return a.validateResponse(res, http.StatusCreated)
 }
 
 func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore, cacheConf params.ServiceCache, timeout *time.Duration) (*APIAuthService, error) {
