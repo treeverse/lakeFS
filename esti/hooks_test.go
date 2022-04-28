@@ -47,8 +47,8 @@ func waitForListRepositoryRunsLen(ctx context.Context, t *testing.T, repo, ref s
 	t.Helper()
 	var runs *api.ActionRunList
 	bo := backoff.NewExponentialBackOff()
-	bo.MaxInterval = time.Second * 5
-	bo.MaxElapsedTime = time.Second * 30
+	bo.MaxInterval = 5 * time.Second
+	bo.MaxElapsedTime = 30 * time.Second
 	listFunc := func() error {
 		runsResp, err := client.ListRepositoryRunsWithResponse(ctx, repo, &api.ListRepositoryRunsParams{
 			Commit: api.StringPtr(ref),
