@@ -106,9 +106,11 @@ This reference uses `.` to denote the nesting of values.
 + `committed.sstable.memory.cache_size_bytes` (`int` : `200_000_000`) - maximal size of
   in-memory cache used for each SSTable reader.
 + `email.smtp_host` `(string)` - A string representing the URL of the SMTP host.
-+ `email.port` (`int` :   ) - An integer representing the port of the SMTP service (465, 587, 993, 25 are some standard ports)
++ `email.smtp_port` (`int`) - An integer representing the port of the SMTP service (465, 587, 993, 25 are some standard ports)
++ `email.use_ssl` (`bool : false`) - Use SSL connection with SMTP host.
 + `email.username` `(string)` - A string representing the username of the specific account at the SMTP. It's recommended to provide this value at runtime from a secret vault of some sort.
 + `email.password` `(string)` - A string representing the password of the account. It's recommended to provide this value at runtime from a secret vault of some sort.
++ `email.local_name` `(string)` - A string representing the hostname sent to the SMTP server with the HELO command. By default, "localhost" is sent.
 + `email.sender` `(string)` - A string representing the email account which is set as the sender.
 + `email.limit_every_duration` `(duration : 1m)` - Average time to wait between sending emails. The zero value means no duration and therefore no emails can be sent.
 + `email.burst` `(int: 10)` - Maximal burst of emails before applying `limit_every`.
