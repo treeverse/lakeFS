@@ -18,8 +18,9 @@ type LoginResponseData struct {
 }
 
 const (
-	DefaultLoginExpiration         = 7 * 24 * time.Hour
-	DefaultResetPasswordExpiration = 6 * time.Hour
+	DefaultLoginExpiration          = 7 * 24 * time.Hour
+	DefaultInvitePasswordExpiration = 6 * time.Hour
+	DefaultResetPasswordExpiration  = 20 * time.Minute
 
 	JWTCookieName = "access_token"
 
