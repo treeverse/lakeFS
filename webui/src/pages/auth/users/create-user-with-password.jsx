@@ -99,7 +99,7 @@ export const ActivateInvitedUserPage = () => {
     const invitedUserEmail = params.get(EMAIL_PARAM_NAME);
 
     return (
-        <Layout>
+        <Layout logged={false}>
             {
                 !!token ?
                     <CreateUserWithPasswordForm token={token} email={invitedUserEmail}/> :
