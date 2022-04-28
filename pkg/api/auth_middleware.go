@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -107,22 +106,8 @@ func checkSecurityRequirements(r *http.Request, securityRequirements openapi3.Se
 	return nil, nil
 }
 
-func verifyToken(authService auth.Service, tokenString string) (*jwt.StandardClaims, error) {
-	claims := &jwt.StandardClaims{}
-	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("%w: %s", ErrUnexpectedSigningMethod, token.Header["alg"])
-		}
-		return authService.SecretStore().SharedSecret(), nil
-	})
-	if err != nil || !token.Valid {
-		return nil, ErrAuthenticatingRequest
-	}
-	return claims, nil
-}
-
 func userByToken(ctx context.Context, logger logging.Logger, authService auth.Service, tokenString string) (*model.User, error) {
-	claims, err := verifyToken(authService, tokenString)
+	claims, err := auth.VerifyToken(authService.SecretStore().SharedSecret(), tokenString)
 	// make sure no audience is set for login token
 	if err != nil || !claims.VerifyAudience(LoginAudience, false) {
 		return nil, ErrAuthenticatingRequest
@@ -165,10 +150,17 @@ func userByAuth(ctx context.Context, logger logging.Logger, authenticator auth.A
 	return user, nil
 }
 
-func VerifyResetPasswordToken(authService auth.Service, tokenString string) (*jwt.StandardClaims, error) {
-	claims, err := verifyToken(authService, tokenString)
-	if err != nil || !claims.VerifyAudience(ResetPasswordAudience, true) {
-		return nil, ErrAuthenticatingRequest
+func VerifyResetPasswordToken(ctx context.Context, authService auth.Service, token string) (*jwt.StandardClaims, error) {
+	secret := authService.SecretStore().SharedSecret()
+	claims, err := auth.VerifyTokenWithAudience(secret, token, ResetPasswordAudience)
+	if err != nil {
+		return nil, err
+	}
+	tokenID := claims.Id
+	tokenExpiresAt := claims.ExpiresAt
+	err = authService.ClaimTokenIDOnce(ctx, tokenID, tokenExpiresAt)
+	if err != nil {
+		return nil, err
 	}
 	return claims, nil
 }

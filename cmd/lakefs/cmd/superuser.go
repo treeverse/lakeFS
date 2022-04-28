@@ -42,10 +42,7 @@ var superuserCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		authService := auth.NewDBAuthService(
-			dbPool,
-			crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
-			cfg.GetAuthCacheConfig())
+		authService := auth.NewDBAuthService(dbPool, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), cfg.GetAuthCacheConfig(), nil)
 		authMetadataManager := auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
 		metadataProvider := stats.BuildMetadataProvider(logging.Default(), cfg)
 		metadata := stats.NewMetadata(ctx, logging.Default(), cfg.GetBlockstoreType(), authMetadataManager, metadataProvider)
