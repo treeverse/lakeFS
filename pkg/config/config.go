@@ -416,6 +416,7 @@ func (c *Config) GetEmailParams() (email.Params, error) {
 	return email.Params{
 		SMTPHost:           c.values.Email.SMTPHost,
 		SMTPPort:           c.values.Email.SMTPPort,
+		UseSSL:             c.values.Email.UseSSL,
 		Username:           c.values.Email.Username,
 		Password:           c.values.Email.Password,
 		LocalName:          c.values.Email.LocalName,
