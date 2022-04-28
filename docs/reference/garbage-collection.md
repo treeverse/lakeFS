@@ -19,6 +19,10 @@ lakeFS provides a Spark program to hard-delete objects that have been deleted an
 The GC job does not remove any commits: you will still be able to use commits containing hard-deleted objects,
 but trying to read these objects from lakeFS will result in a `410 Gone` HTTP status.
 
+**Note**
+At this point, lakeFS supports Garbage Collection only on S3, but we have [concrete plans](https://github.com/treeverse/lakeFS/issues/3271) to extend the support to Azure.     
+{: .note}
+
 ## Understanding Garbage Collection
 
 For every branch, the GC job retains deleted objects for the number of days defined for the branch.
