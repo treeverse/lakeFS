@@ -53,11 +53,12 @@ These issues remain with the magic and staging committer:
   > consider it the least mature of the committers.
 * Documentation is still somewhat lacking.
 
-Other OutputCommitters are not as good, and _rename by copying_.  This is
-both slow and highly non-atomic, as well as making it difficult to recover
-from failed attempts.  The current recommendations are to use the
-partitioned staging committer for overwriting or updating partitioned data
-trees, and the magic committer is most other cases.
+The both versions 1 and 2 of the FileOutputCommitter are not as good.  They
+_rename_ files, which on S3A works by _copying and deleting_.  This is both
+slow and highly non-atomic, as well as making it difficult to recover from
+failed attempts.  The current recommendations are to use the partitioned
+staging committer for overwriting or updating partitioned data trees, and
+the magic committer is most other cases.
 
 ## LakeFSOutputCommitter
 
