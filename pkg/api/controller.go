@@ -82,7 +82,7 @@ type Controller struct {
 	Emailer               *email.Emailer
 }
 
-func (c *Controller) GetAuthCapabilities(w http.ResponseWriter, r *http.Request) {
+func (c *Controller) GetAuthCapabilities(w http.ResponseWriter, _ *http.Request) {
 	emailSupported := c.Emailer.Params.SMTPHost != ""
 	writeResponse(w, http.StatusOK, AuthCapabilities{
 		InviteUser:     &emailSupported,
@@ -811,14 +811,14 @@ func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params Li
 	writeResponse(w, http.StatusOK, response)
 }
 
-func (c *Controller) generateResetPasswordToken(email string) (string, error) {
+func (c *Controller) generateResetPasswordToken(email string, duration time.Duration) (string, error) {
 	secret := c.Auth.SecretStore().SharedSecret()
 	currentTime := time.Now()
-	return GenerateJWTResetPassword(secret, email, currentTime, currentTime.Add(DefaultResetPasswordExpiration))
+	return GenerateJWTResetPassword(secret, email, currentTime, currentTime.Add(duration))
 }
 
 func (c *Controller) inviteUserRequest(emailAddr string) error {
-	token, err := c.generateResetPasswordToken(emailAddr)
+	token, err := c.generateResetPasswordToken(emailAddr, DefaultInvitePasswordExpiration)
 	if err != nil {
 		return err
 	}
@@ -3087,7 +3087,7 @@ func (c *Controller) resetPasswordRequest(ctx context.Context, emailAddr string)
 		return err
 	}
 	emailAddr = StringValue(user.Email)
-	token, err := c.generateResetPasswordToken(emailAddr)
+	token, err := c.generateResetPasswordToken(emailAddr, DefaultResetPasswordExpiration)
 	if err != nil {
 		return err
 	}
