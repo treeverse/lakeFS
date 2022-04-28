@@ -102,7 +102,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                                     let leftCommittedRef = reference.id;
                                     let rightCommittedRef = compareReference.id;
                                     if (reference.type === RefTypeBranch) {
-                                        leftCommittedRef +=  + "@";
+                                        leftCommittedRef += "@";
                                     }
                                     if (compareReference.type === RefTypeBranch) {
                                         rightCommittedRef += "@";
