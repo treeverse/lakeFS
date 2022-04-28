@@ -44,7 +44,6 @@ func TestHooksSuccess(t *testing.T) {
 }
 
 func waitForListRepositoryRunsLen(ctx context.Context, t *testing.T, repo, ref string, l int) *api.ActionRunList {
-	t.Helper()
 	var runs *api.ActionRunList
 	bo := backoff.NewExponentialBackOff()
 	bo.MaxInterval = 5 * time.Second
@@ -54,8 +53,8 @@ func waitForListRepositoryRunsLen(ctx context.Context, t *testing.T, repo, ref s
 			Commit: api.StringPtr(ref),
 		})
 		require.NoError(t, err)
-		require.Equal(t, http.StatusOK, runsResp.StatusCode())
 		runs = runsResp.JSON200
+		require.NotNil(t, runs)
 		if len(runs.Results) == l {
 			return nil
 		}
