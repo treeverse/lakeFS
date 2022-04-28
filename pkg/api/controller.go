@@ -3116,10 +3116,10 @@ func (c *Controller) ForgotPassword(w http.ResponseWriter, r *http.Request, body
 }
 
 func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body UpdatePasswordJSONRequestBody) {
-	claims, err := VerifyResetPasswordToken(c.Auth, body.Token)
+	claims, err := VerifyResetPasswordToken(r.Context(), c.Auth, body.Token)
 	if err != nil {
 		c.Logger.WithError(err).WithField("token", body.Token).Debug("failed to verify token")
-		writeError(w, http.StatusUnauthorized, err)
+		writeError(w, http.StatusUnauthorized, ErrAuthenticatingRequest)
 		return
 	}
 

@@ -11,13 +11,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-openapi/swag"
-	"golang.org/x/crypto/bcrypt"
-
 	sq "github.com/Masterminds/squirrel"
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/getkin/kin-openapi/openapi3filter"
+	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/keys"
 	"github.com/treeverse/lakefs/pkg/auth/model"
@@ -26,6 +24,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthorizationRequest struct {
@@ -91,6 +90,8 @@ type Service interface {
 
 	// authorize user for an action
 	Authorize(ctx context.Context, req *AuthorizationRequest) (*AuthorizationResponse, error)
+
+	ClaimTokenIDOnce(ctx context.Context, tokenID string, expiresAt int64) (bool, error)
 }
 
 var psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
@@ -212,10 +213,11 @@ type DBAuthService struct {
 	db          db.Database
 	secretStore crypt.SecretStore
 	cache       Cache
+	log         logging.Logger
 }
 
-func NewDBAuthService(db db.Database, secretStore crypt.SecretStore, cacheConf params.ServiceCache) *DBAuthService {
-	logging.Default().Info("initialized Auth service")
+func NewDBAuthService(db db.Database, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) *DBAuthService {
+	logger.Info("initialized Auth service")
 	var cache Cache
 	if cacheConf.Enabled {
 		cache = NewLRUCache(cacheConf.Size, cacheConf.TTL, cacheConf.EvictionJitter)
@@ -226,6 +228,7 @@ func NewDBAuthService(db db.Database, secretStore crypt.SecretStore, cacheConf p
 		db:          db,
 		secretStore: secretStore,
 		cache:       cache,
+		log:         logger,
 	}
 }
 
@@ -978,6 +981,34 @@ func (s *DBAuthService) Authorize(ctx context.Context, req *AuthorizationRequest
 	return &AuthorizationResponse{Allowed: true}, nil
 }
 
+func (s *DBAuthService) ClaimTokenIDOnce(ctx context.Context, tokenID string, expiresAt int64) (bool, error) {
+	tokenExpiresAt := time.Unix(expiresAt, 0)
+	canUseToken, err := s.markTokenSingleUse(ctx, tokenID, tokenExpiresAt)
+	if err != nil {
+		return false, err
+	}
+	if !canUseToken {
+		return false, nil
+	}
+	return true, nil
+}
+
+// markTokenSingleUse returns true if token is valid for single use
+func (s *DBAuthService) markTokenSingleUse(ctx context.Context, tokenID string, tokenExpiresAt time.Time) (bool, error) {
+	res, err := s.db.Exec(ctx, `INSERT INTO auth_expired_tokens (token_id, token_expires_at) VALUES ($1,$2) ON CONFLICT DO NOTHING`,
+		tokenID, tokenExpiresAt)
+	if err != nil {
+		return false, err
+	}
+	canUseToken := res.RowsAffected() == 1
+	// cleanup old tokens
+	_, err = s.db.Exec(ctx, `DELETE FROM auth_expired_tokens WHERE token_expires_at < $1`, time.Now())
+	if err != nil {
+		s.log.WithError(err).Error("delete expired tokens")
+	}
+	return canUseToken, nil
+}
+
 type APIAuthService struct {
 	apiClient   *ClientWithResponses
 	secretStore crypt.SecretStore
@@ -1134,6 +1165,7 @@ func (a *APIAuthService) HashAndUpdatePassword(ctx context.Context, username str
 	if err != nil {
 		return err
 	}
+
 	return a.validateResponse(resp, http.StatusOK)
 }
 
@@ -1614,6 +1646,24 @@ func (a *APIAuthService) Authorize(ctx context.Context, req *AuthorizationReques
 
 	// we're allowed!
 	return &AuthorizationResponse{Allowed: true}, nil
+}
+
+func (a *APIAuthService) ClaimTokenIDOnce(ctx context.Context, tokenID string, expiresAt int64) (bool, error) {
+	res, err := a.apiClient.ClaimTokenIdWithResponse(ctx, ClaimTokenIdJSONRequestBody{
+		Expires: expiresAt,
+		TokenId: tokenID,
+	})
+	if err != nil {
+		return false, err
+	}
+	if res.StatusCode() == http.StatusBadRequest {
+		return false, nil
+	}
+	a.validateResponse(res, http.StatusCreated)
+	if err := a.validateResponse(res, http.StatusCreated); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore, cacheConf params.ServiceCache, timeout *time.Duration) (*APIAuthService, error) {
