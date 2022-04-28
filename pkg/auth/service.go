@@ -1021,7 +1021,10 @@ func (a *APIAuthService) SecretStore() crypt.SecretStore {
 
 func (a *APIAuthService) CreateUser(ctx context.Context, user *model.User) (int64, error) {
 	resp, err := a.apiClient.CreateUserWithResponse(ctx, CreateUserJSONRequestBody{
-		Username: user.Username,
+		Email:        user.Email,
+		FriendlyName: user.FriendlyName,
+		Source:       &user.Source,
+		Username:     user.Username,
 	})
 	if err != nil {
 		return InvalidUserID, err
