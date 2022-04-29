@@ -305,7 +305,7 @@ jobs:
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
-      SPARK_TAG: 2
+      SPARK_TAG: 2.4.6
     steps:
       - name: Check-out code
         uses: actions/checkout@v2
@@ -349,43 +349,6 @@ jobs:
         working-directory: test/spark
         run: docker-compose logs --tail=1000 lakefs
 
-  spark2-thich:
-    name: Test lakeFS thick client with Spark 2.x
-    needs: deploy-image
-    runs-on: ubuntu-20.04
-    env:
-      TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
-      SPARK_TAG: 2
-    steps:
-      - name: Check-out code
-        uses: actions/checkout@v2
-
-      - name: Setup Scala
-        uses: olafurpg/setup-scala@v10
-
-      - name: Package Spark App
-        working-directory: test/spark/app
-        run: sbt sonnets-246/package
-
-      - name: Start lakeFS for Spark tests
-        uses: ./.github/actions/bootstrap-test-lakefs
-        with:
-          compose-directory: test/spark
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          LAKEFS_BLOCKSTORE_TYPE: s3
-          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
-          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-      - name: Setup lakeFS for tests
-        working-directory: test/spark
-        run: ./setup-test.sh
-
-      - name: Generate uniquifying value
-        id: unique
-        run:  echo "::set-output name=value::$RANDOM"
-
       - name: Build Spark direct-access client
         working-directory: clients/hadoopfs
         run: mvn -Passembly -Djar.finalName=client --batch-mode --update-snapshots package
@@ -403,7 +366,7 @@ jobs:
         working-directory: test/spark
         run: ./run-test.sh
 
-      - name: lakeFS thick client Logs on Spark 2.x with client failure
+      - name: lakeFS Logs on Spark 2.x with client failure
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/spark
