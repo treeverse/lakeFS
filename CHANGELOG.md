@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.64.0 - 2022-04-29
+
+- Fix bug in merge - merge with no changes resolves by creating empty commit (with no data) on destinations head  (#3270)
+- Fix broken content-based diff for changed objects in compare view (#3275)
+- Bump metadata client version to 0.1.7-RC.0 (#3277)
+- Fix logged out user redirect to login (#3283)
+
 ## v0.63.0 - 2022-04-17
 
 - Authenticate using an external service (#3178)
