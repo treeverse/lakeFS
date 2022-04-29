@@ -316,7 +316,17 @@ jobs:
       - name: Package Spark App
         working-directory: test/spark/app
         run: sbt sonnets-246/package
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+      - uses: actions/setup-java@v1
+        with:
+          java-version: '11'
 
+      - uses: vemonet/setup-spark@v1
+        with:
+          spark-version: '2.4.6'
+          hadoop-version: '3.2'
       - name: Start lakeFS for Spark tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
