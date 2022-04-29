@@ -30,10 +30,17 @@ jobs:
           echo "Enable next jobs based on secrets existence: ${{ env.ENABLE_NEXT_JOBS != '' }}"
           echo "::set-output name=secretsavailable::${{ env.ENABLE_NEXT_JOBS != '' }}"
 
+
   gen-code:
     name: Generate code from latest lakeFS app
     runs-on: ubuntu-20.04
     steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+
       - name: Check-out code
         uses: actions/checkout@v2
 
@@ -116,7 +123,7 @@ jobs:
       - uses: vemonet/setup-spark@v1
         with:
           spark-version: '2.4.8'
-          hadoop-version: '3.2'
+          hadoop-version: 2.7
       - name: Start lakeFS for Spark tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
