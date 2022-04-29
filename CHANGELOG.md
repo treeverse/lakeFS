@@ -2,6 +2,15 @@
 
 ## v0.64.0 - 2022-04-29
 
+This release requires running database migration.
+The lakeFS service will not run if the migration version isn't compatible with the binary.
+Before running the new version you will be required to run migrate, with the new version:
+
+```sh
+$ lakefs migrate up
+```
+
+
 - Fix bug in merge - merge with no changes resolves by creating empty commit (with no data) on destinations head  (#3270)
 - Fix broken content-based diff for changed objects in compare view (#3275)
 - Bump metadata client version to 0.1.7-RC.0 (#3277)
