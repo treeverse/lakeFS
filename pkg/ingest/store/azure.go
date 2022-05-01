@@ -10,6 +10,7 @@ import (
 
 	"github.com/Azure/azure-pipeline-go/pipeline"
 	"github.com/Azure/azure-storage-blob-go/azblob"
+	"github.com/go-openapi/swag"
 )
 
 var (
@@ -84,11 +85,7 @@ func (a *AzureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, op Walk
 		if err != nil {
 			return err
 		}
-		if marker.Val == nil {
-			a.mark.ContinuationToken = ""
-		} else {
-			a.mark.ContinuationToken = *marker.Val
-		}
+		a.mark.ContinuationToken = swag.StringValue(marker.Val)
 		marker = listBlob.NextMarker
 		for _, blobInfo := range listBlob.Segment.BlobItems {
 			// skipping everything in the page which is before 'After' (without forgetting the possible empty string key!)
@@ -110,7 +107,7 @@ func (a *AzureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, op Walk
 	}
 
 	a.mark = Mark{
-		HasMore: true,
+		HasMore: false,
 	}
 
 	return nil

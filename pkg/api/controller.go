@@ -1726,6 +1726,8 @@ func (c *Controller) IngestRange(w http.ResponseWriter, r *http.Request, body In
 		return
 	}
 
+	c.LogAction(r.Context(), "ingest_range")
+
 	contToken := ""
 	if body.ContinuationToken != nil {
 		contToken = *body.ContinuationToken
@@ -1760,6 +1762,9 @@ func (c *Controller) CreateMetaRange(w http.ResponseWriter, r *http.Request, bod
 	}) {
 		return
 	}
+
+	c.LogAction(r.Context(), "create_metarange")
+
 	ranges := make([]*graveler.RangeInfo, 0, len(body.Ranges))
 	for _, r := range body.Ranges {
 		ranges = append(ranges, &graveler.RangeInfo{
