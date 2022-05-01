@@ -149,7 +149,11 @@ export const TreeEntryRow = ({entry, relativeTo = "", leaf = false, dirExpanded,
     if (!leaf) {
         rowActions.push(new RowAction(<GraphIcon/>, showSummary ? "Hide summary" : "Calculate change summary", showSummary, () => setShowSummary(!showSummary)))
     }
-    rowActions.push(new RowAction(<HistoryIcon/>, "Revert changes", false, () => {setShowRevertConfirm(true)}))
+    if (onRevert) {
+        rowActions.push(new RowAction(<HistoryIcon/>, "Revert changes", false, () => {
+            setShowRevertConfirm(true)
+        }))
+    }
     return (
         <tr className={rowClass}>
             <td className="pl-4 col-auto p-2">{diffIndicator}</td>
