@@ -119,6 +119,5 @@ func (m *tracker) Delete(ctx context.Context, uploadID string) error {
 		}
 		return fmt.Errorf("failed on Get. key (%s): %w", uploadID, err)
 	}
-	err := m.store.Delete(ctx, []byte(uploadID))
-	return err
+	return m.store.Delete(ctx, []byte(uploadID))
 }
