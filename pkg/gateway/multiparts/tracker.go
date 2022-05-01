@@ -117,7 +117,7 @@ func (m *tracker) Delete(ctx context.Context, uploadID string) error {
 		if errors.Is(err, kv.ErrNotFound) {
 			return ErrMultipartUploadNotFound
 		}
-		return fmt.Errorf("failed on Get. key %s, %w", uploadID, err)
+		return fmt.Errorf("failed on Get. key (%s): %w", uploadID, err)
 	}
 	err := m.store.Delete(ctx, []byte(uploadID))
 	return err
