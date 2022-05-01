@@ -7,6 +7,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
+// StoreMessage protobuf generic implementation for kv.Store interface applicable for all data models
 type StoreMessage struct {
 	Store Store
 }
@@ -53,10 +54,6 @@ func (s *StoreMessage) Delete(ctx context.Context, key []byte) error {
 }
 
 // TODO: niro - implement when required
-// func (s *StoreMessage) Scan(ctx context.Context, start string) (Msgs, error) {
-//	//	Scan(ctx context.Context, start []byte) (Entries, error)
-//
-//}
 
 func (s *StoreMessage) Close() {
 	s.Store.Close()

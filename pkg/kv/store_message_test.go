@@ -104,7 +104,7 @@ func testStoreMessageSetIf(t *testing.T, ctx context.Context, sm kv.StoreMessage
 	err = sm.SetIf(ctx, []byte(setModel.Name), m1, nil)
 	require.Error(t, kv.ErrPredicateFailed, err)
 
-	// SetIf fails nil
+	// SetIf fails
 	err = sm.SetIf(ctx, []byte(setModel.Name), m1, m1)
 	require.Error(t, kv.ErrPredicateFailed, err)
 

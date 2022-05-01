@@ -17,6 +17,13 @@ type Metadata map[string]string
 
 var ErrAlreadyExists = errors.New("upload ID already exists")
 
+// MultipartUpload data structure
+// UploadID A unique identifier for the uploaded part
+// Path Multipart path in repository
+// CreationDate Creation date of the part
+// PhysicalAddress Physical address of the part in the storage
+// Metadata Additional metadata as required (by storage vendor etc.)
+// ContentType Original file's content-type
 type MultipartUpload struct {
 	UploadID        string    `db:"upload_id"`
 	Path            string    `db:"path"`
