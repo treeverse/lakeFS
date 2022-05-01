@@ -147,6 +147,7 @@ func executeAndLogResponse(ctx context.Context, req *http.Request, buf *bytes.Bu
 	elapsed := time.Since(start)
 	buf.WriteString(fmt.Sprintf("\nRequest duration: %s\n", elapsed))
 	if err != nil {
+		buf.WriteString(fmt.Sprintf("\nError: %s\n", err))
 		return -1, err
 	}
 	defer func() {
