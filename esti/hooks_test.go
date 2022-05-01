@@ -12,6 +12,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api"
 )
@@ -40,6 +41,28 @@ func TestHooksSuccess(t *testing.T) {
 	t.Run("create delete tag test", func(t *testing.T) {
 		testCreateDeleteTag(t, ctx, repo)
 	})
+}
+
+func waitForListRepositoryRunsLen(ctx context.Context, t *testing.T, repo, ref string, l int) *api.ActionRunList {
+	var runs *api.ActionRunList
+	bo := backoff.NewExponentialBackOff()
+	bo.MaxInterval = 5 * time.Second
+	bo.MaxElapsedTime = 30 * time.Second
+	listFunc := func() error {
+		runsResp, err := client.ListRepositoryRunsWithResponse(ctx, repo, &api.ListRepositoryRunsParams{
+			Commit: api.StringPtr(ref),
+		})
+		require.NoError(t, err)
+		runs = runsResp.JSON200
+		require.NotNil(t, runs)
+		if len(runs.Results) == l {
+			return nil
+		}
+		return fmt.Errorf("run results size: %d", len(runs.Results))
+	}
+	err := backoff.Retry(listFunc, bo)
+	require.NoError(t, err)
+	return runs
 }
 
 func testCommitMerge(t *testing.T, ctx context.Context, repo string) {
@@ -158,18 +181,18 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string) {
 	}, postMergeEvent)
 
 	t.Log("List repository runs", mergeRef)
-	runsResp, err := client.ListRepositoryRunsWithResponse(ctx, repo, &api.ListRepositoryRunsParams{
-		Commit: api.StringPtr(mergeRef),
-	})
-	require.NoError(t, err)
-	require.Equal(t, http.StatusOK, runsResp.StatusCode())
-	runs := runsResp.JSON200
-	require.Len(t, runs.Results, 1)
-	run := runs.Results[0]
-	require.Equal(t, mergeRef, run.CommitId)
-	require.Equal(t, "pre-merge", run.EventType)
-	require.Equal(t, "completed", run.Status)
-	require.Equal(t, "main", run.Branch)
+	runs := waitForListRepositoryRunsLen(ctx, t, repo, mergeRef, 2)
+	eventType := map[string]bool{
+		"pre-merge":  true,
+		"post-merge": true,
+	}
+	for _, run := range runs.Results {
+		require.Equal(t, mergeRef, run.CommitId)
+		require.True(t, eventType[run.EventType])
+		eventType[run.EventType] = false
+		require.Equal(t, "completed", run.Status)
+		require.Equal(t, "main", run.Branch)
+	}
 }
 
 func testCreateDeleteBranch(t *testing.T, ctx context.Context, repo string) {

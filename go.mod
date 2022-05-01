@@ -75,7 +75,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 )
 
-require golang.org/x/time v0.0.0-20220224211638-0e9765cccd65 // indirect
+require golang.org/x/time v0.0.0-20220224211638-0e9765cccd65
 
 require (
 	4d63.com/gochecknoglobals v0.0.0-20201008074935-acfc0b28355a // indirect
