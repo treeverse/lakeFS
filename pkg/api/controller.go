@@ -3089,6 +3089,7 @@ func (c *Controller) resetPasswordRequest(ctx context.Context, emailAddr string)
 	emailAddr = StringValue(user.Email)
 	token, err := c.generateResetPasswordToken(emailAddr, DefaultResetPasswordExpiration)
 	if err != nil {
+		c.Logger.WithError(err).WithField("email_address", emailAddr).Error("reset password - failed generating token")
 		return err
 	}
 	params := map[string]string{
@@ -3096,6 +3097,7 @@ func (c *Controller) resetPasswordRequest(ctx context.Context, emailAddr string)
 	}
 	err = c.Emailer.SendResetPasswordEmail([]string{emailAddr}, params)
 	if err != nil {
+		c.Logger.WithError(err).WithField("email_address", emailAddr).Error("reset password - failed sending email")
 		return err
 	}
 	c.Logger.WithField("email", emailAddr).Info("reset password email sent")
@@ -3110,7 +3112,7 @@ func (c *Controller) ForgotPassword(w http.ResponseWriter, r *http.Request, body
 	}
 	err = c.resetPasswordRequest(r.Context(), addr.Address)
 	if err != nil {
-		c.Logger.WithError(err).WithField("email", body.Email).Debug("failed sending reset password email")
+		c.Logger.WithError(err).WithField("email", body.Email).Info("failed sending reset password email")
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -3118,7 +3120,7 @@ func (c *Controller) ForgotPassword(w http.ResponseWriter, r *http.Request, body
 func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body UpdatePasswordJSONRequestBody) {
 	claims, err := VerifyResetPasswordToken(r.Context(), c.Auth, body.Token)
 	if err != nil {
-		c.Logger.WithError(err).WithField("token", body.Token).Debug("failed to verify token")
+		c.Logger.WithError(err).WithField("token", body.Token).Info("failed to verify token")
 		writeError(w, http.StatusUnauthorized, ErrAuthenticatingRequest)
 		return
 	}
@@ -3134,7 +3136,7 @@ func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body
 
 	user, err := c.Auth.GetUserByEmail(r.Context(), claims.Subject)
 	if err != nil {
-		c.Logger.WithError(err).WithField("email", claims.Subject).Debug("failed to retrieve user by email")
+		c.Logger.WithError(err).WithField("email", claims.Subject).Info("failed to retrieve user by email")
 		writeError(w, http.StatusNotFound, http.StatusText(http.StatusNotFound))
 		return
 	}
