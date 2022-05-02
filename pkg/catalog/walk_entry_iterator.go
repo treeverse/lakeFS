@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/treeverse/lakefs/pkg/ingest/store"
 	"go.uber.org/atomic"
@@ -30,8 +31,12 @@ type EntryWithMarker struct {
 	Mark
 }
 
-// ErrItClosed is used to determine the reason for the end of the walk
-var ErrItClosed = errors.New("iterator closed")
+var (
+	// ErrItClosed is used to determine the reason for the end of the walk
+	ErrItClosed = errors.New("iterator closed")
+
+	errSeekGENotSupported = errors.New("SeekGE not supported for walk entry iterator")
+)
 
 // buffer size of the buffer between reading entries from the blockstore Walk and passing it on
 const bufferSize = 100
@@ -42,7 +47,7 @@ type WalkerFactory interface {
 }
 
 func NewWalkEntryIterator(ctx context.Context, factory WalkerFactory, fromSourceURI, prepend, after, continuationToken string) (*walkEntryIterator, error) {
-	if prepend != "" && prepend[len(prepend)-1:] != "/" {
+	if prepend != "" && !strings.HasSuffix(prepend, "/") {
 		prepend += "/"
 	}
 
@@ -60,6 +65,8 @@ func NewWalkEntryIterator(ctx context.Context, factory WalkerFactory, fromSource
 	}
 
 	go func() {
+		defer close(it.done)
+
 		err := it.walker.Walk(ctx, store.WalkOptions{
 			After:             after,
 			ContinuationToken: continuationToken,
@@ -88,7 +95,6 @@ func NewWalkEntryIterator(ctx context.Context, factory WalkerFactory, fromSource
 			it.err.Store(err)
 		}
 		close(it.entries)
-		close(it.done)
 	}()
 
 	return &it, nil
@@ -119,7 +125,7 @@ func (it *walkEntryIterator) Next() bool {
 }
 
 func (it *walkEntryIterator) SeekGE(Path) {
-	// unsupported
+	it.err.Store(errSeekGENotSupported)
 }
 
 func (it *walkEntryIterator) Value() *EntryRecord {

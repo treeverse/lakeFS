@@ -1728,10 +1728,7 @@ func (c *Controller) IngestRange(w http.ResponseWriter, r *http.Request, body In
 
 	c.LogAction(r.Context(), "ingest_range")
 
-	contToken := ""
-	if body.ContinuationToken != nil {
-		contToken = *body.ContinuationToken
-	}
+	contToken := swag.StringValue(body.ContinuationToken)
 	info, mark, err := c.Catalog.WriteRange(r.Context(), repository, body.FromSourceURI, body.Prepend, body.After, contToken)
 	if handleAPIError(w, err) {
 		return

@@ -670,7 +670,7 @@ type CommittedManager interface {
 	WriteMetaRangeByIterator(ctx context.Context, ns StorageNamespace, it ValueIterator, metadata Metadata) (*MetaRangeID, error)
 
 	// WriteRange creates a new Range from the iterator values.
-	// Keeps Range closing logic, so might not flush all values to the range.
+	// Keeps Range closing logic, so might not exhaust the iterator.
 	WriteRange(ctx context.Context, ns StorageNamespace, it ValueIterator) (*RangeInfo, error)
 
 	// WriteMetaRange creates a new MetaRange from the given Ranges.

@@ -495,7 +495,7 @@ func TestController_CommitHandler(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("commit non-existent commit", func(t *testing.T) {
-		repo := "foo1"
+		repo := testUniqueRepoName()
 		resp, err := clt.CommitWithResponse(ctx, repo, "main", &api.CommitParams{}, api.CommitJSONRequestBody{
 			Message: "some message",
 		})
@@ -510,10 +510,10 @@ func TestController_CommitHandler(t *testing.T) {
 	})
 
 	t.Run("commit success", func(t *testing.T) {
-		repo := "foo2"
+		repo := testUniqueRepoName()
 		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
-		testutil.MustDo(t, "create repo foo2", err)
-		testutil.MustDo(t, "commit bar on foo2", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
+		testutil.MustDo(t, fmt.Sprintf("create repo %s", repo), err)
+		testutil.MustDo(t, fmt.Sprintf("commit bar on %s", repo), deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
 		resp, err := clt.CommitWithResponse(ctx, repo, "main", &api.CommitParams{}, api.CommitJSONRequestBody{
 			Message: "some message",
 		})
@@ -521,13 +521,13 @@ func TestController_CommitHandler(t *testing.T) {
 	})
 
 	t.Run("commit success with source metarange", func(t *testing.T) {
-		repo := "foo3"
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main")
-		testutil.MustDo(t, "create repo foo3", err)
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		testutil.MustDo(t, fmt.Sprintf("create repo %s", repo), err)
 
 		_, err = deps.catalog.CreateBranch(ctx, repo, "foo-branch", "main")
 
-		testutil.MustDo(t, "commit bar on foo1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
+		testutil.MustDo(t, fmt.Sprintf("commit bar on %s", repo), deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
 		resp, err := clt.CommitWithResponse(ctx, repo, "main", &api.CommitParams{}, api.CommitJSONRequestBody{
 			Message: "some message",
 		})
@@ -540,19 +540,19 @@ func TestController_CommitHandler(t *testing.T) {
 	})
 
 	t.Run("commit failure with source metarange and dirty branch", func(t *testing.T) {
-		repo := "foo4"
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main")
-		testutil.MustDo(t, "create repo foo4", err)
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		testutil.MustDo(t, fmt.Sprintf("create repo %s", repo), err)
 
 		_, err = deps.catalog.CreateBranch(ctx, repo, "foo-branch", "main")
 
-		testutil.MustDo(t, "commit bar on foo4", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
+		testutil.MustDo(t, fmt.Sprintf("commit bar on %s", repo), deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
 		resp, err := clt.CommitWithResponse(ctx, repo, "main", &api.CommitParams{}, api.CommitJSONRequestBody{
 			Message: "some message",
 		})
 		verifyResponseOK(t, resp, err)
 
-		testutil.MustDo(t, "commit bar on foo4", deps.catalog.CreateEntry(ctx, repo, "foo-branch", catalog.DBEntry{Path: "foo/bar/2", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
+		testutil.MustDo(t, fmt.Sprintf("commit bar on %s", repo), deps.catalog.CreateEntry(ctx, repo, "foo-branch", catalog.DBEntry{Path: "foo/bar/2", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
 		resp, err = clt.CommitWithResponse(ctx, repo, "foo-branch", &api.CommitParams{SourceMetarange: &resp.JSON201.MetaRangeId}, api.CommitJSONRequestBody{
 			Message: "some message",
 		})
@@ -563,10 +563,10 @@ func TestController_CommitHandler(t *testing.T) {
 	})
 
 	t.Run("commit success - with creation date", func(t *testing.T) {
-		repo := "repo5"
+		repo := testUniqueRepoName()
 		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
-		testutil.MustDo(t, "create repo foo5", err)
-		testutil.MustDo(t, "commit bar on foo5", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
+		testutil.MustDo(t, fmt.Sprintf("create repo %s", repo), err)
+		testutil.MustDo(t, fmt.Sprintf("commit bar on %s", repo), deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
 		date := int64(1642626109)
 		resp, err := clt.CommitWithResponse(ctx, repo, "main", &api.CommitParams{}, api.CommitJSONRequestBody{
 			Message: "some message",
@@ -1203,33 +1203,35 @@ func TestController_IngestRangeHandler(t *testing.T) {
 		uriPrefix               = "take/from/here"
 		fromSourceURIWithPrefix = fromSourceURI + "/" + uriPrefix
 		after                   = "some/key/to/start/after"
-		continuationToken       = "opaque"
 		prepend                 = "some/logical/prefix"
 	)
 
-	ctx := context.Background()
-	token := continuationToken
+	continuationToken := "opaque"
 
-	setup := func(count int, err error) (api.ClientWithResponsesInterface, *testutils.FakeWalker) {
-		w := testutils.NewFakeWalker(count, count, uriPrefix, after, continuationToken, fromSourceURIWithPrefix, err)
+	setup := func(t *testing.T, count int, expectedErr error) (api.ClientWithResponsesInterface, *testutils.FakeWalker) {
+		t.Helper()
+		ctx := context.Background()
+
+		w := testutils.NewFakeWalker(count, count, uriPrefix, after, continuationToken, fromSourceURIWithPrefix, expectedErr)
 		clt, deps := setupClientWithAdminAndWalkerFactory(t, testutils.FakeFactory{Walker: w})
 
 		// setup test data
-		_, err = deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "foo1"), "main")
+		_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "foo1"), "main")
 		testutil.Must(t, err)
 
 		return clt, w
 	}
 
 	t.Run("successful ingestion no pagination", func(t *testing.T) {
+		ctx := context.Background()
 		count := 1000
-		clt, w := setup(count, nil)
+		clt, w := setup(t, count, nil)
 
 		resp, err := clt.IngestRangeWithResponse(ctx, "repo1", api.IngestRangeJSONRequestBody{
 			After:             after,
 			FromSourceURI:     fromSourceURIWithPrefix,
 			Prepend:           prepend,
-			ContinuationToken: &token,
+			ContinuationToken: &continuationToken,
 		})
 
 		verifyResponseOK(t, resp, err)
@@ -1245,14 +1247,15 @@ func TestController_IngestRangeHandler(t *testing.T) {
 
 	t.Run("successful ingestion with pagination", func(t *testing.T) {
 		// force splitting the range before
+		ctx := context.Background()
 		count := 200_000
-		clt, w := setup(count, nil)
+		clt, w := setup(t, count, nil)
 
 		resp, err := clt.IngestRangeWithResponse(ctx, "repo1", api.IngestRangeJSONRequestBody{
 			After:             after,
 			FromSourceURI:     fromSourceURIWithPrefix,
 			Prepend:           prepend,
-			ContinuationToken: &token,
+			ContinuationToken: &continuationToken,
 		})
 
 		verifyResponseOK(t, resp, err)
@@ -1268,15 +1271,16 @@ func TestController_IngestRangeHandler(t *testing.T) {
 
 	t.Run("error during walk", func(t *testing.T) {
 		// force splitting the range before
+		ctx := context.Background()
 		count := 10
 		expectedErr := errors.New("failed reading for object store")
-		clt, _ := setup(count, expectedErr)
+		clt, _ := setup(t, count, expectedErr)
 
 		resp, err := clt.IngestRangeWithResponse(ctx, "repo1", api.IngestRangeJSONRequestBody{
 			After:             after,
 			FromSourceURI:     fromSourceURIWithPrefix,
 			Prepend:           prepend,
-			ContinuationToken: &token,
+			ContinuationToken: &continuationToken,
 		})
 
 		require.NoError(t, err)
@@ -1288,17 +1292,17 @@ func TestController_IngestRangeHandler(t *testing.T) {
 func TestController_WriteMetaRangeHandler(t *testing.T) {
 	ctx := context.Background()
 	clt, deps := setupClientWithAdmin(t)
-
+	repo := testUniqueRepoName()
 	// setup test data
-	_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "foo1"), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
 	testutil.Must(t, err)
 
 	t.Run("successful metarange creation", func(t *testing.T) {
-		resp, err := clt.CreateMetaRangeWithResponse(ctx, "repo1", api.CreateMetaRangeJSONRequestBody{
+		resp, err := clt.CreateMetaRangeWithResponse(ctx, repo, api.CreateMetaRangeJSONRequestBody{
 			Ranges: []api.RangeMetadata{
 				{Count: 11355, EstimatedSize: 123465897, Id: "FirstRangeID", MaxKey: "1", MinKey: "2"},
 				{Count: 13123, EstimatedSize: 123465897, Id: "SecondRangeID", MaxKey: "3", MinKey: "4"},
-				{Count: 10123, EstimatedSize: 123465897, Id: "SecondRangeID", MaxKey: "5", MinKey: "6"},
+				{Count: 10123, EstimatedSize: 123465897, Id: "ThirdRangeID", MaxKey: "5", MinKey: "6"},
 			},
 		})
 
@@ -1307,14 +1311,14 @@ func TestController_WriteMetaRangeHandler(t *testing.T) {
 		require.NotNil(t, resp.JSON201.Id)
 		require.NotEmpty(t, *resp.JSON201.Id)
 
-		respMR, err := clt.GetMetaRangeWithResponse(ctx, "repo1", *resp.JSON201.Id)
+		respMR, err := clt.GetMetaRangeWithResponse(ctx, repo, *resp.JSON201.Id)
 		verifyResponseOK(t, respMR, err)
 		require.NotNil(t, respMR.JSON200)
 		require.NotEmpty(t, respMR.JSON200.Location)
 	})
 
 	t.Run("missing ranges", func(t *testing.T) {
-		resp, err := clt.CreateMetaRangeWithResponse(ctx, "repo1", api.CreateMetaRangeJSONRequestBody{
+		resp, err := clt.CreateMetaRangeWithResponse(ctx, repo, api.CreateMetaRangeJSONRequestBody{
 			Ranges: []api.RangeMetadata{},
 		})
 

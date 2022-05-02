@@ -19,21 +19,21 @@ const (
 	prefixImport    = "imported/new-prefix/"
 )
 
-var filesToCheck = map[string]bool{
-	"prefix-1/file002100":        true,
-	"prefix-2/file000568":        true,
-	"prefix-3/file001331":        true,
-	"prefix-4/file001888":        true,
-	"prefix-5/file000987":        true,
-	"prefix-6/file001556":        true,
-	"prefix-7/file000001":        true,
-	"nested/prefix-1/file002005": true,
-	"nested/prefix-2/file001894": true,
-	"nested/prefix-3/file000005": true,
-	"nested/prefix-4/file000645": true,
-	"nested/prefix-5/file001566": true,
-	"nested/prefix-6/file002011": true,
-	"nested/prefix-7/file000101": true,
+var importFilesToCheck = []string{
+	"prefix-1/file002100",
+	"prefix-2/file000568",
+	"prefix-3/file001331",
+	"prefix-4/file001888",
+	"prefix-5/file000987",
+	"prefix-6/file001556",
+	"prefix-7/file000001",
+	"nested/prefix-1/file002005",
+	"nested/prefix-2/file001894",
+	"nested/prefix-3/file000005",
+	"nested/prefix-4/file000645",
+	"nested/prefix-5/file001566",
+	"nested/prefix-6/file002011",
+	"nested/prefix-7/file000101",
 }
 
 func TestImport(t *testing.T) {
@@ -68,6 +68,7 @@ func TestImport(t *testing.T) {
 		log.Info("Ingest range response body: %s", resp.Body)
 		require.Equal(t, http.StatusCreated, resp.StatusCode())
 
+		require.NotNil(t, resp.JSON201)
 		ranges = append(ranges, *resp.JSON201.Range)
 		hasMore = resp.JSON201.Pagination.HasMore
 		after = resp.JSON201.Pagination.LastKey
@@ -82,7 +83,7 @@ func TestImport(t *testing.T) {
 	require.Equal(t, http.StatusCreated, metarangeResp.StatusCode())
 	require.NotNil(t, metarangeResp.JSON201.Id)
 
-	ingestionBranch := "ingestion"
+	const ingestionBranch = "ingestion"
 	_, err = client.CreateBranchWithResponse(ctx, repoName, api.CreateBranchJSONRequestBody{
 		Name:   ingestionBranch,
 		Source: "main",
@@ -100,7 +101,7 @@ func TestImport(t *testing.T) {
 	require.NoError(t, err, "failed to commit")
 	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
 
-	for k := range filesToCheck {
+	for _, k := range importFilesToCheck {
 		// try to read some values from that ingested branch
 		objResp, err := client.GetObjectWithResponse(ctx, repoName, ingestionBranch, &api.GetObjectParams{
 			Path: prefixImport + k,
