@@ -35,6 +35,47 @@ jobs:
     name: Generate code from latest lakeFS app
     runs-on: ubuntu-20.04
     steps:
+      - name: Check-out code
+        uses: actions/checkout@v2
+
+      # No way to share code between workflows :-( If you change this, find and change the
+      # same code wherever "Find Go module and build caches" appears!
+      - name: Find Go module and build caches
+        run: |
+          echo GOMODCACHE=`go env GOMODCACHE` >> $GITHUB_ENV
+          echo GOCACHE=`go env GOCACHE` >> $GITHUB_ENV
+          cat $GITHUB_ENV
+
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17.8
+        id: go
+
+      - name: Cache Go modules and builds
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-go-modules
+        with:
+          path: |
+            ${{ env.GOMODCACHE }}
+            ${{ env.GOCACHE }}
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('go.mod', 'go.sum') }}
+          restore-keys:
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+
+      - name: Generate code
+        run: |
+          make -j3 gen-api gen-ui
+          tar -cf /tmp/generated.tar.gz .
+      - name: Store generated code
+        uses: actions/upload-artifact@v2
+        with:
+          name: generated-code
+          path: /tmp/generated.tar.gz
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:

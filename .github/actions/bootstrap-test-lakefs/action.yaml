@@ -15,16 +15,14 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - uses: prewk/s3-cp-action@v2
+    - name: Retrieve generated code
+      uses: actions/download-artifact@v2
       with:
-        source: 's3://yoni-test3/gencode/generated.tar.gz'
-        dest: './generated.tar.gz'
-        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
+        name: generated-code
+        path: /tmp/
     - name: Unpack generated code
       shell: bash
-      run: tar -xf ./generated.tar.gz
+      run: tar -xf /tmp/generated.tar.gz
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
