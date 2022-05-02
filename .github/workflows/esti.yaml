@@ -150,8 +150,6 @@ jobs:
           REPOSITORY: gateway-test-spark2
           SONNET_JAR: sonnets-246_2.11-0.1.0.jar
           SPARK_PACKAGES: org.apache.hadoop:hadoop-aws:2.7.7
-          TESTER_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          TESTER_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         working-directory: test/spark
         run: ./run-test.sh
 
