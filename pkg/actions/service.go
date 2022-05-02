@@ -203,16 +203,25 @@ func (s *Service) runTasks(ctx context.Context, record graveler.HookRecord, task
 					ActionName:       task.Action.Name,
 					HookID:           task.HookID,
 				}
+				buf := bytes.Buffer{}
 				task.StartTime = time.Now().UTC()
-				task.Err = task.Hook.Run(ctx, record, hookOutputWriter)
+
+				task.Err = task.Hook.Run(ctx, record, &buf)
 				task.EndTime = time.Now().UTC()
 
 				s.stats.CollectEvent("actions_service", string(record.EventType))
 
-				if task.Err != nil {
+				if task.Err != nil { // log error in buffer
 					// wrap error with more information and return
 					task.Err = fmt.Errorf("hook run id '%s' failed on action '%s' hook '%s': %w",
 						task.HookRunID, task.Action.Name, task.HookID, task.Err)
+					_, _ = fmt.Fprint(&buf, task.Err)
+				}
+				err := hookOutputWriter.OutputWrite(ctx, &buf, int64(buf.Len()))
+				if err != nil {
+					return fmt.Errorf("failed to write action log. %w", err)
+				}
+				if task.Err != nil { // stop execution of tasks and return error
 					return task.Err
 				}
 			}

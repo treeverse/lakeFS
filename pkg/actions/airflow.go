@@ -87,7 +87,7 @@ type DagRunReq struct {
 	Conf map[string]interface{} `json:"conf,omitempty"`
 }
 
-func (a *Airflow) Run(ctx context.Context, record graveler.HookRecord, writer *HookOutputWriter) error {
+func (a *Airflow) Run(ctx context.Context, record graveler.HookRecord, buf *bytes.Buffer) error {
 	logging.FromContext(ctx).
 		WithField("hook_type", "airflow").
 		WithField("event_type", record.EventType).
@@ -113,19 +113,19 @@ func (a *Airflow) Run(ctx context.Context, record graveler.HookRecord, writer *H
 	if err != nil {
 		return fmt.Errorf("building dag run path: %w", err)
 	}
-	buf := bytes.NewBufferString(fmt.Sprintf("Request:\nPOST %s\n", dagRunURL))
+	_, _ = fmt.Fprintf(buf, "Request:\nPOST %s\n", dagRunURL)
 
 	req, err := http.NewRequest(http.MethodPost, dagRunURL, reqReader)
 	if err != nil {
 		return fmt.Errorf("request serialization error: %w", err)
 	}
 	req.SetBasicAuth(a.Username, a.Password.val)
-	buf.WriteString(fmt.Sprintf("Username: %s, Password: %s\n", a.Username, a.Password.String()))
+	_, _ = fmt.Fprintf(buf, "Username: %s, Password: %s\n", a.Username, a.Password.String())
 
 	req.Header.Set("Content-Type", "application/json")
 
-	buf.WriteString(fmt.Sprintf("Body: %s\n\n", bod))
-	statusCode, err := executeAndLogResponse(ctx, req, buf, writer, airflowClientDefaultTimeout)
+	_, _ = fmt.Fprintf(buf, "Body: %s\n\n", bod)
+	statusCode, err := executeAndLogResponse(ctx, req, buf, airflowClientDefaultTimeout)
 	if err != nil {
 		return fmt.Errorf("failed executing airflow request: %w", err)
 	}
