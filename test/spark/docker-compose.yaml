@@ -36,6 +36,7 @@ services:
         - tester.env
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
 
+
 networks:
   default:
     driver: bridge
@@ -43,3 +44,4 @@ networks:
      config:
        - subnet: 10.5.0.0/16
          gateway: 10.5.0.1
+
