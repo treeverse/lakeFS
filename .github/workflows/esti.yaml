@@ -45,6 +45,8 @@ jobs:
         with:
           source: 's3://yoni-test3/gencode/generated.tar.gz'
           dest: '/tmp'
+          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Store generated code
         uses: actions/upload-artifact@v2
