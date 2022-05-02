@@ -6,6 +6,12 @@ import (
 	"fmt"
 	"net/url"
 	"time"
+
+	"cloud.google.com/go/storage"
+	"github.com/Azure/azure-pipeline-go/pipeline"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/treeverse/lakefs/pkg/block/factory"
+	"github.com/treeverse/lakefs/pkg/block/params"
 )
 
 var (
@@ -78,11 +84,78 @@ func (ww *WalkerWrapper) Marker() Mark {
 	return ww.walker.Marker()
 }
 
-var DefaultFactory = walkerFactory{}
+type walkerFactory struct {
+	params params.AdapterConfig
+}
 
-type walkerFactory struct{}
+func NewFactory(params params.AdapterConfig) *walkerFactory {
+	return &walkerFactory{params: params}
+}
 
-func (walkerFactory) GetWalker(ctx context.Context, opts WalkerOptions) (*WalkerWrapper, error) {
+func (f *walkerFactory) buildS3Walker(opts WalkerOptions) (*s3Walker, error) {
+	var sess *session.Session
+	if f.params != nil {
+		s3params, err := f.params.GetBlockAdapterS3Params()
+		if err != nil {
+			return nil, err
+		}
+		sess, err = factory.BuildS3Client(s3params.AwsConfig)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		var err error
+		sess, err = getS3Client(opts.S3EndpointURL)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return NewS3Walker(sess), nil
+}
+
+func (f *walkerFactory) buildGCSWalker(ctx context.Context) (*gcsWalker, error) {
+	var svc *storage.Client
+	if f.params != nil {
+		gsParams, err := f.params.GetBlockAdapterGSParams()
+		if err != nil {
+			return nil, err
+		}
+		svc, err = factory.BuildGSClient(ctx, gsParams)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		var err error
+		svc, err = storage.NewClient(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return NewGCSWalker(svc), nil
+}
+
+func (f *walkerFactory) buildAzureWalker() (*azureBlobWalker, error) {
+	var p pipeline.Pipeline
+	if f.params != nil {
+		azureParams, err := f.params.GetBlockAdapterAzureParams()
+		if err != nil {
+			return nil, err
+		}
+		p, err = factory.BuildAzureClient(azureParams)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		var err error
+		p, err = getAzureClient()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return NewAzureBlobWalker(p)
+}
+
+func (f *walkerFactory) GetWalker(ctx context.Context, opts WalkerOptions) (*WalkerWrapper, error) {
 	var walker Walker
 	uri, err := url.Parse(opts.StorageURI)
 	if err != nil {
@@ -90,21 +163,19 @@ func (walkerFactory) GetWalker(ctx context.Context, opts WalkerOptions) (*Walker
 	}
 	switch uri.Scheme {
 	case "s3":
-		svc, err := GetS3Client(opts.S3EndpointURL)
+		walker, err = f.buildS3Walker(opts)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("creating s3 walker: %w", err)
 		}
-		walker = &S3Walker{s3: svc, mark: Mark{HasMore: true}}
 	case "gs":
-		svc, err := GetGCSClient(ctx)
+		walker, err = f.buildGCSWalker(ctx)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("creating gs walker: %w", err)
 		}
-		walker = &GCSWalker{client: svc}
 	case "http", "https":
-		walker, err = NewAzureBlobWalker()
+		walker, err = f.buildAzureWalker()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("creating Azure walker: %w", err)
 		}
 	default:
 		return nil, fmt.Errorf("%w: for scheme: %s", ErrNotSupported, uri.Scheme)

@@ -69,7 +69,7 @@ var ingestCmd = &cobra.Command{
 			path = path + PathDelimiter // append a path delimiter (slash) if not passed by the user, and it's not an empty path in lakeFS
 		}
 		go func() {
-			walker, err := store.DefaultFactory.GetWalker(ctx, store.WalkerOptions{
+			walker, err := store.NewFactory(nil).GetWalker(ctx, store.WalkerOptions{
 				S3EndpointURL: s3EndpointURL,
 				StorageURI:    from,
 			})

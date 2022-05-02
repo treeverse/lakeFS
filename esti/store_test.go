@@ -17,7 +17,7 @@ func TestS3Walk(t *testing.T) {
 	const expectedNumObjs = 2100
 	numObjs := 0
 
-	walker, err := store.DefaultFactory.GetWalker(context.Background(), store.WalkerOptions{
+	walker, err := store.NewFactory(nil).GetWalker(context.Background(), store.WalkerOptions{
 		S3EndpointURL: "",
 		StorageURI:    IngestTestBucketPath,
 	})

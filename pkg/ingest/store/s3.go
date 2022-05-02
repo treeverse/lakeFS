@@ -12,7 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 )
 
-func GetS3Client(s3EndpointURL string) (*s3.S3, error) {
+func getS3Client(s3EndpointURL string) (*session.Session, error) {
 	var config aws.Config
 	if s3EndpointURL != "" {
 		config = aws.Config{
@@ -21,23 +21,25 @@ func GetS3Client(s3EndpointURL string) (*s3.S3, error) {
 			S3ForcePathStyle: aws.Bool(true),
 		}
 	}
-	sess, err := session.NewSessionWithOptions(session.Options{
+	return session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 		Config:            config,
 	})
-	if err != nil {
-		return nil, err
-	}
-	svc := s3.New(sess)
-	return svc, nil
 }
 
-type S3Walker struct {
+type s3Walker struct {
 	s3   s3iface.S3API
 	mark Mark
 }
 
-func (s *S3Walker) Walk(ctx context.Context, storageURI *url.URL, op WalkOptions, walkFn func(e ObjectStoreEntry) error) error {
+func NewS3Walker(sess *session.Session) *s3Walker {
+	return &s3Walker{
+		s3:   s3.New(sess),
+		mark: Mark{HasMore: true},
+	}
+}
+
+func (s *s3Walker) Walk(ctx context.Context, storageURI *url.URL, op WalkOptions, walkFn func(e ObjectStoreEntry) error) error {
 	var continuation *string
 	const maxKeys = 1000
 	prefix := strings.TrimLeft(storageURI.Path, "/")
@@ -102,6 +104,6 @@ func (s *S3Walker) Walk(ctx context.Context, storageURI *url.URL, op WalkOptions
 	return nil
 }
 
-func (s *S3Walker) Marker() Mark {
+func (s *s3Walker) Marker() Mark {
 	return s.mark
 }

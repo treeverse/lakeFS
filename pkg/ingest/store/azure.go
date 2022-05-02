@@ -18,7 +18,7 @@ var (
 	ErrAzureCredentials = errors.New("azure credentials error")
 )
 
-func GetAzureClient() (pipeline.Pipeline, error) {
+func getAzureClient() (pipeline.Pipeline, error) {
 	// From the Azure portal, get your storage account name and key and set environment variables.
 	accountName, accountKey := os.Getenv("AZURE_STORAGE_ACCOUNT"), os.Getenv("AZURE_STORAGE_ACCESS_KEY")
 	if len(accountName) == 0 || len(accountKey) == 0 {
@@ -33,19 +33,14 @@ func GetAzureClient() (pipeline.Pipeline, error) {
 	return azblob.NewPipeline(credential, azblob.PipelineOptions{}), nil
 }
 
-func NewAzureBlobWalker() (*AzureBlobWalker, error) {
-	svc, err := GetAzureClient()
-	if err != nil {
-		return nil, err
-	}
-
-	return &AzureBlobWalker{
+func NewAzureBlobWalker(svc pipeline.Pipeline) (*azureBlobWalker, error) {
+	return &azureBlobWalker{
 		client: svc,
 		mark:   Mark{HasMore: true},
 	}, nil
 }
 
-type AzureBlobWalker struct {
+type azureBlobWalker struct {
 	client pipeline.Pipeline
 	mark   Mark
 }
@@ -72,7 +67,7 @@ func getAzureBlobURL(containerURL *url.URL, blobName string) *url.URL {
 	return containerURL.ResolveReference(&relativePath)
 }
 
-func (a *AzureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, op WalkOptions, walkFn func(e ObjectStoreEntry) error) error {
+func (a *azureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, op WalkOptions, walkFn func(e ObjectStoreEntry) error) error {
 	// we use bucket as container and prefix as path
 	containerURL, prefix, err := extractAzurePrefix(storageURI)
 	if err != nil {
@@ -113,6 +108,6 @@ func (a *AzureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, op Walk
 	return nil
 }
 
-func (a *AzureBlobWalker) Marker() Mark {
+func (a *azureBlobWalker) Marker() Mark {
 	return a.mark
 }

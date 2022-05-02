@@ -148,7 +148,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		return nil, fmt.Errorf("build block adapter: %w", err)
 	}
 	if cfg.WalkerFactory == nil {
-		cfg.WalkerFactory = store.DefaultFactory
+		cfg.WalkerFactory = store.NewFactory(cfg.Config)
 	}
 
 	tierFSParams, err := cfg.Config.GetCommittedTierFSParams(adapter)

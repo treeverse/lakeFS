@@ -12,16 +12,16 @@ import (
 	"google.golang.org/api/iterator"
 )
 
-func GetGCSClient(ctx context.Context) (*storage.Client, error) {
-	return storage.NewClient(ctx)
-}
-
-type GCSWalker struct {
+type gcsWalker struct {
 	client *storage.Client
 	mark   Mark
 }
 
-func (w *GCSWalker) Walk(ctx context.Context, storageURI *url.URL, op WalkOptions, walkFn func(e ObjectStoreEntry) error) error {
+func NewGCSWalker(client *storage.Client) *gcsWalker {
+	return &gcsWalker{client: client}
+}
+
+func (w *gcsWalker) Walk(ctx context.Context, storageURI *url.URL, op WalkOptions, walkFn func(e ObjectStoreEntry) error) error {
 	prefix := strings.TrimLeft(storageURI.Path, "/")
 	iter := w.client.
 		Bucket(storageURI.Host).
@@ -68,6 +68,6 @@ func (w *GCSWalker) Walk(ctx context.Context, storageURI *url.URL, op WalkOption
 	return nil
 }
 
-func (w *GCSWalker) Marker() Mark {
+func (w *gcsWalker) Marker() Mark {
 	return w.mark
 }
