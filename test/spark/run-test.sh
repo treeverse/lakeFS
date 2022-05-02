@@ -26,5 +26,5 @@ if [ -v USE_DIRECT_ACCESS ]; then # Direct access using thick Spark client.
 else				# Access via S3 gateway using regular Spark client.
     export s3input="s3a://${REPOSITORY}/main/sonnets.txt"
     export s3output="s3a://${REPOSITORY}/main/sonnets-wordcount"
-    spark-submit --master local[4] ${PACKAGES_FLAG} -c "spark.hadoop.fs.s3a.access.key=${TESTER_ACCESS_KEY_ID}" -c "spark.hadoop.fs.s3a.secret.key=${TESTER_SECRET_ACCESS_KEY}" -c spark.hadoop.fs.s3a.endpoint=s3.docker.lakefs.io:8000 -c spark.hadoop.fs.s3a.connection.ssl.enabled=false --class Sonnets ./app/"${SONNET_JAR}" ${s3input} ${s3output}
+    spark-submit --master local[4] ${PACKAGES_FLAG} -c "spark.hadoop.fs.s3a.access.key=AKIAIOSFODNN7EXAMPLE" -c "spark.hadoop.fs.s3a.secret.key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" -c spark.hadoop.fs.s3a.endpoint=s3.docker.lakefs.io:8000 -c spark.hadoop.fs.s3a.connection.ssl.enabled=false --class Sonnets ./app/"${SONNET_JAR}" ${s3input} ${s3output}
 fi
