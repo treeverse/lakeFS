@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	kv "github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -130,12 +130,12 @@ func (m *tracker) Delete(ctx context.Context, uploadID string) error {
 	if uploadID == "" {
 		return ErrInvalidUploadID
 	}
-	path := multipartPrefix + kv.PathDelimiter + uploadID
-	if _, err := m.Get(ctx, path); err != nil {
+	if _, err := m.Get(ctx, uploadID); err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			return ErrMultipartUploadNotFound
 		}
 		return fmt.Errorf("failed on Get. Key (%s): %w", uploadID, err)
 	}
+	path := multipartPrefix + kv.PathDelimiter + uploadID
 	return m.store.Delete(ctx, path)
 }
