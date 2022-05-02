@@ -6,17 +6,17 @@ import (
 	"github.com/treeverse/lakefs/pkg/db"
 )
 
-type track struct {
+type dbTracker struct {
 	db db.Database
 }
 
 func NewDBTracker(adb db.Database) Tracker {
-	return &track{
+	return &dbTracker{
 		db: adb,
 	}
 }
 
-func (m *track) Create(ctx context.Context, multipart MultipartUpload) error {
+func (m *dbTracker) Create(ctx context.Context, multipart MultipartUpload) error {
 	if multipart.UploadID == "" {
 		return ErrInvalidUploadID
 	}
@@ -29,7 +29,7 @@ func (m *track) Create(ctx context.Context, multipart MultipartUpload) error {
 	return err
 }
 
-func (m *track) Get(ctx context.Context, uploadID string) (*MultipartUpload, error) {
+func (m *dbTracker) Get(ctx context.Context, uploadID string) (*MultipartUpload, error) {
 	if uploadID == "" {
 		return nil, ErrInvalidUploadID
 	}
@@ -50,7 +50,7 @@ func (m *track) Get(ctx context.Context, uploadID string) (*MultipartUpload, err
 	return res.(*MultipartUpload), nil
 }
 
-func (m *track) Delete(ctx context.Context, uploadID string) error {
+func (m *dbTracker) Delete(ctx context.Context, uploadID string) error {
 	if uploadID == "" {
 		return ErrInvalidUploadID
 	}
