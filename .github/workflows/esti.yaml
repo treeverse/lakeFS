@@ -113,7 +113,7 @@ jobs:
         uses: prewk/s3-cp-action@v2
         with:
           source: 's3://yoni-test3/gencode/sonnets-246_2.11-0.1.0.jar'
-          dest: 'test/spark/app/sonnets-246_2.11-0.1.0.jar'
+          dest: '/home/runner/work/lakeFS/lakeFS/test/spark/app/'
           aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
