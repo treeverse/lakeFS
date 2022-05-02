@@ -74,7 +74,8 @@ func (a *azureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, op Walk
 		return err
 	}
 	container := azblob.NewContainerURL(*containerURL, a.client)
-	for marker := (azblob.Marker{Val: &op.ContinuationToken}); marker.NotDone(); {
+	notDone := true
+	for marker := (azblob.Marker{Val: &op.ContinuationToken}); notDone; {
 		listBlob, err := container.ListBlobsFlatSegment(ctx, marker,
 			azblob.ListBlobsSegmentOptions{Prefix: prefix})
 		if err != nil {
@@ -99,6 +100,7 @@ func (a *azureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, op Walk
 				return err
 			}
 		}
+		notDone = marker.NotDone()
 	}
 
 	a.mark = Mark{

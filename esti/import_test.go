@@ -15,7 +15,7 @@ import (
 const (
 	s3ImportPath    = "s3://esti-system-testing-data/import-test-data/"
 	gsImportPath    = "gs://esti-system-testing-data/import-test-data/"
-	azureImportPath = "https://esti-system-testing-data.blob.core.windows.net/import-test-data/"
+	azureImportPath = "https://esti.blob.core.windows.net/esti-system-testing-data/import-test-data/"
 	prefixImport    = "imported/new-prefix/"
 )
 
