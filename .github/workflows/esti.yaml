@@ -144,6 +144,7 @@ jobs:
           STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark2/${{ steps.unique.outputs.value }}
           REPOSITORY: gateway-test-spark2
           SONNET_JAR: sonnets-246_2.11-0.1.0.jar
+          SPARK_PACKAGES: org.apache.hadoop:hadoop-aws:2.7.7
         working-directory: test/spark
         run: ./run-test.sh
 
