@@ -244,6 +244,10 @@ var runCmd = &cobra.Command{
 			}
 		}
 
+		if !emailer.IsEmailerConfigured() {
+			logger.Warn(fmt.Sprintf("Emailer has not been properly configured, check the values in the email config"))
+		}
+
 		lakefsBaseURL := emailParams.LakefsBaseURL
 		if lakefsBaseURL != "" {
 			_, err := url.Parse(lakefsBaseURL)
