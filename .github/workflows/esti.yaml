@@ -139,11 +139,11 @@ jobs:
         id: unique
         run:  echo "::set-output name=value::$RANDOM"
       - run: |
-          sudo echo "10.5.0.55 s3.docker.lakefs.io" >> /etc/hosts
-          sudo echo "10.5.0.55 example.s3.docker.lakefs.io" >> /etc/hosts
-          sudo echo "10.5.0.55 gateway-test-spark2.s3.docker.lakefs.io" >> /etc/hosts
-          sudo echo "10.5.0.55 gateway-test-spark3.s3.docker.lakefs.io" >> /etc/hosts
-          sudo echo "10.5.0.55 thick-client-test.s3.docker.lakefs.io" >> /etc/hosts
+          echo "10.5.0.55 s3.docker.lakefs.io" | sudo tee -a /etc/hosts
+          echo "10.5.0.55 example.s3.docker.lakefs.io" | sudo tee -a /etc/hosts
+          echo "10.5.0.55 gateway-test-spark2.s3.docker.lakefs.io" | sudo tee -a /etc/hosts
+          echo "10.5.0.55 gateway-test-spark3.s3.docker.lakefs.io" | sudo tee -a /etc/hosts
+          echo "10.5.0.55 thick-client-test.s3.docker.lakefs.io" | sudo tee -a /etc/hosts
       - name: Test lakeFS S3 with Spark 2.x
         env:
           STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark2/${{ steps.unique.outputs.value }}
