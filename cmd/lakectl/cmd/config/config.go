@@ -38,8 +38,8 @@ type configuration struct {
 				SessionToken    string `mapstructure:"session_token"`
 			} `mapstructure:"credentials"`
 
-			Region    string `mapstructure:"region"`
-			CatalogID string `mapstructure:"catalog_id"`
+			Region    string            `mapstructure:"region"`
+			CatalogID config.OnlyString `mapstructure:"catalog_id"`
 		}
 		// setting FixSparkPlaceholder to true will change spark placeholder with the actual location. for more information see https://github.com/treeverse/lakeFS/issues/2213
 		FixSparkPlaceholder bool `mapstructure:"fix_spark_placeholder"`
@@ -122,7 +122,7 @@ func (c *Config) GetMetastoreHiveURI() string {
 }
 
 func (c *Config) GetMetastoreGlueCatalogID() string {
-	return c.Values.Metastore.Glue.CatalogID
+	return string(c.Values.Metastore.Glue.CatalogID)
 }
 func (c *Config) GetMetastoreType() string {
 	return c.Values.Metastore.Type
