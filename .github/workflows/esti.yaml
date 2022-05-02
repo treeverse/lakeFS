@@ -81,16 +81,13 @@ jobs:
 
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
-
-      - name: Package Spark App
-        working-directory: test/spark/app
-        run: sbt sonnets-246/package
-      - uses: actions/setup-python@v2
+      - name: Copy a file from s3
+        uses: prewk/s3-cp-action@v2
         with:
-          python-version: '3.8'
-      - uses: actions/setup-java@v1
-        with:
-          java-version: '11'
+          source: 's3://yoni-test3/gencode/sonnets-246_2.11-0.1.0.jar'
+          dest: 'test/spark/app/target'
+          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - uses: vemonet/setup-spark@v1
         with:
@@ -118,7 +115,7 @@ jobs:
         env:
           STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark2/${{ steps.unique.outputs.value }}
           REPOSITORY: gateway-test-spark2
-          SONNET_JAR: sonnets-246/target/sonnets-246/scala-2.11/sonnets-246_2.11-0.1.0.jar
+          SONNET_JAR: sonnets-246_2.11-0.1.0.jar
         working-directory: test/spark
         run: ./run-test.sh
 
