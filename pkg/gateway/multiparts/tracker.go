@@ -13,24 +13,25 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+const multipartPrefix = "multipart"
+
 type Metadata map[string]string
 
 var ErrAlreadyExists = errors.New("upload ID already exists")
 
-// MultipartUpload data structure
-// UploadID A unique identifier for the uploaded part
-// Path Multipart path in repository
-// CreationDate Creation date of the part
-// PhysicalAddress Physical address of the part in the storage
-// Metadata Additional metadata as required (by storage vendor etc.)
-// ContentType Original file's content-type
 type MultipartUpload struct {
-	UploadID        string    `db:"upload_id"`
-	Path            string    `db:"path"`
-	CreationDate    time.Time `db:"creation_date"`
-	PhysicalAddress string    `db:"physical_address"`
-	Metadata        Metadata  `db:"metadata"`
-	ContentType     string    `db:"content_type"`
+	// UploadID A unique identifier for the uploaded part
+	UploadID string `db:"upload_id"`
+	// Path Multipart path in repository
+	Path string `db:"path"`
+	// CreationDate Creation date of the part
+	CreationDate time.Time `db:"creation_date"`
+	// PhysicalAddress Physical address of the part in the storage
+	PhysicalAddress string `db:"physical_address"`
+	// Metadata Additional metadata as required (by storage vendor etc.)
+	Metadata Metadata `db:"metadata"`
+	// ContentType Original file's content-type
+	ContentType string `db:"content_type"`
 }
 
 func (m Metadata) Set(k, v string) {
@@ -77,6 +78,28 @@ func NewTracker(ms kv.StoreMessage) Tracker {
 	}
 }
 
+func multipartFromProto(pb *MultipartUploadData) *MultipartUpload {
+	return &MultipartUpload{
+		UploadID:        pb.UploadId,
+		Path:            pb.Path,
+		CreationDate:    pb.CreationDate.AsTime(),
+		PhysicalAddress: pb.PhysicalAddress,
+		Metadata:        pb.Metadata,
+		ContentType:     pb.ContentType,
+	}
+}
+
+func protoFromMultipart(m *MultipartUpload) *MultipartUploadData {
+	return &MultipartUploadData{
+		UploadId:        m.UploadID,
+		Path:            m.Path,
+		CreationDate:    timestamppb.New(m.CreationDate),
+		PhysicalAddress: m.PhysicalAddress,
+		Metadata:        m.Metadata,
+		ContentType:     m.ContentType,
+	}
+}
+
 func (m *tracker) Create(ctx context.Context, multipart MultipartUpload) error {
 	if multipart.UploadID == "" {
 		return ErrInvalidUploadID
@@ -85,15 +108,8 @@ func (m *tracker) Create(ctx context.Context, multipart MultipartUpload) error {
 	if err == nil {
 		return ErrAlreadyExists
 	}
-
-	err = m.store.SetMsg(ctx, []byte(multipart.UploadID), &MultipartUploadData{
-		UploadId:        multipart.UploadID,
-		Path:            multipart.Path,
-		CreationDate:    timestamppb.New(multipart.CreationDate),
-		PhysicalAddress: multipart.PhysicalAddress,
-		Metadata:        multipart.Metadata,
-		ContentType:     multipart.ContentType,
-	})
+	path := multipartPrefix + kv.PathDelimiter + multipart.UploadID
+	err = m.store.SetMsg(ctx, path, protoFromMultipart(&multipart))
 	return err
 }
 
@@ -102,29 +118,24 @@ func (m *tracker) Get(ctx context.Context, uploadID string) (*MultipartUpload, e
 		return nil, ErrInvalidUploadID
 	}
 	data := &MultipartUploadData{}
-	err := m.store.GetMsg(ctx, []byte(uploadID), data)
+	path := multipartPrefix + kv.PathDelimiter + uploadID
+	err := m.store.GetMsg(ctx, path, data)
 	if err != nil {
 		return nil, err
 	}
-	return &MultipartUpload{
-		UploadID:        data.UploadId,
-		Path:            data.Path,
-		CreationDate:    data.CreationDate.AsTime(),
-		PhysicalAddress: data.PhysicalAddress,
-		Metadata:        data.Metadata,
-		ContentType:     data.ContentType,
-	}, nil
+	return multipartFromProto(data), nil
 }
 
 func (m *tracker) Delete(ctx context.Context, uploadID string) error {
 	if uploadID == "" {
 		return ErrInvalidUploadID
 	}
-	if _, err := m.Get(ctx, uploadID); err != nil {
+	path := multipartPrefix + kv.PathDelimiter + uploadID
+	if _, err := m.Get(ctx, path); err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			return ErrMultipartUploadNotFound
 		}
-		return fmt.Errorf("failed on Get. key (%s): %w", uploadID, err)
+		return fmt.Errorf("failed on Get. Key (%s): %w", uploadID, err)
 	}
-	return m.store.Delete(ctx, []byte(uploadID))
+	return m.store.Delete(ctx, path)
 }

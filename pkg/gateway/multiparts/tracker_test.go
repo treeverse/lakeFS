@@ -31,7 +31,6 @@ func TestDBTracker_Get(t *testing.T) {
 }
 
 func testTrackerGet(t *testing.T, tracker multiparts.Tracker) {
-	t.Helper()
 	ctx := context.Background()
 	creationTime := time.Now().UTC().Round(time.Second) // round in order to remove the monotonic clock
 	// setup test data

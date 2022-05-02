@@ -32,7 +32,6 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.2
 	github.com/golangci/golangci-lint v1.38.0
-	github.com/google/flatbuffers v2.0.0+incompatible
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-multierror v1.1.0
 	github.com/hnlq715/golang-lru v0.3.0
