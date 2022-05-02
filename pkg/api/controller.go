@@ -3089,6 +3089,7 @@ func (c *Controller) resetPasswordRequest(ctx context.Context, emailAddr string)
 	emailAddr = StringValue(user.Email)
 	token, err := c.generateResetPasswordToken(emailAddr, DefaultResetPasswordExpiration)
 	if err != nil {
+		c.Logger.WithError(err).WithField("email_address", emailAddr).Error("reset password - failed generating token")
 		return err
 	}
 	params := map[string]string{
@@ -3096,6 +3097,7 @@ func (c *Controller) resetPasswordRequest(ctx context.Context, emailAddr string)
 	}
 	err = c.Emailer.SendResetPasswordEmail([]string{emailAddr}, params)
 	if err != nil {
+		c.Logger.WithError(err).WithField("email_address", emailAddr).Error("reset password - failed sending email")
 		return err
 	}
 	c.Logger.WithField("email", emailAddr).Info("reset password email sent")
@@ -3134,7 +3136,7 @@ func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body
 
 	user, err := c.Auth.GetUserByEmail(r.Context(), claims.Subject)
 	if err != nil {
-		c.Logger.WithError(err).WithField("email", claims.Subject).Debug("failed to retrieve user by email")
+		c.Logger.WithError(err).WithField("email", claims.Subject).Warn("failed to retrieve user by email")
 		writeError(w, http.StatusNotFound, http.StatusText(http.StatusNotFound))
 		return
 	}
