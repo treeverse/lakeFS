@@ -1,26 +1,21 @@
 package gateway_test
 
 import (
-	"archive/zip"
 	"context"
-	"encoding/json"
-	"io"
-	"log"
 	"net/http"
-	"net/url"
 	"os"
-	"path/filepath"
-	"strings"
 	"testing"
+	"time"
 
 	"github.com/ory/dockertest/v3"
 	"github.com/spf13/viper"
+	"github.com/treeverse/lakefs/pkg/auth"
+	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/gateway"
 	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
-	"github.com/treeverse/lakefs/pkg/gateway/simulator"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/testutil"
@@ -28,91 +23,18 @@ import (
 
 type dependencies struct {
 	blocks  block.Adapter
-	auth    simulator.GatewayAuthService
-	catalog catalog.Interface
+	auth    *FakeAuthService
+	catalog *catalog.Catalog
 }
-
-type mockCollector struct{}
-
-const (
-	RecordingsDir        = "testdata/recordings"
-	ReplayRepositoryName = "example"
-)
 
 var (
-	pool         *dockertest.Pool
-	databaseURI  string
-	IdTranslator *testutil.UploadIDTranslator
+	pool        *dockertest.Pool
+	databaseURI string
 )
 
-func TestGatewayRecording(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping playback test in short mode.")
-	}
-	testData := []string{
-		"s3://lakefs-recordings/presto.zip",
-		"s3://lakefs-recordings/aws.zip",
-		"s3://lakefs-recordings/emr-spark.zip",
-	}
-
-	downloader := simulator.NewExternalRecordDownloader("us-east-1")
-
-	for _, recording := range testData {
-		s3Url, err := url.Parse(recording)
-		if err != nil {
-			t.Fatal(err)
-		}
-		basename := filepath.Base(s3Url.Path)
-		filename := filepath.Join(RecordingsDir, basename)
-		testName := strings.TrimSuffix(basename, filepath.Ext(basename))
-		t.Run(testName, func(t *testing.T) {
-			t.Parallel()
-
-			// download record
-			err := downloader.DownloadRecording(s3Url.Host, basename, filename)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			params := makePlaybackParams(basename)
-			_ = os.RemoveAll(params.RecordingDir)
-			_ = os.MkdirAll(params.RecordingDir, 0755)
-			deCompressRecordings(filename, params.RecordingDir, params)
-			handler, _ := getBasicHandlerPlayback(t, params)
-			DoTestRun(handler, false, 1.0, t, params)
-		})
-	}
-}
-
-func TestMain(m *testing.M) {
-	var err error
-	var closer func()
-	pool, err = dockertest.NewPool("")
-	if err != nil {
-		log.Fatalf("Could not connect to Docker: %s", err)
-	}
-	databaseURI, closer = testutil.GetDBInstance(pool)
-	code := m.Run()
-	closer() // cleanup
-	os.Exit(code)
-}
-
-func (m *mockCollector) CollectMetadata(*stats.Metadata) {}
-
-func (m *mockCollector) CollectEvent(string, string) {}
-
-func (m *mockCollector) SetInstallationID(string) {}
-
-func (m *mockCollector) Close() {}
-
-func getBasicHandlerPlayback(t *testing.T, params *PlaybackParams) (http.Handler, *dependencies) {
-	authService := newGatewayAuthFromFile(t, params.RecordingDir)
-	return getBasicHandler(t, authService)
-}
-
-func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (http.Handler, *dependencies) {
+func getBasicHandler(t *testing.T, authService *FakeAuthService, repoName string) (http.Handler, *dependencies) {
 	ctx := context.Background()
-	IdTranslator = &testutil.UploadIDTranslator{TransMap: make(map[string]string),
+	idTranslator := &testutil.UploadIDTranslator{TransMap: make(map[string]string),
 		ExpectedID: "",
 		T:          t,
 	}
@@ -131,7 +53,7 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 	multipartsTracker := multiparts.NewTracker(conn)
 
 	blockstoreType, _ := os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
-	blockAdapter := testutil.NewBlockAdapterByType(t, IdTranslator, blockstoreType)
+	blockAdapter := testutil.NewBlockAdapterByType(t, idTranslator, blockstoreType)
 
 	t.Cleanup(func() {
 		_ = c.Close()
@@ -142,11 +64,10 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 		storageNamespace = "replay"
 	}
 
-	// keeping the name 'master' and not 'main' below as the recordings point to that
-	_, err = c.CreateRepository(ctx, ReplayRepositoryName, storageNamespace, "master")
+	_, err = c.CreateRepository(ctx, repoName, storageNamespace, "main")
 	testutil.Must(t, err)
 
-	handler := gateway.NewHandler(authService.Region, c, multipartsTracker, blockAdapter, authService, []string{authService.BareDomain}, &mockCollector{}, nil, false)
+	handler := gateway.NewHandler(authService.Region, c, multipartsTracker, blockAdapter, authService, []string{authService.BareDomain}, &mockCollector{}, nil, true)
 
 	return handler, &dependencies{
 		blocks:  blockAdapter,
@@ -155,59 +76,55 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 	}
 }
 
-func newGatewayAuthFromFile(t *testing.T, directory string) *simulator.PlayBackMockConf {
-	m := new(simulator.PlayBackMockConf)
-	fName := filepath.Join(directory, simulator.SimulationConfig)
-	confStr, err := os.ReadFile(fName)
+func TestMain(m *testing.M) {
+	var err error
+	var closer func()
+	pool, err = dockertest.NewPool("")
 	if err != nil {
-		t.Fatal(fName + " not found\n")
+		logging.Default().Fatalf("Could not connect to Docker: %s", err)
 	}
-	err = json.Unmarshal(confStr, m)
-	if err != nil {
-		t.Fatalf("Failed to unmarshal configuration: %s", err.Error())
-	}
-	return m
+	databaseURI, closer = testutil.GetDBInstance(pool)
+	code := m.Run()
+	closer() // cleanup
+	os.Exit(code)
 }
 
-func deCompressRecordings(archive, dir string, params *PlaybackParams) {
-	// Open a zip archive for reading.
-	r, err := zip.OpenReader(archive)
-	if err != nil {
-		logging.Default().WithError(err).Fatal("could not decompress archive " + archive)
-	}
-	defer func() {
-		_ = r.Close()
-	}()
-
-	// Iterate through the files in the archive,
-	// copy to temporary recordings directory
-	for _, f := range r.File {
-		// skip directories
-		if f.FileInfo().IsDir() {
-			continue
-		}
-		decompressRecordingsFile(f, params)
-	}
+type FakeAuthService struct {
+	BareDomain      string `json:"bare_domain"`
+	AccessKeyID     string `json:"access_key_id"`
+	SecretAccessKey string `json:"access_secret_key"`
+	UserID          int64  `json:"user_id"`
+	Region          string `json:"region"`
 }
 
-func decompressRecordingsFile(f *zip.File, params *PlaybackParams) {
-	compressedFile, err := f.Open()
-	if err != nil {
-		logging.Default().WithError(err).Fatal("Couldn't read from archive file " + f.Name)
+func (m *FakeAuthService) GetCredentials(_ context.Context, accessKey string) (*model.Credential, error) {
+	if accessKey != m.AccessKeyID {
+		logging.Default().Fatal("access key in recording different than configuration")
 	}
-	defer func() {
-		_ = compressedFile.Close()
-	}()
-	fileName := filepath.Join(params.RecordingDir, filepath.Base(f.Name))
-	decompressedFile, err := os.Create(fileName)
-	if err != nil {
-		logging.Default().WithError(err).Fatal("failed creating file " + f.Name)
-	}
-	defer func() {
-		_ = decompressedFile.Close()
-	}()
-	_, err = io.Copy(decompressedFile, compressedFile)
-	if err != nil {
-		logging.Default().WithError(err).Fatal("failed copying file " + f.Name)
-	}
+	aCred := new(model.Credential)
+	aCred.AccessKeyID = accessKey
+	aCred.SecretAccessKey = m.SecretAccessKey
+	aCred.UserID = m.UserID
+	return aCred, nil
 }
+
+func (m *FakeAuthService) GetUserByID(ctx context.Context, userID int64) (*model.User, error) {
+	return &model.User{
+		CreatedAt: time.Now(),
+		Username:  "user",
+	}, nil
+}
+
+func (m *FakeAuthService) Authorize(_ context.Context, req *auth.AuthorizationRequest) (*auth.AuthorizationResponse, error) {
+	return &auth.AuthorizationResponse{Allowed: true}, nil
+}
+
+type mockCollector struct{}
+
+func (m *mockCollector) CollectMetadata(*stats.Metadata) {}
+
+func (m *mockCollector) CollectEvent(string, string) {}
+
+func (m *mockCollector) SetInstallationID(string) {}
+
+func (m *mockCollector) Close() {}
