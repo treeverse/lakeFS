@@ -107,11 +107,10 @@ overwrite modes: an entire previous table will be deleted on write.
   occur on the subtree.
 * **In-place updates** work: the old objects are deleted and replaced by new
   objects.  This is true regardess of partitioning etc.
-* **Multiple writers** are detected and the first fails.  The first to
-  HOC-commit succeeds.  But all the others fail: they deleted the same
-  previous files, or created a conflicting file (at least their `_SUCCESS`
-  indicator).  So their lakeFS merge fails due to a conflict with the first
-  (successful) merge.
+* **Multiple writers** are detected and the first to HOC-commit succeeds.
+  But all the others fail: they deleted the same previous files, or created
+  a conflicting file (at least their `_SUCCESS` indicator).  So their lakeFS
+  merge fails due to a conflict with the first (successful) merge.
 * (Conflicting) **non-OutputCommitter writes are detected** and clearly
   handled.  As long as other writes create _one_ object with an overlapping
   name the merge will fail.  So LakeFSOutputCommitter can achieve its
