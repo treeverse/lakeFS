@@ -2,11 +2,7 @@ package multiparts
 
 import (
 	"context"
-	"database/sql/driver"
-	"encoding/json"
 	"errors"
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/kv"
@@ -32,28 +28,6 @@ type MultipartUpload struct {
 	Metadata Metadata `db:"metadata"`
 	// ContentType Original file's content-type
 	ContentType string `db:"content_type"`
-}
-
-func (m Metadata) Set(k, v string) {
-	m[strings.ToLower(k)] = v
-}
-
-func (m Metadata) Get(k string) string {
-	return m[strings.ToLower(k)]
-}
-func (m Metadata) Value() (driver.Value, error) {
-	return json.Marshal(m)
-}
-
-func (m *Metadata) Scan(src interface{}) error {
-	if src == nil {
-		return nil
-	}
-	data, ok := src.([]byte)
-	if !ok {
-		return ErrInvalidMetadataSrcFormat
-	}
-	return json.Unmarshal(data, m)
 }
 
 type Tracker interface {
@@ -108,7 +82,7 @@ func (m *tracker) Create(ctx context.Context, multipart MultipartUpload) error {
 	if err == nil {
 		return ErrAlreadyExists
 	}
-	path := multipartPrefix + kv.PathDelimiter + multipart.UploadID
+	path := kv.NewPath(multipartPrefix, multipart.UploadID)
 	err = m.store.SetMsg(ctx, path, protoFromMultipart(&multipart))
 	return err
 }
@@ -118,7 +92,7 @@ func (m *tracker) Get(ctx context.Context, uploadID string) (*MultipartUpload, e
 		return nil, ErrInvalidUploadID
 	}
 	data := &MultipartUploadData{}
-	path := multipartPrefix + kv.PathDelimiter + uploadID
+	path := kv.NewPath(multipartPrefix, uploadID)
 	err := m.store.GetMsg(ctx, path, data)
 	if err != nil {
 		return nil, err
@@ -134,8 +108,8 @@ func (m *tracker) Delete(ctx context.Context, uploadID string) error {
 		if errors.Is(err, kv.ErrNotFound) {
 			return ErrMultipartUploadNotFound
 		}
-		return fmt.Errorf("failed on Get. Key (%s): %w", uploadID, err)
+		return err
 	}
-	path := multipartPrefix + kv.PathDelimiter + uploadID
+	path := kv.NewPath(multipartPrefix, uploadID)
 	return m.store.Delete(ctx, path)
 }

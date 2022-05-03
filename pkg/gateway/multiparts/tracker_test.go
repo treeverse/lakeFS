@@ -85,7 +85,7 @@ func testTrackerGet(t *testing.T, tracker multiparts.Tracker) {
 				t.Errorf("Get() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !tt.wantErr {
+			if err == nil {
 				got.CreationDate = got.CreationDate.UTC() // deepEqual workaround for time
 			}
 			if !reflect.DeepEqual(got, tt.want) {

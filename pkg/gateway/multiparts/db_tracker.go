@@ -2,9 +2,34 @@ package multiparts
 
 import (
 	"context"
+	"database/sql/driver"
+	"encoding/json"
+	"strings"
 
 	"github.com/treeverse/lakefs/pkg/db"
 )
+
+func (m Metadata) Set(k, v string) {
+	m[strings.ToLower(k)] = v
+}
+
+func (m Metadata) Get(k string) string {
+	return m[strings.ToLower(k)]
+}
+func (m Metadata) Value() (driver.Value, error) {
+	return json.Marshal(m)
+}
+
+func (m *Metadata) Scan(src interface{}) error {
+	if src == nil {
+		return nil
+	}
+	data, ok := src.([]byte)
+	if !ok {
+		return ErrInvalidMetadataSrcFormat
+	}
+	return json.Unmarshal(data, m)
+}
 
 type dbTracker struct {
 	db db.Database
