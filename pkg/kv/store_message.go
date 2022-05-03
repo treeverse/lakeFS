@@ -55,7 +55,7 @@ func (s *StoreMessage) Delete(ctx context.Context, path string) error {
 	return s.Store.Delete(ctx, []byte(path))
 }
 
-// TODO: niro - implement Scan when required
+// TODO(niro): implement Scan when required
 
 func (s *StoreMessage) Close() {
 	s.Store.Close()
