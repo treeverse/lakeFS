@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/cmd/lakectl/cmd/store"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/ingest/store"
 )
 
 const ingestSummaryTemplate = `
@@ -69,7 +69,14 @@ var ingestCmd = &cobra.Command{
 			path = path + PathDelimiter // append a path delimiter (slash) if not passed by the user, and it's not an empty path in lakeFS
 		}
 		go func() {
-			err := store.Walk(ctx, s3EndpointURL, from, func(e store.ObjectStoreEntry) error {
+			walker, err := store.NewFactory(nil).GetWalker(ctx, store.WalkerOptions{
+				S3EndpointURL: s3EndpointURL,
+				StorageURI:    from,
+			})
+			if err != nil {
+				DieFmt("error creating object-store walker: %v", err)
+			}
+			err = walker.Walk(ctx, store.WalkOptions{}, func(e store.ObjectStoreEntry) error {
 				if dryRun {
 					Fmt("%s\n", e)
 					return nil

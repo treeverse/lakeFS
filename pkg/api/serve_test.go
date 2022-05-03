@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/ingest/store"
+
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/actions"
@@ -71,7 +73,7 @@ func createDefaultAdminUser(t testing.TB, clt api.ClientWithResponsesInterface) 
 	}
 }
 
-func setupHandler(t testing.TB, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
+func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
 	t.Helper()
 	ctx := context.Background()
 	conn, handlerDatabaseURI := testutil.GetDB(t, databaseURI, opts...)
@@ -80,8 +82,9 @@ func setupHandler(t testing.TB, opts ...testutil.GetDBOption) (http.Handler, *de
 	testutil.MustDo(t, "config", err)
 	// Do not validate invalid config (missing required fields).
 	c, err := catalog.New(ctx, catalog.Config{
-		Config: cfg,
-		DB:     conn,
+		Config:        cfg,
+		DB:            conn,
+		WalkerFactory: factory,
 	})
 	testutil.MustDo(t, "build catalog", err)
 
@@ -121,6 +124,10 @@ func setupHandler(t testing.TB, opts ...testutil.GetDBOption) (http.Handler, *de
 		catalog:     c,
 		collector:   collector,
 	}
+}
+
+func setupHandler(t testing.TB, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
+	return setupHandlerWithWalkerFactory(t, store.NewFactory(nil), opts...)
 }
 
 func setupClientByEndpoint(t testing.TB, endpointURL string, accessKeyID, secretAccessKey string) api.ClientWithResponsesInterface {
@@ -165,7 +172,12 @@ func shouldUseServerTimeout() bool {
 
 func setupClientWithAdmin(t testing.TB, opts ...testutil.GetDBOption) (api.ClientWithResponsesInterface, *dependencies) {
 	t.Helper()
-	handler, deps := setupHandler(t, opts...)
+	return setupClientWithAdminAndWalkerFactory(t, store.NewFactory(nil), opts...)
+}
+
+func setupClientWithAdminAndWalkerFactory(t testing.TB, factory catalog.WalkerFactory, opts ...testutil.GetDBOption) (api.ClientWithResponsesInterface, *dependencies) {
+	t.Helper()
+	handler, deps := setupHandlerWithWalkerFactory(t, factory, opts...)
 	server := setupServer(t, handler)
 	clt := setupClientByEndpoint(t, server.URL, "", "")
 	cred := createDefaultAdminUser(t, clt)

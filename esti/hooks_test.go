@@ -23,7 +23,7 @@ var actions embed.FS
 func TestHooksSuccess(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	parseAndUploadActions(t, ctx, repo, mainBranch)
-	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, api.CommitJSONRequestBody{
+	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &api.CommitParams{}, api.CommitJSONRequestBody{
 		Message: "Initial content",
 	})
 	require.NoError(t, err, "failed to commit initial content")
@@ -83,7 +83,7 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string) {
 	require.Equal(t, http.StatusCreated, resp.StatusCode())
 
 	t.Log("Commit content", branch)
-	commitResp, err := client.CommitWithResponse(ctx, repo, branch, api.CommitJSONRequestBody{
+	commitResp, err := client.CommitWithResponse(ctx, repo, branch, &api.CommitParams{}, api.CommitJSONRequestBody{
 		Message: "Initial content",
 	})
 	require.NoError(t, err, "failed to commit initial content")

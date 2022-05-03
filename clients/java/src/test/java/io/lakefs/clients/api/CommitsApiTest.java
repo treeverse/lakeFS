@@ -48,7 +48,8 @@ public class CommitsApiTest {
         String repository = null;
         String branch = null;
         CommitCreation commitCreation = null;
-                Commit response = api.commit(repository, branch, commitCreation);
+        String sourceMetarange = null;
+                Commit response = api.commit(repository, branch, commitCreation, sourceMetarange);
         // TODO: test validations
     }
     

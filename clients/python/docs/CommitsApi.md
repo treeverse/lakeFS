@@ -69,11 +69,21 @@ with lakefs_client.ApiClient(configuration) as api_client:
         },
         date=1,
     ) # CommitCreation | 
+    source_metarange = "source_metarange_example" # str | The source metarange to commit. Branch must not have uncommitted changes. (optional)
 
     # example passing only required values which don't have defaults set
     try:
         # create commit
         api_response = api_instance.commit(repository, branch, commit_creation)
+        pprint(api_response)
+    except lakefs_client.ApiException as e:
+        print("Exception when calling CommitsApi->commit: %s\n" % e)
+
+    # example passing only required values which don't have defaults set
+    # and optional values
+    try:
+        # create commit
+        api_response = api_instance.commit(repository, branch, commit_creation, source_metarange=source_metarange)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling CommitsApi->commit: %s\n" % e)
@@ -87,6 +97,7 @@ Name | Type | Description  | Notes
  **repository** | **str**|  |
  **branch** | **str**|  |
  **commit_creation** | [**CommitCreation**](CommitCreation.md)|  |
+ **source_metarange** | **str**| The source metarange to commit. Branch must not have uncommitted changes. | [optional]
 
 ### Return type
 

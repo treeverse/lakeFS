@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/cmd/lakectl/cmd/store"
+	"github.com/treeverse/lakefs/pkg/ingest/store"
 )
 
 // Currently, this test accesses the following bucket, and so AWS should be configured to allow it
@@ -20,10 +20,16 @@ func TestS3Walk(t *testing.T) {
 	const expectedNumObjs = 2100
 	numObjs := 0
 
-	store.Walk(context.Background(), "", IngestTestBucketPath, func(e store.ObjectStoreEntry) error {
+	walker, err := store.NewFactory(nil).GetWalker(context.Background(), store.WalkerOptions{
+		S3EndpointURL: "",
+		StorageURI:    IngestTestBucketPath,
+	})
+	require.NoError(t, err)
+	err = walker.Walk(context.Background(), store.WalkOptions{}, func(e store.ObjectStoreEntry) error {
 		numObjs++
 		return nil
 	})
 
+	require.NoError(t, err)
 	require.Equal(t, expectedNumObjs, numObjs, "Wrong number of objects detected by Walk function")
 }

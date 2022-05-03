@@ -62,6 +62,7 @@ public class CommitsApi {
      * @param repository  (required)
      * @param branch  (required)
      * @param commitCreation  (required)
+     * @param sourceMetarange The source metarange to commit. Branch must not have uncommitted changes. (optional)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -76,7 +77,7 @@ public class CommitsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call commitCall(String repository, String branch, CommitCreation commitCreation, final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call commitCall(String repository, String branch, CommitCreation commitCreation, String sourceMetarange, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = commitCreation;
 
         // create path and map variables
@@ -89,6 +90,10 @@ public class CommitsApi {
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
         Map<String, String> localVarCookieParams = new HashMap<String, String>();
         Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        if (sourceMetarange != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("source_metarange", sourceMetarange));
+        }
 
         final String[] localVarAccepts = {
             "application/json"
@@ -109,7 +114,7 @@ public class CommitsApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call commitValidateBeforeCall(String repository, String branch, CommitCreation commitCreation, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call commitValidateBeforeCall(String repository, String branch, CommitCreation commitCreation, String sourceMetarange, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'repository' is set
         if (repository == null) {
@@ -127,7 +132,7 @@ public class CommitsApi {
         }
         
 
-        okhttp3.Call localVarCall = commitCall(repository, branch, commitCreation, _callback);
+        okhttp3.Call localVarCall = commitCall(repository, branch, commitCreation, sourceMetarange, _callback);
         return localVarCall;
 
     }
@@ -138,6 +143,7 @@ public class CommitsApi {
      * @param repository  (required)
      * @param branch  (required)
      * @param commitCreation  (required)
+     * @param sourceMetarange The source metarange to commit. Branch must not have uncommitted changes. (optional)
      * @return Commit
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -151,8 +157,8 @@ public class CommitsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public Commit commit(String repository, String branch, CommitCreation commitCreation) throws ApiException {
-        ApiResponse<Commit> localVarResp = commitWithHttpInfo(repository, branch, commitCreation);
+    public Commit commit(String repository, String branch, CommitCreation commitCreation, String sourceMetarange) throws ApiException {
+        ApiResponse<Commit> localVarResp = commitWithHttpInfo(repository, branch, commitCreation, sourceMetarange);
         return localVarResp.getData();
     }
 
@@ -162,6 +168,7 @@ public class CommitsApi {
      * @param repository  (required)
      * @param branch  (required)
      * @param commitCreation  (required)
+     * @param sourceMetarange The source metarange to commit. Branch must not have uncommitted changes. (optional)
      * @return ApiResponse&lt;Commit&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -175,8 +182,8 @@ public class CommitsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<Commit> commitWithHttpInfo(String repository, String branch, CommitCreation commitCreation) throws ApiException {
-        okhttp3.Call localVarCall = commitValidateBeforeCall(repository, branch, commitCreation, null);
+    public ApiResponse<Commit> commitWithHttpInfo(String repository, String branch, CommitCreation commitCreation, String sourceMetarange) throws ApiException {
+        okhttp3.Call localVarCall = commitValidateBeforeCall(repository, branch, commitCreation, sourceMetarange, null);
         Type localVarReturnType = new TypeToken<Commit>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
@@ -187,6 +194,7 @@ public class CommitsApi {
      * @param repository  (required)
      * @param branch  (required)
      * @param commitCreation  (required)
+     * @param sourceMetarange The source metarange to commit. Branch must not have uncommitted changes. (optional)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -201,9 +209,9 @@ public class CommitsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call commitAsync(String repository, String branch, CommitCreation commitCreation, final ApiCallback<Commit> _callback) throws ApiException {
+    public okhttp3.Call commitAsync(String repository, String branch, CommitCreation commitCreation, String sourceMetarange, final ApiCallback<Commit> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = commitValidateBeforeCall(repository, branch, commitCreation, _callback);
+        okhttp3.Call localVarCall = commitValidateBeforeCall(repository, branch, commitCreation, sourceMetarange, _callback);
         Type localVarReturnType = new TypeToken<Commit>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
