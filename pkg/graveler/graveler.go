@@ -329,7 +329,7 @@ type CommitParams struct {
 	// Date (Unix Epoch in seconds) is used to override commits creation date
 	Date     *int64
 	Metadata Metadata
-	// If SourceMetaRange exists, use it directly. Fail if branch has uncommitted changes
+	// SourceMetaRange - If exists, use it directly. Fail if branch has uncommitted changes
 	SourceMetaRange *MetaRangeID
 }
 

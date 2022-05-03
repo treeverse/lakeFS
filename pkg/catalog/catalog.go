@@ -1235,7 +1235,12 @@ func (c *Catalog) GetRange(ctx context.Context, repositoryID, rangeID string) (g
 }
 
 func (c *Catalog) WriteRange(ctx context.Context, repositoryID, fromSourceURI, prepend, after, continuationToken string) (*graveler.RangeInfo, *Mark, error) {
-	it, err := NewWalkEntryIterator(ctx, c.walkerFactory, fromSourceURI, prepend, after, continuationToken)
+	walker, err := c.walkerFactory.GetWalker(ctx, store.WalkerOptions{StorageURI: fromSourceURI})
+	if err != nil {
+		return nil, nil, fmt.Errorf("creating object-store walker: %w", err)
+	}
+
+	it, err := NewWalkEntryIterator(ctx, walker, prepend, after, continuationToken)
 	if err != nil {
 		return nil, nil, fmt.Errorf("creating walk iterator: %w", err)
 	}

@@ -559,6 +559,7 @@ func TestController_CommitHandler(t *testing.T) {
 
 		require.NoError(t, err)
 		require.Equal(t, http.StatusBadRequest, resp.StatusCode())
+		require.NotNil(t, resp.JSON400)
 		require.Contains(t, resp.JSON400.Message, graveler.ErrCommitMetaRangeDirtyBranch.Error())
 	})
 

@@ -3,7 +3,6 @@ package catalog
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/treeverse/lakefs/pkg/ingest/store"
@@ -38,7 +37,7 @@ var (
 	errSeekGENotSupported = errors.New("SeekGE not supported for walk entry iterator")
 )
 
-// buffer size of the buffer between reading entries from the blockstore Walk and passing it on
+// bufferSize - buffer size of the buffer between reading entries from the blockstore Walk and passing it on
 const bufferSize = 100
 
 // WalkerFactory provides an abstraction for creating Walker
@@ -46,26 +45,21 @@ type WalkerFactory interface {
 	GetWalker(ctx context.Context, opts store.WalkerOptions) (*store.WalkerWrapper, error)
 }
 
-func NewWalkEntryIterator(ctx context.Context, factory WalkerFactory, fromSourceURI, prepend, after, continuationToken string) (*walkEntryIterator, error) {
+func NewWalkEntryIterator(ctx context.Context, walker *store.WalkerWrapper, prepend, after, continuationToken string) (*walkEntryIterator, error) {
 	if prepend != "" && !strings.HasSuffix(prepend, "/") {
 		prepend += "/"
 	}
 
 	it := walkEntryIterator{
 		entries: make(chan EntryWithMarker, bufferSize),
-
-		done:   make(chan bool),
-		closed: atomic.NewBool(false),
-		err:    atomic.NewError(nil),
+		walker:  walker,
+		done:    make(chan bool),
+		closed:  atomic.NewBool(false),
+		err:     atomic.NewError(nil),
 	}
-	var err error
-	it.walker, err = factory.GetWalker(ctx, store.WalkerOptions{StorageURI: fromSourceURI})
-	if err != nil {
-		return nil, fmt.Errorf("creating object-store walker: %w", err)
-	}
-
 	go func() {
 		defer close(it.done)
+		defer close(it.entries)
 
 		err := it.walker.Walk(ctx, store.WalkOptions{
 			After:             after,
@@ -94,7 +88,6 @@ func NewWalkEntryIterator(ctx context.Context, factory WalkerFactory, fromSource
 		if !errors.Is(err, ErrItClosed) {
 			it.err.Store(err)
 		}
-		close(it.entries)
 	}()
 
 	return &it, nil

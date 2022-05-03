@@ -2,13 +2,13 @@ package catalog_test
 
 import (
 	"context"
+	"net/url"
 	"testing"
 
-	"github.com/treeverse/lakefs/pkg/catalog"
-
-	"github.com/treeverse/lakefs/pkg/catalog/testutils"
-
 	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pkg/catalog"
+	"github.com/treeverse/lakefs/pkg/catalog/testutils"
+	"github.com/treeverse/lakefs/pkg/ingest/store"
 )
 
 const (
@@ -39,7 +39,8 @@ func TestWalkEntryIterator(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			w := testutils.NewFakeWalker(count, tt.max, uriPrefix, after, continuationToken, fromSourceURIWithPrefix, nil)
-			sut, err := catalog.NewWalkEntryIterator(context.Background(), testutils.FakeFactory{Walker: w}, fromSourceURIWithPrefix, prepend, after, continuationToken)
+			url, _ := url.Parse(fromSourceURIWithPrefix)
+			sut, err := catalog.NewWalkEntryIterator(context.Background(), store.NewWrapper(w, url), prepend, after, continuationToken)
 			require.NoError(t, err, "creating walk entry iterator")
 			require.NotNil(t, sut)
 
