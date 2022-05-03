@@ -20,7 +20,7 @@ func setupTest(t *testing.T, method, target string, body io.Reader) *http.Respon
 		SecretAccessKey: "MockAccessSecretKey",
 		UserID:          1,
 		Region:          "MockRegion",
-	}, repoName)
+	}, databaseURI, repoName)
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(method, target, body)
 	req.Header["Content-Type"] = []string{"text/tab - separated - values"}

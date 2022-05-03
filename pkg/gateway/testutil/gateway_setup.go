@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ory/dockertest/v3"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
@@ -27,12 +26,7 @@ type Dependencies struct {
 	catalog *catalog.Catalog
 }
 
-var (
-	pool        *dockertest.Pool
-	databaseURI string
-)
-
-func GetBasicHandler(t *testing.T, authService *FakeAuthService, repoName string) (http.Handler, *Dependencies) {
+func GetBasicHandler(t *testing.T, authService *FakeAuthService, databaseURI string, repoName string) (http.Handler, *Dependencies) {
 	ctx := context.Background()
 	idTranslator := &testutil.UploadIDTranslator{TransMap: make(map[string]string),
 		ExpectedID: "",
@@ -74,19 +68,6 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, repoName string
 		auth:    authService,
 		catalog: c,
 	}
-}
-
-func TestMain(m *testing.M) {
-	var err error
-	var closer func()
-	pool, err = dockertest.NewPool("")
-	if err != nil {
-		logging.Default().Fatalf("Could not connect to Docker: %s", err)
-	}
-	databaseURI, closer = testutil.GetDBInstance(pool)
-	code := m.Run()
-	closer() // cleanup
-	os.Exit(code)
 }
 
 type FakeAuthService struct {
