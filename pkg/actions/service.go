@@ -215,7 +215,7 @@ func (s *Service) runTasks(ctx context.Context, record graveler.HookRecord, task
 					// wrap error with more information and return
 					task.Err = fmt.Errorf("hook run id '%s' failed on action '%s' hook '%s': %w",
 						task.HookRunID, task.Action.Name, task.HookID, task.Err)
-					_, _ = fmt.Fprint(&buf, task.Err)
+					_, _ = fmt.Fprintf(&buf, "%s\n", task.Err)
 				}
 				err := hookOutputWriter.OutputWrite(ctx, &buf, int64(buf.Len()))
 				if err != nil {
