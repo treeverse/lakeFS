@@ -197,9 +197,18 @@ jobs:
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
 
-      - name: Package Spark App
-        working-directory: test/spark/app
-        run: sbt sonnets-311/package
+      - name: Copy a file from s3
+        uses: prewk/s3-cp-action@v2
+        with:
+          source: 's3://yoni-test3/gencode/sonnets-311_2.12-0.1.0.jar'
+          dest: '/home/runner/work/lakeFS/lakeFS/test/spark/app/'
+          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - uses: vemonet/setup-spark@v1
+        with:
+          spark-version: '3.2.1'
+          hadoop-version: 3.2
 
       - name: Generate uniquifying value
         id: unique
