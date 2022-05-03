@@ -211,19 +211,20 @@ func (s *Service) runTasks(ctx context.Context, record graveler.HookRecord, task
 
 				s.stats.CollectEvent("actions_service", string(record.EventType))
 
-				if task.Err != nil { 
-				// log error in buffer
-					// wrap error with more information and return
+				if task.Err != nil {
+					_, _ = fmt.Fprintf(&buf, "Error: %s\n", task.Err)
+					// wrap error with more information
 					task.Err = fmt.Errorf("hook run id '%s' failed on action '%s' hook '%s': %w",
 						task.HookRunID, task.Action.Name, task.HookID, task.Err)
-					_, _ = fmt.Fprintf(&buf, "%s\n", task.Err)
 				}
+
 				err := hookOutputWriter.OutputWrite(ctx, &buf, int64(buf.Len()))
 				if err != nil {
-					return fmt.Errorf("failed to write action log. %w", err)
+					return fmt.Errorf("failed to write action log. Run id '%s' action '%s' hook '%s': %w",
+						task.HookRunID, task.Action.Name, task.HookID, err)
 				}
-				if task.Err != nil { 
-				// stop execution of tasks and return error
+				if task.Err != nil {
+					// stop execution of tasks and return error
 					return task.Err
 				}
 			}
