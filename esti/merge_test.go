@@ -22,7 +22,7 @@ func TestMergeAndList(t *testing.T) {
 	}
 
 	logger.WithField("branch", mainBranch).Info("Commit initial content")
-	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, api.CommitJSONRequestBody{Message: "Initial content"})
+	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &api.CommitParams{}, api.CommitJSONRequestBody{Message: "Initial content"})
 	require.NoError(t, err, "failed to commit initial content")
 	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
 
@@ -59,7 +59,7 @@ func doMergeAndListIteration(t *testing.T, logger logging.Logger, ctx context.Co
 	const totalFiles = addedFiles + 1
 
 	logger.WithField("iteration", iteration).Info("Commit uploaded files")
-	commitResp, err := client.CommitWithResponse(ctx, repo, branch, api.CommitJSONRequestBody{
+	commitResp, err := client.CommitWithResponse(ctx, repo, branch, &api.CommitParams{}, api.CommitJSONRequestBody{
 		Message: fmt.Sprintf("Adding %d files", addedFiles),
 	})
 	require.NoError(t, err, "failed to commit changes")

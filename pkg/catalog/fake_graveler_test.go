@@ -197,15 +197,11 @@ func (g *FakeGraveler) Commit(ctx context.Context, repositoryID graveler.Reposit
 	panic("implement me")
 }
 
-func WriteRange(ctx context.Context, ns graveler.StorageNamespace, it graveler.ValueIterator) (*graveler.RangeInfo, error) {
+func (g *FakeGraveler) WriteRange(ctx context.Context, repositoryID graveler.RepositoryID, it graveler.ValueIterator) (*graveler.RangeInfo, error) {
 	panic("implement me")
 }
 
-func WriteMetaRange(ctx context.Context, ns graveler.StorageNamespace, ranges []*graveler.RangeInfo) (*graveler.MetaRangeInfo, error) {
-	panic("implement me")
-}
-
-func WriteMetaRangeByIterator(ctx context.Context, repositoryID graveler.RepositoryID, it graveler.ValueIterator) (*graveler.MetaRangeID, error) {
+func (g *FakeGraveler) WriteMetaRange(ctx context.Context, repositoryID graveler.RepositoryID, ranges []*graveler.RangeInfo) (*graveler.MetaRangeInfo, error) {
 	panic("implement me")
 }
 

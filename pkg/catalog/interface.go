@@ -101,7 +101,7 @@ type Interface interface {
 	ResetEntry(ctx context.Context, repository, branch string, path string) error
 	ResetEntries(ctx context.Context, repository, branch string, prefix string) error
 
-	Commit(ctx context.Context, repository, branch, message, committer string, metadata Metadata, date *int64) (*CommitLog, error)
+	Commit(ctx context.Context, repository, branch, message, committer string, metadata Metadata, date *int64, sourceMetarange *string) (*CommitLog, error)
 	GetCommit(ctx context.Context, repository, reference string) (*CommitLog, error)
 	ListCommits(ctx context.Context, repository, branch string, params LogParams) ([]*CommitLog, bool, error)
 
@@ -126,6 +126,8 @@ type Interface interface {
 	GetMetaRange(ctx context.Context, repositoryID, metaRangeID string) (graveler.MetaRangeAddress, error)
 	GetRange(ctx context.Context, repositoryID, rangeID string) (graveler.RangeAddress, error)
 
+	WriteRange(ctx context.Context, repositoryID, fromSourceURI, prepend, after, continuationToken string) (*graveler.RangeInfo, *Mark, error)
+	WriteMetaRange(ctx context.Context, repositoryID string, ranges []*graveler.RangeInfo) (*graveler.MetaRangeInfo, error)
 	GetGarbageCollectionRules(ctx context.Context, repositoryID string) (*graveler.GarbageCollectionRules, error)
 	SetGarbageCollectionRules(ctx context.Context, repositoryID string, rules *graveler.GarbageCollectionRules) error
 	PrepareExpiredCommits(ctx context.Context, repositoryID string, previousRunID string) (*graveler.GarbageCollectionRunMetadata, error)

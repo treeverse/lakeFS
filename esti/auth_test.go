@@ -231,13 +231,13 @@ func newClientFromGroup(t *testing.T, context context.Context, logger logging.Lo
 func mergeAuthTest(t *testing.T, cli *api.ClientWithResponses, ctx context.Context, repo string, branch string) (*api.MergeIntoBranchResponse, error) {
 	uploadFileRandomData(ctx, t, repo, mainBranch, "README", false)
 
-	resMainCommit, err := cli.CommitWithResponse(ctx, repo, mainBranch, api.CommitJSONRequestBody{Message: "Initial content"})
+	resMainCommit, err := cli.CommitWithResponse(ctx, repo, mainBranch, &api.CommitParams{}, api.CommitJSONRequestBody{Message: "Initial content"})
 	require.NoError(t, err, "failed to commit initial content in merge auth test")
 	require.Equal(t, http.StatusCreated, resMainCommit.StatusCode())
 
 	uploadFileRandomData(ctx, t, repo, branch, "foo.txt", false)
 
-	resBranchCommit, err := cli.CommitWithResponse(ctx, repo, branch, api.CommitJSONRequestBody{Message: "Additional content"})
+	resBranchCommit, err := cli.CommitWithResponse(ctx, repo, branch, &api.CommitParams{}, api.CommitJSONRequestBody{Message: "Additional content"})
 	require.NoError(t, err, "failed to commit additional content in merge auth test")
 	require.Equal(t, http.StatusCreated, resBranchCommit.StatusCode())
 

@@ -34,11 +34,16 @@ docs/GroupList.md
 docs/HealthCheckApi.md
 docs/HookRun.md
 docs/HookRunList.md
+docs/ImportApi.md
+docs/ImportPagination.md
+docs/IngestRangeCreationResponse.md
 docs/InlineObject1.md
 docs/LoginInformation.md
 docs/Merge.md
 docs/MergeResult.md
 docs/MergeResultSummary.md
+docs/MetaRangeCreation.md
+docs/MetaRangeCreationResponse.md
 docs/MetadataApi.md
 docs/ObjectError.md
 docs/ObjectErrorList.md
@@ -51,6 +56,7 @@ docs/Pagination.md
 docs/PathList.md
 docs/Policy.md
 docs/PolicyList.md
+docs/RangeMetadata.md
 docs/Ref.md
 docs/RefList.md
 docs/RefsApi.md
@@ -64,6 +70,7 @@ docs/RetentionApi.md
 docs/RevertCreation.md
 docs/Setup.md
 docs/SetupState.md
+docs/StageRangeCreation.md
 docs/StagingApi.md
 docs/StagingLocation.md
 docs/StagingMetadata.md
@@ -86,6 +93,7 @@ lakefs_client/api/branches_api.py
 lakefs_client/api/commits_api.py
 lakefs_client/api/config_api.py
 lakefs_client/api/health_check_api.py
+lakefs_client/api/import_api.py
 lakefs_client/api/metadata_api.py
 lakefs_client/api/objects_api.py
 lakefs_client/api/refs_api.py
@@ -125,11 +133,15 @@ lakefs_client/model/group_creation.py
 lakefs_client/model/group_list.py
 lakefs_client/model/hook_run.py
 lakefs_client/model/hook_run_list.py
+lakefs_client/model/import_pagination.py
+lakefs_client/model/ingest_range_creation_response.py
 lakefs_client/model/inline_object1.py
 lakefs_client/model/login_information.py
 lakefs_client/model/merge.py
 lakefs_client/model/merge_result.py
 lakefs_client/model/merge_result_summary.py
+lakefs_client/model/meta_range_creation.py
+lakefs_client/model/meta_range_creation_response.py
 lakefs_client/model/object_error.py
 lakefs_client/model/object_error_list.py
 lakefs_client/model/object_stage_creation.py
@@ -140,6 +152,7 @@ lakefs_client/model/pagination.py
 lakefs_client/model/path_list.py
 lakefs_client/model/policy.py
 lakefs_client/model/policy_list.py
+lakefs_client/model/range_metadata.py
 lakefs_client/model/ref.py
 lakefs_client/model/ref_list.py
 lakefs_client/model/refs_dump.py
@@ -150,6 +163,7 @@ lakefs_client/model/reset_creation.py
 lakefs_client/model/revert_creation.py
 lakefs_client/model/setup.py
 lakefs_client/model/setup_state.py
+lakefs_client/model/stage_range_creation.py
 lakefs_client/model/staging_location.py
 lakefs_client/model/staging_metadata.py
 lakefs_client/model/statement.py
@@ -203,11 +217,16 @@ test/test_group_list.py
 test/test_health_check_api.py
 test/test_hook_run.py
 test/test_hook_run_list.py
+test/test_import_api.py
+test/test_import_pagination.py
+test/test_ingest_range_creation_response.py
 test/test_inline_object1.py
 test/test_login_information.py
 test/test_merge.py
 test/test_merge_result.py
 test/test_merge_result_summary.py
+test/test_meta_range_creation.py
+test/test_meta_range_creation_response.py
 test/test_metadata_api.py
 test/test_object_error.py
 test/test_object_error_list.py
@@ -220,6 +239,7 @@ test/test_pagination.py
 test/test_path_list.py
 test/test_policy.py
 test/test_policy_list.py
+test/test_range_metadata.py
 test/test_ref.py
 test/test_ref_list.py
 test/test_refs_api.py
@@ -233,6 +253,7 @@ test/test_retention_api.py
 test/test_revert_creation.py
 test/test_setup.py
 test/test_setup_state.py
+test/test_stage_range_creation.py
 test/test_staging_api.py
 test/test_staging_location.py
 test/test_staging_metadata.py

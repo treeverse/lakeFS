@@ -10,6 +10,7 @@ import (
 
 	"github.com/Azure/azure-pipeline-go/pipeline"
 	"github.com/Azure/azure-storage-blob-go/azblob"
+	"github.com/go-openapi/swag"
 )
 
 var (
@@ -17,7 +18,7 @@ var (
 	ErrAzureCredentials = errors.New("azure credentials error")
 )
 
-func GetAzureClient() (pipeline.Pipeline, error) {
+func getAzureClient() (pipeline.Pipeline, error) {
 	// From the Azure portal, get your storage account name and key and set environment variables.
 	accountName, accountKey := os.Getenv("AZURE_STORAGE_ACCOUNT"), os.Getenv("AZURE_STORAGE_ACCESS_KEY")
 	if len(accountName) == 0 || len(accountKey) == 0 {
@@ -32,8 +33,16 @@ func GetAzureClient() (pipeline.Pipeline, error) {
 	return azblob.NewPipeline(credential, azblob.PipelineOptions{}), nil
 }
 
-type AzureBlobWalker struct {
+func NewAzureBlobWalker(svc pipeline.Pipeline) (*azureBlobWalker, error) {
+	return &azureBlobWalker{
+		client: svc,
+		mark:   Mark{HasMore: true},
+	}, nil
+}
+
+type azureBlobWalker struct {
 	client pipeline.Pipeline
+	mark   Mark
 }
 
 // extractAzurePrefix takes a URL that looks like this: https://storageaccount.blob.core.windows.net/container/prefix
@@ -58,20 +67,28 @@ func getAzureBlobURL(containerURL *url.URL, blobName string) *url.URL {
 	return containerURL.ResolveReference(&relativePath)
 }
 
-func (a *AzureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, walkFn func(e ObjectStoreEntry) error) error {
+func (a *azureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, op WalkOptions, walkFn func(e ObjectStoreEntry) error) error {
 	// we use bucket as container and prefix as path
 	containerURL, prefix, err := extractAzurePrefix(storageURI)
 	if err != nil {
 		return err
 	}
 	container := azblob.NewContainerURL(*containerURL, a.client)
-	for marker := (azblob.Marker{}); marker.NotDone(); {
-		listBlob, err := container.ListBlobsFlatSegment(ctx, marker, azblob.ListBlobsSegmentOptions{Prefix: prefix})
+	notDone := true
+	for marker := (azblob.Marker{Val: &op.ContinuationToken}); notDone; {
+		listBlob, err := container.ListBlobsFlatSegment(ctx, marker,
+			azblob.ListBlobsSegmentOptions{Prefix: prefix})
 		if err != nil {
 			return err
 		}
+		a.mark.ContinuationToken = swag.StringValue(marker.Val)
 		marker = listBlob.NextMarker
 		for _, blobInfo := range listBlob.Segment.BlobItems {
+			// skipping everything in the page which is before 'After' (without forgetting the possible empty string key!)
+			if op.After != "" && blobInfo.Name <= op.After {
+				continue
+			}
+			a.mark.LastKey = blobInfo.Name
 			if err := walkFn(ObjectStoreEntry{
 				FullKey:     blobInfo.Name,
 				RelativeKey: strings.TrimPrefix(blobInfo.Name, prefix),
@@ -83,6 +100,16 @@ func (a *AzureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, walkFn 
 				return err
 			}
 		}
+		notDone = marker.NotDone()
 	}
+
+	a.mark = Mark{
+		HasMore: false,
+	}
+
 	return nil
+}
+
+func (a *azureBlobWalker) Marker() Mark {
+	return a.mark
 }
