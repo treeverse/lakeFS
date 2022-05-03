@@ -39,6 +39,12 @@ type AuthorizationResponse struct {
 
 const InvalidUserID = -1
 
+type GatewayService interface {
+	GetCredentials(_ context.Context, accessKey string) (*model.Credential, error)
+	GetUserByID(ctx context.Context, userID int64) (*model.User, error)
+	Authorize(_ context.Context, req *AuthorizationRequest) (*AuthorizationResponse, error)
+}
+
 type Service interface {
 	SecretStore() crypt.SecretStore
 
