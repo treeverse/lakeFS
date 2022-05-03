@@ -9,9 +9,9 @@ redirect_from: ./downloads.html
 ## What is lakeFS
 {: .no_toc }  
 
-lakeFS transforms object storage buckets into data lake repositories that expose a git-like interface to data of any size.
+lakeFS transforms object storage buckets into data lake repositories that expose a Git-like interface to data of any size.
 
-This interface means users of lakeFS can use the same development workflows when working with data and working with code. Development in a data-intensive environment is enhanced by proven git workflows and designed lakeFS to enable them over data in an object store.
+This interface means users of lakeFS can use the same development workflows for code and data. Development in a data-intensive environment is enhanced by proven git workflows and we designed lakeFS to enable them over data in an object store.
 
 In this way, lakeFS brings a unique combination of performance and manageability to data lakes. *To learn more about applying git principles to data, [see here](https://lakefs.io/how-to-manage-your-data-the-way-you-manage-your-code/).*
 
@@ -88,12 +88,12 @@ Following this pattern, lakeFS facilitates a streamlined data deployment workflo
 lakeFS helps you maintain a tidy data lake in several other ways, including:
 
 #### Recovery from data errors
-Erroneous data that makes it into production is a newar inevitability given the complex and fast-moving nature of modern data pipelines. Similarly, critical data assets are liable to accidental deletion by poorly configured jobs or due to human errors.
+Erroneous data that makes it into production is an inevitability given the complex and fast-moving nature of modern data pipelines. Similarly, critical data assets are liable to accidental deletion by poorly configured jobs or due to human errors.
 
 Today, recovering from these events relies on periodic backups that 1) may be out of date and 2) require sifting through data at the object level. This process is inefficient and can take hours, days, or in some cases, weeks to complete.
 Recovering data in deletion events becomes an instant one-line operation with lakeFS using the ability to restore any historical commit.
 
-Reverting your data lake back to previous version using our command-line tool is explained [here](https://docs.lakefs.io/reference/commands.html#lakectl-branch-reset).
+Reverting your data lake back to previous version using our command-line tool is explained [here](https://docs.lakefs.io/reference/commands.html#lakectl-branch-revert).
 
 #### Data reprocessing and backfills
 
