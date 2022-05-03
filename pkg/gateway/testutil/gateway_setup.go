@@ -1,4 +1,4 @@
-package gateway_test
+package testutil
 
 import (
 	"context"
@@ -21,7 +21,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
-type dependencies struct {
+type Dependencies struct {
 	blocks  block.Adapter
 	auth    *FakeAuthService
 	catalog *catalog.Catalog
@@ -32,7 +32,7 @@ var (
 	databaseURI string
 )
 
-func getBasicHandler(t *testing.T, authService *FakeAuthService, repoName string) (http.Handler, *dependencies) {
+func GetBasicHandler(t *testing.T, authService *FakeAuthService, repoName string) (http.Handler, *Dependencies) {
 	ctx := context.Background()
 	idTranslator := &testutil.UploadIDTranslator{TransMap: make(map[string]string),
 		ExpectedID: "",
@@ -69,7 +69,7 @@ func getBasicHandler(t *testing.T, authService *FakeAuthService, repoName string
 
 	handler := gateway.NewHandler(authService.Region, c, multipartsTracker, blockAdapter, authService, []string{authService.BareDomain}, &mockCollector{}, nil, true)
 
-	return handler, &dependencies{
+	return handler, &Dependencies{
 		blocks:  blockAdapter,
 		auth:    authService,
 		catalog: c,

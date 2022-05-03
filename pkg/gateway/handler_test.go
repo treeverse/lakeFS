@@ -8,12 +8,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/treeverse/lakefs/pkg/gateway/testutil"
 )
 
 const repoName = "example"
 
 func setupTest(t *testing.T, method, target string, body io.Reader) *http.Response {
-	h, _ := getBasicHandler(t, &FakeAuthService{
+	h, _ := testutil.GetBasicHandler(t, &testutil.FakeAuthService{
 		BareDomain:      "example.com",
 		AccessKeyID:     "AKIAIO5FODNN7EXAMPLE",
 		SecretAccessKey: "MockAccessSecretKey",
