@@ -39,7 +39,7 @@
 * DB is used to track the start and end of a multipart upload. All DB accesses are done via `mutltiparts.Tracker`. Entries are created once, read-accesses multiple times and deleted upon completion
 * Currently unit tests cover correctness of DB accesses in both good and error paths.
 * 83.8% coverage
-* Currently system tests cover a simle multipart upload - a single object with 7 parts, good path only
+* Currently system tests cover a simple multipart upload - a single object with 7 parts, good path only
 * What is missing:
   * Performance - Can that sustain heavy loads: multi-multipart uploads with a lot of parts
   * Concurrency, that is derived from the previous bullet (can we increase concurrency by using smaller parts?)
