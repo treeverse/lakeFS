@@ -139,7 +139,7 @@ Learn more on how to incorporate hooks [here](./setup/hooks.md).
 * It minimizes data duplication via a copy-on-write mechanism
 * It maintains high performance over data lakes of any size
 * It includes configurable garbage collection capabilities
-* lakeFS is highly available and production ready
+* It is highly available and production ready
 
 <img src="{{ site.baseurl }}/assets/img/lakeFS_integration.png" alt="lakeFS integration into data lake" width="60%" height="60%" />
 
