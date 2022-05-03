@@ -11,9 +11,9 @@ redirect_from: ./downloads.html
 
 lakeFS transforms object storage buckets into data lake repositories that expose a Git-like interface to data of any size.
 
-This interface means users of lakeFS can use the same development workflows for code and data. Development in a data-intensive environment is enhanced by incorporating proven git workflows and we designed lakeFS to enable them over data in an object store.
+This interface means users of lakeFS can use the same development workflows for code and data. Adopting Git workflows greatly improved software development practices, and we designed lakeFS to bring the same benefits to data.
 
-In this way, lakeFS brings a unique combination of performance and manageability to data lakes. *To learn more about applying git principles to data, [see here](https://lakefs.io/how-to-manage-your-data-the-way-you-manage-your-code/).*
+In this way, lakeFS brings a unique combination of performance and manageability to data lakes. *To learn more about applying Git principles to data, [see here](https://lakefs.io/how-to-manage-your-data-the-way-you-manage-your-code/).*
 
 The open source lakeFS project supports AWS S3, Azure Blob Storage and Google Cloud Storage (GCS) as its underlying storage service. It is API compatible with S3 and integrates seamlessly with popular data frameworks such as Spark, Hive, dbt, Trino, and many others.
 
