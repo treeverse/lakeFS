@@ -13,7 +13,7 @@ lakeFS transforms object storage buckets into data lake repositories that expose
 
 This interface means users of lakeFS can use the same development workflows when working with data and working with code. Development in a data-intensive environment is enhanced by proven git workflows and designed lakeFS to enable them over data in an object store.
 
-In this way, lakeFS brings a unique combination of performance and manageability to data lakes. *To learn more about applying git to data, [see here](https://lakefs.io/how-to-manage-your-data-the-way-you-manage-your-code/).*
+In this way, lakeFS brings a unique combination of performance and manageability to data lakes. *To learn more about applying git principles to data, [see here](https://lakefs.io/how-to-manage-your-data-the-way-you-manage-your-code/).*
 
 The open source lakeFS project supports AWS S3, Azure Blob Storage and Google Cloud Storage (GCS) as its underlying storage service. It is API compatible with S3 and integrates seamlessly with popular data frameworks such as Spark, Hive, dbt, Trino, and many others.
 
@@ -55,7 +55,7 @@ Never again will you spend time doing the following tasks:
 
 * **Copying objects between prefixes to promote new data**
 * **Deleting specific objects to recover from data errors**
-* **Maintaining auxilliary jobs that hydrate a development environment with data**
+* **Maintaining auxilliary jobs that populate a development environment with data**
 
 If you execute any of these actions, adopting lakeFS will speed up development and deployment cycles, reduce the chance of incorrect data making it into production, and make it less painful in the event it does.
 
@@ -65,19 +65,19 @@ Through its versioning engine, lakeFS enables the following built-in operations 
 * **commit:** an immutable checkpoint containing a complete snapshot of a repository.
 * **merge:** performed between two branches –– merges atomically update one branch with the changes from another.
 * **revert:** return a repo to the exact state of a previous commit.
-* **tag:** an immutable pointer to a single commits with a readable name.
+* **tag:** an immutable pointer to a single commit with a readable name.
 
-*The full list of commands available through the CLI can be [found here](./resources/commands.md).*
+*See the [CLI reference](./resources/commands.md) for the full list of commands.*
 
 Incorporating these operations into your data lake pipelines provides the same collaboration and organizational benefits you get when managing application code with source control.
 
 ### The lakeFS promotion workflow
 
-To illustrate, we’ll show how lakeFS **branches** and **merges** improve the universal process of updating collections with the latest data.
+To illustrate, we’ll show how lakeFS *branches* and *merges* improve the universal process of updating collections with the latest data.
 
 <img src="{{ site.baseurl }}/assets/img/promotion_workflow.png" alt="lakeFS promotion workflow" width="60%" height="60%" />
 
-1. First, create a new **branch** sourced from main to instantly generate a complete copy of your production data.
+1. First, create a new **branch** from `main` to instantly generate a complete "copy" of your production data.
 2. Apply changes or make updates on the isolated branch to understand their impact prior to exposure.
 3. And finally, perform a **merge** from the feature branch back to main to atomically promote the updates into production.
 
@@ -88,7 +88,7 @@ Following this pattern, lakeFS facilitates a streamlined data deployment workflo
 lakeFS helps you maintain a tidy data lake in several other ways, including:
 
 #### Recovery from data errors
-Erroneous data that makes it into production is a newar inevitability given the complex and fast-moving nature of modern data pipelines. Similarly, critical data assets are liable to accidental deletion by poorly configured jobs or careless humans.
+Erroneous data that makes it into production is a newar inevitability given the complex and fast-moving nature of modern data pipelines. Similarly, critical data assets are liable to accidental deletion by poorly configured jobs or due to human errors.
 
 Today, recovering from these events relies on periodic backups that 1) may be out of date and 2) require sifting through data at the object level. This process is inefficient and can take hours, days, or in some cases, weeks to complete.
 Recovering data in deletion events becomes an instant one-line operation with lakeFS using the ability to restore any historical commit.
@@ -104,7 +104,7 @@ Occasionally, we might need to reprocess historical data. This can be due to sev
 
 This is tricky first and foremost because it often involves huge volumes of historical data. In addition, auditing requirements may necessitate keeping the old version of the data handy. 
 
-lakeFS allows you to manage the reprocess on an isolated branch before merging to ensure the reprocessed data is exposed atomically. It also allows you to easily access via a commit’s ID the different versions of reprocessed data.
+lakeFS allows you to manage the reprocess on an isolated branch before merging to ensure the reprocessed data is exposed atomically. It also allows you to easily access the different versions of reprocessed data, using a commit ID.
 
 #### Cross-collection consistency guarantees
 
@@ -125,11 +125,9 @@ To learn more on how to access a specific historical commit in a repository, see
 
 #### Establishing data quality guarantees
 
-The best way to deal with mistakes is to avoid them. A data source that is ingested into the lake introducing low-quality data should be blocked before exposure if possible.'
+The best way to deal with mistakes is to avoid them. A data source that is ingested into the lake introducing low-quality data should be blocked before exposure if possible.
 
-With lakeFS, you can achieve this by tieing data quality tests to commit and merge operations via lakeFS hooks.
-
-Learn more on how to incorporate hooks [here](./setup/hooks.md).
+With lakeFS, you can achieve this by tying data quality tests to commit and merge operations via lakeFS [hooks](./setup/hooks.md).
 
 
 ### Additional things you should know about lakeFS: 
