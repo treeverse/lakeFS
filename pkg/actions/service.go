@@ -222,7 +222,8 @@ func (s *Service) runTasks(ctx context.Context, record graveler.HookRecord, task
 				if err != nil {
 					return fmt.Errorf("failed to write action log. %w", err)
 				}
-				if task.Err != nil { // stop execution of tasks and return error
+				if task.Err != nil { 
+				// stop execution of tasks and return error
 					return task.Err
 				}
 			}
