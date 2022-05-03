@@ -6,14 +6,15 @@
 * Global tests to verify and benchmark the migration process
 * Need to verify that the system behavior is not affected by the move to the KV DB
 * [Question] - Do we need to dispose of these once migration to KV is globally completed?
+  * Yes. Migration code (and related tests) should be removed from the code, once the entire deployment of KV Store is done
 
 #### Operational Testing
 * Set of tests that will run DB migration as part of the test
 * Currently, system tests assume lakeFS is up and running. Need to add ability to perform migration in the middle of the test (stop lakeFS -> run&verify migration -> start lakeFS ?)
-* Maybe something that can be 
 
 #### Data Level Testing
-* Dump (all) data before and after migration and compare it
+**Note:** This section is on a "Nice to Have" basis, as it is pretty much covered by the previous section
+* ~~Dump~~ Extract (all) data before and after migration and compare it
 * Verifies data is preserved through migration, and is readable by the KV Store
 * Need to write appropriate dumpers. Can be done per package, as we go
 * Can be done both on DB package level, to verify the package itself, and on the using packages level, to verify data usage is not affected
@@ -32,11 +33,6 @@
   * Run with both Table DB and KV Store and compare the results
   * What is the accepted degradation, if any?
   * Need to consider various scales
-
-### Feature Flag
-* Dummy tests to verify the feature flag works as expected
-* Package level panic in case the wrong DB logic is used? Is that sufficient?
-
 ## Per Package DB Testing
 
 ### ```pkg/gateway/multiparts```
@@ -97,7 +93,7 @@ Updates are done for commitID, as part of `post` hooks
   * Migration tests
   * Comparison benchmark
 
-### Res-Dump/Restore
+### Ref-Dump/Restore
 Currently this functionality is not covered directly, but since it relies on '''pkg/graveler/ref''' for DB access, the DB migration should be seamless
 It can be leveraged, however, to extend the cover of '''pkg/graveler/ref''' and for performance, as it is quite exhaustive (traverses all branches and commits and tags, per repo)
 
@@ -105,9 +101,18 @@ It can be leveraged, however, to extend the cover of '''pkg/graveler/ref''' and 
 
 ### KVM1
 * Data level migration tests infrastructure
-  * Migrate data from Table to KV, dumps both and compares
-  * Implement dumpers for `gateway_multiprts`
-  * Implement tests for '''pkg/multiparts'''
+  * Migrate data from Table to KV, extract both and compare
+    * Data extraction should be done by listing all objects in the DB, using a designated 'get' function, and compare
+  * Implement ~~dumpers for `gateway_multiprts`~~ `GetAll` for `multiparts.Tracker`, to return a list of `MultipartUpload`
+  * Implement comparison of `MultipartUploads` list. Lists are considered identical if objects are identical, but **not necessarily** at the same order
+  * Implement unit tests for `pkg/gateway/multiparts`
+    * Add multipart uploads using `multiparts.Tracker.Create` with Table DB (KV Feature Flag off)
+      * Create an entry with key representing each off the supported storages:
+        * azure, google, s3, local, mem & transient
+      * Read all entries using `GetAll` above (Table DB)
+      * Run migration for `gateway_multiparts` table
+      * Read all entries using `GetAll` (KV Store)
+      * Compare the lists and expect equality (up to order)
 * Infrastructure for running migration during a system test execution
   * System test to run migration during multiparts upload
   * Currently there is a single simple multiparts system test (single file, 7 parts) - this is also an opportunity to expand that
