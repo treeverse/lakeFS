@@ -34,7 +34,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/gateway"
 	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
 	"github.com/treeverse/lakefs/pkg/gateway/sig"
-	"github.com/treeverse/lakefs/pkg/gateway/simulator"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
@@ -427,7 +426,6 @@ func gracefulShutdown(ctx context.Context, quit <-chan os.Signal, done chan<- bo
 			fmt.Printf("Error while shutting down service (%d): %s\n", i, err)
 		}
 	}
-	simulator.ShutdownRecorder()
 	close(done)
 }
 
