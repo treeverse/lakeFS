@@ -16,7 +16,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
 	"github.com/treeverse/lakefs/pkg/gateway/operations"
 	"github.com/treeverse/lakefs/pkg/gateway/sig"
-	"github.com/treeverse/lakefs/pkg/gateway/simulator"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
@@ -55,11 +54,11 @@ type ServerContext struct {
 	catalog           catalog.Interface
 	multipartsTracker multiparts.Tracker
 	blockStore        block.Adapter
-	authService       simulator.GatewayAuthService
+	authService       auth.GatewayService
 	stats             stats.Collector
 }
 
-func NewHandler(region string, catalog catalog.Interface, multipartsTracker multiparts.Tracker, blockStore block.Adapter, authService simulator.GatewayAuthService, bareDomains []string, stats stats.Collector, fallbackURL *url.URL, traceRequestHeaders bool) http.Handler {
+func NewHandler(region string, catalog catalog.Interface, multipartsTracker multiparts.Tracker, blockStore block.Adapter, authService auth.GatewayService, bareDomains []string, stats stats.Collector, fallbackURL *url.URL, traceRequestHeaders bool) http.Handler {
 	var fallbackHandler http.Handler
 	if fallbackURL != nil {
 		fallbackProxy := gohttputil.NewSingleHostReverseProxy(fallbackURL)
@@ -107,7 +106,9 @@ func NewHandler(region string, catalog catalog.Interface, multipartsTracker mult
 		"X-Amz-Request-Id",
 		logging.Fields{"service_name": "s3_gateway"},
 		traceRequestHeaders)
-	h = simulator.RegisterRecorder(loggingMiddleware(h), authService, region, bareDomains)
+
+	h = loggingMiddleware(h)
+
 	h = EnrichWithOperation(sc,
 		DurationHandler(
 			AuthenticationHandler(authService, EnrichWithParts(bareDomains,
@@ -233,7 +234,7 @@ func PathOperationHandler(sc *ServerContext, handler operations.PathOperationHan
 	})
 }
 
-func authorize(w http.ResponseWriter, req *http.Request, authService simulator.GatewayAuthService, perms permissions.Node) *operations.AuthorizedOperation {
+func authorize(w http.ResponseWriter, req *http.Request, authService auth.GatewayService, perms permissions.Node) *operations.AuthorizedOperation {
 	ctx := req.Context()
 	o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 	username := ctx.Value(ContextKeyUser).(*model.User).Username
