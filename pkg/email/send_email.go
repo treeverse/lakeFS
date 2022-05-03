@@ -2,7 +2,6 @@ package email
 
 import (
 	"errors"
-	"net/mail"
 	"time"
 
 	"golang.org/x/time/rate"
@@ -28,7 +27,6 @@ type Params struct {
 	LimitEveryDuration time.Duration
 	Burst              int
 	LakefsBaseURL      string
-	IsEmailerUsable    bool
 }
 
 func NewEmailer(p Params) *Emailer {
@@ -76,14 +74,4 @@ func (e *Emailer) SendInviteUserEmail(receivers []string, params map[string]stri
 		return err
 	}
 	return e.SendEmailWithLimit(receivers, inviteUserWEmailSubject, body, nil)
-}
-
-func (e *Emailer) IsEmailerConfigured() bool {
-	_, err := mail.ParseAddress(e.Params.Sender)
-	if err != nil {
-		e.Params.IsEmailerUsable = false
-		return false
-	}
-	e.Params.IsEmailerUsable = e.Params.SMTPHost != ""
-	return e.Params.IsEmailerUsable
 }

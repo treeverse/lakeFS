@@ -215,7 +215,10 @@ var runCmd = &cobra.Command{
 		done := make(chan bool, 1)
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-		emailParams, _ := cfg.GetEmailParams()
+		emailParams, err := cfg.GetEmailParams()
+		if err != nil {
+			logger.WithError(err).Fatal("Emailer has not been properly configured, check the values in sender field")
+		}
 		emailer := email.NewEmailer(emailParams)
 		apiHandler := api.Serve(
 			cfg,
@@ -242,10 +245,6 @@ var runCmd = &cobra.Command{
 			if err != nil {
 				logger.WithError(err).Fatal("Failed to parse s3 fallback URL")
 			}
-		}
-
-		if !emailer.IsEmailerConfigured() {
-			logger.Warn(fmt.Sprintf("Emailer has not been properly configured, check the values in the email config"))
 		}
 
 		lakefsBaseURL := emailParams.LakefsBaseURL
