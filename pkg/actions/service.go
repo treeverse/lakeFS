@@ -211,7 +211,8 @@ func (s *Service) runTasks(ctx context.Context, record graveler.HookRecord, task
 
 				s.stats.CollectEvent("actions_service", string(record.EventType))
 
-				if task.Err != nil { // log error in buffer
+				if task.Err != nil { 
+				// log error in buffer
 					// wrap error with more information and return
 					task.Err = fmt.Errorf("hook run id '%s' failed on action '%s' hook '%s': %w",
 						task.HookRunID, task.Action.Name, task.HookID, task.Err)
