@@ -108,7 +108,6 @@ create_repo() {
 
 failed_tests=()
 repositories=()
-file_existing_ref=()
 
 prepare_for_gc() {
   local test_case=$1
@@ -117,9 +116,9 @@ prepare_for_gc() {
 
   run_lakectl branch create "lakefs://${repo}/a${test_id}" -s "lakefs://${repo}/main"
   run_lakectl fs upload "lakefs://${repo}/a${test_id}/file${test_id}" -s /local/gc-tests/sample_file
-  file_existing_ref[${test_id}]=$(run_lakectl commit "lakefs://${repo}/a${test_id}" -m "uploaded file ${test_id}" --epoch-time-seconds 0 | grep "ID: " | awk '{ print $2 }')
-  run_lakectl branch create "lakefs://${repo}/b${test_id}" -s "lakefs://${repo}/${file_existing_ref[${test_id}]}"
-  echo "EXISTING_REF: ${file_existing_ref[${test_id}]}"
+  file_existing_ref=$(run_lakectl commit "lakefs://${repo}/a${test_id}" -m "uploaded file ${test_id}" --epoch-time-seconds 0 | grep "ID: " | awk '{ print $2 }')
+  run_lakectl branch create "lakefs://${repo}/b${test_id}" -s "lakefs://${repo}/${file_existing_ref}"
+  echo "${file_existing_ref}" > "existing_ref_${test_id}.txt"
   echo "${test_case}" | jq --raw-output '.policy' > "policy_${test_id}.json"
   run_lakectl gc set-config lakefs://"${repo}" -f "/local/policy_${test_id}.json"
   delete_and_commit "${test_case}" "${repo}" "${test_id}"
@@ -149,12 +148,14 @@ for test_case in $(jq -r '.[] | @base64' gc-tests/test_scenarios.json); do
     test_case=$(_jq ${test_case})
     test_id=$(echo "${test_case}" | jq -r '.id')
     test_description=$(echo "${test_case}" | jq -r '.description')
-    if ! validate_gc_job "${test_case}" "${REPOSITORY}-${test_id}" "${file_existing_ref[${test_id}]}" "${test_id}"; then
+    file_existing_ref=$(cat "existing_ref_${test_id}.txt")
+    if ! validate_gc_job "${test_case}" "${REPOSITORY}-${test_id}" "${file_existing_ref}" "${test_id}"; then
       failed_tests+=("${test_description}")
     else
       echo "Test: ${test_description} - SUCCEEDED"
     fi
     rm -f "policy_${test_id}.json"
+    rm -f "existing_ref_${test_id}.txt"
     clean_repo "${REPOSITORY}-${test_id}"
     clean_main_branch "${REPOSITORY}-${test_id}"
 done
