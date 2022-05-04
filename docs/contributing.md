@@ -106,7 +106,7 @@ A developer from our team will review your pull request, and may request some ch
 
 Documentation of features and changes in behaviour should be included in the pull-request.
 You can create separate pull requests for documentation changes only.
-Documentation site customizations should be performed in accordance with the [Just The Docs Customization](https://pmarsceill.github.io/just-the-docs/docs/customization/) guide, which is applied during the site creation process.
+Documentation site customizations should be performed in accordance with the [Just The Docs Customization](https://just-the-docs.github.io/just-the-docs/docs/customization/) guide, which is applied during the site creation process.
 
 ### CHANGELOG.md
 
