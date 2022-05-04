@@ -568,6 +568,11 @@ jobs:
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
 
+      - uses: coursier/cache-action@v6
+        id: coursier-cache
+        with:
+          root: clients/spark
+          
       - name: Package Metaclient
         working-directory: clients/spark
         run: |
