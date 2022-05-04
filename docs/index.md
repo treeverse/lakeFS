@@ -9,9 +9,13 @@ redirect_from: ./downloads.html
 ## What is lakeFS
 {: .no_toc }
 
-lakeFS transforms object storage buckets into data lake repositories that expose a Git-like interface to data of any size.
+lakeFS transforms object storage buckets into data lake repositories that
+expose a Git-like interface.  By design, it works with data of any size.
 
-This interface means users of lakeFS can use the same development workflows for code and data. Adopting Git workflows greatly improved software development practices, and we designed lakeFS to bring the same benefits to data.
+The Git-like interface means users of lakeFS can use the same development
+workflows for code and data.  Git workflows greatly improved software
+development practices; we designed lakeFS to bring the same benefits to
+data.
 
 In this way, lakeFS brings a unique combination of performance and manageability to data lakes. *To learn more about applying Git principles to data, [see here](https://lakefs.io/how-to-manage-your-data-the-way-you-manage-your-code/).*
 
@@ -33,7 +37,9 @@ You can easily integrate it with your existing tools, and feel lakeFS in action 
 
 ## How do I use lakeFS?
 
-lakeFS is designed to minimize adoption friction by maintaining compatibility with the S3 API. You can use it as a drop-in replacement for S3 from the perspective of any tool interacting with a data lake.
+lakeFS maintains compatibility with the S3 API to minimize adoption
+friction.  Use it as a drop-in replacement for S3 from the perspective of
+any tool interacting with a data lake.
 
 For example, take the common operation of reading a collection of data from object storage into a Spark DataFrame. For data outside a lakeFS repo, the code will look like:
 
@@ -41,26 +47,28 @@ For example, take the common operation of reading a collection of data from obje
 df = spark.read.parquet("s3a://my-bucket/collections/foo/")
 ```
 
-Once the data collections in my-bucket get added to a repository, the same operation becomes:
+After adding the data collections in my-bucket to a repository, the same operation becomes:
 
-As this example illustrates, you can use the same methods and syntax you already use to read and write data when using a lakeFS repository. This makes adoption process of lakeFS minimal, and can be done incrementally.
 ```py
 df = spark.read.parquet("s3a://my-repo/main-branch/collections/foo/")
 ```
 
+You can use the same methods and syntax you already use to read and write data when using a lakeFS repository.  This simplifies adoption of lakeFS: minimal changes are needed to get started, making further changes an incremental process.
 
 
 ## Why is lakeFS the data solution you've been missing?
 
 Working with data in a lakeFS repository &mdash; as opposed to a bucket &mdash; enables simplified workflows when developing data lake pipelines.
 
-Never again will you spend time doing the following tasks:
+lakeFS performs all these operations safely and efficiently:
 
 * **Copying objects between prefixes to promote new data**
 * **Deleting specific objects to recover from data errors**
 * **Maintaining auxilliary jobs that populate a development environment with data**
 
-If you execute any of these actions, adopting lakeFS will speed up development and deployment cycles, reduce the chance of incorrect data making it into production, and make it less painful in the event it does.
+If today you spend time performing any of these actions, adopting lakeFS
+will speed up your development and deployment cycles, reduce the chance of
+incorrect data making it into production, and make recovery less painful if it does.
 
 Through its versioning engine, lakeFS enables the following built-in operations familiar from Git:
 
@@ -68,7 +76,7 @@ Through its versioning engine, lakeFS enables the following built-in operations 
 * **commit:** an immutable checkpoint containing a complete snapshot of a repository.
 * **merge:** performed between two branches &mdash; merges atomically update one branch with the changes from another.
 * **revert:** return a repo to the exact state of a previous commit.
-* **tag:** an immutable pointer to a single commit with a readable name.
+* **tag:** a pointer to a single immutable commit with a readable, meaningful name.
 
 *See the [CLI reference](./reference/commands.md) for the full list of commands.*
 
@@ -76,7 +84,7 @@ Incorporating these operations into your data lake pipelines provides the same c
 
 ### The lakeFS promotion workflow
 
-To illustrate, we’ll show how lakeFS *branches* and *merges* improve the universal process of updating collections with the latest data.
+Here's how lakeFS *branches* and *merges* improve the universal process of updating collections with the latest data.
 
 <img src="{{ site.baseurl }}/assets/img/promotion_workflow.png" alt="lakeFS promotion workflow" width="60%" height="60%" />
 
@@ -105,13 +113,17 @@ Occasionally, we might need to reprocess historical data. This can be due to sev
 * Implementing new logic.
 * Late arriving data that wasn’t included in previous analysis, and need to be backfilled after the fact.
 
-This is tricky first and foremost because it often involves huge volumes of historical data. In addition, auditing requirements may necessitate keeping the old version of the data handy. 
+This is tricky first and foremost because it often involves huge volumes of historical data. In addition, auditing requirements may necessitate keeping the old version of the data.
 
-lakeFS allows you to manage the reprocess on an isolated branch before merging to ensure the reprocessed data is exposed atomically. It also allows you to easily access the different versions of reprocessed data, using a commit ID.
+lakeFS allows you to manage the reprocess on an isolated branch before merging to ensure the reprocessed data is exposed atomically. It also allows you to easily access the different versions of reprocessed data, using any tag or a historical commit ID.
 
 #### Cross-collection consistency guarantees
 
-Data engineers typically have to implement custom logic in scripts in order to guarantee two or more data assets are updated synchronously. The lakeFS merge operation from one branch into another removes the need to implement this logic yourself.
+Data engineers typically need implement custom logic in scripts to guarantee
+two or more data assets are updated synchronously.  This logic often
+requires extensive rewrites or periods during which data is unavailable.
+The lakeFS merge operation from one branch into another removes the need to
+implement this logic yourself.
 
 Instead, make updates to the desired data assets on a branch, and then utilize a lakeFS merge to atomically expose the data to downstream consumers.
 
