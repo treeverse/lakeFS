@@ -26,7 +26,7 @@ The built-in authentication database is always present and active.  Use the
 Web UI at Administration / Users to create users.  Users have an access key
 `AKIA...` and an associated secret access key.  These credentials are valid
 to log into the Web UI, or to authenticate programmatic requests to the API
-Server, or for S3 Gateway Authentication.
+Server or the S3 Gateway.
 
 #### LDAP server
 
