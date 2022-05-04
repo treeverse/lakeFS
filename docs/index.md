@@ -7,7 +7,7 @@ redirect_from: ./downloads.html
 ---
 
 ## What is lakeFS
-{: .no_toc }  
+{: .no_toc }
 
 lakeFS transforms object storage buckets into data lake repositories that expose a Git-like interface to data of any size.
 
@@ -37,19 +37,22 @@ lakeFS is designed to minimize adoption friction by maintaining compatibility wi
 
 For example, take the common operation of reading a collection of data from object storage into a Spark DataFrame. For data outside a lakeFS repo, the code will look like:
 
-```df = spark.read.parquet(“s3a://my-bucket/collections/foo/”)```
+```py
+df = spark.read.parquet("s3a://my-bucket/collections/foo/")
+```
 
 Once the data collections in my-bucket get added to a repository, the same operation becomes:
 
-```df = spark.read.parquet(“s3a://my-repo/main-branch/collections/foo/”)```
-
 As this example illustrates, you can use the same methods and syntax you already use to read and write data when using a lakeFS repository. This makes adoption process of lakeFS minimal, and can be done incrementally.
+```py
+df = spark.read.parquet("s3a://my-repo/main-branch/collections/foo/")
+```
 
 
 
 ## Why is lakeFS the data solution you've been missing?
 
-Working with data in a lakeFS repository––as opposed to a bucket––enables simplified workflows when developing data lake pipelines.
+Working with data in a lakeFS repository &mdash; as opposed to a bucket &mdash; enables simplified workflows when developing data lake pipelines.
 
 Never again will you spend time doing the following tasks:
 
@@ -59,11 +62,11 @@ Never again will you spend time doing the following tasks:
 
 If you execute any of these actions, adopting lakeFS will speed up development and deployment cycles, reduce the chance of incorrect data making it into production, and make it less painful in the event it does.
 
-Through its versioning engine, lakeFS enables the following built-in operations familiar from git:
+Through its versioning engine, lakeFS enables the following built-in operations familiar from Git:
 
 * **branch:** a consistent copy of a repository, isolated from other branches and their changes. Initial creation of a branch is a metadata operation that does not duplicate objects.
 * **commit:** an immutable checkpoint containing a complete snapshot of a repository.
-* **merge:** performed between two branches –– merges atomically update one branch with the changes from another.
+* **merge:** performed between two branches &mdash; merges atomically update one branch with the changes from another.
 * **revert:** return a repo to the exact state of a previous commit.
 * **tag:** an immutable pointer to a single commit with a readable name.
 
@@ -116,7 +119,7 @@ To learn more about atomic cross-collection updates, [this video](https://www.yo
 
 #### Troubleshooting production problems
 
-Data engineers are often asked to validate the data. A user might report inconsistencies, question the accuracy, or simply report it to be incorrect. Since the data continuously changes, it is challenging to understand its state at the time of the error
+Data engineers are often asked to validate the data. A user might report inconsistencies, question the accuracy, or simply report it to be incorrect. Since the data continuously changes, it is challenging to understand its state at the time of the error.
 
 The best way to investigate, therefore, is to have a snapshot of the data as close as possible to the time of the error.
 Once implementing a regular commit cadence in lakeFS, each commit represents an accessible historical snapshot of the data. When needed, a branch may be created from a commit ID to debug an issue in isolation.
