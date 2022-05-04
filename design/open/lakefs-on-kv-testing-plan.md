@@ -1,5 +1,9 @@
 # lakeFS on KV - Testing Plan
-
+This document discusses the tests and testing methods that will be applied to support our development and transition to [lakeFS on KV](https://github.com/treeverse/lakeFS/blob/ed55edc2c24b24ed4e6fcccad1ae95844d38b9ad/design/open/metadata_kv/index.md). It is derived and aligned with [lakeFS on KV - Execution Plan](https://github.com/treeverse/lakeFS/blob/master/design/open/lakefs-kv-execution-plan.md) doc. </br>
+This document aims to describe the requirements for the testing infrastructure and the tests to be conducted. It refers both to system tests and package specific unit tests. </br>
+## Important Notes
+* Part of the tests discussed, refer to the migration process from Table DB to KV Store. These tests are valid for the development and transition phases and will not be required once `lakeFS` is completely migrated to KV Store
+* Implied from the previous comment, the migration process itself is not here to stay. The current plan is to have a transition version (V.mig) which will be the last version to support migration from Table DB to KV Store, and no migration such will be supported in later version. An update from Table DB version (V.table) prior to Vt, to KV version (V.kv) later than Vt, will have to go through Vt (i.e. 2 step update): V.table -> V.mig -> V.kv
 ## Global Testing
 
 ### Migration
@@ -22,6 +26,7 @@
 
 ### Performance
 * **A benchmark for the migration process itself:**
+  * An `Esti` system test for system-wide migration from Table DB to KV. This tests should be a WIP and will support a growing set of data to be migrated, as KV support is growing
   * How do we load the DB with data to migrate for benchmarking?
   * Ideally, run on several data sizes (tens / thousands / millions branches & commits, various numbers of users, etc.) to get sense of how scaling will affect
   * What is the expected/acceptable outcome?
@@ -130,4 +135,5 @@ TBD
 ## Open questions
 * What performance degradation is acceptable? (Can be 0)
 * How do we simulate KV Store failure? Do we need it at all?
+  * [per @N-o-Z] We can create a mock for either Store or StoreMessage to simulate failures. I would describe what kind of fault injection do we need to support to better understand the faults requirements
 * What is the expected downtime for migrate?
