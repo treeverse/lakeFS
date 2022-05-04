@@ -572,7 +572,7 @@ jobs:
         id: coursier-cache
         with:
           root: clients/spark
-          
+
       - name: Package Metaclient
         working-directory: clients/spark
         run: |
