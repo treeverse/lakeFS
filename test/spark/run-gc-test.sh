@@ -82,14 +82,6 @@ validate_gc_job() {
   done
 }
 
-clean_main_branch() {
-  local repo=$1
-  run_lakectl fs rm "lakefs://${repo}/main/not_deleted_file1"
-  run_lakectl fs rm "lakefs://${repo}/main/not_deleted_file2"
-  run_lakectl fs rm "lakefs://${repo}/main/not_deleted_file3"
-  run_lakectl commit "lakefs://${repo}/main" -m "delete the undeleted files"
-}
-
 #################################
 ######## Tests Execution ########
 #################################
@@ -113,6 +105,11 @@ prepare_for_gc() {
   local test_case=$1
   local test_id=$2
   local repo="${REPOSITORY}-${test_id}"
+
+  run_lakectl fs rm "lakefs://${repo}/main/not_deleted_file1"
+  run_lakectl fs rm "lakefs://${repo}/main/not_deleted_file2"
+  run_lakectl fs rm "lakefs://${repo}/main/not_deleted_file3"
+  run_lakectl commit "lakefs://${repo}/main" -m "delete the undeleted files"
 
   run_lakectl branch create "lakefs://${repo}/a${test_id}" -s "lakefs://${repo}/main"
   run_lakectl fs upload "lakefs://${repo}/a${test_id}/file${test_id}" -s /local/gc-tests/sample_file
