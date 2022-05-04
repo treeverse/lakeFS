@@ -3,7 +3,7 @@ layout: default
 title: Authorization
 description: This section covers authorization (using AWS IAM)  of your lakeFS server.
 parent: Reference
-nav_order: 60
+nav_order: 65
 has_children: false
 ---
 
