@@ -101,10 +101,20 @@ Following this pattern, lakeFS facilitates a streamlined data deployment workflo
 lakeFS helps you maintain a tidy data lake in several other ways, including:
 
 #### Recovery from data errors
-Erroneous data that makes it into production is an inevitability given the complex and fast-moving nature of modern data pipelines. Similarly, critical data assets are liable to accidental deletion by poorly configured jobs or due to human errors.
 
-Today, recovering from these events relies on periodic backups that 1) may be out of date and 2) require sifting through data at the object level. This process is inefficient and can take hours, days, or in some cases, weeks to complete.
-Recovering data in deletion events becomes an instant one-line operation with lakeFS using the ability to restore any historical commit.
+Human error, misconfiguration, or wide-ranging systematic effects are
+unavoidable.  When they do happen, erroneous data may make it into
+production, or critical data assets might accidentally by deleted.
+
+By their nature, backups are the wrong tool for recovering from such events.
+Backups are periodic events that are usually not tied to performing
+erroneous operations.  So they may be out of date, and they will require
+sifting through data at the object level.  This process is inefficient and
+can take hours, days, or in some cases, weeks to complete.  By quickly
+committing entire snapshots of data at well-defined times, recovering data
+in deletion or corruption events becomes an instant one-line operation with
+lakeFS: just identify a good historical commit, and then restore to it or
+copy from it.
 
 Reverting your data lake back to previous version using our command-line tool is explained [here](https://docs.lakefs.io/reference/commands.html#lakectl-branch-revert).
 
