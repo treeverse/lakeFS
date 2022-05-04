@@ -88,16 +88,6 @@ validate_gc_job() {
 day_in_seconds=100000 # rounded up from 86400
 current_epoch_in_seconds=$(date +%s)
 
-create_repo() {
-  local repo=$1
-  run_lakectl repo create "lakefs://${repo}" "${STORAGE_NAMESPACE}/${repo}/"
-
-  run_lakectl fs upload "lakefs://${repo}/main/not_deleted_file1" -s /local/gc-tests/sample_file
-  run_lakectl fs upload "lakefs://${repo}/main/not_deleted_file2" -s /local/gc-tests/sample_file
-  run_lakectl fs upload "lakefs://${repo}/main/not_deleted_file3" -s /local/gc-tests/sample_file
-  run_lakectl commit "lakefs://${repo}/main" -m "add three files not to be deleted" --epoch-time-seconds 0
-}
-
 failed_tests=()
 repositories=()
 
@@ -106,10 +96,11 @@ prepare_for_gc() {
   local test_id=$2
   local repo="${REPOSITORY}-${test_id}"
 
-  run_lakectl fs rm "lakefs://${repo}/main/not_deleted_file1"
-  run_lakectl fs rm "lakefs://${repo}/main/not_deleted_file2"
-  run_lakectl fs rm "lakefs://${repo}/main/not_deleted_file3"
-  run_lakectl commit "lakefs://${repo}/main" -m "delete the undeleted files"
+  run_lakectl repo create "lakefs://${repo}" "${STORAGE_NAMESPACE}/${repo}/"
+  run_lakectl fs upload "lakefs://${repo}/main/not_deleted_file1" -s /local/gc-tests/sample_file
+  run_lakectl fs upload "lakefs://${repo}/main/not_deleted_file2" -s /local/gc-tests/sample_file
+  run_lakectl fs upload "lakefs://${repo}/main/not_deleted_file3" -s /local/gc-tests/sample_file
+  run_lakectl commit "lakefs://${repo}/main" -m "add three files not to be deleted" --epoch-time-seconds 0
 
   run_lakectl branch create "lakefs://${repo}/a${test_id}" -s "lakefs://${repo}/main"
   run_lakectl fs upload "lakefs://${repo}/a${test_id}/file${test_id}" -s /local/gc-tests/sample_file
