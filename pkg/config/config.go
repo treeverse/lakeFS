@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"net/mail"
 	"reflect"
 	"sort"
 	"strings"
@@ -414,10 +413,6 @@ func (c *Config) GetStatsFlushInterval() time.Duration {
 }
 
 func (c *Config) GetEmailParams() (email.Params, error) {
-	_, err := mail.ParseAddress(c.values.Email.Sender)
-	if err != nil && c.values.Email.SMTPHost != "" {
-		return email.Params{}, err
-	}
 	return email.Params{
 		SMTPHost:           c.values.Email.SMTPHost,
 		SMTPPort:           c.values.Email.SMTPPort,

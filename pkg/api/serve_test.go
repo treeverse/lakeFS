@@ -114,7 +114,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, 
 
 	auditChecker := version.NewDefaultAuditChecker(cfg.GetSecurityAuditCheckURL())
 	emailParams, _ := cfg.GetEmailParams()
-	emailer := email.NewEmailer(emailParams)
+	emailer, _ := email.NewEmailer(emailParams)
 
 	handler := api.Serve(cfg, c, authenticator, authService, c.BlockAdapter, meta, migrator, collector, nil, actionsService, auditChecker, logging.Default(), emailer, nil)
 
