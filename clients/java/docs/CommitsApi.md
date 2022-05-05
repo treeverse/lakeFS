@@ -11,7 +11,7 @@ Method | HTTP request | Description
 
 <a name="commit"></a>
 # **commit**
-> Commit commit(repository, branch, commitCreation)
+> Commit commit(repository, branch, commitCreation, sourceMetarange)
 
 create commit
 
@@ -49,8 +49,9 @@ public class Example {
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | 
     CommitCreation commitCreation = new CommitCreation(); // CommitCreation | 
+    String sourceMetarange = "sourceMetarange_example"; // String | The source metarange to commit. Branch must not have uncommitted changes.
     try {
-      Commit result = apiInstance.commit(repository, branch, commitCreation);
+      Commit result = apiInstance.commit(repository, branch, commitCreation, sourceMetarange);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling CommitsApi#commit");
@@ -70,6 +71,7 @@ Name | Type | Description  | Notes
  **repository** | **String**|  |
  **branch** | **String**|  |
  **commitCreation** | [**CommitCreation**](CommitCreation.md)|  |
+ **sourceMetarange** | **String**| The source metarange to commit. Branch must not have uncommitted changes. | [optional]
 
 ### Return type
 

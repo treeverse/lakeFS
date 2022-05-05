@@ -1,23 +1,26 @@
 package gateway_test
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/treeverse/lakefs/pkg/gateway/simulator"
+	"github.com/treeverse/lakefs/pkg/gateway/testutil"
 )
 
+const repoName = "example"
+
 func setupTest(t *testing.T, method, target string, body io.Reader) *http.Response {
-	h, _ := getBasicHandler(t, &simulator.PlayBackMockConf{
+	h, _ := testutil.GetBasicHandler(t, &testutil.FakeAuthService{
 		BareDomain:      "example.com",
 		AccessKeyID:     "AKIAIO5FODNN7EXAMPLE",
 		SecretAccessKey: "MockAccessSecretKey",
 		UserID:          1,
 		Region:          "MockRegion",
-	})
+	}, databaseURI, repoName)
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(method, target, body)
 	req.Header["Content-Type"] = []string{"text/tab - separated - values"}
@@ -30,7 +33,7 @@ func setupTest(t *testing.T, method, target string, body io.Reader) *http.Respon
 }
 
 func TestPathWithTrailingSlash(t *testing.T) {
-	result := setupTest(t, http.MethodHead, "/example/", nil)
+	result := setupTest(t, http.MethodHead, fmt.Sprint("/", repoName, "/"), nil)
 	assert.Equal(t, 200, result.StatusCode)
 	bytes, err := io.ReadAll(result.Body)
 	assert.NoError(t, err)

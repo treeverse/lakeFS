@@ -82,7 +82,7 @@ type Controller struct {
 	Emailer               *email.Emailer
 }
 
-func (c *Controller) GetAuthCapabilities(w http.ResponseWriter, r *http.Request) {
+func (c *Controller) GetAuthCapabilities(w http.ResponseWriter, _ *http.Request) {
 	emailSupported := c.Emailer.Params.SMTPHost != ""
 	writeResponse(w, http.StatusOK, AuthCapabilities{
 		InviteUser:     &emailSupported,
@@ -811,14 +811,14 @@ func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params Li
 	writeResponse(w, http.StatusOK, response)
 }
 
-func (c *Controller) generateResetPasswordToken(email string) (string, error) {
+func (c *Controller) generateResetPasswordToken(email string, duration time.Duration) (string, error) {
 	secret := c.Auth.SecretStore().SharedSecret()
 	currentTime := time.Now()
-	return GenerateJWTResetPassword(secret, email, currentTime, currentTime.Add(DefaultResetPasswordExpiration))
+	return GenerateJWTResetPassword(secret, email, currentTime, currentTime.Add(duration))
 }
 
 func (c *Controller) inviteUserRequest(emailAddr string) error {
-	token, err := c.generateResetPasswordToken(emailAddr)
+	token, err := c.generateResetPasswordToken(emailAddr, DefaultInvitePasswordExpiration)
 	if err != nil {
 		return err
 	}
@@ -1697,6 +1697,7 @@ func handleAPIError(w http.ResponseWriter, err error) bool {
 		writeError(w, http.StatusNotFound, err)
 
 	case errors.Is(err, graveler.ErrDirtyBranch),
+		errors.Is(err, graveler.ErrCommitMetaRangeDirtyBranch),
 		errors.Is(err, catalog.ErrNoDifferenceWasFound),
 		errors.Is(err, graveler.ErrNoChanges),
 		errors.Is(err, permissions.ErrInvalidServiceName),
@@ -1760,7 +1761,83 @@ func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body Re
 	writeResponse(w, http.StatusNoContent, nil)
 }
 
-func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body CommitJSONRequestBody, repository string, branch string) {
+func (c *Controller) IngestRange(w http.ResponseWriter, r *http.Request, body IngestRangeJSONRequestBody, repository string) {
+	if !c.authorize(w, r, permissions.Node{
+		Type: permissions.NodeTypeAnd,
+		Nodes: []permissions.Node{
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ImportFromStorage,
+					Resource: permissions.StorageNamespace(body.FromSourceURI),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.WriteObjectAction,
+					Resource: permissions.ObjectArn(repository, body.Prepend),
+				},
+			},
+		},
+	}) {
+		return
+	}
+
+	c.LogAction(r.Context(), "ingest_range")
+
+	contToken := swag.StringValue(body.ContinuationToken)
+	info, mark, err := c.Catalog.WriteRange(r.Context(), repository, body.FromSourceURI, body.Prepend, body.After, contToken)
+	if handleAPIError(w, err) {
+		return
+	}
+
+	writeResponse(w, http.StatusCreated, IngestRangeCreationResponse{
+		Range: &RangeMetadata{
+			Id:            string(info.ID),
+			MinKey:        string(info.MinKey),
+			MaxKey:        string(info.MaxKey),
+			Count:         info.Count,
+			EstimatedSize: int(info.EstimatedRangeSizeBytes),
+		},
+		Pagination: &ImportPagination{
+			HasMore:           mark.HasMore,
+			ContinuationToken: &mark.ContinuationToken,
+			LastKey:           mark.LastKey,
+		},
+	})
+}
+
+func (c *Controller) CreateMetaRange(w http.ResponseWriter, r *http.Request, body CreateMetaRangeJSONRequestBody, repository string) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.CreateMetaRangeAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+
+	c.LogAction(r.Context(), "create_metarange")
+
+	ranges := make([]*graveler.RangeInfo, 0, len(body.Ranges))
+	for _, r := range body.Ranges {
+		ranges = append(ranges, &graveler.RangeInfo{
+			ID:                      graveler.RangeID(r.Id),
+			MinKey:                  graveler.Key(r.MinKey),
+			MaxKey:                  graveler.Key(r.MaxKey),
+			Count:                   r.Count,
+			EstimatedRangeSizeBytes: uint64(r.EstimatedSize),
+		})
+	}
+	info, err := c.Catalog.WriteMetaRange(r.Context(), repository, ranges)
+	if handleAPIError(w, err) {
+		return
+	}
+	writeResponse(w, http.StatusCreated, MetaRangeCreationResponse{
+		Id: StringPtr(string(info.ID)),
+	})
+}
+
+func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body CommitJSONRequestBody, repository string, branch string, params CommitParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.CreateCommitAction,
@@ -1781,7 +1858,7 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body CommitJ
 		metadata = body.Metadata.AdditionalProperties
 	}
 	committer := user.Username
-	newCommit, err := c.Catalog.Commit(ctx, repository, branch, body.Message, committer, metadata, body.Date)
+	newCommit, err := c.Catalog.Commit(ctx, repository, branch, body.Message, committer, metadata, body.Date, params.SourceMetarange)
 	var hookAbortErr *graveler.HookAbortError
 	if errors.As(err, &hookAbortErr) {
 		c.Logger.
@@ -3087,8 +3164,9 @@ func (c *Controller) resetPasswordRequest(ctx context.Context, emailAddr string)
 		return err
 	}
 	emailAddr = StringValue(user.Email)
-	token, err := c.generateResetPasswordToken(emailAddr)
+	token, err := c.generateResetPasswordToken(emailAddr, DefaultResetPasswordExpiration)
 	if err != nil {
+		c.Logger.WithError(err).WithField("email_address", emailAddr).Error("reset password - failed generating token")
 		return err
 	}
 	params := map[string]string{
@@ -3096,6 +3174,7 @@ func (c *Controller) resetPasswordRequest(ctx context.Context, emailAddr string)
 	}
 	err = c.Emailer.SendResetPasswordEmail([]string{emailAddr}, params)
 	if err != nil {
+		c.Logger.WithError(err).WithField("email_address", emailAddr).Error("reset password - failed sending email")
 		return err
 	}
 	c.Logger.WithField("email", emailAddr).Info("reset password email sent")
@@ -3116,10 +3195,10 @@ func (c *Controller) ForgotPassword(w http.ResponseWriter, r *http.Request, body
 }
 
 func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body UpdatePasswordJSONRequestBody) {
-	claims, err := VerifyResetPasswordToken(c.Auth, body.Token)
+	claims, err := VerifyResetPasswordToken(r.Context(), c.Auth, body.Token)
 	if err != nil {
 		c.Logger.WithError(err).WithField("token", body.Token).Debug("failed to verify token")
-		writeError(w, http.StatusUnauthorized, err)
+		writeError(w, http.StatusUnauthorized, ErrAuthenticatingRequest)
 		return
 	}
 
@@ -3134,7 +3213,7 @@ func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body
 
 	user, err := c.Auth.GetUserByEmail(r.Context(), claims.Subject)
 	if err != nil {
-		c.Logger.WithError(err).WithField("email", claims.Subject).Debug("failed to retrieve user by email")
+		c.Logger.WithError(err).WithField("email", claims.Subject).Warn("failed to retrieve user by email")
 		writeError(w, http.StatusNotFound, http.StatusText(http.StatusNotFound))
 		return
 	}

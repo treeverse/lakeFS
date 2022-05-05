@@ -6,12 +6,11 @@ import (
 	"fmt"
 
 	"cloud.google.com/go/storage"
+	"github.com/Azure/azure-pipeline-go/pipeline"
 	"github.com/Azure/azure-storage-blob-go/azblob"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"golang.org/x/oauth2/google"
-	"google.golang.org/api/option"
-
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/azure"
 	"github.com/treeverse/lakefs/pkg/block/gs"
@@ -22,6 +21,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/block/transient"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/option"
 )
 
 // googleAuthCloudPlatform - Cloud Storage authentication https://cloud.google.com/storage/docs/authentication
@@ -84,12 +85,20 @@ func buildLocalAdapter(params params.Local) (*local.Adapter, error) {
 	return adapter, nil
 }
 
-func buildS3Adapter(statsCollector stats.Collector, params params.S3) (*s3a.Adapter, error) {
-	sess, err := session.NewSession(params.AwsConfig)
+func BuildS3Client(params *aws.Config) (*session.Session, error) {
+	sess, err := session.NewSession(params)
 	if err != nil {
 		return nil, err
 	}
 	sess.ClientConfig(s3.ServiceName)
+	return sess, nil
+}
+
+func buildS3Adapter(statsCollector stats.Collector, params params.S3) (*s3a.Adapter, error) {
+	sess, err := BuildS3Client(params.AwsConfig)
+	if err != nil {
+		return nil, err
+	}
 	adapter := s3a.NewAdapter(sess,
 		s3a.WithStreamingChunkSize(params.StreamingChunkSize),
 		s3a.WithStreamingChunkTimeout(params.StreamingChunkTimeout),
@@ -100,7 +109,7 @@ func buildS3Adapter(statsCollector stats.Collector, params params.S3) (*s3a.Adap
 	return adapter, nil
 }
 
-func buildGSAdapter(ctx context.Context, params params.GS) (*gs.Adapter, error) {
+func BuildGSClient(ctx context.Context, params params.GS) (*storage.Client, error) {
 	var opts []option.ClientOption
 	if params.CredentialsFile != "" {
 		opts = append(opts, option.WithCredentialsFile(params.CredentialsFile))
@@ -111,7 +120,11 @@ func buildGSAdapter(ctx context.Context, params params.GS) (*gs.Adapter, error) 
 		}
 		opts = append(opts, option.WithCredentials(cred))
 	}
-	client, err := storage.NewClient(ctx, opts...)
+	return storage.NewClient(ctx, opts...)
+}
+
+func buildGSAdapter(ctx context.Context, params params.GS) (*gs.Adapter, error) {
+	client, err := BuildGSClient(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -121,6 +134,14 @@ func buildGSAdapter(ctx context.Context, params params.GS) (*gs.Adapter, error) 
 }
 
 func buildAzureAdapter(params params.Azure) (*azure.Adapter, error) {
+	pipeline, err := BuildAzureClient(params)
+	if err != nil {
+		return nil, err
+	}
+	return azure.NewAdapter(pipeline), nil
+}
+
+func BuildAzureClient(params params.Azure) (pipeline.Pipeline, error) {
 	accountName := params.StorageAccount
 	accountKey := params.StorageAccessKey
 	var credentials azblob.Credential
@@ -134,8 +155,7 @@ func buildAzureAdapter(params params.Azure) (*azure.Adapter, error) {
 		err = ErrAuthMethodNotSupported
 	}
 	if err != nil {
-		return nil, fmt.Errorf("invalid credentials : %w", err)
+		return nil, fmt.Errorf("invalid credentials: %w", err)
 	}
-	pipeline := azblob.NewPipeline(credentials, azblob.PipelineOptions{Retry: azblob.RetryOptions{TryTimeout: params.TryTimeout}})
-	return azure.NewAdapter(pipeline), nil
+	return azblob.NewPipeline(credentials, azblob.PipelineOptions{Retry: azblob.RetryOptions{TryTimeout: params.TryTimeout}}), nil
 }

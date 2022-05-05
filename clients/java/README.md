@@ -175,6 +175,8 @@ Class | Method | HTTP request | Description
 *ConfigApi* | [**getStorageConfig**](docs/ConfigApi.md#getStorageConfig) | **GET** /config/storage | 
 *ConfigApi* | [**setup**](docs/ConfigApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
 *HealthCheckApi* | [**healthCheck**](docs/HealthCheckApi.md#healthCheck) | **GET** /healthcheck | 
+*ImportApi* | [**createMetaRange**](docs/ImportApi.md#createMetaRange) | **POST** /repositories/{repository}/branches/metaranges | create a lakeFS metarange file from the given ranges
+*ImportApi* | [**ingestRange**](docs/ImportApi.md#ingestRange) | **POST** /repositories/{repository}/branches/ranges | create a lakeFS range file from the source uri
 *MetadataApi* | [**createSymlinkFile**](docs/MetadataApi.md#createSymlinkFile) | **POST** /repositories/{repository}/refs/{branch}/symlink | creates symlink files corresponding to the given directory
 *MetadataApi* | [**getMetaRange**](docs/MetadataApi.md#getMetaRange) | **GET** /repositories/{repository}/metadata/meta_range/{meta_range} | return URI to a meta-range file
 *MetadataApi* | [**getRange**](docs/MetadataApi.md#getRange) | **GET** /repositories/{repository}/metadata/range/{range} | return URI to a range file
@@ -238,11 +240,15 @@ Class | Method | HTTP request | Description
  - [GroupList](docs/GroupList.md)
  - [HookRun](docs/HookRun.md)
  - [HookRunList](docs/HookRunList.md)
+ - [ImportPagination](docs/ImportPagination.md)
+ - [IngestRangeCreationResponse](docs/IngestRangeCreationResponse.md)
  - [InlineObject1](docs/InlineObject1.md)
  - [LoginInformation](docs/LoginInformation.md)
  - [Merge](docs/Merge.md)
  - [MergeResult](docs/MergeResult.md)
  - [MergeResultSummary](docs/MergeResultSummary.md)
+ - [MetaRangeCreation](docs/MetaRangeCreation.md)
+ - [MetaRangeCreationResponse](docs/MetaRangeCreationResponse.md)
  - [ObjectError](docs/ObjectError.md)
  - [ObjectErrorList](docs/ObjectErrorList.md)
  - [ObjectStageCreation](docs/ObjectStageCreation.md)
@@ -252,6 +258,7 @@ Class | Method | HTTP request | Description
  - [PathList](docs/PathList.md)
  - [Policy](docs/Policy.md)
  - [PolicyList](docs/PolicyList.md)
+ - [RangeMetadata](docs/RangeMetadata.md)
  - [Ref](docs/Ref.md)
  - [RefList](docs/RefList.md)
  - [RefsDump](docs/RefsDump.md)
@@ -262,6 +269,7 @@ Class | Method | HTTP request | Description
  - [RevertCreation](docs/RevertCreation.md)
  - [Setup](docs/Setup.md)
  - [SetupState](docs/SetupState.md)
+ - [StageRangeCreation](docs/StageRangeCreation.md)
  - [StagingLocation](docs/StagingLocation.md)
  - [StagingMetadata](docs/StagingMetadata.md)
  - [Statement](docs/Statement.md)

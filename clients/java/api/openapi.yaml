@@ -2289,6 +2289,15 @@ paths:
         schema:
           type: string
         style: simple
+      - description: The source metarange to commit. Branch must not have uncommitted
+          changes.
+        explode: true
+        in: query
+        name: source_metarange
+        required: false
+        schema:
+          type: string
+        style: form
       requestBody:
         content:
           application/json:
@@ -3064,6 +3073,112 @@ paths:
       summary: associate staging on this physical address with a path
       tags:
       - staging
+      x-contentType: application/json
+      x-accepts: application/json
+  /repositories/{repository}/branches/metaranges:
+    post:
+      operationId: createMetaRange
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MetaRangeCreation'
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetaRangeCreationResponse'
+          description: metarange metadata
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: create a lakeFS metarange file from the given ranges
+      tags:
+      - import
+      x-contentType: application/json
+      x-accepts: application/json
+  /repositories/{repository}/branches/ranges:
+    post:
+      operationId: ingestRange
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StageRangeCreation'
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestRangeCreationResponse'
+          description: range metadata
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: create a lakeFS range file from the source uri
+      tags:
+      - import
       x-contentType: application/json
       x-accepts: application/json
   /repositories/{repository}/branches/{branch}/objects:
@@ -4378,6 +4493,25 @@ components:
       - next_offset
       - results
       type: object
+    ImportPagination:
+      example:
+        continuation_token: continuation_token
+        has_more: true
+        last_key: last_key
+      properties:
+        has_more:
+          description: More keys to be ingested.
+          type: boolean
+        continuation_token:
+          description: Opaque. Token used to import the next range.
+          type: string
+        last_key:
+          description: Last object store key that was ingested.
+          type: string
+      required:
+      - has_more
+      - last_key
+      type: object
     Repository:
       example:
         default_branch: default_branch
@@ -5627,6 +5761,116 @@ components:
           type: string
       required:
       - pattern
+      type: object
+    StageRangeCreation:
+      example:
+        fromSourceURI: s3://my-bucket/production/collections/
+        continuation_token: continuation_token
+        prepend: collections/
+        after: production/collections/some/file.parquet
+      properties:
+        fromSourceURI:
+          description: The source location of the ingested files. Must match the lakeFS
+            installation blockstore type.
+          example: s3://my-bucket/production/collections/
+          type: string
+        after:
+          description: Only objects after this key would be ingested.
+          example: production/collections/some/file.parquet
+          type: string
+        prepend:
+          description: A prefix to prepend to ingested objects.
+          example: collections/
+          type: string
+        continuation_token:
+          description: Opaque. Client should pass the continuation_token received
+            from server to continue creation ranges from the same key.
+          type: string
+      required:
+      - after
+      - fromSourceURI
+      - prepend
+      type: object
+    RangeMetadata:
+      example:
+        max_key: production/collections/some/file_8229.parquet
+        count: 0
+        estimated_size: 6
+        id: 480e19972a6fbe98ab8e81ae5efdfd1a29037587e91244e87abd4adefffdb01c
+        min_key: production/collections/some/file_1.parquet
+      properties:
+        id:
+          description: ID of the range.
+          example: 480e19972a6fbe98ab8e81ae5efdfd1a29037587e91244e87abd4adefffdb01c
+          type: string
+        min_key:
+          description: First key in the range.
+          example: production/collections/some/file_1.parquet
+          type: string
+        max_key:
+          description: Last key in the range.
+          example: production/collections/some/file_8229.parquet
+          type: string
+        count:
+          description: Number of records in the range.
+          type: integer
+        estimated_size:
+          description: Estimated size of the range in bytes
+          type: integer
+      required:
+      - count
+      - estimated_size
+      - id
+      - max_key
+      - min_key
+      type: object
+    IngestRangeCreationResponse:
+      example:
+        pagination:
+          continuation_token: continuation_token
+          has_more: true
+          last_key: last_key
+        range:
+          max_key: production/collections/some/file_8229.parquet
+          count: 0
+          estimated_size: 6
+          id: 480e19972a6fbe98ab8e81ae5efdfd1a29037587e91244e87abd4adefffdb01c
+          min_key: production/collections/some/file_1.parquet
+      properties:
+        range:
+          $ref: '#/components/schemas/RangeMetadata'
+        pagination:
+          $ref: '#/components/schemas/ImportPagination'
+      type: object
+    MetaRangeCreation:
+      example:
+        ranges:
+        - max_key: production/collections/some/file_8229.parquet
+          count: 0
+          estimated_size: 6
+          id: 480e19972a6fbe98ab8e81ae5efdfd1a29037587e91244e87abd4adefffdb01c
+          min_key: production/collections/some/file_1.parquet
+        - max_key: production/collections/some/file_8229.parquet
+          count: 0
+          estimated_size: 6
+          id: 480e19972a6fbe98ab8e81ae5efdfd1a29037587e91244e87abd4adefffdb01c
+          min_key: production/collections/some/file_1.parquet
+      properties:
+        ranges:
+          items:
+            $ref: '#/components/schemas/RangeMetadata'
+          minItems: 1
+          type: array
+      required:
+      - ranges
+      type: object
+    MetaRangeCreationResponse:
+      example:
+        id: id
+      properties:
+        id:
+          description: The id of the created metarange
+          type: string
       type: object
     inline_object:
       properties:

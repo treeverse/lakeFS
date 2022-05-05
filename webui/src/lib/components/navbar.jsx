@@ -63,7 +63,16 @@ const TopNavLink = ({ href, children }) => {
     );
 };
 
-const TopNav = () => {
+const TopNav = ({logged = true}) => {
+    if (!logged) {
+        return (
+            <Navbar variant="dark" bg="dark" expand="md">
+                <Link component={Navbar.Brand} href="/">
+                    <img src="/logo.png" alt="lakeFS" className="logo"/>
+                </Link>
+            </Navbar>
+        );
+    }
     return (
         <Navbar variant="dark" bg="dark" expand="md">
             <Link component={Navbar.Brand} href="/">

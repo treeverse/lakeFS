@@ -74,7 +74,7 @@ func hookFailToCommit(t *testing.T, path string) {
 	require.Equal(t, http.StatusCreated, uploadResp.StatusCode())
 	logger.WithField("branch", branch).Info("Commit initial content")
 
-	commitResp, err := client.CommitWithResponse(ctx, repo, branch, api.CommitJSONRequestBody{
+	commitResp, err := client.CommitWithResponse(ctx, repo, branch, &api.CommitParams{}, api.CommitJSONRequestBody{
 		Message: "Initial content",
 	})
 	require.NoError(t, err)

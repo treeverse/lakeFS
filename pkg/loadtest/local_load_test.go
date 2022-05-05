@@ -89,7 +89,7 @@ func TestLocalLoad(t *testing.T) {
 	)
 	c.SetHooksHandler(actionsService)
 
-	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{})
+	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{}, logging.Default().WithField("service", "auth"))
 	authenticator := auth.NewBuiltinAuthenticator(authService)
 	meta := auth.NewDBMetadataManager("dev", conf.GetFixedInstallationID(), conn)
 	migrator := db.NewDatabaseMigrator(dbparams.Database{ConnectionString: databaseURI})

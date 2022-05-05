@@ -1,6 +1,7 @@
 package actions
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -17,7 +18,7 @@ const (
 
 // Hook is the abstraction of the basic user-configured runnable building-stone
 type Hook interface {
-	Run(ctx context.Context, record graveler.HookRecord, writer *HookOutputWriter) error
+	Run(ctx context.Context, record graveler.HookRecord, buf *bytes.Buffer) error
 }
 
 type NewHookFunc func(ActionHook, *Action) (Hook, error)

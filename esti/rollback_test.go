@@ -19,7 +19,7 @@ func TestResetAll(t *testing.T) {
 	require.True(t, f, "uploaded object found")
 
 	// commit file
-	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, api.CommitJSONRequestBody{
+	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &api.CommitParams{}, api.CommitJSONRequestBody{
 		Message: "resetAll",
 	})
 	require.NoError(t, err, "failed to commit changes")
@@ -71,7 +71,7 @@ func TestResetPath(t *testing.T) {
 	require.True(t, f, "uploaded object found")
 
 	// commit files
-	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, api.CommitJSONRequestBody{
+	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &api.CommitParams{}, api.CommitJSONRequestBody{
 		Message: "resetPath",
 	})
 	require.NoError(t, err, "failed to commit changes")
@@ -137,7 +137,7 @@ func TestResetObject(t *testing.T) {
 	require.True(t, f, "uploaded object found")
 
 	// commit files
-	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, api.CommitJSONRequestBody{
+	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &api.CommitParams{}, api.CommitJSONRequestBody{
 		Message: "resetObject",
 	})
 	require.NoError(t, err, "failed to commit changes")
@@ -197,7 +197,7 @@ func TestRevert(t *testing.T) {
 	require.True(t, f, "uploaded object found")
 
 	// commit file1
-	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, api.CommitJSONRequestBody{
+	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &api.CommitParams{}, api.CommitJSONRequestBody{
 		Message: "singleCommit",
 	})
 
@@ -214,7 +214,7 @@ func TestRevert(t *testing.T) {
 	require.True(t, f, "uploaded object found")
 
 	// commit file2
-	commitResp, err = client.CommitWithResponse(ctx, repo, mainBranch, api.CommitJSONRequestBody{
+	commitResp, err = client.CommitWithResponse(ctx, repo, mainBranch, &api.CommitParams{}, api.CommitJSONRequestBody{
 		Message: "revert",
 	})
 	require.NoError(t, err, "failed to commit changes")

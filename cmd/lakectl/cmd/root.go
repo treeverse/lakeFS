@@ -11,10 +11,12 @@ import (
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/mitchellh/go-homedir"
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/cmd/lakectl/cmd/config"
 	"github.com/treeverse/lakefs/pkg/api"
+	config_types "github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/version"
 )
@@ -78,7 +80,11 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
 			DieFmt("error reading configuration file: %v", cfg.Err())
 		}
 
-		if err := viper.UnmarshalExact(&cfg.Values); err != nil {
+		err := viper.UnmarshalExact(&cfg.Values, viper.DecodeHook(
+			mapstructure.ComposeDecodeHookFunc(
+				config_types.DecodeOnlyString,
+				mapstructure.StringToTimeDurationHookFunc())))
+		if err != nil {
 			DieFmt("error unmarshal configuration: %v", err)
 		}
 	},

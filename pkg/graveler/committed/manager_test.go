@@ -68,6 +68,7 @@ func TestManager_WriteRange(t *testing.T) {
 			rangeWriter.EXPECT().ShouldBreakAtKey(gomock.Any(), gomock.Any()).
 				DoAndReturn(func(interface{}, interface{}) bool { times++; return times == maxRecords }).Times(expectedTimes)
 			rangeWriter.EXPECT().Close().Return(writeResult, nil)
+			rangeWriter.EXPECT().SetMetadata(committed.MetadataTypeKey, committed.MetadataRangesType)
 
 			it := testutils.NewFakeValueIterator(tt.records)
 			rangeInfo, err := sut.WriteRange(context.Background(), ns, it)

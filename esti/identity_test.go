@@ -27,7 +27,7 @@ func TestIdentity(t *testing.T) {
 
 			checksum, objContent, err := uploadFileRandomDataAndReport(ctx, repo, branch1, objPath, direct)
 			require.NoError(t, err, "failed uploading file")
-			commitResp, err := client.CommitWithResponse(ctx, repo, branch1, api.CommitJSONRequestBody{
+			commitResp, err := client.CommitWithResponse(ctx, repo, branch1, &api.CommitParams{}, api.CommitJSONRequestBody{
 				Message: "commit on branch1",
 			})
 			require.NoError(t, err, "failed to commit changes")
@@ -45,7 +45,7 @@ func TestIdentity(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, checksum, checksumNew, "Same file uploaded to committed branch, expected no checksum difference")
 
-			_, err = client.CommitWithResponse(ctx, repo, branch2, api.CommitJSONRequestBody{
+			_, err = client.CommitWithResponse(ctx, repo, branch2, &api.CommitParams{}, api.CommitJSONRequestBody{
 				Message: "commit on branch2",
 			})
 			require.NoError(t, err, "failed to commit changes")
