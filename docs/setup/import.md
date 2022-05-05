@@ -7,9 +7,6 @@ nav_order: 20
 has_children: false
 redirect_from: ../reference/import.html
 ---
-This page describes importing from versions >= v0.24.0. For earlier versions, see [mvcc import](import-mvcc.md)
-{: .note .pb-3 }
-
 # Import data into lakeFS
 {: .no_toc }
 
