@@ -22,7 +22,7 @@ of type HTTP and add it to your DAG.  You can do that using the Airflow UI
 or the CLI.  Here’s an example Airflow command that does just that:
 
 ```bash
-airflow connections add conn_lakefs --conn-type=HTTP --conn-host=http://<LAKEFS_ENDPOINT> \
+airflow connections add conn_lakefs --conn-type=http --conn-host=http://<LAKEFS_ENDPOINT> \
     --conn-extra='{"access_key_id":"<LAKEFS_ACCESS_KEY_ID>","secret_access_key":"<LAKEFS_SECRET_ACCESS_KEY>"}'
 ```
 
@@ -50,6 +50,7 @@ The package exposes several operations to interact with a lakeFS server:
       source_branch='main'
    )
    ```
+
 1. `CommitOperator` commits uncommitted changes to a branch.
 
    ```python
@@ -61,6 +62,7 @@ The package exposes several operations to interact with a lakeFS server:
        metadata={'committed_from": "airflow-operator'}
    )
    ```
+
 1. `MergeOperator` merges 2 lakeFS branches.
 
    ```python
@@ -78,7 +80,7 @@ The package exposes several operations to interact with a lakeFS server:
 Sensors are also available that allow synchronizing a running DAG with external operations:
 
 1. `CommitSensor` waits until a commit has been applied to the branch
-   
+
    ```python
    task_sense_commit = CommitSensor(
        repo='example-repo',
@@ -86,6 +88,7 @@ Sensors are also available that allow synchronizing a running DAG with external 
        task_id='sense_commit'
    )
    ```
+
 1. `FileSensor` waits until a given file is present on a branch.
 
    ```python
@@ -108,7 +111,9 @@ Sometimes an operator might not yet be supported by airflow-provider-lakeFS. You
 
 - SimpleHttpOperator to send [API requests](../reference/api.md) to lakeFS. 
 - BashOperator with [lakeCTL](../quickstart/first_commit.md) commands.
+
 For example, deleting a branch using BashOperator:
+
 ```bash
 commit_extract = BashOperator(
    task_id='delete_branch',
