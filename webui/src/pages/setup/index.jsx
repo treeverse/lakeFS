@@ -28,7 +28,7 @@ const SetupContents = () => {
         return null;
     }
     if (!error && response && response.state === SETUP_STATE_INITIALIZED) {
-        // router.push({pathname: '/', query: router.query})
+        router.push({pathname: '/', query: router.query})
     }
     const { next } = router.query;
     const onSubmit = async () => {
