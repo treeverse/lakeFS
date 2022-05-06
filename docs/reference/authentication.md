@@ -28,6 +28,14 @@ Web UI at Administration / Users to create users.  Users have an access key
 to log into the Web UI, or to authenticate programmatic requests to the API
 Server or the S3 Gateway.
 
+The built-in authentication database supports authentication to the UI, via
+email and password as well. This option is only valid for users who have 
+been invited to lakefs, confirmed the invite, and created a password.
+These credentials should be used for UI access only. It should be noted, that 
+the initial admin user who created the repo, will not be able to use email/password 
+authentiaction.
+
+
 #### LDAP server
 
 Configure lakeFS to authenticate users on an LDAP server.  Once configured,
