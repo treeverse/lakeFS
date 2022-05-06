@@ -119,14 +119,11 @@ for test_case in $(jq -r '.[] | @base64' gc-tests/test_scenarios.json); do
   echo "Test: ${test_description}"
   # run prepare_for_gc in parallel
   prepare_for_gc "${test_case}" "${test_id}" &
-  pids[${test_id}]=$!
   repositories+=("${REPOSITORY}-${test_id}")
 done
 
 # wait for all prepare_for_gc functions:
-for pid in ${pids[*]}; do
-    wait $pid
-done
+wait
 
 export -f run_gc
 # Run GC jobs in parallel processes:
