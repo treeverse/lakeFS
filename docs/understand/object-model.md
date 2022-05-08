@@ -139,6 +139,10 @@ below, "A", "B" and "C" are possible file contents, "X" is a missing file, and "
 | A           | A             | X                  | X          | File deleted on one side                       |
 | A           | X             | A                  | X          | File deleted on one side                       |
 
+The API and lakectl enables passing optional `strategy` flag with the following values: 
+- dest-wins - in case of a conflict, merge will pick the destination
+- source-wins - in case of a conflict, merge will pick the source
+
 As a format-agnostic system, lakeFS currently merges by complete files.  Format-specific and
 other user-defined merge strategies for handling conflicts are on the roadmap.
 
