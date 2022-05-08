@@ -35,6 +35,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
 	"github.com/treeverse/lakefs/pkg/gateway/sig"
 	"github.com/treeverse/lakefs/pkg/httputil"
+	"github.com/treeverse/lakefs/pkg/kv"
+	_ "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/version"
@@ -131,7 +133,18 @@ var runCmd = &cobra.Command{
 		}
 		defer func() { _ = c.Close() }()
 
-		multipartsTracker := multiparts.NewTracker(dbPool)
+		var multipartsTracker multiparts.Tracker
+
+		if dbParams.KVEnabled {
+			kvStore, err := kv.Open(ctx, dbParams.Type, dbParams.ConnectionString)
+			if err != nil {
+				logger.WithError(err).Fatal("failed to open KV store")
+			}
+			defer kvStore.Close()
+			multipartsTracker = multiparts.NewTracker(kv.StoreMessage{Store: kvStore})
+		} else {
+			multipartsTracker = multiparts.NewDBTracker(dbPool)
+		}
 
 		// init authentication
 		var authService auth.Service

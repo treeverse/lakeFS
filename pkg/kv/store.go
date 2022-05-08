@@ -4,8 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 )
+
+const PathDelimiter = "/"
 
 var (
 	ErrClosedEntries       = errors.New("closed entries")
@@ -19,6 +22,10 @@ var (
 	ErrSetupFailed         = errors.New("setup failed")
 	ErrUnknownDriver       = errors.New("unknown driver")
 )
+
+func FormatPath(p ...string) string {
+	return strings.Join(p, PathDelimiter)
+}
 
 // Driver is the interface to access a kv database as a Store.
 // Each kv provider implements a Driver.
