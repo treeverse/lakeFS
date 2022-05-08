@@ -31,14 +31,14 @@ type Params struct {
 }
 
 func NewEmailer(p Params) (*Emailer, error) {
+	dialer := gomail.NewDialer(p.SMTPHost, p.SMTPPort, p.Username, p.Password)
 	if p.SMTPHost == "" {
-		return &Emailer{}, nil
+		return &Emailer{Dialer: dialer}, nil
 	}
 	_, err := mail.ParseAddress(p.Sender)
 	if err != nil {
 		return nil, err
 	}
-	dialer := gomail.NewDialer(p.SMTPHost, p.SMTPPort, p.Username, p.Password)
 	dialer.SSL = p.UseSSL
 	dialer.LocalName = p.LocalName
 	limiter := rate.NewLimiter(rate.Every(p.LimitEveryDuration), p.Burst)
