@@ -1,7 +1,6 @@
 package gateway_test
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -13,14 +12,14 @@ import (
 
 const repoName = "example"
 
-func setupTest(t *testing.T, method, target string, body io.Reader) *http.Response {
+func setupTest(t *testing.T, method, target string, body io.Reader, kvEnabled bool) *http.Response {
 	h, _ := testutil.GetBasicHandler(t, &testutil.FakeAuthService{
 		BareDomain:      "example.com",
 		AccessKeyID:     "AKIAIO5FODNN7EXAMPLE",
 		SecretAccessKey: "MockAccessSecretKey",
 		UserID:          1,
 		Region:          "MockRegion",
-	}, databaseURI, repoName)
+	}, databaseURI, repoName, kvEnabled)
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(method, target, body)
 	req.Header["Content-Type"] = []string{"text/tab - separated - values"}
@@ -33,7 +32,16 @@ func setupTest(t *testing.T, method, target string, body io.Reader) *http.Respon
 }
 
 func TestPathWithTrailingSlash(t *testing.T) {
-	result := setupTest(t, http.MethodHead, fmt.Sprint("/", repoName, "/"), nil)
+	result := setupTest(t, http.MethodHead, "/example/", nil, true)
+	testPathWithTrailingSlash(t, result)
+}
+
+func TestPathWithTrailingSlashDB(t *testing.T) {
+	result := setupTest(t, http.MethodHead, "/example/", nil, false)
+	testPathWithTrailingSlash(t, result)
+}
+
+func testPathWithTrailingSlash(t *testing.T, result *http.Response) {
 	assert.Equal(t, 200, result.StatusCode)
 	bytes, err := io.ReadAll(result.Body)
 	assert.NoError(t, err)

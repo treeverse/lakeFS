@@ -1,0 +1,15 @@
+syntax = "proto3";
+option go_package = "github.com/treeverse/lakefs/pkg/kv/kvtest";
+
+import "google/protobuf/timestamp.proto";
+
+package io.treeverse.lakefs.kvtest;
+
+message TestModel {
+    string name = 1;
+    string another_string = 2;
+    double a_double = 3;
+    google.protobuf.Timestamp test_time = 4;
+    map<string, int32> test_map = 5;
+    repeated bool test_list = 6;
+}

@@ -2,24 +2,30 @@ package multiparts
 
 import (
 	"context"
-	"database/sql/driver"
-	"encoding/json"
 	"errors"
-	"strings"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/db"
+	"github.com/treeverse/lakefs/pkg/kv"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+const multipartPrefix = "multipart"
 
 type Metadata map[string]string
 
 type MultipartUpload struct {
-	UploadID        string    `db:"upload_id"`
-	Path            string    `db:"path"`
-	CreationDate    time.Time `db:"creation_date"`
-	PhysicalAddress string    `db:"physical_address"`
-	Metadata        Metadata  `db:"metadata"`
-	ContentType     string    `db:"content_type"`
+	// UploadID A unique identifier for the uploaded part
+	UploadID string `db:"upload_id"`
+	// Path Multipart path in repository
+	Path string `db:"path"`
+	// CreationDate Creation date of the part
+	CreationDate time.Time `db:"creation_date"`
+	// PhysicalAddress Physical address of the part in the storage
+	PhysicalAddress string `db:"physical_address"`
+	// Metadata Additional metadata as required (by storage vendor etc.)
+	Metadata Metadata `db:"metadata"`
+	// ContentType Original file's content-type
+	ContentType string `db:"content_type"`
 }
 
 type Tracker interface {
@@ -29,7 +35,7 @@ type Tracker interface {
 }
 
 type tracker struct {
-	db db.Database
+	store kv.StoreMessage
 }
 
 var (
@@ -38,9 +44,31 @@ var (
 	ErrInvalidMetadataSrcFormat = errors.New("invalid metadata source format")
 )
 
-func NewTracker(adb db.Database) Tracker {
+func NewTracker(ms kv.StoreMessage) Tracker {
 	return &tracker{
-		db: adb,
+		store: ms,
+	}
+}
+
+func multipartFromProto(pb *MultipartUploadData) *MultipartUpload {
+	return &MultipartUpload{
+		UploadID:        pb.UploadId,
+		Path:            pb.Path,
+		CreationDate:    pb.CreationDate.AsTime(),
+		PhysicalAddress: pb.PhysicalAddress,
+		Metadata:        pb.Metadata,
+		ContentType:     pb.ContentType,
+	}
+}
+
+func protoFromMultipart(m *MultipartUpload) *MultipartUploadData {
+	return &MultipartUploadData{
+		UploadId:        m.UploadID,
+		Path:            m.Path,
+		CreationDate:    timestamppb.New(m.CreationDate),
+		PhysicalAddress: m.PhysicalAddress,
+		Metadata:        m.Metadata,
+		ContentType:     m.ContentType,
 	}
 }
 
@@ -48,12 +76,8 @@ func (m *tracker) Create(ctx context.Context, multipart MultipartUpload) error {
 	if multipart.UploadID == "" {
 		return ErrInvalidUploadID
 	}
-	_, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		_, err := tx.Exec(`INSERT INTO gateway_multiparts (upload_id,path,creation_date,physical_address, metadata, content_type)
-			VALUES ($1, $2, $3, $4, $5, $6)`,
-			multipart.UploadID, multipart.Path, multipart.CreationDate, multipart.PhysicalAddress, multipart.Metadata, multipart.ContentType)
-		return nil, err
-	})
+	path := kv.FormatPath(multipartPrefix, multipart.UploadID)
+	err := m.store.SetIf(ctx, path, protoFromMultipart(&multipart), nil)
 	return err
 }
 
@@ -61,59 +85,27 @@ func (m *tracker) Get(ctx context.Context, uploadID string) (*MultipartUpload, e
 	if uploadID == "" {
 		return nil, ErrInvalidUploadID
 	}
-	res, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		var m MultipartUpload
-		if err := tx.Get(&m, `
-			SELECT upload_id, path, creation_date, physical_address, metadata, content_type 
-			FROM gateway_multiparts
-			WHERE upload_id = $1`,
-			uploadID); err != nil {
-			return nil, err
-		}
-		return &m, nil
-	})
+	data := &MultipartUploadData{}
+	path := kv.FormatPath(multipartPrefix, uploadID)
+	err := m.store.GetMsg(ctx, path, data)
 	if err != nil {
 		return nil, err
 	}
-	return res.(*MultipartUpload), nil
+	return multipartFromProto(data), nil
 }
 
 func (m *tracker) Delete(ctx context.Context, uploadID string) error {
 	if uploadID == "" {
 		return ErrInvalidUploadID
 	}
-	_, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		res, err := tx.Exec(`DELETE FROM gateway_multiparts WHERE upload_id = $1`, uploadID)
-		if err != nil {
-			return nil, err
+	data := &MultipartUploadData{}
+	path := kv.FormatPath(multipartPrefix, uploadID)
+	if err := m.store.GetMsg(ctx, path, data); err != nil {
+		if errors.Is(err, kv.ErrNotFound) {
+			return ErrMultipartUploadNotFound
 		}
-		affected := res.RowsAffected()
-		if affected != 1 {
-			return nil, ErrMultipartUploadNotFound
-		}
-		return nil, nil
-	})
-	return err
-}
-
-func (m Metadata) Set(k, v string) {
-	m[strings.ToLower(k)] = v
-}
-
-func (m Metadata) Get(k string) string {
-	return m[strings.ToLower(k)]
-}
-func (m Metadata) Value() (driver.Value, error) {
-	return json.Marshal(m)
-}
-
-func (m *Metadata) Scan(src interface{}) error {
-	if src == nil {
-		return nil
+		return err
 	}
-	data, ok := src.([]byte)
-	if !ok {
-		return ErrInvalidMetadataSrcFormat
-	}
-	return json.Unmarshal(data, m)
+
+	return m.store.Delete(ctx, path)
 }

@@ -7,20 +7,32 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
+	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
-func testTracker(t testing.TB) multiparts.Tracker {
+func testDBTracker(t testing.TB) multiparts.Tracker {
 	t.Helper()
 	conn, _ := testutil.GetDB(t, databaseURI)
-	return multiparts.NewTracker(conn)
+	return multiparts.NewDBTracker(conn)
 }
 
 func TestTracker_Get(t *testing.T) {
-	ctx := context.Background()
-	tracker := testTracker(t)
+	store := kvtest.MakeStoreByName("mem", "")(t, context.Background())
+	defer store.Close()
+	tracker := multiparts.NewTracker(kv.StoreMessage{Store: store})
+	testTrackerGet(t, tracker)
+}
 
-	creationTime := time.Now().Round(time.Second) // round in order to remove the monotonic clock
+func TestDBTracker_Get(t *testing.T) {
+	tracker := testDBTracker(t)
+	testTrackerGet(t, tracker)
+}
+
+func testTrackerGet(t *testing.T, tracker multiparts.Tracker) {
+	ctx := context.Background()
+	creationTime := time.Now().UTC().Round(time.Second) // round in order to remove the monotonic clock
 	// setup test data
 	if err := tracker.Create(ctx, multiparts.MultipartUpload{
 		UploadID:        "upload1",
@@ -73,6 +85,9 @@ func TestTracker_Get(t *testing.T) {
 				t.Errorf("Get() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
+			if err == nil {
+				got.CreationDate = got.CreationDate.UTC() // deepEqual workaround for time
+			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Get() got = %v, want %v", got, tt.want)
 			}
@@ -81,11 +96,23 @@ func TestTracker_Get(t *testing.T) {
 }
 
 func TestTracker_Delete(t *testing.T) {
+	store := kvtest.MakeStoreByName("mem", "")(t, context.Background())
+	defer store.Close()
+	tracker := multiparts.NewTracker(kv.StoreMessage{Store: store})
+	testTrackerDelete(t, tracker)
+}
+
+func TestDBTracker_Delete(t *testing.T) {
+	tracker := testDBTracker(t)
+	testTrackerDelete(t, tracker)
+}
+
+func testTrackerDelete(t *testing.T, tracker multiparts.Tracker) {
+	t.Helper()
 	ctx := context.Background()
-	c := testTracker(t)
 
 	// setup test data
-	if err := c.Create(ctx, multiparts.MultipartUpload{
+	if err := tracker.Create(ctx, multiparts.MultipartUpload{
 		UploadID:        "uploadX",
 		Path:            "/pathX",
 		CreationDate:    time.Now(),
@@ -110,7 +137,7 @@ func TestTracker_Delete(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := c.Delete(ctx, tt.args.uploadID); (err != nil) != tt.wantErr {
+			if err := tracker.Delete(ctx, tt.args.uploadID); (err != nil) != tt.wantErr {
 				t.Errorf("Delete() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -118,8 +145,20 @@ func TestTracker_Delete(t *testing.T) {
 }
 
 func TestTracker_Create(t *testing.T) {
+	store := kvtest.MakeStoreByName("mem", "")(t, context.Background())
+	defer store.Close()
+	tracker := multiparts.NewTracker(kv.StoreMessage{Store: store})
+	testTrackerCreate(t, tracker)
+}
+
+func TestDBTracker_Create(t *testing.T) {
+	tracker := testDBTracker(t)
+	testTrackerCreate(t, tracker)
+}
+
+func testTrackerCreate(t *testing.T, tracker multiparts.Tracker) {
+	t.Helper()
 	ctx := context.Background()
-	tracker := testTracker(t)
 
 	// setup test data
 	if err := tracker.Create(ctx, multiparts.MultipartUpload{
