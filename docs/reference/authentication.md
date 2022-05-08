@@ -27,14 +27,15 @@ Web UI at Administration / Users to create users.  Users have an access key
 `AKIA...` and an associated secret access key.  These credentials are valid
 to log into the Web UI, or to authenticate programmatic requests to the API
 Server or the S3 Gateway.
+git
+#### lakeFS Invite
 
-The built-in authentication database supports authentication to the UI, via
-email and password as well. This option is only valid for users who have 
-been invited to lakefs, confirmed the invite, and created a password.
-These credentials should be used for UI access only. It should be noted, that 
-the initial admin user who created the repo, will not be able to use email/password 
-authentiaction.
+If you were invited to lakeFS, Follow the following steps to create and activate your account:
 
+1. Locate the email sent to you, (be aware this may be in your spam folder)
+1. Click on the link in the email, to be directed to the account activation page
+1. Set your account password
+1. Now you can login to the UI using your email and the password you created for your account in the previous step
 
 #### LDAP server
 
