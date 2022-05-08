@@ -37,6 +37,8 @@ If you were invited to lakeFS, Follow the following steps to create and activate
 1. Set your account password
 1. Now you can login to the UI using your email and the password you created for your account in the previous step
 
+Note that email/password credentials should only be used for login via the UI.
+
 #### LDAP server
 
 Configure lakeFS to authenticate users on an LDAP server.  Once configured,
