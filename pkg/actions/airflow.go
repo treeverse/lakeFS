@@ -62,7 +62,7 @@ func NewAirflowHook(h ActionHook, action *Action) (Hook, error) {
 			ActionName: action.Name,
 		},
 		DAGConf: map[string]interface{}{},
-		Timeout: airflowClientDefaultTimeout,
+		Timeout: airflowDefaultTimeout,
 	}
 
 	var err error
@@ -88,7 +88,6 @@ func NewAirflowHook(h ActionHook, action *Action) (Hook, error) {
 		return nil, fmt.Errorf("airflow hook password property: %w", err)
 	}
 
-	airflowHook.Timeout = airflowDefaultTimeout
 	if v, ok := h.Properties[airflowTimeoutPropertyKey].(string); ok {
 		duration, err := time.ParseDuration(v)
 		if err != nil {
