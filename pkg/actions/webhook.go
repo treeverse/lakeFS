@@ -3,6 +3,7 @@ package actions
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -89,9 +90,8 @@ func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, buf *byte
 		return err
 	}
 
+	_, _ = fmt.Fprintf(buf, "Request:\n%s %s\n", http.MethodPost, w.URL)
 	reqReader := bytes.NewReader(eventData)
-	_, _ = fmt.Fprintf(buf, "Request:\nPOST %s\n", w.URL)
-
 	req, err := http.NewRequest(http.MethodPost, w.URL, reqReader)
 	if err != nil {
 		return err
@@ -116,7 +116,7 @@ func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, buf *byte
 
 	_, _ = fmt.Fprintf(buf, "Request Body:\n%s\n\n", eventData)
 
-	statusCode, err := executeAndLogResponse(ctx, req, buf, w.Timeout)
+	statusCode, err := executeAndLogResponse(ctx, req, buf, w.Timeout, nil)
 	if err != nil {
 		return err
 	}
@@ -128,7 +128,7 @@ func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, buf *byte
 	return nil
 }
 
-func executeAndLogResponse(ctx context.Context, req *http.Request, buf *bytes.Buffer, timeout time.Duration) (n int, err error) {
+func executeAndLogResponse(ctx context.Context, req *http.Request, buf *bytes.Buffer, timeout time.Duration, respMsg interface{}) (n int, err error) {
 	req = req.WithContext(ctx)
 
 	client := &http.Client{
@@ -150,6 +150,12 @@ func executeAndLogResponse(ctx context.Context, req *http.Request, buf *bytes.Bu
 		buf.Write(dumpResp)
 	} else {
 		_, _ = fmt.Fprintf(buf, "Failed dumping response: %s", err)
+	}
+	if respMsg != nil {
+		err = json.NewDecoder(resp.Body).Decode(&respMsg)
+		if err != nil {
+			return -1, err
+		}
 	}
 
 	return resp.StatusCode, nil
