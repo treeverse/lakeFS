@@ -23,7 +23,7 @@ var (
 	ErrUnknownDriver       = errors.New("unknown driver")
 )
 
-func NewPath(p ...string) string {
+func FormatPath(p ...string) string {
 	return strings.Join(p, PathDelimiter)
 }
 

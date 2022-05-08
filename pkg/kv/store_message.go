@@ -30,6 +30,14 @@ func (s *StoreMessage) SetMsg(ctx context.Context, path string, msg protoreflect
 }
 
 func (s *StoreMessage) SetIf(ctx context.Context, path string, msg protoreflect.ProtoMessage, pred protoreflect.ProtoMessage) error {
+	val, err := proto.Marshal(msg)
+	if err != nil {
+		return fmt.Errorf("failed on Marshal (path: %s): %w", path, err)
+	}
+	if pred == nil {
+		return s.Store.SetIf(ctx, []byte(path), val, nil)
+	}
+
 	curr, err := s.Store.Get(ctx, []byte(path))
 	if err != nil {
 		return fmt.Errorf("failed on Get. Path (%s): %w", path, err)
@@ -41,10 +49,6 @@ func (s *StoreMessage) SetIf(ctx context.Context, path string, msg protoreflect.
 	}
 	if !proto.Equal(pred, currMsg) {
 		return fmt.Errorf("failed on predicate. Path (%s): %w", path, ErrPredicateFailed)
-	}
-	val, err := proto.Marshal(msg)
-	if err != nil {
-		return fmt.Errorf("failed on Marshal (path: %s): %w", msg, err)
 	}
 	return s.Store.SetIf(ctx, []byte(path), val, curr)
 }

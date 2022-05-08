@@ -17,10 +17,6 @@ import (
 
 const modelPrefix = "tm"
 
-func getModelPath(name string) string {
-	return modelPrefix + kv.PathDelimiter + name
-}
-
 func TestStoreMessage(t *testing.T) {
 	ctx := context.Background()
 	makeStore := kvtest.MakeStoreByName("mem", "")
@@ -45,7 +41,7 @@ func TestStoreMessage(t *testing.T) {
 func testStoreMessageSetGet(t *testing.T, ctx context.Context, sm kv.StoreMessage) {
 	// set model info
 	setModel := &kvtest.TestModel{
-		Name:          "model1",
+		Name:          "SetGetModel",
 		AnotherString: "This is another string",
 		ADouble:       2.4,
 		TestTime:      timestamppb.New(time.Now()),
@@ -56,14 +52,14 @@ func testStoreMessageSetGet(t *testing.T, ctx context.Context, sm kv.StoreMessag
 		},
 		TestList: []bool{true, true, false, true, false},
 	}
-	err := sm.SetMsg(ctx, getModelPath(setModel.Name), setModel)
+	err := sm.SetMsg(ctx, kv.FormatPath(modelPrefix, setModel.Name), setModel)
 	if err != nil {
 		t.Fatal("failed to set model", err)
 	}
 
 	// get model info
 	m := &kvtest.TestModel{}
-	err = sm.GetMsg(ctx, getModelPath(setModel.Name), m)
+	err = sm.GetMsg(ctx, kv.FormatPath(modelPrefix, setModel.Name), m)
 	if err != nil {
 		t.Fatal("failed to get message", err)
 	}
@@ -76,7 +72,7 @@ func testStoreMessageSetGet(t *testing.T, ctx context.Context, sm kv.StoreMessag
 func testStoreMessageSetIf(t *testing.T, ctx context.Context, sm kv.StoreMessage) {
 	// set model info
 	setModel := &kvtest.TestModel{
-		Name:          "model1",
+		Name:          "SetIfModel",
 		AnotherString: "This is another string",
 		ADouble:       2.4,
 		TestTime:      timestamppb.New(time.Now()),
@@ -87,9 +83,9 @@ func testStoreMessageSetIf(t *testing.T, ctx context.Context, sm kv.StoreMessage
 		},
 		TestList: []bool{true, true, false, true, false},
 	}
-	err := sm.SetMsg(ctx, getModelPath(setModel.Name), setModel)
+	err := sm.SetIf(ctx, kv.FormatPath(modelPrefix, setModel.Name), setModel, nil)
 	if err != nil {
-		t.Fatal("failed to set model", err)
+		t.Fatal("failed to set model with nil predicate", err)
 	}
 
 	// SetIf model
@@ -107,16 +103,16 @@ func testStoreMessageSetIf(t *testing.T, ctx context.Context, sm kv.StoreMessage
 	}
 
 	// SetIf fails nil
-	err = sm.SetIf(ctx, getModelPath(setModel.Name), m1, nil)
+	err = sm.SetIf(ctx, kv.FormatPath(modelPrefix, setModel.Name), m1, nil)
 	require.Error(t, kv.ErrPredicateFailed, err)
 
 	// SetIf fails
-	err = sm.SetIf(ctx, getModelPath(setModel.Name), m1, m1)
+	err = sm.SetIf(ctx, kv.FormatPath(modelPrefix, setModel.Name), m1, m1)
 	require.Error(t, kv.ErrPredicateFailed, err)
 
 	// get model info
 	m2 := &kvtest.TestModel{}
-	err = sm.GetMsg(ctx, getModelPath(setModel.Name), m2)
+	err = sm.GetMsg(ctx, kv.FormatPath(modelPrefix, setModel.Name), m2)
 	if err != nil {
 		t.Fatal("failed to get message", err)
 	}
@@ -126,12 +122,12 @@ func testStoreMessageSetIf(t *testing.T, ctx context.Context, sm kv.StoreMessage
 	}
 
 	// SetIf succeeds
-	err = sm.SetIf(ctx, getModelPath(setModel.Name), m1, setModel)
+	err = sm.SetIf(ctx, kv.FormatPath(modelPrefix, setModel.Name), m1, setModel)
 	if err != nil {
 		t.Fatal("failed on SetIf", err)
 	}
 
-	err = sm.GetMsg(ctx, getModelPath(setModel.Name), m2)
+	err = sm.GetMsg(ctx, kv.FormatPath(modelPrefix, setModel.Name), m2)
 	if err != nil {
 		t.Fatal("failed to get message", err)
 	}
@@ -144,7 +140,7 @@ func testStoreMessageSetIf(t *testing.T, ctx context.Context, sm kv.StoreMessage
 func testStoreMessageDelete(t *testing.T, ctx context.Context, sm kv.StoreMessage) {
 	// set model info
 	m1 := &kvtest.TestModel{
-		Name:          "model1",
+		Name:          "DeleteModel",
 		AnotherString: "This is another string",
 		ADouble:       2.4,
 		TestTime:      timestamppb.New(time.Now()),
@@ -155,7 +151,7 @@ func testStoreMessageDelete(t *testing.T, ctx context.Context, sm kv.StoreMessag
 		},
 		TestList: []bool{true, true, false, true, false},
 	}
-	err := sm.SetMsg(ctx, getModelPath(m1.Name), m1)
+	err := sm.SetMsg(ctx, kv.FormatPath(m1.Name), m1)
 	if err != nil {
 		t.Fatal("failed to set model", err)
 	}
@@ -168,29 +164,29 @@ func testStoreMessageDelete(t *testing.T, ctx context.Context, sm kv.StoreMessag
 		TestMap:       nil,
 		TestList:      nil,
 	}
-	err = sm.SetMsg(ctx, getModelPath(m2.Name), m2)
+	err = sm.SetMsg(ctx, kv.FormatPath(m2.Name), m2)
 	if err != nil {
 		t.Fatal("failed to set model", err)
 	}
 
 	// delete model2
-	err = sm.Delete(ctx, getModelPath(m2.Name))
+	err = sm.Delete(ctx, kv.FormatPath(m2.Name))
 	if err != nil {
 		t.Fatal("failed to delete message", err)
 	}
 
 	// Get deleted key
 	m3 := &kvtest.TestModel{}
-	err = sm.GetMsg(ctx, getModelPath(m2.Name), m3)
+	err = sm.GetMsg(ctx, kv.FormatPath(m2.Name), m3)
 	require.Error(t, kv.ErrNotFound, err)
 
 	// delete twice - expect nop
-	err = sm.Delete(ctx, getModelPath(m2.Name))
+	err = sm.Delete(ctx, kv.FormatPath(m2.Name))
 	if err != nil {
 		t.Fatal("error trying to delete non-existing key", err)
 	}
 
-	err = sm.GetMsg(ctx, getModelPath(m1.Name), m3)
+	err = sm.GetMsg(ctx, kv.FormatPath(m1.Name), m3)
 	if err != nil {
 		t.Fatal("failed to get message", err)
 	}
@@ -200,18 +196,18 @@ func testStoreMessageDelete(t *testing.T, ctx context.Context, sm kv.StoreMessag
 	}
 
 	// delete model1
-	err = sm.Delete(ctx, getModelPath(m1.Name))
+	err = sm.Delete(ctx, kv.FormatPath(m1.Name))
 	if err != nil {
 		t.Fatal("failed to delete message", err)
 	}
 
 	// delete twice - expect nop
-	err = sm.Delete(ctx, getModelPath(m1.Name))
+	err = sm.Delete(ctx, kv.FormatPath(m1.Name))
 	if err != nil {
 		t.Fatal("error trying to delete non-existing key", err)
 	}
 
 	// Get deleted key (empty store)
-	err = sm.GetMsg(ctx, getModelPath(m1.Name), m3)
+	err = sm.GetMsg(ctx, kv.FormatPath(m1.Name), m3)
 	require.Error(t, kv.ErrNotFound, err)
 }

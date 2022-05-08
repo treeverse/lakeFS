@@ -13,8 +13,6 @@ const multipartPrefix = "multipart"
 
 type Metadata map[string]string
 
-var ErrAlreadyExists = errors.New("upload ID already exists")
-
 type MultipartUpload struct {
 	// UploadID A unique identifier for the uploaded part
 	UploadID string `db:"upload_id"`
@@ -78,12 +76,8 @@ func (m *tracker) Create(ctx context.Context, multipart MultipartUpload) error {
 	if multipart.UploadID == "" {
 		return ErrInvalidUploadID
 	}
-	_, err := m.Get(ctx, multipart.UploadID)
-	if err == nil {
-		return ErrAlreadyExists
-	}
-	path := kv.NewPath(multipartPrefix, multipart.UploadID)
-	err = m.store.SetMsg(ctx, path, protoFromMultipart(&multipart))
+	path := kv.FormatPath(multipartPrefix, multipart.UploadID)
+	err := m.store.SetIf(ctx, path, protoFromMultipart(&multipart), nil)
 	return err
 }
 
@@ -92,7 +86,7 @@ func (m *tracker) Get(ctx context.Context, uploadID string) (*MultipartUpload, e
 		return nil, ErrInvalidUploadID
 	}
 	data := &MultipartUploadData{}
-	path := kv.NewPath(multipartPrefix, uploadID)
+	path := kv.FormatPath(multipartPrefix, uploadID)
 	err := m.store.GetMsg(ctx, path, data)
 	if err != nil {
 		return nil, err
@@ -105,7 +99,7 @@ func (m *tracker) Delete(ctx context.Context, uploadID string) error {
 		return ErrInvalidUploadID
 	}
 	data := &MultipartUploadData{}
-	path := kv.NewPath(multipartPrefix, uploadID)
+	path := kv.FormatPath(multipartPrefix, uploadID)
 	if err := m.store.GetMsg(ctx, path, data); err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			return ErrMultipartUploadNotFound
