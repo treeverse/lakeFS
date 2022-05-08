@@ -245,7 +245,7 @@ The hook run succeeds if the DAG was triggered, and fails otherwise.
 | password      | The password of the Airflow user performing the request         | String                                                                                    | "admin"                 | true     | yes              |
 | dag_conf      | DAG run configuration that will be passed as is                 | JSON                                                                                      |                         | false    | no               |
 | wait_for_dag  | Wait for DAG run to complete and reflect state (default: false) | Boolean                                                                                   |                         | false    | no               |
-| timeout       | Duration while waiting for DAG to complete (default: 1m)        | String (golang's [Duration](https://golang.org/pkg/time/#Duration.String) representation) |                         | false    | no               |
+| timeout       | Time to wait for the DAG run to complete (default: 1m)        | String (golang's [Duration](https://golang.org/pkg/time/#Duration.String) representation) |                         | false    | no               |
 
 Example:
 ```yaml
