@@ -17,24 +17,42 @@ import (
 
 type Airflow struct {
 	HookBase
-	URL      string
-	DagID    string
-	Username string
-	Password SecureString
-	DAGConf  map[string]interface{}
+	URL        string
+	DagID      string
+	Username   string
+	Password   SecureString
+	DAGConf    map[string]interface{}
+	Timeout    time.Duration
+	WaitForDAG bool
+}
+
+type airflowGetDagResponse struct {
+	DagRunID      string    `json:"dag_run_id"`
+	DagID         string    `json:"dag_id"`
+	LogicalDate   time.Time `json:"logical_date"`
+	ExecutionDate time.Time `json:"execution_date"`
+	StartDate     time.Time `json:"start_date"`
+	EndDate       time.Time `json:"end_date"`
+	State         string    `json:"state"`
 }
 
 const (
+	airflowDefaultTimeout       = 1 * time.Minute
 	airflowClientDefaultTimeout = 5 * time.Second
-	airflowURLPropertyKey       = "url"
-	airflowDagIDPropertyKey     = "dag_id"
-	airflowUsernamePropertyKey  = "username"
-	airflowPasswordPropertyKey  = "password"
-	airflowConf                 = "dag_conf"
+	airflowCheckStatusInterval  = 5 * time.Second
+
+	airflowURLPropertyKey        = "url"
+	airflowDagIDPropertyKey      = "dag_id"
+	airflowUsernamePropertyKey   = "username"
+	airflowPasswordPropertyKey   = "password"
+	airflowConf                  = "dag_conf"
+	airflowTimeoutPropertyKey    = "timeout"
+	airflowWaitForDAGPropertyKey = "wait_for_dag"
 )
 
 var (
 	errAirflowHookRequestFailed = errors.New("airflow hook request failed")
+	errAirflowHookDAGFailed     = errors.New("airflow hook DAG failed")
 )
 
 func NewAirflowHook(h ActionHook, action *Action) (Hook, error) {
@@ -44,7 +62,9 @@ func NewAirflowHook(h ActionHook, action *Action) (Hook, error) {
 			ActionName: action.Name,
 		},
 		DAGConf: map[string]interface{}{},
+		Timeout: airflowDefaultTimeout,
 	}
+
 	var err error
 	airflowHook.URL, err = h.Properties.getRequiredProperty(airflowURLPropertyKey)
 	if err != nil {
@@ -68,6 +88,18 @@ func NewAirflowHook(h ActionHook, action *Action) (Hook, error) {
 		return nil, fmt.Errorf("airflow hook password property: %w", err)
 	}
 
+	if v, ok := h.Properties[airflowTimeoutPropertyKey].(string); ok {
+		duration, err := time.ParseDuration(v)
+		if err != nil {
+			return nil, fmt.Errorf("airflow hook timeout property: %w", err)
+		}
+		airflowHook.Timeout = duration
+	}
+
+	if v, ok := h.Properties[airflowWaitForDAGPropertyKey].(bool); ok {
+		airflowHook.WaitForDAG = v
+	}
+
 	conf, ok := h.Properties[airflowConf]
 	if ok {
 		airflowHook.DAGConf, ok = conf.(Properties)
@@ -80,10 +112,9 @@ func NewAirflowHook(h ActionHook, action *Action) (Hook, error) {
 }
 
 type DagRunReq struct {
-	// Run ID. This together with DAG_ID are a unique key.
+	// DagRunID Run ID. This together with DAG_ID are a unique key.
 	DagRunID string `json:"dag_run_id,omitempty"`
-
-	// JSON object describing additional configuration parameters.
+	// Conf JSON object describing additional configuration parameters.
 	Conf map[string]interface{} `json:"conf,omitempty"`
 }
 
@@ -99,15 +130,15 @@ func (a *Airflow) Run(ctx context.Context, record graveler.HookRecord, buf *byte
 	}
 	a.DAGConf["lakeFS_event"] = json.RawMessage(eventData)
 
-	dagRunID := fmt.Sprintf("lakeFS_hook_%s_%s", a.ID, time.Now().Format(time.RFC3339))
-	bod, err := json.Marshal(DagRunReq{
+	dagRunID := fmt.Sprintf("lakeFS_hook_%s_%s", a.ID, record.RunID)
+	body, err := json.Marshal(DagRunReq{
 		DagRunID: dagRunID,
 		Conf:     a.DAGConf,
 	})
 	if err != nil {
 		return fmt.Errorf("request serialization error: %w", err)
 	}
-	reqReader := bytes.NewReader(bod)
+	reqReader := bytes.NewReader(body)
 
 	dagRunURL, err := a.buildDagRunURL()
 	if err != nil {
@@ -124,8 +155,9 @@ func (a *Airflow) Run(ctx context.Context, record graveler.HookRecord, buf *byte
 
 	req.Header.Set("Content-Type", "application/json")
 
-	_, _ = fmt.Fprintf(buf, "Body: %s\n\n", bod)
-	statusCode, err := executeAndLogResponse(ctx, req, buf, airflowClientDefaultTimeout)
+	_, _ = fmt.Fprintf(buf, "Body: %s\n\n", body)
+
+	statusCode, err := doHTTPRequestWithLog(ctx, req, buf, airflowClientDefaultTimeout)
 	if err != nil {
 		return fmt.Errorf("failed executing airflow request: %w", err)
 	}
@@ -133,6 +165,9 @@ func (a *Airflow) Run(ctx context.Context, record graveler.HookRecord, buf *byte
 		return fmt.Errorf("status code (%d): %w", statusCode, errAirflowHookRequestFailed)
 	}
 
+	if a.WaitForDAG {
+		return a.waitForDAGComplete(ctx, dagRunID, buf)
+	}
 	return nil
 }
 
@@ -143,4 +178,61 @@ func (a *Airflow) buildDagRunURL() (string, error) {
 	}
 	u.Path = path.Join(u.Path, "/api/v1/dags/", a.DagID, "/dagRuns")
 	return u.String(), nil
+}
+
+func (a *Airflow) waitForDAGComplete(ctx context.Context, dagRunID string, buf *bytes.Buffer) error {
+	_, _ = fmt.Fprintf(buf, "\nWaiting for DAG to complete...\n")
+
+	// get dag request url
+	u, err := url.Parse(a.URL)
+	if err != nil {
+		return fmt.Errorf("failed parse airflow URL for DAG status: %w", err)
+	}
+	u.Path = path.Join(u.Path, "/api/v1/dags/", url.PathEscape(a.DagID), "/dagRuns/", url.PathEscape(dagRunID))
+	dagRunURL := u.String()
+
+	ctx, cancel := context.WithTimeout(ctx, a.Timeout)
+	defer cancel()
+
+	t := time.NewTicker(airflowCheckStatusInterval)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-t.C:
+			state, err := a.getAirflowDAGStatus(ctx, dagRunURL, buf)
+			if err != nil {
+				return err
+			}
+			switch state {
+			case "failed":
+				return errAirflowHookDAGFailed
+			case "success":
+				return nil
+			}
+		}
+	}
+}
+
+func (a *Airflow) getAirflowDAGStatus(ctx context.Context, dagRunURL string, buf *bytes.Buffer) (string, error) {
+	_, _ = fmt.Fprintf(buf, "Request:\n%s %s\n", http.MethodGet, dagRunURL)
+
+	req, err := http.NewRequest(http.MethodGet, dagRunURL, nil)
+	if err != nil {
+		return "", fmt.Errorf("failed airflow new request for DAG status: %w", err)
+	}
+	req.SetBasicAuth(a.Username, a.Password.val)
+	req.Header.Set("Content-Type", "application/json")
+
+	var dagResponse airflowGetDagResponse
+	statusCode, err := doHTTPRequestResponseWithLog(ctx, req, &dagResponse, buf, airflowClientDefaultTimeout)
+	if err != nil {
+		return "", err
+	}
+	if statusCode != http.StatusOK {
+		return "", fmt.Errorf("status code (%d): %w", statusCode, errAirflowHookRequestFailed)
+	}
+	_, _ = fmt.Fprintf(buf, "\nDAG completed with state: %s\n", dagResponse.State)
+	return dagResponse.State, nil
 }
