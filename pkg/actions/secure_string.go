@@ -26,7 +26,7 @@ func (s SecureString) String() string {
 
 var envVarRegex = regexp.MustCompile(`{{ ?ENV\..*? ?}}`)
 
-// Creates a new SecureString, reading env var if needed.
+// NewSecureString creates a new SecureString, reading env var if needed.
 func NewSecureString(s string) (SecureString, error) {
 	matches := 0
 	var err error
