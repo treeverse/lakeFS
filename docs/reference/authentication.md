@@ -30,9 +30,9 @@ Server or the S3 Gateway.
 git
 #### lakeFS Invite
 
-If you were invited to lakeFS, Follow the following steps to create and activate your account:
+If you were invited to lakeFS, Follow these steps to create and activate your account:
 
-1. Locate the email sent to you, (be aware this may be in your spam folder)
+1. Locate the email sent to you, (be aware it may be in your spam folder)
 1. Click on the link in the email, to be directed to the account activation page
 1. Set your account password
 1. Now you can login to the UI using your email and the password you created for your account in the previous step
