@@ -24,10 +24,6 @@ var (
 )
 
 func NewPath(p ...string) string {
-	const minPathLength = 2
-	if len(p) < minPathLength {
-		panic("invalid path length")
-	}
 	return strings.Join(p, PathDelimiter)
 }
 

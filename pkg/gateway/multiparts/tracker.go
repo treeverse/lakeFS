@@ -104,12 +104,14 @@ func (m *tracker) Delete(ctx context.Context, uploadID string) error {
 	if uploadID == "" {
 		return ErrInvalidUploadID
 	}
-	if _, err := m.Get(ctx, uploadID); err != nil {
+	data := &MultipartUploadData{}
+	path := kv.NewPath(multipartPrefix, uploadID)
+	if err := m.store.GetMsg(ctx, path, data); err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			return ErrMultipartUploadNotFound
 		}
 		return err
 	}
-	path := kv.NewPath(multipartPrefix, uploadID)
+
 	return m.store.Delete(ctx, path)
 }

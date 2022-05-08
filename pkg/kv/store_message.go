@@ -24,7 +24,7 @@ func (s *StoreMessage) GetMsg(ctx context.Context, path string, msg protoreflect
 func (s *StoreMessage) SetMsg(ctx context.Context, path string, msg protoreflect.ProtoMessage) error {
 	val, err := proto.Marshal(msg)
 	if err != nil {
-		return fmt.Errorf("failed on Set (path: %s) (msg: %s): %w", path, msg, err)
+		return fmt.Errorf("failed on Set (path: %s): %w", path, err)
 	}
 	return s.Store.Set(ctx, []byte(path), val)
 }
@@ -37,14 +37,14 @@ func (s *StoreMessage) SetIf(ctx context.Context, path string, msg protoreflect.
 	currMsg := msg.ProtoReflect().New().Interface()
 	err = proto.Unmarshal(curr, currMsg)
 	if err != nil {
-		return fmt.Errorf("failed on Unmarshal (path: %s) (curr msg: %s): %w", path, currMsg, err)
+		return fmt.Errorf("failed on Unmarshal (path: %s) %w", path, err)
 	}
 	if !proto.Equal(pred, currMsg) {
 		return fmt.Errorf("failed on predicate. Path (%s): %w", path, ErrPredicateFailed)
 	}
 	val, err := proto.Marshal(msg)
 	if err != nil {
-		return fmt.Errorf("failed on Marshal (path: %s) (msg: %s): %w", path, msg, err)
+		return fmt.Errorf("failed on Marshal (path: %s): %w", msg, err)
 	}
 	return s.Store.SetIf(ctx, []byte(path), val, curr)
 }
