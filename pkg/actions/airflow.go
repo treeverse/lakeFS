@@ -157,7 +157,7 @@ func (a *Airflow) Run(ctx context.Context, record graveler.HookRecord, buf *byte
 
 	_, _ = fmt.Fprintf(buf, "Body: %s\n\n", body)
 
-	statusCode, err := executeAndLogResponse(ctx, req, buf, airflowClientDefaultTimeout, nil)
+	statusCode, err := doHTTPRequestWithLog(ctx, req, buf, airflowClientDefaultTimeout)
 	if err != nil {
 		return fmt.Errorf("failed executing airflow request: %w", err)
 	}
@@ -226,7 +226,7 @@ func (a *Airflow) getAirflowDAGStatus(ctx context.Context, dagRunURL string, buf
 	req.Header.Set("Content-Type", "application/json")
 
 	var dagResponse airflowGetDagResponse
-	statusCode, err := executeAndLogResponse(ctx, req, buf, airflowClientDefaultTimeout, &dagResponse)
+	statusCode, err := doHTTPRequestResponseWithLog(ctx, req, &dagResponse, buf, airflowClientDefaultTimeout)
 	if err != nil {
 		return "", err
 	}

@@ -116,7 +116,7 @@ func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, buf *byte
 
 	_, _ = fmt.Fprintf(buf, "Request Body:\n%s\n\n", eventData)
 
-	statusCode, err := executeAndLogResponse(ctx, req, buf, w.Timeout, nil)
+	statusCode, err := doHTTPRequestWithLog(ctx, req, buf, w.Timeout)
 	if err != nil {
 		return err
 	}
@@ -128,7 +128,14 @@ func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, buf *byte
 	return nil
 }
 
-func executeAndLogResponse(ctx context.Context, req *http.Request, buf *bytes.Buffer, timeout time.Duration, respMsg interface{}) (n int, err error) {
+// doHTTPRequestWithLog helper that uses 'doHTTPRequestResponseWithLog' without response parse
+func doHTTPRequestWithLog(ctx context.Context, req *http.Request, buf *bytes.Buffer, timeout time.Duration) (n int, err error) {
+	return doHTTPRequestResponseWithLog(ctx, req, nil, buf, timeout)
+}
+
+// doHTTPRequestResponseWithLog execute a http request with specified timeout. Output variable 'respJSON', if set, used to json decode the response.
+// returns the response status code or -1 on error
+func doHTTPRequestResponseWithLog(ctx context.Context, req *http.Request, respJSON interface{}, buf *bytes.Buffer, timeout time.Duration) (int, error) {
 	req = req.WithContext(ctx)
 
 	client := &http.Client{
@@ -151,8 +158,8 @@ func executeAndLogResponse(ctx context.Context, req *http.Request, buf *bytes.Bu
 	} else {
 		_, _ = fmt.Fprintf(buf, "Failed dumping response: %s", err)
 	}
-	if respMsg != nil {
-		err = json.NewDecoder(resp.Body).Decode(&respMsg)
+	if respJSON != nil {
+		err = json.NewDecoder(resp.Body).Decode(&respJSON)
 		if err != nil {
 			return -1, err
 		}
