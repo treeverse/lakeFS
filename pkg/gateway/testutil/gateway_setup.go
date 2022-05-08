@@ -48,8 +48,8 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, databaseURI str
 		DB:     conn,
 	})
 
-	var multipartsTracker multiparts.Tracker
 	testutil.MustDo(t, "build catalog", err)
+	var multipartsTracker multiparts.Tracker
 	if kvEnabled {
 		store := kvtest.MakeStoreByName("mem", "")(t, context.Background())
 		defer store.Close()
