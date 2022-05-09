@@ -12,7 +12,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 )
 
-type makeStore func(t *testing.T, ctx context.Context) kv.Store
+type MakeStore func(t *testing.T, ctx context.Context) kv.Store
 
 var runTestID = nanoid.MustGenerate("abcdef1234567890", 8)
 
@@ -41,7 +41,7 @@ func sampleEntry(prefix string, n int) kv.Entry {
 }
 
 func TestDriver(t *testing.T, name, dsn string) {
-	ms := makeStoreByName(name, dsn)
+	ms := MakeStoreByName(name, dsn)
 	t.Run("Driver_Open", func(t *testing.T) { testDriverOpen(t, ms) })
 	t.Run("Store_SetGet", func(t *testing.T) { testStoreSetGet(t, ms) })
 	t.Run("Store_SetIf", func(t *testing.T) { testStoreSetIf(t, ms) })
@@ -51,7 +51,7 @@ func TestDriver(t *testing.T, name, dsn string) {
 	t.Run("ScanPrefix", func(t *testing.T) { testScanPrefix(t, ms) })
 }
 
-func testDriverOpen(t *testing.T, ms makeStore) {
+func testDriverOpen(t *testing.T, ms MakeStore) {
 	ctx := context.Background()
 	store1 := ms(t, ctx)
 	store2 := ms(t, ctx)
@@ -59,7 +59,7 @@ func testDriverOpen(t *testing.T, ms makeStore) {
 	store2.Close()
 }
 
-func testStoreSetGet(t *testing.T, ms makeStore) {
+func testStoreSetGet(t *testing.T, ms MakeStore) {
 	ctx := context.Background()
 	store := ms(t, ctx)
 	defer store.Close()
@@ -111,7 +111,7 @@ func testStoreSetGet(t *testing.T, ms makeStore) {
 	}
 }
 
-func testStoreDelete(t *testing.T, ms makeStore) {
+func testStoreDelete(t *testing.T, ms MakeStore) {
 	t.Parallel()
 	ctx := context.Background()
 	store := ms(t, ctx)
@@ -138,7 +138,7 @@ func testStoreDelete(t *testing.T, ms makeStore) {
 	})
 }
 
-func testStoreSetIf(t *testing.T, ms makeStore) {
+func testStoreSetIf(t *testing.T, ms MakeStore) {
 	ctx := context.Background()
 	store := ms(t, ctx)
 	defer store.Close()
@@ -198,7 +198,7 @@ func testStoreSetIf(t *testing.T, ms makeStore) {
 	})
 }
 
-func testStoreScan(t *testing.T, ms makeStore) {
+func testStoreScan(t *testing.T, ms MakeStore) {
 	ctx := context.Background()
 	store := ms(t, ctx)
 	defer store.Close()
@@ -273,7 +273,7 @@ func testStoreScan(t *testing.T, ms makeStore) {
 	})
 }
 
-func makeStoreByName(name, dsn string) makeStore {
+func MakeStoreByName(name, dsn string) MakeStore {
 	return func(t *testing.T, ctx context.Context) kv.Store {
 		t.Helper()
 		store, err := kv.Open(ctx, name, dsn)
@@ -284,7 +284,7 @@ func makeStoreByName(name, dsn string) makeStore {
 	}
 }
 
-func testStoreMissingArgument(t *testing.T, ms makeStore) {
+func testStoreMissingArgument(t *testing.T, ms MakeStore) {
 	ctx := context.Background()
 	store := ms(t, ctx)
 	defer store.Close()
@@ -326,7 +326,7 @@ func testStoreMissingArgument(t *testing.T, ms makeStore) {
 	})
 }
 
-func testScanPrefix(t *testing.T, ms makeStore) {
+func testScanPrefix(t *testing.T, ms MakeStore) {
 	ctx := context.Background()
 	store := ms(t, ctx)
 	defer store.Close()

@@ -30,7 +30,6 @@ const SetupContents = () => {
     if (!error && response && response.state === SETUP_STATE_INITIALIZED) {
         router.push({pathname: '/', query: router.query})
     }
-    const { next } = router.query;
     const onSubmit = async () => {
         setDisabled(true);
         try {
@@ -75,7 +74,7 @@ server:
                                 This is the <strong>only</strong> time that the secret access keys can be viewed or downloaded. You cannot recover them later.
                             </Alert>
                             <div className={"mt-4"} style={{textAlign: "center"}}>
-                                <Button className={"p-2 pl-3 pr-3 after-setup-btn"} onClick={() => window.open("/auth/login", "_blank")}>Go To Login</Button>
+                                <Button className={"p-2 pl-3 pr-3 after-setup-btn"} onClick={() => window.open(router.query && router.query.next ? `/auth/login?next=${router.query.next}` : '/auth/login', "_blank")}>Go To Login</Button>
                             </div>
                         </Card.Body>
                     </Card>

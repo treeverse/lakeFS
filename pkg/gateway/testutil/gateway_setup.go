@@ -15,6 +15,9 @@ import (
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/gateway"
 	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
+	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/kvtest"
+	_ "github.com/treeverse/lakefs/pkg/kv/mem"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/testutil"
@@ -26,9 +29,10 @@ type Dependencies struct {
 	catalog *catalog.Catalog
 }
 
-func GetBasicHandler(t *testing.T, authService *FakeAuthService, databaseURI string, repoName string) (http.Handler, *Dependencies) {
+func GetBasicHandler(t *testing.T, authService *FakeAuthService, databaseURI string, repoName string, kvEnabled bool) (http.Handler, *Dependencies) {
 	ctx := context.Background()
-	idTranslator := &testutil.UploadIDTranslator{TransMap: make(map[string]string),
+	idTranslator := &testutil.UploadIDTranslator{
+		TransMap:   make(map[string]string),
 		ExpectedID: "",
 		T:          t,
 	}
@@ -43,8 +47,16 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, databaseURI str
 		Config: conf,
 		DB:     conn,
 	})
-	testutil.MustDo(t, "build c", err)
-	multipartsTracker := multiparts.NewTracker(conn)
+
+	testutil.MustDo(t, "build catalog", err)
+	var multipartsTracker multiparts.Tracker
+	if kvEnabled {
+		store := kvtest.MakeStoreByName("mem", "")(t, context.Background())
+		defer store.Close()
+		multipartsTracker = multiparts.NewTracker(kv.StoreMessage{Store: store})
+	} else {
+		multipartsTracker = multiparts.NewDBTracker(conn)
+	}
 
 	blockstoreType, _ := os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
 	blockAdapter := testutil.NewBlockAdapterByType(t, idTranslator, blockstoreType)
@@ -89,14 +101,14 @@ func (m *FakeAuthService) GetCredentials(_ context.Context, accessKey string) (*
 	return aCred, nil
 }
 
-func (m *FakeAuthService) GetUserByID(ctx context.Context, userID int64) (*model.User, error) {
+func (m *FakeAuthService) GetUserByID(_ context.Context, _ int64) (*model.User, error) {
 	return &model.User{
 		CreatedAt: time.Now(),
 		Username:  "user",
 	}, nil
 }
 
-func (m *FakeAuthService) Authorize(_ context.Context, req *auth.AuthorizationRequest) (*auth.AuthorizationResponse, error) {
+func (m *FakeAuthService) Authorize(_ context.Context, _ *auth.AuthorizationRequest) (*auth.AuthorizationResponse, error) {
 	return &auth.AuthorizationResponse{Allowed: true}, nil
 }
 
