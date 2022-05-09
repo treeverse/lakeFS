@@ -89,7 +89,6 @@ day_in_seconds=100000 # rounded up from 86400
 current_epoch_in_seconds=$(date +%s)
 
 failed_tests=()
-repositories=()
 
 prepare_for_gc() {
   local test_case=$1
@@ -112,27 +111,36 @@ prepare_for_gc() {
   delete_and_commit "${test_case}" "${repo}" "${test_id}"
 }
 
+do_case() {
+  test_key=$1
+  test_case=$(jq -r ".[${test_key}] | @base64" gc-tests/test_scenarios.json)
+  test_case=$(_jq "${test_case}")
+  test_id=$(echo "${test_case}" | jq -r '.id')
+  repo="${REPOSITORY}-${test_id}"
+  prepare_for_gc "${test_case}" "${test_id}"
+  run_gc "${repo}"
+}
+
 for test_case in $(jq -r '.[] | @base64' gc-tests/test_scenarios.json); do
   test_case=$(_jq "${test_case}")
   test_id=$(echo "${test_case}" | jq -r '.id')
   test_description=$(echo "${test_case}" | jq -r '.description')
-  echo "Test: ${test_description}"
-  # run prepare_for_gc in parallel
-  prepare_for_gc "${test_case}" "${test_id}" &
-  repositories+=("${REPOSITORY}-${test_id}")
 done
 
-# wait for all prepare_for_gc functions:
-wait
 
-export -f run_gc
+test_keys=()
+for test_case in $(jq -r 'to_entries | .[] | @base64' gc-tests/test_scenarios.json); do
+    test_case=$(_jq "${test_case}")
+    test_keys+=("$(echo "${test_case}" | jq -r '.key')")
+done
+
+export -f do_case
 # Run GC jobs in parallel processes:
-printf '%s\n' "${repositories[@]}" | xargs -P 8 -n 1 -I {} bash -c 'run_gc "$@"' _ {}
+printf '%s\n' "${test_keys[@]}" | xargs -P 8 -n 1 -I {} bash -c 'do_case "$@"' _ {}
 
-for test_case in $(jq -r '.[] | @base64' gc-tests/test_scenarios.json); do
+for test_case in $(jq -r 'to_entries | .[] | @base64' gc-tests/test_scenarios.json); do
     test_case=$(_jq ${test_case})
-    test_id=$(echo "${test_case}" | jq -r '.id')
-    test_description=$(echo "${test_case}" | jq -r '.description')
+    test_id=$(echo "${test_case}" | jq -r '.value.id')
     file_existing_ref=$(cat "existing_ref_${test_id}.txt")
     if ! validate_gc_job "${test_case}" "${REPOSITORY}-${test_id}" "${file_existing_ref}" "${test_id}"; then
       failed_tests+=("${test_description}")
