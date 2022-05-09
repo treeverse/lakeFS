@@ -29,16 +29,6 @@ clean_repo() {
   done
 }
 
-initialize_env() {
-  local repo=$1
-  local test_id=$2
-  run_lakectl branch create "lakefs://${repo}/a${test_id}" -s "lakefs://${repo}/main"
-  run_lakectl fs upload "lakefs://${repo}/a${test_id}/file${test_id}" -s /local/gc-tests/sample_file
-  local existing_ref=$(run_lakectl commit "lakefs://${repo}/a${test_id}" -m "uploaded file ${test_id}" --epoch-time-seconds 0 | grep "ID: " | awk '{ print $2 }')
-  run_lakectl branch create "lakefs://${repo}/b${test_id}" -s "lakefs://${repo}/${existing_ref}"
-  echo "EXISTING_REF: ${existing_ref}"
-}
-
 delete_and_commit() {
   local test_case=$1
   local repo=$2
@@ -92,46 +82,68 @@ validate_gc_job() {
   done
 }
 
-clean_main_branch() {
-  local repo=$1
-  run_lakectl fs rm "lakefs://${repo}/main/not_deleted_file1"
-  run_lakectl fs rm "lakefs://${repo}/main/not_deleted_file2"
-  run_lakectl fs rm "lakefs://${repo}/main/not_deleted_file3"
-  run_lakectl commit "lakefs://${repo}/main" -m "delete the undeleted files"
-}
-
 #################################
 ######## Tests Execution ########
 #################################
 day_in_seconds=100000 # rounded up from 86400
 current_epoch_in_seconds=$(date +%s)
 
-run_lakectl fs upload "lakefs://${REPOSITORY}/main/not_deleted_file1" -s /local/gc-tests/sample_file
-run_lakectl fs upload "lakefs://${REPOSITORY}/main/not_deleted_file2" -s /local/gc-tests/sample_file
-run_lakectl fs upload "lakefs://${REPOSITORY}/main/not_deleted_file3" -s /local/gc-tests/sample_file
-run_lakectl commit "lakefs://${REPOSITORY}/main" -m "add three files not to be deleted" --epoch-time-seconds 0
-
 failed_tests=()
-for test_case in $(jq -r '.[] | @base64' gc-tests/test_scenarios.json); do
-  test_case=$(_jq ${test_case})
+
+prepare_for_gc() {
+  local test_case=$1
+  local test_id=$2
+  local repo="${REPOSITORY}-${test_id}"
+
+  run_lakectl repo create "lakefs://${repo}" "${STORAGE_NAMESPACE}/${repo}/"
+  run_lakectl fs upload "lakefs://${repo}/main/not_deleted_file1" -s /local/gc-tests/sample_file
+  run_lakectl fs upload "lakefs://${repo}/main/not_deleted_file2" -s /local/gc-tests/sample_file
+  run_lakectl fs upload "lakefs://${repo}/main/not_deleted_file3" -s /local/gc-tests/sample_file
+  run_lakectl commit "lakefs://${repo}/main" -m "add three files not to be deleted" --epoch-time-seconds 0
+
+  run_lakectl branch create "lakefs://${repo}/a${test_id}" -s "lakefs://${repo}/main"
+  run_lakectl fs upload "lakefs://${repo}/a${test_id}/file${test_id}" -s /local/gc-tests/sample_file
+  file_existing_ref=$(run_lakectl commit "lakefs://${repo}/a${test_id}" -m "uploaded file ${test_id}" --epoch-time-seconds 0 | grep "ID: " | awk '{ print $2 }')
+  run_lakectl branch create "lakefs://${repo}/b${test_id}" -s "lakefs://${repo}/${file_existing_ref}"
+  echo "${file_existing_ref}" > "existing_ref_${test_id}.txt"
+  echo "${test_case}" | jq --raw-output '.policy' > "policy_${test_id}.json"
+  run_lakectl gc set-config lakefs://"${repo}" -f "/local/policy_${test_id}.json"
+  delete_and_commit "${test_case}" "${repo}" "${test_id}"
+}
+
+do_case() {
+  test_key=$1
+  test_case=$(jq -r ".[${test_key}] | @base64" gc-tests/test_scenarios.json)
+  test_case=$(_jq "${test_case}")
   test_id=$(echo "${test_case}" | jq -r '.id')
-  test_description=$(echo "${test_case}" | jq -r '.description')
-  echo "Test: ${test_description}"
-  file_existing_ref=$(initialize_env ${REPOSITORY} ${test_id}  | grep "^EXISTING_REF: " | awk '{ print $2 }')
-  echo "${test_case}" | jq --raw-output '.policy' > policy.json
-  run_lakectl gc set-config lakefs://${REPOSITORY} -f /local/policy.json
-  delete_and_commit "${test_case}" ${REPOSITORY} ${test_id}
-  run_gc ${REPOSITORY}
-  if ! validate_gc_job "${test_case}" ${REPOSITORY} ${file_existing_ref} ${test_id}; then
-    failed_tests+=("${test_description}")
-  else
-    echo "Test: ${test_description} - SUCCEEDED"
-  fi
-  rm -f policy.json
-  clean_repo ${REPOSITORY}
+  repo="${REPOSITORY}-${test_id}"
+  prepare_for_gc "${test_case}" "${test_id}"
+  run_gc "${repo}"
+}
+
+test_keys=()
+for test_case in $(jq -r 'to_entries | .[] | @base64' gc-tests/test_scenarios.json); do
+    test_case=$(_jq "${test_case}")
+    test_keys+=("$(echo "${test_case}" | jq -r '.key')")
 done
 
-clean_main_branch ${REPOSITORY}
+export -f do_case
+# Run GC jobs in parallel processes:
+printf '%s\n' "${test_keys[@]}" | xargs -P 8 -n 1 -I {} bash -c 'do_case "$@"' _ {}
+
+for test_case in $(jq -r '.[] | @base64' gc-tests/test_scenarios.json); do
+    test_case=$(_jq ${test_case})
+    test_id=$(echo "${test_case}" | jq -r '.id')
+    test_description=$(echo "${test_case}" | jq -r '.description')
+    file_existing_ref=$(cat "existing_ref_${test_id}.txt")
+    if ! validate_gc_job "${test_case}" "${REPOSITORY}-${test_id}" "${file_existing_ref}" "${test_id}"; then
+      failed_tests+=("${test_description}")
+    else
+      echo "Test: ${test_description} - SUCCEEDED"
+    fi
+    rm -f "policy_${test_id}.json"
+    rm -f "existing_ref_${test_id}.txt"
+done
 
 if (( ${#failed_tests[@]} > 0)); then
   for ft in "${failed_tests[@]}"; do
