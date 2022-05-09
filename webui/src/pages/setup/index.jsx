@@ -30,7 +30,6 @@ const SetupContents = () => {
     if (!error && response && response.state === SETUP_STATE_INITIALIZED) {
         router.push({pathname: '/', query: router.query})
     }
-    const { next } = router.query;
     const onSubmit = async () => {
         setDisabled(true);
         try {
@@ -85,7 +84,7 @@ server:
                             <hr/>
                             <Button variant="success" href={downloadContent} taget="_blank" download="lakectl.yaml"><DownloadIcon />Download Configuration </Button>
                             {' '}
-                            <Button variant="link" onClick={() => router.push({pathname: "/auth/login", query: {next}})}>Go To Login</Button>
+                            <Button variant="link" onClick={() => router.push({pathname: "/auth/login", query: router.query})}>Go To Login</Button>
                         </Card.Body>
                     </Card>
                 </Col>
