@@ -53,48 +53,57 @@ server:
   endpoint_url: ${window.location.protocol}//${window.location.host}${API_ENDPOINT}
 `);
         return (
+            <>
             <Row>
                 <Col md={{offset: 2, span: 8}}>
                     <Card className="setup-widget">
-                        <Card.Header>Congratulations</Card.Header>
-                        <Card.Body>
+                        <Card.Body className={"after-setup-card"}>
+                            <h2>You&apos;re all set!</h2>
                             <Card.Text>
-                                Database was initialized and admin user was created.<br/>
-                                Here are your credentials:<br/>
+                                Here are the credentials for your first user:<br/>
                             </Card.Text>
-                            <hr/>
-                            <Table borderless hover>
-                                <tbody>
-                                <tr>
-                                    <td>Key ID</td>
-                                    <td><code>{setupData.access_key_id}</code> <ClipboardButton variant="link" text={setupData.access_key_id} tooltip="Copy key ID"/></td>
-                                </tr>
-                                <tr>
-                                    <td>Secret Key</td>
-                                    <td><code>{setupData.secret_access_key}</code> <ClipboardButton variant="link" text={setupData.secret_access_key} tooltip="Copy secret key"/></td>
-                                </tr>
-                                </tbody>
-                            </Table>
-                            <Card.Text>
-                                Download the initial client configuration under your <code>$HOME/.lakectl.yaml</code> and keep a copy of the data for your login into the system<br/>
-                            </Card.Text>
-                            <Alert variant="warning">
+                            <div className={"ml-2 row mt-4"}>
+                                <div className={"col-3"}>Access Key ID:</div>
+                                <div className={"col-7"}><code>{setupData.access_key_id}</code> &#160;&#160;<ClipboardButton className={"copy-button"} variant="outline-dark" text={setupData.access_key_id} tooltip="Copy"/></div>
+                            </div>
+                            <div className={"ml-2 row mt-2"}>
+                                <div className={"col-3"}>Secret Access Key:</div>
+                                <div className={"col-7"}><code>{setupData.secret_access_key}</code> &#160;&#160;<ClipboardButton className={"copy-button"} variant="outline-dark" text={setupData.secret_access_key} tooltip="Copy"/></div>
+                            </div>
+                            <Alert className={"mt-4"} variant="warning">
                                 This is the <strong>only</strong> time that the secret access keys can be viewed or downloaded. You cannot recover them later.
                             </Alert>
-                            <hr/>
-                            <Button variant="success" href={downloadContent} taget="_blank" download="lakectl.yaml"><DownloadIcon />Download Configuration </Button>
-                            {' '}
-                            <Button variant="link" onClick={() => router.push({pathname: "/auth/login", query: router.query})}>Go To Login</Button>
+                            <div className={"mt-4"} style={{textAlign: "center"}}>
+                                <Button className={"p-2 pl-3 pr-3 after-setup-btn"} onClick={() => window.open(router.query && router.query.next ? `/auth/login?next=${router.query.next}` : '/auth/login', "_blank")}>Go To Login</Button>
+                            </div>
                         </Card.Body>
                     </Card>
                 </Col>
             </Row>
+                <Row>
+                    <Col md={{offset: 2, span: 8}}>
+                        <Card className="mt-5">
+                            <Card.Body className={"after-setup-card"}>
+                                <h5>Configure lakectl</h5>
+                                <div>Use the command-line tool to perform Git-like operations on your data. Save the configuration file under <code>~/.lakectl.yaml</code>:</div>
+                                <div className={"mt-3"} style={{textAlign: "center"}}>
+                                    <Button className={"p-2 pl-3 pr-3 after-setup-btn"} href={downloadContent}
+                                            taget="_blank" download="lakectl.yaml"><DownloadIcon/> Download Configuration
+                                    </Button>
+                                </div>
+                                <div className={"mt-3"}>
+                                    To use lakectl, you will need to download the binary. <a href="https://www.youtube.com/watch?v=8nO7RT411nA" rel="noreferrer" target={"_blank"}>Learn more</a>.
+                                </div>
+                            </Card.Body>
+                        </Card>
+                    </Col>
+                </Row></>
         );
     }
     return (
         <Row>
             <Col md={{offset: 2, span: 8}}>
-               <Card className="setup-widget">
+                <Card className="setup-widget">
                     <Card.Header>Initial Setup</Card.Header>
                     <Card.Body>
                         <Card.Text>

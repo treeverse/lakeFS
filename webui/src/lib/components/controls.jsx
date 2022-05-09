@@ -218,7 +218,7 @@ export const TooltipButton = ({ onClick, variant, children, tooltip, className="
     );
 };
 
-export const ClipboardButton = ({ text, variant, onSuccess, icon = <ClippyIcon/>, onError, tooltip = "Copy to clipboard"}) => {
+export const ClipboardButton = ({ text, variant, onSuccess, icon = <ClippyIcon/>, onError, tooltip = "Copy to clipboard", ...rest}) => {
 
     const [show, setShow] = useState(false);
     const [copied, setCopied] = useState(false);
@@ -248,7 +248,7 @@ export const ClipboardButton = ({ text, variant, onSuccess, icon = <ClippyIcon/>
                     if (target.current !== null) setCopied(false)
                 }, 1000);
                 copyTextToClipboard(text, onSuccess, onError);
-            }}>
+            }} {...rest}>
                 {currentIcon}
             </Button>
         </>

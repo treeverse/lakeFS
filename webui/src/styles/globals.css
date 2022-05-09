@@ -314,19 +314,13 @@
 }
 
 .table .change-entry-row .change-entry-row-actions .btn-link,
-.table .tree-entry-row .change-entry-row-actions .btn-link,
-.actions-runs-list .table tbody tr td .clipboard-copy button,
-.actions-runs-list .table tbody tr td .run-filter .link {
+.table .tree-entry-row .change-entry-row-actions .btn-link {
   visibility: hidden;
   font-size: 0.7rem;
 }
 .table .change-entry-row:hover .change-entry-row-actions .btn-link,
 .table .tree-entry-row:hover .change-entry-row-actions .btn-link,
-.table .tree-entry-row:focus .change-entry-row-actions .btn-link,
-.actions-runs-list .table tbody tr:hover td .clipboard-copy button ,
-.actions-runs-list .table tbody tr:focus td .clipboard-copy button ,
-.actions-runs-list .table tbody tr:hover td .run-filter .link ,
-.actions-runs-list .table tbody tr:focus td .run-filter .link {
+.table .tree-entry-row:focus .change-entry-row-actions .btn-link {
   visibility: visible;
   display: inline-block;
 }
@@ -499,4 +493,25 @@ td .form-group {
 
 .action-bar .btn.cancel-create-user {
   background-color: #7e7e7e;
+}
+
+.after-setup-btn {
+  width: 250px;
+  margin-top: 7px;
+  background-color: #0fa276;
+  border: 0;
+}
+.after-setup-btn:hover {
+  background-color: #4e555b;
+}
+
+.after-setup-card code {
+  color: #4e555b;
+}
+
+.copy-button {
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 5px 0;
 }
