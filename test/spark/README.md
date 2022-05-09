@@ -16,7 +16,7 @@ sbt package
 The docker-compose yaml holds a service entry called `spark-submit` which uses the same settings as a Spark worker just with profile `command`, which will not start by default, unless "command" profile is specified.
 Using this entry and the volume mount to our workspace we submit the spark app.
 
-- The scripts `setup-gc-test.sh` and `setup-exporter-test.sh` are responsible to setup the repository for the respective tests (Garbage collection test and Exporter test).
+- `setup-exporter-test.sh` is responsible to setup the repository for the Exporter test. Repositories in the GC tests are created in the test itself.
 - The scripts `run-gc-test.sh` and `run-exporter-test.sh` are responsible to prepare the test environment and run the respective test `spark-submit` job.
 
 ### Exporter test
