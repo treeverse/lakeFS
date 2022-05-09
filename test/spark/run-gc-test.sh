@@ -121,13 +121,6 @@ do_case() {
   run_gc "${repo}"
 }
 
-for test_case in $(jq -r '.[] | @base64' gc-tests/test_scenarios.json); do
-  test_case=$(_jq "${test_case}")
-  test_id=$(echo "${test_case}" | jq -r '.id')
-  test_description=$(echo "${test_case}" | jq -r '.description')
-done
-
-
 test_keys=()
 for test_case in $(jq -r 'to_entries | .[] | @base64' gc-tests/test_scenarios.json); do
     test_case=$(_jq "${test_case}")
@@ -138,9 +131,10 @@ export -f do_case
 # Run GC jobs in parallel processes:
 printf '%s\n' "${test_keys[@]}" | xargs -P 8 -n 1 -I {} bash -c 'do_case "$@"' _ {}
 
-for test_case in $(jq -r 'to_entries | .[] | @base64' gc-tests/test_scenarios.json); do
+for test_case in $(jq -r '.[] | @base64' gc-tests/test_scenarios.json); do
     test_case=$(_jq ${test_case})
-    test_id=$(echo "${test_case}" | jq -r '.value.id')
+    test_id=$(echo "${test_case}" | jq -r '.id')
+    test_description=$(echo "${test_case}" | jq -r '.description')
     file_existing_ref=$(cat "existing_ref_${test_id}.txt")
     if ! validate_gc_job "${test_case}" "${REPOSITORY}-${test_id}" "${file_existing_ref}" "${test_id}"; then
       failed_tests+=("${test_description}")
@@ -149,8 +143,6 @@ for test_case in $(jq -r 'to_entries | .[] | @base64' gc-tests/test_scenarios.js
     fi
     rm -f "policy_${test_id}.json"
     rm -f "existing_ref_${test_id}.txt"
-    clean_repo "${REPOSITORY}-${test_id}"
-    clean_main_branch "${REPOSITORY}-${test_id}"
 done
 
 if (( ${#failed_tests[@]} > 0)); then
