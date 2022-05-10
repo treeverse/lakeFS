@@ -54,6 +54,13 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
     const storageNamespaceValidityRegexStr = config ? config.blockstore_namespace_ValidityRegex : DEFAULT_BLOCKSTORE_VALIDITY_REGEX;
     const storageNamespaceValidityRegex = RegExp(storageNamespaceValidityRegexStr);
     const storageNamespaceExample = config ? config.blockstore_namespace_example : DEFAULT_BLOCKSTORE_EXAMPLE;
+
+    useEffect(() => {
+        if (repoNameField.current) {
+            repoNameField.current.focus();
+        }
+    }, []);
+
     return (
         <Form onSubmit={(e) => {
             e.preventDefault();
@@ -71,7 +78,7 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
             <Form.Group as={Row} controlId="id">
                 <Form.Label column sm={fieldNameOffset}>Repository ID</Form.Label>
                 <Col sm={sm}>
-                    <Form.Control type="text" autoFocus ref={repoNameField} onChange={onRepoNameChange}/>
+                    <Form.Control type="text" ref={repoNameField} onChange={onRepoNameChange}/>
                     {repoValid === false &&
                     <Form.Text className="text-danger">
                         Min 3 characters. Only lowercase alphanumeric characters and {'\'-\''} allowed.
@@ -83,8 +90,8 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
                 <Form.Label column sm={fieldNameOffset}>
                     Storage Namespace&nbsp;
                     <OverlayTrigger placement="bottom" overlay={<Tooltip style={{"font-size": "s"}}>What should I type here?</Tooltip>}>
-                        <a href="https://docs.lakefs.io/understand/object-model.html#concepts-unique-to-lakefs" target={"_blank"} rel="noopener noreferrer">
-                            <InfoIcon/>
+                        <a href="https://docs.lakefs.io/understand/object-model.html#concepts-unique-to-lakefs" target={"_blank"} tabIndex="-1" rel="noopener noreferrer">
+                            <InfoIcon />
                         </a>
                     </OverlayTrigger>
                 </Form.Label>
