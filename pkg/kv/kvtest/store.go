@@ -424,6 +424,7 @@ func testDeleteWhileIterPrefixSingleSequence(t *testing.T, ms MakeStore, sequenc
 		if err != nil {
 			chErr <- fmt.Errorf("unexpected error from store.Scan (read): %w", err)
 		}
+		defer ei.Close()
 		for range chMap['R'] {
 			if !ei.Next() {
 				chErr <- fmt.Errorf("unexpected end of read iteration: %w", ei.Err())
@@ -445,6 +446,7 @@ func testDeleteWhileIterPrefixSingleSequence(t *testing.T, ms MakeStore, sequenc
 		if err != nil {
 			chErr <- fmt.Errorf("unexpected error from store.Scan (delete): %w", err)
 		}
+		defer ei.Close()
 		for range chMap['D'] {
 			if !ei.Next() {
 				chErr <- fmt.Errorf("unexpected end of delete iteration: %w", ei.Err())
@@ -465,6 +467,7 @@ func testDeleteWhileIterPrefixSingleSequence(t *testing.T, ms MakeStore, sequenc
 		wg.Done()
 	}()
 
+	// iterating over the input sequence and triggering the read/delete routines accordingly
 	for i := 0; i < len(sequence); i++ {
 		chMap[sequence[i]] <- true
 		err := <-chErr
