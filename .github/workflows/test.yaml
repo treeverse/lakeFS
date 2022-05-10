@@ -1,13 +1,13 @@
 name: Test
 on:
   push:
+    branches:
+      - master
+  pull_request:
     paths-ignore:
       - "*.md"
       - "docs/**"
       - "design/**"
-    branches:
-      - master
-  pull_request:
 jobs:
   validator:
     name: Run Linters and Checkers
