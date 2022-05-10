@@ -20,7 +20,7 @@ const NavUserInfo = () => {
         <Navbar.Collapse className="justify-content-end">
             <NavDropdown title={user.friendly_name || user.id} className="navbar-username" alignRight>
                 <NavDropdown.Header>
-                    User: <code>{user.accessKeyId}</code>
+                    User: <code>{user.accessKeyId || user.id}</code>
                 </NavDropdown.Header>
 
                 <NavDropdown.Divider/>
