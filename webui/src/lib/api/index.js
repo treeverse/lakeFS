@@ -175,7 +175,7 @@ class Auth {
 
         const user = await this.getCurrentUser();
 
-        cache.set('user', {...user, accessKeyId});
+        cache.set('user',user);
         return user;
     }
 
