@@ -131,7 +131,7 @@ lakeFS allows you to manage the reprocess on an isolated branch before merging t
 
 #### Cross-collection consistency guarantees
 
-Data engineers typically need implement custom logic in scripts to guarantee
+Data engineers typically need to implement custom logic in scripts to guarantee
 two or more data assets are updated synchronously.  This logic often
 requires extensive rewrites or periods during which data is unavailable.
 The lakeFS merge operation from one branch into another removes the need to
