@@ -87,7 +87,7 @@ On the object store, ranges are stored in the following hierarchy:
 
 ## Representing references and uncommitted metadata
 
-lakeFS always stores the objects' data in the storage namespace in the user's object store, committed and uncommitted data alike.
+lakeFS always stores the object data in the storage namespace in the user's object store, committed and uncommitted data alike.
 
 However, the lakeFS object metadata might be stored in either the object store or PostgresSQL.
 
