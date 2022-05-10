@@ -722,7 +722,7 @@ jobs:
         run: docker-compose logs --tail=1000 lakefs
 
   run-system-aws-s3-kv:
-    name: Run latest lakeFS app on AWS S3 KV
+    name: Test lakeFS on AWS S3 KV
     needs: [gen-code, deploy-image]
     runs-on: ubuntu-20.04
     env:
@@ -784,7 +784,7 @@ jobs:
           docker-compose -f esti/ops/docker-compose.yaml up --quiet-pull --exit-code-from=esti
 
   run-system-aws-s3:
-    name: Run latest lakeFS app on AWS S3
+    name: Test lakeFS on AWS S3
     needs: [gen-code, deploy-image]
     runs-on: ubuntu-20.04
     env:
@@ -844,7 +844,7 @@ jobs:
           docker-compose -f esti/ops/docker-compose.yaml up --quiet-pull --exit-code-from=esti
 
   run-system-gcp-gs:
-    name: Run latest lakeFS app on Google Cloud Platform and Google Cloud Storage
+    name: Test lakeFS on Google Cloud Platform and Google Cloud Storage
     needs: [gen-code, deploy-image]
     runs-on: ubuntu-20.04
     env:
@@ -878,7 +878,7 @@ jobs:
         run: docker-compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
 
   run-system-azure-abfs:
-    name: Run latest lakeFS app on Azure with Azure blobstore
+    name: Test lakeFS on Azure with Azure blobstore
     needs: [gen-code, deploy-image]
     runs-on: ubuntu-20.04
     env:
