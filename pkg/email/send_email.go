@@ -2,6 +2,7 @@ package email
 
 import (
 	"errors"
+	"fmt"
 	"net/mail"
 	"time"
 
@@ -15,8 +16,12 @@ type Emailer struct {
 	Limiter *rate.Limiter
 }
 
-var ErrRateLimitExceeded = errors.New("rate limit exceeded")
-var ErrNoSMTPHostConfigured = errors.New("no smtp host configured")
+var (
+	ErrRateLimitExceeded     = errors.New("rate limit exceeded")
+	ErrNoSMTPHostConfigured  = errors.New("no smtp host configured")
+	ErrNoSenderConfigured    = errors.New("no sender configured")
+	ErrNoRecipientConfigured = errors.New("no recipient configured")
+)
 
 type Params struct {
 	SMTPHost           string
@@ -35,7 +40,7 @@ func NewEmailer(p Params) (*Emailer, error) {
 	if p.SMTPHost != "" {
 		_, err := mail.ParseAddress(p.Sender)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("sender misconfigured: %w", err)
 		}
 	}
 	dialer := gomail.NewDialer(p.SMTPHost, p.SMTPPort, p.Username, p.Password)
@@ -52,6 +57,12 @@ func NewEmailer(p Params) (*Emailer, error) {
 func (e *Emailer) SendEmail(receivers []string, subject string, body string, attachmentFilePath []string) error {
 	if e.Params.SMTPHost == "" {
 		return ErrNoSMTPHostConfigured
+	}
+	if e.Params.Sender == "" {
+		return ErrNoSenderConfigured
+	}
+	if len(receivers) == 0 {
+		return ErrNoRecipientConfigured
 	}
 	msg := gomail.NewMessage()
 	msg.SetHeader("From", e.Params.Sender)
