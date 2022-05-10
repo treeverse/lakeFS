@@ -100,4 +100,4 @@ Luckily, this is also much smaller set of metadata, compared to the committed me
 References and uncommitted metadata are currently stored on PostgreSQL for its strong consistency and transactional guarantees.
 
 [In the future](roadmap.md#decouple-ref-store-from-postgresql) we plan on eliminating the need for an RDBMS by using a pluggable Key-Value store interface that would allow the use of [many databases](https://github.com/treeverse/lakeFS/blob/master/design/open/metadata_kv/index.md#databases-that-meet-these-requirements-examples) that meet its naive requirements.
-Non-Production single server installations can leverage an embedded key-value store like RocksDB, that will allow running with only a single container.
+Non-production single server installations can leverage an embedded key-value store like RocksDB, that will allow running with only a single container.
