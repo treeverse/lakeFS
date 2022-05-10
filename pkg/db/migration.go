@@ -1,11 +1,15 @@
 package db
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -13,8 +17,12 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source"
 	"github.com/golang-migrate/migrate/v4/source/httpfs"
+	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/pkg/db/params"
 	"github.com/treeverse/lakefs/pkg/ddl"
+	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/export"
+	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"gopkg.in/retry.v1"
 )
@@ -41,7 +49,7 @@ func (d *DatabaseMigrator) Migrate(ctx context.Context) error {
 	lg := log.WithFields(logging.Fields{
 		"direction": "up",
 	})
-	err := MigrateUp(d.params)
+	err := MigrateUp(d.params, false)
 	if err != nil {
 		lg.WithError(err).Error("Failed to migrate")
 		return err
@@ -158,7 +166,7 @@ func closeMigrate(m *migrate.Migrate) {
 	}
 }
 
-func MigrateUp(p params.Database) error {
+func MigrateUp(p params.Database, dropTables bool) error {
 	m, err := getMigrate(p)
 	if err != nil {
 		return err
@@ -168,7 +176,8 @@ func MigrateUp(p params.Database) error {
 	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return err
 	}
-	return nil
+	err = kvMigrate(p, m, dropTables)
+	return err
 }
 
 func MigrateDown(params params.Database) error {
@@ -227,4 +236,110 @@ func MigrateVersion(ctx context.Context, dbPool Database, params params.Database
 		return 0, false, err
 	}
 	return version, dirty, err
+}
+
+// TODO: (niro) Remove on feature complete
+
+// kvMigrate implementation of KV Migration logic
+func kvMigrate(dbParams params.Database, m *migrate.Migrate, drop bool) error {
+	if !dbParams.KVEnabled {
+		return nil
+	}
+	ctx := context.Background()
+	dbPool := BuildDatabaseConnection(ctx, dbParams)
+	defer dbPool.Close()
+	version, dirty, err := MigrateVersion(ctx, dbPool, dbParams)
+	if err != nil {
+		return err
+	}
+	if dirty {
+		return migrate.ErrDirty{Version: int(version)}
+	}
+	if kv.MigrateVersion != version {
+		return migrate.ErrInvalidVersion
+	}
+
+	// Delete store if exists from previous failed KV migration
+	err = dropTables(ctx, dbPool, []string{kvpg.DefaultTableName})
+	if err != nil {
+		return err
+	}
+
+	kvStore, err := kv.Open(ctx, kvpg.DriverName, dbParams.ConnectionString)
+	if err != nil {
+		return err
+	}
+
+	// Import to KV Store
+	var g multierror.Group
+	for n, f := range kvPkgs {
+		name := n
+		migrateFunc := f
+		g.Go(func() error {
+			logging.Default().Info("Starting KV migration for package:", name)
+			buf := bytes.Buffer{}
+			err := migrateFunc(dbPool, &buf)
+			if err != nil {
+				logging.Default().WithError(err).Error("Failed migration on pkg:", name)
+				return err
+			}
+			err = export.ImportFile(ctx, &buf, kvStore)
+			if err != nil {
+				logging.Default().WithError(err).Error("Failed export on pkg:", name)
+				return err
+			}
+			logging.Default().Info("Successfully migrated pkg", name, "to KV")
+			return nil
+		})
+	}
+	err = g.Wait().ErrorOrNil()
+	if err != nil {
+		return err
+	}
+
+	// Update migrate version
+	err = m.Force(kv.MigrateVersion + 1)
+	if err != nil {
+		logging.Default().WithError(err).Error("Failed setting migrate version")
+		return err
+	}
+
+	if drop {
+		tables := []string{"gateway_multiparts"}
+		err = dropTables(ctx, dbPool, tables)
+	}
+	return err
+}
+
+type MigrateFunc func(db Database, writer io.Writer) error
+
+var (
+	kvPkgs     = make(map[string]MigrateFunc)
+	registerMu sync.RWMutex
+)
+
+func KVRegister(name string, f MigrateFunc) {
+	registerMu.Lock()
+	defer registerMu.Unlock()
+	kvPkgs[name] = f
+}
+
+// KVUnRegisterAll remove all loaded migrate callbacks, used for test code.
+func KVUnRegisterAll() {
+	registerMu.Lock()
+	defer registerMu.Unlock()
+	for k := range kvPkgs {
+		delete(kvPkgs, k)
+	}
+}
+
+// TODO(niro): For each pkg implementation add relevant tables
+func dropTables(ctx context.Context, db Database, tables []string) error {
+	_, err := db.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s`, strings.Join(tables, ", ")))
+	if err != nil {
+		logging.Default().WithError(err).Error(
+			"Failed during drop tables:", tables, ". Please perform manual cleanup of old database tables")
+		return err
+	}
+	return nil
 }

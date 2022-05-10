@@ -8,7 +8,10 @@ import (
 	"sync"
 )
 
-const PathDelimiter = "/"
+const (
+	MigrateVersion = 37
+	PathDelimiter  = "/"
+)
 
 var (
 	ErrClosedEntries       = errors.New("closed entries")

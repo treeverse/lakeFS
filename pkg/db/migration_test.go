@@ -11,7 +11,7 @@ import (
 func TestMigrations(t *testing.T) {
 	databaseURI, closer := testutil.GetDBInstance(pool)
 	defer closer()
-	err := db.MigrateUp(params.Database{ConnectionString: databaseURI})
+	err := db.MigrateUp(params.Database{ConnectionString: databaseURI}, true)
 	if err != nil {
 		t.Fatal("failed running migrate up:", err)
 	}

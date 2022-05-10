@@ -6,13 +6,11 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/timestamppb"
-
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	_ "github.com/treeverse/lakefs/pkg/kv/mem"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const modelPrefix = "tm"
