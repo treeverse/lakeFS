@@ -16,6 +16,7 @@ type Emailer struct {
 }
 
 var ErrRateLimitExceeded = errors.New("rate limit exceeded")
+var ErrNoSMTPHostConfigured = errors.New("no smtp host configured")
 
 type Params struct {
 	SMTPHost           string
@@ -31,14 +32,13 @@ type Params struct {
 }
 
 func NewEmailer(p Params) (*Emailer, error) {
+	if p.SMTPHost != "" {
+		_, err := mail.ParseAddress(p.Sender)
+		if err != nil {
+			return nil, err
+		}
+	}
 	dialer := gomail.NewDialer(p.SMTPHost, p.SMTPPort, p.Username, p.Password)
-	if p.SMTPHost == "" {
-		return &Emailer{Dialer: dialer}, nil
-	}
-	_, err := mail.ParseAddress(p.Sender)
-	if err != nil {
-		return nil, err
-	}
 	dialer.SSL = p.UseSSL
 	dialer.LocalName = p.LocalName
 	limiter := rate.NewLimiter(rate.Every(p.LimitEveryDuration), p.Burst)
@@ -50,6 +50,9 @@ func NewEmailer(p Params) (*Emailer, error) {
 }
 
 func (e *Emailer) SendEmail(receivers []string, subject string, body string, attachmentFilePath []string) error {
+	if e.Params.SMTPHost == "" {
+		return ErrNoSMTPHostConfigured
+	}
 	msg := gomail.NewMessage()
 	msg.SetHeader("From", e.Params.Sender)
 	msg.SetHeader("To", receivers...)
