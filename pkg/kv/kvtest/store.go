@@ -5,6 +5,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
+	"sync"
 	"testing"
 
 	"github.com/go-test/deep"
@@ -49,6 +51,7 @@ func TestDriver(t *testing.T, name, dsn string) {
 	t.Run("Store_Scan", func(t *testing.T) { testStoreScan(t, ms) })
 	t.Run("Store_MissingArgument", func(t *testing.T) { testStoreMissingArgument(t, ms) })
 	t.Run("ScanPrefix", func(t *testing.T) { testScanPrefix(t, ms) })
+	t.Run("DeleteWhileIterating", func(t *testing.T) { testDeleteWhileIterPrefix(t, ms) })
 }
 
 func testDriverOpen(t *testing.T, ms MakeStore) {
@@ -367,5 +370,131 @@ func testScanPrefix(t *testing.T, ms MakeStore) {
 	}
 	if diff := deep.Equal(entries, sampleData); diff != nil {
 		t.Fatal("ScanPrefix entries didn't match:", diff)
+	}
+}
+
+func testDeleteWhileIterPrefix(t *testing.T, ms MakeStore) {
+	// iteration
+	//            deletion
+	testDeleteWhileIterPrefixSingleSequence(t, ms, "RRRRRRRDDDDDDD")
+	// iteration
+	//       deletion
+	testDeleteWhileIterPrefixSingleSequence(t, ms, "RRRDRDRDRDRDDD")
+	// iiiiiiiiiiteration
+	//     deletion
+	testDeleteWhileIterPrefixSingleSequence(t, ms, "RRRRRDRDRDRDRDRRRRR")
+	//   iteration
+	// deleeeeeeeetion
+	testDeleteWhileIterPrefixSingleSequence(t, ms, "DDDDRDRDRDRDDRDDDDD")
+	//     iteration
+	// deletion
+	testDeleteWhileIterPrefixSingleSequence(t, ms, "DDDDRDRDDRRDDDDD")
+	//           iteration
+	// deletion
+	testDeleteWhileIterPrefixSingleSequence(t, ms, "DDDDDRRRRR")
+}
+
+// Executing a sequence of (R)ead and (D)elete operations, according to the specified sequence
+func testDeleteWhileIterPrefixSingleSequence(t *testing.T, ms MakeStore, sequence string) {
+	ctx := context.Background()
+	store := ms(t, ctx)
+	defer store.Close()
+
+	readPref := uniqueKey("readPrefix")
+	toDelPref := uniqueKey("toDelPrefix")
+
+	numRead := strings.Count(sequence, "R")
+	numDel := strings.Count(sequence, "D")
+
+	readData := setupSampleData(t, ctx, store, string(readPref), numRead)
+	toDelData := setupSampleData(t, ctx, store, string(toDelPref), numDel)
+
+	chMap := make(map[byte]chan bool)
+	chMap['D'] = make(chan bool)
+	chMap['R'] = make(chan bool)
+	chErr := make(chan error)
+
+	const numRoutines = 2
+	var wg sync.WaitGroup
+	wg.Add(numRoutines)
+
+	// Scan and read
+	go func() {
+		ei, err := store.Scan(ctx, readPref)
+		if err != nil {
+			chErr <- fmt.Errorf("unexpected error from store.Scan (read): %w", err)
+		}
+		for range chMap['R'] {
+			if !ei.Next() {
+				chErr <- fmt.Errorf("unexpected end of read iteration: %w", ei.Err())
+				break
+			}
+			e := ei.Entry()
+			if e == nil {
+				chErr <- fmt.Errorf("unexpected nil entry read: %w", ei.Err())
+				break
+			}
+			chErr <- nil
+		}
+		wg.Done()
+	}()
+
+	// Scan and delete
+	go func() {
+		ei, err := store.Scan(ctx, toDelPref)
+		if err != nil {
+			chErr <- fmt.Errorf("unexpected error from store.Scan (delete): %w", err)
+		}
+		for range chMap['D'] {
+			if !ei.Next() {
+				chErr <- fmt.Errorf("unexpected end of delete iteration: %w", ei.Err())
+				break
+			}
+			e := ei.Entry()
+			if e == nil {
+				chErr <- fmt.Errorf("unexpected nil entry during deletion iteration: %w", ei.Err())
+				break
+			}
+			err = store.Delete(ctx, e.Key)
+			if err != nil {
+				chErr <- fmt.Errorf("unexpected delete failure :%w", err)
+				break
+			}
+			chErr <- nil
+		}
+		wg.Done()
+	}()
+
+	for i := 0; i < len(sequence); i++ {
+		chMap[sequence[i]] <- true
+		err := <-chErr
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	close(chMap['R'])
+	close(chMap['D'])
+	wg.Wait()
+
+	close(chErr)
+
+	// Verify all entries from read iteration remain in place, while all entries
+	// from delete iteration are deleted
+	for _, kve := range readData {
+		val, err := store.Get(ctx, kve.Key)
+		if err != nil {
+			t.Fatal("Unexpected failure reading value for verification", err)
+		}
+		if !bytes.Equal(val, kve.Value) {
+			t.Fatal("Expected value not found for key", kve.Key)
+		}
+	}
+
+	for _, kve := range toDelData {
+		_, err := store.Get(ctx, kve.Key)
+		if !errors.Is(err, kv.ErrNotFound) {
+			t.Fatal("Unexpected entry found after deletion for key", kve.Key)
+		}
 	}
 }
