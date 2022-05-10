@@ -200,7 +200,6 @@ class Auth {
     }
 
     async getCurrentUser() {
-        // get current user and cache it
         const userResponse = await apiRequest('/user')
         const body = await userResponse.json();
         return body.user;
