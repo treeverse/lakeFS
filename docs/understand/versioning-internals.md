@@ -85,17 +85,19 @@ On the object store, ranges are stored in the following hierarchy:
 
 *Note: this relatively flat structure could be modified in the future: looking at the diagram above, it imposes no real limitations on the depth of the tree. A tree could easily be made recursive by having Meta Ranges point to other Meta Ranges - and still provide all the same characteristics. For simplicity, we decided to start with a fixed 2-level hierarchy.*
 
-## Representing references and uncommitted data
+## Representing references and uncommitted metadata
 
-Unlike committed data which is immutable, uncommitted (or "staged") data experiences frequent random writes and is very mutable in nature. This is also true for "refs" - in particular, branches, which are simply pointers to an underlying commit, are modified frequently: on every commit or merge operation.
+lakeFS always stores the object data in the storage namespace in the user's object store, committed and uncommitted data alike.
 
-Both these types of data are not only mutable, but also require strong consistency guarantees while also being fault tolerant. If we can’t access the current pointer of the main branch, a big portion of the system is essentially down. 
+However, the lakeFS object metadata might be stored in either the object store or PostgresSQL.
 
-Luckily, this is also much smaller data, compared to the committed dataset.
+Unlike committed metadata which is immutable, uncommitted (or "staged") metadata experiences frequent random writes and is very mutable in nature. This is also true for "refs" - in particular, branches, which are simply pointers to an underlying commit, are modified frequently: on every commit or merge operation.
 
-References and uncommitted data are currently stored on PostgreSQL for its strong consistency and transactional guarantees.
+Both these types of metadata are not only mutable, but also require strong consistency guarantees while also being fault tolerant. If we can’t access the current pointer of the main branch, a big portion of the system is essentially down. 
 
-[In the future](roadmap.md#lakefs-on-the-rocks-milestone-3---remove-postgresql) we plan on eliminating the need for an RDBMS by embedding [Raft](https://raft.github.io/){: target="_blank" } to replicate these writes across a cluster of machines, with the data itself being stored in RocksDB. To make operations easier, the replicated RocksDB database will be periodically snapshotted to the underlying object store.
+Luckily, this is also much smaller set of metadata, compared to the committed metadata.
 
-For extremely large installations ( >= millions of read/write operations per second), it will be possible to utilize [multi-Raft](https://pingcap.com/blog/2017-08-15-multi-raft/){: target="_blank" } to shard references across a wider fleet of machines.
+References and uncommitted metadata are currently stored on PostgreSQL for its strong consistency and transactional guarantees.
 
+[In the future](roadmap.md#decouple-ref-store-from-postgresql) we plan on eliminating the need for an RDBMS by using a pluggable Key-Value store interface that would allow the use of [many databases](https://github.com/treeverse/lakeFS/blob/master/design/open/metadata_kv/index.md#databases-that-meet-these-requirements-examples) that meet its naive requirements.
+Non-production single server installations can leverage an embedded key-value store like RocksDB, that will allow running with only a single container.

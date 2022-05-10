@@ -144,17 +144,17 @@ There are 3 big shifts in design:
 
 ### Decouple ref-store from PostgreSQL
 
-Currently lakeFS requires a PostgreSQL database. Internally, it is used to store references (branches, tags, etc) other metadata such as user management.
+Currently lakeFS requires a PostgreSQL database. Internally, it is used to store references (branches, tags, etc), uncommitted objects metadata and other metadata such as user management.
 
 Making this store a pluggable component would allow the following:
 
 1. Simpler quickstart using **only an object store**: allow running lakeFS without any dependencies. This ref-store will use the underlying object store to also store the references. For S3 (or any object store that doesn't support any native transaction/compare-and-swap semantics) this will be available only when running in single-instance mode. This is still beneficial for running lakeFS in POC or development mode, removing the need to run and connect multiple Docker containers.
-1. Flexible production setup: A PostgreSQL option will still be available, but additional implementations will also be possible: running lakeFS as a Raft consensus group, using an other RDBMS types such as MySQL &emdash; or using managed services such as DynamoDB that lakeFS will be able to manage itself
+1. Flexible production setup: A PostgreSQL option will still be available, but additional implementations will also be possible:  Using other RDBMS types such as MySQL &emdash; or using managed services such as DynamoDB that lakeFS will be able to manage itself
 1. Easier scalability: Scaling RDBMS for very high throughput while keeping it predictable in performance for different loads and access patterns has a very high operational cost.
 
 This release will mark the completion of project **["lakeFS on the Rocks"](https://docs.google.com/document/d/1jzD7-jun-tdU5BGapmnMBe9ovSzBvTNjXCcVztV07A4/edit?usp=sharing){:target="_blank"}**
 
-[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/pull/1685){: target="_blank" class="btn" }
+[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/blob/master/design/open/metadata_kv/index.md){: target="_blank" class="btn" }
 
 
 ### Snowflake Support <span>Requires Discussion</span>{: .label .label-yellow }
