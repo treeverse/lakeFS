@@ -494,20 +494,20 @@ func testDeleteWhileIterPrefixSingleSequence(t *testing.T, ms MakeStore, sequenc
 			t.Fatal("Unexpected failure reading value for verification", err)
 		}
 		if !bytes.Equal(val, kve.Value) {
-			t.Fatal("Expected value not found for key", kve.Key)
+			t.Fatal("Expected value not found for key", string(kve.Key))
 		}
 		if !readDone[string(kve.Key)] {
-			t.Fatal("Entry skipped during scan for key", kve.Key)
+			t.Fatal("Entry skipped during scan for key", string(kve.Key))
 		}
 	}
 
 	for _, kve := range toDelData {
 		_, err := store.Get(ctx, kve.Key)
 		if err == nil {
-			t.Fatal("Unexpected entry found after deletion for key", kve.Key)
+			t.Fatal("Unexpected entry found after deletion for key", string(kve.Key))
 		}
 		if !errors.Is(err, kv.ErrNotFound) {
-			t.Fatal("Unexpected error from store.Get for deleted key", kve.Key, err)
+			t.Fatal("Unexpected error from store.Get for deleted key", string(kve.Key), err)
 		}
 	}
 }
