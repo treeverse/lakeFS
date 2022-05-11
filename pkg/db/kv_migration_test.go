@@ -10,73 +10,73 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v4/pgxpool"
+
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/db/params"
 	"github.com/treeverse/lakefs/pkg/kv"
-	"github.com/treeverse/lakefs/pkg/kv/export"
-	"github.com/treeverse/lakefs/pkg/kv/postgres"
+	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
-const testValue = "This is a test value"
+const testMigrateValue = "This is a test value"
 
 func TestKVMigration(t *testing.T) {
 	ctx := context.Background()
-	dbParams := params.Database{Driver: "pgx", ConnectionString: databaseURI, KVEnabled: true}
-	kvStore, err := kv.Open(ctx, postgres.DriverName, dbParams.ConnectionString)
+	dbParams := params.Database{Driver: "pgx", ConnectionString: databaseURI, KVEnabled: true, DropTables: true}
+	kvStore, err := kv.Open(ctx, kvpg.DriverName, dbParams.ConnectionString)
 	testutil.MustDo(t, "Open KV store", err)
 	tests := []struct {
 		name       string
-		migrations map[string]db.MigrateFunc
+		migrations map[string]kvpg.MigrateFunc
 		err        error
 		entries    int
 	}{
 		{
 			name:       "basic",
-			migrations: map[string]db.MigrateFunc{"basic": migrateBasic},
+			migrations: map[string]kvpg.MigrateFunc{"basic": migrateBasic},
 			err:        nil,
 			entries:    5,
 		},
 		{
 			name:       "parallel",
-			migrations: map[string]db.MigrateFunc{"basic": migrateBasic, "parallel": migrateParallel},
+			migrations: map[string]kvpg.MigrateFunc{"basic": migrateBasic, "parallel": migrateParallel},
 			err:        nil,
 			entries:    10,
 		},
 		{
 			name:       "empty",
-			migrations: map[string]db.MigrateFunc{"empty": migrateEmpty},
-			err:        export.ErrEmptyFile,
+			migrations: map[string]kvpg.MigrateFunc{"empty": migrateEmpty},
+			err:        kv.ErrInvalidFormat,
 		},
 		{
 			name:       "no_header",
-			migrations: map[string]db.MigrateFunc{"no_header": migrateNoHeader},
-			err:        export.ErrBadHeader,
+			migrations: map[string]kvpg.MigrateFunc{"no_header": migrateNoHeader},
+			err:        kv.ErrInvalidFormat,
 		},
 		{
 			name:       "bad_entry",
-			migrations: map[string]db.MigrateFunc{"bad_entry": migrateBadEntry},
-			err:        export.ErrBadHeader,
+			migrations: map[string]kvpg.MigrateFunc{"bad_entry": migrateBadEntry},
+			err:        kv.ErrInvalidFormat,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			db.KVUnRegisterAll()
+			kvpg.UnRegisterAll()
 			for n, m := range tt.migrations {
-				db.KVRegister(n, m)
+				kvpg.Register(n, m, nil)
 			}
-			err = db.MigrateUp(dbParams, true)
+			err = db.MigrateUp(dbParams)
 			require.ErrorIs(t, err, tt.err)
 
 			if tt.err == nil {
-				dbPool, _ := testutil.GetDB(t, databaseURI)
-				version, dirty, err := db.MigrateVersion(ctx, dbPool, dbParams)
+				data, err := kvStore.Get(ctx, []byte(kv.DBVersionPath))
 				require.NoError(t, err)
-				require.False(t, dirty)
-				require.Equal(t, uint(kv.MigrateVersion+1), version)
+				version, _ := strconv.Atoi(string(data))
+				require.Equal(t, kv.InitialMigrateVersion, version)
 				// revert migration version for next tests
-				testutil.MustDo(t, "version rollback", db.MigrateTo(ctx, dbParams, kv.MigrateVersion, true))
+				testutil.MustDo(t, "version rollback", kvStore.Set(ctx, []byte(kv.DBVersionPath), []byte("0")))
 			}
 
 			validate(ctx, t, kvStore, tt.entries)
@@ -87,7 +87,7 @@ func TestKVMigration(t *testing.T) {
 
 func validate(ctx context.Context, t *testing.T, store kv.Store, entries int) {
 	for i := 1; i <= entries; i++ {
-		expectdVal := fmt.Sprint(i, ". ", testValue)
+		expectdVal := fmt.Sprint(i, ". ", testMigrateValue)
 		value, err := store.Get(ctx, []byte(strconv.Itoa(i)))
 		require.NoError(t, err)
 		require.Equal(t, expectdVal, string(value))
@@ -108,24 +108,24 @@ func cleanup(ctx context.Context, t *testing.T, store kv.Store) {
 
 // migrate functions for test scenarios
 
-func migrateEmpty(_ db.Database, _ io.Writer) error {
+func migrateEmpty(_ context.Context, _ *pgxpool.Pool, _ io.Writer) error {
 	return nil
 }
 
-func migrateBasic(_ db.Database, writer io.Writer) error {
+func migrateBasic(_ context.Context, _ *pgxpool.Pool, writer io.Writer) error {
 	jd := json.NewEncoder(writer)
 
-	err := jd.Encode(export.Header{
-		Version:   kv.MigrateVersion + 1,
+	err := jd.Encode(kv.Header{
+		Version:   kv.InitialMigrateVersion,
 		Timestamp: time.Now(),
 	})
 	if err != nil {
 		log.Fatal("Failed to encode struct")
 	}
 	for i := 1; i < 6; i++ {
-		err = jd.Encode(export.Entry{
+		err = jd.Encode(kv.Entry{
 			Key:   []byte(strconv.Itoa(i)),
-			Value: []byte(fmt.Sprint(i, ". ", testValue)),
+			Value: []byte(fmt.Sprint(i, ". ", testMigrateValue)),
 		})
 		if err != nil {
 			log.Fatal("Failed to encode struct")
@@ -134,13 +134,13 @@ func migrateBasic(_ db.Database, writer io.Writer) error {
 	return nil
 }
 
-func migrateNoHeader(_ db.Database, writer io.Writer) error {
+func migrateNoHeader(_ context.Context, _ *pgxpool.Pool, writer io.Writer) error {
 	jd := json.NewEncoder(writer)
 
 	for i := 1; i < 5; i++ {
-		err := jd.Encode(export.Entry{
+		err := jd.Encode(kv.Entry{
 			Key:   []byte(strconv.Itoa(i)),
-			Value: []byte(fmt.Sprint(i, ". ", testValue)),
+			Value: []byte(fmt.Sprint(i, ". ", testMigrateValue)),
 		})
 		if err != nil {
 			log.Fatal("Failed to encode struct")
@@ -149,7 +149,7 @@ func migrateNoHeader(_ db.Database, writer io.Writer) error {
 	return nil
 }
 
-func migrateBadEntry(_ db.Database, writer io.Writer) error {
+func migrateBadEntry(_ context.Context, _ *pgxpool.Pool, writer io.Writer) error {
 	jd := json.NewEncoder(writer)
 
 	err := jd.Encode(struct {
@@ -165,11 +165,11 @@ func migrateBadEntry(_ db.Database, writer io.Writer) error {
 	return nil
 }
 
-func migrateParallel(_ db.Database, writer io.Writer) error {
+func migrateParallel(_ context.Context, _ *pgxpool.Pool, writer io.Writer) error {
 	jd := json.NewEncoder(writer)
 
-	err := jd.Encode(export.Header{
-		Version:   kv.MigrateVersion + 1,
+	err := jd.Encode(kv.Header{
+		Version:   kv.InitialMigrateVersion,
 		Timestamp: time.Now(),
 	})
 	if err != nil {
@@ -177,9 +177,9 @@ func migrateParallel(_ db.Database, writer io.Writer) error {
 	}
 
 	for i := 6; i < 11; i++ {
-		err := jd.Encode(export.Entry{
+		err := jd.Encode(kv.Entry{
 			Key:   []byte(strconv.Itoa(i)),
-			Value: []byte(fmt.Sprint(i, ". ", testValue)),
+			Value: []byte(fmt.Sprint(i, ". ", testMigrateValue)),
 		})
 		if err != nil {
 			log.Fatal("Failed to encode struct")

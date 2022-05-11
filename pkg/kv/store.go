@@ -4,13 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 )
 
 const (
-	MigrateVersion = 37
-	PathDelimiter  = "/"
+	InitialMigrateVersion = 1
+	PathDelimiter         = "/"
+	DBVersionPath         = "kv" + PathDelimiter + "db" + PathDelimiter + "version"
 )
 
 var (
@@ -144,4 +146,17 @@ func Drivers() []string {
 		names = append(names, name)
 	}
 	return names
+}
+
+// GetDBVersion returns the current DB version
+func GetDBVersion(ctx context.Context, store Store) (int, error) {
+	data, err := store.Get(ctx, []byte(DBVersionPath))
+	if err != nil {
+		return -1, err
+	}
+	version, err := strconv.Atoi(string(data))
+	if err != nil {
+		return -1, err
+	}
+	return version, nil
 }

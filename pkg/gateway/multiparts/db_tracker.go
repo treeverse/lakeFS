@@ -8,16 +8,18 @@ import (
 	"strings"
 	"time"
 
+	"github.com/georgysavva/scany/pgxscan"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/kv"
-	"github.com/treeverse/lakefs/pkg/kv/export"
+	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"google.golang.org/protobuf/proto"
 )
 
 // TODO(niro): Remove after Migration version
 //nolint:gochecknoinits
 func init() {
-	db.KVRegister("multiparts", Migrate)
+	kvpg.Register("multiparts", Migrate, []string{"gateway_multiparts"})
 }
 
 func (m Metadata) Set(k, v string) {
@@ -104,32 +106,36 @@ func (m *dbTracker) Delete(ctx context.Context, uploadID string) error {
 	return err
 }
 
-func Migrate(d db.Database, writer io.Writer) error {
-	ctx := context.Background()
+func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
 	je := json.NewEncoder(writer)
-
 	// Create header
-	err := je.Encode(export.Header{
-		Version:   kv.MigrateVersion + 1,
+	err := je.Encode(kv.Header{
+		Version:   kv.InitialMigrateVersion,
 		Timestamp: time.Now(),
 	})
 	if err != nil {
 		return err
 	}
 
-	entries := make([]MultipartUpload, 0)
-	err = d.Select(ctx, &entries, "SELECT * FROM gateway_multiparts")
+	rows, err := d.Query(ctx, "SELECT * FROM gateway_multiparts")
 	if err != nil {
 		return err
 	}
-	for i := range entries {
-		pr := protoFromMultipart(&entries[i]) // gosec error WA
-		value, err := proto.Marshal(pr)
-		key := []byte(kv.FormatPath(multipartPrefix, entries[i].UploadID))
+	defer rows.Close()
+	rowScanner := pgxscan.NewRowScanner(rows)
+	for rows.Next() {
+		m := MultipartUpload{}
+		err = rowScanner.Scan(&m)
 		if err != nil {
 			return err
 		}
-		err = je.Encode(export.Entry{
+		pr := protoFromMultipart(&m)
+		value, err := proto.Marshal(pr)
+		if err != nil {
+			return err
+		}
+		key := []byte(kv.FormatPath(multipartPrefix, m.UploadID))
+		err = je.Encode(kv.Entry{
 			Key:   key,
 			Value: value,
 		})
@@ -137,5 +143,6 @@ func Migrate(d db.Database, writer io.Writer) error {
 			return err
 		}
 	}
+
 	return nil
 }

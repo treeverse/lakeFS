@@ -42,8 +42,7 @@ var upCmd = &cobra.Command{
 	Short: "Apply all up migrations",
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := loadConfig()
-		drop, _ := cmd.Flags().GetBool("drop-tables")
-		err := db.MigrateUp(cfg.GetDatabaseParams(), drop)
+		err := db.MigrateUp(cfg.GetDatabaseParams())
 		if err != nil {
 			fmt.Printf("Failed to setup DB: %s\n", err)
 			os.Exit(1)

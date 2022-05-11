@@ -8,14 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/kv/postgres"
-
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
 	"github.com/treeverse/lakefs/pkg/kv"
-	"github.com/treeverse/lakefs/pkg/kv/export"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
-	_ "github.com/treeverse/lakefs/pkg/kv/postgres"
+	"github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
@@ -29,11 +26,10 @@ func TestMigrate(t *testing.T) {
 	data := createData(t, ctx, dbTracker, 300)
 
 	buf := bytes.Buffer{}
-	err := multiparts.Migrate(database, &buf)
+	err := multiparts.Migrate(ctx, database.Pool(), &buf)
 	require.NoError(t, err)
 
-	// TODO(niro): Consider not using Import and iterate over the buffer?
-	testutil.MustDo(t, "Import file", export.ImportFile(ctx, &buf, kvStore))
+	testutil.MustDo(t, "Import file", kv.Import(ctx, &buf, kvStore))
 	kvTracker := multiparts.NewTracker(kv.StoreMessage{Store: kvStore})
 	for _, entry := range data {
 		m, err := kvTracker.Get(ctx, entry.UploadID)
