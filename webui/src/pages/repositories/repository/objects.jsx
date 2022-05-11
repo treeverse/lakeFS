@@ -50,15 +50,19 @@ const ImportDone = ({ numObjects, importBranch, currBranch}) => {
     return (
         <Row>
             <Col>
-                <div style={{color: 'green', display: 'flex', justifyContent: 'center'}}>
-                    <p>Import succeeded</p>
+                <div className={"mt-10 mb-2 mr-2 row mt-4"} style={{color: 'green', display: 'flex', justifyContent: 'center', fontSize: 'large'}}>
+                    <p>Import succeeded!</p>
                 </div>
                 <div style={{display: 'flex', justifyContent: 'center'}}>
                     <p><strong><div style={{ color: 'green', display: 'inline'}}> {numObjects} </div></strong> objects imported and committed into branch <strong>{importBranch}</strong></p>
                 </div>
                 <div style={{display: 'flex', justifyContent: 'center'}}>
-                    <p> &nbsp;<Link to={`compare?ref=${ currBranch }&compare=${ importBranch }`} variant = "success" className="btn btn-primary">Compare and Merge</Link>&nbsp;it into your current branch - <strong>{currBranch}</strong></p>
+                    <p> &nbsp;<Link to={`compare?ref=${ currBranch }&compare=${ importBranch }`} variant = "success" className="btn btn-success">Compare and Merge</Link>&nbsp;it into the current branch - <strong>{currBranch}</strong></p>
                 </div>
+                <Alert variant="warning" className={"ml-2 mr-2 row mt-4"}>
+                    Merging {importBranch} will delete all files on branch {currBranch}
+                </Alert>
+
             </Col>
         </Row>
     );
@@ -71,7 +75,7 @@ const ImportButton = ({ config, repo, reference, path, onDone, onClick, variant 
         error: null,
         done: false,
         numObj: 0,
-        isStorageNamespaceValid: false
+        isStorageNamespaceValid: null
     }
     const [importState, setImportState] = useState(initialState)
 
