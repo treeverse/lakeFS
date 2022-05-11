@@ -55,6 +55,8 @@ type Service interface {
 	GetUser(ctx context.Context, username string) (*model.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
 	ListUsers(ctx context.Context, params *model.PaginationParams) ([]*model.User, *model.Paginator, error)
+	RemoveUserFromCache(username string)
+	RemoveUserFromCacheByID(userID int64)
 
 	// groups
 	CreateGroup(ctx context.Context, group *model.Group) error
@@ -325,6 +327,14 @@ func (s *DBAuthService) GetUserByID(ctx context.Context, userID int64) (*model.U
 		}
 		return user.(*model.User), nil
 	})
+}
+
+func (s *DBAuthService) RemoveUserFromCache(username string) {
+	s.cache.RemoveUser(username)
+}
+
+func (s *DBAuthService) RemoveUserFromCacheByID(userID int64) {
+	s.cache.RemoveUserByID(userID)
 }
 
 func (s *DBAuthService) ListUsers(ctx context.Context, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
@@ -1124,6 +1134,14 @@ func (a *APIAuthService) GetUserByEmail(ctx context.Context, email string) (*mod
 
 		return user, err
 	})
+}
+
+func (a *APIAuthService) RemoveUserFromCache(username string) {
+	a.cache.RemoveUser(username)
+}
+
+func (a *APIAuthService) RemoveUserFromCacheByID(userID int64) {
+	a.cache.RemoveUserByID(userID)
 }
 
 func toPagination(paginator Pagination) *model.Paginator {

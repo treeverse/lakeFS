@@ -3223,6 +3223,8 @@ func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body
 		writeError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
 	}
+	// RemoveUserFromCache to clean the cache from the old password
+	c.Auth.RemoveUserFromCache(user.Username)
 	w.WriteHeader(http.StatusCreated)
 }
 

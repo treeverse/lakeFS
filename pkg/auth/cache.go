@@ -16,6 +16,8 @@ type Cache interface {
 	GetUser(username string, setFn UserSetFn) (*model.User, error)
 	GetUserByID(userID int64, setFn UserSetFn) (*model.User, error)
 	GetUserPolicies(userID string, setFn UserPoliciesSetFn) ([]*model.Policy, error)
+	RemoveUser(username string)
+	RemoveUserByID(userID int64)
 }
 
 type LRUCache struct {
@@ -57,6 +59,14 @@ func (c *LRUCache) GetUserByID(userID int64, setFn UserSetFn) (*model.User, erro
 	return v.(*model.User), nil
 }
 
+func (c *LRUCache) RemoveUser(username string) {
+	c.userCache.Remove(username)
+}
+
+func (c *LRUCache) RemoveUserByID(userID int64) {
+	c.userCache.Remove(userID)
+}
+
 func (c *LRUCache) GetUserPolicies(userID string, setFn UserPoliciesSetFn) ([]*model.Policy, error) {
 	v, err := c.policyCache.GetOrSet(userID, func() (interface{}, error) { return setFn() })
 	if err != nil {
@@ -82,4 +92,10 @@ func (d *DummyCache) GetUserByID(userID int64, setFn UserSetFn) (*model.User, er
 
 func (d *DummyCache) GetUserPolicies(userID string, setFn UserPoliciesSetFn) ([]*model.Policy, error) {
 	return setFn()
+}
+
+func (d *DummyCache) RemoveUser(username string) {
+}
+
+func (d *DummyCache) RemoveUserByID(userID int64) {
 }
