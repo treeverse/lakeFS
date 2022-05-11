@@ -57,7 +57,7 @@ func ImportFile(ctx context.Context, reader io.Reader, store kv.Store) error {
 	// Decode does not return error on failure to Unmarshal
 	if err != nil || header == (Header{}) {
 		logging.Default().WithError(err).Error("Failed to decode header")
-		return fmt.Errorf("error reading header: %w", ErrBadHeader)
+		return ErrBadHeader
 	}
 	err = validateHeader(header)
 	if err != nil {
