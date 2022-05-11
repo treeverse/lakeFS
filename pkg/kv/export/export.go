@@ -70,7 +70,7 @@ func ImportFile(ctx context.Context, reader io.Reader, store kv.Store) error {
 		// Decode does not return error on failure to Unmarshal
 		if err != nil || entry.Key == nil || entry.Value == nil {
 			logging.Default().WithError(err).Error("Failed to decode entry")
-			return fmt.Errorf("error reading entry: %w", ErrBadEntry)
+			return ErrBadEntry
 		}
 		err = store.SetIf(ctx, entry.Key, entry.Value, nil)
 		if err != nil {
