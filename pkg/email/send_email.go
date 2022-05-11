@@ -2,6 +2,8 @@ package email
 
 import (
 	"errors"
+	"fmt"
+	"net/mail"
 	"time"
 
 	"golang.org/x/time/rate"
@@ -14,7 +16,12 @@ type Emailer struct {
 	Limiter *rate.Limiter
 }
 
-var ErrRateLimitExceeded = errors.New("rate limit exceeded")
+var (
+	ErrRateLimitExceeded     = errors.New("rate limit exceeded")
+	ErrNoSMTPHostConfigured  = errors.New("no smtp host configured")
+	ErrNoSenderConfigured    = errors.New("no sender configured")
+	ErrNoRecipientConfigured = errors.New("no recipient configured")
+)
 
 type Params struct {
 	SMTPHost           string
@@ -29,7 +36,13 @@ type Params struct {
 	LakefsBaseURL      string
 }
 
-func NewEmailer(p Params) *Emailer {
+func NewEmailer(p Params) (*Emailer, error) {
+	if p.SMTPHost != "" {
+		_, err := mail.ParseAddress(p.Sender)
+		if err != nil {
+			return nil, fmt.Errorf("sender misconfigured: %w", err)
+		}
+	}
 	dialer := gomail.NewDialer(p.SMTPHost, p.SMTPPort, p.Username, p.Password)
 	dialer.SSL = p.UseSSL
 	dialer.LocalName = p.LocalName
@@ -38,10 +51,19 @@ func NewEmailer(p Params) *Emailer {
 		Params:  p,
 		Dialer:  dialer,
 		Limiter: limiter,
-	}
+	}, nil
 }
 
 func (e *Emailer) SendEmail(receivers []string, subject string, body string, attachmentFilePath []string) error {
+	if e.Params.SMTPHost == "" {
+		return ErrNoSMTPHostConfigured
+	}
+	if e.Params.Sender == "" {
+		return ErrNoSenderConfigured
+	}
+	if len(receivers) == 0 {
+		return ErrNoRecipientConfigured
+	}
 	msg := gomail.NewMessage()
 	msg.SetHeader("From", e.Params.Sender)
 	msg.SetHeader("To", receivers...)

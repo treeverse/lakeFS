@@ -229,8 +229,26 @@ var runCmd = &cobra.Command{
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 		emailParams, _ := cfg.GetEmailParams()
-		emailer := email.NewEmailer(emailParams)
-		apiHandler := api.Serve(cfg, c, authenticator, authService, blockStore, authMetadataManager, migrator, bufferedCollector, cloudMetadataProvider, actionsService, auditChecker, logger.WithField("service", "api_gateway"), emailer, cfg.GetS3GatewayDomainNames())
+		emailer, err := email.NewEmailer(emailParams)
+		if err != nil {
+			logger.WithError(err).Fatal("Emailer has not been properly configured, check the values in sender field")
+		}
+		apiHandler := api.Serve(
+			cfg,
+			c,
+			authenticator,
+			authService,
+			blockStore,
+			authMetadataManager,
+			migrator,
+			bufferedCollector,
+			cloudMetadataProvider,
+			actionsService,
+			auditChecker,
+			logger.WithField("service", "api_gateway"),
+			emailer,
+			cfg.GetS3GatewayDomainNames(),
+		)
 
 		// init gateway server
 		s3Fallback := cfg.GetS3GatewayFallbackURL()

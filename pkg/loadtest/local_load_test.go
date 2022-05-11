@@ -98,8 +98,8 @@ func TestLocalLoad(t *testing.T) {
 	})
 	auditChecker := version.NewDefaultAuditChecker(conf.GetSecurityAuditCheckURL())
 	emailParams, _ := conf.GetEmailParams()
-	emailer := email.NewEmailer(emailParams)
-
+	emailer, err := email.NewEmailer(emailParams)
+	testutil.Must(t, err)
 	handler := api.Serve(
 		conf,
 		c,
