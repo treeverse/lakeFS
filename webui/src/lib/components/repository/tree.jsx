@@ -261,7 +261,7 @@ export const URINavigator = ({ repo, reference, path, relativeTo = "", pathURLBu
     );
 };
 
-const GetStarted = ({ onUpload }) => {
+const GetStarted = ({ onUpload, onImport }) => {
     return (
         <Container className="m-4 mb-5">
             <h2 className="mt-2">To get started with this repository:</h2>
@@ -281,16 +281,21 @@ const GetStarted = ({ onUpload }) => {
                 <DotIcon className="mr-1 mt-1"/>
                 See the&nbsp;<a href="https://docs.lakefs.io/setup/import.html" target="_blank" rel="noopener noreferrer">docs</a>&nbsp;for other ways to import data to your repository.
             </Row>
+
+            <Row className="pt-2 ml-2">
+                <DotIcon className="mr-1 mt-1"/>
+                Or, click to&nbsp;<Button variant="link" onClick={onImport}>Import</Button>&nbsp;from the object store.
+            </Row>
         </Container>
     );
 };
 
-export const Tree = ({ repo, reference, results, after, onPaginate, nextPage, onUpload, onDelete, showActions = false, path = "" }) => {
+export const Tree = ({ repo, reference, results, after, onPaginate, nextPage, onUpload, onImport, onDelete, showActions = false, path = "" }) => {
 
     let body;
     if (results.length === 0 && path === "" && reference.type === RefTypeBranch) {
         // empty state!
-        body = <GetStarted onUpload={onUpload}/>;
+        body = <GetStarted onUpload={onUpload} onImport={onImport}/>;
     } else {
         body = (
             <>

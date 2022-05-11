@@ -486,7 +486,7 @@ class Branches {
         if (response.status !== 201) {
             throw new Error(await extractError(response));
         }
-        return response.json();
+        return response;
     }
 
     async delete(repoId, name) {
@@ -639,11 +639,21 @@ class Commits {
         return response.json();
     }
 
-    async commit(repoId, branchId, message, metadata ={}) {
-        const response = await apiRequest(`/repositories/${repoId}/branches/${branchId}/commits`, {
-            method: 'POST',
-            body: json({message, metadata}),
-        });
+    async commit(repoId, branchId, message, metadata ={}, source_metarange="") {
+        let response
+        if (source_metarange!="") {
+            const query = qs({source_metarange});
+            response = await apiRequest(`/repositories/${repoId}/branches/${branchId}/commits?${query}`, {
+                method: 'POST',
+                body: json({message, metadata}),
+            });
+        } else {
+            response = await apiRequest(`/repositories/${repoId}/branches/${branchId}/commits`, {
+                method: 'POST',
+                body: json({message, metadata}),
+            });
+        }
+
         if (response.status !== 201) {
             throw new Error(await extractError(response));
         }
@@ -846,6 +856,32 @@ class BranchProtectionRules {
     }
 
 }
+
+class Ranges {
+    async createRange(repoID, fromSourceURI, after, prepend, continuation_token="") {
+        const response = await apiRequest(`/repositories/${repoID}/branches/ranges`, {
+            method: 'POST',
+            body: json({fromSourceURI, after, prepend, continuation_token}),
+        });
+        if (response.status !== 201) {
+            throw new Error(await extractError(response));
+        }
+        return response.json();
+    }
+}
+
+class MetaRanges {
+    async createMetaRange(repoID, ranges) {
+        const response = await apiRequest(`/repositories/${repoID}/branches/metaranges`, {
+            method: 'POST',
+            body: json({ranges}),
+        });
+        if (response.status !== 201) {
+            throw new Error(await extractError(response));
+        }
+        return response.json();
+    }
+}
 export const repositories = new Repositories();
 export const branches = new Branches();
 export const tags = new Tags();
@@ -858,3 +894,5 @@ export const actions = new Actions();
 export const retention = new Retention();
 export const config = new Config();
 export const branchProtectionRules = new BranchProtectionRules();
+export const ranges = new Ranges();
+export const metaRanges = new MetaRanges();
