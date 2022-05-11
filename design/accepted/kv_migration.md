@@ -5,7 +5,7 @@
 2. DB Migration - The process of migrating postgres data using the postgres versioning schema
 3. KV Migration Version - “Schema” version for which the KV Migration will occur
 4. KV Enabled Flag - Development flag to enable the use of the KV Store and to signal migration to KV is required
-5. DB Import - The process of creating the initial lakeFS DB via a file which was previously exported. Our plan is
+5. DB Import - The process of creating the initial lakeFS DB via a 'file' which was previously exported. Our plan is
    to create a preliminary implementation of the lakeFS DB export / import feature (specifically DB Import) as part of the
    KV development and use it in the KV Migration process.
 
@@ -27,15 +27,13 @@ behave as usual, not taking into account KV migration.
 ## Migration Mechanism
 1. Migrate up command will perform DB migration up to the latest version
 2. Check if current version equals the KV Migration Version and perform KV Migration
-3. KV Migration will consist of 2 main steps: Export, Import
-4. Export:
-   1. Each migrating package will read the data from postgres into its corresponding KV models
-   2. Data will be saved on file per pkg in its KV format
-   3. Each pkg file will consist of a header containing the migration version and creation date
-   4. Files will be saved in a designated export folder
+3. KV Migration will consist of 2 main steps: Migrate, Import
+4. Migrate:
+   1. Each migrating package will implement a 'Migrate' method which will implement its migration logic
+   2. Each migrating package will read the data from its tables and create the appropriate KV models to support its functionality.
+   3. Data will be saved in a format that can be read by the package's KV implementation
 5. Import:
-   1. Read files content from the ‘export’ folder directly to DB
-
+   1. Read the package's data directly to the DB in KV format
 6. Upon successful import - update DB migration version in DB
 7. Drop old DB tables - support an optional flag for testing purposes
 
