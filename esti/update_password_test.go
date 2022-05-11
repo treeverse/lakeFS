@@ -13,12 +13,11 @@ func TestUpdatePassword(t *testing.T) {
 	adminClient := client
 	// creating a new user should succeed
 	email := "test@treeverse.io"
+	inviteUser := true
 	resCreateUser, err := adminClient.CreateUserWithResponse(ctx, api.CreateUserJSONRequestBody{
-		Id: email,
+		Id:         email,
+		InviteUser: &inviteUser,
 	})
-	require.NoError(t, err, "Admin failed while creating user")
-	require.Equal(t, http.StatusCreated, resCreateUser.StatusCode(), "Admin unexpectedly failed to create user")
-
 	require.NoError(t, err, "Admin failed while creating user")
 	require.Equal(t, http.StatusCreated, resCreateUser.StatusCode(), "Admin unexpectedly failed to create user")
 
