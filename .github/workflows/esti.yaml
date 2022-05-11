@@ -768,9 +768,8 @@ jobs:
         run: docker-compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
       - name: Export DB KV
         if: ${{ always() }}
-        run: |
-            cd esti/ops
-            docker-compose ps -q postgres && docker-compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}/dump.gz
+        working-directory: esti/ops
+        run: docker-compose ps -q postgres && docker-compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}/dump.gz
       - name: Run lakeFS S3 to use with local API key KV
         env:
           LAKEFS_STATS_ENABLED: "false"
