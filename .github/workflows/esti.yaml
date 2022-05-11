@@ -771,7 +771,8 @@ jobs:
         working-directory: esti/ops
         run: |
           docker-compose exec -T postgres pg_dumpall --username=lakefs
-          #docker-compose ps -q postgres && docker-compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}/dump.gz
+          docker-compose ps -q postgres && docker-compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}/dump.gz
+          
       - name: Run lakeFS S3 to use with local API key KV
         env:
           LAKEFS_STATS_ENABLED: "false"
