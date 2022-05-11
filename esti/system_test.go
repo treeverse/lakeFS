@@ -8,10 +8,8 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
-	"os"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -227,16 +225,12 @@ func listRepositories(t *testing.T, ctx context.Context) []api.Repository {
 // TestKVEnabled tests that lakefs database contains kv table in case feature is enabled
 func TestKVEnabled(t *testing.T) {
 	// skip test if not kv enabled on postgres
-	if v := os.Getenv("LAKEFS_DATABASE_KV_ENABLED"); v == "" {
-		t.Skip("KV not enabled")
-	} else if b, err := strconv.ParseBool(v); err != nil {
-		t.Fatal("failed to parse kv enable feature flag from env:", v)
-	} else if !b || os.Getenv("LAKEFS_DATABASE_TYPE") != "postgres" {
+	if !viper.GetBool("database_kv_enabled") {
 		t.Skip("KV not enabled")
 	}
 
 	// connect to database and verify that kv table exists
-	dbURI := os.Getenv("LAKEFS_DATABASE_CONNECTION_STRING")
+	dbURI := viper.GetString("database_connection_string")
 	if dbURI == "" {
 		t.Fatal("lakefs database connection string environment variable is missing")
 	}
