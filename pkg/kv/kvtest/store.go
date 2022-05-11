@@ -414,6 +414,9 @@ func testDeleteWhileIterPrefixSingleSequence(t *testing.T, ms MakeStore, sequenc
 	chMap['R'] = make(chan bool)
 	chErr := make(chan error)
 
+	// Will be filled by the scan&read routine, to later verify that all values are passed by scan
+	readDone := make(map[string]bool)
+
 	const numRoutines = 2
 	var wg sync.WaitGroup
 	wg.Add(numRoutines)
@@ -435,6 +438,7 @@ func testDeleteWhileIterPrefixSingleSequence(t *testing.T, ms MakeStore, sequenc
 				chErr <- fmt.Errorf("unexpected nil entry read: %w", ei.Err())
 				break
 			}
+			readDone[string(e.Key)] = true
 			chErr <- nil
 		}
 		wg.Done()
@@ -482,8 +486,8 @@ func testDeleteWhileIterPrefixSingleSequence(t *testing.T, ms MakeStore, sequenc
 
 	close(chErr)
 
-	// Verify all entries from read iteration remain in place, while all entries
-	// from delete iteration are deleted
+	// Verify that all entries under readPrefix were accessed and that all entries from
+	// read iteration remain in place, while all entries from delete iteration are deleted
 	for _, kve := range readData {
 		val, err := store.Get(ctx, kve.Key)
 		if err != nil {
@@ -491,6 +495,9 @@ func testDeleteWhileIterPrefixSingleSequence(t *testing.T, ms MakeStore, sequenc
 		}
 		if !bytes.Equal(val, kve.Value) {
 			t.Fatal("Expected value not found for key", kve.Key)
+		}
+		if !readDone[string(kve.Key)] {
+			t.Fatal("Entry skipped during scan for key", kve.Key)
 		}
 	}
 
