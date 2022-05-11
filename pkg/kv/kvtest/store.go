@@ -496,8 +496,11 @@ func testDeleteWhileIterPrefixSingleSequence(t *testing.T, ms MakeStore, sequenc
 
 	for _, kve := range toDelData {
 		_, err := store.Get(ctx, kve.Key)
-		if !errors.Is(err, kv.ErrNotFound) {
+		if err == nil {
 			t.Fatal("Unexpected entry found after deletion for key", kve.Key)
+		}
+		if !errors.Is(err, kv.ErrNotFound) {
+			t.Fatal("Unexpected error from store.Get for deleted key", kve.Key, err)
 		}
 	}
 }
