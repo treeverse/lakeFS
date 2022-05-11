@@ -176,8 +176,7 @@ func MigrateUp(p params.Database, dropTables bool) error {
 	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return err
 	}
-	err = kvMigrate(p, m, dropTables)
-	return err
+	return kvMigrate(p, m, dropTables)
 }
 
 func MigrateDown(params params.Database) error {
