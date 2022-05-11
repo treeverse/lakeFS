@@ -739,7 +739,7 @@ jobs:
         id: unique
         run:  echo "::set-output name=value::$RANDOM"
 
-      - name: Start lakeFS with S3 tests KV
+      - name: Test lakeFS with S3 tests KV
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
           compose-file: esti/ops/docker-compose.yaml
@@ -769,7 +769,9 @@ jobs:
       - name: Export DB KV
         if: ${{ always() }}
         working-directory: esti/ops
-        run: docker-compose ps -q postgres && docker-compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}/dump.gz
+        run: |
+          docker-compose exec -T postgres pg_dumpall --username=lakefs
+          #docker-compose ps -q postgres && docker-compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}/dump.gz
       - name: Run lakeFS S3 to use with local API key KV
         env:
           LAKEFS_STATS_ENABLED: "false"
@@ -800,7 +802,7 @@ jobs:
         id: unique
         run:  echo "::set-output name=value::$RANDOM"
 
-      - name: Start lakeFS with S3 tests
+      - name: Test lakeFS with S3 tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
           compose-file: esti/ops/docker-compose.yaml
