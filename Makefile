@@ -1,5 +1,6 @@
 GOCMD=$(or $(shell which go), $(error "Missing dependency - no go in PATH"))
 DOCKER=$(or $(shell which docker), $(error "Missing dependency - no docker in PATH"))
+MOCKGEN=$(or $(shell which mockgen), $(error "Missing dependency - no mockgen in PATH"))
 GOBINPATH=$(shell $(GOCMD) env GOPATH)/bin
 NPM=$(or $(shell which npm), $(error "Missing dependency - no npm in PATH"))
 
@@ -149,6 +150,8 @@ gen-mockgen: go-install ## Run the generator for inline commands
 	$(GOGENERATE) ./pkg/pyramid
 	$(GOGENERATE) ./pkg/onboard
 	$(GOGENERATE) ./pkg/actions
+	## create mock for generated auth client
+	$(MOCKGEN) -package=mock -destination=pkg/auth/mock/mock_auth_client.go github.com/treeverse/lakefs/pkg/auth ClientWithResponsesInterface
 
 LD_FLAGS := "-X github.com/treeverse/lakefs/pkg/version.Version=$(VERSION)-$(REVISION)"
 build: gen docs ## Download dependencies and build the default binary
