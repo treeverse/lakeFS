@@ -721,6 +721,73 @@ jobs:
         working-directory: test/spark
         run: docker-compose logs --tail=1000 lakefs
 
+  run-system-aws-s3-kv:
+    name: Run latest lakeFS app on AWS S3 KV
+    needs: [gen-code, deploy-image]
+    runs-on: ubuntu-20.04
+    env:
+      TAG: ${{ needs.deploy-image.outputs.tag }}
+      # Setting Account_ID as a secret as a way to avoid specifying it here
+      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v2
+
+      - name: Generate uniquifying value
+        id: unique
+        run:  echo "::set-output name=value::$RANDOM"
+
+      - name: Test lakeFS with S3 tests KV
+        uses: ./.github/actions/bootstrap-test-lakefs
+        with:
+          compose-file: esti/ops/docker-compose.yaml
+          compose-flags: "--quiet-pull --exit-code-from=esti"
+        env:
+          LAKEFS_BLOCKSTORE_TYPE: s3
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_DATABASE_KV_ENABLED: "true"
+          LAKEFS_DATABASE_TYPE: postgres
+          DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
+          ESTI_TEST_DATA_ACCESS: true,false
+          ESTI_BLOCKSTORE_TYPE: s3
+          ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}
+          ESTI_AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          ESTI_AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          ESTI_VERSION: ${{ steps.version.outputs.tag }}
+          ESTI_KV_ENABLED: "true"
+          ESTI_DATABASE_CONNECTION_STRING: "true"
+
+      - name: Check files in S3 bucket KV
+        run: |
+            FILES_COUNT=`aws s3 ls s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }} --recursive | wc -l`
+            [ $FILES_COUNT -gt 5 ]
+      - name: lakeFS Logs on s3 failure KV
+        if: ${{ failure() }}
+        continue-on-error: true
+        run: docker-compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
+      - name: Export DB KV
+        if: ${{ always() }}
+        working-directory: esti/ops
+        run: |
+          if docker-compose ps -q postgres; then
+            docker-compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}/dump.gz
+          fi
+          
+      - name: Run lakeFS S3 to use with local API key KV
+        env:
+          LAKEFS_STATS_ENABLED: "false"
+          LAKEFS_BLOCKSTORE_TYPE: s3
+          DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
+          ESTI_TEST_DATA_ACCESS: true,false
+          ESTI_BLOCKSTORE_TYPE: s3
+          ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-local-api-key/${{ steps.unique.outputs.value }}
+        run: |
+          docker-compose -f esti/ops/docker-compose.yaml down -v
+          docker-compose -f esti/ops/docker-compose.yaml up --quiet-pull --exit-code-from=esti
+
   run-system-aws-s3:
     name: Run latest lakeFS app on AWS S3
     needs: [gen-code, deploy-image]
@@ -739,7 +806,7 @@ jobs:
         id: unique
         run:  echo "::set-output name=value::$RANDOM"
 
-      - name: Start lakeFS with S3 tests
+      - name: Test lakeFS with S3 tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
           compose-file: esti/ops/docker-compose.yaml
@@ -766,9 +833,11 @@ jobs:
         run: docker-compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
       - name: Export DB
         if: ${{ always() }}
+        working-directory: esti/ops
         run: |
-            cd esti/ops
-            docker-compose ps -q postgres && docker-compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}/dump.gz
+            if docker-compose ps -q postgres; then
+              docker-compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}/dump.gz
+            fi
       - name: Run lakeFS S3 to use with local API key
         env:
           LAKEFS_STATS_ENABLED: "false"
