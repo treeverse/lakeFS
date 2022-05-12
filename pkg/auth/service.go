@@ -1121,7 +1121,7 @@ func (s *KVAuthService) markTokenSingleUse(ctx context.Context, tokenID string, 
 }
 
 type APIAuthService struct {
-	apiClient              *ClientWithResponses
+	apiClient              ClientWithResponsesInterface
 	secretStore            crypt.SecretStore
 	cache                  Cache
 	delegatedInviteHandler *EmailInviteHandler
@@ -1197,6 +1197,10 @@ func (a *APIAuthService) getFirstUser(ctx context.Context, userKey *userKey, par
 		results := resp.JSON200.Results
 		if len(results) == 0 {
 			return nil, ErrNotFound
+		}
+		if len(results) > 1 {
+			// a.log.WithField("userID", userID).Error("GetUserByID - more than one user for userID")
+			return nil, ErrNonUnique
 		}
 		u := results[0]
 		return &model.User{
@@ -1835,4 +1839,18 @@ func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore,
 		res.delegatedInviteHandler = NewEmailInviteHandler(res, logging.Default(), emailer)
 	}
 	return res, nil
+}
+
+func NewAPIAuthServiceWithClient(client ClientWithResponsesInterface, secretStore crypt.SecretStore, cacheConf params.ServiceCache) (*APIAuthService, error) {
+	var cache Cache
+	if cacheConf.Enabled {
+		cache = NewLRUCache(cacheConf.Size, cacheConf.TTL, cacheConf.EvictionJitter)
+	} else {
+		cache = &DummyCache{}
+	}
+	return &APIAuthService{
+		apiClient:   client,
+		secretStore: secretStore,
+		cache:       cache,
+	}, nil
 }
