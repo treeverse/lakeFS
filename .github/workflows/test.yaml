@@ -90,3 +90,27 @@ jobs:
       #   with:
       #     files: ./cover.out,api/cover.out
       #     fail_ci_if_error: false
+
+---
+# Succeed on these required tests when we do not need to run them.  See
+# https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/troubleshooting-required-status-checks#handling-skipped-but-required-checks
+name: Test
+on:
+  push:
+    paths:
+      - "*.md"
+      - "docs/**"
+      - "design/**"
+    branches:
+      - master
+jobs:
+  validator:
+    name: Run Linters and Checkers
+    runs-on: ubuntu-20.04
+    steps:
+      - run: echo 'Skipped.'
+  test-go:
+    name: Run Go tests
+    runs-on: ubuntu-20.04
+    steps:
+      - run: echo 'Skipped.'
