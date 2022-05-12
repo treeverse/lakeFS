@@ -402,12 +402,14 @@ func testDeleteWhileIterPrefixSingleSequence(t *testing.T, ms MakeStore, sequenc
 
 	readPref := uniqueKey("readPrefix")
 	toDelPref := uniqueKey("toDelPrefix")
+	naPref := uniqueKey("naPrefix")
 
 	numRead := strings.Count(sequence, "R")
 	numDel := strings.Count(sequence, "D")
 
 	readData := setupSampleData(t, ctx, store, string(readPref), numRead)
 	toDelData := setupSampleData(t, ctx, store, string(toDelPref), numDel)
+	naData := setupSampleData(t, ctx, store, string(naPref), numRead+numDel)
 
 	chMap := make(map[byte]chan bool)
 	chMap['D'] = make(chan bool)
@@ -488,6 +490,7 @@ func testDeleteWhileIterPrefixSingleSequence(t *testing.T, ms MakeStore, sequenc
 
 	// Verify that all entries under readPrefix were accessed and that all entries from
 	// read iteration remain in place, while all entries from delete iteration are deleted
+	// and all entries under naPrefix are neither deleted nor scanned
 	for _, kve := range readData {
 		val, err := store.Get(ctx, kve.Key)
 		if err != nil {
@@ -508,6 +511,19 @@ func testDeleteWhileIterPrefixSingleSequence(t *testing.T, ms MakeStore, sequenc
 		}
 		if !errors.Is(err, kv.ErrNotFound) {
 			t.Fatal("Unexpected error from store.Get for deleted key", string(kve.Key), err)
+		}
+	}
+
+	for _, kve := range naData {
+		val, err := store.Get(ctx, kve.Key)
+		if err != nil {
+			t.Fatal("Unexpected error reading value for verification", err)
+		}
+		if !bytes.Equal(val, kve.Value) {
+			t.Fatal("Unexpected value found for key", string(kve.Key))
+		}
+		if readDone[string(kve.Key)] {
+			t.Fatal("Unexepcted entry access for key", string(kve.Key))
 		}
 	}
 }
