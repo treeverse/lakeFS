@@ -262,7 +262,7 @@ class Auth {
     }
 
     async attachPolicyToGroup(groupId, policyId) {
-        const response = await apiRequest(`/auth/groups/${encodeURIComponent(roupId)}/policies/${encodeURIComponent(policyId)}`, {method: 'PUT'});
+        const response = await apiRequest(`/auth/groups/${encodeURIComponent(groupId)}/policies/${encodeURIComponent(policyId)}`, {method: 'PUT'});
         if (response.status !== 201) {
             throw new Error(await extractError(response));
         }
