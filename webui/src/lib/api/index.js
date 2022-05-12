@@ -173,12 +173,9 @@ class Auth {
             throw new AuthenticationError('unknown authentication error');
         }
 
-        // get current user and cache it
-        const userResponse = await apiRequest('/user')
-        const body = await userResponse.json();
-        const user = body.user;
+        const user = await this.getCurrentUser();
 
-        cache.set('user', {...user, accessKeyId});
+        cache.set('user',user);
         return user;
     }
 
@@ -193,8 +190,19 @@ class Auth {
         cache.delete('user');
     }
 
+    async getCurrentUserWithCache() {
+        let user = cache.get('user')
+        if (!user) {
+            user = await this.getCurrentUser();
+            cache.set('user', user);
+        }
+        return user
+    }
+
     async getCurrentUser() {
-        return cache.get('user');
+        const userResponse = await apiRequest('/user')
+        const body = await userResponse.json();
+        return body.user;
     }
 
     async listUsers(prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
