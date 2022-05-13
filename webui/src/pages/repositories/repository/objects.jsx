@@ -17,6 +17,7 @@ import Form from "react-bootstrap/Form";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import { BiImport } from "react-icons/bi";
+import { BsCloudArrowUp } from "react-icons/bs";
 
 import {Tree} from "../../../lib/components/repository/tree";
 import {branches, commits, config, metaRanges, objects, ranges} from "../../../lib/api";
@@ -219,7 +220,7 @@ const ImportButton = ({ config, repo, reference, path, onDone, onClick, variant 
                     )}
             </Modal>
             <Button variant={variant} disabled={!enabled} onClick={onClick}>
-                <BiImport/> Import
+                <BsCloudArrowUp/> Import
             </Button>
         </>
     );

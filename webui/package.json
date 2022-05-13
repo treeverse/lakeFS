@@ -10,9 +10,6 @@
   "dependencies": {
     "@emotion/react": "^11.9.0",
     "@emotion/styled": "^11.8.1",
-    "@fortawesome/fontawesome-svg-core": "^6.1.1",
-    "@fortawesome/free-solid-svg-icons": "^6.1.1",
-    "@fortawesome/react-fontawesome": "^0.1.18",
     "@primer/octicons-react": "^13.0.0",
     "bootstrap": "^4.6.0",
     "http-proxy-middleware": "^1.1.1",
