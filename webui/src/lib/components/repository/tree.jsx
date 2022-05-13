@@ -268,6 +268,11 @@ const GetStarted = ({ onUpload, onImport }) => {
 
             <Row className="pt-2 ml-2">
                 <DotIcon className="mr-1 mt-1"/>
+                &nbsp;<Button variant="link" onClick={onImport}>Import</Button>&nbsp;data from the object store. Or, see the&nbsp;<a href="https://docs.lakefs.io/setup/import.html" target="_blank" rel="noopener noreferrer">docs</a>&nbsp;for other ways to import data to your repository.
+            </Row>
+
+            <Row className="pt-2 ml-2">
+                <DotIcon className="mr-1 mt-1"/>
                 <Button variant="link" onClick={onUpload}>Upload</Button>&nbsp;an object.
             </Row>
 
@@ -275,16 +280,6 @@ const GetStarted = ({ onUpload, onImport }) => {
                 <DotIcon className="mr-1 mt-1"/>
                 Use&nbsp;<a href="https://docs.lakefs.io/integrations/distcp.html" target="_blank" rel="noopener noreferrer">DistCp</a>&nbsp;or&nbsp;
                 <a href="https://docs.lakefs.io/integrations/rclone.html" target="_blank" rel="noopener noreferrer">Rclone</a>&nbsp;to copy data into your repository.
-            </Row>
-
-            <Row className="pt-2 ml-2">
-                <DotIcon className="mr-1 mt-1"/>
-                See the&nbsp;<a href="https://docs.lakefs.io/setup/import.html" target="_blank" rel="noopener noreferrer">docs</a>&nbsp;for other ways to import data to your repository.
-            </Row>
-
-            <Row className="pt-2 ml-2">
-                <DotIcon className="mr-1 mt-1"/>
-                Or, click to&nbsp;<Button variant="link" onClick={onImport}>Import</Button>&nbsp;from the object store.
             </Row>
         </Container>
     );

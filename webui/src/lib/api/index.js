@@ -3,6 +3,8 @@ export const DEFAULT_LISTING_AMOUNT = 100;
 
 export const SETUP_STATE_INITIALIZED = "initialized"
 export const SETUP_STATE_NOT_INITIALIZED = "not_initialized"
+import * as QueryString from "query-string"
+
 class LocalCache {
     get(key) {
         const value = localStorage.getItem(key)
@@ -640,19 +642,12 @@ class Commits {
     }
 
     async commit(repoId, branchId, message, metadata ={}, source_metarange="") {
-        let response
-        if (source_metarange!="") {
-            const query = qs({source_metarange});
-            response = await apiRequest(`/repositories/${repoId}/branches/${branchId}/commits?${query}`, {
-                method: 'POST',
-                body: json({message, metadata}),
-            });
-        } else {
-            response = await apiRequest(`/repositories/${repoId}/branches/${branchId}/commits`, {
-                method: 'POST',
-                body: json({message, metadata}),
-            });
-        }
+        const requestURL = QueryString.stringifyUrl({url: `/repositories/${repoId}/branches/${branchId}/commits`, query: {source_metarange: source_metarange}});
+        const parsedURL = QueryString.exclude(requestURL, (name, value) => value === "", {parseNumbers: true});
+        const response = await apiRequest(parsedURL, {
+            method: 'POST',
+            body: json({message, metadata}),
+        });
 
         if (response.status !== 201) {
             throw new Error(await extractError(response));

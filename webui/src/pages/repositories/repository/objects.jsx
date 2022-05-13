@@ -50,24 +50,23 @@ const ImportDone = ({ numObjects, importBranch, currBranch}) => {
     return (
         <Row>
             <Col>
-                <div className={"mt-10 mb-2 mr-2 row mt-4"} style={{color: 'green', display: 'flex', justifyContent: 'center', fontSize: 'large'}}>
-                    <p>Import succeeded!</p>
+                <div className={"mt-10 mb-2 mr-2 row mt-4"} style={{color: 'green', display: 'flex', justifyContent: 'center', fontSize: '160%'}}>
+                    <p><strong>Success!</strong></p>
                 </div>
                 <div style={{display: 'flex', justifyContent: 'center'}}>
-                    <p><strong><div style={{ color: 'green', display: 'inline'}}> {numObjects} </div></strong> objects imported and committed into branch <strong>{importBranch}</strong></p>
+                    <p><strong><div style={{ color: 'green', display: 'inline'}}> {numObjects} </div></strong> objects imported and committed into branch {importBranch}.</p>
                 </div>
                 <div style={{display: 'flex', justifyContent: 'center'}}>
-                    <p> &nbsp;<Link to={`compare?ref=${ currBranch }&compare=${ importBranch }`} variant = "success" className="btn btn-success">Compare and Merge</Link>&nbsp;it into the current branch - <strong>{currBranch}</strong></p>
+                    <p> Use the&nbsp;<Link to={`compare?ref=${ currBranch }&compare=${ importBranch }`} variant = "success" >Compare tab</Link>&nbsp;to view the changes and merge them to {currBranch}.</p>
                 </div>
                 <Alert variant="warning" className={"ml-2 mr-2 row mt-4"}>
-                    Merging {importBranch} will delete all files on branch {currBranch}
+                    Merging will override the state of {currBranch} with the imported objects.
                 </Alert>
 
             </Col>
         </Row>
     );
 }
-
 
 const ImportButton = ({ config, repo, reference, path, onDone, onClick, variant = "success", onHide, show = false, enabled= false}) => {
     const initialState = {
@@ -115,7 +114,7 @@ const ImportButton = ({ config, repo, reference, path, onDone, onClick, variant 
             let prepend = `${destRef.current.value}`;
             let importBranchResp
             let sum = importState.numObj
-            const importBranch = `${reference.id}-imported`;
+            const importBranch = `_${reference.id}_imported`;
             const commitMsg = commitMsgRef.current.value;
             const sourceRefVal = sourceRef.current.value;
             const range_arr = []
@@ -148,43 +147,41 @@ const ImportButton = ({ config, repo, reference, path, onDone, onClick, variant 
             throw error
         }
     }
-    const basePath = `lakefs://${repo.id}/${reference.id}-imported/\u00A0`;
+    const basePath = `lakefs://${repo.id}/_${reference.id}_imported/\u00A0`;
     const pathStyle = {'minWidth' : '25%'};
 
     return (
         <>
             <Modal show={show} onHide={hide} size="lg">
                 <Modal.Header closeButton>
-                    <Modal.Title>Import</Modal.Title>
+                    <Modal.Title>Import data from your object store</Modal.Title>
                 </Modal.Header>
-                {(importState.done) ? (<ImportDone currBranch={reference.id} importBranch={`${reference.id}-imported`} numObjects={importState.numObj} />)
+                {(importState.done) ? (<ImportDone currBranch={reference.id} importBranch={`_${reference.id}_imported`} numObjects={importState.numObj} />)
                     : ( <>
                 <Modal.Body>
                 {(importState.inProgress) ? (<ImportProgress numObjects={importState.numObj} />)
                     : ( <>
-                            <Alert variant="warning">
-                                <strong>Note:</strong> Importing from your object storage doesn&apos;t copy any data, it creates read-only <q>soft links</q> to existing objects. lakeFS will never modify or delete anything outside the repository&apos;s storage namespace.
+                            <Alert variant="info">
+                                Importing  doesn&apos;t copy any data, it only create links to them in the lakeFS metadata. Don&apos;t worry, we will never make any changes to objects in the import source.
                                 <a href="https://docs.lakefs.io/setup/import.html" target="_blank" rel="noreferrer"> Learn more.</a>
                             </Alert>
                             <form>
                             <Form.Group class='form-group'>
-                                <Form.Label><strong>Source URI:</strong></Form.Label>
+                                <Form.Label><strong>Import source:</strong></Form.Label>
                                     <Form.Control type="text" name="text" style={pathStyle} sm={8} ref={sourceRef} autoFocus
                                                   placeholder={sourceURIExample}
                                                   onChange={checkStorageNamespaceValidity}/>
                                     {importState.isStorageNamespaceValid === false &&
                                     <Form.Text className="text-danger">
-                                        {"Can only create repository with storage type: " + storageType}
+                                        {"Import source must start with " + storageType + "://"}
                                     </Form.Text>
                                     }
                                 <Form.Text style={{ color: 'grey', justifyContent: "space-between"}}>
-                                    Source bucket and prefix path on the object storage to import from.<br/>
-                                    <strong>&bull;</strong> Import is feasible only from source object storage that matches the storage namespace of the repository.<br/>
-                                    <strong>&bull;</strong> lakeFS needs access to the source.<br/>
+                                    A URI on the object store to import from.<br/>
                                 </Form.Text>
                             </Form.Group>
                             <Form.Group class='form-group'>
-                                <Form.Label><strong>Destination:</strong></Form.Label>
+                                <Form.Label><strong>Destination:</strong> <div style={{ color: 'grey', display: 'inline', fontSize: 'small'}}> (optional) </div></Form.Label>
                                 <Row noGutters={true}>
                                     <Col className="col-auto d-flex align-items-center justify-content-start">
                                         {basePath}
@@ -194,11 +191,11 @@ const ImportButton = ({ config, repo, reference, path, onDone, onClick, variant 
                                     </Col>
                                 </Row>
                                 <Form.Text style={{ color: 'grey'}} md={{offset: 2, span: 10000}}>
-                                    Path to import the objects.
+                                    Path to import the objects to.
                                 </Form.Text>
                             </Form.Group>
                             <Form.Group class='form-group'>
-                                <Form.Label><strong>Commit Message:</strong></Form.Label>
+                                <Form.Label><strong>Commit Message:</strong> <div style={{ color: 'grey', display: 'inline', fontSize: 'small'}}> (optional) </div></Form.Label>
                                     <Form.Control sm={8} type="text" ref={commitMsgRef} name="text" autoFocus/>
                             </Form.Group>
                             </form>
@@ -228,7 +225,7 @@ const ImportButton = ({ config, repo, reference, path, onDone, onClick, variant 
     );
 }
 
-const UploadButton = ({ Config, repo, reference, path, onDone, onClick, onHide, show = false}) => {
+const UploadButton = ({ config, repo, reference, path, onDone, onClick, onHide, show = false}) => {
     const initialState = {
         inProgress: false,
         error: null,
@@ -279,9 +276,9 @@ const UploadButton = ({ Config, repo, reference, path, onDone, onClick, onHide, 
                         upload();
                         e.preventDefault();
                     }}>
-			{Config?.warnings &&
+			{config?.warnings &&
 			 <Form.Group controlId="warnings">
-			     <Warnings warnings={Config.warnings}/>
+			     <Warnings warnings={config.warnings}/>
 			 </Form.Group>}
                         <Form.Group controlId="path">
                             <Row noGutters={true}>
