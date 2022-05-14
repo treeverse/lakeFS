@@ -49,6 +49,7 @@ const (
 
 	actionStatusCompleted = "completed"
 	actionStatusFailed    = "failed"
+	actionStatusSkipped   = "skipped"
 
 	entryTypeObject       = "object"
 	entryTypeCommonPrefix = "common_prefix"
@@ -1534,6 +1535,8 @@ func (c *Controller) ListRunHooks(w http.ResponseWriter, r *http.Request, reposi
 		}
 		if val.Passed {
 			hookRun.Status = actionStatusCompleted
+		} else if val.StartTime.IsZero() { // assumes that database values are only stored after run is finished
+			hookRun.Status = actionStatusSkipped
 		} else {
 			hookRun.Status = actionStatusFailed
 		}
