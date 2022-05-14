@@ -11,6 +11,7 @@ import (
 	"os"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -40,10 +41,9 @@ const (
 )
 
 const (
-	LakectlInteractive        = "LAKECTL_INTERACTIVE"
-	LakectlInteractiveDisable = "no"
-	DeathMessage              = "{{.Error|red}}\nError executing command.\n"
-	DeathMessageWithFields    = "{{.Message|red}}\n{{.Status}}\n"
+	LakectlInteractive     = "LAKECTL_INTERACTIVE"
+	DeathMessage           = "{{.Error|red}}\nError executing command.\n"
+	DeathMessageWithFields = "{{.Message|red}}\n{{.Status}}\n"
 )
 
 const (
@@ -57,8 +57,15 @@ const resourceListTemplate = `{{.Table | table -}}
 
 //nolint:gochecknoinits
 func init() {
-	// disable colors if we're not attached to interactive TTY
-	if !term.IsTerminal(int(os.Stdout.Fd())) || os.Getenv(LakectlInteractive) == LakectlInteractiveDisable || noColorRequested {
+	// disable colors if we're not attached to interactive TTY.
+	// when environment variable is set we use it to control interactive mode
+	// otherwise we will try to detect based on the standard output
+	interactiveVal := os.Getenv(LakectlInteractive)
+	if interactiveVal != "" {
+		if interactive, err := strconv.ParseBool(interactiveVal); err == nil && !interactive {
+			DisableColors()
+		}
+	} else if !term.IsTerminal(int(os.Stdout.Fd())) {
 		DisableColors()
 	}
 }
