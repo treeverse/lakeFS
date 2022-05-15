@@ -1538,6 +1538,7 @@ func (c *Controller) ListRunHooks(w http.ResponseWriter, r *http.Request, reposi
 			hookRun.Status = actionStatusCompleted
 		case val.StartTime.IsZero(): // assumes that database values are only stored after run is finished
 			hookRun.Status = actionStatusSkipped
+			hookRun.EndTime = nil
 		default:
 			hookRun.Status = actionStatusFailed
 		}
@@ -1578,6 +1579,10 @@ func (c *Controller) GetRunHookOutput(w http.ResponseWriter, r *http.Request, re
 	taskResult, err := c.Actions.GetTaskResult(ctx, repo.Name, runID, hookRunID)
 	if handleAPIError(w, err) {
 		return
+	}
+
+	if taskResult.StartTime.IsZero() { // skipped task
+		writeResponse(w, http.StatusOK, nil)
 	}
 
 	logPath := taskResult.LogPath()

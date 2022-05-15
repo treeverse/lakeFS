@@ -299,6 +299,7 @@ func buildRunManifestFromTasks(record graveler.HookRecord, tasks [][]*Task) RunM
 	for _, actionTasks := range tasks {
 		for _, task := range actionTasks {
 			// record hook run information
+			taskStarted := !task.StartTime.IsZero()
 			manifest.HooksRun = append(manifest.HooksRun, TaskResult{
 				RunID:      task.RunID,
 				HookRunID:  task.HookRunID,
@@ -306,10 +307,10 @@ func buildRunManifestFromTasks(record graveler.HookRecord, tasks [][]*Task) RunM
 				ActionName: task.Action.Name,
 				StartTime:  task.StartTime,
 				EndTime:    task.EndTime,
-				Passed:     task.Err == nil && !task.StartTime.IsZero(), // mark skipped tasks as failed
+				Passed:     taskStarted && task.Err == nil, // mark skipped tasks as failed
 			})
 			// keep min run start time using non-skipped tasks
-			if manifest.Run.StartTime.IsZero() || (!task.StartTime.IsZero() && task.StartTime.Before(manifest.Run.StartTime)) {
+			if manifest.Run.StartTime.IsZero() || (taskStarted && task.StartTime.Before(manifest.Run.StartTime)) {
 				manifest.Run.StartTime = task.StartTime
 			}
 			// keep max run end time
