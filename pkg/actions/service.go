@@ -306,9 +306,9 @@ func buildRunManifestFromTasks(record graveler.HookRecord, tasks [][]*Task) RunM
 				ActionName: task.Action.Name,
 				StartTime:  task.StartTime,
 				EndTime:    task.EndTime,
-				Passed:     task.Err == nil && !task.StartTime.IsZero(), // mark skipper tasks as failed
+				Passed:     task.Err == nil && !task.StartTime.IsZero(), // mark skipped tasks as failed
 			})
-			// keep min run start time using non-skipper tasks
+			// keep min run start time using non-skipped tasks
 			if manifest.Run.StartTime.IsZero() || (!task.StartTime.IsZero() && task.StartTime.Before(manifest.Run.StartTime)) {
 				manifest.Run.StartTime = task.StartTime
 			}
