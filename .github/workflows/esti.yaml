@@ -760,7 +760,7 @@ jobs:
         env:
           LAKEFS_DATABASE_KV_ENABLED: true
           LAKEFS_DATABASE_KV_TYPE: postgres
-        run: docker-compose ps -aq lakefs && docker-compose exec -T lakefs lakefs migrate up
+        run: docker-compose ps -aq lakefs && docker-compose run -T --entrypoint "lakefs migrate up" lakefs
 
       - name: Start lakeFS with KV DB
         uses: ./.github/actions/bootstrap-test-lakefs
