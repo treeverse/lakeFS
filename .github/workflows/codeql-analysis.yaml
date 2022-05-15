@@ -27,7 +27,7 @@ jobs:
         go-version: 1.17.8
 
     - name: Initialize CodeQL Go
-      uses: github/codeql-action/init@v1
+      uses: github/codeql-action/init@v2
       with:
         languages: go, javascript
         config-file: ./.github/codeql/codeql-config.yaml
@@ -35,5 +35,5 @@ jobs:
     - run: make gen
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v1
+      uses: github/codeql-action/analyze@v2
 
