@@ -1583,6 +1583,7 @@ func (c *Controller) GetRunHookOutput(w http.ResponseWriter, r *http.Request, re
 
 	if taskResult.StartTime.IsZero() { // skipped task
 		writeResponse(w, http.StatusOK, nil)
+		return
 	}
 
 	logPath := taskResult.LogPath()
