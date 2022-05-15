@@ -76,7 +76,6 @@ func TestMain(m *testing.M) {
 	}
 
 	viper.SetDefault("post_migrate", false)
-	viper.SetDefault("migrate_state_file", "/tmp/migrate-state-file.json")
 
 	logger, client, svc = testutil.SetupTestingEnv(&params)
 

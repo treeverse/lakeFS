@@ -3,7 +3,6 @@ package esti
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"testing"
 
@@ -17,34 +16,38 @@ import (
 
 func TestMigrate(t *testing.T) {
 	postMigrate := viper.GetViper().GetBool("post_migrate")
-	stateFile := viper.GetViper().GetString("migrate_state_file")
 
 	if postMigrate {
-		postMigrateTests(t, stateFile)
+		postMigrateTests(t)
 	} else {
-		preMigrateTests(t, stateFile)
+		preMigrateTests(t)
 	}
 }
 
-func preMigrateTests(t *testing.T, stateFile string) {
+func preMigrateTests(t *testing.T) {
 	// all pre tests execution
 	t.Run("TestPreMigrateMultipart", testPreMigrateMultipart)
 
 	// write the state file
-	bytes, err := json.Marshal(&state)
+	stateBytes, err := json.Marshal(&state)
 	require.NoError(t, err, "marshal state")
 
-	err = ioutil.WriteFile(stateFile, bytes, 0644)
+	ctx := context.Background()
+	_ = createRepositoryByName(context.Background(), t, migrateStateRepoName)
+	resp, err := uploadContent(ctx, migrateStateRepoName, "main", migrateStateObjectPath, string(stateBytes))
 	require.NoError(t, err, "writing state file")
+	require.Equal(t, http.StatusCreated, resp.StatusCode())
 }
 
-func postMigrateTests(t *testing.T, stateFile string) {
+func postMigrateTests(t *testing.T) {
 	// read the state file
-	bytes, err := ioutil.ReadFile(stateFile)
+	ctx := context.Background()
+	resp, err := client.GetObjectWithResponse(ctx, migrateStateRepoName, "main", &api.GetObjectParams{Path: migrateStateObjectPath})
 	require.NoError(t, err, "reading state file")
+	require.Equal(t, http.StatusOK, resp.StatusCode())
 
-	err = json.Unmarshal(bytes, &state)
-	require.NoError(t, err, "unmarshal state")
+	err = json.Unmarshal(resp.Body, &state)
+	require.NoError(t, err, "unmarshal state from response")
 
 	// all post tests execution
 	t.Run("TestPostMigrateMultipart", testPostMigrateMultipart)
@@ -66,6 +69,8 @@ type multipartState struct {
 const (
 	migrateMultipartFile     = "multipart_file"
 	migrateMultipartFilepath = mainBranch + "/" + migrateMultipartFile
+	migrateStateRepoName     = "migrate"
+	migrateStateObjectPath   = "state.json"
 )
 
 func testPreMigrateMultipart(t *testing.T) {
