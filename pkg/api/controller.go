@@ -837,7 +837,7 @@ func (c *Controller) inviteUserRequest(emailAddr string) error {
 func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body CreateUserJSONRequestBody) {
 	invite := swag.BoolValue(body.InviteUser)
 	id := body.Id
-	var email *string
+	var parsedEmail *string
 	if invite {
 		addr, err := mail.ParseAddress(body.Id)
 		if err != nil {
@@ -846,7 +846,7 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body Cre
 			return
 		}
 		id = strings.ToLower(addr.Address)
-		email = &addr.Address
+		parsedEmail = &addr.Address
 	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
@@ -861,7 +861,7 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body Cre
 		Username:     id,
 		FriendlyName: nil,
 		Source:       "internal",
-		Email:        email,
+		Email:        parsedEmail,
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "create_user")
