@@ -12,18 +12,18 @@ const (
 	ResetPasswordURLPath = "/auth/resetpassword" //#nosec
 	InviteUserURLPath    = "/auth/users/create"  //#nosec
 
-	resetPasswordEmailSubject = "Reset Password Request for your lakeFS account"
-	inviteUserWEmailSubject   = "You have been invited to lakeFS"
+	ResetPasswordEmailSubject = "Reset Password Request for your lakeFS account"
+	InviteUserWEmailSubject   = "You have been invited to lakeFS"
 )
 
 var (
 	//go:embed invite_user_template.html
 	inviteEmailContent string
-	inviteUserTemplate = template.Must(template.New("inviteUserTemplate").Parse(inviteEmailContent))
+	InviteUserTemplate = template.Must(template.New("inviteUserTemplate").Parse(inviteEmailContent))
 
 	//go:embed reset_email_template.html
 	resetEmailContent  string
-	resetEmailTemplate = template.Must(template.New("resetEmailTemplate").Parse(resetEmailContent))
+	ResetEmailTemplate = template.Must(template.New("resetEmailTemplate").Parse(resetEmailContent))
 )
 
 type TemplateParams struct {
@@ -46,7 +46,7 @@ func buildURL(baseURL string, pth string, values map[string]string) (string, err
 	return u.String(), nil
 }
 
-func buildEmailByTemplate(tmpl *template.Template, host string, path string, params map[string]string) (string, error) {
+func BuildEmailByTemplate(tmpl *template.Template, host string, path string, params map[string]string) (string, error) {
 	u, err := buildURL(host, path, params)
 	if err != nil {
 		return "", err
