@@ -1533,11 +1533,12 @@ func (c *Controller) ListRunHooks(w http.ResponseWriter, r *http.Request, reposi
 			StartTime: val.StartTime,
 			EndTime:   &val.EndTime,
 		}
-		if val.Passed {
+		switch {
+		case val.Passed:
 			hookRun.Status = actionStatusCompleted
-		} else if val.StartTime.IsZero() { // assumes that database values are only stored after run is finished
+		case val.StartTime.IsZero(): // assumes that database values are only stored after run is finished
 			hookRun.Status = actionStatusSkipped
-		} else {
+		default:
 			hookRun.Status = actionStatusFailed
 		}
 		response.Results = append(response.Results, hookRun)
