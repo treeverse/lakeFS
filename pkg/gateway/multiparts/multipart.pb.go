@@ -26,7 +26,6 @@ const (
 // of the legacy proto package is being used.
 const _ = proto.ProtoPackageIsVersion4
 
-// message data model for multiparts.MultipartUpload struct
 type MultipartUploadData struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
