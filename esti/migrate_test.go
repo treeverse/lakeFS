@@ -2,6 +2,7 @@ package esti
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"testing"
@@ -64,6 +65,7 @@ type multipartState struct {
 	Repo           string                         `json:"repo"`
 	Info           s3.CreateMultipartUploadOutput `json:"info"`
 	CompletedParts []*s3.CompletedPart            `json:"completed_parts"`
+	Content        string                         `json:"state"`
 }
 
 const (
@@ -97,6 +99,7 @@ func testPreMigrateMultipart(t *testing.T) {
 	state.Multipart.Repo = repo
 	state.Multipart.Info = *resp
 	state.Multipart.CompletedParts = completedParts
+	state.Multipart.Content = base64.StdEncoding.EncodeToString(partsConcat)
 }
 
 func testPostMigrateMultipart(t *testing.T) {
@@ -110,5 +113,8 @@ func testPostMigrateMultipart(t *testing.T) {
 	getResp, err := client.GetObjectWithResponse(ctx, state.Multipart.Repo, mainBranch, &api.GetObjectParams{Path: migrateMultipartFile})
 	require.NoError(t, err, "failed to get object")
 	require.Equal(t, http.StatusOK, getResp.StatusCode())
-	require.Equal(t, multipartNumberOfParts*multipartPartSize, len(getResp.Body))
+
+	contentBytes, err := base64.StdEncoding.DecodeString(state.Multipart.Content)
+	require.NoError(t, err, "failed to decode error")
+	require.Equal(t, contentBytes, getResp.Body)
 }
