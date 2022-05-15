@@ -12,6 +12,7 @@ import (
 	"github.com/go-test/deep"
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"golang.org/x/sync/errgroup"
 )
 
 type MakeStore func(t *testing.T, ctx context.Context) kv.Store
@@ -52,6 +53,7 @@ func TestDriver(t *testing.T, name, dsn string) {
 	t.Run("Store_MissingArgument", func(t *testing.T) { testStoreMissingArgument(t, ms) })
 	t.Run("ScanPrefix", func(t *testing.T) { testScanPrefix(t, ms) })
 	t.Run("DeleteWhileIterating", func(t *testing.T) { testDeleteWhileIterPrefix(t, ms) })
+	t.Run("DeleteWhileIteratingSamePrefix", func(t *testing.T) { testDeleteWhileIterSamePrefix(t, ms) })
 }
 
 func testDriverOpen(t *testing.T, ms MakeStore) {
@@ -524,6 +526,158 @@ func testDeleteWhileIterPrefixSingleSequence(t *testing.T, ms MakeStore, sequenc
 		}
 		if readDone[string(kve.Key)] {
 			t.Fatal("Unexepcted entry access for key", string(kve.Key))
+		}
+	}
+}
+
+func testDeleteWhileIterSamePrefix(t *testing.T, ms MakeStore) {
+	// building the following kv keys sequence
+
+	//       pref			prefin			prefinin
+	//         |               |               |               |
+	// prefix: |-----------------------------------------------|
+	// internal-prefix:        |-------------------------------|
+	// internal-internal-prefix:               |---------------|
+
+	// Using the following keys (for some ints:L,M,N, and unique TESTID), that will provide access
+
+	// TESTID-pref-key-0000
+	// TESTID-pref-key-0001
+	// ...
+	// TESTID-pref-key-000<N>
+	// TESTID-prefin-key-0000
+	// TESTID-prefin-key-0001
+	// ...
+	// TESTID-prefin-key-000<M>
+	// TESTID-prefinin-key-0000
+	// TESTID-prefinin-key-0001
+	// ...
+	// TESTID-prefinin-key-000<L>
+
+	extPref := uniqueKey("pref")
+	inPref := uniqueKey("prefin")
+	ininPref := uniqueKey("prefinin")
+
+	allPrefs := [][]byte{extPref, inPref, ininPref}
+
+	// delete a subsection of the read prefix
+	testDeleteWhileIterSamePrefixSingleRun(t, ms, allPrefs, inPref, ininPref)
+
+	// scan a subsection of the delete prefix
+	testDeleteWhileIterSamePrefixSingleRun(t, ms, allPrefs, ininPref, inPref)
+
+	// scan and delete the same prefix
+	testDeleteWhileIterSamePrefixSingleRun(t, ms, allPrefs, ininPref, ininPref)
+}
+
+func testDeleteWhileIterSamePrefixSingleRun(t *testing.T, ms MakeStore, prefsToCreate [][]byte, readPref, delPref []byte) {
+	ctx := context.Background()
+	store := ms(t, ctx)
+	defer store.Close()
+
+	// Emptying the KV store from previous entries. This is essential in these tests as
+	// the verification relies on exact keys to exist
+	cleanIter, err := store.Scan(ctx, delPref)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cleanIter.Close()
+
+	for cleanIter.Next() {
+		e := cleanIter.Entry()
+		if cleanIter != nil {
+			err = store.Delete(ctx, e.Key)
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+
+	for _, pref := range prefsToCreate {
+		setupSampleData(t, ctx, store, string(pref), 100)
+	}
+
+	// Will be filled by the scan&read routine, to later verify that all values are passed by scan
+	readDone := make(map[string]bool)
+	deleteDone := make(map[string]bool)
+
+	errGrp, errCtx := errgroup.WithContext(context.Background())
+
+	// Scan and read
+	errGrp.Go(func() error {
+		ei, err := store.Scan(errCtx, readPref)
+		if err != nil {
+			return fmt.Errorf("unexpected error from store.Scan (read): %w", err)
+		}
+		defer ei.Close()
+
+		for ei.Next() {
+			e := ei.Entry()
+			if e != nil {
+				readDone[string(e.Key)] = true
+			} else if ei.Err() != nil {
+				return fmt.Errorf("unexpected error during read iteration: %w", err)
+			}
+		}
+		return nil
+	})
+
+	// Scan and delete
+	errGrp.Go(func() error {
+		ei, err := store.Scan(errCtx, delPref)
+		if err != nil {
+			return fmt.Errorf("unexpected error from store.Scan (delete): %w", err)
+		}
+		defer ei.Close()
+
+		for ei.Next() {
+			e := ei.Entry()
+			if e == nil {
+				return fmt.Errorf("unexpected nil entry during deletion interation: %w", ei.Err())
+			}
+			err = store.Delete(errCtx, e.Key)
+			if err != nil {
+				return fmt.Errorf("unexpected delete failure :%w", err)
+			}
+			deleteDone[string(e.Key)] = true
+		}
+		return nil
+	})
+
+	err = errGrp.Wait()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// verify all readDone entries fits readPref
+	for k := range readDone {
+		if strings.Index(k, string(readPref)) != 0 {
+			t.Fatal("unexpected key read for prefix", k, string(readPref))
+		}
+	}
+
+	// verify all delete entries fits delPref
+	for k := range deleteDone {
+		if strings.Index(k, string(delPref)) != 0 {
+			t.Fatal("unexpected key deleted for prefix", k, string(delPref))
+		}
+	}
+
+	// verify all entires that fits delPref are indeed deleted, i.e. no such entry is left
+	// in the store
+	verifIter, err := store.Scan(ctx, []byte{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer verifIter.Close()
+
+	for verifIter.Next() {
+		e := verifIter.Entry()
+		if e == nil {
+			t.Fatal("unexpected nil entry in KV store")
+		}
+		if strings.Index(string(e.Key), string(delPref)) == 0 {
+			t.Fatal("unexpected entry found after delete", string(e.Key), string(delPref))
 		}
 	}
 }
