@@ -2,6 +2,7 @@ package email_test
 
 import (
 	"errors"
+	"html/template"
 	"testing"
 	"time"
 
@@ -74,5 +75,8 @@ func TestBuildEmailTemplate(t *testing.T) {
 	_, err := email.BuildEmailByTemplate(email.ResetEmailTemplate, "foo", "bar", d)
 	testutil.Must(t, err)
 	_, err = email.BuildEmailByTemplate(email.InviteUserTemplate, "foo", "bar", d)
+	testutil.Must(t, err)
+	template := template.Must(template.New("").Parse(""))
+	_, err = email.BuildEmailByTemplate(template, "", "", map[string]string{})
 	testutil.Must(t, err)
 }
