@@ -49,6 +49,7 @@ const (
 
 	actionStatusCompleted = "completed"
 	actionStatusFailed    = "failed"
+	actionStatusSkipped   = "skipped"
 
 	entryTypeObject       = "object"
 	entryTypeCommonPrefix = "common_prefix"
@@ -1532,9 +1533,13 @@ func (c *Controller) ListRunHooks(w http.ResponseWriter, r *http.Request, reposi
 			StartTime: val.StartTime,
 			EndTime:   &val.EndTime,
 		}
-		if val.Passed {
+		switch {
+		case val.Passed:
 			hookRun.Status = actionStatusCompleted
-		} else {
+		case val.StartTime.IsZero(): // assumes that database values are only stored after run is finished
+			hookRun.Status = actionStatusSkipped
+			hookRun.EndTime = nil
+		default:
 			hookRun.Status = actionStatusFailed
 		}
 		response.Results = append(response.Results, hookRun)
@@ -1573,6 +1578,11 @@ func (c *Controller) GetRunHookOutput(w http.ResponseWriter, r *http.Request, re
 
 	taskResult, err := c.Actions.GetTaskResult(ctx, repo.Name, runID, hookRunID)
 	if handleAPIError(w, err) {
+		return
+	}
+
+	if taskResult.StartTime.IsZero() { // skipped task
+		writeResponse(w, http.StatusOK, nil)
 		return
 	}
 
