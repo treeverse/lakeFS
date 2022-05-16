@@ -4,7 +4,7 @@
 
 What's new:
 - Import your data into lakeFS using the UI! (#3233, #3352)
-- Airflow hook wait for DAG completion (#3231)
+- Airflow hook wait for DAG completion (#3321)
 - Friendlier post-setup page (#3318)
 - Show skipped hooks for failed action run (#3359)
 
