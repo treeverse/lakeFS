@@ -29,6 +29,7 @@ lakeFS supports AWS S3, Azure Blob Storage, and Google Cloud Storage as its unde
 
 For more information, see the [official lakeFS documentation](https://docs.lakefs.io).
 
+
 ## Capabilities
 
 ### In Development
