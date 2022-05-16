@@ -19,7 +19,7 @@ import Col from "react-bootstrap/Col";
 import { BsCloudArrowUp } from "react-icons/bs";
 
 import {Tree} from "../../../lib/components/repository/tree";
-import {branches, commits, config, metaRanges, objects, ranges} from "../../../lib/api";
+import {branches, commits, config, metaRanges, NotFoundError, objects, ranges} from "../../../lib/api";
 import {useAPI, useAPIWithPagination} from "../../../lib/hooks/api";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import {useRouter} from "../../../lib/hooks/router";
@@ -135,9 +135,14 @@ const ImportButton = ({ config, repo, reference, path, onDone, onClick, variant 
 
             try {
                 importBranchResp = await branches.get(repo.id, importBranch)
-            } catch (error) { // branch not exists
-                await branches.create(repo.id, importBranch, currBranch)
-                importBranchResp = await branches.get(repo.id, importBranch)
+            } catch (error) {
+                if (error instanceof NotFoundError) {
+                    await branches.create(repo.id, importBranch, currBranch)
+                    importBranchResp = await branches.get(repo.id, importBranch)
+                } else {
+                    setImportState({...initialState, error})
+                    throw error
+                }
             }
 
             await commits.commit(repo.id, importBranchResp.id, commitMsg, {}, metarange.id)
