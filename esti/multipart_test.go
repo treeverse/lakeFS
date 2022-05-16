@@ -30,8 +30,8 @@ func TestMultipartUpload(t *testing.T) {
 	}
 
 	resp, err := svc.CreateMultipartUpload(input)
-	require.NoError(t, err, "failed to create multipartState upload")
-	logger.Info("Created multipartState upload request")
+	require.NoError(t, err, "failed to create multipart upload")
+	logger.Info("Created multipart upload request")
 
 	parts := make([][]byte, multipartNumberOfParts)
 	var partsConcat []byte
@@ -43,9 +43,9 @@ func TestMultipartUpload(t *testing.T) {
 	completedParts := uploadMultipartParts(t, logger, resp, parts)
 
 	completeResponse, err := uploadMultipartComplete(svc, resp, completedParts)
-	require.NoError(t, err, "failed to complete multipartState upload")
+	require.NoError(t, err, "failed to complete multipart upload")
 
-	logger.WithField("key", completeResponse.Key).Info("Completed multipartState request successfully")
+	logger.WithField("key", completeResponse.Key).Info("Completed multipart request successfully")
 
 	getResp, err := client.GetObjectWithResponse(ctx, repo, mainBranch, &api.GetObjectParams{Path: file})
 	require.NoError(t, err, "failed to get object")

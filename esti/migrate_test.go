@@ -29,6 +29,17 @@ func preMigrateTests(t *testing.T) {
 	// all pre tests execution
 	t.Run("TestPreMigrateMultipart", testPreMigrateMultipart)
 
+	saveStateInLakeFS(t)
+}
+
+func postMigrateTests(t *testing.T) {
+	readStateFromLakeFS(t)
+
+	// all post tests execution
+	t.Run("TestPostMigrateMultipart", testPostMigrateMultipart)
+}
+
+func saveStateInLakeFS(t *testing.T) {
 	// write the state file
 	stateBytes, err := json.Marshal(&state)
 	require.NoError(t, err, "marshal state")
@@ -40,7 +51,7 @@ func preMigrateTests(t *testing.T) {
 	require.Equal(t, http.StatusCreated, resp.StatusCode())
 }
 
-func postMigrateTests(t *testing.T) {
+func readStateFromLakeFS(t *testing.T) {
 	// read the state file
 	ctx := context.Background()
 	resp, err := client.GetObjectWithResponse(ctx, migrateStateRepoName, "main", &api.GetObjectParams{Path: migrateStateObjectPath})
@@ -49,9 +60,6 @@ func postMigrateTests(t *testing.T) {
 
 	err = json.Unmarshal(resp.Body, &state)
 	require.NoError(t, err, "unmarshal state from response")
-
-	// all post tests execution
-	t.Run("TestPostMigrateMultipart", testPostMigrateMultipart)
 }
 
 // state to be used
