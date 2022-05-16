@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -16,11 +17,19 @@ import (
 	"github.com/treeverse/lakefs/webui"
 )
 
-func NewUIHandler(gatewayDomains []string) http.Handler {
-	content, err := fs.Sub(webui.Content, "dist")
-	if err != nil {
-		// embedded UI content is missing
-		panic(err)
+func NewUIHandler(gatewayDomains []string, fsDir *string) http.Handler {
+	var (
+		content fs.FS
+		err     error
+	)
+	if fsDir == nil {
+		content, err = fs.Sub(webui.Content, "dist")
+		if err != nil {
+			// embedded UI content is missing
+			panic(err)
+		}
+	} else {
+		content = os.DirFS(*fsDir)
 	}
 	fileSystem := http.FS(content)
 	nocacheContent := middleware.NoCache(http.StripPrefix("/", http.FileServer(fileSystem)))

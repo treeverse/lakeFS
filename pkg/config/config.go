@@ -262,6 +262,10 @@ func (c *Config) Validate() error {
 	return nil
 }
 
+func (c *Config) GetUIDir() *string {
+	return c.values.UI.Dir
+}
+
 func (c *Config) GetDatabaseParams() dbparams.Database {
 	return dbparams.Database{
 		ConnectionString:      c.values.Database.ConnectionString.SecureValue(),

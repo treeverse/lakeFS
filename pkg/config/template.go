@@ -41,6 +41,10 @@ type configuration struct {
 		Enabled bool `mapstructure:"enabled"`
 	}
 
+	UI struct {
+		Dir *string
+	}
+
 	Logging struct {
 		Format        string   `mapstructure:"format"`
 		Level         string   `mapstructure:"level"`

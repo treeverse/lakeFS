@@ -94,7 +94,7 @@ func Serve(
 	r.Mount("/_pprof/", httputil.ServePPROF("/_pprof/"))
 	r.Mount("/swagger.json", http.HandlerFunc(swaggerSpecHandler))
 	r.Mount(BaseURL, http.HandlerFunc(InvalidAPIEndpointHandler))
-	r.Mount("/", NewUIHandler(gatewayDomains))
+	r.Mount("/", NewUIHandler(gatewayDomains, cfg.GetUIDir()))
 	return r
 }
 
