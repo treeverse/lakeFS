@@ -19,18 +19,6 @@ const NavUserInfo = () => {
     return (
         <Navbar.Collapse className="justify-content-end">
             <NavDropdown title={user.friendly_name || user.id} className="navbar-username" alignRight>
-                <NavDropdown.Header>
-                    User: <code>{user.accessKeyId}</code>
-                </NavDropdown.Header>
-
-                <NavDropdown.Divider/>
-
-                <NavDropdown.Item
-                    href="/auth/credentials"
-                    onSelect={()=> router.push('/auth/credentials')}>
-                        Manage My Credentials
-                </NavDropdown.Item>
-
                 <NavDropdown.Item
                     onSelect={()=> {
                         auth.logout().then(() => {
