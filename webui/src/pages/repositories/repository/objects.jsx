@@ -16,7 +16,6 @@ import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
-import { BiImport } from "react-icons/bi";
 import { BsCloudArrowUp } from "react-icons/bs";
 
 import {Tree} from "../../../lib/components/repository/tree";
@@ -33,8 +32,8 @@ const ImportProgress = ({ numObjects}) => {
     return (
         <Row>
             <Col>
-                <div style={{display: 'flex', justifyContent: 'center'}}>
-                    <p>Imported <strong><div style={{ color: 'green', display: 'inline'}}> {numObjects} </div></strong> objects so far...</p>
+                <div className='import-text'>
+                    <p>Imported <strong><div className='import-num-objects'> {numObjects} </div></strong> objects so far...</p>
                 </div>
                 <div>
                     <LinearProgress color="success" />
@@ -51,13 +50,13 @@ const ImportDone = ({ numObjects, importBranch, currBranch}) => {
     return (
         <Row>
             <Col>
-                <div className={"mt-10 mb-2 mr-2 row mt-4"} style={{color: 'green', display: 'flex', justifyContent: 'center', fontSize: '160%'}}>
+                <div className={"mt-10 mb-2 mr-2 row mt-4 import-success"}>
                     <p><strong>Success!</strong></p>
                 </div>
-                <div style={{display: 'flex', justifyContent: 'center'}}>
-                    <p><strong><div style={{ color: 'green', display: 'inline'}}> {numObjects} </div></strong> objects imported and committed into branch {importBranch}.</p>
+                <div className='import-text'>
+                    <p><strong><div className='import-num-objects'> {numObjects} </div></strong> objects imported and committed into branch {importBranch}.</p>
                 </div>
-                <div style={{display: 'flex', justifyContent: 'center'}}>
+                <div className='import-text'>
                     <p> Use the&nbsp;<Link to={`compare?ref=${ currBranch }&compare=${ importBranch }`} variant = "success" >Compare tab</Link>&nbsp;to view the changes and merge them to {currBranch}.</p>
                 </div>
                 <Alert variant="warning" className={"ml-2 mr-2 row mt-4"}>
@@ -69,13 +68,13 @@ const ImportDone = ({ numObjects, importBranch, currBranch}) => {
     );
 }
 
-const ImportButton = ({ config, repo, reference, path, onDone, onClick, variant = "success", onHide, show = false, enabled= false}) => {
+const ImportButton = ({ config, repo, reference, path, onDone, onClick, variant = "success", onHide, show = false, enabled = false}) => {
     const initialState = {
         inProgress: false,
         error: null,
         done: false,
         numObj: 0,
-        isStorageNamespaceValid: null
+        isSourceValid: null
     }
     const [importState, setImportState] = useState(initialState)
 
@@ -87,13 +86,20 @@ const ImportButton = ({ config, repo, reference, path, onDone, onClick, variant 
     const storageNamespaceValidityRegexStr = config ? config.blockstore_namespace_ValidityRegex : DEFAULT_BLOCKSTORE_VALIDITY_REGEX;
     const storageNamespaceValidityRegex = RegExp(storageNamespaceValidityRegexStr);
     const sourceURIExample = config ? config.blockstore_namespace_example : "s3://my-bucket/path/";
+    let importBranch = `_${reference.id}_imported`;
+    let currBranch = reference.id;
 
+    if (currBranch.includes('_imported')) {
+        importBranch = reference.id
+        currBranch = currBranch.replace("_imported","")
+        currBranch = currBranch.replace("_","")
+    }
 
     if (!reference || reference.type !== RefTypeBranch) return <></>
 
-    const checkStorageNamespaceValidity = () => {
-        const isStorageNamespaceValid = storageNamespaceValidityRegex.test(sourceRef.current.value)
-        setImportState({inProgress: importState.inProgress, error: importState.error, done: importState.done, numObj: importState.numObj, isStorageNamespaceValid: isStorageNamespaceValid});
+    const checkSourceURLValidity = () => {
+        const isSourceValid = storageNamespaceValidityRegex.test(sourceRef.current.value)
+        setImportState({inProgress: importState.inProgress, error: importState.error, done: importState.done, numObj: importState.numObj, isSourceValid: isSourceValid});
     };
 
     const hide = () => {
@@ -102,77 +108,72 @@ const ImportButton = ({ config, repo, reference, path, onDone, onClick, variant 
         onHide()
     };
 
-    const ingest = async () => {
+    const doImport = async () => {
         setImportState({
             ...initialState,
             inProgress: true
         })
 
         try {
-            let hasMore = true
-            let continuationToken = ""
+            let paginationResp = {}
             let after = ""
             let prepend = `${destRef.current.value}`;
             let importBranchResp
             let sum = importState.numObj
-            const importBranch = `_${reference.id}_imported`;
             const commitMsg = commitMsgRef.current.value;
             const sourceRefVal = sourceRef.current.value;
-            const range_arr = []
+            const rangeArr = []
 
-            while (hasMore) {
-                const response = await ranges.createRange(repo.id, sourceRefVal, after, prepend, continuationToken)
-                range_arr.push(response.range)
-
-                let pagination = response.pagination
-                hasMore = pagination.has_more
-                continuationToken = pagination.continuation_token
-                after = pagination.last_key
+            do {
+                const response = await ranges.createRange(repo.id, sourceRefVal, after, prepend, paginationResp.continuation_token)
+                rangeArr.push(response.range)
+                paginationResp = response.pagination
+                after = paginationResp.last_key
                 sum += response.range.count
-                setImportState({inProgress: true, error: null, done: false, isStorageNamespaceValid: importState.isStorageNamespaceValid, numObj: sum})
-            }
-            const metarange = await metaRanges.createMetaRange(repo.id, range_arr)
+                setImportState({inProgress: true, error: null, done: false, isSourceValid: importState.isSourceValid, numObj: sum})
+            } while (paginationResp.has_more);
+            const metarange = await metaRanges.createMetaRange(repo.id, rangeArr)
 
             try {
                 importBranchResp = await branches.get(repo.id, importBranch)
-            } catch (error){
-                await branches.create(repo.id, importBranch, reference.id)
+            } catch (error) { // branch not exists
+                await branches.create(repo.id, importBranch, currBranch)
                 importBranchResp = await branches.get(repo.id, importBranch)
             }
 
             await commits.commit(repo.id, importBranchResp.id, commitMsg, {}, metarange.id)
-            setImportState({inProgress: false, error: null, done: true, numObj: sum, isStorageNamespaceValid: importState.isStorageNamespaceValid})
+            setImportState({inProgress: false, error: null, done: true, numObj: sum, isSourceValid: importState.isSourceValid})
             onDone()
         } catch (error) {
             setImportState({...initialState, error})
             throw error
         }
     }
-    const basePath = `lakefs://${repo.id}/_${reference.id}_imported/\u00A0`;
+    const basePath = `lakefs://${repo.id}/${importBranch}/\u00A0`;
     const pathStyle = {'minWidth' : '25%'};
 
     return (
         <>
             <Modal show={show} onHide={hide} size="lg">
                 <Modal.Header closeButton>
-                    <Modal.Title>Import data from your object store</Modal.Title>
+                    <Modal.Title>Import data from {config.blockstore_type}</Modal.Title>
                 </Modal.Header>
-                {(importState.done) ? (<ImportDone currBranch={reference.id} importBranch={`_${reference.id}_imported`} numObjects={importState.numObj} />)
+                {(importState.done) ? (<ImportDone currBranch={currBranch} importBranch={importBranch} numObjects={importState.numObj} />)
                     : ( <>
                 <Modal.Body>
                 {(importState.inProgress) ? (<ImportProgress numObjects={importState.numObj} />)
                     : ( <>
                             <Alert variant="info">
-                                Importing  doesn&apos;t copy any data, it only create links to them in the lakeFS metadata. Don&apos;t worry, we will never make any changes to objects in the import source.
+                                Import doesn&apos;t copy the object. it only creates links to the objects in the lakeFS metadata layer. Don&apos;t worry, we will never change objects in the import source.
                                 <a href="https://docs.lakefs.io/setup/import.html" target="_blank" rel="noreferrer"> Learn more.</a>
                             </Alert>
                             <form>
                             <Form.Group class='form-group'>
-                                <Form.Label><strong>Import source:</strong></Form.Label>
+                                <Form.Label><strong>Import from:</strong></Form.Label>
                                     <Form.Control type="text" name="text" style={pathStyle} sm={8} ref={sourceRef} autoFocus
                                                   placeholder={sourceURIExample}
-                                                  onChange={checkStorageNamespaceValidity}/>
-                                    {importState.isStorageNamespaceValid === false &&
+                                                  onChange={checkSourceURLValidity}/>
+                                    {importState.isSourceValid === false &&
                                     <Form.Text className="text-danger">
                                         {"Import source must start with " + storageType + "://"}
                                     </Form.Text>
@@ -182,7 +183,7 @@ const ImportButton = ({ config, repo, reference, path, onDone, onClick, variant 
                                 </Form.Text>
                             </Form.Group>
                             <Form.Group class='form-group'>
-                                <Form.Label><strong>Destination:</strong> <div style={{ color: 'grey', display: 'inline', fontSize: 'small'}}> (optional) </div></Form.Label>
+                                <Form.Label><strong>Destination:</strong></Form.Label>
                                 <Row noGutters={true}>
                                     <Col className="col-auto d-flex align-items-center justify-content-start">
                                         {basePath}
@@ -192,11 +193,11 @@ const ImportButton = ({ config, repo, reference, path, onDone, onClick, variant 
                                     </Col>
                                 </Row>
                                 <Form.Text style={{ color: 'grey'}} md={{offset: 2, span: 10000}}>
-                                    Path to import the objects to.
+                                    Leave empty to import to the repository&apos;s root.
                                 </Form.Text>
                             </Form.Group>
                             <Form.Group class='form-group'>
-                                <Form.Label><strong>Commit Message:</strong> <div style={{ color: 'grey', display: 'inline', fontSize: 'small'}}> (optional) </div></Form.Label>
+                                <Form.Label><strong>Commit Message:</strong></Form.Label>
                                     <Form.Control sm={8} type="text" ref={commitMsgRef} name="text" autoFocus/>
                             </Form.Group>
                             </form>
@@ -209,9 +210,9 @@ const ImportButton = ({ config, repo, reference, path, onDone, onClick, variant 
                     <Button variant="secondary"  disabled={importState.inProgress} onClick={hide}>
                         Cancel
                     </Button>
-                    <Button variant="success" disabled={importState.inProgress || !importState.isStorageNamespaceValid} onClick={() => {
+                    <Button variant="success" disabled={importState.inProgress || !importState.isSourceValid} onClick={() => {
                         if (importState.inProgress) return;
-                        ingest()
+                        doImport()
                     }}>
                         {(importState.inProgress)? 'Importing...' : 'Import'}
                     </Button>
@@ -321,7 +322,7 @@ const UploadButton = ({ config, repo, reference, path, onDone, onClick, onHide, 
                 </Modal.Footer>
             </Modal>
 
-            <Button variant="light" onClick={onClick}>
+            <Button variant={(config.blockstore_type === 'local' || config.blockstore_type === 'mem') ? "success" :"light"} onClick={onClick}>
                 <UploadIcon/> Upload Object
             </Button>
         </>
