@@ -29,6 +29,7 @@ lakeFS supports AWS S3, Azure Blob Storage, and Google Cloud Storage as its unde
 
 For more information, see the [official lakeFS documentation](https://docs.lakefs.io).
 
+
 ## Capabilities
 
 ### In Development
@@ -82,7 +83,7 @@ Once lakeFS is installed, you are ready to [create your first repository](https:
 
 Stay up to date and get lakeFS support via:
 
-- Share your lakeFS experience and get support on [our Slack](https://lakefs.io/slack).
+- Share your lakeFS experience and get support on [our Slack](https://go.lakefs.io/JoinSlack).
 - Follow us and join the conversation on [Twitter](https://twitter.com/lakeFS).
 - Learn from video tutorials on [our YouTube channel](https://lakefs.io/youtube).
 - Feel free to [contact us](https://lakefs.io/contact-us/) about anything else.

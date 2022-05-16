@@ -3,7 +3,7 @@ import {auth} from "../api";
 
 
 const useUser = () => {
-    const { response, loading, error } = useAPI(() => auth.getCurrentUser(), []);
+    const { response, loading, error } = useAPI(() => auth.getCurrentUserWithCache(), []);
     return { user: response, loading, error };
 }
 

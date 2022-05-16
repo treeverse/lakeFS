@@ -2,7 +2,7 @@ import React from "react";
 
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Tooltip from "react-bootstrap/Tooltip";
-import {CheckCircleFillIcon, StopwatchIcon, XCircleFillIcon} from "@primer/octicons-react";
+import {CheckCircleFillIcon, StopwatchIcon, XCircleFillIcon, SkipIcon} from "@primer/octicons-react";
 
 
 export const ActionStatusIcon = ({ status, className = null }) => {
@@ -11,6 +11,8 @@ export const ActionStatusIcon = ({ status, className = null }) => {
         icon = <CheckCircleFillIcon fill="green" verticalAlign="middle"/>
     } else if (status === "failed") {
         icon = <XCircleFillIcon fill="red" verticalAlign="middle"/>
+    } else if (status === "skipped") {
+        icon = <SkipIcon fill="yellow" verticalAlign="middle"/>
     }
     // otherwise, probably still running
     return (

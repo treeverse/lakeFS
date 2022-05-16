@@ -102,13 +102,15 @@ const HookLog = ({ repo, run, execution }) => {
         const startTs = moment(execution.start_time);
         const diff = moment.duration(endTs.diff(startTs)).asSeconds();
         duration = `(${execution.status} in ${diff}s)`;
+    } else if (execution.status === 'skipped') {
+        duration = '(skipped)'
     }
 
     return (
             <div className="hook-log">
 
                 <p className="mb-3 hook-log-title">
-                    <Button variant="link" onClick={() => {setExpanded(!expanded)}}>
+                    <Button variant="link" onClick={() => {setExpanded(!expanded)}} disabled={execution.status === "skipped"}>
                         {(expanded) ?  <ChevronDownIcon size="small"/> : <ChevronRightIcon size="small"/>}
                     </Button>
                     {' '}
