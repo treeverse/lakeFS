@@ -663,7 +663,7 @@ func testDeleteWhileIterSamePrefixSingleRun(t *testing.T, ms MakeStore, prefsToC
 		}
 	}
 
-	// verify all entires that fits delPref are indeed deleted, i.e. no such entry is left
+	// verify all entries that fits delPref are indeed deleted, i.e. no such entry is left
 	// in the store
 	verifIter, err := store.Scan(ctx, []byte{})
 	if err != nil {
