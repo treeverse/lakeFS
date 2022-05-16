@@ -46,27 +46,23 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 	}
 	defer store.Close()
 
-	// Check KV version before migration
-	version, err := kv.GetDBVersion(ctx, store)
-	if err != nil && errors.Is(err, kv.ErrMissingKey) {
-		return err
-	} else if err == nil { // Version exists in DB
-		if version < kv.InitialMigrateVersion {
-			// After unsuccessful migration attempt, clean KV table
-			// Delete store if exists from previous failed KV migration and reopen store
-			logging.Default().Warn("Removing KV table")
-			err = dropTables(ctx, dbPool, []string{DefaultTableName})
-			if err != nil {
-				return err
-			}
-			store.Close()
-			store, err = kv.Open(ctx, DriverName, dbParams.ConnectionString)
-			if err != nil {
-				return fmt.Errorf("opening kv store: %w", err)
-			}
-		} else { // version >= InitialMigrateVersion - Migration already completed successfully
-			return nil
+	shouldDrop, err := validateVersion(ctx, store)
+	if err != nil {
+		return fmt.Errorf("validating version: %w", err)
+	}
+	if shouldDrop {
+		// After unsuccessful migration attempt, clean KV table
+		// Delete store if exists from previous failed KV migration and reopen store
+		logging.Default().Warn("Removing KV table")
+		err = dropTables(ctx, dbPool, []string{DefaultTableName})
+		if err != nil {
+			return err
 		}
+		tmpStore, err := kv.Open(ctx, DriverName, dbParams.ConnectionString) // Open flow recreates table
+		if err != nil {
+			return fmt.Errorf("opening kv store: %w", err)
+		}
+		tmpStore.Close()
 	}
 
 	// Mark KV Migration started
@@ -78,7 +74,7 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 	// Import to KV Store
 	var g multierror.Group
 	var tables []string
-	tmpDir, err := os.MkdirTemp("", "kv_migrate")
+	tmpDir, err := os.MkdirTemp("", "kv_migrate_")
 	if err != nil {
 		return fmt.Errorf("create temp dir: %w", err)
 	}
@@ -91,7 +87,7 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 		g.Go(func() error {
 			fileLog := logging.Default().WithField("pkg_id", name)
 			fileLog.Info("Starting KV migration for package")
-			fd, err := os.CreateTemp(tmpDir, "migrate_file")
+			fd, err := os.CreateTemp(tmpDir, fmt.Sprintf("migrate_%s_", name))
 			if err != nil {
 				return fmt.Errorf("create temp file: %w", err)
 			}
@@ -134,6 +130,19 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 		logger.Error("Failed to remove migration directory") // This should not fail the migration process
 	}
 	return nil
+}
+
+// validateVersion Check KV version before migration. Version exists and smaller than InitialMigrateVersion indicates
+// failed previous migration. In this case we drop the kv table and recreate it.
+// In case version is equal or bigger - it means we already performed a successful migration and there's nothing to do
+func validateVersion(ctx context.Context, store kv.Store) (bool, error) {
+	version, err := kv.GetDBVersion(ctx, store)
+	if err != nil && errors.Is(err, kv.ErrNotFound) {
+		return false, nil
+	} else if err == nil { // Version exists in DB
+		return version < kv.InitialMigrateVersion, nil
+	}
+	return false, err
 }
 
 func Register(name string, f MigrateFunc, tables []string) {

@@ -2,12 +2,21 @@ package testutil
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/version"
 
 	"cloud.google.com/go/storage"
 	"github.com/aws/aws-sdk-go/aws"
@@ -32,6 +41,8 @@ const (
 	envKeyAwsKeyID        = "AWS_ACCESS_KEY_ID"
 	envKeyAwsSecretKey    = "AWS_SECRET_ACCESS_KEY" //nolint:gosec
 	envKeyAwsRegion       = "AWS_DEFAULT_REGION"
+
+	testMigrateValue = "This is a test value"
 )
 
 var keepDB = flag.Bool("keep-db", false, "keep test DB instance running")
@@ -241,5 +252,109 @@ func NewBlockAdapterByType(t testing.TB, translator block.UploadIDTranslator, bl
 
 	default:
 		return mem.New(mem.WithTranslator(translator))
+	}
+}
+
+// migrate functions for test scenarios
+
+func MigrateEmpty(_ context.Context, _ *pgxpool.Pool, _ io.Writer) error {
+	return nil
+}
+
+func MigrateBasic(_ context.Context, _ *pgxpool.Pool, writer io.Writer) error {
+	jd := json.NewEncoder(writer)
+
+	err := jd.Encode(kv.Header{
+		LakeFSVersion: version.Version,
+		PkgName:       "test_package_name",
+		DBVersion:     kv.InitialMigrateVersion,
+		Timestamp:     time.Now(),
+	})
+	if err != nil {
+		log.Fatal("Failed to encode struct")
+	}
+	for i := 1; i < 6; i++ {
+		err = jd.Encode(kv.Entry{
+			Key:   []byte(strconv.Itoa(i)),
+			Value: []byte(fmt.Sprint(i, ". ", testMigrateValue)),
+		})
+		if err != nil {
+			log.Fatal("Failed to encode struct")
+		}
+	}
+	return nil
+}
+
+func MigrateNoHeader(_ context.Context, _ *pgxpool.Pool, writer io.Writer) error {
+	jd := json.NewEncoder(writer)
+
+	for i := 1; i < 5; i++ {
+		err := jd.Encode(kv.Entry{
+			Key:   []byte(strconv.Itoa(i)),
+			Value: []byte(fmt.Sprint(i, ". ", testMigrateValue)),
+		})
+		if err != nil {
+			log.Fatal("Failed to encode struct")
+		}
+	}
+	return nil
+}
+
+func MigrateBadEntry(_ context.Context, _ *pgxpool.Pool, writer io.Writer) error {
+	jd := json.NewEncoder(writer)
+
+	err := jd.Encode(kv.Entry{
+		Key:   []byte("test"),
+		Value: nil,
+	})
+	if err != nil {
+		log.Fatal("Failed to encode struct")
+	}
+	return nil
+}
+
+func MigrateParallel(_ context.Context, _ *pgxpool.Pool, writer io.Writer) error {
+	jd := json.NewEncoder(writer)
+
+	err := jd.Encode(kv.Header{
+		LakeFSVersion: version.Version,
+		PkgName:       "test_package_name",
+		DBVersion:     kv.InitialMigrateVersion,
+		Timestamp:     time.Now(),
+	})
+	if err != nil {
+		log.Fatal("Failed to encode struct")
+	}
+
+	for i := 6; i < 11; i++ {
+		err := jd.Encode(kv.Entry{
+			Key:   []byte(strconv.Itoa(i)),
+			Value: []byte(fmt.Sprint(i, ". ", testMigrateValue)),
+		})
+		if err != nil {
+			log.Fatal("Failed to encode struct")
+		}
+	}
+	return nil
+}
+
+func ValidateKV(ctx context.Context, t *testing.T, store kv.Store, entries int) {
+	for i := 1; i <= entries; i++ {
+		expectdVal := fmt.Sprint(i, ". ", testMigrateValue)
+		value, err := store.Get(ctx, []byte(strconv.Itoa(i)))
+		require.NoError(t, err)
+		require.Equal(t, expectdVal, string(value))
+	}
+}
+
+func CleanupKV(ctx context.Context, t *testing.T, store kv.Store) {
+	t.Helper()
+	scan, err := store.Scan(ctx, []byte{0})
+	MustDo(t, "scan store", err)
+	defer scan.Close()
+
+	for scan.Next() {
+		ent := scan.Entry()
+		MustDo(t, "Clean store", store.Delete(ctx, ent.Key))
 	}
 }

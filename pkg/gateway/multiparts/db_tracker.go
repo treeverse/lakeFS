@@ -13,13 +13,15 @@ import (
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/kv"
 	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
+	"github.com/treeverse/lakefs/pkg/version"
 	"google.golang.org/protobuf/proto"
 )
 
-// TODO(niro): Remove after Migration version
+const packageName = "multiparts"
+
 //nolint:gochecknoinits
 func init() {
-	kvpg.Register("multiparts", Migrate, []string{"gateway_multiparts"})
+	kvpg.Register(packageName, Migrate, []string{"gateway_multiparts"})
 }
 
 func (m Metadata) Set(k, v string) {
@@ -110,8 +112,10 @@ func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
 	je := json.NewEncoder(writer)
 	// Create header
 	err := je.Encode(kv.Header{
-		Version:   kv.InitialMigrateVersion,
-		Timestamp: time.Now(),
+		LakeFSVersion: version.Version,
+		PkgName:       packageName,
+		DBVersion:     kv.InitialMigrateVersion,
+		Timestamp:     time.Now(),
 	})
 	if err != nil {
 		return err
