@@ -156,7 +156,7 @@ const ImportButton = ({ config, repo, reference, path, onDone, onClick, variant 
         <>
             <Modal show={show} onHide={hide} size="lg">
                 <Modal.Header closeButton>
-                    <Modal.Title>Import data from {config.blockstore_type}</Modal.Title>
+                    <Modal.Title>Import data from {config.blockstore_type} </Modal.Title>
                 </Modal.Header>
                 {(importState.done) ? (<ImportDone currBranch={currBranch} importBranch={importBranch} numObjects={importState.numObj} />)
                     : ( <>
@@ -329,7 +329,7 @@ const UploadButton = ({ config, repo, reference, path, onDone, onClick, onHide, 
     );
 }
 
-const TreeContainer = ({ repo, reference, path, after, onPaginate, onRefresh, onUpload, onImport, refreshToken }) => {
+const TreeContainer = ({ config, repo, reference, path, after, onPaginate, onRefresh, onUpload, onImport, refreshToken }) => {
     const { results, error, loading, nextPage } = useAPIWithPagination( () => {
         return objects.list(repo.id, reference.id, path, after)
     },[repo.id, reference.id, path, after, refreshToken]);
@@ -347,6 +347,7 @@ const TreeContainer = ({ repo, reference, path, after, onPaginate, onRefresh, on
         <>
             {deleteState.error && <Error error={deleteState.error} onDismiss={() => setDeleteState(initialState)}/>}
             <Tree
+                config={{config}}
                 repo={repo}
                 reference={reference}
                 path={(!!path) ? path : ""}
@@ -427,6 +428,7 @@ const ObjectsBrowser = ({ config, configError }) => {
             </ActionsBar>
 
             <TreeContainer
+                config={config}
                 reference={reference}
                 repo={repo}
                 path={(!!path) ? path : ""}
