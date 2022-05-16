@@ -174,7 +174,7 @@ const ImportButton = ({ config, repo, reference, path, onDone, onClick, variant 
                                                   onChange={checkSourceURLValidity}/>
                                     {importState.isSourceValid === false &&
                                     <Form.Text className="text-danger">
-                                        {"Import source must start with " + storageType + "://"}
+                                        {"Import source must start with " + config.blockstore_namespace_ValidityRegex}
                                     </Form.Text>
                                     }
                                 <Form.Text style={{ color: 'grey', justifyContent: "space-between"}}>
