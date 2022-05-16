@@ -262,26 +262,7 @@ func MigrateEmpty(_ context.Context, _ *pgxpool.Pool, _ io.Writer) error {
 }
 
 func MigrateBasic(_ context.Context, _ *pgxpool.Pool, writer io.Writer) error {
-	jd := json.NewEncoder(writer)
-
-	err := jd.Encode(kv.Header{
-		LakeFSVersion: version.Version,
-		PkgName:       "test_package_name",
-		DBVersion:     kv.InitialMigrateVersion,
-		Timestamp:     time.Now(),
-	})
-	if err != nil {
-		log.Fatal("Failed to encode struct")
-	}
-	for i := 1; i < 6; i++ {
-		err = jd.Encode(kv.Entry{
-			Key:   []byte(strconv.Itoa(i)),
-			Value: []byte(fmt.Sprint(i, ". ", testMigrateValue)),
-		})
-		if err != nil {
-			log.Fatal("Failed to encode struct")
-		}
-	}
+	buildTestData(1, 5, writer)
 	return nil
 }
 
@@ -314,27 +295,8 @@ func MigrateBadEntry(_ context.Context, _ *pgxpool.Pool, writer io.Writer) error
 }
 
 func MigrateParallel(_ context.Context, _ *pgxpool.Pool, writer io.Writer) error {
-	jd := json.NewEncoder(writer)
-
-	err := jd.Encode(kv.Header{
-		LakeFSVersion: version.Version,
-		PkgName:       "test_package_name",
-		DBVersion:     kv.InitialMigrateVersion,
-		Timestamp:     time.Now(),
-	})
-	if err != nil {
-		log.Fatal("Failed to encode struct")
-	}
-
-	for i := 6; i < 11; i++ {
-		err := jd.Encode(kv.Entry{
-			Key:   []byte(strconv.Itoa(i)),
-			Value: []byte(fmt.Sprint(i, ". ", testMigrateValue)),
-		})
-		if err != nil {
-			log.Fatal("Failed to encode struct")
-		}
-	}
+	const index = 6 // Magic number WA
+	buildTestData(index, 5, writer)
 	return nil
 }
 
@@ -356,5 +318,28 @@ func CleanupKV(ctx context.Context, t *testing.T, store kv.Store) {
 	for scan.Next() {
 		ent := scan.Entry()
 		MustDo(t, "Clean store", store.Delete(ctx, ent.Key))
+	}
+}
+
+func buildTestData(startIdx, count int, writer io.Writer) {
+	jd := json.NewEncoder(writer)
+
+	err := jd.Encode(kv.Header{
+		LakeFSVersion: version.Version,
+		PkgName:       "test_package_name",
+		DBVersion:     kv.InitialMigrateVersion,
+		Timestamp:     time.Now(),
+	})
+	if err != nil {
+		log.Fatal("Failed to encode struct")
+	}
+	for i := startIdx; i < startIdx+count; i++ {
+		err = jd.Encode(kv.Entry{
+			Key:   []byte(strconv.Itoa(i)),
+			Value: []byte(fmt.Sprint(i, ". ", testMigrateValue)),
+		})
+		if err != nil {
+			log.Fatal("Failed to encode struct")
+		}
 	}
 }

@@ -30,14 +30,14 @@ func Import(ctx context.Context, reader io.Reader, store Store) error {
 	var header Header
 	if err := jd.Decode(&header); err != nil {
 		if errors.Is(err, io.EOF) {
-			return fmt.Errorf("%w: Empty file", ErrInvalidFormat)
+			return fmt.Errorf("empty file: %w", ErrInvalidFormat)
 		} else {
-			return fmt.Errorf("%w: error decoding header", err)
+			return fmt.Errorf("decoding header: %w", err)
 		}
 	}
 	// Decode does not return error on failure to Unmarshal
 	if header == (Header{}) {
-		return fmt.Errorf("%w: bad header format", ErrInvalidFormat)
+		return fmt.Errorf("bad header format: %w", ErrInvalidFormat)
 	}
 	readHeader(header)
 
@@ -49,13 +49,13 @@ func Import(ctx context.Context, reader io.Reader, store Store) error {
 		}
 		// Decode does not return error on failure to Unmarshal
 		if err != nil {
-			return fmt.Errorf("%w: error decoding entry", err)
+			return fmt.Errorf("decoding entry: %w", err)
 		}
 		if len(entry.Key) == 0 {
-			return fmt.Errorf("%w: bad entry key", ErrInvalidFormat)
+			return fmt.Errorf("bad entry key: %w", ErrInvalidFormat)
 		}
 		if entry.Value == nil {
-			return fmt.Errorf("%w: bad entry value", ErrInvalidFormat)
+			return fmt.Errorf("bad entry value: %w", ErrInvalidFormat)
 		}
 		err = store.SetIf(ctx, entry.Key, entry.Value, nil)
 		if err != nil {
