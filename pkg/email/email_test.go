@@ -10,7 +10,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
-func TestEmailer_DialerAndLimiter(t *testing.T) {
+func TestNewEmailer_DialerAndLimiter(t *testing.T) {
 	p := email.Params{}
 	emailer, err := email.NewEmailer(p)
 	testutil.Must(t, err)
@@ -22,14 +22,14 @@ func TestEmailer_DialerAndLimiter(t *testing.T) {
 	}
 }
 
-func TestEmailer_Sender(t *testing.T) {
+func TestNewEmailer_Sender(t *testing.T) {
 	p := email.Params{
 		SMTPHost: "foo",
 		Sender:   "bar",
 	}
 	_, err := email.NewEmailer(p)
 	if err == nil {
-		t.Errorf("got a proper emailer, expected sender misconfigured")
+		t.Errorf("got a proper emailer, expected %s", email.ErrNoSenderConfigured)
 	}
 }
 
@@ -53,7 +53,7 @@ func TestSendEmail(t *testing.T) {
 	}
 	err = emailer.SendEmail([]string{"foo"}, "bar", "baz", nil)
 	if err == nil {
-		t.Errorf("email sent, expected error")
+		t.Errorf("email sent, expected error: dial tcp :0: connect: can't assign requested address")
 	}
 }
 
@@ -67,7 +67,7 @@ func TestSendEmailWithLimit(t *testing.T) {
 	}
 }
 
-func TestBuildEmailTemplate(t *testing.T) {
+func TestBuildEmailByTemplate(t *testing.T) {
 	d := map[string]string{
 		"paramx": "testparamx",
 		"paramy": "testparamy",
@@ -76,7 +76,14 @@ func TestBuildEmailTemplate(t *testing.T) {
 	testutil.Must(t, err)
 	_, err = email.BuildEmailByTemplate(email.InviteUserTemplate, "foo", "bar", d)
 	testutil.Must(t, err)
-	template := template.Must(template.New("").Parse(""))
-	_, err = email.BuildEmailByTemplate(template, "", "", map[string]string{})
-	testutil.Must(t, err)
+	testCases := []string{
+		"", "@@@@", "////\\\\\\", "[[[[]]]]]", "12345", "-12345", "-01010101",
+		"averyveryextralongstringWITHCAPSandcommas,withsomespecialcharacters*#@!^&()",
+	}
+	for _, test := range testCases {
+		d["paramx"], d["paramy"] = test, test
+		template := template.Must(template.New(test).Parse(test))
+		_, err = email.BuildEmailByTemplate(template, test, test, d)
+		testutil.Must(t, err)
+	}
 }
