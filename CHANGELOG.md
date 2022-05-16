@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.65.0 - 2022-05-16
+
+What's new:
+- API expansion to support Import from UI (#3233)
+- Airflow hook wait for DAG completion (#3231)
+- Friendlier post-setup page (#3318)
+- Show skipped hooks for failed action run (#3359)
+- Import from UI (#3352) 
+- Additional documentation for user management (#3320)
+
+Bug fixes:
+- UI enable row revert action when possible (#3291)
+  - Fixes bug #3161 - Bug: revert path shows up when comparing refs
+- Force catalog ID in metastore client config to be a string (#3252)
+  - Fixes bug #2996 - Glue catalog_id parsed as int
+- Fix: login redirects to credentials page (#3319)
+- UI: fix create repo focus on name (#3342)
+  - Fixes bug #3343 - UI create repository focus
+- Fixed link to authentication page vs authorization page (#3337)
+- UI api encode URI component for path parameters (#3290)
+
 ## v0.64.0 - 2022-04-29
 
 This release requires running database migration.
