@@ -74,45 +74,35 @@ Please follow the [installation](#installation) instruction and execute the foll
 // Import classes:
 import io.lakefs.clients.api.ApiClient;
 import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.BranchesApi;
 import io.lakefs.clients.api.Configuration;
 import io.lakefs.clients.api.auth.*;
-import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.ActionsApi;
+import io.lakefs.clients.api.model.*;
 
-public class Example {
-  public static void main(String[] args) {
-    ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost/api/v1");
-    
-    // Configure HTTP basic authorization: basic_auth
-    HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
-    basic_auth.setUsername("YOUR USERNAME");
-    basic_auth.setPassword("YOUR PASSWORD");
+public class Main {
 
-    // Configure API key authorization: cookie_auth
-    ApiKeyAuth cookie_auth = (ApiKeyAuth) defaultClient.getAuthentication("cookie_auth");
-    cookie_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //cookie_auth.setApiKeyPrefix("Token");
+    public static void main(String[] args) {
+        ApiClient defaultClient = Configuration.getDefaultApiClient();
+        defaultClient.setBasePath("http://localhost/api/v1");
+        defaultClient.setUsername("AKIAIOSFODNN7EXAMPLE");
+        defaultClient.setPassword("wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY");
 
-    // Configure HTTP bearer authorization: jwt_token
-    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setBearerToken("BEARER TOKEN");
 
-    ActionsApi apiInstance = new ActionsApi(defaultClient);
-    String repository = "repository_example"; // String | 
-    String runId = "runId_example"; // String | 
-    try {
-      ActionRun result = apiInstance.getRun(repository, runId);
-      System.out.println(result);
-    } catch (ApiException e) {
-      System.err.println("Exception when calling ActionsApi#getRun");
-      System.err.println("Status code: " + e.getCode());
-      System.err.println("Reason: " + e.getResponseBody());
-      System.err.println("Response headers: " + e.getResponseHeaders());
-      e.printStackTrace();
+        BranchesApi api = new BranchesApi(defaultClient);
+        String repository = "example-repo"; 
+        String branchName = "experiment-aggregations1"; 
+        String sourceBranch = "main";
+
+        try {
+            api.createBranch(repository, new BranchCreation().name(branchName).source(sourceBranch));
+        } catch (ApiException e) {
+            System.err.println("Exception when calling BranchesApi#createBranch");
+            System.err.println("Status code: " + e.getCode());
+            System.err.println("Reason: " + e.getResponseBody());
+            System.err.println("Response headers: " + e.getResponseHeaders());
+            e.printStackTrace();
+        }
     }
-  }
 }
 
 ```
