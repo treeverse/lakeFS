@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.65.0 - 2022-05-16
+
+What's new:
+- Import your data into lakeFS using the UI! (#3233, #3352)
+- Airflow hook wait for DAG completion (#3321)
+- Friendlier post-setup page (#3318)
+- Show skipped hooks for failed action run (#3359)
+
+Bug fixes:
+- Fixed: Revert path shows up when comparing refs (#3291)
+- Fixed: Glue catalog_id parsed as int (#3252)
+- Fixed: login redirects to credentials page (#3319)
+- Fixed: UI create repository not focused on name field (#3342)
+- Fixed link to authentication page vs authorization page (#3337)
+- Fixed: Some URI parameters were not encoded (#3290)
+
 ## v0.64.0 - 2022-04-29
 
 This release requires running database migration.
