@@ -409,17 +409,19 @@ func testDeleteWhileIterPrefixSingleSequence(t *testing.T, ms MakeStore, sequenc
 	numRead := strings.Count(sequence, "R")
 	numDel := strings.Count(sequence, "D")
 
-	readData := setupSampleData(t, ctx, store, string(readPref), numRead)
-	toDelData := setupSampleData(t, ctx, store, string(toDelPref), numDel)
-	naData := setupSampleData(t, ctx, store, string(naPref), numRead+numDel)
+	initialStore := []kv.Entry{}
+	initialStore = append(initialStore, setupSampleData(t, ctx, store, string(readPref), numRead)...)
+	initialStore = append(initialStore, setupSampleData(t, ctx, store, string(toDelPref), numDel)...)
+	initialStore = append(initialStore, setupSampleData(t, ctx, store, string(naPref), numRead+numDel)...)
 
 	chMap := make(map[byte]chan bool)
 	chMap['D'] = make(chan bool)
 	chMap['R'] = make(chan bool)
 	chErr := make(chan error)
 
-	// Will be filled by the scan&read routine, to later verify that all values are passed by scan
+	// Will be filled by the scan routines, to later verify that all values are passed by scan
 	readDone := make(map[string]bool)
+	deleteDone := make(map[string]bool)
 
 	const numRoutines = 2
 	var wg sync.WaitGroup
@@ -470,6 +472,7 @@ func testDeleteWhileIterPrefixSingleSequence(t *testing.T, ms MakeStore, sequenc
 				chErr <- fmt.Errorf("unexpected delete failure :%w", err)
 				break
 			}
+			deleteDone[string(e.Key)] = true
 			chErr <- nil
 		}
 		wg.Done()
@@ -490,44 +493,7 @@ func testDeleteWhileIterPrefixSingleSequence(t *testing.T, ms MakeStore, sequenc
 
 	close(chErr)
 
-	// Verify that all entries under readPrefix were accessed and that all entries from
-	// read iteration remain in place, while all entries from delete iteration are deleted
-	// and all entries under naPrefix are neither deleted nor scanned
-	for _, kve := range readData {
-		val, err := store.Get(ctx, kve.Key)
-		if err != nil {
-			t.Fatal("Unexpected failure reading value for verification", err)
-		}
-		if !bytes.Equal(val, kve.Value) {
-			t.Fatal("Expected value not found for key", string(kve.Key))
-		}
-		if !readDone[string(kve.Key)] {
-			t.Fatal("Entry skipped during scan for key", string(kve.Key))
-		}
-	}
-
-	for _, kve := range toDelData {
-		_, err := store.Get(ctx, kve.Key)
-		if err == nil {
-			t.Fatal("Unexpected entry found after deletion for key", string(kve.Key))
-		}
-		if !errors.Is(err, kv.ErrNotFound) {
-			t.Fatal("Unexpected error from store.Get for deleted key", string(kve.Key), err)
-		}
-	}
-
-	for _, kve := range naData {
-		val, err := store.Get(ctx, kve.Key)
-		if err != nil {
-			t.Fatal("Unexpected error reading value for verification", err)
-		}
-		if !bytes.Equal(val, kve.Value) {
-			t.Fatal("Unexpected value found for key", string(kve.Key))
-		}
-		if readDone[string(kve.Key)] {
-			t.Fatal("Unexepcted entry access for key", string(kve.Key))
-		}
-	}
+	verifyDeleteWhileIterResults(t, ctx, store, initialStore, readDone, deleteDone, readPref, toDelPref)
 }
 
 func testDeleteWhileIterSamePrefix(t *testing.T, ms MakeStore) {
@@ -600,10 +566,10 @@ func testDeleteWhileIterSamePrefixSingleRun(t *testing.T, ms MakeStore, prefsToC
 		}
 	}
 
-	// originalKv holds all the created items, to later verify that no items, that do not fit delPref, were deleted
-	originalKv := []kv.Entry{}
+	// initialKv holds all the created items, to later verify that no items, that do not fit delPref, were deleted
+	initialKv := []kv.Entry{}
 	for _, pref := range prefsToCreate {
-		originalKv = append(originalKv, setupSampleData(t, ctx, store, string(pref), 100)...)
+		initialKv = append(initialKv, setupSampleData(t, ctx, store, string(pref), 100)...)
 	}
 
 	// Will be filled by the scan&read routine, to later verify that all values are passed by scan
@@ -658,6 +624,10 @@ func testDeleteWhileIterSamePrefixSingleRun(t *testing.T, ms MakeStore, prefsToC
 		t.Fatal(err)
 	}
 
+	verifyDeleteWhileIterResults(t, ctx, store, initialKv, readDone, deleteDone, readPref, delPref)
+}
+
+func verifyDeleteWhileIterResults(t *testing.T, ctx context.Context, store kv.Store, initialStore []kv.Entry, readDone, deleteDone map[string]bool, readPref, delPref []byte) {
 	// verify all readDone entries fits readPref
 	for k := range readDone {
 		if strings.Index(k, string(readPref)) != 0 {
@@ -672,17 +642,41 @@ func testDeleteWhileIterSamePrefixSingleRun(t *testing.T, ms MakeStore, prefsToC
 		}
 	}
 
-	// verify entries that does not fit delPref, were not accidentally deleted
-	for _, kve := range originalKv {
+	// For each entry originally created, verify that:
+	// 1. If it is under delPref, it was deleted
+	// 2. Otherwise, if it is under readPref, it was accessed
+	// 3. Otherwise, it is untouched
+	for _, kve := range initialStore {
 		if strings.Index(string(kve.Key), string(delPref)) == 0 {
-			// Absence of deleted entries is verified in the next step
+			if !deleteDone[string(kve.Key)] {
+				t.Fatal("entry missing from deleted list", string(kve.Key))
+			}
+			_, err := store.Get(ctx, kve.Key)
+			if !errors.Is(err, kv.ErrNotFound) {
+				t.Fatal("unexpected entry found after delete", string(kve.Key))
+			}
+			if !errors.Is(err, kv.ErrNotFound) {
+				t.Fatal("unexpected error ")
+			}
 			continue
 		}
-		_, err := store.Get(ctx, kve.Key)
+		if strings.Index(string(kve.Key), string(readPref)) == 0 {
+			if !readDone[string(kve.Key)] {
+				t.Fatal("entry missing from read list", string(kve.Key))
+			}
+		} else if deleteDone[string(kve.Key)] || readDone[string(kve.Key)] {
+			t.Fatal("unexpected entry access (read or delete)", string(kve.Key))
+		}
+
+		val, err := store.Get(ctx, kve.Key)
 		if errors.Is(err, kv.ErrNotFound) {
-			t.Fatal("expected entry not found in store", kve.Key)
-		} else if err != nil {
-			t.Fatal("unexpected failure getting entry", kve.Key, err)
+			t.Fatal("expected entry not found", string(kve.Key))
+		}
+		if err != nil {
+			t.Fatal("unexpected error getting entry", string(kve.Key), err)
+		}
+		if !bytes.Equal(val, kve.Value) {
+			t.Fatal("Unexpected value found for key", string(kve.Key))
 		}
 	}
 
