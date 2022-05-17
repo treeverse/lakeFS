@@ -600,8 +600,10 @@ func testDeleteWhileIterSamePrefixSingleRun(t *testing.T, ms MakeStore, prefsToC
 		}
 	}
 
+	// originalKv holds all the created items, to later verify that no items, that do not fit delPref, were deleted
+	originalKv := []kv.Entry{}
 	for _, pref := range prefsToCreate {
-		setupSampleData(t, ctx, store, string(pref), 100)
+		originalKv = append(originalKv, setupSampleData(t, ctx, store, string(pref), 100)...)
 	}
 
 	// Will be filled by the scan&read routine, to later verify that all values are passed by scan
@@ -670,16 +672,31 @@ func testDeleteWhileIterSamePrefixSingleRun(t *testing.T, ms MakeStore, prefsToC
 		}
 	}
 
+	// verify entries that does not fit delPref, were not accidentally deleted
+	for _, kve := range originalKv {
+		if strings.Index(string(kve.Key), string(delPref)) == 0 {
+			// Absence of deleted entries is verified in the next step
+			continue
+		}
+		_, err := store.Get(ctx, kve.Key)
+		if errors.Is(err, kv.ErrNotFound) {
+			t.Fatal("expected entry not found in store", kve.Key)
+		} else if err != nil {
+			t.Fatal("unexpected failure getting entry", kve.Key, err)
+		}
+
+	}
+
 	// verify all entries that fits delPref are indeed deleted, i.e. no such entry is left
 	// in the store
-	verifIter, err := store.Scan(ctx, []byte{})
+	verifyIter, err := store.Scan(ctx, []byte{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer verifIter.Close()
+	defer verifyIter.Close()
 
-	for verifIter.Next() {
-		e := verifIter.Entry()
+	for verifyIter.Next() {
+		e := verifyIter.Entry()
 		if e == nil {
 			t.Fatal("unexpected nil entry in KV store")
 		}
