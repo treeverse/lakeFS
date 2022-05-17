@@ -725,7 +725,7 @@ jobs:
     needs: [ gen-code, deploy-image ]
     runs-on: ubuntu-20.04
     env:
-      TAG: sha-302df28
+      TAG: ${{ needs.deploy-image.outputs.tag }}
       # Setting Account_ID as a secret as a way to avoid specifying it here
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
