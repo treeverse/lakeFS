@@ -3,16 +3,22 @@ package api
 //go:generate oapi-codegen -package api -generate "types,client,chi-server,spec" -templates tmpl -o lakefs.gen.go ../../api/swagger.yml
 
 import (
+	"context"
+	"encoding/gob"
 	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
+	"net/url"
+	"os"
 
+	"github.com/coreos/go-oidc"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/getkin/kin-openapi/routers"
 	"github.com/getkin/kin-openapi/routers/legacy"
 	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/sessions"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -24,6 +30,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
+	"golang.org/x/oauth2"
 )
 
 const (
@@ -54,11 +61,29 @@ func Serve(
 	emailer *email.Emailer,
 	gatewayDomains []string,
 ) http.Handler {
+	gob.Register(map[string]interface{}{})
 	logger.Info("initialize OpenAPI server")
 	swagger, err := GetSwagger()
 	if err != nil {
 		panic(err)
 	}
+
+	provider, _ := oidc.NewProvider( // TODO handle error - and move this away
+		context.Background(), // TODO context should not be here?
+		"https://"+os.Getenv("OIDC_DOMAIN")+"/",
+	)
+	oauthConfig := oauth2.Config{
+		ClientID:     os.Getenv("OIDC_CLIENT_ID"), // TODO use generic variable names
+		ClientSecret: os.Getenv("OIDC_CLIENT_SECRET"),
+		RedirectURL:  os.Getenv("OIDC_CALLBACK_URL"),
+		Endpoint:     provider.Endpoint(),
+		Scopes:       []string{oidc.ScopeOpenID, "profile", "email"},
+	}
+	sessionStore := sessions.NewCookieStore(authService.SecretStore().SharedSecret())
+	oidcVerifier := provider.Verifier(&oidc.Config{
+		ClientID: oauthConfig.ClientID,
+	})
+
 	r := chi.NewRouter()
 	apiRouter := r.With(
 		OapiRequestValidatorWithOptions(swagger, &openapi3filter.Options{
@@ -68,10 +93,9 @@ func Serve(
 			RequestIDHeaderName,
 			logging.Fields{logging.ServiceNameFieldKey: LoggerServiceName},
 			cfg.GetLoggingTraceRequestHeaders()),
-		AuthMiddleware(logger, swagger, authenticator, authService),
+		AuthMiddleware(logger, swagger, authenticator, authService, sessionStore),
 		MetricsMiddleware(swagger),
 	)
-
 	controller := NewController(
 		cfg,
 		catalog,
@@ -86,6 +110,9 @@ func Serve(
 		auditChecker,
 		logger,
 		emailer,
+		oauthConfig,
+		oidcVerifier,
+		sessionStore,
 	)
 	HandlerFromMuxWithBaseURL(controller, apiRouter, BaseURL)
 
@@ -94,6 +121,13 @@ func Serve(
 	r.Mount("/_pprof/", httputil.ServePPROF("/_pprof/"))
 	r.Mount("/swagger.json", http.HandlerFunc(swaggerSpecHandler))
 	r.Mount(BaseURL, http.HandlerFunc(InvalidAPIEndpointHandler))
+	r.Mount("/login", NewOIDCLoginPageHandler(sessionStore, oauthConfig)) // TODO only if oidc enabled:
+	logoutUrl, err := url.Parse("https://" + os.Getenv("OIDC_DOMAIN") + "/v2/logout")
+	if err != nil {
+		panic(err)
+	}
+	r.Mount("/logout", NewOIDCLogoutHandler(sessionStore, oauthConfig, logoutUrl)) // TODO only if oidc enabled:
+
 	r.Mount("/", NewUIHandler(gatewayDomains))
 	return r
 }

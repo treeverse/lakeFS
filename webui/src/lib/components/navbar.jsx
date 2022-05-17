@@ -7,9 +7,12 @@ import {auth, config} from "../api";
 import {useRouter} from "../hooks/router";
 import {Link} from "./nav";
 import {useAPI} from "../hooks/api";
+import {useHistory} from "react-router-dom";
 
 const NavUserInfo = () => {
     const router = useRouter();
+    const history = useHistory();
+
     const { user, loading, error } = useUser();
     const { response: versionResponse, loading: versionLoading, error: versionError } = useAPI(() => {
         return config.getLakeFSVersion()
@@ -22,7 +25,7 @@ const NavUserInfo = () => {
                 <NavDropdown.Item
                     onSelect={()=> {
                         auth.logout().then(() => {
-                            router.push('/auth/login')
+                            window.location = '/logout'
                         })
                     }}>
                     Logout

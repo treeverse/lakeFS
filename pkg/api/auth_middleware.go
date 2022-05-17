@@ -2,14 +2,18 @@ package api
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/routers"
 	"github.com/getkin/kin-openapi/routers/legacy"
+	"github.com/go-openapi/swag"
 	"github.com/golang-jwt/jwt"
+	"github.com/gorilla/sessions"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -28,7 +32,7 @@ func extractSecurityRequirements(router routers.Router, r *http.Request) (openap
 	return *route.Operation.Security, nil
 }
 
-func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authenticator auth.Authenticator, authService auth.Service) func(next http.Handler) http.Handler {
+func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authenticator auth.Authenticator, authService auth.Service, sessionStore sessions.Store) func(next http.Handler) http.Handler {
 	router, err := legacy.NewRouter(swagger)
 	if err != nil {
 		panic(err)
@@ -40,7 +44,7 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authentica
 				writeError(w, http.StatusBadRequest, err)
 				return
 			}
-			user, err := checkSecurityRequirements(r, securityRequirements, logger, authenticator, authService)
+			user, err := checkSecurityRequirements(r, securityRequirements, logger, authenticator, authService, sessionStore)
 			if err != nil {
 				writeError(w, http.StatusUnauthorized, err)
 				return
@@ -55,11 +59,14 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authentica
 
 // checkSecurityRequirements goes over the security requirements and check the authentication. returns the user information and error if the security check was required.
 // it will return nil user and error in case of no security checks to match.
-func checkSecurityRequirements(r *http.Request, securityRequirements openapi3.SecurityRequirements, logger logging.Logger, authenticator auth.Authenticator, authService auth.Service) (*model.User, error) {
+func checkSecurityRequirements(r *http.Request, securityRequirements openapi3.SecurityRequirements, logger logging.Logger, authenticator auth.Authenticator, authService auth.Service, sessionStore sessions.Store) (*model.User, error) {
 	ctx := r.Context()
 	var user *model.User
 	var err error
-
+	session, err := sessionStore.Get(r, OIDCAuthSessionName)
+	if err != nil {
+		return nil, err
+	}
 	logger = logger.WithContext(ctx)
 	for _, securityRequirement := range securityRequirements {
 		for provider := range securityRequirement {
@@ -84,12 +91,14 @@ func checkSecurityRequirements(r *http.Request, securityRequirements openapi3.Se
 				}
 				user, err = userByAuth(ctx, logger, authenticator, authService, accessKey, secretKey)
 			case "cookie_auth":
-				// validate jwt token from cookie
-				jwtCookie, _ := r.Cookie(JWTCookieName)
-				if jwtCookie == nil {
-					continue
-				}
-				user, err = userByToken(ctx, logger, authService, jwtCookie.Value)
+				// TODO if oidc enabled:
+				user, err = userFromOIDC(ctx, logger, authService, session)
+				//// validate jwt token from cookie
+				//jwtCookie, _ := r.Cookie(JWTCookieName)
+				//if jwtCookie == nil {
+				//	continue
+				//}
+				//user, err = userByToken(ctx, logger, authService, jwtCookie.Value)
 			default:
 				// unknown security requirement to check
 				logger.WithField("provider", provider).Error("Authentication middleware unknown security requirement provider")
@@ -104,6 +113,45 @@ func checkSecurityRequirements(r *http.Request, securityRequirements openapi3.Se
 		}
 	}
 	return nil, nil
+}
+
+func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.Service, authSession *sessions.Session) (*model.User, error) {
+	profile, ok := authSession.Values["profile"].(map[string]interface{})
+	if !ok || profile == nil {
+		return nil, ErrAuthenticatingRequest
+	}
+	if _, ok = profile["email"]; !ok {
+		return nil, ErrAuthenticatingRequest
+	}
+	email := ""
+	if email, ok = profile["email"].(string); !ok || email == "" {
+		return nil, ErrAuthenticatingRequest
+	}
+
+	user, err := authService.GetUserByEmail(ctx, email)
+	if err == nil {
+		return user, nil
+	}
+	if !errors.Is(err, auth.ErrNotFound) {
+		return nil, err
+	}
+	u := &model.User{
+		CreatedAt:    time.Now().UTC(),
+		FriendlyName: swag.String(profile["name"].(string)), // TODO make safe
+		Source:       "oidc",
+		Email:        swag.String(email),
+		OidcOpenID:   profile["sub"].(string), // TODO make safe
+		Username:     email,
+	}
+	_, err = authService.CreateUser(ctx, u)
+	if err != nil {
+		return nil, err
+	}
+	err = authService.AddUserToGroup(ctx, u.Username, auth.DevelopersGroup) // TODO default group should be configurable?
+	if err != nil {
+		return nil, err
+	}
+	return u, nil
 }
 
 func userByToken(ctx context.Context, logger logging.Logger, authService auth.Service, tokenString string) (*model.User, error) {

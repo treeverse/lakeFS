@@ -55,15 +55,7 @@ export const useAPI = (promise, deps = []) => {
 
     useEffect(() => {
         if (login) {
-            const loginPathname = '/auth/login';
-            if (router.route === loginPathname) {
-                return;
-            }
-            router.push({
-                pathname: loginPathname,
-                query: {next: router.route},
-            });
-            setLogin(false);
+            window.location = '/login';
         }
     }, [login, router])
 

@@ -18,7 +18,9 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/coreos/go-oidc"
 	"github.com/go-openapi/swag"
+	"github.com/gorilla/sessions"
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/auth"
@@ -37,6 +39,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/version"
+	"golang.org/x/oauth2"
 )
 
 type contextKey string
@@ -81,6 +84,9 @@ type Controller struct {
 	AuditChecker          AuditChecker
 	Logger                logging.Logger
 	Emailer               *email.Emailer
+	sessionStore          sessions.Store
+	oauthConfig           oauth2.Config         // TODO move from here
+	oidcVerifier          *oidc.IDTokenVerifier // TODO move from here
 }
 
 func (c *Controller) GetAuthCapabilities(w http.ResponseWriter, _ *http.Request) {
@@ -170,6 +176,47 @@ func (c *Controller) Logout(w http.ResponseWriter, _ *http.Request) {
 	})
 
 	writeResponse(w, http.StatusOK, nil)
+}
+
+func (c *Controller) OauthCallback(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	session, err := c.sessionStore.Get(r, OIDCAuthSessionName)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if r.URL.Query().Get("state") != session.Values["state"] {
+		writeError(w, http.StatusBadRequest, "Invalid state parameter.")
+		return
+	}
+
+	// Exchange an authorization code for a token.
+	token, err := c.oauthConfig.Exchange(ctx, r.URL.Query().Get("code"))
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "Failed to exchange an authorization code for a token.")
+		return
+	}
+	rawIDToken, ok := token.Extra("id_token").(string)
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "no id_token field in oauth2 token")
+	}
+
+	idToken, err := c.oidcVerifier.Verify(ctx, rawIDToken)
+
+	var profile map[string]interface{}
+	if err := idToken.Claims(&profile); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	session.Values["access_token"] = token.AccessToken
+	session.Values["profile"] = profile
+	err = session.Save(r, w)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 }
 
 func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSONRequestBody) {
@@ -3399,6 +3446,9 @@ func NewController(
 	auditChecker AuditChecker,
 	logger logging.Logger,
 	emailer *email.Emailer,
+	oauthConfig oauth2.Config,
+	oidcVerifier *oidc.IDTokenVerifier,
+	sessionStore sessions.Store,
 ) *Controller {
 	return &Controller{
 		Config:                cfg,
@@ -3414,6 +3464,9 @@ func NewController(
 		AuditChecker:          auditChecker,
 		Logger:                logger,
 		Emailer:               emailer,
+		oauthConfig:           oauthConfig,
+		oidcVerifier:          oidcVerifier,
+		sessionStore:          sessionStore,
 	}
 }
 

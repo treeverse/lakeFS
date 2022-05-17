@@ -185,6 +185,15 @@ func getUserByEmail(tx db.Tx, email string) (*model.User, error) {
 	return user, nil
 }
 
+func getUserByOidcOpenID(tx db.Tx, oidcOpenID string) (*model.User, error) {
+	user := &model.User{}
+	err := tx.Get(user, `SELECT * FROM auth_users WHERE oidc_openid = $1`, oidcOpenID)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
 func getGroup(tx db.Tx, groupDisplayName string) (*model.Group, error) {
 	group := &model.Group{}
 	err := tx.Get(group, `SELECT * FROM auth_groups WHERE display_name = $1`, groupDisplayName)
@@ -269,8 +278,8 @@ func (s *DBAuthService) CreateUser(ctx context.Context, user *model.User) (int64
 		}
 		var id int64
 		err := tx.Get(&id,
-			`INSERT INTO auth_users (display_name, created_at, friendly_name, source, email) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-			user.Username, user.CreatedAt, user.FriendlyName, user.Source, user.Email)
+			`INSERT INTO auth_users (display_name, created_at, friendly_name, source, email, oidc_openid) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+			user.Username, user.CreatedAt, user.FriendlyName, user.Source, user.Email, user.OidcOpenID)
 		return id, err
 	})
 	if err != nil {
@@ -1031,6 +1040,7 @@ func (a *APIAuthService) CreateUser(ctx context.Context, user *model.User) (int6
 		FriendlyName: user.FriendlyName,
 		Source:       &user.Source,
 		Username:     user.Username,
+		OidcOpenId:   &user.OidcOpenID,
 	})
 	if err != nil {
 		return InvalidUserID, err
