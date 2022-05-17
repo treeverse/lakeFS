@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/testutil"
@@ -73,6 +74,9 @@ func TestMain(m *testing.M) {
 		params.AdminAccessKeyID = "AKIAIOSFDNN7EXAMPLEQ"
 		params.AdminSecretAccessKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 	}
+
+	viper.SetDefault("post_migrate", false)
+
 	logger, client, svc = testutil.SetupTestingEnv(&params)
 
 	var err error
