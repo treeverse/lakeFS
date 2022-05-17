@@ -684,7 +684,6 @@ func testDeleteWhileIterSamePrefixSingleRun(t *testing.T, ms MakeStore, prefsToC
 		} else if err != nil {
 			t.Fatal("unexpected failure getting entry", kve.Key, err)
 		}
-
 	}
 
 	// verify all entries that fits delPref are indeed deleted, i.e. no such entry is left
