@@ -13,6 +13,30 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/thanhpk/randstr"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/logging"
+)
+
+// state to be used
+var state migrateTestState
+
+type migrateTestState struct {
+	Multipart multipartState
+}
+
+type multipartState struct {
+	Repo           string                         `json:"repo"`
+	Info           s3.CreateMultipartUploadOutput `json:"info"`
+	CompletedParts []*s3.CompletedPart            `json:"completed_parts"`
+	Content        string                         `json:"state"`
+}
+
+const (
+	migrateMultipartFile     = "multipart_file"
+	migrateMultipartFilepath = mainBranch + "/" + migrateMultipartFile
+	migrateStateRepoName     = "migrate"
+	migrateStateObjectPath   = "state.json"
+	migratePrePartsCount     = 3
+	migratePostPartsCount    = 2
 )
 
 func TestMigrate(t *testing.T) {
@@ -62,27 +86,6 @@ func readStateFromLakeFS(t *testing.T) {
 	require.NoError(t, err, "unmarshal state from response")
 }
 
-// state to be used
-var state migrateTestState
-
-type migrateTestState struct {
-	Multipart multipartState
-}
-
-type multipartState struct {
-	Repo           string                         `json:"repo"`
-	Info           s3.CreateMultipartUploadOutput `json:"info"`
-	CompletedParts []*s3.CompletedPart            `json:"completed_parts"`
-	Content        string                         `json:"state"`
-}
-
-const (
-	migrateMultipartFile     = "multipart_file"
-	migrateMultipartFilepath = mainBranch + "/" + migrateMultipartFile
-	migrateStateRepoName     = "migrate"
-	migrateStateObjectPath   = "state.json"
-)
-
 func testPreMigrateMultipart(t *testing.T) {
 	_, logger, repo := setupTest(t)
 
@@ -95,14 +98,7 @@ func testPreMigrateMultipart(t *testing.T) {
 	require.NoError(t, err, "failed to create multipart upload")
 	logger.Info("Created multipart upload request")
 
-	parts := make([][]byte, multipartNumberOfParts)
-	var partsConcat []byte
-	for i := 0; i < multipartNumberOfParts; i++ {
-		parts[i] = randstr.Bytes(multipartPartSize + i)
-		partsConcat = append(partsConcat, parts[i]...)
-	}
-
-	completedParts := uploadMultipartParts(t, logger, resp, parts)
+	partsConcat, completedParts := createAndUploadParts(t, logger, resp, migratePrePartsCount, 0)
 
 	state.Multipart.Repo = repo
 	state.Multipart.Info = *resp
@@ -110,19 +106,35 @@ func testPreMigrateMultipart(t *testing.T) {
 	state.Multipart.Content = base64.StdEncoding.EncodeToString(partsConcat)
 }
 
+func createAndUploadParts(t *testing.T, logger logging.Logger, resp *s3.CreateMultipartUploadOutput, count, firstIndex int) ([]byte, []*s3.CompletedPart) {
+	parts := make([][]byte, count)
+	var partsConcat []byte
+	for i := 0; i < count; i++ {
+		parts[i] = randstr.Bytes(multipartPartSize + i + firstIndex)
+		partsConcat = append(partsConcat, parts[i]...)
+	}
+
+	completedParts := uploadMultipartParts(t, logger, resp, parts, firstIndex)
+	return partsConcat, completedParts
+}
+
 func testPostMigrateMultipart(t *testing.T) {
 	ctx := context.Background()
 
-	completeResponse, err := uploadMultipartComplete(svc, &state.Multipart.Info, state.Multipart.CompletedParts)
-	require.NoError(t, err, "failed to complete multipartState upload")
+	partsConcat, completedParts := createAndUploadParts(t, logger, &state.Multipart.Info, migratePostPartsCount, migratePrePartsCount)
 
-	logger.WithField("key", completeResponse.Key).Info("Completed multipartState request successfully")
+	completeResponse, err := uploadMultipartComplete(svc, &state.Multipart.Info, append(state.Multipart.CompletedParts, completedParts...))
+	require.NoError(t, err, "failed to complete multipart upload")
+
+	logger.WithField("key", completeResponse.Key).Info("Completed multipart request successfully")
 
 	getResp, err := client.GetObjectWithResponse(ctx, state.Multipart.Repo, mainBranch, &api.GetObjectParams{Path: migrateMultipartFile})
 	require.NoError(t, err, "failed to get object")
 	require.Equal(t, http.StatusOK, getResp.StatusCode())
 
-	contentBytes, err := base64.StdEncoding.DecodeString(state.Multipart.Content)
+	preContentBytes, err := base64.StdEncoding.DecodeString(state.Multipart.Content)
 	require.NoError(t, err, "failed to decode error")
-	require.Equal(t, contentBytes, getResp.Body)
+
+	fullContent := append(preContentBytes, partsConcat...)
+	require.Equal(t, fullContent, getResp.Body)
 }
