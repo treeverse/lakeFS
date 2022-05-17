@@ -583,13 +583,20 @@ func testDeleteWhileIterSamePrefixSingleRun(t *testing.T, ms MakeStore, prefsToC
 	}
 	defer cleanIter.Close()
 
+	keysToClean := [][]byte{}
 	for cleanIter.Next() {
 		e := cleanIter.Entry()
-		if cleanIter != nil {
-			err = store.Delete(ctx, e.Key)
-			if err != nil {
-				t.Fatal(err)
-			}
+		if e != nil {
+			keysToClean = append(keysToClean, e.Key)
+		} else {
+			t.Fatal("unexpected nil entry during pre test clean", cleanIter.Err())
+		}
+	}
+
+	for _, k := range keysToClean {
+		err = store.Delete(ctx, k)
+		if err != nil {
+			t.Fatal(err)
 		}
 	}
 
