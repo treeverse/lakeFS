@@ -2,10 +2,12 @@ package multiparts_test
 
 import (
 	"context"
+	"math/rand"
 	"reflect"
 	"testing"
 	"time"
 
+	"github.com/thanhpk/randstr"
 	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
@@ -234,4 +236,159 @@ func testTrackerCreate(t *testing.T, tracker multiparts.Tracker) {
 			}
 		})
 	}
+}
+
+func BenchmarkMultipartsTrackerCreate(b *testing.B) {
+	ctx := context.Background()
+	b.Run("benchmarkCreateOp_DB", func(b *testing.B) { runDBBenchmark(b, ctx, benchmarkCreateOp) })
+	b.Run("benchmarkCreateOp_KVmem", func(b *testing.B) { runKVMemBenchmark(b, ctx, benchmarkCreateOp) })
+	b.Run("benchmarkCreateOp_KVpg", func(b *testing.B) { runKVPostgresBenchmark(b, ctx, benchmarkCreateOp) })
+}
+
+func BenchmarkMultipartsTrackerGetSeq(b *testing.B) {
+	ctx := context.Background()
+	b.Run("benchmarkGetOpSeq_DB", func(b *testing.B) { runDBBenchmark(b, ctx, benchmarkGetOpSeq) })
+	b.Run("benchmarkGetOpSeq_KVmem", func(b *testing.B) { runKVMemBenchmark(b, ctx, benchmarkGetOpSeq) })
+	b.Run("benchmarkGetOpSeq_KVpg", func(b *testing.B) { runKVPostgresBenchmark(b, ctx, benchmarkGetOpSeq) })
+}
+
+func BenchmarkMultipartsTrackerGetRand(b *testing.B) {
+	ctx := context.Background()
+	b.Run("benchmarkGetOpRand_DB", func(b *testing.B) { runDBBenchmark(b, ctx, benchmarkGetOpRand) })
+	b.Run("benchmarkGetOpRand_KVmem", func(b *testing.B) { runKVMemBenchmark(b, ctx, benchmarkGetOpRand) })
+	b.Run("benchmarkGetOpRand_KVpg", func(b *testing.B) { runKVPostgresBenchmark(b, ctx, benchmarkGetOpRand) })
+}
+
+func BenchmarkMultipartsTrackerDelete(b *testing.B) {
+	ctx := context.Background()
+	b.Run("benchmarkDeleteOpSeq_DB", func(b *testing.B) { runDBBenchmark(b, ctx, benchmarkDeleteOpSeq) })
+	b.Run("benchmarkDeleteOpSeq_KVmem", func(b *testing.B) { runKVMemBenchmark(b, ctx, benchmarkDeleteOpSeq) })
+	b.Run("benchmarkDeleteOpSeq_KVpg", func(b *testing.B) { runKVPostgresBenchmark(b, ctx, benchmarkDeleteOpSeq) })
+}
+
+func BenchmarkMultipartsTrackerMix(b *testing.B) {
+	ctx := context.Background()
+	b.Run("benchmarkMixedOps_DB", func(b *testing.B) { runDBBenchmark(b, ctx, benchmarkMixedOps) })
+	b.Run("benchmarkMixedOps_KVmem", func(b *testing.B) { runKVMemBenchmark(b, ctx, benchmarkMixedOps) })
+	b.Run("benchmarkMixedOps_KVpg", func(b *testing.B) { runKVPostgresBenchmark(b, ctx, benchmarkMixedOps) })
+}
+
+type RunBenchmarkFunc func(b *testing.B, ctx context.Context, tracker multiparts.Tracker)
+
+func runDBBenchmark(b *testing.B, ctx context.Context, bmFunc RunBenchmarkFunc) {
+	bmFunc(b, ctx, testDBTracker(b))
+}
+
+func runKVMemBenchmark(b *testing.B, ctx context.Context, bmFunc RunBenchmarkFunc) {
+	store := kvtest.MakeStoreByName("mem", "")(b, context.Background())
+	defer store.Close()
+	tracker := multiparts.NewTracker(kv.StoreMessage{Store: store})
+	bmFunc(b, ctx, tracker)
+}
+
+func runKVPostgresBenchmark(b *testing.B, ctx context.Context, bmFunc RunBenchmarkFunc) {
+	store := kvtest.MakeStoreByName("postgres", databaseURI)(b, context.Background())
+	defer store.Close()
+	tracker := multiparts.NewTracker(kv.StoreMessage{Store: store})
+	bmFunc(b, ctx, tracker)
+}
+
+func benchmarkCreateOp(b *testing.B, ctx context.Context, tracker multiparts.Tracker) {
+	keys := randomStrings(b.N)
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		testutil.Must(b, createMpu(ctx, tracker, keys[n]))
+	}
+}
+
+func createMpu(ctx context.Context, tracker multiparts.Tracker, key string) error {
+	return tracker.Create(ctx, multiparts.MultipartUpload{
+		UploadID:        key,
+		Path:            "path/to/" + key,
+		CreationDate:    time.Now().Round(time.Second),
+		PhysicalAddress: "phy_" + key,
+		Metadata:        nil,
+		ContentType:     "test/data",
+	})
+}
+
+func benchmarkGetOpSeq(b *testing.B, ctx context.Context, tracker multiparts.Tracker) {
+	keys := createEntriesForTest(b, ctx, tracker, b.N)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		_, err := tracker.Get(ctx, keys[n])
+		testutil.Must(b, err)
+	}
+}
+
+func benchmarkGetOpRand(b *testing.B, ctx context.Context, tracker multiparts.Tracker) {
+	keys := createEntriesForTest(b, ctx, tracker, b.N)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		_, err := tracker.Get(ctx, keys[rand.Intn(b.N)])
+		testutil.Must(b, err)
+	}
+}
+
+func benchmarkDeleteOpSeq(b *testing.B, ctx context.Context, tracker multiparts.Tracker) {
+	keys := createEntriesForTest(b, ctx, tracker, b.N)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		err := tracker.Delete(ctx, keys[n])
+		testutil.Must(b, err)
+	}
+}
+
+func benchmarkMixedOps(b *testing.B, ctx context.Context, tracker multiparts.Tracker) {
+	keys := randomStrings(b.N)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		// Performing random Create (10%), Get(80%) and Delete(10%).
+		// errors are allowed as it is possible an access is requested before a key
+		// is created or after it is deleted, or a re-attempt to create a key
+		key := keys[rand.Intn(b.N)]
+		op := rand.Intn(10)
+		switch op {
+		case 0: // Create
+			createMpu(ctx, tracker, key)
+		case 1: // Delete
+			tracker.Delete(ctx, key)
+		default: // Get
+			tracker.Get(ctx, key)
+		}
+	}
+
+}
+
+func createEntriesForTest(t testing.TB, ctx context.Context, tracker multiparts.Tracker, num int) []string {
+	keys := randomStrings(num)
+
+	for n := 0; n < num; n++ {
+		err := tracker.Create(ctx, multiparts.MultipartUpload{
+			UploadID:        keys[n],
+			Path:            "path/to/" + keys[n],
+			CreationDate:    time.Now().Round(time.Second),
+			PhysicalAddress: "phy_" + keys[n],
+
+			Metadata:    nil,
+			ContentType: "test/data",
+		})
+		testutil.Must(t, err)
+	}
+
+	return keys
+}
+
+// TODO - identical to a function in pkg/graveler/sstable/writer_test.go
+// refactor to a common "test_helpers" or alike
+func randomStrings(n int) []string {
+	var keys []string
+	for i := 0; i < n; i++ {
+		keys = append(keys, randstr.String(20, "abcdefghijklmnopqrstuvwyz0123456789"))
+	}
+	return keys
 }
