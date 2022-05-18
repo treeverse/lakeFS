@@ -409,7 +409,7 @@ func testDeleteWhileIterPrefixSingleSequence(t *testing.T, ms MakeStore, sequenc
 	numRead := strings.Count(sequence, "R")
 	numDel := strings.Count(sequence, "D")
 
-	initialStore := []kv.Entry{}
+	var initialStore []kv.Entry
 	initialStore = append(initialStore, setupSampleData(t, ctx, store, string(readPref), numRead)...)
 	initialStore = append(initialStore, setupSampleData(t, ctx, store, string(toDelPref), numDel)...)
 	initialStore = append(initialStore, setupSampleData(t, ctx, store, string(naPref), numRead+numDel)...)
