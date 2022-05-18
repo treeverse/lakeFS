@@ -38,6 +38,9 @@ func (s *StoreMessage) SetIf(ctx context.Context, path string, msg protoreflect.
 		return s.Store.SetIf(ctx, []byte(path), val, nil)
 	}
 
+	// Calling Get here is suboptimial and ideally we would save the round trip to the store.
+	// Since Proto Marshaling can be inconsistent we must read and parse it first to have a consistent predicate compare.
+	// A future optimization here would be adding an ID to the Store interface, or a consistent marshaling protocol.
 	curr, err := s.Store.Get(ctx, []byte(path))
 	if err != nil {
 		return fmt.Errorf("failed on Get. Path (%s): %w", path, err)
