@@ -37,7 +37,7 @@ Additionally, the definition of a conflict is also a bit different:
 simply looking at object names to determine whether or not a conflict occured might not be good enough.
 
 With that in mind, we plan on making the diff and merge operations pluggable. 
-lakeFS already supports injecting custom behavior using hooks. Ideally, we can support this by introducing `on-diff` and `on-merge` hooks that allow implementing hooks in different languages, possibly utilizing existing code and libraries to aide with understanding these formats.
+lakeFS already supports injecting custom behavior using hooks. Ideally, we can support this by introducing `on-diff` and `on-merge` hooks that allow implementing hooks in different languages, possibly utilizing existing code and libraries to aid with understanding these formats.
 
 Once implemented we could support:
 
