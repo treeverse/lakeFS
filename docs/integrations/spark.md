@@ -36,8 +36,6 @@ Using the S3A gateway is easier to configure and may be more suitable for legacy
 small-scale applications.  Using the lakeFS FileSystem requires somewhat more complex
 configuration, but offers greatly increased performance.
 
-
-
 ## Access lakeFS using the S3A gateway
 
 To use this mode you configure the Spark application to use S3A using the S3-compatible
@@ -192,7 +190,6 @@ df.write.partitionBy("example-column").parquet(s"s3a://${repo}/${branch}/output-
 ```
 
 The data is now created in lakeFS as new changes in your branch. You can now commit these changes, or revert them.
-
 
 ## Access lakeFS using the lakeFS-specific Hadoop FileSystem
 
