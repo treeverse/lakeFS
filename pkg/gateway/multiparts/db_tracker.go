@@ -21,7 +21,7 @@ const packageName = "multiparts"
 
 //nolint:gochecknoinits
 func init() {
-	kvpg.Register(packageName, Migrate, []string{"gateway_multiparts"})
+	kvpg.RegisterMigrate(packageName, Migrate, []string{"gateway_multiparts"})
 }
 
 func (m Metadata) Set(k, v string) {
@@ -112,10 +112,10 @@ func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
 	je := json.NewEncoder(writer)
 	// Create header
 	err := je.Encode(kv.Header{
-		LakeFSVersion: version.Version,
-		PkgName:       packageName,
-		DBVersion:     kv.InitialMigrateVersion,
-		Timestamp:     time.Now(),
+		LakeFSVersion:   version.Version,
+		PackageName:     packageName,
+		DBSchemaVersion: kv.InitialMigrateVersion,
+		CreatedAt:       time.Now().UTC(),
 	})
 	if err != nil {
 		return err

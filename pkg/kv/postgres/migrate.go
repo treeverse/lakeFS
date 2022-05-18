@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/jackc/pgx/v4"
 
@@ -20,8 +21,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-// TODO: (niro) Remove module on feature complete
-
 type MigrateFunc func(ctx context.Context, db *pgxpool.Pool, writer io.Writer) error
 
 var (
@@ -32,6 +31,11 @@ var (
 type pkgMigrate struct {
 	Func   MigrateFunc
 	Tables []string
+}
+
+func timeTrack(start time.Time, logger logging.Logger, name string) {
+	elapsed := time.Since(start)
+	logger.Info(fmt.Sprintf("%s took %s", name, elapsed))
 }
 
 // Migrate data migration from DB to KV
@@ -46,7 +50,7 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 	}
 	defer store.Close()
 
-	shouldDrop, err := validateVersion(ctx, store)
+	shouldDrop, err := getMigrationStatus(ctx, store)
 	if err != nil {
 		return fmt.Errorf("validating version: %w", err)
 	}
@@ -66,7 +70,7 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 	}
 
 	// Mark KV Migration started
-	err = store.Set(ctx, []byte(kv.DBVersionPath), []byte("0"))
+	err = store.Set(ctx, []byte(kv.DBSchemaVersionKey), []byte("0"))
 	if err != nil {
 		return err
 	}
@@ -80,11 +84,13 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 	}
 	logger := logging.Default().WithField("TempDir", tmpDir)
 	logger.Info("Starting KV Migration Process")
+	defer timeTrack(time.Now(), logger, "KV Migration")
 	for n, p := range kvPkgs {
 		name := n
 		migrateFunc := p.Func
 		tables = append(tables, p.Tables...)
 		g.Go(func() error {
+			defer timeTrack(time.Now(), logger, fmt.Sprintf("%s Package Migration", name))
 			fileLog := logging.Default().WithField("pkg_id", name)
 			fileLog.Info("Starting KV migration for package")
 			fd, err := os.CreateTemp(tmpDir, fmt.Sprintf("migrate_%s_", name))
@@ -94,7 +100,6 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 			defer fd.Close()
 			err = migrateFunc(ctx, dbPool, fd)
 			if err != nil {
-				fileLog.WithError(err).Error()
 				return fmt.Errorf("failed migration on package %s: %w", name, err)
 			}
 			_, err = fd.Seek(0, 0)
@@ -115,7 +120,7 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 	}
 
 	// Update migrate version
-	err = store.Set(ctx, []byte(kv.DBVersionPath), []byte(strconv.Itoa(kv.InitialMigrateVersion)))
+	err = store.Set(ctx, []byte(kv.DBSchemaVersionKey), []byte(strconv.Itoa(kv.InitialMigrateVersion)))
 	if err != nil {
 		return fmt.Errorf("failed setting migrate version: %w", err)
 	}
@@ -127,16 +132,16 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 		}
 	}
 	if err = os.RemoveAll(tmpDir); err != nil {
-		logger.Error("Failed to remove migration directory") // This should not fail the migration process
+		logger.WithError(err).Warn("Failed to remove migration directory") // This should not fail the migration process
 	}
 	return nil
 }
 
-// validateVersion Check KV version before migration. Version exists and smaller than InitialMigrateVersion indicates
+// getMigrationStatus Check KV version before migration. Version exists and smaller than InitialMigrateVersion indicates
 // failed previous migration. In this case we drop the kv table and recreate it.
 // In case version is equal or bigger - it means we already performed a successful migration and there's nothing to do
-func validateVersion(ctx context.Context, store kv.Store) (bool, error) {
-	version, err := kv.GetDBVersion(ctx, store)
+func getMigrationStatus(ctx context.Context, store kv.Store) (bool, error) {
+	version, err := kv.GetDBSchemaVersion(ctx, store)
 	if err != nil && errors.Is(err, kv.ErrNotFound) {
 		return false, nil
 	} else if err == nil { // Version exists in DB
@@ -145,7 +150,7 @@ func validateVersion(ctx context.Context, store kv.Store) (bool, error) {
 	return false, err
 }
 
-func Register(name string, f MigrateFunc, tables []string) {
+func RegisterMigrate(name string, f MigrateFunc, tables []string) {
 	registerMu.Lock()
 	defer registerMu.Unlock()
 	if _, ok := kvPkgs[name]; ok {
@@ -157,8 +162,8 @@ func Register(name string, f MigrateFunc, tables []string) {
 	}
 }
 
-// UnRegisterAll remove all loaded migrate callbacks, used for test code.
-func UnRegisterAll() {
+// UnregisterAll remove all loaded migrate callbacks, used for test code.
+func UnregisterAll() {
 	registerMu.Lock()
 	defer registerMu.Unlock()
 	for k := range kvPkgs {

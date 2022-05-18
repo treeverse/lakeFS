@@ -54,15 +54,15 @@ func TestKVMigration(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			kvpg.UnRegisterAll()
+			kvpg.UnregisterAll()
 			for n, m := range tt.migrations {
-				kvpg.Register(n, m, nil)
+				kvpg.RegisterMigrate(n, m, nil)
 			}
 			err = db.MigrateUp(dbParams)
 			require.ErrorIs(t, err, tt.err)
 
 			if tt.err == nil {
-				data, err := kvStore.Get(ctx, []byte(kv.DBVersionPath))
+				data, err := kvStore.Get(ctx, []byte(kv.DBSchemaVersionKey))
 				require.NoError(t, err)
 				version, _ := strconv.Atoi(string(data))
 				require.Equal(t, kv.InitialMigrateVersion, version)

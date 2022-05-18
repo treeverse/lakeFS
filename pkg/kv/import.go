@@ -15,15 +15,12 @@ var ErrInvalidFormat = errors.New("invalid format")
 
 // Header contains metadata information for import / export file
 type Header struct {
-	LakeFSVersion string
-	PkgName       string
-	DBVersion     uint32
-	Timestamp     time.Time
+	LakeFSVersion   string
+	PackageName     string
+	DBSchemaVersion int
+	CreatedAt       time.Time
 }
 
-// TODO: (niro) implement export
-
-// TODO: (niro) Make private after migration
 func Import(ctx context.Context, reader io.Reader, store Store) error {
 	jd := json.NewDecoder(reader)
 	// Read header
@@ -35,11 +32,18 @@ func Import(ctx context.Context, reader io.Reader, store Store) error {
 			return fmt.Errorf("decoding header: %w", err)
 		}
 	}
-	// Decode does not return error on failure to Unmarshal
+	// Decode does not return error onm missing data / incompatible format
 	if header == (Header{}) {
 		return fmt.Errorf("bad header format: %w", ErrInvalidFormat)
 	}
-	readHeader(header)
+
+	// TODO(niro): Add validation the header in the future
+	logging.Default().WithFields(logging.Fields{
+		"package name":   header.PackageName,
+		"lakeFS version": header.LakeFSVersion,
+		"DB Version":     header.DBSchemaVersion,
+		"CreatedAt":      header.CreatedAt,
+	}).Info("Processing file")
 
 	var entry Entry
 	for {
@@ -47,7 +51,7 @@ func Import(ctx context.Context, reader io.Reader, store Store) error {
 		if errors.Is(err, io.EOF) {
 			break
 		}
-		// Decode does not return error on failure to Unmarshal
+		// Decode does not return error onm missing data / incompatible format
 		if err != nil {
 			return fmt.Errorf("decoding entry: %w", err)
 		}
@@ -63,14 +67,4 @@ func Import(ctx context.Context, reader io.Reader, store Store) error {
 		}
 	}
 	return nil
-}
-
-// TODO(niro): Use this method to validate the header in the future
-func readHeader(header Header) {
-	logging.Default().WithFields(logging.Fields{
-		"package name":   header.PkgName,
-		"lakeFS version": header.LakeFSVersion,
-		"DB Version":     header.DBVersion,
-		"Timestamp":      header.Timestamp,
-	}).Info("Processing file")
 }

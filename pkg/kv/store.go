@@ -12,7 +12,7 @@ import (
 const (
 	InitialMigrateVersion = 1
 	PathDelimiter         = "/"
-	DBVersionPath         = "kv" + PathDelimiter + "db" + PathDelimiter + "version"
+	DBSchemaVersionKey    = "kv" + PathDelimiter + "schema" + PathDelimiter + "version"
 )
 
 var (
@@ -148,9 +148,9 @@ func Drivers() []string {
 	return names
 }
 
-// GetDBVersion returns the current DB version
-func GetDBVersion(ctx context.Context, store Store) (int, error) {
-	data, err := store.Get(ctx, []byte(DBVersionPath))
+// GetDBSchemaVersion returns the current KV DB schema version
+func GetDBSchemaVersion(ctx context.Context, store Store) (int, error) {
+	data, err := store.Get(ctx, []byte(DBSchemaVersionKey))
 	if err != nil {
 		return -1, err
 	}

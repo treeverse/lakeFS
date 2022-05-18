@@ -13,11 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
-	"github.com/treeverse/lakefs/pkg/kv"
-	"github.com/treeverse/lakefs/pkg/version"
-
 	"cloud.google.com/go/storage"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -26,12 +21,15 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/ory/dockertest/v3"
+	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/gs"
 	"github.com/treeverse/lakefs/pkg/block/mem"
 	lakefsS3 "github.com/treeverse/lakefs/pkg/block/s3"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/db/params"
+	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/version"
 )
 
 const (
@@ -325,10 +323,10 @@ func buildTestData(startIdx, count int, writer io.Writer) {
 	jd := json.NewEncoder(writer)
 
 	err := jd.Encode(kv.Header{
-		LakeFSVersion: version.Version,
-		PkgName:       "test_package_name",
-		DBVersion:     kv.InitialMigrateVersion,
-		Timestamp:     time.Now(),
+		LakeFSVersion:   version.Version,
+		PackageName:     "test_package_name",
+		DBSchemaVersion: kv.InitialMigrateVersion,
+		CreatedAt:       time.Now(),
 	})
 	if err != nil {
 		log.Fatal("Failed to encode struct")
