@@ -47,7 +47,6 @@ var upCmd = &cobra.Command{
 			fmt.Printf("Failed to setup DB: %s\n", err)
 			os.Exit(1)
 		}
-
 	},
 }
 

@@ -15,6 +15,7 @@ import (
 	"github.com/golang-migrate/migrate/v4/source/httpfs"
 	"github.com/treeverse/lakefs/pkg/db/params"
 	"github.com/treeverse/lakefs/pkg/ddl"
+	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"gopkg.in/retry.v1"
 )
@@ -168,7 +169,10 @@ func MigrateUp(p params.Database) error {
 	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return err
 	}
-	return nil
+	ctx := context.Background()
+	d := BuildDatabaseConnection(ctx, p)
+	defer d.Close()
+	return kvpg.Migrate(ctx, d.Pool(), p)
 }
 
 func MigrateDown(params params.Database) error {

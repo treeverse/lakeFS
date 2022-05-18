@@ -10,4 +10,5 @@ type Database struct {
 	ConnectionMaxLifetime time.Duration
 	Type                  string
 	KVEnabled             bool
+	DropTables            bool
 }

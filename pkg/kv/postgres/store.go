@@ -28,7 +28,7 @@ type EntriesIterator struct {
 const (
 	DriverName = "postgres"
 
-	defaultTableName = "kv"
+	DefaultTableName = "kv"
 	paramTableName   = "lakefskv_table"
 )
 
@@ -86,7 +86,7 @@ type Params struct {
 
 func parseStoreConfig(runtimeParams map[string]string) *Params {
 	p := &Params{
-		TableName: defaultTableName,
+		TableName: DefaultTableName,
 	}
 	if tableName, ok := runtimeParams[paramTableName]; ok {
 		p.TableName = tableName

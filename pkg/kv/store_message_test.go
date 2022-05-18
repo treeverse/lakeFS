@@ -6,21 +6,18 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/timestamppb"
-
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	_ "github.com/treeverse/lakefs/pkg/kv/mem"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const modelPrefix = "tm"
 
 func TestStoreMessage(t *testing.T) {
 	ctx := context.Background()
-	makeStore := kvtest.MakeStoreByName("mem", "")
-	store := makeStore(t, ctx)
+	store := GetStore(ctx, t)
 	defer store.Close()
 
 	sm := kv.StoreMessage{
@@ -210,4 +207,15 @@ func testStoreMessageDelete(t *testing.T, ctx context.Context, sm kv.StoreMessag
 	// Get deleted key (empty store)
 	err = sm.GetMsg(ctx, kv.FormatPath(m1.Name), m3)
 	require.Error(t, kv.ErrNotFound, err)
+}
+
+// GetStore helper function to return Store object for all unit tests
+func GetStore(ctx context.Context, t *testing.T) kv.Store {
+	t.Helper()
+	const storeType = "mem"
+	store, err := kv.Open(ctx, storeType, "")
+	if err != nil {
+		t.Fatalf("failed to open kv (%s) store: %s", storeType, err)
+	}
+	return store
 }

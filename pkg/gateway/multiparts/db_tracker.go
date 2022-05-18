@@ -4,10 +4,25 @@ import (
 	"context"
 	"database/sql/driver"
 	"encoding/json"
+	"io"
 	"strings"
+	"time"
 
+	"github.com/georgysavva/scany/pgxscan"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/treeverse/lakefs/pkg/db"
+	"github.com/treeverse/lakefs/pkg/kv"
+	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
+	"github.com/treeverse/lakefs/pkg/version"
+	"google.golang.org/protobuf/proto"
 )
+
+const packageName = "multiparts"
+
+//nolint:gochecknoinits
+func init() {
+	kvpg.RegisterMigrate(packageName, Migrate, []string{"gateway_multiparts"})
+}
 
 func (m Metadata) Set(k, v string) {
 	m[strings.ToLower(k)] = v
@@ -91,4 +106,47 @@ func (m *dbTracker) Delete(ctx context.Context, uploadID string) error {
 		return nil, nil
 	})
 	return err
+}
+
+func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
+	je := json.NewEncoder(writer)
+	// Create header
+	err := je.Encode(kv.Header{
+		LakeFSVersion:   version.Version,
+		PackageName:     packageName,
+		DBSchemaVersion: kv.InitialMigrateVersion,
+		CreatedAt:       time.Now().UTC(),
+	})
+	if err != nil {
+		return err
+	}
+
+	rows, err := d.Query(ctx, "SELECT * FROM gateway_multiparts")
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	rowScanner := pgxscan.NewRowScanner(rows)
+	for rows.Next() {
+		m := MultipartUpload{}
+		err = rowScanner.Scan(&m)
+		if err != nil {
+			return err
+		}
+		pr := protoFromMultipart(&m)
+		value, err := proto.Marshal(pr)
+		if err != nil {
+			return err
+		}
+		key := []byte(kv.FormatPath(multipartPrefix, m.UploadID))
+		err = je.Encode(kv.Entry{
+			Key:   key,
+			Value: value,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
