@@ -24,8 +24,8 @@ import (
 type MigrateFunc func(ctx context.Context, db *pgxpool.Pool, writer io.Writer) error
 
 var (
-	kvPkgs     = make(map[string]pkgMigrate)
-	registerMu sync.RWMutex
+	kvPkgs   = make(map[string]pkgMigrate)
+	kvPkgsMu sync.RWMutex
 )
 
 type pkgMigrate struct {
@@ -35,7 +35,7 @@ type pkgMigrate struct {
 
 func timeTrack(start time.Time, logger logging.Logger, name string) {
 	elapsed := time.Since(start)
-	logger.Info(fmt.Sprintf("%s took %s", name, elapsed))
+	logger.Infof("%s took %s", name, elapsed)
 }
 
 // Migrate data migration from DB to KV
@@ -151,8 +151,8 @@ func getMigrationStatus(ctx context.Context, store kv.Store) (bool, error) {
 }
 
 func RegisterMigrate(name string, f MigrateFunc, tables []string) {
-	registerMu.Lock()
-	defer registerMu.Unlock()
+	kvPkgsMu.Lock()
+	defer kvPkgsMu.Unlock()
 	if _, ok := kvPkgs[name]; ok {
 		panic(fmt.Sprintf("Package already registered: %s", name))
 	}
@@ -164,8 +164,8 @@ func RegisterMigrate(name string, f MigrateFunc, tables []string) {
 
 // UnregisterAll remove all loaded migrate callbacks, used for test code.
 func UnregisterAll() {
-	registerMu.Lock()
-	defer registerMu.Unlock()
+	kvPkgsMu.Lock()
+	defer kvPkgsMu.Unlock()
 	for k := range kvPkgs {
 		delete(kvPkgs, k)
 	}

@@ -2,7 +2,6 @@ package db_test
 
 import (
 	"context"
-	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -62,9 +61,8 @@ func TestKVMigration(t *testing.T) {
 			require.ErrorIs(t, err, tt.err)
 
 			if tt.err == nil {
-				data, err := kvStore.Get(ctx, []byte(kv.DBSchemaVersionKey))
+				version, err := kv.GetDBSchemaVersion(ctx, kvStore)
 				require.NoError(t, err)
-				version, _ := strconv.Atoi(string(data))
 				require.Equal(t, kv.InitialMigrateVersion, version)
 			}
 

@@ -23,7 +23,7 @@ func TestMigrate(t *testing.T) {
 	defer kvStore.Close()
 	dbTracker := multiparts.NewDBTracker(database)
 
-	data := createData(t, ctx, dbTracker, 300)
+	data := createMigrateTestData(t, ctx, dbTracker, 300)
 
 	buf := bytes.Buffer{}
 	err := multiparts.Migrate(ctx, database.Pool(), &buf)
@@ -38,7 +38,7 @@ func TestMigrate(t *testing.T) {
 	}
 }
 
-func createData(t *testing.T, ctx context.Context, tracker multiparts.Tracker, size int) []multiparts.MultipartUpload {
+func createMigrateTestData(t *testing.T, ctx context.Context, tracker multiparts.Tracker, size int) []multiparts.MultipartUpload {
 	t.Helper()
 	data := make([]multiparts.MultipartUpload, 0)
 	for i := 0; i < size; i++ {

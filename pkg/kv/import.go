@@ -39,10 +39,10 @@ func Import(ctx context.Context, reader io.Reader, store Store) error {
 
 	// TODO(niro): Add validation the header in the future
 	logging.Default().WithFields(logging.Fields{
-		"package_name":   header.PackageName,
-		"lakefs_version": header.LakeFSVersion,
-		"db_schema_version":     header.DBSchemaVersion,
-		"created_at":      header.CreatedAt,
+		"package_name":      header.PackageName,
+		"lakefs_version":    header.LakeFSVersion,
+		"db_schema_version": header.DBSchemaVersion,
+		"created_at":        header.CreatedAt,
 	}).Info("Processing file")
 
 	var entry Entry
