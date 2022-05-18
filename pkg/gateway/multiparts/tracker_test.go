@@ -2,8 +2,10 @@ package multiparts_test
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"reflect"
+	"sync"
 	"testing"
 	"time"
 
@@ -273,27 +275,48 @@ func BenchmarkMultipartsTrackerMix(b *testing.B) {
 	b.Run("benchmarkMixedOps_KVpg", func(b *testing.B) { runKVPostgresBenchmark(b, ctx, benchmarkMixedOps) })
 }
 
-type RunBenchmarkFunc func(b *testing.B, ctx context.Context, tracker multiparts.Tracker)
-
-func runDBBenchmark(b *testing.B, ctx context.Context, bmFunc RunBenchmarkFunc) {
-	bmFunc(b, ctx, testDBTracker(b))
+func BenchmarkMultipartsTrackerFlowConcurrent(b *testing.B) {
+	ctx := context.Background()
+	numParts := []int{100, 1000, 10000}
+	concurrency := []int{10, 20, 50, 100, 500, 1000}
+	for _, routines := range concurrency {
+		for _, parts := range numParts {
+			testParamsStr := fmt.Sprintf("routines_%d_parts_%d", routines, parts)
+			b.Run("benchmarkFullFlowConcurrent_"+testParamsStr+"_DB", func(b *testing.B) { runDBBenchmark(b, ctx, benchmarkFullFlowConcurrent, routines, parts) })
+			b.Run("benchmarkFullFlowConcurrent_"+testParamsStr+"_KVmem", func(b *testing.B) { runKVMemBenchmark(b, ctx, benchmarkFullFlowConcurrent, routines, parts) })
+			b.Run("benchmarkFullFlowConcurrent_"+testParamsStr+"_KVpg", func(b *testing.B) { runKVPostgresBenchmark(b, ctx, benchmarkFullFlowConcurrent, routines, parts) })
+		}
+	}
 }
 
-func runKVMemBenchmark(b *testing.B, ctx context.Context, bmFunc RunBenchmarkFunc) {
+// Concurrency params index in array
+const (
+	ConcurrencyNumRoutines = iota
+	ConcurrencyNumParts
+	ConcurrencyMaxParams
+)
+
+type RunBenchmarkFunc func(b *testing.B, ctx context.Context, tracker multiparts.Tracker, concurrencyParams ...int)
+
+func runDBBenchmark(b *testing.B, ctx context.Context, bmFunc RunBenchmarkFunc, concurrencyParams ...int) {
+	bmFunc(b, ctx, testDBTracker(b), concurrencyParams...)
+}
+
+func runKVMemBenchmark(b *testing.B, ctx context.Context, bmFunc RunBenchmarkFunc, concurrencyParams ...int) {
 	store := kvtest.MakeStoreByName("mem", "")(b, context.Background())
 	defer store.Close()
 	tracker := multiparts.NewTracker(kv.StoreMessage{Store: store})
-	bmFunc(b, ctx, tracker)
+	bmFunc(b, ctx, tracker, concurrencyParams...)
 }
 
-func runKVPostgresBenchmark(b *testing.B, ctx context.Context, bmFunc RunBenchmarkFunc) {
+func runKVPostgresBenchmark(b *testing.B, ctx context.Context, bmFunc RunBenchmarkFunc, concurrencyParams ...int) {
 	store := kvtest.MakeStoreByName("postgres", databaseURI)(b, context.Background())
 	defer store.Close()
 	tracker := multiparts.NewTracker(kv.StoreMessage{Store: store})
-	bmFunc(b, ctx, tracker)
+	bmFunc(b, ctx, tracker, concurrencyParams...)
 }
 
-func benchmarkCreateOp(b *testing.B, ctx context.Context, tracker multiparts.Tracker) {
+func benchmarkCreateOp(b *testing.B, ctx context.Context, tracker multiparts.Tracker, concurrencyParams ...int) {
 	keys := randomStrings(b.N)
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -312,7 +335,7 @@ func createMpu(ctx context.Context, tracker multiparts.Tracker, key string) erro
 	})
 }
 
-func benchmarkGetOpSeq(b *testing.B, ctx context.Context, tracker multiparts.Tracker) {
+func benchmarkGetOpSeq(b *testing.B, ctx context.Context, tracker multiparts.Tracker, concurrencyParams ...int) {
 	keys := createEntriesForTest(b, ctx, tracker, b.N)
 
 	b.ResetTimer()
@@ -322,7 +345,7 @@ func benchmarkGetOpSeq(b *testing.B, ctx context.Context, tracker multiparts.Tra
 	}
 }
 
-func benchmarkGetOpRand(b *testing.B, ctx context.Context, tracker multiparts.Tracker) {
+func benchmarkGetOpRand(b *testing.B, ctx context.Context, tracker multiparts.Tracker, concurrencyParams ...int) {
 	keys := createEntriesForTest(b, ctx, tracker, b.N)
 
 	b.ResetTimer()
@@ -332,7 +355,7 @@ func benchmarkGetOpRand(b *testing.B, ctx context.Context, tracker multiparts.Tr
 	}
 }
 
-func benchmarkDeleteOpSeq(b *testing.B, ctx context.Context, tracker multiparts.Tracker) {
+func benchmarkDeleteOpSeq(b *testing.B, ctx context.Context, tracker multiparts.Tracker, concurrencyParams ...int) {
 	keys := createEntriesForTest(b, ctx, tracker, b.N)
 
 	b.ResetTimer()
@@ -342,7 +365,7 @@ func benchmarkDeleteOpSeq(b *testing.B, ctx context.Context, tracker multiparts.
 	}
 }
 
-func benchmarkMixedOps(b *testing.B, ctx context.Context, tracker multiparts.Tracker) {
+func benchmarkMixedOps(b *testing.B, ctx context.Context, tracker multiparts.Tracker, concurrencyParams ...int) {
 	keys := randomStrings(b.N)
 
 	b.ResetTimer()
@@ -361,22 +384,56 @@ func benchmarkMixedOps(b *testing.B, ctx context.Context, tracker multiparts.Tra
 			tracker.Get(ctx, key)
 		}
 	}
+}
 
+func benchmarkFullFlowConcurrent(b *testing.B, ctx context.Context, tracker multiparts.Tracker, concurrencyParams ...int) {
+	if len(concurrencyParams) != ConcurrencyMaxParams {
+		b.Fatal("Wrong number of concurrency params", len(concurrencyParams))
+	}
+	ch := make(chan bool)
+	var wg sync.WaitGroup
+	wg.Add(concurrencyParams[ConcurrencyNumRoutines])
+
+	for i := 0; i < concurrencyParams[ConcurrencyNumRoutines]; i++ {
+		go func() {
+			defer wg.Done()
+
+			for range ch {
+				runSingleTrackerFlow(b, ctx, tracker, concurrencyParams[ConcurrencyNumParts])
+			}
+		}()
+	}
+
+	b.ResetTimer()
+
+	for n := 0; n < b.N; n++ {
+		ch <- true
+	}
+
+	close(ch)
+	wg.Wait()
+}
+
+func runSingleTrackerFlow(t testing.TB, ctx context.Context, tracker multiparts.Tracker, numParts int) {
+	key := randomString(20)
+
+	err := createMpu(ctx, tracker, key)
+	testutil.Must(t, err)
+
+	for i := 0; i < numParts; i++ {
+		_, err = tracker.Get(ctx, key)
+		testutil.Must(t, err)
+	}
+
+	err = tracker.Delete(ctx, key)
+	testutil.Must(t, err)
 }
 
 func createEntriesForTest(t testing.TB, ctx context.Context, tracker multiparts.Tracker, num int) []string {
 	keys := randomStrings(num)
 
 	for n := 0; n < num; n++ {
-		err := tracker.Create(ctx, multiparts.MultipartUpload{
-			UploadID:        keys[n],
-			Path:            "path/to/" + keys[n],
-			CreationDate:    time.Now().Round(time.Second),
-			PhysicalAddress: "phy_" + keys[n],
-
-			Metadata:    nil,
-			ContentType: "test/data",
-		})
+		err := createMpu(ctx, tracker, keys[n])
 		testutil.Must(t, err)
 	}
 
@@ -388,7 +445,11 @@ func createEntriesForTest(t testing.TB, ctx context.Context, tracker multiparts.
 func randomStrings(n int) []string {
 	var keys []string
 	for i := 0; i < n; i++ {
-		keys = append(keys, randstr.String(20, "abcdefghijklmnopqrstuvwyz0123456789"))
+		keys = append(keys, randomString(20))
 	}
 	return keys
+}
+
+func randomString(len int) string {
+	return randstr.String(20, "abcdefghijklmnopqrstuvwyz0123456789")
 }
