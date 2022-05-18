@@ -549,7 +549,7 @@ func testDeleteWhileIterSamePrefixSingleRun(t *testing.T, ms MakeStore, prefsToC
 	}
 	defer cleanIter.Close()
 
-	keysToClean := [][]byte{}
+	var keysToClean [][]byte
 	for cleanIter.Next() {
 		e := cleanIter.Entry()
 		if e != nil {
