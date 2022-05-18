@@ -212,9 +212,10 @@ func testStoreMessageDelete(t *testing.T, ctx context.Context, sm kv.StoreMessag
 // GetStore helper function to return Store object for all unit tests
 func GetStore(ctx context.Context, t *testing.T) kv.Store {
 	t.Helper()
-	store, err := kv.Open(ctx, "mem", "")
+        const storeType = "mem"
+	store, err := kv.Open(ctx, storeType, "")
 	if err != nil {
-		t.Fatalf("failed to open kv store: %s", err)
+		t.Fatalf("failed to open kv (%s) store: %s", storeType, err)
 	}
 	return store
 }
