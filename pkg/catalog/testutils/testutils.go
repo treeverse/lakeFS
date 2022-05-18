@@ -154,6 +154,7 @@ func (w *FakeWalker) createEntries(count int) {
 	// Calling test functions rely on Graveler to not break on the first 1000 entries.
 	// For example, setting "5" here will cause the test to constantly fail.
 	// Fix Bug #3384
+	//nolint:gosec
 	rand := rand.New(rand.NewSource(6))
 	for i := 0; i < count; i++ {
 		relativeKey := testutil.RandomString(rand, randomKeyLength)
