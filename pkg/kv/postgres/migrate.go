@@ -122,7 +122,7 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 	// Update migrate version
 	err = store.Set(ctx, []byte(kv.DBSchemaVersionKey), []byte(strconv.Itoa(kv.InitialMigrateVersion)))
 	if err != nil {
-		return fmt.Errorf("failed setting migrate version: %w", err)
+		return fmt.Errorf("failed setting migrate schema version: %w", err)
 	}
 
 	if dbParams.DropTables {
