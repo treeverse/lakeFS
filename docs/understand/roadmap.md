@@ -18,7 +18,7 @@ redirect_from: ../roadmap.html
 
 ### Snowflake Support: External tables on lakeFS <span>Requires Discussion</span>{: .label .label-yellow }
 
-Since Snowflake supports reading external tables from an object store, we'd like to extend this support to work with lakeFS repositories thaet are hosted on top of [supported object stores](https://docs.snowflake.com/en/user-guide/data-load-snowpipe-intro.html#supported-cloud-storage-services){: target="_blank" }.
+Since Snowflake supports reading external tables from an object store, we'd like to extend this support to work with lakeFS repositories that are hosted on top of [supported object stores](https://docs.snowflake.com/en/user-guide/data-load-snowpipe-intro.html#supported-cloud-storage-services){: target="_blank" }.
 This could be done by utilizing Snowflake's support for `SymlinkInputFormat` similar to how [Delta Lake support is implemented](https://docs.databricks.com/delta/snowflake-integration.html){: target="_blank" }, and later on by having a native integration with Snowflake itself. If you'd like to hear more:
 
 [Contact us, we'd love to talk about it!](mailto:hello@treeverse.io?subject=using+lakeFS+with+Snowflake){: target="_blank" class="btn" }
