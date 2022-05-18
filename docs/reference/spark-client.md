@@ -35,10 +35,10 @@ Start Spark Shell / PySpark with the `--packages` flag:
   ```
   
   Alternatively an assembled jar is available on S3, at
-  s3://treeverse-clients-us-east/lakefs-spark-client-247/0.1.7/lakefs-spark-client-247-assembly-0.1.7.jar
+  `s3://treeverse-clients-us-east/lakefs-spark-client-247/0.1.7/lakefs-spark-client-247-assembly-0.1.7.jar`
   </div>
 
-<div markdown="1" id="packages-3-hadoop2">
+  <div markdown="1" id="packages-3-hadoop2">
   This client is compiled for Spark 3.0.1 with Hadoop 2 and tested with it, but can work for
   higher versions.
 
@@ -47,7 +47,7 @@ Start Spark Shell / PySpark with the `--packages` flag:
   ```
   
   Alternatively an assembled jar is available on S3, at
-  s3://treeverse-clients-us-east/lakefs-spark-client-301/0.1.7/lakefs-spark-client-301-assembly-0.1.7.jar
+  `s3://treeverse-clients-us-east/lakefs-spark-client-301/0.1.7/lakefs-spark-client-301-assembly-0.1.7.jar`
   </div> 
 
   <div markdown="1" id="packages-3-hadoop3">
@@ -59,7 +59,8 @@ Start Spark Shell / PySpark with the `--packages` flag:
   ```
 
   Alternatively an assembled jar is available on S3, at
-  s3://treeverse-clients-us-east/lakefs-spark-client-312-hadoop3/0.1.7/lakefs-spark-client-312-hadoop3-assembly-0.1.7.jar
+  `s3://treeverse-clients-us-east/lakefs-spark-client-312-hadoop3/0.1.7/lakefs-spark-client-312-hadoop3-assembly-0.1.7.jar`
+  </div>
 
 ## Configuration
 
@@ -81,11 +82,14 @@ Start Spark Shell / PySpark with the `--packages` flag:
    | `spark.hadoop.fs.s3a.access.key` | Access key to use for accessing underlying storage on S3 |
    | `spark.hadoop.fs.s3a.secret.key` | Corresponding secret key to use with S3 access key       |
 
-   The client includes support for assuming a separate role on S3A when
-   running on Hadoop 3: it can read and use the same configuration used by
-   S3AFileSystem to assume a role for S3A.  Apache Hadoop AWS support
-   details [Working with IAM Assumed Roles][s3a-assumed-role].  You will
-   need to use the following Hadoop configurations:
+   ### Assuming role on S3 (Hadoop 3 only)
+
+   The client includes support for assuming a separate role on S3 when
+   running on Hadoop 3.  It uses the same configuration used by
+   `S3AFileSystem` to assume the role on S3A.  Apache Hadoop AWS
+   documentation has details under "[Working with IAM Assumed
+   Roles][s3a-assumed-role]".  You will need to use the following Hadoop
+   configurations:
    
    | Configuration                     | Description                                                          |
    |-----------------------------------|----------------------------------------------------------------------|
