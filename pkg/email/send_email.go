@@ -10,18 +10,31 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
-type Emailer struct {
-	Params  Params
-	Dialer  *gomail.Dialer
-	Limiter *rate.Limiter
-}
-
 var (
 	ErrRateLimitExceeded     = errors.New("rate limit exceeded")
 	ErrNoSMTPHostConfigured  = errors.New("no smtp host configured")
 	ErrNoSenderConfigured    = errors.New("no sender configured")
 	ErrNoRecipientConfigured = errors.New("no recipient configured")
 )
+
+type DialAndSender interface {
+	DialAndSend(m ...*gomail.Message) error
+}
+
+type Emailer struct {
+	Params  Params
+	Dialer  DialAndSender
+	Limiter *rate.Limiter
+}
+
+type Dialer struct {
+	Message []*gomail.Message
+}
+
+func (d *Dialer) DialAndSend(m ...*gomail.Message) error {
+	d.Message = m
+	return nil
+}
 
 type Params struct {
 	SMTPHost           string
@@ -83,17 +96,17 @@ func (e *Emailer) SendEmailWithLimit(receivers []string, subject string, body st
 }
 
 func (e *Emailer) SendResetPasswordEmail(receivers []string, params map[string]string) error {
-	body, err := BuildEmailByTemplate(ResetEmailTemplate, e.Params.LakefsBaseURL, ResetPasswordURLPath, params)
+	body, err := BuildEmailByTemplate(resetEmailTemplate, e.Params.LakefsBaseURL, resetPasswordURLPath, params)
 	if err != nil {
 		return err
 	}
-	return e.SendEmailWithLimit(receivers, ResetPasswordEmailSubject, body, nil)
+	return e.SendEmailWithLimit(receivers, resetPasswordEmailSubject, body, nil)
 }
 
 func (e *Emailer) SendInviteUserEmail(receivers []string, params map[string]string) error {
-	body, err := BuildEmailByTemplate(InviteUserTemplate, e.Params.LakefsBaseURL, InviteUserURLPath, params)
+	body, err := BuildEmailByTemplate(inviteUserTemplate, e.Params.LakefsBaseURL, inviteUserURLPath, params)
 	if err != nil {
 		return err
 	}
-	return e.SendEmailWithLimit(receivers, InviteUserWEmailSubject, body, nil)
+	return e.SendEmailWithLimit(receivers, inviteUserWEmailSubject, body, nil)
 }

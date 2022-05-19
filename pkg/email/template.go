@@ -9,21 +9,21 @@ import (
 )
 
 const (
-	ResetPasswordURLPath = "/auth/resetpassword" //#nosec
-	InviteUserURLPath    = "/auth/users/create"  //#nosec
+	resetPasswordURLPath = "/auth/resetpassword" //#nosec
+	inviteUserURLPath    = "/auth/users/create"  //#nosec
 
-	ResetPasswordEmailSubject = "Reset Password Request for your lakeFS account"
-	InviteUserWEmailSubject   = "You have been invited to lakeFS"
+	resetPasswordEmailSubject = "Reset Password Request for your lakeFS account"
+	inviteUserWEmailSubject   = "You have been invited to lakeFS"
 )
 
 var (
 	//go:embed invite_user_template.html
 	inviteEmailContent string
-	InviteUserTemplate = template.Must(template.New("inviteUserTemplate").Parse(inviteEmailContent))
+	inviteUserTemplate = template.Must(template.New("inviteUserTemplate").Parse(inviteEmailContent))
 
 	//go:embed reset_email_template.html
 	resetEmailContent  string
-	ResetEmailTemplate = template.Must(template.New("resetEmailTemplate").Parse(resetEmailContent))
+	resetEmailTemplate = template.Must(template.New("resetEmailTemplate").Parse(resetEmailContent))
 )
 
 type TemplateParams struct {
