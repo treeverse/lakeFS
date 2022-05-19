@@ -15,12 +15,14 @@ type Cache interface {
 	GetCredential(accessKeyID string, setFn CredentialSetFn) (*model.Credential, error)
 	GetUser(username string, setFn UserSetFn) (*model.User, error)
 	GetUserByID(userID int64, setFn UserSetFn) (*model.User, error)
+	GetUserByEmail(userEmail string, setFn UserSetFn) (*model.User, error)
 	GetUserPolicies(userID string, setFn UserPoliciesSetFn) ([]*model.Policy, error)
 }
 
 type LRUCache struct {
 	credentialsCache cache.Cache
 	userCache        cache.Cache
+	userEmailCache   cache.Cache
 	policyCache      cache.Cache
 }
 
@@ -29,6 +31,7 @@ func NewLRUCache(size int, expiry, jitter time.Duration) *LRUCache {
 	return &LRUCache{
 		credentialsCache: cache.NewCache(size, expiry, jitterFn),
 		userCache:        cache.NewCache(size, expiry, jitterFn),
+		userEmailCache:   cache.NewCache(size, expiry, jitterFn),
 		policyCache:      cache.NewCache(size, expiry, jitterFn),
 	}
 }
@@ -57,6 +60,14 @@ func (c *LRUCache) GetUserByID(userID int64, setFn UserSetFn) (*model.User, erro
 	return v.(*model.User), nil
 }
 
+func (c *LRUCache) GetUserByEmail(userEmail string, setFn UserSetFn) (*model.User, error) {
+	v, err := c.userEmailCache.GetOrSet(userEmail, func() (interface{}, error) { return setFn() })
+	if err != nil {
+		return nil, err
+	}
+	return v.(*model.User), nil
+}
+
 func (c *LRUCache) GetUserPolicies(userID string, setFn UserPoliciesSetFn) ([]*model.Policy, error) {
 	v, err := c.policyCache.GetOrSet(userID, func() (interface{}, error) { return setFn() })
 	if err != nil {
@@ -65,21 +76,25 @@ func (c *LRUCache) GetUserPolicies(userID string, setFn UserPoliciesSetFn) ([]*m
 	return v.([]*model.Policy), nil
 }
 
-type DummyCache struct {
-}
+// DummyCache dummy cache that doesn't cache
+type DummyCache struct{}
 
-func (d *DummyCache) GetCredential(accessKeyID string, setFn CredentialSetFn) (*model.Credential, error) {
+func (d *DummyCache) GetCredential(_ string, setFn CredentialSetFn) (*model.Credential, error) {
 	return setFn()
 }
 
-func (d *DummyCache) GetUser(username string, setFn UserSetFn) (*model.User, error) {
+func (d *DummyCache) GetUser(_ string, setFn UserSetFn) (*model.User, error) {
 	return setFn()
 }
 
-func (d *DummyCache) GetUserByID(userID int64, setFn UserSetFn) (*model.User, error) {
+func (d *DummyCache) GetUserByID(_ int64, setFn UserSetFn) (*model.User, error) {
 	return setFn()
 }
 
-func (d *DummyCache) GetUserPolicies(userID string, setFn UserPoliciesSetFn) ([]*model.Policy, error) {
+func (d *DummyCache) GetUserByEmail(_ string, setFn UserSetFn) (*model.User, error) {
+	return setFn()
+}
+
+func (d *DummyCache) GetUserPolicies(_ string, setFn UserPoliciesSetFn) ([]*model.Policy, error) {
 	return setFn()
 }

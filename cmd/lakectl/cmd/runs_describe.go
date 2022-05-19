@@ -111,8 +111,13 @@ func convertHookResultsTables(results []api.HookRun) []*Table {
 	for i, r := range results {
 		hookRunID := text.FgYellow.Sprint(r.HookRunId)
 		statusColor := text.FgRed
-		if r.Status == "completed" {
+		switch r.Status {
+		case "completed":
 			statusColor = text.FgGreen
+		case "skipped":
+			statusColor = text.FgYellow
+		case "failed":
+			statusColor = text.FgRed
 		}
 		status := statusColor.Sprint(r.Status)
 		tables[i] = &Table{
