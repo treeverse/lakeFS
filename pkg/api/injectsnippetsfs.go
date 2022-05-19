@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"fmt"
+	"html"
 	"io"
 	"io/fs"
 	"time"
@@ -53,9 +54,9 @@ func NewInjectIndexFS(fsys fs.FS, name string, snippets map[string]string) (fs.F
 func renderCodeSnippets(snippets map[string]string) []byte {
 	var b bytes.Buffer
 	for k, v := range snippets {
-		_, _ = b.WriteString("<!-- snippet: " + k + " -->\n")
+		_, _ = b.WriteString("<!-- snippet begin: " + html.EscapeString(k) + " -->\n")
 		_, _ = b.WriteString(v)
-		_, _ = b.WriteString("\n")
+		_, _ = b.WriteString("<!-- snippet end: " + html.EscapeString(k) + " -->\n")
 	}
 	return b.Bytes()
 }
