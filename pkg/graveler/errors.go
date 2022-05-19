@@ -23,7 +23,7 @@ var (
 	ErrNoMergeBase                  = errors.New("no merge base")
 	ErrInvalidRef                   = fmt.Errorf("ref: %w", ErrInvalidValue)
 	ErrInvalidCommitID              = fmt.Errorf("commit id: %w", ErrInvalidValue)
-	ErrInvalidBranchID              = fmt.Errorf("branch id: %w can contain only letters, numbers, underscores, and dashes (not at the beginning)", ErrInvalidValue)
+	ErrInvalidBranchID              = fmt.Errorf("branch id: %w", ErrInvalidValue)
 	ErrInvalidTagID                 = fmt.Errorf("tag id: %w", ErrInvalidValue)
 	ErrInvalid                      = errors.New("validation error")
 	ErrInvalidType                  = fmt.Errorf("invalid type: %w", ErrInvalid)
