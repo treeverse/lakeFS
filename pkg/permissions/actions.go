@@ -54,10 +54,10 @@ const (
 	ListPoliciesAction      = "auth:ListPolicies"
 	AttachPolicyAction      = "auth:AttachPolicy"
 	DetachPolicyAction      = "auth:DetachPolicy"
-	ReadCredentialsAction   = "auth:ReadCredentials"   // nolint:gosec
-	CreateCredentialsAction = "auth:CreateCredentials" // nolint:gosec
-	DeleteCredentialsAction = "auth:DeleteCredentials" // nolint:gosec
-	ListCredentialsAction   = "auth:ListCredentials"   // nolint:gosec
+	ReadCredentialsAction   = "auth:ReadCredentials"   //nolint:gosec
+	CreateCredentialsAction = "auth:CreateCredentials" //nolint:gosec
+	DeleteCredentialsAction = "auth:DeleteCredentials" //nolint:gosec
+	ListCredentialsAction   = "auth:ListCredentials"   //nolint:gosec
 
 	ReadActionsAction = "ci:ReadAction"
 

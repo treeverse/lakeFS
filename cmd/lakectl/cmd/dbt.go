@@ -186,7 +186,7 @@ generate_schema_name.sql
 {%- endmacro %}
 `
 		//nolint:gosec
-		err := ioutil.WriteFile(macroPath, []byte(generateSchemaData), 0644) // nolint: gomnd
+		err := ioutil.WriteFile(macroPath, []byte(generateSchemaData), 0644) //nolint: gomnd
 		if err != nil {
 			DieErr(err)
 		}
