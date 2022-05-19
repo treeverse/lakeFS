@@ -133,7 +133,7 @@ var ingestCmd = &cobra.Command{
 	},
 }
 
-//nolint:gochecknoinits, gomnd
+//nolint:gochecknoinits,gomnd
 func init() {
 	ingestCmd.Flags().String("from", "", "prefix to read from (e.g. \"s3://bucket/sub/path/\"). must not be in a storage namespace")
 	_ = ingestCmd.MarkFlagRequired("from")
