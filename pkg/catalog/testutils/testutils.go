@@ -154,10 +154,11 @@ func (w *FakeWalker) createEntries(count int) {
 	// Calling test functions rely on Graveler to not break on the first 1000 entries.
 	// For example, setting "5" here will cause the test to constantly fail.
 	// Fix Bug #3384
+	const seed = 6
 	//nolint:gosec
-	randSeed := rand.New(rand.NewSource(6))
+	randGen := rand.New(rand.NewSource(seed))
 	for i := 0; i < count; i++ {
-		relativeKey := testutil.RandomString(randSeed, randomKeyLength)
+		relativeKey := testutil.RandomString(randGen, randomKeyLength)
 		fullkey := w.uriPrefix + "/" + relativeKey
 		ents[i] = store.ObjectStoreEntry{
 			RelativeKey: relativeKey,
