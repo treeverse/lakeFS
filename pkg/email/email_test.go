@@ -31,7 +31,7 @@ func TestNewEmailer_Sender(t *testing.T) {
 	}
 }
 
-func TestSendEmail_Params(t *testing.T) { // table testing here
+func TestSendEmail_Params(t *testing.T) {
 	p := email.Params{}
 	emailer, err := email.NewEmailer(p)
 	testutil.Must(t, err)
