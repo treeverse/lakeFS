@@ -15,7 +15,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type MakeStore func(t *testing.T, ctx context.Context) kv.Store
+type MakeStore func(t testing.TB, ctx context.Context) kv.Store
 
 var runTestID = nanoid.MustGenerate("abcdef1234567890", 8)
 
@@ -279,7 +279,7 @@ func testStoreScan(t *testing.T, ms MakeStore) {
 }
 
 func MakeStoreByName(name, dsn string) MakeStore {
-	return func(t *testing.T, ctx context.Context) kv.Store {
+	return func(t testing.TB, ctx context.Context) kv.Store {
 		t.Helper()
 		store, err := kv.Open(ctx, name, dsn)
 		if err != nil {
