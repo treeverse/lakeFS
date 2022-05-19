@@ -26,8 +26,8 @@ func TestNewEmailer_Sender(t *testing.T) {
 		Sender:   "bar",
 	}
 	_, err := email.NewEmailer(p)
-	if !errors.Is(err, email.ErrNoSenderConfigured) {
-		t.Errorf("expected err:%s got:%s", email.ErrNoSenderConfigured, err)
+	if err == nil {
+		t.Errorf("expected err:, got:%s", err)
 	}
 }
 
