@@ -65,7 +65,9 @@ func DBTRun(projectRoot, schema, schemaEnvVarIdentifier string, selectValues []s
 }
 
 func DBTLsToJSON(projectRoot, resourceType string, selectValues []string, executor Executor) ([]DBTResource, error) {
-	DBTCmd := exec.Command("dbt", "ls", "--resource-type", resourceType, "--select", strings.Join(selectValues, " "), "--output", "json", "--output-keys", resourceJSONKeys)
+	// Disable lint because this is actually safe: the entire output of
+	// strings.Join() is a _single_ argument to the dbt command.
+	DBTCmd := exec.Command("dbt", "ls", "--resource-type", resourceType, "--select", strings.Join(selectValues, " "), "--output", "json", "--output-keys", resourceJSONKeys) // nolint: gosec
 	DBTCmd.Dir = projectRoot
 	output, err := executor(DBTCmd)
 	if err != nil {

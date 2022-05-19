@@ -65,9 +65,10 @@ func MarshalString(h hash.Hash, v string) {
 }
 
 func MarshalInt64(h hash.Hash, v int64) {
+	const int64Bytes = 8
 	marshalType(h, AddressTypeInt64)
-	_, _ = h.Write([]byte{8})
-	bytes := make([]byte, 8)
+	_, _ = h.Write([]byte{int64Bytes})
+	bytes := make([]byte, int64Bytes)
 	binary.BigEndian.PutUint64(bytes, uint64(v))
 	_, _ = h.Write(bytes)
 }

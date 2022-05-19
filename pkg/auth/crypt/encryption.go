@@ -45,7 +45,13 @@ func (a *NaclSecretStore) kdf(storedSalt []byte) (key [KeySizeBytes]byte, salt [
 	}
 	// scrypt's N, r & p, benchmarked to run at about 1ms, since it's in the critical path.
 	// fair trade-off for a high throughput low latency system
-	keySlice, err := scrypt.Key(a.secret, salt[:], 512, 8, 1, 32)
+	const (
+		N      = 512
+		r      = 8
+		p      = 1
+		keyLen = 32
+	)
+	keySlice, err := scrypt.Key(a.secret, salt[:], N, r, p, keyLen)
 	if err != nil {
 		return
 	}
