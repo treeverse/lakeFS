@@ -16,13 +16,20 @@ import (
 	"github.com/treeverse/lakefs/webui"
 )
 
-func NewUIHandler(gatewayDomains []string) http.Handler {
+const uiIndexDoc = "index.html"
+
+func NewUIHandler(gatewayDomains []string, snippets map[string]string) http.Handler {
 	content, err := fs.Sub(webui.Content, "dist")
 	if err != nil {
 		// embedded UI content is missing
 		panic(err)
 	}
-	fileSystem := http.FS(content)
+	injectedContent, err := NewInjectIndexFS(content, uiIndexDoc, snippets)
+	if err != nil {
+		// failed to inject snippets to index.html
+		panic(err)
+	}
+	fileSystem := http.FS(injectedContent)
 	nocacheContent := middleware.NoCache(http.StripPrefix("/", http.FileServer(fileSystem)))
 	return NewHandlerWithDefault(fileSystem, nocacheContent, gatewayDomains)
 }

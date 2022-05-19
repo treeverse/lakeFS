@@ -510,3 +510,7 @@ func (c *Config) GetAuthAPIToken() string {
 func (c *Config) GetCookieDomain() string {
 	return c.values.Auth.CookieDomain
 }
+
+func (c *Config) GetUISnippets() map[string]string {
+	return c.values.UI.Snippets
+}
