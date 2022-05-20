@@ -34,8 +34,8 @@ func NewInjectIndexFS(fsys fs.FS, name string, snippets map[string]string) (fs.F
 
 	// inject snippets code into content
 	codeSnippets := renderCodeSnippets(snippets)
-	bodyEndElement := []byte("</body>")
-	idx := bytes.LastIndex(all, bodyEndElement)
+	endElement := []byte("</head>")
+	idx := bytes.Index(all, endElement)
 	if idx == -1 {
 		// TODO(barak): consider error in case there is no body to inject snippet
 		return fsys, nil
