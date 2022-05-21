@@ -16,6 +16,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
+var makeTestStore = kvtest.MakeStoreByName("mem", "")
+
 func testDBTracker(t testing.TB) multiparts.Tracker {
 	t.Helper()
 	conn, _ := testutil.GetDB(t, databaseURI)
@@ -23,7 +25,7 @@ func testDBTracker(t testing.TB) multiparts.Tracker {
 }
 
 func TestTracker_Get(t *testing.T) {
-	store := kvtest.MakeStoreByName("mem", "")(t, context.Background())
+	store := makeTestStore(t, context.Background())
 	defer store.Close()
 	tracker := multiparts.NewTracker(kv.StoreMessage{Store: store})
 	testTrackerGet(t, tracker)
@@ -100,7 +102,7 @@ func testTrackerGet(t *testing.T, tracker multiparts.Tracker) {
 }
 
 func TestTracker_Delete(t *testing.T) {
-	store := kvtest.MakeStoreByName("mem", "")(t, context.Background())
+	store := makeTestStore(t, context.Background())
 	defer store.Close()
 	tracker := multiparts.NewTracker(kv.StoreMessage{Store: store})
 	testTrackerDelete(t, tracker)
@@ -149,7 +151,7 @@ func testTrackerDelete(t *testing.T, tracker multiparts.Tracker) {
 }
 
 func TestTracker_Create(t *testing.T) {
-	store := kvtest.MakeStoreByName("mem", "")(t, context.Background())
+	store := makeTestStore(t, context.Background())
 	defer store.Close()
 	tracker := multiparts.NewTracker(kv.StoreMessage{Store: store})
 	testTrackerCreate(t, tracker)
@@ -298,7 +300,7 @@ func runDBBenchmark(b *testing.B, ctx context.Context, bmFunc RunBenchmarkFunc, 
 
 func runKVMemBenchmark(b *testing.B, ctx context.Context, bmFunc RunBenchmarkFunc, concurrencyParams ...int) {
 	b.Helper()
-	store := kvtest.MakeStoreByName("mem", "")(b, context.Background())
+	store := makeTestStore(b, context.Background())
 	defer store.Close()
 	tracker := multiparts.NewTracker(kv.StoreMessage{Store: store})
 	bmFunc(b, ctx, tracker, concurrencyParams...)
