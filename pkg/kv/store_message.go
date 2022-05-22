@@ -58,9 +58,8 @@ func (s *StoreMessage) Scan(ctx context.Context, msgType protoreflect.MessageTyp
 }
 
 type MessageIterator struct {
-	itr     EntriesIterator
-	msgType protoreflect.MessageType
-	err     error
+	itr EntriesIterator
+	err error
 }
 
 type MessageEntry struct {
@@ -68,12 +67,19 @@ type MessageEntry struct {
 	Value protoreflect.ProtoMessage
 }
 
+func NewMessageEntry(msg protoreflect.MessageType) *MessageEntry {
+	return &MessageEntry{
+		Key:   "",
+		Value: msg.New().Interface(),
+	}
+}
+
 func NewMessageIterator(ctx context.Context, store Store, msgType protoreflect.MessageType, partitionKey, prefix string) (*MessageIterator, error) {
 	itr, err := ScanPrefix(ctx, store, []byte(partitionKey), []byte(prefix))
 	if err != nil {
 		return nil, fmt.Errorf("create prefix iterator: %w", err)
 	}
-	return &MessageIterator{itr: itr, msgType: msgType}, nil
+	return &MessageIterator{itr: itr}, nil
 }
 
 func (m *MessageIterator) Next() bool {
@@ -83,21 +89,21 @@ func (m *MessageIterator) Next() bool {
 	return m.itr.Next()
 }
 
-func (m *MessageIterator) Entry() *MessageEntry {
+func (m *MessageIterator) Entry(key *string, value *protoreflect.ProtoMessage) error {
 	entry := m.itr.Entry()
 	if entry == nil {
-		return nil
+		return ErrNotFound
 	}
-	msg := m.msgType.New().Interface()
-	err := proto.Unmarshal(entry.Value, msg)
-	if err != nil {
-		m.err = fmt.Errorf("unmarshal proto data for key %s: %w", string(entry.Key), err)
-		return nil
+	if value != nil {
+		err := proto.Unmarshal(entry.Value, *value)
+		if err != nil {
+			return fmt.Errorf("unmarshal proto data for key %s: %w", string(entry.Key), err)
+		}
 	}
-	return &MessageEntry{
-		Key:   string(entry.Key),
-		Value: msg,
+	if key != nil {
+		*key = string(entry.Key)
 	}
+	return nil
 }
 
 func (m *MessageIterator) Err() error {

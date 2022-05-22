@@ -20,8 +20,7 @@ const modelPartitionKey = "tm"
 
 func TestStoreMessage(t *testing.T) {
 	ctx := context.Background()
-	store := GetStore(ctx, t)
-	defer store.Close()
+	store := kvtest.GetStore(ctx, t)
 
 	sm := kv.StoreMessage{
 		Store: store,
@@ -249,9 +248,14 @@ func testStoreMessageScan(t *testing.T, ctx context.Context, sm kv.StoreMessage)
 	require.NoError(t, sm.Store.Set(ctx, []byte(modelPartitionKey), []byte(postModelKey), []byte(postModelData)))
 	itr, err := sm.Scan(ctx, m.ProtoReflect().Type(), modelPartitionKey, modelKeyPrefix)
 	testutil.MustDo(t, "get iterator", err)
+	defer itr.Close()
 	count := 0
+	entry := kv.NewMessageEntry(m.ProtoReflect().Type())
 	for itr.Next() {
-		entry := itr.Entry()
+		err = itr.Entry(&entry.Key, &entry.Value)
+		require.NoError(t, err)
+		value, _ := entry.Value.(*kvtest.TestModel)
+		require.NotNil(t, entry)
 		require.Nil(t, itr.Err())
 		require.NotNil(t, entry)
 		value, ok := entry.Value.(*kvtest.TestModel)
@@ -290,11 +294,13 @@ func testStoreMessageScanWrongFormat(t *testing.T, ctx context.Context, sm kv.St
 
 	itr, err := sm.Scan(ctx, m.ProtoReflect().Type(), modelPartitionKey, modelKeyPrefix)
 	testutil.MustDo(t, "get iterator", err)
+	defer itr.Close()
 
+	entry := kv.NewMessageEntry(m.ProtoReflect().Type())
 	for i := 0; i < modelNum; i++ {
 		require.True(t, itr.Next())
-		entry := itr.Entry()
-		require.Nil(t, itr.Err())
+		err = itr.Entry(&entry.Key, &entry.Value)
+		require.NoError(t, err)
 		require.NotNil(t, entry)
 		value, ok := entry.Value.(*kvtest.TestModel)
 		require.True(t, ok)
@@ -302,20 +308,13 @@ func testStoreMessageScanWrongFormat(t *testing.T, ctx context.Context, sm kv.St
 		require.True(t, proto.Equal(value, m))
 	}
 
+	// bad Entry
 	require.True(t, itr.Next())
-	badEntry := itr.Entry()
-	require.Nil(t, badEntry)
-	require.ErrorIs(t, itr.Err(), proto.Error)
+	err = itr.Entry(&entry.Key, &entry.Value)
+	require.ErrorIs(t, err, proto.Error)
+	require.NoError(t, itr.Err())
+	require.True(t, itr.Next())
 	require.False(t, itr.Next())
-}
-
-// GetStore helper function to return Store object for all unit tests
-func GetStore(ctx context.Context, t *testing.T) kv.Store {
-	t.Helper()
-	const storeType = "mem"
-	store, err := kv.Open(ctx, storeType, "")
-	if err != nil {
-		t.Fatalf("failed to open kv (%s) store: %s", storeType, err)
-	}
-	return store
+	err = itr.Entry(&entry.Key, &entry.Value)
+	require.ErrorIs(t, err, kv.ErrNotFound)
 }
