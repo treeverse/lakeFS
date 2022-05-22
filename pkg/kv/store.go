@@ -47,7 +47,7 @@ type Store interface {
 	// Get returns a value for the given key, or ErrNotFound if key doesn't exist
 	Get(ctx context.Context, key []byte) ([]byte, error)
 
-	GetEntry(ctx context.Context, key []byte) (*Entry, error)
+	GetValuePredicate(ctx context.Context, key []byte) (*ValuePredicate, error)
 
 	// Set stores the given value, overwriting an existing value if one exists
 	Set(ctx context.Context, key, value []byte) error
@@ -56,7 +56,7 @@ type Store interface {
 	//  doesn't match the currently stored value. SetIf is a simple compare-and-swap operator:
 	//  valuePredicate is either the existing value, or nil for no previous key exists.
 	//  this is intentionally simplistic: we can model a better abstraction on top, keeping this interface simple for implementors
-	SetIf(ctx context.Context, key, value []byte, valuePredicate Predicate) (Predicate, error)
+	SetIf(ctx context.Context, key, value []byte, valuePredicate Predicate) error
 
 	// Delete will delete the key, no error in if key doesn't exist
 	Delete(ctx context.Context, key []byte) error
@@ -87,9 +87,14 @@ type EntriesIterator interface {
 
 // Entry holds a pair of key/value and predicate used for conditional set
 type Entry struct {
-	Key       []byte
+	Key   []byte
+	Value []byte
+}
+
+// ValuePredicate value with predicate, used to by SetIf
+type ValuePredicate struct {
 	Value     []byte
-	Predicate interface{}
+	Predicate Predicate
 }
 
 func (e *Entry) String() string {

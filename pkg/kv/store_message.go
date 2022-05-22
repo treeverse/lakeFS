@@ -12,19 +12,27 @@ type StoreMessage struct {
 	Store Store
 }
 
-func (s *StoreMessage) GetMsg(ctx context.Context, path string, msg protoreflect.ProtoMessage) (Predicate, error) {
-	ent, err := s.Store.GetEntry(ctx, []byte(path))
+func (s *StoreMessage) GetMsg(ctx context.Context, path string, msg protoreflect.ProtoMessage) error {
+	v, err := s.Store.Get(ctx, []byte(path))
+	if err != nil {
+		return err
+	}
+	return proto.Unmarshal(v, msg)
+}
+
+func (s *StoreMessage) GetMsgPredicate(ctx context.Context, path string, msg protoreflect.ProtoMessage) (Predicate, error) {
+	vp, err := s.Store.GetValuePredicate(ctx, []byte(path))
 	if err != nil {
 		return nil, err
 	}
 	if msg == nil {
-		return ent.Predicate, nil
+		return vp.Predicate, nil
 	}
-	err = proto.Unmarshal(ent.Value, msg)
+	err = proto.Unmarshal(vp.Value, msg)
 	if err != nil {
 		return nil, err
 	}
-	return ent.Predicate, nil
+	return vp.Predicate, nil
 }
 
 func (s *StoreMessage) SetMsg(ctx context.Context, path string, msg protoreflect.ProtoMessage) error {
@@ -35,10 +43,10 @@ func (s *StoreMessage) SetMsg(ctx context.Context, path string, msg protoreflect
 	return s.Store.Set(ctx, []byte(path), val)
 }
 
-func (s *StoreMessage) SetMsgIf(ctx context.Context, path string, msg protoreflect.ProtoMessage, predicate Predicate) (Predicate, error) {
+func (s *StoreMessage) SetMsgIf(ctx context.Context, path string, msg protoreflect.ProtoMessage, predicate Predicate) error {
 	val, err := proto.Marshal(msg)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	return s.Store.SetIf(ctx, []byte(path), val, predicate)
 }

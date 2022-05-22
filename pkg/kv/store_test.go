@@ -27,7 +27,7 @@ func (m *MockStore) Get(_ context.Context, _ []byte) ([]byte, error) {
 	return nil, errNotImplemented
 }
 
-func (m *MockStore) GetEntry(_ context.Context, _ []byte) (*kv.Entry, error) {
+func (m *MockStore) GetValuePredicate(_ context.Context, _ []byte) (*kv.ValuePredicate, error) {
 	return nil, errNotImplemented
 }
 
@@ -35,8 +35,8 @@ func (m *MockStore) Set(_ context.Context, _, _ []byte) error {
 	return errNotImplemented
 }
 
-func (m *MockStore) SetIf(_ context.Context, _, _ []byte, _ kv.Predicate) (kv.Predicate, error) {
-	return nil, errNotImplemented
+func (m *MockStore) SetIf(_ context.Context, _, _ []byte, _ kv.Predicate) error {
+	return errNotImplemented
 }
 
 func (m *MockStore) Delete(_ context.Context, _ []byte) error {

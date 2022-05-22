@@ -127,13 +127,12 @@ func (s *Store) Get(ctx context.Context, key []byte) ([]byte, error) {
 	return val, nil
 }
 
-func (s *Store) GetEntry(ctx context.Context, key []byte) (*kv.Entry, error) {
+func (s *Store) GetValuePredicate(ctx context.Context, key []byte) (*kv.ValuePredicate, error) {
 	val, err := s.Get(ctx, key)
 	if err != nil {
 		return nil, err
 	}
-	return &kv.Entry{
-		Key:       key,
+	return &kv.ValuePredicate{
 		Value:     val,
 		Predicate: kv.Predicate(val),
 	}, nil
@@ -154,12 +153,12 @@ func (s *Store) Set(ctx context.Context, key, value []byte) error {
 	return nil
 }
 
-func (s *Store) SetIf(ctx context.Context, key, value []byte, valuePredicate kv.Predicate) (kv.Predicate, error) {
+func (s *Store) SetIf(ctx context.Context, key, value []byte, valuePredicate kv.Predicate) error {
 	if key == nil {
-		return nil, kv.ErrMissingKey
+		return kv.ErrMissingKey
 	}
 	if value == nil {
-		return nil, kv.ErrMissingValue
+		return kv.ErrMissingValue
 	}
 	var (
 		res pgconn.CommandTag
@@ -173,12 +172,12 @@ func (s *Store) SetIf(ctx context.Context, key, value []byte, valuePredicate kv.
 		res, err = s.Pool.Exec(ctx, `UPDATE `+s.Params.SanitizedTableName+` SET value=$2 WHERE key=$1 AND value=$3`, key, value, valuePredicate.([]byte))
 	}
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
+		return fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
 	}
 	if res.RowsAffected() != 1 {
-		return nil, kv.ErrPredicateFailed
+		return kv.ErrPredicateFailed
 	}
-	return kv.Predicate(value), nil
+	return nil
 }
 
 func (s *Store) Delete(ctx context.Context, key []byte) error {
@@ -228,7 +227,6 @@ func (e *EntriesIterator) Next() bool {
 		e.err = fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
 		return false
 	}
-	ent.Predicate = kv.Predicate(ent.Value)
 	e.entry = &ent
 	return true
 }

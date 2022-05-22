@@ -61,7 +61,7 @@ func Import(ctx context.Context, reader io.Reader, store Store) error {
 		if entry.Value == nil {
 			return fmt.Errorf("bad entry value: %w", ErrInvalidFormat)
 		}
-		_, err = store.SetIf(ctx, entry.Key, entry.Value, nil)
+		err = store.SetIf(ctx, entry.Key, entry.Value, nil)
 		if err != nil {
 			return err
 		}

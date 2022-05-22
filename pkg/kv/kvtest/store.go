@@ -150,7 +150,7 @@ func testStoreSetIf(t *testing.T, ms MakeStore) {
 	t.Run("set_first", func(t *testing.T) {
 		key := uniqueKey("set-if-first")
 		val := []byte("v")
-		_, err := store.SetIf(ctx, key, val, nil)
+		err := store.SetIf(ctx, key, val, nil)
 		if err != nil {
 			t.Fatalf("SetIf without previous key - key=%s value=%s pred=nil: %s", key, val, err)
 		}
@@ -164,13 +164,13 @@ func testStoreSetIf(t *testing.T, ms MakeStore) {
 			t.Fatalf("Set while testing SetIf - key=%s value=%s: %s", key, val1, err)
 		}
 
-		ent, err := store.GetEntry(ctx, key)
+		vp, err := store.GetValuePredicate(ctx, key)
 		if err != nil {
 			t.Fatalf("GetEntry while testing SetIf - key=%s: %s", key, err)
 		}
 
 		val2 := []byte("v2")
-		_, err = store.SetIf(ctx, key, val2, ent.Predicate)
+		err = store.SetIf(ctx, key, val2, vp.Predicate)
 		if err != nil {
 			t.Fatalf("SetIf with previous value - key=%s value=%s pred=%s: %s", key, val2, val1, err)
 		}
@@ -186,7 +186,7 @@ func testStoreSetIf(t *testing.T, ms MakeStore) {
 
 		val2 := []byte("v2")
 		pred := []byte("pred")
-		_, err = store.SetIf(ctx, key, val2, pred)
+		err = store.SetIf(ctx, key, val2, pred)
 		if !errors.Is(err, kv.ErrPredicateFailed) {
 			t.Fatalf("SetIf err=%v - key=%s, value=%s, pred=%s, expected err=%s", err, key, val2, val2, kv.ErrPredicateFailed)
 		}
@@ -201,7 +201,7 @@ func testStoreSetIf(t *testing.T, ms MakeStore) {
 		}
 
 		val2 := []byte("v2")
-		_, err = store.SetIf(ctx, key, val2, nil)
+		err = store.SetIf(ctx, key, val2, nil)
 		if !errors.Is(err, kv.ErrPredicateFailed) {
 			t.Fatalf("SetIf err=%v - key=%s, value=%s, pred=nil, expected err=%s", err, key, val2, kv.ErrPredicateFailed)
 		}
@@ -314,13 +314,13 @@ func testStoreMissingArgument(t *testing.T, ms MakeStore) {
 	})
 
 	t.Run("SetIf", func(t *testing.T) {
-		_, err := store.SetIf(ctx, nil, []byte("v"), []byte("p"))
+		err := store.SetIf(ctx, nil, []byte("v"), []byte("p"))
 		if !errors.Is(err, kv.ErrMissingKey) {
 			t.Errorf("SetIf using nil key - err=%v, expected %s", err, kv.ErrMissingKey)
 		}
 
 		key := uniqueKey("test-missing-argument")
-		_, err = store.SetIf(ctx, key, nil, []byte("p"))
+		err = store.SetIf(ctx, key, nil, []byte("p"))
 		if !errors.Is(err, kv.ErrMissingValue) {
 			t.Errorf("SetIf using nil value - err=%v, expected %s", err, kv.ErrMissingValue)
 		}
