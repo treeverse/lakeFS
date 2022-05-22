@@ -127,6 +127,18 @@ func (s *Store) Get(ctx context.Context, key []byte) ([]byte, error) {
 	return val, nil
 }
 
+func (s *Store) GetEntry(ctx context.Context, key []byte) (*kv.Entry, error) {
+	val, err := s.Get(ctx, key)
+	if err != nil {
+		return nil, err
+	}
+	return &kv.Entry{
+		Key:       key,
+		Value:     val,
+		Predicate: kv.Predicate(val),
+	}, nil
+}
+
 func (s *Store) Set(ctx context.Context, key, value []byte) error {
 	if key == nil {
 		return kv.ErrMissingKey
@@ -142,12 +154,12 @@ func (s *Store) Set(ctx context.Context, key, value []byte) error {
 	return nil
 }
 
-func (s *Store) SetIf(ctx context.Context, key, value, valuePredicate []byte) error {
+func (s *Store) SetIf(ctx context.Context, key, value []byte, valuePredicate kv.Predicate) (kv.Predicate, error) {
 	if key == nil {
-		return kv.ErrMissingKey
+		return nil, kv.ErrMissingKey
 	}
 	if value == nil {
-		return kv.ErrMissingValue
+		return nil, kv.ErrMissingValue
 	}
 	var (
 		res pgconn.CommandTag
@@ -158,15 +170,15 @@ func (s *Store) SetIf(ctx context.Context, key, value, valuePredicate []byte) er
 		res, err = s.Pool.Exec(ctx, `INSERT INTO `+s.Params.SanitizedTableName+`(key,value) VALUES($1,$2) ON CONFLICT DO NOTHING`, key, value)
 	} else {
 		// update just in case the previous value was same as predicate value
-		res, err = s.Pool.Exec(ctx, `UPDATE `+s.Params.SanitizedTableName+` SET value=$2 WHERE key=$1 AND value=$3`, key, value, valuePredicate)
+		res, err = s.Pool.Exec(ctx, `UPDATE `+s.Params.SanitizedTableName+` SET value=$2 WHERE key=$1 AND value=$3`, key, value, valuePredicate.([]byte))
 	}
 	if err != nil {
-		return fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
+		return nil, fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
 	}
 	if res.RowsAffected() != 1 {
-		return kv.ErrPredicateFailed
+		return nil, kv.ErrPredicateFailed
 	}
-	return nil
+	return kv.Predicate(value), nil
 }
 
 func (s *Store) Delete(ctx context.Context, key []byte) error {
@@ -216,6 +228,7 @@ func (e *EntriesIterator) Next() bool {
 		e.err = fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
 		return false
 	}
+	ent.Predicate = kv.Predicate(ent.Value)
 	e.entry = &ent
 	return true
 }

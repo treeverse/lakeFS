@@ -51,6 +51,18 @@ func (s *Store) Get(_ context.Context, key []byte) ([]byte, error) {
 	return value, nil
 }
 
+func (s *Store) GetEntry(ctx context.Context, key []byte) (*kv.Entry, error) {
+	v, err := s.Get(ctx, key)
+	if err != nil {
+		return nil, err
+	}
+	return &kv.Entry{
+		Key:       key,
+		Value:     v,
+		Predicate: kv.Predicate(v),
+	}, nil
+}
+
 func (s *Store) Set(_ context.Context, key, value []byte) error {
 	if key == nil {
 		return kv.ErrMissingKey
@@ -79,26 +91,26 @@ func (s *Store) insertNewKey(key []byte) {
 	}
 }
 
-func (s *Store) SetIf(_ context.Context, key, value, valuePredicate []byte) error {
+func (s *Store) SetIf(_ context.Context, key, value []byte, valuePredicate kv.Predicate) (kv.Predicate, error) {
 	if key == nil {
-		return kv.ErrMissingKey
+		return nil, kv.ErrMissingKey
 	}
 	if value == nil {
-		return kv.ErrMissingValue
+		return nil, kv.ErrMissingValue
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	curr, currOK := s.m[string(key)]
 	if valuePredicate == nil {
 		if currOK {
-			return kv.ErrPredicateFailed
+			return nil, kv.ErrPredicateFailed
 		}
 		s.insertNewKey(key)
-	} else if !bytes.Equal(valuePredicate, curr) {
-		return kv.ErrPredicateFailed
+	} else if !bytes.Equal(valuePredicate.([]byte), curr) {
+		return nil, kv.ErrPredicateFailed
 	}
 	s.m[string(key)] = value
-	return nil
+	return kv.Predicate(value), nil
 }
 
 func (s *Store) Delete(_ context.Context, key []byte) error {
@@ -147,8 +159,9 @@ func (e *EntriesIterator) Next() bool {
 	key := e.store.keys[idx]
 	value := e.store.m[key]
 	e.entry = &kv.Entry{
-		Key:   []byte(key),
-		Value: value,
+		Key:       []byte(key),
+		Value:     value,
+		Predicate: kv.Predicate(value),
 	}
 	// set start to the next item - nil as end indicator
 	if idx+1 < len(e.store.keys) {

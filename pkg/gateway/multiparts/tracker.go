@@ -76,8 +76,8 @@ func (m *tracker) Create(ctx context.Context, multipart MultipartUpload) error {
 	if multipart.UploadID == "" {
 		return ErrInvalidUploadID
 	}
-	key := kv.FormatPath(multipartsPrefix, multipart.UploadID)
-	err := m.store.SetIf(ctx, key, protoFromMultipart(&multipart), nil)
+	path := kv.FormatPath(multipartPrefix, multipart.UploadID)
+	_, err := m.store.SetMsgIf(ctx, path, protoFromMultipart(&multipart), nil)
 	return err
 }
 
@@ -86,8 +86,8 @@ func (m *tracker) Get(ctx context.Context, uploadID string) (*MultipartUpload, e
 		return nil, ErrInvalidUploadID
 	}
 	data := &MultipartUploadData{}
-	key := kv.FormatPath(multipartsPrefix, uploadID)
-	err := m.store.GetMsg(ctx, key, data)
+	path := kv.FormatPath(multipartPrefix, uploadID)
+	_, err := m.store.GetMsg(ctx, path, data)
 	if err != nil {
 		return nil, err
 	}
@@ -99,8 +99,8 @@ func (m *tracker) Delete(ctx context.Context, uploadID string) error {
 		return ErrInvalidUploadID
 	}
 	data := &MultipartUploadData{}
-	key := kv.FormatPath(multipartsPrefix, uploadID)
-	if err := m.store.GetMsg(ctx, key, data); err != nil {
+	path := kv.FormatPath(multipartPrefix, uploadID)
+	if _, err := m.store.GetMsg(ctx, path, data); err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			return ErrMultipartUploadNotFound
 		}

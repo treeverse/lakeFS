@@ -9,7 +9,6 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/go-test/deep"
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"golang.org/x/sync/errgroup"
@@ -151,7 +150,7 @@ func testStoreSetIf(t *testing.T, ms MakeStore) {
 	t.Run("set_first", func(t *testing.T) {
 		key := uniqueKey("set-if-first")
 		val := []byte("v")
-		err := store.SetIf(ctx, key, val, nil)
+		_, err := store.SetIf(ctx, key, val, nil)
 		if err != nil {
 			t.Fatalf("SetIf without previous key - key=%s value=%s pred=nil: %s", key, val, err)
 		}
@@ -165,8 +164,13 @@ func testStoreSetIf(t *testing.T, ms MakeStore) {
 			t.Fatalf("Set while testing SetIf - key=%s value=%s: %s", key, val1, err)
 		}
 
+		ent, err := store.GetEntry(ctx, key)
+		if err != nil {
+			t.Fatalf("GetEntry while testing SetIf - key=%s: %s", key, err)
+		}
+
 		val2 := []byte("v2")
-		err = store.SetIf(ctx, key, val2, val1)
+		_, err = store.SetIf(ctx, key, val2, ent.Predicate)
 		if err != nil {
 			t.Fatalf("SetIf with previous value - key=%s value=%s pred=%s: %s", key, val2, val1, err)
 		}
@@ -181,7 +185,8 @@ func testStoreSetIf(t *testing.T, ms MakeStore) {
 		}
 
 		val2 := []byte("v2")
-		err = store.SetIf(ctx, key, val2, val2)
+		pred := []byte("pred")
+		_, err = store.SetIf(ctx, key, val2, pred)
 		if !errors.Is(err, kv.ErrPredicateFailed) {
 			t.Fatalf("SetIf err=%v - key=%s, value=%s, pred=%s, expected err=%s", err, key, val2, val2, kv.ErrPredicateFailed)
 		}
@@ -196,7 +201,7 @@ func testStoreSetIf(t *testing.T, ms MakeStore) {
 		}
 
 		val2 := []byte("v2")
-		err = store.SetIf(ctx, key, val2, nil)
+		_, err = store.SetIf(ctx, key, val2, nil)
 		if !errors.Is(err, kv.ErrPredicateFailed) {
 			t.Fatalf("SetIf err=%v - key=%s, value=%s, pred=nil, expected err=%s", err, key, val2, kv.ErrPredicateFailed)
 		}
@@ -239,9 +244,7 @@ func testStoreScan(t *testing.T, ms MakeStore) {
 		if err := scan.Err(); err != nil {
 			t.Fatal("scan ended with an error", err)
 		}
-		if diff := deep.Equal(entries, sampleData); diff != nil {
-			t.Fatal("scan data didn't match:", diff)
-		}
+		testCompareEntries(t, entries, sampleData)
 	})
 
 	t.Run("part", func(t *testing.T) {
@@ -272,9 +275,7 @@ func testStoreScan(t *testing.T, ms MakeStore) {
 		if err := scan.Err(); err != nil {
 			t.Fatal("scan ended with an error", err)
 		}
-		if diff := deep.Equal(entries, sampleData[fromIndex:]); diff != nil {
-			t.Fatal("scan data didn't match:", diff)
-		}
+		testCompareEntries(t, entries, sampleData[fromIndex:])
 	})
 }
 
@@ -313,12 +314,14 @@ func testStoreMissingArgument(t *testing.T, ms MakeStore) {
 	})
 
 	t.Run("SetIf", func(t *testing.T) {
-		if err := store.SetIf(ctx, nil, []byte("v"), []byte("p")); !errors.Is(err, kv.ErrMissingKey) {
+		_, err := store.SetIf(ctx, nil, []byte("v"), []byte("p"))
+		if !errors.Is(err, kv.ErrMissingKey) {
 			t.Errorf("SetIf using nil key - err=%v, expected %s", err, kv.ErrMissingKey)
 		}
 
 		key := uniqueKey("test-missing-argument")
-		if err := store.SetIf(ctx, key, nil, []byte("p")); !errors.Is(err, kv.ErrMissingValue) {
+		_, err = store.SetIf(ctx, key, nil, []byte("p"))
+		if !errors.Is(err, kv.ErrMissingValue) {
 			t.Errorf("SetIf using nil value - err=%v, expected %s", err, kv.ErrMissingValue)
 		}
 	})
@@ -370,8 +373,21 @@ func testScanPrefix(t *testing.T, ms MakeStore) {
 	if err := scan.Err(); err != nil {
 		t.Fatal("ScanPrefix ended with an error", err)
 	}
-	if diff := deep.Equal(entries, sampleData); diff != nil {
-		t.Fatal("ScanPrefix entries didn't match:", diff)
+	testCompareEntries(t, entries, sampleData)
+}
+
+func testCompareEntries(t *testing.T, entries []kv.Entry, expected []kv.Entry) {
+	t.Helper()
+	if len(entries) != len(expected) {
+		t.Fatalf("Entries length=%d, expected=%d", len(entries), len(expected))
+	}
+	for i := range entries {
+		if !bytes.Equal(entries[i].Key, expected[i].Key) {
+			t.Errorf("Entry[%d] key=%v, expected=%v", i, entries[i].Key, expected[i].Key)
+		}
+		if !bytes.Equal(entries[i].Value, expected[i].Value) {
+			t.Errorf("Entry[%d] key=%v, expected=%v", i, entries[i].Key, expected[i].Key)
+		}
 	}
 }
 
@@ -529,7 +545,7 @@ func testDeleteWhileIterSamePrefix(t *testing.T, ms MakeStore) {
 	// delete a subsection of the read prefix
 	testDeleteWhileIterSamePrefixSingleRun(t, ms, allPrefs, inPref, ininPref)
 
-	// scan a subsection of the delete prefix
+	// scan a subsection of the deleted prefix
 	testDeleteWhileIterSamePrefixSingleRun(t, ms, allPrefs, ininPref, inPref)
 
 	// scan and delete the same prefix
@@ -680,7 +696,7 @@ func verifyDeleteWhileIterResults(t *testing.T, ctx context.Context, store kv.St
 		}
 	}
 
-	// verify all entries that fits delPref are indeed deleted, i.e. no such entry is left
+	// verify all entries that fit delPref are indeed deleted, i.e. no such entry is left
 	// in the store
 	verifyIter, err := store.Scan(ctx, []byte{})
 	if err != nil {
