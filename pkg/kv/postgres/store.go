@@ -97,9 +97,17 @@ func parseStoreConfig(runtimeParams map[string]string) *Params {
 
 // setupKeyValueDatabase setup everything required to enable kv over postgres
 func setupKeyValueDatabase(ctx context.Context, conn *pgxpool.Conn, params *Params) error {
+	// main kv table
 	_, err := conn.Exec(ctx, `CREATE TABLE IF NOT EXISTS `+params.SanitizedTableName+` (
-    key BYTEA NOT NULL PRIMARY KEY,
-    value BYTEA NOT NULL);`)
+		key BYTEA NOT NULL PRIMARY KEY,
+		value BYTEA NOT NULL);`)
+	if err != nil {
+		return err
+	}
+
+	// view of kv table to help humans select from table (same as table with _v as suffix)
+	_, err = conn.Exec(ctx, `CREATE OR REPLACE VIEW `+pgx.Identifier{params.TableName + "_v"}.Sanitize()+
+		` AS SELECT ENCODE(key, 'escape') AS key, value FROM `+params.SanitizedTableName)
 	return err
 }
 
