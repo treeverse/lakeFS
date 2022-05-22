@@ -107,7 +107,7 @@ func setupKeyValueDatabase(ctx context.Context, conn *pgxpool.Conn, params *Para
 
 	// view of kv table to help humans select from table (same as table with _v as suffix)
 	_, err = conn.Exec(ctx, `CREATE OR REPLACE VIEW `+pgx.Identifier{params.TableName + "_v"}.Sanitize()+
-		` AS SELECT ENCODE(key, 'escape') AS path, VALUE FROM `+params.SanitizedTableName)
+		` AS SELECT ENCODE(key, 'escape') AS key, value FROM `+params.SanitizedTableName)
 	return err
 }
 
