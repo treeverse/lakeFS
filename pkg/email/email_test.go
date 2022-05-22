@@ -27,7 +27,7 @@ func TestNewEmailer_Sender(t *testing.T) {
 	}
 	_, err := email.NewEmailer(p)
 	if err == nil {
-		t.Errorf("expected err:, got:%s", err)
+		t.Errorf("expected err: sender misconfigured, got:%s", err)
 	}
 }
 
@@ -47,11 +47,13 @@ func TestSendEmail_Params(t *testing.T) {
 		{name: "test recipient", smtpHost: "foo", sender: "bar", receiver: []string{}, expected: email.ErrNoRecipientConfigured},
 	}
 	for _, tt := range tests {
-		emailer.Params.SMTPHost, emailer.Params.Sender = tt.smtpHost, tt.sender
-		err = emailer.SendEmail(tt.receiver, "bar", "baz", nil)
-		if !errors.Is(err, tt.expected) {
-			t.Errorf("expected err: %s got err: %s", tt.expected, err)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			emailer.Params.SMTPHost, emailer.Params.Sender = tt.smtpHost, tt.sender
+			err = emailer.SendEmail(tt.receiver, "bar", "baz", nil)
+			if !errors.Is(err, tt.expected) {
+				t.Errorf("expected err: %s got err: %s", tt.expected, err)
+			}
+		})
 	}
 }
 
@@ -68,7 +70,7 @@ func TestSendEmail_Headers(t *testing.T) {
 	subject := "testSubject"
 	receiver := "receiver@test.com"
 	emailer.SendEmail([]string{receiver}, subject, "", nil)
-	if len(d.Message) == 0 {
+	if len(d.Message) != 1 {
 		t.Fatalf("message length %d, expected 1", len(d.Message))
 	}
 	tests := []struct {
@@ -81,25 +83,36 @@ func TestSendEmail_Headers(t *testing.T) {
 		{name: "test Subject header", header: "Subject", expected: subject},
 	}
 	for _, tt := range tests {
-		header := d.Message[0].GetHeader(tt.header)[0]
-		if header != tt.expected {
-			t.Errorf("got header: %s, expected header: %s", header, tt.expected)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			header := d.Message[0].GetHeader(tt.header)[0]
+			if header != tt.expected {
+				t.Errorf("got header: %s, expected header: %s", header, tt.expected)
+			}
+		})
 	}
 }
 
-func TestSendResetPasswordAndInviteUserEmail(t *testing.T) {
+func TestSendResetPasswordAndInviteUserEmail_RateLimiter(t *testing.T) {
 	// Burst value is set to 0, so any call to SendEmailWithLimit should result in ErrRateLimitExceeded
 	p := email.Params{Burst: 0, LimitEveryDuration: time.Minute}
 	emailer, err := email.NewEmailer(p)
 	testutil.Must(t, err)
-	err = emailer.SendInviteUserEmail([]string{"foo"}, map[string]string{})
-	if !errors.Is(err, email.ErrRateLimitExceeded) {
-		t.Errorf("expected error: %s got error: %s", email.ErrRateLimitExceeded, err)
+	tests := []struct {
+		name     string
+		op       func(receivers []string, params map[string]string) error
+		receiver []string
+		expect   error
+	}{
+		{name: "invite user limiter", op: emailer.SendInviteUserEmail, receiver: []string{"foo"}, expect: email.ErrRateLimitExceeded},
+		{name: "reset password  limiter", op: emailer.SendResetPasswordEmail, receiver: []string{"foo"}, expect: email.ErrRateLimitExceeded},
 	}
-	err = emailer.SendResetPasswordEmail([]string{"foo"}, map[string]string{})
-	if !errors.Is(err, email.ErrRateLimitExceeded) {
-		t.Errorf("expected error %s", email.ErrRateLimitExceeded)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.op(tt.receiver, map[string]string{})
+			if !errors.Is(err, email.ErrRateLimitExceeded) {
+				t.Errorf("expected error: %s got error: %s", email.ErrRateLimitExceeded, err)
+			}
+		})
 	}
 }
 
