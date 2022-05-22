@@ -9,7 +9,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const multipartPrefix = "multipart"
+const multipartsPrefix = "multiparts"
 
 type Metadata map[string]string
 
@@ -76,8 +76,8 @@ func (m *tracker) Create(ctx context.Context, multipart MultipartUpload) error {
 	if multipart.UploadID == "" {
 		return ErrInvalidUploadID
 	}
-	path := kv.FormatPath(multipartPrefix, multipart.UploadID)
-	err := m.store.SetIf(ctx, path, protoFromMultipart(&multipart), nil)
+	key := kv.FormatPath(multipartsPrefix, multipart.UploadID)
+	err := m.store.SetIf(ctx, key, protoFromMultipart(&multipart), nil)
 	return err
 }
 
@@ -86,8 +86,8 @@ func (m *tracker) Get(ctx context.Context, uploadID string) (*MultipartUpload, e
 		return nil, ErrInvalidUploadID
 	}
 	data := &MultipartUploadData{}
-	path := kv.FormatPath(multipartPrefix, uploadID)
-	err := m.store.GetMsg(ctx, path, data)
+	key := kv.FormatPath(multipartsPrefix, uploadID)
+	err := m.store.GetMsg(ctx, key, data)
 	if err != nil {
 		return nil, err
 	}
@@ -99,13 +99,13 @@ func (m *tracker) Delete(ctx context.Context, uploadID string) error {
 		return ErrInvalidUploadID
 	}
 	data := &MultipartUploadData{}
-	path := kv.FormatPath(multipartPrefix, uploadID)
-	if err := m.store.GetMsg(ctx, path, data); err != nil {
+	key := kv.FormatPath(multipartsPrefix, uploadID)
+	if err := m.store.GetMsg(ctx, key, data); err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			return ErrMultipartUploadNotFound
 		}
 		return err
 	}
 
-	return m.store.Delete(ctx, path)
+	return m.store.Delete(ctx, key)
 }

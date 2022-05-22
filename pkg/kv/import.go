@@ -37,7 +37,7 @@ func Import(ctx context.Context, reader io.Reader, store Store) error {
 		return fmt.Errorf("bad header format: %w", ErrInvalidFormat)
 	}
 
-	// TODO(niro): Add validation the header in the future
+	// TODO(niro): Add validation to the header in the future
 	logging.Default().WithFields(logging.Fields{
 		"package_name":      header.PackageName,
 		"lakefs_version":    header.LakeFSVersion,
