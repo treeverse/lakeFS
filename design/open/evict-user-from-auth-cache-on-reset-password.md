@@ -1,7 +1,7 @@
 ## The problem: 
 When a user logs in to lakeFS we save their credentials in the auth-cache. 
 This way, we avoid checking the usr credentials through the DB on each call the user makes. 
-Currently, when a user tries to reset his password, his old password is still stored in the auth-cache, so he has to wait till it is evicted to log in using the new password.
+Currently, when a user tries to reset their password, their old password is still stored in the auth-cache, so they have to wait till it is evicted to log in using the new password.
 
 
 ## The suggested solution: 
