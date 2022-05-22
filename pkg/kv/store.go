@@ -91,7 +91,7 @@ func (e *Entry) String() string {
 	if e == nil {
 		return "Entry{nil}"
 	}
-	return fmt.Sprintf("Entry{%s, %s}", e.Key, e.Value)
+	return fmt.Sprintf("Entry{%v, %v}", e.Key, e.Value)
 }
 
 // map drivers implementation
