@@ -18,6 +18,7 @@ import com.amazonaws.services.s3.model
 
 import java.net.URI
 import collection.JavaConverters._
+import java.time.format.DateTimeFormatter
 
 /** Interface to build an S3 client.  The object
  *  io.treeverse.clients.conditional.S3ClientBuilder -- conditionally
@@ -304,6 +305,8 @@ object GarbageCollector {
       System.exit(1)
     }
 
+    println("! this is with test code")
+
     val spark = SparkSession.builder().appName("GarbageCollector").getOrCreate()
 
     val repo = args(0)
@@ -362,6 +365,10 @@ object GarbageCollector {
       .parquet(gcAddressesLocation + ".deleted")
 
     spark.close()
+
+    val commitsDF = getCommitsDF(runID, gcCommitsLocation, spark)
+    val reportDst = storageNamespace + "_lakefs/logs/gc/summary/"
+    writeParquetReport(reportDst, commitsDF)
   }
 
   private def repartitionBySize(df: DataFrame, maxSize: Int, column: String): DataFrame = {
@@ -445,5 +452,12 @@ object GarbageCollector {
       .where(col("relative") === true)
 
     bulkRemove(df, MaxBulkSize, bucket, region, awsRetries, snPrefix, hcValues).toDF("addresses")
+  }
+
+  private def writeParquetReport(dstRoot: String, df: DataFrame) = {
+    val time = DateTimeFormatter.ISO_INSTANT.format(java.time.Clock.systemUTC.instant())
+    val dstPath = dstRoot + s"/dt=${time}/commits.parquet"
+
+    df.write.parquet(dstPath)
   }
 }
