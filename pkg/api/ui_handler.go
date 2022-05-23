@@ -16,7 +16,10 @@ import (
 	"github.com/treeverse/lakefs/webui"
 )
 
-const uiIndexDoc = "index.html"
+const (
+	uiIndexDoc    = "index.html"
+	uiIndexMarker = "<!--Snippets-->"
+)
 
 func NewUIHandler(gatewayDomains []string, snippets map[string]string) http.Handler {
 	content, err := fs.Sub(webui.Content, "dist")
@@ -24,7 +27,7 @@ func NewUIHandler(gatewayDomains []string, snippets map[string]string) http.Hand
 		// embedded UI content is missing
 		panic(err)
 	}
-	injectedContent, err := NewInjectIndexFS(content, uiIndexDoc, snippets)
+	injectedContent, err := NewInjectIndexFS(content, uiIndexDoc, uiIndexMarker, snippets)
 	if err != nil {
 		// failed to inject snippets to index.html
 		panic(err)

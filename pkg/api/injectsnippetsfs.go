@@ -15,9 +15,9 @@ type InjectSnippetsFS struct {
 	content string
 }
 
-func NewInjectIndexFS(fsys fs.FS, name string, snippets map[string]string) (fs.FS, error) {
-	// no snippets, we serve using the name fs
+func NewInjectIndexFS(fsys fs.FS, name string, marker string, snippets map[string]string) (fs.FS, error) {
 	if len(snippets) == 0 {
+		// no snippets, return the original marker
 		return fsys, nil
 	}
 
@@ -34,20 +34,11 @@ func NewInjectIndexFS(fsys fs.FS, name string, snippets map[string]string) (fs.F
 
 	// inject snippets code into content
 	codeSnippets := renderCodeSnippets(snippets)
-	endElement := []byte("</head>")
-	idx := bytes.Index(all, endElement)
-	if idx == -1 {
-		// TODO(barak): consider error in case there is no body to inject snippet
-		return fsys, nil
-	}
-	var b bytes.Buffer
-	_, _ = b.Write(all[0:idx])
-	_, _ = b.Write(codeSnippets)
-	_, _ = b.Write(all[idx:])
+	contentBytes := bytes.Replace(all, []byte(marker), codeSnippets, 1)
 	return &InjectSnippetsFS{
 		FS:      fsys,
 		name:    name,
-		content: b.String(),
+		content: string(contentBytes),
 	}, nil
 }
 
@@ -88,10 +79,14 @@ func (f *memFile) Stat() (fs.FileInfo, error) {
 
 func (f *memFile) Read(b []byte) (int, error) {
 	i := 0
-	for f.at < int64(len(f.data)) && i < len(b) {
+	dataLen := int64(len(f.data))
+	for f.at < dataLen && i < len(b) {
 		b[i] = f.data[f.at]
 		i++
 		f.at++
+	}
+	if f.at >= dataLen {
+		return i, io.EOF
 	}
 	return i, nil
 }
