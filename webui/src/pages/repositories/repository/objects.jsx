@@ -133,12 +133,16 @@ const ImportButton = ({ config, repo, reference, path, onDone, onClick, variant 
             } catch (error) {
                 if (error instanceof NotFoundError) {
                     // Find root commit for repository
-                    let response = await commits.log(repo.id, repo.default_branch, "", 1000)
-                    while (response.pagination.has_more) {
-                        response = await commits.log(repo.id, repo.default_branch, response.pagination.next_offset, 1000)
-                    }
-                    let baseBranch = response.results.at(-1)
-                    await branches.create(repo.id, importBranch, baseBranch.id)
+                    let hasMore = true;
+                    let nextOffset = "";
+                    let baseCommit = reference.id;
+                    do {
+                    	let response = await commits.log(repo.id, reference.id, nextOffset, 1000);
+                    	hasMore = response.pagination.has_more;
+                    	nextOffset = response.pagination.next_offset;
+                    	baseCommit = response.results.at(-1);
+                    } while (hasMore)
+                    await branches.create(repo.id, importBranch, baseCommit.id)
                     importBranchResp = await branches.get(repo.id, importBranch)
                 } else {
                     setImportState({...initialState, error})
