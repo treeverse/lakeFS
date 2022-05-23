@@ -2,6 +2,7 @@ package kv_test
 
 import (
 	"context"
+	"strconv"
 	"testing"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	_ "github.com/treeverse/lakefs/pkg/kv/mem"
+	"github.com/treeverse/lakefs/pkg/testutil"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -32,7 +34,12 @@ func TestStoreMessage(t *testing.T) {
 	t.Run("delete test", func(t *testing.T) {
 		testStoreMessageDelete(t, ctx, sm)
 	})
-
+	t.Run("scan test", func(t *testing.T) {
+		testStoreMessageScan(t, ctx, sm)
+	})
+	t.Run("scan wrong format test", func(t *testing.T) {
+		testStoreMessageScanWrongFormat(t, ctx, sm)
+	})
 }
 
 func testStoreMessageSetGet(t *testing.T, ctx context.Context, sm kv.StoreMessage) {
@@ -41,7 +48,7 @@ func testStoreMessageSetGet(t *testing.T, ctx context.Context, sm kv.StoreMessag
 		Name:          "SetGetModel",
 		AnotherString: "This is another string",
 		ADouble:       2.4,
-		TestTime:      timestamppb.New(time.Now()),
+		TestTime:      timestamppb.New(time.Now().UTC()),
 		TestMap: map[string]int32{
 			"one":   1,
 			"two":   2,
@@ -90,7 +97,7 @@ func testStoreMessageSetIf(t *testing.T, ctx context.Context, sm kv.StoreMessage
 		Name:          setModel.Name,
 		AnotherString: "just another string",
 		ADouble:       3.14159,
-		TestTime:      timestamppb.New(time.Now()),
+		TestTime:      timestamppb.New(time.Now().UTC()),
 		TestMap: map[string]int32{
 			"red":   1,
 			"green": 2,
@@ -140,7 +147,7 @@ func testStoreMessageDelete(t *testing.T, ctx context.Context, sm kv.StoreMessag
 		Name:          "DeleteModel",
 		AnotherString: "This is another string",
 		ADouble:       2.4,
-		TestTime:      timestamppb.New(time.Now()),
+		TestTime:      timestamppb.New(time.Now().UTC()),
 		TestMap: map[string]int32{
 			"one":   1,
 			"two":   2,
@@ -207,6 +214,92 @@ func testStoreMessageDelete(t *testing.T, ctx context.Context, sm kv.StoreMessag
 	// Get deleted key (empty store)
 	err = sm.GetMsg(ctx, kv.FormatPath(m1.Name), m3)
 	require.Error(t, kv.ErrNotFound, err)
+}
+
+func testStoreMessageScan(t *testing.T, ctx context.Context, sm kv.StoreMessage) {
+	// set model info
+	m := &kvtest.TestModel{
+		Name:          "DeleteModel",
+		AnotherString: "This is another string",
+		ADouble:       2.4,
+		TestTime:      timestamppb.New(time.Now().UTC()),
+		TestMap: map[string]int32{
+			"one":   1,
+			"two":   2,
+			"three": 3,
+		},
+		TestList: []bool{true, true, false, true, false},
+	}
+	modelKeyPrefix := "m"
+	modelNum := 5
+
+	// Add test models to store
+	for i := 0; i < modelNum; i++ {
+		require.NoError(t, sm.SetMsg(ctx, kv.FormatPath(modelKeyPrefix, strconv.Itoa(i)), m))
+	}
+
+	preModelKey := "l"
+	preModelData := "This is pre test model"
+	require.NoError(t, sm.Store.Set(ctx, []byte(preModelKey), []byte(preModelData)))
+	postModelKey := "n"
+	postModelData := "This is post test model"
+	require.NoError(t, sm.Store.Set(ctx, []byte(postModelKey), []byte(postModelData)))
+	itr, err := sm.Scan(ctx, m.ProtoReflect(), modelKeyPrefix)
+	testutil.MustDo(t, "get iterator", err)
+	count := 0
+	for itr.Next() {
+		entry := itr.Entry()
+		require.NotNil(t, entry)
+		require.Nil(t, itr.Err())
+		require.Equal(t, kv.FormatPath(modelKeyPrefix, strconv.Itoa(count)), entry.Key)
+		require.True(t, proto.Equal(entry.Value, m))
+		count++
+	}
+	require.Equal(t, modelNum, count)
+}
+
+func testStoreMessageScanWrongFormat(t *testing.T, ctx context.Context, sm kv.StoreMessage) {
+	// set model info
+	m := &kvtest.TestModel{
+		Name:          "DeleteModel",
+		AnotherString: "This is another string",
+		ADouble:       2.4,
+		TestTime:      timestamppb.New(time.Now().UTC()),
+		TestMap: map[string]int32{
+			"one":   1,
+			"two":   2,
+			"three": 3,
+		},
+		TestList: []bool{true, true, false, true, false},
+	}
+	modelKeyPrefix := "m"
+	modelNum := 3
+
+	// Add test models to store
+	for i := 0; i < modelNum; i++ {
+		require.NoError(t, sm.SetMsg(ctx, kv.FormatPath(modelKeyPrefix, strconv.Itoa(i)), m))
+	}
+
+	badModelData := "This is a bad model data"
+	require.NoError(t, sm.Store.Set(ctx, []byte(kv.FormatPath(modelKeyPrefix, strconv.Itoa(modelNum))), []byte(badModelData)))
+
+	itr, err := sm.Scan(ctx, m.ProtoReflect(), modelKeyPrefix)
+	testutil.MustDo(t, "get iterator", err)
+
+	for i := 0; i < modelNum; i++ {
+		require.True(t, itr.Next())
+		entry := itr.Entry()
+		require.NotNil(t, entry)
+		require.Nil(t, itr.Err())
+		require.Equal(t, kv.FormatPath(modelKeyPrefix, strconv.Itoa(i)), entry.Key)
+		require.True(t, proto.Equal(entry.Value, m))
+	}
+
+	require.True(t, itr.Next())
+	badEntry := itr.Entry()
+	require.Nil(t, badEntry)
+	require.ErrorIs(t, itr.Err(), proto.Error)
+	require.False(t, itr.Next())
 }
 
 // GetStore helper function to return Store object for all unit tests
