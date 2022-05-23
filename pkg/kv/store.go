@@ -41,12 +41,18 @@ type Driver interface {
 	Open(ctx context.Context, dsn string) (Store, error)
 }
 
+// Predicate value used to update a key base on a previous fetched value.
+//   Store's GetValuePredicate used to pull the key's value with the associated predicate.
+//   Store's SetIf used to set the key's value based on the predicate.
 type Predicate interface{}
 
 type Store interface {
 	// Get returns a value for the given key, or ErrNotFound if key doesn't exist
 	Get(ctx context.Context, key []byte) ([]byte, error)
 
+	// GetValuePredicate return a value for the given key with predicate that can be used
+	//   by 'SetIf' to guaranty we update the same value.
+	//   ErrNotFound returned if key doesn't exist.
 	GetValuePredicate(ctx context.Context, key []byte) (*ValuePredicate, error)
 
 	// Set stores the given value, overwriting an existing value if one exists
@@ -85,7 +91,7 @@ type EntriesIterator interface {
 	Close()
 }
 
-// Entry holds a pair of key/value and predicate used for conditional set
+// Entry holds a pair of key/value
 type Entry struct {
 	Key   []byte
 	Value []byte

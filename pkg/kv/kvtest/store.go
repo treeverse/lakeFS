@@ -72,47 +72,86 @@ func testStoreSetGet(t *testing.T, ms MakeStore) {
 	testValue1 := []byte("value")
 	testValue2 := []byte("a different kind of value")
 
-	// set test key with value1
-	err := store.Set(ctx, testKey, testValue1)
-	if err != nil {
-		t.Fatalf("failed to set key '%s', to value '%s': %s", testKey, testValue1, err)
-	}
+	t.Run("set_missing_key", func(t *testing.T) {
+		// key - nil (disallow)
+		err := store.Set(ctx, nil, testValue1)
+		if !errors.Is(err, kv.ErrMissingKey) {
+			t.Fatalf("Set with nil key should fail - err: %v", err)
+		}
 
-	// get test key with value1
-	val, err := store.Get(ctx, testKey)
-	switch {
-	case err != nil:
-		t.Fatalf("failed to get key '%s': %s", testKey, err)
-	case val == nil:
-		t.Fatalf("got value with nil")
-	case !bytes.Equal(testValue1, val):
-		t.Fatalf("key='%s' value='%s' doesn't match, expected='%s'", testKey, val, testValue1)
-	}
+		// key - empty slice (disallow)
+		err = store.Set(ctx, []byte{}, testValue1)
+		if !errors.Is(err, kv.ErrMissingKey) {
+			t.Fatalf("Set with empty key should fail - err: %v", err)
+		}
+	})
 
-	// override key with value2
-	err = store.Set(ctx, testKey, testValue2)
-	if err != nil {
-		t.Fatalf("failed to set key '%s', to value '%s': %s", testKey, testValue2, err)
-	}
+	t.Run("set_missing_value", func(t *testing.T) {
+		// value - nil (disallow)
+		k := uniqueKey("key")
+		err := store.Set(ctx, k, nil)
+		if !errors.Is(err, kv.ErrMissingValue) {
+			t.Fatalf("Set with nil value should fail - key=%s, err: %v", k, err)
+		}
 
-	// get test key with value2
-	val2, err := store.Get(ctx, testKey)
-	if err != nil {
-		t.Fatalf("failed to get key '%s': %s", testKey, err)
-	}
-	if !bytes.Equal(testValue2, val2) {
-		t.Fatalf("key='%s' value='%s' doesn't match, expected='%s'", testKey, val2, testValue2)
-	}
+		// value - empty slice (allow)
+		k = uniqueKey("key")
+		err = store.Set(ctx, []byte{}, testValue1)
+		if !errors.Is(err, kv.ErrMissingKey) {
+			t.Fatalf("Set with empty value should fail - key=%s, err: %v", k, err)
+		}
+	})
+	t.Run("set_value", func(t *testing.T) {
+		// set test key with value1
+		err := store.Set(ctx, testKey, testValue1)
+		if err != nil {
+			t.Fatalf("failed to set key '%s', to value '%s': %s", testKey, testValue1, err)
+		}
+	})
 
-	// get a missing key
-	keyNotExists := uniqueKey("key-not-exists")
-	val3, err := store.Get(ctx, keyNotExists)
-	if !errors.Is(err, kv.ErrNotFound) {
-		t.Fatalf("get key='%s' err=%s, expected not found", keyNotExists, err)
-	}
-	if val3 != nil {
-		t.Fatalf("get key='%s' value='%s', expected nil", keyNotExists, val3)
-	}
+	t.Run("get_value", func(t *testing.T) {
+		// get test key with value1
+		val, err := store.Get(ctx, testKey)
+		switch {
+		case err != nil:
+			t.Fatalf("failed to get key '%s': %s", testKey, err)
+		case val == nil:
+			t.Fatalf("got value with nil")
+		case !bytes.Equal(testValue1, val):
+			t.Fatalf("key='%s' value='%s' doesn't match, expected='%s'", testKey, val, testValue1)
+		}
+	})
+
+	t.Run("set_exist", func(t *testing.T) {
+		// override key with value2
+		err := store.Set(ctx, testKey, testValue2)
+		if err != nil {
+			t.Fatalf("failed to set key '%s', to value '%s': %s", testKey, testValue2, err)
+		}
+	})
+
+	t.Run("get_new_value", func(t *testing.T) {
+		// get test key with value2
+		val2, err := store.Get(ctx, testKey)
+		if err != nil {
+			t.Fatalf("failed to get key '%s': %s", testKey, err)
+		}
+		if !bytes.Equal(testValue2, val2) {
+			t.Fatalf("key='%s' value='%s' doesn't match, expected='%s'", testKey, val2, testValue2)
+		}
+	})
+
+	t.Run("get_missing", func(t *testing.T) {
+		// get a missing key
+		keyNotExists := uniqueKey("key-not-exists")
+		val3, err := store.Get(ctx, keyNotExists)
+		if !errors.Is(err, kv.ErrNotFound) {
+			t.Fatalf("get key='%s' err=%s, expected not found", keyNotExists, err)
+		}
+		if val3 != nil {
+			t.Fatalf("get key='%s' value='%s', expected nil", keyNotExists, val3)
+		}
+	})
 }
 
 func testStoreDelete(t *testing.T, ms MakeStore) {
