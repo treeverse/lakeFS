@@ -11,6 +11,7 @@ import (
 )
 
 const multipartsPrefix = "multiparts"
+const multipartsPartitionKey = "multiparts"
 
 type Metadata map[string]string
 
@@ -78,7 +79,8 @@ func (m *tracker) Create(ctx context.Context, multipart MultipartUpload) error {
 		return ErrInvalidUploadID
 	}
 	path := kv.FormatPath(multipartsPrefix, multipart.UploadID)
-	return m.store.SetMsgIf(ctx, path, protoFromMultipart(&multipart), nil)
+
+	return m.store.SetMsgIf(ctx, multipartsPartitionKey, path, protoFromMultipart(&multipart), nil)
 }
 
 func (m *tracker) Get(ctx context.Context, uploadID string) (*MultipartUpload, error) {
@@ -87,7 +89,7 @@ func (m *tracker) Get(ctx context.Context, uploadID string) (*MultipartUpload, e
 	}
 	data := &MultipartUploadData{}
 	path := kv.FormatPath(multipartsPrefix, uploadID)
-	_, err := m.store.GetMsg(ctx, path, data)
+	_, err := m.store.GetMsg(ctx, multipartsPartitionKey, path, data)
 	if err != nil {
 		return nil, err
 	}
@@ -100,12 +102,12 @@ func (m *tracker) Delete(ctx context.Context, uploadID string) error {
 	}
 	store := m.store.Store
 	key := []byte(kv.FormatPath(multipartsPrefix, uploadID))
-	if _, err := store.Get(ctx, key); err != nil {
+	if _, err := store.Get(ctx, []byte(multipartsPartitionKey), key); err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			return fmt.Errorf("%w uploadID=%s", ErrMultipartUploadNotFound, uploadID)
 		}
 		return err
 	}
 
-	return store.Delete(ctx, key)
+	return store.Delete(ctx, []byte(multipartsPartitionKey), key)
 }
