@@ -5,6 +5,9 @@ a possible representation of them in the KV database.
 
 ## Entities
 
+Some entities, like `User` and `Group` has an `ID` field which is a serial int key handled by postgres. 
+It will be migrated to a generated random string ID.
+
 ### User
 
 - Can be looked up by `ID`, `Username` & `Email`.
