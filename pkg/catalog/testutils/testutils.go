@@ -5,14 +5,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand"
 	"net/url"
 	"sort"
 	"time"
 
-	"github.com/thanhpk/randstr"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/ingest/store"
+	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
 type FakeValueIterator struct {
@@ -148,8 +149,16 @@ const (
 
 func (w *FakeWalker) createEntries(count int) {
 	ents := make([]store.ObjectStoreEntry, count)
+
+	// Use same sequence to overcome Graveler ability to create small ranges.
+	// Calling test functions rely on Graveler to not break on the first 1000 entries.
+	// For example, setting "5" here will cause the test to constantly fail.
+	// Fix Bug #3384
+	const seed = 6
+	//nolint:gosec
+	randGen := rand.New(rand.NewSource(seed))
 	for i := 0; i < count; i++ {
-		relativeKey := randstr.Base64(randomKeyLength)
+		relativeKey := testutil.RandomString(randGen, randomKeyLength)
 		fullkey := w.uriPrefix + "/" + relativeKey
 		ents[i] = store.ObjectStoreEntry{
 			RelativeKey: relativeKey,

@@ -4,11 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 )
 
-const PathDelimiter = "/"
+const (
+	InitialMigrateVersion = 1
+	PathDelimiter         = "/"
+	DBSchemaVersionKey    = "kv" + PathDelimiter + "schema" + PathDelimiter + "version"
+)
 
 var (
 	ErrClosedEntries       = errors.New("closed entries")
@@ -86,7 +91,7 @@ func (e *Entry) String() string {
 	if e == nil {
 		return "Entry{nil}"
 	}
-	return fmt.Sprintf("Entry{%s, %s}", e.Key, e.Value)
+	return fmt.Sprintf("Entry{%v, %v}", e.Key, e.Value)
 }
 
 // map drivers implementation
@@ -141,4 +146,17 @@ func Drivers() []string {
 		names = append(names, name)
 	}
 	return names
+}
+
+// GetDBSchemaVersion returns the current KV DB schema version
+func GetDBSchemaVersion(ctx context.Context, store Store) (int, error) {
+	data, err := store.Get(ctx, []byte(DBSchemaVersionKey))
+	if err != nil {
+		return -1, err
+	}
+	version, err := strconv.Atoi(string(data))
+	if err != nil {
+		return -1, err
+	}
+	return version, nil
 }

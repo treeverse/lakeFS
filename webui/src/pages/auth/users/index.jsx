@@ -67,7 +67,7 @@ const UsersContainer = () => {
                 </ActionGroup>
             </ActionsBar>
             <div className="auth-learn-more">
-                Users are entities that access and use lakeFS. <a href="https://docs.lakefs.io/reference/authorization.html#authorization" target="_blank" rel="noopener noreferrer">Learn more.</a>
+                Users are entities that access and use lakeFS. <a href="https://docs.lakefs.io/reference/authentication.html" target="_blank" rel="noopener noreferrer">Learn more.</a>
             </div>
 
             {(!!deleteError) && <Error error={deleteError}/>}

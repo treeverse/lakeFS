@@ -40,7 +40,7 @@ func TestMultipartUpload(t *testing.T) {
 		partsConcat = append(partsConcat, parts[i]...)
 	}
 
-	completedParts := uploadMultipartParts(t, logger, resp, parts)
+	completedParts := uploadMultipartParts(t, logger, resp, parts, 0)
 
 	completeResponse, err := uploadMultipartComplete(svc, resp, completedParts)
 	require.NoError(t, err, "failed to complete multipart upload")
@@ -53,15 +53,16 @@ func TestMultipartUpload(t *testing.T) {
 	require.Equal(t, partsConcat, getResp.Body, "uploaded object did not match")
 }
 
-func uploadMultipartParts(t *testing.T, logger logging.Logger, resp *s3.CreateMultipartUploadOutput, parts [][]byte) []*s3.CompletedPart {
-	completedParts := make([]*s3.CompletedPart, multipartNumberOfParts)
-	errs := make([]error, multipartNumberOfParts)
+func uploadMultipartParts(t *testing.T, logger logging.Logger, resp *s3.CreateMultipartUploadOutput, parts [][]byte, firstIndex int) []*s3.CompletedPart {
+	count := len(parts)
+	completedParts := make([]*s3.CompletedPart, count)
+	errs := make([]error, count)
 	var wg sync.WaitGroup
-	wg.Add(multipartNumberOfParts)
-	for i := 0; i < multipartNumberOfParts; i++ {
+	wg.Add(count)
+	for i := 0; i < count; i++ {
 		go func(i int) {
 			defer wg.Done()
-			partNumber := i + 1
+			partNumber := firstIndex + i + 1
 			completedParts[i], errs[i] = uploadMultipartPart(logger, svc, resp, parts[i], partNumber)
 		}(i)
 	}
@@ -69,7 +70,7 @@ func uploadMultipartParts(t *testing.T, logger logging.Logger, resp *s3.CreateMu
 
 	// verify upload completed successfully
 	for i, err := range errs {
-		partNumber := int64(i + 1)
+		partNumber := int64(firstIndex + i + 1)
 		assert.NoErrorf(t, err, "error while upload part number %d", partNumber)
 		// verify part number
 		assert.Equal(t, partNumber, *(completedParts[i].PartNumber), "inconsistent part number")

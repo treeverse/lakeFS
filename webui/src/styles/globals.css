@@ -515,3 +515,20 @@ td .form-group {
   height: 100%;
   padding: 0 5px 0;
 }
+
+.import-num-objects {
+  display: inline-flex;
+  color: green;
+}
+
+.import-text {
+  display: flex;
+  justify-content: center
+}
+
+.import-success {
+  color: green;
+  display: flex;
+  justify-content: center;
+  font-size: 160%
+}

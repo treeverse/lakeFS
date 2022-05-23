@@ -13,6 +13,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/rs/xid"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
@@ -219,4 +220,30 @@ func listRepositories(t *testing.T, ctx context.Context) []api.Repository {
 		after = payload.Pagination.NextOffset
 	}
 	return listedRepos
+}
+
+// TestKVEnabled tests that lakefs database contains kv table in case feature is enabled
+func TestKVEnabled(t *testing.T) {
+	// skip test if not kv enabled on postgres
+	if !viper.GetBool("database_kv_enabled") {
+		t.Skip("KV not enabled")
+	}
+
+	// connect to database and verify that kv table exists
+	dbURI := viper.GetString("database_connection_string")
+	if dbURI == "" {
+		t.Fatal("lakefs database connection string environment variable is missing")
+	}
+	ctx := context.Background()
+	pool, err := pgxpool.Connect(ctx, dbURI)
+	if err != nil {
+		t.Fatal("failed connecting to lakefs db:", err)
+	}
+	var keyCount int
+	row := pool.QueryRow(ctx, `SELECT COUNT(*) FROM kv`)
+	err = row.Scan(&keyCount)
+	if err != nil {
+		t.Fatal("failed to check kv table", err)
+	}
+	t.Log("kv keys", keyCount)
 }
