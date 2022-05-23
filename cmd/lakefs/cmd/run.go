@@ -164,14 +164,15 @@ var runCmd = &cobra.Command{
 				cfg.GetAuthCacheConfig(),
 				logger.WithField("service", "auth_service"))
 		}
-		authenticator := auth.ChainAuthenticator{
+		middlewareAuthenticator := auth.ChainAuthenticator{
 			auth.NewBuiltinAuthenticator(authService),
-			auth.NewEmailAuthenticator(authService),
 		}
 		ldapConfig := cfg.GetLDAPConfiguration()
 		if ldapConfig != nil {
-			authenticator = append(authenticator, newLDAPAuthenticator(ldapConfig, authService))
+			middlewareAuthenticator = append(middlewareAuthenticator, newLDAPAuthenticator(ldapConfig, authService))
 		}
+		controllerAuthenticator := append(middlewareAuthenticator, auth.NewEmailAuthenticator(authService))
+
 		authMetadataManager := auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
 		blockstoreType := cfg.GetBlockstoreType()
@@ -236,7 +237,8 @@ var runCmd = &cobra.Command{
 		apiHandler := api.Serve(
 			cfg,
 			c,
-			authenticator,
+			middlewareAuthenticator,
+			controllerAuthenticator,
 			authService,
 			blockStore,
 			authMetadataManager,
