@@ -149,6 +149,14 @@ history rewriting in which the changes that occured in the source branch are the
 
 [Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/2739){: target="_blank" class="btn" }
 
+### Support Garbage Collection on Azure <span>High Priority</span>{: .label .label-blue }
+
+The lakeFS [Garbage Collection](https://docs.lakefs.io/reference/garbage-collection.html) capability hard-deletes objects deleted from branches, helping users reduce costs and 
+comply with data privacy policies. Currently, lakeFS only supports Garbage Collection of S3 objects managed by lakeFS. Extending the support to Azure will allow lakeFS users that use Azure as their underlying storage to use this feature.
+
+[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/3271){: target="_blank" class="btn" }
+
+
 ## Architecture
 
 
