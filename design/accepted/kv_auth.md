@@ -39,7 +39,7 @@ a possible representation of them in the KV database.
 
 - Attach/Detach `Policy` to `User` by `User.Username` & `Policy.DisplayName`.
 - List all `Policies` for a `User` by `User.Username`.
-- List all effective `Policies` for a `User` by `User.Username`, this includes all `Policies` for `Group`s is a member of.
+- List all effective `Policies` for a `User` by `User.Username`, this includes all `Group Policies` for Groups the user is a member of.
 
 ### Policy <-> Group
 
