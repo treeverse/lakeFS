@@ -111,24 +111,27 @@ func setupKeyValueDatabase(ctx context.Context, conn *pgxpool.Conn, params *Para
 	return err
 }
 
-func (s *Store) Get(ctx context.Context, key []byte) ([]byte, error) {
-	if key == nil {
+func (s *Store) Get(ctx context.Context, key []byte) (*kv.ValueWithPredicate, error) {
+	if len(key) == 0 {
 		return nil, kv.ErrMissingKey
 	}
 	row := s.Pool.QueryRow(ctx, `SELECT value FROM `+s.Params.SanitizedTableName+` WHERE key = $1`, key)
 	var val []byte
 	err := row.Scan(&val)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, kv.ErrNotFound
+		return nil, fmt.Errorf("key=%v: %w", key, kv.ErrNotFound)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
+		return nil, fmt.Errorf("%s: %w (key=%v)", err, kv.ErrOperationFailed, key)
 	}
-	return val, nil
+	return &kv.ValueWithPredicate{
+		Value:     val,
+		Predicate: kv.Predicate(val),
+	}, nil
 }
 
 func (s *Store) Set(ctx context.Context, key, value []byte) error {
-	if key == nil {
+	if len(key) == 0 {
 		return kv.ErrMissingKey
 	}
 	if value == nil {
@@ -142,8 +145,8 @@ func (s *Store) Set(ctx context.Context, key, value []byte) error {
 	return nil
 }
 
-func (s *Store) SetIf(ctx context.Context, key, value, valuePredicate []byte) error {
-	if key == nil {
+func (s *Store) SetIf(ctx context.Context, key, value []byte, valuePredicate kv.Predicate) error {
+	if len(key) == 0 {
 		return kv.ErrMissingKey
 	}
 	if value == nil {
@@ -158,10 +161,10 @@ func (s *Store) SetIf(ctx context.Context, key, value, valuePredicate []byte) er
 		res, err = s.Pool.Exec(ctx, `INSERT INTO `+s.Params.SanitizedTableName+`(key,value) VALUES($1,$2) ON CONFLICT DO NOTHING`, key, value)
 	} else {
 		// update just in case the previous value was same as predicate value
-		res, err = s.Pool.Exec(ctx, `UPDATE `+s.Params.SanitizedTableName+` SET value=$2 WHERE key=$1 AND value=$3`, key, value, valuePredicate)
+		res, err = s.Pool.Exec(ctx, `UPDATE `+s.Params.SanitizedTableName+` SET value=$2 WHERE key=$1 AND value=$3`, key, value, valuePredicate.([]byte))
 	}
 	if err != nil {
-		return fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
+		return fmt.Errorf("%s: %w (key=%v)", err, kv.ErrOperationFailed, key)
 	}
 	if res.RowsAffected() != 1 {
 		return kv.ErrPredicateFailed
@@ -170,12 +173,12 @@ func (s *Store) SetIf(ctx context.Context, key, value, valuePredicate []byte) er
 }
 
 func (s *Store) Delete(ctx context.Context, key []byte) error {
-	if key == nil {
+	if len(key) == 0 {
 		return kv.ErrMissingKey
 	}
 	_, err := s.Pool.Exec(ctx, `DELETE FROM `+s.Params.SanitizedTableName+` WHERE key=$1`, key)
 	if err != nil {
-		return fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
+		return fmt.Errorf("%s: %w (key=%v)", err, kv.ErrOperationFailed, key)
 	}
 	return nil
 }
@@ -191,7 +194,7 @@ func (s *Store) Scan(ctx context.Context, start []byte) (kv.EntriesIterator, err
 		rows, err = s.Pool.Query(ctx, `SELECT key,value FROM `+s.Params.SanitizedTableName+` WHERE key >= $1 ORDER BY key`, start)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
+		return nil, fmt.Errorf("%s: %w (start=%v)", err, kv.ErrOperationFailed, start)
 	}
 	return &EntriesIterator{
 		rows: rows,

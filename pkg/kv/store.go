@@ -41,9 +41,23 @@ type Driver interface {
 	Open(ctx context.Context, dsn string) (Store, error)
 }
 
+// Predicate value used to update a key base on a previous fetched value.
+//   Store's Get used to pull the key's value with the associated predicate.
+//   Store's SetIf used to set the key's value based on the predicate.
+type Predicate interface{}
+
+// ValueWithPredicate value with predicate - Value holds the data and Predicate a value used for conditional set.
+//   Get operation will return this struct, holding the key's information
+//   SetIf operation will use the Predicate for conditional set
+type ValueWithPredicate struct {
+	Value     []byte
+	Predicate Predicate
+}
+
 type Store interface {
-	// Get returns a value for the given key, or ErrNotFound if key doesn't exist
-	Get(ctx context.Context, key []byte) ([]byte, error)
+	// Get returns a result containing the Value and Predicate for the given key, or ErrNotFound if key doesn't exist
+	//   Predicate can be used for SetIf operation
+	Get(ctx context.Context, key []byte) (*ValueWithPredicate, error)
 
 	// Set stores the given value, overwriting an existing value if one exists
 	Set(ctx context.Context, key, value []byte) error
@@ -52,7 +66,7 @@ type Store interface {
 	//  doesn't match the currently stored value. SetIf is a simple compare-and-swap operator:
 	//  valuePredicate is either the existing value, or nil for no previous key exists.
 	//  this is intentionally simplistic: we can model a better abstraction on top, keeping this interface simple for implementors
-	SetIf(ctx context.Context, key, value, valuePredicate []byte) error
+	SetIf(ctx context.Context, key, value []byte, valuePredicate Predicate) error
 
 	// Delete will delete the key, no error in if key doesn't exist
 	Delete(ctx context.Context, key []byte) error
@@ -150,11 +164,11 @@ func Drivers() []string {
 
 // GetDBSchemaVersion returns the current KV DB schema version
 func GetDBSchemaVersion(ctx context.Context, store Store) (int, error) {
-	data, err := store.Get(ctx, []byte(DBSchemaVersionKey))
+	res, err := store.Get(ctx, []byte(DBSchemaVersionKey))
 	if err != nil {
 		return -1, err
 	}
-	version, err := strconv.Atoi(string(data))
+	version, err := strconv.Atoi(string(res.Value))
 	if err != nil {
 		return -1, err
 	}

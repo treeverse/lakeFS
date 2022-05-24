@@ -9,7 +9,6 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/go-test/deep"
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"golang.org/x/sync/errgroup"
@@ -73,47 +72,88 @@ func testStoreSetGet(t *testing.T, ms MakeStore) {
 	testValue1 := []byte("value")
 	testValue2 := []byte("a different kind of value")
 
-	// set test key with value1
-	err := store.Set(ctx, testKey, testValue1)
-	if err != nil {
-		t.Fatalf("failed to set key '%s', to value '%s': %s", testKey, testValue1, err)
-	}
+	t.Run("set_missing_key", func(t *testing.T) {
+		// key - nil (disallow)
+		err := store.Set(ctx, nil, testValue1)
+		if !errors.Is(err, kv.ErrMissingKey) {
+			t.Fatalf("Set with nil key should fail - err: %v", err)
+		}
 
-	// get test key with value1
-	val, err := store.Get(ctx, testKey)
-	switch {
-	case err != nil:
-		t.Fatalf("failed to get key '%s': %s", testKey, err)
-	case val == nil:
-		t.Fatalf("got value with nil")
-	case !bytes.Equal(testValue1, val):
-		t.Fatalf("key='%s' value='%s' doesn't match, expected='%s'", testKey, val, testValue1)
-	}
+		// key - empty slice (disallow)
+		err = store.Set(ctx, []byte{}, testValue1)
+		if !errors.Is(err, kv.ErrMissingKey) {
+			t.Fatalf("Set with empty key should fail - err: %v", err)
+		}
+	})
 
-	// override key with value2
-	err = store.Set(ctx, testKey, testValue2)
-	if err != nil {
-		t.Fatalf("failed to set key '%s', to value '%s': %s", testKey, testValue2, err)
-	}
+	t.Run("set_missing_value", func(t *testing.T) {
+		// value - nil (disallow)
+		k := uniqueKey("key")
+		err := store.Set(ctx, k, nil)
+		if !errors.Is(err, kv.ErrMissingValue) {
+			t.Fatalf("Set with nil value should fail - key=%s, err: %v", k, err)
+		}
 
-	// get test key with value2
-	val2, err := store.Get(ctx, testKey)
-	if err != nil {
-		t.Fatalf("failed to get key '%s': %s", testKey, err)
-	}
-	if !bytes.Equal(testValue2, val2) {
-		t.Fatalf("key='%s' value='%s' doesn't match, expected='%s'", testKey, val2, testValue2)
-	}
+		// value - empty slice (allow)
+		k = uniqueKey("key")
+		err = store.Set(ctx, []byte{}, testValue1)
+		if !errors.Is(err, kv.ErrMissingKey) {
+			t.Fatalf("Set with empty value should fail - key=%s, err: %v", k, err)
+		}
+	})
+	t.Run("set_value", func(t *testing.T) {
+		// set test key with value1
+		err := store.Set(ctx, testKey, testValue1)
+		if err != nil {
+			t.Fatalf("failed to set key '%s', to value '%s': %s", testKey, testValue1, err)
+		}
+	})
 
-	// get a missing key
-	keyNotExists := uniqueKey("key-not-exists")
-	val3, err := store.Get(ctx, keyNotExists)
-	if !errors.Is(err, kv.ErrNotFound) {
-		t.Fatalf("get key='%s' err=%s, expected not found", keyNotExists, err)
-	}
-	if val3 != nil {
-		t.Fatalf("get key='%s' value='%s', expected nil", keyNotExists, val3)
-	}
+	t.Run("get_value", func(t *testing.T) {
+		// get test key with value1
+		res, err := store.Get(ctx, testKey)
+		switch {
+		case err != nil:
+			t.Fatalf("failed to get key '%s': %s", testKey, err)
+		case res == nil:
+			t.Fatalf("got nil result")
+		case res.Value == nil:
+			t.Fatalf("got nil value")
+		case !bytes.Equal(testValue1, res.Value):
+			t.Fatalf("key='%s' value='%s' doesn't match, expected='%s'", testKey, res.Value, testValue1)
+		}
+	})
+
+	t.Run("set_exist", func(t *testing.T) {
+		// override key with value2
+		err := store.Set(ctx, testKey, testValue2)
+		if err != nil {
+			t.Fatalf("failed to set key '%s', to value '%s': %s", testKey, testValue2, err)
+		}
+	})
+
+	t.Run("get_new_value", func(t *testing.T) {
+		// get test key with value2
+		res, err := store.Get(ctx, testKey)
+		if err != nil {
+			t.Fatalf("failed to get key '%s': %s", testKey, err)
+		}
+		if !bytes.Equal(testValue2, res.Value) {
+			t.Fatalf("key='%s' value='%s' doesn't match, expected='%s'", testKey, res.Value, testValue2)
+		}
+	})
+
+	t.Run("get_missing", func(t *testing.T) {
+		// get a missing key
+		keyNotExists := uniqueKey("key-not-exists")
+		val3, err := store.Get(ctx, keyNotExists)
+		if !errors.Is(err, kv.ErrNotFound) {
+			t.Fatalf("get key='%s' err=%s, expected not found", keyNotExists, err)
+		}
+		if val3 != nil {
+			t.Fatalf("get key='%s' value='%s', expected nil", keyNotExists, val3)
+		}
+	})
 }
 
 func testStoreDelete(t *testing.T, ms MakeStore) {
@@ -165,8 +205,13 @@ func testStoreSetIf(t *testing.T, ms MakeStore) {
 			t.Fatalf("Set while testing SetIf - key=%s value=%s: %s", key, val1, err)
 		}
 
+		res, err := store.Get(ctx, key)
+		if err != nil {
+			t.Fatalf("Get while testing SetIf - key=%s: %s", key, err)
+		}
+
 		val2 := []byte("v2")
-		err = store.SetIf(ctx, key, val2, val1)
+		err = store.SetIf(ctx, key, val2, res.Predicate)
 		if err != nil {
 			t.Fatalf("SetIf with previous value - key=%s value=%s pred=%s: %s", key, val2, val1, err)
 		}
@@ -181,7 +226,8 @@ func testStoreSetIf(t *testing.T, ms MakeStore) {
 		}
 
 		val2 := []byte("v2")
-		err = store.SetIf(ctx, key, val2, val2)
+		pred := []byte("pred")
+		err = store.SetIf(ctx, key, val2, pred)
 		if !errors.Is(err, kv.ErrPredicateFailed) {
 			t.Fatalf("SetIf err=%v - key=%s, value=%s, pred=%s, expected err=%s", err, key, val2, val2, kv.ErrPredicateFailed)
 		}
@@ -239,9 +285,7 @@ func testStoreScan(t *testing.T, ms MakeStore) {
 		if err := scan.Err(); err != nil {
 			t.Fatal("scan ended with an error", err)
 		}
-		if diff := deep.Equal(entries, sampleData); diff != nil {
-			t.Fatal("scan data didn't match:", diff)
-		}
+		testCompareEntries(t, entries, sampleData)
 	})
 
 	t.Run("part", func(t *testing.T) {
@@ -272,9 +316,7 @@ func testStoreScan(t *testing.T, ms MakeStore) {
 		if err := scan.Err(); err != nil {
 			t.Fatal("scan ended with an error", err)
 		}
-		if diff := deep.Equal(entries, sampleData[fromIndex:]); diff != nil {
-			t.Fatal("scan data didn't match:", diff)
-		}
+		testCompareEntries(t, entries, sampleData[fromIndex:])
 	})
 }
 
@@ -313,12 +355,14 @@ func testStoreMissingArgument(t *testing.T, ms MakeStore) {
 	})
 
 	t.Run("SetIf", func(t *testing.T) {
-		if err := store.SetIf(ctx, nil, []byte("v"), []byte("p")); !errors.Is(err, kv.ErrMissingKey) {
+		err := store.SetIf(ctx, nil, []byte("v"), []byte("p"))
+		if !errors.Is(err, kv.ErrMissingKey) {
 			t.Errorf("SetIf using nil key - err=%v, expected %s", err, kv.ErrMissingKey)
 		}
 
 		key := uniqueKey("test-missing-argument")
-		if err := store.SetIf(ctx, key, nil, []byte("p")); !errors.Is(err, kv.ErrMissingValue) {
+		err = store.SetIf(ctx, key, nil, []byte("p"))
+		if !errors.Is(err, kv.ErrMissingValue) {
 			t.Errorf("SetIf using nil value - err=%v, expected %s", err, kv.ErrMissingValue)
 		}
 	})
@@ -370,8 +414,21 @@ func testScanPrefix(t *testing.T, ms MakeStore) {
 	if err := scan.Err(); err != nil {
 		t.Fatal("ScanPrefix ended with an error", err)
 	}
-	if diff := deep.Equal(entries, sampleData); diff != nil {
-		t.Fatal("ScanPrefix entries didn't match:", diff)
+	testCompareEntries(t, entries, sampleData)
+}
+
+func testCompareEntries(t *testing.T, entries []kv.Entry, expected []kv.Entry) {
+	t.Helper()
+	if len(entries) != len(expected) {
+		t.Fatalf("Entries length=%d, expected=%d", len(entries), len(expected))
+	}
+	for i := range entries {
+		if !bytes.Equal(entries[i].Key, expected[i].Key) {
+			t.Errorf("Entry[%d] key=%v, expected=%v", i, entries[i].Key, expected[i].Key)
+		}
+		if !bytes.Equal(entries[i].Value, expected[i].Value) {
+			t.Errorf("Entry[%d] key=%v, expected=%v", i, entries[i].Key, expected[i].Key)
+		}
 	}
 }
 
@@ -529,7 +586,7 @@ func testDeleteWhileIterSamePrefix(t *testing.T, ms MakeStore) {
 	// delete a subsection of the read prefix
 	testDeleteWhileIterSamePrefixSingleRun(t, ms, allPrefs, inPref, ininPref)
 
-	// scan a subsection of the delete prefix
+	// scan a subsection of the deleted prefix
 	testDeleteWhileIterSamePrefixSingleRun(t, ms, allPrefs, ininPref, inPref)
 
 	// scan and delete the same prefix
@@ -668,19 +725,19 @@ func verifyDeleteWhileIterResults(t *testing.T, ctx context.Context, store kv.St
 			t.Fatal("unexpected entry access (read or delete)", string(kve.Key))
 		}
 
-		val, err := store.Get(ctx, kve.Key)
+		res, err := store.Get(ctx, kve.Key)
 		if errors.Is(err, kv.ErrNotFound) {
 			t.Fatal("expected entry not found", string(kve.Key))
 		}
 		if err != nil {
 			t.Fatal("unexpected error getting entry", string(kve.Key), err)
 		}
-		if !bytes.Equal(val, kve.Value) {
+		if !bytes.Equal(res.Value, kve.Value) {
 			t.Fatal("Unexpected value found for key", string(kve.Key))
 		}
 	}
 
-	// verify all entries that fits delPref are indeed deleted, i.e. no such entry is left
+	// verify all entries that fit delPref are indeed deleted, i.e. no such entry is left
 	// in the store
 	verifyIter, err := store.Scan(ctx, []byte{})
 	if err != nil {
