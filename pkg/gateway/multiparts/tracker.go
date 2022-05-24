@@ -3,6 +3,7 @@ package multiparts
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/kv"
@@ -76,7 +77,7 @@ func (m *tracker) Create(ctx context.Context, multipart MultipartUpload) error {
 	if multipart.UploadID == "" {
 		return ErrInvalidUploadID
 	}
-	path := kv.FormatPath(multipartPrefix, multipart.UploadID)
+	path := kv.FormatPath(multipartsPrefix, multipart.UploadID)
 	return m.store.SetMsgIf(ctx, path, protoFromMultipart(&multipart), nil)
 }
 
@@ -85,7 +86,7 @@ func (m *tracker) Get(ctx context.Context, uploadID string) (*MultipartUpload, e
 		return nil, ErrInvalidUploadID
 	}
 	data := &MultipartUploadData{}
-	path := kv.FormatPath(multipartPrefix, uploadID)
+	path := kv.FormatPath(multipartsPrefix, uploadID)
 	err := m.store.GetMsg(ctx, path, data)
 	if err != nil {
 		return nil, err
@@ -97,14 +98,14 @@ func (m *tracker) Delete(ctx context.Context, uploadID string) error {
 	if uploadID == "" {
 		return ErrInvalidUploadID
 	}
-	data := &MultipartUploadData{}
-	path := kv.FormatPath(multipartPrefix, uploadID)
-	if err := m.store.GetMsg(ctx, path, data); err != nil {
+	store := m.store.Store
+	key := []byte(kv.FormatPath(multipartsPrefix, uploadID))
+	if _, err := store.Get(ctx, key); err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
-			return ErrMultipartUploadNotFound
+			return fmt.Errorf("%w uploadID=%s", ErrMultipartUploadNotFound, uploadID)
 		}
 		return err
 	}
 
-	return m.store.Delete(ctx, key)
+	return store.Delete(ctx, key)
 }
