@@ -100,6 +100,16 @@ Once the import is completed, you can merge the changes from the import branch t
 
 ![img.png](../assets/img/ui-import-completed.png)
 
+#### Prerequisite
+
+lakeFS must have permissions to list the objects at the source object store,
+and on the same region of your destination bucket.
+
+#### Limitations
+
+Import is feasible only from source object storage that matches the storage namespace of the
+current repository.  lakeFS S3 installation cannot import from Azure bucket.
+
 Although created by lakeFS, import branches are just like any other branch.
 Authorization policies, CI/CD triggering, branch protection rules and all other lakeFS concepts apply to them
 as they apply to any other branch.
