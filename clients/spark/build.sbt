@@ -39,7 +39,7 @@ def generateCoreProject(buildType: BuildType) =
       semanticdbEnabled := true, // enable SemanticDB
       semanticdbVersion := scalafixSemanticdb.revision,
       scalacOptions += "-Ywarn-unused-import",
-      PB.targets := Seq(
+      Compile / PB.targets := Seq(
         scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
       ),
       libraryDependencies ++= Seq(
@@ -64,11 +64,11 @@ def generateCoreProject(buildType: BuildType) =
         // version will probably continue to work because the C language API
         // is quite stable.  Take the version documented in DataBricks
         // Runtime 7.6, and note that it changes in 8.3 :-(
-        "org.xerial.snappy" % "snappy-java" % "1.1.7.5",
+        "org.xerial.snappy" % "snappy-java" % "1.1.8.4",
         "org.scalactic" %% "scalactic" % "3.2.9",
         "org.scalatest" %% "scalatest" % "3.2.9" % "test",
-        "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.39.5" % "test",
-        "com.dimafeng" %% "testcontainers-scala-munit" % "0.39.5" % "test",
+        "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.39.11" % "test",
+        "com.dimafeng" %% "testcontainers-scala-munit" % "0.39.11" % "test",
         "com.lihaoyi" %% "upickle" % "1.4.0" % "test",
         "com.lihaoyi" %% "os-lib" % "0.7.8" % "test"
       ),
