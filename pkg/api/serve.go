@@ -14,6 +14,7 @@ import (
 	"github.com/getkin/kin-openapi/routers/legacy"
 	"github.com/go-chi/chi/v5"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/treeverse/lakefs/pkg/api/params"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
@@ -54,6 +55,7 @@ func Serve(
 	logger logging.Logger,
 	emailer *email.Emailer,
 	gatewayDomains []string,
+	snippets []params.CodeSnippet,
 ) http.Handler {
 	logger.Info("initialize OpenAPI server")
 	swagger, err := GetSwagger()
@@ -95,7 +97,7 @@ func Serve(
 	r.Mount("/_pprof/", httputil.ServePPROF("/_pprof/"))
 	r.Mount("/swagger.json", http.HandlerFunc(swaggerSpecHandler))
 	r.Mount(BaseURL, http.HandlerFunc(InvalidAPIEndpointHandler))
-	r.Mount("/", NewUIHandler(gatewayDomains))
+	r.Mount("/", NewUIHandler(gatewayDomains, snippets))
 	return r
 }
 

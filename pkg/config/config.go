@@ -15,6 +15,7 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
+	apiparams "github.com/treeverse/lakefs/pkg/api/params"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/block"
 	blockparams "github.com/treeverse/lakefs/pkg/block/params"
@@ -509,4 +510,15 @@ func (c *Config) GetAuthAPIToken() string {
 
 func (c *Config) GetCookieDomain() string {
 	return c.values.Auth.CookieDomain
+}
+
+func (c *Config) GetUISnippets() []apiparams.CodeSnippet {
+	snippets := make([]apiparams.CodeSnippet, 0, len(c.values.UI.Snippets))
+	for _, item := range c.values.UI.Snippets {
+		snippets = append(snippets, apiparams.CodeSnippet{
+			ID:   item.ID,
+			Code: item.Code,
+		})
+	}
+	return snippets
 }
