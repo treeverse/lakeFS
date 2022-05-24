@@ -299,15 +299,13 @@ func (s *DBAuthService) GetUser(ctx context.Context, username string) (*model.Us
 }
 
 func (s *DBAuthService) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
-	return s.cache.GetUserByEmail(email, func() (*model.User, error) {
-		user, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-			return getUserByEmail(tx, email)
-		}, db.ReadOnly())
-		if err != nil {
-			return nil, err
-		}
-		return user.(*model.User), nil
-	})
+	user, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
+		return getUserByEmail(tx, email)
+	}, db.ReadOnly())
+	if err != nil {
+		return nil, err
+	}
+	return user.(*model.User), nil
 }
 
 func (s *DBAuthService) GetUserByID(ctx context.Context, userID int64) (*model.User, error) {

@@ -41,7 +41,8 @@ type responseError struct {
 func Serve(
 	cfg *config.Config,
 	catalog catalog.Interface,
-	authenticator auth.Authenticator,
+	middlewareAuthenticator auth.Authenticator,
+	controllerAuthenticator auth.Authenticator,
 	authService auth.Service,
 	blockAdapter block.Adapter,
 	metadataManager auth.MetadataManager,
@@ -68,14 +69,14 @@ func Serve(
 			RequestIDHeaderName,
 			logging.Fields{logging.ServiceNameFieldKey: LoggerServiceName},
 			cfg.GetLoggingTraceRequestHeaders()),
-		AuthMiddleware(logger, swagger, authenticator, authService),
+		AuthMiddleware(logger, swagger, middlewareAuthenticator, authService),
 		MetricsMiddleware(swagger),
 	)
 
 	controller := NewController(
 		cfg,
 		catalog,
-		authenticator,
+		controllerAuthenticator,
 		authService,
 		blockAdapter,
 		metadataManager,
