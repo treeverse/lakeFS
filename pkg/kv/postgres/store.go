@@ -111,7 +111,7 @@ func setupKeyValueDatabase(ctx context.Context, conn *pgxpool.Conn, params *Para
 	return err
 }
 
-func (s *Store) Get(ctx context.Context, key []byte) ([]byte, error) {
+func (s *Store) Get(ctx context.Context, key []byte) (*kv.GetResult, error) {
 	if len(key) == 0 {
 		return nil, kv.ErrMissingKey
 	}
@@ -124,15 +124,7 @@ func (s *Store) Get(ctx context.Context, key []byte) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w (key=%v)", err, kv.ErrOperationFailed, key)
 	}
-	return val, nil
-}
-
-func (s *Store) GetValuePredicate(ctx context.Context, key []byte) (*kv.ValuePredicate, error) {
-	val, err := s.Get(ctx, key)
-	if err != nil {
-		return nil, err
-	}
-	return &kv.ValuePredicate{
+	return &kv.GetResult{
 		Value:     val,
 		Predicate: kv.Predicate(val),
 	}, nil

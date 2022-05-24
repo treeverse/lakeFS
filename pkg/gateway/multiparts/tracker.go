@@ -87,7 +87,7 @@ func (m *tracker) Get(ctx context.Context, uploadID string) (*MultipartUpload, e
 	}
 	data := &MultipartUploadData{}
 	path := kv.FormatPath(multipartsPrefix, uploadID)
-	err := m.store.GetMsg(ctx, path, data)
+	_, err := m.store.GetMsg(ctx, path, data)
 	if err != nil {
 		return nil, err
 	}

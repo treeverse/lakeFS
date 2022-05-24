@@ -46,14 +46,18 @@ type Driver interface {
 //   Store's SetIf used to set the key's value based on the predicate.
 type Predicate interface{}
 
-type Store interface {
-	// Get returns a value for the given key, or ErrNotFound if key doesn't exist
-	Get(ctx context.Context, key []byte) ([]byte, error)
+// GetResult value with predicate - Value holds the data and Predicate a value used for conditional set.
+//   Get operation will return this struct, holding the key's information
+//   SetIf operation will use the Predicate for conditional set
+type GetResult struct {
+	Value     []byte
+	Predicate Predicate
+}
 
-	// GetValuePredicate return a value for the given key with predicate that can be used
-	//   by 'SetIf' to guaranty we update the same value.
-	//   ErrNotFound returned if key doesn't exist.
-	GetValuePredicate(ctx context.Context, key []byte) (*ValuePredicate, error)
+type Store interface {
+	// Get returns a result containing the Value and Predicate for the given key, or ErrNotFound if key doesn't exist
+	//   Predicate can be used for SetIf operation
+	Get(ctx context.Context, key []byte) (*GetResult, error)
 
 	// Set stores the given value, overwriting an existing value if one exists
 	Set(ctx context.Context, key, value []byte) error
@@ -95,12 +99,6 @@ type EntriesIterator interface {
 type Entry struct {
 	Key   []byte
 	Value []byte
-}
-
-// ValuePredicate value with predicate, used to by SetIf
-type ValuePredicate struct {
-	Value     []byte
-	Predicate Predicate
 }
 
 func (e *Entry) String() string {
@@ -166,11 +164,11 @@ func Drivers() []string {
 
 // GetDBSchemaVersion returns the current KV DB schema version
 func GetDBSchemaVersion(ctx context.Context, store Store) (int, error) {
-	data, err := store.Get(ctx, []byte(DBSchemaVersionKey))
+	res, err := store.Get(ctx, []byte(DBSchemaVersionKey))
 	if err != nil {
 		return -1, err
 	}
-	version, err := strconv.Atoi(string(data))
+	version, err := strconv.Atoi(string(res.Value))
 	if err != nil {
 		return -1, err
 	}

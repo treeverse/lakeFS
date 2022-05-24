@@ -111,14 +111,16 @@ func testStoreSetGet(t *testing.T, ms MakeStore) {
 
 	t.Run("get_value", func(t *testing.T) {
 		// get test key with value1
-		val, err := store.Get(ctx, testKey)
+		res, err := store.Get(ctx, testKey)
 		switch {
 		case err != nil:
 			t.Fatalf("failed to get key '%s': %s", testKey, err)
-		case val == nil:
-			t.Fatalf("got value with nil")
-		case !bytes.Equal(testValue1, val):
-			t.Fatalf("key='%s' value='%s' doesn't match, expected='%s'", testKey, val, testValue1)
+		case res == nil:
+			t.Fatalf("got nil result")
+		case res.Value == nil:
+			t.Fatalf("got nil value")
+		case !bytes.Equal(testValue1, res.Value):
+			t.Fatalf("key='%s' value='%s' doesn't match, expected='%s'", testKey, res.Value, testValue1)
 		}
 	})
 
@@ -132,12 +134,12 @@ func testStoreSetGet(t *testing.T, ms MakeStore) {
 
 	t.Run("get_new_value", func(t *testing.T) {
 		// get test key with value2
-		val2, err := store.Get(ctx, testKey)
+		res, err := store.Get(ctx, testKey)
 		if err != nil {
 			t.Fatalf("failed to get key '%s': %s", testKey, err)
 		}
-		if !bytes.Equal(testValue2, val2) {
-			t.Fatalf("key='%s' value='%s' doesn't match, expected='%s'", testKey, val2, testValue2)
+		if !bytes.Equal(testValue2, res.Value) {
+			t.Fatalf("key='%s' value='%s' doesn't match, expected='%s'", testKey, res.Value, testValue2)
 		}
 	})
 
@@ -203,13 +205,13 @@ func testStoreSetIf(t *testing.T, ms MakeStore) {
 			t.Fatalf("Set while testing SetIf - key=%s value=%s: %s", key, val1, err)
 		}
 
-		vp, err := store.GetValuePredicate(ctx, key)
+		res, err := store.Get(ctx, key)
 		if err != nil {
-			t.Fatalf("GetEntry while testing SetIf - key=%s: %s", key, err)
+			t.Fatalf("Get while testing SetIf - key=%s: %s", key, err)
 		}
 
 		val2 := []byte("v2")
-		err = store.SetIf(ctx, key, val2, vp.Predicate)
+		err = store.SetIf(ctx, key, val2, res.Predicate)
 		if err != nil {
 			t.Fatalf("SetIf with previous value - key=%s value=%s pred=%s: %s", key, val2, val1, err)
 		}
@@ -723,14 +725,14 @@ func verifyDeleteWhileIterResults(t *testing.T, ctx context.Context, store kv.St
 			t.Fatal("unexpected entry access (read or delete)", string(kve.Key))
 		}
 
-		val, err := store.Get(ctx, kve.Key)
+		res, err := store.Get(ctx, kve.Key)
 		if errors.Is(err, kv.ErrNotFound) {
 			t.Fatal("expected entry not found", string(kve.Key))
 		}
 		if err != nil {
 			t.Fatal("unexpected error getting entry", string(kve.Key), err)
 		}
-		if !bytes.Equal(val, kve.Value) {
+		if !bytes.Equal(res.Value, kve.Value) {
 			t.Fatal("Unexpected value found for key", string(kve.Key))
 		}
 	}
