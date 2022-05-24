@@ -250,6 +250,7 @@ var runCmd = &cobra.Command{
 			logger.WithField("service", "api_gateway"),
 			emailer,
 			cfg.GetS3GatewayDomainNames(),
+			cfg.GetUISnippets(),
 		)
 
 		// init gateway server

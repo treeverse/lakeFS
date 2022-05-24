@@ -160,4 +160,10 @@ type configuration struct {
 		Burst              int           `mapstructure:"burst"`
 		LakefsBaseURL      string        `mapstructure:"lakefs_base_url"`
 	}
+	UI struct {
+		Snippets []struct {
+			ID   string `mapstructure:"id"`
+			Code string `mapstructure:"code"`
+		} `mapstructure:"snippets"`
+	} `mapstructure:"ui"`
 }

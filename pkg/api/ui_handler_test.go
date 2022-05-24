@@ -19,7 +19,7 @@ func testHTTPGetPage(t *testing.T, handler http.Handler, url string) *httptest.R
 }
 
 func TestNewUIHandler_SPA(t *testing.T) {
-	handler := NewUIHandler(nil)
+	handler := NewUIHandler(nil, nil)
 
 	rrMain := testHTTPGetPage(t, handler, "/")
 	if rrMain.Code != http.StatusOK {
@@ -36,7 +36,7 @@ func TestNewUIHandler_SPA(t *testing.T) {
 }
 
 func TestNewUIHandler_GatewayError(t *testing.T) {
-	handler := NewUIHandler([]string{"s3.lakefs.dev"})
+	handler := NewUIHandler([]string{"s3.lakefs.dev"}, nil)
 	rr := httptest.NewRecorder()
 	req, err := http.NewRequest(http.MethodGet, "/", nil)
 	if err != nil {
