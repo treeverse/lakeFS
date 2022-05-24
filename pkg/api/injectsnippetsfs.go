@@ -7,6 +7,8 @@ import (
 	"io"
 	"io/fs"
 	"time"
+
+	"github.com/treeverse/lakefs/pkg/api/params"
 )
 
 type InjectSnippetsFS struct {
@@ -15,7 +17,7 @@ type InjectSnippetsFS struct {
 	content string
 }
 
-func NewInjectIndexFS(fsys fs.FS, name string, marker string, snippets map[string]string) (fs.FS, error) {
+func NewInjectIndexFS(fsys fs.FS, name string, marker string, snippets []params.CodeSnippet) (fs.FS, error) {
 	if len(snippets) == 0 {
 		// no snippets, return the original marker
 		return fsys, nil
@@ -34,7 +36,7 @@ func NewInjectIndexFS(fsys fs.FS, name string, marker string, snippets map[strin
 
 	// inject snippets code into content
 	codeSnippets := renderCodeSnippets(snippets)
-	contentBytes := bytes.Replace(all, []byte(marker), codeSnippets, 1)
+	contentBytes := bytes.ReplaceAll(all, []byte(marker), codeSnippets)
 	return &InjectSnippetsFS{
 		FS:      fsys,
 		name:    name,
@@ -42,12 +44,11 @@ func NewInjectIndexFS(fsys fs.FS, name string, marker string, snippets map[strin
 	}, nil
 }
 
-func renderCodeSnippets(snippets map[string]string) []byte {
+func renderCodeSnippets(snippets []params.CodeSnippet) []byte {
 	var b bytes.Buffer
-	for k, v := range snippets {
-		_, _ = b.WriteString("<!-- snippet begin: " + html.EscapeString(k) + " -->\n")
-		_, _ = b.WriteString(v)
-		_, _ = b.WriteString("<!-- snippet end: " + html.EscapeString(k) + " -->\n")
+	for _, item := range snippets {
+		_, _ = b.WriteString("<!-- snippet: " + html.EscapeString(item.ID) + " -->")
+		_, _ = b.WriteString(item.Code)
 	}
 	return b.Bytes()
 }

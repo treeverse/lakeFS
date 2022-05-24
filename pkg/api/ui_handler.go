@@ -10,6 +10,7 @@ import (
 
 	gomime "github.com/cubewise-code/go-mime"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/treeverse/lakefs/pkg/api/params"
 	gwerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/gateway/operations"
 	"github.com/treeverse/lakefs/pkg/gateway/sig"
@@ -21,7 +22,7 @@ const (
 	uiIndexMarker = "<!--Snippets-->"
 )
 
-func NewUIHandler(gatewayDomains []string, snippets map[string]string) http.Handler {
+func NewUIHandler(gatewayDomains []string, snippets []params.CodeSnippet) http.Handler {
 	content, err := fs.Sub(webui.Content, "dist")
 	if err != nil {
 		// embedded UI content is missing

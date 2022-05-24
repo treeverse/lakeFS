@@ -161,6 +161,9 @@ type configuration struct {
 		LakefsBaseURL      string        `mapstructure:"lakefs_base_url"`
 	}
 	UI struct {
-		Snippets map[string]string `mapstructure:"snippets"`
+		Snippets []struct {
+			ID   string `mapstructure:"id"`
+			Code string `mapstructure:"code"`
+		} `mapstructure:"snippets"`
 	} `mapstructure:"ui"`
 }

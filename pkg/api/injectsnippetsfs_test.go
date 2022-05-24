@@ -18,9 +18,15 @@ func TestNewInjectIndexFS(t *testing.T) {
 		name   = "testdata/first.html"
 		marker = "<!-- code snippets -->"
 	)
-	snippets := map[string]string{
-		"code1": "<script>console.log('code1')</script>",
-		"code2": "<script>console.log('code2')</script>",
+	snippets := []api.CodeSnippet{
+		{
+			ID:   "code1",
+			Code: "<script>console.log('code1')</script>",
+		},
+		{
+			ID:   "code2",
+			Code: "<script>console.log('code2')</script>",
+		},
 	}
 	fsys, err := api.NewInjectIndexFS(testdataFS, name, marker, snippets)
 	if err != nil {
@@ -35,10 +41,10 @@ func TestNewInjectIndexFS(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to read '%s' file: %s", name, err)
 		}
-		for tag, code := range snippets {
-			idx := bytes.Index(data, []byte(code))
+		for _, item := range snippets {
+			idx := bytes.Index(data, []byte(item.Code))
 			if idx == -1 {
-				t.Errorf("Snippet '%s' code, was not found in data", tag)
+				t.Errorf("Snippet '%s' code, was not found in data", item.ID)
 			}
 		}
 	})
@@ -52,10 +58,10 @@ func TestNewInjectIndexFS(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to read '%s' file: %s", filename, err)
 		}
-		for tag, code := range snippets {
-			idx := bytes.Index(data, []byte(code))
+		for _, item := range snippets {
+			idx := bytes.Index(data, []byte(item.Code))
 			if idx != -1 {
-				t.Errorf("Snippet '%s' code, was found in data unexpected", tag)
+				t.Errorf("Snippet '%s' code, was found in data unexpected", item.ID)
 			}
 		}
 	})
