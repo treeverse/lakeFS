@@ -300,10 +300,10 @@ func MigrateParallel(_ context.Context, _ *pgxpool.Pool, writer io.Writer) error
 
 func ValidateKV(ctx context.Context, t *testing.T, store kv.Store, entries int) {
 	for i := 1; i <= entries; i++ {
-		expectdVal := fmt.Sprint(i, ". ", testMigrateValue)
-		value, err := store.Get(ctx, []byte(strconv.Itoa(i)))
+		expectedVal := fmt.Sprint(i, ". ", testMigrateValue)
+		res, err := store.Get(ctx, []byte(strconv.Itoa(i)))
 		require.NoError(t, err)
-		require.Equal(t, expectdVal, string(value))
+		require.Equal(t, expectedVal, string(res.Value))
 	}
 }
 
