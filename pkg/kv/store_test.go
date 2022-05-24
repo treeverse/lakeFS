@@ -23,7 +23,7 @@ type MockStore struct {
 
 var errNotImplemented = errors.New("not implemented")
 
-func (m *MockStore) Get(_ context.Context, _ []byte) (*kv.GetResult, error) {
+func (m *MockStore) Get(_ context.Context, _ []byte) (*kv.ValueWithPredicate, error) {
 	return nil, errNotImplemented
 }
 

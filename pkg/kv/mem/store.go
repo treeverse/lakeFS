@@ -39,7 +39,7 @@ func (d *Driver) Open(_ context.Context, _ string) (kv.Store, error) {
 	}, nil
 }
 
-func (s *Store) Get(_ context.Context, key []byte) (*kv.GetResult, error) {
+func (s *Store) Get(_ context.Context, key []byte) (*kv.ValueWithPredicate, error) {
 	if len(key) == 0 {
 		return nil, kv.ErrMissingKey
 	}
@@ -49,7 +49,7 @@ func (s *Store) Get(_ context.Context, key []byte) (*kv.GetResult, error) {
 	if !ok {
 		return nil, fmt.Errorf("key=%v: %w", key, kv.ErrNotFound)
 	}
-	return &kv.GetResult{
+	return &kv.ValueWithPredicate{
 		Value:     value,
 		Predicate: kv.Predicate(value),
 	}, nil

@@ -42,14 +42,14 @@ type Driver interface {
 }
 
 // Predicate value used to update a key base on a previous fetched value.
-//   Store's GetValuePredicate used to pull the key's value with the associated predicate.
+//   Store's Get used to pull the key's value with the associated predicate.
 //   Store's SetIf used to set the key's value based on the predicate.
 type Predicate interface{}
 
-// GetResult value with predicate - Value holds the data and Predicate a value used for conditional set.
+// ValueWithPredicate value with predicate - Value holds the data and Predicate a value used for conditional set.
 //   Get operation will return this struct, holding the key's information
 //   SetIf operation will use the Predicate for conditional set
-type GetResult struct {
+type ValueWithPredicate struct {
 	Value     []byte
 	Predicate Predicate
 }
@@ -57,7 +57,7 @@ type GetResult struct {
 type Store interface {
 	// Get returns a result containing the Value and Predicate for the given key, or ErrNotFound if key doesn't exist
 	//   Predicate can be used for SetIf operation
-	Get(ctx context.Context, key []byte) (*GetResult, error)
+	Get(ctx context.Context, key []byte) (*ValueWithPredicate, error)
 
 	// Set stores the given value, overwriting an existing value if one exists
 	Set(ctx context.Context, key, value []byte) error
