@@ -46,7 +46,7 @@ func buildURL(baseURL string, pth string, values map[string]string) (string, err
 	return u.String(), nil
 }
 
-func BuildEmailByTemplate(tmpl *template.Template, host string, path string, params map[string]string) (string, error) {
+func buildEmailByTemplate(tmpl *template.Template, host string, path string, params map[string]string) (string, error) {
 	u, err := buildURL(host, path, params)
 	if err != nil {
 		return "", err

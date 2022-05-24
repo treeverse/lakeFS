@@ -15,6 +15,7 @@ var (
 	ErrNoSMTPHostConfigured  = errors.New("no smtp host configured")
 	ErrNoSenderConfigured    = errors.New("no sender configured")
 	ErrNoRecipientConfigured = errors.New("no recipient configured")
+	ErrSenderMisconfigured   = errors.New("sender misconfigured")
 )
 
 type DialAndSender interface {
@@ -25,15 +26,6 @@ type Emailer struct {
 	Params  Params
 	Dialer  DialAndSender
 	Limiter *rate.Limiter
-}
-
-type Dialer struct {
-	Message []*gomail.Message
-}
-
-func (d *Dialer) DialAndSend(m ...*gomail.Message) error {
-	d.Message = m
-	return nil
 }
 
 type Params struct {
@@ -53,7 +45,7 @@ func NewEmailer(p Params) (*Emailer, error) {
 	if p.SMTPHost != "" {
 		_, err := mail.ParseAddress(p.Sender)
 		if err != nil {
-			return nil, fmt.Errorf("sender misconfigured: %w", err)
+			return nil, fmt.Errorf("%w: %s", ErrSenderMisconfigured, err)
 		}
 	}
 	dialer := gomail.NewDialer(p.SMTPHost, p.SMTPPort, p.Username, p.Password)
@@ -96,7 +88,7 @@ func (e *Emailer) SendEmailWithLimit(receivers []string, subject string, body st
 }
 
 func (e *Emailer) SendResetPasswordEmail(receivers []string, params map[string]string) error {
-	body, err := BuildEmailByTemplate(resetEmailTemplate, e.Params.LakefsBaseURL, resetPasswordURLPath, params)
+	body, err := buildEmailByTemplate(resetEmailTemplate, e.Params.LakefsBaseURL, resetPasswordURLPath, params)
 	if err != nil {
 		return err
 	}
@@ -104,7 +96,7 @@ func (e *Emailer) SendResetPasswordEmail(receivers []string, params map[string]s
 }
 
 func (e *Emailer) SendInviteUserEmail(receivers []string, params map[string]string) error {
-	body, err := BuildEmailByTemplate(inviteUserTemplate, e.Params.LakefsBaseURL, inviteUserURLPath, params)
+	body, err := buildEmailByTemplate(inviteUserTemplate, e.Params.LakefsBaseURL, inviteUserURLPath, params)
 	if err != nil {
 		return err
 	}
