@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/treeverse/lakefs/pkg/api"
+	apiparams "github.com/treeverse/lakefs/pkg/api/params"
 )
 
 //go:embed testdata/*.html
@@ -18,7 +19,7 @@ func TestNewInjectIndexFS(t *testing.T) {
 		name   = "testdata/first.html"
 		marker = "<!-- code snippets -->"
 	)
-	snippets := []api.CodeSnippet{
+	snippets := []apiparams.CodeSnippet{
 		{
 			ID:   "code1",
 			Code: "<script>console.log('code1')</script>",
