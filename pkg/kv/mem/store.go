@@ -95,7 +95,7 @@ func (s *Store) SetIf(_ context.Context, key, value []byte, valuePredicate kv.Pr
 	curr, currOK := s.m[string(key)]
 	if valuePredicate == nil {
 		if currOK {
-			return fmt.Errorf("%w: key=%v", kv.ErrPredicateFailed, key)
+			return fmt.Errorf("key=%v: %w", key, kv.ErrPredicateFailed)
 		}
 		s.insertNewKey(key)
 	} else if !bytes.Equal(valuePredicate.([]byte), curr) {
