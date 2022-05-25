@@ -19,6 +19,50 @@ or using tools like [Apache DistCp](../integrations/distcp.md#from-s3-to-lakefs)
 
 ## Zero-copy import
 
+lakeFS supports 3 ways to ingest objects from the object store without copying the data.
+They differ by the outcome, scale and ease of use:
+
+1. Import from the UI - A UI dialog to trigger an import to a designated import branch. It creates a commit from all imported objects. Easy to use and scales well.
+1. `lakectl ingest` - Use a simple CLI command to create uncommitted objects in a branch. It will make sequential calls between the CLI and the server, which make scaling difficult.
+1. `lakefs import` - Use the lakeFS binary to create a commit from an S3 inventory file. Supported only with lakeFS with S3 storage adapters.
+   Requires the most setup - lakeFS binary with DB access and an S3 inventory file. The most scalable option.
+
+
+### UI Import
+
+Clicking the Import button from any branch will open the following dialog:
+
+![ui-import.png](../assets/img/UI-Import-Dialog.png)
+
+If it's the first import to `my-branch`, it will create the import branch named `_my-branch_imported`.
+lakeFS will import all objects from the Source URI to the import branch under the given prefix.
+
+Hang tight! It might take several minutes for the operation to complete:
+
+![img.png](../assets/img/ui-import-waiting.png)
+
+Once the import is completed, you can merge the changes from the import branch to the source branch.
+
+![img.png](../assets/img/ui-import-completed.png)
+
+#### Prerequisite
+
+lakeFS must have permissions to list the objects at the source object store,
+and on the same region of your destination bucket.
+
+#### Limitations
+
+Import is feasible only from source object storage that matches the storage namespace of the
+current repository.  lakeFS S3 installation cannot import from Azure bucket.
+
+Although created by lakeFS, import branches are just like any other branch.
+Authorization policies, CI/CD triggering, branch protection rules and all other lakeFS concepts apply to them
+as they apply to any other branch.
+{: .note }
+
+
+### lakectl ingest
+
 For cases where copying data is not feasible, the `lakectl` command supports ingesting objects from a source object store without actually copying the data itself.
 This is done by listing the source bucket (and optional prefix), and creating pointers to the returned objects in lakeFS.
 
@@ -28,7 +72,7 @@ For this to work, make sure that:
 
 1. The user calling `lakectl ingest` must have permissions to list the objects at the source object store
 2. The lakeFS installation has read permissions to the objects being ingested.
-3. The source path is **not** a storage namespace used by lakeFS. e.g. if `lakefs://my-repo` created with storage namespace `s3://my-bucket`, then `s3://my-bucket/*` cannot be an ingestion source.   
+3. The source path is **not** a storage namespace used by lakeFS. e.g. if `lakefs://my-repo` created with storage namespace `s3://my-bucket`, then `s3://my-bucket/*` cannot be an ingestion source.
 
 <div class="tabs">
 <ul>
@@ -73,7 +117,8 @@ The `lakectl ingest` command currently supports the standard `GOOGLE_APPLICATION
 </div>
 </div>
 
-## Import from very large buckets
+
+### lakefs import
 
 Importing a very large amount of objects (> ~250M) might take some time using `lakectl ingest` as described above,
 since it has to paginate through all the objects in the source using API calls.
@@ -87,7 +132,7 @@ You should not make any changes or commit anything to branch `import-from-invent
 After importing, you will be able to merge this branch into your main branch.
 {: .note }
 
-### How it works
+#### How it works
 {: .no_toc }
 
 The imported data is not copied to the repository’s dedicated bucket.
@@ -100,7 +145,7 @@ when accessing it through other branches. In a sense, your original bucket becom
 **Note:** lakeFS will never make any changes to the import source bucket.
 {: .note .pb-3 }
 
-### Prerequisites
+#### Prerequisites
 {: .no_toc }
 
 - Your bucket should have S3 Inventory enabled.
@@ -112,7 +157,7 @@ when accessing it through other branches. In a sense, your original bucket becom
 For a step-by-step walkthrough of this process, see the post [3 Ways to Add Data to lakeFS](https://lakefs.io/3-ways-to-add-data-to-lakefs/) on our blog.
 {: .note .note-info }
 
-### Usage
+#### Usage
 {: .no_toc }
 
 Import is performed by the `lakefs import` command.
@@ -138,7 +183,7 @@ To merge the changes to your main branch, run:
 	$ lakectl merge lakefs://example-repo/import-from-inventory lakefs://goo/main
 ```
 
-#### Merging imported data to the main branch
+##### Merging imported data to the main branch
 {: .no_toc }
 
 As previously mentioned, the above command imports data to the dedicated `import-from-inventory` branch.
@@ -148,7 +193,7 @@ By adding the `--with-merge` flag to the import command, this branch will be aut
 lakefs import --with-merge lakefs://example-repo -m s3://example-bucket/path/to/inventory/YYYY-MM-DDT00-00Z/manifest.json --config config.yaml
 ```
 
-#### Notes
+##### Notes
 {: .no_toc }
 
 1. Perform the import from a machine with access to your database, and on the same region of your destination bucket.
@@ -160,7 +205,7 @@ lakefs import --with-merge lakefs://example-repo -m s3://example-bucket/path/to/
 **Warning:** the *import-from-inventory* branch should only be used by lakeFS. You should not make any operations on it.
 {: .note } 
 
-### Gradual Import
+#### Gradual Import
 {: .no_toc }
 
 Once you switch to using the lakeFS S3-compatible endpoint in all places, you can stop making changes to your original bucket.
@@ -169,7 +214,7 @@ you can repeat using the import API with up-to-date inventories every day, until
 You can specify only the prefixes that require import. lakeFS will merge those prefixes with the previous imported inventory.
 For example, a prefixes-file that contains only the prefix `new/data/`. The new commit to `import-from-inventory` branch will include all objects from the HEAD of that branch, except for objects with prefix `new/data/` that is imported from the inventory. 
 
-### Limitations
+#### Limitations
 {: .no_toc }
 
 Note that lakeFS cannot manage your metadata if you make changes to data in the original bucket.
@@ -180,3 +225,44 @@ The following table describes the results of making changes in the original buck
 | Create                               | Object not visible                           | Object not accessible      |
 | Overwrite                            | Object visible with outdated metadata        | Updated object accessible  |
 | Delete                               | Object visible                               | Object not accessible      |
+
+
+## Importing from public buckets
+
+lakeFS needs access to the imported location to first list the files to import and later
+to read the files upon users request. 
+
+There are some use-cases where the user would like to import from a destination which isn't owned by the account running lakeFS.
+For example, importing public datasets to experiment with lakeFS and Spark.
+
+lakeFS will require additional permissions to read from public buckets. For example, for S3 public buckets,
+the following policy needs to be attached to the lakeFS S3 service-account to allow access to public buckets, while blocking access to other owned buckets:
+
+  ```json
+   {
+     "Version": "2012-10-17",
+     "Statement": [
+       {
+         "Sid": "PubliclyAccessibleBuckets",
+         "Effect": "Allow",
+         "Action": [
+            "s3:GetBucketVersioning",
+            "s3:ListBucket",
+            "s3:GetBucketLocation",
+            "s3:ListBucketMultipartUploads",
+            "s3:ListBucketVersions",
+            "s3:GetObject",
+            "s3:GetObjectVersion",
+            "s3:AbortMultipartUpload",
+            "s3:ListMultipartUploadParts"
+         ],
+         "Resource": ["*"],
+         "Condition": {
+           "StringNotEquals": {
+             "s3:ResourceAccount": "<YourAccountID>"
+           }
+         }
+       }
+     ]
+   }
+   ```
