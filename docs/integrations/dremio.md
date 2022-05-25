@@ -24,6 +24,5 @@ You can follow below steps to configure on Dremio UI:
 1. Under `Advanced Options`, check `Enable compatibility mode (experimental)`.
 1. Under `Advanced Options` > `Connection Properties`, add `fs.s3a.path.style.access` and set the value to true.
 1. Under `Advanced Options` > `Connection Properties`, add `fs.s3a.endpoint` and set lakeFS S3 endpoint to the value. 
-1. Under `Advanced Options` > `Connection Properties`, add `fs.s3a.path.style.access` and set to `true`
 1. Under the `General` tab, specify the `access_key_id` and `secret_access_key` provided by lakeFS server.
 1. Click `Save`, and now you should be able to browse lakeFS repositories on Dremio.
