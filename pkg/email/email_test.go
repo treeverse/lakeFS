@@ -22,11 +22,11 @@ var (
 	resetPasswordGolden string
 )
 
-type Dialer struct {
+type MockDialer struct {
 	Message []*gomail.Message
 }
 
-func (d *Dialer) DialAndSend(m ...*gomail.Message) error {
+func (d *MockDialer) DialAndSend(m ...*gomail.Message) error {
 	d.Message = m
 	return nil
 }
@@ -50,7 +50,10 @@ func TestNewEmailer(t *testing.T) {
 				SMTPHost: tt.smtpHost,
 				Sender:   tt.sender,
 			}
-			_, err := email.NewEmailer(p)
+			emailer, err := email.NewEmailer(p)
+			if err == nil && emailer == nil {
+				t.Errorf("expected emailer, got nil pointer")
+			}
 			if !errors.Is(err, tt.expected) {
 				t.Errorf("expected err: %s got err: %s", tt.expected, err)
 			}
@@ -61,7 +64,7 @@ func TestNewEmailer(t *testing.T) {
 func TestSendEmail_Params(t *testing.T) {
 	p := email.Params{}
 	emailer, err := email.NewEmailer(p)
-	emailer.Dialer = &Dialer{}
+	emailer.Dialer = &MockDialer{}
 	testutil.Must(t, err)
 	tests := []struct {
 		name     string
@@ -95,7 +98,7 @@ func TestSendEmail_Headers(t *testing.T) {
 		SMTPHost: "abc@test.com",
 		Sender:   "test@test.com",
 	}
-	d := Dialer{}
+	d := MockDialer{}
 	emailer := email.Emailer{
 		Params: p,
 		Dialer: &d,
@@ -124,7 +127,8 @@ func TestSendEmailWithLimit(t *testing.T) {
 	p := email.Params{SMTPHost: "test.com", Sender: "alice@testing.com"}
 	emailer, err := email.NewEmailer(p)
 	testutil.Must(t, err)
-	emailer.Dialer = &Dialer{}
+	d := &MockDialer{}
+	emailer.Dialer = d
 	tests := []struct {
 		name       string
 		limitEvery time.Duration
@@ -140,6 +144,9 @@ func TestSendEmailWithLimit(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			emailer.Limiter = rate.NewLimiter(rate.Limit(tt.limitEvery), tt.burst)
 			err := emailer.SendEmailWithLimit([]string{"receiver@test.com"}, "foo", "", nil)
+			if err == nil && len(d.Message) < 1 {
+				t.Errorf("expected message to be sent")
+			}
 			if !errors.Is(err, tt.expect) {
 				t.Errorf("got err: %s, expected err %s", err, tt.expect)
 			}
@@ -147,7 +154,7 @@ func TestSendEmailWithLimit(t *testing.T) {
 	}
 }
 
-func TestSendResetPasswordAndInviteUserEmail_SendWithLimit(t *testing.T) {
+func TestSendResetPasswordAndInviteUserEmail(t *testing.T) {
 	// Burst value is set to 0, so any call to SendEmailWithLimit should result in ErrRateLimitExceeded
 	// thus verifying that SendEmailWithLimit was called
 	p := email.Params{Burst: 0, LimitEveryDuration: time.Minute}
@@ -176,7 +183,7 @@ func TestEmailerSendEmailBody(t *testing.T) {
 		LimitEveryDuration: time.Minute,
 		Burst:              math.MaxInt,
 	}
-	d := Dialer{}
+	d := MockDialer{}
 	lim := rate.NewLimiter(rate.Every(p.LimitEveryDuration), p.Burst)
 	emailer := email.Emailer{
 		Params:  p,
