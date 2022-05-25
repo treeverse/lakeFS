@@ -10,7 +10,7 @@ import (
 
 // StoreMessage protobuf generic implementation for kv.Store interface applicable for all data models
 type StoreMessage struct {
-	Store Store
+	Store
 }
 
 // GetMsg based on 'path' the value will be loaded into 'msg' and return a predicate.
@@ -47,7 +47,7 @@ func (s *StoreMessage) SetMsgIf(ctx context.Context, path string, msg protorefle
 	return s.Store.SetIf(ctx, []byte(path), val, predicate)
 }
 
-func (s *StoreMessage) Delete(ctx context.Context, path string) error {
+func (s *StoreMessage) DeleteMsg(ctx context.Context, path string) error {
 	return s.Store.Delete(ctx, []byte(path))
 }
 
@@ -55,10 +55,6 @@ func (s *StoreMessage) Delete(ctx context.Context, path string) error {
 // Therefore, the given prefix should bound the range of the data only to that which can be deserialized by the given proto message type
 func (s *StoreMessage) Scan(ctx context.Context, msgType protoreflect.MessageType, prefix string) (*MessageIterator, error) {
 	return NewMessageIterator(ctx, s.Store, msgType, prefix)
-}
-
-func (s *StoreMessage) Close() {
-	s.Store.Close()
 }
 
 type MessageIterator struct {

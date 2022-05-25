@@ -176,7 +176,7 @@ func testStoreMessageDelete(t *testing.T, ctx context.Context, sm kv.StoreMessag
 	}
 
 	// delete model2
-	err = sm.Delete(ctx, kv.FormatPath(m2.Name))
+	err = sm.DeleteMsg(ctx, kv.FormatPath(m2.Name))
 	if err != nil {
 		t.Fatal("failed to delete message", err)
 	}
@@ -187,7 +187,7 @@ func testStoreMessageDelete(t *testing.T, ctx context.Context, sm kv.StoreMessag
 	require.Error(t, kv.ErrNotFound, err)
 
 	// delete twice - expect nop
-	err = sm.Delete(ctx, kv.FormatPath(m2.Name))
+	err = sm.DeleteMsg(ctx, kv.FormatPath(m2.Name))
 	if err != nil {
 		t.Fatal("error trying to delete non-existing key", err)
 	}
@@ -202,13 +202,13 @@ func testStoreMessageDelete(t *testing.T, ctx context.Context, sm kv.StoreMessag
 	}
 
 	// delete model1
-	err = sm.Delete(ctx, m1Path)
+	err = sm.DeleteMsg(ctx, m1Path)
 	if err != nil {
 		t.Fatal("failed to delete message", err)
 	}
 
 	// delete twice - expect nop
-	err = sm.Delete(ctx, m1Path)
+	err = sm.DeleteMsg(ctx, m1Path)
 	if err != nil {
 		t.Fatal("error trying to delete non-existing key", err)
 	}
