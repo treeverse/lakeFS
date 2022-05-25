@@ -1411,6 +1411,7 @@ func (c *Controller) ListRepositoryRuns(w http.ResponseWriter, r *http.Request, 
 	if handleAPIError(w, err) {
 		return
 	}
+	defer runsIter.Close()
 
 	response := ActionRunList{
 		Pagination: Pagination{
