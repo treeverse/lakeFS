@@ -22,9 +22,43 @@ or using tools like [Apache DistCp](../integrations/distcp.md#from-s3-to-lakefs)
 lakeFS supports 3 ways to ingest objects from the object store without copying the data.
 They differ by the outcome, scale and ease of use:
 
-1. `lakectl ingest` - Use the CLI to create uncommitted objects in a branch. It will make sequential calls between the CLI and the server, which make scaling difficult.
-1. Import from the UI - A UI dialog to trigger an import to a designated import branch. It creates a commit from all imported objects.
-1. `lakefs import` - Use the lakeFS binary to create a commit from an S3 inventory file. Supported only with lakeFS with S3 storage adapters. Requires the lakeFS binary with DB access, hence might be hard to configure.
+1. Import from the UI - A UI dialog to trigger an import to a designated import branch. It creates a commit from all imported objects. Easy to use and scales well.
+1. `lakectl ingest` - Use a simple CLI command to create uncommitted objects in a branch. It will make sequential calls between the CLI and the server, which make scaling difficult.
+1. `lakefs import` - Use the lakeFS binary to create a commit from an S3 inventory file. Supported only with lakeFS with S3 storage adapters.
+   Requires the most setup - lakeFS binary with DB access and an S3 inventory file. The most scalable option.
+
+
+### UI Import
+
+Clicking the Import button from any branch will open the following dialog:
+
+![ui-import.png](../assets/img/UI-Import-Dialog.png)
+
+If it's the first import to `my-branch`, it will create the import branch named `_my-branch_imported`.
+lakeFS will import all objects from the Source URI to the import branch under the given prefix.
+
+Hang tight! It might take several minutes for the operation to complete:
+
+![img.png](../assets/img/ui-import-waiting.png)
+
+Once the import is completed, you can merge the changes from the import branch to the source branch.
+
+![img.png](../assets/img/ui-import-completed.png)
+
+#### Prerequisite
+
+lakeFS must have permissions to list the objects at the source object store,
+and on the same region of your destination bucket.
+
+#### Limitations
+
+Import is feasible only from source object storage that matches the storage namespace of the
+current repository.  lakeFS S3 installation cannot import from Azure bucket.
+
+Although created by lakeFS, import branches are just like any other branch.
+Authorization policies, CI/CD triggering, branch protection rules and all other lakeFS concepts apply to them
+as they apply to any other branch.
+{: .note }
 
 
 ### lakectl ingest
@@ -38,7 +72,7 @@ For this to work, make sure that:
 
 1. The user calling `lakectl ingest` must have permissions to list the objects at the source object store
 2. The lakeFS installation has read permissions to the objects being ingested.
-3. The source path is **not** a storage namespace used by lakeFS. e.g. if `lakefs://my-repo` created with storage namespace `s3://my-bucket`, then `s3://my-bucket/*` cannot be an ingestion source.   
+3. The source path is **not** a storage namespace used by lakeFS. e.g. if `lakefs://my-repo` created with storage namespace `s3://my-bucket`, then `s3://my-bucket/*` cannot be an ingestion source.
 
 <div class="tabs">
 <ul>
@@ -83,37 +117,6 @@ The `lakectl ingest` command currently supports the standard `GOOGLE_APPLICATION
 </div>
 </div>
 
-### UI Import
-
-Clicking the Import button from any branch will open the following dialog:
-
-![ui-import.png](../assets/img/UI-Import-Dialog.png)
-
-If it's the first import to `my-branch`, it will create the import branch named `_my-branch_imported`.
-lakeFS will import all objects from the Source URI to the import branch under the given prefix.
-
-Hang tight! It might take several minutes for the operation to complete:
-
-![img.png](../assets/img/ui-import-waiting.png)
-
-Once the import is completed, you can merge the changes from the import branch to the source branch.
-
-![img.png](../assets/img/ui-import-completed.png)
-
-#### Prerequisite
-
-lakeFS must have permissions to list the objects at the source object store,
-and on the same region of your destination bucket.
-
-#### Limitations
-
-Import is feasible only from source object storage that matches the storage namespace of the
-current repository.  lakeFS S3 installation cannot import from Azure bucket.
-
-Although created by lakeFS, import branches are just like any other branch.
-Authorization policies, CI/CD triggering, branch protection rules and all other lakeFS concepts apply to them
-as they apply to any other branch.
-{: .note }
 
 ### lakefs import
 
