@@ -37,7 +37,7 @@ type Config struct {
 	RepoName         string
 	StorageNamespace string
 	KeepRepo         bool
-	Credentials      model.Credential
+	Credentials      model.KvCredential
 	ServerAddress    string
 }
 
@@ -219,6 +219,6 @@ func (t *Loader) streamRequests(in <-chan vegeta.Target) <-chan error {
 	return errs
 }
 
-func getAuth(credentials *model.Credential) string {
+func getAuth(credentials *model.KvCredential) string {
 	return base64.StdEncoding.EncodeToString([]byte(credentials.AccessKeyID + ":" + credentials.SecretAccessKey))
 }

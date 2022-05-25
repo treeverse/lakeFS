@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -27,7 +28,7 @@ type Authenticator interface {
 
 // Credentialler fetches S3-style credentials for access keys.
 type Credentialler interface {
-	GetCredentials(ctx context.Context, accessKeyID string) (*model.Credential, error)
+	GetCredentials(ctx context.Context, accessKeyID string) (*model.KvCredential, error)
 }
 
 // NewChainAuthenticator returns an Authenticator that authenticates users
@@ -63,6 +64,15 @@ func NewEmailAuthenticator(service Service) *EmailAuthenticator {
 	return &EmailAuthenticator{AuthService: service}
 }
 
+func UserIDToInt64(id string) (int64, error) {
+	base, bitSize := 10, 64
+	idInt, err := strconv.ParseInt(id, base, bitSize)
+	if err != nil {
+		return InvalidUserID, err
+	}
+	return idInt, err
+}
+
 func (e EmailAuthenticator) AuthenticateUser(ctx context.Context, username, password string) (int64, error) {
 	user, err := e.AuthService.GetUserByEmail(ctx, username)
 	if err != nil {
@@ -72,8 +82,7 @@ func (e EmailAuthenticator) AuthenticateUser(ctx context.Context, username, pass
 	if err := user.Authenticate(password); err != nil {
 		return InvalidUserID, err
 	}
-
-	return user.ID, nil
+	return UserIDToInt64(user.ID)
 }
 
 func (e EmailAuthenticator) String() string {
@@ -99,7 +108,7 @@ func (ba *BuiltinAuthenticator) AuthenticateUser(ctx context.Context, username, 
 	if subtle.ConstantTimeCompare([]byte(password), []byte(cred.SecretAccessKey)) != 1 {
 		return InvalidUserID, ErrInvalidSecretAccessKey
 	}
-	return cred.UserID, nil
+	return UserIDToInt64(cred.UserID)
 }
 
 func (ba *BuiltinAuthenticator) String() string {
@@ -217,20 +226,22 @@ func (la *LDAPAuthenticator) AuthenticateUser(ctx context.Context, username, pas
 	// TODO(ariels): Should users be stored by their DNs or by their
 	//     usernames?  (Also below in user passed to CreateUser).
 	user, err := la.AuthService.GetUser(ctx, dn)
+	intID, err := UserIDToInt64(user.ID)
 	if err == nil {
 		logger.WithField("user", fmt.Sprintf("%+v", user)).Debug("Got existing user")
-		return user.ID, nil
+		return intID, nil
 	}
 
 	if !errors.Is(err, ErrNotFound) {
 		logger.WithError(err).Info("Could not get user; create them")
 	}
 
-	user = &model.User{
+	user = &model.KvUser{User: model.User{
 		CreatedAt:    time.Now(),
 		Username:     dn,
 		FriendlyName: &username,
 		Source:       "ldap",
+	},
 	}
 	id, err := la.AuthService.CreateUser(ctx, user)
 	if err != nil {

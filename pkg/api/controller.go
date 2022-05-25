@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -187,7 +188,13 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSO
 
 	// user.Username will be different from username/access_key_id on
 	// LDAP login.  Use the stored value.
-	tokenString, err := GenerateJWTLogin(secret, user.ID, loginTime, expires)
+	base, bitSize := 10, 64
+	n, err := strconv.ParseInt(user.ID, base, bitSize)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+		return
+	}
+	tokenString, err := GenerateJWTLogin(secret, n, loginTime, expires)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
@@ -396,9 +403,10 @@ func (c *Controller) CreateGroup(w http.ResponseWriter, r *http.Request, body Cr
 	ctx := r.Context()
 	c.LogAction(ctx, "create_group")
 
-	g := &model.Group{
+	g := &model.KvGroup{Group: model.Group{
 		CreatedAt:   time.Now().UTC(),
 		DisplayName: body.Id,
+	},
 	}
 	err := c.Auth.CreateGroup(ctx, g)
 	if handleAPIError(w, err) {
@@ -571,7 +579,7 @@ func (c *Controller) ListGroupPolicies(w http.ResponseWriter, r *http.Request, g
 	writeResponse(w, http.StatusOK, response)
 }
 
-func serializePolicy(p *model.Policy) Policy {
+func serializePolicy(p *model.KvPolicy) Policy {
 	stmts := make([]Statement, 0, len(p.Statement))
 	for _, s := range p.Statement {
 		stmts = append(stmts, Statement{
@@ -681,10 +689,11 @@ func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body C
 		}
 	}
 
-	p := &model.Policy{
+	p := &model.KvPolicy{Policy: model.Policy{
 		CreatedAt:   time.Now().UTC(),
 		DisplayName: body.Id,
 		Statement:   stmts,
+	},
 	}
 
 	err := c.Auth.WritePolicy(ctx, p)
@@ -762,10 +771,11 @@ func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, body U
 		}
 	}
 
-	p := &model.Policy{
+	p := &model.KvPolicy{Policy: model.Policy{
 		CreatedAt:   time.Now().UTC(),
 		DisplayName: policyID,
 		Statement:   stmts,
+	},
 	}
 	err := c.Auth.WritePolicy(ctx, p)
 	if handleAPIError(w, err) {
@@ -858,12 +868,14 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body Cre
 	}) {
 		return
 	}
-	u := &model.User{
-		CreatedAt:    time.Now().UTC(),
-		Username:     id,
-		FriendlyName: nil,
-		Source:       "internal",
-		Email:        parsedEmail,
+	u := &model.KvUser{
+		User: model.User{
+			CreatedAt:    time.Now().UTC(),
+			Username:     id,
+			FriendlyName: nil,
+			Source:       "internal",
+			Email:        parsedEmail,
+		},
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "create_user")
@@ -1097,7 +1109,7 @@ func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, us
 
 	ctx := r.Context()
 	c.LogAction(ctx, "list_user_policies")
-	var listPolicies func(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
+	var listPolicies func(ctx context.Context, username string, params *model.PaginationParams) ([]*model.KvPolicy, *model.Paginator, error)
 	if params.Effective != nil && *params.Effective {
 		listPolicies = c.Auth.ListEffectivePolicies
 	} else {
@@ -3128,7 +3140,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 		return
 	}
 
-	var cred *model.Credential
+	var cred *model.KvCredential
 	if body.Key == nil {
 		cred, err = auth.CreateInitialAdminUser(ctx, c.Auth, c.MetadataManager, body.Username)
 	} else {

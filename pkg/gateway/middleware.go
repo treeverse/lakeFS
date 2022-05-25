@@ -54,7 +54,14 @@ func AuthenticationHandler(authService auth.GatewayService, next http.Handler) h
 			_ = o.EncodeError(w, req, getAPIErrOrDefault(err, gatewayerrors.ErrAccessDenied))
 			return
 		}
-		user, err := authService.GetUserByID(ctx, creds.UserID)
+		base, bitSize := 10, 64
+		intCredsID, err := strconv.ParseInt(creds.UserID, base, bitSize)
+		if err != nil {
+			logger.WithError(err).Warn("error parsing user ID")
+			_ = o.EncodeError(w, req, getAPIErrOrDefault(err, gatewayerrors.ErrAccessDenied))
+			return
+		}
+		user, err := authService.GetUserByID(ctx, intCredsID)
 		if err != nil {
 			logger.WithError(err).Warn("could not get user for credentials key")
 			_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
@@ -135,7 +142,7 @@ func EnrichWithRepositoryOrFallback(c catalog.Interface, authService auth.Gatewa
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		repoID := ctx.Value(ContextKeyRepositoryID).(string)
-		username := ctx.Value(ContextKeyUser).(*model.User).Username
+		username := ctx.Value(ContextKeyUser).(*model.KvUser).Username
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		if repoID == "" {
 			// action without repo

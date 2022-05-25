@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -90,21 +91,21 @@ type FakeAuthService struct {
 	Region          string `json:"region"`
 }
 
-func (m *FakeAuthService) GetCredentials(_ context.Context, accessKey string) (*model.Credential, error) {
+func (m *FakeAuthService) GetCredentials(_ context.Context, accessKey string) (*model.KvCredential, error) {
 	if accessKey != m.AccessKeyID {
 		logging.Default().Fatal("access key in recording different than configuration")
 	}
-	aCred := new(model.Credential)
+	aCred := new(model.KvCredential)
 	aCred.AccessKeyID = accessKey
 	aCred.SecretAccessKey = m.SecretAccessKey
-	aCred.UserID = m.UserID
+	aCred.UserID = strconv.FormatInt(m.UserID, 10)
 	return aCred, nil
 }
 
-func (m *FakeAuthService) GetUserByID(_ context.Context, _ int64) (*model.User, error) {
-	return &model.User{
+func (m *FakeAuthService) GetUserByID(_ context.Context, _ int64) (*model.KvUser, error) {
+	return &model.KvUser{User: model.User{
 		CreatedAt: time.Now(),
-		Username:  "user",
+		Username:  "user"},
 	}, nil
 }
 
