@@ -10,13 +10,13 @@ import (
 
 // StoreMessage protobuf generic implementation for kv.Store interface applicable for all data models
 type StoreMessage struct {
-	Store Store
+	Store
 }
 
 // GetMsg based on 'path' the value will be loaded into 'msg' and return a predicate.
 //   In case 'msg' is nil, a predicate will be returned
 func (s *StoreMessage) GetMsg(ctx context.Context, path string, msg protoreflect.ProtoMessage) (Predicate, error) {
-	res, err := s.Store.Get(ctx, []byte(path))
+	res, err := s.Get(ctx, []byte(path))
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +36,7 @@ func (s *StoreMessage) SetMsg(ctx context.Context, path string, msg protoreflect
 	if err != nil {
 		return err
 	}
-	return s.Store.Set(ctx, []byte(path), val)
+	return s.Set(ctx, []byte(path), val)
 }
 
 func (s *StoreMessage) SetMsgIf(ctx context.Context, path string, msg protoreflect.ProtoMessage, predicate Predicate) error {
@@ -44,21 +44,17 @@ func (s *StoreMessage) SetMsgIf(ctx context.Context, path string, msg protorefle
 	if err != nil {
 		return err
 	}
-	return s.Store.SetIf(ctx, []byte(path), val, predicate)
+	return s.SetIf(ctx, []byte(path), val, predicate)
 }
 
-func (s *StoreMessage) Delete(ctx context.Context, path string) error {
-	return s.Store.Delete(ctx, []byte(path))
+func (s *StoreMessage) DeleteMsg(ctx context.Context, path string) error {
+	return s.Delete(ctx, []byte(path))
 }
 
-// Scan returns a prefix iterator which returns entries in deserialized format. Scan in store message implementation is msg specific
-// Therefore, the given prefix should bound the range of the data only to that which can be deserialized by the given proto message type
+// Scan returns a prefix iterator which returns entries in deserialized format. Scan in store message implementation is msg specific.
+//   Therefore, the prefix given should limit the range of the data to those that can be deserialized by the proto message type.
 func (s *StoreMessage) Scan(ctx context.Context, msgType protoreflect.MessageType, prefix string) (*MessageIterator, error) {
 	return NewMessageIterator(ctx, s.Store, msgType, prefix)
-}
-
-func (s *StoreMessage) Close() {
-	s.Store.Close()
 }
 
 type MessageIterator struct {
