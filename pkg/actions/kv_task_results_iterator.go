@@ -10,7 +10,7 @@ import (
 )
 
 type KVTaskResultIterator struct {
-	it  kv.MessageIterator
+	it  kv.PrimaryIterator
 	ctx context.Context
 }
 

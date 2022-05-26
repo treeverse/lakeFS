@@ -11,51 +11,46 @@ import (
 )
 
 type KVRunResultIterator struct {
-	it       kv.MessageIterator
-	ctx      context.Context
-	branchID string
-	commitID string
+	it  kv.MessageIterator
+	ctx context.Context
 }
 
 func NewKVRunResultIterator(ctx context.Context, store kv.StoreMessage, repositoryID, branchID, commitID, prefix string) *KVRunResultIterator {
-	key := kv.FormatPath(getRunPath(repositoryID), prefix)
-	it, err := store.Scan(ctx, key)
-	if err != nil {
-		return nil
+	var key string
+	var err error
+	secondary := true
+
+	switch {
+	case branchID != "":
+		key = getRunByBranchPath(repositoryID, branchID)
+	case commitID != "":
+		key = getRunByCommitPath(repositoryID, commitID)
+	default:
+		key = getRunPath(repositoryID, prefix)
+		secondary = false
 	}
+
+	var it kv.MessageIterator
+	if secondary {
+		it, err = kv.NewSecondaryIterator(ctx, store.Store, key)
+		if err != nil {
+			return nil
+		}
+	} else {
+		it, err = kv.NewPrimaryIterator(ctx, store.Store, key)
+		if err != nil {
+			return nil
+		}
+	}
+
 	return &KVRunResultIterator{
-		it:       *it,
-		ctx:      ctx,
-		branchID: branchID,
-		commitID: commitID,
+		it:  it,
+		ctx: ctx,
 	}
 }
 
 func (i *KVRunResultIterator) Next() bool {
-	entry := kv.NewMessageEntry((&RunResultData{}).ProtoReflect().Type())
-	for i.it.Next() {
-		err := i.it.Entry(&entry.Key, &entry.Value)
-		if err != nil {
-			logging.Default().WithError(err).Error("next entry failed")
-			return false
-		}
-		if entry.Value != nil {
-			value := entry.Value.(*RunResultData)
-			switch {
-			case i.branchID != "":
-				if value.BranchId == i.branchID {
-					return true
-				}
-			case i.commitID != "":
-				if value.CommitId == i.commitID {
-					return true
-				}
-			default: // both branchID and commitID are empty return the first next entry
-				return true
-			}
-		}
-	}
-	return false
+	return i.it.Next()
 }
 
 func (i *KVRunResultIterator) Value() *RunResult {
