@@ -334,7 +334,6 @@ func (s *KVService) saveRunManifestObjectStore(ctx context.Context, manifest Run
 }
 
 func (s *KVService) saveRunManifestDB(ctx context.Context, repositoryID graveler.RepositoryID, manifest RunManifest) error {
-	// TODO(niro): Should we create a transaction?
 	// insert run information
 	run := manifest.Run
 	err := s.storeRun(ctx, protoFromRunResult(&run), repositoryID.String())
@@ -519,11 +518,11 @@ func (s *KVService) GetTaskResult(ctx context.Context, repositoryID string, runI
 }
 
 func (s *KVService) ListRunResults(ctx context.Context, repositoryID string, branchID, commitID string, after string) (RunResultIterator, error) {
-	return NewKVRunResultIterator(ctx, s.Store, repositoryID, branchID, commitID, after), nil
+	return NewKVRunResultIterator(ctx, s.Store, repositoryID, branchID, commitID, after)
 }
 
 func (s *KVService) ListRunTaskResults(ctx context.Context, repositoryID string, runID string, after string) (TaskResultIterator, error) {
-	return NewKVTaskResultIterator(ctx, s.Store, repositoryID, runID, after), nil
+	return NewKVTaskResultIterator(ctx, s.Store, repositoryID, runID, after)
 }
 
 func (s *KVService) PreCommitHook(ctx context.Context, record graveler.HookRecord) error {

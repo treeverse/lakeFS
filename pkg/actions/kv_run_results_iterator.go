@@ -3,19 +3,16 @@ package actions
 import (
 	"context"
 
-	"google.golang.org/protobuf/proto"
-
-	"github.com/treeverse/lakefs/pkg/logging"
-
 	"github.com/treeverse/lakefs/pkg/kv"
+	"google.golang.org/protobuf/proto"
 )
 
 type KVRunResultIterator struct {
 	it  kv.MessageIterator
-	ctx context.Context
+	err error
 }
 
-func NewKVRunResultIterator(ctx context.Context, store kv.StoreMessage, repositoryID, branchID, commitID, prefix string) *KVRunResultIterator {
+func NewKVRunResultIterator(ctx context.Context, store kv.StoreMessage, repositoryID, branchID, commitID, prefix string) (*KVRunResultIterator, error) {
 	var key string
 	var err error
 	secondary := true
@@ -34,22 +31,24 @@ func NewKVRunResultIterator(ctx context.Context, store kv.StoreMessage, reposito
 	if secondary {
 		it, err = kv.NewSecondaryIterator(ctx, store.Store, key)
 		if err != nil {
-			return nil
+			return nil, err
 		}
 	} else {
 		it, err = kv.NewPrimaryIterator(ctx, store.Store, key)
 		if err != nil {
-			return nil
+			return nil, err
 		}
 	}
 
 	return &KVRunResultIterator{
-		it:  it,
-		ctx: ctx,
-	}
+		it: it,
+	}, nil
 }
 
 func (i *KVRunResultIterator) Next() bool {
+	if i.Err() != nil {
+		return false
+	}
 	return i.it.Next()
 }
 
@@ -60,14 +59,19 @@ func (i *KVRunResultIterator) Value() *RunResult {
 	var v proto.Message = &RunResultData{}
 	err := i.it.Entry(nil, &v)
 	if err != nil {
-		logging.Default().WithError(err).Errorf("value failed")
+		i.err = err
+		return nil
 	}
 	return runResultFromProto(v.(*RunResultData))
 }
 
 func (i *KVRunResultIterator) Err() error {
-	return i.it.Err()
+	if i.err == nil {
+		return i.it.Err()
+	}
+	return i.err
 }
+
 func (i *KVRunResultIterator) Close() {
 	i.it.Close()
 }
