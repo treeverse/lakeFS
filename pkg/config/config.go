@@ -97,7 +97,11 @@ func NewConfig() (*Config, error) {
 
 	err := viper.UnmarshalExact(&c.values, viper.DecodeHook(
 		mapstructure.ComposeDecodeHookFunc(
-			DecodeStrings, mapstructure.StringToTimeDurationHookFunc())))
+			DecodeStringToUICodeSnippet,
+			DecodeStrings,
+			mapstructure.StringToTimeDurationHookFunc(),
+		),
+	))
 	if err != nil {
 		return nil, err
 	}

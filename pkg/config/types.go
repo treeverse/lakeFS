@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
@@ -12,9 +13,10 @@ import (
 type Strings []string
 
 var (
-	ourStringsType  = reflect.TypeOf(Strings{})
-	stringType      = reflect.TypeOf("")
-	stringSliceType = reflect.TypeOf([]string{})
+	ourStringsType    = reflect.TypeOf(Strings{})
+	stringType        = reflect.TypeOf("")
+	stringSliceType   = reflect.TypeOf([]string{})
+	uiCodeSnippetType = reflect.TypeOf(UICodeSnippet{})
 )
 
 // DecodeStrings is a mapstructure.HookFuncType that decodes a single string value or a slice
@@ -30,6 +32,23 @@ func DecodeStrings(fromValue reflect.Value, toValue reflect.Value) (interface{},
 		return Strings(strings.Split(fromValue.String(), ",")), nil
 	}
 	return fromValue.Interface(), nil
+}
+
+// DecodeStringToUICodeSnippet decode UI code snippet from string
+func DecodeStringToUICodeSnippet(fromValue reflect.Value, toValue reflect.Value) (interface{}, error) {
+	if toValue.Type() != uiCodeSnippetType {
+		return fromValue.Interface(), nil
+	}
+	if fromValue.Kind() != reflect.String {
+		return fromValue.Interface(), nil
+	}
+	var snippet UICodeSnippet
+	value := fromValue.String()
+	err := json.Unmarshal([]byte(value), &snippet)
+	if err != nil {
+		return nil, err
+	}
+	return &snippet, nil
 }
 
 type SecureString string

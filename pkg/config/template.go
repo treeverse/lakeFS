@@ -30,6 +30,12 @@ type S3AuthInfo struct {
 	}
 }
 
+// UICodeSnippet ui code snippet. From be read from string/environment value as id=code
+type UICodeSnippet struct {
+	ID   string `mapstructure:"id"`
+	Code string `mapstructure:"code"`
+}
+
 // Output struct of configuration, used to validate.  If you read a key using a viper accessor
 // rather than accessing a field of this struct, that key will *not* be validated.  So don't
 // do that.
@@ -161,9 +167,6 @@ type configuration struct {
 		LakefsBaseURL      string        `mapstructure:"lakefs_base_url"`
 	}
 	UI struct {
-		Snippets []struct {
-			ID   string `mapstructure:"id"`
-			Code string `mapstructure:"code"`
-		} `mapstructure:"snippets"`
+		Snippets []UICodeSnippet
 	} `mapstructure:"ui"`
 }
