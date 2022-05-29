@@ -191,7 +191,7 @@ var runCmd = &cobra.Command{
 			storeMessage := kv.StoreMessage{Store: kvStore}
 
 			multipartsTracker = multiparts.NewTracker(storeMessage)
-			actionsService = actions.NewService(
+			actionsService = actions.NewKVService(
 				ctx,
 				storeMessage,
 				catalog.NewActionsSource(c),

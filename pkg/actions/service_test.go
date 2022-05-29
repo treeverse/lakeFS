@@ -62,7 +62,7 @@ func GetDBService(t *testing.T, ctx context.Context, source actions.Source, writ
 func GetKVService(t *testing.T, ctx context.Context, source actions.Source, writer actions.OutputWriter, stats stats.Collector, runHooks bool) actions.Service {
 	t.Helper()
 	kvStore := kvtest.GetStore(ctx, t)
-	return actions.NewService(ctx, kv.StoreMessage{Store: kvStore}, source, writer, stats, runHooks)
+	return actions.NewKVService(ctx, kv.StoreMessage{Store: kvStore}, source, writer, stats, runHooks)
 }
 
 func TestServiceRun(t *testing.T) {
@@ -288,12 +288,6 @@ func TestDisableHooksRun(t *testing.T) {
 			err := actionsService.Run(ctx, record)
 			if err != nil {
 				t.Fatalf("Run() failed with err=%s", err)
-			}
-
-			// update commit using post event record
-			err = actionsService.UpdateCommitID(ctx, record.RepositoryID.String(), record.StorageNamespace.String(), record.RunID, "commit1")
-			if err != nil {
-				t.Fatalf("UpdateCommitID() failed with err=%s", err)
 			}
 
 			// get run result

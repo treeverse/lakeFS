@@ -12,29 +12,31 @@ type KVRunResultIterator struct {
 	err error
 }
 
-func NewKVRunResultIterator(ctx context.Context, store kv.StoreMessage, repositoryID, branchID, commitID, prefix string) (*KVRunResultIterator, error) {
-	var key string
-	var err error
+func NewKVRunResultIterator(ctx context.Context, store kv.StoreMessage, repositoryID, branchID, commitID, after string) (*KVRunResultIterator, error) {
+	var (
+		prefix string
+		err    error
+	)
 	secondary := true
 
 	switch {
 	case branchID != "":
-		key = getRunByBranchPath(repositoryID, branchID)
+		prefix = getByBranchPath(repositoryID, branchID)
 	case commitID != "":
-		key = getRunByCommitPath(repositoryID, commitID)
+		prefix = getByCommitPath(repositoryID, commitID)
 	default:
-		key = getRunPath(repositoryID, prefix)
+		prefix = kv.FormatPath(getBaseActionsPath(repositoryID), runsPrefix)
 		secondary = false
 	}
 
 	var it kv.MessageIterator
 	if secondary {
-		it, err = kv.NewSecondaryIterator(ctx, store.Store, key)
+		it, err = kv.NewSecondaryIterator(ctx, store.Store, prefix, after)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		it, err = kv.NewPrimaryIterator(ctx, store.Store, key)
+		it, err = kv.NewPrimaryIterator(ctx, store.Store, prefix, after)
 		if err != nil {
 			return nil, err
 		}

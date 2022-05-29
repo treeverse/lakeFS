@@ -96,7 +96,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, 
 	var actionsService actions.Service
 	if kvEnabled {
 		kvStore := kvtest.GetStore(ctx, t)
-		actionsService = actions.NewService(
+		actionsService = actions.NewKVService(
 			ctx,
 			kv.StoreMessage{Store: kvStore},
 			catalog.NewActionsSource(c),
@@ -203,49 +203,32 @@ func setupClientWithAdminAndWalkerFactory(t testing.TB, factory catalog.WalkerFa
 }
 
 func TestInvalidRoute(t *testing.T) {
-	tests := []struct {
-		name      string
-		kvEnabled bool
-	}{
-		{
-			name:      "DB invalid route",
-			kvEnabled: false,
-		},
-		{
-			name:      "KV invalid route",
-			kvEnabled: true,
-		},
+	handler, _ := setupHandler(t, false)
+	server := setupServer(t, handler)
+	clt := setupClientByEndpoint(t, server.URL, "", "")
+	cred := createDefaultAdminUser(t, clt)
+
+	// setup client with invalid endpoint base url
+	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(cred.AccessKeyID, cred.SecretAccessKey)
+	if err != nil {
+		t.Fatal("basic auth security provider", err)
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			handler, _ := setupHandler(t, tt.kvEnabled)
-			server := setupServer(t, handler)
-			clt := setupClientByEndpoint(t, server.URL, "", "")
-			cred := createDefaultAdminUser(t, clt)
+	clt, err = api.NewClientWithResponses(server.URL+api.BaseURL+"//", api.WithRequestEditorFn(basicAuthProvider.Intercept))
+	if err != nil {
+		t.Fatal("failed to create api client:", err)
+	}
 
-			// setup client with invalid endpoint base url
-			basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(cred.AccessKeyID, cred.SecretAccessKey)
-			if err != nil {
-				t.Fatal("basic auth security provider", err)
-			}
-			clt, err = api.NewClientWithResponses(server.URL+api.BaseURL+"//", api.WithRequestEditorFn(basicAuthProvider.Intercept))
-			if err != nil {
-				t.Fatal("failed to create api client:", err)
-			}
-
-			ctx := context.Background()
-			resp, err := clt.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
-			if err != nil {
-				t.Fatalf("failed to get lakefs server version")
-			}
-			if resp.JSONDefault == nil {
-				t.Fatalf("client api call expected default error, got nil")
-			}
-			expectedErrMsg := api.ErrInvalidAPIEndpoint.Error()
-			errMsg := resp.JSONDefault.Message
-			if errMsg != expectedErrMsg {
-				t.Fatalf("client response error message: %s, expected: %s", errMsg, expectedErrMsg)
-			}
-		})
+	ctx := context.Background()
+	resp, err := clt.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
+	if err != nil {
+		t.Fatalf("failed to get lakefs server version")
+	}
+	if resp.JSONDefault == nil {
+		t.Fatalf("client api call expected default error, got nil")
+	}
+	expectedErrMsg := api.ErrInvalidAPIEndpoint.Error()
+	errMsg := resp.JSONDefault.Message
+	if errMsg != expectedErrMsg {
+		t.Fatalf("client response error message: %s, expected: %s", errMsg, expectedErrMsg)
 	}
 }

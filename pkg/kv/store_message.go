@@ -52,23 +52,13 @@ func (s *StoreMessage) DeleteMsg(ctx context.Context, partitionKey, key string) 
 }
 
 func (s *StoreMessage) Scan(ctx context.Context, prefix string) (*PrimaryIterator, error) {
-	return NewPrimaryIterator(ctx, s.Store, prefix)
-}
-
-type MessageEntry struct {
-	Key   string
-	Value protoreflect.ProtoMessage
-}
-
-func NewMessageEntry(msg protoreflect.MessageType) *MessageEntry {
-	return &MessageEntry{
-		Key:   "",
-		Value: msg.New().Interface(),
-	}
+	return NewPrimaryIterator(ctx, s.Store, prefix, "")
 }
 
 type MessageIterator interface {
 	Next() bool
+	// Entry Receives key and value pointers from user and populates them with the iterator entry values
+	// The function will try to populate the func arguments which are not nil
 	Entry(key *string, value *protoreflect.ProtoMessage) error
 	Err() error
 	Close()
@@ -81,8 +71,8 @@ type PrimaryIterator struct {
 	err error
 }
 
-func NewPrimaryIterator(ctx context.Context, store Store, prefix string) (*PrimaryIterator, error) {
-	itr, err := ScanPrefix(ctx, store, []byte(prefix))
+func NewPrimaryIterator(ctx context.Context, store Store, prefix, after string) (*PrimaryIterator, error) {
+	itr, err := ScanPrefix(ctx, store, []byte(prefix), []byte(after))
 	if err != nil {
 		return nil, fmt.Errorf("create prefix iterator: %w", err)
 	}
@@ -134,8 +124,8 @@ type SecondaryIterator struct {
 	err   error
 }
 
-func NewSecondaryIterator(ctx context.Context, store Store, prefix string) (*SecondaryIterator, error) {
-	itr, err := ScanPrefix(ctx, store, []byte(prefix))
+func NewSecondaryIterator(ctx context.Context, store Store, prefix, after string) (*SecondaryIterator, error) {
+	itr, err := ScanPrefix(ctx, store, []byte(prefix), []byte(after))
 	if err != nil {
 		return nil, fmt.Errorf("create prefix iterator: %w", err)
 	}

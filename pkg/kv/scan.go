@@ -43,8 +43,12 @@ func (b *PrefixIterator) Close() {
 }
 
 // ScanPrefix returns an iterator on store that scan the set of keys that start with prefix
-func ScanPrefix(ctx context.Context, store Store, partitionKey, prefix []byte) (EntriesIterator, error) {
-	iter, err := store.Scan(ctx, partitionKey, prefix)
+func ScanPrefix(ctx context.Context, store Store, partitionKey, prefix, after []byte) (EntriesIterator, error) {
+	start := prefix
+	if len(after) > 0 {
+		start = after
+	}
+	iter, err := store.Scan(ctx, start)
 	if err != nil {
 		return nil, err
 	}

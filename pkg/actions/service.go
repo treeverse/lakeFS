@@ -23,10 +23,11 @@ import (
 
 const (
 	actionsPrefix = "actions"
-	runPrefix     = "run"
-	taskPrefix    = "task"
-	branchPrefix  = "runByBranch"
-	commitPrefix  = "runByCommit"
+	reposPrefix   = "repos"
+	runsPrefix    = "runs"
+	tasksPrefix   = "tasks"
+	branchPrefix  = "branches"
+	commitPrefix  = "commits"
 	unixYear3000  = 32500915200
 )
 
@@ -134,20 +135,32 @@ func protoFromTaskResult(m *TaskResult) *TaskResultData {
 	}
 }
 
+func getBaseActionsPath(repoID string) string {
+	return kv.FormatPath(actionsPrefix, reposPrefix, repoID)
+}
+
 func getTasksPath(repoID, runID string) string {
-	return kv.FormatPath(actionsPrefix, repoID, taskPrefix, runID)
+	return kv.FormatPath(getBaseActionsPath(repoID), tasksPrefix, runID)
 }
 
 func getRunPath(repoID, runID string) string {
-	return kv.FormatPath(actionsPrefix, repoID, runPrefix, runID)
+	return kv.FormatPath(getBaseActionsPath(repoID), runsPrefix, runID)
 }
 
-func getRunByBranchPath(repoID, branchID string) string {
-	return kv.FormatPath(actionsPrefix, repoID, branchPrefix, branchID)
+func getByBranchPath(repoID, branchID string) string {
+	return kv.FormatPath(getBaseActionsPath(repoID), branchPrefix, branchID)
 }
 
-func getRunByCommitPath(repoID, commitID string) string {
-	return kv.FormatPath(actionsPrefix, repoID, commitPrefix, commitID)
+func getByCommitPath(repoID, commitID string) string {
+	return kv.FormatPath(getBaseActionsPath(repoID), commitPrefix, commitID)
+}
+
+func getRunByBranchPath(repoID, branchID, runID string) string {
+	return kv.FormatPath(getByBranchPath(repoID, branchID), runID)
+}
+
+func getRunByCommitPath(repoID, commitID, runID string) string {
+	return kv.FormatPath(getByCommitPath(repoID, commitID), runID)
 }
 
 type Service interface {
@@ -161,7 +174,7 @@ type Service interface {
 	graveler.HooksHandler
 }
 
-func NewService(ctx context.Context, store kv.StoreMessage, source Source, writer OutputWriter, stats stats.Collector, runHooks bool) *KVService {
+func NewKVService(ctx context.Context, store kv.StoreMessage, source Source, writer OutputWriter, stats stats.Collector, runHooks bool) *KVService {
 	ctx, cancel := context.WithCancel(ctx)
 	return &KVService{
 		Store:    store,
@@ -356,23 +369,27 @@ func (s *KVService) saveRunManifestDB(ctx context.Context, repositoryID graveler
 
 func (s *KVService) storeRun(ctx context.Context, run *RunResultData, repoID string) error {
 	runKey := getRunPath(repoID, run.RunId)
-	err := s.Store.SetMsg(ctx, runKey, run)
-	if err != nil {
-		return fmt.Errorf("save run result (runKey %s): %w", runKey, err)
-	}
-
 	// Save secondary index by BranchID
-	bk := kv.FormatPath(getRunByBranchPath(repoID, run.BranchId), run.RunId)
-	err = s.Store.SetIf(ctx, []byte(bk), []byte(runKey), nil)
-	if err != nil {
-		return fmt.Errorf("save secondary index by branch (key %s): %w", bk, err)
+	if run.BranchId != "" {
+		bk := getRunByBranchPath(repoID, run.BranchId, run.RunId)
+		err := s.Store.SetIf(ctx, []byte(bk), []byte(runKey), nil)
+		if err != nil {
+			return fmt.Errorf("save secondary index by branch (key %s): %w", bk, err)
+		}
 	}
 
 	// Save secondary index by CommitID
-	ck := kv.FormatPath(getRunByCommitPath(repoID, run.CommitId), run.RunId)
-	err = s.Store.SetIf(ctx, []byte(ck), []byte(runKey), nil)
+	if run.CommitId != "" {
+		ck := getRunByCommitPath(repoID, run.CommitId, run.RunId)
+		err := s.Store.SetIf(ctx, []byte(ck), []byte(runKey), nil)
+		if err != nil {
+			return fmt.Errorf("save secondary index by commit (key %s): %w", ck, err)
+		}
+	}
+
+	err := s.Store.SetMsg(ctx, runKey, run)
 	if err != nil {
-		return fmt.Errorf("save secondary index by commit (key %s): %w", ck, err)
+		return fmt.Errorf("save run result (runKey %s): %w", runKey, err)
 	}
 
 	return nil
@@ -428,10 +445,7 @@ func (s *KVService) UpdateCommitID(ctx context.Context, repositoryID string, sto
 	run := RunResultData{}
 	_, err := s.Store.GetMsg(ctx, runKey, &run)
 	if err != nil {
-		if errors.Is(err, kv.ErrNotFound) {
-			return nil // nothing to update
-		}
-		return fmt.Errorf("run id: %w", err)
+		return fmt.Errorf("run id %s: %w", runID, err)
 	}
 	if run.CommitId == commitID { // return if no update is required
 		return nil
@@ -442,7 +456,6 @@ func (s *KVService) UpdateCommitID(ctx context.Context, repositoryID string, sto
 	if err != nil {
 		return err
 	}
-	manifest := &RunManifest{Run: *runResultFromProto(&run)}
 
 	// update database and re-read the run manifest
 	run.CommitId = commitID
@@ -450,6 +463,8 @@ func (s *KVService) UpdateCommitID(ctx context.Context, repositoryID string, sto
 	if err != nil {
 		return fmt.Errorf("update run commit_id: %w", err)
 	}
+
+	manifest := &RunManifest{Run: *runResultFromProto(&run)}
 
 	taskKey := getTasksPath(repositoryID, runID)
 	scanner, err := s.Store.Scan(ctx, taskKey)
@@ -478,14 +493,14 @@ func (s *KVService) UpdateCommitID(ctx context.Context, repositoryID string, sto
 
 func (s *KVService) deleteRunSecondaryKeys(ctx context.Context, run *RunResultData, repoID string) error {
 	// Delete secondary index by BranchID
-	bk := kv.FormatPath(getRunByBranchPath(repoID, run.BranchId), run.RunId)
+	bk := getRunByBranchPath(repoID, run.BranchId, run.RunId)
 	err := s.Store.Delete(ctx, []byte(bk))
 	if err != nil {
 		return fmt.Errorf("delete secondary index by branch (key %s): %w", bk, err)
 	}
 
 	// Delete secondary index by CommitID
-	ck := kv.FormatPath(getRunByCommitPath(repoID, run.CommitId), run.RunId)
+	ck := getRunByCommitPath(repoID, run.CommitId, run.RunId)
 	err = s.Store.Delete(ctx, []byte(ck))
 	if err != nil {
 		return fmt.Errorf("delete secondary index by commit (key %s): %w", ck, err)
@@ -500,7 +515,7 @@ func (s *KVService) GetRunResult(ctx context.Context, repositoryID string, runID
 	_, err := s.Store.GetMsg(ctx, runKey, &m)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
-			err = fmt.Errorf("%s, %w", err, ErrNotFound) // Wrap error for compatibility with DBService
+			err = fmt.Errorf("%s: %w", err, ErrNotFound) // Wrap error for compatibility with DBService
 		}
 		return nil, err
 	}

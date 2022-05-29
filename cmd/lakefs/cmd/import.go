@@ -130,7 +130,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 		}
 		defer kvStore.Close()
 		storeMessage := kv.StoreMessage{Store: kvStore}
-		actionsService = actions.NewService(
+		actionsService = actions.NewKVService(
 			ctx,
 			storeMessage,
 			catalog.NewActionsSource(c),

@@ -70,7 +70,7 @@ func GetDBService(t *testing.T, ctx context.Context, source actions.Source, writ
 func GetKVService(t *testing.T, ctx context.Context, source actions.Source, writer actions.OutputWriter, stats stats.Collector, runHooks bool) actions.Service {
 	t.Helper()
 	kvStore := kvtest.GetStore(ctx, t)
-	return actions.NewService(ctx, kv.StoreMessage{Store: kvStore}, source, writer, stats, runHooks)
+	return actions.NewKVService(ctx, kv.StoreMessage{Store: kvStore}, source, writer, stats, runHooks)
 }
 
 func TestLocalLoad(t *testing.T) {
