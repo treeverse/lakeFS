@@ -392,9 +392,9 @@ func checkEvent(t *testing.T, record graveler.HookRecord, event actions.EventInf
 
 func setupTest(t *testing.T) (*mock.MockOutputWriter, *gomock.Controller, *httptest.Server, graveler.HookRecord) {
 	t.Helper()
-
+	hooks := graveler.HooksNoOp{}
 	record := graveler.HookRecord{
-		RunID:            graveler.NewRunID(),
+		RunID:            hooks.NewRunID(),
 		EventType:        graveler.EventTypePreCommit,
 		StorageNamespace: "storageNamespace",
 		RepositoryID:     "repoID",

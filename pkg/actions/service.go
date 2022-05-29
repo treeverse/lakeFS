@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-multierror"
+	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -26,6 +27,7 @@ const (
 	taskPrefix    = "task"
 	branchPrefix  = "runByBranch"
 	commitPrefix  = "runByCommit"
+	unixYear3000  = 32500915200
 )
 
 var ErrNotFound = errors.New("not found")
@@ -584,6 +586,13 @@ func (s *KVService) PreDeleteBranchHook(ctx context.Context, record graveler.Hoo
 
 func (s *KVService) PostDeleteBranchHook(_ context.Context, record graveler.HookRecord) {
 	s.asyncRun(record)
+}
+
+func (s *KVService) NewRunID() string {
+	const nanoLen = 8
+	id := gonanoid.Must(nanoLen)
+	tm := time.Unix(unixYear3000-time.Now().Unix(), 0).UTC().Format(graveler.RunIDTimeLayout)
+	return tm + id
 }
 
 func NewHookRunID(actionIdx, hookIdx int) string {

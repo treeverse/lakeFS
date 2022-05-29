@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	nanoid "github.com/matoous/go-nanoid/v2"
+	gonanoid "github.com/matoous/go-nanoid/v2"
 )
 
 type EventType string
@@ -22,6 +22,8 @@ const (
 	EventTypePostCreateBranch EventType = "post-create-branch"
 	EventTypePreDeleteBranch  EventType = "pre-delete-branch"
 	EventTypePostDeleteBranch EventType = "post-delete-branch"
+
+	RunIDTimeLayout = "20060102150405"
 )
 
 // HookRecord is an aggregation of all necessary fields for all event types
@@ -59,6 +61,8 @@ type HooksHandler interface {
 	PostCreateBranchHook(ctx context.Context, record HookRecord)
 	PreDeleteBranchHook(ctx context.Context, record HookRecord) error
 	PostDeleteBranchHook(ctx context.Context, record HookRecord)
+	// NewRunID TODO (niro): WA for now until KV feature complete
+	NewRunID() string
 }
 
 type HooksNoOp struct{}
@@ -107,9 +111,9 @@ func (h *HooksNoOp) PreDeleteBranchHook(context.Context, HookRecord) error {
 func (h *HooksNoOp) PostDeleteBranchHook(context.Context, HookRecord) {
 }
 
-func NewRunID() string {
+func (h *HooksNoOp) NewRunID() string {
 	const nanoLen = 8
-	id := nanoid.Must(nanoLen)
-	tm := time.Now().UTC().Format("20060102150405")
+	id := gonanoid.Must(nanoLen)
+	tm := time.Now().UTC().Format(RunIDTimeLayout)
 	return tm + id
 }

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-multierror"
+	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -393,4 +394,11 @@ func (s *DBService) PreDeleteBranchHook(ctx context.Context, record graveler.Hoo
 
 func (s *DBService) PostDeleteBranchHook(_ context.Context, record graveler.HookRecord) {
 	s.asyncRun(record)
+}
+
+func (s *DBService) NewRunID() string {
+	const nanoLen = 8
+	id := gonanoid.Must(nanoLen)
+	tm := time.Now().UTC().Format(graveler.RunIDTimeLayout)
+	return tm + id
 }
