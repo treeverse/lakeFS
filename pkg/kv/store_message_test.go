@@ -250,15 +250,13 @@ func testStoreMessageScan(t *testing.T, ctx context.Context, sm kv.StoreMessage)
 	testutil.MustDo(t, "get iterator", err)
 	defer itr.Close()
 	count := 0
-	eKey := ""
-	eValue := m.ProtoReflect().Interface()
 	for itr.Next() {
-		err = itr.Entry(&eKey, &eValue)
-		require.NoError(t, err)
-		value, ok := eValue.(*kvtest.TestModel)
+		entry := itr.Entry()
+		require.NotNil(t, entry)
+		value, ok := entry.Value.(*kvtest.TestModel)
 		require.True(t, ok)
 		require.Nil(t, itr.Err())
-		require.Equal(t, kv.FormatPath(modelKeyPrefix, strconv.Itoa(count)), eKey)
+		require.Equal(t, kv.FormatPath(modelKeyPrefix, strconv.Itoa(count)), entry.Key)
 		require.True(t, proto.Equal(value, m))
 		count++
 	}
@@ -294,25 +292,19 @@ func testStoreMessageScanWrongFormat(t *testing.T, ctx context.Context, sm kv.St
 	testutil.MustDo(t, "get iterator", err)
 	defer itr.Close()
 
-	eKey := ""
-	eValue := m.ProtoReflect().Interface()
 	for i := 0; i < modelNum; i++ {
 		require.True(t, itr.Next())
-		err = itr.Entry(&eKey, &eValue)
-		require.NoError(t, err)
-		value, ok := eValue.(*kvtest.TestModel)
+		entry := itr.Entry()
+		value, ok := entry.Value.(*kvtest.TestModel)
 		require.True(t, ok)
-		require.Equal(t, kv.FormatPath(modelKeyPrefix, strconv.Itoa(i)), eKey)
+		require.Equal(t, kv.FormatPath(modelKeyPrefix, strconv.Itoa(i)), entry.Key)
 		require.True(t, proto.Equal(value, m))
 	}
 
 	// bad Entry
 	require.True(t, itr.Next())
-	err = itr.Entry(&eKey, &eValue)
-	require.ErrorIs(t, err, proto.Error)
-	require.NoError(t, itr.Err())
-	require.True(t, itr.Next())
+	value := itr.Entry()
+	require.Nil(t, value)
+	require.ErrorIs(t, itr.Err(), proto.Error)
 	require.False(t, itr.Next())
-	err = itr.Entry(&eKey, &eValue)
-	require.ErrorIs(t, err, kv.ErrNotFound)
 }

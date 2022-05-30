@@ -15,9 +15,10 @@ import (
 )
 
 const (
-	iteratorTestRepoID = "itTestRepoID"
+	iteratorTestRepoID = "iterTestRepoID"
 	testByBranch       = "testBranch"
-	testByCommit       = "commit1"
+	testByCommit       = "testCommit1"
+	testMissingPrimary = "branchPartialPrimary"
 )
 
 var keyMap = make(map[int]string, 0)
@@ -76,10 +77,18 @@ func TestRunResultsIterator(t *testing.T) {
 			count:    41,
 		},
 		{
+			name:     "missing primary keys",
+			branchID: testMissingPrimary,
+			commitID: "",
+			after:    "",
+			startIdx: 49,
+			count:    50,
+		},
+		{
 			name:     "after out of range",
 			branchID: "",
 			commitID: "",
-			after:    keyMap[201],
+			after:    keyMap[251],
 			startIdx: 0,
 			count:    0,
 		},
@@ -94,6 +103,7 @@ func TestRunResultsIterator(t *testing.T) {
 			runID := tt.startIdx
 			for itr.Next() {
 				run := itr.Value()
+				require.NotNil(t, run)
 				require.Equal(t, strconv.Itoa(runID), run.RunID)
 				runID--
 				numRead++
@@ -150,6 +160,7 @@ func createTestData(t *testing.T, ctx context.Context, kvStore kv.StoreMessage) 
 		}
 	}
 
+	s := kv.SecondaryIndex{}
 	// By branch
 	for ; msgIdx < 150; msgIdx++ {
 		runID := actionService.NewRunID()
@@ -157,8 +168,9 @@ func createTestData(t *testing.T, ctx context.Context, kvStore kv.StoreMessage) 
 		key := actions.GetRunPath(iteratorTestRepoID, runID)
 		run.RunId = strconv.Itoa(msgIdx)
 		require.NoError(t, kvStore.SetMsg(ctx, key, &run))
-		keyByCommit := actions.GetRunByBranchPath(iteratorTestRepoID, testByBranch, runID)
-		require.NoError(t, kvStore.Set(ctx, []byte(keyByCommit), []byte(key)))
+		keyByBranch := actions.GetRunByBranchPath(iteratorTestRepoID, testByBranch, runID)
+		s.PrimaryKey = []byte(key)
+		require.NoError(t, kvStore.SetMsg(ctx, keyByBranch, &s))
 		time.Sleep(2 * time.Millisecond)
 	}
 
@@ -170,7 +182,27 @@ func createTestData(t *testing.T, ctx context.Context, kvStore kv.StoreMessage) 
 		run.RunId = strconv.Itoa(msgIdx)
 		require.NoError(t, kvStore.SetMsg(ctx, key, &run))
 		keyByCommit := actions.GetRunByCommitPath(iteratorTestRepoID, testByCommit, runID)
-		require.NoError(t, kvStore.Set(ctx, []byte(keyByCommit), []byte(key)))
+		s.PrimaryKey = []byte(key)
+		require.NoError(t, kvStore.SetMsg(ctx, keyByCommit, &s))
+		time.Sleep(2 * time.Millisecond)
+	}
+
+	// Missing Primary
+	for ; msgIdx < 250; msgIdx++ {
+		//for ; msgIdx < 201; msgIdx++ {
+		runID := actionService.NewRunID()
+
+		// Add key with bad primary
+		primaryKey := actions.GetRunPath(iteratorTestRepoID, runID)
+		keyNoPrimary := actions.GetRunByBranchPath(iteratorTestRepoID, testMissingPrimary, runID)
+		s.PrimaryKey = []byte(primaryKey)
+		require.NoError(t, kvStore.SetMsg(ctx, keyNoPrimary, &s))
+
+		// Key with primary
+		primaryKey = actions.GetRunPath(iteratorTestRepoID, keyMap[msgIdx%100])
+		keyWithPrimary := actions.GetRunByBranchPath(iteratorTestRepoID, testMissingPrimary, keyMap[msgIdx%100])
+		s.PrimaryKey = []byte(primaryKey)
+		require.NoError(t, kvStore.SetMsg(ctx, keyWithPrimary, &s))
 		time.Sleep(2 * time.Millisecond)
 	}
 

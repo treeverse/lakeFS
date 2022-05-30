@@ -2,6 +2,7 @@ package kv
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"google.golang.org/protobuf/proto"
@@ -51,15 +52,20 @@ func (s *StoreMessage) DeleteMsg(ctx context.Context, partitionKey, key string) 
 	return s.Delete(ctx, []byte(partitionKey), []byte(key))
 }
 
-func (s *StoreMessage) Scan(ctx context.Context, prefix string) (*PrimaryIterator, error) {
-	return NewPrimaryIterator(ctx, s.Store, prefix, "")
+func (s *StoreMessage) Scan(ctx context.Context, msgType protoreflect.MessageType, prefix string) (*PrimaryIterator, error) {
+	return NewPrimaryIterator(ctx, s.Store, msgType, prefix, "")
+}
+
+type MessageEntry struct {
+	Key   string
+	Value protoreflect.ProtoMessage
 }
 
 type MessageIterator interface {
 	Next() bool
 	// Entry Receives key and value pointers from user and populates them with the iterator entry values
 	// The function will try to populate the func arguments which are not nil
-	Entry(key *string, value *protoreflect.ProtoMessage) error
+	Entry() *MessageEntry
 	Err() error
 	Close()
 }
@@ -67,69 +73,70 @@ type MessageIterator interface {
 // PrimaryIterator MessageIterator implementation for primary key
 // The iterator iterates over the given prefix and returns the proto message and key
 type PrimaryIterator struct {
-	itr EntriesIterator
-	err error
+	itr     EntriesIterator
+	msgType protoreflect.MessageType
+	err     error
 }
 
-func NewPrimaryIterator(ctx context.Context, store Store, prefix, after string) (*PrimaryIterator, error) {
+func NewPrimaryIterator(ctx context.Context, store Store, msgType protoreflect.MessageType, prefix, after string) (*PrimaryIterator, error) {
 	itr, err := ScanPrefix(ctx, store, []byte(prefix), []byte(after))
 	if err != nil {
 		return nil, fmt.Errorf("create prefix iterator: %w", err)
 	}
-	return &PrimaryIterator{itr: itr}, nil
+	return &PrimaryIterator{itr: itr, msgType: msgType}, nil
 }
 
-func (m *PrimaryIterator) Next() bool {
-	if m.err != nil {
+func (i *PrimaryIterator) Next() bool {
+	if i.err != nil {
 		return false
 	}
-	return m.itr.Next()
+	return i.itr.Next()
 }
 
-func (m *PrimaryIterator) Entry(key *string, value *protoreflect.ProtoMessage) error {
-	entry := m.itr.Entry()
+func (i *PrimaryIterator) Entry() *MessageEntry {
+	entry := i.itr.Entry()
 	if entry == nil {
-		return ErrNotFound
+		return nil
 	}
-	if value != nil {
-		err := proto.Unmarshal(entry.Value, *value)
-		if err != nil {
-			return fmt.Errorf("unmarshal proto data for key %s: %w", string(entry.Key), err)
-		}
+	value := i.msgType.New().Interface()
+	err := proto.Unmarshal(entry.Value, value)
+	if err != nil {
+		i.err = fmt.Errorf("unmarshal proto data for key %s: %w", entry.Key, err)
+		return nil
 	}
-	if key != nil {
-		*key = string(entry.Key)
-	}
-	return nil
+	return &MessageEntry{
+		Key:   string(entry.Key),
+		Value: value}
 }
 
-func (m *PrimaryIterator) Err() error {
-	if m.err != nil {
-		return m.err
+func (i *PrimaryIterator) Err() error {
+	if i.err != nil {
+		return i.err
 	}
-	return m.itr.Err()
+	return i.itr.Err()
 }
 
-func (m *PrimaryIterator) Close() {
-	m.itr.Close()
+func (i *PrimaryIterator) Close() {
+	i.itr.Close()
 }
 
 // SecondaryIterator MessageIterator implementation for secondary key
 // The iterator iterates over the given prefix, extracts the primary key value from secondary key and then returns
 // the proto message and primary key
 type SecondaryIterator struct {
-	ctx   context.Context
-	itr   EntriesIterator
-	store Store
-	err   error
+	ctx     context.Context
+	itr     PrimaryIterator
+	store   Store
+	msgType protoreflect.MessageType
+	err     error
 }
 
-func NewSecondaryIterator(ctx context.Context, store Store, prefix, after string) (*SecondaryIterator, error) {
-	itr, err := ScanPrefix(ctx, store, []byte(prefix), []byte(after))
+func NewSecondaryIterator(ctx context.Context, store Store, msgType protoreflect.MessageType, prefix, after string) (*SecondaryIterator, error) {
+	itr, err := NewPrimaryIterator(ctx, store, (&SecondaryIndex{}).ProtoReflect().Type(), prefix, after)
 	if err != nil {
 		return nil, fmt.Errorf("create prefix iterator: %w", err)
 	}
-	return &SecondaryIterator{ctx: ctx, itr: itr, store: store}, nil
+	return &SecondaryIterator{ctx: ctx, itr: *itr, store: store, msgType: msgType}, nil
 }
 
 func (s *SecondaryIterator) Next() bool {
@@ -139,26 +146,45 @@ func (s *SecondaryIterator) Next() bool {
 	return s.itr.Next()
 }
 
-func (s *SecondaryIterator) Entry(key *string, value *protoreflect.ProtoMessage) error {
+func (s *SecondaryIterator) Entry() *MessageEntry {
 	secondary := s.itr.Entry()
 	if secondary == nil {
-		return ErrNotFound
+		return nil
 	}
+	next := secondary.Value.(*SecondaryIndex)
 
-	if value != nil {
-		data, err := s.store.Get(s.ctx, secondary.Value)
-		if err != nil {
-			return fmt.Errorf("getting value from key (secondary key %s, key %s): %w", secondary.Key, secondary.Value, err)
+	var (
+		primary *ValueWithPredicate
+		err     error
+	)
+	for {
+		primary, err = s.store.Get(s.ctx, next.PrimaryKey)
+		if !errors.Is(err, ErrNotFound) {
+			break
 		}
-		err = proto.Unmarshal(data.Value, *value)
-		if err != nil {
-			return fmt.Errorf("unmarshal proto data for key %s: %w", string(secondary.Key), err)
+		if !s.itr.Next() {
+			return nil
 		}
+		secondary = s.itr.Entry()
+		if secondary == nil {
+			return nil
+		}
+		next = secondary.Value.(*SecondaryIndex)
 	}
-	if key != nil {
-		*key = string(secondary.Value)
+	if err != nil {
+		s.err = fmt.Errorf("getting value from key (primary key %s): %w", next.PrimaryKey, err)
+		return nil
 	}
-	return nil
+	value := s.msgType.New().Interface()
+	err = proto.Unmarshal(primary.Value, value)
+	if err != nil {
+		s.err = fmt.Errorf("unmarshal proto data for key %s: %w", next.PrimaryKey, err)
+		return nil
+	}
+	return &MessageEntry{
+		Key:   string(next.PrimaryKey),
+		Value: value,
+	}
 }
 
 func (s *SecondaryIterator) Err() error {

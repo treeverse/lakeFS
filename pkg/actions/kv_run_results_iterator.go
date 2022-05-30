@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/treeverse/lakefs/pkg/kv"
-	"google.golang.org/protobuf/proto"
 )
 
 type KVRunResultIterator struct {
@@ -34,12 +33,12 @@ func NewKVRunResultIterator(ctx context.Context, store kv.StoreMessage, reposito
 
 	var it kv.MessageIterator
 	if secondary {
-		it, err = kv.NewSecondaryIterator(ctx, store.Store, prefix, after)
+		it, err = kv.NewSecondaryIterator(ctx, store.Store, (&RunResultData{}).ProtoReflect().Type(), prefix, after)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		it, err = kv.NewPrimaryIterator(ctx, store.Store, prefix, after)
+		it, err = kv.NewPrimaryIterator(ctx, store.Store, (&RunResultData{}).ProtoReflect().Type(), prefix, after)
 		if err != nil {
 			return nil, err
 		}
@@ -61,13 +60,11 @@ func (i *KVRunResultIterator) Value() *RunResult {
 	if i.Err() != nil {
 		return nil
 	}
-	var v proto.Message = &RunResultData{}
-	err := i.it.Entry(nil, &v)
-	if err != nil {
-		i.err = err
+	e := i.it.Entry()
+	if e == nil {
 		return nil
 	}
-	return runResultFromProto(v.(*RunResultData))
+	return runResultFromProto(e.Value.(*RunResultData))
 }
 
 func (i *KVRunResultIterator) Err() error {

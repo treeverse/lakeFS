@@ -18,7 +18,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -32,7 +31,10 @@ const (
 	unixYear3000  = 32500915200000
 )
 
-var ErrNotFound = errors.New("not found")
+var (
+	ErrNotFound = errors.New("not found")
+	ErrNilValue = errors.New("nil value")
+)
 
 type KVService struct {
 	Store    kv.StoreMessage
@@ -373,7 +375,7 @@ func (s *KVService) storeRun(ctx context.Context, run *RunResultData, repoID str
 	// Save secondary index by BranchID
 	if run.BranchId != "" {
 		bk := GetRunByBranchPath(repoID, run.BranchId, run.RunId)
-		err := s.Store.SetIf(ctx, []byte(bk), []byte(runKey), nil)
+		err := s.Store.SetMsg(ctx, bk, &kv.SecondaryIndex{PrimaryKey: []byte(runKey)})
 		if err != nil {
 			return fmt.Errorf("save secondary index by branch (key %s): %w", bk, err)
 		}
@@ -382,7 +384,7 @@ func (s *KVService) storeRun(ctx context.Context, run *RunResultData, repoID str
 	// Save secondary index by CommitID
 	if run.CommitId != "" {
 		ck := GetRunByCommitPath(repoID, run.CommitId, run.RunId)
-		err := s.Store.SetIf(ctx, []byte(ck), []byte(runKey), nil)
+		err := s.Store.SetMsg(ctx, ck, &kv.SecondaryIndex{PrimaryKey: []byte(runKey)})
 		if err != nil {
 			return fmt.Errorf("save secondary index by commit (key %s): %w", ck, err)
 		}
@@ -452,12 +454,6 @@ func (s *KVService) UpdateCommitID(ctx context.Context, repositoryID string, sto
 		return nil
 	}
 
-	// delete secondary keys
-	err = s.deleteRunSecondaryKeys(ctx, &run, repositoryID)
-	if err != nil {
-		return err
-	}
-
 	// update database and re-read the run manifest
 	run.CommitId = commitID
 	err = s.storeRun(ctx, &run, repositoryID)
@@ -467,47 +463,27 @@ func (s *KVService) UpdateCommitID(ctx context.Context, repositoryID string, sto
 
 	manifest := &RunManifest{Run: *runResultFromProto(&run)}
 
-	taskKey := GetTasksPath(repositoryID, runID)
-	scanner, err := s.Store.Scan(ctx, taskKey)
+	it, err := NewKVTaskResultIterator(ctx, s.Store, repositoryID, runID, "")
 	if err != nil {
 		return err
 	}
-	defer scanner.Close()
+	defer it.Close()
 
 	var tasks []TaskResult
-	var v proto.Message = &TaskResultData{}
-	for scanner.Next() {
-		err = scanner.Entry(nil, &v)
-		if err != nil {
-			return err
+	for it.Next() {
+		res := it.Value()
+		if res == nil {
+			return ErrNilValue
 		}
-		tasks = append(tasks, *taskResultFromProto(v.(*TaskResultData)))
+		tasks = append(tasks, *res)
 	}
-	if err = scanner.Err(); err != nil {
+	if err = it.Err(); err != nil {
 		return err
 	}
 	manifest.HooksRun = tasks
 
 	// update manifest
 	return s.saveRunManifestObjectStore(ctx, *manifest, storageNamespace, runID)
-}
-
-func (s *KVService) deleteRunSecondaryKeys(ctx context.Context, run *RunResultData, repoID string) error {
-	// Delete secondary index by BranchID
-	bk := GetRunByBranchPath(repoID, run.BranchId, run.RunId)
-	err := s.Store.Delete(ctx, []byte(bk))
-	if err != nil {
-		return fmt.Errorf("delete secondary index by branch (key %s): %w", bk, err)
-	}
-
-	// Delete secondary index by CommitID
-	ck := GetRunByCommitPath(repoID, run.CommitId, run.RunId)
-	err = s.Store.Delete(ctx, []byte(ck))
-	if err != nil {
-		return fmt.Errorf("delete secondary index by commit (key %s): %w", ck, err)
-	}
-
-	return nil
 }
 
 func (s *KVService) GetRunResult(ctx context.Context, repositoryID string, runID string) (*RunResult, error) {

@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/treeverse/lakefs/pkg/kv"
-	"google.golang.org/protobuf/proto"
 )
 
 type KVTaskResultIterator struct {
@@ -17,7 +16,7 @@ func NewKVTaskResultIterator(ctx context.Context, store kv.StoreMessage, reposit
 	if after != "" {
 		after = kv.FormatPath(prefix, after)
 	}
-	it, err := kv.NewPrimaryIterator(ctx, store.Store, prefix, after)
+	it, err := kv.NewPrimaryIterator(ctx, store.Store, (&TaskResultData{}).ProtoReflect().Type(), prefix, after)
 	if err != nil {
 		return nil, err
 	}
@@ -37,13 +36,12 @@ func (i *KVTaskResultIterator) Value() *TaskResult {
 	if i.Err() != nil {
 		return nil
 	}
-	var v proto.Message = &TaskResultData{}
-	err := i.it.Entry(nil, &v)
-	if err != nil {
-		i.err = err
+	entry := i.it.Entry()
+	if entry == nil {
+		i.err = ErrNilValue
 		return nil
 	}
-	return taskResultFromProto(v.(*TaskResultData))
+	return taskResultFromProto(entry.Value.(*TaskResultData))
 }
 
 func (i *KVTaskResultIterator) Err() error {
