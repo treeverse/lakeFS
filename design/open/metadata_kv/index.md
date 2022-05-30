@@ -285,6 +285,7 @@ Guidelines:
 - Partition keys are also a namespace for the key. i.e. the combination of (partitionKey,key) is unique in the KV database,
 but (key) is not guaranteed to be unique.
 - Although possible in some implementations, the interface will not support `dropPartition`. 
+  A later addition of `dropPartition` could speed up commits by iterating over keys in a goroutine after the commit is done and not have to worry about iterator invalidation.
 - New partition creation is implicit to keep the API free of additional `NewPartition` functionality.
 
 ### Open Questions
