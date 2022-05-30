@@ -71,18 +71,18 @@ This is roughly the API:
 ```go
 type Store interface {
     // Get returns a value for the given key, or ErrNotFound if key doesn't exist
-    Get(key []byte) (value []byte, err error)
+    Get(partitionKey, key []byte) (value []byte, err error)
     // Scan returns an iterator that scans keys in byte order, starting at or after the `start` position
-    Scan(start []byte) (iter KeyValueIterator, err error)
+    Scan(partitionKey, start []byte) (iter KeyValueIterator, err error)
     // Set stores the given value, overwriting an existing value if one exists
-    Set(key, value []byte) error
+    Set(partitionKey, key, value []byte) error
     // Delete will delete the key/value at key, if any
-    Delete(key []byte) error
+    Delete(partitionKey, key []byte) error
     // SetIf returns an ErrPredicateFailed error if the valuePredicate passed
     //  doesn't match the currently stored value. SetIf is a simple compare-and-swap operator:
     //  valuePredicate is either the existing value, or an opaque value representing it (hash, index, etc).
     //  this is intentianally simplistic: we can model a better abstraction on top, keeping this interface simple for implementors
-    SetIf(key, value, valuePredicate []byte) error
+    SetIf(partitionKey, key, value, valuePredicate []byte) error
 }
 ```
 
@@ -265,6 +265,29 @@ This takes time proportional to the amount of changes to be committed and is unb
 
 With the optimistic version, readers and writers end up retrying in during exactly 2 "constant time" operations during a commit: during the initial update with a new `staging_token`, and again when clearing `sealed_tokens`.
 The duration of these operations is of course, not constant - it is (well, should be) very short, and not proportional to the size of the commit in any way.
+
+### Partitioning
+
+Partitioning the KV key space designed to increase performance. The correctness of the KV interface without partitioning remains.
+We rely on 2 assumptions for adding the partitioning:
+1. lakeFS keys can be partitioned in a manner that doesn't require access to 2 partitions in a single operation.
+The only operation of the API that handles more than a single key is `Scan` and there's no use-case for scanning more than a single partition.
+1. Performance decreases if the keys are not partitioned. For example, a transaction on a kv Postgres table will lock the entire table
+during the execution. Working on partitioned key-space will only block the single partition.
+
+The KV store implementation is in charge of managing the partitioned storage. The user the KV store
+is responsible for choosing the appropriate partitions. For example, the number of keys used for authentication
+& authorization is relatively small, so using the same 'auth' partition for all auth entities is appropriate.
+However, the number of entries (keys) under a single staging token is possibly the size of the entire repository,
+so creating a partition for each staging token is the right strategy.
+
+Guidelines:
+- Partition keys are also a namespace for the key. i.e. the combination of (partitionKey,key) is unique in the KV database,
+but (key) is not guaranteed to be unique.
+- Although possible in some implementations, the interface will not support `dropPartition`. 
+  A later addition of `dropPartition` could speed up commits by iterating over keys in a goroutine after the commit is done and not have to worry about iterator invalidation.
+- New partition creation is implicit to keep the API free of additional `NewPartition` functionality.
+
 ### Open Questions
 
 1. Complexity cost - How complex is the system after implementing this? What would a real API look like? Serialization?
