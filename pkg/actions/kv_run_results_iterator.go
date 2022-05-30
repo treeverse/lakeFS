@@ -21,12 +21,15 @@ func NewKVRunResultIterator(ctx context.Context, store kv.StoreMessage, reposito
 
 	switch {
 	case branchID != "":
-		prefix = getByBranchPath(repositoryID, branchID)
+		prefix = GetByBranchPath(repositoryID, branchID)
 	case commitID != "":
-		prefix = getByCommitPath(repositoryID, commitID)
+		prefix = GetByCommitPath(repositoryID, commitID)
 	default:
-		prefix = kv.FormatPath(getBaseActionsPath(repositoryID), runsPrefix)
+		prefix = kv.FormatPath(GetBaseActionsPath(repositoryID), RunsPrefix)
 		secondary = false
+	}
+	if after != "" {
+		after = kv.FormatPath(prefix, after)
 	}
 
 	var it kv.MessageIterator

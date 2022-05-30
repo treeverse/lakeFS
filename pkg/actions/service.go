@@ -5,6 +5,7 @@ package actions
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,7 +13,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-multierror"
-	gonanoid "github.com/matoous/go-nanoid/v2"
+	"github.com/oklog/ulid"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -24,11 +25,11 @@ import (
 const (
 	actionsPrefix = "actions"
 	reposPrefix   = "repos"
-	runsPrefix    = "runs"
+	RunsPrefix    = "runs"
 	tasksPrefix   = "tasks"
 	branchPrefix  = "branches"
 	commitPrefix  = "commits"
-	unixYear3000  = 32500915200
+	unixYear3000  = 32500915200000
 )
 
 var ErrNotFound = errors.New("not found")
@@ -135,32 +136,32 @@ func protoFromTaskResult(m *TaskResult) *TaskResultData {
 	}
 }
 
-func getBaseActionsPath(repoID string) string {
+func GetBaseActionsPath(repoID string) string {
 	return kv.FormatPath(actionsPrefix, reposPrefix, repoID)
 }
 
-func getTasksPath(repoID, runID string) string {
-	return kv.FormatPath(getBaseActionsPath(repoID), tasksPrefix, runID)
+func GetTasksPath(repoID, runID string) string {
+	return kv.FormatPath(GetBaseActionsPath(repoID), tasksPrefix, runID)
 }
 
-func getRunPath(repoID, runID string) string {
-	return kv.FormatPath(getBaseActionsPath(repoID), runsPrefix, runID)
+func GetRunPath(repoID, runID string) string {
+	return kv.FormatPath(GetBaseActionsPath(repoID), RunsPrefix, runID)
 }
 
-func getByBranchPath(repoID, branchID string) string {
-	return kv.FormatPath(getBaseActionsPath(repoID), branchPrefix, branchID)
+func GetByBranchPath(repoID, branchID string) string {
+	return kv.FormatPath(GetBaseActionsPath(repoID), branchPrefix, branchID)
 }
 
-func getByCommitPath(repoID, commitID string) string {
-	return kv.FormatPath(getBaseActionsPath(repoID), commitPrefix, commitID)
+func GetByCommitPath(repoID, commitID string) string {
+	return kv.FormatPath(GetBaseActionsPath(repoID), commitPrefix, commitID)
 }
 
-func getRunByBranchPath(repoID, branchID, runID string) string {
-	return kv.FormatPath(getByBranchPath(repoID, branchID), runID)
+func GetRunByBranchPath(repoID, branchID, runID string) string {
+	return kv.FormatPath(GetByBranchPath(repoID, branchID), runID)
 }
 
-func getRunByCommitPath(repoID, commitID, runID string) string {
-	return kv.FormatPath(getByCommitPath(repoID, commitID), runID)
+func GetRunByCommitPath(repoID, commitID, runID string) string {
+	return kv.FormatPath(GetByCommitPath(repoID, commitID), runID)
 }
 
 type Service interface {
@@ -357,7 +358,7 @@ func (s *KVService) saveRunManifestDB(ctx context.Context, repositoryID graveler
 	// insert each task information
 	for i := range manifest.HooksRun {
 		hookRun := manifest.HooksRun[i]
-		taskKey := kv.FormatPath(getTasksPath(repositoryID.String(), run.RunID), hookRun.HookRunID)
+		taskKey := kv.FormatPath(GetTasksPath(repositoryID.String(), run.RunID), hookRun.HookRunID)
 		err = s.Store.SetMsgIf(ctx, taskKey, protoFromTaskResult(&hookRun), nil)
 		if err != nil {
 			return fmt.Errorf("save task result (runID: %s taskKey %s): %w", run.RunID, taskKey, err)
@@ -368,10 +369,10 @@ func (s *KVService) saveRunManifestDB(ctx context.Context, repositoryID graveler
 }
 
 func (s *KVService) storeRun(ctx context.Context, run *RunResultData, repoID string) error {
-	runKey := getRunPath(repoID, run.RunId)
+	runKey := GetRunPath(repoID, run.RunId)
 	// Save secondary index by BranchID
 	if run.BranchId != "" {
-		bk := getRunByBranchPath(repoID, run.BranchId, run.RunId)
+		bk := GetRunByBranchPath(repoID, run.BranchId, run.RunId)
 		err := s.Store.SetIf(ctx, []byte(bk), []byte(runKey), nil)
 		if err != nil {
 			return fmt.Errorf("save secondary index by branch (key %s): %w", bk, err)
@@ -380,7 +381,7 @@ func (s *KVService) storeRun(ctx context.Context, run *RunResultData, repoID str
 
 	// Save secondary index by CommitID
 	if run.CommitId != "" {
-		ck := getRunByCommitPath(repoID, run.CommitId, run.RunId)
+		ck := GetRunByCommitPath(repoID, run.CommitId, run.RunId)
 		err := s.Store.SetIf(ctx, []byte(ck), []byte(runKey), nil)
 		if err != nil {
 			return fmt.Errorf("save secondary index by commit (key %s): %w", ck, err)
@@ -441,7 +442,7 @@ func (s *KVService) UpdateCommitID(ctx context.Context, repositoryID string, sto
 		return fmt.Errorf("run id: %w", ErrNotFound)
 	}
 
-	runKey := getRunPath(repositoryID, runID)
+	runKey := GetRunPath(repositoryID, runID)
 	run := RunResultData{}
 	_, err := s.Store.GetMsg(ctx, runKey, &run)
 	if err != nil {
@@ -466,7 +467,7 @@ func (s *KVService) UpdateCommitID(ctx context.Context, repositoryID string, sto
 
 	manifest := &RunManifest{Run: *runResultFromProto(&run)}
 
-	taskKey := getTasksPath(repositoryID, runID)
+	taskKey := GetTasksPath(repositoryID, runID)
 	scanner, err := s.Store.Scan(ctx, taskKey)
 	if err != nil {
 		return err
@@ -493,14 +494,14 @@ func (s *KVService) UpdateCommitID(ctx context.Context, repositoryID string, sto
 
 func (s *KVService) deleteRunSecondaryKeys(ctx context.Context, run *RunResultData, repoID string) error {
 	// Delete secondary index by BranchID
-	bk := getRunByBranchPath(repoID, run.BranchId, run.RunId)
+	bk := GetRunByBranchPath(repoID, run.BranchId, run.RunId)
 	err := s.Store.Delete(ctx, []byte(bk))
 	if err != nil {
 		return fmt.Errorf("delete secondary index by branch (key %s): %w", bk, err)
 	}
 
 	// Delete secondary index by CommitID
-	ck := getRunByCommitPath(repoID, run.CommitId, run.RunId)
+	ck := GetRunByCommitPath(repoID, run.CommitId, run.RunId)
 	err = s.Store.Delete(ctx, []byte(ck))
 	if err != nil {
 		return fmt.Errorf("delete secondary index by commit (key %s): %w", ck, err)
@@ -510,7 +511,7 @@ func (s *KVService) deleteRunSecondaryKeys(ctx context.Context, run *RunResultDa
 }
 
 func (s *KVService) GetRunResult(ctx context.Context, repositoryID string, runID string) (*RunResult, error) {
-	runKey := getRunPath(repositoryID, runID)
+	runKey := GetRunPath(repositoryID, runID)
 	m := RunResultData{}
 	_, err := s.Store.GetMsg(ctx, runKey, &m)
 	if err != nil {
@@ -523,7 +524,7 @@ func (s *KVService) GetRunResult(ctx context.Context, repositoryID string, runID
 }
 
 func (s *KVService) GetTaskResult(ctx context.Context, repositoryID string, runID string, hookRunID string) (*TaskResult, error) {
-	runKey := kv.FormatPath(getTasksPath(repositoryID, runID), hookRunID)
+	runKey := kv.FormatPath(GetTasksPath(repositoryID, runID), hookRunID)
 	m := TaskResultData{}
 	_, err := s.Store.GetMsg(ctx, runKey, &m)
 	if err != nil {
@@ -603,10 +604,9 @@ func (s *KVService) PostDeleteBranchHook(_ context.Context, record graveler.Hook
 }
 
 func (s *KVService) NewRunID() string {
-	const nanoLen = 8
-	id := gonanoid.Must(nanoLen)
-	tm := time.Unix(unixYear3000-time.Now().Unix(), 0).UTC().Format(graveler.RunIDTimeLayout)
-	return tm + id
+	entropy := ulid.Monotonic(rand.Reader, 0)
+	tm := time.UnixMilli(unixYear3000 - time.Now().UnixMilli()).UTC()
+	return ulid.MustNew(ulid.Timestamp(tm), entropy).String()
 }
 
 func NewHookRunID(actionIdx, hookIdx int) string {

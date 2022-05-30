@@ -13,8 +13,11 @@ type KVTaskResultIterator struct {
 }
 
 func NewKVTaskResultIterator(ctx context.Context, store kv.StoreMessage, repositoryID, runID, after string) (*KVTaskResultIterator, error) {
-	key := kv.FormatPath(getTasksPath(repositoryID, runID), after)
-	it, err := store.Scan(ctx, key)
+	prefix := GetTasksPath(repositoryID, runID)
+	if after != "" {
+		after = kv.FormatPath(prefix, after)
+	}
+	it, err := kv.NewPrimaryIterator(ctx, store.Store, prefix, after)
 	if err != nil {
 		return nil, err
 	}
