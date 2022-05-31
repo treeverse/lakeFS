@@ -17,8 +17,6 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-const packageName = "multiparts"
-
 //nolint:gochecknoinits
 func init() {
 	kvpg.RegisterMigrate(packageName, Migrate, []string{"gateway_multiparts"})

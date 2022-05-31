@@ -8,16 +8,28 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"sync"
 	"time"
 
+	"github.com/georgysavva/scany/pgxscan"
 	"github.com/hashicorp/go-multierror"
+	"github.com/jackc/pgx/v4/pgxpool"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/kv"
+	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
+	"github.com/treeverse/lakefs/pkg/version"
+	"google.golang.org/protobuf/proto"
 )
+
+//nolint:gochecknoinits
+func init() {
+	kvpg.RegisterMigrate(packageName, Migrate, []string{"actions_run_hooks", "actions_runs"})
+}
 
 type DBService struct {
 	DB       db.Database
@@ -401,4 +413,135 @@ func (s *DBService) NewRunID() string {
 	id := gonanoid.Must(nanoLen)
 	tm := time.Now().UTC().Format(graveler.RunIDTimeLayout)
 	return tm + id
+}
+
+type runResultMigrate struct {
+	RunResult
+	RepoID string `db:"repository_id" json:"repository_id"`
+}
+
+type taskResultMigrate struct {
+	TaskResult
+	RepoID string `db:"repository_id" json:"repository_id"`
+}
+
+func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
+	je := json.NewEncoder(writer)
+	// Create header
+	err := je.Encode(kv.Header{
+		LakeFSVersion:   version.Version,
+		PackageName:     packageName,
+		DBSchemaVersion: kv.InitialMigrateVersion,
+		CreatedAt:       time.Now().UTC(),
+	})
+	if err != nil {
+		return err
+	}
+
+	// Dump RunResults
+	rows, err := d.Query(ctx, "SELECT * FROM actions_runs ORDER BY run_id DESC")
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	rowScanner := pgxscan.NewRowScanner(rows)
+	for rows.Next() {
+		newRunID := graveler.NewRunID()
+		m := runResultMigrate{}
+		err = rowScanner.Scan(&m)
+		if err != nil {
+			return err
+		}
+
+		oldRunID := m.RunResult.RunID
+		m.RunResult.RunID = newRunID
+		pr := protoFromRunResult(&m.RunResult)
+		value, err := proto.Marshal(pr)
+		if err != nil {
+			return err
+		}
+		key := []byte(RunPath(m.RepoID, newRunID))
+		err = je.Encode(kv.Entry{
+			PartitionKey: []byte(PartitionKey),
+			Key:          key,
+			Value:        value,
+		})
+		if err != nil {
+			return err
+		}
+
+		// Add secondary keys branch
+		if m.BranchID != "" {
+			secKey := []byte(RunByBranchPath(m.RepoID, m.BranchID, newRunID))
+			sec := kv.SecondaryIndex{PrimaryKey: key}
+			data, err := proto.Marshal(&sec)
+			if err != nil {
+				return err
+			}
+			err = je.Encode(kv.Entry{
+				PartitionKey: []byte(PartitionKey),
+				Key:          secKey,
+				Value:        data,
+			})
+			if err != nil {
+				return err
+			}
+		}
+
+		// Add secondary keys commit
+		if m.CommitID != "" {
+			secKey := []byte(RunByCommitPath(m.RepoID, m.CommitID, newRunID))
+			sec := kv.SecondaryIndex{PrimaryKey: key}
+			data, err := proto.Marshal(&sec)
+			if err != nil {
+				return err
+			}
+			err = je.Encode(kv.Entry{
+				PartitionKey: []byte(PartitionKey),
+				Key:          secKey,
+				Value:        data,
+			})
+			if err != nil {
+				return err
+			}
+		}
+		err = dumpTaskResults(ctx, d, je, &m, oldRunID)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func dumpTaskResults(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, m *runResultMigrate, runID string) error {
+	tasksRows, err := d.Query(ctx, "SELECT * FROM actions_run_hooks where run_id=$1", runID)
+	if err != nil {
+		return err
+	}
+	defer tasksRows.Close()
+	rowScanner := pgxscan.NewRowScanner(tasksRows)
+	for tasksRows.Next() {
+		t := taskResultMigrate{}
+		err = rowScanner.Scan(&t)
+		if err != nil {
+			return err
+		}
+		taskPr := protoFromTaskResult(&t.TaskResult)
+		taskPr.RunId = m.RunID
+		taskValue, err := proto.Marshal(taskPr)
+		if err != nil {
+			return err
+		}
+		taskKey := []byte(kv.FormatPath(TasksPath(m.RepoID, m.RunID), t.HookRunID))
+		err = je.Encode(kv.Entry{
+			PartitionKey: []byte(PartitionKey),
+			Key:          taskKey,
+			Value:        taskValue,
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
