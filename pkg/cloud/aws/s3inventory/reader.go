@@ -116,7 +116,7 @@ func (o *Reader) getParquetReader(bucket string, key string) (FileReader, error)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create parquet file reader: %w", err)
 	}
-	pr, err := reader.NewParquetReader(pf, nil, 4)
+	pr, err := reader.NewParquetReader(pf, nil, 4) //nolint: gomnd
 	if err != nil {
 		return nil, fmt.Errorf("failed to create parquet reader: %w", err)
 	}

@@ -260,7 +260,7 @@ func MigrateEmpty(_ context.Context, _ *pgxpool.Pool, _ io.Writer) error {
 }
 
 func MigrateBasic(_ context.Context, _ *pgxpool.Pool, writer io.Writer) error {
-	buildTestData(1, 5, writer)
+	buildTestData(1, 5, writer) //nolint: gomnd
 	return nil
 }
 
@@ -293,8 +293,8 @@ func MigrateBadEntry(_ context.Context, _ *pgxpool.Pool, writer io.Writer) error
 }
 
 func MigrateParallel(_ context.Context, _ *pgxpool.Pool, writer io.Writer) error {
-	const index = 6 // Magic number WA
-	buildTestData(index, 5, writer)
+	const index = 6                 // Magic number WA
+	buildTestData(index, 5, writer) //nolint: gomnd
 	return nil
 }
 

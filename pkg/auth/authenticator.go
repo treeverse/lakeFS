@@ -174,7 +174,7 @@ func (la *LDAPAuthenticator) AuthenticateUser(ctx context.Context, username, pas
 	searchRequest := la.BaseSearchRequest
 	searchRequest.Filter = fmt.Sprintf("(&(%s=%s)%s)", la.UsernameAttribute, ldap.EscapeFilter(username), inBrackets(searchRequest.Filter))
 
-	res, err := controlConn.SearchWithPaging(&searchRequest, 2)
+	res, err := controlConn.SearchWithPaging(&searchRequest, 2) //nolint: gomnd
 	if err != nil {
 		logger.WithError(err).Error("Failed to search for DN by username")
 		if errors.Is(err, os.ErrDeadlineExceeded) {

@@ -242,7 +242,7 @@ var abuseCreateBranchesCmd = &cobra.Command{
 	},
 }
 
-//nolint:gochecknoinits
+//nolint:gochecknoinits,gomnd
 func init() {
 	rootCmd.AddCommand(abuseCmd)
 
