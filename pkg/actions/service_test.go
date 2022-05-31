@@ -471,3 +471,17 @@ func setupTest(t *testing.T) (*mock.MockOutputWriter, *gomock.Controller, *httpt
 
 	return mock.NewMockOutputWriter(ctrl), ctrl, ts, record
 }
+
+func TestNewRunID(t *testing.T) {
+	ctx := context.Background()
+	testOutputWriter, ctrl, _, _ := setupTest(t)
+	testSource := mock.NewMockSource(ctrl)
+	mockStatsCollector := NewActionStatsMockCollector()
+	actionsService := GetKVService(t, ctx, testSource, testOutputWriter, &mockStatsCollector, false)
+
+	id1 := actionsService.NewRunID()
+	time.Sleep(2 * time.Second)
+	id2 := actionsService.NewRunID()
+
+	require.Greater(t, id1, id2)
+}

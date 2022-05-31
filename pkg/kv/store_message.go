@@ -63,8 +63,6 @@ type MessageEntry struct {
 
 type MessageIterator interface {
 	Next() bool
-	// Entry Receives key and value pointers from user and populates them with the iterator entry values
-	// The function will try to populate the func arguments which are not nil
 	Entry() *MessageEntry
 	Err() error
 	Close()
@@ -75,6 +73,7 @@ type MessageIterator interface {
 type PrimaryIterator struct {
 	itr     EntriesIterator
 	msgType protoreflect.MessageType
+	value   *MessageEntry
 	err     error
 }
 
@@ -87,26 +86,33 @@ func NewPrimaryIterator(ctx context.Context, store Store, msgType protoreflect.M
 }
 
 func (i *PrimaryIterator) Next() bool {
-	if i.err != nil {
+	if i.Err() != nil {
 		return false
 	}
-	return i.itr.Next()
-}
-
-func (i *PrimaryIterator) Entry() *MessageEntry {
+	i.value = nil
+	if !i.itr.Next() {
+		return false
+	}
 	entry := i.itr.Entry()
 	if entry == nil {
-		return nil
+		i.err = ErrNotFound
+		return false
 	}
 	value := i.msgType.New().Interface()
 	err := proto.Unmarshal(entry.Value, value)
 	if err != nil {
 		i.err = fmt.Errorf("unmarshal proto data for key %s: %w", entry.Key, err)
-		return nil
+		return false
 	}
-	return &MessageEntry{
+	i.value = &MessageEntry{
 		Key:   string(entry.Key),
-		Value: value}
+		Value: value,
+	}
+	return true
+}
+
+func (i *PrimaryIterator) Entry() *MessageEntry {
+	return i.value
 }
 
 func (i *PrimaryIterator) Err() error {
@@ -128,6 +134,7 @@ type SecondaryIterator struct {
 	itr     PrimaryIterator
 	store   Store
 	msgType protoreflect.MessageType
+	value   *MessageEntry
 	err     error
 }
 
@@ -140,16 +147,16 @@ func NewSecondaryIterator(ctx context.Context, store Store, msgType protoreflect
 }
 
 func (s *SecondaryIterator) Next() bool {
-	if s.err != nil {
+	if s.Err() != nil {
 		return false
 	}
-	return s.itr.Next()
-}
-
-func (s *SecondaryIterator) Entry() *MessageEntry {
+	if !s.itr.Next() {
+		return false
+	}
 	secondary := s.itr.Entry()
 	if secondary == nil {
-		return nil
+		s.err = ErrNotFound
+		return false
 	}
 	next := secondary.Value.(*SecondaryIndex)
 
@@ -163,28 +170,34 @@ func (s *SecondaryIterator) Entry() *MessageEntry {
 			break
 		}
 		if !s.itr.Next() {
-			return nil
+			return false
 		}
 		secondary = s.itr.Entry()
 		if secondary == nil {
-			return nil
+			s.err = ErrNotFound
+			return false
 		}
 		next = secondary.Value.(*SecondaryIndex)
 	}
 	if err != nil {
 		s.err = fmt.Errorf("getting value from key (primary key %s): %w", next.PrimaryKey, err)
-		return nil
+		return false
 	}
 	value := s.msgType.New().Interface()
 	err = proto.Unmarshal(primary.Value, value)
 	if err != nil {
 		s.err = fmt.Errorf("unmarshal proto data for key %s: %w", next.PrimaryKey, err)
-		return nil
+		return false
 	}
-	return &MessageEntry{
+	s.value = &MessageEntry{
 		Key:   string(next.PrimaryKey),
 		Value: value,
 	}
+	return true
+}
+
+func (s *SecondaryIterator) Entry() *MessageEntry {
+	return s.value
 }
 
 func (s *SecondaryIterator) Err() error {

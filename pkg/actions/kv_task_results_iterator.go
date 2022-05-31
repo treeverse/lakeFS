@@ -11,8 +11,10 @@ type KVTaskResultIterator struct {
 	err error
 }
 
+// NewKVTaskResultIterator returns a new iterator over actions task results of a specific run
+// 'after' determines the hook run ID which we should start the scan from, used for pagination
 func NewKVTaskResultIterator(ctx context.Context, store kv.StoreMessage, repositoryID, runID, after string) (*KVTaskResultIterator, error) {
-	prefix := GetTasksPath(repositoryID, runID)
+	prefix := TasksPath(repositoryID, runID)
 	if after != "" {
 		after = kv.FormatPath(prefix, after)
 	}

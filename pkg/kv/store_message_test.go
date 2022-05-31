@@ -302,7 +302,7 @@ func testStoreMessageScanWrongFormat(t *testing.T, ctx context.Context, sm kv.St
 	}
 
 	// bad Entry
-	require.True(t, itr.Next())
+	require.False(t, itr.Next())
 	value := itr.Entry()
 	require.Nil(t, value)
 	require.ErrorIs(t, itr.Err(), proto.Error)

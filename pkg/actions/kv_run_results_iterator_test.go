@@ -19,9 +19,11 @@ const (
 	testByBranch       = "testBranch"
 	testByCommit       = "testCommit1"
 	testMissingPrimary = "branchPartialPrimary"
+	IndexOutOfRange    = "zzz"
 )
 
-var keyMap = make(map[int]string, 0)
+var keyMap = make(map[string]int, 0)
+var keyList = make([]string, 300)
 
 func TestRunResultsIterator(t *testing.T) {
 	ctx := context.Background()
@@ -34,63 +36,63 @@ func TestRunResultsIterator(t *testing.T) {
 		commitID string
 		after    string
 		startIdx int
-		count    int
+		endIdx   int
 	}{
 		{
 			name:     "basic",
 			branchID: "",
 			commitID: "",
 			after:    "",
-			startIdx: 199,
-			count:    200,
+			startIdx: 0,
+			endIdx:   200,
 		},
 		{
 			name:     "after key",
 			branchID: "",
 			commitID: "",
-			after:    keyMap[40],
-			startIdx: 40,
-			count:    41,
+			after:    keyList[50],
+			startIdx: 50,
+			endIdx:   100,
 		},
 		{
 			name:     "basic by branch",
 			branchID: testByBranch,
 			commitID: "",
 			after:    "",
-			startIdx: 149,
-			count:    50,
+			startIdx: 100,
+			endIdx:   150,
 		},
 		{
 			name:     "basic by commit",
 			branchID: "",
 			commitID: testByCommit,
 			after:    "",
-			startIdx: 199,
-			count:    50,
+			startIdx: 150,
+			endIdx:   200,
 		},
 		{
 			name:     "after by commit",
 			branchID: "",
 			commitID: testByCommit,
-			after:    keyMap[190],
+			after:    keyList[190],
 			startIdx: 190,
-			count:    41,
+			endIdx:   200,
 		},
 		{
 			name:     "missing primary keys",
 			branchID: testMissingPrimary,
 			commitID: "",
 			after:    "",
-			startIdx: 49,
-			count:    50,
+			startIdx: 0,
+			endIdx:   50,
 		},
 		{
 			name:     "after out of range",
 			branchID: "",
 			commitID: "",
-			after:    keyMap[251],
+			after:    IndexOutOfRange,
 			startIdx: 0,
-			count:    0,
+			endIdx:   0,
 		},
 	}
 	for _, tt := range tests {
@@ -100,17 +102,18 @@ func TestRunResultsIterator(t *testing.T) {
 			defer itr.Close()
 
 			numRead := 0
-			runID := tt.startIdx
 			for itr.Next() {
 				run := itr.Value()
 				require.NotNil(t, run)
-				require.Equal(t, strconv.Itoa(runID), run.RunID)
-				runID--
+				idx, ok := keyMap[run.RunID]
+				require.True(t, ok)
+				require.GreaterOrEqual(t, idx, tt.startIdx)
+				require.Less(t, idx, tt.endIdx)
 				numRead++
 			}
 			require.False(t, itr.Next())
 			require.NoError(t, itr.Err())
-			require.Equal(t, tt.count, numRead)
+			require.Equal(t, tt.endIdx-tt.startIdx, numRead)
 		})
 	}
 }
@@ -145,14 +148,14 @@ func createTestData(t *testing.T, ctx context.Context, kvStore kv.StoreMessage) 
 	// Basic runs
 	for ; msgIdx < 100; msgIdx++ {
 		runID := actionService.NewRunID()
-		keyMap[msgIdx] = runID
-		key := actions.GetRunPath(iteratorTestRepoID, runID)
-		run.RunId = strconv.Itoa(msgIdx)
+		keyMap[runID] = msgIdx
+		keyList[msgIdx] = runID
+		key := actions.RunPath(iteratorTestRepoID, runID)
+		run.RunId = runID
 		require.NoError(t, kvStore.SetMsg(ctx, key, &run))
-		time.Sleep(2 * time.Millisecond)
 		for j := 0; j < 100; j++ {
 			HookRunId := actions.NewHookRunID(msgIdx, j)
-			taskKey := kv.FormatPath(actions.GetTasksPath(iteratorTestRepoID, runID), HookRunId)
+			taskKey := kv.FormatPath(actions.TasksPath(iteratorTestRepoID, runID), HookRunId)
 			task.HookRunId = HookRunId
 			task.HookId = strconv.Itoa(j)
 			task.RunId = runID
@@ -160,50 +163,49 @@ func createTestData(t *testing.T, ctx context.Context, kvStore kv.StoreMessage) 
 		}
 	}
 
+	time.Sleep(2 * time.Second) // For 'after' test
 	s := kv.SecondaryIndex{}
 	// By branch
 	for ; msgIdx < 150; msgIdx++ {
 		runID := actionService.NewRunID()
-		keyMap[msgIdx] = runID
-		key := actions.GetRunPath(iteratorTestRepoID, runID)
-		run.RunId = strconv.Itoa(msgIdx)
+		keyMap[runID] = msgIdx
+		keyList[msgIdx] = runID
+		key := actions.RunPath(iteratorTestRepoID, runID)
+		run.RunId = runID
 		require.NoError(t, kvStore.SetMsg(ctx, key, &run))
-		keyByBranch := actions.GetRunByBranchPath(iteratorTestRepoID, testByBranch, runID)
+		keyByBranch := actions.RunByBranchPath(iteratorTestRepoID, testByBranch, runID)
 		s.PrimaryKey = []byte(key)
 		require.NoError(t, kvStore.SetMsg(ctx, keyByBranch, &s))
-		time.Sleep(2 * time.Millisecond)
 	}
 
 	// By commit
 	for ; msgIdx < 200; msgIdx++ {
 		runID := actionService.NewRunID()
-		keyMap[msgIdx] = runID
-		key := actions.GetRunPath(iteratorTestRepoID, runID)
-		run.RunId = strconv.Itoa(msgIdx)
+		keyMap[runID] = msgIdx
+		keyList[msgIdx] = runID
+		key := actions.RunPath(iteratorTestRepoID, runID)
+		run.RunId = runID
 		require.NoError(t, kvStore.SetMsg(ctx, key, &run))
-		keyByCommit := actions.GetRunByCommitPath(iteratorTestRepoID, testByCommit, runID)
+		keyByCommit := actions.RunByCommitPath(iteratorTestRepoID, testByCommit, runID)
 		s.PrimaryKey = []byte(key)
 		require.NoError(t, kvStore.SetMsg(ctx, keyByCommit, &s))
-		time.Sleep(2 * time.Millisecond)
 	}
 
 	// Missing Primary
 	for ; msgIdx < 250; msgIdx++ {
-		//for ; msgIdx < 201; msgIdx++ {
 		runID := actionService.NewRunID()
 
 		// Add key with bad primary
-		primaryKey := actions.GetRunPath(iteratorTestRepoID, runID)
-		keyNoPrimary := actions.GetRunByBranchPath(iteratorTestRepoID, testMissingPrimary, runID)
+		primaryKey := actions.RunPath(iteratorTestRepoID, runID)
+		keyNoPrimary := actions.RunByBranchPath(iteratorTestRepoID, testMissingPrimary, runID)
 		s.PrimaryKey = []byte(primaryKey)
 		require.NoError(t, kvStore.SetMsg(ctx, keyNoPrimary, &s))
 
 		// Key with primary
-		primaryKey = actions.GetRunPath(iteratorTestRepoID, keyMap[msgIdx%100])
-		keyWithPrimary := actions.GetRunByBranchPath(iteratorTestRepoID, testMissingPrimary, keyMap[msgIdx%100])
+		primaryKey = actions.RunPath(iteratorTestRepoID, keyList[msgIdx%100])
+		keyWithPrimary := actions.RunByBranchPath(iteratorTestRepoID, testMissingPrimary, keyList[msgIdx%100])
 		s.PrimaryKey = []byte(primaryKey)
 		require.NoError(t, kvStore.SetMsg(ctx, keyWithPrimary, &s))
-		time.Sleep(2 * time.Millisecond)
 	}
 
 	// Out of range
@@ -211,10 +213,11 @@ func createTestData(t *testing.T, ctx context.Context, kvStore kv.StoreMessage) 
 	key := "aaa"
 	require.NoError(t, kvStore.Set(ctx, []byte(key), []byte(badValue)))
 	msgIdx++
-	keyMap[msgIdx] = key
+	keyMap[key] = msgIdx
+	keyList[msgIdx] = key
 
-	key = "zzz"
-	require.NoError(t, kvStore.Set(ctx, []byte(key), []byte(badValue)))
+	require.NoError(t, kvStore.Set(ctx, []byte(IndexOutOfRange), []byte(badValue)))
 	msgIdx++
-	keyMap[msgIdx] = key
+	keyMap[key] = msgIdx
+	keyList[msgIdx] = key
 }

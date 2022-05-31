@@ -11,6 +11,8 @@ type KVRunResultIterator struct {
 	err error
 }
 
+// NewKVRunResultIterator returns a new iterator over actions run results
+// 'after' determines the runID which we should start the scan from, used for pagination
 func NewKVRunResultIterator(ctx context.Context, store kv.StoreMessage, repositoryID, branchID, commitID, after string) (*KVRunResultIterator, error) {
 	var (
 		prefix string
@@ -20,11 +22,11 @@ func NewKVRunResultIterator(ctx context.Context, store kv.StoreMessage, reposito
 
 	switch {
 	case branchID != "":
-		prefix = GetByBranchPath(repositoryID, branchID)
+		prefix = ByBranchPath(repositoryID, branchID)
 	case commitID != "":
-		prefix = GetByCommitPath(repositoryID, commitID)
+		prefix = ByCommitPath(repositoryID, commitID)
 	default:
-		prefix = kv.FormatPath(GetBaseActionsPath(repositoryID), RunsPrefix)
+		prefix = kv.FormatPath(BaseActionsPath(repositoryID), RunsPrefix)
 		secondary = false
 	}
 	if after != "" {

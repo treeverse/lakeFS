@@ -50,7 +50,7 @@ func TestTaskResultsIterator(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			runID := keyMap[tt.runID]
+			runID := keyList[tt.runID]
 			taskID := 0
 			after := ""
 			if tt.after >= 0 {
