@@ -27,7 +27,7 @@ type InventoryIterator struct {
 }
 
 func NewInventoryIterator(inv *Inventory) *InventoryIterator {
-	creationTimestamp, err := strconv.ParseInt(inv.Manifest.CreationTimestamp, 10, 64)
+	creationTimestamp, err := strconv.ParseInt(inv.Manifest.CreationTimestamp, 10, 64) //nolint: gomnd
 	if err != nil {
 		inv.logger.Errorf("failed to get creation timestamp from manifest")
 		creationTimestamp = 0

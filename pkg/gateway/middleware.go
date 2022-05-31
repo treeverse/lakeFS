@@ -230,7 +230,7 @@ func ParseRequestParts(host string, urlPath string, bareDomains []string) Reques
 	// 3. none of the above, path based
 	if memberFold(httputil.HostOnly(host), ourHosts) {
 		// path style: extract repo from first part
-		p = strings.SplitN(urlPath, path.Separator, 3)
+		p = strings.SplitN(urlPath, path.Separator, 3) //nolint: gomnd
 		parts.Repository = p[0]
 		if len(p) >= 1 {
 			p = p[1:]
@@ -247,13 +247,13 @@ func ParseRequestParts(host string, urlPath string, bareDomains []string) Reques
 			}
 		}
 		if parts.MatchedHost {
-			p = strings.SplitN(urlPath, path.Separator, 2)
+			p = strings.SplitN(urlPath, path.Separator, 2) //nolint: gomnd
 		}
 	}
 
 	if !parts.MatchedHost {
 		// assume path based for domains we don't explicitly know
-		p = strings.SplitN(urlPath, path.Separator, 3)
+		p = strings.SplitN(urlPath, path.Separator, 3) //nolint: gomnd
 		parts.Repository = p[0]
 		if len(p) >= 1 {
 			p = p[1:]

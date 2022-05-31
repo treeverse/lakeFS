@@ -36,7 +36,7 @@ func NewSecureString(s string) (SecureString, error) {
 		}
 		matches++
 		raw := strings.Trim(origin, "{} ")
-		parts := strings.SplitN(raw, ".", 2)
+		parts := strings.SplitN(raw, ".", 2) //nolint: gomnd
 		if len(parts) != 2 || parts[0] != "ENV" {
 			return origin
 		}

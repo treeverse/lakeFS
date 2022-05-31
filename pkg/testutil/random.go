@@ -27,7 +27,7 @@ func RandomRune(rand *rand.Rand, num, den int) rune {
 func RandomString(rand *rand.Rand, size int) string {
 	sb := strings.Builder{}
 	for sb.Len() <= size {
-		sb.WriteRune(RandomRune(rand, 2, 5))
+		sb.WriteRune(RandomRune(rand, 2, 5)) //nolint: gomnd
 	}
 	ret := sb.String()
 	_, lastRuneSize := utf8.DecodeLastRuneInString(ret)

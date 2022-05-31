@@ -32,7 +32,7 @@ func connectToDB(ctx context.Context, connectionString string) db.Database {
 	return database
 }
 
-//nolint:gochecknoinits
+//nolint:gochecknoinits,gomnd
 func init() {
 	rootCmd.AddCommand(dbCmd)
 	dbCmd.PersistentFlags().String("db", "postgres://127.0.0.1:5432/postgres?sslmode=disable", "Database connection string")
