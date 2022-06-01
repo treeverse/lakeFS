@@ -459,7 +459,7 @@ func testScanPrefix(t *testing.T, ms MakeStore) {
 		sampleData   []kv.Entry
 		samplePrefix []byte
 	)
-	const sampleItems = 2
+	const sampleItems = 100
 	const numberOfSets = 3
 
 	for i := 0; i < numberOfSets; i++ {

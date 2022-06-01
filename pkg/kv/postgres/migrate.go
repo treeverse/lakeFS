@@ -185,7 +185,7 @@ func dropTables(ctx context.Context, dbPool *pgxpool.Pool, tables []string) erro
 		tables[i] = pgx.Identifier{table}.Sanitize()
 	}
 
-	_, err := dbPool.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s`, strings.Join(tables, ", ")))
+	_, err := dbPool.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s CASCADE`, strings.Join(tables, ", ")))
 	if err != nil {
 		return fmt.Errorf("failed during drop tables: %s. Please perform manual cleanup of old database tables: %w", tables, err)
 	}

@@ -46,10 +46,12 @@ func combinedKey(partitionKey, key []byte) string {
 }
 
 func keyFromCombinedKey(combinedKey string) []byte {
+	//nolint:gomnd
 	return []byte(strings.SplitN(combinedKey, "_", 2)[1])
 }
 
 func partitionKeyFromCombinedKey(combinedKey string) []byte {
+	//nolint:gomnd
 	return []byte(strings.SplitN(combinedKey, "_", 2)[0])
 }
 
