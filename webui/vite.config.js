@@ -28,12 +28,12 @@ export default ({ command }) => {
             changeOrigin: true,
             secure: false
           },
-          '/login': {
+          '/oidc/login': {
             target: 'http://localhost:8000',
             changeOrigin: false,
             secure: false
           },
-          '/logout': {
+          '/oidc/logout': {
             target: 'http://localhost:8000',
             changeOrigin: false,
             secure: false

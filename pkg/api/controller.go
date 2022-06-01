@@ -85,8 +85,8 @@ type Controller struct {
 	Logger                logging.Logger
 	Emailer               *email.Emailer
 	sessionStore          sessions.Store
-	oauthConfig           oauth2.Config         // TODO move from here
-	oidcVerifier          *oidc.IDTokenVerifier // TODO move from here
+	oauthConfig           *oauth2.Config
+	oidcProvider          *oidc.Provider
 }
 
 func (c *Controller) GetAuthCapabilities(w http.ResponseWriter, _ *http.Request) {
@@ -202,8 +202,10 @@ func (c *Controller) OauthCallback(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		writeError(w, http.StatusUnauthorized, "no id_token field in oauth2 token")
 	}
-
-	idToken, err := c.oidcVerifier.Verify(ctx, rawIDToken)
+	oidcVerifier := c.oidcProvider.Verifier(&oidc.Config{
+		ClientID: c.oauthConfig.ClientID,
+	})
+	idToken, err := oidcVerifier.Verify(ctx, rawIDToken)
 
 	var profile map[string]interface{}
 	if err := idToken.Claims(&profile); err != nil {
@@ -3146,7 +3148,7 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 	if initialized || c.Config.IsAuthTypeAPI() {
 		state = setupStateInitialized
 	}
-	response := SetupState{State: swag.String(state)}
+	response := SetupState{State: swag.String(state), OidcEnabled: swag.Bool(c.Config.GetAuthOIDCConfiguration() != nil)}
 	writeResponse(w, http.StatusOK, response)
 }
 
@@ -3448,8 +3450,8 @@ func NewController(
 	auditChecker AuditChecker,
 	logger logging.Logger,
 	emailer *email.Emailer,
-	oauthConfig oauth2.Config,
-	oidcVerifier *oidc.IDTokenVerifier,
+	oauthConfig *oauth2.Config,
+	oidcProvider *oidc.Provider,
 	sessionStore sessions.Store,
 ) *Controller {
 	return &Controller{
@@ -3467,7 +3469,7 @@ func NewController(
 		Logger:                logger,
 		Emailer:               emailer,
 		oauthConfig:           oauthConfig,
-		oidcVerifier:          oidcVerifier,
+		oidcProvider:          oidcProvider,
 		sessionStore:          sessionStore,
 	}
 }

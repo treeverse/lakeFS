@@ -38,7 +38,6 @@ type User struct {
 	Email             *string `db:"email" json:"email"`
 	EncryptedPassword []byte  `db:"encrypted_password" json:"encrypted_password"`
 	Source            string  `db:"source" json:"source"`
-	OidcOpenID        string  `db:"oidc_openid"`
 }
 
 func (u *User) UpdatePassword(password string) error {

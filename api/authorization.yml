@@ -129,8 +129,6 @@ components:
         encryptedPassword:
           type: string
           format: byte
-        oidc_open_id:
-          type: string
     UserPassword:
       type: object
       required:
@@ -154,8 +152,6 @@ components:
         encryptedPassword:
           type: string
           format: byte
-        oidc_open_id:
-          type: string
       required:
         - username
 

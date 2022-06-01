@@ -11,11 +11,11 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/routers"
 	"github.com/getkin/kin-openapi/routers/legacy"
-	"github.com/go-openapi/swag"
 	"github.com/golang-jwt/jwt"
 	"github.com/gorilla/sessions"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
+	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -91,14 +91,14 @@ func checkSecurityRequirements(r *http.Request, securityRequirements openapi3.Se
 				}
 				user, err = userByAuth(ctx, logger, authenticator, authService, accessKey, secretKey)
 			case "cookie_auth":
-				// TODO if oidc enabled:
+				// validate jwt token from cookie
+				jwtCookie, _ := r.Cookie(JWTCookieName)
+				if jwtCookie == nil {
+					continue
+				}
+				user, err = userByToken(ctx, logger, authService, jwtCookie.Value)
+			case "oidc_auth":
 				user, err = userFromOIDC(ctx, logger, authService, session)
-				//// validate jwt token from cookie
-				//jwtCookie, _ := r.Cookie(JWTCookieName)
-				//if jwtCookie == nil {
-				//	continue
-				//}
-				//user, err = userByToken(ctx, logger, authService, jwtCookie.Value)
 			default:
 				// unknown security requirement to check
 				logger.WithField("provider", provider).Error("Authentication middleware unknown security requirement provider")
@@ -107,9 +107,7 @@ func checkSecurityRequirements(r *http.Request, securityRequirements openapi3.Se
 			if err != nil {
 				return nil, err
 			}
-			if user != nil {
-				return user, nil
-			}
+			return user, nil
 		}
 	}
 	return nil, nil
@@ -120,31 +118,29 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 	if !ok || profile == nil {
 		return nil, ErrAuthenticatingRequest
 	}
-	if _, ok = profile["email"]; !ok {
+	username, ok := profile["sub"].(string)
+	if !ok {
+		logger.WithField("sub", profile["sub"]).Error("Failed type assertion for sub claim")
 		return nil, ErrAuthenticatingRequest
 	}
-	email := ""
-	if email, ok = profile["email"].(string); !ok || email == "" {
-		return nil, ErrAuthenticatingRequest
-	}
-
-	user, err := authService.GetUserByEmail(ctx, email)
+	user, err := authService.GetUser(ctx, username)
 	if err == nil {
 		return user, nil
 	}
 	if !errors.Is(err, auth.ErrNotFound) {
 		return nil, err
 	}
+
 	u := &model.User{
-		CreatedAt:    time.Now().UTC(),
-		FriendlyName: swag.String(profile["name"].(string)), // TODO make safe
-		Source:       "oidc",
-		Email:        swag.String(email),
-		OidcOpenID:   profile["sub"].(string), // TODO make safe
-		Username:     email,
+		CreatedAt: time.Now().UTC(),
+		Source:    "oidc",
+		Username:  username,
 	}
 	_, err = authService.CreateUser(ctx, u)
 	if err != nil {
+		if errors.Is(err, db.ErrAlreadyExists) {
+			return authService.GetUser(ctx, username)
+		}
 		return nil, err
 	}
 	err = authService.AddUserToGroup(ctx, u.Username, auth.DevelopersGroup) // TODO default group should be configurable?

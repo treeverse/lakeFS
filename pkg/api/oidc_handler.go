@@ -11,10 +11,10 @@ import (
 )
 
 const (
-	OIDCAuthSessionName = "auth-session"
+	OIDCAuthSessionName = "auth_session"
 )
 
-func NewOIDCLoginPageHandler(sessionStore sessions.Store, oauthConfig oauth2.Config) http.HandlerFunc {
+func NewOIDCLoginPageHandler(sessionStore sessions.Store, oauthConfig *oauth2.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		state, err := generateRandomState()
 		if err != nil {
@@ -36,7 +36,7 @@ func NewOIDCLoginPageHandler(sessionStore sessions.Store, oauthConfig oauth2.Con
 	}
 }
 
-func NewOIDCLogoutHandler(sessionStore sessions.Store, oauthConfig oauth2.Config, logoutUrl *url.URL) http.HandlerFunc {
+func NewOIDCLogoutHandler(sessionStore sessions.Store, oauthConfig *oauth2.Config, logoutUrl *url.URL) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		session, err := sessionStore.Get(r, OIDCAuthSessionName)
 		if err != nil {
@@ -60,8 +60,8 @@ func NewOIDCLogoutHandler(sessionStore sessions.Store, oauthConfig oauth2.Config
 		}
 
 		parameters := url.Values{}
-		parameters.Add("returnTo", returnTo.String())
-		parameters.Add("client_id", oauthConfig.ClientID)
+		parameters.Add("returnTo", returnTo.String())     // TODO(johnnyaug) this is auth0 specific
+		parameters.Add("client_id", oauthConfig.ClientID) // TODO(johnnyaug) this is auth0 specific
 		logoutUrl.RawQuery = parameters.Encode()
 		http.Redirect(w, r, logoutUrl.String(), http.StatusTemporaryRedirect)
 	}

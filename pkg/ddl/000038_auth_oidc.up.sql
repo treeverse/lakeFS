@@ -1,6 +1,0 @@
-BEGIN;
-
-ALTER TABLE auth_users
-    ADD COLUMN IF NOT EXISTS oidc_openid VARCHAR(100) UNIQUE;
-
-COMMIT;

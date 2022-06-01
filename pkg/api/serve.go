@@ -3,14 +3,12 @@ package api
 //go:generate oapi-codegen -package api -generate "types,client,chi-server,spec" -templates tmpl -o lakefs.gen.go ../../api/swagger.yml
 
 import (
-	"context"
 	"encoding/gob"
 	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 
 	"github.com/coreos/go-oidc"
 	"github.com/getkin/kin-openapi/openapi3"
@@ -63,6 +61,8 @@ func Serve(
 	emailer *email.Emailer,
 	gatewayDomains []string,
 	snippets []params.CodeSnippet,
+	oidcProvider *oidc.Provider,
+	oauthConfig *oauth2.Config,
 ) http.Handler {
 	gob.Register(map[string]interface{}{})
 	logger.Info("initialize OpenAPI server")
@@ -71,22 +71,7 @@ func Serve(
 		panic(err)
 	}
 
-	provider, _ := oidc.NewProvider( // TODO handle error - and move this away
-		context.Background(), // TODO context should not be here?
-		"https://"+os.Getenv("OIDC_DOMAIN")+"/",
-	)
-	oauthConfig := oauth2.Config{
-		ClientID:     os.Getenv("OIDC_CLIENT_ID"), // TODO use generic variable names
-		ClientSecret: os.Getenv("OIDC_CLIENT_SECRET"),
-		RedirectURL:  os.Getenv("OIDC_CALLBACK_URL"),
-		Endpoint:     provider.Endpoint(),
-		Scopes:       []string{oidc.ScopeOpenID, "profile", "email"},
-	}
 	sessionStore := sessions.NewCookieStore(authService.SecretStore().SharedSecret())
-	oidcVerifier := provider.Verifier(&oidc.Config{
-		ClientID: oauthConfig.ClientID,
-	})
-
 	r := chi.NewRouter()
 	apiRouter := r.With(
 		OapiRequestValidatorWithOptions(swagger, &openapi3filter.Options{
@@ -114,7 +99,7 @@ func Serve(
 		logger,
 		emailer,
 		oauthConfig,
-		oidcVerifier,
+		oidcProvider,
 		sessionStore,
 	)
 	HandlerFromMuxWithBaseURL(controller, apiRouter, BaseURL)
@@ -124,13 +109,15 @@ func Serve(
 	r.Mount("/_pprof/", httputil.ServePPROF("/_pprof/"))
 	r.Mount("/swagger.json", http.HandlerFunc(swaggerSpecHandler))
 	r.Mount(BaseURL, http.HandlerFunc(InvalidAPIEndpointHandler))
-	r.Mount("/login", NewOIDCLoginPageHandler(sessionStore, oauthConfig)) // TODO only if oidc enabled:
-	logoutUrl, err := url.Parse("https://" + os.Getenv("OIDC_DOMAIN") + "/v2/logout")
-	if err != nil {
-		panic(err)
+	r.Mount("/oidc/login", NewOIDCLoginPageHandler(sessionStore, oauthConfig))
+	oidcConfig := cfg.GetAuthOIDCConfiguration()
+	if oidcConfig != nil {
+		logoutUrl, err := url.Parse("https://" + oidcConfig.Domain + "/v2/logout") // TODO(johnnyaug) this is auth0 specific
+		if err != nil {
+			panic(err)
+		}
+		r.Mount("/oidc/logout", NewOIDCLogoutHandler(sessionStore, oauthConfig, logoutUrl))
 	}
-	r.Mount("/logout", NewOIDCLogoutHandler(sessionStore, oauthConfig, logoutUrl)) // TODO only if oidc enabled:
-
 	r.Mount("/", NewUIHandler(gatewayDomains, snippets))
 	return r
 }

@@ -4,6 +4,13 @@ import (
 	"time"
 )
 
+type OIDC struct {
+	Domain       string `mapstructure:"domain"`
+	ClientID     string `mapstructure:"client_id"`
+	ClientSecret string `mapstructure:"client_secret"`
+	CallbackURL  string `mapstructure:"callback_url"`
+}
+
 // LDAP holds configuration for authenticating on an LDAP server.
 type LDAP struct {
 	ServerEndpoint    string `mapstructure:"server_endpoint"`
@@ -79,6 +86,7 @@ type configuration struct {
 			Token    string
 		}
 		LDAP         *LDAP
+		OIDC         *OIDC
 		CookieDomain string `mapstructure:"cookie_domain"`
 	}
 	Blockstore struct {

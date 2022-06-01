@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/coreos/go-oidc"
 	"github.com/dlmiddlecote/sqlstats"
 	"github.com/fsnotify/fsnotify"
 	"github.com/go-ldap/ldap/v3"
@@ -40,6 +41,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/version"
+	"golang.org/x/oauth2"
 )
 
 const (
@@ -234,6 +236,26 @@ var runCmd = &cobra.Command{
 		if err != nil {
 			logger.WithError(err).Fatal("Emailer has not been properly configured, check the values in sender field")
 		}
+		oidcConfig := cfg.GetAuthOIDCConfiguration()
+		var oauthConfig *oauth2.Config
+		var oidcProvider *oidc.Provider
+		if oidcConfig != nil {
+			oidcProvider, err = oidc.NewProvider(
+				cmd.Context(),
+				"https://"+oidcConfig.Domain+"/",
+			)
+			if err != nil {
+				logger.WithError(err).Fatal("Failed to initialize OIDC provider")
+			}
+			cfg.GetBlockstoreDefaultNamespacePrefix()
+			oauthConfig = &oauth2.Config{
+				ClientID:     oidcConfig.ClientID,
+				ClientSecret: oidcConfig.ClientSecret,
+				RedirectURL:  oidcConfig.CallbackURL,
+				Endpoint:     oidcProvider.Endpoint(),
+				Scopes:       []string{oidc.ScopeOpenID, "profile"},
+			}
+		}
 		apiHandler := api.Serve(
 			cfg,
 			c,
@@ -251,6 +273,8 @@ var runCmd = &cobra.Command{
 			emailer,
 			cfg.GetS3GatewayDomainNames(),
 			cfg.GetUISnippets(),
+			oidcProvider,
+			oauthConfig,
 		)
 
 		// init gateway server

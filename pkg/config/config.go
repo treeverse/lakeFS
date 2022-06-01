@@ -522,3 +522,7 @@ func (c *Config) GetUISnippets() []apiparams.CodeSnippet {
 	}
 	return snippets
 }
+
+func (c *Config) GetAuthOIDCConfiguration() *OIDC {
+	return c.values.Auth.OIDC
+}

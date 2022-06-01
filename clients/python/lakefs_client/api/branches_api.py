@@ -48,7 +48,8 @@ class BranchesApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/branches',
                 'operation_id': 'create_branch',
@@ -109,7 +110,8 @@ class BranchesApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/branches/{branch}',
                 'operation_id': 'delete_branch',
@@ -168,7 +170,8 @@ class BranchesApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/branches/{branch}/diff',
                 'operation_id': 'diff_branch',
@@ -253,7 +256,8 @@ class BranchesApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/branches/{branch}',
                 'operation_id': 'get_branch',
@@ -312,7 +316,8 @@ class BranchesApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/branches',
                 'operation_id': 'list_branches',
@@ -386,7 +391,8 @@ class BranchesApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/branches/{branch}',
                 'operation_id': 'reset_branch',
@@ -452,7 +458,8 @@ class BranchesApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/branches/{branch}/revert',
                 'operation_id': 'revert_branch',
