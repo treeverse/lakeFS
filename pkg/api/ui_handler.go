@@ -10,19 +10,30 @@ import (
 
 	gomime "github.com/cubewise-code/go-mime"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/treeverse/lakefs/pkg/api/params"
 	gwerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/gateway/operations"
 	"github.com/treeverse/lakefs/pkg/gateway/sig"
 	"github.com/treeverse/lakefs/webui"
 )
 
-func NewUIHandler(gatewayDomains []string) http.Handler {
+const (
+	uiIndexDoc    = "index.html"
+	uiIndexMarker = "<!--Snippets-->"
+)
+
+func NewUIHandler(gatewayDomains []string, snippets []params.CodeSnippet) http.Handler {
 	content, err := fs.Sub(webui.Content, "dist")
 	if err != nil {
 		// embedded UI content is missing
 		panic(err)
 	}
-	fileSystem := http.FS(content)
+	injectedContent, err := NewInjectIndexFS(content, uiIndexDoc, uiIndexMarker, snippets)
+	if err != nil {
+		// failed to inject snippets to index.html
+		panic(err)
+	}
+	fileSystem := http.FS(injectedContent)
 	nocacheContent := middleware.NoCache(http.StripPrefix("/", http.FileServer(fileSystem)))
 	return NewHandlerWithDefault(fileSystem, nocacheContent, gatewayDomains)
 }

@@ -104,6 +104,7 @@ func TestLocalLoad(t *testing.T) {
 		conf,
 		c,
 		authenticator,
+		authenticator,
 		authService,
 		blockAdapter,
 		meta,
@@ -114,6 +115,7 @@ func TestLocalLoad(t *testing.T) {
 		auditChecker,
 		logging.Default(),
 		emailer,
+		nil,
 		nil,
 	)
 

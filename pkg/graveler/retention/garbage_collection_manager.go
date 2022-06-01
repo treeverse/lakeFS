@@ -145,9 +145,9 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Cont
 		refManager:   m.refManager,
 		repositoryID: repositoryID,
 	}
-	branchIterator := ref.NewBranchIterator(ctx, m.db, repositoryID, 1000, ref.WithOrderByCommitID())
+	branchIterator := ref.NewBranchIterator(ctx, m.db, repositoryID, 1000, ref.WithOrderByCommitID()) //nolint: gomnd
 	// get all commits that are not the first parent of any commit:
-	commitIterator := ref.NewOrderedCommitIterator(ctx, m.db, repositoryID, 1000, ref.WithOnlyAncestryLeaves())
+	commitIterator := ref.NewOrderedCommitIterator(ctx, m.db, repositoryID, 1000, ref.WithOnlyAncestryLeaves()) //nolint: gomnd
 	startingPointIterator := NewGCStartingPointIterator(commitIterator, branchIterator)
 	gcCommits, err := GetGarbageCollectionCommits(ctx, startingPointIterator, commitGetter, rules, previouslyExpiredCommits)
 	if err != nil {

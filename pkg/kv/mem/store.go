@@ -3,6 +3,7 @@ package mem
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"sort"
 	"sync"
 
@@ -38,21 +39,24 @@ func (d *Driver) Open(_ context.Context, _ string) (kv.Store, error) {
 	}, nil
 }
 
-func (s *Store) Get(_ context.Context, key []byte) ([]byte, error) {
-	if key == nil {
+func (s *Store) Get(_ context.Context, key []byte) (*kv.ValueWithPredicate, error) {
+	if len(key) == 0 {
 		return nil, kv.ErrMissingKey
 	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	value, ok := s.m[string(key)]
 	if !ok {
-		return nil, kv.ErrNotFound
+		return nil, fmt.Errorf("key=%v: %w", key, kv.ErrNotFound)
 	}
-	return value, nil
+	return &kv.ValueWithPredicate{
+		Value:     value,
+		Predicate: kv.Predicate(value),
+	}, nil
 }
 
 func (s *Store) Set(_ context.Context, key, value []byte) error {
-	if key == nil {
+	if len(key) == 0 {
 		return kv.ErrMissingKey
 	}
 	if value == nil {
@@ -79,8 +83,8 @@ func (s *Store) insertNewKey(key []byte) {
 	}
 }
 
-func (s *Store) SetIf(_ context.Context, key, value, valuePredicate []byte) error {
-	if key == nil {
+func (s *Store) SetIf(_ context.Context, key, value []byte, valuePredicate kv.Predicate) error {
+	if len(key) == 0 {
 		return kv.ErrMissingKey
 	}
 	if value == nil {
@@ -91,18 +95,18 @@ func (s *Store) SetIf(_ context.Context, key, value, valuePredicate []byte) erro
 	curr, currOK := s.m[string(key)]
 	if valuePredicate == nil {
 		if currOK {
-			return kv.ErrPredicateFailed
+			return fmt.Errorf("key=%v: %w", key, kv.ErrPredicateFailed)
 		}
 		s.insertNewKey(key)
-	} else if !bytes.Equal(valuePredicate, curr) {
-		return kv.ErrPredicateFailed
+	} else if !bytes.Equal(valuePredicate.([]byte), curr) {
+		return fmt.Errorf("%w: key=%v", kv.ErrPredicateFailed, key)
 	}
 	s.m[string(key)] = value
 	return nil
 }
 
 func (s *Store) Delete(_ context.Context, key []byte) error {
-	if key == nil {
+	if len(key) == 0 {
 		return kv.ErrMissingKey
 	}
 	s.mu.Lock()

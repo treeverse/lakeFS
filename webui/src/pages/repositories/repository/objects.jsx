@@ -59,10 +59,6 @@ const ImportDone = ({ numObjects, importBranch, currBranch}) => {
                 <div className='import-text'>
                     <p> Use the&nbsp;<Link to={`compare?ref=${ currBranch }&compare=${ importBranch }`} variant = "success" >Compare tab</Link>&nbsp;to view the changes and merge them to {currBranch}.</p>
                 </div>
-                <Alert variant="warning" className={"ml-2 mr-2 row mt-4"}>
-                    Merging will override the state of {currBranch} with the imported objects.
-                </Alert>
-
             </Col>
         </Row>
     );
@@ -81,7 +77,6 @@ const ImportButton = ({ config, repo, reference, path, onDone, onClick, variant 
     const sourceRef = useRef(null);
     const destRef = useRef(null);
     const commitMsgRef = useRef(null);
-    const storageType = config.blockstore_type
     const storageNamespaceValidityRegexStr = config.blockstore_namespace_ValidityRegex;
     const storageNamespaceValidityRegex = RegExp(storageNamespaceValidityRegexStr);
     const sourceURIExample = config ? config.blockstore_namespace_example : "s3://my-bucket/path/";
@@ -137,7 +132,17 @@ const ImportButton = ({ config, repo, reference, path, onDone, onClick, variant 
                 importBranchResp = await branches.get(repo.id, importBranch)
             } catch (error) {
                 if (error instanceof NotFoundError) {
-                    await branches.create(repo.id, importBranch, currBranch)
+                    // Find root commit for repository
+                    let hasMore = true;
+                    let nextOffset = "";
+                    let baseCommit = reference.id;
+                    do {
+                    	let response = await commits.log(repo.id, reference.id, nextOffset, 1000);
+                    	hasMore = response.pagination.has_more;
+                    	nextOffset = response.pagination.next_offset;
+                    	baseCommit = response.results.at(-1);
+                    } while (hasMore)
+                    await branches.create(repo.id, importBranch, baseCommit.id)
                     importBranchResp = await branches.get(repo.id, importBranch)
                 } else {
                     setImportState({...initialState, error})

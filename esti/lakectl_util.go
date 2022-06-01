@@ -162,7 +162,7 @@ func updateGoldenFile(t *testing.T, cmd string, isTerminal bool, goldenFile stri
 	s := sanitize(string(result), vars)
 	s, err := embedVariables(s, vars)
 	require.NoError(t, err, "Variable embed failed - %s", err)
-	err = ioutil.WriteFile(goldenFile, []byte(s), 0o600)
+	err = ioutil.WriteFile(goldenFile, []byte(s), 0o600) //nolint: gomnd
 	require.NoError(t, err, "Failed to write file %s", goldenFile)
 }
 

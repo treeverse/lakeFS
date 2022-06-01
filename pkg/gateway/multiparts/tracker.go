@@ -3,13 +3,14 @@ package multiparts
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/kv"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const multipartPrefix = "multipart"
+const multipartsPrefix = "multiparts"
 
 type Metadata map[string]string
 
@@ -76,9 +77,8 @@ func (m *tracker) Create(ctx context.Context, multipart MultipartUpload) error {
 	if multipart.UploadID == "" {
 		return ErrInvalidUploadID
 	}
-	path := kv.FormatPath(multipartPrefix, multipart.UploadID)
-	err := m.store.SetIf(ctx, path, protoFromMultipart(&multipart), nil)
-	return err
+	path := kv.FormatPath(multipartsPrefix, multipart.UploadID)
+	return m.store.SetMsgIf(ctx, path, protoFromMultipart(&multipart), nil)
 }
 
 func (m *tracker) Get(ctx context.Context, uploadID string) (*MultipartUpload, error) {
@@ -86,8 +86,8 @@ func (m *tracker) Get(ctx context.Context, uploadID string) (*MultipartUpload, e
 		return nil, ErrInvalidUploadID
 	}
 	data := &MultipartUploadData{}
-	path := kv.FormatPath(multipartPrefix, uploadID)
-	err := m.store.GetMsg(ctx, path, data)
+	path := kv.FormatPath(multipartsPrefix, uploadID)
+	_, err := m.store.GetMsg(ctx, path, data)
 	if err != nil {
 		return nil, err
 	}
@@ -98,14 +98,14 @@ func (m *tracker) Delete(ctx context.Context, uploadID string) error {
 	if uploadID == "" {
 		return ErrInvalidUploadID
 	}
-	data := &MultipartUploadData{}
-	path := kv.FormatPath(multipartPrefix, uploadID)
-	if err := m.store.GetMsg(ctx, path, data); err != nil {
+	store := m.store.Store
+	key := []byte(kv.FormatPath(multipartsPrefix, uploadID))
+	if _, err := store.Get(ctx, key); err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
-			return ErrMultipartUploadNotFound
+			return fmt.Errorf("%w uploadID=%s", ErrMultipartUploadNotFound, uploadID)
 		}
 		return err
 	}
 
-	return m.store.Delete(ctx, path)
+	return store.Delete(ctx, key)
 }

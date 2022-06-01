@@ -20,6 +20,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/sessions"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/treeverse/lakefs/pkg/api/params"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
@@ -48,7 +49,8 @@ type responseError struct {
 func Serve(
 	cfg *config.Config,
 	catalog catalog.Interface,
-	authenticator auth.Authenticator,
+	middlewareAuthenticator auth.Authenticator,
+	controllerAuthenticator auth.Authenticator,
 	authService auth.Service,
 	blockAdapter block.Adapter,
 	metadataManager auth.MetadataManager,
@@ -60,6 +62,7 @@ func Serve(
 	logger logging.Logger,
 	emailer *email.Emailer,
 	gatewayDomains []string,
+	snippets []params.CodeSnippet,
 ) http.Handler {
 	gob.Register(map[string]interface{}{})
 	logger.Info("initialize OpenAPI server")
@@ -93,13 +96,13 @@ func Serve(
 			RequestIDHeaderName,
 			logging.Fields{logging.ServiceNameFieldKey: LoggerServiceName},
 			cfg.GetLoggingTraceRequestHeaders()),
-		AuthMiddleware(logger, swagger, authenticator, authService, sessionStore),
+		AuthMiddleware(logger, swagger, middlewareAuthenticator, authService, sessionStore),
 		MetricsMiddleware(swagger),
 	)
 	controller := NewController(
 		cfg,
 		catalog,
-		authenticator,
+		controllerAuthenticator,
 		authService,
 		blockAdapter,
 		metadataManager,
@@ -128,7 +131,7 @@ func Serve(
 	}
 	r.Mount("/logout", NewOIDCLogoutHandler(sessionStore, oauthConfig, logoutUrl)) // TODO only if oidc enabled:
 
-	r.Mount("/", NewUIHandler(gatewayDomains))
+	r.Mount("/", NewUIHandler(gatewayDomains, snippets))
 	return r
 }
 

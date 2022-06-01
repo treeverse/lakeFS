@@ -169,6 +169,7 @@ func (c *Controller) Logout(w http.ResponseWriter, _ *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     JWTCookieName,
 		Value:    "",
+		Domain:   c.Config.GetCookieDomain(),
 		Path:     "/",
 		HttpOnly: true,
 		Expires:  time.Unix(0, 0),
@@ -1458,6 +1459,7 @@ func (c *Controller) ListRepositoryRuns(w http.ResponseWriter, r *http.Request, 
 	if handleAPIError(w, err) {
 		return
 	}
+	defer runsIter.Close()
 
 	response := ActionRunList{
 		Pagination: Pagination{

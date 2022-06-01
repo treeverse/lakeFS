@@ -368,7 +368,7 @@ func validateFilename(filename string) error {
 	if strings.HasPrefix(filename, workspaceDir+string(os.PathSeparator)) {
 		return errPathInWorkspace
 	}
-	if strings.Contains(filename, strings.Repeat(string(os.PathSeparator), 2)) {
+	if strings.Contains(filename, strings.Repeat(string(os.PathSeparator), 2)) { //nolint: gomnd
 		return errEmptyDirInPath
 	}
 	return nil

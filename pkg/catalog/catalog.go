@@ -386,6 +386,9 @@ func (c *Catalog) CreateBranch(ctx context.Context, repository string, branch st
 		{Name: "branch", Value: branchID, Fn: graveler.ValidateBranchID},
 		{Name: "ref", Value: sourceRef, Fn: graveler.ValidateRef},
 	}); err != nil {
+		if errors.Is(err, graveler.ErrInvalidBranchID) {
+			return nil, fmt.Errorf("%w: branch id must consist of letters, digits, underscores and dashes, and cannot start with a dash", err)
+		}
 		return nil, err
 	}
 	newBranch, err := c.Store.CreateBranch(ctx, repositoryID, branchID, sourceRef)
