@@ -29,6 +29,11 @@ private object ApiClient {
              )
     else
       uri
+
+  def getCommitTimeStamp(repoName: String, commitID: String, commitsApi: api.CommitsApi): Long = {
+    val commit = commitsApi.getCommit(repoName, commitID)
+    commit.getCreationDate
+  }
 }
 
 class ApiClient(apiUrl: String, accessKey: String, secretKey: String) {
@@ -68,6 +73,11 @@ class ApiClient(apiUrl: String, accessKey: String, secretKey: String) {
       repoName,
       new GarbageCollectionPrepareRequest().previousRunId(previousRunID)
     )
+  }
+
+  def getGarbageCollectionRules(repoName: String): String = {
+    val gcRules = retentionApi.getGarbageCollectionRules(repoName)
+    gcRules.toString()
   }
 
   /** Query lakeFS for a URL to the metarange of commitID of repoName and

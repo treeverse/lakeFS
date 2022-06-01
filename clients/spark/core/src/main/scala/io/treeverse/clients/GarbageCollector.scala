@@ -6,6 +6,8 @@ import io.treeverse.clients.LakeFSContext.{
   LAKEFS_CONF_API_SECRET_KEY_KEY,
   LAKEFS_CONF_API_URL_KEY
 }
+
+import org.apache.hadoop.fs._
 import org.apache.hadoop.conf.Configuration
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
@@ -19,6 +21,9 @@ import com.amazonaws.services.s3.model
 import java.net.URI
 import collection.JavaConverters._
 import java.time.format.DateTimeFormatter
+import org.json4s.native.JsonMethods._
+import org.json4s._
+import org.json4s.JsonDSL._
 
 /** Interface to build an S3 client.  The object
  *  io.treeverse.clients.conditional.S3ClientBuilder -- conditionally
@@ -305,8 +310,6 @@ object GarbageCollector {
       System.exit(1)
     }
 
-    println("! this is with test code")
-
     val spark = SparkSession.builder().appName("GarbageCollector").getOrCreate()
 
     val repo = args(0)
@@ -326,6 +329,8 @@ object GarbageCollector {
     val accessKey = hc.get(LAKEFS_CONF_API_ACCESS_KEY_KEY)
     val secretKey = hc.get(LAKEFS_CONF_API_SECRET_KEY_KEY)
     val apiClient = new ApiClient(apiURL, accessKey, secretKey)
+
+    val gcRules = apiClient.getGarbageCollectionRules(repo)
 
     val res = apiClient.prepareGarbageCollectionCommits(repo, previousRunID)
     val runID = res.getRunId
@@ -364,11 +369,16 @@ object GarbageCollector {
       .mode(SaveMode.Overwrite)
       .parquet(gcAddressesLocation + ".deleted")
 
-    spark.close()
-
     val commitsDF = getCommitsDF(runID, gcCommitsLocation, spark)
-    val reportDst = storageNamespace + "_lakefs/logs/gc/summary/"
-    writeParquetReport(reportDst, commitsDF)
+    val reportLogsDst = storageNamespace + "/_lakefs/logs/gc/summary/"
+    val reportDeletedDst = storageNamespace + "/_lakefs/logs/gc/deleted_objects/"
+
+    val time = DateTimeFormatter.ISO_INSTANT.format(java.time.Clock.systemUTC.instant())
+    writeParquetReport(reportLogsDst, commitsDF, time, "commits.parquet")
+    writeParquetReport(reportDeletedDst, expiredAddresses, time)
+    writeJsonSummary(reportLogsDst, removed.count(), gcRules, hcValues, time)
+
+    spark.close()
   }
 
   private def repartitionBySize(df: DataFrame, maxSize: Int, column: String): DataFrame = {
@@ -454,10 +464,18 @@ object GarbageCollector {
     bulkRemove(df, MaxBulkSize, bucket, region, awsRetries, snPrefix, hcValues).toDF("addresses")
   }
 
-  private def writeParquetReport(dstRoot: String, df: DataFrame) = {
-    val time = DateTimeFormatter.ISO_INSTANT.format(java.time.Clock.systemUTC.instant())
-    val dstPath = dstRoot + s"/dt=${time}/commits.parquet"
-
+  private def writeParquetReport(dstRoot: String, df: DataFrame, time: String, suffix: String = "") = {
+    val dstPath = dstRoot + s"/dt=${time}/${suffix}"
     df.write.parquet(dstPath)
+  }
+
+  private def writeJsonSummary(dstRoot: String, numDeletedObjects: Long, gcRules: String, hcValues: Broadcast[ConfMap], time: String) = {
+    val dstPath = new Path(dstRoot + s"/dt=${time}/summary.json")
+    val dstFS = dstPath.getFileSystem(configurationFromValues(hcValues))
+    val jsonSummary = JObject("gc_rules" -> gcRules, "num_deleted_objects" -> numDeletedObjects)
+
+    val stream = dstFS.create(dstPath)
+    stream.writeChars(compact(render(jsonSummary)))
+    stream.close()
   }
 }
