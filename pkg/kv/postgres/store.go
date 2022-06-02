@@ -227,19 +227,18 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 }
 
 func (s *Store) Scan(ctx context.Context, partitionKey, start []byte) (kv.EntriesIterator, error) {
+	if len(partitionKey) == 0 {
+		return nil, kv.ErrMissingPartitionKey
+	}
+
 	var (
 		rows pgx.Rows
 		err  error
 	)
 
-	switch {
-	case start == nil && len(partitionKey) == 0:
-		rows, err = s.Pool.Query(ctx, `SELECT partition_key,key,value FROM `+s.Params.SanitizedTableName+` ORDER BY key`)
-	case start != nil && len(partitionKey) == 0:
-		rows, err = s.Pool.Query(ctx, `SELECT partition_key,key,value FROM `+s.Params.SanitizedTableName+` WHERE key >= $1 ORDER BY key`, start)
-	case start == nil:
+	if start == nil {
 		rows, err = s.Pool.Query(ctx, `SELECT partition_key,key,value FROM `+s.Params.SanitizedTableName+` WHERE partition_key=$1 ORDER BY key`, partitionKey)
-	case start != nil:
+	} else {
 		rows, err = s.Pool.Query(ctx, `SELECT partition_key,key,value FROM `+s.Params.SanitizedTableName+` WHERE partition_key=$1 AND key >= $2 ORDER BY key`, partitionKey, start)
 	}
 

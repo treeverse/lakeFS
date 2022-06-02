@@ -159,6 +159,9 @@ func (s *Store) Delete(_ context.Context, partitionKey, key []byte) error {
 }
 
 func (s *Store) Scan(_ context.Context, partitionKey, start []byte) (kv.EntriesIterator, error) {
+	if len(partitionKey) == 0 {
+		return nil, kv.ErrMissingPartitionKey
+	}
 	combinedKey := combinedKey(partitionKey, start)
 
 	return &EntriesIterator{
