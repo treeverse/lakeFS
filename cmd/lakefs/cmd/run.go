@@ -242,7 +242,7 @@ var runCmd = &cobra.Command{
 		if oidcConfig != nil {
 			oidcProvider, err = oidc.NewProvider(
 				cmd.Context(),
-				"https://"+oidcConfig.Domain,
+				oidcConfig.URL,
 			)
 			if err != nil {
 				logger.WithError(err).Fatal("Failed to initialize OIDC provider")

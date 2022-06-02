@@ -55,6 +55,9 @@ This reference uses `.` to denote the nesting of values.
 * `auth.ldap.user_base_dn` `(string : required)` - Base DN for searching for users.  Search looks for users in the subtree below this.
 * `auth.ldap.default_user_group` `(string : )` - Create all LDAP users in this group.  Defaults to `Viewers`.
 * `auth.ldap.user_filter` `(string : )` - Additional filter for users.
+* `auth.oidc.client_id` `(string : )` - OIDC client ID
+* `auth.oidc.client_secret` `(string : )` - OIDC client secret
+* `auth.oidc.url` `(string : )` - The base URL of your OIDC compatible identity provider
 * `blockstore.type` `(one of ["local", "s3", "gs", "azure", "mem"] : required)`.  Block adapter to use. This controls where the underlying data will be stored
 * `blockstore.default_namespace_prefix` `(string : )` - Use this to help your users choose a storage namespace for their repositories. 
    If specified, the storage namespace will be filled with this default value as a prefix, when creating a repository from the UI.

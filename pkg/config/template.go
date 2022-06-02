@@ -5,7 +5,7 @@ import (
 )
 
 type OIDC struct {
-	Domain       string `mapstructure:"domain"`
+	URL          string `mapstructure:"url"`
 	ClientID     string `mapstructure:"client_id"`
 	ClientSecret string `mapstructure:"client_secret"`
 }
