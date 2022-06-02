@@ -23,23 +23,23 @@ type MockStore struct {
 
 var errNotImplemented = errors.New("not implemented")
 
-func (m *MockStore) Get(_ context.Context, _ []byte) (*kv.ValueWithPredicate, error) {
+func (m *MockStore) Get(_ context.Context, _, _ []byte) (*kv.ValueWithPredicate, error) {
 	return nil, errNotImplemented
 }
 
-func (m *MockStore) Set(_ context.Context, _, _ []byte) error {
+func (m *MockStore) Set(_ context.Context, _, _, _ []byte) error {
 	return errNotImplemented
 }
 
-func (m *MockStore) SetIf(_ context.Context, _, _ []byte, _ kv.Predicate) error {
+func (m *MockStore) SetIf(_ context.Context, _, _, _ []byte, _ kv.Predicate) error {
 	return errNotImplemented
 }
 
-func (m *MockStore) Delete(_ context.Context, _ []byte) error {
+func (m *MockStore) Delete(_ context.Context, _, _ []byte) error {
 	return errNotImplemented
 }
 
-func (m *MockStore) Scan(_ context.Context, _ []byte) (kv.EntriesIterator, error) {
+func (m *MockStore) Scan(_ context.Context, _, _ []byte) (kv.EntriesIterator, error) {
 	return nil, errNotImplemented
 }
 

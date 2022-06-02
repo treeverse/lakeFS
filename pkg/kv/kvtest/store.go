@@ -18,16 +18,21 @@ type MakeStore func(t testing.TB, ctx context.Context) kv.Store
 
 var runTestID = nanoid.MustGenerate("abcdef1234567890", 8) //nolint:gomnd
 
+const (
+	testPartitionKey       = "test"
+	testUnusedPartitionKey = "unused"
+)
+
 func uniqueKey(k string) []byte {
 	return []byte(runTestID + "-" + k)
 }
 
-func setupSampleData(t *testing.T, ctx context.Context, store kv.Store, prefix string, items int) []kv.Entry {
+func setupSampleData(t *testing.T, ctx context.Context, store kv.Store, partition, prefix string, items int) []kv.Entry {
 	t.Helper()
 	entries := make([]kv.Entry, 0, items)
 	for i := 0; i < items; i++ {
 		entry := sampleEntry(prefix, i)
-		err := store.Set(ctx, entry.Key, entry.Value)
+		err := store.Set(ctx, []byte(partition), entry.Key, entry.Value)
 		if err != nil {
 			t.Fatalf("failed to setup data with '%s': %s", entry, err)
 		}
@@ -72,15 +77,29 @@ func testStoreSetGet(t *testing.T, ms MakeStore) {
 	testValue1 := []byte("value")
 	testValue2 := []byte("a different kind of value")
 
+	t.Run("set_missing_partition_key", func(t *testing.T) {
+		// partition key - nil (disallow)
+		err := store.Set(ctx, nil, testKey, testValue1)
+		if !errors.Is(err, kv.ErrMissingPartitionKey) {
+			t.Fatalf("Set with nil partition key should fail - err: %v", err)
+		}
+
+		// partition key - empty slice (disallow)
+		err = store.Set(ctx, []byte{}, testKey, testValue1)
+		if !errors.Is(err, kv.ErrMissingPartitionKey) {
+			t.Fatalf("Set with empty key should fail - err: %v", err)
+		}
+	})
+
 	t.Run("set_missing_key", func(t *testing.T) {
 		// key - nil (disallow)
-		err := store.Set(ctx, nil, testValue1)
+		err := store.Set(ctx, []byte(testPartitionKey), nil, testValue1)
 		if !errors.Is(err, kv.ErrMissingKey) {
 			t.Fatalf("Set with nil key should fail - err: %v", err)
 		}
 
 		// key - empty slice (disallow)
-		err = store.Set(ctx, []byte{}, testValue1)
+		err = store.Set(ctx, []byte(testPartitionKey), []byte{}, testValue1)
 		if !errors.Is(err, kv.ErrMissingKey) {
 			t.Fatalf("Set with empty key should fail - err: %v", err)
 		}
@@ -89,21 +108,22 @@ func testStoreSetGet(t *testing.T, ms MakeStore) {
 	t.Run("set_missing_value", func(t *testing.T) {
 		// value - nil (disallow)
 		k := uniqueKey("key")
-		err := store.Set(ctx, k, nil)
+		err := store.Set(ctx, []byte(testPartitionKey), k, nil)
 		if !errors.Is(err, kv.ErrMissingValue) {
 			t.Fatalf("Set with nil value should fail - key=%s, err: %v", k, err)
 		}
 
 		// value - empty slice (allow)
 		k = uniqueKey("key")
-		err = store.Set(ctx, []byte{}, testValue1)
+		err = store.Set(ctx, []byte(testPartitionKey), []byte{}, testValue1)
 		if !errors.Is(err, kv.ErrMissingKey) {
 			t.Fatalf("Set with empty value should fail - key=%s, err: %v", k, err)
 		}
 	})
+
 	t.Run("set_value", func(t *testing.T) {
 		// set test key with value1
-		err := store.Set(ctx, testKey, testValue1)
+		err := store.Set(ctx, []byte(testPartitionKey), testKey, testValue1)
 		if err != nil {
 			t.Fatalf("failed to set key '%s', to value '%s': %s", testKey, testValue1, err)
 		}
@@ -111,7 +131,7 @@ func testStoreSetGet(t *testing.T, ms MakeStore) {
 
 	t.Run("get_value", func(t *testing.T) {
 		// get test key with value1
-		res, err := store.Get(ctx, testKey)
+		res, err := store.Get(ctx, []byte(testPartitionKey), testKey)
 		switch {
 		case err != nil:
 			t.Fatalf("failed to get key '%s': %s", testKey, err)
@@ -126,7 +146,7 @@ func testStoreSetGet(t *testing.T, ms MakeStore) {
 
 	t.Run("set_exist", func(t *testing.T) {
 		// override key with value2
-		err := store.Set(ctx, testKey, testValue2)
+		err := store.Set(ctx, []byte(testPartitionKey), testKey, testValue2)
 		if err != nil {
 			t.Fatalf("failed to set key '%s', to value '%s': %s", testKey, testValue2, err)
 		}
@@ -134,7 +154,7 @@ func testStoreSetGet(t *testing.T, ms MakeStore) {
 
 	t.Run("get_new_value", func(t *testing.T) {
 		// get test key with value2
-		res, err := store.Get(ctx, testKey)
+		res, err := store.Get(ctx, []byte(testPartitionKey), testKey)
 		if err != nil {
 			t.Fatalf("failed to get key '%s': %s", testKey, err)
 		}
@@ -146,12 +166,24 @@ func testStoreSetGet(t *testing.T, ms MakeStore) {
 	t.Run("get_missing", func(t *testing.T) {
 		// get a missing key
 		keyNotExists := uniqueKey("key-not-exists")
-		val3, err := store.Get(ctx, keyNotExists)
+		val3, err := store.Get(ctx, []byte(testPartitionKey), keyNotExists)
 		if !errors.Is(err, kv.ErrNotFound) {
 			t.Fatalf("get key='%s' err=%s, expected not found", keyNotExists, err)
 		}
 		if val3 != nil {
 			t.Fatalf("get key='%s' value='%s', expected nil", keyNotExists, val3)
+		}
+	})
+
+	t.Run("get_missing_partition_key", func(t *testing.T) {
+		// get a missing key
+		partitionKeyNotExists := uniqueKey("partition-key-not-exists")
+		val3, err := store.Get(ctx, partitionKeyNotExists, testKey)
+		if !errors.Is(err, kv.ErrNotFound) {
+			t.Fatalf("get key='%s' err=%s, expected not found", partitionKeyNotExists, err)
+		}
+		if val3 != nil {
+			t.Fatalf("get key='%s' value='%s', expected nil", partitionKeyNotExists, val3)
 		}
 	})
 }
@@ -164,11 +196,11 @@ func testStoreDelete(t *testing.T, ms MakeStore) {
 
 	t.Run("exists", func(t *testing.T) {
 		keyToDel := uniqueKey("key-to-delete")
-		err := store.Set(ctx, keyToDel, []byte("value to delete"))
+		err := store.Set(ctx, []byte(testPartitionKey), keyToDel, []byte("value to delete"))
 		if err != nil {
 			t.Fatalf("failed to set key='%s': %s", keyToDel, err)
 		}
-		err = store.Delete(ctx, keyToDel)
+		err = store.Delete(ctx, []byte(testPartitionKey), keyToDel)
 		if err != nil {
 			t.Fatalf("failed to delete key='%s': %s", keyToDel, err)
 		}
@@ -176,7 +208,7 @@ func testStoreDelete(t *testing.T, ms MakeStore) {
 
 	t.Run("non_exists", func(t *testing.T) {
 		keyToDel := uniqueKey("missing-key-to-delete")
-		err := store.Delete(ctx, keyToDel)
+		err := store.Delete(ctx, []byte(testPartitionKey), keyToDel)
 		if err != nil {
 			t.Fatalf("delete missing key '%s', err=%v expected nil", keyToDel, err)
 		}
@@ -191,7 +223,7 @@ func testStoreSetIf(t *testing.T, ms MakeStore) {
 	t.Run("set_first", func(t *testing.T) {
 		key := uniqueKey("set-if-first")
 		val := []byte("v")
-		err := store.SetIf(ctx, key, val, nil)
+		err := store.SetIf(ctx, []byte(testPartitionKey), key, val, nil)
 		if err != nil {
 			t.Fatalf("SetIf without previous key - key=%s value=%s pred=nil: %s", key, val, err)
 		}
@@ -200,18 +232,18 @@ func testStoreSetIf(t *testing.T, ms MakeStore) {
 	t.Run("set_exists", func(t *testing.T) {
 		key := uniqueKey("set-if-exists")
 		val1 := []byte("v1")
-		err := store.Set(ctx, key, val1)
+		err := store.Set(ctx, []byte(testPartitionKey), key, val1)
 		if err != nil {
 			t.Fatalf("Set while testing SetIf - key=%s value=%s: %s", key, val1, err)
 		}
 
-		res, err := store.Get(ctx, key)
+		res, err := store.Get(ctx, []byte(testPartitionKey), key)
 		if err != nil {
 			t.Fatalf("Get while testing SetIf - key=%s: %s", key, err)
 		}
 
 		val2 := []byte("v2")
-		err = store.SetIf(ctx, key, val2, res.Predicate)
+		err = store.SetIf(ctx, []byte(testPartitionKey), key, val2, res.Predicate)
 		if err != nil {
 			t.Fatalf("SetIf with previous value - key=%s value=%s pred=%s: %s", key, val2, val1, err)
 		}
@@ -220,14 +252,14 @@ func testStoreSetIf(t *testing.T, ms MakeStore) {
 	t.Run("fail_predicate_value", func(t *testing.T) {
 		key := uniqueKey("fail-predicate-value")
 		val1 := []byte("v1")
-		err := store.Set(ctx, key, val1)
+		err := store.Set(ctx, []byte(testPartitionKey), key, val1)
 		if err != nil {
 			t.Fatalf("Set while testing fail predicate - key=%s value=%s: %s", key, val1, err)
 		}
 
 		val2 := []byte("v2")
 		pred := []byte("pred")
-		err = store.SetIf(ctx, key, val2, pred)
+		err = store.SetIf(ctx, []byte(testPartitionKey), key, val2, pred)
 		if !errors.Is(err, kv.ErrPredicateFailed) {
 			t.Fatalf("SetIf err=%v - key=%s, value=%s, pred=%s, expected err=%s", err, key, val2, val2, kv.ErrPredicateFailed)
 		}
@@ -236,13 +268,13 @@ func testStoreSetIf(t *testing.T, ms MakeStore) {
 	t.Run("fail_predicate_nil", func(t *testing.T) {
 		key := uniqueKey("fail-predicate-nil")
 		val1 := []byte("v1")
-		err := store.Set(ctx, key, val1)
+		err := store.Set(ctx, []byte(testPartitionKey), key, val1)
 		if err != nil {
 			t.Fatalf("Set while testing fail predicate - key=%s value=%s: %s", key, val1, err)
 		}
 
 		val2 := []byte("v2")
-		err = store.SetIf(ctx, key, val2, nil)
+		err = store.SetIf(ctx, []byte(testPartitionKey), key, val2, nil)
 		if !errors.Is(err, kv.ErrPredicateFailed) {
 			t.Fatalf("SetIf err=%v - key=%s, value=%s, pred=nil, expected err=%s", err, key, val2, kv.ErrPredicateFailed)
 		}
@@ -257,10 +289,11 @@ func testStoreScan(t *testing.T, ms MakeStore) {
 	// setup sample data
 	samplePrefix := uniqueKey("scan")
 	const sampleItems = 100
-	sampleData := setupSampleData(t, ctx, store, string(samplePrefix), sampleItems)
+	sampleData := setupSampleData(t, ctx, store, testPartitionKey, string(samplePrefix), sampleItems)
+	_ = setupSampleData(t, ctx, store, testUnusedPartitionKey, string(samplePrefix), sampleItems)
 
 	t.Run("full", func(t *testing.T) {
-		scan, err := store.Scan(ctx, samplePrefix)
+		scan, err := store.Scan(ctx, []byte(testPartitionKey), samplePrefix)
 		if err != nil {
 			t.Fatal("failed to scan", err)
 		}
@@ -291,7 +324,7 @@ func testStoreScan(t *testing.T, ms MakeStore) {
 	t.Run("part", func(t *testing.T) {
 		const fromIndex = 5
 		fromKey := []byte(fmt.Sprint(string(samplePrefix), fmt.Sprintf("-key-%04d", fromIndex)))
-		scan, err := store.Scan(ctx, fromKey)
+		scan, err := store.Scan(ctx, []byte(testPartitionKey), fromKey)
 		if err != nil {
 			t.Fatal("failed to scan", err)
 		}
@@ -336,41 +369,95 @@ func testStoreMissingArgument(t *testing.T, ms MakeStore) {
 	store := ms(t, ctx)
 	defer store.Close()
 
-	t.Run("Get", func(t *testing.T) {
-		_, err := store.Get(ctx, nil)
-		if !errors.Is(err, kv.ErrMissingKey) {
-			t.Errorf("Get using nil key - err=%v, expected %s", err, kv.ErrMissingKey)
+	t.Run("Get_key", func(t *testing.T) {
+		for _, k := range [][]byte{nil, {}} {
+			_, err := store.Get(ctx, []byte(testPartitionKey), k)
+			if !errors.Is(err, kv.ErrMissingKey) {
+				t.Errorf("Get using nil key - err=%v, expected %s", err, kv.ErrMissingKey)
+			}
+		}
+	})
+
+	t.Run("Get_partition_key", func(t *testing.T) {
+		key := uniqueKey("test-missing-argument")
+		for _, pk := range [][]byte{nil, {}} {
+			_, err := store.Get(ctx, pk, key)
+			if !errors.Is(err, kv.ErrMissingPartitionKey) {
+				t.Errorf("Get using nil partition key - err=%v, expected %s", err, kv.ErrMissingPartitionKey)
+			}
 		}
 	})
 
 	t.Run("Set", func(t *testing.T) {
-		if err := store.Set(ctx, nil, []byte("v")); !errors.Is(err, kv.ErrMissingKey) {
-			t.Errorf("Set using nil key - err=%v, expected %s", err, kv.ErrMissingKey)
+		key := uniqueKey("test-missing-argument")
+		for _, pk := range [][]byte{nil, {}} {
+			if err := store.Set(ctx, pk, key, []byte("v")); !errors.Is(err, kv.ErrMissingPartitionKey) {
+				t.Errorf("Set using empty partition key - err=%v, expected %s", err, kv.ErrMissingPartitionKey)
+			}
 		}
 
-		key := uniqueKey("test-missing-argument")
-		if err := store.Set(ctx, key, nil); !errors.Is(err, kv.ErrMissingValue) {
+		for _, k := range [][]byte{nil, {}} {
+			if err := store.Set(ctx, []byte(testPartitionKey), k, []byte("v")); !errors.Is(err, kv.ErrMissingKey) {
+				t.Errorf("Set using empty key - err=%v, expected %s", err, kv.ErrMissingKey)
+			}
+		}
+
+		if err := store.Set(ctx, []byte(testPartitionKey), key, nil); !errors.Is(err, kv.ErrMissingValue) {
 			t.Errorf("Set using nil value - err=%v, expected %s", err, kv.ErrMissingValue)
 		}
 	})
 
 	t.Run("SetIf", func(t *testing.T) {
-		err := store.SetIf(ctx, nil, []byte("v"), []byte("p"))
-		if !errors.Is(err, kv.ErrMissingKey) {
-			t.Errorf("SetIf using nil key - err=%v, expected %s", err, kv.ErrMissingKey)
+		key := uniqueKey("test-missing-argument")
+
+		for _, pk := range [][]byte{nil, {}} {
+			err := store.SetIf(ctx, pk, key, []byte("v"), []byte("p"))
+			if !errors.Is(err, kv.ErrMissingPartitionKey) {
+				t.Errorf("SetIf using empty partition key - err=%v, expected %s", err, kv.ErrMissingPartitionKey)
+			}
 		}
 
-		key := uniqueKey("test-missing-argument")
-		err = store.SetIf(ctx, key, nil, []byte("p"))
+		for _, k := range [][]byte{nil, {}} {
+			err := store.SetIf(ctx, []byte(testPartitionKey), k, []byte("v"), []byte("p"))
+			if !errors.Is(err, kv.ErrMissingKey) {
+				t.Errorf("SetIf using empty key - err=%v, expected %s", err, kv.ErrMissingKey)
+			}
+		}
+
+		err := store.SetIf(ctx, []byte(testPartitionKey), key, nil, []byte("p"))
 		if !errors.Is(err, kv.ErrMissingValue) {
 			t.Errorf("SetIf using nil value - err=%v, expected %s", err, kv.ErrMissingValue)
 		}
 	})
 
 	t.Run("Delete", func(t *testing.T) {
-		err := store.Delete(ctx, nil)
-		if !errors.Is(err, kv.ErrMissingKey) {
-			t.Errorf("Delete using nil key - err=%v, expected %s", err, kv.ErrMissingKey)
+		key := uniqueKey("test-missing-argument")
+
+		for _, pk := range [][]byte{nil, {}} {
+			err := store.Delete(ctx, pk, key)
+			if !errors.Is(err, kv.ErrMissingPartitionKey) {
+				t.Errorf("Delete using empty partition key - err=%v, expected %s", err, kv.ErrMissingPartitionKey)
+			}
+		}
+
+		for _, k := range [][]byte{nil, {}} {
+			err := store.Delete(ctx, []byte(testPartitionKey), k)
+			if !errors.Is(err, kv.ErrMissingKey) {
+				t.Errorf("Delete using empty key - err=%v, expected %s", err, kv.ErrMissingKey)
+			}
+		}
+	})
+
+	t.Run("Scan", func(t *testing.T) {
+		start := uniqueKey("test-missing-argument")
+		for _, pk := range [][]byte{nil, {}} {
+			it, err := store.Scan(ctx, pk, start)
+			if !errors.Is(err, kv.ErrMissingPartitionKey) {
+				t.Errorf("Scan using empty partition key - err=%v, expected %s", err, kv.ErrMissingPartitionKey)
+			}
+			if it != nil {
+				t.Errorf("Scan using empty partition key - expected nil iterator: %s", it)
+			}
 		}
 	})
 }
@@ -387,12 +474,16 @@ func testScanPrefix(t *testing.T, ms MakeStore) {
 	)
 	const sampleItems = 100
 	const numberOfSets = 3
+
 	for i := 0; i < numberOfSets; i++ {
 		samplePrefix = uniqueKey("scan-prefix")
-		sampleData = setupSampleData(t, ctx, store, string(samplePrefix), sampleItems)
+		sampleData = setupSampleData(t, ctx, store, testPartitionKey, string(samplePrefix), sampleItems)
+
+		// filing unused data under the same prefix but a different partition to check partition isolation
+		_ = setupSampleData(t, ctx, store, testUnusedPartitionKey, string(samplePrefix), sampleItems)
 	}
 
-	scan, err := kv.ScanPrefix(ctx, store, samplePrefix)
+	scan, err := kv.ScanPrefix(ctx, store, []byte(testPartitionKey), samplePrefix)
 	if err != nil {
 		t.Fatal("ScanPrefix failed", err)
 	}
@@ -467,9 +558,9 @@ func testDeleteWhileIterPrefixSingleSequence(t *testing.T, ms MakeStore, sequenc
 	numDel := strings.Count(sequence, "D")
 
 	var initialStore []kv.Entry
-	initialStore = append(initialStore, setupSampleData(t, ctx, store, string(readPref), numRead)...)
-	initialStore = append(initialStore, setupSampleData(t, ctx, store, string(toDelPref), numDel)...)
-	initialStore = append(initialStore, setupSampleData(t, ctx, store, string(naPref), numRead+numDel)...)
+	initialStore = append(initialStore, setupSampleData(t, ctx, store, testPartitionKey, string(readPref), numRead)...)
+	initialStore = append(initialStore, setupSampleData(t, ctx, store, testPartitionKey, string(toDelPref), numDel)...)
+	initialStore = append(initialStore, setupSampleData(t, ctx, store, testPartitionKey, string(naPref), numRead+numDel)...)
 
 	chMap := make(map[byte]chan bool)
 	chMap['D'] = make(chan bool)
@@ -486,7 +577,7 @@ func testDeleteWhileIterPrefixSingleSequence(t *testing.T, ms MakeStore, sequenc
 
 	// Scan and read
 	go func() {
-		ei, err := store.Scan(ctx, readPref)
+		ei, err := store.Scan(ctx, []byte(testPartitionKey), readPref)
 		if err != nil {
 			chErr <- fmt.Errorf("unexpected error from store.Scan (read): %w", err)
 		}
@@ -509,7 +600,7 @@ func testDeleteWhileIterPrefixSingleSequence(t *testing.T, ms MakeStore, sequenc
 
 	// Scan and delete
 	go func() {
-		ei, err := store.Scan(ctx, toDelPref)
+		ei, err := store.Scan(ctx, []byte(testPartitionKey), toDelPref)
 		if err != nil {
 			chErr <- fmt.Errorf("unexpected error from store.Scan (delete): %w", err)
 		}
@@ -524,7 +615,7 @@ func testDeleteWhileIterPrefixSingleSequence(t *testing.T, ms MakeStore, sequenc
 				chErr <- fmt.Errorf("unexpected nil entry during deletion iteration: %w", ei.Err())
 				break
 			}
-			err = store.Delete(ctx, e.Key)
+			err = store.Delete(ctx, []byte(testPartitionKey), e.Key)
 			if err != nil {
 				chErr <- fmt.Errorf("unexpected delete failure :%w", err)
 				break
@@ -600,7 +691,7 @@ func testDeleteWhileIterSamePrefixSingleRun(t *testing.T, ms MakeStore, prefsToC
 
 	// Emptying the KV store from previous entries. This is essential in these tests as
 	// the verification relies on exact keys to exist
-	cleanIter, err := store.Scan(ctx, delPref)
+	cleanIter, err := store.Scan(ctx, []byte(testPartitionKey), delPref)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -617,7 +708,7 @@ func testDeleteWhileIterSamePrefixSingleRun(t *testing.T, ms MakeStore, prefsToC
 	}
 
 	for _, k := range keysToClean {
-		err = store.Delete(ctx, k)
+		err = store.Delete(ctx, []byte(testPartitionKey), k)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -626,7 +717,7 @@ func testDeleteWhileIterSamePrefixSingleRun(t *testing.T, ms MakeStore, prefsToC
 	// initialKv holds all the created items, to later verify that no items, that do not fit delPref, were deleted
 	var initialKv []kv.Entry
 	for _, pref := range prefsToCreate {
-		initialKv = append(initialKv, setupSampleData(t, ctx, store, string(pref), 100)...) //nolint:gomnd
+		initialKv = append(initialKv, setupSampleData(t, ctx, store, testPartitionKey, string(pref), 100)...) //nolint:gomnd
 	}
 
 	// Will be filled by the scan&read routine, to later verify that all values are passed by scan
@@ -637,7 +728,7 @@ func testDeleteWhileIterSamePrefixSingleRun(t *testing.T, ms MakeStore, prefsToC
 
 	// Scan and read
 	errGrp.Go(func() error {
-		ei, err := store.Scan(errCtx, readPref)
+		ei, err := store.Scan(errCtx, []byte(testPartitionKey), readPref)
 		if err != nil {
 			return fmt.Errorf("unexpected error from store.Scan (read): %w", err)
 		}
@@ -656,7 +747,7 @@ func testDeleteWhileIterSamePrefixSingleRun(t *testing.T, ms MakeStore, prefsToC
 
 	// Scan and delete
 	errGrp.Go(func() error {
-		ei, err := store.Scan(errCtx, delPref)
+		ei, err := store.Scan(errCtx, []byte(testPartitionKey), delPref)
 		if err != nil {
 			return fmt.Errorf("unexpected error from store.Scan (delete): %w", err)
 		}
@@ -667,7 +758,7 @@ func testDeleteWhileIterSamePrefixSingleRun(t *testing.T, ms MakeStore, prefsToC
 			if e == nil {
 				return fmt.Errorf("unexpected nil entry during deletion interation: %w", ei.Err())
 			}
-			err = store.Delete(errCtx, e.Key)
+			err = store.Delete(errCtx, []byte(testPartitionKey), e.Key)
 			if err != nil {
 				return fmt.Errorf("unexpected delete failure :%w", err)
 			}
@@ -708,7 +799,7 @@ func verifyDeleteWhileIterResults(t *testing.T, ctx context.Context, store kv.St
 			if !deleteDone[string(kve.Key)] {
 				t.Fatal("entry missing from deleted list", string(kve.Key))
 			}
-			_, err := store.Get(ctx, kve.Key)
+			_, err := store.Get(ctx, []byte(testPartitionKey), kve.Key)
 			if !errors.Is(err, kv.ErrNotFound) {
 				t.Fatal("unexpected entry found after delete", string(kve.Key))
 			}
@@ -725,7 +816,7 @@ func verifyDeleteWhileIterResults(t *testing.T, ctx context.Context, store kv.St
 			t.Fatal("unexpected entry access (read or delete)", string(kve.Key))
 		}
 
-		res, err := store.Get(ctx, kve.Key)
+		res, err := store.Get(ctx, []byte(testPartitionKey), kve.Key)
 		if errors.Is(err, kv.ErrNotFound) {
 			t.Fatal("expected entry not found", string(kve.Key))
 		}
@@ -739,7 +830,7 @@ func verifyDeleteWhileIterResults(t *testing.T, ctx context.Context, store kv.St
 
 	// verify all entries that fit delPref are indeed deleted, i.e. no such entry is left
 	// in the store
-	verifyIter, err := store.Scan(ctx, []byte{})
+	verifyIter, err := store.Scan(ctx, []byte(testPartitionKey), []byte{})
 	if err != nil {
 		t.Fatal(err)
 	}

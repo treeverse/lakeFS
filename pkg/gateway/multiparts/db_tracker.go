@@ -140,8 +140,9 @@ func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
 		}
 		key := []byte(kv.FormatPath(multipartsPrefix, m.UploadID))
 		err = je.Encode(kv.Entry{
-			Key:   key,
-			Value: value,
+			PartitionKey: []byte(multipartsPartitionKey),
+			Key:          key,
+			Value:        value,
 		})
 		if err != nil {
 			return err
