@@ -37,9 +37,9 @@ trait S3ClientBuilder extends Serializable {
    *  On Hadoop versions >=3, S3A can assume a role, and the returned S3
    *  client will similarly assume that role.
    *
-   *  @param hc (partial) Hadoop configuration of fs.s3a.
-   *  @param bucket that this client will access.
-   *  @param region to find this bucket.
+   *  @param hc         (partial) Hadoop configuration of fs.s3a.
+   *  @param bucket     that this client will access.
+   *  @param region     to find this bucket.
    *  @param numRetries number of times to retry on AWS.
    */
   def build(hc: Configuration, bucket: String, region: String, numRetries: Int): AmazonS3
@@ -464,12 +464,23 @@ object GarbageCollector {
     bulkRemove(df, MaxBulkSize, bucket, region, awsRetries, snPrefix, hcValues).toDF("addresses")
   }
 
-  private def writeParquetReport(dstRoot: String, df: DataFrame, time: String, suffix: String = "") = {
+  private def writeParquetReport(
+      dstRoot: String,
+      df: DataFrame,
+      time: String,
+      suffix: String = ""
+  ) = {
     val dstPath = dstRoot + s"/dt=${time}/${suffix}"
     df.write.parquet(dstPath)
   }
 
-  private def writeJsonSummary(dstRoot: String, numDeletedObjects: Long, gcRules: String, hcValues: Broadcast[ConfMap], time: String) = {
+  private def writeJsonSummary(
+      dstRoot: String,
+      numDeletedObjects: Long,
+      gcRules: String,
+      hcValues: Broadcast[ConfMap],
+      time: String
+  ) = {
     val dstPath = new Path(dstRoot + s"/dt=${time}/summary.json")
     val dstFS = dstPath.getFileSystem(configurationFromValues(hcValues))
     val jsonSummary = JObject("gc_rules" -> gcRules, "num_deleted_objects" -> numDeletedObjects)
