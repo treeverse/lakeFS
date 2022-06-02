@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
@@ -30,6 +31,10 @@ const (
 
 	DefaultTableName = "kv"
 	paramTableName   = "lakefskv_table"
+
+	// Changing the below value means repartitioning and probably a migration.
+	// Change it only if you really know what you're doing.
+	DefaultPartitions = 100
 )
 
 //nolint:gochecknoinits
@@ -82,11 +87,13 @@ func (d *Driver) Open(ctx context.Context, name string) (kv.Store, error) {
 type Params struct {
 	TableName          string
 	SanitizedTableName string
+	PartitionsAmount   int
 }
 
 func parseStoreConfig(runtimeParams map[string]string) *Params {
 	p := &Params{
-		TableName: DefaultTableName,
+		TableName:        DefaultTableName,
+		PartitionsAmount: DefaultPartitions,
 	}
 	if tableName, ok := runtimeParams[paramTableName]; ok {
 		p.TableName = tableName
@@ -99,23 +106,50 @@ func parseStoreConfig(runtimeParams map[string]string) *Params {
 func setupKeyValueDatabase(ctx context.Context, conn *pgxpool.Conn, params *Params) error {
 	// main kv table
 	_, err := conn.Exec(ctx, `CREATE TABLE IF NOT EXISTS `+params.SanitizedTableName+` (
-		key BYTEA NOT NULL PRIMARY KEY,
-		value BYTEA NOT NULL);`)
+		partition_key BYTEA NOT NULL,
+		key BYTEA NOT NULL,
+		value BYTEA NOT NULL,
+		UNIQUE (partition_key, key))
+	PARTITION BY HASH (partition_key);
+	`)
 	if err != nil {
 		return err
 	}
 
+	partitions := getTablePartitions(params.TableName, params.PartitionsAmount)
+	for i := 0; i < len(partitions); i++ {
+		_, err := conn.Exec(ctx, `CREATE TABLE IF NOT EXISTS`+
+			pgx.Identifier{partitions[i]}.Sanitize()+` PARTITION OF `+
+			params.SanitizedTableName+` FOR VALUES WITH (MODULUS `+strconv.Itoa(params.PartitionsAmount)+
+			`,REMAINDER `+strconv.Itoa(i)+`);`)
+		if err != nil {
+			return err
+		}
+	}
 	// view of kv table to help humans select from table (same as table with _v as suffix)
 	_, err = conn.Exec(ctx, `CREATE OR REPLACE VIEW `+pgx.Identifier{params.TableName + "_v"}.Sanitize()+
-		` AS SELECT ENCODE(key, 'escape') AS key, value FROM `+params.SanitizedTableName)
+		` AS SELECT ENCODE(partition_key, 'escape') AS partition_key, ENCODE(key, 'escape') AS key, value FROM `+params.SanitizedTableName)
 	return err
 }
 
-func (s *Store) Get(ctx context.Context, key []byte) (*kv.ValueWithPredicate, error) {
+func getTablePartitions(tableName string, partitionsAmount int) []string {
+	res := make([]string, 0, partitionsAmount)
+	for i := 0; i < partitionsAmount; i++ {
+		res = append(res, fmt.Sprintf("%s_%d", tableName, i))
+	}
+
+	return res
+}
+
+func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWithPredicate, error) {
+	if len(partitionKey) == 0 {
+		return nil, kv.ErrMissingPartitionKey
+	}
 	if len(key) == 0 {
 		return nil, kv.ErrMissingKey
 	}
-	row := s.Pool.QueryRow(ctx, `SELECT value FROM `+s.Params.SanitizedTableName+` WHERE key = $1`, key)
+
+	row := s.Pool.QueryRow(ctx, `SELECT value FROM `+s.Params.SanitizedTableName+` WHERE key = $1 AND partition_key = $2`, key, partitionKey)
 	var val []byte
 	err := row.Scan(&val)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -130,38 +164,44 @@ func (s *Store) Get(ctx context.Context, key []byte) (*kv.ValueWithPredicate, er
 	}, nil
 }
 
-func (s *Store) Set(ctx context.Context, key, value []byte) error {
+func (s *Store) Set(ctx context.Context, partitionKey, key, value []byte) error {
+	if len(partitionKey) == 0 {
+		return kv.ErrMissingPartitionKey
+	}
 	if len(key) == 0 {
 		return kv.ErrMissingKey
 	}
 	if value == nil {
 		return kv.ErrMissingValue
 	}
-	_, err := s.Pool.Exec(ctx, `INSERT INTO `+s.Params.SanitizedTableName+`(key,value) VALUES($1,$2)
-			ON CONFLICT (key) DO UPDATE SET value = $2`, key, value)
+
+	_, err := s.Pool.Exec(ctx, `INSERT INTO `+s.Params.SanitizedTableName+`(partition_key,key,value) VALUES($1,$2,$3)
+			ON CONFLICT (partition_key,key) DO UPDATE SET value = $3`, partitionKey, key, value)
 	if err != nil {
 		return fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
 	}
 	return nil
 }
 
-func (s *Store) SetIf(ctx context.Context, key, value []byte, valuePredicate kv.Predicate) error {
+func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valuePredicate kv.Predicate) error {
+	if len(partitionKey) == 0 {
+		return kv.ErrMissingPartitionKey
+	}
 	if len(key) == 0 {
 		return kv.ErrMissingKey
 	}
 	if value == nil {
 		return kv.ErrMissingValue
 	}
-	var (
-		res pgconn.CommandTag
-		err error
-	)
+
+	var res pgconn.CommandTag
+	var err error
 	if valuePredicate == nil {
 		// use insert to make sure there was no previous value before
-		res, err = s.Pool.Exec(ctx, `INSERT INTO `+s.Params.SanitizedTableName+`(key,value) VALUES($1,$2) ON CONFLICT DO NOTHING`, key, value)
+		res, err = s.Pool.Exec(ctx, `INSERT INTO `+s.Params.SanitizedTableName+`(partition_key,key,value) VALUES($1,$2,$3) ON CONFLICT DO NOTHING`, partitionKey, key, value)
 	} else {
 		// update just in case the previous value was same as predicate value
-		res, err = s.Pool.Exec(ctx, `UPDATE `+s.Params.SanitizedTableName+` SET value=$2 WHERE key=$1 AND value=$3`, key, value, valuePredicate.([]byte))
+		res, err = s.Pool.Exec(ctx, `UPDATE `+s.Params.SanitizedTableName+` SET value=$3 WHERE key=$2 AND partition_key=$1 AND value=$4`, partitionKey, key, value, valuePredicate.([]byte))
 	}
 	if err != nil {
 		return fmt.Errorf("%s: %w (key=%v)", err, kv.ErrOperationFailed, key)
@@ -172,27 +212,36 @@ func (s *Store) SetIf(ctx context.Context, key, value []byte, valuePredicate kv.
 	return nil
 }
 
-func (s *Store) Delete(ctx context.Context, key []byte) error {
+func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
+	if len(partitionKey) == 0 {
+		return kv.ErrMissingPartitionKey
+	}
 	if len(key) == 0 {
 		return kv.ErrMissingKey
 	}
-	_, err := s.Pool.Exec(ctx, `DELETE FROM `+s.Params.SanitizedTableName+` WHERE key=$1`, key)
+	_, err := s.Pool.Exec(ctx, `DELETE FROM `+s.Params.SanitizedTableName+` WHERE partition_key=$1 AND key=$2`, partitionKey, key)
 	if err != nil {
 		return fmt.Errorf("%s: %w (key=%v)", err, kv.ErrOperationFailed, key)
 	}
 	return nil
 }
 
-func (s *Store) Scan(ctx context.Context, start []byte) (kv.EntriesIterator, error) {
+func (s *Store) Scan(ctx context.Context, partitionKey, start []byte) (kv.EntriesIterator, error) {
+	if len(partitionKey) == 0 {
+		return nil, kv.ErrMissingPartitionKey
+	}
+
 	var (
 		rows pgx.Rows
 		err  error
 	)
+
 	if start == nil {
-		rows, err = s.Pool.Query(ctx, `SELECT key,value FROM `+s.Params.SanitizedTableName+` ORDER BY key`)
+		rows, err = s.Pool.Query(ctx, `SELECT partition_key,key,value FROM `+s.Params.SanitizedTableName+` WHERE partition_key=$1 ORDER BY key`, partitionKey)
 	} else {
-		rows, err = s.Pool.Query(ctx, `SELECT key,value FROM `+s.Params.SanitizedTableName+` WHERE key >= $1 ORDER BY key`, start)
+		rows, err = s.Pool.Query(ctx, `SELECT partition_key,key,value FROM `+s.Params.SanitizedTableName+` WHERE partition_key=$1 AND key >= $2 ORDER BY key`, partitionKey, start)
 	}
+
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w (start=%v)", err, kv.ErrOperationFailed, start)
 	}
@@ -215,7 +264,7 @@ func (e *EntriesIterator) Next() bool {
 		return false
 	}
 	var ent kv.Entry
-	if err := e.rows.Scan(&ent.Key, &ent.Value); err != nil {
+	if err := e.rows.Scan(&ent.PartitionKey, &ent.Key, &ent.Value); err != nil {
 		e.err = fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
 		return false
 	}
