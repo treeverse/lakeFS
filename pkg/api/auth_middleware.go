@@ -107,7 +107,9 @@ func checkSecurityRequirements(r *http.Request, securityRequirements openapi3.Se
 			if err != nil {
 				return nil, err
 			}
-			return user, nil
+			if user != nil {
+				return user, nil
+			}
 		}
 	}
 	return nil, nil
@@ -143,7 +145,7 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 		}
 		return nil, err
 	}
-	err = authService.AddUserToGroup(ctx, u.Username, auth.DevelopersGroup) // TODO default group should be configurable?
+	err = authService.AddUserToGroup(ctx, u.Username, auth.DevelopersGroup) // TODO(johnnyaug) for OIDC logins, authorization should be handled by the identity provider
 	if err != nil {
 		return nil, err
 	}

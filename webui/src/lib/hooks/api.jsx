@@ -54,7 +54,6 @@ export const useAPI = (promise, deps = []) => {
     const [login, setLogin] = useState(false);
 
     useEffect(() => {
-        console.log(router.route + ">>" + login)
         if (login) {
             const loginPathname = '/auth/login';
             if (router.route === loginPathname) {

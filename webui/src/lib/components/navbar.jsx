@@ -21,7 +21,7 @@ const NavUserInfo = () => {
                 <NavDropdown.Item
                     onSelect={()=> {
                         auth.logout().then(() => {
-                            window.location = '/oidc/logout'
+                            window.location = '/oidc/logout' // TODO(johnnyaug): do this only when OIDC is enabled
                         })
                     }}>
                     Logout

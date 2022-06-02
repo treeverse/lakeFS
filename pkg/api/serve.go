@@ -8,7 +8,6 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"net/url"
 
 	"github.com/coreos/go-oidc"
 	"github.com/getkin/kin-openapi/openapi3"
@@ -112,11 +111,7 @@ func Serve(
 	r.Mount("/oidc/login", NewOIDCLoginPageHandler(sessionStore, oauthConfig))
 	oidcConfig := cfg.GetAuthOIDCConfiguration()
 	if oidcConfig != nil {
-		logoutUrl, err := url.Parse("https://" + oidcConfig.Domain + "/v2/logout") // TODO(johnnyaug) this is auth0 specific
-		if err != nil {
-			panic(err)
-		}
-		r.Mount("/oidc/logout", NewOIDCLogoutHandler(sessionStore, oauthConfig, logoutUrl))
+		r.Mount("/oidc/logout", NewOIDCLogoutHandler(sessionStore, oauthConfig, oidcConfig.EndSessionEndpoint))
 	}
 	r.Mount("/", NewUIHandler(gatewayDomains, snippets))
 	return r

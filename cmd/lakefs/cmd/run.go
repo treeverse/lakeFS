@@ -242,7 +242,7 @@ var runCmd = &cobra.Command{
 		if oidcConfig != nil {
 			oidcProvider, err = oidc.NewProvider(
 				cmd.Context(),
-				"https://"+oidcConfig.Domain+"/",
+				"https://"+oidcConfig.Domain,
 			)
 			if err != nil {
 				logger.WithError(err).Fatal("Failed to initialize OIDC provider")
@@ -251,7 +251,6 @@ var runCmd = &cobra.Command{
 			oauthConfig = &oauth2.Config{
 				ClientID:     oidcConfig.ClientID,
 				ClientSecret: oidcConfig.ClientSecret,
-				RedirectURL:  oidcConfig.CallbackURL,
 				Endpoint:     oidcProvider.Endpoint(),
 				Scopes:       []string{oidc.ScopeOpenID, "profile"},
 			}
