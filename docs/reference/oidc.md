@@ -37,3 +37,4 @@ Note that you may have other configuration values under the `auth` key, so make 
 ## Limitations
 
 - Groups are not currently supported for externally managed users.
+- Creating programmatic access credentials is not supported for externally managed users.
