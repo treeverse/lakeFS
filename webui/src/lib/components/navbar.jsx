@@ -9,6 +9,7 @@ import {Link} from "./nav";
 import {useAPI} from "../hooks/api";
 
 const NavUserInfo = () => {
+    const router = useRouter();
     const { user, loading, error } = useUser();
     const { response: versionResponse, loading: versionLoading, error: versionError } = useAPI(() => {
         return config.getLakeFSVersion()
@@ -21,7 +22,7 @@ const NavUserInfo = () => {
                 <NavDropdown.Item
                     onSelect={()=> {
                         auth.logout().then(() => {
-                            window.location = '/oidc/logout' // TODO(johnnyaug): do this only when OIDC is enabled
+                            router.push('/auth/login')
                         })
                     }}>
                     Logout

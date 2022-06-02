@@ -108,10 +108,8 @@ func Serve(
 	r.Mount("/_pprof/", httputil.ServePPROF("/_pprof/"))
 	r.Mount("/swagger.json", http.HandlerFunc(swaggerSpecHandler))
 	r.Mount(BaseURL, http.HandlerFunc(InvalidAPIEndpointHandler))
-	r.Mount("/oidc/login", NewOIDCLoginPageHandler(sessionStore, oauthConfig))
-	oidcConfig := cfg.GetAuthOIDCConfiguration()
-	if oidcConfig != nil {
-		r.Mount("/oidc/logout", NewOIDCLogoutHandler(sessionStore, oauthConfig, oidcConfig.EndSessionEndpoint))
+	if cfg.GetAuthOIDCConfiguration() != nil {
+		r.Mount("/oidc/login", NewOIDCLoginPageHandler(sessionStore, oauthConfig))
 	}
 	r.Mount("/", NewUIHandler(gatewayDomains, snippets))
 	return r
