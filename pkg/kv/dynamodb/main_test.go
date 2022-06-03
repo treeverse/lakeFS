@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/ory/dockertest/v3"
 	dc "github.com/ory/dockertest/v3/docker"
@@ -59,6 +60,9 @@ func runDBInstance(dockerPool *dockertest.Pool) (string, func()) {
 	if os.Getenv("AWS_SECRET_ACCESS_KEY") == "" {
 		os.Setenv("AWS_SECRET_ACCESS_KEY", "fakeSecretAccessKey")
 	}
+
+	// Disgusting, but I have to wait for the dynamodb container to be ready
+	time.Sleep(2 * time.Second)
 
 	// return DB URI
 	return uri, closer
