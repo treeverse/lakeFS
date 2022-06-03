@@ -49,6 +49,17 @@ func runDBInstance(dockerPool *dockertest.Pool) (string, func()) {
 
 	uri := fmt.Sprintf("http://localhost:%s", DynamodbLocalPort)
 
+	// dummy aws env, in case not configured
+	if os.Getenv("AWS_DEFAULT_REGION") == "" {
+		os.Setenv("AWS_DEFAULT_REGION", "us-west-1")
+	}
+	if os.Getenv("AWS_ACCESS_KEY_ID") == "" {
+		os.Setenv("AWS_ACCESS_KEY_ID", "fakeMyKeyId")
+	}
+	if os.Getenv("AWS_SECRET_ACCESS_KEY") == "" {
+		os.Setenv("AWS_SECRET_ACCESS_KEY", "fakeSecretAccessKey")
+	}
+
 	// return DB URI
 	return uri, closer
 }
