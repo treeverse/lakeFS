@@ -52,7 +52,9 @@ func init() {
 	kv.Register(DriverName, &Driver{})
 }
 
-func (d *Driver) Open(ctx context.Context, name string) (kv.Store, error) {
+// Open - opens and returns a KV store over DynamoDB. This function creates the DB session
+// and sets up the KV table. dsn is a string with the DynamoDB endpoint
+func (d *Driver) Open(ctx context.Context, dsn string) (kv.Store, error) {
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	}))
@@ -60,7 +62,7 @@ func (d *Driver) Open(ctx context.Context, name string) (kv.Store, error) {
 	// Create DynamoDB client
 	svc := dynamodb.New(sess,
 		aws.NewConfig().
-			WithEndpoint(name))
+			WithEndpoint(dsn))
 
 	// TODO: Get table name from env
 	params := &Params{TableName: DefaultTableName}
