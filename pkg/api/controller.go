@@ -403,10 +403,9 @@ func (c *Controller) CreateGroup(w http.ResponseWriter, r *http.Request, body Cr
 	ctx := r.Context()
 	c.LogAction(ctx, "create_group")
 
-	g := &model.KvGroup{Group: model.Group{
+	g := &model.Group{
 		CreatedAt:   time.Now().UTC(),
 		DisplayName: body.Id,
-	},
 	}
 	err := c.Auth.CreateGroup(ctx, g)
 	if handleAPIError(w, err) {
@@ -579,7 +578,7 @@ func (c *Controller) ListGroupPolicies(w http.ResponseWriter, r *http.Request, g
 	writeResponse(w, http.StatusOK, response)
 }
 
-func serializePolicy(p *model.KvPolicy) Policy {
+func serializePolicy(p *model.Policy) Policy {
 	stmts := make([]Statement, 0, len(p.Statement))
 	for _, s := range p.Statement {
 		stmts = append(stmts, Statement{
@@ -689,11 +688,10 @@ func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body C
 		}
 	}
 
-	p := &model.KvPolicy{Policy: model.Policy{
+	p := &model.Policy{
 		CreatedAt:   time.Now().UTC(),
 		DisplayName: body.Id,
 		Statement:   stmts,
-	},
 	}
 
 	err := c.Auth.WritePolicy(ctx, p)
@@ -771,11 +769,10 @@ func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, body U
 		}
 	}
 
-	p := &model.KvPolicy{Policy: model.Policy{
+	p := &model.Policy{
 		CreatedAt:   time.Now().UTC(),
 		DisplayName: policyID,
 		Statement:   stmts,
-	},
 	}
 	err := c.Auth.WritePolicy(ctx, p)
 	if handleAPIError(w, err) {
@@ -868,21 +865,19 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body Cre
 	}) {
 		return
 	}
-	u := &model.KvUser{
-		User: model.User{
-			CreatedAt:    time.Now().UTC(),
-			Username:     id,
-			FriendlyName: nil,
-			Source:       "internal",
-			Email:        parsedEmail,
-		},
+	u := &model.User{
+		CreatedAt:    time.Now().UTC(),
+		Username:     id,
+		FriendlyName: nil,
+		Source:       "internal",
+		Email:        parsedEmail,
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "create_user")
 	_, err := c.Auth.CreateUser(ctx, u)
 
 	if handleAPIError(w, err) {
-		c.Logger.WithError(err).WithField("user_id", u.ID).Warn("failed creating user")
+		c.Logger.WithError(err).WithField("username", u.Username).Warn("failed creating user")
 		return
 	}
 
@@ -1109,7 +1104,7 @@ func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, us
 
 	ctx := r.Context()
 	c.LogAction(ctx, "list_user_policies")
-	var listPolicies func(ctx context.Context, username string, params *model.PaginationParams) ([]*model.KvPolicy, *model.Paginator, error)
+	var listPolicies func(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
 	if params.Effective != nil && *params.Effective {
 		listPolicies = c.Auth.ListEffectivePolicies
 	} else {
@@ -1872,7 +1867,7 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body CommitJ
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "create_commit")
-	user, ok := ctx.Value(UserContextKey).(*model.User)
+	user, ok := ctx.Value(UserContextKey).(*model.KVUser)
 	if !ok {
 		writeError(w, http.StatusUnauthorized, "missing user")
 		return
@@ -2171,7 +2166,7 @@ func (c *Controller) RevertBranch(w http.ResponseWriter, r *http.Request, body R
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "revert_branch")
-	user, ok := ctx.Value(UserContextKey).(*model.User)
+	user, ok := ctx.Value(UserContextKey).(*model.KVUser)
 	if !ok {
 		writeError(w, http.StatusUnauthorized, "user not found")
 		return
@@ -2974,7 +2969,7 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "merge_branches")
-	user, ok := ctx.Value(UserContextKey).(*model.User)
+	user, ok := ctx.Value(UserContextKey).(*model.KVUser)
 	if !ok {
 		writeError(w, http.StatusUnauthorized, "user not found")
 		return
@@ -3140,7 +3135,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 		return
 	}
 
-	var cred *model.KvCredential
+	var cred *model.KVCredential
 	if body.Key == nil {
 		cred, err = auth.CreateInitialAdminUser(ctx, c.Auth, c.MetadataManager, body.Username)
 	} else {
@@ -3165,7 +3160,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 }
 
 func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
-	u, ok := r.Context().Value(UserContextKey).(*model.User)
+	u, ok := r.Context().Value(UserContextKey).(*model.KVUser)
 	var user User
 	if ok {
 		user.Id = u.Username
@@ -3252,7 +3247,7 @@ func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body
 
 func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	user, ok := ctx.Value(UserContextKey).(*model.User)
+	user, ok := ctx.Value(UserContextKey).(*model.KVUser)
 	if !ok || user == nil {
 		writeError(w, http.StatusUnauthorized, ErrAuthenticatingRequest)
 		return
@@ -3463,7 +3458,7 @@ func paginationFor(hasMore bool, results interface{}, fieldName string) Paginati
 
 func (c *Controller) authorize(w http.ResponseWriter, r *http.Request, perms permissions.Node) bool {
 	ctx := r.Context()
-	user, ok := ctx.Value(UserContextKey).(*model.User)
+	user, ok := ctx.Value(UserContextKey).(*model.KVUser)
 	if !ok || user == nil {
 		writeError(w, http.StatusUnauthorized, ErrAuthenticatingRequest)
 		return false

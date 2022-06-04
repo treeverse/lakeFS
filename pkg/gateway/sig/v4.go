@@ -119,7 +119,7 @@ func ParseV4AuthContext(r *http.Request) (V4Auth, error) {
 	return ctx, nil
 }
 
-func V4Verify(auth V4Auth, credentials *model.KvCredential, r *http.Request) error {
+func V4Verify(auth V4Auth, credentials *model.KVCredential, r *http.Request) error {
 	ctx := &verificationCtx{
 		Request:   r,
 		Query:     r.URL.Query(),
@@ -355,7 +355,7 @@ func (ctx *verificationCtx) contentLength() (int64, error) {
 	return size, nil
 }
 
-func (ctx *verificationCtx) reader(reader io.ReadCloser, creds *model.KvCredential) (io.ReadCloser, error) {
+func (ctx *verificationCtx) reader(reader io.ReadCloser, creds *model.KVCredential) (io.ReadCloser, error) {
 	if ctx.isStreaming() {
 		amzDate, err := ctx.getAmzDate()
 		if err != nil {
@@ -394,7 +394,7 @@ func (a *V4Authenticator) String() string {
 	return "sigv4"
 }
 
-func (a *V4Authenticator) Verify(creds *model.KvCredential, _ string) error {
+func (a *V4Authenticator) Verify(creds *model.KVCredential, _ string) error {
 	err := V4Verify(a.ctx, creds, a.request)
 	return err
 }

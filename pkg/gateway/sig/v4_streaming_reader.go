@@ -52,7 +52,7 @@ func getScope(t time.Time, region, service string) string {
 }
 
 // getChunkSignature - get chunk signature.
-func getChunkSignature(cred *model.KvCredential, seedSignature string, region string, service string, date time.Time, hashedChunk string) string {
+func getChunkSignature(cred *model.KVCredential, seedSignature string, region string, service string, date time.Time, hashedChunk string) string {
 	// Calculate string to sign.
 	stringToSign := signV4ChunkedAlgorithm + "\n" +
 		date.Format(v4timeFormat) + "\n" +
@@ -89,7 +89,7 @@ var (
 //
 // NewChunkedReader is not needed by normal applications. The http package
 // automatically decodes chunking when reading response bodies.
-func newSignV4ChunkedReader(reader *bufio.Reader, amzDate string, auth V4Auth, creds *model.KvCredential) (io.ReadCloser, error) {
+func newSignV4ChunkedReader(reader *bufio.Reader, amzDate string, auth V4Auth, creds *model.KVCredential) (io.ReadCloser, error) {
 	seedDate, err := time.Parse(v4timeFormat, amzDate)
 	if err != nil {
 		return nil, err
@@ -110,7 +110,7 @@ func newSignV4ChunkedReader(reader *bufio.Reader, amzDate string, auth V4Auth, c
 // AWS Signature V4 chunked reader.
 type s3ChunkedReader struct {
 	reader            *bufio.Reader
-	cred              *model.KvCredential
+	cred              *model.KVCredential
 	seedSignature     string
 	seedDate          time.Time
 	region            string

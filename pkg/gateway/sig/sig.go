@@ -80,7 +80,7 @@ type SigContext interface {
 
 type SigAuthenticator interface {
 	Parse() (SigContext, error)
-	Verify(*model.KvCredential, string) error
+	Verify(*model.KVCredential, string) error
 }
 
 type chainedAuthenticator struct {
@@ -107,7 +107,7 @@ func Equal(sig1, sig2 []byte) bool {
 	return hmac.Equal(sig1, sig2)
 }
 
-func (c *chainedAuthenticator) Verify(creds *model.KvCredential, fqdn string) error {
+func (c *chainedAuthenticator) Verify(creds *model.KVCredential, fqdn string) error {
 	return c.chosen.Verify(creds, fqdn)
 }
 

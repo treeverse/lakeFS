@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/kv"
@@ -34,7 +35,7 @@ type Paginator struct {
 
 // SuperuserConfiguration requests a particular configuration for a superuser.
 type SuperuserConfiguration struct {
-	KvUser
+	KVUser
 	AccessKeyID     string
 	SecretAccessKey string
 }
@@ -52,7 +53,7 @@ type User struct {
 	Source            string  `db:"source" json:"source"`
 }
 
-type KvUser struct {
+type KVUser struct {
 	ID string
 	User
 }
@@ -62,18 +63,24 @@ type DBUser struct {
 	User
 }
 
+func DBUserToKVUser(u *DBUser) *KVUser {
+	return &KVUser{
+		ID:   strconv.FormatInt(u.ID, 10),
+		User: u.User,
+	}
+}
+
 type Group struct {
-	ID          string    `db:"id"`
 	CreatedAt   time.Time `db:"created_at"`
 	DisplayName string    `db:"display_name" json:"display_name"`
 }
 
-type KvGroup struct {
-	ID string `default:"0"`
+type KVGroup struct {
+	ID string
 	Group
 }
 
-type DbGroup struct {
+type DBGroup struct {
 	ID int `db:"id"`
 	Group
 }
@@ -84,12 +91,7 @@ type Policy struct {
 	Statement   Statements `db:"statement"`
 }
 
-type KvPolicy struct {
-	ID string `default:"0"`
-	Policy
-}
-
-type DbPolicy struct {
+type DBPolicy struct {
 	ID int `db:"id"`
 	Policy
 }
@@ -109,12 +111,12 @@ type Credential struct {
 	IssuedDate                    time.Time `db:"issued_date"`
 }
 
-type KvCredential struct {
-	UserID string `default:"0"`
+type KVCredential struct {
+	UserID string
 	Credential
 }
 
-type DbCredential struct {
+type DBCredential struct {
 	UserID int64 `db:"user_id"`
 	Credential
 }
@@ -172,8 +174,8 @@ func kvUserPath(userName string) string {
 }
 
 //nolint
-func userFromProto(pb *UserData) *KvUser {
-	return &KvUser{
+func userFromProto(pb *UserData) *KVUser {
+	return &KVUser{
 		ID: string(pb.Id),
 		User: User{
 			CreatedAt:         pb.CreatedAt.AsTime(),
@@ -187,7 +189,7 @@ func userFromProto(pb *UserData) *KvUser {
 }
 
 //nolint
-func protoFromUser(u *KvUser) *UserData {
+func protoFromUser(u *KVUser) *UserData {
 	return &UserData{
 		Id:                []byte(u.ID),
 		CreatedAt:         timestamppb.New(u.CreatedAt),
@@ -205,8 +207,8 @@ func kvGroupPath(displayName string) string {
 }
 
 //nolint
-func groupFromProto(pb *GroupData) *KvGroup {
-	return &KvGroup{
+func groupFromProto(pb *GroupData) *KVGroup {
+	return &KVGroup{
 		ID: string(pb.Id),
 		Group: Group{
 			CreatedAt:   pb.CreatedAt.AsTime(),
@@ -216,7 +218,7 @@ func groupFromProto(pb *GroupData) *KvGroup {
 }
 
 //nolint
-func protoFromGroup(g *KvGroup) *GroupData {
+func protoFromGroup(g *KVGroup) *GroupData {
 	return &GroupData{
 		Id:          []byte(g.ID),
 		CreatedAt:   timestamppb.New(g.CreatedAt),
@@ -225,26 +227,22 @@ func protoFromGroup(g *KvGroup) *GroupData {
 }
 
 //nolint
-func kvPolicyPath(DisplayName string) string {
+func PolicyPath(DisplayName string) string {
 	return kv.FormatPath(authPrefix, "policies", DisplayName)
 }
 
 //nolint
-func policyFromProto(pb *PolicyData) *KvPolicy {
-	return &KvPolicy{
-		ID: string(pb.Id),
-		Policy: Policy{
-			CreatedAt:   pb.CreatedAt.AsTime(),
-			DisplayName: pb.DisplayName,
-			Statement:   *statementsFromProto(pb.Statements),
-		},
+func policyFromProto(pb *PolicyData) *Policy {
+	return &Policy{
+		CreatedAt:   pb.CreatedAt.AsTime(),
+		DisplayName: pb.DisplayName,
+		Statement:   *statementsFromProto(pb.Statements),
 	}
 }
 
 //nolint
-func protoFromPolicy(p *KvPolicy) *PolicyData {
+func protoFromPolicy(p *Policy) *PolicyData {
 	return &PolicyData{
-		Id:          []byte(p.ID),
 		CreatedAt:   timestamppb.New(p.CreatedAt),
 		DisplayName: p.DisplayName,
 		Statements:  protoFromStatements(&p.Statement),
@@ -257,8 +255,8 @@ func kvCredentialPath(userName string, accessKeyID string) string {
 }
 
 //nolint
-func credentialFromProto(pb *CredentialData) *KvCredential {
-	return &KvCredential{
+func credentialFromProto(pb *CredentialData) *KVCredential {
+	return &KVCredential{
 		UserID: string(pb.UserId),
 		Credential: Credential{
 			AccessKeyID:                   pb.AccessKeyId,
@@ -270,7 +268,7 @@ func credentialFromProto(pb *CredentialData) *KvCredential {
 }
 
 //nolint
-func protoFromCredential(c *KvCredential) *CredentialData {
+func protoFromCredential(c *KVCredential) *CredentialData {
 	return &CredentialData{
 		AccessKeyId:                   c.AccessKeyID,
 		SecretAccessKey:               c.SecretAccessKey,
@@ -325,11 +323,49 @@ func kvUserToGroup(userName string, groupDisplayName string) string {
 }
 
 //nolint
-func kvPolicyToUser(policyDisplayName string, userName string) string {
+func PolicyToUser(policyDisplayName string, userName string) string {
 	return kv.FormatPath(authPrefix, "users", userName, "policies", policyDisplayName)
 }
 
 //nolint
-func kvPolicyToGroup(policyDisplayName string, groupDisplayName string) string {
+func PolicyToGroup(policyDisplayName string, groupDisplayName string) string {
 	return kv.FormatPath(authPrefix, "groups", groupDisplayName, "policies", policyDisplayName)
+}
+
+func ConvertUsersList(users []*DBUser) []*KVUser {
+	kvUsers := make([]*KVUser, 0, len(users))
+	for _, u := range users {
+		kvUsers = append(kvUsers, DBUserToKVUser(u))
+	}
+	return kvUsers
+}
+
+func ConvertCredList(creds []*DBCredential) []*KVCredential {
+	res := make([]*KVCredential, 0, len(creds))
+	for _, c := range creds {
+		res = append(res, ConvertCreds(c))
+	}
+	return res
+}
+
+func ConvertCreds(c *DBCredential) *KVCredential {
+	return &KVCredential{
+		UserID:     strconv.FormatInt(c.UserID, 10),
+		Credential: c.Credential,
+	}
+}
+
+func ConvertGroupList(groups []*DBGroup) []*KVGroup {
+	res := make([]*KVGroup, 0, len(groups))
+	for _, g := range groups {
+		res = append(res, ConvertGroup(g))
+	}
+	return res
+}
+
+func ConvertGroup(g *DBGroup) *KVGroup {
+	return &KVGroup{
+		ID:    strconv.Itoa(g.ID),
+		Group: g.Group,
+	}
 }

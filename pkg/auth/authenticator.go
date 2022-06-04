@@ -28,7 +28,7 @@ type Authenticator interface {
 
 // Credentialler fetches S3-style credentials for access keys.
 type Credentialler interface {
-	GetCredentials(ctx context.Context, accessKeyID string) (*model.KvCredential, error)
+	GetCredentials(ctx context.Context, accessKeyID string) (*model.KVCredential, error)
 }
 
 // NewChainAuthenticator returns an Authenticator that authenticates users
@@ -226,24 +226,21 @@ func (la *LDAPAuthenticator) AuthenticateUser(ctx context.Context, username, pas
 	// TODO(ariels): Should users be stored by their DNs or by their
 	//     usernames?  (Also below in user passed to CreateUser).
 	user, err := la.AuthService.GetUser(ctx, dn)
-	intID, err := UserIDToInt64(user.ID)
 	if err == nil {
 		logger.WithField("user", fmt.Sprintf("%+v", user)).Debug("Got existing user")
-		return intID, nil
+		return UserIDToInt64(user.ID)
 	}
-
 	if !errors.Is(err, ErrNotFound) {
 		logger.WithError(err).Info("Could not get user; create them")
 	}
 
-	user = &model.KvUser{User: model.User{
+	newUser := &model.User{
 		CreatedAt:    time.Now(),
 		Username:     dn,
 		FriendlyName: &username,
 		Source:       "ldap",
-	},
 	}
-	id, err := la.AuthService.CreateUser(ctx, user)
+	id, err := la.AuthService.CreateUser(ctx, newUser)
 	if err != nil {
 		return InvalidUserID, fmt.Errorf("create backing user for LDAP user %s: %w", dn, err)
 	}

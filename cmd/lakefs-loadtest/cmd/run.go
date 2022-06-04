@@ -57,7 +57,7 @@ var runCmd = &cobra.Command{
 			RepoName:         repoName,
 			StorageNamespace: storageNamespace,
 			KeepRepo:         isKeep,
-			Credentials: model.KvCredential{Credential: model.Credential{
+			Credentials: model.KVCredential{Credential: model.Credential{
 				AccessKeyID:     viper.GetString(ConfigAccessKeyID),
 				SecretAccessKey: viper.GetString(ConfigSecretAccessKey),
 			},

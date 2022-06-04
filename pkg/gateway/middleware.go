@@ -142,7 +142,7 @@ func EnrichWithRepositoryOrFallback(c catalog.Interface, authService auth.Gatewa
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		repoID := ctx.Value(ContextKeyRepositoryID).(string)
-		username := ctx.Value(ContextKeyUser).(*model.KvUser).Username
+		username := ctx.Value(ContextKeyUser).(*model.KVUser).Username
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		if repoID == "" {
 			// action without repo

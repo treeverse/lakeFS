@@ -17,7 +17,7 @@ const (
 	ViewersGroup    = "Viewers"
 )
 
-func createGroups(ctx context.Context, authService Service, groups []*model.KvGroup) error {
+func createGroups(ctx context.Context, authService Service, groups []*model.Group) error {
 	for _, group := range groups {
 		err := authService.CreateGroup(ctx, group)
 		if err != nil {
@@ -27,7 +27,7 @@ func createGroups(ctx context.Context, authService Service, groups []*model.KvGr
 	return nil
 }
 
-func createPolicies(ctx context.Context, authService Service, policies []*model.KvPolicy) error {
+func createPolicies(ctx context.Context, authService Service, policies []*model.Policy) error {
 	for _, policy := range policies {
 		err := authService.WritePolicy(ctx, policy)
 		if err != nil {
@@ -50,160 +50,144 @@ func attachPolicies(ctx context.Context, authService Service, groupID string, po
 func SetupBaseGroups(ctx context.Context, authService Service, ts time.Time) error {
 	var err error
 
-	err = createGroups(ctx, authService, []*model.KvGroup{
-		{Group: model.Group{CreatedAt: ts, DisplayName: AdminsGroup}},
-		{Group: model.Group{CreatedAt: ts, DisplayName: SuperUsersGroup}},
-		{Group: model.Group{CreatedAt: ts, DisplayName: DevelopersGroup}},
-		{Group: model.Group{CreatedAt: ts, DisplayName: ViewersGroup}},
+	err = createGroups(ctx, authService, []*model.Group{
+		{CreatedAt: ts, DisplayName: AdminsGroup},
+		{CreatedAt: ts, DisplayName: SuperUsersGroup},
+		{CreatedAt: ts, DisplayName: DevelopersGroup},
+		{CreatedAt: ts, DisplayName: ViewersGroup},
 	})
 	if err != nil {
 		return err
 	}
 
-	err = createPolicies(ctx, authService, []*model.KvPolicy{
+	err = createPolicies(ctx, authService, []*model.Policy{
 		{
-			Policy: model.Policy{
-				CreatedAt:   ts,
-				DisplayName: "FSFullAccess",
-				Statement: model.Statements{
-					{
-						Action: []string{
-							"fs:*",
-						},
-						Resource: permissions.All,
-						Effect:   model.StatementEffectAllow,
+			CreatedAt:   ts,
+			DisplayName: "FSFullAccess",
+			Statement: model.Statements{
+				{
+					Action: []string{
+						"fs:*",
 					},
+					Resource: permissions.All,
+					Effect:   model.StatementEffectAllow,
 				},
 			},
 		},
 		{
-			Policy: model.Policy{
-				CreatedAt:   ts,
-				DisplayName: "FSReadWriteAll",
-				Statement: model.Statements{
-					{
-						Action: []string{
-							permissions.ListRepositoriesAction,
-							permissions.ReadRepositoryAction,
-							permissions.ReadCommitAction,
-							permissions.ListBranchesAction,
-							permissions.ListTagsAction,
-							permissions.ListObjectsAction,
-							permissions.ReadObjectAction,
-							permissions.WriteObjectAction,
-							permissions.DeleteObjectAction,
-							permissions.RevertBranchAction,
-							permissions.ReadBranchAction,
-							permissions.ReadTagAction,
-							permissions.CreateBranchAction,
-							permissions.CreateTagAction,
-							permissions.DeleteBranchAction,
-							permissions.DeleteTagAction,
-							permissions.CreateCommitAction,
-						},
-						Resource: permissions.All,
-						Effect:   model.StatementEffectAllow,
+			CreatedAt:   ts,
+			DisplayName: "FSReadWriteAll",
+			Statement: model.Statements{
+				{
+					Action: []string{
+						permissions.ListRepositoriesAction,
+						permissions.ReadRepositoryAction,
+						permissions.ReadCommitAction,
+						permissions.ListBranchesAction,
+						permissions.ListTagsAction,
+						permissions.ListObjectsAction,
+						permissions.ReadObjectAction,
+						permissions.WriteObjectAction,
+						permissions.DeleteObjectAction,
+						permissions.RevertBranchAction,
+						permissions.ReadBranchAction,
+						permissions.ReadTagAction,
+						permissions.CreateBranchAction,
+						permissions.CreateTagAction,
+						permissions.DeleteBranchAction,
+						permissions.DeleteTagAction,
+						permissions.CreateCommitAction,
 					},
+					Resource: permissions.All,
+					Effect:   model.StatementEffectAllow,
 				},
 			},
 		},
 		{
-			Policy: model.Policy{
-				CreatedAt:   ts,
-				DisplayName: "FSReadAll",
-				Statement: model.Statements{
-					{
-						Action: []string{
-							"fs:List*",
-							"fs:Read*",
-						},
-						Resource: permissions.All,
-						Effect:   model.StatementEffectAllow,
+			CreatedAt:   ts,
+			DisplayName: "FSReadAll",
+			Statement: model.Statements{
+				{
+					Action: []string{
+						"fs:List*",
+						"fs:Read*",
 					},
+					Resource: permissions.All,
+					Effect:   model.StatementEffectAllow,
 				},
 			},
 		},
 		{
-			Policy: model.Policy{
-				CreatedAt:   ts,
-				DisplayName: "RepoManagementFullAccess",
-				Statement: model.Statements{
-					{
-						Action: []string{
-							"ci:*",
-							"retention:*",
-							"branches:*",
-							"fs:ReadConfig",
-						},
-						Resource: permissions.All,
-						Effect:   model.StatementEffectAllow,
+			CreatedAt:   ts,
+			DisplayName: "RepoManagementFullAccess",
+			Statement: model.Statements{
+				{
+					Action: []string{
+						"ci:*",
+						"retention:*",
+						"branches:*",
+						"fs:ReadConfig",
 					},
+					Resource: permissions.All,
+					Effect:   model.StatementEffectAllow,
 				},
 			},
 		},
 		{
-			Policy: model.Policy{
-				CreatedAt:   ts,
-				DisplayName: "RepoManagementReadAll",
-				Statement: model.Statements{
-					{
-						Action: []string{
-							"ci:Read*",
-							"retention:Get*",
-							"branches:Get*",
-							"fs:ReadConfig",
-						},
-						Resource: permissions.All,
-						Effect:   model.StatementEffectAllow,
+			CreatedAt:   ts,
+			DisplayName: "RepoManagementReadAll",
+			Statement: model.Statements{
+				{
+					Action: []string{
+						"ci:Read*",
+						"retention:Get*",
+						"branches:Get*",
+						"fs:ReadConfig",
 					},
+					Resource: permissions.All,
+					Effect:   model.StatementEffectAllow,
 				},
 			},
 		},
 		{
-			Policy: model.Policy{
-				CreatedAt:   ts,
-				DisplayName: "ExportSetConfiguration",
-				Statement: model.Statements{
-					{
-						Action: []string{
-							"fs:ExportConfig",
-						},
-						Resource: permissions.All,
-						Effect:   model.StatementEffectAllow,
+			CreatedAt:   ts,
+			DisplayName: "ExportSetConfiguration",
+			Statement: model.Statements{
+				{
+					Action: []string{
+						"fs:ExportConfig",
 					},
+					Resource: permissions.All,
+					Effect:   model.StatementEffectAllow,
 				},
 			},
 		},
 		{
-			Policy: model.Policy{
-				CreatedAt:   ts,
-				DisplayName: "AuthFullAccess",
-				Statement: model.Statements{
-					{
-						Action: []string{
-							"auth:*",
-						},
-						Resource: permissions.All,
-						Effect:   model.StatementEffectAllow,
+			CreatedAt:   ts,
+			DisplayName: "AuthFullAccess",
+			Statement: model.Statements{
+				{
+					Action: []string{
+						"auth:*",
 					},
+					Resource: permissions.All,
+					Effect:   model.StatementEffectAllow,
 				},
 			},
 		},
 		{
-			Policy: model.Policy{
-				CreatedAt:   ts,
-				DisplayName: "AuthManageOwnCredentials",
-				Statement: model.Statements{
-					{
-						Action: []string{
-							permissions.CreateCredentialsAction,
-							permissions.DeleteCredentialsAction,
-							permissions.ListCredentialsAction,
-							permissions.ReadCredentialsAction,
-						},
-						Resource: permissions.UserArn("${user}"),
-						Effect:   model.StatementEffectAllow,
+			CreatedAt:   ts,
+			DisplayName: "AuthManageOwnCredentials",
+			Statement: model.Statements{
+				{
+					Action: []string{
+						permissions.CreateCredentialsAction,
+						permissions.DeleteCredentialsAction,
+						permissions.ListCredentialsAction,
+						permissions.ReadCredentialsAction,
 					},
+					Resource: permissions.UserArn("${user}"),
+					Effect:   model.StatementEffectAllow,
 				},
 			},
 		},
@@ -232,7 +216,7 @@ func SetupBaseGroups(ctx context.Context, authService Service, ts time.Time) err
 	return nil
 }
 
-func SetupAdminUser(ctx context.Context, authService Service, superuser *model.SuperuserConfiguration) (*model.KvCredential, error) {
+func SetupAdminUser(ctx context.Context, authService Service, superuser *model.SuperuserConfiguration) (*model.KVCredential, error) {
 	now := time.Now()
 
 	// Setup the basic groups and policies
@@ -244,7 +228,7 @@ func SetupAdminUser(ctx context.Context, authService Service, superuser *model.S
 	return AddAdminUser(ctx, authService, superuser)
 }
 
-func AddAdminUser(ctx context.Context, authService Service, user *model.SuperuserConfiguration) (*model.KvCredential, error) {
+func AddAdminUser(ctx context.Context, authService Service, user *model.SuperuserConfiguration) (*model.KVCredential, error) {
 	const adminGroupName = "Admins"
 
 	// verify admin group exists
@@ -255,7 +239,7 @@ func AddAdminUser(ctx context.Context, authService Service, user *model.Superuse
 
 	// create admin user
 	user.Source = "internal"
-	_, err = authService.CreateUser(ctx, &user.KvUser)
+	_, err = authService.CreateUser(ctx, &user.User)
 	if err != nil {
 		return nil, fmt.Errorf("create user - %w", err)
 	}
@@ -264,7 +248,7 @@ func AddAdminUser(ctx context.Context, authService Service, user *model.Superuse
 		return nil, fmt.Errorf("add user to group - %w", err)
 	}
 
-	var creds *model.KvCredential
+	var creds *model.KVCredential
 	if user.AccessKeyID == "" {
 		// Generate and return a key pair
 		creds, err = authService.CreateCredentials(ctx, user.Username)
@@ -280,12 +264,12 @@ func AddAdminUser(ctx context.Context, authService Service, user *model.Superuse
 	return creds, nil
 }
 
-func CreateInitialAdminUser(ctx context.Context, authService Service, metadataManger MetadataManager, username string) (*model.KvCredential, error) {
+func CreateInitialAdminUser(ctx context.Context, authService Service, metadataManger MetadataManager, username string) (*model.KVCredential, error) {
 	return CreateInitialAdminUserWithKeys(ctx, authService, metadataManger, username, nil, nil)
 }
 
-func CreateInitialAdminUserWithKeys(ctx context.Context, authService Service, metadataManger MetadataManager, username string, accessKeyID *string, secretAccessKey *string) (*model.KvCredential, error) {
-	adminUser := &model.SuperuserConfiguration{KvUser: model.KvUser{
+func CreateInitialAdminUserWithKeys(ctx context.Context, authService Service, metadataManger MetadataManager, username string, accessKeyID *string, secretAccessKey *string) (*model.KVCredential, error) {
+	adminUser := &model.SuperuserConfiguration{KVUser: model.KVUser{
 		User: model.User{
 			CreatedAt: time.Now(),
 			Username:  username,

@@ -123,7 +123,7 @@ func TestLocalLoad(t *testing.T) {
 	defer ts.Close()
 
 	superuser := &authmodel.SuperuserConfiguration{
-		KvUser: authmodel.KvUser{User: authmodel.User{
+		KVUser: authmodel.KVUser{User: authmodel.User{
 			CreatedAt: time.Now(),
 			Username:  "admin",
 		},
