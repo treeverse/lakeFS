@@ -403,7 +403,7 @@ func (c *Controller) CreateGroup(w http.ResponseWriter, r *http.Request, body Cr
 	ctx := r.Context()
 	c.LogAction(ctx, "create_group")
 
-	g := &model.Group{
+	g := &model.BaseGroup{
 		CreatedAt:   time.Now().UTC(),
 		DisplayName: body.Id,
 	}
@@ -578,7 +578,7 @@ func (c *Controller) ListGroupPolicies(w http.ResponseWriter, r *http.Request, g
 	writeResponse(w, http.StatusOK, response)
 }
 
-func serializePolicy(p *model.Policy) Policy {
+func serializePolicy(p *model.BasePolicy) Policy {
 	stmts := make([]Statement, 0, len(p.Statement))
 	for _, s := range p.Statement {
 		stmts = append(stmts, Statement{
@@ -688,7 +688,7 @@ func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body C
 		}
 	}
 
-	p := &model.Policy{
+	p := &model.BasePolicy{
 		CreatedAt:   time.Now().UTC(),
 		DisplayName: body.Id,
 		Statement:   stmts,
@@ -769,7 +769,7 @@ func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, body U
 		}
 	}
 
-	p := &model.Policy{
+	p := &model.BasePolicy{
 		CreatedAt:   time.Now().UTC(),
 		DisplayName: policyID,
 		Statement:   stmts,
@@ -865,7 +865,7 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body Cre
 	}) {
 		return
 	}
-	u := &model.User{
+	u := &model.BaseUser{
 		CreatedAt:    time.Now().UTC(),
 		Username:     id,
 		FriendlyName: nil,
@@ -1104,7 +1104,7 @@ func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, us
 
 	ctx := r.Context()
 	c.LogAction(ctx, "list_user_policies")
-	var listPolicies func(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
+	var listPolicies func(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error)
 	if params.Effective != nil && *params.Effective {
 		listPolicies = c.Auth.ListEffectivePolicies
 	} else {
@@ -1867,7 +1867,7 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body CommitJ
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "create_commit")
-	user, ok := ctx.Value(UserContextKey).(*model.KVUser)
+	user, ok := ctx.Value(UserContextKey).(*model.User)
 	if !ok {
 		writeError(w, http.StatusUnauthorized, "missing user")
 		return
@@ -2166,7 +2166,7 @@ func (c *Controller) RevertBranch(w http.ResponseWriter, r *http.Request, body R
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "revert_branch")
-	user, ok := ctx.Value(UserContextKey).(*model.KVUser)
+	user, ok := ctx.Value(UserContextKey).(*model.User)
 	if !ok {
 		writeError(w, http.StatusUnauthorized, "user not found")
 		return
@@ -2969,7 +2969,7 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "merge_branches")
-	user, ok := ctx.Value(UserContextKey).(*model.KVUser)
+	user, ok := ctx.Value(UserContextKey).(*model.User)
 	if !ok {
 		writeError(w, http.StatusUnauthorized, "user not found")
 		return
@@ -3135,7 +3135,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 		return
 	}
 
-	var cred *model.KVCredential
+	var cred *model.Credential
 	if body.Key == nil {
 		cred, err = auth.CreateInitialAdminUser(ctx, c.Auth, c.MetadataManager, body.Username)
 	} else {
@@ -3160,7 +3160,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 }
 
 func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
-	u, ok := r.Context().Value(UserContextKey).(*model.KVUser)
+	u, ok := r.Context().Value(UserContextKey).(*model.User)
 	var user User
 	if ok {
 		user.Id = u.Username
@@ -3247,7 +3247,7 @@ func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body
 
 func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	user, ok := ctx.Value(UserContextKey).(*model.KVUser)
+	user, ok := ctx.Value(UserContextKey).(*model.User)
 	if !ok || user == nil {
 		writeError(w, http.StatusUnauthorized, ErrAuthenticatingRequest)
 		return
@@ -3458,7 +3458,7 @@ func paginationFor(hasMore bool, results interface{}, fieldName string) Paginati
 
 func (c *Controller) authorize(w http.ResponseWriter, r *http.Request, perms permissions.Node) bool {
 	ctx := r.Context()
-	user, ok := ctx.Value(UserContextKey).(*model.KVUser)
+	user, ok := ctx.Value(UserContextKey).(*model.User)
 	if !ok || user == nil {
 		writeError(w, http.StatusUnauthorized, ErrAuthenticatingRequest)
 		return false

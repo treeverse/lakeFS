@@ -17,7 +17,7 @@ const (
 	ViewersGroup    = "Viewers"
 )
 
-func createGroups(ctx context.Context, authService Service, groups []*model.Group) error {
+func createGroups(ctx context.Context, authService Service, groups []*model.BaseGroup) error {
 	for _, group := range groups {
 		err := authService.CreateGroup(ctx, group)
 		if err != nil {
@@ -27,7 +27,7 @@ func createGroups(ctx context.Context, authService Service, groups []*model.Grou
 	return nil
 }
 
-func createPolicies(ctx context.Context, authService Service, policies []*model.Policy) error {
+func createPolicies(ctx context.Context, authService Service, policies []*model.BasePolicy) error {
 	for _, policy := range policies {
 		err := authService.WritePolicy(ctx, policy)
 		if err != nil {
@@ -50,7 +50,7 @@ func attachPolicies(ctx context.Context, authService Service, groupID string, po
 func SetupBaseGroups(ctx context.Context, authService Service, ts time.Time) error {
 	var err error
 
-	err = createGroups(ctx, authService, []*model.Group{
+	err = createGroups(ctx, authService, []*model.BaseGroup{
 		{CreatedAt: ts, DisplayName: AdminsGroup},
 		{CreatedAt: ts, DisplayName: SuperUsersGroup},
 		{CreatedAt: ts, DisplayName: DevelopersGroup},
@@ -60,7 +60,7 @@ func SetupBaseGroups(ctx context.Context, authService Service, ts time.Time) err
 		return err
 	}
 
-	err = createPolicies(ctx, authService, []*model.Policy{
+	err = createPolicies(ctx, authService, []*model.BasePolicy{
 		{
 			CreatedAt:   ts,
 			DisplayName: "FSFullAccess",
@@ -216,7 +216,7 @@ func SetupBaseGroups(ctx context.Context, authService Service, ts time.Time) err
 	return nil
 }
 
-func SetupAdminUser(ctx context.Context, authService Service, superuser *model.SuperuserConfiguration) (*model.KVCredential, error) {
+func SetupAdminUser(ctx context.Context, authService Service, superuser *model.SuperuserConfiguration) (*model.Credential, error) {
 	now := time.Now()
 
 	// Setup the basic groups and policies
@@ -228,7 +228,7 @@ func SetupAdminUser(ctx context.Context, authService Service, superuser *model.S
 	return AddAdminUser(ctx, authService, superuser)
 }
 
-func AddAdminUser(ctx context.Context, authService Service, user *model.SuperuserConfiguration) (*model.KVCredential, error) {
+func AddAdminUser(ctx context.Context, authService Service, user *model.SuperuserConfiguration) (*model.Credential, error) {
 	const adminGroupName = "Admins"
 
 	// verify admin group exists
@@ -239,7 +239,7 @@ func AddAdminUser(ctx context.Context, authService Service, user *model.Superuse
 
 	// create admin user
 	user.Source = "internal"
-	_, err = authService.CreateUser(ctx, &user.User)
+	_, err = authService.CreateUser(ctx, &user.BaseUser)
 	if err != nil {
 		return nil, fmt.Errorf("create user - %w", err)
 	}
@@ -248,7 +248,7 @@ func AddAdminUser(ctx context.Context, authService Service, user *model.Superuse
 		return nil, fmt.Errorf("add user to group - %w", err)
 	}
 
-	var creds *model.KVCredential
+	var creds *model.Credential
 	if user.AccessKeyID == "" {
 		// Generate and return a key pair
 		creds, err = authService.CreateCredentials(ctx, user.Username)
@@ -264,13 +264,13 @@ func AddAdminUser(ctx context.Context, authService Service, user *model.Superuse
 	return creds, nil
 }
 
-func CreateInitialAdminUser(ctx context.Context, authService Service, metadataManger MetadataManager, username string) (*model.KVCredential, error) {
+func CreateInitialAdminUser(ctx context.Context, authService Service, metadataManger MetadataManager, username string) (*model.Credential, error) {
 	return CreateInitialAdminUserWithKeys(ctx, authService, metadataManger, username, nil, nil)
 }
 
-func CreateInitialAdminUserWithKeys(ctx context.Context, authService Service, metadataManger MetadataManager, username string, accessKeyID *string, secretAccessKey *string) (*model.KVCredential, error) {
-	adminUser := &model.SuperuserConfiguration{KVUser: model.KVUser{
-		User: model.User{
+func CreateInitialAdminUserWithKeys(ctx context.Context, authService Service, metadataManger MetadataManager, username string, accessKeyID *string, secretAccessKey *string) (*model.Credential, error) {
+	adminUser := &model.SuperuserConfiguration{User: model.User{
+		BaseUser: model.BaseUser{
 			CreatedAt: time.Now(),
 			Username:  username,
 		},

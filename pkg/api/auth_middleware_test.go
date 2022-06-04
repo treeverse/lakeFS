@@ -133,7 +133,7 @@ func TestAuthMiddleware(t *testing.T) {
 	})
 }
 
-func testGenerateApiToken(ctx context.Context, t testing.TB, clt api.ClientWithResponsesInterface, cred *model.Credential) string {
+func testGenerateApiToken(ctx context.Context, t testing.TB, clt api.ClientWithResponsesInterface, cred *model.BaseCredential) string {
 	t.Helper()
 	loginReq := api.LoginJSONRequestBody{
 		AccessKeyId:     cred.AccessKeyID,

@@ -32,7 +32,7 @@ var (
 	psql        = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 	someSecret  = []byte("some secret")
 
-	userPoliciesForTesting = []*model.Policy{{
+	userPoliciesForTesting = []*model.BasePolicy{{
 		Statement: model.Statements{
 			{
 				Action:   []string{"auth:DeleteUser"},
@@ -71,17 +71,17 @@ func setupService(t testing.TB, opts ...testutil.GetDBOption) auth.Service {
 	return authService
 }
 
-func userWithPolicies(t testing.TB, s auth.Service, policies []*model.Policy) string {
+func userWithPolicies(t testing.TB, s auth.Service, policies []*model.BasePolicy) string {
 	ctx := context.Background()
 	userName := uuid.New().String()
-	_, err := s.CreateUser(ctx, &model.User{
+	_, err := s.CreateUser(ctx, &model.BaseUser{
 		Username: userName,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, policy := range policies {
-		p := &model.Policy{
+		p := &model.BasePolicy{
 			DisplayName: uuid.New().String(),
 			Statement:   policy.Statement,
 		}
@@ -165,7 +165,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 
 	cases := []struct {
 		name     string
-		policies []*model.Policy
+		policies []*model.BasePolicy
 		request  func(userName string) *auth.AuthorizationRequest
 
 		expectedAllowed bool
@@ -173,7 +173,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 	}{
 		{
 			name: "basic_allowed",
-			policies: []*model.Policy{{
+			policies: []*model.BasePolicy{{
 				Statement: model.Statements{
 					{
 						Action:   []string{"fs:WriteObject"},
@@ -199,7 +199,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 		},
 		{
 			name: "basic_disallowed",
-			policies: []*model.Policy{{
+			policies: []*model.BasePolicy{{
 				Statement: model.Statements{
 					{
 						Action:   []string{"fs:WriteObject"},
@@ -225,7 +225,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 		},
 		{
 			name: "policy_with_wildcard",
-			policies: []*model.Policy{{
+			policies: []*model.BasePolicy{{
 				Statement: model.Statements{
 					{
 						Action:   []string{"fs:WriteObject"},
@@ -251,7 +251,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 		},
 		{
 			name: "policy_with_invalid_user",
-			policies: []*model.Policy{{
+			policies: []*model.BasePolicy{{
 				Statement: model.Statements{
 					{
 						Action:   []string{"auth:CreateUser"},
@@ -277,7 +277,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 		},
 		{
 			name: "policy_with_valid_user",
-			policies: []*model.Policy{{
+			policies: []*model.BasePolicy{{
 				Statement: model.Statements{
 					{
 						Action:   []string{"auth:CreateUser"},
@@ -302,7 +302,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 		},
 		{
 			name: "policy_with_other_user",
-			policies: []*model.Policy{{
+			policies: []*model.BasePolicy{{
 				Statement: model.Statements{
 					{
 						Action:   []string{"auth:CreateUser"},
@@ -328,7 +328,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 		},
 		{
 			name: "policy_with_wildcard",
-			policies: []*model.Policy{{
+			policies: []*model.BasePolicy{{
 				Statement: model.Statements{
 					{
 						Action:   []string{"auth:CreateUser"},
@@ -354,7 +354,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 		},
 		{
 			name: "action_passing_wildcards",
-			policies: []*model.Policy{{
+			policies: []*model.BasePolicy{{
 				Statement: model.Statements{
 					{
 						Action:   []string{"auth:Create*"},
@@ -380,7 +380,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 		},
 		{
 			name: "action_other_wildcards",
-			policies: []*model.Policy{{
+			policies: []*model.BasePolicy{{
 				Statement: model.Statements{
 					{
 						Action:   []string{"auth:Create*"},
@@ -406,7 +406,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 		},
 		{
 			name: "action_denying_wildcards",
-			policies: []*model.Policy{{
+			policies: []*model.BasePolicy{{
 				Statement: model.Statements{
 					{
 						Action:   []string{"auth:DeleteUser"},
@@ -476,7 +476,7 @@ func TestDBAuthService_ListUsers(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			s := setupService(t)
 			for _, userName := range testCase.userNames {
-				if _, err := s.CreateUser(ctx, &model.User{Username: userName}); err != nil {
+				if _, err := s.CreateUser(ctx, &model.BaseUser{Username: userName}); err != nil {
 					t.Fatalf("CreateUser(%s): %s", userName, err)
 				}
 			}
@@ -501,7 +501,7 @@ func TestDBAuthService_ListUserCredentials(t *testing.T) {
 	const userName = "accredited"
 	s := setupService(t)
 	ctx := context.Background()
-	if _, err := s.CreateUser(ctx, &model.User{Username: userName}); err != nil {
+	if _, err := s.CreateUser(ctx, &model.BaseUser{Username: userName}); err != nil {
 		t.Fatalf("CreateUser(%s): %s", userName, err)
 	}
 	credential, err := s.CreateCredentials(ctx, userName)
@@ -551,7 +551,7 @@ func TestDBAuthService_ListGroups(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			s := setupService(t)
 			for _, groupName := range testCase.groupNames {
-				if err := s.CreateGroup(ctx, &model.Group{DisplayName: groupName}); err != nil {
+				if err := s.CreateGroup(ctx, &model.BaseGroup{DisplayName: groupName}); err != nil {
 					t.Fatalf("CreateGroup(%s): %s", groupName, err)
 				}
 			}
@@ -579,7 +579,7 @@ func TestDbAuthService_GetUser(t *testing.T) {
 	// Time should *not* have nanoseconds - otherwise we are comparing accuracy of golang
 	// and Postgres time storage.
 	ts := time.Date(2222, 2, 22, 22, 22, 22, 0, time.UTC)
-	if _, err := s.CreateUser(ctx, &model.User{Username: userName, CreatedAt: ts}); err != nil {
+	if _, err := s.CreateUser(ctx, &model.BaseUser{Username: userName, CreatedAt: ts}); err != nil {
 		t.Fatalf("CreateUser(%s): %s", userName, err)
 	}
 	user, err := s.GetUser(ctx, userName)
@@ -604,7 +604,7 @@ func TestDbAuthService_AddCredentials(t *testing.T) {
 	// Time should *not* have nanoseconds - otherwise we are comparing accuracy of golang
 	// and Postgres time storage.
 	ts := time.Date(2222, 2, 22, 22, 22, 22, 0, time.UTC)
-	if _, err := s.CreateUser(ctx, &model.User{Username: userName, CreatedAt: ts}); err != nil {
+	if _, err := s.CreateUser(ctx, &model.BaseUser{Username: userName, CreatedAt: ts}); err != nil {
 		t.Fatalf("CreateUser(%s): %s", userName, err)
 	}
 
@@ -658,7 +658,7 @@ func TestDbAuthService_GetUserById(t *testing.T) {
 	// Time should *not* have nanoseconds - otherwise we are comparing accuracy of golang
 	// and Postgres time storage.
 	ts := time.Date(2222, 2, 22, 22, 22, 22, 0, time.UTC)
-	if _, err := s.CreateUser(ctx, &model.User{Username: userName, CreatedAt: ts}); err != nil {
+	if _, err := s.CreateUser(ctx, &model.BaseUser{Username: userName, CreatedAt: ts}); err != nil {
 		t.Fatalf("CreateUser(%s): %s", userName, err)
 	}
 	user, err := s.GetUser(ctx, userName)
@@ -683,7 +683,7 @@ func TestDBAuthService_DeleteUser(t *testing.T) {
 	s := setupService(t)
 	const userName = "foo"
 	ctx := context.Background()
-	if _, err := s.CreateUser(ctx, &model.User{Username: userName}); err != nil {
+	if _, err := s.CreateUser(ctx, &model.BaseUser{Username: userName}); err != nil {
 		t.Fatalf("CreateUser(%s): %s", userName, err)
 	}
 	_, err := s.GetUser(ctx, userName)

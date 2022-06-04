@@ -28,7 +28,7 @@ type Authenticator interface {
 
 // Credentialler fetches S3-style credentials for access keys.
 type Credentialler interface {
-	GetCredentials(ctx context.Context, accessKeyID string) (*model.KVCredential, error)
+	GetCredentials(ctx context.Context, accessKeyID string) (*model.Credential, error)
 }
 
 // NewChainAuthenticator returns an Authenticator that authenticates users
@@ -234,7 +234,7 @@ func (la *LDAPAuthenticator) AuthenticateUser(ctx context.Context, username, pas
 		logger.WithError(err).Info("Could not get user; create them")
 	}
 
-	newUser := &model.User{
+	newUser := &model.BaseUser{
 		CreatedAt:    time.Now(),
 		Username:     dn,
 		FriendlyName: &username,

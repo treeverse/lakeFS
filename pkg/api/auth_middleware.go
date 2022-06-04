@@ -55,9 +55,9 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authentica
 
 // checkSecurityRequirements goes over the security requirements and check the authentication. returns the user information and error if the security check was required.
 // it will return nil user and error in case of no security checks to match.
-func checkSecurityRequirements(r *http.Request, securityRequirements openapi3.SecurityRequirements, logger logging.Logger, authenticator auth.Authenticator, authService auth.Service) (*model.KVUser, error) {
+func checkSecurityRequirements(r *http.Request, securityRequirements openapi3.SecurityRequirements, logger logging.Logger, authenticator auth.Authenticator, authService auth.Service) (*model.User, error) {
 	ctx := r.Context()
-	var user *model.KVUser
+	var user *model.User
 	var err error
 
 	logger = logger.WithContext(ctx)
@@ -106,7 +106,7 @@ func checkSecurityRequirements(r *http.Request, securityRequirements openapi3.Se
 	return nil, nil
 }
 
-func userByToken(ctx context.Context, logger logging.Logger, authService auth.Service, tokenString string) (*model.KVUser, error) {
+func userByToken(ctx context.Context, logger logging.Logger, authService auth.Service, tokenString string) (*model.User, error) {
 	claims, err := auth.VerifyToken(authService.SecretStore().SharedSecret(), tokenString)
 	// make sure no audience is set for login token
 	if err != nil || !claims.VerifyAudience(LoginAudience, false) {
@@ -135,7 +135,7 @@ func userByToken(ctx context.Context, logger logging.Logger, authService auth.Se
 	return userData, nil
 }
 
-func userByAuth(ctx context.Context, logger logging.Logger, authenticator auth.Authenticator, authService auth.Service, accessKey string, secretKey string) (*model.KVUser, error) {
+func userByAuth(ctx context.Context, logger logging.Logger, authenticator auth.Authenticator, authService auth.Service, accessKey string, secretKey string) (*model.User, error) {
 	// TODO(ariels): Rename keys.
 	id, err := authenticator.AuthenticateUser(ctx, accessKey, secretKey)
 	if err != nil {

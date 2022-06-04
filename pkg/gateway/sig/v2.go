@@ -219,7 +219,7 @@ func buildPath(host string, bareDomain string, path string) string {
 	return ""
 }
 
-func (a *V2SigAuthenticator) Verify(creds *model.KVCredential, bareDomain string) error {
+func (a *V2SigAuthenticator) Verify(creds *model.Credential, bareDomain string) error {
 	/*
 		s3 sigV2 implementation:
 		the s3 signature is somewhat different from general aws signature implementation.

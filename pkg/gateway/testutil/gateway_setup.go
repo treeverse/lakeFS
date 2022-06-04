@@ -91,19 +91,19 @@ type FakeAuthService struct {
 	Region          string `json:"region"`
 }
 
-func (m *FakeAuthService) GetCredentials(_ context.Context, accessKey string) (*model.KVCredential, error) {
+func (m *FakeAuthService) GetCredentials(_ context.Context, accessKey string) (*model.Credential, error) {
 	if accessKey != m.AccessKeyID {
 		logging.Default().Fatal("access key in recording different than configuration")
 	}
-	aCred := new(model.KVCredential)
+	aCred := new(model.Credential)
 	aCred.AccessKeyID = accessKey
 	aCred.SecretAccessKey = m.SecretAccessKey
 	aCred.UserID = strconv.FormatInt(m.UserID, 10)
 	return aCred, nil
 }
 
-func (m *FakeAuthService) GetUserByID(_ context.Context, _ int64) (*model.KVUser, error) {
-	return &model.KVUser{User: model.User{
+func (m *FakeAuthService) GetUserByID(_ context.Context, _ int64) (*model.User, error) {
+	return &model.User{BaseUser: model.BaseUser{
 		CreatedAt: time.Now(),
 		Username:  "user"},
 	}, nil
