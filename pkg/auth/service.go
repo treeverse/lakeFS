@@ -181,7 +181,7 @@ func getUser(tx db.Tx, username string) (*model.User, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &model.User{BaseUser: user.BaseUser, ID: strconv.FormatInt(user.ID, 10)}, nil
+	return model.ConvertUser(user), nil
 }
 
 func getUserByEmail(tx db.Tx, email string) (*model.User, error) {
@@ -190,7 +190,7 @@ func getUserByEmail(tx db.Tx, email string) (*model.User, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &model.User{BaseUser: user.BaseUser, ID: strconv.FormatInt(user.ID, 10)}, nil
+	return model.ConvertUser(user), nil
 }
 
 func getGroup(tx db.Tx, groupDisplayName string) (*model.DBGroup, error) {
@@ -199,7 +199,7 @@ func getGroup(tx db.Tx, groupDisplayName string) (*model.DBGroup, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &model.DBGroup{BaseGroup: group.BaseGroup, ID: group.ID}, nil
+	return group, nil
 }
 
 func getPolicy(tx db.Tx, policyDisplayName string) (*model.DBPolicy, error) {
@@ -208,7 +208,7 @@ func getPolicy(tx db.Tx, policyDisplayName string) (*model.DBPolicy, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &model.DBPolicy{ID: policy.ID, BasePolicy: policy.BasePolicy}, nil
+	return policy, nil
 }
 
 func deleteOrNotFound(tx db.Tx, stmt string, args ...interface{}) error {
@@ -329,9 +329,8 @@ func (s *DBAuthService) GetUserByID(ctx context.Context, userID int64) (*model.U
 		if err != nil {
 			return nil, err
 		}
-		dbUser := user.(*model.DBUser)
-		kvUser := model.User{ID: strconv.FormatInt(dbUser.ID, 10), BaseUser: dbUser.BaseUser}
-		return &kvUser, nil
+
+		return model.ConvertUser(user.(*model.DBUser)), nil
 	})
 }
 
@@ -785,6 +784,9 @@ func (s *DBAuthService) AddCredentials(ctx context.Context, username, accessKeyI
 			UserID: user.ID,
 		}
 		intID, err := UserIDToInt64(c.UserID)
+		if err != nil {
+			return nil, err
+		}
 		_, err = tx.Exec(`
 			INSERT INTO auth_credentials (access_key_id, secret_access_key, issued_date, user_id)
 			VALUES ($1, $2, $3, $4)`,
@@ -901,9 +903,7 @@ func (s *DBAuthService) GetCredentials(ctx context.Context, accessKeyID string) 
 		if err != nil {
 			return nil, err
 		}
-		dbCredentials := credentials.(*model.DBCredential)
-		kvCredentials := model.Credential{UserID: strconv.FormatInt(dbCredentials.UserID, 10), BaseCredential: dbCredentials.BaseCredential}
-		return &kvCredentials, nil
+		return model.ConvertCreds(credentials.(*model.DBCredential)), nil
 	})
 }
 
@@ -1094,7 +1094,7 @@ func (a *APIAuthService) GetUserByID(ctx context.Context, userID int64) (*model.
 		}
 		u := results[0]
 		return &model.User{
-			ID: strconv.FormatInt(u.Id, 10),
+			ID: model.ConvertDBID(u.Id),
 			BaseUser: model.BaseUser{
 				CreatedAt:         time.Unix(u.CreationDate, 0),
 				Username:          u.Name,
@@ -1118,7 +1118,7 @@ func (a *APIAuthService) GetUser(ctx context.Context, username string) (*model.U
 		}
 		u := resp.JSON200
 		return &model.User{
-			ID: strconv.FormatInt(u.Id, 10),
+			ID: model.ConvertDBID(u.Id),
 			BaseUser: model.BaseUser{
 				CreatedAt:         time.Unix(u.CreationDate, 0),
 				Username:          u.Name,
@@ -1146,7 +1146,7 @@ func (a *APIAuthService) GetUserByEmail(ctx context.Context, email string) (*mod
 		}
 		u := results[0]
 		user := &model.User{
-			ID: strconv.FormatInt(u.Id, 10),
+			ID: model.ConvertDBID(u.Id),
 			BaseUser: model.BaseUser{
 				CreatedAt:         time.Unix(u.CreationDate, 0),
 				Username:          u.Name,
@@ -1188,7 +1188,7 @@ func (a *APIAuthService) ListUsers(ctx context.Context, params *model.Pagination
 	users := make([]*model.User, len(results))
 	for i, r := range results {
 		users[i] = &model.User{
-			ID: strconv.FormatInt(r.Id, 10),
+			ID: model.ConvertDBID(r.Id),
 			BaseUser: model.BaseUser{
 				CreatedAt:         time.Unix(r.CreationDate, 0),
 				Username:          r.Name,
@@ -1544,7 +1544,7 @@ func (a *APIAuthService) GetCredentials(ctx context.Context, accessKeyID string)
 				SecretAccessKeyEncryptedBytes: nil,
 				IssuedDate:                    time.Unix(credentials.CreationDate, 0),
 			},
-			UserID: strconv.FormatInt(credentials.UserId, 10),
+			UserID: model.ConvertDBID(credentials.UserId),
 		}, nil
 	})
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"os"
-	"strconv"
 	"testing"
 	"time"
 
@@ -98,7 +97,7 @@ func (m *FakeAuthService) GetCredentials(_ context.Context, accessKey string) (*
 	aCred := new(model.Credential)
 	aCred.AccessKeyID = accessKey
 	aCred.SecretAccessKey = m.SecretAccessKey
-	aCred.UserID = strconv.FormatInt(m.UserID, 10)
+	aCred.UserID = model.ConvertDBID(m.UserID)
 	return aCred, nil
 }
 

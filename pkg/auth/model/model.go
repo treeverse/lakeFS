@@ -63,11 +63,16 @@ type DBUser struct {
 	BaseUser
 }
 
-func DBUserToUser(u *DBUser) *User {
+func ConvertUser(u *DBUser) *User {
 	return &User{
-		ID:       strconv.FormatInt(u.ID, 10),
+		ID:       ConvertDBID(u.ID),
 		BaseUser: u.BaseUser,
 	}
+}
+
+func ConvertDBID(id int64) string {
+	const base = 10
+	return strconv.FormatInt(id, base)
 }
 
 type BaseGroup struct {
@@ -335,7 +340,7 @@ func PolicyToGroup(policyDisplayName string, groupDisplayName string) string {
 func ConvertUsersList(users []*DBUser) []*User {
 	kvUsers := make([]*User, 0, len(users))
 	for _, u := range users {
-		kvUsers = append(kvUsers, DBUserToUser(u))
+		kvUsers = append(kvUsers, ConvertUser(u))
 	}
 	return kvUsers
 }
@@ -350,7 +355,7 @@ func ConvertCredList(creds []*DBCredential) []*Credential {
 
 func ConvertCreds(c *DBCredential) *Credential {
 	return &Credential{
-		UserID:         strconv.FormatInt(c.UserID, 10),
+		UserID:         ConvertDBID(c.UserID),
 		BaseCredential: c.BaseCredential,
 	}
 }

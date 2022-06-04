@@ -14,7 +14,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -188,8 +187,7 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSO
 
 	// user.Username will be different from username/access_key_id on
 	// LDAP login.  Use the stored value.
-	base, bitSize := 10, 64
-	n, err := strconv.ParseInt(user.ID, base, bitSize)
+	n, err := auth.UserIDToInt64(user.ID)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
