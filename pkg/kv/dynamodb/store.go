@@ -29,18 +29,18 @@ type EntriesIterator struct {
 }
 
 type DynKVItem struct {
-	PartKey   string
-	ItemKey   string
-	ItemValue string
+	PartitionKey string
+	ItemKey      string
+	ItemValue    string
 }
 
 const (
 	DriverName       = "dynamodb"
 	DefaultTableName = "kvstore"
 
-	PartKey   = "PartKey"
-	ItemKey   = "ItemKey"
-	ItemValue = "ItemValue"
+	PartitionKey = "PartitionKey"
+	ItemKey      = "ItemKey"
+	ItemValue    = "ItemValue"
 
 	// TBD: Which values to use?
 	ReadCapacityUnits  = 1000
@@ -94,7 +94,7 @@ func setupKeyValueDatabase(ctx context.Context, svc *dynamodb.DynamoDB, params *
 		TableName: aws.String(params.TableName),
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
 			{
-				AttributeName: aws.String(PartKey),
+				AttributeName: aws.String(PartitionKey),
 				AttributeType: aws.String("S"),
 			},
 			{
@@ -104,7 +104,7 @@ func setupKeyValueDatabase(ctx context.Context, svc *dynamodb.DynamoDB, params *
 		},
 		KeySchema: []*dynamodb.KeySchemaElement{
 			{
-				AttributeName: aws.String(PartKey),
+				AttributeName: aws.String(PartitionKey),
 				KeyType:       aws.String("HASH"),
 			},
 			{
@@ -127,7 +127,7 @@ func setupKeyValueDatabase(ctx context.Context, svc *dynamodb.DynamoDB, params *
 
 func (s *Store) bytesKeyToDynamoKey(key []byte) map[string]*dynamodb.AttributeValue {
 	return map[string]*dynamodb.AttributeValue{
-		PartKey: {
+		PartitionKey: {
 			S: aws.String(s.getPartitionKey(key)),
 		},
 		ItemKey: {
@@ -183,9 +183,9 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, key, value []byte,
 	}
 
 	item := DynKVItem{
-		PartKey:   s.getPartitionKey(key),
-		ItemKey:   string(key),
-		ItemValue: string(value),
+		PartitionKey: s.getPartitionKey(key),
+		ItemKey:      string(key),
+		ItemValue:    string(value),
 	}
 
 	marshaledItem, err := dynamodbattribute.MarshalMap(item)
@@ -240,9 +240,9 @@ func (s *Store) Scan(ctx context.Context, start []byte) (kv.EntriesIterator, err
 }
 
 func (s *Store) scanInternal(ctx context.Context, scanKey []byte, exclusiveStartKey map[string]*dynamodb.AttributeValue) (*EntriesIterator, error) {
-	keyConditionExpression := PartKey + " = :partkey"
+	keyConditionExpression := PartitionKey + " = :partitionkey"
 	expressionAttributeValues := map[string]*dynamodb.AttributeValue{
-		":partkey": {
+		":partitionkey": {
 			S: aws.String(s.getPartitionKey(scanKey)),
 		},
 	}
