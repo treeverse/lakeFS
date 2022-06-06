@@ -21,15 +21,20 @@ import (
 //go:embed action_files/*.yaml
 var actionsPath embed.FS
 
-var (
-	resultVal = make([]*webhookEventInfo, 0)
-	mu        sync.RWMutex
-)
+type hooksValidationData struct {
+	data []*webhookEventInfo
+	mu   sync.RWMutex
+}
+
+var hooksTestData = hooksValidationData{
+	data: make([]*webhookEventInfo, 0),
+	mu:   sync.RWMutex{},
+}
 
 func appendRes(info webhookEventInfo) {
-	mu.Lock()
-	resultVal = append(resultVal, &info)
-	mu.Unlock()
+	hooksTestData.mu.Lock()
+	hooksTestData.data = append(hooksTestData.data, &info)
+	hooksTestData.mu.Unlock()
 }
 
 func TestHooksSuccess(t *testing.T) {
@@ -63,10 +68,10 @@ func TestHooksSuccess(t *testing.T) {
 
 	t.Log("check runs are sorted in descending order")
 	runs := waitForListRepositoryRunsLen(ctx, t, repo, "", 13)
-	require.Equal(t, len(runs.Results), len(resultVal))
+	require.Equal(t, len(runs.Results), len(hooksTestData.data))
 	for i, run := range runs.Results {
-		valIdx := len(resultVal) - (i + 1)
-		require.Equal(t, resultVal[valIdx].EventType, run.EventType)
+		valIdx := len(hooksTestData.data) - (i + 1)
+		require.Equal(t, hooksTestData.data[valIdx].EventType, run.EventType)
 	}
 }
 

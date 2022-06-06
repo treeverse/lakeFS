@@ -18,7 +18,7 @@ func NewKVTaskResultIterator(ctx context.Context, store kv.StoreMessage, reposit
 	if after != "" {
 		after = kv.FormatPath(prefix, after)
 	}
-	it, err := kv.NewPrimaryIterator(ctx, store.Store, (&TaskResultData{}).ProtoReflect().Type(), prefix, after)
+	it, err := kv.NewPrimaryIterator(ctx, store.Store, (&TaskResultData{}).ProtoReflect().Type(), PartitionKey, prefix, after)
 	if err != nil {
 		return nil, err
 	}

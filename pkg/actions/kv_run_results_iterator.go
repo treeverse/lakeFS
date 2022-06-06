@@ -2,9 +2,12 @@ package actions
 
 import (
 	"context"
+	"errors"
 
 	"github.com/treeverse/lakefs/pkg/kv"
 )
+
+var ErrParamConflict = errors.New("parameters conflict")
 
 type KVRunResultIterator struct {
 	it  kv.MessageIterator
@@ -14,6 +17,10 @@ type KVRunResultIterator struct {
 // NewKVRunResultIterator returns a new iterator over actions run results
 // 'after' determines the runID which we should start the scan from, used for pagination
 func NewKVRunResultIterator(ctx context.Context, store kv.StoreMessage, repositoryID, branchID, commitID, after string) (*KVRunResultIterator, error) {
+	if branchID != "" && commitID != "" {
+		return nil, ErrParamConflict
+	}
+
 	var (
 		prefix string
 		err    error
@@ -35,12 +42,12 @@ func NewKVRunResultIterator(ctx context.Context, store kv.StoreMessage, reposito
 
 	var it kv.MessageIterator
 	if secondary {
-		it, err = kv.NewSecondaryIterator(ctx, store.Store, (&RunResultData{}).ProtoReflect().Type(), prefix, after)
+		it, err = kv.NewSecondaryIterator(ctx, store.Store, (&RunResultData{}).ProtoReflect().Type(), PartitionKey, prefix, after)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		it, err = kv.NewPrimaryIterator(ctx, store.Store, (&RunResultData{}).ProtoReflect().Type(), prefix, after)
+		it, err = kv.NewPrimaryIterator(ctx, store.Store, (&RunResultData{}).ProtoReflect().Type(), PartitionKey, prefix, after)
 		if err != nil {
 			return nil, err
 		}

@@ -6,9 +6,10 @@ import (
 )
 
 type PrefixIterator struct {
-	Iterator  EntriesIterator
-	Prefix    []byte
-	completed bool
+	Iterator     EntriesIterator
+	Prefix       []byte
+	PartitionKey []byte
+	completed    bool
 }
 
 func (b *PrefixIterator) Next() bool {
@@ -49,12 +50,13 @@ func ScanPrefix(ctx context.Context, store Store, partitionKey, prefix, after []
 	if len(after) > 0 {
 		start = after
 	}
-	iter, err := store.Scan(ctx, start)
+	iter, err := store.Scan(ctx, partitionKey, start)
 	if err != nil {
 		return nil, err
 	}
 	return &PrefixIterator{
-		Iterator: iter,
-		Prefix:   prefix,
+		Iterator:     iter,
+		Prefix:       prefix,
+		PartitionKey: partitionKey,
 	}, nil
 }

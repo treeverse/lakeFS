@@ -484,7 +484,7 @@ func testScanPrefix(t *testing.T, ms MakeStore) {
 		_ = setupSampleData(t, ctx, store, testUnusedPartitionKey, string(samplePrefix), sampleItems)
 	}
 
-	scan, err := kv.ScanPrefix(ctx, store, []byte(testPartitionKey), samplePrefix)
+	scan, err := kv.ScanPrefix(ctx, store, []byte(testPartitionKey), samplePrefix, nil)
 	if err != nil {
 		t.Fatal("ScanPrefix failed", err)
 	}

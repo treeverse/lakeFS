@@ -52,8 +52,8 @@ func (s *StoreMessage) DeleteMsg(ctx context.Context, partitionKey, key string) 
 	return s.Delete(ctx, []byte(partitionKey), []byte(key))
 }
 
-func (s *StoreMessage) Scan(ctx context.Context, msgType protoreflect.MessageType, prefix string) (*PrimaryIterator, error) {
-	return NewPrimaryIterator(ctx, s.Store, msgType, prefix, "")
+func (s *StoreMessage) Scan(ctx context.Context, msgType protoreflect.MessageType, partitionKey, prefix string) (*PrimaryIterator, error) {
+	return NewPrimaryIterator(ctx, s.Store, msgType, partitionKey, prefix, "")
 }
 
 type MessageEntry struct {
@@ -77,8 +77,8 @@ type PrimaryIterator struct {
 	err     error
 }
 
-func NewPrimaryIterator(ctx context.Context, store Store, msgType protoreflect.MessageType, prefix, after string) (*PrimaryIterator, error) {
-	itr, err := ScanPrefix(ctx, store, []byte(prefix), []byte(after))
+func NewPrimaryIterator(ctx context.Context, store Store, msgType protoreflect.MessageType, partitionKey, prefix, after string) (*PrimaryIterator, error) {
+	itr, err := ScanPrefix(ctx, store, []byte(partitionKey), []byte(prefix), []byte(after))
 	if err != nil {
 		return nil, fmt.Errorf("create prefix iterator: %w", err)
 	}
@@ -130,20 +130,21 @@ func (i *PrimaryIterator) Close() {
 // The iterator iterates over the given prefix, extracts the primary key value from secondary key and then returns
 // the proto message and primary key
 type SecondaryIterator struct {
-	ctx     context.Context
-	itr     PrimaryIterator
-	store   Store
-	msgType protoreflect.MessageType
-	value   *MessageEntry
-	err     error
+	ctx          context.Context
+	itr          PrimaryIterator
+	partitionKey string
+	store        Store
+	msgType      protoreflect.MessageType
+	value        *MessageEntry
+	err          error
 }
 
-func NewSecondaryIterator(ctx context.Context, store Store, msgType protoreflect.MessageType, prefix, after string) (*SecondaryIterator, error) {
-	itr, err := NewPrimaryIterator(ctx, store, (&SecondaryIndex{}).ProtoReflect().Type(), prefix, after)
+func NewSecondaryIterator(ctx context.Context, store Store, msgType protoreflect.MessageType, partitionKey, prefix, after string) (*SecondaryIterator, error) {
+	itr, err := NewPrimaryIterator(ctx, store, (&SecondaryIndex{}).ProtoReflect().Type(), partitionKey, prefix, after)
 	if err != nil {
 		return nil, fmt.Errorf("create prefix iterator: %w", err)
 	}
-	return &SecondaryIterator{ctx: ctx, itr: *itr, store: store, msgType: msgType}, nil
+	return &SecondaryIterator{ctx: ctx, itr: *itr, partitionKey: partitionKey, store: store, msgType: msgType}, nil
 }
 
 func (s *SecondaryIterator) Next() bool {
@@ -165,7 +166,7 @@ func (s *SecondaryIterator) Next() bool {
 		err     error
 	)
 	for {
-		primary, err = s.store.Get(s.ctx, next.PrimaryKey)
+		primary, err = s.store.Get(s.ctx, []byte(s.partitionKey), next.PrimaryKey)
 		if !errors.Is(err, ErrNotFound) {
 			break
 		}

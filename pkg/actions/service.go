@@ -22,6 +22,7 @@ import (
 
 const (
 	actionsPrefix = "actions"
+	PartitionKey  = "actions"
 	reposPrefix   = "repos"
 	RunsPrefix    = "runs"
 	tasksPrefix   = "tasks"
@@ -360,7 +361,7 @@ func (s *KVService) saveRunManifestDB(ctx context.Context, repositoryID graveler
 	for i := range manifest.HooksRun {
 		hookRun := manifest.HooksRun[i]
 		taskKey := kv.FormatPath(TasksPath(repositoryID.String(), run.RunID), hookRun.HookRunID)
-		err = s.Store.SetMsgIf(ctx, taskKey, protoFromTaskResult(&hookRun), nil)
+		err = s.Store.SetMsgIf(ctx, PartitionKey, taskKey, protoFromTaskResult(&hookRun), nil)
 		if err != nil {
 			return fmt.Errorf("save task result (runID: %s taskKey %s): %w", run.RunID, taskKey, err)
 		}
@@ -374,7 +375,7 @@ func (s *KVService) storeRun(ctx context.Context, run *RunResultData, repoID str
 	// Save secondary index by BranchID
 	if run.BranchId != "" {
 		bk := RunByBranchPath(repoID, run.BranchId, run.RunId)
-		err := s.Store.SetMsg(ctx, bk, &kv.SecondaryIndex{PrimaryKey: []byte(runKey)})
+		err := s.Store.SetMsg(ctx, PartitionKey, bk, &kv.SecondaryIndex{PrimaryKey: []byte(runKey)})
 		if err != nil {
 			return fmt.Errorf("save secondary index by branch (key %s): %w", bk, err)
 		}
@@ -383,13 +384,13 @@ func (s *KVService) storeRun(ctx context.Context, run *RunResultData, repoID str
 	// Save secondary index by CommitID
 	if run.CommitId != "" {
 		ck := RunByCommitPath(repoID, run.CommitId, run.RunId)
-		err := s.Store.SetMsg(ctx, ck, &kv.SecondaryIndex{PrimaryKey: []byte(runKey)})
+		err := s.Store.SetMsg(ctx, PartitionKey, ck, &kv.SecondaryIndex{PrimaryKey: []byte(runKey)})
 		if err != nil {
 			return fmt.Errorf("save secondary index by commit (key %s): %w", ck, err)
 		}
 	}
 
-	err := s.Store.SetMsg(ctx, runKey, run)
+	err := s.Store.SetMsg(ctx, PartitionKey, runKey, run)
 	if err != nil {
 		return fmt.Errorf("save run result (runKey %s): %w", runKey, err)
 	}
@@ -445,7 +446,7 @@ func (s *KVService) UpdateCommitID(ctx context.Context, repositoryID string, sto
 
 	runKey := RunPath(repositoryID, runID)
 	run := RunResultData{}
-	_, err := s.Store.GetMsg(ctx, runKey, &run)
+	_, err := s.Store.GetMsg(ctx, PartitionKey, runKey, &run)
 	if err != nil {
 		return fmt.Errorf("run id %s: %w", runID, err)
 	}
@@ -488,7 +489,7 @@ func (s *KVService) UpdateCommitID(ctx context.Context, repositoryID string, sto
 func (s *KVService) GetRunResult(ctx context.Context, repositoryID string, runID string) (*RunResult, error) {
 	runKey := RunPath(repositoryID, runID)
 	m := RunResultData{}
-	_, err := s.Store.GetMsg(ctx, runKey, &m)
+	_, err := s.Store.GetMsg(ctx, PartitionKey, runKey, &m)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			err = fmt.Errorf("%s: %w", err, ErrNotFound) // Wrap error for compatibility with DBService
@@ -501,7 +502,7 @@ func (s *KVService) GetRunResult(ctx context.Context, repositoryID string, runID
 func (s *KVService) GetTaskResult(ctx context.Context, repositoryID string, runID string, hookRunID string) (*TaskResult, error) {
 	runKey := kv.FormatPath(TasksPath(repositoryID, runID), hookRunID)
 	m := TaskResultData{}
-	_, err := s.Store.GetMsg(ctx, runKey, &m)
+	_, err := s.Store.GetMsg(ctx, PartitionKey, runKey, &m)
 	if err != nil {
 		return nil, err
 	}

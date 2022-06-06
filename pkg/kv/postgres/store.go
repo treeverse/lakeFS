@@ -32,7 +32,7 @@ const (
 	DefaultTableName = "kv"
 	paramTableName   = "lakefskv_table"
 
-	// Changing the below value means repartitioning and probably a migration.
+	// DefaultPartitions Changing the below value means repartitioning and probably a migration.
 	// Change it only if you really know what you're doing.
 	DefaultPartitions = 100
 )
