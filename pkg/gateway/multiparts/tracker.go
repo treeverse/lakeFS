@@ -10,8 +10,10 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const multipartsPrefix = "multiparts"
-const multipartsPartitionKey = "multiparts"
+const (
+	multipartsPrefix       = "multiparts"
+	multipartsPartitionKey = "multiparts"
+)
 
 type Metadata map[string]string
 

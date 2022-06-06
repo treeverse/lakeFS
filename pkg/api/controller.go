@@ -32,6 +32,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/email"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
+	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/stats"
@@ -1705,6 +1706,7 @@ func handleAPIError(w http.ResponseWriter, err error) bool {
 		errors.Is(err, graveler.ErrNotFound),
 		errors.Is(err, actions.ErrNotFound),
 		errors.Is(err, auth.ErrNotFound),
+		errors.Is(err, kv.ErrNotFound),
 		errors.Is(err, db.ErrNotFound):
 		writeError(w, http.StatusNotFound, err)
 

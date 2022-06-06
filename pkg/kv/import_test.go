@@ -6,18 +6,16 @@ import (
 	_ "embed"
 	"testing"
 
-	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
-	"github.com/treeverse/lakefs/pkg/testutil"
-
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/kv"
-	_ "github.com/treeverse/lakefs/pkg/kv/mem"
+	"github.com/treeverse/lakefs/pkg/kv/kvtest"
+	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
+	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
 func TestImport(t *testing.T) {
 	ctx := context.Background()
-	kvStore := GetStore(ctx, t)
-	defer kvStore.Close()
+	kvStore := kvtest.GetStore(ctx, t)
 	tests := []struct {
 		name    string
 		data    kvpg.MigrateFunc

@@ -22,8 +22,9 @@ func TestHookWriter_OutputWritePath(t *testing.T) {
 	const hookID = "hookID"
 	const actionName = "actionName"
 	const storageNamespace = "storageNamespace"
-	runID := graveler.NewRunID()
-	hookRunID := graveler.NewRunID()
+	hooks := graveler.HooksNoOp{}
+	runID := hooks.NewRunID()
+	hookRunID := hooks.NewRunID()
 	writer := mock.NewMockOutputWriter(ctrl)
 	writer.EXPECT().OutputWrite(ctx, storageNamespace, actions.FormatHookOutputPath(runID, hookRunID), contentReader, int64(len(content))).Return(nil)
 
@@ -46,8 +47,9 @@ func TestHookWriter_OutputWriteError(t *testing.T) {
 	defer ctrl.Finish()
 
 	ctx := context.Background()
-	runID := graveler.NewRunID()
-	hookRunID := graveler.NewRunID()
+	hooks := graveler.HooksNoOp{}
+	runID := hooks.NewRunID()
+	hookRunID := hooks.NewRunID()
 	errSomeError := errors.New("some error")
 	writer := mock.NewMockOutputWriter(ctrl)
 	writer.EXPECT().OutputWrite(ctx, "storageNamespace", actions.FormatHookOutputPath(runID, hookRunID), gomock.Any(), gomock.Any()).Return(errSomeError)

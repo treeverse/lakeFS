@@ -11,6 +11,7 @@ import (
 
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/treeverse/lakefs/pkg/kv"
+	_ "github.com/treeverse/lakefs/pkg/kv/mem"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -483,7 +484,7 @@ func testScanPrefix(t *testing.T, ms MakeStore) {
 		_ = setupSampleData(t, ctx, store, testUnusedPartitionKey, string(samplePrefix), sampleItems)
 	}
 
-	scan, err := kv.ScanPrefix(ctx, store, []byte(testPartitionKey), samplePrefix)
+	scan, err := kv.ScanPrefix(ctx, store, []byte(testPartitionKey), samplePrefix, nil)
 	if err != nil {
 		t.Fatal("ScanPrefix failed", err)
 	}
@@ -845,4 +846,18 @@ func verifyDeleteWhileIterResults(t *testing.T, ctx context.Context, store kv.St
 			t.Fatal("unexpected entry found after delete", string(e.Key), string(delPref))
 		}
 	}
+}
+
+// GetStore helper function to return Store object for all unit tests
+func GetStore(ctx context.Context, t testing.TB) kv.Store {
+	t.Helper()
+	const storeType = "mem"
+	store, err := kv.Open(ctx, storeType, "")
+	if err != nil {
+		t.Fatalf("failed to open kv (%s) store: %s", storeType, err)
+	}
+	t.Cleanup(func() {
+		store.Close()
+	})
+	return store
 }

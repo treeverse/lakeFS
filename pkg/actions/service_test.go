@@ -13,14 +13,25 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/kv/kvtest"
+
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/actions/mock"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/kv"
+	_ "github.com/treeverse/lakefs/pkg/kv/mem"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/testutil"
+)
+
+const (
+	testActionName          = "test action"
+	testWebhookID           = "webhook_id"
+	testAirflowHookID       = "airflow_hook_id"
+	testAirflowHookIDNoConf = "airflow_hook_id_no_conf"
 )
 
 type ActionStatsMockCollector struct {
@@ -33,108 +44,44 @@ func NewActionStatsMockCollector() ActionStatsMockCollector {
 	}
 }
 
-func (c *ActionStatsMockCollector) CollectEvent(class, action string) {
+func (c *ActionStatsMockCollector) CollectEvent(_, action string) {
 	c.Hits[action]++
 }
-func (c *ActionStatsMockCollector) CollectMetadata(accountMetadata *stats.Metadata) {}
-func (c *ActionStatsMockCollector) SetInstallationID(installationID string)         {}
-func (c *ActionStatsMockCollector) Close()                                          {}
+func (c *ActionStatsMockCollector) CollectMetadata(_ *stats.Metadata) {}
+func (c *ActionStatsMockCollector) SetInstallationID(_ string)        {}
+func (c *ActionStatsMockCollector) Close()                            {}
+
+type getService func(t *testing.T, ctx context.Context, source actions.Source, writer actions.OutputWriter, stats stats.Collector, runHooks bool) actions.Service
+
+func GetDBService(t *testing.T, ctx context.Context, source actions.Source, writer actions.OutputWriter, stats stats.Collector, runHooks bool) actions.Service {
+	t.Helper()
+	conn, _ := testutil.GetDB(t, databaseURI)
+	return actions.NewDBService(ctx, conn, source, writer, stats, runHooks)
+}
+
+func GetKVService(t *testing.T, ctx context.Context, source actions.Source, writer actions.OutputWriter, stats stats.Collector, runHooks bool) actions.Service {
+	t.Helper()
+	kvStore := kvtest.GetStore(ctx, t)
+	return actions.NewKVService(ctx, kv.StoreMessage{Store: kvStore}, source, writer, stats, runHooks)
+}
 
 func TestServiceRun(t *testing.T) {
-	conn, _ := testutil.GetDB(t, databaseURI)
+	ctx := context.Background()
 
-	record := graveler.HookRecord{
-		RunID:            graveler.NewRunID(),
-		EventType:        graveler.EventTypePreCommit,
-		StorageNamespace: "storageNamespace",
-		RepositoryID:     "repoID",
-		BranchID:         "branchID",
-		SourceRef:        "sourceRef",
-		Commit: graveler.Commit{
-			Message:   "commitMessage",
-			Committer: "committer",
-			Metadata:  map[string]string{"key": "value"},
-		},
-	}
-	const actionName = "test action"
-	const webhookID = "webhook_id"
-	const airflowHookID = "airflow_hook_id"
-	const airflowHookIDNoConf = "airflow_hook_id_no_conf"
-	hookResponse := "OK"
+	var lastManifest *actions.RunManifest
+	var writerBytes []byte
 
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer func() { _ = r.Body.Close() }()
-		data, err := io.ReadAll(r.Body)
-		if err != nil {
-			t.Error("Failed to read webhook post data", err)
-			return
-		}
+	expectedWebhookRunID := actions.NewHookRunID(0, 0)
+	expectedAirflowHookRunIDWithConf := actions.NewHookRunID(0, 1)
+	expectedAirflowHookRunIDWithoutConf := actions.NewHookRunID(0, 2)
 
-		if r.URL.Path == "/webhook" {
-			queryParams := map[string][]string(r.URL.Query())
-			require.Len(t, queryParams["prefix"], 1)
-			require.Equal(t, "public/", queryParams["prefix"][0])
-			require.Len(t, queryParams["disallow"], 2)
-			require.Equal(t, "user_", queryParams["disallow"][0])
-			require.Equal(t, "private_", queryParams["disallow"][1])
-
-			var eventInfo actions.EventInfo
-			err = json.Unmarshal(data, &eventInfo)
-			if err != nil {
-				t.Error("Failed to unmarshal webhook data", err)
-				return
-			}
-
-			checkEvent(t, record, eventInfo, actionName, webhookID)
-		} else if r.URL.Path == "/airflow/api/v1/dags/some_dag_id/dagRuns" {
-			var req actions.DagRunReq
-
-			withConf := r.URL.Query().Get("conf") == "true"
-			expectedID := airflowHookID
-			if !withConf {
-				expectedID = airflowHookIDNoConf
-			}
-
-			require.NoError(t, json.Unmarshal(data, &req))
-			require.True(t, strings.HasPrefix(req.DagRunID, "lakeFS_hook_"+expectedID))
-
-			if withConf {
-				require.Equal(t, req.Conf["some"], "additional_conf")
-			}
-
-			username, pass, ok := r.BasicAuth()
-			require.True(t, ok)
-			require.Equal(t, "some_username", username)
-			require.Equal(t, "some_password", pass)
-
-			rawEvent, ok := req.Conf["lakeFS_event"]
-			require.True(t, ok, "missing lakeFS event")
-			b, err := json.Marshal(rawEvent)
-			require.NoError(t, err)
-
-			var event actions.EventInfo
-			require.NoError(t, json.Unmarshal(b, &event))
-
-			checkEvent(t, record, event, actionName, expectedID)
-		} else {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-
-		_, _ = io.WriteString(w, hookResponse)
-	}))
+	testOutputWriter, ctrl, ts, record := setupTest(t)
 	defer ts.Close()
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	require.NoError(t, os.Setenv("PRIVATE", "private_"))
-	require.NoError(t, os.Setenv("AIRFLOW_PASSWORD", "some_password"))
-	actionContent := `name: ` + actionName + `
+	actionContent := `name: ` + testActionName + `
 on:
   pre-commit: {}
 hooks:
-  - id: ` + webhookID + `
+  - id: ` + testWebhookID + `
     type: webhook
     properties:
       url: "` + ts.URL + `/webhook"
@@ -144,7 +91,7 @@ hooks:
         disallow: ["user_", "{{ ENV.PRIVATE }}"]
       headers:
         user: admin
-  - id: ` + airflowHookID + `
+  - id: ` + testAirflowHookID + `
     type: airflow
     properties:
       url: "` + ts.URL + `/airflow?conf=true"
@@ -153,7 +100,7 @@ hooks:
       password: "{{ ENV.AIRFLOW_PASSWORD }}"
       dag_conf:
         some: "additional_conf"
-  - id: ` + airflowHookIDNoConf + `
+  - id: ` + testAirflowHookIDNoConf + `
     type: airflow
     properties:
       url: "` + ts.URL + `/airflow?conf=false"
@@ -161,235 +108,249 @@ hooks:
       username: "some_username" 
       password: "{{ ENV.AIRFLOW_PASSWORD }}"
 `
+	tests := []struct {
+		name           string
+		actionsService getService
+	}{
+		{
+			name:           "DB service test",
+			actionsService: GetDBService,
+		},
+		{
+			name:           "KV service test",
+			actionsService: GetKVService,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			testOutputWriter.EXPECT().
+				OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatHookOutputPath(record.RunID, expectedWebhookRunID), gomock.Any(), gomock.Any()).
+				Return(nil).
+				DoAndReturn(func(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
+					var err error
+					writerBytes, err = io.ReadAll(reader)
+					return err
+				})
+			testOutputWriter.EXPECT().
+				OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatHookOutputPath(record.RunID, expectedAirflowHookRunIDWithConf), gomock.Any(), gomock.Any()).
+				Return(nil).
+				DoAndReturn(func(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
+					var err error
+					writerBytes, err = io.ReadAll(reader)
+					return err
+				})
+			testOutputWriter.EXPECT().
+				OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatHookOutputPath(record.RunID, expectedAirflowHookRunIDWithoutConf), gomock.Any(), gomock.Any()).
+				Return(nil).
+				DoAndReturn(func(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
+					var err error
+					writerBytes, err = io.ReadAll(reader)
+					return err
+				})
+			testOutputWriter.EXPECT().
+				OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatRunManifestOutputPath(record.RunID), gomock.Any(), gomock.Any()).
+				DoAndReturn(func(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
+					data, err := io.ReadAll(reader)
+					if err != nil {
+						return err
+					}
+					var manifest actions.RunManifest
+					err = json.Unmarshal(data, &manifest)
+					if err != nil {
+						return err
+					}
+					lastManifest = &manifest
+					return nil
+				}).
+				Times(2)
 
-	ctx := context.Background()
-	testOutputWriter := mock.NewMockOutputWriter(ctrl)
-	expectedWebhookRunID := actions.NewHookRunID(0, 0)
-	expectedAirflowHookRunIDWithConf := actions.NewHookRunID(0, 1)
-	expectedAirflowHookRunIDWithoutConf := actions.NewHookRunID(0, 2)
-	var lastManifest *actions.RunManifest
-	var writerBytes []byte
-	testOutputWriter.EXPECT().
-		OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatHookOutputPath(record.RunID, expectedWebhookRunID), gomock.Any(), gomock.Any()).
-		Return(nil).
-		DoAndReturn(func(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
-			var err error
-			writerBytes, err = io.ReadAll(reader)
-			return err
-		})
-	testOutputWriter.EXPECT().
-		OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatHookOutputPath(record.RunID, expectedAirflowHookRunIDWithConf), gomock.Any(), gomock.Any()).
-		Return(nil).
-		DoAndReturn(func(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
-			var err error
-			writerBytes, err = io.ReadAll(reader)
-			return err
-		})
-	testOutputWriter.EXPECT().
-		OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatHookOutputPath(record.RunID, expectedAirflowHookRunIDWithoutConf), gomock.Any(), gomock.Any()).
-		Return(nil).
-		DoAndReturn(func(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
-			var err error
-			writerBytes, err = io.ReadAll(reader)
-			return err
-		})
-	testOutputWriter.EXPECT().
-		OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatRunManifestOutputPath(record.RunID), gomock.Any(), gomock.Any()).
-		DoAndReturn(func(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
-			data, err := io.ReadAll(reader)
+			testSource := mock.NewMockSource(ctrl)
+			testSource.EXPECT().
+				List(ctx, record).
+				Return([]string{"act.yaml"}, nil)
+			testSource.EXPECT().
+				Load(ctx, record, "act.yaml").
+				Return([]byte(actionContent), nil)
+
+			mockStatsCollector := NewActionStatsMockCollector()
+
+			// run actions
+			now := time.Now()
+			actionsService := tt.actionsService(t, ctx, testSource, testOutputWriter, &mockStatsCollector, true)
+			defer actionsService.Stop()
+
+			err := actionsService.Run(ctx, record)
 			if err != nil {
-				return err
+				t.Fatalf("Run() failed with err=%s", err)
 			}
-			var manifest actions.RunManifest
-			err = json.Unmarshal(data, &manifest)
+			if lastManifest == nil {
+				t.Fatalf("Run() should store manifest")
+			}
+			if lastManifest.Run.RunID != record.RunID {
+				t.Errorf("Run() manifest RunID %s, expected %s", lastManifest.Run.RunID, record.RunID)
+			}
+			if lastManifest.Run.CommitID != "" {
+				t.Errorf("Run() manifest CommitID %s, expected empty", lastManifest.Run.CommitID)
+			}
+			lastManifest = nil
+
+			// update commit using post event record
+			err = actionsService.UpdateCommitID(ctx, record.RepositoryID.String(), record.StorageNamespace.String(), record.RunID, "commit1")
 			if err != nil {
-				return err
+				t.Fatalf("UpdateCommitID() failed with err=%s", err)
 			}
-			lastManifest = &manifest
-			return nil
-		}).
-		Times(2)
+			if lastManifest == nil {
+				t.Fatalf("UpdateCommitID() should store updated manifest")
+			}
+			if lastManifest.Run.RunID != record.RunID {
+				t.Errorf("UpdateCommitID() manifest RunID %s, expected %s", lastManifest.Run.RunID, record.RunID)
+			}
+			if lastManifest.Run.CommitID != "commit1" {
+				t.Errorf("UpdateCommitID() manifest CommitID %s, expected 'commit1'", lastManifest.Run.CommitID)
+			}
 
-	testSource := mock.NewMockSource(ctrl)
-	testSource.EXPECT().
-		List(ctx, record).
-		Return([]string{"act.yaml"}, nil)
-	testSource.EXPECT().
-		Load(ctx, record, "act.yaml").
-		Return([]byte(actionContent), nil)
+			// get run result
+			runResult, err := actionsService.GetRunResult(ctx, record.RepositoryID.String(), record.RunID)
+			if err != nil {
+				t.Fatal("GetRunResult() get run result", err)
+			}
+			if runResult.RunID != record.RunID {
+				t.Errorf("GetRunResult() result RunID=%s, expect=%s", runResult.RunID, record.RunID)
+			}
+			if runResult.BranchID != record.BranchID.String() {
+				t.Errorf("GetRunResult() result BranchID=%s, expect=%s", runResult.BranchID, record.BranchID)
+			}
+			if runResult.EventType != string(record.EventType) {
+				t.Errorf("GetRunResult() result Type=%s, expect=%s", runResult.EventType, record.EventType)
+			}
+			startTime := runResult.StartTime
+			if startTime.Before(now) {
+				t.Errorf("GetRunResult() result StartTime should be after we run the actions, %v > %v", startTime, now)
+			}
+			endTime := runResult.EndTime
+			if endTime.Before(startTime) {
+				t.Errorf("GetRunResult() result EndTime should be same or after StartTime %v >= %v", endTime, startTime)
+			}
 
-	// run actions
-	now := time.Now()
-	mockStatsCollector := NewActionStatsMockCollector()
-	actionsService := actions.NewService(ctx, conn, testSource, testOutputWriter, &mockStatsCollector, true)
-	defer actionsService.Stop()
+			const expectedPassed = true
+			if runResult.Passed != expectedPassed {
+				t.Errorf("GetRunResult() result Passed=%t, expect=%t", runResult.Passed, expectedPassed)
+			}
+			const expectedCommitID = "commit1"
+			if runResult.CommitID != expectedCommitID {
+				t.Errorf("GetRunResult() result CommitID=%s, expect=%s", runResult.CommitID, expectedCommitID)
+			}
 
-	err := actionsService.Run(ctx, record)
-	if err != nil {
-		t.Fatalf("Run() failed with err=%s", err)
-	}
-	if lastManifest == nil {
-		t.Fatalf("Run() should store manifest")
-	}
-	if lastManifest.Run.RunID != record.RunID {
-		t.Errorf("Run() manifest RunID %s, expected %s", lastManifest.Run.RunID, record.RunID)
-	}
-	if lastManifest.Run.CommitID != "" {
-		t.Errorf("Run() manifest CommitID %s, expected empty", lastManifest.Run.CommitID)
-	}
-	lastManifest = nil
+			require.Equal(t, 3, mockStatsCollector.Hits["pre-commit"])
 
-	// update commit using post event record
-	err = actionsService.UpdateCommitID(ctx, record.RepositoryID.String(), record.StorageNamespace.String(), record.RunID, "commit1")
-	if err != nil {
-		t.Fatalf("UpdateCommitID() failed with err=%s", err)
-	}
-	if lastManifest == nil {
-		t.Fatalf("UpdateCommitID() should store updated manifest")
-	}
-	if lastManifest.Run.RunID != record.RunID {
-		t.Errorf("UpdateCommitID() manifest RunID %s, expected %s", lastManifest.Run.RunID, record.RunID)
-	}
-	if lastManifest.Run.CommitID != "commit1" {
-		t.Errorf("UpdateCommitID() manifest CommitID %s, expected 'commit1'", lastManifest.Run.CommitID)
-	}
+			// get run - not found
+			runResult, err = actionsService.GetRunResult(ctx, record.RepositoryID.String(), "not-run-id")
+			expectedErr := actions.ErrNotFound
+			if !errors.Is(err, expectedErr) {
+				t.Errorf("GetRunResult() err=%v, expected=%v", err, expectedErr)
+			}
+			if runResult != nil {
+				t.Errorf("GetRunResult() result=%v, expected nil", runResult)
+			}
 
-	// get run result
-	runResult, err := actionsService.GetRunResult(ctx, record.RepositoryID.String(), record.RunID)
-	if err != nil {
-		t.Fatal("GetRunResult() get run result", err)
+			require.Greater(t, bytes.Count(writerBytes, []byte("\n")), 10)
+		})
 	}
-	if runResult.RunID != record.RunID {
-		t.Errorf("GetRunResult() result RunID=%s, expect=%s", runResult.RunID, record.RunID)
-	}
-	if runResult.BranchID != record.BranchID.String() {
-		t.Errorf("GetRunResult() result BranchID=%s, expect=%s", runResult.BranchID, record.BranchID)
-	}
-	if runResult.EventType != string(record.EventType) {
-		t.Errorf("GetRunResult() result Type=%s, expect=%s", runResult.EventType, record.EventType)
-	}
-	startTime := runResult.StartTime
-	if startTime.Before(now) {
-		t.Errorf("GetRunResult() result StartTime should be after we run the actions, %v > %v", startTime, now)
-	}
-	endTime := runResult.EndTime
-	if endTime.Before(startTime) {
-		t.Errorf("GetRunResult() result EndTime should be same or after StartTime %v >= %v", endTime, startTime)
-	}
-
-	const expectedPassed = true
-	if runResult.Passed != expectedPassed {
-		t.Errorf("GetRunResult() result Passed=%t, expect=%t", runResult.Passed, expectedPassed)
-	}
-	const expectedCommitID = "commit1"
-	if runResult.CommitID != expectedCommitID {
-		t.Errorf("GetRunResult() result CommitID=%s, expect=%s", runResult.CommitID, expectedCommitID)
-	}
-
-	require.Equal(t, 3, mockStatsCollector.Hits["pre-commit"])
-
-	// get run - not found
-	runResult, err = actionsService.GetRunResult(ctx, record.RepositoryID.String(), "not-run-id")
-	expectedErr := actions.ErrNotFound
-	if !errors.Is(err, expectedErr) {
-		t.Errorf("GetRunResult() err=%v, expected=%v", err, expectedErr)
-	}
-	if runResult != nil {
-		t.Errorf("GetRunResult() result=%v, expected nil", runResult)
-	}
-
-	require.Greater(t, bytes.Count(writerBytes, []byte("\n")), 10)
 }
 
 func TestDisableHooksRun(t *testing.T) {
-	conn, _ := testutil.GetDB(t, databaseURI)
-
-	record := graveler.HookRecord{
-		RunID:            graveler.NewRunID(),
-		EventType:        graveler.EventTypePreCommit,
-		StorageNamespace: "storageNamespace",
-		RepositoryID:     "repoID",
-		BranchID:         "branchID",
-		SourceRef:        "sourceRef",
-		Commit: graveler.Commit{
-			Message:   "commitMessage",
-			Committer: "committer",
-			Metadata:  map[string]string{"key": "value"},
-		},
-	}
-	const actionName = "test action"
-	const webhookID = "webhook_id"
-	hookResponse := "OK"
-
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer func() { _ = r.Body.Close() }()
-		data, err := io.ReadAll(r.Body)
-		if err != nil {
-			t.Error("Failed to read webhook post data", err)
-			return
-		}
-
-		if r.URL.Path == "/webhook" {
-			queryParams := map[string][]string(r.URL.Query())
-			require.Len(t, queryParams["prefix"], 1)
-			require.Equal(t, "public/", queryParams["prefix"][0])
-			require.Len(t, queryParams["disallow"], 2)
-			require.Equal(t, "user_", queryParams["disallow"][0])
-			require.Equal(t, "private_", queryParams["disallow"][1])
-
-			var eventInfo actions.EventInfo
-			err = json.Unmarshal(data, &eventInfo)
-			if err != nil {
-				t.Error("Failed to unmarshal webhook data", err)
-				return
-			}
-
-			checkEvent(t, record, eventInfo, actionName, webhookID)
-		} else {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-
-		_, _ = io.WriteString(w, hookResponse)
-	}))
-	defer ts.Close()
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	require.NoError(t, os.Setenv("PRIVATE", "private_"))
-	require.NoError(t, os.Setenv("AIRFLOW_PASSWORD", "some_password"))
-
 	ctx := context.Background()
-	testOutputWriter := mock.NewMockOutputWriter(ctrl)
-	var writerBytes []byte
+	testOutputWriter, ctrl, ts, record := setupTest(t)
+	defer ts.Close()
 
 	testSource := mock.NewMockSource(ctrl)
 
-	// run actions
-	mockStatsCollector := NewActionStatsMockCollector()
-	actionsService := actions.NewService(ctx, conn, testSource, testOutputWriter, &mockStatsCollector, false)
-	defer actionsService.Stop()
-
-	err := actionsService.Run(ctx, record)
-	if err != nil {
-		t.Fatalf("Run() failed with err=%s", err)
+	tests := []struct {
+		name           string
+		actionsService getService
+	}{
+		{
+			name:           "DB service test",
+			actionsService: GetDBService,
+		},
+		{
+			name:           "KV service test",
+			actionsService: GetKVService,
+		},
 	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// run actions
+			mockStatsCollector := NewActionStatsMockCollector()
+			actionsService := tt.actionsService(t, ctx, testSource, testOutputWriter, &mockStatsCollector, false)
+			defer actionsService.Stop()
 
-	// update commit using post event record
-	err = actionsService.UpdateCommitID(ctx, record.RepositoryID.String(), record.StorageNamespace.String(), record.RunID, "commit1")
-	if err != nil {
-		t.Fatalf("UpdateCommitID() failed with err=%s", err)
+			err := actionsService.Run(ctx, record)
+			if err != nil {
+				t.Fatalf("Run() failed with err=%s", err)
+			}
+
+			// get run result
+			runResult, err := actionsService.GetRunResult(ctx, record.RepositoryID.String(), record.RunID)
+			if !errors.Is(err, actions.ErrNotFound) || runResult != nil {
+				t.Fatal("GetRunResult() shouldn't get run result", err, runResult)
+			}
+			require.Equal(t, 0, mockStatsCollector.Hits["pre-commit"])
+		})
 	}
+}
 
-	// get run result
-	runResult, err := actionsService.GetRunResult(ctx, record.RepositoryID.String(), record.RunID)
-	if !errors.Is(err, actions.ErrNotFound) || runResult != nil {
-		t.Fatal("GetRunResult() shouldn't get run result", err, runResult)
+func TestMissingEnvVar(t *testing.T) {
+	ctx := context.Background()
+	testOutputWriter, ctrl, _, record := setupTest(t)
+
+	actionContent := `name: test action
+on:
+  pre-commit: {}
+hooks:
+  - id: airflow_hook_id
+    type: airflow
+    properties:
+      url: "http://wontsendrequesthere/airflow"
+      dag_id: "some_dag_id"
+      username: "some_username"
+      password: "{{ ENV.NEW_AIRFLOW_PASSWORD }}"
+      dag_conf:
+        some: "additional_conf"
+`
+
+	tests := []struct {
+		name           string
+		actionsService getService
+	}{
+		{
+			name:           "DB service test",
+			actionsService: GetDBService,
+		},
+		{
+			name:           "KV service test",
+			actionsService: GetKVService,
+		},
 	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			testSource := mock.NewMockSource(ctrl)
+			testSource.EXPECT().
+				List(ctx, record).
+				Return([]string{"act.yaml"}, nil)
+			testSource.EXPECT().
+				Load(ctx, record, "act.yaml").
+				Return([]byte(actionContent), nil)
 
-	require.Equal(t, 0, mockStatsCollector.Hits["pre-commit"])
-	require.Equal(t, bytes.Count(writerBytes, []byte("\n")), 0)
+			// run actions
+			mockStatsCollector := NewActionStatsMockCollector()
+			actionsService := tt.actionsService(t, ctx, testSource, testOutputWriter, &mockStatsCollector, true)
+			defer actionsService.Stop()
+
+			require.Error(t, actionsService.Run(ctx, record))
+			require.Equal(t, 0, mockStatsCollector.Hits["pre-commit"])
+		})
+	}
 }
 
 func checkEvent(t *testing.T, record graveler.HookRecord, event actions.EventInfo, actionName string, hookID string) {
@@ -423,11 +384,11 @@ func checkEvent(t *testing.T, record graveler.HookRecord, event actions.EventInf
 	}
 }
 
-func TestMissingEnvVar(t *testing.T) {
-	conn, _ := testutil.GetDB(t, databaseURI)
-
+func setupTest(t *testing.T) (*mock.MockOutputWriter, *gomock.Controller, *httptest.Server, graveler.HookRecord) {
+	t.Helper()
+	hooks := graveler.HooksNoOp{}
 	record := graveler.HookRecord{
-		RunID:            graveler.NewRunID(),
+		RunID:            hooks.NewRunID(),
 		EventType:        graveler.EventTypePreCommit,
 		StorageNamespace: "storageNamespace",
 		RepositoryID:     "repoID",
@@ -439,41 +400,88 @@ func TestMissingEnvVar(t *testing.T) {
 			Metadata:  map[string]string{"key": "value"},
 		},
 	}
+	hookResponse := "OK"
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() { _ = r.Body.Close() }()
+		data, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Error("Failed to read webhook post data", err)
+			return
+		}
+
+		if r.URL.Path == "/webhook" {
+			queryParams := map[string][]string(r.URL.Query())
+			require.Len(t, queryParams["prefix"], 1)
+			require.Equal(t, "public/", queryParams["prefix"][0])
+			require.Len(t, queryParams["disallow"], 2)
+			require.Equal(t, "user_", queryParams["disallow"][0])
+			require.Equal(t, "private_", queryParams["disallow"][1])
+
+			var eventInfo actions.EventInfo
+			err = json.Unmarshal(data, &eventInfo)
+			if err != nil {
+				t.Error("Failed to unmarshal webhook data", err)
+				return
+			}
+
+			checkEvent(t, record, eventInfo, testActionName, testWebhookID)
+		} else if r.URL.Path == "/airflow/api/v1/dags/some_dag_id/dagRuns" {
+			var req actions.DagRunReq
+
+			withConf := r.URL.Query().Get("conf") == "true"
+			expectedID := testAirflowHookID
+			if !withConf {
+				expectedID = testAirflowHookIDNoConf
+			}
+
+			require.NoError(t, json.Unmarshal(data, &req))
+			require.True(t, strings.HasPrefix(req.DagRunID, "lakeFS_hook_"+expectedID))
+
+			if withConf {
+				require.Equal(t, req.Conf["some"], "additional_conf")
+			}
+
+			username, pass, ok := r.BasicAuth()
+			require.True(t, ok)
+			require.Equal(t, "some_username", username)
+			require.Equal(t, "some_password", pass)
+
+			rawEvent, ok := req.Conf["lakeFS_event"]
+			require.True(t, ok, "missing lakeFS event")
+			b, err := json.Marshal(rawEvent)
+			require.NoError(t, err)
+
+			var event actions.EventInfo
+			require.NoError(t, json.Unmarshal(b, &event))
+
+			checkEvent(t, record, event, testActionName, expectedID)
+		} else {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		_, _ = io.WriteString(w, hookResponse)
+	}))
 
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
-	actionContent := `name: test action
-on:
-  pre-commit: {}
-hooks:
-  - id: airflow_hook_id
-    type: airflow
-    properties:
-      url: "http://wontsendrequesthere/airflow"
-      dag_id: "some_dag_id"
-      username: "some_username"
-      password: "{{ ENV.NEW_AIRFLOW_PASSWORD }}"
-      dag_conf:
-        some: "additional_conf"
-`
+	require.NoError(t, os.Setenv("PRIVATE", "private_"))
+	require.NoError(t, os.Setenv("AIRFLOW_PASSWORD", "some_password"))
 
+	return mock.NewMockOutputWriter(ctrl), ctrl, ts, record
+}
+
+func TestNewRunID(t *testing.T) {
 	ctx := context.Background()
-	testOutputWriter := mock.NewMockOutputWriter(ctrl)
-
+	testOutputWriter, ctrl, _, _ := setupTest(t)
 	testSource := mock.NewMockSource(ctrl)
-	testSource.EXPECT().
-		List(ctx, record).
-		Return([]string{"act.yaml"}, nil)
-	testSource.EXPECT().
-		Load(ctx, record, "act.yaml").
-		Return([]byte(actionContent), nil)
-
-	// run actions
 	mockStatsCollector := NewActionStatsMockCollector()
-	actionsService := actions.NewService(ctx, conn, testSource, testOutputWriter, &mockStatsCollector, true)
-	defer actionsService.Stop()
+	actionsService := GetKVService(t, ctx, testSource, testOutputWriter, &mockStatsCollector, false)
 
-	require.Error(t, actionsService.Run(ctx, record))
-	require.Equal(t, 0, mockStatsCollector.Hits["pre-commit"])
+	id1 := actionsService.NewRunID()
+	time.Sleep(2 * time.Second)
+	id2 := actionsService.NewRunID()
+
+	require.Greater(t, id1, id2)
 }
