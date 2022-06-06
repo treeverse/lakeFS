@@ -54,14 +54,8 @@ func AuthenticationHandler(authService auth.GatewayService, next http.Handler) h
 			_ = o.EncodeError(w, req, getAPIErrOrDefault(err, gatewayerrors.ErrAccessDenied))
 			return
 		}
-		base, bitSize := 10, 64
-		intCredsID, err := strconv.ParseInt(creds.UserID, base, bitSize)
-		if err != nil {
-			logger.WithError(err).Warn("error parsing user ID")
-			_ = o.EncodeError(w, req, getAPIErrOrDefault(err, gatewayerrors.ErrAccessDenied))
-			return
-		}
-		user, err := authService.GetUserByID(ctx, intCredsID)
+
+		user, err := authService.GetUserByID(ctx, creds.UserID)
 		if err != nil {
 			logger.WithError(err).Warn("could not get user for credentials key")
 			_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())

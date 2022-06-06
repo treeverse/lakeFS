@@ -38,11 +38,11 @@ type AuthorizationResponse struct {
 	Error   error
 }
 
-const InvalidUserID = -1
+const InvalidUserID = "-1"
 
 type GatewayService interface {
 	GetCredentials(_ context.Context, accessKey string) (*model.Credential, error)
-	GetUserByID(ctx context.Context, userID int64) (*model.User, error)
+	GetUserByID(ctx context.Context, userID string) (*model.User, error)
 	Authorize(_ context.Context, req *AuthorizationRequest) (*AuthorizationResponse, error)
 }
 
@@ -50,9 +50,9 @@ type Service interface {
 	SecretStore() crypt.SecretStore
 
 	// users
-	CreateUser(ctx context.Context, user *model.BaseUser) (int64, error)
+	CreateUser(ctx context.Context, user *model.BaseUser) (string, error)
 	DeleteUser(ctx context.Context, username string) error
-	GetUserByID(ctx context.Context, userID int64) (*model.User, error)
+	GetUserByID(ctx context.Context, userID string) (*model.User, error)
 	GetUser(ctx context.Context, username string) (*model.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
 	ListUsers(ctx context.Context, params *model.PaginationParams) ([]*model.User, *model.Paginator, error)
@@ -270,7 +270,7 @@ func (s *DBAuthService) DB() db.Database {
 	return s.db
 }
 
-func (s *DBAuthService) CreateUser(ctx context.Context, user *model.BaseUser) (int64, error) {
+func (s *DBAuthService) CreateUser(ctx context.Context, user *model.BaseUser) (string, error) {
 	id, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		if err := model.ValidateAuthEntityID(user.Username); err != nil {
 			return nil, err
@@ -284,7 +284,7 @@ func (s *DBAuthService) CreateUser(ctx context.Context, user *model.BaseUser) (i
 	if err != nil {
 		return InvalidUserID, err
 	}
-	return id.(int64), err
+	return fmt.Sprint(id), err
 }
 
 func (s *DBAuthService) DeleteUser(ctx context.Context, username string) error {
@@ -316,7 +316,7 @@ func (s *DBAuthService) GetUserByEmail(ctx context.Context, email string) (*mode
 	return user.(*model.User), nil
 }
 
-func (s *DBAuthService) GetUserByID(ctx context.Context, userID int64) (*model.User, error) {
+func (s *DBAuthService) GetUserByID(ctx context.Context, userID string) (*model.User, error) {
 	return s.cache.GetUserByID(userID, func() (*model.User, error) {
 		user, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			user := &model.DBUser{}
@@ -776,9 +776,11 @@ func (s *DBAuthService) AddCredentials(ctx context.Context, username, accessKeyI
 			},
 			UserID: user.ID,
 		}
-		intID, err := UserIDToInt64(c.UserID)
+
+		// A DB user must have an int ID
+		intID, err := userIDToInt(user.ID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("userID as int64: %w", err)
 		}
 		_, err = tx.Exec(`
 			INSERT INTO auth_credentials (access_key_id, secret_access_key, issued_date, user_id)
@@ -1047,7 +1049,7 @@ func (a *APIAuthService) SecretStore() crypt.SecretStore {
 	return a.secretStore
 }
 
-func (a *APIAuthService) CreateUser(ctx context.Context, user *model.BaseUser) (int64, error) {
+func (a *APIAuthService) CreateUser(ctx context.Context, user *model.BaseUser) (string, error) {
 	resp, err := a.apiClient.CreateUserWithResponse(ctx, CreateUserJSONRequestBody{
 		Email:        user.Email,
 		FriendlyName: user.FriendlyName,
@@ -1061,7 +1063,7 @@ func (a *APIAuthService) CreateUser(ctx context.Context, user *model.BaseUser) (
 		return InvalidUserID, err
 	}
 
-	return resp.JSON201.Id, nil
+	return fmt.Sprint(resp.JSON201.Id), nil
 }
 
 func (a *APIAuthService) DeleteUser(ctx context.Context, username string) error {
@@ -1072,9 +1074,18 @@ func (a *APIAuthService) DeleteUser(ctx context.Context, username string) error 
 	return a.validateResponse(resp, http.StatusNoContent)
 }
 
-func (a *APIAuthService) GetUserByID(ctx context.Context, userID int64) (*model.User, error) {
+func userIDToInt(userID string) (int64, error) {
+	const base, bitSize = 10, 64
+	return strconv.ParseInt(userID, base, bitSize)
+}
+
+func (a *APIAuthService) GetUserByID(ctx context.Context, userID string) (*model.User, error) {
+	intID, err := userIDToInt(userID)
+	if err != nil {
+		return nil, fmt.Errorf("userID as int64: %w", err)
+	}
 	return a.cache.GetUserByID(userID, func() (*model.User, error) {
-		resp, err := a.apiClient.ListUsersWithResponse(ctx, &ListUsersParams{Id: &userID})
+		resp, err := a.apiClient.ListUsersWithResponse(ctx, &ListUsersParams{Id: &intID})
 		if err != nil {
 			return nil, err
 		}

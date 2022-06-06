@@ -86,7 +86,7 @@ type FakeAuthService struct {
 	BareDomain      string `json:"bare_domain"`
 	AccessKeyID     string `json:"access_key_id"`
 	SecretAccessKey string `json:"access_secret_key"`
-	UserID          int64  `json:"user_id"`
+	UserID          string `json:"user_id"`
 	Region          string `json:"region"`
 }
 
@@ -97,11 +97,11 @@ func (m *FakeAuthService) GetCredentials(_ context.Context, accessKey string) (*
 	aCred := new(model.Credential)
 	aCred.AccessKeyID = accessKey
 	aCred.SecretAccessKey = m.SecretAccessKey
-	aCred.UserID = model.ConvertDBID(m.UserID)
+	aCred.UserID = m.UserID
 	return aCred, nil
 }
 
-func (m *FakeAuthService) GetUserByID(_ context.Context, _ int64) (*model.User, error) {
+func (m *FakeAuthService) GetUserByID(_ context.Context, _ string) (*model.User, error) {
 	return &model.User{BaseUser: model.BaseUser{
 		CreatedAt: time.Now(),
 		Username:  "user"},

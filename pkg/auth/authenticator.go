@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -23,7 +22,7 @@ import (
 type Authenticator interface {
 	// AuthenticateUser authenticates a user matching username and
 	// password and returns their ID.
-	AuthenticateUser(ctx context.Context, username, password string) (int64, error)
+	AuthenticateUser(ctx context.Context, username, password string) (string, error)
 }
 
 // Credentialler fetches S3-style credentials for access keys.
@@ -41,7 +40,7 @@ func NewChainAuthenticator(auth ...Authenticator) Authenticator {
 // order, returning the last error in case all fail.
 type ChainAuthenticator []Authenticator
 
-func (ca ChainAuthenticator) AuthenticateUser(ctx context.Context, username, password string) (int64, error) {
+func (ca ChainAuthenticator) AuthenticateUser(ctx context.Context, username, password string) (string, error) {
 	var merr *multierror.Error
 	logger := logging.FromContext(ctx).WithField("username", username)
 	for _, a := range ca {
@@ -64,16 +63,7 @@ func NewEmailAuthenticator(service Service) *EmailAuthenticator {
 	return &EmailAuthenticator{AuthService: service}
 }
 
-func UserIDToInt64(id string) (int64, error) {
-	base, bitSize := 10, 64
-	idInt, err := strconv.ParseInt(id, base, bitSize)
-	if err != nil {
-		return InvalidUserID, err
-	}
-	return idInt, err
-}
-
-func (e EmailAuthenticator) AuthenticateUser(ctx context.Context, username, password string) (int64, error) {
+func (e EmailAuthenticator) AuthenticateUser(ctx context.Context, username, password string) (string, error) {
 	user, err := e.AuthService.GetUserByEmail(ctx, username)
 	if err != nil {
 		return InvalidUserID, err
@@ -82,7 +72,7 @@ func (e EmailAuthenticator) AuthenticateUser(ctx context.Context, username, pass
 	if err := user.Authenticate(password); err != nil {
 		return InvalidUserID, err
 	}
-	return UserIDToInt64(user.ID)
+	return user.ID, nil
 }
 
 func (e EmailAuthenticator) String() string {
@@ -99,7 +89,7 @@ func NewBuiltinAuthenticator(service Service) *BuiltinAuthenticator {
 	return &BuiltinAuthenticator{creds: service}
 }
 
-func (ba *BuiltinAuthenticator) AuthenticateUser(ctx context.Context, username, password string) (int64, error) {
+func (ba *BuiltinAuthenticator) AuthenticateUser(ctx context.Context, username, password string) (string, error) {
 	// Look user up in DB.  username is really the access key ID.
 	cred, err := ba.creds.GetCredentials(ctx, username)
 	if err != nil {
@@ -108,7 +98,7 @@ func (ba *BuiltinAuthenticator) AuthenticateUser(ctx context.Context, username, 
 	if subtle.ConstantTimeCompare([]byte(password), []byte(cred.SecretAccessKey)) != 1 {
 		return InvalidUserID, ErrInvalidSecretAccessKey
 	}
-	return UserIDToInt64(cred.UserID)
+	return cred.UserID, nil
 }
 
 func (ba *BuiltinAuthenticator) String() string {
@@ -171,7 +161,7 @@ func inBrackets(filter string) string {
 	return fmt.Sprintf("(%s)", filter)
 }
 
-func (la *LDAPAuthenticator) AuthenticateUser(ctx context.Context, username, password string) (int64, error) {
+func (la *LDAPAuthenticator) AuthenticateUser(ctx context.Context, username, password string) (string, error) {
 	// There may be multiple authenticators.  Log everything to allow debugging.
 	logger := logging.FromContext(ctx).WithField("username", username)
 	controlConn, err := la.getControlConnection(ctx)
@@ -228,7 +218,7 @@ func (la *LDAPAuthenticator) AuthenticateUser(ctx context.Context, username, pas
 	user, err := la.AuthService.GetUser(ctx, dn)
 	if err == nil {
 		logger.WithField("user", fmt.Sprintf("%+v", user)).Debug("Got existing user")
-		return UserIDToInt64(user.ID)
+		return user.ID, nil
 	}
 	if !errors.Is(err, ErrNotFound) {
 		logger.WithError(err).Info("Could not get user; create them")

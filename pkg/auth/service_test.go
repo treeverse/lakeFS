@@ -665,12 +665,8 @@ func TestDbAuthService_GetUserById(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetUser(%s): %s", userName, err)
 	}
-	base, bitSize := 10, 64
-	idInt, err := strconv.ParseInt(user.ID, base, bitSize)
-	if err != nil {
-		t.Errorf("can't parse user ID(%s): %s", user.ID, err)
-	}
-	gotUser, err := s.GetUserByID(ctx, idInt)
+
+	gotUser, err := s.GetUserByID(ctx, user.ID)
 	if err != nil {
 		t.Errorf("GetUserById(%s): %s", user.ID, err)
 	}

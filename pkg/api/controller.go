@@ -185,14 +185,7 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSO
 	expires := loginTime.Add(DefaultLoginExpiration)
 	secret := c.Auth.SecretStore().SharedSecret()
 
-	// user.Username will be different from username/access_key_id on
-	// LDAP login.  Use the stored value.
-	n, err := auth.UserIDToInt64(user.ID)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
-		return
-	}
-	tokenString, err := GenerateJWTLogin(secret, n, loginTime, expires)
+	tokenString, err := GenerateJWTLogin(secret, user.ID, loginTime, expires)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
