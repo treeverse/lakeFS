@@ -492,13 +492,6 @@ func (s *DBAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName 
 	return slice.Interface().([]*model.BasePolicy), paginator, nil
 }
 
-func IDToInt(id string) (int, error) {
-	if id == "" {
-		id = "0"
-	}
-	return strconv.Atoi(id)
-}
-
 func (s *DBAuthService) CreateGroup(ctx context.Context, group *model.BaseGroup) error {
 	var id int
 	_, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
