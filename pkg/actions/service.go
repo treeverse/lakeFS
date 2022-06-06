@@ -350,24 +350,18 @@ func (s *KVService) saveRunManifestObjectStore(ctx context.Context, manifest Run
 }
 
 func (s *KVService) saveRunManifestDB(ctx context.Context, repositoryID graveler.RepositoryID, manifest RunManifest) error {
-	// insert run information
-	run := manifest.Run
-	err := s.storeRun(ctx, protoFromRunResult(&run), repositoryID.String())
-	if err != nil {
-		return err
-	}
-
 	// insert each task information
 	for i := range manifest.HooksRun {
 		hookRun := manifest.HooksRun[i]
-		taskKey := kv.FormatPath(TasksPath(repositoryID.String(), run.RunID), hookRun.HookRunID)
-		err = s.Store.SetMsgIf(ctx, PartitionKey, taskKey, protoFromTaskResult(&hookRun), nil)
+		taskKey := kv.FormatPath(TasksPath(repositoryID.String(), manifest.Run.RunID), hookRun.HookRunID)
+		err := s.Store.SetMsgIf(ctx, PartitionKey, taskKey, protoFromTaskResult(&hookRun), nil)
 		if err != nil {
-			return fmt.Errorf("save task result (runID: %s taskKey %s): %w", run.RunID, taskKey, err)
+			return fmt.Errorf("save task result (runID: %s taskKey %s): %w", manifest.Run.RunID, taskKey, err)
 		}
 	}
 
-	return nil
+	// insert run information
+	return s.storeRun(ctx, protoFromRunResult(&manifest.Run), repositoryID.String())
 }
 
 func (s *KVService) storeRun(ctx context.Context, run *RunResultData, repoID string) error {

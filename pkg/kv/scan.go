@@ -47,7 +47,7 @@ func (b *PrefixIterator) Close() {
 // after is the full key name for which to start the scan from
 func ScanPrefix(ctx context.Context, store Store, partitionKey, prefix, after []byte) (EntriesIterator, error) {
 	start := prefix
-	if len(after) > 0 {
+	if len(after) > 0 && string(after) > string(prefix) {
 		start = after
 	}
 	iter, err := store.Scan(ctx, partitionKey, start)
