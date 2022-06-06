@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/ingest/store"
+	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/spf13/viper"
@@ -26,6 +26,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/db"
 	dbparams "github.com/treeverse/lakefs/pkg/db/params"
 	"github.com/treeverse/lakefs/pkg/email"
+	"github.com/treeverse/lakefs/pkg/ingest/store"
+	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/testutil"
@@ -73,7 +75,7 @@ func createDefaultAdminUser(t testing.TB, clt api.ClientWithResponsesInterface) 
 	}
 }
 
-func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
+func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, kvEnabled bool, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
 	t.Helper()
 	ctx := context.Background()
 	conn, handlerDatabaseURI := testutil.GetDB(t, databaseURI, opts...)
@@ -91,14 +93,28 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, 
 	collector := &nullCollector{}
 
 	// wire actions
-	actionsService := actions.NewService(
-		ctx,
-		conn,
-		catalog.NewActionsSource(c),
-		catalog.NewActionsOutputWriter(c.BlockAdapter),
-		collector,
-		true,
-	)
+	var actionsService actions.Service
+	if kvEnabled {
+		kvStore := kvtest.GetStore(ctx, t)
+		actionsService = actions.NewKVService(
+			ctx,
+			kv.StoreMessage{Store: kvStore},
+			catalog.NewActionsSource(c),
+			catalog.NewActionsOutputWriter(c.BlockAdapter),
+			collector,
+			true,
+		)
+	} else {
+		actionsService = actions.NewDBService(
+			ctx,
+			conn,
+			catalog.NewActionsSource(c),
+			catalog.NewActionsOutputWriter(c.BlockAdapter),
+			collector,
+			true,
+		)
+	}
+
 	c.SetHooksHandler(actionsService)
 
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
@@ -127,8 +143,8 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, 
 	}
 }
 
-func setupHandler(t testing.TB, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
-	return setupHandlerWithWalkerFactory(t, store.NewFactory(nil), opts...)
+func setupHandler(t testing.TB, kvEnabled bool, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
+	return setupHandlerWithWalkerFactory(t, store.NewFactory(nil), kvEnabled, opts...)
 }
 
 func setupClientByEndpoint(t testing.TB, endpointURL string, accessKeyID, secretAccessKey string) api.ClientWithResponsesInterface {
@@ -171,14 +187,14 @@ func shouldUseServerTimeout() bool {
 	return withServerTimeout
 }
 
-func setupClientWithAdmin(t testing.TB, opts ...testutil.GetDBOption) (api.ClientWithResponsesInterface, *dependencies) {
+func setupClientWithAdmin(t testing.TB, kvEnabled bool, opts ...testutil.GetDBOption) (api.ClientWithResponsesInterface, *dependencies) {
 	t.Helper()
-	return setupClientWithAdminAndWalkerFactory(t, store.NewFactory(nil), opts...)
+	return setupClientWithAdminAndWalkerFactory(t, store.NewFactory(nil), kvEnabled, opts...)
 }
 
-func setupClientWithAdminAndWalkerFactory(t testing.TB, factory catalog.WalkerFactory, opts ...testutil.GetDBOption) (api.ClientWithResponsesInterface, *dependencies) {
+func setupClientWithAdminAndWalkerFactory(t testing.TB, factory catalog.WalkerFactory, kvEnabled bool, opts ...testutil.GetDBOption) (api.ClientWithResponsesInterface, *dependencies) {
 	t.Helper()
-	handler, deps := setupHandlerWithWalkerFactory(t, factory, opts...)
+	handler, deps := setupHandlerWithWalkerFactory(t, factory, kvEnabled, opts...)
 	server := setupServer(t, handler)
 	clt := setupClientByEndpoint(t, server.URL, "", "")
 	cred := createDefaultAdminUser(t, clt)
@@ -187,7 +203,7 @@ func setupClientWithAdminAndWalkerFactory(t testing.TB, factory catalog.WalkerFa
 }
 
 func TestInvalidRoute(t *testing.T) {
-	handler, _ := setupHandler(t)
+	handler, _ := setupHandler(t, false)
 	server := setupServer(t, handler)
 	clt := setupClientByEndpoint(t, server.URL, "", "")
 	cred := createDefaultAdminUser(t, clt)

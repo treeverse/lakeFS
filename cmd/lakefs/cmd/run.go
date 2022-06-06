@@ -133,19 +133,6 @@ var runCmd = &cobra.Command{
 		}
 		defer func() { _ = c.Close() }()
 
-		var multipartsTracker multiparts.Tracker
-
-		if dbParams.KVEnabled {
-			kvStore, err := kv.Open(ctx, dbParams.Type, dbParams.ConnectionString)
-			if err != nil {
-				logger.WithError(err).Fatal("failed to open KV store")
-			}
-			defer kvStore.Close()
-			multipartsTracker = multiparts.NewTracker(kv.StoreMessage{Store: kvStore})
-		} else {
-			multipartsTracker = multiparts.NewDBTracker(dbPool)
-		}
-
 		// init authentication
 		var authService auth.Service
 		if cfg.IsAuthTypeAPI() {
@@ -192,17 +179,41 @@ var runCmd = &cobra.Command{
 		// send metadata
 		bufferedCollector.CollectMetadata(metadata)
 
-		// wire actions
-		actionsService := actions.NewService(
-			ctx,
-			dbPool,
-			catalog.NewActionsSource(c),
-			catalog.NewActionsOutputWriter(c.BlockAdapter),
-			bufferedCollector,
-			cfg.GetActionsEnabled(),
-		)
-		c.SetHooksHandler(actionsService)
+		var multipartsTracker multiparts.Tracker
+		var actionsService actions.Service
+
+		if dbParams.KVEnabled {
+			kvStore, err := kv.Open(ctx, dbParams.Type, dbParams.ConnectionString)
+			if err != nil {
+				logger.WithError(err).Fatal("failed to open KV store")
+			}
+			defer kvStore.Close()
+			storeMessage := kv.StoreMessage{Store: kvStore}
+
+			multipartsTracker = multiparts.NewTracker(storeMessage)
+			actionsService = actions.NewKVService(
+				ctx,
+				storeMessage,
+				catalog.NewActionsSource(c),
+				catalog.NewActionsOutputWriter(c.BlockAdapter),
+				bufferedCollector,
+				cfg.GetActionsEnabled(),
+			)
+		} else {
+			multipartsTracker = multiparts.NewDBTracker(dbPool)
+			actionsService = actions.NewDBService(
+				ctx,
+				dbPool,
+				catalog.NewActionsSource(c),
+				catalog.NewActionsOutputWriter(c.BlockAdapter),
+				bufferedCollector,
+				cfg.GetActionsEnabled(),
+			)
+		}
+
+		// wire actions into entry catalog
 		defer actionsService.Stop()
+		c.SetHooksHandler(actionsService)
 
 		auditChecker := version.NewDefaultAuditChecker(cfg.GetSecurityAuditCheckURL())
 		defer auditChecker.Close()

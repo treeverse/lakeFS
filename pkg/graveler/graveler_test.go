@@ -132,6 +132,10 @@ func (h *Hooks) PostDeleteBranchHook(_ context.Context, record graveler.HookReco
 	h.BranchID = record.BranchID
 }
 
+func (h *Hooks) NewRunID() string {
+	return ""
+}
+
 func TestGraveler_List(t *testing.T) {
 	conn, _ := tu.GetDB(t, databaseURI)
 	branchLocker := ref.NewBranchLocker(conn)

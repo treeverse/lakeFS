@@ -7,6 +7,10 @@ import (
 	"github.com/treeverse/lakefs/pkg/db"
 )
 
+const defaultFetchSize = 1024
+
+var psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
+
 type DBRunResultIterator struct {
 	db           db.Database
 	ctx          context.Context
@@ -21,7 +25,7 @@ type DBRunResultIterator struct {
 	commitID     string
 }
 
-func NewDBRunResultIterator(ctx context.Context, db db.Database, fetchSize int, repositoryID string, branchID, commitID string, after string) *DBRunResultIterator {
+func NewDBRunResultIterator(ctx context.Context, db db.Database, fetchSize int, repositoryID, branchID, commitID string, after string) *DBRunResultIterator {
 	return &DBRunResultIterator{
 		db:           db,
 		ctx:          ctx,

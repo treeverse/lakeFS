@@ -12,8 +12,16 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/model"
 )
 
-func TestAuthMiddleware(t *testing.T) {
-	handler, deps := setupHandler(t)
+func TestDBAuthMiddleware(t *testing.T) {
+	testAuthMiddleware(t, false)
+}
+
+func TestKVAuthMiddleware(t *testing.T) {
+	testAuthMiddleware(t, true)
+}
+
+func testAuthMiddleware(t *testing.T, kvEnabled bool) {
+	handler, deps := setupHandler(t, kvEnabled)
 	server := setupServer(t, handler)
 	apiEndpoint := server.URL + api.BaseURL
 	clt := setupClientByEndpoint(t, server.URL, "", "")
