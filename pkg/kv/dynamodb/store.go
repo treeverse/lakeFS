@@ -145,7 +145,6 @@ func (s *Store) Get(ctx context.Context, key []byte) (*kv.ValueWithPredicate, er
 		TableName: aws.String(s.params.TableName),
 		Key:       s.bytesKeyToDynamoKey(key),
 	})
-
 	if err != nil {
 		return nil, err
 	}
