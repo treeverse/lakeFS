@@ -14,7 +14,7 @@ type UserPoliciesSetFn func() ([]*model.BasePolicy, error)
 type Cache interface {
 	GetCredential(accessKeyID string, setFn CredentialSetFn) (*model.Credential, error)
 	GetUser(username string, setFn UserSetFn) (*model.User, error)
-	GetUserByID(string string, setFn UserSetFn) (*model.User, error)
+	GetUserByID(userID string, setFn UserSetFn) (*model.User, error)
 	GetUserPolicies(userID string, setFn UserPoliciesSetFn) ([]*model.BasePolicy, error)
 }
 
