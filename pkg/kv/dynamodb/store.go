@@ -113,12 +113,6 @@ func parseDsn(dsn string) (*Params, error) {
 	return params, nil
 }
 
-func (s *Store) getPartitionKey(_ /*itemKey*/ []byte) string {
-	// At some point the partition key will probably depend on the key.
-	// Meanwhile, it is simply the table name (i.e. everything is under the same partition)
-	return s.params.TableName
-}
-
 // setupKeyValueDatabase setup everything required to enable kv over postgres
 func setupKeyValueDatabase(ctx context.Context, svc *dynamodb.DynamoDB, params *Params) error {
 	// main kv table
@@ -157,10 +151,10 @@ func setupKeyValueDatabase(ctx context.Context, svc *dynamodb.DynamoDB, params *
 	return nil
 }
 
-func (s *Store) bytesKeyToDynamoKey(key []byte) map[string]*dynamodb.AttributeValue {
+func (s *Store) bytesKeyToDynamoKey(partitionKey, key []byte) map[string]*dynamodb.AttributeValue {
 	return map[string]*dynamodb.AttributeValue{
 		PartitionKey: {
-			S: aws.String(s.getPartitionKey(key)),
+			S: aws.String(string(partitionKey)),
 		},
 		ItemKey: {
 			S: aws.String(string(key)),
@@ -168,14 +162,14 @@ func (s *Store) bytesKeyToDynamoKey(key []byte) map[string]*dynamodb.AttributeVa
 	}
 }
 
-func (s *Store) Get(ctx context.Context, key []byte) (*kv.ValueWithPredicate, error) {
+func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWithPredicate, error) {
 	if len(key) == 0 {
 		return nil, kv.ErrMissingKey
 	}
 
 	result, err := s.svc.GetItemWithContext(ctx, &dynamodb.GetItemInput{
 		TableName: aws.String(s.params.TableName),
-		Key:       s.bytesKeyToDynamoKey(key),
+		Key:       s.bytesKeyToDynamoKey(partitionKey, key),
 	})
 	if err != nil {
 		return nil, err
@@ -197,15 +191,15 @@ func (s *Store) Get(ctx context.Context, key []byte) (*kv.ValueWithPredicate, er
 	}, nil
 }
 
-func (s *Store) Set(ctx context.Context, key, value []byte) error {
-	return s.setWithOptionalPredicate(ctx, key, value, nil, false)
+func (s *Store) Set(ctx context.Context, partitionKey, key, value []byte) error {
+	return s.setWithOptionalPredicate(ctx, partitionKey, key, value, nil, false)
 }
 
-func (s *Store) SetIf(ctx context.Context, key, value []byte, valuePredicate kv.Predicate) error {
-	return s.setWithOptionalPredicate(ctx, key, value, valuePredicate, true)
+func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valuePredicate kv.Predicate) error {
+	return s.setWithOptionalPredicate(ctx, partitionKey, key, value, valuePredicate, true)
 }
 
-func (s *Store) setWithOptionalPredicate(ctx context.Context, key, value []byte, valuePredicate kv.Predicate, usePredicate bool) error {
+func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key, value []byte, valuePredicate kv.Predicate, usePredicate bool) error {
 	if len(key) == 0 {
 		return kv.ErrMissingKey
 	}
@@ -214,7 +208,7 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, key, value []byte,
 	}
 
 	item := DynKVItem{
-		PartitionKey: s.getPartitionKey(key),
+		PartitionKey: string(partitionKey),
 		ItemKey:      string(key),
 		ItemValue:    string(value),
 	}
@@ -250,14 +244,14 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, key, value []byte,
 	return nil
 }
 
-func (s *Store) Delete(ctx context.Context, key []byte) error {
+func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 	if len(key) == 0 {
 		return kv.ErrMissingKey
 	}
 
 	_, err := s.svc.DeleteItemWithContext(ctx, &dynamodb.DeleteItemInput{
 		TableName: aws.String(s.params.TableName),
-		Key:       s.bytesKeyToDynamoKey(key),
+		Key:       s.bytesKeyToDynamoKey(partitionKey, key),
 	})
 
 	if err != nil {
@@ -266,15 +260,15 @@ func (s *Store) Delete(ctx context.Context, key []byte) error {
 	return nil
 }
 
-func (s *Store) Scan(ctx context.Context, start []byte) (kv.EntriesIterator, error) {
-	return s.scanInternal(ctx, start, nil)
+func (s *Store) Scan(ctx context.Context, partitionKey, start []byte) (kv.EntriesIterator, error) {
+	return s.scanInternal(ctx, partitionKey, start, nil)
 }
 
-func (s *Store) scanInternal(ctx context.Context, scanKey []byte, exclusiveStartKey map[string]*dynamodb.AttributeValue) (*EntriesIterator, error) {
+func (s *Store) scanInternal(ctx context.Context, partitionKey, scanKey []byte, exclusiveStartKey map[string]*dynamodb.AttributeValue) (*EntriesIterator, error) {
 	keyConditionExpression := PartitionKey + " = :partitionkey"
 	expressionAttributeValues := map[string]*dynamodb.AttributeValue{
 		":partitionkey": {
-			S: aws.String(s.getPartitionKey(scanKey)),
+			S: aws.String(string(partitionKey)),
 		},
 	}
 	if len(scanKey) > 0 {
@@ -298,7 +292,7 @@ func (s *Store) scanInternal(ctx context.Context, scanKey []byte, exclusiveStart
 
 	return &EntriesIterator{
 		store:        s,
-		partKey:      s.getPartitionKey(scanKey),
+		partKey:      string(partitionKey),
 		startKey:     string(scanKey),
 		queryResult:  queryOutput,
 		currEntryIdx: 0,
@@ -317,7 +311,7 @@ func (e *EntriesIterator) Next() bool {
 		if e.queryResult.LastEvaluatedKey == nil {
 			return false
 		}
-		tmpEntriesIter, err := e.store.scanInternal(context.Background(), []byte(e.startKey), e.queryResult.LastEvaluatedKey)
+		tmpEntriesIter, err := e.store.scanInternal(context.Background(), []byte(e.partKey), []byte(e.startKey), e.queryResult.LastEvaluatedKey)
 		if err != nil {
 			e.err = fmt.Errorf("scanning table: %w", err)
 			return false
