@@ -23,9 +23,8 @@ lakeFS makes it instantaneous to create isolated development environments. This 
 
 In a lakeFS repository, data is always located on a `branch`. You can think of each `branch` in lakeFS as its own environment. This is because branches are isolated, meaning changes on one branch have no effect other branches.
 
-Data that is the same between two branches is not copied, but rather shared on both via metadata pointers that lakeFS manages.
-If you make a change on one branch and want it reflected on another, you can perform a `merge` operation to update one branch with the changes from another.
-{: .note .note-info }
+Data that is the same between two branches is not copied, but rather shared on both via metadata pointers that lakeFS manages. If you make a change on one branch and want it reflected on another, you can perform a `merge` operation to update one branch with the changes from another.
+{: .note }
 
 Let’s show an example of using multiple lakeFS branches for isolation.
  
