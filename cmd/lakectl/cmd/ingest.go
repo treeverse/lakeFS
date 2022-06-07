@@ -66,7 +66,7 @@ var ingestCmd = &cobra.Command{
 			path = *lakefsURI.Path
 		}
 		if len(path) > 0 && !strings.HasSuffix(path, PathDelimiter) {
-			path = path + PathDelimiter // append a path delimiter (slash) if not passed by the user, and it's not an empty path in lakeFS
+			path += PathDelimiter // append a path delimiter (slash) if not passed by the user, and it's not an empty path in lakeFS
 		}
 		go func() {
 			walker, err := store.NewFactory(nil).GetWalker(ctx, store.WalkerOptions{
@@ -133,7 +133,7 @@ var ingestCmd = &cobra.Command{
 	},
 }
 
-//nolint:gochecknoinits
+//nolint:gochecknoinits,gomnd
 func init() {
 	ingestCmd.Flags().String("from", "", "prefix to read from (e.g. \"s3://bucket/sub/path/\"). must not be in a storage namespace")
 	_ = ingestCmd.MarkFlagRequired("from")

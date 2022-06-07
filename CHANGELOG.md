@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.66.0 - 2022-05-26
+
+What's new:
+- UI: enable server side configuration to apply code snippets (#3398)
+- Upgrade Spark client dependencies to be compatible with M1 (#3420)
+- LAKECTL_INTERACTIVE environment can control lakeCTL on/off terminal output (#3358)
+
+Bug fixes:
+- Fix: Use repository root commit for import branch in import from UI (#3415)
+- Fix: Resource leak on list hooks run (#3424)
+- Fix: Create branch name validation message (#3374)
+- Fix: Evict user from authorization cache to reset password (#3407)
+
+
 ## v0.65.0 - 2022-05-16
 
 What's new:

@@ -69,8 +69,58 @@ func onBlock(deps *dependencies, path string) string {
 	return fmt.Sprintf("%s://%s", deps.blocks.BlockstoreType(), path)
 }
 
-func TestController_ListRepositoriesHandler(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t)
+var tests = map[string]func(*testing.T, bool){
+	"ListRepositoriesHandler":          testController_ListRepositoriesHandler,
+	"GetRepoHandler":                   testController_GetRepoHandler,
+	"CommitsGetBranchCommitLogHandler": testController_CommitsGetBranchCommitLogHandler,
+	"CommitsGetBranchCommitLogByPath":  testController_CommitsGetBranchCommitLogByPath,
+	"GetCommitHandler":                 testController_GetCommitHandler,
+	"CommitHandler":                    testController_CommitHandler,
+	"CreateRepositoryHandler":          testController_CreateRepositoryHandler,
+	"DeleteRepositoryHandler":          testController_DeleteRepositoryHandler,
+	"ListBranchesHandler":              testController_ListBranchesHandler,
+	"ListTagsHandler":                  testController_ListTagsHandler,
+	"GetBranchHandler":                 testController_GetBranchHandler,
+	"BranchesDiffBranchHandler":        testController_BranchesDiffBranchHandler,
+	"CreateBranchHandler":              testController_CreateBranchHandler,
+	"UploadObject":                     testController_UploadObject,
+	"DeleteBranchHandler":              testController_DeleteBranchHandler,
+	"IngestRangeHandler":               testController_IngestRangeHandler,
+	"WriteMetaRangeHandler":            testController_WriteMetaRangeHandler,
+	"ObjectsStatObjectHandler":         testController_ObjectsStatObjectHandler,
+	"ObjectsListObjectsHandler":        testController_ObjectsListObjectsHandler,
+	"ObjectsGetObjectHandler":          testController_ObjectsGetObjectHandler,
+	"ObjectsUploadObjectHandler":       testController_ObjectsUploadObjectHandler,
+	"ObjectsStageObjectHandler":        testController_ObjectsStageObjectHandler,
+	"ObjectsDeleteObjectHandler":       testController_ObjectsDeleteObjectHandler,
+	"CreatePolicyHandler":              testController_CreatePolicyHandler,
+	"ConfigHandlers":                   testController_ConfigHandlers,
+	"SetupLakeFSHandler":               testController_SetupLakeFSHandler,
+	"ListRepositoryRuns":               testController_ListRepositoryRuns,
+	"MergeDiffWithParent":              testController_MergeDiffWithParent,
+	"MergeIntoExplicitBranch":          testController_MergeIntoExplicitBranch,
+	"CreateTag":                        testController_CreateTag,
+	"Revert":                           testController_Revert,
+}
+
+func TestKVEnabled(t *testing.T) {
+	for name, test := range tests {
+		t.Run(name, runWithKVFlag(test, true))
+	}
+}
+
+func TestKVDisabled(t *testing.T) {
+	for name, test := range tests {
+		t.Run(name, runWithKVFlag(test, false))
+	}
+}
+
+func runWithKVFlag(f func(t *testing.T, kvEnabled bool), kvEnabled bool) func(t *testing.T) {
+	return func(t *testing.T) { f(t, kvEnabled) }
+}
+
+func testController_ListRepositoriesHandler(t *testing.T, kvEnabled bool) {
+	clt, deps := setupClientWithAdmin(t, kvEnabled)
 	ctx := context.Background()
 
 	t.Run("list no repos", func(t *testing.T) {
@@ -159,8 +209,8 @@ func TestController_ListRepositoriesHandler(t *testing.T) {
 	})
 }
 
-func TestController_GetRepoHandler(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t)
+func testController_GetRepoHandler(t *testing.T, kvEnabled bool) {
+	clt, deps := setupClientWithAdmin(t, kvEnabled)
 	ctx := context.Background()
 
 	t.Run("get missing repo", func(t *testing.T) {
@@ -223,8 +273,8 @@ func testCommitEntries(t *testing.T, ctx context.Context, cat catalog.Interface,
 	return commit.Reference
 }
 
-func TestController_CommitsGetBranchCommitLogHandler(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t)
+func testController_CommitsGetBranchCommitLogHandler(t *testing.T, kvEnabled bool) {
+	clt, deps := setupClientWithAdmin(t, kvEnabled)
 	ctx := context.Background()
 
 	t.Run("get missing branch", func(t *testing.T) {
@@ -263,8 +313,8 @@ func TestController_CommitsGetBranchCommitLogHandler(t *testing.T) {
 	})
 }
 
-func TestController_CommitsGetBranchCommitLogByPath(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t)
+func testController_CommitsGetBranchCommitLogByPath(t *testing.T, kvEnabled bool) {
+	clt, deps := setupClientWithAdmin(t, kvEnabled)
 	ctx := context.Background()
 	/*
 			This is the tree we test on:
@@ -450,8 +500,8 @@ func TestController_CommitsGetBranchCommitLogByPath(t *testing.T) {
 	}
 }
 
-func TestController_GetCommitHandler(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t)
+func testController_GetCommitHandler(t *testing.T, kvEnabled bool) {
+	clt, deps := setupClientWithAdmin(t, kvEnabled)
 	ctx := context.Background()
 
 	t.Run("get missing commit", func(t *testing.T) {
@@ -490,8 +540,8 @@ func TestController_GetCommitHandler(t *testing.T) {
 	})
 }
 
-func TestController_CommitHandler(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t)
+func testController_CommitHandler(t *testing.T, kvEnabled bool) {
+	clt, deps := setupClientWithAdmin(t, kvEnabled)
 	ctx := context.Background()
 
 	t.Run("commit non-existent commit", func(t *testing.T) {
@@ -580,8 +630,8 @@ func TestController_CommitHandler(t *testing.T) {
 	})
 }
 
-func TestController_CreateRepositoryHandler(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t)
+func testController_CreateRepositoryHandler(t *testing.T, kvEnabled bool) {
+	clt, deps := setupClientWithAdmin(t, kvEnabled)
 	ctx := context.Background()
 	t.Run("create repo success", func(t *testing.T) {
 		resp, err := clt.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
@@ -635,8 +685,8 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 	})
 }
 
-func TestController_DeleteRepositoryHandler(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t)
+func testController_DeleteRepositoryHandler(t *testing.T, kvEnabled bool) {
+	clt, deps := setupClientWithAdmin(t, kvEnabled)
 	ctx := context.Background()
 
 	t.Run("delete repo success", func(t *testing.T) {
@@ -682,8 +732,8 @@ func TestController_DeleteRepositoryHandler(t *testing.T) {
 	})
 }
 
-func TestController_ListBranchesHandler(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t)
+func testController_ListBranchesHandler(t *testing.T, kvEnabled bool) {
+	clt, deps := setupClientWithAdmin(t, kvEnabled)
 	ctx := context.Background()
 
 	t.Run("list branches only default", func(t *testing.T) {
@@ -755,8 +805,8 @@ func TestController_ListBranchesHandler(t *testing.T) {
 	})
 }
 
-func TestController_ListTagsHandler(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t)
+func testController_ListTagsHandler(t *testing.T, kvEnabled bool) {
+	clt, deps := setupClientWithAdmin(t, kvEnabled)
 	ctx := context.Background()
 
 	// setup test data
@@ -833,8 +883,8 @@ func TestController_ListTagsHandler(t *testing.T) {
 	})
 }
 
-func TestController_GetBranchHandler(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t)
+func testController_GetBranchHandler(t *testing.T, kvEnabled bool) {
+	clt, deps := setupClientWithAdmin(t, kvEnabled)
 	ctx := context.Background()
 
 	t.Run("get default branch", func(t *testing.T) {
@@ -875,9 +925,8 @@ func TestController_GetBranchHandler(t *testing.T) {
 	})
 }
 
-func TestController_BranchesDiffBranchHandler(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t)
-
+func testController_BranchesDiffBranchHandler(t *testing.T, kvEnabled bool) {
+	clt, deps := setupClientWithAdmin(t, kvEnabled)
 	ctx := context.Background()
 	const testBranch = "main"
 	_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "foo1"), testBranch)
@@ -919,8 +968,8 @@ func TestController_BranchesDiffBranchHandler(t *testing.T) {
 	})
 }
 
-func TestController_CreateBranchHandler(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t)
+func testController_CreateBranchHandler(t *testing.T, kvEnabled bool) {
+	clt, deps := setupClientWithAdmin(t, kvEnabled)
 	ctx := context.Background()
 	t.Run("create branch and diff refs success", func(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "foo1"), "main")
@@ -1032,8 +1081,8 @@ func writeMultipart(fieldName, filename, content string) (string, io.Reader) {
 	return mpw.FormDataContentType(), &buf
 }
 
-func TestController_UploadObject(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t)
+func testController_UploadObject(t *testing.T, kvEnabled bool) {
+	clt, deps := setupClientWithAdmin(t, kvEnabled)
 	ctx := context.Background()
 
 	_, err := deps.catalog.CreateRepository(ctx, "my-new-repo", onBlock(deps, "foo1"), "main")
@@ -1150,8 +1199,8 @@ func TestController_UploadObject(t *testing.T) {
 	})
 }
 
-func TestController_DeleteBranchHandler(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t)
+func testController_DeleteBranchHandler(t *testing.T, kvEnabled bool) {
+	clt, deps := setupClientWithAdmin(t, kvEnabled)
 	ctx := context.Background()
 
 	t.Run("delete branch success", func(t *testing.T) {
@@ -1198,7 +1247,7 @@ func TestController_DeleteBranchHandler(t *testing.T) {
 	})
 }
 
-func TestController_IngestRangeHandler(t *testing.T) {
+func testController_IngestRangeHandler(t *testing.T, kvEnabled bool) {
 	const (
 		fromSourceURI           = "https://valid.uri"
 		uriPrefix               = "take/from/here"
@@ -1214,7 +1263,7 @@ func TestController_IngestRangeHandler(t *testing.T) {
 		ctx := context.Background()
 
 		w := testutils.NewFakeWalker(count, count, uriPrefix, after, continuationToken, fromSourceURIWithPrefix, expectedErr)
-		clt, deps := setupClientWithAdminAndWalkerFactory(t, testutils.FakeFactory{Walker: w})
+		clt, deps := setupClientWithAdminAndWalkerFactory(t, testutils.FakeFactory{Walker: w}, kvEnabled)
 
 		// setup test data
 		_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "foo1"), "main")
@@ -1290,9 +1339,9 @@ func TestController_IngestRangeHandler(t *testing.T) {
 	})
 }
 
-func TestController_WriteMetaRangeHandler(t *testing.T) {
+func testController_WriteMetaRangeHandler(t *testing.T, kvEnabled bool) {
 	ctx := context.Background()
-	clt, deps := setupClientWithAdmin(t)
+	clt, deps := setupClientWithAdmin(t, kvEnabled)
 	repo := testUniqueRepoName()
 	// setup test data
 	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
@@ -1329,8 +1378,8 @@ func TestController_WriteMetaRangeHandler(t *testing.T) {
 	})
 }
 
-func TestController_ObjectsStatObjectHandler(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t)
+func testController_ObjectsStatObjectHandler(t *testing.T, kvEnabled bool) {
+	clt, deps := setupClientWithAdmin(t, kvEnabled)
 	ctx := context.Background()
 
 	_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "some-bucket"), "main")
@@ -1404,8 +1453,8 @@ func TestController_ObjectsStatObjectHandler(t *testing.T) {
 	})
 }
 
-func TestController_ObjectsListObjectsHandler(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t)
+func testController_ObjectsListObjectsHandler(t *testing.T, kvEnabled bool) {
+	clt, deps := setupClientWithAdmin(t, kvEnabled)
 	ctx := context.Background()
 
 	_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "bucket/prefix"), "main")
@@ -1498,8 +1547,8 @@ func TestController_ObjectsListObjectsHandler(t *testing.T) {
 	})
 }
 
-func TestController_ObjectsGetObjectHandler(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t)
+func testController_ObjectsGetObjectHandler(t *testing.T, kvEnabled bool) {
+	clt, deps := setupClientWithAdmin(t, kvEnabled)
 	ctx := context.Background()
 
 	_, err := deps.catalog.CreateRepository(ctx, "repo1", "ns1", "main")
@@ -1575,8 +1624,8 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 	})
 }
 
-func TestController_ObjectsUploadObjectHandler(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t)
+func testController_ObjectsUploadObjectHandler(t *testing.T, kvEnabled bool) {
+	clt, deps := setupClientWithAdmin(t, kvEnabled)
 	ctx := context.Background()
 
 	_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "bucket/prefix"), "main")
@@ -1628,8 +1677,8 @@ func TestController_ObjectsUploadObjectHandler(t *testing.T) {
 	})
 }
 
-func TestController_ObjectsStageObjectHandler(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t)
+func testController_ObjectsStageObjectHandler(t *testing.T, kvEnabled bool) {
+	clt, deps := setupClientWithAdmin(t, kvEnabled)
 	ctx := context.Background()
 
 	_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "bucket/prefix"), "main")
@@ -1688,8 +1737,8 @@ func TestController_ObjectsStageObjectHandler(t *testing.T) {
 	})
 }
 
-func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t)
+func testController_ObjectsDeleteObjectHandler(t *testing.T, kvEnabled bool) {
+	clt, deps := setupClientWithAdmin(t, kvEnabled)
 	ctx := context.Background()
 
 	const repo = "repo1"
@@ -1833,8 +1882,8 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 	})
 }
 
-func TestController_CreatePolicyHandler(t *testing.T) {
-	clt, _ := setupClientWithAdmin(t)
+func testController_CreatePolicyHandler(t *testing.T, kvEnabled bool) {
+	clt, _ := setupClientWithAdmin(t, kvEnabled)
 	ctx := context.Background()
 	t.Run("valid_policy", func(t *testing.T) {
 		resp, err := clt.CreatePolicyWithResponse(ctx, api.CreatePolicyJSONRequestBody{
@@ -1907,8 +1956,8 @@ func TestController_CreatePolicyHandler(t *testing.T) {
 	})
 }
 
-func TestController_ConfigHandlers(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t)
+func testController_ConfigHandlers(t *testing.T, kvEnabled bool) {
+	clt, deps := setupClientWithAdmin(t, kvEnabled)
 	ctx := context.Background()
 
 	ExpectedExample := onBlock(deps, "example-bucket/")
@@ -1924,7 +1973,7 @@ func TestController_ConfigHandlers(t *testing.T) {
 	})
 }
 
-func TestController_SetupLakeFSHandler(t *testing.T) {
+func testController_SetupLakeFSHandler(t *testing.T, kvEnabled bool) {
 	const validAccessKeyID = "AKIAIOSFODNN7EXAMPLE"
 	cases := []struct {
 		name               string
@@ -1960,7 +2009,7 @@ func TestController_SetupLakeFSHandler(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			handler, deps := setupHandler(t)
+			handler, deps := setupHandler(t, true)
 			server := setupServer(t, handler)
 			clt := setupClientByEndpoint(t, server.URL, "", "")
 
@@ -2054,8 +2103,8 @@ hooks:
       url: {{.URL}}
 `))
 
-func TestController_ListRepositoryRuns(t *testing.T) {
-	clt, _ := setupClientWithAdmin(t)
+func testController_ListRepositoryRuns(t *testing.T, kvEnabled bool) {
+	clt, _ := setupClientWithAdmin(t, kvEnabled)
 	ctx := context.Background()
 	httpServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -2137,8 +2186,8 @@ func TestController_ListRepositoryRuns(t *testing.T) {
 	})
 }
 
-func TestController_MergeDiffWithParent(t *testing.T) {
-	clt, _ := setupClientWithAdmin(t)
+func testController_MergeDiffWithParent(t *testing.T, kvEnabled bool) {
+	clt, _ := setupClientWithAdmin(t, kvEnabled)
 	ctx := context.Background()
 
 	const repoName = "repo7"
@@ -2175,8 +2224,8 @@ func TestController_MergeDiffWithParent(t *testing.T) {
 	}
 }
 
-func TestController_MergeIntoExplicitBranch(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t)
+func testController_MergeIntoExplicitBranch(t *testing.T, kvEnabled bool) {
+	clt, deps := setupClientWithAdmin(t, kvEnabled)
 	ctx := context.Background()
 
 	// setup env
@@ -2210,8 +2259,8 @@ func TestController_MergeIntoExplicitBranch(t *testing.T) {
 	}
 }
 
-func TestController_CreateTag(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t)
+func testController_CreateTag(t *testing.T, kvEnabled bool) {
+	clt, deps := setupClientWithAdmin(t, kvEnabled)
 	ctx := context.Background()
 	// setup env
 	repo := testUniqueRepoName()
@@ -2285,8 +2334,8 @@ func testUniqueRepoName() string {
 	return "repo-" + nanoid.MustGenerate("abcdef1234567890", 8)
 }
 
-func TestController_Revert(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t)
+func testController_Revert(t *testing.T, kvEnabled bool) {
+	clt, deps := setupClientWithAdmin(t, kvEnabled)
 	ctx := context.Background()
 	// setup env
 	repo := testUniqueRepoName()

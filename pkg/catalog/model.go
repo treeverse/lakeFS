@@ -72,7 +72,7 @@ const (
 	AddressTypeFull AddressType = 2
 )
 
-// nolint:staticcheck
+//nolint:staticcheck
 func (at AddressType) ToIdentifierType() block.IdentifierType {
 	switch at {
 	case AddressTypeByPrefixDeprecated:

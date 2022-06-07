@@ -39,9 +39,9 @@ func ValidateGenerateSchemaMacro(projectRoot, macrosDirName, generateSchemaFileN
 }
 
 func DBTDebug(projectRoot string, schemaRegex *regexp.Regexp, executor Executor) (string, error) {
-	DBTCmd := exec.Command("dbt", "debug")
-	DBTCmd.Dir = projectRoot
-	output, err := executor(DBTCmd)
+	dbtCmd := exec.Command("dbt", "debug")
+	dbtCmd.Dir = projectRoot
+	output, err := executor(dbtCmd)
 	if err != nil {
 		return string(output), err
 	}
@@ -55,19 +55,21 @@ func DBTDebug(projectRoot string, schemaRegex *regexp.Regexp, executor Executor)
 
 func DBTRun(projectRoot, schema, schemaEnvVarIdentifier string, selectValues []string, executor Executor) (string, error) {
 	selectedValuesList := strings.Join(selectValues, " ")
-	DBTCmd := exec.Command("dbt", "run", "--select", selectedValuesList)
+	dbtCmd := exec.Command("dbt", "run", "--select", selectedValuesList)
 	if strings.TrimSpace(schemaEnvVarIdentifier) != "" && strings.TrimSpace(schema) != "" {
-		DBTCmd.Env = append(os.Environ(), schemaEnvVarIdentifier+"="+schema)
+		dbtCmd.Env = append(os.Environ(), schemaEnvVarIdentifier+"="+schema)
 	}
-	DBTCmd.Dir = projectRoot
-	output, err := executor(DBTCmd)
+	dbtCmd.Dir = projectRoot
+	output, err := executor(dbtCmd)
 	return string(output), err
 }
 
 func DBTLsToJSON(projectRoot, resourceType string, selectValues []string, executor Executor) ([]DBTResource, error) {
-	DBTCmd := exec.Command("dbt", "ls", "--resource-type", resourceType, "--select", strings.Join(selectValues, " "), "--output", "json", "--output-keys", resourceJSONKeys)
-	DBTCmd.Dir = projectRoot
-	output, err := executor(DBTCmd)
+	// Disable lint because this is actually safe: the entire output of
+	// strings.Join() is a _single_ argument to the dbt command.
+	dbtCmd := exec.Command("dbt", "ls", "--resource-type", resourceType, "--select", strings.Join(selectValues, " "), "--output", "json", "--output-keys", resourceJSONKeys) //nolint: gosec
+	dbtCmd.Dir = projectRoot
+	output, err := executor(dbtCmd)
 	if err != nil {
 		fmt.Println(string(output))
 		return nil, err

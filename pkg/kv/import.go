@@ -55,13 +55,16 @@ func Import(ctx context.Context, reader io.Reader, store Store) error {
 		if err != nil {
 			return fmt.Errorf("decoding entry: %w", err)
 		}
+		if len(entry.PartitionKey) == 0 {
+			return fmt.Errorf("bad entry partition key: %w", ErrInvalidFormat)
+		}
 		if len(entry.Key) == 0 {
 			return fmt.Errorf("bad entry key: %w", ErrInvalidFormat)
 		}
 		if entry.Value == nil {
 			return fmt.Errorf("bad entry value: %w", ErrInvalidFormat)
 		}
-		err = store.SetIf(ctx, entry.Key, entry.Value, nil)
+		err = store.SetIf(ctx, entry.PartitionKey, entry.Key, entry.Value, nil)
 		if err != nil {
 			return err
 		}

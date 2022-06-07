@@ -58,10 +58,16 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 		// After unsuccessful migration attempt, clean KV table
 		// Delete store if exists from previous failed KV migration and reopen store
 		logging.Default().Warn("Removing KV table")
+		// drop partitions first
+		err = dropTables(ctx, dbPool, getTablePartitions(DefaultTableName, DefaultPartitions))
+		if err != nil {
+			return err
+		}
 		err = dropTables(ctx, dbPool, []string{DefaultTableName})
 		if err != nil {
 			return err
 		}
+
 		tmpStore, err := kv.Open(ctx, DriverName, dbParams.ConnectionString) // Open flow recreates table
 		if err != nil {
 			return fmt.Errorf("opening kv store: %w", err)
@@ -70,7 +76,7 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 	}
 
 	// Mark KV Migration started
-	err = store.Set(ctx, []byte(kv.DBSchemaVersionKey), []byte("0"))
+	err = store.Set(ctx, []byte(kv.MetadataPartitionKey), []byte(kv.DBSchemaVersionKey), []byte("0"))
 	if err != nil {
 		return err
 	}
@@ -120,7 +126,7 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 	}
 
 	// Update migrate version
-	err = store.Set(ctx, []byte(kv.DBSchemaVersionKey), []byte(strconv.Itoa(kv.InitialMigrateVersion)))
+	err = store.Set(ctx, []byte(kv.MetadataPartitionKey), []byte(kv.DBSchemaVersionKey), []byte(strconv.Itoa(kv.InitialMigrateVersion)))
 	if err != nil {
 		return fmt.Errorf("failed setting migrate schema version: %w", err)
 	}
@@ -178,7 +184,8 @@ func dropTables(ctx context.Context, dbPool *pgxpool.Pool, tables []string) erro
 	for i, table := range tables {
 		tables[i] = pgx.Identifier{table}.Sanitize()
 	}
-	_, err := dbPool.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s`, strings.Join(tables, ", ")))
+
+	_, err := dbPool.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s CASCADE`, strings.Join(tables, ", ")))
 	if err != nil {
 		return fmt.Errorf("failed during drop tables: %s. Please perform manual cleanup of old database tables: %w", tables, err)
 	}

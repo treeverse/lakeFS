@@ -113,7 +113,7 @@ func ListRepositoriesAndAnalyze(ctx context.Context) error {
 	configFileName := viper.GetViper().ConfigFileUsed()
 	msgOnErrUnknownConfig := "It looks like you have a problem with your `" + configFileName + "` file."
 	msgOnErrWrongEndpointURI := "It looks like endpoint url is wrong."
-	msgOnErrCredential := "It seems like the `access_key_id` or `secret_access_key` you supplied are wrong."
+	msgOnErrCredential := "It seems like the `access_key_id` or `secret_access_key` you supplied are wrong." //nolint: gosec
 
 	WriteIfVerbose(analyzingMessageTemplate, &UserMessage{Message: "Trying to get endpoint URL and parse it as a URL format."})
 	// getClient might die on url.Parse error, so check it first.

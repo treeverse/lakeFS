@@ -32,6 +32,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/email"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
+	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/stats"
@@ -163,6 +164,7 @@ func (c *Controller) Logout(w http.ResponseWriter, _ *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     JWTCookieName,
 		Value:    "",
+		Domain:   c.Config.GetCookieDomain(),
 		Path:     "/",
 		HttpOnly: true,
 		Expires:  time.Unix(0, 0),
@@ -1411,6 +1413,7 @@ func (c *Controller) ListRepositoryRuns(w http.ResponseWriter, r *http.Request, 
 	if handleAPIError(w, err) {
 		return
 	}
+	defer runsIter.Close()
 
 	response := ActionRunList{
 		Pagination: Pagination{
@@ -1703,6 +1706,7 @@ func handleAPIError(w http.ResponseWriter, err error) bool {
 		errors.Is(err, graveler.ErrNotFound),
 		errors.Is(err, actions.ErrNotFound),
 		errors.Is(err, auth.ErrNotFound),
+		errors.Is(err, kv.ErrNotFound),
 		errors.Is(err, db.ErrNotFound):
 		writeError(w, http.StatusNotFound, err)
 
