@@ -366,7 +366,7 @@ class Auth {
         if (effective) {
             params.effective =  'true'
         }
-        const query = qa(params);
+        const query = qs(params);
         const response = await apiRequest(`/auth/users/${encodeURIComponent(userId)}/policies?`+query);
         if (response.status !== 200) {
             throw new Error(`could not list policies: ${await extractError(response)}`);
