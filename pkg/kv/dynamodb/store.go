@@ -319,7 +319,7 @@ func (e *EntriesIterator) Next() bool {
 		}
 		tmpEntriesIter, err := e.store.scanInternal(context.Background(), []byte(e.startKey), e.queryResult.LastEvaluatedKey)
 		if err != nil {
-			e.err = err
+			e.err = fmt.Errorf("scanning table: %w", err)
 			return false
 		}
 		e.queryResult = tmpEntriesIter.queryResult
