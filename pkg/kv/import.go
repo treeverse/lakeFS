@@ -66,7 +66,7 @@ func Import(ctx context.Context, reader io.Reader, store Store) error {
 		}
 		err = store.SetIf(ctx, entry.PartitionKey, entry.Key, entry.Value, nil)
 		if err != nil {
-			return fmt.Errorf("failed import (partition key: %s, key: %s): %w", entry.PartitionKey, entry.Key, err)
+			return fmt.Errorf("import (partition key: %s, key: %s): %w", entry.PartitionKey, entry.Key, err)
 		}
 	}
 	return nil
