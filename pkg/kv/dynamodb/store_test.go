@@ -8,5 +8,5 @@ import (
 )
 
 func TestDynamoKV(t *testing.T) {
-	kvtest.TestDriver(t, "dynamodb", databaseURI)
+	kvtest.TestDriver(t, "dynamodb", dsn)
 }

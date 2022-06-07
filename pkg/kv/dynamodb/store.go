@@ -2,9 +2,11 @@ package dynamodb
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
@@ -34,17 +36,27 @@ type DynKVItem struct {
 	ItemValue    string
 }
 
+type Params struct {
+	TableName          string
+	ReadCapacityUnits  int64
+	WriteCapacityUnits int64
+
+	Endpoint           string
+	AwsRegion          string
+	AwsAccessKeyID     string
+	AwsSecretAccessKey string
+}
+
 const (
 	DriverName       = "dynamodb"
 	DefaultTableName = "kvstore"
+	// TBD: Which values to use?
+	DefaultReadCapacityUnits  = 1000
+	DefaultWriteCapacityUnits = 1000
 
 	PartitionKey = "PartitionKey"
 	ItemKey      = "ItemKey"
 	ItemValue    = "ItemValue"
-
-	// TBD: Which values to use?
-	ReadCapacityUnits  = 1000
-	WriteCapacityUnits = 1000
 )
 
 //nolint:gochecknoinits
@@ -55,6 +67,12 @@ func init() {
 // Open - opens and returns a KV store over DynamoDB. This function creates the DB session
 // and sets up the KV table. dsn is a string with the DynamoDB endpoint
 func (d *Driver) Open(ctx context.Context, dsn string) (kv.Store, error) {
+	// TODO: Get table name from env
+	params, err := parseDsn(dsn)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s", kv.ErrDriverConfiguration, err)
+	}
+
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	}))
@@ -62,11 +80,16 @@ func (d *Driver) Open(ctx context.Context, dsn string) (kv.Store, error) {
 	// Create DynamoDB client
 	svc := dynamodb.New(sess,
 		aws.NewConfig().
-			WithEndpoint(dsn))
+			WithEndpoint(params.Endpoint).
+			WithRegion(params.AwsRegion).
+			WithCredentials(credentials.NewCredentials(
+				&credentials.StaticProvider{
+					Value: credentials.Value{
+						AccessKeyID:     params.AwsAccessKeyID,
+						SecretAccessKey: params.AwsSecretAccessKey,
+					}})))
 
-	// TODO: Get table name from env
-	params := &Params{TableName: DefaultTableName}
-	err := setupKeyValueDatabase(ctx, svc, params)
+	err = setupKeyValueDatabase(ctx, svc, params)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", kv.ErrSetupFailed, err)
 	}
@@ -77,8 +100,17 @@ func (d *Driver) Open(ctx context.Context, dsn string) (kv.Store, error) {
 	}, nil
 }
 
-type Params struct {
-	TableName string
+func parseDsn(dsn string) (*Params, error) {
+	params := &Params{
+		TableName:          DefaultTableName,
+		ReadCapacityUnits:  DefaultReadCapacityUnits,
+		WriteCapacityUnits: DefaultWriteCapacityUnits,
+	}
+	err := json.Unmarshal([]byte(dsn), params)
+	if err != nil {
+		return nil, err
+	}
+	return params, nil
 }
 
 func (s *Store) getPartitionKey(_ /*itemKey*/ []byte) string {
@@ -113,8 +145,8 @@ func setupKeyValueDatabase(ctx context.Context, svc *dynamodb.DynamoDB, params *
 			},
 		},
 		ProvisionedThroughput: &dynamodb.ProvisionedThroughput{
-			ReadCapacityUnits:  aws.Int64(ReadCapacityUnits),
-			WriteCapacityUnits: aws.Int64(WriteCapacityUnits),
+			ReadCapacityUnits:  aws.Int64(params.ReadCapacityUnits),
+			WriteCapacityUnits: aws.Int64(params.WriteCapacityUnits),
 		},
 	})
 	if err != nil {

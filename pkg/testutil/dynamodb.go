@@ -2,7 +2,6 @@ package testutil
 
 import (
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/ory/dockertest/v3"
@@ -52,17 +51,6 @@ func RunLocalDynamoDBInstance(port string) (string, func(), error) {
 	}
 
 	uri := fmt.Sprintf("http://localhost:%s", port)
-
-	// dummy aws env, in case not configured
-	if os.Getenv("AWS_DEFAULT_REGION") == "" {
-		os.Setenv("AWS_DEFAULT_REGION", "us-west-1")
-	}
-	if os.Getenv("AWS_ACCESS_KEY_ID") == "" {
-		os.Setenv("AWS_ACCESS_KEY_ID", "fakeMyKeyId")
-	}
-	if os.Getenv("AWS_SECRET_ACCESS_KEY") == "" {
-		os.Setenv("AWS_SECRET_ACCESS_KEY", "fakeSecretAccessKey")
-	}
 
 	// Disgusting, but I have to wait for the dynamodb container to be ready
 	time.Sleep(2 * time.Second)
