@@ -122,32 +122,31 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	defer bufferedCollector.Close()
 	bufferedCollector.SetRuntimeCollector(blockStore.RuntimeStats)
 
-	var actionsService actions.Service
+	var idGen actions.IDGenerator
+	var actionsStore actions.Store
 	if dbParams.KVEnabled {
 		kvStore, err := kv.Open(ctx, dbParams.Type, dbParams.ConnectionString)
 		if err != nil {
 			logger.WithError(err).Fatal("failed to open KV store")
 		}
 		defer kvStore.Close()
-		storeMessage := kv.StoreMessage{Store: kvStore}
-		actionsService = actions.NewKVService(
-			ctx,
-			storeMessage,
-			catalog.NewActionsSource(c),
-			catalog.NewActionsOutputWriter(c.BlockAdapter),
-			bufferedCollector,
-			cfg.GetActionsEnabled(),
-		)
+
+		actionsStore = actions.NewActionsKVStore(kv.StoreMessage{Store: kvStore})
+		idGen = &actions.DecreasingIDGenerator{}
 	} else {
-		actionsService = actions.NewDBService(
-			ctx,
-			dbPool,
-			catalog.NewActionsSource(c),
-			catalog.NewActionsOutputWriter(c.BlockAdapter),
-			bufferedCollector,
-			cfg.GetActionsEnabled(),
-		)
+		actionsStore = actions.NewActionsDBStore(dbPool)
+		idGen = &actions.IncreasingIDGenerator{}
 	}
+
+	actionsService := actions.NewService(
+		ctx,
+		actionsStore,
+		catalog.NewActionsSource(c),
+		catalog.NewActionsOutputWriter(c.BlockAdapter),
+		idGen,
+		bufferedCollector,
+		cfg.GetActionsEnabled(),
+	)
 
 	// wire actions into entry catalog
 	c.SetHooksHandler(actionsService)
