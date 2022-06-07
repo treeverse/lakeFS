@@ -40,6 +40,6 @@ Treeverse offers lakeFS Cloud, which provides all the same benefits of the Git-l
 
 lakeFS Cloud's vision is to provide a managed, usable data versioning and management solution for data practitioners, by leveraging the open source technology behind lakeFS and building added capabilities and unique features on top.
 
-As part of our commitment to the open source values of transparency and interoperability, we believe everyone should be able to enjoy these benefits, regarless of whether or not they choose to use the managed offering. 
+As part of our commitment to the open source values of transparency and interoperability, we believe everyone should be able to enjoy these benefits, regardless of whether or not they choose to use the managed offering. 
 
 Because of that, we will not intentionally make it harder to build these features independently on top of the open source solution.
