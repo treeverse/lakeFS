@@ -95,9 +95,23 @@ spark = SparkSession(sc)
 Now we can use spark to read in the parquet file we added to the main branch of our lakeFS repo:
 
 ```
-df = spark.read.parquet('s3a://example/main/part-00000-495c48e6-96d6-4650-aa65-3c36a3516ddd.c000.snappy.parquet')
+df = spark.read.parquet('s3a://example/main/')
 ```
 
-To see the Dataframe, run `display(df.show())`.
+To see the Dataframe, run `display(df.show())`. If we run `display(df.count())` we'll get returned that the Dataframe has 486k rows.
 
-Let’s accidentally write the DataFrame back to the `double-branch` branch, creating a duplicate object.
+
+### Changing one branch
+
+Let’s accidentally write the DataFrame back to the `double-branch` branch, creating a duplicate object on that branch.
+
+```
+df.write.mode('append').parquet('s3a://example/double-branch/')
+```
+
+What happens if we re-read in the data on both branches and perform a count on the resulting DataFrames?
+
+![Branch Counts]({{ site.baseurl }}/assets/img/iso-env-df-counts.png)
+
+As expected, there are now twice as many rows, 972k, on the `double-branch` branch. On the `main` branch however, there is still just the origin 4486k rows. This shows the utility of branch-based isolated environments with lakeFS.
+
