@@ -163,6 +163,9 @@ func (s *Store) bytesKeyToDynamoKey(partitionKey, key []byte) map[string]*dynamo
 }
 
 func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWithPredicate, error) {
+	if len(partitionKey) == 0 {
+		return nil, kv.ErrMissingPartitionKey
+	}
 	if len(key) == 0 {
 		return nil, kv.ErrMissingKey
 	}
@@ -200,6 +203,9 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 }
 
 func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key, value []byte, valuePredicate kv.Predicate, usePredicate bool) error {
+	if len(partitionKey) == 0 {
+		return kv.ErrMissingPartitionKey
+	}
 	if len(key) == 0 {
 		return kv.ErrMissingKey
 	}
@@ -234,7 +240,6 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 	}
 
 	_, err = s.svc.PutItemWithContext(ctx, input)
-
 	if err != nil {
 		if _, ok := err.(*dynamodb.ConditionalCheckFailedException); ok && usePredicate {
 			return kv.ErrPredicateFailed
@@ -245,6 +250,9 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 }
 
 func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
+	if len(partitionKey) == 0 {
+		return kv.ErrMissingPartitionKey
+	}
 	if len(key) == 0 {
 		return kv.ErrMissingKey
 	}
@@ -253,7 +261,6 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 		TableName: aws.String(s.params.TableName),
 		Key:       s.bytesKeyToDynamoKey(partitionKey, key),
 	})
-
 	if err != nil {
 		return fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
 	}
@@ -261,10 +268,17 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 }
 
 func (s *Store) Scan(ctx context.Context, partitionKey, start []byte) (kv.EntriesIterator, error) {
-	return s.scanInternal(ctx, partitionKey, start, nil)
+	internalIter, err := s.scanInternal(ctx, partitionKey, start, nil)
+	if err != nil {
+		return nil, err
+	}
+	return internalIter, nil
 }
 
 func (s *Store) scanInternal(ctx context.Context, partitionKey, scanKey []byte, exclusiveStartKey map[string]*dynamodb.AttributeValue) (*EntriesIterator, error) {
+	if len(partitionKey) == 0 {
+		return nil, kv.ErrMissingPartitionKey
+	}
 	keyConditionExpression := PartitionKey + " = :partitionkey"
 	expressionAttributeValues := map[string]*dynamodb.AttributeValue{
 		":partitionkey": {
