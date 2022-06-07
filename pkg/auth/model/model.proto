@@ -1,0 +1,48 @@
+syntax = "proto3";
+option go_package = "github.com/treeverse/lakefs/auth/model";
+
+import "google/protobuf/timestamp.proto";
+
+package io.treeverse.lakefs.auth.model;
+
+// message data model for model.User struct
+message UserData {
+    bytes id = 1;
+    google.protobuf.Timestamp created_at = 2;
+    string username = 3;
+    string friendly_name = 4;
+    string email = 5;
+    bytes encrypted_password = 6;
+    string source = 7;
+}
+
+// message data model for model.Group struct
+message GroupData {
+    bytes id = 1;
+    google.protobuf.Timestamp created_at = 2;
+    string display_name = 3;
+}
+
+// message data model for model.Policy struct
+message PolicyData {
+    bytes id = 1;
+    google.protobuf.Timestamp created_at = 2;
+    string display_name = 3;
+    repeated StatementData statements = 4;
+}
+
+// message data model for model.Credential struct
+message CredentialData {
+    string access_key_id = 1;
+    string secret_access_key = 2;
+    bytes secret_access_key_encrypted_bytes = 3;
+    google.protobuf.Timestamp issued_date = 4;
+    bytes user_id = 5;
+}
+
+// message data model for model.Statement struct
+message StatementData {
+    string effect = 1;
+    repeated string action = 2;
+    string resource = 3;
+}

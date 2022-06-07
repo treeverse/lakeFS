@@ -86,9 +86,10 @@ func TestLocalLoad(t *testing.T) {
 	conn, _ := testutil.GetDB(t, databaseURI)
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{}, logging.Default().WithField("service", "auth"))
 	superuser := &authmodel.SuperuserConfiguration{
-		User: authmodel.User{
+		User: authmodel.User{BaseUser: authmodel.BaseUser{
 			CreatedAt: time.Now(),
 			Username:  "admin",
+		},
 		},
 	}
 	credentials, err := auth.SetupAdminUser(ctx, authService, superuser)
