@@ -141,7 +141,7 @@ func testAuthMiddleware(t *testing.T, kvEnabled bool) {
 	})
 }
 
-func testGenerateApiToken(ctx context.Context, t testing.TB, clt api.ClientWithResponsesInterface, cred *model.Credential) string {
+func testGenerateApiToken(ctx context.Context, t testing.TB, clt api.ClientWithResponsesInterface, cred *model.BaseCredential) string {
 	t.Helper()
 	loginReq := api.LoginJSONRequestBody{
 		AccessKeyId:     cred.AccessKeyID,
@@ -161,8 +161,9 @@ func testGenerateBadAPIToken(t testing.TB, authService auth.Service) string {
 	secret := authService.SecretStore().SharedSecret()
 	now := time.Now()
 	expires := now.Add(time.Hour)
+	userID := "2906"
 	// Generate a JWT for a nonexistent user.  It will fail authentication.
-	tokenString, err := api.GenerateJWTLogin(secret, 2906, now, expires)
+	tokenString, err := api.GenerateJWTLogin(secret, userID, now, expires)
 	if err != nil {
 		t.Fatal("Generate (bad) JWT token:", err)
 	}

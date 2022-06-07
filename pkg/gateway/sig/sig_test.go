@@ -90,7 +90,7 @@ func MakeV2Verifier(keyID, secretKey, bareDomain string) Verifier {
 			return fmt.Errorf("sigV2 parse failed: %w", err)
 		}
 		return authenticator.Verify(
-			&model.Credential{AccessKeyID: keyID, SecretAccessKey: secretKey},
+			&model.Credential{BaseCredential: model.BaseCredential{AccessKeyID: keyID, SecretAccessKey: secretKey}},
 			bareDomain,
 		)
 	}
@@ -104,7 +104,7 @@ func MakeV4Verifier(keyID, secretKey, bareDomain string) Verifier {
 			return fmt.Errorf("sigV4 parse failed: %w", err)
 		}
 		return authenticator.Verify(
-			&model.Credential{AccessKeyID: keyID, SecretAccessKey: secretKey},
+			&model.Credential{BaseCredential: model.BaseCredential{AccessKeyID: keyID, SecretAccessKey: secretKey}},
 			bareDomain,
 		)
 	}

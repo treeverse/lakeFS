@@ -59,7 +59,7 @@ func (m *nullCollector) SetInstallationID(_ string) {}
 
 func (m *nullCollector) Close() {}
 
-func createDefaultAdminUser(t testing.TB, clt api.ClientWithResponsesInterface) *authmodel.Credential {
+func createDefaultAdminUser(t testing.TB, clt api.ClientWithResponsesInterface) *authmodel.BaseCredential {
 	t.Helper()
 	res, err := clt.SetupWithResponse(context.Background(), api.SetupJSONRequestBody{
 		Username: "admin",
@@ -68,7 +68,7 @@ func createDefaultAdminUser(t testing.TB, clt api.ClientWithResponsesInterface) 
 	if res.JSON200 == nil {
 		t.Fatal("Failed run setup env", res.HTTPResponse.StatusCode, res.HTTPResponse.Status)
 	}
-	return &authmodel.Credential{
+	return &authmodel.BaseCredential{
 		IssuedDate:      time.Unix(res.JSON200.CreationDate, 0),
 		AccessKeyID:     res.JSON200.AccessKeyId,
 		SecretAccessKey: res.JSON200.SecretAccessKey,

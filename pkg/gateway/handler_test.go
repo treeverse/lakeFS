@@ -17,7 +17,7 @@ func setupTest(t *testing.T, method, target string, body io.Reader, kvEnabled bo
 		BareDomain:      "example.com",
 		AccessKeyID:     "AKIAIO5FODNN7EXAMPLE",
 		SecretAccessKey: "MockAccessSecretKey",
-		UserID:          1,
+		UserID:          "65867",
 		Region:          "MockRegion",
 	}, databaseURI, repoName, kvEnabled)
 	rr := httptest.NewRecorder()

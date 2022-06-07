@@ -186,8 +186,6 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSO
 	expires := loginTime.Add(DefaultLoginExpiration)
 	secret := c.Auth.SecretStore().SharedSecret()
 
-	// user.Username will be different from username/access_key_id on
-	// LDAP login.  Use the stored value.
 	tokenString, err := GenerateJWTLogin(secret, user.ID, loginTime, expires)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
@@ -397,7 +395,7 @@ func (c *Controller) CreateGroup(w http.ResponseWriter, r *http.Request, body Cr
 	ctx := r.Context()
 	c.LogAction(ctx, "create_group")
 
-	g := &model.Group{
+	g := &model.BaseGroup{
 		CreatedAt:   time.Now().UTC(),
 		DisplayName: body.Id,
 	}
@@ -572,7 +570,7 @@ func (c *Controller) ListGroupPolicies(w http.ResponseWriter, r *http.Request, g
 	writeResponse(w, http.StatusOK, response)
 }
 
-func serializePolicy(p *model.Policy) Policy {
+func serializePolicy(p *model.BasePolicy) Policy {
 	stmts := make([]Statement, 0, len(p.Statement))
 	for _, s := range p.Statement {
 		stmts = append(stmts, Statement{
@@ -682,7 +680,7 @@ func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body C
 		}
 	}
 
-	p := &model.Policy{
+	p := &model.BasePolicy{
 		CreatedAt:   time.Now().UTC(),
 		DisplayName: body.Id,
 		Statement:   stmts,
@@ -763,7 +761,7 @@ func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, body U
 		}
 	}
 
-	p := &model.Policy{
+	p := &model.BasePolicy{
 		CreatedAt:   time.Now().UTC(),
 		DisplayName: policyID,
 		Statement:   stmts,
@@ -859,7 +857,7 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body Cre
 	}) {
 		return
 	}
-	u := &model.User{
+	u := &model.BaseUser{
 		CreatedAt:    time.Now().UTC(),
 		Username:     id,
 		FriendlyName: nil,
@@ -871,7 +869,7 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body Cre
 	_, err := c.Auth.CreateUser(ctx, u)
 
 	if handleAPIError(w, err) {
-		c.Logger.WithError(err).WithField("user_id", u.ID).Warn("failed creating user")
+		c.Logger.WithError(err).WithField("username", u.Username).Warn("failed creating user")
 		return
 	}
 
@@ -1098,7 +1096,7 @@ func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, us
 
 	ctx := r.Context()
 	c.LogAction(ctx, "list_user_policies")
-	var listPolicies func(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
+	var listPolicies func(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error)
 	if params.Effective != nil && *params.Effective {
 		listPolicies = c.Auth.ListEffectivePolicies
 	} else {

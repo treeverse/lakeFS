@@ -23,9 +23,10 @@ import (
 const sigV4NoDomain = ""
 
 var (
-	mockCreds = &model.Credential{
+	mockCreds = &model.Credential{BaseCredential: model.BaseCredential{
 		AccessKeyID:     "AKIAIOSFODNN7EXAMPLE",
 		SecretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+	},
 	}
 )
 
@@ -169,10 +170,11 @@ func TestSingleChunkPut(t *testing.T) {
 				t.Errorf("expect not no error, got %v", err)
 			}
 
-			err = authenticator.Verify(&model.Credential{
+			err = authenticator.Verify(&model.Credential{BaseCredential: model.BaseCredential{
 				AccessKeyID:     ID,
 				SecretAccessKey: SECRET,
 				IssuedDate:      time.Now(),
+			},
 			}, sigV4NoDomain)
 			if err != nil {
 				t.Errorf("expect not no error, got %v", err)
@@ -231,10 +233,11 @@ func TestStreaming(t *testing.T) {
 		t.Errorf("expect not no error, got %v", err)
 	}
 
-	err = authenticator.Verify(&model.Credential{
+	err = authenticator.Verify(&model.Credential{BaseCredential: model.BaseCredential{
 		AccessKeyID:     ID,
 		SecretAccessKey: SECRET,
 		IssuedDate:      time.Now(),
+	},
 	}, sigV4NoDomain)
 	if err != nil {
 		t.Error(err)
@@ -288,10 +291,11 @@ func TestStreamingLastByteWrong(t *testing.T) {
 		t.Errorf("expect not no error, got %v", err)
 	}
 
-	err = authenticator.Verify(&model.Credential{
+	err = authenticator.Verify(&model.Credential{BaseCredential: model.BaseCredential{
 		AccessKeyID:     ID,
 		SecretAccessKey: SECRET,
 		IssuedDate:      time.Now(),
+	},
 	}, sigV4NoDomain)
 	if err != nil {
 		t.Errorf("expect not no error, got %v", err)
@@ -333,10 +337,11 @@ func TestUnsignedPayload(t *testing.T) {
 		t.Errorf("expect not no error, got %v", err)
 	}
 
-	err = authenticator.Verify(&model.Credential{
+	err = authenticator.Verify(&model.Credential{BaseCredential: model.BaseCredential{
 		AccessKeyID:     testID,
 		SecretAccessKey: testSecret,
 		IssuedDate:      time.Now(),
+	},
 	}, sigV4NoDomain)
 	if err != nil {
 		t.Errorf("expect not no error, got %v", err)

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -36,11 +35,11 @@ func generateJWT(claims *jwt.StandardClaims, secret []byte) (string, error) {
 // GenerateJWTLogin creates a jwt token which can be used for authentication during login only, i.e. it will not work for password reset.
 // It supports backward compatibility for creating a login jwt. The audience is not set for login token. Any audience will make the token
 // invalid for login. No email is passed to support the ability of login for users via user/access keys which don't have an email yet
-func GenerateJWTLogin(secret []byte, userID int64, issuedAt, expiresAt time.Time) (string, error) {
+func GenerateJWTLogin(secret []byte, userID string, issuedAt, expiresAt time.Time) (string, error) {
 	claims := &jwt.StandardClaims{
 		Id:        uuid.NewString(),
 		Audience:  LoginAudience,
-		Subject:   fmt.Sprint(userID),
+		Subject:   userID,
 		IssuedAt:  issuedAt.Unix(),
 		ExpiresAt: expiresAt.Unix(),
 	}

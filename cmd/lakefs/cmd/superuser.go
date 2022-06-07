@@ -47,9 +47,10 @@ var superuserCmd = &cobra.Command{
 		metadataProvider := stats.BuildMetadataProvider(logging.Default(), cfg)
 		metadata := stats.NewMetadata(ctx, logging.Default(), cfg.GetBlockstoreType(), authMetadataManager, metadataProvider)
 		credentials, err := auth.AddAdminUser(ctx, authService, &model.SuperuserConfiguration{
-			User: model.User{
+			User: model.User{BaseUser: model.BaseUser{
 				CreatedAt: time.Now(),
 				Username:  userName,
+			},
 			},
 			AccessKeyID:     accessKeyID,
 			SecretAccessKey: secretAccessKey,

@@ -17,7 +17,7 @@ const (
 	ViewersGroup    = "Viewers"
 )
 
-func createGroups(ctx context.Context, authService Service, groups []*model.Group) error {
+func createGroups(ctx context.Context, authService Service, groups []*model.BaseGroup) error {
 	for _, group := range groups {
 		err := authService.CreateGroup(ctx, group)
 		if err != nil {
@@ -27,7 +27,7 @@ func createGroups(ctx context.Context, authService Service, groups []*model.Grou
 	return nil
 }
 
-func createPolicies(ctx context.Context, authService Service, policies []*model.Policy) error {
+func createPolicies(ctx context.Context, authService Service, policies []*model.BasePolicy) error {
 	for _, policy := range policies {
 		err := authService.WritePolicy(ctx, policy)
 		if err != nil {
@@ -50,7 +50,7 @@ func attachPolicies(ctx context.Context, authService Service, groupID string, po
 func SetupBaseGroups(ctx context.Context, authService Service, ts time.Time) error {
 	var err error
 
-	err = createGroups(ctx, authService, []*model.Group{
+	err = createGroups(ctx, authService, []*model.BaseGroup{
 		{CreatedAt: ts, DisplayName: AdminsGroup},
 		{CreatedAt: ts, DisplayName: SuperUsersGroup},
 		{CreatedAt: ts, DisplayName: DevelopersGroup},
@@ -60,7 +60,7 @@ func SetupBaseGroups(ctx context.Context, authService Service, ts time.Time) err
 		return err
 	}
 
-	err = createPolicies(ctx, authService, []*model.Policy{
+	err = createPolicies(ctx, authService, []*model.BasePolicy{
 		{
 			CreatedAt:   ts,
 			DisplayName: "FSFullAccess",
@@ -239,7 +239,7 @@ func AddAdminUser(ctx context.Context, authService Service, user *model.Superuse
 
 	// create admin user
 	user.Source = "internal"
-	_, err = authService.CreateUser(ctx, &user.User)
+	_, err = authService.CreateUser(ctx, &user.BaseUser)
 	if err != nil {
 		return nil, fmt.Errorf("create user - %w", err)
 	}
@@ -270,8 +270,10 @@ func CreateInitialAdminUser(ctx context.Context, authService Service, metadataMa
 
 func CreateInitialAdminUserWithKeys(ctx context.Context, authService Service, metadataManger MetadataManager, username string, accessKeyID *string, secretAccessKey *string) (*model.Credential, error) {
 	adminUser := &model.SuperuserConfiguration{User: model.User{
-		CreatedAt: time.Now(),
-		Username:  username,
+		BaseUser: model.BaseUser{
+			CreatedAt: time.Now(),
+			Username:  username,
+		},
 	}}
 	if accessKeyID != nil && secretAccessKey != nil {
 		adminUser.AccessKeyID = *accessKeyID
