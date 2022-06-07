@@ -38,9 +38,9 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v2
       - name: Setup UI
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v3
         with:
-          node-version: '16.x'
+          node-version: '16.15'
       - name: Cache node_modules # TODO(ariels): Share with UI build
         uses: actions/cache@v2
         env:
