@@ -19,6 +19,8 @@ const LoginForm = () => {
     }
 
     const showResetPwd = !error && response && response.forgot_password;
+    const usernamePlaceholder = showResetPwd ? "Email / Access Key ID" : "Access Key ID"
+    const passwordPlaceholder = showResetPwd ? "Password / Secret Access Key" : "Secret Access Key"
     const { next } = router.query;
 
     return (
@@ -38,11 +40,11 @@ const LoginForm = () => {
                             }
                         }}>
                             <Form.Group controlId="username">
-                                <Form.Control type="text" placeholder="Email / Access Key ID" autoFocus/>
+                                <Form.Control type="text" placeholder={usernamePlaceholder} autoFocus/>
                             </Form.Group>
 
                             <Form.Group controlId="password">
-                                <Form.Control type="password" placeholder="Password / Secret Access Key"/>
+                                <Form.Control type="password" placeholder={passwordPlaceholder}/>
                             </Form.Group>
 
                             {(!!loginError) && <Error error={loginError}/>}
