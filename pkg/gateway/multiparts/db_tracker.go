@@ -109,13 +109,12 @@ func (m *dbTracker) Delete(ctx context.Context, uploadID string) error {
 func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
 	je := json.NewEncoder(writer)
 	// Create header
-	err := je.Encode(kv.Header{
+	if err := je.Encode(kv.Header{
 		LakeFSVersion:   version.Version,
 		PackageName:     packageName,
 		DBSchemaVersion: kv.InitialMigrateVersion,
 		CreatedAt:       time.Now().UTC(),
-	})
-	if err != nil {
+	}); err != nil {
 		return err
 	}
 
@@ -137,12 +136,11 @@ func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
 			return err
 		}
 		key := []byte(kv.FormatPath(multipartsPrefix, m.UploadID))
-		err = je.Encode(kv.Entry{
+		if err = je.Encode(kv.Entry{
 			PartitionKey: []byte(multipartsPartitionKey),
 			Key:          key,
 			Value:        value,
-		})
-		if err != nil {
+		}); err != nil {
 			return err
 		}
 	}

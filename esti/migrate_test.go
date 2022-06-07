@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/thanhpk/randstr"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -38,8 +39,9 @@ type actionRun struct {
 }
 
 type actionsState struct {
-	Repo string       `json:"repo"`
-	Runs []*actionRun `json:"runs"`
+	Repo        string       `json:"repo"`
+	WebhookPort int          `json:"webhook_port"`
+	Runs        []*actionRun `json:"runs"`
 }
 
 const (
@@ -73,8 +75,8 @@ func postMigrateTests(t *testing.T) {
 	readStateFromLakeFS(t)
 
 	// all post tests execution
-	t.Run("testPostMigrateActions", testPostMigrateActions)
 	t.Run("TestPostMigrateMultipart", testPostMigrateMultipart)
+	t.Run("testPostMigrateActions", testPostMigrateActions)
 }
 
 func saveStateInLakeFS(t *testing.T) {
@@ -87,7 +89,6 @@ func saveStateInLakeFS(t *testing.T) {
 	resp, err := uploadContent(ctx, migrateStateRepoName, "main", migrateStateObjectPath, string(stateBytes))
 	require.NoError(t, err, "writing state file")
 	require.Equal(t, http.StatusCreated, resp.StatusCode())
-	t.Log("Written migration state file:", string(stateBytes))
 }
 
 func readStateFromLakeFS(t *testing.T) {
@@ -191,18 +192,33 @@ func testPreMigrateActions(t *testing.T) {
 		}
 		state.Actions.Runs = append(state.Actions.Runs, ar)
 	}
+	state.Actions.WebhookPort = server.port
 }
 
 func testPostMigrateActions(t *testing.T) {
 	// Validate info using storage logs
 	ctx, _, _ := setupTest(t)
-	runs, err := client.ListRepositoryRunsWithResponse(ctx, state.Actions.Repo, &api.ListRepositoryRunsParams{})
-	require.NoError(t, err, "failed to list runs")
-	require.Equal(t, http.StatusOK, runs.StatusCode())
-	require.Equal(t, len(state.Actions.Runs), len(runs.JSON200.Results))
+	// Create new event and make sure it's listed before the migrated events
+	resp, err := client.GetBranchWithResponse(ctx, state.Actions.Repo, mainBranch)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode())
+	commitID := resp.JSON200.CommitId
 
+	createTagResp, err := client.CreateTagWithResponse(ctx, state.Actions.Repo, api.CreateTagJSONRequestBody{
+		Id:  "failed-tag",
+		Ref: commitID,
+	})
+	require.NoError(t, err, "failed to create tag")
+	require.Equal(t, http.StatusInternalServerError, createTagResp.StatusCode())
+
+	runs := waitForListRepositoryRunsLen(ctx, t, state.Actions.Repo, "", 14)
 	runCount := 0
-	for _, run := range runs.JSON200.Results {
+	for i, run := range runs.Results {
+		if i < 1 { // First event is a failed pre create tag
+			require.Equal(t, run.EventType, string(graveler.EventTypePreCreateTag))
+			require.Equal(t, run.Status, "failed")
+			continue
+		}
 		expRun := state.Actions.Runs[runCount].Run
 		expTasks := state.Actions.Runs[runCount].Hooks
 		// Ignore runID since it changes due to migration
@@ -217,7 +233,7 @@ func testPostMigrateActions(t *testing.T) {
 
 	// List by secondary index
 	branch := mainBranch
-	runResp, err := client.ListRepositoryRunsWithResponse(ctx, state.Actions.Repo, &api.ListRepositoryRunsParams{Branch: &branch})
+	branchResp, err := client.ListRepositoryRunsWithResponse(ctx, state.Actions.Repo, &api.ListRepositoryRunsParams{Branch: &branch})
 	require.NoError(t, err, "failed to list runs")
-	require.Equal(t, len(runResp.JSON200.Results), 3)
+	require.Equal(t, len(branchResp.JSON200.Results), 3)
 }

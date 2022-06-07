@@ -24,7 +24,7 @@ const (
 	EventTypePostDeleteBranch EventType = "post-delete-branch"
 
 	RunIDTimeLayout = "20060102150405"
-	unixYear3000    = 32500915200
+	UnixYear3000    = 32500915200
 )
 
 // HookRecord is an aggregation of all necessary fields for all event types
@@ -117,6 +117,6 @@ func (h *HooksNoOp) NewRunID() string {
 }
 
 func NewRunID() string {
-	tm := time.Unix(unixYear3000-time.Now().Unix(), 0).UTC()
+	tm := time.Unix(UnixYear3000-time.Now().Unix(), 0).UTC()
 	return xid.NewWithTime(tm).String()
 }
