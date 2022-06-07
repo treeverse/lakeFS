@@ -11,6 +11,8 @@ import (
 const (
 	dbContainerTimeoutSeconds = 10 * 60 // 10 min
 	DefaultDynamodbLocalPort  = "6432"
+
+	WaitForContainerSec = 2
 )
 
 func RunLocalDynamoDBInstance(port string) (string, func(), error) {
@@ -27,7 +29,7 @@ func RunLocalDynamoDBInstance(port string) (string, func(), error) {
 		Repository: "amazon/dynamodb-local",
 		Tag:        "latest",
 		PortBindings: map[dc.Port][]dc.PortBinding{
-			"8000/tcp": []dc.PortBinding{{HostPort: port}},
+			"8000/tcp": {{HostPort: port}},
 		},
 	}
 
@@ -53,7 +55,7 @@ func RunLocalDynamoDBInstance(port string) (string, func(), error) {
 	uri := fmt.Sprintf("http://localhost:%s", port)
 
 	// Disgusting, but I have to wait for the dynamodb container to be ready
-	time.Sleep(2 * time.Second)
+	time.Sleep(WaitForContainerSec * time.Second)
 
 	// return DB URI
 	return uri, closer, nil
