@@ -293,7 +293,7 @@ func (s *Store) scanInternal(ctx context.Context, scanKey []byte, exclusiveStart
 	}
 	queryOutput, err := s.svc.QueryWithContext(ctx, queryInput)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w (start=%v)", err, kv.ErrOperationFailed, string(scanKey))
+		return nil, fmt.Errorf("%s (start=%v): %w ", err, string(scanKey), kv.ErrOperationFailed)
 	}
 
 	return &EntriesIterator{
