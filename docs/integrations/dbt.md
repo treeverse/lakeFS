@@ -1,20 +1,20 @@
 ---
 layout: default
-title: DBT
-description: Maintaining environments with DBT and lakeFS.
+title: dbt
+description: Maintaining environments with dbt and lakeFS.
 parent: Integrations
 nav_order: 64
 has_children: false
 redirect_from: ../using/dbt.html
 ---
 
-## Maintaining environments with DBT and lakeFS
+## Maintaining environments with dbt and lakeFS
 {: .no_toc }
 
-DBT could run on lakeFS with the Spark adapter or the Presto/Trino adapter. 
+dbt can run on lakeFS with the Spark adapter or the Presto/Trino adapter. 
 Both Spark and Presto use Hive metastore or Glue in order to manage tables and views.
 When creating a branch in lakeFS we receive a logical copy of the data that could be accessed by `s3://my-repo/branch/...` 
-In order to run our DBT project on a new created branch we need to have a copy of the metadata as well.
+In order to run our dbt project on a new created branch we need to have a copy of the metadata as well.
 
 The lakectl dbt command generates all the metadata needed in order to work on the new created branch,
 continuing from the last state in the source branch.
@@ -24,9 +24,9 @@ The dbt lakectl command does this using dbt commands and lakectl metastore comma
 
 ## Configuration 
 
-In order to run the lakectl-dbt commands we need to configure both dbt and lakectl. 
+In order to run the lakectl-dbt commands you need to configure both dbt and lakectl. 
 Assuming dbt is already configured using either a Spark or Presto/Trino target 
-you will need to add configurations to give access to your catalog (metastore).
+you will need to add configurations to give lakeFS access to your catalog (metastore).
 This is done by adding the following configurations to the lakectl configuration file (by default `~/.lakectl.yaml`)
 
 ### Hive metastore
@@ -55,7 +55,7 @@ metastore:
 ## Views
 
 lakectl copies all models materialized as tables and incremental directly on your metastore.
-copying views should be done manually or with lakectl
+However, copying views should be done manually or with lakectl.
 
 ### Using lakectl
 
