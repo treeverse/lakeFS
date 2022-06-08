@@ -35,8 +35,12 @@ var (
 	ErrNilValue = errors.New("nil value")
 )
 
-type KVService struct {
-	Store    kv.StoreMessage
+// StoreService is an implementation of actions.Service that saves
+// the run data to the blockstore and to the actions.Store (which is a
+// fancy name for a DB - kv style or postgres directly)
+type StoreService struct {
+	Store    Store
+	idGen    IDGenerator
 	Source   Source
 	Writer   OutputWriter
 	ctx      context.Context
@@ -176,13 +180,14 @@ type Service interface {
 	graveler.HooksHandler
 }
 
-func NewKVService(ctx context.Context, store kv.StoreMessage, source Source, writer OutputWriter, stats stats.Collector, runHooks bool) *KVService {
+func NewService(ctx context.Context, store Store, source Source, writer OutputWriter, idGen IDGenerator, stats stats.Collector, runHooks bool) *StoreService {
 	ctx, cancel := context.WithCancel(ctx)
-	return &KVService{
+	return &StoreService{
 		Store:    store,
 		Source:   source,
 		Writer:   writer,
 		ctx:      ctx,
+		idGen:    idGen,
 		cancel:   cancel,
 		wg:       sync.WaitGroup{},
 		stats:    stats,
@@ -190,12 +195,12 @@ func NewKVService(ctx context.Context, store kv.StoreMessage, source Source, wri
 	}
 }
 
-func (s *KVService) Stop() {
+func (s *StoreService) Stop() {
 	s.cancel()
 	s.wg.Wait()
 }
 
-func (s *KVService) asyncRun(record graveler.HookRecord) {
+func (s *StoreService) asyncRun(record graveler.HookRecord) {
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
@@ -209,7 +214,7 @@ func (s *KVService) asyncRun(record graveler.HookRecord) {
 }
 
 // Run load and run actions based on the event information
-func (s *KVService) Run(ctx context.Context, record graveler.HookRecord) error {
+func (s *StoreService) Run(ctx context.Context, record graveler.HookRecord) error {
 	if !s.runHooks {
 		logging.Default().WithField("record", record).Info("Hooks are disabled, skipping hooks execution")
 		return nil
@@ -243,7 +248,7 @@ func (s *KVService) Run(ctx context.Context, record graveler.HookRecord) error {
 	return runErr
 }
 
-func (s *KVService) loadMatchedActions(ctx context.Context, record graveler.HookRecord, spec MatchSpec) ([]*Action, error) {
+func (s *StoreService) loadMatchedActions(ctx context.Context, record graveler.HookRecord, spec MatchSpec) ([]*Action, error) {
 	actions, err := LoadActions(ctx, s.Source, record)
 	if err != nil {
 		return nil, err
@@ -251,7 +256,7 @@ func (s *KVService) loadMatchedActions(ctx context.Context, record graveler.Hook
 	return MatchedActions(actions, spec)
 }
 
-func (s *KVService) allocateTasks(runID string, actions []*Action) ([][]*Task, error) {
+func (s *StoreService) allocateTasks(runID string, actions []*Action) ([][]*Task, error) {
 	var tasks [][]*Task
 	for actionIdx, action := range actions {
 		var actionTasks []*Task
@@ -277,7 +282,7 @@ func (s *KVService) allocateTasks(runID string, actions []*Action) ([][]*Task, e
 	return tasks, nil
 }
 
-func (s *KVService) runTasks(ctx context.Context, record graveler.HookRecord, tasks [][]*Task) error {
+func (s *StoreService) runTasks(ctx context.Context, record graveler.HookRecord, tasks [][]*Task) error {
 	var g multierror.Group
 	for _, actionTasks := range tasks {
 		actionTasks := actionTasks // pin
@@ -322,7 +327,7 @@ func (s *KVService) runTasks(ctx context.Context, record graveler.HookRecord, ta
 	return g.Wait().ErrorOrNil()
 }
 
-func (s *KVService) saveRunInformation(ctx context.Context, record graveler.HookRecord, tasks [][]*Task) error {
+func (s *StoreService) saveRunInformation(ctx context.Context, record graveler.HookRecord, tasks [][]*Task) error {
 	if len(tasks) == 0 {
 		return nil
 	}
@@ -337,7 +342,7 @@ func (s *KVService) saveRunInformation(ctx context.Context, record graveler.Hook
 	return s.saveRunManifestObjectStore(ctx, manifest, record.StorageNamespace.String(), record.RunID)
 }
 
-func (s *KVService) saveRunManifestObjectStore(ctx context.Context, manifest RunManifest, storageNamespace string, runID string) error {
+func (s *StoreService) saveRunManifestObjectStore(ctx context.Context, manifest RunManifest, storageNamespace string, runID string) error {
 	manifestJSON, err := json.Marshal(manifest)
 	if err != nil {
 		return fmt.Errorf("marshal run manifest: %w", err)
@@ -348,47 +353,8 @@ func (s *KVService) saveRunManifestObjectStore(ctx context.Context, manifest Run
 	return s.Writer.OutputWrite(ctx, storageNamespace, runManifestPath, manifestReader, manifestSize)
 }
 
-func (s *KVService) saveRunManifestDB(ctx context.Context, repositoryID graveler.RepositoryID, manifest RunManifest) error {
-	// insert each task information
-	for i := range manifest.HooksRun {
-		hookRun := manifest.HooksRun[i]
-		taskKey := kv.FormatPath(TasksPath(repositoryID.String(), manifest.Run.RunID), hookRun.HookRunID)
-		err := s.Store.SetMsgIf(ctx, PartitionKey, taskKey, protoFromTaskResult(&hookRun), nil)
-		if err != nil {
-			return fmt.Errorf("save task result (runID: %s taskKey %s): %w", manifest.Run.RunID, taskKey, err)
-		}
-	}
-
-	// insert run information
-	return s.storeRun(ctx, protoFromRunResult(&manifest.Run), repositoryID.String())
-}
-
-func (s *KVService) storeRun(ctx context.Context, run *RunResultData, repoID string) error {
-	runKey := RunPath(repoID, run.RunId)
-	// Save secondary index by BranchID
-	if run.BranchId != "" {
-		bk := RunByBranchPath(repoID, run.BranchId, run.RunId)
-		err := s.Store.SetMsg(ctx, PartitionKey, bk, &kv.SecondaryIndex{PrimaryKey: []byte(runKey)})
-		if err != nil {
-			return fmt.Errorf("save secondary index by branch (key %s): %w", bk, err)
-		}
-	}
-
-	// Save secondary index by CommitID
-	if run.CommitId != "" {
-		ck := RunByCommitPath(repoID, run.CommitId, run.RunId)
-		err := s.Store.SetMsg(ctx, PartitionKey, ck, &kv.SecondaryIndex{PrimaryKey: []byte(runKey)})
-		if err != nil {
-			return fmt.Errorf("save secondary index by commit (key %s): %w", ck, err)
-		}
-	}
-
-	err := s.Store.SetMsg(ctx, PartitionKey, runKey, run)
-	if err != nil {
-		return fmt.Errorf("save run result (runKey %s): %w", runKey, err)
-	}
-
-	return nil
+func (s *StoreService) saveRunManifestDB(ctx context.Context, repositoryID graveler.RepositoryID, manifest RunManifest) error {
+	return s.Store.saveRunManifest(ctx, repositoryID, manifest)
 }
 
 func buildRunManifestFromTasks(record graveler.HookRecord, tasks [][]*Task) RunManifest {
@@ -432,89 +398,40 @@ func buildRunManifestFromTasks(record graveler.HookRecord, tasks [][]*Task) RunM
 }
 
 // UpdateCommitID assume record is a post event, we use the PreRunID to update the commit_id and save the run manifest again
-func (s *KVService) UpdateCommitID(ctx context.Context, repositoryID string, storageNamespace string, runID string, commitID string) error {
-	if runID == "" {
-		return fmt.Errorf("run id: %w", ErrNotFound)
-	}
-
-	runKey := RunPath(repositoryID, runID)
-	run := RunResultData{}
-	_, err := s.Store.GetMsg(ctx, PartitionKey, runKey, &run)
+func (s *StoreService) UpdateCommitID(ctx context.Context, repositoryID string, storageNamespace string, runID string, commitID string) error {
+	manifest, err := s.Store.UpdateCommitID(ctx, repositoryID, runID, commitID)
 	if err != nil {
-		return fmt.Errorf("run id %s: %w", runID, err)
+		return fmt.Errorf("updating commit ID: %w", err)
 	}
-	if run.CommitId == commitID { // return if no update is required
+	if manifest == nil {
 		return nil
 	}
-
-	// update database and re-read the run manifest
-	run.CommitId = commitID
-	err = s.storeRun(ctx, &run, repositoryID)
-	if err != nil {
-		return fmt.Errorf("update run commit_id: %w", err)
-	}
-
-	manifest := &RunManifest{Run: *RunResultFromProto(&run)}
-
-	it, err := NewKVTaskResultIterator(ctx, s.Store, repositoryID, runID, "")
-	if err != nil {
-		return err
-	}
-	defer it.Close()
-
-	var tasks []TaskResult
-	for it.Next() {
-		res := it.Value()
-		if res == nil {
-			return ErrNilValue
-		}
-		tasks = append(tasks, *res)
-	}
-	if err = it.Err(); err != nil {
-		return err
-	}
-	manifest.HooksRun = tasks
 
 	// update manifest
 	return s.saveRunManifestObjectStore(ctx, *manifest, storageNamespace, runID)
 }
 
-func (s *KVService) GetRunResult(ctx context.Context, repositoryID string, runID string) (*RunResult, error) {
-	runKey := RunPath(repositoryID, runID)
-	m := RunResultData{}
-	_, err := s.Store.GetMsg(ctx, PartitionKey, runKey, &m)
-	if err != nil {
-		if errors.Is(err, kv.ErrNotFound) {
-			err = fmt.Errorf("%s: %w", err, ErrNotFound) // Wrap error for compatibility with DBService
-		}
-		return nil, err
-	}
-	return RunResultFromProto(&m), nil
+func (s *StoreService) GetRunResult(ctx context.Context, repositoryID string, runID string) (*RunResult, error) {
+	return s.Store.GetRunResult(ctx, repositoryID, runID)
 }
 
-func (s *KVService) GetTaskResult(ctx context.Context, repositoryID string, runID string, hookRunID string) (*TaskResult, error) {
-	runKey := kv.FormatPath(TasksPath(repositoryID, runID), hookRunID)
-	m := TaskResultData{}
-	_, err := s.Store.GetMsg(ctx, PartitionKey, runKey, &m)
-	if err != nil {
-		return nil, err
-	}
-	return taskResultFromProto(&m), nil
+func (s *StoreService) GetTaskResult(ctx context.Context, repositoryID string, runID string, hookRunID string) (*TaskResult, error) {
+	return s.Store.GetTaskResult(ctx, repositoryID, runID, hookRunID)
 }
 
-func (s *KVService) ListRunResults(ctx context.Context, repositoryID string, branchID, commitID string, after string) (RunResultIterator, error) {
-	return NewKVRunResultIterator(ctx, s.Store, repositoryID, branchID, commitID, after)
+func (s *StoreService) ListRunResults(ctx context.Context, repositoryID string, branchID, commitID string, after string) (RunResultIterator, error) {
+	return s.Store.ListRunResults(ctx, repositoryID, branchID, commitID, after)
 }
 
-func (s *KVService) ListRunTaskResults(ctx context.Context, repositoryID string, runID string, after string) (TaskResultIterator, error) {
-	return NewKVTaskResultIterator(ctx, s.Store, repositoryID, runID, after)
+func (s *StoreService) ListRunTaskResults(ctx context.Context, repositoryID string, runID string, after string) (TaskResultIterator, error) {
+	return s.Store.ListRunTaskResults(ctx, repositoryID, runID, after)
 }
 
-func (s *KVService) PreCommitHook(ctx context.Context, record graveler.HookRecord) error {
+func (s *StoreService) PreCommitHook(ctx context.Context, record graveler.HookRecord) error {
 	return s.Run(ctx, record)
 }
 
-func (s *KVService) PostCommitHook(ctx context.Context, record graveler.HookRecord) error {
+func (s *StoreService) PostCommitHook(ctx context.Context, record graveler.HookRecord) error {
 	// update pre-commit with commit ID if needed
 	err := s.UpdateCommitID(ctx, record.RepositoryID.String(), record.StorageNamespace.String(), record.PreRunID, record.CommitID.String())
 	if err != nil {
@@ -525,11 +442,11 @@ func (s *KVService) PostCommitHook(ctx context.Context, record graveler.HookReco
 	return nil
 }
 
-func (s *KVService) PreMergeHook(ctx context.Context, record graveler.HookRecord) error {
+func (s *StoreService) PreMergeHook(ctx context.Context, record graveler.HookRecord) error {
 	return s.Run(ctx, record)
 }
 
-func (s *KVService) PostMergeHook(ctx context.Context, record graveler.HookRecord) error {
+func (s *StoreService) PostMergeHook(ctx context.Context, record graveler.HookRecord) error {
 	// update pre-merge with commit ID if needed
 	err := s.UpdateCommitID(ctx, record.RepositoryID.String(), record.StorageNamespace.String(), record.PreRunID, record.CommitID.String())
 	if err != nil {
@@ -540,41 +457,40 @@ func (s *KVService) PostMergeHook(ctx context.Context, record graveler.HookRecor
 	return nil
 }
 
-func (s *KVService) PreCreateTagHook(ctx context.Context, record graveler.HookRecord) error {
+func (s *StoreService) PreCreateTagHook(ctx context.Context, record graveler.HookRecord) error {
 	return s.Run(ctx, record)
 }
 
-func (s *KVService) PostCreateTagHook(_ context.Context, record graveler.HookRecord) {
+func (s *StoreService) PostCreateTagHook(_ context.Context, record graveler.HookRecord) {
 	s.asyncRun(record)
 }
 
-func (s *KVService) PreDeleteTagHook(ctx context.Context, record graveler.HookRecord) error {
+func (s *StoreService) PreDeleteTagHook(ctx context.Context, record graveler.HookRecord) error {
 	return s.Run(ctx, record)
 }
 
-func (s *KVService) PostDeleteTagHook(_ context.Context, record graveler.HookRecord) {
+func (s *StoreService) PostDeleteTagHook(_ context.Context, record graveler.HookRecord) {
 	s.asyncRun(record)
 }
 
-func (s *KVService) PreCreateBranchHook(ctx context.Context, record graveler.HookRecord) error {
+func (s *StoreService) PreCreateBranchHook(ctx context.Context, record graveler.HookRecord) error {
 	return s.Run(ctx, record)
 }
 
-func (s *KVService) PostCreateBranchHook(_ context.Context, record graveler.HookRecord) {
+func (s *StoreService) PostCreateBranchHook(_ context.Context, record graveler.HookRecord) {
 	s.asyncRun(record)
 }
 
-func (s *KVService) PreDeleteBranchHook(ctx context.Context, record graveler.HookRecord) error {
+func (s *StoreService) PreDeleteBranchHook(ctx context.Context, record graveler.HookRecord) error {
 	return s.Run(ctx, record)
 }
 
-func (s *KVService) PostDeleteBranchHook(_ context.Context, record graveler.HookRecord) {
+func (s *StoreService) PostDeleteBranchHook(_ context.Context, record graveler.HookRecord) {
 	s.asyncRun(record)
 }
 
-// NewRunID TODO(nior): WA until we have a single implementation
-func (s *KVService) NewRunID() string {
-	return graveler.NewRunID()
+func (s *StoreService) NewRunID() string {
+	return s.idGen.NewRunID()
 }
 
 func NewHookRunID(actionIdx, hookIdx int) string {

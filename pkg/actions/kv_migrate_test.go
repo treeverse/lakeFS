@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/actions/mock"
+	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/kv/postgres"
@@ -43,12 +44,7 @@ func benchmarkMigrate(runCount int, b *testing.B) {
 	ctx := context.Background()
 	database, _ := testutil.GetDB(b, databaseURI)
 
-	ctrl := gomock.NewController(b)
-	testSource := mock.NewMockSource(ctrl)
-	testWriter := mock.NewMockOutputWriter(ctrl)
-	mockStatsCollector := NewActionStatsMockCollector()
-	dbService := actions.NewDBService(ctx, database, testSource, testWriter, &mockStatsCollector, true)
-	createMigrateTestData(b, ctx, dbService, migrateBenchRepo, runCount)
+	createMigrateTestData(b, ctx, database, migrateBenchRepo, runCount)
 	kvStore := kvtest.MakeStoreByName(postgres.DriverName, databaseURI)(b, ctx)
 	buf, _ := os.CreateTemp("", "migrate")
 	defer os.Remove(buf.Name())
@@ -71,9 +67,9 @@ func TestMigrate(t *testing.T) {
 	testSource := mock.NewMockSource(ctrl)
 	testWriter := mock.NewMockOutputWriter(ctrl)
 	mockStatsCollector := NewActionStatsMockCollector()
-	dbService := actions.NewDBService(ctx, database, testSource, testWriter, &mockStatsCollector, true)
+
 	for i := 0; i < actionsSampleSize; i++ {
-		testData[i] = createMigrateTestData(t, ctx, dbService, migrateTestRepo+strconv.Itoa(i), actionsSampleSize)
+		testData[i] = createMigrateTestData(t, ctx, database, migrateTestRepo+strconv.Itoa(i), actionsSampleSize)
 	}
 
 	buf := bytes.Buffer{}
@@ -83,7 +79,7 @@ func TestMigrate(t *testing.T) {
 	kvStore := kvtest.MakeStoreByName(postgres.DriverName, databaseURI)(t, ctx)
 	mStore := kv.StoreMessage{Store: kvStore}
 	testutil.MustDo(t, "Import file", kv.Import(ctx, &buf, kvStore))
-	kvService := actions.NewKVService(ctx, mStore, testSource, testWriter, &mockStatsCollector, true)
+	kvService := actions.NewService(ctx, actions.NewActionsKVStore(mStore), testSource, testWriter, &actions.DecreasingIDGenerator{}, &mockStatsCollector, true)
 	for i := 0; i < actionsSampleSize; i++ {
 		validateTestData(t, ctx, kvService, mStore, testData[i], migrateTestRepo+strconv.Itoa(i))
 	}
@@ -144,7 +140,7 @@ func validateTestData(t *testing.T, ctx context.Context, service actions.Service
 	require.Equal(t, len(testData), runCount)
 }
 
-func createMigrateTestData(t testing.TB, ctx context.Context, service *actions.DBService, repoID string, size int) []actions.RunManifest {
+func createMigrateTestData(t testing.TB, ctx context.Context, database db.Database, repoID string, size int) []actions.RunManifest {
 	t.Helper()
 	rand.Seed(time.Now().UnixNano())
 	runs := make([]actions.RunManifest, 0)
@@ -152,14 +148,14 @@ func createMigrateTestData(t testing.TB, ctx context.Context, service *actions.D
 	var g multierror.Group
 	for i := 0; i < 10; i++ {
 		g.Go(func() error {
-			return writeToDB(ctx, runChan, repoID, service)
+			return writeToDB(ctx, runChan, repoID, database)
 		})
 	}
 
 	for i := 0; i < size; i++ {
 		iStr := strconv.Itoa(i)
 		now := time.Now().UTC().Truncate(time.Second)
-		runID := service.NewRunID()
+		runID := (&actions.IncreasingIDGenerator{}).NewRunID()
 		run := actions.RunManifest{
 			Run: actions.RunResult{
 				RunID:     runID,
@@ -195,16 +191,16 @@ func createMigrateTestData(t testing.TB, ctx context.Context, service *actions.D
 	return runs
 }
 
-func writeToDB(ctx context.Context, jobChan <-chan *actions.RunManifest, repoID string, service *actions.DBService) error {
+func writeToDB(ctx context.Context, jobChan <-chan *actions.RunManifest, repoID string, db db.Database) error {
 	for run := range jobChan {
-		_, err := service.DB.Exec(ctx, `INSERT INTO actions_runs(repository_id, run_id, event_type, start_time, end_time, branch_id, source_ref, commit_id, passed)
+		_, err := db.Exec(ctx, `INSERT INTO actions_runs(repository_id, run_id, event_type, start_time, end_time, branch_id, source_ref, commit_id, passed)
 			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
 			repoID, run.Run.RunID, run.Run.EventType, run.Run.StartTime, run.Run.EndTime, run.Run.BranchID, run.Run.SourceRef, run.Run.CommitID, run.Run.Passed)
 		if err != nil {
 			return err
 		}
 		for _, h := range run.HooksRun {
-			_, err = service.DB.Exec(ctx, `INSERT INTO actions_run_hooks(repository_id, run_id, hook_run_id, action_name, hook_id, start_time, end_time, passed)
+			_, err = db.Exec(ctx, `INSERT INTO actions_run_hooks(repository_id, run_id, hook_run_id, action_name, hook_id, start_time, end_time, passed)
 				VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
 				repoID, h.RunID, h.HookRunID, h.ActionName, h.HookID, h.StartTime, h.EndTime, h.Passed)
 			if err != nil {
