@@ -692,7 +692,7 @@ func testDeleteWhileIterSamePrefixSingleRun(t *testing.T, ms MakeStore, prefsToC
 
 	// Emptying the KV store from previous entries. This is essential in these tests as
 	// the verification relies on exact keys to exist
-	cleanIter, err := store.Scan(ctx, []byte(testPartitionKey), delPref)
+	cleanIter, err := store.Scan(ctx, []byte(testPartitionKey), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
