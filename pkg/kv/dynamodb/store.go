@@ -21,6 +21,7 @@ type Store struct {
 }
 
 type EntriesIterator struct {
+	scanCtx      context.Context
 	entry        *kv.Entry
 	err          error
 	store        *Store
@@ -322,6 +323,7 @@ func (s *Store) scanInternal(ctx context.Context, partitionKey, scanKey []byte, 
 	}
 
 	return &EntriesIterator{
+		scanCtx:      ctx,
 		store:        s,
 		partKey:      string(partitionKey),
 		startKey:     string(scanKey),
@@ -342,7 +344,7 @@ func (e *EntriesIterator) Next() bool {
 		if e.queryResult.LastEvaluatedKey == nil {
 			return false
 		}
-		tmpEntriesIter, err := e.store.scanInternal(context.Background(), []byte(e.partKey), []byte(e.startKey), e.queryResult.LastEvaluatedKey)
+		tmpEntriesIter, err := e.store.scanInternal(e.scanCtx, []byte(e.partKey), []byte(e.startKey), e.queryResult.LastEvaluatedKey)
 		if err != nil {
 			e.err = fmt.Errorf("scanning table: %w", err)
 			return false
