@@ -196,17 +196,17 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 		Key:       s.bytesKeyToDynamoKey(partitionKey, key),
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get item: %s (key=%v): %w", err, string(key), kv.ErrOperationFailed)
 	}
 
 	if result.Item == nil {
-		return nil, kv.ErrNotFound
+		return nil, fmt.Errorf("key=%v: %w", string(key), kv.ErrNotFound)
 	}
 
 	var item DynKVItem
 	err = dynamodbattribute.UnmarshalMap(result.Item, &item)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
+		return nil, fmt.Errorf("unmarshal map: %s (key=%v): %w", err, string(key), kv.ErrOperationFailed)
 	}
 
 	return &kv.ValueWithPredicate{
@@ -242,7 +242,7 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 
 	marshaledItem, err := dynamodbattribute.MarshalMap(item)
 	if err != nil {
-		return fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
+		return fmt.Errorf("marshal map: %s (key=%v): %w", err, string(key), kv.ErrOperationFailed)
 	}
 
 	input := &dynamodb.PutItemInput{
@@ -265,7 +265,7 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 		if _, ok := err.(*dynamodb.ConditionalCheckFailedException); ok && usePredicate {
 			return kv.ErrPredicateFailed
 		}
-		return fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
+		return fmt.Errorf("put item: %s (key=%v): %w", err, string(key), kv.ErrOperationFailed)
 	}
 	return nil
 }
@@ -283,7 +283,7 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 		Key:       s.bytesKeyToDynamoKey(partitionKey, key),
 	})
 	if err != nil {
-		return fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
+		return fmt.Errorf("delete item: %s (key=%v): %w", err, string(key), kv.ErrOperationFailed)
 	}
 	return nil
 }
@@ -325,7 +325,7 @@ func (s *Store) scanInternal(ctx context.Context, partitionKey, scanKey []byte, 
 	}
 	queryOutput, err := s.svc.QueryWithContext(ctx, queryInput)
 	if err != nil {
-		return nil, fmt.Errorf("%s (start=%v): %w ", err, string(scanKey), kv.ErrOperationFailed)
+		return nil, fmt.Errorf("query: %s (start=%v): %w ", err, string(scanKey), kv.ErrOperationFailed)
 	}
 
 	return &EntriesIterator{
@@ -352,7 +352,7 @@ func (e *EntriesIterator) Next() bool {
 		}
 		tmpEntriesIter, err := e.store.scanInternal(e.scanCtx, []byte(e.partKey), []byte(e.startKey), e.queryResult.LastEvaluatedKey)
 		if err != nil {
-			e.err = fmt.Errorf("scanning table: %w", err)
+			e.err = fmt.Errorf("scan paging: %w", err)
 			return false
 		}
 		e.queryResult = tmpEntriesIter.queryResult
@@ -362,7 +362,7 @@ func (e *EntriesIterator) Next() bool {
 	var item DynKVItem
 	err := dynamodbattribute.UnmarshalMap(e.queryResult.Items[e.currEntryIdx], &item)
 	if err != nil {
-		e.err = fmt.Errorf("%s: %w", err, kv.ErrOperationFailed)
+		e.err = fmt.Errorf("unmarshal map: %s: %w", err, kv.ErrOperationFailed)
 	}
 	e.entry = &kv.Entry{
 		Key:   []byte(item.ItemKey),
