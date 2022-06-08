@@ -49,6 +49,9 @@ type Params struct {
 	ReadCapacityUnits  int64
 	WriteCapacityUnits int64
 
+	// Maximal number of items per page during scan operation
+	ScanLimit int64
+
 	// The endpoint URL of the DynamoDB endpoint
 	// Can be used to redirect to DynmoDB on AWS, local docker etc.
 	Endpoint string
@@ -317,6 +320,9 @@ func (s *Store) scanInternal(ctx context.Context, partitionKey, scanKey []byte, 
 		ScanIndexForward:          aws.Bool(true),
 		ExclusiveStartKey:         exclusiveStartKey,
 	}
+	if s.params.ScanLimit != 0 {
+		queryInput.SetLimit(s.params.ScanLimit)
+	}
 	queryOutput, err := s.svc.QueryWithContext(ctx, queryInput)
 	if err != nil {
 		return nil, fmt.Errorf("%s (start=%v): %w ", err, string(scanKey), kv.ErrOperationFailed)
@@ -340,7 +346,7 @@ func (e *EntriesIterator) Next() bool {
 		return false
 	}
 
-	if e.currEntryIdx == int(*e.queryResult.Count) {
+	for e.currEntryIdx == int(*e.queryResult.Count) {
 		if e.queryResult.LastEvaluatedKey == nil {
 			return false
 		}

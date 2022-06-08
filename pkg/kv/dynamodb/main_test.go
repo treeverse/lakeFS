@@ -31,6 +31,7 @@ func TestMain(m *testing.M) {
 		TableName:          testUniqueTableName(),
 		ReadCapacityUnits:  100,
 		WriteCapacityUnits: 100,
+		ScanLimit:          10,
 		Endpoint:           databaseURI,
 		AwsRegion:          "us-east-1",
 		AwsAccessKeyID:     "fakeMyKeyId",
