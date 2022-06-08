@@ -101,7 +101,7 @@ func Import(ctx context.Context, reader io.Reader, store Store) error {
 		if errors.Is(err, io.EOF) {
 			break
 		}
-		// Decode does not return error onm missing data / incompatible format
+		// Decode does not return error on missing data / incompatible format
 		if err != nil {
 			return fmt.Errorf("decoding entry: %w", err)
 		}

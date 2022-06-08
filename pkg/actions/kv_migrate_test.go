@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
+	"github.com/hashicorp/go-multierror"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/actions/mock"
@@ -25,30 +26,40 @@ const (
 	actionsSampleSize = 10
 )
 
-// TestMigrateTime - use this test to benchmark the migration time of actions. Default dataset size is small as to not
-// block github pipeline. Modify as needed when running locally. Note that dbContainerTimeoutSeconds might need to be modified as well
-func TestMigrateTime(t *testing.T) {
-	ctx := context.Background()
-	database, _ := testutil.GetDB(t, databaseURI)
+func BenchmarkMigrate(b *testing.B) {
+	b.Run("Benchmark-250", func(b *testing.B) {
+		benchmarkMigrate(250, b)
+	})
+	b.Run("Benchmark-2500", func(b *testing.B) {
+		benchmarkMigrate(2500, b)
+	})
+	b.Run("Benchmark-25000", func(b *testing.B) {
+		benchmarkMigrate(25000, b)
+	})
+}
 
-	ctrl := gomock.NewController(t)
+// benchmarkMigrate - use this test to benchmark the migration time of actions. Default dataset size is small as to not
+func benchmarkMigrate(runCount int, b *testing.B) {
+	ctx := context.Background()
+	database, _ := testutil.GetDB(b, databaseURI)
+
+	ctrl := gomock.NewController(b)
 	testSource := mock.NewMockSource(ctrl)
 	testWriter := mock.NewMockOutputWriter(ctrl)
 	mockStatsCollector := NewActionStatsMockCollector()
 	dbService := actions.NewDBService(ctx, database, testSource, testWriter, &mockStatsCollector, true)
-	createMigrateTestData(t, ctx, dbService, migrateBenchRepo, 250)
-	kvStore := kvtest.MakeStoreByName(postgres.DriverName, databaseURI)(t, ctx)
+	createMigrateTestData(b, ctx, dbService, migrateBenchRepo, runCount)
+	kvStore := kvtest.MakeStoreByName(postgres.DriverName, databaseURI)(b, ctx)
 	buf, _ := os.CreateTemp("", "migrate")
-	start := time.Now()
 	defer os.Remove(buf.Name())
 	defer buf.Close()
-	err := actions.Migrate(ctx, database.Pool(), buf)
-	require.NoError(t, err)
-	t.Log("Actions Migrate Time:", time.Since(start))
-	_, _ = buf.Seek(0, 0)
-	testutil.MustDo(t, "Import file", kv.Import(ctx, buf, kvStore))
-
-	t.Log("Total Migrate Time:", time.Since(start))
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		err := actions.Migrate(ctx, database.Pool(), buf)
+		require.NoError(b, err)
+		_, _ = buf.Seek(0, 0)
+		testutil.MustDo(b, "Import file", kv.Import(ctx, buf, kvStore))
+	}
 }
 
 func TestMigrate(t *testing.T) {
@@ -137,6 +148,14 @@ func createMigrateTestData(t testing.TB, ctx context.Context, service *actions.D
 	t.Helper()
 	rand.Seed(time.Now().UnixNano())
 	runs := make([]actions.RunManifest, 0)
+	runChan := make(chan *actions.RunManifest, 100)
+	var g multierror.Group
+	for i := 0; i < 10; i++ {
+		g.Go(func() error {
+			return writeToDB(ctx, runChan, repoID, service)
+		})
+	}
+
 	for i := 0; i < size; i++ {
 		iStr := strconv.Itoa(i)
 		now := time.Now().UTC().Truncate(time.Second)
@@ -154,12 +173,6 @@ func createMigrateTestData(t testing.TB, ctx context.Context, service *actions.D
 			},
 			HooksRun: make([]actions.TaskResult, 0),
 		}
-
-		_, err := service.DB.Exec(ctx, `INSERT INTO actions_runs(repository_id, run_id, event_type, start_time, end_time, branch_id, source_ref, commit_id, passed)
-			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-			repoID, run.Run.RunID, run.Run.EventType, run.Run.StartTime, run.Run.EndTime, run.Run.BranchID, run.Run.SourceRef, run.Run.CommitID, run.Run.Passed)
-		testutil.MustDo(t, "Create entry", err)
-
 		for j := 0; j < 10; j++ {
 			jStr := strconv.Itoa(j)
 			now = time.Now().UTC().Truncate(time.Second)
@@ -173,12 +186,31 @@ func createMigrateTestData(t testing.TB, ctx context.Context, service *actions.D
 				Passed:     rand.Intn(2) == 1,
 			}
 			run.HooksRun = append(run.HooksRun, h)
+		}
+		runs = append(runs, run)
+		runChan <- &run
+	}
+	close(runChan)
+	testutil.MustDo(t, "Create entries", g.Wait().ErrorOrNil())
+	return runs
+}
+
+func writeToDB(ctx context.Context, jobChan <-chan *actions.RunManifest, repoID string, service *actions.DBService) error {
+	for run := range jobChan {
+		_, err := service.DB.Exec(ctx, `INSERT INTO actions_runs(repository_id, run_id, event_type, start_time, end_time, branch_id, source_ref, commit_id, passed)
+			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+			repoID, run.Run.RunID, run.Run.EventType, run.Run.StartTime, run.Run.EndTime, run.Run.BranchID, run.Run.SourceRef, run.Run.CommitID, run.Run.Passed)
+		if err != nil {
+			return err
+		}
+		for _, h := range run.HooksRun {
 			_, err = service.DB.Exec(ctx, `INSERT INTO actions_run_hooks(repository_id, run_id, hook_run_id, action_name, hook_id, start_time, end_time, passed)
 				VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
 				repoID, h.RunID, h.HookRunID, h.ActionName, h.HookID, h.StartTime, h.EndTime, h.Passed)
-			testutil.MustDo(t, "Create entry", err)
+			if err != nil {
+				return err
+			}
 		}
-		runs = append(runs, run)
 	}
-	return runs
+	return nil
 }
