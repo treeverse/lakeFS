@@ -2,7 +2,7 @@ package testutil
 
 import (
 	"fmt"
-	"time"
+	"net/http"
 
 	"github.com/ory/dockertest/v3"
 	dc "github.com/ory/dockertest/v3/docker"
@@ -54,8 +54,16 @@ func RunLocalDynamoDBInstance(port string) (string, func(), error) {
 
 	uri := fmt.Sprintf("http://localhost:%s", port)
 
-	// Disgusting, but I have to wait for the dynamodb container to be ready
-	time.Sleep(WaitForContainerSec * time.Second)
+	err = dockerPool.Retry(func() error {
+		// waiting for dynamodb container to be ready by issuing an http get request with
+		// exponential backoff retry. The response is not really meaningful for that case
+		// and so is ignored
+		_, err := http.Get(uri)
+		return err
+	})
+	if err != nil {
+		return "", nil, fmt.Errorf("could not connect to dynamodb at %s: %w", uri, err)
+	}
 
 	// return DB URI
 	return uri, closer, nil
