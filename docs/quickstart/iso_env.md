@@ -112,5 +112,5 @@ What happens if we re-read in the data on both branches and perform a count on t
 
 ![Branch Counts]({{ site.baseurl }}/assets/img/iso-env-df-counts.png)
 
-As expected, there are now twice as many rows, 972k, on the `double-branch` branch. On the `main` branch however, there is still just the origin 4486k rows. This shows the utility of branch-based isolated environments with lakeFS.
+As expected, there are now twice as many rows, 972k, on the `double-branch` branch. On the `main` branch however, there is still just the origin 486k rows. This shows the utility of branch-based isolated environments with lakeFS.
 
