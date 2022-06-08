@@ -13,8 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/kv/kvtest"
-
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -22,6 +20,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/actions/mock"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	_ "github.com/treeverse/lakefs/pkg/kv/mem"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/testutil"
