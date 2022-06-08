@@ -22,7 +22,7 @@ func testUniqueTableName() string {
 }
 
 func TestMain(m *testing.M) {
-	databaseURI, cleanpFunc, err := testutil.RunLocalDynamoDBInstance("")
+	databaseURI, cleanpFunc, err := testutil.RunLocalDynamoDBInstance()
 	if err != nil {
 		log.Fatalf("Could not connect to Docker: %s", err)
 	}

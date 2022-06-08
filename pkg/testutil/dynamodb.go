@@ -10,26 +10,23 @@ import (
 
 const (
 	dbContainerTimeoutSeconds = 10 * 60 // 10 min
-	DefaultDynamodbLocalPort  = "6432"
+	DynamodbLocalPort         = "6432"
+	DynamodbLocalURI          = "http://localhost:6432"
 
 	WaitForContainerSec = 2
 )
 
-func RunLocalDynamoDBInstance(port string) (string, func(), error) {
+func RunLocalDynamoDBInstance() (string, func(), error) {
 	dockerPool, err := dockertest.NewPool("")
 	if err != nil {
 		return "", nil, fmt.Errorf("could not connect to Docker: %w", err)
-	}
-
-	if len(port) == 0 {
-		port = DefaultDynamodbLocalPort
 	}
 
 	dynamodbDockerRunOptions := &dockertest.RunOptions{
 		Repository: "amazon/dynamodb-local",
 		Tag:        "latest",
 		PortBindings: map[dc.Port][]dc.PortBinding{
-			"8000/tcp": {{HostPort: port}},
+			"8000/tcp": {{HostPort: DynamodbLocalPort}},
 		},
 	}
 
@@ -52,19 +49,21 @@ func RunLocalDynamoDBInstance(port string) (string, func(), error) {
 		return "", nil, fmt.Errorf("could not expire dynamodb local container: %w", err)
 	}
 
-	uri := fmt.Sprintf("http://localhost:%s", port)
-
 	err = dockerPool.Retry(func() error {
 		// waiting for dynamodb container to be ready by issuing an http get request with
 		// exponential backoff retry. The response is not really meaningful for that case
 		// and so is ignored
-		_, err := http.Get(uri)
-		return err
+		resp, err := http.Get(DynamodbLocalURI)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+		return nil
 	})
 	if err != nil {
-		return "", nil, fmt.Errorf("could not connect to dynamodb at %s: %w", uri, err)
+		return "", nil, fmt.Errorf("could not connect to dynamodb at %s: %w", DynamodbLocalURI, err)
 	}
 
 	// return DB URI
-	return uri, closer, nil
+	return DynamodbLocalURI, closer, nil
 }
