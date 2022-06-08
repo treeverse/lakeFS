@@ -93,27 +93,27 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, 
 	collector := &nullCollector{}
 
 	// wire actions
-	var actionsService actions.Service
+	var actionsStore actions.Store
+	var idGen actions.IDGenerator
+
 	if kvEnabled {
 		kvStore := kvtest.GetStore(ctx, t)
-		actionsService = actions.NewKVService(
-			ctx,
-			kv.StoreMessage{Store: kvStore},
-			catalog.NewActionsSource(c),
-			catalog.NewActionsOutputWriter(c.BlockAdapter),
-			collector,
-			true,
-		)
+		actionsStore = actions.NewActionsKVStore(kv.StoreMessage{Store: kvStore})
+		idGen = &actions.DecreasingIDGenerator{}
 	} else {
-		actionsService = actions.NewDBService(
-			ctx,
-			conn,
-			catalog.NewActionsSource(c),
-			catalog.NewActionsOutputWriter(c.BlockAdapter),
-			collector,
-			true,
-		)
+		actionsStore = actions.NewActionsDBStore(conn)
+		idGen = &actions.IncreasingIDGenerator{}
 	}
+
+	actionsService := actions.NewService(
+		ctx,
+		actionsStore,
+		catalog.NewActionsSource(c),
+		catalog.NewActionsOutputWriter(c.BlockAdapter),
+		idGen,
+		collector,
+		true,
+	)
 
 	c.SetHooksHandler(actionsService)
 
