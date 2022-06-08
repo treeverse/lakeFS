@@ -41,6 +41,7 @@ const (
 	envKeyAwsRegion       = "AWS_DEFAULT_REGION"
 
 	testMigrateValue = "This is a test value"
+	testPartitionKey = "This is a test partition key"
 )
 
 var keepDB = flag.Bool("keep-db", false, "keep test DB instance running")
@@ -269,8 +270,9 @@ func MigrateNoHeader(_ context.Context, _ *pgxpool.Pool, writer io.Writer) error
 
 	for i := 1; i < 5; i++ {
 		err := jd.Encode(kv.Entry{
-			Key:   []byte(strconv.Itoa(i)),
-			Value: []byte(fmt.Sprint(i, ". ", testMigrateValue)),
+			PartitionKey: []byte(strconv.Itoa(i)),
+			Key:          []byte(strconv.Itoa(i)),
+			Value:        []byte(fmt.Sprint(i, ". ", testMigrateValue)),
 		})
 		if err != nil {
 			log.Fatal("Failed to encode struct")
@@ -301,7 +303,7 @@ func MigrateParallel(_ context.Context, _ *pgxpool.Pool, writer io.Writer) error
 func ValidateKV(ctx context.Context, t *testing.T, store kv.Store, entries int) {
 	for i := 1; i <= entries; i++ {
 		expectedVal := fmt.Sprint(i, ". ", testMigrateValue)
-		res, err := store.Get(ctx, []byte(strconv.Itoa(i)))
+		res, err := store.Get(ctx, []byte(testPartitionKey), []byte(strconv.Itoa(i)))
 		require.NoError(t, err)
 		require.Equal(t, expectedVal, string(res.Value))
 	}
@@ -309,13 +311,14 @@ func ValidateKV(ctx context.Context, t *testing.T, store kv.Store, entries int) 
 
 func CleanupKV(ctx context.Context, t *testing.T, store kv.Store) {
 	t.Helper()
-	scan, err := store.Scan(ctx, []byte{0})
+
+	scan, err := store.Scan(ctx, []byte(testPartitionKey), []byte{0})
 	MustDo(t, "scan store", err)
 	defer scan.Close()
 
 	for scan.Next() {
 		ent := scan.Entry()
-		MustDo(t, "Clean store", store.Delete(ctx, ent.Key))
+		MustDo(t, "Clean store", store.Delete(ctx, ent.PartitionKey, ent.Key))
 	}
 }
 
@@ -333,8 +336,9 @@ func buildTestData(startIdx, count int, writer io.Writer) {
 	}
 	for i := startIdx; i < startIdx+count; i++ {
 		err = jd.Encode(kv.Entry{
-			Key:   []byte(strconv.Itoa(i)),
-			Value: []byte(fmt.Sprint(i, ". ", testMigrateValue)),
+			PartitionKey: []byte(testPartitionKey),
+			Key:          []byte(strconv.Itoa(i)),
+			Value:        []byte(fmt.Sprint(i, ". ", testMigrateValue)),
 		})
 		if err != nil {
 			log.Fatal("Failed to encode struct")

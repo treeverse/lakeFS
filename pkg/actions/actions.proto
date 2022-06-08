@@ -1,0 +1,29 @@
+syntax = "proto3";
+option go_package = "github.com/treeverse/lakefs/actions";
+
+import "google/protobuf/timestamp.proto";
+
+package io.treeverse.lakefs.actions;
+
+// message data model for RunResult struct
+message RunResultData {
+  string run_id = 1;
+  string branch_id = 2;
+  string commit_id = 3;
+  string source_ref = 4;
+  string event_type = 5;
+  google.protobuf.Timestamp start_time = 6;
+  google.protobuf.Timestamp end_time = 7;
+  bool passed = 8;
+}
+
+// message data model for TaskResult struct
+message TaskResultData {
+  string run_id = 1;
+  string hook_run_id = 2;
+  string hook_id = 3;
+  string action_name = 4;
+  google.protobuf.Timestamp start_time = 5;
+  google.protobuf.Timestamp end_time = 6;
+  bool passed = 9;
+}

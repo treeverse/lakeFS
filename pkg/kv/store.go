@@ -13,12 +13,14 @@ const (
 	InitialMigrateVersion = 1
 	PathDelimiter         = "/"
 	DBSchemaVersionKey    = "kv" + PathDelimiter + "schema" + PathDelimiter + "version"
+	MetadataPartitionKey  = "kv-internal-metadata"
 )
 
 var (
 	ErrClosedEntries       = errors.New("closed entries")
 	ErrConnectFailed       = errors.New("connect failed")
 	ErrDriverConfiguration = errors.New("driver configuration")
+	ErrMissingPartitionKey = errors.New("missing partition key")
 	ErrMissingKey          = errors.New("missing key")
 	ErrMissingValue        = errors.New("missing value")
 	ErrNotFound            = errors.New("not found")
@@ -57,22 +59,23 @@ type ValueWithPredicate struct {
 type Store interface {
 	// Get returns a result containing the Value and Predicate for the given key, or ErrNotFound if key doesn't exist
 	//   Predicate can be used for SetIf operation
-	Get(ctx context.Context, key []byte) (*ValueWithPredicate, error)
+	Get(ctx context.Context, partitionKey, key []byte) (*ValueWithPredicate, error)
 
 	// Set stores the given value, overwriting an existing value if one exists
-	Set(ctx context.Context, key, value []byte) error
+	Set(ctx context.Context, partitionKey, key, value []byte) error
 
 	// SetIf returns an ErrPredicateFailed error if the key with valuePredicate passed
 	//  doesn't match the currently stored value. SetIf is a simple compare-and-swap operator:
 	//  valuePredicate is either the existing value, or nil for no previous key exists.
 	//  this is intentionally simplistic: we can model a better abstraction on top, keeping this interface simple for implementors
-	SetIf(ctx context.Context, key, value []byte, valuePredicate Predicate) error
+	SetIf(ctx context.Context, partitionKey, key, value []byte, valuePredicate Predicate) error
 
 	// Delete will delete the key, no error in if key doesn't exist
-	Delete(ctx context.Context, key []byte) error
+	Delete(ctx context.Context, partitionKey, key []byte) error
 
 	// Scan returns entries that can be read by key order, starting at or after the `start` position
-	Scan(ctx context.Context, start []byte) (EntriesIterator, error)
+	// partitionKey is optional, passing it might increase performance.
+	Scan(ctx context.Context, partitionKey, start []byte) (EntriesIterator, error)
 
 	// Close access to the database store. After calling Close the instance is unusable.
 	Close()
@@ -97,8 +100,9 @@ type EntriesIterator interface {
 
 // Entry holds a pair of key/value
 type Entry struct {
-	Key   []byte
-	Value []byte
+	PartitionKey []byte
+	Key          []byte
+	Value        []byte
 }
 
 func (e *Entry) String() string {
@@ -164,7 +168,7 @@ func Drivers() []string {
 
 // GetDBSchemaVersion returns the current KV DB schema version
 func GetDBSchemaVersion(ctx context.Context, store Store) (int, error) {
-	res, err := store.Get(ctx, []byte(DBSchemaVersionKey))
+	res, err := store.Get(ctx, []byte(MetadataPartitionKey), []byte(DBSchemaVersionKey))
 	if err != nil {
 		return -1, err
 	}

@@ -12,8 +12,16 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/model"
 )
 
-func TestAuthMiddleware(t *testing.T) {
-	handler, deps := setupHandler(t)
+func TestDBAuthMiddleware(t *testing.T) {
+	testAuthMiddleware(t, false)
+}
+
+func TestKVAuthMiddleware(t *testing.T) {
+	testAuthMiddleware(t, true)
+}
+
+func testAuthMiddleware(t *testing.T, kvEnabled bool) {
+	handler, deps := setupHandler(t, kvEnabled)
 	server := setupServer(t, handler)
 	apiEndpoint := server.URL + api.BaseURL
 	clt := setupClientByEndpoint(t, server.URL, "", "")
@@ -133,7 +141,7 @@ func TestAuthMiddleware(t *testing.T) {
 	})
 }
 
-func testGenerateApiToken(ctx context.Context, t testing.TB, clt api.ClientWithResponsesInterface, cred *model.Credential) string {
+func testGenerateApiToken(ctx context.Context, t testing.TB, clt api.ClientWithResponsesInterface, cred *model.BaseCredential) string {
 	t.Helper()
 	loginReq := api.LoginJSONRequestBody{
 		AccessKeyId:     cred.AccessKeyID,
@@ -153,8 +161,9 @@ func testGenerateBadAPIToken(t testing.TB, authService auth.Service) string {
 	secret := authService.SecretStore().SharedSecret()
 	now := time.Now()
 	expires := now.Add(time.Hour)
+	userID := "2906"
 	// Generate a JWT for a nonexistent user.  It will fail authentication.
-	tokenString, err := api.GenerateJWTLogin(secret, 2906, now, expires)
+	tokenString, err := api.GenerateJWTLogin(secret, userID, now, expires)
 	if err != nil {
 		t.Fatal("Generate (bad) JWT token:", err)
 	}

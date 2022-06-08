@@ -54,6 +54,7 @@ func AuthenticationHandler(authService auth.GatewayService, next http.Handler) h
 			_ = o.EncodeError(w, req, getAPIErrOrDefault(err, gatewayerrors.ErrAccessDenied))
 			return
 		}
+
 		user, err := authService.GetUserByID(ctx, creds.UserID)
 		if err != nil {
 			logger.WithError(err).Warn("could not get user for credentials key")
