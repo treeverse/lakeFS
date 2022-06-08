@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/rs/xid"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -21,6 +20,7 @@ import (
 )
 
 const (
+	packageName   = "actions"
 	actionsPrefix = "actions"
 	PartitionKey  = "actions"
 	reposPrefix   = "repos"
@@ -28,7 +28,6 @@ const (
 	tasksPrefix   = "tasks"
 	branchPrefix  = "branches"
 	commitPrefix  = "commits"
-	unixYear3000  = 32500915200
 )
 
 var (
@@ -88,7 +87,7 @@ func (r *TaskResult) LogPath() string {
 	return FormatHookOutputPath(r.RunID, r.HookRunID)
 }
 
-func runResultFromProto(pb *RunResultData) *RunResult {
+func RunResultFromProto(pb *RunResultData) *RunResult {
 	return &RunResult{
 		RunID:     pb.RunId,
 		BranchID:  pb.BranchId,
@@ -455,7 +454,7 @@ func (s *KVService) UpdateCommitID(ctx context.Context, repositoryID string, sto
 		return fmt.Errorf("update run commit_id: %w", err)
 	}
 
-	manifest := &RunManifest{Run: *runResultFromProto(&run)}
+	manifest := &RunManifest{Run: *RunResultFromProto(&run)}
 
 	it, err := NewKVTaskResultIterator(ctx, s.Store, repositoryID, runID, "")
 	if err != nil {
@@ -490,7 +489,7 @@ func (s *KVService) GetRunResult(ctx context.Context, repositoryID string, runID
 		}
 		return nil, err
 	}
-	return runResultFromProto(&m), nil
+	return RunResultFromProto(&m), nil
 }
 
 func (s *KVService) GetTaskResult(ctx context.Context, repositoryID string, runID string, hookRunID string) (*TaskResult, error) {
@@ -573,9 +572,9 @@ func (s *KVService) PostDeleteBranchHook(_ context.Context, record graveler.Hook
 	s.asyncRun(record)
 }
 
+// NewRunID TODO(nior): WA until we have a single implementation
 func (s *KVService) NewRunID() string {
-	tm := time.Unix(unixYear3000-time.Now().Unix(), 0).UTC()
-	return xid.NewWithTime(tm).String()
+	return graveler.NewRunID()
 }
 
 func NewHookRunID(actionIdx, hookIdx int) string {
