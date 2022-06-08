@@ -1,6 +1,6 @@
 ---
 layout: default 
-title: Use Case – Isolated Environment
+title: Tutorial – Isolated Environment
 description: In this section we will explore how to use lakeFS for isolated dev environments.
 parent: Quickstart
 nav_order: 60
@@ -44,13 +44,13 @@ The following commands can be run in your terminal to get the bagel running:
 1. Clone the lakeFS repo: `git clone https://github.com/treeverse/lakeFS.git`
 2. Start the Docker containers: `cd deployments/compose && docker compose up -d`
 
-Once you have your Docker environment running, it is helpful to pull up the UI for lakeFS. To do this navigate to http://localhost:8000 in your browser. The access key and secret to login are found in the docker_compose.yml file in the “lakefs-setup” section.
+Once you have your Docker environment running, it is helpful to pull up the UI for lakeFS. To do this navigate to http://localhost:8000 in your browser. The access key and secret to login are found in the `docker_compose.yml` file in the `lakefs-setup` section.
 
 ![Setup Done]({{ site.baseurl }}/assets/img/iso-env-ex-repo.png)
 
 The first thing to notice is in this environment, lakeFS comes with a repository called `example` already created, and the repo’s default branch is `main`.
 
-Next it’ll be useful to add some data into this lakeFS repo. We’ll use an Amazon review dataset from a public S3 bucket. First we’ll download the file to our local computer using the AWS CLI. Then, we’ll upload it into lakeFS using the ‘Upload Object’ button in the UI.
+Next it’ll be useful to add some data into this lakeFS repo. We’ll use an Amazon review dataset from a public S3 bucket. First we’ll download the file to our local computer using the AWS CLI. Then, we’ll upload it into lakeFS using the `Upload Object` button in the UI.
 
 To install the AWS CLI, follow [these instructions](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) {: .note .note-info }
 
