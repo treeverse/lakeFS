@@ -35,10 +35,10 @@ var (
 	ErrNilValue = errors.New("nil value")
 )
 
-// MultiStorageService is an implementation of actions.Service that saves
+// StoreService is an implementation of actions.Service that saves
 // the run data to the blockstore and to the actions.Store (which is a
 // fancy name for a DB - kv style or postgres directly)
-type MultiStorageService struct {
+type StoreService struct {
 	Store    Store
 	idGen    IDGenerator
 	Source   Source
@@ -180,9 +180,9 @@ type Service interface {
 	graveler.HooksHandler
 }
 
-func NewService(ctx context.Context, store Store, source Source, writer OutputWriter, idGen IDGenerator, stats stats.Collector, runHooks bool) *MultiStorageService {
+func NewService(ctx context.Context, store Store, source Source, writer OutputWriter, idGen IDGenerator, stats stats.Collector, runHooks bool) *StoreService {
 	ctx, cancel := context.WithCancel(ctx)
-	return &MultiStorageService{
+	return &StoreService{
 		Store:    store,
 		Source:   source,
 		Writer:   writer,
@@ -195,12 +195,12 @@ func NewService(ctx context.Context, store Store, source Source, writer OutputWr
 	}
 }
 
-func (s *MultiStorageService) Stop() {
+func (s *StoreService) Stop() {
 	s.cancel()
 	s.wg.Wait()
 }
 
-func (s *MultiStorageService) asyncRun(record graveler.HookRecord) {
+func (s *StoreService) asyncRun(record graveler.HookRecord) {
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
@@ -214,7 +214,7 @@ func (s *MultiStorageService) asyncRun(record graveler.HookRecord) {
 }
 
 // Run load and run actions based on the event information
-func (s *MultiStorageService) Run(ctx context.Context, record graveler.HookRecord) error {
+func (s *StoreService) Run(ctx context.Context, record graveler.HookRecord) error {
 	if !s.runHooks {
 		logging.Default().WithField("record", record).Info("Hooks are disabled, skipping hooks execution")
 		return nil
@@ -248,7 +248,7 @@ func (s *MultiStorageService) Run(ctx context.Context, record graveler.HookRecor
 	return runErr
 }
 
-func (s *MultiStorageService) loadMatchedActions(ctx context.Context, record graveler.HookRecord, spec MatchSpec) ([]*Action, error) {
+func (s *StoreService) loadMatchedActions(ctx context.Context, record graveler.HookRecord, spec MatchSpec) ([]*Action, error) {
 	actions, err := LoadActions(ctx, s.Source, record)
 	if err != nil {
 		return nil, err
@@ -256,7 +256,7 @@ func (s *MultiStorageService) loadMatchedActions(ctx context.Context, record gra
 	return MatchedActions(actions, spec)
 }
 
-func (s *MultiStorageService) allocateTasks(runID string, actions []*Action) ([][]*Task, error) {
+func (s *StoreService) allocateTasks(runID string, actions []*Action) ([][]*Task, error) {
 	var tasks [][]*Task
 	for actionIdx, action := range actions {
 		var actionTasks []*Task
@@ -282,7 +282,7 @@ func (s *MultiStorageService) allocateTasks(runID string, actions []*Action) ([]
 	return tasks, nil
 }
 
-func (s *MultiStorageService) runTasks(ctx context.Context, record graveler.HookRecord, tasks [][]*Task) error {
+func (s *StoreService) runTasks(ctx context.Context, record graveler.HookRecord, tasks [][]*Task) error {
 	var g multierror.Group
 	for _, actionTasks := range tasks {
 		actionTasks := actionTasks // pin
@@ -327,7 +327,7 @@ func (s *MultiStorageService) runTasks(ctx context.Context, record graveler.Hook
 	return g.Wait().ErrorOrNil()
 }
 
-func (s *MultiStorageService) saveRunInformation(ctx context.Context, record graveler.HookRecord, tasks [][]*Task) error {
+func (s *StoreService) saveRunInformation(ctx context.Context, record graveler.HookRecord, tasks [][]*Task) error {
 	if len(tasks) == 0 {
 		return nil
 	}
@@ -342,7 +342,7 @@ func (s *MultiStorageService) saveRunInformation(ctx context.Context, record gra
 	return s.saveRunManifestObjectStore(ctx, manifest, record.StorageNamespace.String(), record.RunID)
 }
 
-func (s *MultiStorageService) saveRunManifestObjectStore(ctx context.Context, manifest RunManifest, storageNamespace string, runID string) error {
+func (s *StoreService) saveRunManifestObjectStore(ctx context.Context, manifest RunManifest, storageNamespace string, runID string) error {
 	manifestJSON, err := json.Marshal(manifest)
 	if err != nil {
 		return fmt.Errorf("marshal run manifest: %w", err)
@@ -353,7 +353,7 @@ func (s *MultiStorageService) saveRunManifestObjectStore(ctx context.Context, ma
 	return s.Writer.OutputWrite(ctx, storageNamespace, runManifestPath, manifestReader, manifestSize)
 }
 
-func (s *MultiStorageService) saveRunManifestDB(ctx context.Context, repositoryID graveler.RepositoryID, manifest RunManifest) error {
+func (s *StoreService) saveRunManifestDB(ctx context.Context, repositoryID graveler.RepositoryID, manifest RunManifest) error {
 	return s.Store.saveRunManifest(ctx, repositoryID, manifest)
 }
 
@@ -398,7 +398,7 @@ func buildRunManifestFromTasks(record graveler.HookRecord, tasks [][]*Task) RunM
 }
 
 // UpdateCommitID assume record is a post event, we use the PreRunID to update the commit_id and save the run manifest again
-func (s *MultiStorageService) UpdateCommitID(ctx context.Context, repositoryID string, storageNamespace string, runID string, commitID string) error {
+func (s *StoreService) UpdateCommitID(ctx context.Context, repositoryID string, storageNamespace string, runID string, commitID string) error {
 	manifest, err := s.Store.UpdateCommitID(ctx, repositoryID, runID, commitID)
 	if err != nil {
 		return fmt.Errorf("updating commit ID: %w", err)
@@ -411,27 +411,27 @@ func (s *MultiStorageService) UpdateCommitID(ctx context.Context, repositoryID s
 	return s.saveRunManifestObjectStore(ctx, *manifest, storageNamespace, runID)
 }
 
-func (s *MultiStorageService) GetRunResult(ctx context.Context, repositoryID string, runID string) (*RunResult, error) {
+func (s *StoreService) GetRunResult(ctx context.Context, repositoryID string, runID string) (*RunResult, error) {
 	return s.Store.GetRunResult(ctx, repositoryID, runID)
 }
 
-func (s *MultiStorageService) GetTaskResult(ctx context.Context, repositoryID string, runID string, hookRunID string) (*TaskResult, error) {
+func (s *StoreService) GetTaskResult(ctx context.Context, repositoryID string, runID string, hookRunID string) (*TaskResult, error) {
 	return s.Store.GetTaskResult(ctx, repositoryID, runID, hookRunID)
 }
 
-func (s *MultiStorageService) ListRunResults(ctx context.Context, repositoryID string, branchID, commitID string, after string) (RunResultIterator, error) {
+func (s *StoreService) ListRunResults(ctx context.Context, repositoryID string, branchID, commitID string, after string) (RunResultIterator, error) {
 	return s.Store.ListRunResults(ctx, repositoryID, branchID, commitID, after)
 }
 
-func (s *MultiStorageService) ListRunTaskResults(ctx context.Context, repositoryID string, runID string, after string) (TaskResultIterator, error) {
+func (s *StoreService) ListRunTaskResults(ctx context.Context, repositoryID string, runID string, after string) (TaskResultIterator, error) {
 	return s.Store.ListRunTaskResults(ctx, repositoryID, runID, after)
 }
 
-func (s *MultiStorageService) PreCommitHook(ctx context.Context, record graveler.HookRecord) error {
+func (s *StoreService) PreCommitHook(ctx context.Context, record graveler.HookRecord) error {
 	return s.Run(ctx, record)
 }
 
-func (s *MultiStorageService) PostCommitHook(ctx context.Context, record graveler.HookRecord) error {
+func (s *StoreService) PostCommitHook(ctx context.Context, record graveler.HookRecord) error {
 	// update pre-commit with commit ID if needed
 	err := s.UpdateCommitID(ctx, record.RepositoryID.String(), record.StorageNamespace.String(), record.PreRunID, record.CommitID.String())
 	if err != nil {
@@ -442,11 +442,11 @@ func (s *MultiStorageService) PostCommitHook(ctx context.Context, record gravele
 	return nil
 }
 
-func (s *MultiStorageService) PreMergeHook(ctx context.Context, record graveler.HookRecord) error {
+func (s *StoreService) PreMergeHook(ctx context.Context, record graveler.HookRecord) error {
 	return s.Run(ctx, record)
 }
 
-func (s *MultiStorageService) PostMergeHook(ctx context.Context, record graveler.HookRecord) error {
+func (s *StoreService) PostMergeHook(ctx context.Context, record graveler.HookRecord) error {
 	// update pre-merge with commit ID if needed
 	err := s.UpdateCommitID(ctx, record.RepositoryID.String(), record.StorageNamespace.String(), record.PreRunID, record.CommitID.String())
 	if err != nil {
@@ -457,40 +457,39 @@ func (s *MultiStorageService) PostMergeHook(ctx context.Context, record graveler
 	return nil
 }
 
-func (s *MultiStorageService) PreCreateTagHook(ctx context.Context, record graveler.HookRecord) error {
+func (s *StoreService) PreCreateTagHook(ctx context.Context, record graveler.HookRecord) error {
 	return s.Run(ctx, record)
 }
 
-func (s *MultiStorageService) PostCreateTagHook(_ context.Context, record graveler.HookRecord) {
+func (s *StoreService) PostCreateTagHook(_ context.Context, record graveler.HookRecord) {
 	s.asyncRun(record)
 }
 
-func (s *MultiStorageService) PreDeleteTagHook(ctx context.Context, record graveler.HookRecord) error {
+func (s *StoreService) PreDeleteTagHook(ctx context.Context, record graveler.HookRecord) error {
 	return s.Run(ctx, record)
 }
 
-func (s *MultiStorageService) PostDeleteTagHook(_ context.Context, record graveler.HookRecord) {
+func (s *StoreService) PostDeleteTagHook(_ context.Context, record graveler.HookRecord) {
 	s.asyncRun(record)
 }
 
-func (s *MultiStorageService) PreCreateBranchHook(ctx context.Context, record graveler.HookRecord) error {
+func (s *StoreService) PreCreateBranchHook(ctx context.Context, record graveler.HookRecord) error {
 	return s.Run(ctx, record)
 }
 
-func (s *MultiStorageService) PostCreateBranchHook(_ context.Context, record graveler.HookRecord) {
+func (s *StoreService) PostCreateBranchHook(_ context.Context, record graveler.HookRecord) {
 	s.asyncRun(record)
 }
 
-func (s *MultiStorageService) PreDeleteBranchHook(ctx context.Context, record graveler.HookRecord) error {
+func (s *StoreService) PreDeleteBranchHook(ctx context.Context, record graveler.HookRecord) error {
 	return s.Run(ctx, record)
 }
 
-func (s *MultiStorageService) PostDeleteBranchHook(_ context.Context, record graveler.HookRecord) {
+func (s *StoreService) PostDeleteBranchHook(_ context.Context, record graveler.HookRecord) {
 	s.asyncRun(record)
 }
 
-// NewRunID TODO(nior): WA until we have a single implementation
-func (s *MultiStorageService) NewRunID() string {
+func (s *StoreService) NewRunID() string {
 	return s.idGen.NewRunID()
 }
 

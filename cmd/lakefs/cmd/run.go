@@ -180,7 +180,6 @@ var runCmd = &cobra.Command{
 		bufferedCollector.CollectMetadata(metadata)
 
 		var multipartsTracker multiparts.Tracker
-
 		var idGen actions.IDGenerator
 		var actionsStore actions.Store
 
@@ -193,12 +192,10 @@ var runCmd = &cobra.Command{
 			storeMessage := kv.StoreMessage{Store: kvStore}
 
 			multipartsTracker = multiparts.NewTracker(storeMessage)
-
 			actionsStore = actions.NewActionsKVStore(kv.StoreMessage{Store: kvStore})
 			idGen = &actions.DecreasingIDGenerator{}
 		} else {
 			multipartsTracker = multiparts.NewDBTracker(dbPool)
-
 			actionsStore = actions.NewActionsDBStore(dbPool)
 			idGen = &actions.IncreasingIDGenerator{}
 		}
