@@ -14,6 +14,7 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
+	"github.com/treeverse/lakefs/pkg/auth/oidc"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -123,17 +124,13 @@ func checkSecurityRequirements(r *http.Request,
 }
 
 func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.Service, authSession *sessions.Session, oidcConfig *config.OIDC) (*model.User, error) {
-	profile, ok := authSession.Values["profile"].(map[string]interface{})
-	if !ok || profile == nil {
+	idTokenClaims, ok := authSession.Values[IdTokenClaimsSessionKey].(oidc.Claims)
+	if !ok || idTokenClaims == nil {
 		return nil, ErrAuthenticatingRequest
 	}
-	accessTokenClaims, ok := authSession.Values["access_token_claims"].(map[string]interface{})
-	if !ok || profile == nil {
-		return nil, ErrAuthenticatingRequest
-	}
-	externalID, ok := profile["sub"].(string)
+	externalID, ok := idTokenClaims["sub"].(string)
 	if !ok {
-		logger.WithField("sub", profile["sub"]).Error("Failed type assertion for sub claim")
+		logger.WithField("sub", idTokenClaims["sub"]).Error("Failed type assertion for sub claim")
 		return nil, ErrAuthenticatingRequest
 	}
 	user, err := authService.GetUser(ctx, externalID)
@@ -159,7 +156,7 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 		return nil, err
 	}
 	initialGroups := oidcConfig.DefaultInitialGroups
-	if userInitialGroups, ok := accessTokenClaims["initial_groups"].(string); ok {
+	if userInitialGroups, ok := idTokenClaims[oidcConfig.InitialGroupsClaimName].(string); ok {
 		initialGroups = strings.Split(userInitialGroups, ",")
 	}
 	for _, g := range initialGroups {

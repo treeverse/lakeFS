@@ -3,7 +3,6 @@ package api
 //go:generate oapi-codegen -package api -generate "types,client,chi-server,spec" -templates tmpl -o lakefs.gen.go ../../api/swagger.yml
 
 import (
-	"encoding/gob"
 	"encoding/json"
 	"errors"
 	"io"
@@ -19,6 +18,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/treeverse/lakefs/pkg/api/params"
 	"github.com/treeverse/lakefs/pkg/auth"
+	authoidc "github.com/treeverse/lakefs/pkg/auth/oidc"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/cloud"
@@ -63,7 +63,6 @@ func Serve(
 	oidcProvider *oidc.Provider,
 	oauthConfig *oauth2.Config,
 ) http.Handler {
-	gob.Register(map[string]interface{}{})
 	logger.Info("initialize OpenAPI server")
 	swagger, err := GetSwagger()
 	if err != nil {
@@ -83,6 +82,7 @@ func Serve(
 		AuthMiddleware(logger, swagger, middlewareAuthenticator, authService, sessionStore, cfg.GetAuthOIDCConfiguration()),
 		MetricsMiddleware(swagger),
 	)
+	oidcAuthenticator := authoidc.NewAuthenticator(oauthConfig, oidcProvider)
 	controller := NewController(
 		cfg,
 		catalog,
@@ -97,8 +97,7 @@ func Serve(
 		auditChecker,
 		logger,
 		emailer,
-		oauthConfig,
-		oidcProvider,
+		oidcAuthenticator,
 		sessionStore,
 	)
 	HandlerFromMuxWithBaseURL(controller, apiRouter, BaseURL)

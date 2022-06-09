@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"context"
+	"encoding/gob"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,13 +19,13 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/coreos/go-oidc"
 	"github.com/go-openapi/swag"
 	"github.com/gorilla/sessions"
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
+	"github.com/treeverse/lakefs/pkg/auth/oidc"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/adapter"
 	"github.com/treeverse/lakefs/pkg/catalog"
@@ -40,7 +41,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/version"
-	"golang.org/x/oauth2"
 )
 
 type contextKey string
@@ -86,8 +86,7 @@ type Controller struct {
 	Logger                logging.Logger
 	Emailer               *email.Emailer
 	sessionStore          sessions.Store
-	oauthConfig           *oauth2.Config
-	oidcProvider          *oidc.Provider
+	oidcAuthenticator     *oidc.Authenticator
 }
 
 func (c *Controller) GetAuthCapabilities(w http.ResponseWriter, _ *http.Request) {
@@ -166,7 +165,7 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 	writeResponse(w, http.StatusOK, response)
 }
 
-func (c *Controller) Logout(w http.ResponseWriter, _ *http.Request) {
+func (c *Controller) Logout(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     JWTCookieName,
 		Value:    "",
@@ -176,57 +175,35 @@ func (c *Controller) Logout(w http.ResponseWriter, _ *http.Request) {
 		Expires:  time.Unix(0, 0),
 		SameSite: http.SameSiteStrictMode,
 	})
-
+	session, err := c.sessionStore.Get(r, OIDCAuthSessionName)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+	}
+	session.Values = nil
+	err = session.Save(r, w)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+	}
 	writeResponse(w, http.StatusOK, nil)
 }
 
 func (c *Controller) OauthCallback(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-
 	session, err := c.sessionStore.Get(r, OIDCAuthSessionName)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if r.URL.Query().Get("state") != session.Values["state"] {
+	if r.URL.Query().Get("state") != session.Values[StateSessionKey] {
 		writeError(w, http.StatusBadRequest, "Invalid state parameter.")
 		return
 	}
-
-	// Exchange an authorization code for a token.
-	token, err := c.oauthConfig.Exchange(ctx, r.URL.Query().Get("code"))
+	idTokenClaims, err := c.oidcAuthenticator.GetIDTokenClaims(ctx, r.URL.Query().Get("code"))
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "Failed to exchange an authorization code for a token.")
-		return
-	}
-	rawIDToken, ok := token.Extra("id_token").(string)
-	if !ok {
-		writeError(w, http.StatusUnauthorized, "no id_token field in oauth2 token")
-	}
-	rawAccessToken, ok := token.Extra("access_token").(string)
-	if !ok {
-		writeError(w, http.StatusUnauthorized, "no access_token field in oauth2 token")
-	}
-
-	oidcVerifier := c.oidcProvider.Verifier(&oidc.Config{
-		ClientID: c.oauthConfig.ClientID,
-	})
-	idToken, err := oidcVerifier.Verify(ctx, rawIDToken)
-
-	var profile map[string]interface{}
-	if err := idToken.Claims(&profile); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	var accessTokenClaims map[string]interface{}
-	accessToken, err := oidcVerifier.Verify(ctx, rawAccessToken)
-	if err := accessToken.Claims(&accessTokenClaims); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	session.Values["access_token_claims"] = accessTokenClaims
-	session.Values["profile"] = profile
+	session.Values[IdTokenClaimsSessionKey] = idTokenClaims
 	err = session.Save(r, w)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
@@ -3462,10 +3439,10 @@ func NewController(
 	auditChecker AuditChecker,
 	logger logging.Logger,
 	emailer *email.Emailer,
-	oauthConfig *oauth2.Config,
-	oidcProvider *oidc.Provider,
+	oidcAuthenticator *oidc.Authenticator,
 	sessionStore sessions.Store,
 ) *Controller {
+	gob.Register(oidc.Claims{})
 	return &Controller{
 		Config:                cfg,
 		Catalog:               catalog,
@@ -3480,9 +3457,8 @@ func NewController(
 		AuditChecker:          auditChecker,
 		Logger:                logger,
 		Emailer:               emailer,
-		oauthConfig:           oauthConfig,
-		oidcProvider:          oidcProvider,
 		sessionStore:          sessionStore,
+		oidcAuthenticator:     oidcAuthenticator,
 	}
 }
 

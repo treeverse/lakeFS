@@ -12,6 +12,9 @@ import (
 
 const (
 	OIDCAuthSessionName = "auth_session"
+
+	IdTokenClaimsSessionKey = "id_token_claims"
+	StateSessionKey         = "state"
 )
 
 func NewOIDCLoginPageHandler(sessionStore sessions.Store, oauthConfig *oauth2.Config) http.HandlerFunc {
@@ -27,7 +30,7 @@ func NewOIDCLoginPageHandler(sessionStore sessions.Store, oauthConfig *oauth2.Co
 			writeError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
-		session.Values["state"] = state
+		session.Values[StateSessionKey] = state
 		if err := session.Save(r, w); err != nil {
 			writeError(w, http.StatusInternalServerError, err.Error())
 			return
