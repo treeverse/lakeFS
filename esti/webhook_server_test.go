@@ -103,6 +103,7 @@ func hookHandlerFunc(respCh chan hookResponse) func(http.ResponseWriter, *http.R
 			return
 		}
 
+		time.Sleep(1 * time.Second) // Added sleep to differentiate between event timestamps
 		respCh <- hookResponse{path: request.URL.Path, data: data, queryParams: request.URL.Query()}
 		_, _ = io.WriteString(writer, "OK")
 		writer.WriteHeader(http.StatusOK)

@@ -133,19 +133,6 @@ var runCmd = &cobra.Command{
 		}
 		defer func() { _ = c.Close() }()
 
-		var multipartsTracker multiparts.Tracker
-
-		if dbParams.KVEnabled {
-			kvStore, err := kv.Open(ctx, dbParams.Type, dbParams.ConnectionString)
-			if err != nil {
-				logger.WithError(err).Fatal("failed to open KV store")
-			}
-			defer kvStore.Close()
-			multipartsTracker = multiparts.NewTracker(kv.StoreMessage{Store: kvStore})
-		} else {
-			multipartsTracker = multiparts.NewDBTracker(dbPool)
-		}
-
 		// init authentication
 		var authService auth.Service
 		if cfg.IsAuthTypeAPI() {
@@ -192,17 +179,40 @@ var runCmd = &cobra.Command{
 		// send metadata
 		bufferedCollector.CollectMetadata(metadata)
 
-		// wire actions
+		var multipartsTracker multiparts.Tracker
+		var idGen actions.IDGenerator
+		var actionsStore actions.Store
+
+		if dbParams.KVEnabled {
+			kvStore, err := kv.Open(ctx, dbParams.Type, dbParams.ConnectionString)
+			if err != nil {
+				logger.WithError(err).Fatal("failed to open KV store")
+			}
+			defer kvStore.Close()
+			storeMessage := kv.StoreMessage{Store: kvStore}
+
+			multipartsTracker = multiparts.NewTracker(storeMessage)
+			actionsStore = actions.NewActionsKVStore(kv.StoreMessage{Store: kvStore})
+			idGen = &actions.DecreasingIDGenerator{}
+		} else {
+			multipartsTracker = multiparts.NewDBTracker(dbPool)
+			actionsStore = actions.NewActionsDBStore(dbPool)
+			idGen = &actions.IncreasingIDGenerator{}
+		}
+
 		actionsService := actions.NewService(
 			ctx,
-			dbPool,
+			actionsStore,
 			catalog.NewActionsSource(c),
 			catalog.NewActionsOutputWriter(c.BlockAdapter),
+			idGen,
 			bufferedCollector,
 			cfg.GetActionsEnabled(),
 		)
-		c.SetHooksHandler(actionsService)
+
+		// wire actions into entry catalog
 		defer actionsService.Stop()
+		c.SetHooksHandler(actionsService)
 
 		auditChecker := version.NewDefaultAuditChecker(cfg.GetSecurityAuditCheckURL())
 		defer auditChecker.Close()

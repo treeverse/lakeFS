@@ -17,7 +17,6 @@ var (
 
 func TestMain(m *testing.M) {
 	flag.Parse()
-
 	var err error
 	pool, err = dockertest.NewPool("")
 	if err != nil {

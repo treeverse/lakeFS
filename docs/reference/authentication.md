@@ -28,22 +28,6 @@ Web UI at Administration / Users to create users.  Users have an access key
 to log into the Web UI, or to authenticate programmatic requests to the API
 Server or the S3 Gateway.
 
-#### LakeFS Invite
-
-Lakefs supports inviting users via email.
-
-If you were invited to lakeFS, follow these steps to create and activate your account:
-
-1. Locate the email sent to you (be aware it may be in your spam folder).
-1. Click on the link in the email to open the account activation page.
-1. Set your account password.
-1. Now you can login to the GUI using your email and the password you created for your account in the previous step.
-
-You can now generate an access key and a secret access key on the Web UI
-at Administration / My Credentials. Use the email / password for login to 
-the GUI only.
-
-
 #### LDAP server
 
 Configure lakeFS to authenticate users on an LDAP server.  Once configured,

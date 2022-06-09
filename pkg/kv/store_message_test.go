@@ -20,8 +20,7 @@ const modelPartitionKey = "tm"
 
 func TestStoreMessage(t *testing.T) {
 	ctx := context.Background()
-	store := GetStore(ctx, t)
-	defer store.Close()
+	store := kvtest.GetStore(ctx, t)
 
 	sm := kv.StoreMessage{
 		Store: store,
@@ -249,13 +248,14 @@ func testStoreMessageScan(t *testing.T, ctx context.Context, sm kv.StoreMessage)
 	require.NoError(t, sm.Store.Set(ctx, []byte(modelPartitionKey), []byte(postModelKey), []byte(postModelData)))
 	itr, err := sm.Scan(ctx, m.ProtoReflect().Type(), modelPartitionKey, modelKeyPrefix)
 	testutil.MustDo(t, "get iterator", err)
+	defer itr.Close()
 	count := 0
 	for itr.Next() {
 		entry := itr.Entry()
-		require.Nil(t, itr.Err())
 		require.NotNil(t, entry)
 		value, ok := entry.Value.(*kvtest.TestModel)
 		require.True(t, ok)
+		require.Nil(t, itr.Err())
 		require.Equal(t, kv.FormatPath(modelKeyPrefix, strconv.Itoa(count)), entry.Key)
 		require.True(t, proto.Equal(value, m))
 		count++
@@ -290,32 +290,21 @@ func testStoreMessageScanWrongFormat(t *testing.T, ctx context.Context, sm kv.St
 
 	itr, err := sm.Scan(ctx, m.ProtoReflect().Type(), modelPartitionKey, modelKeyPrefix)
 	testutil.MustDo(t, "get iterator", err)
+	defer itr.Close()
 
 	for i := 0; i < modelNum; i++ {
 		require.True(t, itr.Next())
 		entry := itr.Entry()
-		require.Nil(t, itr.Err())
-		require.NotNil(t, entry)
 		value, ok := entry.Value.(*kvtest.TestModel)
 		require.True(t, ok)
 		require.Equal(t, kv.FormatPath(modelKeyPrefix, strconv.Itoa(i)), entry.Key)
 		require.True(t, proto.Equal(value, m))
 	}
 
-	require.True(t, itr.Next())
-	badEntry := itr.Entry()
-	require.Nil(t, badEntry)
+	// bad Entry
+	require.False(t, itr.Next())
+	value := itr.Entry()
+	require.Nil(t, value)
 	require.ErrorIs(t, itr.Err(), proto.Error)
 	require.False(t, itr.Next())
-}
-
-// GetStore helper function to return Store object for all unit tests
-func GetStore(ctx context.Context, t *testing.T) kv.Store {
-	t.Helper()
-	const storeType = "mem"
-	store, err := kv.Open(ctx, storeType, "")
-	if err != nil {
-		t.Fatalf("failed to open kv (%s) store: %s", storeType, err)
-	}
-	return store
 }
