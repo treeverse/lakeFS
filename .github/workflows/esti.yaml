@@ -65,6 +65,9 @@ jobs:
             ${{ runner.os }}-build-
             ${{ runner.os }}-
 
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '16.15.0'
       - name: Generate code
         run: |
           make -j3 gen-api gen-ui
