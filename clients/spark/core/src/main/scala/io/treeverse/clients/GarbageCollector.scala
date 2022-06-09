@@ -361,22 +361,21 @@ object GarbageCollector {
     val removed =
       remove(storageNamespace, gcAddressesLocation, expiredAddresses, runID, region, hcValues)
 
-    // BUG(ariels): Write to some other location!
+    val commitsDF = getCommitsDF(runID, gcCommitsLocation, spark)
+    val reportLogsDst = s"${storageNamespace}/_lakefs/logs/gc/summary/"
+    val reportExpiredDst = s"${storageNamespace}/_lakefs/logs/gc/expired_addresses/"
+
+    val time = DateTimeFormatter.ISO_INSTANT.format(java.time.Clock.systemUTC.instant())
+    writeParquetReport(commitsDF, reportLogsDst, time, "commits.parquet")
+    writeParquetReport(expiredAddresses, reportExpiredDst, time)
+    writeJsonSummary(reportLogsDst, removed.count(), gcRules, hcValues, time)
+
     removed
       .withColumn("run_id", lit(runID))
       .write
       .partitionBy("run_id")
       .mode(SaveMode.Overwrite)
-      .parquet(gcAddressesLocation + ".deleted")
-
-    val commitsDF = getCommitsDF(runID, gcCommitsLocation, spark)
-    val reportLogsDst = storageNamespace + "/_lakefs/logs/gc/summary/"
-    val reportDeletedDst = storageNamespace + "/_lakefs/logs/gc/deleted_objects/"
-
-    val time = DateTimeFormatter.ISO_INSTANT.format(java.time.Clock.systemUTC.instant())
-    writeParquetReport(reportLogsDst, commitsDF, time, "commits.parquet")
-    writeParquetReport(reportDeletedDst, expiredAddresses, time)
-    writeJsonSummary(reportLogsDst, removed.count(), gcRules, hcValues, time)
+      .parquet(s"${storageNamespace}/_lakefs/logs/gc/deleted_objects/${time}/deleted.parquet")
 
     spark.close()
   }
@@ -465,12 +464,12 @@ object GarbageCollector {
   }
 
   private def writeParquetReport(
-      dstRoot: String,
       df: DataFrame,
+      dstRoot: String,
       time: String,
       suffix: String = ""
   ) = {
-    val dstPath = dstRoot + s"/dt=${time}/${suffix}"
+    val dstPath = s"${dstRoot}/dt=${time}/${suffix}"
     df.write.parquet(dstPath)
   }
 
@@ -481,12 +480,15 @@ object GarbageCollector {
       hcValues: Broadcast[ConfMap],
       time: String
   ) = {
-    val dstPath = new Path(dstRoot + s"/dt=${time}/summary.json")
+    val dstPath = new Path(s"${dstRoot}/dt=${time}/summary.json")
     val dstFS = dstPath.getFileSystem(configurationFromValues(hcValues))
     val jsonSummary = JObject("gc_rules" -> gcRules, "num_deleted_objects" -> numDeletedObjects)
 
     val stream = dstFS.create(dstPath)
-    stream.writeChars(compact(render(jsonSummary)))
-    stream.close()
+    try {
+      stream.writeChars(compact(render(jsonSummary)))
+    } finally {
+      stream.close()
+    }
   }
 }

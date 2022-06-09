@@ -29,11 +29,6 @@ private object ApiClient {
              )
     else
       uri
-
-  def getCommitTimeStamp(repoName: String, commitID: String, commitsApi: api.CommitsApi): Long = {
-    val commit = commitsApi.getCommit(repoName, commitID)
-    commit.getCreationDate
-  }
 }
 
 class ApiClient(apiUrl: String, accessKey: String, secretKey: String) {
