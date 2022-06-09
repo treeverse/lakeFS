@@ -14,6 +14,7 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
@@ -31,7 +32,7 @@ func extractSecurityRequirements(router routers.Router, r *http.Request) (openap
 	return *route.Operation.Security, nil
 }
 
-func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authenticator auth.Authenticator, authService auth.Service, sessionStore sessions.Store) func(next http.Handler) http.Handler {
+func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authenticator auth.Authenticator, authService auth.Service, sessionStore sessions.Store, oidcConfig *config.OIDC) func(next http.Handler) http.Handler {
 	router, err := legacy.NewRouter(swagger)
 	if err != nil {
 		panic(err)
@@ -43,7 +44,7 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authentica
 				writeError(w, http.StatusBadRequest, err)
 				return
 			}
-			user, err := checkSecurityRequirements(r, securityRequirements, logger, authenticator, authService, sessionStore)
+			user, err := checkSecurityRequirements(r, securityRequirements, logger, authenticator, authService, sessionStore, oidcConfig)
 			if err != nil {
 				writeError(w, http.StatusUnauthorized, err)
 				return
@@ -58,7 +59,14 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authentica
 
 // checkSecurityRequirements goes over the security requirements and check the authentication. returns the user information and error if the security check was required.
 // it will return nil user and error in case of no security checks to match.
-func checkSecurityRequirements(r *http.Request, securityRequirements openapi3.SecurityRequirements, logger logging.Logger, authenticator auth.Authenticator, authService auth.Service, sessionStore sessions.Store) (*model.User, error) {
+func checkSecurityRequirements(r *http.Request,
+	securityRequirements openapi3.SecurityRequirements,
+	logger logging.Logger,
+	authenticator auth.Authenticator,
+	authService auth.Service,
+	sessionStore sessions.Store,
+	oidcConfig *config.OIDC,
+) (*model.User, error) {
 	ctx := r.Context()
 	var user *model.User
 	var err error
@@ -97,7 +105,7 @@ func checkSecurityRequirements(r *http.Request, securityRequirements openapi3.Se
 				}
 				user, err = userByToken(ctx, logger, authService, jwtCookie.Value)
 			case "oidc_auth":
-				user, err = userFromOIDC(ctx, logger, authService, session)
+				user, err = userFromOIDC(ctx, logger, authService, session, oidcConfig)
 			default:
 				// unknown security requirement to check
 				logger.WithField("provider", provider).Error("Authentication middleware unknown security requirement provider")
@@ -114,17 +122,21 @@ func checkSecurityRequirements(r *http.Request, securityRequirements openapi3.Se
 	return nil, nil
 }
 
-func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.Service, authSession *sessions.Session) (*model.User, error) {
+func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.Service, authSession *sessions.Session, oidcConfig *config.OIDC) (*model.User, error) {
 	profile, ok := authSession.Values["profile"].(map[string]interface{})
 	if !ok || profile == nil {
 		return nil, ErrAuthenticatingRequest
 	}
-	username, ok := profile["sub"].(string)
+	accessTokenClaims, ok := authSession.Values["access_token_claims"].(map[string]interface{})
+	if !ok || profile == nil {
+		return nil, ErrAuthenticatingRequest
+	}
+	externalID, ok := profile["sub"].(string)
 	if !ok {
 		logger.WithField("sub", profile["sub"]).Error("Failed type assertion for sub claim")
 		return nil, ErrAuthenticatingRequest
 	}
-	user, err := authService.GetUser(ctx, username)
+	user, err := authService.GetUser(ctx, externalID)
 	if err == nil {
 		return user, nil
 	}
@@ -132,23 +144,35 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 		return nil, err
 	}
 
-	u := &model.User{
-		CreatedAt: time.Now().UTC(),
-		Source:    "oidc",
-		Username:  username,
+	u := model.BaseUser{
+		CreatedAt:  time.Now().UTC(),
+		Source:     "oidc",
+		Username:   externalID,
+		ExternalID: externalID,
 	}
-	_, err = authService.CreateUser(ctx, u)
+	userID, err := authService.CreateUser(ctx, &u)
+
 	if err != nil {
 		if errors.Is(err, db.ErrAlreadyExists) {
-			return authService.GetUser(ctx, username)
+			return authService.GetUser(ctx, externalID)
 		}
 		return nil, err
 	}
-	err = authService.AddUserToGroup(ctx, u.Username, auth.DevelopersGroup) // TODO(johnnyaug) for OIDC logins, authorization should be handled by the identity provider
-	if err != nil {
-		return nil, err
+	initialGroups := oidcConfig.DefaultInitialGroups
+	if userInitialGroups, ok := accessTokenClaims["initial_groups"].(string); ok {
+		initialGroups = strings.Split(userInitialGroups, ",")
 	}
-	return u, nil
+	for _, g := range initialGroups {
+		err = authService.AddUserToGroup(ctx, u.Username, strings.TrimSpace(g))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &model.User{
+		ID:       userID,
+		BaseUser: u,
+	}, nil
 }
 
 func userByToken(ctx context.Context, logger logging.Logger, authService auth.Service, tokenString string) (*model.User, error) {

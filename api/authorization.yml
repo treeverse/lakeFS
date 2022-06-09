@@ -129,6 +129,7 @@ components:
         encryptedPassword:
           type: string
           format: byte
+
     UserPassword:
       type: object
       required:

@@ -80,7 +80,7 @@ func Serve(
 			RequestIDHeaderName,
 			logging.Fields{logging.ServiceNameFieldKey: LoggerServiceName},
 			cfg.GetLoggingTraceRequestHeaders()),
-		AuthMiddleware(logger, swagger, middlewareAuthenticator, authService, sessionStore),
+		AuthMiddleware(logger, swagger, middlewareAuthenticator, authService, sessionStore, cfg.GetAuthOIDCConfiguration()),
 		MetricsMiddleware(swagger),
 	)
 	controller := NewController(

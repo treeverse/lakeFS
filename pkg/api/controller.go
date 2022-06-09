@@ -203,6 +203,11 @@ func (c *Controller) OauthCallback(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		writeError(w, http.StatusUnauthorized, "no id_token field in oauth2 token")
 	}
+	rawAccessToken, ok := token.Extra("access_token").(string)
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "no access_token field in oauth2 token")
+	}
+
 	oidcVerifier := c.oidcProvider.Verifier(&oidc.Config{
 		ClientID: c.oauthConfig.ClientID,
 	})
@@ -213,7 +218,14 @@ func (c *Controller) OauthCallback(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	session.Values["access_token"] = token.AccessToken
+	var accessTokenClaims map[string]interface{}
+	accessToken, err := oidcVerifier.Verify(ctx, rawAccessToken)
+	if err := accessToken.Claims(&accessTokenClaims); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	session.Values["access_token_claims"] = accessTokenClaims
 	session.Values["profile"] = profile
 	err = session.Save(r, w)
 	if err != nil {
