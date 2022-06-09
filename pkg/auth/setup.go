@@ -151,19 +151,6 @@ func SetupBaseGroups(ctx context.Context, authService Service, ts time.Time) err
 		},
 		{
 			CreatedAt:   ts,
-			DisplayName: "ExportSetConfiguration",
-			Statement: model.Statements{
-				{
-					Action: []string{
-						"fs:ExportConfig",
-					},
-					Resource: permissions.All,
-					Effect:   model.StatementEffectAllow,
-				},
-			},
-		},
-		{
-			CreatedAt:   ts,
 			DisplayName: "AuthFullAccess",
 			Statement: model.Statements{
 				{
@@ -196,7 +183,7 @@ func SetupBaseGroups(ctx context.Context, authService Service, ts time.Time) err
 		return err
 	}
 
-	err = attachPolicies(ctx, authService, "Admins", []string{"FSFullAccess", "AuthFullAccess", "RepoManagementFullAccess", "ExportSetConfiguration"})
+	err = attachPolicies(ctx, authService, "Admins", []string{"FSFullAccess", "AuthFullAccess", "RepoManagementFullAccess"})
 	if err != nil {
 		return err
 	}
