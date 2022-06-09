@@ -39,7 +39,7 @@ Step 1: Copy the `commit_id` associated with the commit we want to revert. As sh
 
 Step 2: Run the revert command using [lakectl]({{ site.baseurl }}/reference/commands.html), the lakeFS CLI. In this example this command will be:
 
-```
+```bash
 lakectl branch revert lakefs://example/main 9666d7c9daf37b3ba6964e733d08596ace2ec2c7bc3a4023ad8e80737a6c3e9d
 ```
 
@@ -49,4 +49,4 @@ This will undo the changes introduced by this commit, completing the rollback!
 
 The rollback operation is this simple even if many changes were introduced in a commit, spanning multiple data collections.
 
-In lakeFS, it is always a one-liner to rollback.
+In lakeFS, it is always a one-liner to rollback data.
