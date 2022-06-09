@@ -22,7 +22,7 @@ We believe that every engineer should be able to use, contribute and influence c
 
 We created lakeFS, our open source project, to provide a Git-like interface on top of object stores - that you can fully take advantage of with any data application at any scale.
 
-In other words, we commit that the following capabilities are *and will remain* open source as part of lakeFS:
+For that reason, we commit that the following capabilities are *and will remain* open source as part of lakeFS:
 
   - All versioning capabilities
   - Git-Like interface for the versioning operations
@@ -38,7 +38,7 @@ We are deeply committed to our [community of engineers](https://lakefs.io/commun
 
 Treeverse offers lakeFS Cloud, which provides all the same benefits of the Git-like interface on top of object stores as a fully-managed service.
 
-lakeFS Cloud's vision is to provide a managed, usable data versioning and management solution for data practitioners, by leveraging the open source technology behind lakeFS and building added capabilities and unique features on top.
+The vision of lakeFS Cloud is to provide a managed data versioning and management solution for data practitioners.  lakeFS Cloud will leverage the lakeFS open source technology, integrate capabilities and unique features, and lead its users to implement best practices.
 
 As part of our commitment to the open source values of transparency and interoperability, we believe everyone should be able to enjoy these benefits, regardless of whether or not they choose to use the managed offering. 
 
