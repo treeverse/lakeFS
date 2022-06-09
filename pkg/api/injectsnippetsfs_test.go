@@ -3,7 +3,6 @@ package api_test
 import (
 	"bytes"
 	"embed"
-	_ "embed"
 	"io/fs"
 	"testing"
 

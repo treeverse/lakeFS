@@ -1,11 +1,11 @@
 package helpers_test
 
 import (
-	"github.com/treeverse/lakefs/pkg/api/helpers"
-
 	"fmt"
 	"net/http"
 	"testing"
+
+	"github.com/treeverse/lakefs/pkg/api/helpers"
 )
 
 type Response struct {
@@ -18,7 +18,7 @@ type Body struct {
 }
 
 func TestResponseAsError(t *testing.T) {
-	expectedClean418 := fmt.Sprintf("[%s]: %s", http.StatusText(418), "request failed")
+	expectedClean418 := fmt.Sprintf("[%s]: %s", http.StatusText(http.StatusTeapot), "request failed")
 
 	cases := []struct {
 		name     string
@@ -27,25 +27,25 @@ func TestResponseAsError(t *testing.T) {
 	}{
 		{"no_HTTPResponse_field", &struct{ A int }{17}, "[no HTTPResponse]: request failed"},
 		{"OK", &Response{&http.Response{StatusCode: 234}}, ""},
-		{"status_code", &Response{&http.Response{StatusCode: 418}}, expectedClean418},
+		{"status_code", &Response{&http.Response{StatusCode: http.StatusTeapot}}, expectedClean418},
 		{
 			"status message",
-			&Response{&http.Response{StatusCode: 418, Status: "espresso"}},
+			&Response{&http.Response{StatusCode: http.StatusTeapot, Status: "espresso"}},
 			"[espresso]: request failed",
 		},
 		{
 			"non-JSON body",
-			&Body{Response{&http.Response{StatusCode: 418}}, []byte("it's not JSON")},
+			&Body{Response{&http.Response{StatusCode: http.StatusTeapot}}, []byte("it's not JSON")},
 			expectedClean418,
 		},
 		{
 			"JSON body with no message",
-			&Body{Response{&http.Response{StatusCode: 418}}, []byte("{\"yes\": true}")},
+			&Body{Response{&http.Response{StatusCode: http.StatusTeapot}}, []byte("{\"yes\": true}")},
 			expectedClean418,
 		},
 		{
 			"JSON body",
-			&Body{Response{&http.Response{StatusCode: 418}}, []byte("{\"message\": \"lemonade\"}")},
+			&Body{Response{&http.Response{StatusCode: http.StatusTeapot}}, []byte("{\"message\": \"lemonade\"}")},
 			"[I'm a teapot]: lemonade request failed",
 		},
 	}

@@ -19,14 +19,13 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/catalog/testutils"
-
 	"github.com/go-test/deep"
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
+	"github.com/treeverse/lakefs/pkg/catalog/testutils"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/stats"
@@ -576,7 +575,7 @@ func testController_CommitHandler(t *testing.T, kvEnabled bool) {
 		testutil.MustDo(t, fmt.Sprintf("create repo %s", repo), err)
 
 		_, err = deps.catalog.CreateBranch(ctx, repo, "foo-branch", "main")
-
+		testutil.Must(t, err)
 		testutil.MustDo(t, fmt.Sprintf("commit bar on %s", repo), deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
 		resp, err := clt.CommitWithResponse(ctx, repo, "main", &api.CommitParams{}, api.CommitJSONRequestBody{
 			Message: "some message",
@@ -595,6 +594,7 @@ func testController_CommitHandler(t *testing.T, kvEnabled bool) {
 		testutil.MustDo(t, fmt.Sprintf("create repo %s", repo), err)
 
 		_, err = deps.catalog.CreateBranch(ctx, repo, "foo-branch", "main")
+		testutil.Must(t, err)
 
 		testutil.MustDo(t, fmt.Sprintf("commit bar on %s", repo), deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
 		resp, err := clt.CommitWithResponse(ctx, repo, "main", &api.CommitParams{}, api.CommitJSONRequestBody{
