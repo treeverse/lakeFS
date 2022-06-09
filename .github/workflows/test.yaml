@@ -40,7 +40,7 @@ jobs:
       - name: Setup UI
         uses: actions/setup-node@v3
         with:
-          node-version: '16.15'
+          node-version: '16.15.0'
       - name: Cache node_modules # TODO(ariels): Share with UI build
         uses: actions/cache@v2
         env:
