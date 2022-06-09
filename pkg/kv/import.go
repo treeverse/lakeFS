@@ -6,12 +6,19 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sync"
 	"time"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 var ErrInvalidFormat = errors.New("invalid format")
+
+const (
+	importWorkers  = 10
+	entryQueueSize = 100
+)
 
 // Header contains metadata information for import / export file
 type Header struct {
@@ -21,8 +28,43 @@ type Header struct {
 	CreatedAt       time.Time
 }
 
+type SafeEncoder struct {
+	Je *json.Encoder
+	Mu sync.Mutex
+}
+
+func (e *SafeEncoder) Encode(v interface{}) error {
+	e.Mu.Lock()
+	defer e.Mu.Unlock()
+	err := e.Je.Encode(v)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func worker(ctx context.Context, jobChan <-chan *Entry, store Store) error {
+	for e := range jobChan {
+		if len(e.PartitionKey) == 0 {
+			return fmt.Errorf("bad entry partition key: %w", ErrInvalidFormat)
+		}
+		if len(e.Key) == 0 {
+			return fmt.Errorf("bad entry key: %w", ErrInvalidFormat)
+		}
+		if e.Value == nil {
+			return fmt.Errorf("bad entry value: %w", ErrInvalidFormat)
+		}
+		err := store.SetIf(ctx, e.PartitionKey, e.Key, e.Value, nil)
+		if err != nil {
+			return fmt.Errorf("import (partition key: %s, key: %s): %w", e.PartitionKey, e.Key, err)
+		}
+	}
+	return nil
+}
+
 func Import(ctx context.Context, reader io.Reader, store Store) error {
 	jd := json.NewDecoder(reader)
+
 	// Read header
 	var header Header
 	if err := jd.Decode(&header); err != nil {
@@ -32,7 +74,7 @@ func Import(ctx context.Context, reader io.Reader, store Store) error {
 			return fmt.Errorf("decoding header: %w", err)
 		}
 	}
-	// Decode does not return error onm missing data / incompatible format
+	// Decode does not return error on missing data / incompatible format
 	if header == (Header{}) {
 		return fmt.Errorf("bad header format: %w", ErrInvalidFormat)
 	}
@@ -45,29 +87,26 @@ func Import(ctx context.Context, reader io.Reader, store Store) error {
 		"created_at":        header.CreatedAt,
 	}).Info("Processing file")
 
-	var entry Entry
+	entryChan := make(chan *Entry, entryQueueSize)
+	var g multierror.Group
+	for i := 0; i < importWorkers; i++ {
+		g.Go(func() error {
+			return worker(ctx, entryChan, store)
+		})
+	}
+
 	for {
-		err := jd.Decode(&entry)
+		entry := new(Entry)
+		err := jd.Decode(entry)
 		if errors.Is(err, io.EOF) {
 			break
 		}
-		// Decode does not return error onm missing data / incompatible format
+		// Decode does not return error on missing data / incompatible format
 		if err != nil {
 			return fmt.Errorf("decoding entry: %w", err)
 		}
-		if len(entry.PartitionKey) == 0 {
-			return fmt.Errorf("bad entry partition key: %w", ErrInvalidFormat)
-		}
-		if len(entry.Key) == 0 {
-			return fmt.Errorf("bad entry key: %w", ErrInvalidFormat)
-		}
-		if entry.Value == nil {
-			return fmt.Errorf("bad entry value: %w", ErrInvalidFormat)
-		}
-		err = store.SetIf(ctx, entry.PartitionKey, entry.Key, entry.Value, nil)
-		if err != nil {
-			return err
-		}
+		entryChan <- entry
 	}
-	return nil
+	close(entryChan)
+	return g.Wait().ErrorOrNil()
 }

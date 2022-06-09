@@ -180,7 +180,8 @@ var runCmd = &cobra.Command{
 		bufferedCollector.CollectMetadata(metadata)
 
 		var multipartsTracker multiparts.Tracker
-		var actionsService actions.Service
+		var idGen actions.IDGenerator
+		var actionsStore actions.Store
 
 		if dbParams.KVEnabled {
 			kvStore, err := kv.Open(ctx, dbParams.Type, dbParams.ConnectionString)
@@ -191,25 +192,23 @@ var runCmd = &cobra.Command{
 			storeMessage := kv.StoreMessage{Store: kvStore}
 
 			multipartsTracker = multiparts.NewTracker(storeMessage)
-			actionsService = actions.NewKVService(
-				ctx,
-				storeMessage,
-				catalog.NewActionsSource(c),
-				catalog.NewActionsOutputWriter(c.BlockAdapter),
-				bufferedCollector,
-				cfg.GetActionsEnabled(),
-			)
+			actionsStore = actions.NewActionsKVStore(kv.StoreMessage{Store: kvStore})
+			idGen = &actions.DecreasingIDGenerator{}
 		} else {
 			multipartsTracker = multiparts.NewDBTracker(dbPool)
-			actionsService = actions.NewDBService(
-				ctx,
-				dbPool,
-				catalog.NewActionsSource(c),
-				catalog.NewActionsOutputWriter(c.BlockAdapter),
-				bufferedCollector,
-				cfg.GetActionsEnabled(),
-			)
+			actionsStore = actions.NewActionsDBStore(dbPool)
+			idGen = &actions.IncreasingIDGenerator{}
 		}
+
+		actionsService := actions.NewService(
+			ctx,
+			actionsStore,
+			catalog.NewActionsSource(c),
+			catalog.NewActionsOutputWriter(c.BlockAdapter),
+			idGen,
+			bufferedCollector,
+			cfg.GetActionsEnabled(),
+		)
 
 		// wire actions into entry catalog
 		defer actionsService.Stop()

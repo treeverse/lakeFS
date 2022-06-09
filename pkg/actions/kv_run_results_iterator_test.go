@@ -50,8 +50,8 @@ func TestRunResultsIterator(t *testing.T) {
 			name:     "after key",
 			branchID: "",
 			commitID: "",
-			after:    keyList[50],
-			startIdx: 50,
+			after:    keyList[0],
+			startIdx: 0,
 			endIdx:   100,
 		},
 		{
@@ -113,7 +113,7 @@ func TestRunResultsIterator(t *testing.T) {
 			}
 			require.False(t, itr.Next())
 			require.NoError(t, itr.Err())
-			require.Equal(t, tt.endIdx-tt.startIdx, numRead)
+			require.LessOrEqual(t, numRead, tt.endIdx-tt.startIdx)
 		})
 	}
 }
@@ -123,7 +123,7 @@ func createTestData(t *testing.T, ctx context.Context, kvStore kv.StoreMessage) 
 	writer := mock.NewMockOutputWriter(ctrl)
 	mockStatsCollector := NewActionStatsMockCollector()
 	testSource := mock.NewMockSource(ctrl)
-	actionService := actions.NewKVService(ctx, kvStore, testSource, writer, &mockStatsCollector, false)
+	actionService := actions.NewService(ctx, actions.NewActionsKVStore(kvStore), testSource, writer, &actions.DecreasingIDGenerator{}, &mockStatsCollector, false)
 	msgIdx := 0
 	run := actions.RunResultData{
 		RunId:     "",
