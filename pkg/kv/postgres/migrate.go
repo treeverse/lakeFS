@@ -21,6 +21,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
+var ErrAlreadyMigrated = errors.New("already migrated")
+
 type MigrateFunc func(ctx context.Context, db *pgxpool.Pool, writer io.Writer) error
 
 var (
@@ -52,6 +54,10 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 
 	shouldDrop, err := getMigrationStatus(ctx, store)
 	if err != nil {
+		if errors.Is(err, ErrAlreadyMigrated) {
+			logging.Default().Info("KV migration already completed")
+			return nil
+		}
 		return fmt.Errorf("validating version: %w", err)
 	}
 	if shouldDrop {
@@ -151,7 +157,10 @@ func getMigrationStatus(ctx context.Context, store kv.Store) (bool, error) {
 	if err != nil && errors.Is(err, kv.ErrNotFound) {
 		return false, nil
 	} else if err == nil { // Version exists in DB
-		return version < kv.InitialMigrateVersion, nil
+		if version >= kv.InitialMigrateVersion {
+			return false, ErrAlreadyMigrated
+		}
+		return true, nil
 	}
 	return false, err
 }

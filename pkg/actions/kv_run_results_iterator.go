@@ -73,7 +73,7 @@ func (i *KVRunResultIterator) Value() *RunResult {
 	if e == nil {
 		return nil
 	}
-	return runResultFromProto(e.Value.(*RunResultData))
+	return RunResultFromProto(e.Value.(*RunResultData))
 }
 
 func (i *KVRunResultIterator) Err() error {
