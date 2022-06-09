@@ -50,7 +50,7 @@ Once you are logged in, you should see a page that looks like below.
 
 ![Setup Done]({{ site.baseurl }}/assets/img/iso-env-example-repo.png)
 
-The first thing to notice is in this environment, lakeFS comes with a repository called `example` already created, and the repo’s default branch is `main`. If you're lakeFS installation doesn't have the `example` repo created, you can use the green `Create Repository` button to do so:
+The first thing to notice is in this environment, lakeFS comes with a repository called `example` already created, and the repo’s default branch is `main`. If your lakeFS installation doesn't have the `example` repo created, you can use the green `Create Repository` button to do so:
 
 ![Create Repo]({{ site.baseurl }}/assets/img/iso-env-create-repo.png)
 
