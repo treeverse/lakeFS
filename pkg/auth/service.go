@@ -475,7 +475,7 @@ func (s *DBAuthService) ListEffectivePolicies(ctx context.Context, username stri
 }
 
 func (s *DBAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
-	var policy model.DBPolicy
+	var policy model.BasePolicy
 	query := psql.Select("auth_policies.*").
 		From("auth_policies").
 		Join("auth_group_policies ON (auth_policies.id = auth_group_policies.policy_id)").
@@ -489,12 +489,7 @@ func (s *DBAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName 
 	if err != nil {
 		return nil, paginator, err
 	}
-	dbPolicies := slice.Interface().([]*model.DBPolicy)
-	policies := make([]*model.BasePolicy, len(dbPolicies))
-	for i := range dbPolicies {
-		policies[i] = &dbPolicies[i].BasePolicy
-	}
-	return policies, paginator, nil
+	return slice.Interface().([]*model.BasePolicy), paginator, nil
 }
 
 func (s *DBAuthService) CreateGroup(ctx context.Context, group *model.BaseGroup) error {
@@ -589,8 +584,8 @@ func (s *DBAuthService) ListUserGroups(ctx context.Context, username string, par
 		if _, err := getUser(tx, username); err != nil {
 			return nil, err
 		}
-		dbGroups := make([]*model.DBGroup, 0)
-		err := tx.Select(&dbGroups, `
+		groups := make([]*model.Group, 0)
+		err := tx.Select(&groups, `
 			SELECT auth_groups.* FROM auth_groups
 				INNER JOIN auth_user_groups ON (auth_groups.id = auth_user_groups.group_id)
 				INNER JOIN auth_users ON (auth_user_groups.user_id = auth_users.id)
@@ -604,16 +599,12 @@ func (s *DBAuthService) ListUserGroups(ctx context.Context, username string, par
 		if err != nil {
 			return nil, err
 		}
-		groups := make([]*model.Group, len(dbGroups))
-		for i := range dbGroups {
-			groups[i] = model.ConvertGroup(dbGroups[i])
-		}
 		p := &model.Paginator{}
 		if len(groups) == params.Amount+1 {
 			// we have more pages
 			groups = groups[0:params.Amount]
 			p.Amount = params.Amount
-			p.NextPageToken = groups[len(dbGroups)-1].DisplayName
+			p.NextPageToken = groups[len(groups)-1].DisplayName
 			return &res{groups, p}, nil
 		}
 		p.Amount = len(groups)
@@ -635,8 +626,8 @@ func (s *DBAuthService) ListGroupUsers(ctx context.Context, groupDisplayName str
 		if _, err := getGroup(tx, groupDisplayName); err != nil {
 			return nil, err
 		}
-		dbUsers := make([]*model.DBUser, 0)
-		err := tx.Select(&dbUsers, `
+		users := make([]*model.User, 0)
+		err := tx.Select(&users, `
 			SELECT auth_users.* FROM auth_users
 				INNER JOIN auth_user_groups ON (auth_users.id = auth_user_groups.user_id)
 				INNER JOIN auth_groups ON (auth_user_groups.group_id = auth_groups.id)
@@ -651,10 +642,6 @@ func (s *DBAuthService) ListGroupUsers(ctx context.Context, groupDisplayName str
 			return nil, err
 		}
 		p := &model.Paginator{}
-		users := make([]*model.User, len(dbUsers))
-		for i := range dbUsers {
-			users[i] = model.ConvertUser(dbUsers[i])
-		}
 		if len(users) == params.Amount+1 {
 			// we have more pages
 			users = users[0:params.Amount]
@@ -710,7 +697,7 @@ func (s *DBAuthService) GetPolicy(ctx context.Context, policyDisplayName string)
 	if err != nil {
 		return nil, err
 	}
-	return &policy.(*model.DBPolicy).BasePolicy, nil
+	return policy.(*model.BasePolicy), nil
 }
 
 func (s *DBAuthService) DeletePolicy(ctx context.Context, policyDisplayName string) error {
@@ -726,8 +713,8 @@ func (s *DBAuthService) ListPolicies(ctx context.Context, params *model.Paginati
 		paginator *model.Paginator
 	}
 	result, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		dbPolicies := make([]*model.DBPolicy, 0)
-		err := tx.Select(&dbPolicies, `
+		policies := make([]*model.BasePolicy, 0)
+		err := tx.Select(&policies, `
 			SELECT *
 			FROM auth_policies
 			WHERE display_name > $1
@@ -739,10 +726,7 @@ func (s *DBAuthService) ListPolicies(ctx context.Context, params *model.Paginati
 			return nil, err
 		}
 		p := &model.Paginator{}
-		policies := make([]*model.BasePolicy, len(dbPolicies))
-		for i := range dbPolicies {
-			policies[i] = &dbPolicies[i].BasePolicy
-		}
+
 		if len(policies) == params.Amount+1 {
 			// we have more pages
 			policies = policies[0:params.Amount]
