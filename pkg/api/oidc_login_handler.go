@@ -7,6 +7,7 @@ import (
 	"net/url"
 
 	"github.com/gorilla/sessions"
+	"github.com/treeverse/lakefs/pkg/logging"
 	"golang.org/x/oauth2"
 )
 
@@ -20,22 +21,25 @@ const (
 )
 
 // NewOIDCLoginPageHandler returns a handler to redirect the user the OIDC provider's login page.
-func NewOIDCLoginPageHandler(sessionStore sessions.Store, oauthConfig *oauth2.Config) http.HandlerFunc {
+func NewOIDCLoginPageHandler(sessionStore sessions.Store, oauthConfig *oauth2.Config, logger logging.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		state, err := generateRandomState()
 		if err != nil {
-			writeError(w, http.StatusInternalServerError, err.Error())
+			logger.Errorf("failed to generate state for oidc: %w", err)
+			writeError(w, http.StatusInternalServerError, "Failed to redirect to login page")
 			return
 		}
 
 		session, err := sessionStore.Get(r, OIDCAuthSessionName)
 		if err != nil {
-			writeError(w, http.StatusInternalServerError, err.Error())
+			logger.Errorf("failed to get oidc session: %w", err)
+			writeError(w, http.StatusInternalServerError, "Failed to redirect to login page")
 			return
 		}
 		session.Values[StateSessionKey] = state
 		if err := session.Save(r, w); err != nil {
-			writeError(w, http.StatusInternalServerError, err.Error())
+			logger.Errorf("failed to save oidc session: %w", err)
+			writeError(w, http.StatusInternalServerError, "Failed to redirect to login page")
 			return
 		}
 		scheme := "http"

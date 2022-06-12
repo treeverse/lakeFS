@@ -108,7 +108,7 @@ func Serve(
 	r.Mount("/swagger.json", http.HandlerFunc(swaggerSpecHandler))
 	r.Mount(BaseURL, http.HandlerFunc(InvalidAPIEndpointHandler))
 	if cfg.GetAuthOIDCConfiguration() != nil {
-		r.Mount("/oidc/login", NewOIDCLoginPageHandler(sessionStore, oauthConfig))
+		r.Mount("/oidc/login", NewOIDCLoginPageHandler(sessionStore, oauthConfig, logger))
 	}
 	r.Mount("/", NewUIHandler(gatewayDomains, snippets))
 	return r
