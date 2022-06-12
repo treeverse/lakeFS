@@ -48,6 +48,7 @@ replacements (at least):
 | config            | exportable lakeFS configuration[^1] | `arn:lakefs:template:::config/path/to/field` |
 | object            | (small) object on lakeFS            | IAM read permission for that object          |
 | contenttype       | none; set `Content-Type:`           | (none)                                       |
+| new_credentials   | new credentials added to user       | `auth:CreateCredentials`                     |
 
 A configuration variable will be "exportable" if its struct field is tagged
 `` `export:yes` ``, or (if implementing that is too hard) if its type
@@ -85,6 +86,15 @@ functions or objects.
    permissions as required for expansion.
 1. Template gets expanded and returned to user.
 
+### Credentials
+
+We supply a function `new_credentials` that creates a new set of credential
+for the user, registers them, and returns them.  See this [example of template
+functions returning multiple values][example_template_multiple].
+
+This lets us implement the requirement to create and return new credentials
+as part of a downloaded configuration.
+
 ## Examples
 
 (All examples subject to change as we define object format, and decide
@@ -94,8 +104,9 @@ Set a template that looks like this:
 
 ```conf
 spark.hadoop.fs.lakefs.impl=io.lakefs.LakeFSFileSystem
-spark.hadoop.fs.lakefs.access_key={{.user.credentials.access_key.id}}
-spark.hadoop.fs.lakefs.secret_key={{.user.credentials.access_key.secret}}
+{{with $creds := new_credentials}}
+spark.hadoop.fs.lakefs.access_key={{$creds.ID}}
+spark.hadoop.fs.lakefs.secret_key={{$creds.Secret}}
 spark.hadoop.fs.lakefs.endpoint={{"local.templates.lakefs_url" | config}}
 # Or pass something from "local" to give users a different key.  In any case 
 # requires IAM authorization to fetch.
@@ -113,6 +124,7 @@ it is loaded, allowing that to be the only required configuration.
 
 [text/template]: https://pkg.go.dev/text/template
 [html/template]: https://pkg.go.dev/html/template
+[example_template_multiple]: https://go.dev/play/p/1sfcodvxNvr
 
 [^1]: note that this effectively includes environment variables!
 [^2]: might instead be a function.
