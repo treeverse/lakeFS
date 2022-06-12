@@ -145,7 +145,7 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 		CreatedAt:  time.Now().UTC(),
 		Source:     "oidc",
 		Username:   externalID,
-		ExternalID: externalID,
+		ExternalID: &externalID,
 	}
 	userID, err := authService.CreateUser(ctx, &u)
 

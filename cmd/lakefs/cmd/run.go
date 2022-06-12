@@ -249,7 +249,7 @@ var runCmd = &cobra.Command{
 		oidcConfig := cfg.GetAuthOIDCConfiguration()
 		var oauthConfig *oauth2.Config
 		var oidcProvider *oidc.Provider
-		if oidcConfig != nil {
+		if oidcConfig != nil && oidcConfig.URL != "" {
 			oidcProvider, err = oidc.NewProvider(
 				cmd.Context(),
 				oidcConfig.URL,

@@ -5,10 +5,11 @@ import (
 )
 
 type OIDC struct {
-	URL                  string   `mapstructure:"url"`
-	ClientID             string   `mapstructure:"client_id"`
-	ClientSecret         string   `mapstructure:"client_secret"`
-	DefaultInitialGroups []string `mapstructure:"default_initial_groups"`
+	URL                    string   `mapstructure:"url"`
+	ClientID               string   `mapstructure:"client_id"`
+	ClientSecret           string   `mapstructure:"client_secret"`
+	DefaultInitialGroups   []string `mapstructure:"default_initial_groups"`
+	InitialGroupsClaimName string   `mapstructure:"initial_groups_claim_name"`
 }
 
 // LDAP holds configuration for authenticating on an LDAP server.

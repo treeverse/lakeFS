@@ -32,11 +32,6 @@ export default ({ command }) => {
             target: 'http://localhost:8000',
             changeOrigin: false,
             secure: false
-          },
-          '/oidc/logout': {
-            target: 'http://localhost:8000',
-            changeOrigin: false,
-            secure: false
           }
         }
       }

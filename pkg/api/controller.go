@@ -3137,7 +3137,8 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 	if initialized || c.Config.IsAuthTypeAPI() {
 		state = setupStateInitialized
 	}
-	response := SetupState{State: swag.String(state), OidcEnabled: swag.Bool(c.Config.GetAuthOIDCConfiguration() != nil)}
+	oidcEnabled := c.Config.GetAuthOIDCConfiguration() != nil && c.Config.GetAuthOIDCConfiguration().URL != ""
+	response := SetupState{State: swag.String(state), OidcEnabled: swag.Bool(oidcEnabled)}
 	writeResponse(w, http.StatusOK, response)
 }
 
