@@ -17,7 +17,7 @@ You can manage lakeFS users externally using an OpenID Connect (OIDC) compatible
 
 ## Configuring lakeFS server for OIDC
 
-To support OIDC, add the following configurations to your [lakeFS configuration](./configuration.md):
+To support OIDC, add the following to your [lakeFS configuration](./configuration.md):
 
 ```yaml
 auth:
@@ -28,8 +28,8 @@ auth:
     default_initial_groups: ["Developers"]
 ```
 
-Once this configuration is provided, your login page will include a link to sign-in using the 
-OIDC provider. When a user logs in through the OIDC provider, a corresponding lakeFS user is created.
+Your login page will not include a link to sign-in using the 
+OIDC provider. When a user first logs in through the provider, a corresponding user is created in lakeFS.
 
 #### Notes
 {: .no_toc}
@@ -40,8 +40,8 @@ OIDC provider. When a user logs in through the OIDC provider, a corresponding la
 
 Authorization is still managed via [lakeFS groups and policies](./authorization.md).
 
-By default, an externally managed user is assigned to the groups configured in the _default_initial_groups_ property above.
+By default, an externally managed user is assigned to the lakeFS groups configured in the _default_initial_groups_ property above.
 For a user to be assigned to other groups, add the _initial_groups_ claim to their **ID token** claims. The claim should contain a
 comma-separated list of group names.
 
-Once the user is created, you can manage their permissions from the Administration pages in the lakeFS UI.
+Once the user has been created, you can manage their permissions from the Administration pages in the lakeFS UI or using _lakectl_.
