@@ -24,26 +24,66 @@ Among the planned applications:
 ## Template format
 
 We use Golang [text/template][text/template] to expand most templates.
-For browsers (based on filename, e.g. `*.html.tt`) we instead must use
+For browsers (based on filename, e.g. `*.html`) we instead must use
 [html/template][html/template] for safety.
 
-The template is read by lakeFS from a specific (configured) prefix, by
-default `lakefs://lakefs-templates/main`.  IAM authorizes users to see
-this template, at which point expansion can start.  We will supply the
-following replacements (at least):
+Accesses to http://<lakefs>/api/v1/templates/some/path read the template
+from `some/path`.
 
-| template function | value source              | IAM permissions                              |
-|:------------------|:--------------------------|:---------------------------------------------|
-| config            | lakeFS configuration[^1]  | `arn:lakefs:template:::config/path/to/field` |
-| object            | (small) lakeFS object     | IAM read permission for that object          |
-| querystring       | URL query string[^2]      | (none)                                       |
-| contenttype       | none; set `Content-Type:` | (none)                                       |
+The template is read by lakeFS from a specific (configured) prefix, by
+default `lakefs://lakefs-templates/`.  We might decide to support
+various object storage types; `lakefs` gives the best management and lineage
+capabilities, but possible supporting the production blockstore types `s3`,
+`azure` and `gcs` will simplify deployment of some lakeFS deployments.
+
+If storing on lakeFS, IAM authorizes users to see this template by
+`fs:ReadObject`, at which point expansion can start.  If we want to store
+templates on the blockstore types, we will probably need to add a new IAM
+action type for template expansion, or alternatively overload
+`fs:ReadObject` to support off-lakeFS URIs.  We will supply the following
+replacements (at least):
+
+| template function | value source                        | IAM permissions                              |
+|:------------------|:------------------------------------|:---------------------------------------------|
+| config            | exportable lakeFS configuration[^1] | `arn:lakefs:template:::config/path/to/field` |
+| object            | (small) object on lakeFS            | IAM read permission for that object          |
+| contenttype       | none; set `Content-Type:`           | (none)                                       |
+
+A configuration variable will be "exportable" if its struct field is tagged
+`` `export:yes` ``, or (if implementing that is too hard) if its type
+implements
+
+```go
+interface Exportable {
+	Export() string
+}
+```
+
+IAM is still checked for exportable configuration variables (which will be
+ON by default for users, but can be removed).
 
 Adding a freeform dictionary to our config will allow admins to set up
 any needed configuration.
 
-We shall also supply the user object in `.user`.  We will probably add
-new functions or objects.
+We shall supply the user object in `.user` and the parsed query args in
+`.query`[^2], to allow conditional operations.  We will probably add new
+functions or objects.
+
+## Template expansion flow
+
+#### _:warning: This flow assumes templates stored on lakeFS. :warning:_
+
+1. User accesses the template
+   http://<lakefs>/api/v1/templates/main/expand/me.
+1. lakeFS expands to a lakeFS path (by default this is
+   lakefs://lakefs-templates/main/expand/me).
+1. lakeFS uses IAM to verify user has `fs:ReadObject` permission on this
+   object.
+1. Object is parsed into a text/template.
+1. lakeFS creates template
+   [`Funcs`](https://pkg.go.dev/text/template#FuncMap) that will check IAM
+   permissions as required for expansion.
+1. Template gets expanded and returned to user.
 
 ## Examples
 
@@ -70,8 +110,9 @@ allows a single well-known point to set up.
 A future lakeFSFS version might read from the configured endpoint when
 it is loaded, allowing that to be the only required configuration.
 
+
 [text/template]: https://pkg.go.dev/text/template
 [html/template]: https://pkg.go.dev/html/template
 
-[^1]: effectively includes environment variables!
-[^2]: might instead be passed in as a template variable
+[^1]: note that this effectively includes environment variables!
+[^2]: might instead be a function.
