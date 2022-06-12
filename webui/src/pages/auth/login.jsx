@@ -57,7 +57,7 @@ const LoginForm = ({oidcEnabled}) => {
                                 : ""
                             }
                             { oidcEnabled ?
-                                <Button variant="link" className="text-secondary mt-2" onClick={()=> {window.location = "/oidc/login"}}>Sign in with OIDC provider</Button>
+                                <Button variant="link" className="text-secondary mt-2" onClick={()=> {window.location = "/oidc/login"}}>Sign in with SSO provider</Button>
                                 : ""
                             }
                         </div>
