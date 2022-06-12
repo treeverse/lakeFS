@@ -15,6 +15,7 @@ import (
 const (
 	StatementEffectAllow = "allow"
 	StatementEffectDeny  = "deny"
+	PartitionKey         = "auth"
 )
 
 var (
@@ -172,14 +173,11 @@ func (s *Statements) Scan(src interface{}) error {
 // authPrefix - key prefix in the KV model
 const authPrefix = "auth"
 
-//TODO - delete no lint comments when function is used
-//nolint
-func kvUserPath(userName string) string {
+func KvUserPath(userName string) string {
 	return kv.FormatPath(authPrefix, "users", userName)
 }
 
-//nolint
-func userFromProto(pb *UserData) *User {
+func UserFromProto(pb *UserData) *User {
 	return &User{
 		ID: string(pb.Id),
 		BaseUser: BaseUser{
@@ -193,8 +191,7 @@ func userFromProto(pb *UserData) *User {
 	}
 }
 
-//nolint
-func protoFromUser(u *User) *UserData {
+func ProtoFromUser(u *User) *UserData {
 	return &UserData{
 		Id:                []byte(u.ID),
 		CreatedAt:         timestamppb.New(u.CreatedAt),
@@ -206,13 +203,11 @@ func protoFromUser(u *User) *UserData {
 	}
 }
 
-//nolint
-func kvGroupPath(displayName string) string {
+func KvGroupPath(displayName string) string {
 	return kv.FormatPath(authPrefix, "groups", displayName)
 }
 
-//nolint
-func groupFromProto(pb *GroupData) *Group {
+func GroupFromProto(pb *GroupData) *Group {
 	return &Group{
 		ID: string(pb.Id),
 		BaseGroup: BaseGroup{
@@ -222,8 +217,7 @@ func groupFromProto(pb *GroupData) *Group {
 	}
 }
 
-//nolint
-func protoFromGroup(g *Group) *GroupData {
+func ProtoFromGroup(g *Group) *GroupData {
 	return &GroupData{
 		Id:          []byte(g.ID),
 		CreatedAt:   timestamppb.New(g.CreatedAt),
@@ -231,13 +225,11 @@ func protoFromGroup(g *Group) *GroupData {
 	}
 }
 
-//nolint
-func PolicyPath(DisplayName string) string {
-	return kv.FormatPath(authPrefix, "policies", DisplayName)
+func PolicyPath(displayName string) string {
+	return kv.FormatPath(authPrefix, "policies", displayName)
 }
 
-//nolint
-func policyFromProto(pb *PolicyData) *BasePolicy {
+func PolicyFromProto(pb *PolicyData) *BasePolicy {
 	return &BasePolicy{
 		CreatedAt:   pb.CreatedAt.AsTime(),
 		DisplayName: pb.DisplayName,
@@ -245,22 +237,20 @@ func policyFromProto(pb *PolicyData) *BasePolicy {
 	}
 }
 
-//nolint
-func protoFromPolicy(p *BasePolicy) *PolicyData {
+func ProtoFromPolicy(p *BasePolicy, id string) *PolicyData {
 	return &PolicyData{
 		CreatedAt:   timestamppb.New(p.CreatedAt),
 		DisplayName: p.DisplayName,
 		Statements:  protoFromStatements(&p.Statement),
+		Id:          []byte(id),
 	}
 }
 
-//nolint
-func kvCredentialPath(userName string, accessKeyID string) string {
+func KvCredentialPath(userName string, accessKeyID string) string {
 	return kv.FormatPath(authPrefix, userName, "credentials", accessKeyID)
 }
 
-//nolint
-func credentialFromProto(pb *CredentialData) *Credential {
+func CredentialFromProto(pb *CredentialData) *Credential {
 	return &Credential{
 		UserID: string(pb.UserId),
 		BaseCredential: BaseCredential{
@@ -272,8 +262,7 @@ func credentialFromProto(pb *CredentialData) *Credential {
 	}
 }
 
-//nolint
-func protoFromCredential(c *Credential) *CredentialData {
+func ProtoFromCredential(c *Credential) *CredentialData {
 	return &CredentialData{
 		AccessKeyId:                   c.AccessKeyID,
 		SecretAccessKey:               c.SecretAccessKey,
@@ -283,7 +272,6 @@ func protoFromCredential(c *Credential) *CredentialData {
 	}
 }
 
-//nolint
 func statementFromProto(pb *StatementData) *Statement {
 	return &Statement{
 		Effect:   pb.Effect,
@@ -292,7 +280,6 @@ func statementFromProto(pb *StatementData) *Statement {
 	}
 }
 
-//nolint
 func protoFromStatement(s *Statement) *StatementData {
 	return &StatementData{
 		Effect:   s.Effect,
@@ -301,38 +288,31 @@ func protoFromStatement(s *Statement) *StatementData {
 	}
 }
 
-//nolint
-func statementsFromProto(pb *StatementsData) *Statements {
-	statements := make(Statements, len(pb.Statement))
-	for i := range pb.Statement {
-		statements[i] = *statementFromProto(pb.Statement[i])
+func statementsFromProto(pb []*StatementData) *Statements {
+	statements := make(Statements, len(pb))
+	for i := range pb {
+		statements[i] = *statementFromProto(pb[i])
 	}
 	return &statements
 }
 
-//nolint
-func protoFromStatements(s *Statements) *StatementsData {
+func protoFromStatements(s *Statements) []*StatementData {
 	statements := make([]*StatementData, len(*s))
 	x := *s
 	for i := range *s {
 		statements[i] = protoFromStatement(&x[i])
 	}
-	return &StatementsData{
-		Statement: statements,
-	}
+	return statements
 }
 
-//nolint
-func kvUserToGroup(userName string, groupDisplayName string) string {
+func KvUserToGroup(userName string, groupDisplayName string) string {
 	return kv.FormatPath(authPrefix, "groups", groupDisplayName, "users", userName)
 }
 
-//nolint
 func PolicyToUser(policyDisplayName string, userName string) string {
 	return kv.FormatPath(authPrefix, "users", userName, "policies", policyDisplayName)
 }
 
-//nolint
 func PolicyToGroup(policyDisplayName string, groupDisplayName string) string {
 	return kv.FormatPath(authPrefix, "groups", groupDisplayName, "policies", policyDisplayName)
 }
@@ -345,10 +325,26 @@ func ConvertUsersList(users []*DBUser) []*User {
 	return kvUsers
 }
 
+func ConvertUsersDataList(users []*UserData) []*User {
+	kvUsers := make([]*User, 0, len(users))
+	for _, u := range users {
+		kvUsers = append(kvUsers, UserFromProto(u))
+	}
+	return kvUsers
+}
+
 func ConvertCredList(creds []*DBCredential) []*Credential {
 	res := make([]*Credential, 0, len(creds))
 	for _, c := range creds {
 		res = append(res, ConvertCreds(c))
+	}
+	return res
+}
+
+func ConvertCredDataList(creds []*CredentialData) []*Credential {
+	res := make([]*Credential, 0, len(creds))
+	for _, c := range creds {
+		res = append(res, CredentialFromProto(c))
 	}
 	return res
 }
@@ -373,4 +369,24 @@ func ConvertGroup(g *DBGroup) *Group {
 		ID:        strconv.Itoa(g.ID),
 		BaseGroup: g.BaseGroup,
 	}
+}
+
+func ConvertGroupDataList(group []*GroupData) []*Group {
+	res := make([]*Group, 0, len(group))
+	for _, g := range group {
+		res = append(res, GroupFromProto(g))
+	}
+	return res
+}
+
+func ConvertPolicyDataList(policies []*PolicyData) []*BasePolicy {
+	res := make([]*BasePolicy, 0, len(policies))
+	for _, p := range policies {
+		res = append(res, PolicyFromProto(p))
+	}
+	return res
+}
+
+func KvTokenPath(tokenID string) string {
+	return kv.FormatPath("expired_tokens", tokenID)
 }

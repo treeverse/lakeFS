@@ -11,6 +11,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/kvtest"
+
 	"github.com/treeverse/lakefs/pkg/permissions"
 
 	sq "github.com/Masterminds/squirrel"
@@ -63,12 +66,39 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func setupService(t testing.TB, opts ...testutil.GetDBOption) auth.Service {
-	adb, _ := testutil.GetDB(t, databaseURI, opts...)
-	authService := auth.NewDBAuthService(adb, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
+func setupKVService(t *testing.T, ctx context.Context) auth.Service {
+	t.Helper()
+	kvStore := kvtest.GetStore(ctx, t)
+	storeMessage := kv.StoreMessage{Store: kvStore}
+	return auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
 		Enabled: false,
 	}, logging.Default())
-	return authService
+}
+
+func setupDBService(t testing.TB, opts ...testutil.GetDBOption) auth.Service {
+	adb, _ := testutil.GetDB(t, databaseURI, opts...)
+	return auth.NewDBAuthService(adb, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
+		Enabled: false,
+	}, logging.Default())
+}
+
+func setupService(t *testing.T, ctx context.Context) []DBType {
+	tests := []DBType{
+		{
+			name:        "DB service test",
+			authService: setupDBService(t),
+		},
+		{
+			name:        "KV service test",
+			authService: setupKVService(t, ctx),
+		},
+	}
+	return tests
+}
+
+type DBType struct {
+	name        string
+	authService auth.Service
 }
 
 func userWithPolicies(t testing.TB, s auth.Service, policies []*model.BasePolicy) string {
@@ -161,7 +191,7 @@ func TestDBAuthService_ListPaged(t *testing.T) {
 
 func TestDBAuthService_Authorize(t *testing.T) {
 	ctx := context.Background()
-	s := setupService(t)
+	tests := setupService(t, ctx)
 
 	cases := []struct {
 		name     string
@@ -436,22 +466,23 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			expectedError:   auth.ErrInsufficientPermissions,
 		},
 	}
-
-	for _, testCase := range cases {
-		t.Run(testCase.name, func(t *testing.T) {
-			uid := userWithPolicies(t, s, testCase.policies)
-			request := testCase.request(uid)
-			response, err := s.Authorize(ctx, request)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if response.Allowed != testCase.expectedAllowed {
-				t.Fatalf("expected allowed status %v, got %v", testCase.expectedAllowed, response.Allowed)
-			}
-			if response.Error != testCase.expectedError {
-				t.Fatalf("expected error %v, got %v", testCase.expectedAllowed, response.Error)
-			}
-		})
+	for _, tt := range tests {
+		for _, testCase := range cases {
+			t.Run(testCase.name, func(t *testing.T) {
+				uid := userWithPolicies(t, tt.authService, testCase.policies)
+				request := testCase.request(uid)
+				response, err := tt.authService.Authorize(ctx, request)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if response.Allowed != testCase.expectedAllowed {
+					t.Fatalf("expected allowed status %v, got %v", testCase.expectedAllowed, response.Allowed)
+				}
+				if response.Error != testCase.expectedError {
+					t.Fatalf("expected error %v, got %v", testCase.expectedAllowed, response.Error)
+				}
+			})
+		}
 	}
 }
 
@@ -472,26 +503,28 @@ func TestDBAuthService_ListUsers(t *testing.T) {
 			userNames: []string{"foo", "bar", "baz", "quux"},
 		},
 	}
+	tests := setupService(t, ctx)
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
-			s := setupService(t)
-			for _, userName := range testCase.userNames {
-				if _, err := s.CreateUser(ctx, &model.BaseUser{Username: userName}); err != nil {
-					t.Fatalf("CreateUser(%s): %s", userName, err)
+			for _, tt := range tests {
+				for _, userName := range testCase.userNames {
+					if _, err := tt.authService.CreateUser(ctx, &model.BaseUser{Username: userName}); err != nil {
+						t.Fatalf("CreateUser(%s): %s", userName, err)
+					}
 				}
-			}
-			gotList, _, err := s.ListUsers(ctx, &model.PaginationParams{Amount: -1})
-			if err != nil {
-				t.Fatalf("ListUsers: %s", err)
-			}
-			gotUsers := make([]string, 0, len(testCase.userNames))
-			for _, user := range gotList {
-				gotUsers = append(gotUsers, user.Username)
-			}
-			sort.Strings(gotUsers)
-			sort.Strings(testCase.userNames)
-			if diffs := deep.Equal(testCase.userNames, gotUsers); diffs != nil {
-				t.Errorf("did not get expected user display names: %s", diffs)
+				gotList, _, err := tt.authService.ListUsers(ctx, &model.PaginationParams{Amount: -1})
+				if err != nil {
+					t.Fatalf("ListUsers: %s", err)
+				}
+				gotUsers := make([]string, 0, len(testCase.userNames))
+				for _, user := range gotList {
+					gotUsers = append(gotUsers, user.Username)
+				}
+				sort.Strings(gotUsers)
+				sort.Strings(testCase.userNames)
+				if diffs := deep.Equal(testCase.userNames, gotUsers); diffs != nil {
+					t.Errorf("did not get expected user display names: %s", diffs)
+				}
 			}
 		})
 	}
@@ -499,33 +532,36 @@ func TestDBAuthService_ListUsers(t *testing.T) {
 
 func TestDBAuthService_ListUserCredentials(t *testing.T) {
 	const userName = "accredited"
-	s := setupService(t)
 	ctx := context.Background()
-	if _, err := s.CreateUser(ctx, &model.BaseUser{Username: userName}); err != nil {
-		t.Fatalf("CreateUser(%s): %s", userName, err)
-	}
-	credential, err := s.CreateCredentials(ctx, userName)
-	if err != nil {
-		t.Errorf("CreateCredentials(%s): %s", userName, err)
-	}
-	credentials, _, err := s.ListUserCredentials(ctx, userName, &model.PaginationParams{Amount: -1})
-	if err != nil {
-		t.Errorf("ListUserCredentials(%s): %s", userName, err)
-	}
-	if len(credentials) != 1 || len(credentials[0].AccessKeyID) == 0 || len(credentials[0].SecretAccessKey) > 0 || len(credentials[0].SecretAccessKeyEncryptedBytes) == 0 {
-		t.Errorf("expected to receive single credential with nonempty AccessKeyId and SecretAccessKeyEncryptedBytes and empty SecretAccessKey, got %+v", spew.Sdump(credentials))
-	}
-	gotCredential := credentials[0]
-	if credential.AccessKeyID != gotCredential.AccessKeyID {
-		t.Errorf("expected to receive same access key ID %s, got %s", credential.AccessKeyID, gotCredential.AccessKeyID)
-	}
-	if credential.UserID != gotCredential.UserID {
-		t.Errorf("expected to receive same user ID %s, got %s", credential.UserID, gotCredential.UserID)
-	}
-	// Issued dates are somewhat different, make sure not _too_ different.
-	timeDiff := credential.IssuedDate.Sub(gotCredential.IssuedDate)
-	if timeDiff > time.Second || timeDiff < -1*time.Second {
-		t.Errorf("expected to receive issued date close to %s, got %s (diff %s)", credential.IssuedDate, gotCredential.IssuedDate, timeDiff)
+	tests := setupService(t, ctx)
+	for _, tt := range tests {
+		ctx := context.Background()
+		if _, err := tt.authService.CreateUser(ctx, &model.BaseUser{Username: userName}); err != nil {
+			t.Fatalf("CreateUser(%s): %s", userName, err)
+		}
+		credential, err := tt.authService.CreateCredentials(ctx, userName)
+		if err != nil {
+			t.Errorf("CreateCredentials(%s): %s", userName, err)
+		}
+		credentials, _, err := tt.authService.ListUserCredentials(ctx, userName, &model.PaginationParams{Amount: -1})
+		if err != nil {
+			t.Errorf("ListUserCredentials(%s): %s", userName, err)
+		}
+		if len(credentials) != 1 || len(credentials[0].AccessKeyID) == 0 || len(credentials[0].SecretAccessKey) > 0 || len(credentials[0].SecretAccessKeyEncryptedBytes) == 0 {
+			t.Errorf("expected to receive single credential with nonempty AccessKeyId and SecretAccessKeyEncryptedBytes and empty SecretAccessKey, got %+v", spew.Sdump(credentials))
+		}
+		gotCredential := credentials[0]
+		if credential.AccessKeyID != gotCredential.AccessKeyID {
+			t.Errorf("expected to receive same access key ID %s, got %s", credential.AccessKeyID, gotCredential.AccessKeyID)
+		}
+		if credential.UserID != gotCredential.UserID {
+			t.Errorf("expected to receive same user ID %s, got %s", credential.UserID, gotCredential.UserID)
+		}
+		// Issued dates are somewhat different, make sure not _too_ different.
+		timeDiff := credential.IssuedDate.Sub(gotCredential.IssuedDate)
+		if timeDiff > time.Second || timeDiff < -1*time.Second {
+			t.Errorf("expected to receive issued date close to %s, got %s (diff %s)", credential.IssuedDate, gotCredential.IssuedDate, timeDiff)
+		}
 	}
 	// TODO(ariels): add more credentials (and test)
 }
@@ -547,153 +583,167 @@ func TestDBAuthService_ListGroups(t *testing.T) {
 			groupNames: []string{"fooers", "barriers", "bazaars", "quuxers", "pling-plongers"},
 		},
 	}
+	tests := setupService(t, ctx)
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
-			s := setupService(t)
-			for _, groupName := range testCase.groupNames {
-				if err := s.CreateGroup(ctx, &model.BaseGroup{DisplayName: groupName}); err != nil {
-					t.Fatalf("CreateGroup(%s): %s", groupName, err)
+			for _, tt := range tests {
+				for _, groupName := range testCase.groupNames {
+					if err := tt.authService.CreateGroup(ctx, &model.BaseGroup{DisplayName: groupName}); err != nil {
+						t.Fatalf("CreateGroup(%s): %s", groupName, err)
+					}
 				}
-			}
-			gotGroupNames := make([]string, 0, len(testCase.groupNames))
-			groups, _, err := s.ListGroups(ctx, &model.PaginationParams{Amount: -1})
-			if err != nil {
-				t.Errorf("ListGroups: %s", err)
-			}
-			for _, group := range groups {
-				gotGroupNames = append(gotGroupNames, group.DisplayName)
-			}
-			sort.Strings(testCase.groupNames)
-			sort.Strings(gotGroupNames)
-			if diffs := deep.Equal(testCase.groupNames, gotGroupNames); diffs != nil {
-				t.Errorf("got different groups than expected: %s", diffs)
+				gotGroupNames := make([]string, 0, len(testCase.groupNames))
+				groups, _, err := tt.authService.ListGroups(ctx, &model.PaginationParams{Amount: -1})
+				if err != nil {
+					t.Errorf("ListGroups: %s", err)
+				}
+				for _, group := range groups {
+					gotGroupNames = append(gotGroupNames, group.DisplayName)
+				}
+				sort.Strings(testCase.groupNames)
+				sort.Strings(gotGroupNames)
+				if diffs := deep.Equal(testCase.groupNames, gotGroupNames); diffs != nil {
+					t.Errorf("got different groups than expected: %s", diffs)
+				}
 			}
 		})
 	}
+
 }
 
 func TestDbAuthService_GetUser(t *testing.T) {
-	s := setupService(t)
 	ctx := context.Background()
+	tests := setupService(t, ctx)
+
 	const userName = "foo"
-	// Time should *not* have nanoseconds - otherwise we are comparing accuracy of golang
-	// and Postgres time storage.
-	ts := time.Date(2222, 2, 22, 22, 22, 22, 0, time.UTC)
-	if _, err := s.CreateUser(ctx, &model.BaseUser{Username: userName, CreatedAt: ts}); err != nil {
-		t.Fatalf("CreateUser(%s): %s", userName, err)
-	}
-	user, err := s.GetUser(ctx, userName)
-	if err != nil {
-		t.Fatalf("GetUser(%s): %s", userName, err)
-	}
-	if user.Username != userName {
-		t.Errorf("GetUser(%s) returned user %+v with a different name", userName, user)
-	}
-	if user.CreatedAt.Sub(ts) != 0 {
-		t.Errorf("expected user CreatedAt %s, got %+v", ts, user.CreatedAt)
-	}
-	if user.ID == strconv.Itoa(-22) {
-		t.Errorf("expected CreateUser ID:-22 to be dropped on server, got user %+v", user)
+	for _, tt := range tests {
+		// Time should *not* have nanoseconds - otherwise we are comparing accuracy of golang
+		// and Postgres time storage.
+		ts := time.Date(2222, 2, 22, 22, 22, 22, 0, time.UTC)
+		if _, err := tt.authService.CreateUser(ctx, &model.BaseUser{Username: userName, CreatedAt: ts}); err != nil {
+			t.Fatalf("CreateUser(%s): %s", userName, err)
+		}
+		user, err := tt.authService.GetUser(ctx, userName)
+		if err != nil {
+			t.Fatalf("GetUser(%s): %s", userName, err)
+		}
+		if user.Username != userName {
+			t.Errorf("GetUser(%s) returned user %+v with a different name", userName, user)
+		}
+		if user.CreatedAt.Sub(ts) != 0 {
+			t.Errorf("expected user CreatedAt %s, got %+v", ts, user.CreatedAt)
+		}
+		if user.ID == strconv.Itoa(-22) {
+			t.Errorf("expected CreateUser ID:-22 to be dropped on server, got user %+v", user)
+		}
 	}
 }
 
 func TestDbAuthService_AddCredentials(t *testing.T) {
-	s := setupService(t)
 	ctx := context.Background()
 	const userName = "foo"
-	// Time should *not* have nanoseconds - otherwise we are comparing accuracy of golang
-	// and Postgres time storage.
-	ts := time.Date(2222, 2, 22, 22, 22, 22, 0, time.UTC)
-	if _, err := s.CreateUser(ctx, &model.BaseUser{Username: userName, CreatedAt: ts}); err != nil {
-		t.Fatalf("CreateUser(%s): %s", userName, err)
-	}
+	tests := setupService(t, ctx)
+	for _, tt := range tests {
+		// Time should *not* have nanoseconds - otherwise we are comparing accuracy of golang
+		// and Postgres time storage.
+		ts := time.Date(2222, 2, 22, 22, 22, 22, 0, time.UTC)
+		if _, err := tt.authService.CreateUser(ctx, &model.BaseUser{Username: userName, CreatedAt: ts}); err != nil {
+			t.Fatalf("CreateUser(%s): %s", userName, err)
+		}
 
-	const validKeyID = "AKIAIOSFODNN7EXAMPLE"
-	tests := []struct {
-		Name      string
-		Key       string
-		Secret    string
-		ExpectErr bool
-	}{
-		{
-			Name:      "empty",
-			Key:       "",
-			Secret:    "",
-			ExpectErr: true,
-		},
-		{
-			Name:      "invalid key",
-			Key:       "i",
-			Secret:    "secret",
-			ExpectErr: true,
-		},
-		{
-			Name:      "invalid secret",
-			Key:       validKeyID,
-			Secret:    "",
-			ExpectErr: true,
-		},
-		{
-			Name:      "valid",
-			Key:       validKeyID,
-			Secret:    "secret",
-			ExpectErr: false,
-		},
-	}
+		const validKeyID = "AKIAIOSFODNN7EXAMPLE"
+		tests := []struct {
+			Name      string
+			Key       string
+			Secret    string
+			ExpectErr bool
+		}{
+			{
+				Name:      "empty",
+				Key:       "",
+				Secret:    "",
+				ExpectErr: true,
+			},
+			{
+				Name:      "invalid key",
+				Key:       "i",
+				Secret:    "secret",
+				ExpectErr: true,
+			},
+			{
+				Name:      "invalid secret",
+				Key:       validKeyID,
+				Secret:    "",
+				ExpectErr: true,
+			},
+			{
+				Name:      "valid",
+				Key:       validKeyID,
+				Secret:    "secret",
+				ExpectErr: false,
+			},
+		}
 
-	for _, test := range tests {
-		t.Run(test.Name, func(t *testing.T) {
-			_, err := s.AddCredentials(ctx, userName, test.Key, test.Secret)
-			if test.ExpectErr != (err != nil) {
-				t.Errorf("AddCredentials with key (%s) expect err=%t, got=%v", test.Key, test.ExpectErr, err)
-			}
-		})
+		for _, test := range tests {
+			t.Run(test.Name, func(t *testing.T) {
+				_, err := tt.authService.AddCredentials(ctx, userName, test.Key, test.Secret)
+				if test.ExpectErr != (err != nil) {
+					t.Errorf("AddCredentials with key (%s) expect err=%t, got=%v", test.Key, test.ExpectErr, err)
+				}
+			})
+		}
 	}
 }
 
 func TestDbAuthService_GetUserById(t *testing.T) {
-	s := setupService(t)
 	ctx := context.Background()
 	const userName = "foo"
-	// Time should *not* have nanoseconds - otherwise we are comparing accuracy of golang
-	// and Postgres time storage.
-	ts := time.Date(2222, 2, 22, 22, 22, 22, 0, time.UTC)
-	if _, err := s.CreateUser(ctx, &model.BaseUser{Username: userName, CreatedAt: ts}); err != nil {
-		t.Fatalf("CreateUser(%s): %s", userName, err)
-	}
-	user, err := s.GetUser(ctx, userName)
-	if err != nil {
-		t.Fatalf("GetUser(%s): %s", userName, err)
-	}
+	tests := setupService(t, ctx)
 
-	gotUser, err := s.GetUserByID(ctx, user.ID)
-	if err != nil {
-		t.Errorf("GetUserById(%s): %s", user.ID, err)
-	}
-	if diffs := deep.Equal(user, gotUser); diffs != nil {
-		t.Errorf("got different user by name and by ID: %s", diffs)
+	for _, tt := range tests {
+		// Time should *not* have nanoseconds - otherwise we are comparing accuracy of golang
+		// and Postgres time storage.
+		ts := time.Date(2222, 2, 22, 22, 22, 22, 0, time.UTC)
+		if _, err := tt.authService.CreateUser(ctx, &model.BaseUser{Username: userName, CreatedAt: ts}); err != nil {
+			t.Fatalf("CreateUser(%s): %s", userName, err)
+		}
+		user, err := tt.authService.GetUser(ctx, userName)
+		if err != nil {
+			t.Fatalf("GetUser(%s): %s", userName, err)
+		}
+
+		gotUser, err := tt.authService.GetUserByID(ctx, user.ID)
+		if err != nil {
+			t.Errorf("GetUserById(%s): %s", user.ID, err)
+		}
+		if diffs := deep.Equal(user, gotUser); diffs != nil {
+			t.Errorf("got different user by name and by ID: %s", diffs)
+		}
 	}
 }
 
 func TestDBAuthService_DeleteUser(t *testing.T) {
-	s := setupService(t)
 	const userName = "foo"
 	ctx := context.Background()
-	if _, err := s.CreateUser(ctx, &model.BaseUser{Username: userName}); err != nil {
-		t.Fatalf("CreateUser(%s): %s", userName, err)
-	}
-	_, err := s.GetUser(ctx, userName)
-	if err != nil {
-		t.Fatalf("GetUser(%s) before deletion: %s", userName, err)
-	}
-	if err = s.DeleteUser(ctx, userName); err != nil {
-		t.Errorf("DeleteUser(%s): %s", userName, err)
-	}
-	_, err = s.GetUser(ctx, userName)
-	if err == nil {
-		t.Errorf("GetUser(%s) succeeded after DeleteUser", userName)
-	} else if !errors.Is(err, auth.ErrNotFound) {
-		t.Errorf("GetUser(%s) after deletion: %s", userName, err)
+	tests := setupService(t, ctx)
+
+	for _, tt := range tests {
+		if _, err := tt.authService.CreateUser(ctx, &model.BaseUser{Username: userName}); err != nil {
+			t.Fatalf("CreateUser(%s): %s", userName, err)
+		}
+		_, err := tt.authService.GetUser(ctx, userName)
+		if err != nil {
+			t.Fatalf("GetUser(%s) before deletion: %s", userName, err)
+		}
+		if err = tt.authService.DeleteUser(ctx, userName); err != nil {
+			t.Errorf("DeleteUser(%s): %s", userName, err)
+		}
+		_, err = tt.authService.GetUser(ctx, userName)
+		if err == nil {
+			t.Errorf("GetUser(%s) succeeded after DeleteUser", userName)
+		} else if !errors.Is(err, auth.ErrNotFound) {
+			t.Errorf("GetUser(%s) after deletion: %s", userName, err)
+		}
 	}
 }
 

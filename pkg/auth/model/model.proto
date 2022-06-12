@@ -46,3 +46,10 @@ message StatementData {
     repeated string action = 2;
     string resource = 3;
 }
+
+// message data model for model.Token struct
+message TokenData {
+    string token_id = 1;
+    google.protobuf.Timestamp expired_at = 2;
+}
+
