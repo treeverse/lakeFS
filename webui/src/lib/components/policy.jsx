@@ -5,10 +5,7 @@ import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
 import {FormControl} from "react-bootstrap";
 import Button from "react-bootstrap/Button";
-
 import {Error, FormattedDate} from "./controls";
-
-
 
 export const PolicyEditor = ({ show, onHide, onSubmit, policy = null, noID = false, isCreate = false }) => {
     const [error, setError] = useState(null);
@@ -23,9 +20,9 @@ export const PolicyEditor = ({ show, onHide, onSubmit, policy = null, noID = fal
     const [body, setBody] = useState('')
     useEffect(() => {
         if (policy !== null) {
-	    const newBody = JSON.stringify(policy, null, 4);
+        const newBody = JSON.stringify(policy, null, 4);
             setBody(newBody);
-	    setSavedBody(newBody);
+        setSavedBody(newBody);
         }
     }, [policy]);
 
@@ -37,26 +34,26 @@ export const PolicyEditor = ({ show, onHide, onSubmit, policy = null, noID = fal
             JSON.parse(statement);
         } catch (error) {
             setError(error);
-	    return false;
+        return false;
         }
         const promise = (policy === null) ? onSubmit(idField.current.value, statement) : onSubmit(statement)
         return promise
-	    .then((res) => {
-		setSavedBody(statement);
-		setError(null);
-		return res;
-	    })
-	    .catch((err) => {
-		setError(err);
-		return null;
-	    });
+        .then((res) => {
+        setSavedBody(statement);
+        setError(null);
+        return res;
+        })
+        .catch((err) => {
+        setError(err);
+        return null;
+        });
     };
 
     const hide = () => {
         setError(null);
-	if (savedBody !== null) {
-	    setBody(savedBody);
-	}
+    if (savedBody !== null) {
+        setBody(savedBody);
+    }
         onHide();
     };
     const actionName = policy === null || isCreate ? 'Create' : 'Edit'

@@ -30,7 +30,7 @@ const GroupsContainer = () => {
     const [refresh, setRefresh] = useState(false);
 
     const router = useRouter();
-    const after = (!!router.query.after) ? router.query.after : "";
+    const after = (router.query.after) ? router.query.after : "";
     const { results, loading, error, nextPage } =  useAPIWithPagination(() => {
         return auth.listGroups(after);
     }, [after, refresh]);
@@ -39,7 +39,7 @@ const GroupsContainer = () => {
         setSelected([]);
     }, [after, refresh]);
 
-    if (!!error) return <Error error={error}/>;
+    if (error) return <Error error={error}/>;
     if (loading) return <Loading/>;
 
     return (

@@ -92,7 +92,7 @@ export const TreeItem = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID
     }, [repo.id, reference.id, internalRefresh, afterUpdated, entry.path, delimiter, dirExpanded])
 
     const results = resultsState.results
-    if (!!error)
+    if (error)
         return <Error error={error}/>
 
     if (loading && results.length === 0)
@@ -185,9 +185,7 @@ export const TreeEntryPaginator = ({ path, setAfterUpdated, nextPage, depth=0, l
     return (
         <tr key={"row-" + path}
             className={"tree-entry-row diff-more"}
-            onClick={(_ => {
-                setAfterUpdated(nextPage)
-            })}
+            onClick={() => setAfterUpdated(nextPage)}
         >
             <td className="diff-indicator"/>
             <td className="tree-path">

@@ -19,8 +19,8 @@ export const CredentialsTable = ({userId, currentAccessKey, refresh, after, onPa
         return auth.listCredentials(userId, after);
     }, [refresh, internalRefresh, userId, after]);
 
-    if (!!error) return <Error error={error}/>;
-    if (!!revokeError) return <Error error={revokeError}/>;
+    if (error) return <Error error={error}/>;
+    if (revokeError) return <Error error={revokeError}/>;
     if (loading) return <Loading/>;
 
     return (

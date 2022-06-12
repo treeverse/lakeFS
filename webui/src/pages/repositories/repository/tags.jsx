@@ -184,7 +184,7 @@ const TagList = ({ repo, after, onPaginate }) => {
     let content;
 
     if (loading) content = <Loading />;
-    else if (!!error) content = <Error error={error} />;
+    else if (error) content = <Error error={error} />;
     else content = ( results && !!results.length  ?
         <>
             <Card>
@@ -225,19 +225,19 @@ const TagsContainer = () => {
     const router = useRouter()
     const { repo, loading, error } = useRefs();
     const { after } = router.query;
-    const routerPfx = (!!router.query.prefix) ? router.query.prefix : "";
+    const routerPfx = (router.query.prefix) ? router.query.prefix : "";
 
     if (loading) return <Loading />;
-    if (!!error) return <Error error={error} />;
+    if (error) return <Error error={error} />;
 
     return (
         <TagList
             repo={repo}
-            after={(!!after) ? after : ""}
+            after={(after) ? after : ""}
             prefix={routerPfx}
             onPaginate={after => {
                 const query = { after };
-                if (!!router.query.prefix) query.prefix = router.query.prefix;
+                if (router.query.prefix) query.prefix = router.query.prefix;
                 router.push({ pathname: '/repositories/:repoId/tags', params: { repoId: repo.id }, query });
             }} />
     );
