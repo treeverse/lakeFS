@@ -101,7 +101,7 @@ export const ActivateInvitedUserPage = () => {
     return (
         <Layout logged={false}>
             {
-                !!token ?
+                token ?
                     <CreateUserWithPasswordForm token={token} email={invitedUserEmail}/> :
                     <Route>
                         <Redirect to="/auth/login"/>

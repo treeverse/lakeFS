@@ -30,14 +30,14 @@ const PoliciesContainer = () => {
     const [refresh, setRefresh] = useState(false);
 
     const router = useRouter();
-    const after = (!!router.query.after) ? router.query.after : "";
+    const after = (router.query.after) ? router.query.after : "";
     const { results, loading, error, nextPage } =  useAPIWithPagination(() => {
         return auth.listPolicies("", after);
     }, [after, refresh]);
 
     useEffect(() => { setSelected([]); }, [after, refresh]);
 
-    if (!!error) return <Error error={error}/>;
+    if (error) return <Error error={error}/>;
     if (loading) return <Loading/>;
 
     return (

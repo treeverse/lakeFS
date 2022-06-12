@@ -28,7 +28,7 @@ const UserEffectivePoliciesList = ({ userId, after, onPaginate }) => {
 
     let content;
     if (loading) content = <Loading/>;
-    else if (!!error) content=  <Error error={error}/>;
+    else if (error) content=  <Error error={error}/>;
     else content = (
             <>
                <DataTable
@@ -79,7 +79,7 @@ const UserEffectivePoliciesContainer = () => {
     const { userId } = router.params;
     return (!userId) ? <></> : <UserEffectivePoliciesList
         userId={userId}
-        after={(!!after) ? after : ""}
+        after={(after) ? after : ""}
         onPaginate={after => router.push({pathname: '/auth/users/:userId/policies/effective', params: {userId}, query: {after}})}
     />;
 };

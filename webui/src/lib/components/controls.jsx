@@ -67,8 +67,8 @@ export const Error = ({error, onDismiss = null, className = null}) => {
     let msg = error.toString();
     // handle wrapped errors
     let err = error;
-    while (!!err.error) err = err.error;
-    if (!!err.message) msg = err.message;
+    while (err.error) err = err.error;
+    if (err.message) msg = err.message;
     if (onDismiss !== null) {
         return <Alert className={className} variant="danger" dismissible onClose={onDismiss}>{msg}</Alert>;
     }
@@ -240,7 +240,7 @@ export const ClipboardButton = ({ text, variant, onSuccess, icon = <ClippyIcon/>
                     return (<Tooltip {...props}>{tooltip}</Tooltip>)
                 }}
             </Overlay>
-            <Button variant={variant} ref={target} onClick={(e) => {
+            <Button variant={variant} ref={target} onClick={() => {
                 setShow(false)
                 setCopied(true)
                 if (updater !== null) updater()
@@ -339,14 +339,14 @@ export const ToggleSwitch = ({  label, id, defaultChecked, onChange }) => {
 export const Warning = (props) =>
 <>
     <Alert variant="warning">
-	&#x26A0; { props.children }
+    &#x26A0; { props.children }
     </Alert>
 </>;
 
 export const Warnings = ({ warnings = [] }) => {
     return <ul className="pl-0 ml-0 warnings">
-	       {warnings.map((warning, i) =>
-		   <Warning key={i}>{warning}</Warning>
-	       )}
-	   </ul>;
+           {warnings.map((warning, i) =>
+           <Warning key={i}>{warning}</Warning>
+           )}
+       </ul>;
 };

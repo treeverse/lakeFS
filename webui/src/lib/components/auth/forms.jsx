@@ -28,7 +28,7 @@ export const AttachModal = ({ show, searchFn, onAttach, onHide, addText = "Add",
 
     let content;
     if (loading) content = <Loading/>;
-    else if (!!error) content = <Error error={error}/>;
+    else if (error) content = <Error error={error}/>;
     else content = (
             <>
                 <DataTable

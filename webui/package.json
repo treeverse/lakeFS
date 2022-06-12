@@ -36,7 +36,9 @@
   "eslintConfig": {
     "parser": "babel-eslint",
     "env": {
-      "browser": true
+      "browser": true,
+      "jest": true,
+      "es6": true
     },
     "settings": {
       "react": {
