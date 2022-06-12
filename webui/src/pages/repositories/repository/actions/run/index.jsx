@@ -1,4 +1,3 @@
-
 import React, {useState} from "react";
 
 import {RepositoryPageLayout} from "../../../../../lib/components/repository/layout";
@@ -89,7 +88,7 @@ const HookLog = ({ repo, run, execution }) => {
     if (expanded) {
         if (loading) {
             content = <pre>Loading...</pre>;
-        } else if (!!error) {
+        } else if (error) {
             content = <Error error={error}/>;
         } else {
             content = <pre>{response}</pre>;
@@ -207,7 +206,7 @@ const RunContainer = ({ repo, runId, onSelectAction, selectedAction }) => {
     }, [repo.id, runId]);
 
     if (loading) return <Loading/>;
-    if (!!error) return <Error error={error}/>;
+    if (error) return <Error error={error}/>;
 
     return (
         <ActionBrowser
@@ -227,17 +226,17 @@ const ActionContainer = () => {
     const {loading, error, repo} = useRefs();
 
     if (loading) return <Loading/>;
-    if (!!error) return <Error error={error}/>;
+    if (error) return <Error error={error}/>;
 
     const params = {repoId: repo.id, runId};
 
     return <RunContainer
         repo={repo}
         runId={runId}
-        selectedAction={(!!action) ? action : null}
+        selectedAction={(action) ? action : null}
         onSelectAction={action => {
             const query = {};
-            if (!!action) query.action = action;
+            if (action) query.action = action;
             router.push({
                 pathname: '/repositories/:repoId/actions/:runId', query, params
             });

@@ -17,19 +17,19 @@ export const RepositoryNavTabs = ({ active }) => {
 
     const withRefContext = (url) => {
         const params = new URLSearchParams();
-        if (!!reference) params.append('ref', reference.id);
-        if (!!params.toString())
+        if (reference) params.append('ref', reference.id);
+        if (params.toString())
             return `${url}?${params.toString()}`;
         return url;
     };
 
     const withRefAndCompareContext = (url) => {
         const params = new URLSearchParams();
-        if (!!reference) {
+        if (reference) {
             params.append('ref', reference.id)
             params.append('compare', reference.id);
         }
-        if (!!params.toString())
+        if (params.toString())
             return `${url}?${params.toString()}`;
         return url;
     };
@@ -37,7 +37,7 @@ export const RepositoryNavTabs = ({ active }) => {
     const withBranchContext = (url) => {
         const params = new URLSearchParams();
         if (!!reference && reference.type === RefTypeBranch) params.append('ref', reference.id);
-        if (!!params.toString())
+        if (params.toString())
             return `${url}?${params.toString()}`;
         return url;
     };
@@ -45,9 +45,9 @@ export const RepositoryNavTabs = ({ active }) => {
     const withRefAndPathContext = (url) => {
         const { path } = router.query;
         const params = new URLSearchParams();
-        if (!!reference) params.append('ref', reference.id);
-        if (!!path) params.append('path', path);
-        if (!!params.toString())
+        if (reference) params.append('ref', reference.id);
+        if (path) params.append('path', path);
+        if (params.toString())
             return `${url}?${params.toString()}`;
         return url;
     };

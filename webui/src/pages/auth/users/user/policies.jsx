@@ -33,7 +33,7 @@ const UserPoliciesList = ({ userId, after, onPaginate }) => {
 
     let content;
     if (loading) content = <Loading/>;
-    else if (!!error) content=  <Error error={error}/>;
+    else if (error) content=  <Error error={error}/>;
     else content = (
             <>
                 {attachError && <Error error={attachError}/>}
@@ -111,7 +111,7 @@ const UserPoliciesContainer = () => {
     const { userId } = router.params;
     return (!userId) ? <></> : <UserPoliciesList
         userId={userId}
-        after={(!!after) ? after : ""}
+        after={(after) ? after : ""}
         onPaginate={after => router.push({pathname: '/auth/users/:userId/policies', params: {userId}, query: {after}})}
     />;
 };

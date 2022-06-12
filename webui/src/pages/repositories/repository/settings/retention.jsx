@@ -15,8 +15,6 @@ import {RefContextProvider, useRefs} from "../../../../lib/hooks/repo";
 import Card from "react-bootstrap/Card";
 import Table from "react-bootstrap/Table";
 import {SettingsLayout} from "./layout";
-import {Container, Row} from "react-bootstrap";
-import Col from "react-bootstrap/Col";
 import {PolicyEditor} from "../../../../lib/components/policy";
 import Alert from "react-bootstrap/Alert";
 
@@ -55,7 +53,7 @@ const GCPolicy = ({repo}) => {
     let content;
     if (loading) {
         content = <Loading/>;
-    } else if (!!error) {
+    } else if (error) {
         content = error instanceof NotFoundError ? <Alert variant="info" className={"mt-3"}>A garbage collection policy is not set yet.</Alert> :  <Error error={error}/>;
     } else if (jsonView) {
         content = <>
@@ -135,7 +133,7 @@ const GCPolicy = ({repo}) => {
 const RetentionContainer = () => {
     const {repo, loading, error} = useRefs();
     if (loading) return <Loading/>;
-    if (!!error) return <Error error={error}/>;
+    if (error) return <Error error={error}/>;
 
     return (
         <GCPolicy repo={repo}/>

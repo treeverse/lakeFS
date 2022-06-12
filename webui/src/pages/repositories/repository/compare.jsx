@@ -59,7 +59,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
     }
 
     if (loading) content = <Loading/>
-    else if (!!error) content = <Error error={error}/>
+    else if (error) content = <Error error={error}/>
     else if (compareReference.id === reference.id) content = (
         <Alert variant="warning">
             <Alert.Heading>There isn’t anything to compare.</Alert.Heading>
@@ -137,7 +137,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                     <RefDropdown
                         prefix={'Base '}
                         repo={repo}
-                        selected={(!!reference) ? reference : null}
+                        selected={(reference) ? reference : null}
                         withCommits={true}
                         withWorkspace={false}
                         selectRef={onSelectRef}/>
@@ -148,7 +148,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                         prefix={'Compared to '}
                         emptyText={'Compare with...'}
                         repo={repo}
-                        selected={(!!compareReference) ? compareReference : null}
+                        selected={(compareReference) ? compareReference : null}
                         withCommits={true}
                         withWorkspace={false}
                         selectRef={onSelectCompare}/>
@@ -198,7 +198,7 @@ const CompareContainer = () => {
     const { prefix } = router.query;
 
     if (loading) return <Loading/>;
-    if (!!error) return <Error error={error}/>;
+    if (error) return <Error error={error}/>;
 
     const route = query => router.push({pathname: `/repositories/:repoId/compare`, params: {repoId: repo.id}, query: {
         ...query,
@@ -207,7 +207,7 @@ const CompareContainer = () => {
     return (
         <CompareList
             repo={repo}
-            prefix={(!!prefix) ? prefix : ""}
+            prefix={(prefix) ? prefix : ""}
             reference={reference}
             onSelectRef={reference => route(compare ? {ref: reference.id, compare: compare.id} : {ref: reference.id})}
             compareReference={compare}

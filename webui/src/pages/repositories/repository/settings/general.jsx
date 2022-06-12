@@ -60,8 +60,8 @@ const SettingsContainer = () => {
     const [ deletionError, setDeletionError ] = useState(null);
 
     if (loading) return <Loading/>;
-    if (!!error) return <Error error={error}/>;
-    if (!!deletionError) return <Error error={deletionError}/>;
+    if (error) return <Error error={error}/>;
+    if (deletionError) return <Error error={deletionError}/>;
 
     return (
         <div className="mt-3 mb-5">

@@ -36,7 +36,9 @@
   "eslintConfig": {
     "parser": "babel-eslint",
     "env": {
-      "browser": true
+      "browser": true,
+      "jest": true,
+      "es6": true
     },
     "settings": {
       "react": {
@@ -45,12 +47,13 @@
     },
     "rules": {
       "eqeqeq": "warn",
-      "strict": "off",
+      "strict": "error",
       "react/prop-types": 0,
       "react/jsx-key": 0,
       "react/display-name": 0
     },
     "extends": [
+      "eslint:recommended",
       "plugin:react/recommended"
     ]
   }

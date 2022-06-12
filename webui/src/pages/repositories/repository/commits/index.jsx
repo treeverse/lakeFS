@@ -96,7 +96,7 @@ const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => 
     }, [repo.id, reference.id, refresh, after])
 
     if (loading) return <Loading/>
-    if (!!error) return <Error error={error}/>
+    if (error) return <Error error={error}/>
 
     return (
         <div className="mb-5">
@@ -105,7 +105,7 @@ const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => 
                 <ActionGroup orientation="left">
                     <RefDropdown
                         repo={repo}
-                        selected={(!!reference) ? reference : null}
+                        selected={(reference) ? reference : null}
                         withCommits={true}
                         withWorkspace={false}
                         selectRef={onSelectRef}
@@ -138,7 +138,7 @@ const CommitsContainer = () => {
     const { repo, reference, loading ,error } = useRefs();
 
     if (loading) return <Loading/>;
-    if (!!error) return <Error error={error}/>;
+    if (error) return <Error error={error}/>;
 
     const params = {repoId: repo.id};
 
@@ -151,7 +151,7 @@ const CommitsContainer = () => {
                 query: {ref: ref.id},
                 params
             })}
-            after={(!!after) ? after : ""}
+            after={(after) ? after : ""}
             onPaginate={after => router.push({
                     pathname: `/repositories/:repoId/commits`,
                     query: {ref: reference.id, after},
