@@ -5,6 +5,7 @@ import (
 )
 
 type OIDC struct {
+	Enabled                bool     `mapstructure:"enabled"`
 	URL                    string   `mapstructure:"url"`
 	ClientID               string   `mapstructure:"client_id"`
 	ClientSecret           string   `mapstructure:"client_secret"`

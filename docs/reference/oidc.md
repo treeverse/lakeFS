@@ -22,6 +22,7 @@ To support OIDC, add the following to your [lakeFS configuration](./configuratio
 ```yaml
 auth:
   oidc:
+    enabled: true
     client_id: example-client-id
     client_secret: exampleSecretValue
     url: https://my-account.oidc-provider-example.com
@@ -45,3 +46,15 @@ For a user to be assigned to other groups, add the _initial_groups_ claim to the
 comma-separated list of group names.
 
 Once the user has been created, you can manage their permissions from the Administration pages in the lakeFS UI or using _lakectl_.
+
+### Using a different claim name
+
+To supply the initial groups using another claim from your ID token, you can use the `auth.oidc.initial_groups_claim_name` 
+lakeFS configuration. For example, to take the initial groups from the _roles_ claim, add:
+
+```yaml
+auth:
+  oidc:
+    # ... Other OIDC configurations
+    initial_groups_claim_name: roles
+```
