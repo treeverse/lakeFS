@@ -17,6 +17,7 @@ const (
 	StateSessionKey         = "state"
 )
 
+// NewOIDCLoginPageHandler returns a handler to redirect the user the OIDC provider's login page.
 func NewOIDCLoginPageHandler(sessionStore sessions.Store, oauthConfig *oauth2.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		state, err := generateRandomState()

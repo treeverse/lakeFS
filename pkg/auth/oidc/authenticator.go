@@ -18,6 +18,8 @@ func NewAuthenticator(oauthConfig *oauth2.Config, oidcProvider *oidc.Provider) *
 
 type Claims map[string]interface{}
 
+// GetIDTokenClaims exchanges a temporary code for an ID token.
+// The ID token is verified to be valid, and its Claims are then returned.
 func (a *Authenticator) GetIDTokenClaims(ctx context.Context, code string) (Claims, error) {
 	token, err := a.oauthConfig.Exchange(ctx, code)
 	if err != nil {
