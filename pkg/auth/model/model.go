@@ -7,6 +7,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/go-openapi/swag"
+
+	"google.golang.org/protobuf/proto"
+
 	"github.com/treeverse/lakefs/pkg/kv"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -196,8 +200,8 @@ func ProtoFromUser(u *User) *UserData {
 		Id:                []byte(u.ID),
 		CreatedAt:         timestamppb.New(u.CreatedAt),
 		Username:          u.Username,
-		FriendlyName:      *u.FriendlyName,
-		Email:             *u.Email,
+		FriendlyName:      swag.StringValue(u.FriendlyName),
+		Email:             swag.StringValue(u.Email),
 		EncryptedPassword: u.EncryptedPassword,
 		Source:            u.Source,
 	}
@@ -325,10 +329,11 @@ func ConvertUsersList(users []*DBUser) []*User {
 	return kvUsers
 }
 
-func ConvertUsersDataList(users []*UserData) []*User {
+func ConvertUsersDataList(users []proto.Message) []*User {
 	kvUsers := make([]*User, 0, len(users))
 	for _, u := range users {
-		kvUsers = append(kvUsers, UserFromProto(u))
+		a := u.(*UserData)
+		kvUsers = append(kvUsers, UserFromProto(a))
 	}
 	return kvUsers
 }
@@ -341,10 +346,12 @@ func ConvertCredList(creds []*DBCredential) []*Credential {
 	return res
 }
 
-func ConvertCredDataList(creds []*CredentialData) []*Credential {
+func ConvertCredDataList(creds []proto.Message) []*Credential {
 	res := make([]*Credential, 0, len(creds))
 	for _, c := range creds {
-		res = append(res, CredentialFromProto(c))
+		a := c.(*CredentialData)
+		a.SecretAccessKey = ""
+		res = append(res, CredentialFromProto(a))
 	}
 	return res
 }
@@ -371,18 +378,20 @@ func ConvertGroup(g *DBGroup) *Group {
 	}
 }
 
-func ConvertGroupDataList(group []*GroupData) []*Group {
+func ConvertGroupDataList(group []proto.Message) []*Group {
 	res := make([]*Group, 0, len(group))
 	for _, g := range group {
-		res = append(res, GroupFromProto(g))
+		a := g.(*GroupData)
+		res = append(res, GroupFromProto(a))
 	}
 	return res
 }
 
-func ConvertPolicyDataList(policies []*PolicyData) []*BasePolicy {
+func ConvertPolicyDataList(policies []proto.Message) []*BasePolicy {
 	res := make([]*BasePolicy, 0, len(policies))
 	for _, p := range policies {
-		res = append(res, PolicyFromProto(p))
+		a := p.(*PolicyData)
+		res = append(res, PolicyFromProto(a))
 	}
 	return res
 }

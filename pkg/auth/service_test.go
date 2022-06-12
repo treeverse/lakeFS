@@ -503,9 +503,10 @@ func TestDBAuthService_ListUsers(t *testing.T) {
 			userNames: []string{"foo", "bar", "baz", "quux"},
 		},
 	}
-	tests := setupService(t, ctx)
+
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
+			tests := setupService(t, ctx)
 			for _, tt := range tests {
 				for _, userName := range testCase.userNames {
 					if _, err := tt.authService.CreateUser(ctx, &model.BaseUser{Username: userName}); err != nil {
@@ -583,9 +584,10 @@ func TestDBAuthService_ListGroups(t *testing.T) {
 			groupNames: []string{"fooers", "barriers", "bazaars", "quuxers", "pling-plongers"},
 		},
 	}
-	tests := setupService(t, ctx)
+
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
+			tests := setupService(t, ctx)
 			for _, tt := range tests {
 				for _, groupName := range testCase.groupNames {
 					if err := tt.authService.CreateGroup(ctx, &model.BaseGroup{DisplayName: groupName}); err != nil {
