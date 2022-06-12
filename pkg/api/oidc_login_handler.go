@@ -13,8 +13,10 @@ import (
 const (
 	OIDCAuthSessionName = "auth_session"
 
-	IdTokenClaimsSessionKey = "id_token_claims"
+	IDTokenClaimsSessionKey = "id_token_claims"
 	StateSessionKey         = "state"
+
+	stateByteSize = 32
 )
 
 // NewOIDCLoginPageHandler returns a handler to redirect the user the OIDC provider's login page.
@@ -51,7 +53,7 @@ func NewOIDCLoginPageHandler(sessionStore sessions.Store, oauthConfig *oauth2.Co
 }
 
 func generateRandomState() (string, error) {
-	b := make([]byte, 32)
+	b := make([]byte, stateByteSize)
 	_, err := rand.Read(b)
 	if err != nil {
 		return "", err

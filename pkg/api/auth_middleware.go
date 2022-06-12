@@ -127,7 +127,7 @@ func checkSecurityRequirements(r *http.Request,
 // If the user doesn't exist on the lakeFS side, it is created.
 // This function does not make any calls to an external provider.
 func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.Service, authSession *sessions.Session, oidcConfig *config.OIDC) (*model.User, error) {
-	idTokenClaims, ok := authSession.Values[IdTokenClaimsSessionKey].(oidc.Claims)
+	idTokenClaims, ok := authSession.Values[IDTokenClaimsSessionKey].(oidc.Claims)
 	if !ok || idTokenClaims == nil {
 		return nil, ErrAuthenticatingRequest
 	}

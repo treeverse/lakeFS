@@ -207,7 +207,7 @@ func (c *Controller) OauthCallback(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	session.Values[IdTokenClaimsSessionKey] = idTokenClaims
+	session.Values[IDTokenClaimsSessionKey] = idTokenClaims
 	err = session.Save(r, w)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
