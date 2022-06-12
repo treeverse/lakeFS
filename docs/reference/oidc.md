@@ -28,7 +28,7 @@ auth:
     default_initial_groups: ["Developers"]
 ```
 
-Your login page will not include a link to sign-in using the 
+Your login page will now include a link to sign-in using the 
 OIDC provider. When a user first logs in through the provider, a corresponding user is created in lakeFS.
 
 #### Notes
