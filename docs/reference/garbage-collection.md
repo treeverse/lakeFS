@@ -71,10 +71,10 @@ lakectl gc set-config lakefs://example-repo -f example_repo_gc_rules.json
 ### From the lakeFS UI
 {: .no_toc }
 
-1. Click on the repository you would like to configure GC rules for
-2. Go to _Settings_ -> _Retention_
-3. Click _Edit policy_ and paste your GC rule into the text box as Json
-4. Save you changes
+1. Navigate to the main page of your repository.
+2. Go to _Settings_ -> _Retention_.
+3. Click _Edit policy_ and paste your GC rule into the text box as a JSON.
+4. Save your changes.
 
 ![GC Rules From UI]({{ site.baseurl }}/assets/img/gc_rules_from_ui.png)
 
