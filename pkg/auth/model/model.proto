@@ -47,7 +47,7 @@ message StatementData {
     string resource = 3;
 }
 
-// message data model for model.Token struct
+// message data model for rest password token
 message TokenData {
     string token_id = 1;
     google.protobuf.Timestamp expired_at = 2;

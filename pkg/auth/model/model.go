@@ -8,11 +8,9 @@ import (
 	"time"
 
 	"github.com/go-openapi/swag"
-
-	"google.golang.org/protobuf/proto"
-
 	"github.com/treeverse/lakefs/pkg/kv"
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

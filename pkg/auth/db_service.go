@@ -9,9 +9,8 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/georgysavva/scany/pgxscan"
-
 	sq "github.com/Masterminds/squirrel"
+	"github.com/georgysavva/scany/pgxscan"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/keys"
 	"github.com/treeverse/lakefs/pkg/auth/model"
