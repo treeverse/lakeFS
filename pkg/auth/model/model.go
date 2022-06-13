@@ -229,7 +229,7 @@ func ProtoFromGroup(g *Group) *GroupData {
 	}
 }
 
-func PolicyPath(displayName string) string {
+func KVPolicyPath(displayName string) string {
 	return kv.FormatPath(authPrefix, "policies", displayName)
 }
 
