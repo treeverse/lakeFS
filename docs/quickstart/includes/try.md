@@ -14,9 +14,9 @@ similar to your own.
 
 Get a local lakeFS instance running in a Docker container. This environment includes lakeFS and other common data tools like Spark, dbt, Trino, Hive, and Jupyter.
 
-As a prerequisite, Docker is required to be installed on your machine. FOr instructions, [click here](https://docs.docker.com/get-docker/)
+As a prerequisite, Docker is required to be installed on your machine. For download instructions, [click here](https://docs.docker.com/get-docker/)
 
-The following commands can be run in your terminal to get the bagel running:
+The following commands can be run in your terminal to get the Bagel running:
 1. Clone the lakeFS repo: `git clone https://github.com/treeverse/lakeFS.git`
 2. Start the Docker containers: `cd lakeFS/deployments/compose && docker compose up -d`
 
