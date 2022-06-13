@@ -1,12 +1,11 @@
 package api
 
 import (
-	"crypto/rand"
-	"encoding/base64"
 	"net/http"
 	"net/url"
 
 	"github.com/gorilla/sessions"
+	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"golang.org/x/oauth2"
 )
@@ -17,13 +16,13 @@ const (
 	IDTokenClaimsSessionKey = "id_token_claims"
 	StateSessionKey         = "state"
 
-	stateByteSize = 32
+	stateLength = 22
 )
 
 // NewOIDCLoginPageHandler returns a handler to redirect the user the OIDC provider's login page.
 func NewOIDCLoginPageHandler(sessionStore sessions.Store, oauthConfig *oauth2.Config, logger logging.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		state, err := generateRandomState()
+		state, err := nanoid.New(stateLength)
 		if err != nil {
 			logger.Errorf("failed to generate state for oidc: %w", err)
 			writeError(w, http.StatusInternalServerError, "Failed to redirect to login page")
@@ -54,14 +53,4 @@ func NewOIDCLoginPageHandler(sessionStore sessions.Store, oauthConfig *oauth2.Co
 		oauthConfig.RedirectURL = u.String()
 		http.Redirect(w, r, oauthConfig.AuthCodeURL(state), http.StatusTemporaryRedirect)
 	}
-}
-
-func generateRandomState() (string, error) {
-	b := make([]byte, stateByteSize)
-	_, err := rand.Read(b)
-	if err != nil {
-		return "", err
-	}
-	state := base64.StdEncoding.EncodeToString(b)
-	return state, nil
 }
