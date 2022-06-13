@@ -177,7 +177,7 @@ func (s *Statements) Scan(src interface{}) error {
 // authPrefix - key prefix in the KV model
 const authPrefix = "auth"
 
-func KvUserPath(userName string) string {
+func KVUserPath(userName string) string {
 	return kv.FormatPath(authPrefix, "users", userName)
 }
 
@@ -207,7 +207,7 @@ func ProtoFromUser(u *User) *UserData {
 	}
 }
 
-func KvGroupPath(displayName string) string {
+func KVGroupPath(displayName string) string {
 	return kv.FormatPath(authPrefix, "groups", displayName)
 }
 
@@ -250,7 +250,7 @@ func ProtoFromPolicy(p *BasePolicy, id string) *PolicyData {
 	}
 }
 
-func KvCredentialPath(userName string, accessKeyID string) string {
+func KVCredentialPath(userName string, accessKeyID string) string {
 	return kv.FormatPath(authPrefix, userName, "credentials", accessKeyID)
 }
 
@@ -309,15 +309,15 @@ func protoFromStatements(s *Statements) []*StatementData {
 	return statements
 }
 
-func KvUserToGroup(userName string, groupDisplayName string) string {
+func KVUserToGroup(userName string, groupDisplayName string) string {
 	return kv.FormatPath(authPrefix, "groups", groupDisplayName, "users", userName)
 }
 
-func PolicyToUser(policyDisplayName string, userName string) string {
+func KVPolicyToUser(policyDisplayName string, userName string) string {
 	return kv.FormatPath(authPrefix, "users", userName, "policies", policyDisplayName)
 }
 
-func PolicyToGroup(policyDisplayName string, groupDisplayName string) string {
+func KVPolicyToGroup(policyDisplayName string, groupDisplayName string) string {
 	return kv.FormatPath(authPrefix, "groups", groupDisplayName, "policies", policyDisplayName)
 }
 
@@ -396,6 +396,6 @@ func ConvertPolicyDataList(policies []proto.Message) []*BasePolicy {
 	return res
 }
 
-func KvTokenPath(tokenID string) string {
+func KVTokenPath(tokenID string) string {
 	return kv.FormatPath("expired_tokens", tokenID)
 }

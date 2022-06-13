@@ -770,17 +770,62 @@ func BenchmarkDBAuthService_ListEffectivePolicies(b *testing.B) {
 	userName := userWithPolicies(b, serviceWithoutCache, userPoliciesForTesting)
 
 	b.Run("without_cache", func(b *testing.B) {
-		benchmarkListEffectivePolicies(b, serviceWithoutCache, userName)
+		benchmarkDBListEffectivePolicies(b, serviceWithoutCache, userName)
 	})
 	b.Run("with_cache", func(b *testing.B) {
-		benchmarkListEffectivePolicies(b, serviceWithCache, userName)
+		benchmarkDBListEffectivePolicies(b, serviceWithCache, userName)
 	})
 	b.Run("without_cache_low_ttl", func(b *testing.B) {
-		benchmarkListEffectivePolicies(b, serviceWithCacheLowTTL, userName)
+		benchmarkDBListEffectivePolicies(b, serviceWithCacheLowTTL, userName)
 	})
 }
 
-func benchmarkListEffectivePolicies(b *testing.B, s *auth.DBAuthService, userName string) {
+func benchmarkDBListEffectivePolicies(b *testing.B, s *auth.DBAuthService, userName string) {
+	b.ResetTimer()
+	ctx := context.Background()
+	for n := 0; n < b.N; n++ {
+		_, _, err := s.ListEffectivePolicies(ctx, userName, &model.PaginationParams{Amount: -1})
+		if err != nil {
+			b.Fatal("Failed to list effective policies", err)
+		}
+	}
+}
+
+func BenchmarkKVAuthService_ListEffectivePolicies(b *testing.B) {
+	// setup user with policies for benchmark
+	ctx := context.Background()
+	kvStore := kvtest.GetStore(ctx, b)
+	storeMessage := kv.StoreMessage{Store: kvStore}
+
+	serviceWithoutCache := auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
+		Enabled: false,
+	}, logging.Default())
+	serviceWithCache := auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
+		Enabled:        true,
+		Size:           1024,
+		TTL:            20 * time.Second,
+		EvictionJitter: 3 * time.Second,
+	}, logging.Default())
+	serviceWithCacheLowTTL := auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
+		Enabled:        true,
+		Size:           1024,
+		TTL:            1 * time.Millisecond,
+		EvictionJitter: 1 * time.Millisecond,
+	}, logging.Default())
+	userName := userWithPolicies(b, serviceWithoutCache, userPoliciesForTesting)
+
+	b.Run("without_cache", func(b *testing.B) {
+		benchmarkKVListEffectivePolicies(b, serviceWithoutCache, userName)
+	})
+	b.Run("with_cache", func(b *testing.B) {
+		benchmarkKVListEffectivePolicies(b, serviceWithCache, userName)
+	})
+	b.Run("without_cache_low_ttl", func(b *testing.B) {
+		benchmarkKVListEffectivePolicies(b, serviceWithCacheLowTTL, userName)
+	})
+}
+
+func benchmarkKVListEffectivePolicies(b *testing.B, s *auth.KVAuthService, userName string) {
 	b.ResetTimer()
 	ctx := context.Background()
 	for n := 0; n < b.N; n++ {

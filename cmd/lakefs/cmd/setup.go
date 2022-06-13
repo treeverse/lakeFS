@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/treeverse/lakefs/pkg/kv"
+
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
@@ -50,7 +52,19 @@ var setupCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		authService := auth.NewDBAuthService(dbPool, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), cfg.GetAuthCacheConfig(), logging.Default().WithField("service", "auth_service"))
+		var authService auth.Service
+		if dbParams.KVEnabled {
+			kvStore, err := kv.Open(ctx, dbParams.Type, dbParams.ConnectionString)
+			if err != nil {
+				fmt.Printf("failed to open KV store: %s\n", err)
+				os.Exit(1)
+			}
+			storeMessage := kv.StoreMessage{Store: kvStore}
+			authService = auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), cfg.GetAuthCacheConfig(), logging.Default().WithField("service", "auth_service"))
+		} else {
+			authService = auth.NewDBAuthService(dbPool, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), cfg.GetAuthCacheConfig(), logging.Default().WithField("service", "auth_service"))
+		}
+
 		metadataManager := auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
 		cloudMetadataProvider := stats.BuildMetadataProvider(logging.Default(), cfg)
 		metadata := stats.NewMetadata(ctx, logging.Default(), cfg.GetBlockstoreType(), metadataManager, cloudMetadataProvider)
