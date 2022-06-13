@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/treeverse/lakefs/pkg/kv"
 )
 
@@ -34,7 +36,7 @@ type EntriesIterator struct {
 type DynKVItem struct {
 	PartitionKey string
 	ItemKey      string
-	ItemValue    string
+	ItemValue    []byte
 }
 
 // Params struct holds all the configuration parameters that can be used
@@ -98,18 +100,24 @@ func (d *Driver) Open(ctx context.Context, dsn string) (kv.Store, error) {
 		SharedConfigState: session.SharedConfigEnable,
 	}))
 
-	// Create DynamoDB client
-	svc := dynamodb.New(sess,
-		aws.NewConfig().
-			WithEndpoint(params.Endpoint).
-			WithRegion(params.AwsRegion).
-			WithCredentials(credentials.NewCredentials(
-				&credentials.StaticProvider{
-					Value: credentials.Value{
-						AccessKeyID:     params.AwsAccessKeyID,
-						SecretAccessKey: params.AwsSecretAccessKey,
-					}})))
+	cfg := aws.NewConfig()
+	if params.Endpoint != "" {
+		cfg.Endpoint = aws.String(params.Endpoint)
+	}
+	if params.AwsRegion != "" {
+		cfg = cfg.WithRegion(params.AwsRegion)
+	}
+	if params.AwsAccessKeyID != "" {
+		cfg.WithCredentials(credentials.NewCredentials(
+			&credentials.StaticProvider{
+				Value: credentials.Value{
+					AccessKeyID:     params.AwsAccessKeyID,
+					SecretAccessKey: params.AwsSecretAccessKey,
+				}}))
+	}
 
+	// Create DynamoDB client
+	svc := dynamodb.New(sess, cfg)
 	err = setupKeyValueDatabase(ctx, svc, params)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", kv.ErrSetupFailed, err)
@@ -137,7 +145,7 @@ func parseDsn(dsn string) (*Params, error) {
 // setupKeyValueDatabase setup everything required to enable kv over postgres
 func setupKeyValueDatabase(ctx context.Context, svc *dynamodb.DynamoDB, params *Params) error {
 	// main kv table
-	_, err := svc.CreateTableWithContext(ctx, &dynamodb.CreateTableInput{
+	table, err := svc.CreateTableWithContext(ctx, &dynamodb.CreateTableInput{
 		TableName: aws.String(params.TableName),
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
 			{
@@ -165,11 +173,33 @@ func setupKeyValueDatabase(ctx context.Context, svc *dynamodb.DynamoDB, params *
 		},
 	})
 	if err != nil {
-		if _, ok := err.(*dynamodb.ResourceInUseException); !ok {
-			return err
+		if _, ok := err.(*dynamodb.ResourceInUseException); ok {
+			return nil
 		}
+		return err
 	}
-	return nil
+	bo := backoff.NewExponentialBackOff()
+	const (
+		maxInterval = 5
+		maxElapsed  = 30
+	)
+
+	bo.MaxInterval = maxInterval * time.Second
+	bo.MaxElapsedTime = maxElapsed * time.Second
+	err = backoff.Retry(func() error {
+		desc, err := svc.DescribeTable(&dynamodb.DescribeTableInput{
+			TableName: table.TableDescription.TableName,
+		})
+		if err != nil {
+			// we shouldn't retry on anything but kv.ErrTableNotActive
+			return backoff.Permanent(err)
+		}
+		if *desc.Table.TableStatus != dynamodb.TableStatusActive {
+			return fmt.Errorf("table status(%s): %w", *desc.Table.TableStatus, kv.ErrTableNotActive)
+		}
+		return nil
+	}, bo)
+	return err
 }
 
 func (s *Store) bytesKeyToDynamoKey(partitionKey, key []byte) map[string]*dynamodb.AttributeValue {
@@ -192,8 +222,9 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 	}
 
 	result, err := s.svc.GetItemWithContext(ctx, &dynamodb.GetItemInput{
-		TableName: aws.String(s.params.TableName),
-		Key:       s.bytesKeyToDynamoKey(partitionKey, key),
+		TableName:      aws.String(s.params.TableName),
+		Key:            s.bytesKeyToDynamoKey(partitionKey, key),
+		ConsistentRead: aws.Bool(true),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("get item: %s (key=%v): %w", err, string(key), kv.ErrOperationFailed)
@@ -237,7 +268,7 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 	item := DynKVItem{
 		PartitionKey: string(partitionKey),
 		ItemKey:      string(key),
-		ItemValue:    string(value),
+		ItemValue:    value,
 	}
 
 	marshaledItem, err := dynamodbattribute.MarshalMap(item)
@@ -366,7 +397,7 @@ func (e *EntriesIterator) Next() bool {
 	}
 	e.entry = &kv.Entry{
 		Key:   []byte(item.ItemKey),
-		Value: []byte(item.ItemValue),
+		Value: item.ItemValue,
 	}
 	e.currEntryIdx++
 
