@@ -137,10 +137,10 @@ const ImportButton = ({ config, repo, reference, path, onDone, onClick, variant 
                     let nextOffset = "";
                     let baseCommit = reference.id;
                     do {
-                    	let response = await commits.log(repo.id, reference.id, nextOffset, 1000);
-                    	hasMore = response.pagination.has_more;
-                    	nextOffset = response.pagination.next_offset;
-                    	baseCommit = response.results.at(-1);
+                        let response = await commits.log(repo.id, reference.id, nextOffset, 1000);
+                        hasMore = response.pagination.has_more;
+                        nextOffset = response.pagination.next_offset;
+                        baseCommit = response.results.at(-1);
                     } while (hasMore)
                     await branches.create(repo.id, importBranch, baseCommit.id)
                     importBranchResp = await branches.get(repo.id, importBranch)
@@ -210,7 +210,7 @@ const ImportButton = ({ config, repo, reference, path, onDone, onClick, variant 
                                     <Form.Control sm={8} type="text" ref={commitMsgRef} name="text" autoFocus/>
                             </Form.Group>
                             </form>
-                            {(!!importState.error) ? (<Error error={importState.error}/>) : (<></>)}
+                            {(importState.error) ? (<Error error={importState.error}/>) : (<></>)}
                         </>
                         )}
                 </Modal.Body>
@@ -287,10 +287,10 @@ const UploadButton = ({ config, repo, reference, path, onDone, onClick, onHide, 
                         upload();
                         e.preventDefault();
                     }}>
-			{config?.warnings &&
-			 <Form.Group controlId="warnings">
-			     <Warnings warnings={config.warnings}/>
-			 </Form.Group>}
+            {config?.warnings &&
+             <Form.Group controlId="warnings">
+                 <Warnings warnings={config.warnings}/>
+             </Form.Group>}
                         <Form.Group controlId="path">
                             <Row noGutters={true}>
                                 <Col className="col-auto d-flex align-items-center justify-content-start">
@@ -315,7 +315,7 @@ const UploadButton = ({ config, repo, reference, path, onDone, onClick, onHide, 
                             />
                         </Form.Group>
                     </Form>
-                    {(!!uploadState.error) ? (<Error error={uploadState.error}/>) : (<></>)}
+                    {(uploadState.error) ? (<Error error={uploadState.error}/>) : (<></>)}
 
                 </Modal.Body>
                 <Modal.Footer>
@@ -350,7 +350,7 @@ const TreeContainer = ({ config, repo, reference, path, after, onPaginate, onRef
     const [deleteState, setDeleteState] = useState(initialState)
 
     if (loading) return <Loading/>;
-    if (!!error) return <Error error={error}/>;
+    if (error) return <Error error={error}/>;
 
     return (
         <>
@@ -359,7 +359,7 @@ const TreeContainer = ({ config, repo, reference, path, after, onPaginate, onRef
                 config={{config}}
                 repo={repo}
                 reference={reference}
-                path={(!!path) ? path : ""}
+                path={(path) ? path : ""}
                 showActions={true}
                 results={results}
                 after={after}
@@ -440,12 +440,12 @@ const ObjectsBrowser = ({ config, configError }) => {
                 config={config}
                 reference={reference}
                 repo={repo}
-                path={(!!path) ? path : ""}
-                after={(!!after) ? after : ""}
+                path={(path) ? path : ""}
+                after={(after) ? after : ""}
                 onPaginate={after => {
                     const query = {after}
-                    if (!!path) query.path = path
-                    if (!!reference) query.ref = reference.id
+                    if (path) query.path = path
+                    if (reference) query.ref = reference.id
                     const url = {pathname: `/repositories/:repoId/objects`, query, params: {repoId: repo.id}}
                     router.push(url)
                 }}
@@ -464,7 +464,7 @@ const RepositoryObjectsPage = () => {
     return (
           <RefContextProvider>
               <RepositoryPageLayout activePage={'objects'}>
-		  {loading && <Loading/>}
+          {loading && <Loading/>}
                   <ObjectsBrowser config={response} configError={err}/>
               </RepositoryPageLayout>
           </RefContextProvider>

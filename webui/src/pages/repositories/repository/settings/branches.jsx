@@ -22,9 +22,9 @@ const SettingsContainer = () => {
     const {response: rules, error: rulesError, loading: rulesLoading} = useAPI(async () => {
         return branchProtectionRules.getRules(repo.id)
     }, [repo, refresh])
-    if (!!error) return <Error error={error}/>;
-    if (!!rulesError) return <Error error={rulesError}/>;
-    if (!!actionError) return <Error error={actionError}/>;
+    if (error) return <Error error={error}/>;
+    if (rulesError) return <Error error={rulesError}/>;
+    if (actionError) return <Error error={actionError}/>;
     return (<>
         <div className="mt-3 mb-5">
             <div className={"section-title"}>

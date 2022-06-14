@@ -11,6 +11,7 @@ import (
 )
 
 const (
+	packageName            = "multiparts"
 	multipartsPrefix       = "multiparts"
 	multipartsPartitionKey = "multiparts"
 )

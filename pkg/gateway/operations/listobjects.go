@@ -107,15 +107,6 @@ func (controller *ListObjects) ListV2(w http.ResponseWriter, req *http.Request, 
 
 	maxKeys := controller.getMaxKeys(req, o)
 
-	// see if this is a recursive call`
-	if len(delimiter) >= 1 {
-		if delimiter != path.Separator {
-			// we only support "/" as a delimiter
-			_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
-			return
-		}
-	}
-
 	var results []*catalog.DBEntry
 	var hasMore bool
 	var ref string
@@ -236,11 +227,6 @@ func (controller *ListObjects) ListV1(w http.ResponseWriter, req *http.Request, 
 	delimiter := params.Get("delimiter")
 	descend := true
 	if len(delimiter) >= 1 {
-		if delimiter != path.Separator {
-			// we only support "/" as a delimiter
-			_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
-			return
-		}
 		descend = false
 	}
 

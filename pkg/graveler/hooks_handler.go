@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	gonanoid "github.com/matoous/go-nanoid/v2"
+	"github.com/rs/xid"
 )
 
 type EventType string
@@ -24,6 +24,7 @@ const (
 	EventTypePostDeleteBranch EventType = "post-delete-branch"
 
 	RunIDTimeLayout = "20060102150405"
+	UnixYear3000    = 32500915200
 )
 
 // HookRecord is an aggregation of all necessary fields for all event types
@@ -112,8 +113,10 @@ func (h *HooksNoOp) PostDeleteBranchHook(context.Context, HookRecord) {
 }
 
 func (h *HooksNoOp) NewRunID() string {
-	const nanoLen = 8
-	id := gonanoid.Must(nanoLen)
-	tm := time.Now().UTC().Format(RunIDTimeLayout)
-	return tm + id
+	return NewRunID()
+}
+
+func NewRunID() string {
+	tm := time.Unix(UnixYear3000-time.Now().Unix(), 0).UTC()
+	return xid.NewWithTime(tm).String()
 }

@@ -9,7 +9,7 @@ import ButtonToolbar from "react-bootstrap/ButtonToolbar";
 import Button from "react-bootstrap/Button";
 import Modal from "react-bootstrap/Modal";
 
-import {DotIcon, RepoIcon, SearchIcon} from "@primer/octicons-react";
+import {RepoIcon, SearchIcon} from "@primer/octicons-react";
 import {useState} from "react";
 import moment from "moment";
 
@@ -28,7 +28,7 @@ import Container from "react-bootstrap/Container";
 import {Link} from "../../lib/components/nav";
 import {useRouter} from "../../lib/hooks/router";
 
-import {Redirect, Route, Switch} from "react-router-dom";
+import {Route, Switch} from "react-router-dom";
 import RepositoryPage from './repository';
 import Alert from "react-bootstrap/Alert";
 
@@ -37,7 +37,7 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
 
     const { response, error: err, loading } = useAPI(() => config.getStorageConfig());
 
-    const showError = (!!error) ? error : err;
+    const showError = (error) ? error : err;
     if (loading)
         return (
             <Modal show={show} onHide={onCancel} size="lg">
@@ -82,7 +82,7 @@ const RepositoryList = ({ onPaginate, prefix, after, refresh, onCreateRepo }) =>
     }, [refresh, prefix, after])
 
     if (loading) return <Loading/>;
-    if (!!error) return <Error error={error}/>
+    if (error) return <Error error={error}/>
     if (!after && !prefix && results.length === 0) {
         return <GetStarted onCreateRepo={onCreateRepo}/>;
     }
@@ -128,7 +128,7 @@ const RepositoriesPage = () => {
     const [createError, setCreateError] = useState(null);
     const [refresh, setRefresh] = useState(false);
 
-    const routerPfx = (!!router.query.prefix) ? router.query.prefix : "";
+    const routerPfx = (router.query.prefix) ? router.query.prefix : "";
     const [prefix, setPrefix] = useDebouncedState(
         routerPfx,
         (prefix) => router.push({pathname: `/repositories`, query: {prefix}})
@@ -181,10 +181,10 @@ const RepositoriesPage = () => {
                 <RepositoryList
                     prefix={routerPfx}
                     refresh={refresh}
-                    after={(!!router.query.after) ? router.query.after : ""}
+                    after={(router.query.after) ? router.query.after : ""}
                     onPaginate={after => {
                         const query = {after};
-                        if (!!router.query.prefix) query.prefix = router.query.prefix;
+                        if (router.query.prefix) query.prefix = router.query.prefix;
                         router.push({pathname: `/repositories`, query});
                     }}
                     onCreateRepo={() => setShowCreateModal(true)}

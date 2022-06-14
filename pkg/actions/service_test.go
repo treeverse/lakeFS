@@ -13,8 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/kv/kvtest"
-
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -22,6 +20,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/actions/mock"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	_ "github.com/treeverse/lakefs/pkg/kv/mem"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/testutil"
@@ -56,13 +55,13 @@ type getService func(t *testing.T, ctx context.Context, source actions.Source, w
 func GetDBService(t *testing.T, ctx context.Context, source actions.Source, writer actions.OutputWriter, stats stats.Collector, runHooks bool) actions.Service {
 	t.Helper()
 	conn, _ := testutil.GetDB(t, databaseURI)
-	return actions.NewDBService(ctx, conn, source, writer, stats, runHooks)
+	return actions.NewService(ctx, actions.NewActionsDBStore(conn), source, writer, &actions.IncreasingIDGenerator{}, stats, runHooks)
 }
 
 func GetKVService(t *testing.T, ctx context.Context, source actions.Source, writer actions.OutputWriter, stats stats.Collector, runHooks bool) actions.Service {
 	t.Helper()
 	kvStore := kvtest.GetStore(ctx, t)
-	return actions.NewKVService(ctx, kv.StoreMessage{Store: kvStore}, source, writer, stats, runHooks)
+	return actions.NewService(ctx, actions.NewActionsKVStore(kv.StoreMessage{Store: kvStore}), source, writer, &actions.DecreasingIDGenerator{}, stats, runHooks)
 }
 
 func TestServiceRun(t *testing.T) {

@@ -16,31 +16,30 @@ The project was created and is supported by Treeverse, a commercial company, fou
 
 We believe in bottom up adoption of technologies.
 We believe collaborative communities have the power to bring the best solutions to the community.
-We believe small organizations should be able to use cutting edge technologies for free, so they can innovate in their domain and compete with well established companies that can afford paying for technology.
-
-As a commercial organization, we intend to use an open core model.
-
-![Open Core Model]({{ site.baseurl }}/assets/img/open_core.png)
+We believe that every engineer should be able to use, contribute and influence cutting edge technologies, so they can innovate in their domain.
 
 ***What is our commitment to open source?***
 
-We define lakeFS, our open source project, as the data lake management platform that provides Git-like operations over an object-storage, that can be utilized by any applications accessing the data lake. 
-In other words, the following will remain part of lakeFS:
+We created lakeFS, our open source project, to provide a Git-like interface on top of object stores - that you can fully take advantage of with any data application at any scale.
 
-  - The Versioning capabilities
-  - ACID Guarantees
+For that reason, we commit that the following capabilities are *and will remain* open source as part of lakeFS:
+
+  - All versioning capabilities
   - Git-Like interface for the versioning operations
   - Support for public object store APIs
-  - Integration to publicly available applications accessing an object storage
-  - Clear CLI, API and GUI interfaces
+  - Integrations with publicly available applications accessing an object store
+  - CLI, API and GUI interfaces
   
-We also commit that lakeFS will be scalable in throughput and performance, and will support multi region architecture.
-We are deeply committed to our community of engineers who use and contribute to the project. We are and will continue to be highly responsive and shape lakeFS together to provide the data lake management capabilities we are all looking for.
+We also commit to keeping lakeFS scalable in throughput and performance.
 
-***What will be included in the commercial layer?***
+We are deeply committed to our [community of engineers](https://lakefs.io/community) who use and contribute to the project. We are and will continue to be highly responsive and shape lakeFS together to provide the data versioning capabilities we are all looking for.
 
-Well, it will take a while to figure out, and currently everything we do is open source, but in the future, we will provide a commercial offering according to users’ feedback.
-For example, SLA based support was already requested by some of our design partners. Apparently some organizations feel comfortable with being early adopters of technology if they have the guarantee that when an issue arises someone is committed contractually to resolve it within a given SLA. If this is your preference, we are here for you.
-In addition, in the future, we may choose to provide usability features over the core capabilities, enterprise features revolving around user management and security, and a SaaS offering.  
+***What is lakeFS Cloud?***
 
+Treeverse offers lakeFS Cloud, which provides all the same benefits of the Git-like interface on top of object stores as a fully-managed service.
 
+The vision of lakeFS Cloud is to provide a managed data versioning and management solution for data practitioners.  lakeFS Cloud will leverage the lakeFS open source technology, integrate capabilities and unique features, and lead its users to implement best practices.
+
+As part of our commitment to the open source values of transparency and interoperability, we believe everyone should be able to enjoy these benefits, regardless of whether or not they choose to use the managed offering. 
+
+Because of that, we will not intentionally make it harder to build these features independently on top of the open source solution.

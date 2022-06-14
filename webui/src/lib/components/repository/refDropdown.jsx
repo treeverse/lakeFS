@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useRef, useState} from "react";
+import React, {useEffect, useRef, useState} from "react";
 
 import Form from "react-bootstrap/Form";
 import Alert from "react-bootstrap/Alert";
@@ -71,7 +71,7 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
         );
     }
 
-    if (!!refList.error) {
+    if (refList.error) {
         return  (
             <div className="ref-selector">
                 {form}
@@ -184,7 +184,7 @@ const RefEntry = ({repo, namedRef, refType, selectRef, selected, logCommits, wit
 };
 
 const Paginator = ({ pagination, onPaginate, results, from }) => {
-    const next = (!!results.length) ? results[results.length-1].id : "";
+    const next = (results.length) ? results[results.length-1].id : "";
 
     if (!pagination.has_more && from === "") return (<span/>);
 
