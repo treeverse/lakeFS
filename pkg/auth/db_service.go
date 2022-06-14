@@ -561,23 +561,9 @@ func (s *DBAuthService) ListGroupUsers(ctx context.Context, groupDisplayName str
 
 func (s *DBAuthService) WritePolicy(ctx context.Context, policy *model.BasePolicy) error {
 	_, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		if err := model.ValidateAuthEntityID(policy.DisplayName); err != nil {
+		if err := ValidatePolicy(policy); err != nil {
 			return nil, err
 		}
-		for _, stmt := range policy.Statement {
-			for _, action := range stmt.Action {
-				if err := model.ValidateActionName(action); err != nil {
-					return nil, err
-				}
-			}
-			if err := model.ValidateArn(stmt.Resource); err != nil {
-				return nil, err
-			}
-			if err := model.ValidateStatementEffect(stmt.Effect); err != nil {
-				return nil, err
-			}
-		}
-
 		var id int64
 
 		return nil, tx.Get(&id, `

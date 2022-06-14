@@ -648,17 +648,24 @@ func (s *KVAuthService) ListUserGroups(ctx context.Context, username string, par
 	if _, err := s.GetUser(ctx, username); err != nil {
 		return nil, nil, fmt.Errorf("%s: %w", username, err)
 	}
+	if params.Amount < 0 || params.Amount > maxPage {
+		params.Amount = maxPage
+	}
 
 	hasMoreGroups := true
-	nextPage := ""
-	count := 0
 	var userGroups []*model.Group
-	for hasMoreGroups && count < params.Amount {
-		groups, paginator, err := s.ListGroups(ctx, params)
+	var resPaginator *model.Paginator
+	for hasMoreGroups && len(userGroups) <= params.Amount {
+		groups, paginator, err := s.ListGroups(ctx, &model.PaginationParams{Prefix: params.Prefix, After: params.After, Amount: maxPage})
 		if err != nil {
 			return nil, nil, err
 		}
 		for _, group := range groups {
+			if len(userGroups) == params.Amount {
+				resPaginator.NextPageToken = group.DisplayName
+				resPaginator.Amount = len(userGroups)
+				return userGroups, resPaginator, nil
+			}
 			path := model.KVUserToGroup(group.DisplayName, username)
 			m := model.UserData{}
 			_, err := s.store.GetMsg(ctx, model.PartitionKey, path, &m)
@@ -667,21 +674,12 @@ func (s *KVAuthService) ListUserGroups(ctx context.Context, username string, par
 			}
 			if !errors.Is(err, kv.ErrNotFound) {
 				userGroups = append(userGroups, group)
-				count += 1
 			}
 		}
-		if paginator.NextPageToken == "" {
-			hasMoreGroups = false
-		}
-		params = &model.PaginationParams{
-			After: paginator.NextPageToken,
-		}
+		hasMoreGroups = paginator.NextPageToken != ""
 	}
-	if count == params.Amount {
-		nextPage = params.After
-	}
-	p := &model.Paginator{Amount: count, NextPageToken: nextPage}
-	return userGroups, p, nil
+	resPaginator.Amount = len(userGroups)
+	return userGroups, resPaginator, nil
 }
 
 func (s *KVAuthService) ListGroupUsers(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
@@ -698,7 +696,7 @@ func (s *KVAuthService) ListGroupUsers(ctx context.Context, groupDisplayName str
 	return model.ConvertUsersDataList(msgs), paginator, err
 }
 
-func (s *KVAuthService) WritePolicy(ctx context.Context, policy *model.BasePolicy) error {
+func ValidatePolicy(policy *model.BasePolicy) error {
 	if err := model.ValidateAuthEntityID(policy.DisplayName); err != nil {
 		return err
 	}
@@ -714,6 +712,13 @@ func (s *KVAuthService) WritePolicy(ctx context.Context, policy *model.BasePolic
 		if err := model.ValidateStatementEffect(stmt.Effect); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func (s *KVAuthService) WritePolicy(ctx context.Context, policy *model.BasePolicy) error {
+	if err := ValidatePolicy(policy); err != nil {
+		return err
 	}
 	policyKey := model.KVPolicyPath(policy.DisplayName)
 	id := uuid.New().String()
