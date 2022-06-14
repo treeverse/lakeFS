@@ -979,6 +979,7 @@ func exportGroups(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (IDToN
 		}); err != nil {
 			return nil, err
 		}
+		groupID2Name[dbGroup.ID] = dbGroup.DisplayName
 	}
 	return groupID2Name, nil
 }
