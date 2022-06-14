@@ -287,27 +287,29 @@ func (s *KVAuthService) GetUser(ctx context.Context, username string) (*model.Us
 }
 
 func (s *KVAuthService) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
-	m := &model.UserData{}
-	itr, err := s.store.Scan(ctx, m.ProtoReflect().Type(), model.PartitionKey, model.KVUserPath(""))
-	if err != nil {
-		return nil, fmt.Errorf("sacn users: %w", err)
-	}
-	defer itr.Close()
+	return s.cache.GetUserByID(email, func() (*model.User, error) {
+		m := &model.UserData{}
+		itr, err := s.store.Scan(ctx, m.ProtoReflect().Type(), model.PartitionKey, model.KVUserPath(""))
+		if err != nil {
+			return nil, fmt.Errorf("sacn users: %w", err)
+		}
+		defer itr.Close()
 
-	for itr.Next() {
-		if itr.Err() != nil {
-			return nil, itr.Err()
+		for itr.Next() {
+			if itr.Err() != nil {
+				return nil, itr.Err()
+			}
+			entry := itr.Entry()
+			value, ok := entry.Value.(*model.UserData)
+			if !ok {
+				return nil, fmt.Errorf("list users: %w", err)
+			}
+			if value.Email == email {
+				return model.UserFromProto(value), nil
+			}
 		}
-		entry := itr.Entry()
-		value, ok := entry.Value.(*model.UserData)
-		if !ok {
-			return nil, fmt.Errorf("list users: %w", err)
-		}
-		if value.Email == email {
-			return model.UserFromProto(value), nil
-		}
-	}
-	return nil, ErrNotFound
+		return nil, ErrNotFound
+	})
 }
 
 func (s *KVAuthService) GetUserByID(ctx context.Context, userID string) (*model.User, error) {
