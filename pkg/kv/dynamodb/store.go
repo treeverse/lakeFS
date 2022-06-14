@@ -29,13 +29,13 @@ type EntriesIterator struct {
 	store        *Store
 	queryResult  *dynamodb.QueryOutput
 	currEntryIdx int
-	partKey      string
-	startKey     string
+	partKey      []byte
+	startKey     []byte
 }
 
 type DynKVItem struct {
-	PartitionKey string
-	ItemKey      string
+	PartitionKey []byte
+	ItemKey      []byte
 	ItemValue    []byte
 }
 
@@ -150,11 +150,11 @@ func setupKeyValueDatabase(ctx context.Context, svc *dynamodb.DynamoDB, params *
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
 			{
 				AttributeName: aws.String(PartitionKey),
-				AttributeType: aws.String("S"),
+				AttributeType: aws.String("B"),
 			},
 			{
 				AttributeName: aws.String(ItemKey),
-				AttributeType: aws.String("S"),
+				AttributeType: aws.String("B"),
 			},
 		},
 		KeySchema: []*dynamodb.KeySchemaElement{
@@ -205,10 +205,10 @@ func setupKeyValueDatabase(ctx context.Context, svc *dynamodb.DynamoDB, params *
 func (s *Store) bytesKeyToDynamoKey(partitionKey, key []byte) map[string]*dynamodb.AttributeValue {
 	return map[string]*dynamodb.AttributeValue{
 		PartitionKey: {
-			S: aws.String(string(partitionKey)),
+			B: partitionKey,
 		},
 		ItemKey: {
-			S: aws.String(string(key)),
+			B: key,
 		},
 	}
 }
@@ -241,8 +241,8 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 	}
 
 	return &kv.ValueWithPredicate{
-		Value:     []byte(item.ItemValue),
-		Predicate: kv.Predicate([]byte(item.ItemValue)),
+		Value:     item.ItemValue,
+		Predicate: kv.Predicate(item.ItemValue),
 	}, nil
 }
 
@@ -266,8 +266,8 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 	}
 
 	item := DynKVItem{
-		PartitionKey: string(partitionKey),
-		ItemKey:      string(key),
+		PartitionKey: partitionKey,
+		ItemKey:      key,
 		ItemValue:    value,
 	}
 
@@ -284,7 +284,7 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 		if valuePredicate != nil {
 			input.ConditionExpression = aws.String(ItemValue + " = :predicate")
 			input.ExpressionAttributeValues = map[string]*dynamodb.AttributeValue{
-				":predicate": {S: aws.String(string(valuePredicate.([]byte)))},
+				":predicate": {B: valuePredicate.([]byte)},
 			}
 		} else {
 			input.ConditionExpression = aws.String("attribute_not_exists(" + ItemValue + ")")
@@ -334,13 +334,13 @@ func (s *Store) scanInternal(ctx context.Context, partitionKey, scanKey []byte, 
 	keyConditionExpression := PartitionKey + " = :partitionkey"
 	expressionAttributeValues := map[string]*dynamodb.AttributeValue{
 		":partitionkey": {
-			S: aws.String(string(partitionKey)),
+			B: partitionKey,
 		},
 	}
 	if len(scanKey) > 0 {
 		keyConditionExpression += " AND " + ItemKey + " >= :fromkey"
 		expressionAttributeValues[":fromkey"] = &dynamodb.AttributeValue{
-			S: aws.String(string(scanKey)),
+			B: scanKey,
 		}
 	}
 	queryInput := &dynamodb.QueryInput{
@@ -362,8 +362,8 @@ func (s *Store) scanInternal(ctx context.Context, partitionKey, scanKey []byte, 
 	return &EntriesIterator{
 		scanCtx:      ctx,
 		store:        s,
-		partKey:      string(partitionKey),
-		startKey:     string(scanKey),
+		partKey:      partitionKey,
+		startKey:     scanKey,
 		queryResult:  queryOutput,
 		currEntryIdx: 0,
 		err:          nil,
@@ -381,7 +381,7 @@ func (e *EntriesIterator) Next() bool {
 		if e.queryResult.LastEvaluatedKey == nil {
 			return false
 		}
-		tmpEntriesIter, err := e.store.scanInternal(e.scanCtx, []byte(e.partKey), []byte(e.startKey), e.queryResult.LastEvaluatedKey)
+		tmpEntriesIter, err := e.store.scanInternal(e.scanCtx, e.partKey, e.startKey, e.queryResult.LastEvaluatedKey)
 		if err != nil {
 			e.err = fmt.Errorf("scan paging: %w", err)
 			return false
@@ -396,7 +396,7 @@ func (e *EntriesIterator) Next() bool {
 		e.err = fmt.Errorf("unmarshal map: %s: %w", err, kv.ErrOperationFailed)
 	}
 	e.entry = &kv.Entry{
-		Key:   []byte(item.ItemKey),
+		Key:   item.ItemKey,
 		Value: item.ItemValue,
 	}
 	e.currEntryIdx++
