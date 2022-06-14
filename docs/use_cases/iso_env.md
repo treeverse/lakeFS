@@ -1,9 +1,9 @@
 ---
 layout: default 
-title: Tutorial – Isolated Environment
-description: In this section we will explore how to use lakeFS for isolated dev environments.
-parent: Quickstart
-nav_order: 60
+title: Isolated Environment
+description: In this tutorial we will explore how to use lakeFS for isolated dev environments.
+parent: Use Cases
+nav_order: 10
 has_children: false
 ---
 
