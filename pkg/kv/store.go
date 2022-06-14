@@ -28,6 +28,7 @@ var (
 	ErrPredicateFailed     = errors.New("predicate failed")
 	ErrSetupFailed         = errors.New("setup failed")
 	ErrUnknownDriver       = errors.New("unknown driver")
+	ErrTableNotActive      = errors.New("table not active")
 )
 
 func FormatPath(p ...string) string {

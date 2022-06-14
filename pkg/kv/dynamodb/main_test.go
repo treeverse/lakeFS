@@ -18,7 +18,7 @@ var (
 )
 
 func testUniqueTableName() string {
-	return "kvstore_" + nanoid.MustGenerate(chars, 8)
+	return "kvstore_test_" + nanoid.MustGenerate(chars, 8)
 }
 
 func TestMain(m *testing.M) {
