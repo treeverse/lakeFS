@@ -141,14 +141,6 @@ func NewDBAuthService(db db.Database, secretStore crypt.SecretStore, cacheConf p
 	}
 }
 
-func (s *DBAuthService) decryptSecret(value []byte) (string, error) {
-	decrypted, err := s.secretStore.Decrypt(value)
-	if err != nil {
-		return "", err
-	}
-	return string(decrypted), nil
-}
-
 func (s *DBAuthService) SecretStore() crypt.SecretStore {
 	return s.secretStore
 }
@@ -772,7 +764,7 @@ func (s *DBAuthService) GetCredentials(ctx context.Context, accessKeyID string) 
 			if err != nil {
 				return nil, err
 			}
-			key, err := s.decryptSecret(credentials.SecretAccessKeyEncryptedBytes)
+			key, err := decryptSecret(s.secretStore, credentials.SecretAccessKeyEncryptedBytes)
 			if err != nil {
 				return nil, err
 			}

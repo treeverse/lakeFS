@@ -189,12 +189,47 @@ func NewKVAuthService(store kv.StoreMessage, secretStore crypt.SecretStore, cach
 	}
 }
 
+func decryptSecret(s crypt.SecretStore, value []byte) (string, error) {
+	decrypted, err := s.Decrypt(value)
+	if err != nil {
+		return "", err
+	}
+	return string(decrypted), nil
+}
+
 func encryptSecret(s crypt.SecretStore, secretAccessKey string) ([]byte, error) {
 	encrypted, err := s.Encrypt([]byte(secretAccessKey))
 	if err != nil {
 		return nil, err
 	}
 	return encrypted, nil
+}
+
+func (s *KVAuthService) ConvertCredDataList(creds []proto.Message) []*model.Credential {
+	res := make([]*model.Credential, 0, len(creds))
+	for _, c := range creds {
+		a := c.(*model.CredentialData)
+		m := s.CredentialFromProto(a)
+		m.SecretAccessKey = ""
+		res = append(res, m)
+	}
+	return res
+}
+
+func (s *KVAuthService) CredentialFromProto(pb *model.CredentialData) *model.Credential {
+	secret, err := decryptSecret(s.secretStore, pb.SecretAccessKeyEncryptedBytes)
+	if err != nil {
+		return nil
+	}
+	return &model.Credential{
+		UserID: string(pb.UserId),
+		BaseCredential: model.BaseCredential{
+			AccessKeyID:                   pb.AccessKeyId,
+			SecretAccessKey:               secret,
+			SecretAccessKeyEncryptedBytes: pb.SecretAccessKeyEncryptedBytes,
+			IssuedDate:                    pb.IssuedDate.AsTime(),
+		},
+	}
 }
 
 func (s *KVAuthService) SecretStore() crypt.SecretStore {
@@ -357,7 +392,7 @@ func (s *KVAuthService) ListUserCredentials(ctx context.Context, username string
 	if msgs == nil {
 		return nil, paginator, err
 	}
-	return model.ConvertCredDataList(msgs), paginator, err
+	return s.ConvertCredDataList(msgs), paginator, err
 }
 
 func (s *KVAuthService) AttachPolicyToUser(ctx context.Context, policyDisplayName string, username string) error {
@@ -919,8 +954,10 @@ func (s *KVAuthService) GetCredentialsForUser(ctx context.Context, username, acc
 		}
 		return nil, err
 	}
-	m.SecretAccessKey = ""
-	return model.CredentialFromProto(&m), nil
+
+	c := s.CredentialFromProto(&m)
+	c.SecretAccessKey = ""
+	return c, nil
 }
 
 func (s *KVAuthService) GetCredentials(ctx context.Context, accessKeyID string) (*model.Credential, error) {
@@ -947,7 +984,7 @@ func (s *KVAuthService) GetCredentials(ctx context.Context, accessKeyID string) 
 			if err != nil && !errors.Is(err, kv.ErrNotFound) {
 				return nil, err
 			} else if !errors.Is(err, kv.ErrNotFound) {
-				return model.CredentialFromProto(&c), err
+				return s.CredentialFromProto(&c), err
 			}
 		}
 		return nil, ErrNotFound

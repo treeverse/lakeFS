@@ -252,22 +252,9 @@ func KVCredentialPath(userName string, accessKeyID string) string {
 	return kv.FormatPath(authPrefix, userName, "credentials", accessKeyID)
 }
 
-func CredentialFromProto(pb *CredentialData) *Credential {
-	return &Credential{
-		UserID: string(pb.UserId),
-		BaseCredential: BaseCredential{
-			AccessKeyID:                   pb.AccessKeyId,
-			SecretAccessKey:               pb.SecretAccessKey,
-			SecretAccessKeyEncryptedBytes: pb.SecretAccessKeyEncryptedBytes,
-			IssuedDate:                    pb.IssuedDate.AsTime(),
-		},
-	}
-}
-
 func ProtoFromCredential(c *Credential) *CredentialData {
 	return &CredentialData{
 		AccessKeyId:                   c.AccessKeyID,
-		SecretAccessKey:               c.SecretAccessKey,
 		SecretAccessKeyEncryptedBytes: c.SecretAccessKeyEncryptedBytes,
 		IssuedDate:                    timestamppb.New(c.IssuedDate),
 		UserId:                        []byte(c.UserID),
@@ -340,16 +327,6 @@ func ConvertCredList(creds []*DBCredential) []*Credential {
 	res := make([]*Credential, 0, len(creds))
 	for _, c := range creds {
 		res = append(res, ConvertCreds(c))
-	}
-	return res
-}
-
-func ConvertCredDataList(creds []proto.Message) []*Credential {
-	res := make([]*Credential, 0, len(creds))
-	for _, c := range creds {
-		a := c.(*CredentialData)
-		a.SecretAccessKey = ""
-		res = append(res, CredentialFromProto(a))
 	}
 	return res
 }
