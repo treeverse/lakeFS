@@ -149,14 +149,6 @@ func (s *DBAuthService) decryptSecret(value []byte) (string, error) {
 	return string(decrypted), nil
 }
 
-func (s *DBAuthService) encryptSecret(secretAccessKey string) ([]byte, error) {
-	encrypted, err := s.secretStore.Encrypt([]byte(secretAccessKey))
-	if err != nil {
-		return nil, err
-	}
-	return encrypted, nil
-}
-
 func (s *DBAuthService) SecretStore() crypt.SecretStore {
 	return s.secretStore
 }
@@ -669,7 +661,7 @@ func (s *DBAuthService) AddCredentials(ctx context.Context, username, accessKeyI
 		return nil, ErrInvalidSecretAccessKey
 	}
 	now := time.Now()
-	encryptedKey, err := s.encryptSecret(secretAccessKey)
+	encryptedKey, err := encryptSecret(s.secretStore, secretAccessKey)
 	if err != nil {
 		return nil, err
 	}

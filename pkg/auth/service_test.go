@@ -187,6 +187,61 @@ func TestDBAuthService_ListPaged(t *testing.T) {
 	}
 }
 
+func TestKVAuthService_ListPaged(t *testing.T) {
+	ctx := context.Background()
+	kvStore := kvtest.GetStore(ctx, t)
+	storeMessage := kv.StoreMessage{Store: kvStore}
+	s := auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
+		Enabled: false,
+	}, logging.Default())
+
+	const chars = "abcdefghijklmnopqrstuvwxyz"
+	for _, c := range chars {
+		user := model.BaseUser{Username: string(c)}
+		if _, err := s.CreateUser(ctx, &user); err != nil {
+			t.Fatalf("create user: %s", err)
+		}
+	}
+	var userData model.UserData
+
+	for size := 0; size <= len(chars)+1; size++ {
+		t.Run(fmt.Sprintf("PageSize%d", size), func(t *testing.T) {
+			pagination := &model.PaginationParams{Amount: size}
+			if size == 0 { // Overload to mean "don't paginate"
+				pagination.Amount = -1
+			}
+			got := ""
+			for {
+				values, paginator, err := s.ListKVPaged(ctx, (&userData).ProtoReflect().Type(), pagination, model.KVUserPath(""), false)
+				if err != nil {
+					t.Errorf("ListPaged: %s", err)
+					break
+				}
+				if values == nil {
+					t.Fatalf("expected values for pagination %+v but got just paginator %+v", pagination, paginator)
+				}
+				letters := model.ConvertUsersDataList(values)
+				for _, c := range letters {
+					got = got + c.Username
+				}
+				if paginator.NextPageToken == "" {
+					if size > 0 && len(letters) > size {
+						t.Errorf("expected at most %d entries in last page but got %d", size, len(letters))
+					}
+					break
+				}
+				if len(letters) != size {
+					t.Errorf("expected %d entries in page but got %d", size, len(letters))
+				}
+				pagination.After = paginator.NextPageToken
+			}
+			if got != chars {
+				t.Errorf("Expected to read back \"%s\" but got \"%s\"", chars, got)
+			}
+		})
+	}
+}
+
 func TestDBAuthService_Authorize(t *testing.T) {
 	ctx := context.Background()
 	tests := setupService(t, ctx)

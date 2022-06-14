@@ -307,15 +307,15 @@ func protoFromStatements(s *Statements) []*StatementData {
 	return statements
 }
 
-func KVUserToGroup(userName string, groupDisplayName string) string {
+func KVUserToGroup(groupDisplayName string, userName string) string {
 	return kv.FormatPath(authPrefix, "groups", groupDisplayName, "users", userName)
 }
 
-func KVPolicyToUser(policyDisplayName string, userName string) string {
+func KVPolicyToUser(userName string, policyDisplayName string) string {
 	return kv.FormatPath(authPrefix, "users", userName, "policies", policyDisplayName)
 }
 
-func KVPolicyToGroup(policyDisplayName string, groupDisplayName string) string {
+func KVPolicyToGroup(groupDisplayName string, policyDisplayName string) string {
 	return kv.FormatPath(authPrefix, "groups", groupDisplayName, "policies", policyDisplayName)
 }
 
