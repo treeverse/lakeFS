@@ -38,7 +38,7 @@ This is different from creating a long-living dev environment that is used as a 
 
 ### Setup
 
-This tutorial will use a local Docker environment called the "Everything Bagel" to get lakeFS and other technologies running on your machine. For instructions on how to get this running, [click here](index.html).
+This tutorial will use a local Docker environment called the "Everything Bagel" to get lakeFS and other technologies running on your machine. For instructions on how to get this running, [click here](../quickstart/index.md#lakefs-docker-everything-bagel).
 
 Once the containers are running, it’ll be useful to add some data into the lakeFS repo. We’ll use an Amazon review dataset from a public S3 bucket. First we’ll download the file to our local computer using the AWS CLI. Then, we’ll upload it into lakeFS using the `Upload Object` button in the UI.
 
