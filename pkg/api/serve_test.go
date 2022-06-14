@@ -99,10 +99,10 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, 
 
 	if kvEnabled {
 		kvStore := kvtest.GetStore(ctx, t)
-		actionsStore = actions.NewActionsKVStore(kv.StoreMessage{Store: kvStore})
+		kvStoreMessage := kv.StoreMessage{Store: kvStore}
+		actionsStore = actions.NewActionsKVStore(kvStoreMessage)
 		idGen = &actions.DecreasingIDGenerator{}
-		storeMessage := kv.StoreMessage{Store: kvStore}
-		authService = auth.NewKVAuthService(storeMessage, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
+		authService = auth.NewKVAuthService(kvStoreMessage, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
 			Enabled: false,
 		}, logging.Default())
 	} else {

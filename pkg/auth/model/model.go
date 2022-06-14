@@ -368,6 +368,6 @@ func ConvertPolicyDataList(policies []proto.Message) []*BasePolicy {
 	return res
 }
 
-func KVTokenPath(tokenID string) string {
+func KVExpiredTokenPath(tokenID string) string {
 	return kv.FormatPath("expired_tokens", tokenID)
 }
