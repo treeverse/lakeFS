@@ -1067,9 +1067,9 @@ func exportUserPolicies(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, 
 		if err != nil {
 			return err
 		}
-		username := usersDetails[up.UserID].name
-		key := model.KVPolicyToUser(username, policiesNames[up.PolicyID])
-		secIndex := kv.SecondaryIndex{PrimaryKey: []byte(model.KVUserPath(username))}
+		policyName := policiesNames[up.PolicyID]
+		key := model.KVPolicyToUser(usersDetails[up.UserID].name, policyName)
+		secIndex := kv.SecondaryIndex{PrimaryKey: []byte(model.KVPolicyPath(policyName))}
 		value, err := proto.Marshal(&secIndex)
 		if err != nil {
 			return err
