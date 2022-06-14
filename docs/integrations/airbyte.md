@@ -22,7 +22,7 @@ The integration between the two open-source projects brings resilience and manag
 connectors to sync data to your S3 buckets by leveraging lakeFS branches and atomic commits and merges.
 
 ## Use-cases
-You can leverage lakeFS consistency guarantees and [CI/CD capabilities](../usecases/ci.md) when ingesting data to S3 using lakeFS:
+You can leverage lakeFS consistency guarantees and [CI/CD capabilities](../using_lakefs/ci.md) when ingesting data to S3 using lakeFS:
 
 1. Consolidate many data sources to a single branch and expose them to the consumers simultaneously when merging to the `main` branch.
 1. Test incoming data for breaking schema changes, using [lakeFS hooks](../setup/hooks.md).

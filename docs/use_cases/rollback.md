@@ -1,9 +1,9 @@
 ---
 layout: default 
-title: Tutorial – Rollback
-description: In this section we will explore how to use lakeFS for rollback operations.
-parent: Quickstart
-nav_order: 70
+title: Rollback
+description: In this tutorial we will explore how to use lakeFS for rollback operations.
+parent: Use Cases
+nav_order: 20
 has_children: false
 ---
 
