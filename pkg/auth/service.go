@@ -937,7 +937,7 @@ func (s *KVAuthService) GetCredentials(ctx context.Context, accessKeyID string) 
 			c := model.CredentialData{}
 			credentialsKey := model.KVCredentialPath(user.Username, accessKeyID)
 			_, err := s.store.GetMsg(ctx, model.PartitionKey, credentialsKey, &c)
-			if err != nil && errors.Is(err, kv.ErrNotFound) {
+			if err != nil && !errors.Is(err, kv.ErrNotFound) {
 				return nil, err
 			} else if !errors.Is(err, kv.ErrNotFound) {
 				return model.CredentialFromProto(&c), err
