@@ -1,9 +1,9 @@
 ---
 layout: default 
-title: Tutorial – Reproducibility
-description: In this section we will explore how to use lakeFS for reproducibility of data.
-parent: Quickstart
-nav_order: 80
+title: Reproducibility
+description: In this tutorial we will explore how to use lakeFS for reproducibility of data.
+parent: Use Cases
+nav_order: 30
 has_children: false
 ---
 
@@ -27,6 +27,8 @@ To read data at it’s current state, we can use a static path containing the re
 ```bash
 df = spark.read.parquet(‘s3://example/main/”)
 ```
+Note the code above assumes that all objects in the repository are stored in parquet format. If a different format is used, the applicable Spark read method should be used.
+{: .note }
 
 In a lakeFS repository, we are capable of taking many commits over the data, making many points in time reproducible. 
 
@@ -40,6 +42,6 @@ If we wanted to re-run the model training script and reproduce the exact same re
 df = spark.read.parquet("s3://example/296e54fbee5e176f3f4f4aeb7e087f9d57515750e8c3d033b8b841778613cb23”)
 ```
 
-The ability to reference a specific `commit_id` in code makes reproducing the specific state a data collection, or even multiple collections, simple.
+The ability to reference a specific `commit_id` in code makes reproducing the specific state a data collection, or even multiple collections, simple. This has many applications common in data development, such as when doing historical debugging, identifying deltas in a data collection, audit compliance, and more.
 
 
