@@ -1032,7 +1032,7 @@ func exportUserGroups(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, us
 			return err
 		}
 		username := usersDetails[ug.UserID].name
-		key := model.KVUserToGroup(username, groupsNames[ug.GroupID])
+		key := model.KVUserToGroup(groupsNames[ug.GroupID], username)
 		secIndex := kv.SecondaryIndex{PrimaryKey: []byte(model.KVUserPath(username))}
 		value, err := proto.Marshal(&secIndex)
 		if err != nil {
@@ -1067,7 +1067,7 @@ func exportUserPolicies(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, 
 			return err
 		}
 		username := usersDetails[up.UserID].name
-		key := model.KVPolicyToUser(policiesNames[up.PolicyID], username)
+		key := model.KVPolicyToUser(username, policiesNames[up.PolicyID])
 		secIndex := kv.SecondaryIndex{PrimaryKey: []byte(model.KVUserPath(username))}
 		value, err := proto.Marshal(&secIndex)
 		if err != nil {
@@ -1102,7 +1102,7 @@ func exportGroupPolicies(ctx context.Context, d *pgxpool.Pool, je *json.Encoder,
 			return err
 		}
 		policyName := policiesNames[gp.PolicyID]
-		key := model.KVPolicyToGroup(policyName, groupsNames[gp.GroupID])
+		key := model.KVPolicyToGroup(groupsNames[gp.GroupID], policyName)
 		secIndex := kv.SecondaryIndex{PrimaryKey: []byte(model.KVUserPath(model.KVPolicyPath(policyName)))}
 		value, err := proto.Marshal(&secIndex)
 		if err != nil {
