@@ -12,7 +12,6 @@ import (
 
 const (
 	packageName            = "multiparts"
-	multipartsPrefix       = "multiparts"
 	multipartsPartitionKey = "multiparts"
 )
 
@@ -81,9 +80,7 @@ func (m *tracker) Create(ctx context.Context, multipart MultipartUpload) error {
 	if multipart.UploadID == "" {
 		return ErrInvalidUploadID
 	}
-	path := kv.FormatPath(multipartsPrefix, multipart.UploadID)
-
-	return m.store.SetMsgIf(ctx, multipartsPartitionKey, path, protoFromMultipart(&multipart), nil)
+	return m.store.SetMsgIf(ctx, multipartsPartitionKey, multipart.UploadID, protoFromMultipart(&multipart), nil)
 }
 
 func (m *tracker) Get(ctx context.Context, uploadID string) (*MultipartUpload, error) {
@@ -91,8 +88,7 @@ func (m *tracker) Get(ctx context.Context, uploadID string) (*MultipartUpload, e
 		return nil, ErrInvalidUploadID
 	}
 	data := &MultipartUploadData{}
-	path := kv.FormatPath(multipartsPrefix, uploadID)
-	_, err := m.store.GetMsg(ctx, multipartsPartitionKey, path, data)
+	_, err := m.store.GetMsg(ctx, multipartsPartitionKey, uploadID, data)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +100,7 @@ func (m *tracker) Delete(ctx context.Context, uploadID string) error {
 		return ErrInvalidUploadID
 	}
 	store := m.store.Store
-	key := []byte(kv.FormatPath(multipartsPrefix, uploadID))
+	key := []byte(uploadID)
 	if _, err := store.Get(ctx, []byte(multipartsPartitionKey), key); err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			return fmt.Errorf("%w uploadID=%s", ErrMultipartUploadNotFound, uploadID)
