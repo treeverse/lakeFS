@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/treeverse/lakefs/pkg/kv"
-
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/db"
+	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/version"

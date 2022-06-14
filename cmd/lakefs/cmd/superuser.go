@@ -6,13 +6,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/kv"
-
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/db"
+	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/version"
@@ -25,8 +24,9 @@ var superuserCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := loadConfig()
 		ctx := cmd.Context()
-		dbPool := db.BuildDatabaseConnection(ctx, cfg.GetDatabaseParams())
 		dbParams := cfg.GetDatabaseParams()
+		dbPool := db.BuildDatabaseConnection(ctx, dbParams)
+
 		defer dbPool.Close()
 
 		userName, err := cmd.Flags().GetString("user-name")

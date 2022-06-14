@@ -172,11 +172,8 @@ func (s *Statements) Scan(src interface{}) error {
 	return json.Unmarshal(data, s)
 }
 
-// authPrefix - key prefix in the KV model
-const authPrefix = "auth"
-
 func KVUserPath(userName string) string {
-	return kv.FormatPath(authPrefix, "users", userName)
+	return kv.FormatPath("users", userName)
 }
 
 func UserFromProto(pb *UserData) *User {
@@ -206,7 +203,7 @@ func ProtoFromUser(u *User) *UserData {
 }
 
 func KVGroupPath(displayName string) string {
-	return kv.FormatPath(authPrefix, "groups", displayName)
+	return kv.FormatPath("groups", displayName)
 }
 
 func GroupFromProto(pb *GroupData) *Group {
@@ -228,7 +225,7 @@ func ProtoFromGroup(g *Group) *GroupData {
 }
 
 func KVPolicyPath(displayName string) string {
-	return kv.FormatPath(authPrefix, "policies", displayName)
+	return kv.FormatPath("policies", displayName)
 }
 
 func PolicyFromProto(pb *PolicyData) *BasePolicy {
@@ -249,7 +246,7 @@ func ProtoFromPolicy(p *BasePolicy, id string) *PolicyData {
 }
 
 func KVCredentialPath(userName string, accessKeyID string) string {
-	return kv.FormatPath(authPrefix, userName, "credentials", accessKeyID)
+	return kv.FormatPath(userName, "credentials", accessKeyID)
 }
 
 func ProtoFromCredential(c *Credential) *CredentialData {
@@ -295,15 +292,15 @@ func protoFromStatements(s *Statements) []*StatementData {
 }
 
 func KVUserToGroup(groupDisplayName string, userName string) string {
-	return kv.FormatPath(authPrefix, "groups", groupDisplayName, "users", userName)
+	return kv.FormatPath("groups", groupDisplayName, "users", userName)
 }
 
 func KVPolicyToUser(userName string, policyDisplayName string) string {
-	return kv.FormatPath(authPrefix, "users", userName, "policies", policyDisplayName)
+	return kv.FormatPath("users", userName, "policies", policyDisplayName)
 }
 
 func KVPolicyToGroup(groupDisplayName string, policyDisplayName string) string {
-	return kv.FormatPath(authPrefix, "groups", groupDisplayName, "policies", policyDisplayName)
+	return kv.FormatPath("groups", groupDisplayName, "policies", policyDisplayName)
 }
 
 func ConvertUsersList(users []*DBUser) []*User {
