@@ -42,7 +42,19 @@ type AuthorizationResponse struct {
 	Error   error
 }
 
-const InvalidUserID = "-1"
+// CheckResult - the final result for the authorization is accepted only if it's CheckAllow
+type CheckResult int
+
+const (
+	InvalidUserID = "-1"
+	maxPage       = 1000
+	// CheckAllow Permission allowed
+	CheckAllow CheckResult = iota
+	// CheckNeutral Permission neither allowed nor denied
+	CheckNeutral
+	// CheckDeny Permission denied
+	CheckDeny
+)
 
 type GatewayService interface {
 	GetCredentials(_ context.Context, accessKey string) (*model.Credential, error)
@@ -127,8 +139,6 @@ func fieldByTag(t reflect.Type, key, tag string) string {
 	return ""
 }
 
-const maxPage = 1000
-
 func (s *KVAuthService) ListKVPaged(ctx context.Context, protoType protoreflect.MessageType, params *model.PaginationParams, prefix string, secondary bool) ([]proto.Message, *model.Paginator, error) {
 	amount := maxPage
 	var it kv.MessageIterator
@@ -189,49 +199,6 @@ func NewKVAuthService(store kv.StoreMessage, secretStore crypt.SecretStore, cach
 	}
 }
 
-func decryptSecret(s crypt.SecretStore, value []byte) (string, error) {
-	decrypted, err := s.Decrypt(value)
-	if err != nil {
-		return "", err
-	}
-	return string(decrypted), nil
-}
-
-func encryptSecret(s crypt.SecretStore, secretAccessKey string) ([]byte, error) {
-	encrypted, err := s.Encrypt([]byte(secretAccessKey))
-	if err != nil {
-		return nil, err
-	}
-	return encrypted, nil
-}
-
-func (s *KVAuthService) ConvertCredDataList(creds []proto.Message) []*model.Credential {
-	res := make([]*model.Credential, 0, len(creds))
-	for _, c := range creds {
-		a := c.(*model.CredentialData)
-		m := s.CredentialFromProto(a)
-		m.SecretAccessKey = ""
-		res = append(res, m)
-	}
-	return res
-}
-
-func (s *KVAuthService) CredentialFromProto(pb *model.CredentialData) *model.Credential {
-	secret, err := decryptSecret(s.secretStore, pb.SecretAccessKeyEncryptedBytes)
-	if err != nil {
-		return nil
-	}
-	return &model.Credential{
-		UserID: string(pb.UserId),
-		BaseCredential: model.BaseCredential{
-			AccessKeyID:                   pb.AccessKeyId,
-			SecretAccessKey:               secret,
-			SecretAccessKeyEncryptedBytes: pb.SecretAccessKeyEncryptedBytes,
-			IssuedDate:                    pb.IssuedDate.AsTime(),
-		},
-	}
-}
-
 func (s *KVAuthService) SecretStore() crypt.SecretStore {
 	return s.secretStore
 }
@@ -240,7 +207,7 @@ func (s *KVAuthService) CreateUser(ctx context.Context, user *model.BaseUser) (s
 	if err := model.ValidateAuthEntityID(user.Username); err != nil {
 		return InvalidUserID, err
 	}
-	userKey := model.KVUserPath(user.Username)
+	userKey := model.UserPath(user.Username)
 	id := uuid.New().String()
 	userWithID := model.User{ID: id, BaseUser: *user}
 
@@ -255,24 +222,23 @@ func (s *KVAuthService) CreateUser(ctx context.Context, user *model.BaseUser) (s
 }
 
 func (s *KVAuthService) DeleteUser(ctx context.Context, username string) error {
-	var err error
-	if _, err = s.GetUser(ctx, username); err != nil {
-		return fmt.Errorf("%s: %w", username, err)
+	if _, err := s.GetUser(ctx, username); err != nil {
+		return err
 	}
-	userPath := model.KVUserPath(username)
+	userPath := model.UserPath(username)
 
 	// delete policy attached to user
-	policiesKey := model.KVPolicyToUser(username, "")
+	policiesKey := model.UserPolicyPath(username, "")
 	it, err := kv.NewSecondaryIterator(ctx, s.store.Store, (&model.PolicyData{}).ProtoReflect().Type(), model.PartitionKey, policiesKey, "")
-	defer it.Close()
 	if err != nil {
 		return err
 	}
+	defer it.Close()
 	for it.Next() {
 		entry := it.Entry()
 		policy := entry.Value.(*model.PolicyData)
-		if err = s.DetachPolicyFromUser(ctx, policy.DisplayName, username); err != nil {
-			return fmt.Errorf("detaching policy: %w", err)
+		if err = s.DetachPolicyFromUserNoValidation(ctx, policy.DisplayName, username); err != nil {
+			return err
 		}
 	}
 	if err = it.Err(); err != nil {
@@ -280,23 +246,22 @@ func (s *KVAuthService) DeleteUser(ctx context.Context, username string) error {
 	}
 
 	// delete user membership of group
-	groupKey := model.KVGroupPath("")
+	groupKey := model.GroupPath("")
 	itr, err := kv.NewPrimaryIterator(ctx, s.store.Store, (&model.GroupData{}).ProtoReflect().Type(), model.PartitionKey, groupKey, "")
 	if err != nil {
 		return err
 	}
-
+	defer itr.Close()
 	for itr.Next() {
 		entry := itr.Entry()
 		group := entry.Value.(*model.GroupData)
-		if err = s.RemoveUserFromGroup(ctx, username, group.DisplayName); err != nil {
-			return fmt.Errorf("%s: %w", username, err)
+		if err = s.removeUserFromGroupNoValidation(ctx, username, group.DisplayName); err != nil {
+			return err
 		}
 	}
 	if err = itr.Err(); err != nil {
 		return err
 	}
-	defer itr.Close()
 
 	// delete user
 	err = s.store.DeleteMsg(ctx, model.PartitionKey, userPath)
@@ -308,23 +273,23 @@ func (s *KVAuthService) DeleteUser(ctx context.Context, username string) error {
 
 func (s *KVAuthService) GetUser(ctx context.Context, username string) (*model.User, error) {
 	return s.cache.GetUser(username, func() (*model.User, error) {
-		userKey := model.KVUserPath(username)
+		userKey := model.UserPath(username)
 		m := model.UserData{}
 		_, err := s.store.GetMsg(ctx, model.PartitionKey, userKey, &m)
 		if err != nil {
 			if errors.Is(err, kv.ErrNotFound) {
-				err = ErrNotFound // Wrap error for compatibility with DBService
+				err = ErrNotFound
 			}
-			return nil, err
+			return nil, fmt.Errorf("%s: %w", username, err)
 		}
 		return model.UserFromProto(&m), nil
 	})
 }
 
 func (s *KVAuthService) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
-	return s.cache.GetUserByID(email, func() (*model.User, error) {
+	return s.cache.GetUserByEmail(email, func() (*model.User, error) {
 		m := &model.UserData{}
-		itr, err := s.store.Scan(ctx, m.ProtoReflect().Type(), model.PartitionKey, model.KVUserPath(""))
+		itr, err := s.store.Scan(ctx, m.ProtoReflect().Type(), model.PartitionKey, model.UserPath(""))
 		if err != nil {
 			return nil, fmt.Errorf("scan users: %w", err)
 		}
@@ -337,7 +302,7 @@ func (s *KVAuthService) GetUserByEmail(ctx context.Context, email string) (*mode
 			entry := itr.Entry()
 			value, ok := entry.Value.(*model.UserData)
 			if !ok {
-				return nil, fmt.Errorf("list users: %w", err)
+				return nil, fmt.Errorf("failed to cast: %w", err)
 			}
 			if value.Email == email {
 				return model.UserFromProto(value), nil
@@ -350,7 +315,7 @@ func (s *KVAuthService) GetUserByEmail(ctx context.Context, email string) (*mode
 func (s *KVAuthService) GetUserByID(ctx context.Context, userID string) (*model.User, error) {
 	return s.cache.GetUserByID(userID, func() (*model.User, error) {
 		m := &model.UserData{}
-		itr, err := s.store.Scan(ctx, m.ProtoReflect().Type(), model.PartitionKey, model.KVUserPath(""))
+		itr, err := s.store.Scan(ctx, m.ProtoReflect().Type(), model.PartitionKey, model.UserPath(""))
 		if err != nil {
 			return nil, fmt.Errorf("scan users: %w", err)
 		}
@@ -360,7 +325,7 @@ func (s *KVAuthService) GetUserByID(ctx context.Context, userID string) (*model.
 			entry := itr.Entry()
 			value, ok := entry.Value.(*model.UserData)
 			if !ok {
-				return nil, fmt.Errorf("list users: %w", err)
+				return nil, fmt.Errorf("failed to cast: %w", err)
 			}
 			if string(value.Id) == userID {
 				return model.UserFromProto(value), nil
@@ -375,7 +340,7 @@ func (s *KVAuthService) GetUserByID(ctx context.Context, userID string) (*model.
 
 func (s *KVAuthService) ListUsers(ctx context.Context, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
 	var user model.UserData
-	usersKey := model.KVUserPath("")
+	usersKey := model.UserPath("")
 
 	msgs, paginator, err := s.ListKVPaged(ctx, (&user).ProtoReflect().Type(), params, usersKey, false)
 	if msgs == nil {
@@ -386,25 +351,25 @@ func (s *KVAuthService) ListUsers(ctx context.Context, params *model.PaginationP
 
 func (s *KVAuthService) ListUserCredentials(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Credential, *model.Paginator, error) {
 	var credential model.CredentialData
-	credentialsKey := model.KVCredentialPath(username, "")
+	credentialsKey := model.CredentialPath(username, "")
 
 	msgs, paginator, err := s.ListKVPaged(ctx, (&credential).ProtoReflect().Type(), params, credentialsKey, false)
 	if msgs == nil {
 		return nil, paginator, err
 	}
-	return s.ConvertCredDataList(msgs), paginator, err
+	return model.ConvertCredDataList(s.secretStore, msgs), paginator, err
 }
 
 func (s *KVAuthService) AttachPolicyToUser(ctx context.Context, policyDisplayName string, username string) error {
 	if _, err := s.GetUser(ctx, username); err != nil {
-		return fmt.Errorf("%s: %w", username, err)
+		return err
 	}
 	if _, err := s.GetPolicy(ctx, policyDisplayName); err != nil {
-		return fmt.Errorf("%s: %w", policyDisplayName, err)
+		return err
 	}
 
-	policyKey := model.KVPolicyPath(policyDisplayName)
-	pu := model.KVPolicyToUser(username, policyDisplayName)
+	policyKey := model.PolicyPath(policyDisplayName)
+	pu := model.UserPolicyPath(username, policyDisplayName)
 
 	err := s.store.SetMsgIf(ctx, model.PartitionKey, pu, &kv.SecondaryIndex{PrimaryKey: []byte(policyKey)}, nil)
 	if err != nil {
@@ -416,25 +381,34 @@ func (s *KVAuthService) AttachPolicyToUser(ctx context.Context, policyDisplayNam
 	return nil
 }
 
-func (s *KVAuthService) DetachPolicyFromUser(ctx context.Context, policyDisplayName, username string) error {
-	if _, err := s.GetUser(ctx, username); err != nil {
-		return fmt.Errorf("%s: %w", username, err)
-	}
-	if _, err := s.GetPolicy(ctx, policyDisplayName); err != nil {
-		return fmt.Errorf("%s: %w", policyDisplayName, err)
-	}
-
-	pu := model.KVPolicyToUser(username, policyDisplayName)
+func (s *KVAuthService) DetachPolicyFromUserNoValidation(ctx context.Context, policyDisplayName, username string) error {
+	pu := model.UserPolicyPath(username, policyDisplayName)
 	err := s.store.DeleteMsg(ctx, model.PartitionKey, pu)
 	if err != nil {
-		return fmt.Errorf("policy detachment to user: (key %s): %w", pu, err)
+		return fmt.Errorf("detaching policy: (key %s): %w", pu, err)
+	}
+	return nil
+}
+
+func (s *KVAuthService) DetachPolicyFromUser(ctx context.Context, policyDisplayName, username string) error {
+	if _, err := s.GetUser(ctx, username); err != nil {
+		return err
+	}
+	if _, err := s.GetPolicy(ctx, policyDisplayName); err != nil {
+		return err
+	}
+
+	pu := model.UserPolicyPath(username, policyDisplayName)
+	err := s.store.DeleteMsg(ctx, model.PartitionKey, pu)
+	if err != nil {
+		return fmt.Errorf("detaching policy: (key %s): %w", pu, err)
 	}
 	return nil
 }
 
 func (s *KVAuthService) ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
 	var policy model.PolicyData
-	userPolicyKey := model.KVPolicyToUser(username, "")
+	userPolicyKey := model.UserPolicyPath(username, "")
 
 	msgs, paginator, err := s.ListKVPaged(ctx, (&policy).ProtoReflect().Type(), params, userPolicyKey, true)
 	if msgs == nil {
@@ -445,14 +419,13 @@ func (s *KVAuthService) ListUserPolicies(ctx context.Context, username string, p
 
 func (s *KVAuthService) getEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
 	if _, err := s.GetUser(ctx, username); err != nil {
-		return nil, nil, fmt.Errorf("%s: %w", username, err)
+		return nil, nil, err
 	}
 
 	hasMoreUserPolicy := true
 	after := ""
 	amount := maxPage
 	policiesSet := make(map[string]*model.BasePolicy)
-	var policiesArr []string
 	// get policies attracted to user
 	for hasMoreUserPolicy {
 		policies, userPaginator, err := s.ListUserPolicies(ctx, username, &model.PaginationParams{
@@ -464,7 +437,6 @@ func (s *KVAuthService) getEffectivePolicies(ctx context.Context, username strin
 		}
 		for _, policy := range policies {
 			policiesSet[policy.DisplayName] = policy
-			policiesArr = append(policiesArr, policy.DisplayName)
 		}
 		after = userPaginator.NextPageToken
 		hasMoreUserPolicy = userPaginator.NextPageToken != ""
@@ -474,7 +446,7 @@ func (s *KVAuthService) getEffectivePolicies(ctx context.Context, username strin
 	after = ""
 	for hasMoreGroup {
 		// get membership groups to user
-		groups, groupPaginator, err := s.ListGroups(ctx, &model.PaginationParams{
+		groups, groupPaginator, err := s.ListUserGroups(ctx, username, &model.PaginationParams{
 			After:  after,
 			Amount: amount,
 		})
@@ -494,7 +466,6 @@ func (s *KVAuthService) getEffectivePolicies(ctx context.Context, username strin
 				}
 				for _, policy := range groupPolicies {
 					policiesSet[policy.DisplayName] = policy
-					policiesArr = append(policiesArr, policy.DisplayName)
 				}
 				after = groupPoliciesPaginator.NextPageToken
 				hasMoreGroupPolicy = groupPoliciesPaginator.NextPageToken != ""
@@ -507,20 +478,26 @@ func (s *KVAuthService) getEffectivePolicies(ctx context.Context, username strin
 	if params.Amount < 0 || params.Amount > maxPage {
 		params.Amount = maxPage
 	}
+
+	var policiesArr []string
+	for k := range policiesSet {
+		policiesArr = append(policiesArr, k)
+	}
 	sort.Strings(policiesArr)
+
 	var resPolicies []*model.BasePolicy
-	var resPaginator *model.Paginator
+	var resPaginator model.Paginator
 	for _, p := range policiesArr {
 		if p > after {
 			if len(resPolicies) == params.Amount {
 				resPaginator.NextPageToken = p
 				resPaginator.Amount = len(resPolicies)
-				return resPolicies, resPaginator, nil
+				return resPolicies, &resPaginator, nil
 			}
 			resPolicies = append(resPolicies, policiesSet[p])
 		}
 	}
-	return resPolicies, resPaginator, nil
+	return resPolicies, &resPaginator, nil
 }
 
 func (s *KVAuthService) ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
@@ -541,7 +518,7 @@ func (s *KVAuthService) ListEffectivePolicies(ctx context.Context, username stri
 
 func (s *KVAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
 	var policy model.PolicyData
-	groupPolicyKey := model.KVPolicyToGroup(groupDisplayName, "")
+	groupPolicyKey := model.GroupPolicyPath(groupDisplayName, "")
 
 	msgs, paginator, err := s.ListKVPaged(ctx, (&policy).ProtoReflect().Type(), params, groupPolicyKey, true)
 	if msgs == nil {
@@ -555,7 +532,7 @@ func (s *KVAuthService) CreateGroup(ctx context.Context, group *model.BaseGroup)
 		return err
 	}
 
-	groupKey := model.KVGroupPath(group.DisplayName)
+	groupKey := model.GroupPath(group.DisplayName)
 	id := uuid.New().String()
 	groupWithID := model.Group{ID: id, BaseGroup: *group}
 
@@ -570,23 +547,22 @@ func (s *KVAuthService) CreateGroup(ctx context.Context, group *model.BaseGroup)
 }
 
 func (s *KVAuthService) DeleteGroup(ctx context.Context, groupDisplayName string) error {
-	var err error
-	if _, err = s.GetGroup(ctx, groupDisplayName); err != nil {
-		return fmt.Errorf("%s: %w", groupDisplayName, err)
+	if _, err := s.GetGroup(ctx, groupDisplayName); err != nil {
+		return err
 	}
 
 	// delete user membership to group
-	usersKey := model.KVUserToGroup(groupDisplayName, "")
+	usersKey := model.GroupUserPath(groupDisplayName, "")
 	it, err := kv.NewSecondaryIterator(ctx, s.store.Store, (&model.UserData{}).ProtoReflect().Type(), model.PartitionKey, usersKey, "")
-	defer it.Close()
 	if err != nil {
 		return err
 	}
+	defer it.Close()
 	for it.Next() {
 		entry := it.Entry()
 		user := entry.Value.(*model.UserData)
-		if err = s.RemoveUserFromGroup(ctx, user.Username, groupDisplayName); err != nil {
-			return fmt.Errorf("%s: %w", user.Username, err)
+		if err = s.removeUserFromGroupNoValidation(ctx, user.Username, groupDisplayName); err != nil {
+			return err
 		}
 	}
 	if err = it.Err(); err != nil {
@@ -594,17 +570,17 @@ func (s *KVAuthService) DeleteGroup(ctx context.Context, groupDisplayName string
 	}
 
 	// delete policy attachment to group
-	policiesKey := model.KVPolicyToGroup(groupDisplayName, "")
+	policiesKey := model.GroupPolicyPath(groupDisplayName, "")
 	itr, err := kv.NewSecondaryIterator(ctx, s.store.Store, (&model.PolicyData{}).ProtoReflect().Type(), model.PartitionKey, policiesKey, "")
-	defer it.Close()
 	if err != nil {
 		return err
 	}
+	defer it.Close()
 	for itr.Next() {
 		entry := itr.Entry()
 		policy := entry.Value.(*model.PolicyData)
-		if err = s.DetachPolicyFromGroup(ctx, policy.DisplayName, groupDisplayName); err != nil {
-			return fmt.Errorf("%s: %w", policy.DisplayName, err)
+		if err = s.DetachPolicyFromGroupNoValidation(ctx, policy.DisplayName, groupDisplayName); err != nil {
+			return err
 		}
 	}
 	if err = itr.Err(); err != nil {
@@ -612,7 +588,7 @@ func (s *KVAuthService) DeleteGroup(ctx context.Context, groupDisplayName string
 	}
 
 	// delete group
-	groupPath := model.KVGroupPath(groupDisplayName)
+	groupPath := model.GroupPath(groupDisplayName)
 	err = s.store.DeleteMsg(ctx, model.PartitionKey, groupPath)
 	if err != nil {
 		return fmt.Errorf("delete user (userKey %s): %w", groupPath, err)
@@ -621,21 +597,21 @@ func (s *KVAuthService) DeleteGroup(ctx context.Context, groupDisplayName string
 }
 
 func (s *KVAuthService) GetGroup(ctx context.Context, groupDisplayName string) (*model.Group, error) {
-	groupKey := model.KVGroupPath(groupDisplayName)
+	groupKey := model.GroupPath(groupDisplayName)
 	m := model.GroupData{}
 	_, err := s.store.GetMsg(ctx, model.PartitionKey, groupKey, &m)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			err = ErrNotFound
 		}
-		return nil, err
+		return nil, fmt.Errorf("%s: %w", groupDisplayName, err)
 	}
 	return model.GroupFromProto(&m), nil
 }
 
 func (s *KVAuthService) ListGroups(ctx context.Context, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error) {
 	var group model.GroupData
-	groupKey := model.KVGroupPath("")
+	groupKey := model.GroupPath("")
 
 	msgs, paginator, err := s.ListKVPaged(ctx, (&group).ProtoReflect().Type(), params, groupKey, false)
 	if msgs == nil {
@@ -646,14 +622,14 @@ func (s *KVAuthService) ListGroups(ctx context.Context, params *model.Pagination
 
 func (s *KVAuthService) AddUserToGroup(ctx context.Context, username, groupDisplayName string) error {
 	if _, err := s.GetUser(ctx, username); err != nil {
-		return fmt.Errorf("%s: %w", username, err)
+		return err
 	}
 	if _, err := s.GetGroup(ctx, groupDisplayName); err != nil {
-		return fmt.Errorf("%s: %w", groupDisplayName, err)
+		return err
 	}
 
-	userKey := model.KVUserPath(username)
-	gu := model.KVUserToGroup(groupDisplayName, username)
+	userKey := model.UserPath(username)
+	gu := model.GroupUserPath(groupDisplayName, username)
 
 	err := s.store.SetMsgIf(ctx, model.PartitionKey, gu, &kv.SecondaryIndex{PrimaryKey: []byte(userKey)}, nil)
 	if err != nil {
@@ -665,15 +641,24 @@ func (s *KVAuthService) AddUserToGroup(ctx context.Context, username, groupDispl
 	return err
 }
 
+func (s *KVAuthService) removeUserFromGroupNoValidation(ctx context.Context, username, groupDisplayName string) error {
+	gu := model.GroupUserPath(groupDisplayName, username)
+	err := s.store.DeleteMsg(ctx, model.PartitionKey, gu)
+	if err != nil {
+		return fmt.Errorf("remove user from group: (key %s): %w", gu, err)
+	}
+	return err
+}
+
 func (s *KVAuthService) RemoveUserFromGroup(ctx context.Context, username, groupDisplayName string) error {
 	if _, err := s.GetUser(ctx, username); err != nil {
-		return fmt.Errorf("%s: %w", username, err)
+		return err
 	}
 	if _, err := s.GetGroup(ctx, groupDisplayName); err != nil {
-		return fmt.Errorf("%s: %w", groupDisplayName, err)
+		return err
 	}
 
-	gu := model.KVUserToGroup(groupDisplayName, username)
+	gu := model.GroupUserPath(groupDisplayName, username)
 	err := s.store.DeleteMsg(ctx, model.PartitionKey, gu)
 	if err != nil {
 		return fmt.Errorf("remove user from group: (key %s): %w", gu, err)
@@ -683,7 +668,7 @@ func (s *KVAuthService) RemoveUserFromGroup(ctx context.Context, username, group
 
 func (s *KVAuthService) ListUserGroups(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error) {
 	if _, err := s.GetUser(ctx, username); err != nil {
-		return nil, nil, fmt.Errorf("%s: %w", username, err)
+		return nil, nil, err
 	}
 	if params.Amount < 0 || params.Amount > maxPage {
 		params.Amount = maxPage
@@ -691,19 +676,14 @@ func (s *KVAuthService) ListUserGroups(ctx context.Context, username string, par
 
 	hasMoreGroups := true
 	var userGroups []*model.Group
-	var resPaginator *model.Paginator
+	resPaginator := model.Paginator{Amount: 0, NextPageToken: ""}
 	for hasMoreGroups && len(userGroups) <= params.Amount {
 		groups, paginator, err := s.ListGroups(ctx, &model.PaginationParams{Prefix: params.Prefix, After: params.After, Amount: maxPage})
 		if err != nil {
 			return nil, nil, err
 		}
 		for _, group := range groups {
-			if len(userGroups) == params.Amount {
-				resPaginator.NextPageToken = group.DisplayName
-				resPaginator.Amount = len(userGroups)
-				return userGroups, resPaginator, nil
-			}
-			path := model.KVUserToGroup(group.DisplayName, username)
+			path := model.GroupUserPath(group.DisplayName, username)
 			m := model.UserData{}
 			_, err := s.store.GetMsg(ctx, model.PartitionKey, path, &m)
 			if err != nil && !errors.Is(err, kv.ErrNotFound) {
@@ -712,19 +692,24 @@ func (s *KVAuthService) ListUserGroups(ctx context.Context, username string, par
 			if err == nil {
 				userGroups = append(userGroups, group)
 			}
+			if len(userGroups) == params.Amount {
+				resPaginator.NextPageToken = group.DisplayName
+				resPaginator.Amount = len(userGroups)
+				return userGroups, &resPaginator, nil
+			}
 		}
 		hasMoreGroups = paginator.NextPageToken != ""
 	}
 	resPaginator.Amount = len(userGroups)
-	return userGroups, resPaginator, nil
+	return userGroups, &resPaginator, nil
 }
 
 func (s *KVAuthService) ListGroupUsers(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
 	if _, err := s.GetGroup(ctx, groupDisplayName); err != nil {
-		return nil, nil, fmt.Errorf("%s: %w", groupDisplayName, err)
+		return nil, nil, err
 	}
 	var policy model.UserData
-	userGroupKey := model.KVUserToGroup(groupDisplayName, "")
+	userGroupKey := model.GroupUserPath(groupDisplayName, "")
 
 	msgs, paginator, err := s.ListKVPaged(ctx, (&policy).ProtoReflect().Type(), params, userGroupKey, true)
 	if msgs == nil {
@@ -757,7 +742,7 @@ func (s *KVAuthService) WritePolicy(ctx context.Context, policy *model.BasePolic
 	if err := ValidatePolicy(policy); err != nil {
 		return err
 	}
-	policyKey := model.KVPolicyPath(policy.DisplayName)
+	policyKey := model.PolicyPath(policy.DisplayName)
 	id := uuid.New().String()
 
 	m := model.ProtoFromPolicy(policy, id)
@@ -772,51 +757,51 @@ func (s *KVAuthService) WritePolicy(ctx context.Context, policy *model.BasePolic
 }
 
 func (s *KVAuthService) GetPolicy(ctx context.Context, policyDisplayName string) (*model.BasePolicy, error) {
-	policyKey := model.KVPolicyPath(policyDisplayName)
+	policyKey := model.PolicyPath(policyDisplayName)
 	p := model.PolicyData{}
 	_, err := s.store.GetMsg(ctx, model.PartitionKey, policyKey, &p)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			err = ErrNotFound
 		}
-		return nil, err
+		return nil, fmt.Errorf("%s: %w", policyDisplayName, err)
 	}
 	return model.PolicyFromProto(&p), nil
 }
 
 func (s *KVAuthService) DeletePolicy(ctx context.Context, policyDisplayName string) error {
 	if _, err := s.GetPolicy(ctx, policyDisplayName); err != nil {
-		return fmt.Errorf("%s: %w", policyDisplayName, err)
+		return err
 	}
-	policyPath := model.KVPolicyPath(policyDisplayName)
+	policyPath := model.PolicyPath(policyDisplayName)
 
 	// delete policy attachment to user
-	usersKey := model.KVUserPath("")
+	usersKey := model.UserPath("")
 	it, err := kv.NewPrimaryIterator(ctx, s.store.Store, (&model.UserData{}).ProtoReflect().Type(), model.PartitionKey, usersKey, "")
-	defer it.Close()
 	if err != nil {
 		return err
 	}
+	defer it.Close()
 	for it.Next() {
 		entry := it.Entry()
 		user := entry.Value.(*model.UserData)
-		if err = s.DetachPolicyFromUser(ctx, policyDisplayName, user.Username); err != nil {
-			return fmt.Errorf("%s: %w", policyDisplayName, err)
+		if err = s.DetachPolicyFromUserNoValidation(ctx, policyDisplayName, user.Username); err != nil {
+			return err
 		}
 	}
 
 	// delete policy attachment to group
-	groupKey := model.KVGroupPath("")
+	groupKey := model.GroupPath("")
 	it, err = kv.NewPrimaryIterator(ctx, s.store.Store, (&model.UserData{}).ProtoReflect().Type(), model.PartitionKey, groupKey, "")
-	defer it.Close()
 	if err != nil {
 		return err
 	}
+	defer it.Close()
 	for it.Next() {
 		entry := it.Entry()
 		group := entry.Value.(*model.GroupData)
-		if err = s.DetachPolicyFromGroup(ctx, policyDisplayName, group.DisplayName); err != nil {
-			return fmt.Errorf("%s: %w", policyDisplayName, err)
+		if err = s.DetachPolicyFromGroupNoValidation(ctx, policyDisplayName, group.DisplayName); err != nil {
+			return err
 		}
 	}
 
@@ -830,7 +815,7 @@ func (s *KVAuthService) DeletePolicy(ctx context.Context, policyDisplayName stri
 
 func (s *KVAuthService) ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
 	var policy model.PolicyData
-	policyKey := model.KVPolicyPath("")
+	policyKey := model.PolicyPath("")
 
 	msgs, paginator, err := s.ListKVPaged(ctx, (&policy).ProtoReflect().Type(), params, policyKey, false)
 	if msgs == nil {
@@ -853,13 +838,13 @@ func (s *KVAuthService) AddCredentials(ctx context.Context, username, accessKeyI
 		return nil, ErrInvalidSecretAccessKey
 	}
 	now := time.Now()
-	encryptedKey, err := encryptSecret(s.secretStore, secretAccessKey)
+	encryptedKey, err := model.EncryptSecret(s.secretStore, secretAccessKey)
 	if err != nil {
 		return nil, err
 	}
 	user, err := s.GetUser(ctx, username)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", username, err)
+		return nil, err
 	}
 
 	c := &model.Credential{
@@ -871,7 +856,7 @@ func (s *KVAuthService) AddCredentials(ctx context.Context, username, accessKeyI
 		},
 		UserID: user.ID,
 	}
-	credentialsKey := model.KVCredentialPath(user.Username, c.AccessKeyID)
+	credentialsKey := model.CredentialPath(user.Username, c.AccessKeyID)
 	err = s.store.SetMsgIf(ctx, model.PartitionKey, credentialsKey, model.ProtoFromCredential(c), nil)
 	if err != nil {
 		if errors.Is(err, kv.ErrPredicateFailed) {
@@ -890,13 +875,13 @@ func IsValidAccessKeyID(key string) bool {
 
 func (s *KVAuthService) DeleteCredentials(ctx context.Context, username, accessKeyID string) error {
 	if _, err := s.GetUser(ctx, username); err != nil {
-		return fmt.Errorf("%s: %w", username, err)
+		return err
 	}
 	if _, err := s.GetCredentials(ctx, accessKeyID); err != nil {
-		return fmt.Errorf("%s: %w", accessKeyID, err)
+		return err
 	}
 
-	credPath := model.KVCredentialPath(username, accessKeyID)
+	credPath := model.CredentialPath(username, accessKeyID)
 	err := s.store.DeleteMsg(ctx, model.PartitionKey, credPath)
 	if err != nil {
 		return fmt.Errorf("delete credentials (credentialsKey %s): %w", credPath, err)
@@ -906,14 +891,14 @@ func (s *KVAuthService) DeleteCredentials(ctx context.Context, username, accessK
 
 func (s *KVAuthService) AttachPolicyToGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error {
 	if _, err := s.GetGroup(ctx, groupDisplayName); err != nil {
-		return fmt.Errorf("%s: %w", groupDisplayName, err)
+		return err
 	}
 	if _, err := s.GetPolicy(ctx, policyDisplayName); err != nil {
-		return fmt.Errorf("%s: %w", policyDisplayName, err)
+		return err
 	}
 
-	policyKey := model.KVPolicyPath(policyDisplayName)
-	pg := model.KVPolicyToGroup(groupDisplayName, policyDisplayName)
+	policyKey := model.PolicyPath(policyDisplayName)
+	pg := model.GroupPolicyPath(groupDisplayName, policyDisplayName)
 
 	err := s.store.SetMsgIf(ctx, model.PartitionKey, pg, &kv.SecondaryIndex{PrimaryKey: []byte(policyKey)}, nil)
 	if err != nil {
@@ -925,15 +910,24 @@ func (s *KVAuthService) AttachPolicyToGroup(ctx context.Context, policyDisplayNa
 	return err
 }
 
+func (s *KVAuthService) DetachPolicyFromGroupNoValidation(ctx context.Context, policyDisplayName, groupDisplayName string) error {
+	pg := model.GroupPolicyPath(groupDisplayName, policyDisplayName)
+	err := s.store.DeleteMsg(ctx, model.PartitionKey, pg)
+	if err != nil {
+		return fmt.Errorf("policy detachment to group: (key %s): %w", pg, err)
+	}
+	return err
+}
+
 func (s *KVAuthService) DetachPolicyFromGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error {
 	if _, err := s.GetGroup(ctx, groupDisplayName); err != nil {
-		return fmt.Errorf("%s: %w", groupDisplayName, err)
+		return err
 	}
 	if _, err := s.GetPolicy(ctx, policyDisplayName); err != nil {
-		return fmt.Errorf("%s: %w", policyDisplayName, err)
+		return err
 	}
 
-	pg := model.KVPolicyToGroup(groupDisplayName, policyDisplayName)
+	pg := model.GroupPolicyPath(groupDisplayName, policyDisplayName)
 	err := s.store.DeleteMsg(ctx, model.PartitionKey, pg)
 	if err != nil {
 		return fmt.Errorf("policy detachment to group: (key %s): %w", pg, err)
@@ -943,9 +937,9 @@ func (s *KVAuthService) DetachPolicyFromGroup(ctx context.Context, policyDisplay
 
 func (s *KVAuthService) GetCredentialsForUser(ctx context.Context, username, accessKeyID string) (*model.Credential, error) {
 	if _, err := s.GetUser(ctx, username); err != nil {
-		return nil, fmt.Errorf("%s: %w", username, err)
+		return nil, err
 	}
-	credentialsKey := model.KVCredentialPath(username, accessKeyID)
+	credentialsKey := model.CredentialPath(username, accessKeyID)
 	m := model.CredentialData{}
 	_, err := s.store.GetMsg(ctx, model.PartitionKey, credentialsKey, &m)
 	if err != nil {
@@ -955,7 +949,7 @@ func (s *KVAuthService) GetCredentialsForUser(ctx context.Context, username, acc
 		return nil, err
 	}
 
-	c := s.CredentialFromProto(&m)
+	c := model.CredentialFromProto(s.secretStore, &m)
 	c.SecretAccessKey = ""
 	return c, nil
 }
@@ -963,29 +957,29 @@ func (s *KVAuthService) GetCredentialsForUser(ctx context.Context, username, acc
 func (s *KVAuthService) GetCredentials(ctx context.Context, accessKeyID string) (*model.Credential, error) {
 	return s.cache.GetCredential(accessKeyID, func() (*model.Credential, error) {
 		m := &model.UserData{}
-		itr, err := s.store.Scan(ctx, m.ProtoReflect().Type(), model.PartitionKey, model.KVUserPath(""))
+		itr, err := s.store.Scan(ctx, m.ProtoReflect().Type(), model.PartitionKey, model.UserPath(""))
 		if err != nil {
 			return nil, fmt.Errorf("scan users: %w", err)
 		}
 		defer itr.Close()
 
 		for itr.Next() {
-			if itr.Err() != nil {
-				return nil, itr.Err()
-			}
 			entry := itr.Entry()
 			user, ok := entry.Value.(*model.UserData)
 			if !ok {
-				return nil, fmt.Errorf("list users: %w", err)
+				return nil, fmt.Errorf("failed to cast: %w", err)
 			}
 			c := model.CredentialData{}
-			credentialsKey := model.KVCredentialPath(user.Username, accessKeyID)
+			credentialsKey := model.CredentialPath(user.Username, accessKeyID)
 			_, err := s.store.GetMsg(ctx, model.PartitionKey, credentialsKey, &c)
 			if err != nil && !errors.Is(err, kv.ErrNotFound) {
 				return nil, err
 			} else if err == nil {
-				return s.CredentialFromProto(&c), err
+				return model.CredentialFromProto(s.secretStore, &c), err
 			}
+		}
+		if err = itr.Err(); err != nil {
+			return nil, err
 		}
 		return nil, ErrNotFound
 	})
@@ -994,13 +988,13 @@ func (s *KVAuthService) GetCredentials(ctx context.Context, accessKeyID string) 
 func (s *KVAuthService) HashAndUpdatePassword(ctx context.Context, username string, password string) error {
 	user, err := s.GetUser(ctx, username)
 	if err != nil {
-		return fmt.Errorf("%s: %w", username, err)
+		return err
 	}
 	pw, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
-	userKey := model.KVUserPath(user.Username)
+	userKey := model.UserPath(user.Username)
 	userUpdatePassword := model.User{ID: user.ID, BaseUser: model.BaseUser{
 		CreatedAt:         user.BaseUser.CreatedAt,
 		Username:          user.BaseUser.Username,
@@ -1018,18 +1012,6 @@ func (s *KVAuthService) HashAndUpdatePassword(ctx context.Context, username stri
 func interpolateUser(resource string, username string) string {
 	return strings.ReplaceAll(resource, "${user}", username)
 }
-
-// CheckResult - the final result for the authorization is accepted only if it's CheckAllow
-type CheckResult int
-
-const (
-	// CheckAllow Permission allowed
-	CheckAllow CheckResult = iota
-	// CheckNeutral Permission neither allowed nor denied
-	CheckNeutral
-	// CheckDeny Permission denied
-	CheckDeny
-)
 
 func checkPermissions(node permissions.Node, username string, policies []*model.BasePolicy) CheckResult {
 	allowed := CheckNeutral
@@ -1129,7 +1111,7 @@ func (s *KVAuthService) ClaimTokenIDOnce(ctx context.Context, tokenID string, ex
 
 // markTokenSingleUse returns true if token is valid for single use
 func (s *KVAuthService) markTokenSingleUse(ctx context.Context, tokenID string, tokenExpiresAt time.Time) (bool, error) {
-	tokenPath := model.KVExpiredTokenPath(tokenID)
+	tokenPath := model.ExpiredTokenPath(tokenID)
 	m := model.TokenData{TokenId: tokenID, ExpiredAt: timestamppb.New(tokenExpiresAt)}
 	err := s.store.SetMsgIf(ctx, model.PartitionKey, tokenPath, &m, nil)
 	if err != nil {

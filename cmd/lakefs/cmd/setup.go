@@ -52,6 +52,7 @@ var setupCmd = &cobra.Command{
 		}
 
 		var authService auth.Service
+		authLogger := logging.Default().WithField("service", "auth_service")
 		if dbParams.KVEnabled {
 			kvStore, err := kv.Open(ctx, dbParams.Type, dbParams.ConnectionString)
 			if err != nil {
@@ -59,9 +60,9 @@ var setupCmd = &cobra.Command{
 				os.Exit(1)
 			}
 			storeMessage := kv.StoreMessage{Store: kvStore}
-			authService = auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), cfg.GetAuthCacheConfig(), logging.Default().WithField("service", "auth_service"))
+			authService = auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), cfg.GetAuthCacheConfig(), authLogger)
 		} else {
-			authService = auth.NewDBAuthService(dbPool, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), cfg.GetAuthCacheConfig(), logging.Default().WithField("service", "auth_service"))
+			authService = auth.NewDBAuthService(dbPool, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), cfg.GetAuthCacheConfig(), authLogger)
 		}
 
 		metadataManager := auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)

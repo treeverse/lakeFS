@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/auth/crypt"
+
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"golang.org/x/crypto/bcrypt"
@@ -15,10 +17,51 @@ import (
 )
 
 const (
-	StatementEffectAllow = "allow"
-	StatementEffectDeny  = "deny"
-	PartitionKey         = "auth"
+	StatementEffectAllow   = "allow"
+	StatementEffectDeny    = "deny"
+	PartitionKey           = "auth"
+	groupsPrefix           = "groups"
+	groupsUsersPrefix      = "groups_users"
+	groupsPoliciesPrefix   = "groups_policies"
+	usersPrefix            = "users"
+	policiesPrefix         = "policies"
+	usersPoliciesPrefix    = "users_policies"
+	usersCredentialsPrefix = "users_credentials"
+	credentialsPrefix      = "credentials"
+	ExpiredTokensPrefix    = "expired_tokens"
 )
+
+func UserPath(userName string) string {
+	return kv.FormatPath(usersPrefix, userName)
+}
+
+func PolicyPath(displayName string) string {
+	return kv.FormatPath(policiesPrefix, displayName)
+}
+
+func GroupPath(displayName string) string {
+	return kv.FormatPath(groupsPrefix, displayName)
+}
+
+func CredentialPath(userName string, accessKeyID string) string {
+	return kv.FormatPath(usersCredentialsPrefix, userName, credentialsPrefix, accessKeyID)
+}
+
+func GroupUserPath(groupDisplayName string, userName string) string {
+	return kv.FormatPath(groupsUsersPrefix, groupDisplayName, usersPrefix, userName)
+}
+
+func UserPolicyPath(userName string, policyDisplayName string) string {
+	return kv.FormatPath(usersPoliciesPrefix, userName, policiesPrefix, policyDisplayName)
+}
+
+func GroupPolicyPath(groupDisplayName string, policyDisplayName string) string {
+	return kv.FormatPath(groupsPoliciesPrefix, groupDisplayName, policiesPrefix, policyDisplayName)
+}
+
+func ExpiredTokenPath(tokenID string) string {
+	return kv.FormatPath(ExpiredTokensPrefix, tokenID)
+}
 
 var (
 	ErrInvalidStatementSrcFormat = errors.New("invalid statements src format")
@@ -172,10 +215,6 @@ func (s *Statements) Scan(src interface{}) error {
 	return json.Unmarshal(data, s)
 }
 
-func KVUserPath(userName string) string {
-	return kv.FormatPath("users", userName)
-}
-
 func UserFromProto(pb *UserData) *User {
 	return &User{
 		ID: string(pb.Id),
@@ -202,10 +241,6 @@ func ProtoFromUser(u *User) *UserData {
 	}
 }
 
-func KVGroupPath(displayName string) string {
-	return kv.FormatPath("groups", displayName)
-}
-
 func GroupFromProto(pb *GroupData) *Group {
 	return &Group{
 		ID: string(pb.Id),
@@ -222,10 +257,6 @@ func ProtoFromGroup(g *Group) *GroupData {
 		CreatedAt:   timestamppb.New(g.CreatedAt),
 		DisplayName: g.DisplayName,
 	}
-}
-
-func KVPolicyPath(displayName string) string {
-	return kv.FormatPath("policies", displayName)
 }
 
 func PolicyFromProto(pb *PolicyData) *BasePolicy {
@@ -245,8 +276,20 @@ func ProtoFromPolicy(p *BasePolicy, id string) *PolicyData {
 	}
 }
 
-func KVCredentialPath(userName string, accessKeyID string) string {
-	return kv.FormatPath(userName, "credentials", accessKeyID)
+func CredentialFromProto(s crypt.SecretStore, pb *CredentialData) *Credential {
+	secret, err := DecryptSecret(s, pb.SecretAccessKeyEncryptedBytes)
+	if err != nil {
+		return nil
+	}
+	return &Credential{
+		UserID: string(pb.UserId),
+		BaseCredential: BaseCredential{
+			AccessKeyID:                   pb.AccessKeyId,
+			SecretAccessKey:               secret,
+			SecretAccessKeyEncryptedBytes: pb.SecretAccessKeyEncryptedBytes,
+			IssuedDate:                    pb.IssuedDate.AsTime(),
+		},
+	}
 }
 
 func ProtoFromCredential(c *Credential) *CredentialData {
@@ -289,18 +332,6 @@ func protoFromStatements(s *Statements) []*StatementData {
 		statements[i] = protoFromStatement(&x[i])
 	}
 	return statements
-}
-
-func KVUserToGroup(groupDisplayName string, userName string) string {
-	return kv.FormatPath("groups", groupDisplayName, "users", userName)
-}
-
-func KVPolicyToUser(userName string, policyDisplayName string) string {
-	return kv.FormatPath("users", userName, "policies", policyDisplayName)
-}
-
-func KVPolicyToGroup(groupDisplayName string, policyDisplayName string) string {
-	return kv.FormatPath("groups", groupDisplayName, "policies", policyDisplayName)
 }
 
 func ConvertUsersList(users []*DBUser) []*User {
@@ -368,6 +399,29 @@ func ConvertPolicyDataList(policies []proto.Message) []*BasePolicy {
 	return res
 }
 
-func KVExpiredTokenPath(tokenID string) string {
-	return kv.FormatPath("expired_tokens", tokenID)
+func ConvertCredDataList(s crypt.SecretStore, creds []proto.Message) []*Credential {
+	res := make([]*Credential, 0, len(creds))
+	for _, c := range creds {
+		a := c.(*CredentialData)
+		m := CredentialFromProto(s, a)
+		m.SecretAccessKey = ""
+		res = append(res, m)
+	}
+	return res
+}
+
+func DecryptSecret(s crypt.SecretStore, value []byte) (string, error) {
+	decrypted, err := s.Decrypt(value)
+	if err != nil {
+		return "", err
+	}
+	return string(decrypted), nil
+}
+
+func EncryptSecret(s crypt.SecretStore, secretAccessKey string) ([]byte, error) {
+	encrypted, err := s.Encrypt([]byte(secretAccessKey))
+	if err != nil {
+		return nil, err
+	}
+	return encrypted, nil
 }

@@ -212,7 +212,7 @@ func TestKVAuthService_ListPaged(t *testing.T) {
 			}
 			got := ""
 			for {
-				values, paginator, err := s.ListKVPaged(ctx, (&userData).ProtoReflect().Type(), pagination, model.KVUserPath(""), false)
+				values, paginator, err := s.ListKVPaged(ctx, (&userData).ProtoReflect().Type(), pagination, model.UserPath(""), false)
 				if err != nil {
 					t.Errorf("ListPaged: %s", err)
 					break

@@ -639,7 +639,7 @@ func (s *DBAuthService) AddCredentials(ctx context.Context, username, accessKeyI
 		return nil, ErrInvalidSecretAccessKey
 	}
 	now := time.Now()
-	encryptedKey, err := encryptSecret(s.secretStore, secretAccessKey)
+	encryptedKey, err := model.EncryptSecret(s.secretStore, secretAccessKey)
 	if err != nil {
 		return nil, err
 	}
@@ -764,7 +764,7 @@ func (s *DBAuthService) GetCredentials(ctx context.Context, accessKeyID string) 
 			if err != nil {
 				return nil, err
 			}
-			key, err := decryptSecret(s.secretStore, credentials.SecretAccessKeyEncryptedBytes)
+			key, err := model.DecryptSecret(s.secretStore, credentials.SecretAccessKeyEncryptedBytes)
 			if err != nil {
 				return nil, err
 			}
