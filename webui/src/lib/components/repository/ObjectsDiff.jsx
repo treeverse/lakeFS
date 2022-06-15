@@ -29,7 +29,6 @@ export const ObjectsDiff = ({diffType, repoId, leftRef, rightRef, path}) => {
             break;
         case 'conflict':
             return <Error error={"Conflict in " + path + "; fix conflicts and then view content diff."}/>;
-            break;
         default:
             return <Error error={"Unsupported diff type " + diffType}/>;
     }
@@ -116,12 +115,11 @@ const DiffSizeReport = ({leftSize, rightSize, diffType}) => {
     let size;
     switch (diffType) {
         case 'changed':
-            const sizeDiff = leftSize - rightSize;
-            if (sizeDiff < 0) {
-                size = -sizeDiff;
+            size = leftSize - rightSize;
+            if (size < 0) {
+                size = -size;
                 label = "added";
             } else {
-                size = sizeDiff;
                 label = "removed";
             }
             break;

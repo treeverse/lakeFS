@@ -20,14 +20,13 @@ import (
 )
 
 const (
-	packageName   = "actions"
-	actionsPrefix = "actions"
-	PartitionKey  = "actions"
-	reposPrefix   = "repos"
-	RunsPrefix    = "runs"
-	tasksPrefix   = "tasks"
-	branchPrefix  = "branches"
-	commitPrefix  = "commits"
+	packageName  = "actions"
+	PartitionKey = "actions"
+	reposPrefix  = "repos"
+	RunsPrefix   = "runs"
+	tasksPrefix  = "tasks"
+	branchPrefix = "branches"
+	commitPrefix = "commits"
 )
 
 var (
@@ -142,7 +141,7 @@ func protoFromTaskResult(m *TaskResult) *TaskResultData {
 }
 
 func BaseActionsPath(repoID string) string {
-	return kv.FormatPath(actionsPrefix, reposPrefix, repoID)
+	return kv.FormatPath(reposPrefix, repoID)
 }
 
 func TasksPath(repoID, runID string) string {

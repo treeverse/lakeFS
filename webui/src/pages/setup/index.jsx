@@ -5,7 +5,6 @@ import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Col from "react-bootstrap/Col";
 import Form from "react-bootstrap/Form";
-import Table from "react-bootstrap/Table";
 import Row from "react-bootstrap/Row";
 import {DownloadIcon} from "@primer/octicons-react";
 import {useState} from "react";

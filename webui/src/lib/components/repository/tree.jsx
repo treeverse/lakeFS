@@ -195,7 +195,7 @@ const EntryRow = ({repo, reference, path, entry, onDelete, showActions}) => {
 };
 
 
-function pathParts(path, rootName = "root") {
+function pathParts(path) {
     let parts = path.split(/\//);
     let resolved = [];
     if (parts.length === 0) {
