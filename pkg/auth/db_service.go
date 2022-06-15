@@ -27,6 +27,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/version"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 //nolint:gochecknoinits
@@ -296,7 +297,7 @@ func (s *DBAuthService) DetachPolicyFromUser(ctx context.Context, policyDisplayN
 }
 
 func (s *DBAuthService) ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
-	var policy model.BasePolicy
+	var policy model.DBPolicy
 	sub := psql.Select("auth_policies.*").
 		From("auth_policies").
 		Join("auth_user_policies ON (auth_policies.id = auth_user_policies.policy_id)").
@@ -307,10 +308,16 @@ func (s *DBAuthService) ListUserPolicies(ctx context.Context, username string, p
 		})
 	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(policy), params, "display_name",
 		psql.Select("*").FromSelect(sub, "p"))
+
 	if slice == nil {
 		return nil, paginator, err
 	}
-	return slice.Interface().([]*model.BasePolicy), paginator, nil
+	policies := slice.Interface().([]*model.DBPolicy)
+	res := make([]*model.BasePolicy, 0, len(policies))
+	for _, p := range policies {
+		res = append(res, &p.BasePolicy)
+	}
+	return res, paginator, nil
 }
 
 func (s *DBAuthService) getEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
@@ -897,6 +904,10 @@ func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
 		return err
 	}
 
+	if err = exportExpiredTokens(ctx, d, je); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -1127,7 +1138,7 @@ func exportGroupPolicies(ctx context.Context, d *pgxpool.Pool, je *json.Encoder,
 			return fmt.Errorf("group ID %d: %w", gp.GroupID, ErrExportedEntNotFound)
 		}
 		key := model.GroupPolicyPath(groupName, policyName)
-		secIndex := kv.SecondaryIndex{PrimaryKey: []byte(model.UserPath(model.PolicyPath(policyName)))}
+		secIndex := kv.SecondaryIndex{PrimaryKey: []byte(model.PolicyPath(policyName))}
 		value, err := proto.Marshal(&secIndex)
 		if err != nil {
 			return err
@@ -1144,7 +1155,6 @@ func exportGroupPolicies(ctx context.Context, d *pgxpool.Pool, je *json.Encoder,
 }
 
 func exportCredentials(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, userIDToDetails UserIDToDetails) error {
-	// Credentials
 	rows, err := d.Query(ctx, "SELECT * from auth_credentials")
 	if err != nil {
 		return err
@@ -1178,6 +1188,42 @@ func exportCredentials(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, u
 			return err
 		}
 	}
+	return nil
+}
 
+func exportExpiredTokens(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) error {
+	type tokenData struct {
+		TokenID         string    `db:"token_id"`
+		TokenExpiration time.Time `db:"token_expires_at"`
+	}
+	rows, err := d.Query(ctx, "SELECT * from auth_expired_tokens")
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	scanner := pgxscan.NewRowScanner(rows)
+	for rows.Next() {
+		token := tokenData{}
+		err := scanner.Scan(&token)
+		if err != nil {
+			return err
+		}
+		kvToken := &model.TokenData{
+			TokenId:   token.TokenID,
+			ExpiredAt: timestamppb.New(token.TokenExpiration),
+		}
+		key := model.ExpiredTokenPath(token.TokenID)
+		value, err := proto.Marshal(kvToken)
+		if err != nil {
+			return err
+		}
+		if err = je.Encode(kv.Entry{
+			PartitionKey: []byte(model.PartitionKey),
+			Key:          []byte(key),
+			Value:        value,
+		}); err != nil {
+			return err
+		}
+	}
 	return nil
 }
