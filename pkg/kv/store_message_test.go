@@ -234,6 +234,7 @@ func testStoreMessageScan(t *testing.T, ctx context.Context, sm kv.StoreMessage)
 	}
 	modelKeyPrefix := "m"
 	modelNum := 5
+	skip := 2
 
 	// Add test models to store
 	for i := 0; i < modelNum; i++ {
@@ -246,7 +247,7 @@ func testStoreMessageScan(t *testing.T, ctx context.Context, sm kv.StoreMessage)
 	postModelKey := "n"
 	postModelData := "This is post test model"
 	require.NoError(t, sm.Store.Set(ctx, []byte(modelPartitionKey), []byte(postModelKey), []byte(postModelData)))
-	itr, err := sm.Scan(ctx, m.ProtoReflect().Type(), modelPartitionKey, modelKeyPrefix)
+	itr, err := sm.Scan(ctx, m.ProtoReflect().Type(), modelPartitionKey, modelKeyPrefix, kv.FormatPath(modelKeyPrefix, strconv.Itoa(skip-1)))
 	testutil.MustDo(t, "get iterator", err)
 	defer itr.Close()
 	count := 0
@@ -256,11 +257,11 @@ func testStoreMessageScan(t *testing.T, ctx context.Context, sm kv.StoreMessage)
 		value, ok := entry.Value.(*kvtest.TestModel)
 		require.True(t, ok)
 		require.Nil(t, itr.Err())
-		require.Equal(t, kv.FormatPath(modelKeyPrefix, strconv.Itoa(count)), entry.Key)
+		require.Equal(t, kv.FormatPath(modelKeyPrefix, strconv.Itoa(count+skip)), entry.Key)
 		require.True(t, proto.Equal(value, m))
 		count++
 	}
-	require.Equal(t, modelNum, count)
+	require.Equal(t, modelNum-skip, count)
 }
 
 func testStoreMessageScanWrongFormat(t *testing.T, ctx context.Context, sm kv.StoreMessage) {
@@ -288,7 +289,7 @@ func testStoreMessageScanWrongFormat(t *testing.T, ctx context.Context, sm kv.St
 	badModelData := "This is a bad model data"
 	require.NoError(t, sm.Store.Set(ctx, []byte(modelPartitionKey), []byte(kv.FormatPath(modelKeyPrefix, strconv.Itoa(modelNum))), []byte(badModelData)))
 
-	itr, err := sm.Scan(ctx, m.ProtoReflect().Type(), modelPartitionKey, modelKeyPrefix)
+	itr, err := sm.Scan(ctx, m.ProtoReflect().Type(), modelPartitionKey, modelKeyPrefix, "")
 	testutil.MustDo(t, "get iterator", err)
 	defer itr.Close()
 
