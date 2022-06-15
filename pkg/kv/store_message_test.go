@@ -234,11 +234,15 @@ func testStoreMessageScan(t *testing.T, ctx context.Context, sm kv.StoreMessage)
 	}
 	modelKeyPrefix := "m"
 	modelNum := 5
-	skip := 2
 
+	var testData []testItem
 	// Add test models to store
 	for i := 0; i < modelNum; i++ {
-		require.NoError(t, sm.SetMsg(ctx, modelPartitionKey, kv.FormatPath(modelKeyPrefix, strconv.Itoa(i)), m))
+		msgNew := proto.Clone(m).(*kvtest.TestModel)
+		msgNew.TestMap["special"] = int32(i)
+		key := kv.FormatPath(modelKeyPrefix, strconv.Itoa(i))
+		testData = append(testData, testItem{key, msgNew})
+		require.NoError(t, sm.SetMsg(ctx, modelPartitionKey, key, msgNew))
 	}
 
 	preModelKey := "l"
@@ -247,21 +251,54 @@ func testStoreMessageScan(t *testing.T, ctx context.Context, sm kv.StoreMessage)
 	postModelKey := "n"
 	postModelData := "This is post test model"
 	require.NoError(t, sm.Store.Set(ctx, []byte(modelPartitionKey), []byte(postModelKey), []byte(postModelData)))
-	itr, err := sm.Scan(ctx, m.ProtoReflect().Type(), modelPartitionKey, modelKeyPrefix, kv.FormatPath(modelKeyPrefix, strconv.Itoa(skip-1)))
+
+	t.Run("skip just some", func(t *testing.T) {
+		skip := 2
+		after := testData[skip-1].key
+
+		testScan(t, sm, ctx, testData, modelKeyPrefix, after, skip)
+	})
+	t.Run("skip not equal", func(t *testing.T) {
+		skip := 2
+		after := testData[skip-1].key + "_00000000000"
+
+		testScan(t, sm, ctx, testData, modelKeyPrefix, after, skip)
+	})
+	t.Run("skip all", func(t *testing.T) {
+		skip := 5
+		after := testData[skip-1].key
+
+		testScan(t, sm, ctx, testData, modelKeyPrefix, after, skip)
+	})
+	t.Run("skip none", func(t *testing.T) {
+		skip := 0
+
+		testScan(t, sm, ctx, testData, modelKeyPrefix, "", skip)
+	})
+}
+
+type testItem struct {
+	key string
+	msg *kvtest.TestModel
+}
+
+func testScan(t *testing.T, sm kv.StoreMessage, ctx context.Context, testData []testItem, modelKeyPrefix string, after string, skip int) {
+	itr, err := sm.Scan(ctx, testData[0].msg.ProtoReflect().Type(), modelPartitionKey, modelKeyPrefix, after)
 	testutil.MustDo(t, "get iterator", err)
 	defer itr.Close()
 	count := 0
 	for itr.Next() {
+		index := count + skip
 		entry := itr.Entry()
 		require.NotNil(t, entry)
 		value, ok := entry.Value.(*kvtest.TestModel)
 		require.True(t, ok)
 		require.Nil(t, itr.Err())
-		require.Equal(t, kv.FormatPath(modelKeyPrefix, strconv.Itoa(count+skip)), entry.Key)
-		require.True(t, proto.Equal(value, m))
+		require.Equal(t, testData[index].key, entry.Key)
+		require.True(t, proto.Equal(value, testData[index].msg))
 		count++
 	}
-	require.Equal(t, modelNum-skip, count)
+	require.Equal(t, len(testData)-skip, count)
 }
 
 func testStoreMessageScanWrongFormat(t *testing.T, ctx context.Context, sm kv.StoreMessage) {
