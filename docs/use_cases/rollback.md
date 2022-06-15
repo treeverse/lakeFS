@@ -21,9 +21,9 @@ Rolling back returns data to a state in the past, before the error was present. 
 
 A Rollback is used as a stopgap measure to “put out the fire” as quickly as possible while RCA (root cause analysis) is performed to understand 1) exactly how the error happened and 2) what can be done to prevent it from happening again.
 
-These can be pressured, stressful situations to deal with when a critical error happens. Having the ability to employ a rollback takes some of the pressure off, and makes it more likely you figure out what happened without creating additional issues.
+It can be a pressured, stressful situation to deal with  a critical data error. Having the ability to employ a rollback relieves some of the pressure, and makes it more likely you can figure out what happened without creating additional issues.
 
-The [14 day outage](https://devops.com/what-sres-can-learn-from-the-atlassian-outage-of-2022/) some Atlassian users experienced in May '22 could have been an uninteresting minor incident had rolling back the deleted customer data been an option.
+As a real world example, the [14 day outage](https://devops.com/what-sres-can-learn-from-the-atlassian-outage-of-2022/) some Atlassian users experienced in May '22 could have been an uninteresting minor incident had rolling back the deleted customer data been an option.
 
 ## Performing Rollbacks with lakeFS
 
@@ -35,7 +35,7 @@ To demonstrate how this works, let's take the example of a lakeFS repo with the 
 
 ![Commit History]({{ site.baseurl }}/assets/img/rollback-commit-history.png)
 
-As can be inferred from the history, this repo is updated every minute with a data sync from some data source. An example data sync is a typical ETL job that replicated data from an internal database or any other data source. After each sync, a commit is taken in lakeFS to save a snapshot of data at that point in time.
+As can be inferred from the history, this repo is updated every minute with a data sync from some data source. An example data sync is a typical ETL job that replicates data from an internal database or any other data source. After each sync, a commit is taken in lakeFS to save a snapshot of data at that point in time.
 
 ### How to Rollback From a Bad Data Sync?
 
