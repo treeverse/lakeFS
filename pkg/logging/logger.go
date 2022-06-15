@@ -50,6 +50,8 @@ const (
 	UserFieldKey = "user"
 	// ServiceNameFieldKey service name (string, ex: rest_api)
 	ServiceNameFieldKey = "service_name"
+	// LoggerName logger name (string, ex: MiddlewareLog)
+	LoggerName = "logger_name"
 )
 
 var (

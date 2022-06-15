@@ -119,6 +119,7 @@ const (
 	LoggingOutputKey        = "logging.output"
 	LoggingFileMaxSizeMBKey = "logging.file_max_size_mb"
 	LoggingFilesKeepKey     = "logging.files_keep"
+	LoggingMiddlewareLevel  = "logging.middleware_level"
 
 	ActionsEnabledKey = "actions.enabled"
 
@@ -179,6 +180,7 @@ func setDefaults() {
 	viper.SetDefault(LoggingLevelKey, DefaultLoggingLevel)
 	viper.SetDefault(LoggingOutputKey, DefaultLoggingOutput)
 	viper.SetDefault(LoggingFilesKeepKey, DefaultLoggingFilesKeepKey)
+	viper.SetDefault(LoggingMiddlewareLevel, DefaultMiddlewareLoggingLevel)
 
 	viper.SetDefault(ActionsEnabledKey, DefaultActionsEnabled)
 
