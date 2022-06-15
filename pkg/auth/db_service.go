@@ -30,6 +30,17 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+type userDetails struct {
+	name string
+	kvID string
+}
+
+type UserIDToDetails map[int64]userDetails
+
+type IDToName map[int]string
+
+var ErrExportedEntNotFound = errors.New("previously exported entitiy not found")
+
 //nolint:gochecknoinits
 func init() {
 	tablesToDrop := []string{
@@ -869,8 +880,6 @@ func (s *DBAuthService) markTokenSingleUse(ctx context.Context, tokenID string, 
 	return canUseToken, nil
 }
 
-var ErrExportedEntNotFound = errors.New("previously exported entitiy not found")
-
 func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
 	je := json.NewEncoder(writer)
 	// Create header
@@ -920,15 +929,6 @@ func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
 
 	return nil
 }
-
-type userDetails struct {
-	name string
-	kvID string
-}
-
-type UserIDToDetails map[int64]userDetails
-
-type IDToName map[int]string
 
 func exportUsers(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (UserIDToDetails, error) {
 	rows, err := d.Query(ctx, "SELECT * FROM auth_users ORDER BY created_at ASC")

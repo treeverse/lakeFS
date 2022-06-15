@@ -20,6 +20,13 @@ import (
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
+const (
+	MaxCredsPerUser = 4
+	NumUsers        = 20
+	NumGroups       = 4
+	HugePageSize    = 1000
+)
+
 func TestMigrate(t *testing.T) {
 	ctx := context.Background()
 	database, _ := testutil.GetDB(t, databaseURI)
@@ -41,10 +48,6 @@ func TestMigrate(t *testing.T) {
 
 	verifyMigrationResults(t, ctx, dbAuthService, kvAuthService)
 }
-
-const MaxCredsPerUser = 4
-const NumUsers = 20
-const NumGroups = 4
 
 func prepareTestData(t *testing.T, ctx context.Context, svc auth.Service) {
 	userNames := generateUserNames(NumUsers)
@@ -144,8 +147,6 @@ func writePolicy(t *testing.T, ctx context.Context, svc auth.Service) string {
 	return policyName
 }
 
-const hugePageSize = 1000
-
 func verifyMigrationResults(t *testing.T, ctx context.Context, srcSvc, dstSvc auth.Service) {
 	// verifying bidirectional inclusion
 	verifyInclusion(t, ctx, srcSvc, dstSvc)
@@ -161,15 +162,15 @@ func verifyInclusion(t *testing.T, ctx context.Context, svc, otherSvc auth.Servi
 
 // verifyUsersInclusion - verifies all users and their correlated entities from svc exist in otherSvc
 func verifyUsersInclusion(t *testing.T, ctx context.Context, svc, otherSvc auth.Service) {
-	users, _, err := svc.ListUsers(ctx, &model.PaginationParams{Amount: hugePageSize})
+	users, _, err := svc.ListUsers(ctx, &model.PaginationParams{Amount: HugePageSize})
 	require.NoError(t, err)
 	for _, user := range users {
 		_, err := otherSvc.GetUser(ctx, user.Username)
 		require.NoError(t, err)
 
-		groups, _, err := svc.ListUserGroups(ctx, user.Username, &model.PaginationParams{Amount: hugePageSize})
+		groups, _, err := svc.ListUserGroups(ctx, user.Username, &model.PaginationParams{Amount: HugePageSize})
 		require.NoError(t, err)
-		otherGroups, _, err := otherSvc.ListUserGroups(ctx, user.Username, &model.PaginationParams{Amount: hugePageSize})
+		otherGroups, _, err := otherSvc.ListUserGroups(ctx, user.Username, &model.PaginationParams{Amount: HugePageSize})
 		require.NoError(t, err)
 		require.Equal(t, len(groups), len(otherGroups), "User groups length")
 		groupsSet := make(map[string]bool)
@@ -180,9 +181,9 @@ func verifyUsersInclusion(t *testing.T, ctx context.Context, svc, otherSvc auth.
 			require.True(t, groupsSet[group.DisplayName], "Expected group for user not found", group.DisplayName)
 		}
 
-		policies, _, err := svc.ListUserPolicies(ctx, user.Username, &model.PaginationParams{Amount: hugePageSize})
+		policies, _, err := svc.ListUserPolicies(ctx, user.Username, &model.PaginationParams{Amount: HugePageSize})
 		require.NoError(t, err)
-		otherPolicies, _, err := otherSvc.ListUserPolicies(ctx, user.Username, &model.PaginationParams{Amount: hugePageSize})
+		otherPolicies, _, err := otherSvc.ListUserPolicies(ctx, user.Username, &model.PaginationParams{Amount: HugePageSize})
 		require.NoError(t, err)
 		require.Equal(t, len(policies), len(otherPolicies), "User policies length")
 		policiesSet := make(map[string]bool)
@@ -193,9 +194,9 @@ func verifyUsersInclusion(t *testing.T, ctx context.Context, svc, otherSvc auth.
 			require.True(t, policiesSet[policy.DisplayName], "Expected policy for user not found", policy.DisplayName)
 		}
 
-		effectivePolicies, _, err := svc.ListEffectivePolicies(ctx, user.Username, &model.PaginationParams{Amount: hugePageSize})
+		effectivePolicies, _, err := svc.ListEffectivePolicies(ctx, user.Username, &model.PaginationParams{Amount: HugePageSize})
 		require.NoError(t, err)
-		otherEffectivePolicies, _, err := otherSvc.ListEffectivePolicies(ctx, user.Username, &model.PaginationParams{Amount: hugePageSize})
+		otherEffectivePolicies, _, err := otherSvc.ListEffectivePolicies(ctx, user.Username, &model.PaginationParams{Amount: HugePageSize})
 		require.NoError(t, err)
 		require.Equal(t, len(effectivePolicies), len(otherEffectivePolicies), "User effective policies length")
 		effectivePoliciesSet := make(map[string]bool)
@@ -206,9 +207,9 @@ func verifyUsersInclusion(t *testing.T, ctx context.Context, svc, otherSvc auth.
 			require.True(t, effectivePoliciesSet[policy.DisplayName], "Expected effective policy for user not found", policy.DisplayName)
 		}
 
-		creds, _, err := svc.ListUserCredentials(ctx, user.Username, &model.PaginationParams{Amount: hugePageSize})
+		creds, _, err := svc.ListUserCredentials(ctx, user.Username, &model.PaginationParams{Amount: HugePageSize})
 		require.NoError(t, err)
-		otherCreds, _, err := otherSvc.ListUserCredentials(ctx, user.Username, &model.PaginationParams{Amount: hugePageSize})
+		otherCreds, _, err := otherSvc.ListUserCredentials(ctx, user.Username, &model.PaginationParams{Amount: HugePageSize})
 		require.NoError(t, err)
 		require.Equal(t, len(creds), len(otherCreds), "User credentials length")
 		credsMap := make(map[string][]byte)
@@ -225,15 +226,15 @@ func verifyUsersInclusion(t *testing.T, ctx context.Context, svc, otherSvc auth.
 
 // verifyGroupsInclusion - verifies all groups and their correlated entities from svc exist in otherSvc
 func verifyGroupsInclusion(t *testing.T, ctx context.Context, svc, otherSvc auth.Service) {
-	groups, _, err := svc.ListGroups(ctx, &model.PaginationParams{Amount: hugePageSize})
+	groups, _, err := svc.ListGroups(ctx, &model.PaginationParams{Amount: HugePageSize})
 	require.NoError(t, err)
 	for _, group := range groups {
 		_, err := otherSvc.GetGroup(ctx, group.DisplayName)
 		require.NoError(t, err)
 
-		users, _, err := svc.ListGroupUsers(ctx, group.DisplayName, &model.PaginationParams{Amount: hugePageSize})
+		users, _, err := svc.ListGroupUsers(ctx, group.DisplayName, &model.PaginationParams{Amount: HugePageSize})
 		require.NoError(t, err)
-		otherUsers, _, err := otherSvc.ListGroupUsers(ctx, group.DisplayName, &model.PaginationParams{Amount: hugePageSize})
+		otherUsers, _, err := otherSvc.ListGroupUsers(ctx, group.DisplayName, &model.PaginationParams{Amount: HugePageSize})
 		require.NoError(t, err)
 		require.Equal(t, len(users), len(otherUsers), "Group users length")
 		usersSet := make(map[string]bool)
@@ -244,9 +245,9 @@ func verifyGroupsInclusion(t *testing.T, ctx context.Context, svc, otherSvc auth
 			require.True(t, usersSet[user.Username], "Expected user for group not found", group.DisplayName)
 		}
 
-		policies, _, err := svc.ListGroupPolicies(ctx, group.DisplayName, &model.PaginationParams{Amount: hugePageSize})
+		policies, _, err := svc.ListGroupPolicies(ctx, group.DisplayName, &model.PaginationParams{Amount: HugePageSize})
 		require.NoError(t, err)
-		otherPolicies, _, err := otherSvc.ListGroupPolicies(ctx, group.DisplayName, &model.PaginationParams{Amount: hugePageSize})
+		otherPolicies, _, err := otherSvc.ListGroupPolicies(ctx, group.DisplayName, &model.PaginationParams{Amount: HugePageSize})
 		require.NoError(t, err)
 		require.Equal(t, len(policies), len(otherPolicies), "User policies length")
 		policiesSet := make(map[string]bool)
@@ -261,7 +262,7 @@ func verifyGroupsInclusion(t *testing.T, ctx context.Context, svc, otherSvc auth
 
 // verifyPoliciesInclusion - verifies all policies from svc exist in otherSvc and are identical
 func verifyPoliciesInclusion(t *testing.T, ctx context.Context, svc, otherSvc auth.Service) {
-	policies, _, err := svc.ListPolicies(ctx, &model.PaginationParams{Amount: hugePageSize})
+	policies, _, err := svc.ListPolicies(ctx, &model.PaginationParams{Amount: HugePageSize})
 	require.NoError(t, err)
 	for _, policy := range policies {
 		otherPolicy, err := otherSvc.GetPolicy(ctx, policy.DisplayName)
