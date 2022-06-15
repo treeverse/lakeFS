@@ -27,7 +27,7 @@ To read data at it’s current state, we can use a static path containing the re
 ```bash
 df = spark.read.parquet(‘s3://example/main/”)
 ```
-Note the code above assumes that all objects in the repository are stored in parquet format. If a different format is used, the applicable Spark read method should be used.
+Note the code above assumes that all objects in the repository under this path are stored in parquet format. If a different format is used, the applicable Spark read method should be used.
 {: .note }
 
 In a lakeFS repository, we are capable of taking many commits over the data, making many points in time reproducible. 
@@ -39,7 +39,7 @@ In the repository shown above, a new commit is taken each time a model training 
 If we wanted to re-run the model training script and reproduce the exact same results for a historical run, say run #435, we could copy the commit ID associated with the run and read the data into a dataframe like so:
 
 ```bash
-df = spark.read.parquet("s3://example/296e54fbee5e176f3f4f4aeb7e087f9d57515750e8c3d033b8b841778613cb23”)
+df = spark.read.parquet("s3://example/296e54fbee5e176f3f4f4aeb7e087f9d57515750e8c3d033b8b841778613cb23/training_dataset/”)
 ```
 
 The ability to reference a specific `commit_id` in code makes reproducing the specific state a data collection, or even multiple collections, simple. This has many applications common in data development, such as when doing historical debugging, identifying deltas in a data collection, audit compliance, and more.
