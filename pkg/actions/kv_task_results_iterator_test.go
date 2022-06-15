@@ -32,7 +32,7 @@ func TestTaskResultsIterator(t *testing.T) {
 		{
 			name:  "after key",
 			runID: rand.Intn(100),
-			after: 20,
+			after: 19,
 			count: 80,
 		},
 		{
@@ -55,7 +55,7 @@ func TestTaskResultsIterator(t *testing.T) {
 			after := ""
 			if tt.after >= 0 {
 				after = actions.NewHookRunID(tt.runID, tt.after)
-				taskID = tt.after
+				taskID = tt.after + 1
 			}
 			itr, err := actions.NewKVTaskResultIterator(ctx, kvStore, iteratorTestRepoID, runID, after)
 			require.NoError(t, err)
