@@ -12,12 +12,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v4/pgxpool"
-	"google.golang.org/protobuf/proto"
-
 	sq "github.com/Masterminds/squirrel"
 	"github.com/georgysavva/scany/pgxscan"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/keys"
 	"github.com/treeverse/lakefs/pkg/auth/model"
@@ -28,6 +26,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/version"
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/protobuf/proto"
 )
 
 //nolint:gochecknoinits
@@ -853,6 +852,8 @@ func (s *DBAuthService) markTokenSingleUse(ctx context.Context, tokenID string, 
 	return canUseToken, nil
 }
 
+var ErrExportedEntNotFound = errors.New("previously exported entitiy not found")
+
 func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
 	je := json.NewEncoder(writer)
 	// Create header
@@ -865,34 +866,34 @@ func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
 		return err
 	}
 
-	userID2Details, err := exportUsers(ctx, d, je)
+	userIDToDetails, err := exportUsers(ctx, d, je)
 	if err != nil {
 		return err
 	}
 
-	groupID2Name, err := exportGroups(ctx, d, je)
+	groupIDToName, err := exportGroups(ctx, d, je)
 	if err != nil {
 		return err
 	}
 
-	policyID2Name, err := exportPolicies(ctx, d, je)
+	policyIDToName, err := exportPolicies(ctx, d, je)
 	if err != nil {
 		return err
 	}
 
-	if err = exportUserGroups(ctx, d, je, userID2Details, groupID2Name); err != nil {
+	if err = exportUserGroups(ctx, d, je, userIDToDetails, groupIDToName); err != nil {
 		return err
 	}
 
-	if err = exportUserPolicies(ctx, d, je, userID2Details, policyID2Name); err != nil {
+	if err = exportUserPolicies(ctx, d, je, userIDToDetails, policyIDToName); err != nil {
 		return err
 	}
 
-	if err = exportGroupPolicies(ctx, d, je, groupID2Name, policyID2Name); err != nil {
+	if err = exportGroupPolicies(ctx, d, je, groupIDToName, policyIDToName); err != nil {
 		return err
 	}
 
-	if err = exportCredentials(ctx, d, je, userID2Details); err != nil {
+	if err = exportCredentials(ctx, d, je, userIDToDetails); err != nil {
 		return err
 	}
 
@@ -914,7 +915,7 @@ func exportUsers(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (UserID
 		return nil, err
 	}
 	defer rows.Close()
-	userID2Details := make(UserIDToDetails)
+	userIDToDetails := make(UserIDToDetails)
 	scanner := pgxscan.NewRowScanner(rows)
 	for rows.Next() {
 		dbUser := model.DBUser{}
@@ -940,12 +941,12 @@ func exportUsers(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (UserID
 			return nil, err
 		}
 
-		userID2Details[dbUser.ID] = userDetails{
+		userIDToDetails[dbUser.ID] = userDetails{
 			kvID: kvUser.ID,
 			name: kvUser.Username,
 		}
 	}
-	return userID2Details, nil
+	return userIDToDetails, nil
 }
 
 func exportGroups(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (IDToName, error) {
@@ -954,7 +955,7 @@ func exportGroups(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (IDToN
 		return nil, err
 	}
 	defer rows.Close()
-	groupID2Name := make(IDToName)
+	groupIDToName := make(IDToName)
 	scanner := pgxscan.NewRowScanner(rows)
 	for rows.Next() {
 		dbGroup := model.DBGroup{}
@@ -979,9 +980,9 @@ func exportGroups(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (IDToN
 		}); err != nil {
 			return nil, err
 		}
-		groupID2Name[dbGroup.ID] = dbGroup.DisplayName
+		groupIDToName[dbGroup.ID] = dbGroup.DisplayName
 	}
-	return groupID2Name, nil
+	return groupIDToName, nil
 }
 
 func exportPolicies(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (IDToName, error) {
@@ -990,7 +991,7 @@ func exportPolicies(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (IDT
 		return nil, err
 	}
 	defer rows.Close()
-	policyID2Name := make(IDToName)
+	policyIDToName := make(IDToName)
 	scanner := pgxscan.NewRowScanner(rows)
 	for rows.Next() {
 		dbPolicy := model.DBPolicy{}
@@ -1010,9 +1011,9 @@ func exportPolicies(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (IDT
 		}); err != nil {
 			return nil, err
 		}
-		policyID2Name[dbPolicy.ID] = dbPolicy.DisplayName
+		policyIDToName[dbPolicy.ID] = dbPolicy.DisplayName
 	}
-	return policyID2Name, nil
+	return policyIDToName, nil
 }
 
 func exportUserGroups(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, usersDetails UserIDToDetails, groupsNames IDToName) error {
@@ -1032,8 +1033,16 @@ func exportUserGroups(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, us
 		if err != nil {
 			return err
 		}
-		username := usersDetails[ug.UserID].name
-		key := model.KVUserToGroup(groupsNames[ug.GroupID], username)
+		userDetails, ok := usersDetails[ug.UserID]
+		if !ok {
+			return fmt.Errorf("user ID %d: %w", ug.UserID, ErrExportedEntNotFound)
+		}
+		groupName, ok := groupsNames[ug.GroupID]
+		if !ok {
+			return fmt.Errorf("group ID %d: %w", ug.GroupID, ErrExportedEntNotFound)
+		}
+		username := userDetails.name
+		key := model.KVUserToGroup(groupName, username)
 		secIndex := kv.SecondaryIndex{PrimaryKey: []byte(model.KVUserPath(username))}
 		value, err := proto.Marshal(&secIndex)
 		if err != nil {
@@ -1067,8 +1076,15 @@ func exportUserPolicies(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, 
 		if err != nil {
 			return err
 		}
-		policyName := policiesNames[up.PolicyID]
-		key := model.KVPolicyToUser(usersDetails[up.UserID].name, policyName)
+		policyName, ok := policiesNames[up.PolicyID]
+		if !ok {
+			return fmt.Errorf("policy ID %d: %w", up.PolicyID, ErrExportedEntNotFound)
+		}
+		userDetails, ok := usersDetails[up.UserID]
+		if !ok {
+			return fmt.Errorf("user ID %d: %w", up.UserID, ErrExportedEntNotFound)
+		}
+		key := model.KVPolicyToUser(userDetails.name, policyName)
 		secIndex := kv.SecondaryIndex{PrimaryKey: []byte(model.KVPolicyPath(policyName))}
 		value, err := proto.Marshal(&secIndex)
 		if err != nil {
@@ -1102,8 +1118,15 @@ func exportGroupPolicies(ctx context.Context, d *pgxpool.Pool, je *json.Encoder,
 		if err != nil {
 			return err
 		}
-		policyName := policiesNames[gp.PolicyID]
-		key := model.KVPolicyToGroup(groupsNames[gp.GroupID], policyName)
+		policyName, ok := policiesNames[gp.PolicyID]
+		if !ok {
+			return fmt.Errorf("policy ID %d: %w", gp.PolicyID, ErrExportedEntNotFound)
+		}
+		groupName, ok := groupsNames[gp.GroupID]
+		if !ok {
+			return fmt.Errorf("group ID %d: %w", gp.GroupID, ErrExportedEntNotFound)
+		}
+		key := model.KVPolicyToGroup(groupName, policyName)
 		secIndex := kv.SecondaryIndex{PrimaryKey: []byte(model.KVUserPath(model.KVPolicyPath(policyName)))}
 		value, err := proto.Marshal(&secIndex)
 		if err != nil {
@@ -1120,7 +1143,7 @@ func exportGroupPolicies(ctx context.Context, d *pgxpool.Pool, je *json.Encoder,
 	return nil
 }
 
-func exportCredentials(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, userID2Details UserIDToDetails) error {
+func exportCredentials(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, userIDToDetails UserIDToDetails) error {
 	// Credentials
 	rows, err := d.Query(ctx, "SELECT * from auth_credentials")
 	if err != nil {
@@ -1134,11 +1157,15 @@ func exportCredentials(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, u
 		if err != nil {
 			return err
 		}
+		userDetails, ok := userIDToDetails[dbCred.UserID]
+		if !ok {
+			return fmt.Errorf("user ID %d: %w", dbCred.UserID, ErrExportedEntNotFound)
+		}
 		kvCred := &model.Credential{
-			UserID:         userID2Details[dbCred.UserID].kvID,
+			UserID:         userDetails.kvID,
 			BaseCredential: dbCred.BaseCredential,
 		}
-		key := model.KVCredentialPath(userID2Details[dbCred.UserID].name, dbCred.AccessKeyID)
+		key := model.KVCredentialPath(userDetails.name, dbCred.AccessKeyID)
 		value, err := proto.Marshal(model.ProtoFromCredential(kvCred))
 		if err != nil {
 			return err
