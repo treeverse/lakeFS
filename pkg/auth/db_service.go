@@ -32,7 +32,17 @@ import (
 
 //nolint:gochecknoinits
 func init() {
-	kvpg.RegisterMigrate(model.PackageName, Migrate, []string{"TBD - tables to drop"})
+	tablesToDrop := []string{
+		"auth_users",
+		"auth_groups",
+		"auth_policies",
+		"auth_user_groups",
+		"auth_user_policies",
+		"auth_group_policies",
+		"auth_credentials",
+		"auth_expired_tokens",
+	}
+	kvpg.RegisterMigrate(model.PackageName, Migrate, tablesToDrop)
 }
 
 func ListPaged(ctx context.Context, db db.Querier, retType reflect.Type, params *model.PaginationParams, tokenColumnName string, queryBuilder sq.SelectBuilder) (*reflect.Value, *model.Paginator, error) {
