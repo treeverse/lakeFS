@@ -988,7 +988,6 @@ func exportGroups(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (IDToN
 			ID:        uuid.New().String(),
 			BaseGroup: dbGroup.BaseGroup,
 		}
-		model.ConvertGroup(&dbGroup)
 		key := model.GroupPath(dbGroup.DisplayName)
 		value, err := proto.Marshal(model.ProtoFromGroup(kvGroup))
 		if err != nil {
