@@ -22,7 +22,7 @@ See here, to [learn more about applying Git principles to data](https://lakefs.i
 
 The open source lakeFS project supports AWS S3, Azure Blob Storage and Google Cloud Storage (GCS) as its underlying storage service. It is API compatible with S3 and integrates seamlessly with popular data frameworks such as Spark, Hive, dbt, Trino, and many others.
 
-## NEW lakeFS Playground
+## lakeFS Playground
 
 Experience lakeFS first hand with your own isolated environment. You can easily integrate it with your existing tools, and feel lakeFS in action in an environment similar to your own.
 
