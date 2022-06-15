@@ -27,7 +27,7 @@ const (
 	usersPrefix            = "users"
 	policiesPrefix         = "policies"
 	usersPoliciesPrefix    = "users_policies"
-	usersCredentialsPrefix = "users_credentials"
+	usersCredentialsPrefix = "users_credentials" //#nosec G101 -- False positive: this is only a kv key prefix
 	credentialsPrefix      = "credentials"
 	ExpiredTokensPrefix    = "expired_tokens"
 )
