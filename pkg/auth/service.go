@@ -64,6 +64,7 @@ type GatewayService interface {
 
 type Service interface {
 	SecretStore() crypt.SecretStore
+	Cache() Cache
 
 	// users
 	CreateUser(ctx context.Context, user *model.BaseUser) (string, error)
@@ -201,6 +202,10 @@ func NewKVAuthService(store kv.StoreMessage, secretStore crypt.SecretStore, cach
 
 func (s *KVAuthService) SecretStore() crypt.SecretStore {
 	return s.secretStore
+}
+
+func (s *KVAuthService) Cache() Cache {
+	return s.cache
 }
 
 func (s *KVAuthService) CreateUser(ctx context.Context, user *model.BaseUser) (string, error) {
@@ -397,13 +402,7 @@ func (s *KVAuthService) DetachPolicyFromUser(ctx context.Context, policyDisplayN
 	if _, err := s.GetPolicy(ctx, policyDisplayName); err != nil {
 		return err
 	}
-
-	pu := model.UserPolicyPath(username, policyDisplayName)
-	err := s.store.DeleteMsg(ctx, model.PartitionKey, pu)
-	if err != nil {
-		return fmt.Errorf("detaching policy: (key %s): %w", pu, err)
-	}
-	return nil
+	return s.DetachPolicyFromUserNoValidation(ctx, policyDisplayName, username)
 }
 
 func (s *KVAuthService) ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
@@ -501,10 +500,16 @@ func (s *KVAuthService) getEffectivePolicies(ctx context.Context, username strin
 }
 
 func (s *KVAuthService) ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+	return ListEffectivePolicies(ctx, username, params, s.getEffectivePolicies, s.cache)
+}
+
+type effectivePoliciesGetter func(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error)
+
+func ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams, getEffectivePolicies effectivePoliciesGetter, cache Cache) ([]*model.BasePolicy, *model.Paginator, error) {
 	if params.Amount == -1 {
 		// read through the cache when requesting the full list
-		policies, err := s.cache.GetUserPolicies(username, func() ([]*model.BasePolicy, error) {
-			policies, _, err := s.getEffectivePolicies(ctx, username, params)
+		policies, err := cache.GetUserPolicies(username, func() ([]*model.BasePolicy, error) {
+			policies, _, err := getEffectivePolicies(ctx, username, params)
 			return policies, err
 		})
 		if err != nil {
@@ -513,7 +518,7 @@ func (s *KVAuthService) ListEffectivePolicies(ctx context.Context, username stri
 		return policies, &model.Paginator{Amount: len(policies)}, nil
 	}
 
-	return s.getEffectivePolicies(ctx, username, params)
+	return getEffectivePolicies(ctx, username, params)
 }
 
 func (s *KVAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
@@ -657,13 +662,7 @@ func (s *KVAuthService) RemoveUserFromGroup(ctx context.Context, username, group
 	if _, err := s.GetGroup(ctx, groupDisplayName); err != nil {
 		return err
 	}
-
-	gu := model.GroupUserPath(groupDisplayName, username)
-	err := s.store.DeleteMsg(ctx, model.PartitionKey, gu)
-	if err != nil {
-		return fmt.Errorf("remove user from group: (key %s): %w", gu, err)
-	}
-	return err
+	return s.removeUserFromGroupNoValidation(ctx, username, groupDisplayName)
 }
 
 func (s *KVAuthService) ListUserGroups(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error) {
@@ -926,13 +925,7 @@ func (s *KVAuthService) DetachPolicyFromGroup(ctx context.Context, policyDisplay
 	if _, err := s.GetPolicy(ctx, policyDisplayName); err != nil {
 		return err
 	}
-
-	pg := model.GroupPolicyPath(groupDisplayName, policyDisplayName)
-	err := s.store.DeleteMsg(ctx, model.PartitionKey, pg)
-	if err != nil {
-		return fmt.Errorf("policy detachment to group: (key %s): %w", pg, err)
-	}
-	return err
+	return s.DetachPolicyFromGroupNoValidation(ctx, policyDisplayName, groupDisplayName)
 }
 
 func (s *KVAuthService) GetCredentialsForUser(ctx context.Context, username, accessKeyID string) (*model.Credential, error) {
@@ -1098,8 +1091,12 @@ func (s *KVAuthService) Authorize(ctx context.Context, req *AuthorizationRequest
 }
 
 func (s *KVAuthService) ClaimTokenIDOnce(ctx context.Context, tokenID string, expiresAt int64) error {
+	return ClaimTokenIDOnce(ctx, tokenID, expiresAt, s.markTokenSingleUse)
+}
+
+func ClaimTokenIDOnce(ctx context.Context, tokenID string, expiresAt int64, markTokenSingleUse func(context.Context, string, time.Time) (bool, error)) error {
 	tokenExpiresAt := time.Unix(expiresAt, 0)
-	canUseToken, err := s.markTokenSingleUse(ctx, tokenID, tokenExpiresAt)
+	canUseToken, err := markTokenSingleUse(ctx, tokenID, tokenExpiresAt)
 	if err != nil {
 		return err
 	}
@@ -1129,6 +1126,10 @@ type APIAuthService struct {
 
 func (a *APIAuthService) SecretStore() crypt.SecretStore {
 	return a.secretStore
+}
+
+func (a *APIAuthService) Cache() Cache {
+	return a.cache
 }
 
 func (a *APIAuthService) CreateUser(ctx context.Context, user *model.BaseUser) (string, error) {
@@ -1727,9 +1728,7 @@ func (a *APIAuthService) ListEffectivePolicies(ctx context.Context, username str
 	if params.Amount == -1 {
 		// read through the cache when requesting the full list
 		policies, err := a.cache.GetUserPolicies(username, func() ([]*model.BasePolicy, error) {
-			p, err := a.listAllEffectivePolicies(ctx, username)
-
-			return p, err
+			return a.listAllEffectivePolicies(ctx, username)
 		})
 		if err != nil {
 			return nil, nil, err

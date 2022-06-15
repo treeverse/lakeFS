@@ -145,6 +145,10 @@ func (s *DBAuthService) SecretStore() crypt.SecretStore {
 	return s.secretStore
 }
 
+func (s *DBAuthService) Cache() Cache {
+	return s.cache
+}
+
 func (s *DBAuthService) DB() db.Database {
 	return s.db
 }
@@ -338,19 +342,7 @@ func (s *DBAuthService) getEffectivePolicies(ctx context.Context, username strin
 }
 
 func (s *DBAuthService) ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
-	if params.Amount == -1 {
-		// read through the cache when requesting the full list
-		policies, err := s.cache.GetUserPolicies(username, func() ([]*model.BasePolicy, error) {
-			policies, _, err := s.getEffectivePolicies(ctx, username, params)
-			return policies, err
-		})
-		if err != nil {
-			return nil, nil, err
-		}
-		return policies, &model.Paginator{Amount: len(policies)}, nil
-	}
-
-	return s.getEffectivePolicies(ctx, username, params)
+	return ListEffectivePolicies(ctx, username, params, s.getEffectivePolicies, s.cache)
 }
 
 func (s *DBAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
@@ -811,15 +803,7 @@ func (s *DBAuthService) Authorize(ctx context.Context, req *AuthorizationRequest
 }
 
 func (s *DBAuthService) ClaimTokenIDOnce(ctx context.Context, tokenID string, expiresAt int64) error {
-	tokenExpiresAt := time.Unix(expiresAt, 0)
-	canUseToken, err := s.markTokenSingleUse(ctx, tokenID, tokenExpiresAt)
-	if err != nil {
-		return err
-	}
-	if !canUseToken {
-		return ErrInvalidToken
-	}
-	return nil
+	return ClaimTokenIDOnce(ctx, tokenID, expiresAt, s.markTokenSingleUse)
 }
 
 // markTokenSingleUse returns true if token is valid for single use
