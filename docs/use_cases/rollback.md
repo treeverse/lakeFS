@@ -23,7 +23,7 @@ A Rollback is used as a stopgap measure to “put out the fire” as quickly as 
 
 These can be pressured, stressful situations to deal with when a critical error happens. Having the ability to employ a rollback takes some of the pressure off, and makes it more likely you figure out what happened without creating additional issues.
 
-The co-creators of lakeFS like to tell a story about [deleting petabytes of data](https://www.dataengineeringpodcast.com/lakefs-data-lake-versioning-episode-157/) in their data lake and it taking days to recover from. Havingthe capaibility to rollback over their data lake would have improved the response to that accidental deletion event. Similarly, the [14 day outage](https://devops.com/what-sres-can-learn-from-the-atlassian-outage-of-2022/) some Atlassian users experienced in May '22 could have been a minor incident had rolling back deleted data been an option.
+The [14 day outage](https://devops.com/what-sres-can-learn-from-the-atlassian-outage-of-2022/) some Atlassian users experienced in May '22 could have been an uninteresting minor incident had rolling back the deleted customer data been an option.
 
 ## Performing Rollbacks with lakeFS
 
