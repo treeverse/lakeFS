@@ -31,7 +31,7 @@ import (
 
 //nolint:gochecknoinits
 func init() {
-	kvpg.RegisterMigrate(model.AuthPrefix, Migrate, []string{"TBD - tables to drop"})
+	kvpg.RegisterMigrate(model.PackageName, Migrate, []string{"TBD - tables to drop"})
 }
 
 func ListPaged(ctx context.Context, db db.Querier, retType reflect.Type, params *model.PaginationParams, tokenColumnName string, queryBuilder sq.SelectBuilder) (*reflect.Value, *model.Paginator, error) {
@@ -859,7 +859,7 @@ func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
 	// Create header
 	if err := je.Encode(kv.Header{
 		LakeFSVersion:   version.Version,
-		PackageName:     model.AuthPrefix,
+		PackageName:     model.PackageName,
 		DBSchemaVersion: kv.InitialMigrateVersion,
 		CreatedAt:       time.Now().UTC(),
 	}); err != nil {

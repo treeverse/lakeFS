@@ -20,6 +20,7 @@ const (
 	StatementEffectAllow   = "allow"
 	StatementEffectDeny    = "deny"
 	PartitionKey           = "auth"
+	PackageName            = "auth"
 	groupsPrefix           = "groups"
 	groupsUsersPrefix      = "groups_users"
 	groupsPoliciesPrefix   = "groups_policies"
