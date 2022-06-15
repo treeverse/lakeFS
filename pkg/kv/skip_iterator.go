@@ -2,6 +2,8 @@ package kv
 
 import "bytes"
 
+// SkipFirstIterator will keep the behaviour of the given EntriesIterator,
+// except for skipping the first Entry if its Key is equal to 'after'.
 type SkipFirstIterator struct {
 	it         EntriesIterator
 	after      []byte
