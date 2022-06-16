@@ -129,7 +129,8 @@ components:
         encryptedPassword:
           type: string
           format: byte
-
+        external_id:
+          type: string
     UserPassword:
       type: object
       required:
@@ -153,6 +154,8 @@ components:
         encryptedPassword:
           type: string
           format: byte
+        external_id:
+          type: string
       required:
         - username
 

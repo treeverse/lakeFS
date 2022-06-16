@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/gorilla/sessions"
 	nanoid "github.com/matoous/go-nanoid/v2"
@@ -19,9 +20,28 @@ const (
 	stateLength = 22
 )
 
+func doOIDCLogout(w http.ResponseWriter, r *http.Request, sessionStore sessions.Store) error {
+	session, err := sessionStore.Get(r, OIDCAuthSessionName)
+	if err != nil {
+		return err
+	}
+	session.Values = nil
+	return session.Save(r, w)
+}
+
 // NewOIDCLoginPageHandler returns a handler to redirect the user the OIDC provider's login page.
-func NewOIDCLoginPageHandler(sessionStore sessions.Store, oauthConfig *oauth2.Config, logger logging.Logger) http.HandlerFunc {
+func NewOIDCLoginPageHandler(sessionStore sessions.Store, oauthConfig *oauth2.Config, logger logging.Logger, cookieDomain string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// clear internal authentication cookie
+		http.SetCookie(w, &http.Cookie{
+			Name:     JWTCookieName,
+			Value:    "",
+			Domain:   cookieDomain,
+			Path:     "/",
+			HttpOnly: true,
+			Expires:  time.Unix(0, 0),
+			SameSite: http.SameSiteStrictMode,
+		})
 		state, err := nanoid.New(stateLength)
 		if err != nil {
 			logger.Errorf("failed to generate state for oidc: %w", err)

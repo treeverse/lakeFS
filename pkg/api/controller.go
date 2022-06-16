@@ -175,13 +175,7 @@ func (c *Controller) Logout(w http.ResponseWriter, r *http.Request) {
 		Expires:  time.Unix(0, 0),
 		SameSite: http.SameSiteStrictMode,
 	})
-	session, err := c.sessionStore.Get(r, OIDCAuthSessionName)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
-		return
-	}
-	session.Values = nil
-	err = session.Save(r, w)
+	err := doOIDCLogout(w, r, c.sessionStore)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
@@ -217,6 +211,10 @@ func (c *Controller) OauthCallback(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSONRequestBody) {
+	err := doOIDCLogout(w, r, c.sessionStore)
+	if err != nil {
+		c.Logger.WithError(err).Error("failed to perform OIDC logout")
+	}
 	ctx := r.Context()
 	user, err := userByAuth(ctx, c.Logger, c.Authenticator, c.Auth, body.AccessKeyId, body.SecretAccessKey)
 	if errors.Is(err, ErrAuthenticatingRequest) {
@@ -534,6 +532,7 @@ func (c *Controller) ListGroupMembers(w http.ResponseWriter, r *http.Request, gr
 		response.Results = append(response.Results, User{
 			Id:           u.Username,
 			CreationDate: u.CreatedAt.Unix(),
+			Email:        u.Email,
 		})
 	}
 	writeResponse(w, http.StatusOK, response)

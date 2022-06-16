@@ -10,6 +10,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/routers"
 	"github.com/getkin/kin-openapi/routers/legacy"
+	"github.com/go-openapi/swag"
 	"github.com/golang-jwt/jwt"
 	"github.com/gorilla/sessions"
 	"github.com/treeverse/lakefs/pkg/auth"
@@ -123,6 +124,13 @@ func checkSecurityRequirements(r *http.Request,
 	return nil, nil
 }
 
+func enhanceWithFriendlyName(user *model.User, friendlyName string) *model.User {
+	if friendlyName != "" {
+		user.FriendlyName = swag.String(friendlyName)
+	}
+	return user
+}
+
 // userFromOIDC returns a user from an existing OIDC session.
 // If the user doesn't exist on the lakeFS side, it is created.
 // This function does not make any calls to an external provider.
@@ -136,14 +144,17 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 		logger.WithField("sub", idTokenClaims["sub"]).Error("Failed type assertion for sub claim")
 		return nil, ErrAuthenticatingRequest
 	}
+	friendlyName := ""
+	if oidcConfig.FriendlyNameClaimName != "" {
+		friendlyName, _ = idTokenClaims[oidcConfig.FriendlyNameClaimName].(string)
+	}
 	user, err := authService.GetUser(ctx, externalID)
 	if err == nil {
-		return user, nil
+		return enhanceWithFriendlyName(user, friendlyName), nil
 	}
 	if !errors.Is(err, auth.ErrNotFound) {
 		return nil, err
 	}
-
 	u := model.BaseUser{
 		CreatedAt:  time.Now().UTC(),
 		Source:     "oidc",
@@ -151,12 +162,16 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 		ExternalID: &externalID,
 	}
 	userID, err := authService.CreateUser(ctx, &u)
-
 	if err != nil {
-		if errors.Is(err, db.ErrAlreadyExists) {
-			return authService.GetUser(ctx, externalID)
+		if !errors.Is(err, db.ErrAlreadyExists) {
+			return nil, err
 		}
-		return nil, err
+		// user already exists - get it:
+		user, err = authService.GetUser(ctx, externalID)
+		if err != nil {
+			return nil, err
+		}
+		return enhanceWithFriendlyName(user, friendlyName), nil
 	}
 	initialGroups := oidcConfig.DefaultInitialGroups
 	if userInitialGroups, ok := idTokenClaims[oidcConfig.InitialGroupsClaimName].(string); ok {
@@ -168,11 +183,10 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 			return nil, err
 		}
 	}
-
-	return &model.User{
+	return enhanceWithFriendlyName(&model.User{
 		ID:       userID,
 		BaseUser: u,
-	}, nil
+	}, friendlyName), nil
 }
 
 func userByToken(ctx context.Context, logger logging.Logger, authService auth.Service, tokenString string) (*model.User, error) {
