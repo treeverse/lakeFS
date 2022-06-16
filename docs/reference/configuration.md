@@ -13,7 +13,7 @@ has_children: false
 {% include toc.html %}
 
 Configuring lakeFS is done using a yaml configuration file and/or environment variable.
-The configuration file location can be set with the '--config' flag. If not specified, the the first file found in the following order will be used:
+The configuration file location can be set with the '--config' flag. If not specified, the first file found in the following order will be used:
 1. ./config.yaml
 1. `$HOME`/lakefs/config.yaml
 1. /etc/lakefs/config.yaml
