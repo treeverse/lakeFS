@@ -20,13 +20,14 @@ const (
 	StatementEffectAllow   = "allow"
 	StatementEffectDeny    = "deny"
 	PartitionKey           = "auth"
+	PackageName            = "auth"
 	groupsPrefix           = "groups"
 	groupsUsersPrefix      = "gUsers"
 	groupsPoliciesPrefix   = "gPolicies"
 	usersPrefix            = "users"
 	policiesPrefix         = "policies"
 	usersPoliciesPrefix    = "uPolicies"
-	usersCredentialsPrefix = "uCredentials"
+	usersCredentialsPrefix = "uCredentials" //#nosec G101 -- False positive: this is only a kv key prefix
 	credentialsPrefix      = "credentials"
 	ExpiredTokensPrefix    = "expiredTokens"
 )

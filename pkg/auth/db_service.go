@@ -4,21 +4,56 @@ package auth
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"reflect"
+	"strconv"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/georgysavva/scany/pgxscan"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/keys"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/db"
+	"github.com/treeverse/lakefs/pkg/kv"
+	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/version"
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+type userDetails struct {
+	name string
+	kvID string
+}
+
+type UserIDToDetails map[int64]userDetails
+
+type IDToName map[int]string
+
+var ErrExportedEntNotFound = errors.New("previously exported entity not found")
+
+//nolint:gochecknoinits
+func init() {
+	tablesToDrop := []string{
+		"auth_users",
+		"auth_groups",
+		"auth_policies",
+		"auth_user_groups",
+		"auth_user_policies",
+		"auth_group_policies",
+		"auth_credentials",
+		"auth_expired_tokens",
+	}
+	kvpg.RegisterMigrate(model.PackageName, Migrate, tablesToDrop)
+}
 
 func ListPaged(ctx context.Context, db db.Querier, retType reflect.Type, params *model.PaginationParams, tokenColumnName string, queryBuilder sq.SelectBuilder) (*reflect.Value, *model.Paginator, error) {
 	ptrType := reflect.PtrTo(retType)
@@ -297,6 +332,7 @@ func (s *DBAuthService) ListUserPolicies(ctx context.Context, username string, p
 		})
 	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(policy), params, "display_name",
 		psql.Select("*").FromSelect(sub, "p"))
+
 	if slice == nil {
 		return nil, paginator, err
 	}
@@ -825,4 +861,361 @@ func (s *DBAuthService) markTokenSingleUse(ctx context.Context, tokenID string, 
 		s.log.WithError(err).Error("delete expired tokens")
 	}
 	return canUseToken, nil
+}
+
+func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
+	je := json.NewEncoder(writer)
+	// Create header
+	if err := je.Encode(kv.Header{
+		LakeFSVersion:   version.Version,
+		PackageName:     model.PackageName,
+		DBSchemaVersion: kv.InitialMigrateVersion,
+		CreatedAt:       time.Now().UTC(),
+	}); err != nil {
+		return err
+	}
+
+	userIDToDetails, err := exportUsers(ctx, d, je)
+	if err != nil {
+		return err
+	}
+
+	groupIDToName, err := exportGroups(ctx, d, je)
+	if err != nil {
+		return err
+	}
+
+	policyIDToName, err := exportPolicies(ctx, d, je)
+	if err != nil {
+		return err
+	}
+
+	if err = exportUserGroups(ctx, d, je, userIDToDetails, groupIDToName); err != nil {
+		return err
+	}
+
+	if err = exportUserPolicies(ctx, d, je, userIDToDetails, policyIDToName); err != nil {
+		return err
+	}
+
+	if err = exportGroupPolicies(ctx, d, je, groupIDToName, policyIDToName); err != nil {
+		return err
+	}
+
+	if err = exportCredentials(ctx, d, je, userIDToDetails); err != nil {
+		return err
+	}
+
+	if err = exportExpiredTokens(ctx, d, je); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func exportUsers(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (UserIDToDetails, error) {
+	rows, err := d.Query(ctx, "SELECT * FROM auth_users ORDER BY created_at ASC")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	userIDToDetails := make(UserIDToDetails)
+	scanner := pgxscan.NewRowScanner(rows)
+	for rows.Next() {
+		dbUser := model.DBUser{}
+		err = scanner.Scan(&dbUser)
+		if err != nil {
+			return nil, err
+		}
+		kvUser := &model.User{
+			ID:       model.CreateID(),
+			BaseUser: dbUser.BaseUser,
+		}
+		key := model.UserPath(dbUser.Username)
+		value, err := proto.Marshal(model.ProtoFromUser(kvUser))
+		if err != nil {
+			return nil, err
+		}
+
+		if err = je.Encode(kv.Entry{
+			PartitionKey: []byte(model.PartitionKey),
+			Key:          []byte(key),
+			Value:        value,
+		}); err != nil {
+			return nil, err
+		}
+
+		userIDToDetails[dbUser.ID] = userDetails{
+			kvID: kvUser.ID,
+			name: kvUser.Username,
+		}
+	}
+	return userIDToDetails, nil
+}
+
+func exportGroups(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (IDToName, error) {
+	rows, err := d.Query(ctx, "SELECT * FROM auth_groups ORDER BY created_at ASC")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	groupIDToName := make(IDToName)
+	scanner := pgxscan.NewRowScanner(rows)
+	for rows.Next() {
+		dbGroup := model.DBGroup{}
+		err = scanner.Scan(&dbGroup)
+		if err != nil {
+			return nil, err
+		}
+		kvGroup := &model.Group{
+			ID:        model.CreateID(),
+			BaseGroup: dbGroup.BaseGroup,
+		}
+		key := model.GroupPath(dbGroup.DisplayName)
+		value, err := proto.Marshal(model.ProtoFromGroup(kvGroup))
+		if err != nil {
+			return nil, err
+		}
+		if err = je.Encode(kv.Entry{
+			PartitionKey: []byte(model.PartitionKey),
+			Key:          []byte(key),
+			Value:        value,
+		}); err != nil {
+			return nil, err
+		}
+		groupIDToName[dbGroup.ID] = dbGroup.DisplayName
+	}
+	return groupIDToName, nil
+}
+
+func exportPolicies(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (IDToName, error) {
+	rows, err := d.Query(ctx, "SELECT * FROM auth_policies ORDER BY created_at ASC")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	policyIDToName := make(IDToName)
+	scanner := pgxscan.NewRowScanner(rows)
+	for rows.Next() {
+		dbPolicy := model.DBPolicy{}
+		err = scanner.Scan(&dbPolicy)
+		if err != nil {
+			return nil, err
+		}
+		key := model.PolicyPath(dbPolicy.DisplayName)
+		value, err := proto.Marshal(model.ProtoFromPolicy(&dbPolicy.BasePolicy, strconv.Itoa(dbPolicy.ID)))
+		if err != nil {
+			return nil, err
+		}
+		if err = je.Encode(kv.Entry{
+			PartitionKey: []byte(model.PartitionKey),
+			Key:          []byte(key),
+			Value:        value,
+		}); err != nil {
+			return nil, err
+		}
+		policyIDToName[dbPolicy.ID] = dbPolicy.DisplayName
+	}
+	return policyIDToName, nil
+}
+
+func exportUserGroups(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, usersDetails UserIDToDetails, groupsNames IDToName) error {
+	type relation struct {
+		UserID  int64 `db:"user_id"`
+		GroupID int   `db:"group_id"`
+	}
+	rows, err := d.Query(ctx, "SELECT * FROM auth_user_groups")
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	scanner := pgxscan.NewRowScanner(rows)
+	for rows.Next() {
+		ug := relation{}
+		err = scanner.Scan(&ug)
+		if err != nil {
+			return err
+		}
+		userDetails, ok := usersDetails[ug.UserID]
+		if !ok {
+			return fmt.Errorf("user ID %d: %w", ug.UserID, ErrExportedEntNotFound)
+		}
+		groupName, ok := groupsNames[ug.GroupID]
+		if !ok {
+			return fmt.Errorf("group ID %d: %w", ug.GroupID, ErrExportedEntNotFound)
+		}
+		username := userDetails.name
+		key := model.GroupUserPath(groupName, username)
+		secIndex := kv.SecondaryIndex{PrimaryKey: []byte(model.UserPath(username))}
+		value, err := proto.Marshal(&secIndex)
+		if err != nil {
+			return err
+		}
+		if err = je.Encode(kv.Entry{
+			PartitionKey: []byte(model.PartitionKey),
+			Key:          []byte(key),
+			Value:        value,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func exportUserPolicies(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, usersDetails UserIDToDetails, policiesNames IDToName) error {
+	type relation struct {
+		UserID   int64 `db:"user_id"`
+		PolicyID int   `db:"policy_id"`
+	}
+	rows, err := d.Query(ctx, "SELECT * FROM auth_user_policies")
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	scanner := pgxscan.NewRowScanner(rows)
+	for rows.Next() {
+		up := relation{}
+		err = scanner.Scan(&up)
+		if err != nil {
+			return err
+		}
+		policyName, ok := policiesNames[up.PolicyID]
+		if !ok {
+			return fmt.Errorf("policy ID %d: %w", up.PolicyID, ErrExportedEntNotFound)
+		}
+		userDetails, ok := usersDetails[up.UserID]
+		if !ok {
+			return fmt.Errorf("user ID %d: %w", up.UserID, ErrExportedEntNotFound)
+		}
+		key := model.UserPolicyPath(userDetails.name, policyName)
+		secIndex := kv.SecondaryIndex{PrimaryKey: []byte(model.PolicyPath(policyName))}
+		value, err := proto.Marshal(&secIndex)
+		if err != nil {
+			return err
+		}
+		if err = je.Encode(kv.Entry{
+			PartitionKey: []byte(model.PartitionKey),
+			Key:          []byte(key),
+			Value:        value,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func exportGroupPolicies(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, groupsNames, policiesNames IDToName) error {
+	type relation struct {
+		GroupID  int `db:"group_id"`
+		PolicyID int `db:"policy_id"`
+	}
+	rows, err := d.Query(ctx, "SELECT * FROM auth_group_policies")
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	scanner := pgxscan.NewRowScanner(rows)
+	for rows.Next() {
+		gp := relation{}
+		err = scanner.Scan(&gp)
+		if err != nil {
+			return err
+		}
+		policyName, ok := policiesNames[gp.PolicyID]
+		if !ok {
+			return fmt.Errorf("policy ID %d: %w", gp.PolicyID, ErrExportedEntNotFound)
+		}
+		groupName, ok := groupsNames[gp.GroupID]
+		if !ok {
+			return fmt.Errorf("group ID %d: %w", gp.GroupID, ErrExportedEntNotFound)
+		}
+		key := model.GroupPolicyPath(groupName, policyName)
+		secIndex := kv.SecondaryIndex{PrimaryKey: []byte(model.PolicyPath(policyName))}
+		value, err := proto.Marshal(&secIndex)
+		if err != nil {
+			return err
+		}
+		if err = je.Encode(kv.Entry{
+			PartitionKey: []byte(model.PartitionKey),
+			Key:          []byte(key),
+			Value:        value,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func exportCredentials(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, userIDToDetails UserIDToDetails) error {
+	rows, err := d.Query(ctx, "SELECT * from auth_credentials")
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	scanner := pgxscan.NewRowScanner(rows)
+	for rows.Next() {
+		dbCred := model.DBCredential{}
+		err := scanner.Scan(&dbCred)
+		if err != nil {
+			return err
+		}
+		userDetails, ok := userIDToDetails[dbCred.UserID]
+		if !ok {
+			return fmt.Errorf("user ID %d: %w", dbCred.UserID, ErrExportedEntNotFound)
+		}
+		kvCred := &model.Credential{
+			UserID:         userDetails.kvID,
+			BaseCredential: dbCred.BaseCredential,
+		}
+		key := model.CredentialPath(userDetails.name, dbCred.AccessKeyID)
+		value, err := proto.Marshal(model.ProtoFromCredential(kvCred))
+		if err != nil {
+			return err
+		}
+		if err = je.Encode(kv.Entry{
+			PartitionKey: []byte(model.PartitionKey),
+			Key:          []byte(key),
+			Value:        value,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func exportExpiredTokens(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) error {
+	type tokenData struct {
+		TokenID         string    `db:"token_id"`
+		TokenExpiration time.Time `db:"token_expires_at"`
+	}
+	rows, err := d.Query(ctx, "SELECT * from auth_expired_tokens")
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	scanner := pgxscan.NewRowScanner(rows)
+	for rows.Next() {
+		token := tokenData{}
+		err := scanner.Scan(&token)
+		if err != nil {
+			return err
+		}
+		kvToken := &model.TokenData{
+			TokenId:   token.TokenID,
+			ExpiredAt: timestamppb.New(token.TokenExpiration),
+		}
+		key := model.ExpiredTokenPath(token.TokenID)
+		value, err := proto.Marshal(kvToken)
+		if err != nil {
+			return err
+		}
+		if err = je.Encode(kv.Entry{
+			PartitionKey: []byte(model.PartitionKey),
+			Key:          []byte(key),
+			Value:        value,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
 }
