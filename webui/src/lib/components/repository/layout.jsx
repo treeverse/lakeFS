@@ -11,7 +11,7 @@ import {Link} from "../nav";
 
 const RepoNav = () => {
     const { repo } = useRefs();
-    const repoId = (!!repo) ? repo.id : '#';
+    const repoId = (repo) ? repo.id : '#';
     
     return (
         <Breadcrumb>

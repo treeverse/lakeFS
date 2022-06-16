@@ -26,4 +26,4 @@ export default function GroupPage() {
             </Route>
         </Switch>
     );
-};
+}

@@ -122,7 +122,7 @@ const ActionsList = ({ repo, after, onPaginate, branch, commit, onFilterBranch, 
     const doRefresh = () => setRefresh(!refresh)
 
     let content;
-    if (!!error) content = <Error error={error}/>
+    if (error) content = <Error error={error}/>
 
     else if (loading) content = <Loading/>
     else if (results.length === 0 && !nextPage) content = <Alert variant="info" className={"mt-3"}>No action runs have been logged yet.</Alert>
@@ -139,12 +139,12 @@ const ActionsList = ({ repo, after, onPaginate, branch, commit, onFilterBranch, 
     )
 
     let filters = [];
-    if (!!branch) {
+    if (branch) {
         filters = [<TooltipButton key="branch" variant="light" tooltip="remove branch filter" onClick={() => onFilterBranch("")}>
             <XIcon/> {branch}
         </TooltipButton>]
     }
-    if (!!commit) {
+    if (commit) {
         filters = [...filters, <TooltipButton key="commit" variant="light" tooltip="remove commit filter" onClick={() => onFilterCommit("")}>
             <XIcon/>  {commit.substr(0, 12)}
         </TooltipButton> ]
@@ -174,13 +174,13 @@ const ActionsList = ({ repo, after, onPaginate, branch, commit, onFilterBranch, 
 const ActionsContainer = () => {
     const router = useRouter();
     const { after } = router.query;
-    const commit = (!!router.query.commit) ? router.query.commit : "";
-    const branch = (!!router.query.branch) ? router.query.branch : "";
+    const commit = (router.query.commit) ? router.query.commit : "";
+    const branch = (router.query.branch) ? router.query.branch : "";
 
     const { repo, loading, error } = useRefs();
 
     if (loading) return <Loading/>;
-    if (!!error) return <Error error={error}/>;
+    if (error) return <Error error={error}/>;
 
     const params = {repoId: repo.id};
 
@@ -190,20 +190,20 @@ const ActionsContainer = () => {
             after={after}
             onPaginate={after => {
                 const query = {after};
-                if (!!commit) query.commit = commit;
-                if (!!branch) query.branch = branch;
+                if (commit) query.commit = commit;
+                if (branch) query.branch = branch;
                 router.push({pathname: `/repositories/:repoId/actions`, query, params})
             }}
             branch={branch}
             commit={commit}
             onFilterBranch={branch => {
                 const query = {}; // will reset pagination
-                if (!!branch) query.branch = branch;
+                if (branch) query.branch = branch;
                 router.push({pathname: `/repositories/:repoId/actions`, query, params})
             }}
             onFilterCommit={commit => {
                 const query = {} // will reset pagination
-                if (!!commit) query.commit = commit;
+                if (commit) query.commit = commit;
                 router.push({pathname: `/repositories/:repoId/actions`, query, params})
             }}
         />

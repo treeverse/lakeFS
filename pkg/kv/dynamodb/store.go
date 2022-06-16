@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/treeverse/lakefs/pkg/kv"
 )
 
@@ -27,14 +29,14 @@ type EntriesIterator struct {
 	store        *Store
 	queryResult  *dynamodb.QueryOutput
 	currEntryIdx int
-	partKey      string
-	startKey     string
+	partKey      []byte
+	startKey     []byte
 }
 
 type DynKVItem struct {
-	PartitionKey string
-	ItemKey      string
-	ItemValue    string
+	PartitionKey []byte
+	ItemKey      []byte
+	ItemValue    []byte
 }
 
 // Params struct holds all the configuration parameters that can be used
@@ -98,18 +100,24 @@ func (d *Driver) Open(ctx context.Context, dsn string) (kv.Store, error) {
 		SharedConfigState: session.SharedConfigEnable,
 	}))
 
-	// Create DynamoDB client
-	svc := dynamodb.New(sess,
-		aws.NewConfig().
-			WithEndpoint(params.Endpoint).
-			WithRegion(params.AwsRegion).
-			WithCredentials(credentials.NewCredentials(
-				&credentials.StaticProvider{
-					Value: credentials.Value{
-						AccessKeyID:     params.AwsAccessKeyID,
-						SecretAccessKey: params.AwsSecretAccessKey,
-					}})))
+	cfg := aws.NewConfig()
+	if params.Endpoint != "" {
+		cfg.Endpoint = aws.String(params.Endpoint)
+	}
+	if params.AwsRegion != "" {
+		cfg = cfg.WithRegion(params.AwsRegion)
+	}
+	if params.AwsAccessKeyID != "" {
+		cfg.WithCredentials(credentials.NewCredentials(
+			&credentials.StaticProvider{
+				Value: credentials.Value{
+					AccessKeyID:     params.AwsAccessKeyID,
+					SecretAccessKey: params.AwsSecretAccessKey,
+				}}))
+	}
 
+	// Create DynamoDB client
+	svc := dynamodb.New(sess, cfg)
 	err = setupKeyValueDatabase(ctx, svc, params)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", kv.ErrSetupFailed, err)
@@ -137,16 +145,16 @@ func parseDsn(dsn string) (*Params, error) {
 // setupKeyValueDatabase setup everything required to enable kv over postgres
 func setupKeyValueDatabase(ctx context.Context, svc *dynamodb.DynamoDB, params *Params) error {
 	// main kv table
-	_, err := svc.CreateTableWithContext(ctx, &dynamodb.CreateTableInput{
+	table, err := svc.CreateTableWithContext(ctx, &dynamodb.CreateTableInput{
 		TableName: aws.String(params.TableName),
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
 			{
 				AttributeName: aws.String(PartitionKey),
-				AttributeType: aws.String("S"),
+				AttributeType: aws.String("B"),
 			},
 			{
 				AttributeName: aws.String(ItemKey),
-				AttributeType: aws.String("S"),
+				AttributeType: aws.String("B"),
 			},
 		},
 		KeySchema: []*dynamodb.KeySchemaElement{
@@ -165,20 +173,42 @@ func setupKeyValueDatabase(ctx context.Context, svc *dynamodb.DynamoDB, params *
 		},
 	})
 	if err != nil {
-		if _, ok := err.(*dynamodb.ResourceInUseException); !ok {
-			return err
+		if _, ok := err.(*dynamodb.ResourceInUseException); ok {
+			return nil
 		}
+		return err
 	}
-	return nil
+	bo := backoff.NewExponentialBackOff()
+	const (
+		maxInterval = 5
+		maxElapsed  = 30
+	)
+
+	bo.MaxInterval = maxInterval * time.Second
+	bo.MaxElapsedTime = maxElapsed * time.Second
+	err = backoff.Retry(func() error {
+		desc, err := svc.DescribeTable(&dynamodb.DescribeTableInput{
+			TableName: table.TableDescription.TableName,
+		})
+		if err != nil {
+			// we shouldn't retry on anything but kv.ErrTableNotActive
+			return backoff.Permanent(err)
+		}
+		if *desc.Table.TableStatus != dynamodb.TableStatusActive {
+			return fmt.Errorf("table status(%s): %w", *desc.Table.TableStatus, kv.ErrTableNotActive)
+		}
+		return nil
+	}, bo)
+	return err
 }
 
 func (s *Store) bytesKeyToDynamoKey(partitionKey, key []byte) map[string]*dynamodb.AttributeValue {
 	return map[string]*dynamodb.AttributeValue{
 		PartitionKey: {
-			S: aws.String(string(partitionKey)),
+			B: partitionKey,
 		},
 		ItemKey: {
-			S: aws.String(string(key)),
+			B: key,
 		},
 	}
 }
@@ -192,8 +222,9 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 	}
 
 	result, err := s.svc.GetItemWithContext(ctx, &dynamodb.GetItemInput{
-		TableName: aws.String(s.params.TableName),
-		Key:       s.bytesKeyToDynamoKey(partitionKey, key),
+		TableName:      aws.String(s.params.TableName),
+		Key:            s.bytesKeyToDynamoKey(partitionKey, key),
+		ConsistentRead: aws.Bool(true),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("get item: %s (key=%v): %w", err, string(key), kv.ErrOperationFailed)
@@ -210,8 +241,8 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 	}
 
 	return &kv.ValueWithPredicate{
-		Value:     []byte(item.ItemValue),
-		Predicate: kv.Predicate([]byte(item.ItemValue)),
+		Value:     item.ItemValue,
+		Predicate: kv.Predicate(item.ItemValue),
 	}, nil
 }
 
@@ -235,9 +266,9 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 	}
 
 	item := DynKVItem{
-		PartitionKey: string(partitionKey),
-		ItemKey:      string(key),
-		ItemValue:    string(value),
+		PartitionKey: partitionKey,
+		ItemKey:      key,
+		ItemValue:    value,
 	}
 
 	marshaledItem, err := dynamodbattribute.MarshalMap(item)
@@ -253,7 +284,7 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 		if valuePredicate != nil {
 			input.ConditionExpression = aws.String(ItemValue + " = :predicate")
 			input.ExpressionAttributeValues = map[string]*dynamodb.AttributeValue{
-				":predicate": {S: aws.String(string(valuePredicate.([]byte)))},
+				":predicate": {B: valuePredicate.([]byte)},
 			}
 		} else {
 			input.ConditionExpression = aws.String("attribute_not_exists(" + ItemValue + ")")
@@ -303,13 +334,13 @@ func (s *Store) scanInternal(ctx context.Context, partitionKey, scanKey []byte, 
 	keyConditionExpression := PartitionKey + " = :partitionkey"
 	expressionAttributeValues := map[string]*dynamodb.AttributeValue{
 		":partitionkey": {
-			S: aws.String(string(partitionKey)),
+			B: partitionKey,
 		},
 	}
 	if len(scanKey) > 0 {
 		keyConditionExpression += " AND " + ItemKey + " >= :fromkey"
 		expressionAttributeValues[":fromkey"] = &dynamodb.AttributeValue{
-			S: aws.String(string(scanKey)),
+			B: scanKey,
 		}
 	}
 	queryInput := &dynamodb.QueryInput{
@@ -331,8 +362,8 @@ func (s *Store) scanInternal(ctx context.Context, partitionKey, scanKey []byte, 
 	return &EntriesIterator{
 		scanCtx:      ctx,
 		store:        s,
-		partKey:      string(partitionKey),
-		startKey:     string(scanKey),
+		partKey:      partitionKey,
+		startKey:     scanKey,
 		queryResult:  queryOutput,
 		currEntryIdx: 0,
 		err:          nil,
@@ -350,7 +381,7 @@ func (e *EntriesIterator) Next() bool {
 		if e.queryResult.LastEvaluatedKey == nil {
 			return false
 		}
-		tmpEntriesIter, err := e.store.scanInternal(e.scanCtx, []byte(e.partKey), []byte(e.startKey), e.queryResult.LastEvaluatedKey)
+		tmpEntriesIter, err := e.store.scanInternal(e.scanCtx, e.partKey, e.startKey, e.queryResult.LastEvaluatedKey)
 		if err != nil {
 			e.err = fmt.Errorf("scan paging: %w", err)
 			return false
@@ -365,8 +396,8 @@ func (e *EntriesIterator) Next() bool {
 		e.err = fmt.Errorf("unmarshal map: %s: %w", err, kv.ErrOperationFailed)
 	}
 	e.entry = &kv.Entry{
-		Key:   []byte(item.ItemKey),
-		Value: []byte(item.ItemValue),
+		Key:   item.ItemKey,
+		Value: item.ItemValue,
 	}
 	e.currEntryIdx++
 

@@ -3,6 +3,7 @@ package model
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws/arn"
 	"github.com/treeverse/lakefs/pkg/permissions"
@@ -10,11 +11,15 @@ import (
 
 var (
 	ErrValidationError = errors.New("validation error")
+	Delimiter          = "/"
 )
 
 func ValidateAuthEntityID(name string) error {
 	if len(name) == 0 {
 		return fmt.Errorf("empty name: %w", ErrValidationError)
+	}
+	if strings.Contains(name, Delimiter) {
+		return fmt.Errorf("name contains delimiter %s: %w", Delimiter, ErrValidationError)
 	}
 	return nil
 }
