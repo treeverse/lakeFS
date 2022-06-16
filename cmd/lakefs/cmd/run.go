@@ -14,7 +14,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/coreos/go-oidc"
+	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/dlmiddlecote/sqlstats"
 	"github.com/fsnotify/fsnotify"
 	"github.com/go-ldap/ldap/v3"
@@ -257,7 +257,6 @@ var runCmd = &cobra.Command{
 			if err != nil {
 				logger.WithError(err).Fatal("Failed to initialize OIDC provider")
 			}
-			cfg.GetBlockstoreDefaultNamespacePrefix()
 			oauthConfig = &oauth2.Config{
 				ClientID:     oidcConfig.ClientID,
 				ClientSecret: oidcConfig.ClientSecret,
