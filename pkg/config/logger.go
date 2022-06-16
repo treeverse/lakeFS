@@ -6,11 +6,11 @@ import (
 )
 
 const (
-	DefaultLoggingFormat          = "text"
-	DefaultLoggingLevel           = "INFO"
-	DefaultLoggingOutput          = "-"
-	DefaultLoggingFilesKeepKey    = 100
-	DefaultMiddlewareLoggingLevel = "DEBUG"
+	DefaultLoggingFormat       = "text"
+	DefaultLoggingLevel        = "INFO"
+	DefaultLoggingOutput       = "-"
+	DefaultLoggingFilesKeepKey = 100
+	DefaultAuditLogLevel       = "DEBUG"
 )
 
 func setupLogger() {

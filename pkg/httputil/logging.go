@@ -99,7 +99,7 @@ func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields,
 }
 
 func LoggingMiddleware(requestIDHeaderName string, fields logging.Fields, traceRequestHeaders bool) func(next http.Handler) http.Handler {
-	loggingMiddlewareLevel := viper.GetString(config.LoggingMiddlewareLevel)
+	loggingMiddlewareLevel := viper.GetString(config.LoggingAuditLogLevel)
 	if strings.ToLower(loggingMiddlewareLevel) == "trace" {
 		return TracingMiddleware(requestIDHeaderName, fields, traceRequestHeaders)
 	}
