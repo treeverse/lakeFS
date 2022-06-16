@@ -41,7 +41,7 @@ const (
 type dependencies struct {
 	blocks      block.Adapter
 	catalog     catalog.Interface
-	authService *auth.DBAuthService
+	authService *auth.Service
 	collector   *nullCollector
 }
 
@@ -95,14 +95,22 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, 
 	// wire actions
 	var actionsStore actions.Store
 	var idGen actions.IDGenerator
+	var authService auth.Service
 
 	if kvEnabled {
 		kvStore := kvtest.GetStore(ctx, t)
-		actionsStore = actions.NewActionsKVStore(kv.StoreMessage{Store: kvStore})
+		kvStoreMessage := kv.StoreMessage{Store: kvStore}
+		actionsStore = actions.NewActionsKVStore(kvStoreMessage)
 		idGen = &actions.DecreasingIDGenerator{}
+		authService = auth.NewKVAuthService(kvStoreMessage, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
+			Enabled: false,
+		}, logging.Default())
 	} else {
 		actionsStore = actions.NewActionsDBStore(conn)
 		idGen = &actions.IncreasingIDGenerator{}
+		authService = auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
+			Enabled: false,
+		}, logging.Default())
 	}
 
 	actionsService := actions.NewService(
@@ -117,9 +125,6 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, 
 
 	c.SetHooksHandler(actionsService)
 
-	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
-		Enabled: false,
-	}, logging.Default())
 	authenticator := auth.NewBuiltinAuthenticator(authService)
 	meta := auth.NewDBMetadataManager("dev", cfg.GetFixedInstallationID(), conn)
 	migrator := db.NewDatabaseMigrator(dbparams.Database{ConnectionString: handlerDatabaseURI})
@@ -137,7 +142,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, 
 
 	return handler, &dependencies{
 		blocks:      c.BlockAdapter,
-		authService: authService,
+		authService: &authService,
 		catalog:     c,
 		collector:   collector,
 	}

@@ -70,6 +70,11 @@ class ApiClient(apiUrl: String, accessKey: String, secretKey: String) {
     )
   }
 
+  def getGarbageCollectionRules(repoName: String): String = {
+    val gcRules = retentionApi.getGarbageCollectionRules(repoName)
+    gcRules.toString()
+  }
+
   /** Query lakeFS for a URL to the metarange of commitID of repoName and
    *  translate that URL to use an appropriate Hadoop FileSystem.
    */

@@ -59,18 +59,31 @@ func (m *nullCollector) SetInstallationID(_ string) {}
 
 func (m *nullCollector) Close() {}
 
-type getService func(t *testing.T, ctx context.Context, source actions.Source, writer actions.OutputWriter, stats stats.Collector, runHooks bool) actions.Service
+type getActionsService func(t *testing.T, ctx context.Context, source actions.Source, writer actions.OutputWriter, stats stats.Collector, runHooks bool) actions.Service
 
-func GetDBService(t *testing.T, ctx context.Context, source actions.Source, writer actions.OutputWriter, stats stats.Collector, runHooks bool) actions.Service {
+func GetDBActionsService(t *testing.T, ctx context.Context, source actions.Source, writer actions.OutputWriter, stats stats.Collector, runHooks bool) actions.Service {
 	t.Helper()
 	conn, _ := testutil.GetDB(t, databaseURI)
 	return actions.NewService(ctx, actions.NewActionsDBStore(conn), source, writer, &actions.IncreasingIDGenerator{}, stats, runHooks)
 }
 
-func GetKVService(t *testing.T, ctx context.Context, source actions.Source, writer actions.OutputWriter, stats stats.Collector, runHooks bool) actions.Service {
+func GetKVActionsService(t *testing.T, ctx context.Context, source actions.Source, writer actions.OutputWriter, stats stats.Collector, runHooks bool) actions.Service {
 	t.Helper()
 	kvStore := kvtest.GetStore(ctx, t)
 	return actions.NewService(ctx, actions.NewActionsKVStore(kv.StoreMessage{Store: kvStore}), source, writer, &actions.DecreasingIDGenerator{}, stats, runHooks)
+}
+
+func GetDBAuthService(t *testing.T) auth.Service {
+	t.Helper()
+	conn, _ := testutil.GetDB(t, databaseURI)
+	return auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{}, logging.Default().WithField("service", "auth"))
+}
+
+func GetKVAuthService(t *testing.T, ctx context.Context) auth.Service {
+	t.Helper()
+	kvStore := kvtest.GetStore(ctx, t)
+	storeMessage := kv.StoreMessage{Store: kvStore}
+	return auth.NewKVAuthService(storeMessage, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{}, logging.Default().WithField("service", "auth"))
 }
 
 func TestLocalLoad(t *testing.T) {
@@ -84,7 +97,24 @@ func TestLocalLoad(t *testing.T) {
 	conf, err := config.NewConfig()
 	testutil.MustDo(t, "config", err)
 	conn, _ := testutil.GetDB(t, databaseURI)
-	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{}, logging.Default().WithField("service", "auth"))
+
+	tests := []struct {
+		name           string
+		actionsService getActionsService
+		authService    auth.Service
+	}{
+		{
+			name:           "DB service test",
+			actionsService: GetDBActionsService,
+			authService:    GetDBAuthService(t),
+		},
+		{
+			name:           "KV service test",
+			actionsService: GetKVActionsService,
+			authService:    GetKVAuthService(t, ctx),
+		},
+	}
+
 	superuser := &authmodel.SuperuserConfiguration{
 		User: authmodel.User{BaseUser: authmodel.BaseUser{
 			CreatedAt: time.Now(),
@@ -92,22 +122,7 @@ func TestLocalLoad(t *testing.T) {
 		},
 		},
 	}
-	credentials, err := auth.SetupAdminUser(ctx, authService, superuser)
-	testutil.Must(t, err)
 
-	tests := []struct {
-		name           string
-		actionsService getService
-	}{
-		{
-			name:           "DB service test",
-			actionsService: GetDBService,
-		},
-		{
-			name:           "KV service test",
-			actionsService: GetKVService,
-		},
-	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			blockstoreType, _ := os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
@@ -129,7 +144,10 @@ func TestLocalLoad(t *testing.T) {
 			actionsService := tt.actionsService(t, ctx, source, outputWriter, &nullCollector{}, true)
 			c.SetHooksHandler(actionsService)
 
-			authenticator := auth.NewBuiltinAuthenticator(authService)
+			credentials, err := auth.SetupAdminUser(ctx, tt.authService, superuser)
+			testutil.Must(t, err)
+
+			authenticator := auth.NewBuiltinAuthenticator(tt.authService)
 			meta := auth.NewDBMetadataManager("dev", conf.GetFixedInstallationID(), conn)
 			migrator := db.NewDatabaseMigrator(dbparams.Database{ConnectionString: databaseURI})
 			t.Cleanup(func() {
@@ -144,7 +162,7 @@ func TestLocalLoad(t *testing.T) {
 				c,
 				authenticator,
 				authenticator,
-				authService,
+				tt.authService,
 				blockAdapter,
 				meta,
 				migrator,

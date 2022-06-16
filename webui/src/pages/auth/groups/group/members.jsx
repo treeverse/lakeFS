@@ -37,7 +37,7 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
 
     let content;
     if (loading) content = <Loading/>;
-    else if (!!error) content=  <Error error={error}/>;
+    else if (error) content=  <Error error={error}/>;
     else content = (
             <>
                 {attachError && <Error error={attachError}/>}
@@ -114,7 +114,7 @@ const GroupMembersContainer = () => {
     const { groupId } = router.params;
     return groupId && <GroupMemberList
         groupId={groupId}
-        after={(!!after) ? after : ""}
+        after={(after) ? after : ""}
         onPaginate={after => router.push({pathname: '/auth/groups/:groupId/members', params: {groupId},query: {after}})}
     />;
 };

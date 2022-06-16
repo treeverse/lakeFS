@@ -23,6 +23,9 @@ but trying to read these objects from lakeFS will result in a `410 Gone` HTTP st
 At this point, lakeFS supports Garbage Collection only on S3, but we have [concrete plans](https://github.com/treeverse/lakeFS/issues/3271) to extend the support to Azure.     
 {: .note}
 
+1. TOC
+{:toc .pb-5 }
+
 ## Understanding Garbage Collection
 
 For every branch, the GC job retains deleted objects for the number of days defined for the branch.
@@ -46,6 +49,9 @@ Objects present in the `dev` branch (but not in any other branch), are retained 
 
 ## Configuring GC rules
 
+### Using lakectl
+{: .no_toc }
+
 Use the `lakectl` CLI to define the GC rules: 
 
 ```bash
@@ -61,6 +67,17 @@ EOT
 
 lakectl gc set-config lakefs://example-repo -f example_repo_gc_rules.json 
 ```
+
+### From the lakeFS UI
+{: .no_toc }
+
+1. Navigate to the main page of your repository.
+2. Go to _Settings_ -> _Retention_.
+3. Click _Edit policy_ and paste your GC rule into the text box as a JSON.
+4. Save your changes.
+
+![GC Rules From UI]({{ site.baseurl }}/assets/img/gc_rules_from_ui.png)
+
 
 ## Running the GC job
 

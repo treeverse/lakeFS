@@ -265,7 +265,7 @@ class Auth {
     }
 
     async detachPolicyFromUser(userId, policyId) {
-        const response = await apiRequest(`/auth/users/${encodeURIComponent(userId)}/policies/$encodeURIComponent({policyId)}`, {method: 'DELETE'});
+        const response = await apiRequest(`/auth/users/${encodeURIComponent(userId)}/policies/${encodeURIComponent(policyId)}`, {method: 'DELETE'});
         if (response.status !== 204) {
             throw new Error(await extractError(response));
         }
@@ -691,11 +691,12 @@ class Refs {
             method: 'POST',
             body: '{}',
         });
+        let resp;
         switch (response.status) {
             case 200:
                 return response.json();
             case 409:
-                const resp = await response.json();
+                resp = await response.json();
                 throw new MergeError(response.statusText, resp.body);
             case 412:
             default:
@@ -806,9 +807,10 @@ class Config {
         const response = await apiRequest('/config/storage', {
             method: 'GET',
         });
+        let cfg;
         switch (response.status) {
             case 200:
-                const cfg = await response.json();
+                cfg = await response.json();
                 cfg.warnings = []
                 if (cfg.blockstore_type === 'local' || cfg.blockstore_type === 'mem') {
                     cfg.warnings.push(`Block adapter ${cfg.blockstore_type} not usable in production`)

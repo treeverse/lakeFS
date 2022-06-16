@@ -101,7 +101,7 @@ Committing (along with attaching useful information to the commit) makes a lot o
 
 
 For streaming however, this is currently less clear: There's no obvious point in time to commit, as things never actually "finish successfully".
-[The recommended pattern](../usecases/production.md#example-1-rollback---data-ingested-from-a-kafka-stream) would be to ingest from a stream on a separate branch, periodically committing - storing not only the data added since last commit but also capturing the offset read from the stream, for reproducibility.
+[The recommended pattern](../using_lakefs/production.md#example-1-rollback---data-ingested-from-a-kafka-stream) would be to ingest from a stream on a separate branch, periodically committing - storing not only the data added since last commit but also capturing the offset read from the stream, for reproducibility.
 These commits can then be merged into a main branch given they pass all relevant quality checks and other validations using hooks, exposing consumers to validated, clean data.
 
 In practice, implementing such a workflow is a little challenging. Users need to:

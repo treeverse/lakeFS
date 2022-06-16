@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.67.0 - 2022-06-16
+
+What's new:
+- Garbage collection report at end of run (#3127)
+
+Bug fixes:
+- Fix: gateway remove delimter limitation for list objects v2 API (#3459)
+- Fix: UI policy view fail to update (#3469)
+
 ## v0.66.0 - 2022-05-26
 
 What's new:

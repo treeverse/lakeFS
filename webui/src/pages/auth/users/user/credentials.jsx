@@ -36,7 +36,7 @@ const UserCredentialsList = ({ userId, after, onPaginate }) => {
                 {createError && <Error error={createError}/>}
                 <CredentialsTable
                     userId={userId}
-                    currentAccessKey={(!!user) ? user.accessKeyId : ""}
+                    currentAccessKey={(user) ? user.accessKeyId : ""}
                     refresh={refresh}
                     after={after}
                     onPaginate={onPaginate}
@@ -87,7 +87,7 @@ const UserCredentialsContainer = () => {
     const { userId } = router.params;
     return (!userId) ? <></> : <UserCredentialsList
         userId={userId}
-        after={(!!after) ? after : ""}
+        after={(after) ? after : ""}
         onPaginate={after => router.push({pathname: '/auth/users/:userId/credentials', query: {after}, params: {userId}})}
     />;
 };

@@ -52,8 +52,8 @@ func (s *StoreMessage) DeleteMsg(ctx context.Context, partitionKey, key string) 
 	return s.Delete(ctx, []byte(partitionKey), []byte(key))
 }
 
-func (s *StoreMessage) Scan(ctx context.Context, msgType protoreflect.MessageType, partitionKey, prefix string) (*PrimaryIterator, error) {
-	return NewPrimaryIterator(ctx, s.Store, msgType, partitionKey, prefix, "")
+func (s *StoreMessage) Scan(ctx context.Context, msgType protoreflect.MessageType, partitionKey, prefix, after string) (*PrimaryIterator, error) {
+	return NewPrimaryIterator(ctx, s.Store, msgType, partitionKey, prefix, after)
 }
 
 type MessageEntry struct {
@@ -82,7 +82,7 @@ func NewPrimaryIterator(ctx context.Context, store Store, msgType protoreflect.M
 	if err != nil {
 		return nil, fmt.Errorf("create prefix iterator: %w", err)
 	}
-	return &PrimaryIterator{itr: itr, msgType: msgType}, nil
+	return &PrimaryIterator{itr: NewSkipIterator(itr, []byte(after)), msgType: msgType}, nil
 }
 
 func (i *PrimaryIterator) Next() bool {
