@@ -8,13 +8,13 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
-	"github.com/georgysavva/scany/pgxscan"
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
@@ -22,10 +22,13 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/auth/wildcard"
-	"github.com/treeverse/lakefs/pkg/db"
+	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type AuthorizationRequest struct {
@@ -38,7 +41,19 @@ type AuthorizationResponse struct {
 	Error   error
 }
 
-const InvalidUserID = "-1"
+// CheckResult - the final result for the authorization is accepted only if it's CheckAllow
+type CheckResult int
+
+const (
+	InvalidUserID = "-1"
+	maxPage       = 1000
+	// CheckAllow Permission allowed
+	CheckAllow CheckResult = iota
+	// CheckNeutral Permission neither allowed nor denied
+	CheckNeutral
+	// CheckDeny Permission denied
+	CheckDeny
+)
 
 type GatewayService interface {
 	GetCredentials(_ context.Context, accessKey string) (*model.Credential, error)
@@ -48,6 +63,7 @@ type GatewayService interface {
 
 type Service interface {
 	SecretStore() crypt.SecretStore
+	Cache() Cache
 
 	// users
 	CreateUser(ctx context.Context, user *model.BaseUser) (string, error)
@@ -123,114 +139,51 @@ func fieldByTag(t reflect.Type, key, tag string) string {
 	return ""
 }
 
-const maxPage = 1000
-
-func ListPaged(ctx context.Context, db db.Querier, retType reflect.Type, params *model.PaginationParams, tokenColumnName string, queryBuilder sq.SelectBuilder) (*reflect.Value, *model.Paginator, error) {
-	ptrType := reflect.PtrTo(retType)
-	tokenField := fieldByTag(retType, "db", tokenColumnName)
-	if tokenField == "" {
-		return nil, nil, fmt.Errorf("[I] no field %s: %w", tokenColumnName, ErrNoField)
-	}
-	slice := reflect.MakeSlice(reflect.SliceOf(ptrType), 0, 0)
-	queryBuilder = queryBuilder.OrderBy(tokenColumnName)
-	amount := 0
+func (s *KVAuthService) ListKVPaged(ctx context.Context, protoType protoreflect.MessageType, params *model.PaginationParams, prefix string, secondary bool) ([]proto.Message, *model.Paginator, error) {
+	amount := maxPage
+	var it kv.MessageIterator
+	var err error
 	if params != nil {
-		queryBuilder = queryBuilder.Where(sq.Gt{tokenColumnName: params.After})
-		if params.Amount >= 0 {
-			amount = params.Amount + 1
+		if secondary {
+			it, err = kv.NewSecondaryIterator(ctx, s.store.Store, protoType, model.PartitionKey, prefix, params.After)
+		} else {
+			it, err = kv.NewPrimaryIterator(ctx, s.store.Store, protoType, model.PartitionKey, prefix, params.After)
+		}
+		defer it.Close()
+		if err != nil {
+			return nil, nil, fmt.Errorf("scan prefix(%s): %w", prefix, err)
+		}
+		if params.Amount >= 0 && params.Amount < maxPage {
+			amount = params.Amount
 		}
 	}
-	if amount > maxPage {
-		amount = maxPage
-	}
-	if amount > 0 {
-		queryBuilder = queryBuilder.Limit(uint64(amount))
-	}
-	query, args, err := queryBuilder.ToSql()
-	if err != nil {
-		return nil, nil, fmt.Errorf("convert to SQL: %w", err)
-	}
-	rows, err := db.Query(ctx, query, args...)
-	if err != nil {
-		return nil, nil, fmt.Errorf("query DB: %w", err)
-	}
-	rowScanner := pgxscan.NewRowScanner(rows)
-	for rows.Next() {
-		value := reflect.New(retType)
-		if err = rowScanner.Scan(value.Interface()); err != nil {
-			return nil, nil, fmt.Errorf("scan value from DB: %w", err)
-		}
-		slice = reflect.Append(slice, value)
-	}
+
+	entries := make([]proto.Message, 0)
 	p := &model.Paginator{}
-	if params != nil && params.Amount >= 0 && slice.Len() == params.Amount+1 {
-		// we have more pages
-		slice = slice.Slice(0, params.Amount)
-		p.Amount = params.Amount
-		lastElem := slice.Index(slice.Len() - 1).Elem()
-		p.NextPageToken = lastElem.FieldByName(tokenField).String()
-		return &slice, p, nil
+	for len(entries) < amount && it.Next() {
+		entry := it.Entry()
+		value := entry.Value
+		entries = append(entries, value)
+		if len(entries) == amount {
+			p.NextPageToken = entry.Key
+			break
+		}
 	}
-	p.Amount = slice.Len()
-	return &slice, p, nil
+	if err = it.Err(); err != nil {
+		return nil, nil, fmt.Errorf("list DB: %w", err)
+	}
+	p.Amount = len(entries)
+	return entries, p, nil
 }
 
-func getUser(tx db.Tx, username string) (*model.User, error) {
-	user := &model.DBUser{}
-	err := tx.Get(user, `SELECT * FROM auth_users WHERE display_name = $1`, username)
-	if err != nil {
-		return nil, err
-	}
-	return model.ConvertUser(user), nil
-}
-
-func getUserByEmail(tx db.Tx, email string) (*model.User, error) {
-	user := &model.DBUser{}
-	err := tx.Get(user, `SELECT * FROM auth_users WHERE email = $1`, email)
-	if err != nil {
-		return nil, err
-	}
-	return model.ConvertUser(user), nil
-}
-
-func getGroup(tx db.Tx, groupDisplayName string) (*model.DBGroup, error) {
-	group := &model.DBGroup{}
-	err := tx.Get(group, `SELECT * FROM auth_groups WHERE display_name = $1`, groupDisplayName)
-	if err != nil {
-		return nil, err
-	}
-	return group, nil
-}
-
-func getPolicy(tx db.Tx, policyDisplayName string) (*model.DBPolicy, error) {
-	policy := &model.DBPolicy{}
-	err := tx.Get(policy, `SELECT * FROM auth_policies WHERE display_name = $1`, policyDisplayName)
-	if err != nil {
-		return nil, err
-	}
-	return policy, nil
-}
-
-func deleteOrNotFound(tx db.Tx, stmt string, args ...interface{}) error {
-	res, err := tx.Exec(stmt, args...)
-	if err != nil {
-		return err
-	}
-	numRows := res.RowsAffected()
-	if numRows == 0 {
-		return ErrNotFound
-	}
-	return nil
-}
-
-type DBAuthService struct {
-	db          db.Database
+type KVAuthService struct {
+	store       kv.StoreMessage
 	secretStore crypt.SecretStore
 	cache       Cache
 	log         logging.Logger
 }
 
-func NewDBAuthService(db db.Database, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) *DBAuthService {
+func NewKVAuthService(store kv.StoreMessage, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) *KVAuthService {
 	logger.Info("initialized Auth service")
 	var cache Cache
 	if cacheConf.Enabled {
@@ -238,231 +191,325 @@ func NewDBAuthService(db db.Database, secretStore crypt.SecretStore, cacheConf p
 	} else {
 		cache = &DummyCache{}
 	}
-	return &DBAuthService{
-		db:          db,
+	return &KVAuthService{
+		store:       store,
 		secretStore: secretStore,
 		cache:       cache,
 		log:         logger,
 	}
 }
 
-func (s *DBAuthService) decryptSecret(value []byte) (string, error) {
-	decrypted, err := s.secretStore.Decrypt(value)
-	if err != nil {
-		return "", err
-	}
-	return string(decrypted), nil
-}
-
-func (s *DBAuthService) encryptSecret(secretAccessKey string) ([]byte, error) {
-	encrypted, err := s.secretStore.Encrypt([]byte(secretAccessKey))
-	if err != nil {
-		return nil, err
-	}
-	return encrypted, nil
-}
-
-func (s *DBAuthService) SecretStore() crypt.SecretStore {
+func (s *KVAuthService) SecretStore() crypt.SecretStore {
 	return s.secretStore
 }
 
-func (s *DBAuthService) DB() db.Database {
-	return s.db
+func (s *KVAuthService) Cache() Cache {
+	return s.cache
 }
 
-func (s *DBAuthService) CreateUser(ctx context.Context, user *model.BaseUser) (string, error) {
-	id, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		if err := model.ValidateAuthEntityID(user.Username); err != nil {
-			return nil, err
-		}
-		var id int64
-		err := tx.Get(&id,
-			`INSERT INTO auth_users (display_name, created_at, friendly_name, source, email) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-			user.Username, user.CreatedAt, user.FriendlyName, user.Source, user.Email)
-		return id, err
-	})
-	if err != nil {
+func (s *KVAuthService) CreateUser(ctx context.Context, user *model.BaseUser) (string, error) {
+	if err := model.ValidateAuthEntityID(user.Username); err != nil {
 		return InvalidUserID, err
+	}
+	userKey := model.UserPath(user.Username)
+	id := model.CreateID()
+	userWithID := model.User{ID: id, BaseUser: *user}
+
+	err := s.store.SetMsgIf(ctx, model.PartitionKey, userKey, model.ProtoFromUser(&userWithID), nil)
+	if err != nil {
+		if errors.Is(err, kv.ErrPredicateFailed) {
+			err = ErrAlreadyExists
+		}
+		return "", fmt.Errorf("save user (userKey %s): %w", userKey, err)
 	}
 	return fmt.Sprint(id), err
 }
 
-func (s *DBAuthService) DeleteUser(ctx context.Context, username string) error {
-	_, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		return nil, deleteOrNotFound(tx, `DELETE FROM auth_users WHERE display_name = $1`, username)
-	})
-	return err
-}
+func (s *KVAuthService) DeleteUser(ctx context.Context, username string) error {
+	if _, err := s.GetUser(ctx, username); err != nil {
+		return err
+	}
+	userPath := model.UserPath(username)
 
-func (s *DBAuthService) GetUser(ctx context.Context, username string) (*model.User, error) {
-	return s.cache.GetUser(username, func() (*model.User, error) {
-		user, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-			return getUser(tx, username)
-		}, db.ReadOnly())
-		if err != nil {
-			return nil, err
-		}
-		return user.(*model.User), nil
-	})
-}
-
-func (s *DBAuthService) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
-	user, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		return getUserByEmail(tx, email)
-	}, db.ReadOnly())
+	// delete policy attached to user
+	policiesKey := model.UserPolicyPath(username, "")
+	it, err := kv.NewSecondaryIterator(ctx, s.store.Store, (&model.PolicyData{}).ProtoReflect().Type(), model.PartitionKey, policiesKey, "")
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return user.(*model.User), nil
+	defer it.Close()
+	for it.Next() {
+		entry := it.Entry()
+		policy := entry.Value.(*model.PolicyData)
+		if err = s.DetachPolicyFromUserNoValidation(ctx, policy.DisplayName, username); err != nil {
+			return err
+		}
+	}
+	if err = it.Err(); err != nil {
+		return err
+	}
+
+	// delete user membership of group
+	groupKey := model.GroupPath("")
+	itr, err := kv.NewPrimaryIterator(ctx, s.store.Store, (&model.GroupData{}).ProtoReflect().Type(), model.PartitionKey, groupKey, "")
+	if err != nil {
+		return err
+	}
+	defer itr.Close()
+	for itr.Next() {
+		entry := itr.Entry()
+		group := entry.Value.(*model.GroupData)
+		if err = s.removeUserFromGroupNoValidation(ctx, username, group.DisplayName); err != nil {
+			return err
+		}
+	}
+	if err = itr.Err(); err != nil {
+		return err
+	}
+
+	// delete user
+	err = s.store.DeleteMsg(ctx, model.PartitionKey, userPath)
+	if err != nil {
+		return fmt.Errorf("delete user (userKey %s): %w", userPath, err)
+	}
+	return err
 }
 
-func (s *DBAuthService) GetUserByID(ctx context.Context, userID string) (*model.User, error) {
-	return s.cache.GetUserByID(userID, func() (*model.User, error) {
-		user, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-			user := &model.DBUser{}
-			err := tx.Get(user, `SELECT * FROM auth_users WHERE id = $1`, userID)
-			if err != nil {
-				return nil, err
-			}
-			return user, nil
-		}, db.ReadOnly())
+func (s *KVAuthService) GetUser(ctx context.Context, username string) (*model.User, error) {
+	return s.cache.GetUser(username, func() (*model.User, error) {
+		userKey := model.UserPath(username)
+		m := model.UserData{}
+		_, err := s.store.GetMsg(ctx, model.PartitionKey, userKey, &m)
 		if err != nil {
+			if errors.Is(err, kv.ErrNotFound) {
+				err = ErrNotFound
+			}
+			return nil, fmt.Errorf("%s: %w", username, err)
+		}
+		return model.UserFromProto(&m), nil
+	})
+}
+
+func (s *KVAuthService) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
+	return s.cache.GetUserByEmail(email, func() (*model.User, error) {
+		m := &model.UserData{}
+		itr, err := s.store.Scan(ctx, m.ProtoReflect().Type(), model.PartitionKey, model.UserPath(""), "")
+		if err != nil {
+			return nil, fmt.Errorf("scan users: %w", err)
+		}
+		defer itr.Close()
+
+		for itr.Next() {
+			if itr.Err() != nil {
+				return nil, itr.Err()
+			}
+			entry := itr.Entry()
+			value, ok := entry.Value.(*model.UserData)
+			if !ok {
+				return nil, fmt.Errorf("failed to cast: %w", err)
+			}
+			if value.Email == email {
+				return model.UserFromProto(value), nil
+			}
+		}
+		return nil, ErrNotFound
+	})
+}
+
+func (s *KVAuthService) GetUserByID(ctx context.Context, userID string) (*model.User, error) {
+	return s.cache.GetUserByID(userID, func() (*model.User, error) {
+		m := &model.UserData{}
+		itr, err := s.store.Scan(ctx, m.ProtoReflect().Type(), model.PartitionKey, model.UserPath(""), "")
+		if err != nil {
+			return nil, fmt.Errorf("scan users: %w", err)
+		}
+		defer itr.Close()
+
+		for itr.Next() {
+			entry := itr.Entry()
+			value, ok := entry.Value.(*model.UserData)
+			if !ok {
+				return nil, fmt.Errorf("failed to cast: %w", err)
+			}
+			if string(value.Id) == userID {
+				return model.UserFromProto(value), nil
+			}
+		}
+		if err = itr.Err(); err != nil {
 			return nil, err
 		}
-
-		return model.ConvertUser(user.(*model.DBUser)), nil
+		return nil, ErrNotFound
 	})
 }
 
-func (s *DBAuthService) ListUsers(ctx context.Context, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
-	var user model.DBUser
-	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(user), params, "display_name",
-		psql.Select("*").
-			From("auth_users").
-			Where(sq.Like{"display_name": fmt.Sprint(params.Prefix, "%")}))
-	if slice == nil {
+func (s *KVAuthService) ListUsers(ctx context.Context, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
+	var user model.UserData
+	usersKey := model.UserPath("")
+
+	msgs, paginator, err := s.ListKVPaged(ctx, (&user).ProtoReflect().Type(), params, usersKey, false)
+	if msgs == nil {
 		return nil, paginator, err
 	}
-	return model.ConvertUsersList(slice.Interface().([]*model.DBUser)), paginator, err
+	return model.ConvertUsersDataList(msgs), paginator, err
 }
 
-func (s *DBAuthService) ListUserCredentials(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Credential, *model.Paginator, error) {
-	var credential model.DBCredential
-	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(credential), params, "access_key_id", psql.Select("auth_credentials.*").
-		From("auth_credentials").
-		Join("auth_users ON (auth_credentials.user_id = auth_users.id)").
-		Where(sq.And{
-			sq.Eq{"auth_users.display_name": username},
-			sq.Like{"display_name": fmt.Sprint(params.Prefix, "%")},
-		}))
-	if slice == nil {
+func (s *KVAuthService) ListUserCredentials(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Credential, *model.Paginator, error) {
+	var credential model.CredentialData
+	credentialsKey := model.CredentialPath(username, "")
+
+	msgs, paginator, err := s.ListKVPaged(ctx, (&credential).ProtoReflect().Type(), params, credentialsKey, false)
+	if msgs == nil {
 		return nil, paginator, err
 	}
-	return model.ConvertCredList(slice.Interface().([]*model.DBCredential)), paginator, err
+	return model.ConvertCredDataList(s.secretStore, msgs), paginator, err
 }
 
-func (s *DBAuthService) AttachPolicyToUser(ctx context.Context, policyDisplayName, username string) error {
-	_, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		if _, err := getUser(tx, username); err != nil {
-			return nil, fmt.Errorf("%s: %w", username, err)
+func (s *KVAuthService) AttachPolicyToUser(ctx context.Context, policyDisplayName string, username string) error {
+	if _, err := s.GetUser(ctx, username); err != nil {
+		return err
+	}
+	if _, err := s.GetPolicy(ctx, policyDisplayName); err != nil {
+		return err
+	}
+
+	policyKey := model.PolicyPath(policyDisplayName)
+	pu := model.UserPolicyPath(username, policyDisplayName)
+
+	err := s.store.SetMsgIf(ctx, model.PartitionKey, pu, &kv.SecondaryIndex{PrimaryKey: []byte(policyKey)}, nil)
+	if err != nil {
+		if errors.Is(err, kv.ErrPredicateFailed) {
+			err = ErrAlreadyExists
 		}
-		if _, err := getPolicy(tx, policyDisplayName); err != nil {
-			return nil, fmt.Errorf("%s: %w", policyDisplayName, err)
-		}
-		_, err := tx.Exec(`
-			INSERT INTO auth_user_policies (user_id, policy_id)
-			VALUES (
-				(SELECT id FROM auth_users WHERE display_name = $1),
-				(SELECT id FROM auth_policies WHERE display_name = $2)
-			)`, username, policyDisplayName)
-		if errors.Is(err, db.ErrAlreadyExists) {
-			return nil, fmt.Errorf("policy attachment: %w", ErrAlreadyExists)
-		}
-		return nil, err
-	})
-	return err
+		return fmt.Errorf("policy attachment to user: (key %s): %w", pu, err)
+	}
+	return nil
 }
 
-func (s *DBAuthService) DetachPolicyFromUser(ctx context.Context, policyDisplayName, username string) error {
-	_, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		if _, err := getUser(tx, username); err != nil {
-			return nil, fmt.Errorf("%s: %w", username, err)
-		}
-		if _, err := getPolicy(tx, policyDisplayName); err != nil {
-			return nil, fmt.Errorf("%s: %w", policyDisplayName, err)
-		}
-		return nil, deleteOrNotFound(tx, `
-			DELETE FROM auth_user_policies USING auth_users, auth_policies
-			WHERE auth_user_policies.user_id = auth_users.id
-				AND auth_user_policies.policy_id = auth_policies.id
-				AND auth_users.display_name = $1
-				AND auth_policies.display_name = $2`,
-			username, policyDisplayName)
-	})
-	return err
+func (s *KVAuthService) DetachPolicyFromUserNoValidation(ctx context.Context, policyDisplayName, username string) error {
+	pu := model.UserPolicyPath(username, policyDisplayName)
+	err := s.store.DeleteMsg(ctx, model.PartitionKey, pu)
+	if err != nil {
+		return fmt.Errorf("detaching policy: (key %s): %w", pu, err)
+	}
+	return nil
 }
 
-func (s *DBAuthService) ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
-	var policy model.BasePolicy
-	sub := psql.Select("auth_policies.*").
-		From("auth_policies").
-		Join("auth_user_policies ON (auth_policies.id = auth_user_policies.policy_id)").
-		Join("auth_users ON (auth_user_policies.user_id = auth_users.id)").
-		Where(sq.And{
-			sq.Eq{"auth_users.display_name": username},
-			sq.Like{"auth_policies.display_name": fmt.Sprint(params.Prefix, "%")},
+func (s *KVAuthService) DetachPolicyFromUser(ctx context.Context, policyDisplayName, username string) error {
+	if _, err := s.GetUser(ctx, username); err != nil {
+		return err
+	}
+	if _, err := s.GetPolicy(ctx, policyDisplayName); err != nil {
+		return err
+	}
+	return s.DetachPolicyFromUserNoValidation(ctx, policyDisplayName, username)
+}
+
+func (s *KVAuthService) ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+	var policy model.PolicyData
+	userPolicyKey := model.UserPolicyPath(username, "")
+
+	msgs, paginator, err := s.ListKVPaged(ctx, (&policy).ProtoReflect().Type(), params, userPolicyKey, true)
+	if msgs == nil {
+		return nil, paginator, err
+	}
+	return model.ConvertPolicyDataList(msgs), paginator, err
+}
+
+func (s *KVAuthService) getEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+	if _, err := s.GetUser(ctx, username); err != nil {
+		return nil, nil, err
+	}
+
+	hasMoreUserPolicy := true
+	afterUserPolicy := ""
+	amount := maxPage
+	policiesSet := make(map[string]*model.BasePolicy)
+	// get policies attracted to user
+	for hasMoreUserPolicy {
+		policies, userPaginator, err := s.ListUserPolicies(ctx, username, &model.PaginationParams{
+			After:  afterUserPolicy,
+			Amount: amount,
 		})
-	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(policy), params, "display_name",
-		psql.Select("*").FromSelect(sub, "p"))
-	if slice == nil {
-		return nil, paginator, err
+		if err != nil {
+			return nil, nil, fmt.Errorf("list user policies: %w", err)
+		}
+		for _, policy := range policies {
+			policiesSet[policy.DisplayName] = policy
+		}
+		afterUserPolicy = userPaginator.NextPageToken
+		hasMoreUserPolicy = userPaginator.NextPageToken != ""
 	}
-	return slice.Interface().([]*model.BasePolicy), paginator, nil
+
+	hasMoreGroup := true
+	afterGroup := ""
+	for hasMoreGroup {
+		// get membership groups to user
+		groups, groupPaginator, err := s.ListUserGroups(ctx, username, &model.PaginationParams{
+			After:  afterGroup,
+			Amount: amount,
+		})
+		if err != nil {
+			return nil, nil, err
+		}
+		for _, group := range groups {
+			// get policies attracted to group
+			hasMoreGroupPolicy := true
+			afterGroupPolicy := ""
+			for hasMoreGroupPolicy {
+				groupPolicies, groupPoliciesPaginator, err := s.ListGroupPolicies(ctx, group.DisplayName, &model.PaginationParams{
+					After:  afterGroupPolicy,
+					Amount: amount,
+				})
+				if err != nil {
+					return nil, nil, fmt.Errorf("list group policies: %w", err)
+				}
+				for _, policy := range groupPolicies {
+					policiesSet[policy.DisplayName] = policy
+				}
+				afterGroupPolicy = groupPoliciesPaginator.NextPageToken
+				hasMoreGroupPolicy = groupPoliciesPaginator.NextPageToken != ""
+			}
+		}
+		afterGroup = groupPaginator.NextPageToken
+		hasMoreGroup = groupPaginator.NextPageToken != ""
+	}
+
+	if params.Amount < 0 || params.Amount > maxPage {
+		params.Amount = maxPage
+	}
+
+	var policiesArr []string
+	for k := range policiesSet {
+		policiesArr = append(policiesArr, k)
+	}
+	sort.Strings(policiesArr)
+
+	var resPolicies []*model.BasePolicy
+	resPaginator := model.Paginator{Amount: 0, NextPageToken: ""}
+	for _, p := range policiesArr {
+		if p > params.After {
+			resPolicies = append(resPolicies, policiesSet[p])
+			if len(resPolicies) == params.Amount {
+				resPaginator.NextPageToken = p
+				break
+			}
+		}
+	}
+	resPaginator.Amount = len(resPolicies)
+	return resPolicies, &resPaginator, nil
 }
 
-func (s *DBAuthService) getEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
-	// resolve all policies attached to the user and its groups
-	resolvedCte := `
-	    WITH resolved_policies_view AS (
-                SELECT auth_policies.id, auth_policies.created_at, auth_policies.display_name, auth_policies.statement, auth_users.display_name AS user_display_name
-                FROM auth_policies INNER JOIN
-                     auth_user_policies ON (auth_policies.id = auth_user_policies.policy_id) INNER JOIN
-		     auth_users ON (auth_users.id = auth_user_policies.user_id)
-                UNION
-		SELECT auth_policies.id, auth_policies.created_at, auth_policies.display_name, auth_policies.statement, auth_users.display_name AS user_display_name
-		FROM auth_policies INNER JOIN
-		     auth_group_policies ON (auth_policies.id = auth_group_policies.policy_id) INNER JOIN
-		     auth_groups ON (auth_groups.id = auth_group_policies.group_id) INNER JOIN
-		     auth_user_groups ON (auth_user_groups.group_id = auth_groups.id) INNER JOIN
-		     auth_users ON (auth_users.id = auth_user_groups.user_id)
-	    )`
-	var policy model.DBPolicy
-	slice, paginator, err := ListPaged(ctx,
-		s.db, reflect.TypeOf(policy), params, "display_name",
-		psql.Select("id", "created_at", "display_name", "statement").
-			Prefix(resolvedCte).
-			From("resolved_policies_view").
-			Where(sq.And{
-				sq.Eq{"user_display_name": username},
-				sq.Like{"display_name": fmt.Sprint(params.Prefix, "%")},
-			}))
-
-	if slice == nil {
-		return nil, paginator, err
-	}
-	policies := slice.Interface().([]*model.DBPolicy)
-	res := make([]*model.BasePolicy, 0, len(policies))
-	for _, p := range policies {
-		res = append(res, &p.BasePolicy)
-	}
-	return res, paginator, nil
+func (s *KVAuthService) ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+	return ListEffectivePolicies(ctx, username, params, s.getEffectivePolicies, s.cache)
 }
 
-func (s *DBAuthService) ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+type effectivePoliciesGetter func(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error)
+
+func ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams, getEffectivePolicies effectivePoliciesGetter, cache Cache) ([]*model.BasePolicy, *model.Paginator, error) {
 	if params.Amount == -1 {
 		// read through the cache when requesting the full list
-		policies, err := s.cache.GetUserPolicies(username, func() ([]*model.BasePolicy, error) {
-			policies, _, err := s.getEffectivePolicies(ctx, username, params)
+		policies, err := cache.GetUserPolicies(username, func() ([]*model.BasePolicy, error) {
+			policies, _, err := getEffectivePolicies(ctx, username, params)
 			return policies, err
 		})
 		if err != nil {
@@ -471,302 +518,320 @@ func (s *DBAuthService) ListEffectivePolicies(ctx context.Context, username stri
 		return policies, &model.Paginator{Amount: len(policies)}, nil
 	}
 
-	return s.getEffectivePolicies(ctx, username, params)
+	return getEffectivePolicies(ctx, username, params)
 }
 
-func (s *DBAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
-	var policy model.DBPolicy
-	query := psql.Select("auth_policies.*").
-		From("auth_policies").
-		Join("auth_group_policies ON (auth_policies.id = auth_group_policies.policy_id)").
-		Join("auth_groups ON (auth_group_policies.group_id = auth_groups.id)").
-		Where(sq.And{
-			sq.Eq{"auth_groups.display_name": groupDisplayName},
-			sq.Like{"auth_policies.display_name": fmt.Sprint(params.Prefix, "%")},
-		})
-	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(policy), params, "display_name",
-		psql.Select("*").FromSelect(query, "p"))
-	if err != nil {
+func (s *KVAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+	var policy model.PolicyData
+	groupPolicyKey := model.GroupPolicyPath(groupDisplayName, "")
+
+	msgs, paginator, err := s.ListKVPaged(ctx, (&policy).ProtoReflect().Type(), params, groupPolicyKey, true)
+	if msgs == nil {
 		return nil, paginator, err
 	}
-	dbPolicies := slice.Interface().([]*model.DBPolicy)
-	policies := make([]*model.BasePolicy, len(dbPolicies))
-	for i := range dbPolicies {
-		policies[i] = &dbPolicies[i].BasePolicy
-	}
-	return policies, paginator, nil
+	return model.ConvertPolicyDataList(msgs), paginator, err
 }
 
-func (s *DBAuthService) CreateGroup(ctx context.Context, group *model.BaseGroup) error {
-	var id int
-	_, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		if err := model.ValidateAuthEntityID(group.DisplayName); err != nil {
-			return nil, err
+func (s *KVAuthService) CreateGroup(ctx context.Context, group *model.BaseGroup) error {
+	if err := model.ValidateAuthEntityID(group.DisplayName); err != nil {
+		return err
+	}
+
+	groupKey := model.GroupPath(group.DisplayName)
+	id := model.CreateID()
+	groupWithID := model.Group{ID: id, BaseGroup: *group}
+
+	err := s.store.SetMsgIf(ctx, model.PartitionKey, groupKey, model.ProtoFromGroup(&groupWithID), nil)
+	if err != nil {
+		if errors.Is(err, kv.ErrPredicateFailed) {
+			err = ErrAlreadyExists
 		}
-		return nil, tx.Get(&id, `INSERT INTO auth_groups (display_name, created_at) VALUES ($1, $2) RETURNING id`,
-			group.DisplayName, group.CreatedAt)
-	})
-	return err
-}
-
-func (s *DBAuthService) DeleteGroup(ctx context.Context, groupDisplayName string) error {
-	_, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		return nil, deleteOrNotFound(tx, `DELETE FROM auth_groups WHERE display_name = $1`, groupDisplayName)
-	})
-	return err
-}
-
-func (s *DBAuthService) GetGroup(ctx context.Context, groupDisplayName string) (*model.Group, error) {
-	group, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		return getGroup(tx, groupDisplayName)
-	}, db.ReadOnly())
-	if err != nil {
-		return nil, err
+		return fmt.Errorf("save group (groupKey %s): %w", groupKey, err)
 	}
-	return model.ConvertGroup(group.(*model.DBGroup)), nil
+	return err
 }
 
-func (s *DBAuthService) ListGroups(ctx context.Context, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error) {
-	var group model.DBGroup
-	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(group), params, "display_name",
-		psql.Select("*").
-			From("auth_groups").
-			Where(sq.Like{"display_name": fmt.Sprint(params.Prefix, "%")}))
+func (s *KVAuthService) DeleteGroup(ctx context.Context, groupDisplayName string) error {
+	if _, err := s.GetGroup(ctx, groupDisplayName); err != nil {
+		return err
+	}
+
+	// delete user membership to group
+	usersKey := model.GroupUserPath(groupDisplayName, "")
+	it, err := kv.NewSecondaryIterator(ctx, s.store.Store, (&model.UserData{}).ProtoReflect().Type(), model.PartitionKey, usersKey, "")
 	if err != nil {
+		return err
+	}
+	defer it.Close()
+	for it.Next() {
+		entry := it.Entry()
+		user := entry.Value.(*model.UserData)
+		if err = s.removeUserFromGroupNoValidation(ctx, user.Username, groupDisplayName); err != nil {
+			return err
+		}
+	}
+	if err = it.Err(); err != nil {
+		return err
+	}
+
+	// delete policy attachment to group
+	policiesKey := model.GroupPolicyPath(groupDisplayName, "")
+	itr, err := kv.NewSecondaryIterator(ctx, s.store.Store, (&model.PolicyData{}).ProtoReflect().Type(), model.PartitionKey, policiesKey, "")
+	if err != nil {
+		return err
+	}
+	defer it.Close()
+	for itr.Next() {
+		entry := itr.Entry()
+		policy := entry.Value.(*model.PolicyData)
+		if err = s.DetachPolicyFromGroupNoValidation(ctx, policy.DisplayName, groupDisplayName); err != nil {
+			return err
+		}
+	}
+	if err = itr.Err(); err != nil {
+		return err
+	}
+
+	// delete group
+	groupPath := model.GroupPath(groupDisplayName)
+	err = s.store.DeleteMsg(ctx, model.PartitionKey, groupPath)
+	if err != nil {
+		return fmt.Errorf("delete user (userKey %s): %w", groupPath, err)
+	}
+	return err
+}
+
+func (s *KVAuthService) GetGroup(ctx context.Context, groupDisplayName string) (*model.Group, error) {
+	groupKey := model.GroupPath(groupDisplayName)
+	m := model.GroupData{}
+	_, err := s.store.GetMsg(ctx, model.PartitionKey, groupKey, &m)
+	if err != nil {
+		if errors.Is(err, kv.ErrNotFound) {
+			err = ErrNotFound
+		}
+		return nil, fmt.Errorf("%s: %w", groupDisplayName, err)
+	}
+	return model.GroupFromProto(&m), nil
+}
+
+func (s *KVAuthService) ListGroups(ctx context.Context, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error) {
+	var group model.GroupData
+	groupKey := model.GroupPath("")
+
+	msgs, paginator, err := s.ListKVPaged(ctx, (&group).ProtoReflect().Type(), params, groupKey, false)
+	if msgs == nil {
 		return nil, paginator, err
 	}
-	groups := slice.Interface().([]*model.DBGroup)
-	return model.ConvertGroupList(groups), paginator, nil
+	return model.ConvertGroupDataList(msgs), paginator, err
 }
 
-func (s *DBAuthService) AddUserToGroup(ctx context.Context, username, groupDisplayName string) error {
-	_, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		if _, err := getUser(tx, username); err != nil {
-			return nil, fmt.Errorf("%s: %w", username, err)
-		}
-		if _, err := getGroup(tx, groupDisplayName); err != nil {
-			return nil, fmt.Errorf("%s: %w", groupDisplayName, err)
-		}
-		_, err := tx.Exec(`
-			INSERT INTO auth_user_groups (user_id, group_id)
-			VALUES (
-				(SELECT id FROM auth_users WHERE display_name = $1),
-				(SELECT id FROM auth_groups WHERE display_name = $2)
-			)`, username, groupDisplayName)
-		if errors.Is(err, db.ErrAlreadyExists) {
-			return nil, fmt.Errorf("group membership: %w", ErrAlreadyExists)
-		}
-		return nil, err
-	})
-	return err
-}
-
-func (s *DBAuthService) RemoveUserFromGroup(ctx context.Context, username, groupDisplayName string) error {
-	_, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		if _, err := getUser(tx, username); err != nil {
-			return nil, fmt.Errorf("%s: %w", username, err)
-		}
-		if _, err := getGroup(tx, groupDisplayName); err != nil {
-			return nil, fmt.Errorf("%s: %w", groupDisplayName, err)
-		}
-		return nil, deleteOrNotFound(tx, `
-			DELETE FROM auth_user_groups USING auth_users, auth_groups
-			WHERE auth_user_groups.user_id = auth_users.id
-				AND auth_user_groups.group_id = auth_groups.id
-				AND auth_users.display_name = $1
-				AND auth_groups.display_name = $2`,
-			username, groupDisplayName)
-	})
-	return err
-}
-
-func (s *DBAuthService) ListUserGroups(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error) {
-	type res struct {
-		groups    []*model.Group
-		paginator *model.Paginator
+func (s *KVAuthService) AddUserToGroup(ctx context.Context, username, groupDisplayName string) error {
+	if _, err := s.GetUser(ctx, username); err != nil {
+		return err
 	}
-	result, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		if _, err := getUser(tx, username); err != nil {
-			return nil, err
-		}
-		dbGroups := make([]*model.DBGroup, 0)
-		err := tx.Select(&dbGroups, `
-			SELECT auth_groups.* FROM auth_groups
-				INNER JOIN auth_user_groups ON (auth_groups.id = auth_user_groups.group_id)
-				INNER JOIN auth_users ON (auth_user_groups.user_id = auth_users.id)
-			WHERE
-				auth_users.display_name = $1
-				AND auth_groups.display_name > $2
-				AND auth_groups.display_name like $3
-			ORDER BY auth_groups.display_name
-			LIMIT $4`,
-			username, params.After, fmt.Sprint(params.Prefix, "%"), params.Amount+1)
-		if err != nil {
-			return nil, err
-		}
-		groups := make([]*model.Group, len(dbGroups))
-		for i := range dbGroups {
-			groups[i] = model.ConvertGroup(dbGroups[i])
-		}
-		p := &model.Paginator{}
-		if len(groups) == params.Amount+1 {
-			// we have more pages
-			groups = groups[0:params.Amount]
-			p.Amount = params.Amount
-			p.NextPageToken = groups[len(dbGroups)-1].DisplayName
-			return &res{groups, p}, nil
-		}
-		p.Amount = len(groups)
-		return &res{groups, p}, nil
-	})
+	if _, err := s.GetGroup(ctx, groupDisplayName); err != nil {
+		return err
+	}
 
+	userKey := model.UserPath(username)
+	gu := model.GroupUserPath(groupDisplayName, username)
+
+	err := s.store.SetMsgIf(ctx, model.PartitionKey, gu, &kv.SecondaryIndex{PrimaryKey: []byte(userKey)}, nil)
 	if err != nil {
+		if errors.Is(err, kv.ErrPredicateFailed) {
+			err = ErrAlreadyExists
+		}
+		return fmt.Errorf("add user to group: (key %s): %w", gu, err)
+	}
+	return err
+}
+
+func (s *KVAuthService) removeUserFromGroupNoValidation(ctx context.Context, username, groupDisplayName string) error {
+	gu := model.GroupUserPath(groupDisplayName, username)
+	err := s.store.DeleteMsg(ctx, model.PartitionKey, gu)
+	if err != nil {
+		return fmt.Errorf("remove user from group: (key %s): %w", gu, err)
+	}
+	return err
+}
+
+func (s *KVAuthService) RemoveUserFromGroup(ctx context.Context, username, groupDisplayName string) error {
+	if _, err := s.GetUser(ctx, username); err != nil {
+		return err
+	}
+	if _, err := s.GetGroup(ctx, groupDisplayName); err != nil {
+		return err
+	}
+	return s.removeUserFromGroupNoValidation(ctx, username, groupDisplayName)
+}
+
+func (s *KVAuthService) ListUserGroups(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error) {
+	if _, err := s.GetUser(ctx, username); err != nil {
 		return nil, nil, err
 	}
-	return result.(*res).groups, result.(*res).paginator, nil
+	if params.Amount < 0 || params.Amount > maxPage {
+		params.Amount = maxPage
+	}
+
+	hasMoreGroups := true
+	afterGroup := params.After
+	var userGroups []*model.Group
+	resPaginator := model.Paginator{Amount: 0, NextPageToken: ""}
+	for hasMoreGroups && len(userGroups) <= params.Amount {
+		groups, paginator, err := s.ListGroups(ctx, &model.PaginationParams{Prefix: params.Prefix, After: afterGroup, Amount: maxPage})
+		if err != nil {
+			return nil, nil, err
+		}
+		for _, group := range groups {
+			path := model.GroupUserPath(group.DisplayName, username)
+			m := model.UserData{}
+			_, err := s.store.GetMsg(ctx, model.PartitionKey, path, &m)
+			if err != nil && !errors.Is(err, kv.ErrNotFound) {
+				return nil, nil, err
+			}
+			if err == nil {
+				userGroups = append(userGroups, group)
+			}
+			if len(userGroups) == params.Amount {
+				resPaginator.NextPageToken = group.DisplayName
+				resPaginator.Amount = len(userGroups)
+				return userGroups, &resPaginator, nil
+			}
+		}
+		hasMoreGroups = paginator.NextPageToken != ""
+		afterGroup = paginator.NextPageToken
+	}
+	resPaginator.Amount = len(userGroups)
+	return userGroups, &resPaginator, nil
 }
 
-func (s *DBAuthService) ListGroupUsers(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
-	type res struct {
-		users     []*model.User
-		paginator *model.Paginator
-	}
-	result, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		if _, err := getGroup(tx, groupDisplayName); err != nil {
-			return nil, err
-		}
-		dbUsers := make([]*model.DBUser, 0)
-		err := tx.Select(&dbUsers, `
-			SELECT auth_users.* FROM auth_users
-				INNER JOIN auth_user_groups ON (auth_users.id = auth_user_groups.user_id)
-				INNER JOIN auth_groups ON (auth_user_groups.group_id = auth_groups.id)
-			WHERE
-				auth_groups.display_name = $1
-				AND auth_users.display_name > $2
-				AND auth_users.display_name like $3
-			ORDER BY auth_groups.display_name
-			LIMIT $4`,
-			groupDisplayName, params.After, fmt.Sprint(params.Prefix, "%"), params.Amount+1)
-		if err != nil {
-			return nil, err
-		}
-		p := &model.Paginator{}
-		users := make([]*model.User, len(dbUsers))
-		for i := range dbUsers {
-			users[i] = model.ConvertUser(dbUsers[i])
-		}
-		if len(users) == params.Amount+1 {
-			// we have more pages
-			users = users[0:params.Amount]
-			p.Amount = params.Amount
-			p.NextPageToken = users[len(users)-1].Username
-			return &res{users, p}, nil
-		}
-		p.Amount = len(users)
-		return &res{users, p}, nil
-	})
-
-	if err != nil {
+func (s *KVAuthService) ListGroupUsers(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
+	if _, err := s.GetGroup(ctx, groupDisplayName); err != nil {
 		return nil, nil, err
 	}
-	return result.(*res).users, result.(*res).paginator, nil
+	var policy model.UserData
+	userGroupKey := model.GroupUserPath(groupDisplayName, "")
+
+	msgs, paginator, err := s.ListKVPaged(ctx, (&policy).ProtoReflect().Type(), params, userGroupKey, true)
+	if msgs == nil {
+		return nil, paginator, err
+	}
+	return model.ConvertUsersDataList(msgs), paginator, err
 }
 
-func (s *DBAuthService) WritePolicy(ctx context.Context, policy *model.BasePolicy) error {
-	_, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		if err := model.ValidateAuthEntityID(policy.DisplayName); err != nil {
-			return nil, err
-		}
-		for _, stmt := range policy.Statement {
-			for _, action := range stmt.Action {
-				if err := model.ValidateActionName(action); err != nil {
-					return nil, err
-				}
-			}
-			if err := model.ValidateArn(stmt.Resource); err != nil {
-				return nil, err
-			}
-			if err := model.ValidateStatementEffect(stmt.Effect); err != nil {
-				return nil, err
+func ValidatePolicy(policy *model.BasePolicy) error {
+	if err := model.ValidateAuthEntityID(policy.DisplayName); err != nil {
+		return err
+	}
+	for _, stmt := range policy.Statement {
+		for _, action := range stmt.Action {
+			if err := model.ValidateActionName(action); err != nil {
+				return err
 			}
 		}
+		if err := model.ValidateArn(stmt.Resource); err != nil {
+			return err
+		}
+		if err := model.ValidateStatementEffect(stmt.Effect); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
-		var id int64
+func (s *KVAuthService) WritePolicy(ctx context.Context, policy *model.BasePolicy) error {
+	if err := ValidatePolicy(policy); err != nil {
+		return err
+	}
+	policyKey := model.PolicyPath(policy.DisplayName)
+	id := model.CreateID()
 
-		return nil, tx.Get(&id, `
-			INSERT INTO auth_policies (display_name, created_at, statement)
-			VALUES ($1, $2, $3)
-			ON CONFLICT (display_name) DO UPDATE SET statement = $3
-			RETURNING id`,
-			policy.DisplayName, policy.CreatedAt, policy.Statement)
-	})
+	m := model.ProtoFromPolicy(policy, id)
+	err := s.store.SetMsgIf(ctx, model.PartitionKey, policyKey, m, nil)
+	if err != nil {
+		if errors.Is(err, kv.ErrPredicateFailed) {
+			err = ErrAlreadyExists
+		}
+		return fmt.Errorf("save policy (policyKey %s): %w", policyKey, err)
+	}
 	return err
 }
 
-func (s *DBAuthService) GetPolicy(ctx context.Context, policyDisplayName string) (*model.BasePolicy, error) {
-	policy, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		return getPolicy(tx, policyDisplayName)
-	}, db.ReadOnly())
+func (s *KVAuthService) GetPolicy(ctx context.Context, policyDisplayName string) (*model.BasePolicy, error) {
+	policyKey := model.PolicyPath(policyDisplayName)
+	p := model.PolicyData{}
+	_, err := s.store.GetMsg(ctx, model.PartitionKey, policyKey, &p)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, kv.ErrNotFound) {
+			err = ErrNotFound
+		}
+		return nil, fmt.Errorf("%s: %w", policyDisplayName, err)
 	}
-	return &policy.(*model.DBPolicy).BasePolicy, nil
+	return model.PolicyFromProto(&p), nil
 }
 
-func (s *DBAuthService) DeletePolicy(ctx context.Context, policyDisplayName string) error {
-	_, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		return nil, deleteOrNotFound(tx, `DELETE FROM auth_policies WHERE display_name = $1`, policyDisplayName)
-	})
+func (s *KVAuthService) DeletePolicy(ctx context.Context, policyDisplayName string) error {
+	if _, err := s.GetPolicy(ctx, policyDisplayName); err != nil {
+		return err
+	}
+	policyPath := model.PolicyPath(policyDisplayName)
+
+	// delete policy attachment to user
+	usersKey := model.UserPath("")
+	it, err := kv.NewPrimaryIterator(ctx, s.store.Store, (&model.UserData{}).ProtoReflect().Type(), model.PartitionKey, usersKey, "")
+	if err != nil {
+		return err
+	}
+	defer it.Close()
+	for it.Next() {
+		entry := it.Entry()
+		user := entry.Value.(*model.UserData)
+		if err = s.DetachPolicyFromUserNoValidation(ctx, policyDisplayName, user.Username); err != nil {
+			return err
+		}
+	}
+
+	// delete policy attachment to group
+	groupKey := model.GroupPath("")
+	it, err = kv.NewPrimaryIterator(ctx, s.store.Store, (&model.GroupData{}).ProtoReflect().Type(), model.PartitionKey, groupKey, "")
+	if err != nil {
+		return err
+	}
+	defer it.Close()
+	for it.Next() {
+		entry := it.Entry()
+		group := entry.Value.(*model.GroupData)
+		if err = s.DetachPolicyFromGroupNoValidation(ctx, policyDisplayName, group.DisplayName); err != nil {
+			return err
+		}
+	}
+
+	// delete policy
+	err = s.store.DeleteMsg(ctx, model.PartitionKey, policyPath)
+	if err != nil {
+		return fmt.Errorf("delete policy (policyKey %s): %w", policyPath, err)
+	}
 	return err
 }
 
-func (s *DBAuthService) ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
-	type res struct {
-		policies  []*model.BasePolicy
-		paginator *model.Paginator
-	}
-	result, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		dbPolicies := make([]*model.DBPolicy, 0)
-		err := tx.Select(&dbPolicies, `
-			SELECT *
-			FROM auth_policies
-			WHERE display_name > $1
-			AND display_name LIKE $2
-			ORDER BY display_name
-			LIMIT $3`,
-			params.After, fmt.Sprint(params.Prefix, "%"), params.Amount+1)
-		if err != nil {
-			return nil, err
-		}
-		p := &model.Paginator{}
-		policies := make([]*model.BasePolicy, len(dbPolicies))
-		for i := range dbPolicies {
-			policies[i] = &dbPolicies[i].BasePolicy
-		}
-		if len(policies) == params.Amount+1 {
-			// we have more pages
-			policies = policies[0:params.Amount]
-			p.Amount = params.Amount
-			p.NextPageToken = policies[len(policies)-1].DisplayName
-			return &res{policies, p}, nil
-		}
-		p.Amount = len(policies)
-		return &res{policies, p}, nil
-	})
+func (s *KVAuthService) ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+	var policy model.PolicyData
+	policyKey := model.PolicyPath("")
 
-	if err != nil {
-		return nil, nil, err
+	msgs, paginator, err := s.ListKVPaged(ctx, (&policy).ProtoReflect().Type(), params, policyKey, false)
+	if msgs == nil {
+		return nil, paginator, err
 	}
-	return result.(*res).policies, result.(*res).paginator, nil
+	return model.ConvertPolicyDataList(msgs), paginator, err
 }
 
-func (s *DBAuthService) CreateCredentials(ctx context.Context, username string) (*model.Credential, error) {
+func (s *KVAuthService) CreateCredentials(ctx context.Context, username string) (*model.Credential, error) {
 	accessKeyID := keys.GenAccessKeyID()
 	secretAccessKey := keys.GenSecretAccessKey()
 	return s.AddCredentials(ctx, username, accessKeyID, secretAccessKey)
 }
 
-func (s *DBAuthService) AddCredentials(ctx context.Context, username, accessKeyID, secretAccessKey string) (*model.Credential, error) {
+func (s *KVAuthService) AddCredentials(ctx context.Context, username, accessKeyID, secretAccessKey string) (*model.Credential, error) {
 	if !IsValidAccessKeyID(accessKeyID) {
 		return nil, ErrInvalidAccessKeyID
 	}
@@ -774,44 +839,34 @@ func (s *DBAuthService) AddCredentials(ctx context.Context, username, accessKeyI
 		return nil, ErrInvalidSecretAccessKey
 	}
 	now := time.Now()
-	encryptedKey, err := s.encryptSecret(secretAccessKey)
+	encryptedKey, err := model.EncryptSecret(s.secretStore, secretAccessKey)
 	if err != nil {
 		return nil, err
 	}
-	credentials, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		user, err := getUser(tx, username)
-		if err != nil {
-			return nil, err
-		}
-		c := &model.Credential{
-			BaseCredential: model.BaseCredential{
-				AccessKeyID:                   accessKeyID,
-				SecretAccessKey:               secretAccessKey,
-				SecretAccessKeyEncryptedBytes: encryptedKey,
-				IssuedDate:                    now,
-			},
-			UserID: user.ID,
-		}
+	user, err := s.GetUser(ctx, username)
+	if err != nil {
+		return nil, err
+	}
 
-		// A DB user must have an int ID
-		intID, err := userIDToInt(user.ID)
-		if err != nil {
-			return nil, fmt.Errorf("userID as int64: %w", err)
-		}
-		_, err = tx.Exec(`
-			INSERT INTO auth_credentials (access_key_id, secret_access_key, issued_date, user_id)
-			VALUES ($1, $2, $3, $4)`,
-			c.AccessKeyID,
-			encryptedKey,
-			c.IssuedDate,
-			intID,
-		)
-		return c, err
-	})
-	if err != nil {
-		return nil, err
+	c := &model.Credential{
+		BaseCredential: model.BaseCredential{
+			AccessKeyID:                   accessKeyID,
+			SecretAccessKey:               secretAccessKey,
+			SecretAccessKeyEncryptedBytes: encryptedKey,
+			IssuedDate:                    now,
+		},
+		UserID: user.ID,
 	}
-	return credentials.(*model.Credential), err
+	credentialsKey := model.CredentialPath(user.Username, c.AccessKeyID)
+	err = s.store.SetMsgIf(ctx, model.PartitionKey, credentialsKey, model.ProtoFromCredential(c), nil)
+	if err != nil {
+		if errors.Is(err, kv.ErrPredicateFailed) {
+			err = ErrAlreadyExists
+		}
+		return nil, fmt.Errorf("save credentials (credentialsKey %s): %w", credentialsKey, err)
+	}
+
+	return c, err
 }
 
 func IsValidAccessKeyID(key string) bool {
@@ -819,129 +874,139 @@ func IsValidAccessKeyID(key string) bool {
 	return l >= 3 && l <= 20
 }
 
-func (s *DBAuthService) DeleteCredentials(ctx context.Context, username, accessKeyID string) error {
-	_, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		return nil, deleteOrNotFound(tx, `
-			DELETE FROM auth_credentials USING auth_users
-			WHERE auth_credentials.user_id = auth_users.id
-				AND auth_users.display_name = $1
-				AND auth_credentials.access_key_id = $2`,
-			username, accessKeyID)
-	})
-	return err
-}
+func (s *KVAuthService) DeleteCredentials(ctx context.Context, username, accessKeyID string) error {
+	if _, err := s.GetUser(ctx, username); err != nil {
+		return err
+	}
+	if _, err := s.GetCredentials(ctx, accessKeyID); err != nil {
+		return err
+	}
 
-func (s *DBAuthService) AttachPolicyToGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error {
-	_, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		if _, err := getGroup(tx, groupDisplayName); err != nil {
-			return nil, fmt.Errorf("%s: %w", groupDisplayName, err)
-		}
-		if _, err := getPolicy(tx, policyDisplayName); err != nil {
-			return nil, fmt.Errorf("%s: %w", policyDisplayName, err)
-		}
-		_, err := tx.Exec(`
-			INSERT INTO auth_group_policies (group_id, policy_id)
-			VALUES (
-				(SELECT id FROM auth_groups WHERE display_name = $1),
-				(SELECT id FROM auth_policies WHERE display_name = $2)
-			)`, groupDisplayName, policyDisplayName)
-		if errors.Is(err, db.ErrAlreadyExists) {
-			return nil, fmt.Errorf("policy attachment: %w", ErrAlreadyExists)
-		}
-		return nil, err
-	})
-	return err
-}
-
-func (s *DBAuthService) DetachPolicyFromGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error {
-	_, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		if _, err := getGroup(tx, groupDisplayName); err != nil {
-			return nil, fmt.Errorf("%s: %w", groupDisplayName, err)
-		}
-		if _, err := getPolicy(tx, policyDisplayName); err != nil {
-			return nil, fmt.Errorf("%s: %w", policyDisplayName, err)
-		}
-		return nil, deleteOrNotFound(tx, `
-			DELETE FROM auth_group_policies USING auth_groups, auth_policies
-			WHERE auth_group_policies.group_id = auth_groups.id
-				AND auth_group_policies.policy_id = auth_policies.id
-				AND auth_groups.display_name = $1
-				AND auth_policies.display_name = $2`,
-			groupDisplayName, policyDisplayName)
-	})
-	return err
-}
-
-func (s *DBAuthService) GetCredentialsForUser(ctx context.Context, username, accessKeyID string) (*model.Credential, error) {
-	credentials, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		if _, err := getUser(tx, username); err != nil {
-			return nil, err
-		}
-		credentials := &model.DBCredential{}
-		err := tx.Get(credentials, `
-			SELECT auth_credentials.*
-			FROM auth_credentials
-			INNER JOIN auth_users ON (auth_credentials.user_id = auth_users.id)
-			WHERE auth_credentials.access_key_id = $1
-				AND auth_users.display_name = $2`, accessKeyID, username)
-		if err != nil {
-			return nil, err
-		}
-		return credentials, nil
-	})
+	credPath := model.CredentialPath(username, accessKeyID)
+	err := s.store.DeleteMsg(ctx, model.PartitionKey, credPath)
 	if err != nil {
+		return fmt.Errorf("delete credentials (credentialsKey %s): %w", credPath, err)
+	}
+	return err
+}
+
+func (s *KVAuthService) AttachPolicyToGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error {
+	if _, err := s.GetGroup(ctx, groupDisplayName); err != nil {
+		return err
+	}
+	if _, err := s.GetPolicy(ctx, policyDisplayName); err != nil {
+		return err
+	}
+
+	policyKey := model.PolicyPath(policyDisplayName)
+	pg := model.GroupPolicyPath(groupDisplayName, policyDisplayName)
+
+	err := s.store.SetMsgIf(ctx, model.PartitionKey, pg, &kv.SecondaryIndex{PrimaryKey: []byte(policyKey)}, nil)
+	if err != nil {
+		if errors.Is(err, kv.ErrPredicateFailed) {
+			err = ErrAlreadyExists
+		}
+		return fmt.Errorf("policy attachment to group: (key %s): %w", pg, err)
+	}
+	return err
+}
+
+func (s *KVAuthService) DetachPolicyFromGroupNoValidation(ctx context.Context, policyDisplayName, groupDisplayName string) error {
+	pg := model.GroupPolicyPath(groupDisplayName, policyDisplayName)
+	err := s.store.DeleteMsg(ctx, model.PartitionKey, pg)
+	if err != nil {
+		return fmt.Errorf("policy detachment to group: (key %s): %w", pg, err)
+	}
+	return err
+}
+
+func (s *KVAuthService) DetachPolicyFromGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error {
+	if _, err := s.GetGroup(ctx, groupDisplayName); err != nil {
+		return err
+	}
+	if _, err := s.GetPolicy(ctx, policyDisplayName); err != nil {
+		return err
+	}
+	return s.DetachPolicyFromGroupNoValidation(ctx, policyDisplayName, groupDisplayName)
+}
+
+func (s *KVAuthService) GetCredentialsForUser(ctx context.Context, username, accessKeyID string) (*model.Credential, error) {
+	if _, err := s.GetUser(ctx, username); err != nil {
 		return nil, err
 	}
-	return model.ConvertCreds(credentials.(*model.DBCredential)), nil
+	credentialsKey := model.CredentialPath(username, accessKeyID)
+	m := model.CredentialData{}
+	_, err := s.store.GetMsg(ctx, model.PartitionKey, credentialsKey, &m)
+	if err != nil {
+		if errors.Is(err, kv.ErrNotFound) {
+			err = ErrNotFound
+		}
+		return nil, err
+	}
+
+	c := model.CredentialFromProto(s.secretStore, &m)
+	c.SecretAccessKey = ""
+	return c, nil
 }
 
-func (s *DBAuthService) GetCredentials(ctx context.Context, accessKeyID string) (*model.Credential, error) {
+func (s *KVAuthService) GetCredentials(ctx context.Context, accessKeyID string) (*model.Credential, error) {
 	return s.cache.GetCredential(accessKeyID, func() (*model.Credential, error) {
-		credentials, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-			credentials := &model.DBCredential{}
-			err := tx.Get(credentials, `SELECT * FROM auth_credentials WHERE auth_credentials.access_key_id = $1`,
-				accessKeyID)
-			if err != nil {
-				return nil, err
-			}
-			key, err := s.decryptSecret(credentials.SecretAccessKeyEncryptedBytes)
-			if err != nil {
-				return nil, err
-			}
-			credentials.SecretAccessKey = key
-			return credentials, nil
-		})
+		m := &model.UserData{}
+		itr, err := s.store.Scan(ctx, m.ProtoReflect().Type(), model.PartitionKey, model.UserPath(""), "")
 		if err != nil {
+			return nil, fmt.Errorf("scan users: %w", err)
+		}
+		defer itr.Close()
+
+		for itr.Next() {
+			entry := itr.Entry()
+			user, ok := entry.Value.(*model.UserData)
+			if !ok {
+				return nil, fmt.Errorf("failed to cast: %w", err)
+			}
+			c := model.CredentialData{}
+			credentialsKey := model.CredentialPath(user.Username, accessKeyID)
+			_, err := s.store.GetMsg(ctx, model.PartitionKey, credentialsKey, &c)
+			if err != nil && !errors.Is(err, kv.ErrNotFound) {
+				return nil, err
+			} else if err == nil {
+				return model.CredentialFromProto(s.secretStore, &c), err
+			}
+		}
+		if err = itr.Err(); err != nil {
 			return nil, err
 		}
-		return model.ConvertCreds(credentials.(*model.DBCredential)), nil
+		return nil, ErrNotFound
 	})
 }
 
-func (s *DBAuthService) HashAndUpdatePassword(ctx context.Context, username string, password string) error {
+func (s *KVAuthService) HashAndUpdatePassword(ctx context.Context, username string, password string) error {
+	user, err := s.GetUser(ctx, username)
+	if err != nil {
+		return err
+	}
 	pw, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
-	_, err = s.db.Exec(ctx, `UPDATE auth_users SET encrypted_password = $1 WHERE display_name = $2`, pw, username)
+	userKey := model.UserPath(user.Username)
+	userUpdatePassword := model.User{ID: user.ID, BaseUser: model.BaseUser{
+		CreatedAt:         user.BaseUser.CreatedAt,
+		Username:          user.BaseUser.Username,
+		FriendlyName:      user.BaseUser.FriendlyName,
+		Email:             user.BaseUser.Email,
+		EncryptedPassword: pw,
+		Source:            user.BaseUser.Source}}
+	err = s.store.SetMsg(ctx, model.PartitionKey, userKey, model.ProtoFromUser(&userUpdatePassword))
+	if err != nil {
+		return fmt.Errorf("update user password (userKey %s): %w", userKey, err)
+	}
 	return err
 }
 
 func interpolateUser(resource string, username string) string {
 	return strings.ReplaceAll(resource, "${user}", username)
 }
-
-// CheckResult - the final result for the authorization is accepted only if it's CheckAllow
-type CheckResult int
-
-const (
-	// CheckAllow Permission allowed
-	CheckAllow CheckResult = iota
-	// CheckNeutral Permission neither allowed nor denied
-	CheckNeutral
-	// CheckDeny Permission denied
-	CheckDeny
-)
 
 func checkPermissions(node permissions.Node, username string, policies []*model.BasePolicy) CheckResult {
 	allowed := CheckNeutral
@@ -1004,7 +1069,7 @@ func checkPermissions(node permissions.Node, username string, policies []*model.
 	return allowed
 }
 
-func (s *DBAuthService) Authorize(ctx context.Context, req *AuthorizationRequest) (*AuthorizationResponse, error) {
+func (s *KVAuthService) Authorize(ctx context.Context, req *AuthorizationRequest) (*AuthorizationResponse, error) {
 	policies, _, err := s.ListEffectivePolicies(ctx, req.Username, &model.PaginationParams{
 		After:  "", // all
 		Amount: -1, // all
@@ -1027,9 +1092,13 @@ func (s *DBAuthService) Authorize(ctx context.Context, req *AuthorizationRequest
 	return &AuthorizationResponse{Allowed: true}, nil
 }
 
-func (s *DBAuthService) ClaimTokenIDOnce(ctx context.Context, tokenID string, expiresAt int64) error {
+func (s *KVAuthService) ClaimTokenIDOnce(ctx context.Context, tokenID string, expiresAt int64) error {
+	return ClaimTokenIDOnce(ctx, tokenID, expiresAt, s.markTokenSingleUse)
+}
+
+func ClaimTokenIDOnce(ctx context.Context, tokenID string, expiresAt int64, markTokenSingleUse func(context.Context, string, time.Time) (bool, error)) error {
 	tokenExpiresAt := time.Unix(expiresAt, 0)
-	canUseToken, err := s.markTokenSingleUse(ctx, tokenID, tokenExpiresAt)
+	canUseToken, err := markTokenSingleUse(ctx, tokenID, tokenExpiresAt)
 	if err != nil {
 		return err
 	}
@@ -1040,19 +1109,15 @@ func (s *DBAuthService) ClaimTokenIDOnce(ctx context.Context, tokenID string, ex
 }
 
 // markTokenSingleUse returns true if token is valid for single use
-func (s *DBAuthService) markTokenSingleUse(ctx context.Context, tokenID string, tokenExpiresAt time.Time) (bool, error) {
-	res, err := s.db.Exec(ctx, `INSERT INTO auth_expired_tokens (token_id, token_expires_at) VALUES ($1,$2) ON CONFLICT DO NOTHING`,
-		tokenID, tokenExpiresAt)
+func (s *KVAuthService) markTokenSingleUse(ctx context.Context, tokenID string, tokenExpiresAt time.Time) (bool, error) {
+	tokenPath := model.ExpiredTokenPath(tokenID)
+	m := model.TokenData{TokenId: tokenID, ExpiredAt: timestamppb.New(tokenExpiresAt)}
+	err := s.store.SetMsgIf(ctx, model.PartitionKey, tokenPath, &m, nil)
 	if err != nil {
 		return false, err
 	}
-	canUseToken := res.RowsAffected() == 1
-	// cleanup old tokens
-	_, err = s.db.Exec(ctx, `DELETE FROM auth_expired_tokens WHERE token_expires_at < $1`, time.Now())
-	if err != nil {
-		s.log.WithError(err).Error("delete expired tokens")
-	}
-	return canUseToken, nil
+	// TODO(issue 3500) - delete expired reset password tokens
+	return true, nil
 }
 
 type APIAuthService struct {
@@ -1063,6 +1128,10 @@ type APIAuthService struct {
 
 func (a *APIAuthService) SecretStore() crypt.SecretStore {
 	return a.secretStore
+}
+
+func (a *APIAuthService) Cache() Cache {
+	return a.cache
 }
 
 func (a *APIAuthService) CreateUser(ctx context.Context, user *model.BaseUser) (string, error) {
@@ -1661,9 +1730,7 @@ func (a *APIAuthService) ListEffectivePolicies(ctx context.Context, username str
 	if params.Amount == -1 {
 		// read through the cache when requesting the full list
 		policies, err := a.cache.GetUserPolicies(username, func() ([]*model.BasePolicy, error) {
-			p, err := a.listAllEffectivePolicies(ctx, username)
-
-			return p, err
+			return a.listAllEffectivePolicies(ctx, username)
 		})
 		if err != nil {
 			return nil, nil, err
