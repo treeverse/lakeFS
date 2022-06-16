@@ -110,15 +110,14 @@ func userWithPolicies(t testing.TB, s auth.Service, policies []*model.BasePolicy
 		t.Fatal(err)
 	}
 	for _, policy := range policies {
-		p := &model.BasePolicy{
-			DisplayName: uuid.New().String(),
-			Statement:   policy.Statement,
+		if policy.DisplayName == "" {
+			policy.DisplayName = model.CreateID()
 		}
-		err := s.WritePolicy(ctx, p)
+		err := s.WritePolicy(ctx, policy)
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = s.AttachPolicyToUser(ctx, p.DisplayName, userName)
+		err = s.AttachPolicyToUser(ctx, policy.DisplayName, userName)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -540,91 +539,93 @@ func TestDBAuthService_Authorize(t *testing.T) {
 	}
 }
 
-//func TestDBAuthService_ListEffectivePolicies(t *testing.T) {
-//	ctx := context.Background()
-//	tests := setupService(t, ctx)
-//
-//	cases := []struct {
-//		name             string
-//		policies         []*model.BasePolicy
-//		expectedPolicies []string
-//		expectedError    error
-//	}{
-//		{
-//			name: "action_denying_wildcards",
-//			policies: []*model.BasePolicy{
-//				{
-//					DisplayName: "a",
-//				},
-//				{
-//					DisplayName: "b",
-//				},
-//				{
-//					DisplayName: "c",
-//				},
-//				{
-//					DisplayName: "d",
-//				},
-//				{
-//					DisplayName: "e",
-//				},
-//				{
-//					DisplayName: "f",
-//				},
-//				{
-//					DisplayName: "g",
-//				},
-//				{
-//					DisplayName: "h",
-//				},
-//			},
-//			expectedPolicies: []string{"a", "b", "c", "d", "e", "f", "g", "h"},
-//			expectedError:    nil,
-//		},
-//	}
-//	for _, tt := range tests {
-//		for _, testCase := range cases {
-//			t.Run(testCase.name, func(t *testing.T) {
-//				pagination := &model.PaginationParams{Amount: 3}
-//				var gotPolicies []string
-//				for {
-//					uid := userWithPolicies(t, tt.authService, testCase.policies)
-//					policies, paginator, err := auth.ListEffectivePolicies(ctx, uid, pagination, tt.authService.ListEffectivePolicies, tt.authService.Cache())
-//					if err != nil {
-//						t.Errorf("ListEffectivePolicies: %s", err)
-//						break
-//					}
-//					if policies == nil {
-//						t.Fatalf("expected values for pagination %+v but got just paginator %+v", pagination, paginator)
-//					}
-//
-//					for _, p := range policies {
-//						gotPolicies = append(gotPolicies, p.DisplayName)
-//					}
-//
-//					if paginator.NextPageToken == "" {
-//						if len(policies) > 3 {
-//							t.Errorf("expected at most 3 entries in last page but got %d", len(policies))
-//						}
-//						break
-//					}
-//					if len(policies) != 3 {
-//						t.Errorf("expected 3 entries in page but got %d", len(policies))
-//					}
-//					pagination.After = paginator.NextPageToken
-//				}
-//				if len(gotPolicies) != len(testCase.expectedPolicies) {
-//					t.Fatalf("expected 8 entries in page but got %d", len(gotPolicies))
-//				}
-//				for i := range gotPolicies {
-//					if testCase.expectedPolicies[i] != gotPolicies[i] {
-//						t.Errorf("expected %q got %q", testCase.expectedPolicies[i], gotPolicies[i])
-//					}
-//				}
-//			})
-//		}
-//	}
-//}
+func TestDBAuthService_ListEffectivePolicies(t *testing.T) {
+	ctx := context.Background()
+	tests := setupService(t, ctx)
+
+	cases := []struct {
+		name             string
+		policies         []*model.BasePolicy
+		paginationAmount int
+		expectedPolicies []string
+		expectedError    error
+	}{
+		{
+			name: "effective_policies_with_pagination",
+			policies: []*model.BasePolicy{
+				{
+					DisplayName: "a",
+				},
+				{
+					DisplayName: "b",
+				},
+				{
+					DisplayName: "c",
+				},
+				{
+					DisplayName: "d",
+				},
+				{
+					DisplayName: "e",
+				},
+				{
+					DisplayName: "f",
+				},
+				{
+					DisplayName: "g",
+				},
+				{
+					DisplayName: "h",
+				},
+			},
+			paginationAmount: 3,
+			expectedPolicies: []string{"a", "b", "c", "d", "e", "f", "g", "h"},
+			expectedError:    nil,
+		},
+	}
+	for _, tt := range tests {
+		for _, testCase := range cases {
+			t.Run(testCase.name, func(t *testing.T) {
+				uid := userWithPolicies(t, tt.authService, testCase.policies)
+				pagination := &model.PaginationParams{Amount: testCase.paginationAmount}
+				var gotPolicies []string
+				for {
+					policies, paginator, err := auth.ListEffectivePolicies(ctx, uid, pagination, tt.authService.ListEffectivePolicies, tt.authService.Cache())
+					if err != nil {
+						t.Errorf("ListEffectivePolicies: %s", err)
+						break
+					}
+					if policies == nil {
+						t.Fatalf("expected values for pagination %+v but got just paginator %+v", pagination, paginator)
+					}
+
+					for _, p := range policies {
+						gotPolicies = append(gotPolicies, p.DisplayName)
+					}
+
+					if paginator.NextPageToken == "" {
+						if testCase.paginationAmount > 0 && len(policies) > testCase.paginationAmount {
+							t.Errorf("expected at most %d entries in last page but got %d", testCase.paginationAmount, len(policies))
+						}
+						break
+					}
+					if len(policies) != testCase.paginationAmount {
+						t.Errorf("expected %d entries in page but got %d", testCase.paginationAmount, len(policies))
+					}
+					pagination.After = paginator.NextPageToken
+				}
+				if len(gotPolicies) != len(testCase.expectedPolicies) {
+					t.Fatalf("expected %d entries in page but got %d", len(testCase.expectedPolicies), len(gotPolicies))
+				}
+				for i := range gotPolicies {
+					if testCase.expectedPolicies[i] != gotPolicies[i] {
+						t.Errorf("expected %q got %q", testCase.expectedPolicies[i], gotPolicies[i])
+					}
+				}
+			})
+		}
+	}
+}
 
 func TestDBAuthService_ListUsers(t *testing.T) {
 	ctx := context.Background()

@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/auth/crypt"
-
 	"github.com/go-openapi/swag"
+	"github.com/google/uuid"
+	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/protobuf/proto"
@@ -21,14 +21,14 @@ const (
 	StatementEffectDeny    = "deny"
 	PartitionKey           = "auth"
 	groupsPrefix           = "groups"
-	groupsUsersPrefix      = "groups_users"
-	groupsPoliciesPrefix   = "groups_policies"
+	groupsUsersPrefix      = "gUsers"
+	groupsPoliciesPrefix   = "gPolicies"
 	usersPrefix            = "users"
 	policiesPrefix         = "policies"
-	usersPoliciesPrefix    = "users_policies"
-	usersCredentialsPrefix = "users_credentials"
+	usersPoliciesPrefix    = "uPolicies"
+	usersCredentialsPrefix = "uCredentials"
 	credentialsPrefix      = "credentials"
-	ExpiredTokensPrefix    = "expired_tokens"
+	ExpiredTokensPrefix    = "expiredTokens"
 )
 
 func UserPath(userName string) string {
@@ -424,4 +424,8 @@ func EncryptSecret(s crypt.SecretStore, secretAccessKey string) ([]byte, error) 
 		return nil, err
 	}
 	return encrypted, nil
+}
+
+func CreateID() string {
+	return uuid.New().String()
 }

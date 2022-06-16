@@ -17,7 +17,6 @@ import (
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/go-openapi/swag"
-	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/keys"
 	"github.com/treeverse/lakefs/pkg/auth/model"
@@ -159,7 +158,7 @@ func (s *KVAuthService) ListKVPaged(ctx context.Context, protoType protoreflect.
 		}
 	}
 
-	var entries []proto.Message
+	entries := make([]proto.Message, 0)
 	p := &model.Paginator{}
 	for len(entries) < amount && it.Next() {
 		entry := it.Entry()
@@ -213,7 +212,7 @@ func (s *KVAuthService) CreateUser(ctx context.Context, user *model.BaseUser) (s
 		return InvalidUserID, err
 	}
 	userKey := model.UserPath(user.Username)
-	id := uuid.New().String()
+	id := model.CreateID()
 	userWithID := model.User{ID: id, BaseUser: *user}
 
 	err := s.store.SetMsgIf(ctx, model.PartitionKey, userKey, model.ProtoFromUser(&userWithID), nil)
@@ -422,13 +421,13 @@ func (s *KVAuthService) getEffectivePolicies(ctx context.Context, username strin
 	}
 
 	hasMoreUserPolicy := true
-	after := ""
+	afterUserPolicy := ""
 	amount := maxPage
 	policiesSet := make(map[string]*model.BasePolicy)
 	// get policies attracted to user
 	for hasMoreUserPolicy {
 		policies, userPaginator, err := s.ListUserPolicies(ctx, username, &model.PaginationParams{
-			After:  after,
+			After:  afterUserPolicy,
 			Amount: amount,
 		})
 		if err != nil {
@@ -437,16 +436,16 @@ func (s *KVAuthService) getEffectivePolicies(ctx context.Context, username strin
 		for _, policy := range policies {
 			policiesSet[policy.DisplayName] = policy
 		}
-		after = userPaginator.NextPageToken
+		afterUserPolicy = userPaginator.NextPageToken
 		hasMoreUserPolicy = userPaginator.NextPageToken != ""
 	}
 
 	hasMoreGroup := true
-	after = ""
+	afterGroup := ""
 	for hasMoreGroup {
 		// get membership groups to user
 		groups, groupPaginator, err := s.ListUserGroups(ctx, username, &model.PaginationParams{
-			After:  after,
+			After:  afterGroup,
 			Amount: amount,
 		})
 		if err != nil {
@@ -455,9 +454,10 @@ func (s *KVAuthService) getEffectivePolicies(ctx context.Context, username strin
 		for _, group := range groups {
 			// get policies attracted to group
 			hasMoreGroupPolicy := true
+			afterGroupPolicy := ""
 			for hasMoreGroupPolicy {
 				groupPolicies, groupPoliciesPaginator, err := s.ListGroupPolicies(ctx, group.DisplayName, &model.PaginationParams{
-					After:  after,
+					After:  afterGroupPolicy,
 					Amount: amount,
 				})
 				if err != nil {
@@ -466,11 +466,11 @@ func (s *KVAuthService) getEffectivePolicies(ctx context.Context, username strin
 				for _, policy := range groupPolicies {
 					policiesSet[policy.DisplayName] = policy
 				}
-				after = groupPoliciesPaginator.NextPageToken
+				afterGroupPolicy = groupPoliciesPaginator.NextPageToken
 				hasMoreGroupPolicy = groupPoliciesPaginator.NextPageToken != ""
 			}
 		}
-		after = groupPaginator.NextPageToken
+		afterGroup = groupPaginator.NextPageToken
 		hasMoreGroup = groupPaginator.NextPageToken != ""
 	}
 
@@ -485,17 +485,17 @@ func (s *KVAuthService) getEffectivePolicies(ctx context.Context, username strin
 	sort.Strings(policiesArr)
 
 	var resPolicies []*model.BasePolicy
-	var resPaginator model.Paginator
+	resPaginator := model.Paginator{Amount: 0, NextPageToken: ""}
 	for _, p := range policiesArr {
-		if p > after {
+		if p > params.After {
+			resPolicies = append(resPolicies, policiesSet[p])
 			if len(resPolicies) == params.Amount {
 				resPaginator.NextPageToken = p
-				resPaginator.Amount = len(resPolicies)
-				return resPolicies, &resPaginator, nil
+				break
 			}
-			resPolicies = append(resPolicies, policiesSet[p])
 		}
 	}
+	resPaginator.Amount = len(resPolicies)
 	return resPolicies, &resPaginator, nil
 }
 
@@ -538,7 +538,7 @@ func (s *KVAuthService) CreateGroup(ctx context.Context, group *model.BaseGroup)
 	}
 
 	groupKey := model.GroupPath(group.DisplayName)
-	id := uuid.New().String()
+	id := model.CreateID()
 	groupWithID := model.Group{ID: id, BaseGroup: *group}
 
 	err := s.store.SetMsgIf(ctx, model.PartitionKey, groupKey, model.ProtoFromGroup(&groupWithID), nil)
@@ -674,10 +674,11 @@ func (s *KVAuthService) ListUserGroups(ctx context.Context, username string, par
 	}
 
 	hasMoreGroups := true
+	afterGroup := params.After
 	var userGroups []*model.Group
 	resPaginator := model.Paginator{Amount: 0, NextPageToken: ""}
 	for hasMoreGroups && len(userGroups) <= params.Amount {
-		groups, paginator, err := s.ListGroups(ctx, &model.PaginationParams{Prefix: params.Prefix, After: params.After, Amount: maxPage})
+		groups, paginator, err := s.ListGroups(ctx, &model.PaginationParams{Prefix: params.Prefix, After: afterGroup, Amount: maxPage})
 		if err != nil {
 			return nil, nil, err
 		}
@@ -698,6 +699,7 @@ func (s *KVAuthService) ListUserGroups(ctx context.Context, username string, par
 			}
 		}
 		hasMoreGroups = paginator.NextPageToken != ""
+		afterGroup = paginator.NextPageToken
 	}
 	resPaginator.Amount = len(userGroups)
 	return userGroups, &resPaginator, nil
@@ -742,7 +744,7 @@ func (s *KVAuthService) WritePolicy(ctx context.Context, policy *model.BasePolic
 		return err
 	}
 	policyKey := model.PolicyPath(policy.DisplayName)
-	id := uuid.New().String()
+	id := model.CreateID()
 
 	m := model.ProtoFromPolicy(policy, id)
 	err := s.store.SetMsgIf(ctx, model.PartitionKey, policyKey, m, nil)
@@ -791,7 +793,7 @@ func (s *KVAuthService) DeletePolicy(ctx context.Context, policyDisplayName stri
 
 	// delete policy attachment to group
 	groupKey := model.GroupPath("")
-	it, err = kv.NewPrimaryIterator(ctx, s.store.Store, (&model.UserData{}).ProtoReflect().Type(), model.PartitionKey, groupKey, "")
+	it, err = kv.NewPrimaryIterator(ctx, s.store.Store, (&model.GroupData{}).ProtoReflect().Type(), model.PartitionKey, groupKey, "")
 	if err != nil {
 		return err
 	}

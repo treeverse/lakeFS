@@ -286,7 +286,7 @@ func (s *DBAuthService) DetachPolicyFromUser(ctx context.Context, policyDisplayN
 }
 
 func (s *DBAuthService) ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
-	var policy model.BasePolicy
+	var policy model.DBPolicy
 	sub := psql.Select("auth_policies.*").
 		From("auth_policies").
 		Join("auth_user_policies ON (auth_policies.id = auth_user_policies.policy_id)").
@@ -300,7 +300,12 @@ func (s *DBAuthService) ListUserPolicies(ctx context.Context, username string, p
 	if slice == nil {
 		return nil, paginator, err
 	}
-	return slice.Interface().([]*model.BasePolicy), paginator, nil
+	policies := slice.Interface().([]*model.DBPolicy)
+	res := make([]*model.BasePolicy, 0, len(policies))
+	for _, p := range policies {
+		res = append(res, &p.BasePolicy)
+	}
+	return res, paginator, nil
 }
 
 func (s *DBAuthService) getEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
