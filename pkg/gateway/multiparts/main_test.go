@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/ory/dockertest/v3"
-
 	_ "github.com/treeverse/lakefs/pkg/kv/mem"
 	_ "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -34,6 +33,7 @@ func TestMain(m *testing.M) {
 	}
 	var closer func()
 	databaseURI, closer = testutil.GetDBInstance(pool)
+
 	code := m.Run()
 	closer() // cleanup
 	os.Exit(code)

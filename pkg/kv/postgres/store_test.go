@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
-	_ "github.com/treeverse/lakefs/pkg/kv/postgres"
+	"github.com/treeverse/lakefs/pkg/kv/postgres"
 )
 
 func TestPostgresKV(t *testing.T) {
-	kvtest.TestDriver(t, "postgres", databaseURI)
+	kvtest.TestDriver(t, postgres.DriverName, databaseURI)
 }

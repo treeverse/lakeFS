@@ -1,22 +1,32 @@
 package testutil
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+	"testing"
 
+	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/ory/dockertest/v3"
 	dc "github.com/ory/dockertest/v3/docker"
+	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/dynamodb"
 )
 
 const (
 	dbContainerTimeoutSeconds = 10 * 60 // 10 min
 	DynamodbLocalPort         = "6432"
 	DynamodbLocalURI          = "http://localhost:6432"
-
-	WaitForContainerSec = 2
+	chars                     = "abcdef1234567890"
+	charsSize                 = 8
+	DynamoDBReadCapacity      = 1000
+	DynamoDBWriteCapacity     = 1000
+	DynamoDBScanLimit         = 10
 )
 
-func RunLocalDynamoDBInstance() (string, func(), error) {
+func GetDynamoDBInstance() (string, func(), error) {
 	dockerPool, err := dockertest.NewPool("")
 	if err != nil {
 		return "", nil, fmt.Errorf("could not connect to Docker: %w", err)
@@ -37,7 +47,7 @@ func RunLocalDynamoDBInstance() (string, func(), error) {
 
 	// set cleanup
 	closer := func() {
-		err := dockerPool.Purge(resource)
+		err = dockerPool.Purge(resource)
 		if err != nil {
 			panic("could not kill dynamodb local container")
 		}
@@ -50,7 +60,7 @@ func RunLocalDynamoDBInstance() (string, func(), error) {
 	}
 
 	err = dockerPool.Retry(func() error {
-		// waiting for dynamodb container to be ready by issuing an http get request with
+		// waiting for dynamodb container to be ready by issuing an HTTP get request with
 		// exponential backoff retry. The response is not really meaningful for that case
 		// and so is ignored
 		resp, err := http.Get(DynamodbLocalURI)
@@ -66,4 +76,37 @@ func RunLocalDynamoDBInstance() (string, func(), error) {
 
 	// return DB URI
 	return DynamodbLocalURI, closer, nil
+}
+
+func UniqueKVTableName() string {
+	return "kvstore_" + nanoid.MustGenerate(chars, charsSize)
+}
+
+func GetDynamoDBProd(ctx context.Context, tb testing.TB) kv.Store {
+	table := UniqueKVTableName()
+	testParams := &dynamodb.Params{
+		TableName:          table,
+		ReadCapacityUnits:  DynamoDBReadCapacity,
+		WriteCapacityUnits: DynamoDBWriteCapacity,
+		ScanLimit:          DynamoDBScanLimit,
+		AwsRegion:          "us-east-1",
+	}
+	dsnBytes, err := json.Marshal(testParams)
+	if err != nil {
+		log.Fatalf("Failed to initialize tests params :%s", err)
+	}
+	dsn := string(dsnBytes)
+
+	store, err := kv.Open(ctx, dynamodb.DriverName, dsn)
+	if err != nil {
+		tb.Fatalf("failed to open kv dynamodb store %s %s", dsn, err)
+	}
+	tb.Cleanup(func() {
+		defer store.Close()
+		err = store.(*dynamodb.Store).DropTable()
+		if err != nil {
+			tb.Fatalf("failed to delete table from DB %s %s", table, err)
+		}
+	})
+	return store
 }
