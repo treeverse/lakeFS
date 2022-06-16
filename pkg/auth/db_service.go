@@ -39,7 +39,7 @@ type UserIDToDetails map[int64]userDetails
 
 type IDToName map[int]string
 
-var ErrExportedEntNotFound = errors.New("previously exported entitiy not found")
+var ErrExportedEntNotFound = errors.New("previously exported entity not found")
 
 //nolint:gochecknoinits
 func init() {
