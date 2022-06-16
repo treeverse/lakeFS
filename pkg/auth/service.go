@@ -161,14 +161,14 @@ func (s *KVAuthService) ListKVPaged(ctx context.Context, protoType protoreflect.
 
 	var entries []proto.Message
 	p := &model.Paginator{}
-	for len(entries) <= amount && it.Next() {
+	for len(entries) < amount && it.Next() {
 		entry := it.Entry()
 		value := entry.Value
+		entries = append(entries, value)
 		if len(entries) == amount {
 			p.NextPageToken = entry.Key
 			break
 		}
-		entries = append(entries, value)
 	}
 	if err = it.Err(); err != nil {
 		return nil, nil, fmt.Errorf("list DB: %w", err)
@@ -294,7 +294,7 @@ func (s *KVAuthService) GetUser(ctx context.Context, username string) (*model.Us
 func (s *KVAuthService) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
 	return s.cache.GetUserByEmail(email, func() (*model.User, error) {
 		m := &model.UserData{}
-		itr, err := s.store.Scan(ctx, m.ProtoReflect().Type(), model.PartitionKey, model.UserPath(""))
+		itr, err := s.store.Scan(ctx, m.ProtoReflect().Type(), model.PartitionKey, model.UserPath(""), "")
 		if err != nil {
 			return nil, fmt.Errorf("scan users: %w", err)
 		}
@@ -320,7 +320,7 @@ func (s *KVAuthService) GetUserByEmail(ctx context.Context, email string) (*mode
 func (s *KVAuthService) GetUserByID(ctx context.Context, userID string) (*model.User, error) {
 	return s.cache.GetUserByID(userID, func() (*model.User, error) {
 		m := &model.UserData{}
-		itr, err := s.store.Scan(ctx, m.ProtoReflect().Type(), model.PartitionKey, model.UserPath(""))
+		itr, err := s.store.Scan(ctx, m.ProtoReflect().Type(), model.PartitionKey, model.UserPath(""), "")
 		if err != nil {
 			return nil, fmt.Errorf("scan users: %w", err)
 		}
@@ -950,7 +950,7 @@ func (s *KVAuthService) GetCredentialsForUser(ctx context.Context, username, acc
 func (s *KVAuthService) GetCredentials(ctx context.Context, accessKeyID string) (*model.Credential, error) {
 	return s.cache.GetCredential(accessKeyID, func() (*model.Credential, error) {
 		m := &model.UserData{}
-		itr, err := s.store.Scan(ctx, m.ProtoReflect().Type(), model.PartitionKey, model.UserPath(""))
+		itr, err := s.store.Scan(ctx, m.ProtoReflect().Type(), model.PartitionKey, model.UserPath(""), "")
 		if err != nil {
 			return nil, fmt.Errorf("scan users: %w", err)
 		}
