@@ -34,10 +34,9 @@ message PolicyData {
 // message data model for model.Credential struct
 message CredentialData {
     string access_key_id = 1;
-    string secret_access_key = 2;
-    bytes secret_access_key_encrypted_bytes = 3;
-    google.protobuf.Timestamp issued_date = 4;
-    bytes user_id = 5;
+    bytes secret_access_key_encrypted_bytes = 2;
+    google.protobuf.Timestamp issued_date = 3;
+    bytes user_id = 4;
 }
 
 // message data model for model.Statement struct
@@ -46,3 +45,10 @@ message StatementData {
     repeated string action = 2;
     string resource = 3;
 }
+
+// message data model for rest password token
+message TokenData {
+    string token_id = 1;
+    google.protobuf.Timestamp expired_at = 2;
+}
+

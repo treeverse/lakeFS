@@ -7,15 +7,23 @@ nav_order: 20
 has_children: false
 ---
 
-# What is a Rollback
+# Rollbacks
+
+## What Is a Rollback
 
 A rollback operation is used to to fix critical data errors immediately.
 
-What is a critical data error? Think of a situation where erroneous or mis-formatted data causes a signficant issue with an important service or function. In these situations, the first thing to do is stop the bleeding.
+What is a critical data error? Think of a situation where erroneous or misformatted data causes a signficant issue with an important service or function. In these situations, the first thing to do is stop the bleeding.
 
 Rolling back returns data to a state in the past, before the error was present. You might not be showing all the latest data after a rollback, but at least you aren’t showing incorrect data or raising errors.
 
+## Why Rollbacks are Useful
+
 A Rollback is used as a stopgap measure to “put out the fire” as quickly as possible while RCA (root cause analysis) is performed to understand 1) exactly how the error happened and 2) what can be done to prevent it from happening again.
+
+It can be a pressured, stressful situation to deal with  a critical data error. Having the ability to employ a rollback relieves some of the pressure, and makes it more likely you can figure out what happened without creating additional issues.
+
+As a real world example, the [14 day outage](https://devops.com/what-sres-can-learn-from-the-atlassian-outage-of-2022/) some Atlassian users experienced in May '22 could have been an uninteresting minor incident had rolling back the deleted customer data been an option.
 
 ## Performing Rollbacks with lakeFS
 
@@ -27,9 +35,9 @@ To demonstrate how this works, let's take the example of a lakeFS repo with the 
 
 ![Commit History]({{ site.baseurl }}/assets/img/rollback-commit-history.png)
 
-As can be inferred from the history, this repo is updated every minute with a data sync from some data source. After each sync, a commit is taken in lakeFS to save a snapshot of data at that point in time.
+As can be inferred from the history, this repo is updated every minute with a data sync from some data source. An example data sync is a typical ETL job that replicates data from an internal database or any other data source. After each sync, a commit is taken in lakeFS to save a snapshot of data at that point in time.
 
-### How to Rollback from a bad sync?
+### How to Rollback From a Bad Data Sync?
 
 Say the situation occurs where one of the syncs had bad data and is causing downstream dashboards to fail to load. Since we took a commit of the repo right after the sync ran, we can use a `revert` operation to undo the changes introduced in that sync.
 

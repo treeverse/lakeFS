@@ -76,7 +76,7 @@ func testAuthMiddleware(t *testing.T, kvEnabled bool) {
 
 	t.Run("invalid jwt header", func(t *testing.T) {
 		ctx := context.Background()
-		apiToken := testGenerateBadAPIToken(t, deps.authService)
+		apiToken := testGenerateBadAPIToken(t, *deps.authService)
 		authProvider, err := securityprovider.NewSecurityProviderApiKey("header", "Authorization", "Bearer "+apiToken)
 		if err != nil {
 			t.Fatal("basic auth security provider", err)
@@ -119,7 +119,7 @@ func testAuthMiddleware(t *testing.T, kvEnabled bool) {
 
 	t.Run("invalid jwt cookie", func(t *testing.T) {
 		ctx := context.Background()
-		apiToken := testGenerateBadAPIToken(t, deps.authService)
+		apiToken := testGenerateBadAPIToken(t, *deps.authService)
 		authProvider, err := securityprovider.NewSecurityProviderApiKey("cookie", api.JWTCookieName, apiToken)
 		if err != nil {
 			t.Fatal("basic auth security provider", err)
