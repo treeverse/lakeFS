@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/go-test/deep"
@@ -19,7 +20,7 @@ type LogLine struct {
 	Msg    string
 }
 type MemLogger struct {
-	Log    []*LogLine
+	log    []*LogLine
 	fields logging.Fields
 }
 
@@ -81,6 +82,25 @@ func (m *MemLogger) Panic(args ...interface{}) {
 	m.logLine("PANIC", args...)
 }
 
+func (m *MemLogger) Log(level string, args ...interface{}) {
+	switch strings.ToLower(level) {
+	case "panic":
+		m.logLine("PANIC", args...)
+	case "fatal":
+		m.logLine("FATAL", args...)
+	case "error":
+		m.logLine("ERROR", args...)
+	case "warn", "warning":
+		m.logLine("WARN", args...)
+	case "info":
+		m.logLine("INFO", args...)
+	case "debug":
+		m.logLine("DEBUG", args...)
+	case "trace":
+		m.logLine("TRACE", args...)
+	}
+}
+
 func (m *MemLogger) Tracef(format string, args ...interface{}) {
 	m.logLine("TRACE", fmt.Sprintf(format, args...))
 }
@@ -113,12 +133,31 @@ func (m *MemLogger) Panicf(format string, args ...interface{}) {
 	m.logLine("PANIC", fmt.Sprintf(format, args...))
 }
 
+func (m *MemLogger) Logf(level string, format string, args ...interface{}) {
+	switch strings.ToLower(level) {
+	case "panic":
+		m.logLine("PANIC", fmt.Sprintf(format, args...))
+	case "fatal":
+		m.logLine("FATAL", fmt.Sprintf(format, args...))
+	case "error":
+		m.logLine("ERROR", fmt.Sprintf(format, args...))
+	case "warn", "warning":
+		m.logLine("WARN", fmt.Sprintf(format, args...))
+	case "info":
+		m.logLine("INFO", fmt.Sprintf(format, args...))
+	case "debug":
+		m.logLine("DEBUG", fmt.Sprintf(format, args...))
+	case "trace":
+		m.logLine("TRACE", fmt.Sprintf(format, args...))
+	}
+}
+
 func (m *MemLogger) IsTracing() bool {
 	return true
 }
 
 func (m *MemLogger) logLine(level string, args ...interface{}) {
-	m.Log = append(m.Log, &LogLine{
+	m.log = append(m.log, &LogLine{
 		Fields: m.fields,
 		Level:  level,
 		Msg:    fmt.Sprint(args...),
@@ -236,7 +275,7 @@ func TestAuditChecker_CheckAndLog(t *testing.T) {
 	checker.CheckAndLog(ctx, memLog)
 
 	// verify we logged the right information
-	if diff := deep.Equal(memLog.Log[0], &LogLine{
+	if diff := deep.Equal(memLog.log[0], &LogLine{
 		Fields: logging.Fields{
 			"id":                responseAlert.ID,
 			"affected_versions": responseAlert.AffectedVersions,

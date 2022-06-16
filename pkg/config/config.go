@@ -490,6 +490,10 @@ func (c *Config) GetLoggingTraceRequestHeaders() bool {
 	return c.values.Logging.TraceRequestHeaders
 }
 
+func (c *Config) GetAuditLogLevel() string {
+	return c.values.Logging.AuditLogLevel
+}
+
 func (c *Config) GetSecurityAuditCheckInterval() time.Duration {
 	return c.values.Security.AuditCheckInterval
 }

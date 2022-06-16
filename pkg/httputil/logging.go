@@ -7,8 +7,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/spf13/viper"
-	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -16,6 +14,7 @@ type contextKey string
 
 const (
 	RequestIDContextKey contextKey = "request_id"
+	AuditLogEndMessage  string     = "HTTP call ended"
 )
 
 type ResponseRecordingWriter struct {
@@ -66,7 +65,7 @@ func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields,
 				logging.MethodFieldKey:    r.Method,
 				logging.HostFieldKey:      r.Host,
 				logging.RequestIDFieldKey: reqID,
-				logging.LoggerName:        "MiddlewareLog",
+				logging.LogSource:         "MiddlewareLogger",
 			}
 			for k, v := range fields {
 				requestFields[k] = v
@@ -80,26 +79,18 @@ func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields,
 				"status_code": writer.StatusCode,
 				"sent_bytes":  writer.ResponseSize,
 			}
-			endLogMsg := "HTTP call ended"
 
-			switch strings.ToLower(middlewareLogLevel) {
-			case "debug", "null", "none":
-				logging.FromContext(r.Context()).WithFields(loggingFields).Debug(endLogMsg)
-			case "info":
-				logging.FromContext(r.Context()).WithFields(loggingFields).Info(endLogMsg)
-			case "warn", "warning":
-				logging.FromContext(r.Context()).WithFields(loggingFields).Warning(endLogMsg)
-			case "error":
-				logging.FromContext(r.Context()).WithFields(loggingFields).Error(endLogMsg)
-			case "panic":
-				logging.FromContext(r.Context()).WithFields(loggingFields).Panic(endLogMsg)
+			logLevel := strings.ToLower(middlewareLogLevel)
+			if logLevel == "null" || logLevel == "none" {
+				logging.FromContext(r.Context()).WithFields(loggingFields).Debug(AuditLogEndMessage)
+			} else {
+				logging.FromContext(r.Context()).WithFields(loggingFields).Log(logLevel, AuditLogEndMessage)
 			}
 		})
 	}
 }
 
-func LoggingMiddleware(requestIDHeaderName string, fields logging.Fields, traceRequestHeaders bool) func(next http.Handler) http.Handler {
-	loggingMiddlewareLevel := viper.GetString(config.LoggingAuditLogLevel)
+func LoggingMiddleware(requestIDHeaderName string, fields logging.Fields, loggingMiddlewareLevel string, traceRequestHeaders bool) func(next http.Handler) http.Handler {
 	if strings.ToLower(loggingMiddlewareLevel) == "trace" {
 		return TracingMiddleware(requestIDHeaderName, fields, traceRequestHeaders)
 	}
