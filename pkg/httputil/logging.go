@@ -2,13 +2,13 @@ package httputil
 
 import (
 	"context"
-	"github.com/spf13/viper"
-	"github.com/treeverse/lakefs/pkg/config"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/spf13/viper"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -75,18 +75,24 @@ func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields,
 			writer.Header().Set(requestIDHeaderName, reqID)
 			next.ServeHTTP(writer, r) // handle the request
 
-			if strings.ToLower(middlewareLogLevel) == "debug" {
-				logging.FromContext(r.Context()).WithFields(logging.Fields{
-					"took":        time.Since(startTime),
-					"status_code": writer.StatusCode,
-					"sent_bytes":  writer.ResponseSize,
-				}).Debug("HTTP call ended")
-			} else {
-				logging.FromContext(r.Context()).WithFields(logging.Fields{
-					"took":        time.Since(startTime),
-					"status_code": writer.StatusCode,
-					"sent_bytes":  writer.ResponseSize,
-				}).Info("HTTP call ended")
+			loggingFields := logging.Fields{
+				"took":        time.Since(startTime),
+				"status_code": writer.StatusCode,
+				"sent_bytes":  writer.ResponseSize,
+			}
+			endLogMsg := "HTTP call ended"
+
+			switch strings.ToLower(middlewareLogLevel) {
+			case "debug", "null", "none":
+				logging.FromContext(r.Context()).WithFields(loggingFields).Debug(endLogMsg)
+			case "info":
+				logging.FromContext(r.Context()).WithFields(loggingFields).Info(endLogMsg)
+			case "warn", "warning":
+				logging.FromContext(r.Context()).WithFields(loggingFields).Warning(endLogMsg)
+			case "error":
+				logging.FromContext(r.Context()).WithFields(loggingFields).Error(endLogMsg)
+			case "panic":
+				logging.FromContext(r.Context()).WithFields(loggingFields).Panic(endLogMsg)
 			}
 		})
 	}
