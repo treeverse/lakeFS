@@ -7,6 +7,8 @@ nav_order: 30
 has_children: false
 ---
 
+# Reproducibility
+
 ## The Benefits of Reproducible Data
 
 Data changes frequently. This makes the task of keeping track of its exact state over time difficult. Often people maintain only one state of their data––its current state.
