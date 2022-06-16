@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/rs/xid"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
@@ -80,7 +79,7 @@ func prepareTestData(t *testing.T, ctx context.Context, svc auth.Service) {
 }
 
 func generateUniqueName(suffix string) string {
-	return fmt.Sprintf("%s_%s", xid.New().String(), suffix)
+	return fmt.Sprintf("%s_%s", model.CreateID(), suffix)
 }
 
 func generateUserNames(num int) []string {
@@ -92,7 +91,7 @@ func generateUserNames(num int) []string {
 }
 
 func generateRandomArn() string {
-	return fmt.Sprintf("arn:lakefs:auth:::%s", xid.New().String())
+	return fmt.Sprintf("arn:lakefs:auth:::%s", model.CreateID())
 }
 
 func createTestUserWithCreds(t *testing.T, ctx context.Context, svc auth.Service, userName string, numCred int) {

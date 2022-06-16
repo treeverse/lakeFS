@@ -14,7 +14,6 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/georgysavva/scany/pgxscan"
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/keys"
@@ -929,7 +928,7 @@ func exportUsers(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (UserID
 			return nil, err
 		}
 		kvUser := &model.User{
-			ID:       uuid.New().String(),
+			ID:       model.CreateID(),
 			BaseUser: dbUser.BaseUser,
 		}
 		key := model.UserPath(dbUser.Username)
@@ -969,7 +968,7 @@ func exportGroups(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (IDToN
 			return nil, err
 		}
 		kvGroup := &model.Group{
-			ID:        uuid.New().String(),
+			ID:        model.CreateID(),
 			BaseGroup: dbGroup.BaseGroup,
 		}
 		key := model.GroupPath(dbGroup.DisplayName)
