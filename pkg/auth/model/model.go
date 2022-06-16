@@ -240,6 +240,7 @@ func ProtoFromUser(u *User) *UserData {
 		Email:             swag.StringValue(u.Email),
 		EncryptedPassword: u.EncryptedPassword,
 		Source:            u.Source,
+		ExternalId:        swag.StringValue(u.ExternalID),
 	}
 }
 
