@@ -106,11 +106,11 @@ What happens if we re-read in the data on both branches and perform a count on t
 
 ![Branch Counts]({{ site.baseurl }}/assets/img/iso-env-df-counts.png)
 
-As expected, there are now twice as many rows, 972k, on the `double-branch` branch. That means we *duplicated our data!*oh no!
+As expected, there are now twice as many rows, 972k, on the `double-branch` branch. That means we **duplicated our data!** oh no!
 
 Data duplication introduce errors into our data analytics, BI and machine learning efforts, hence we would like to avoid duplicating our data.
 
-But do not worry! 
+Do be afraid! 
 
 On the `main` branch however, there is still just the origin 486k rows. This shows the utility of branch-based isolated environments with lakeFS.
 
