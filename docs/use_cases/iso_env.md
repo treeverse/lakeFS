@@ -36,11 +36,13 @@ The key difference when using lakeFS for isolated data environments is you can c
 This is different from creating a long-living dev environment that is used as a staging area to test all updates. With lakeFS, **we create a new branch for each change to production** we want to make. (One benefit of this is the ability to test multiple changes at one time).
 
 
-### Setup
+### Prerequisites
 
-This tutorial will use a local Docker environment called the "Everything Bagel" to get lakeFS and other technologies running on your machine. For instructions on how to get this running, [click here](../quickstart/index.md#lakefs-docker-everything-bagel).
+This tutorial will use an exisitng lakeFS environment and an Apache Spark notebook.
 
-Once the containers are running, it’ll be useful to add some data into the lakeFS repo. We’ll use an Amazon review dataset from a public S3 bucket. First we’ll download the file to our local computer using the AWS CLI. Then, we’ll upload it into lakeFS using the `Upload Object` button in the UI.
+To read more about how to setup lakeFS environment, checkout [Quickstart](../quickstart/index.md).
+
+Once you have a live environment, it’ll be useful to add some data into the lakeFS repo. We’ll use an Amazon review dataset from a public S3 bucket. First we’ll download the file to our local computer using the AWS CLI. Then, we’ll upload it into lakeFS using the `Upload Object` button in the UI.
 
 To install the AWS CLI, follow [these instructions](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
 {: .note .note-info }
@@ -70,11 +72,11 @@ This new branch serves as an isolated environment on which we can make changes t
 
 ### Data Manipulation with Jupyter & Spark
 
-The Everything Bagel comes with Spark and Jupyter installed. Let’s use them to manipulate the data on one branch, showing how it has no effect on the other.
+This use-case discuss manipulating data using Spark, we are using Juputer. However you can integrate lakeFS with your favorite [Spark environment](../integrations/spark). Let’s use them to manipulate the data on one branch, showing how it has no effect on the other.
 
-To access the Jupyter notebook UI, go to http://localhost:8888 in your browser and type in “lakefs” when prompted for a password. 
+Go to your Spark notebook UI, in our case this is the Jupyter UI.
 
-Next, create a new notebook and start a spark context:
+Inside the notebook, create a new notebook and start a spark context:
 
 ```bash
 from pyspark.context import SparkContext
@@ -104,5 +106,13 @@ What happens if we re-read in the data on both branches and perform a count on t
 
 ![Branch Counts]({{ site.baseurl }}/assets/img/iso-env-df-counts.png)
 
-As expected, there are now twice as many rows, 972k, on the `double-branch` branch. On the `main` branch however, there is still just the origin 486k rows. This shows the utility of branch-based isolated environments with lakeFS.
+As expected, there are now twice as many rows, 972k, on the `double-branch` branch. That means we *duplicated our data!*oh no!
+
+Data duplication introduce errors into our data analytics, BI and machine learning efforts, hence we would like to avoid duplicating our data.
+
+But do not worry! 
+
+On the `main` branch however, there is still just the origin 486k rows. This shows the utility of branch-based isolated environments with lakeFS.
+
+You can safely continue working with the data from main which is unharmed due to lakeFS isolation capabilities. 
 
