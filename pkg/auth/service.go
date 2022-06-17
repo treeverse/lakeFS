@@ -1093,10 +1093,10 @@ func (s *KVAuthService) Authorize(ctx context.Context, req *AuthorizationRequest
 }
 
 func (s *KVAuthService) ClaimTokenIDOnce(ctx context.Context, tokenID string, expiresAt int64) error {
-	return ClaimTokenIDOnce(ctx, tokenID, expiresAt, s.markTokenSingleUse)
+	return claimTokenIDOnce(ctx, tokenID, expiresAt, s.markTokenSingleUse)
 }
 
-func ClaimTokenIDOnce(ctx context.Context, tokenID string, expiresAt int64, markTokenSingleUse func(context.Context, string, time.Time) (bool, error)) error {
+func claimTokenIDOnce(ctx context.Context, tokenID string, expiresAt int64, markTokenSingleUse func(context.Context, string, time.Time) (bool, error)) error {
 	tokenExpiresAt := time.Unix(expiresAt, 0)
 	canUseToken, err := markTokenSingleUse(ctx, tokenID, tokenExpiresAt)
 	if err != nil {

@@ -23,7 +23,7 @@ const (
 	packageName  = "actions"
 	PartitionKey = "actions"
 	reposPrefix  = "repos"
-	RunsPrefix   = "runs"
+	runsPrefix   = "runs"
 	tasksPrefix  = "tasks"
 	branchPrefix = "branches"
 	commitPrefix = "commits"
@@ -140,32 +140,32 @@ func protoFromTaskResult(m *TaskResult) *TaskResultData {
 	}
 }
 
-func BaseActionsPath(repoID string) string {
+func baseActionsPath(repoID string) string {
 	return kv.FormatPath(reposPrefix, repoID)
 }
 
 func TasksPath(repoID, runID string) string {
-	return kv.FormatPath(BaseActionsPath(repoID), tasksPrefix, runID)
+	return kv.FormatPath(baseActionsPath(repoID), tasksPrefix, runID)
 }
 
 func RunPath(repoID, runID string) string {
-	return kv.FormatPath(BaseActionsPath(repoID), RunsPrefix, runID)
+	return kv.FormatPath(baseActionsPath(repoID), runsPrefix, runID)
 }
 
-func ByBranchPath(repoID, branchID string) string {
-	return kv.FormatPath(BaseActionsPath(repoID), branchPrefix, branchID)
+func byBranchPath(repoID, branchID string) string {
+	return kv.FormatPath(baseActionsPath(repoID), branchPrefix, branchID)
 }
 
-func ByCommitPath(repoID, commitID string) string {
-	return kv.FormatPath(BaseActionsPath(repoID), commitPrefix, commitID)
+func byCommitPath(repoID, commitID string) string {
+	return kv.FormatPath(baseActionsPath(repoID), commitPrefix, commitID)
 }
 
 func RunByBranchPath(repoID, branchID, runID string) string {
-	return kv.FormatPath(ByBranchPath(repoID, branchID), runID)
+	return kv.FormatPath(byBranchPath(repoID, branchID), runID)
 }
 
 func RunByCommitPath(repoID, commitID, runID string) string {
-	return kv.FormatPath(ByCommitPath(repoID, commitID), runID)
+	return kv.FormatPath(byCommitPath(repoID, commitID), runID)
 }
 
 type Service interface {
