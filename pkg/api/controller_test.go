@@ -2169,6 +2169,17 @@ func testController_ListRepositoryRuns(t *testing.T, kvEnabled bool) {
 		}
 	})
 
+	t.Run("on branch and commit", func(t *testing.T) {
+		respList, err := clt.ListRepositoryRunsWithResponse(ctx, "repo9", &api.ListRepositoryRunsParams{
+			Branch: api.StringPtr("someBranch"),
+			Commit: api.StringPtr("someCommit"),
+			Amount: api.PaginationAmountPtr(100),
+		})
+		require.NoError(t, err)
+		require.NotNil(t, respList)
+		require.Equal(t, http.StatusBadRequest, respList.StatusCode())
+	})
+
 	t.Run("on deleted branch", func(t *testing.T) {
 		// delete work branch and list them again
 		delResp, err := clt.DeleteBranchWithResponse(ctx, "repo9", "work")
