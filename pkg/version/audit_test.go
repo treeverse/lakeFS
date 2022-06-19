@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/go-test/deep"
+	"github.com/sirupsen/logrus"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -19,7 +20,7 @@ type LogLine struct {
 	Msg    string
 }
 type MemLogger struct {
-	Log    []*LogLine
+	log    []*LogLine
 	fields logging.Fields
 }
 
@@ -81,6 +82,11 @@ func (m *MemLogger) Panic(args ...interface{}) {
 	m.logLine("PANIC", args...)
 }
 
+func (m *MemLogger) Log(level logrus.Level, args ...interface{}) {
+	m.logLine(level.String(), args...)
+
+}
+
 func (m *MemLogger) Tracef(format string, args ...interface{}) {
 	m.logLine("TRACE", fmt.Sprintf(format, args...))
 }
@@ -113,12 +119,16 @@ func (m *MemLogger) Panicf(format string, args ...interface{}) {
 	m.logLine("PANIC", fmt.Sprintf(format, args...))
 }
 
+func (m *MemLogger) Logf(level logrus.Level, format string, args ...interface{}) {
+	m.logLine(level.String(), fmt.Sprintf(format, args...))
+}
+
 func (m *MemLogger) IsTracing() bool {
 	return true
 }
 
 func (m *MemLogger) logLine(level string, args ...interface{}) {
-	m.Log = append(m.Log, &LogLine{
+	m.log = append(m.log, &LogLine{
 		Fields: m.fields,
 		Level:  level,
 		Msg:    fmt.Sprint(args...),
@@ -236,7 +246,7 @@ func TestAuditChecker_CheckAndLog(t *testing.T) {
 	checker.CheckAndLog(ctx, memLog)
 
 	// verify we logged the right information
-	if diff := deep.Equal(memLog.Log[0], &LogLine{
+	if diff := deep.Equal(memLog.log[0], &LogLine{
 		Fields: logging.Fields{
 			"id":                responseAlert.ID,
 			"affected_versions": responseAlert.AffectedVersions,

@@ -119,6 +119,7 @@ const (
 	LoggingOutputKey        = "logging.output"
 	LoggingFileMaxSizeMBKey = "logging.file_max_size_mb"
 	LoggingFilesKeepKey     = "logging.files_keep"
+	LoggingAuditLogLevel    = "logging.audit_log_level"
 
 	ActionsEnabledKey = "actions.enabled"
 
@@ -179,6 +180,7 @@ func setDefaults() {
 	viper.SetDefault(LoggingLevelKey, DefaultLoggingLevel)
 	viper.SetDefault(LoggingOutputKey, DefaultLoggingOutput)
 	viper.SetDefault(LoggingFilesKeepKey, DefaultLoggingFilesKeepKey)
+	viper.SetDefault(LoggingAuditLogLevel, DefaultAuditLogLevel)
 
 	viper.SetDefault(ActionsEnabledKey, DefaultActionsEnabled)
 
@@ -486,6 +488,10 @@ func (c *Config) ToLoggerFields() logging.Fields {
 
 func (c *Config) GetLoggingTraceRequestHeaders() bool {
 	return c.values.Logging.TraceRequestHeaders
+}
+
+func (c *Config) GetAuditLogLevel() string {
+	return c.values.Logging.AuditLogLevel
 }
 
 func (c *Config) GetSecurityAuditCheckInterval() time.Duration {

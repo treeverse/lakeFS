@@ -13,7 +13,7 @@ has_children: false
 {% include toc.html %}
 
 Configuring lakeFS is done using a yaml configuration file and/or environment variable.
-The configuration file location can be set with the '--config' flag. If not specified, the the first file found in the following order will be used:
+The configuration file location can be set with the '--config' flag. If not specified, the first file found in the following order will be used:
 1. ./config.yaml
 1. `$HOME`/lakefs/config.yaml
 1. /etc/lakefs/config.yaml
@@ -28,9 +28,10 @@ This reference uses `.` to denote the nesting of values.
 
 * `logging.format` `(one of ["json", "text"] : "text")` - Format to output log message in
 * `logging.level` `(one of ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "NONE"] : "DEBUG")` - Logging level to output
+* `logging.audit_log_level` `(one of ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "NONE"] : "DEBUG")` - Audit logs level to output. **Please notice that in case you configure this field to be lower than the main logger level, you won't be able to get the audit logs**
 * `logging.output` `(string : "-")` - A path or paths to write logs to. A `-` means the standard output, `=` means the standard error.
 * `logging.file_max_size_mb` `(int : 100)` - Output file maximum size in megabytes.
-* `logging.files_keep` `(int : 0)` - Numbe of log files to keep, default is all.
+* `logging.files_keep` `(int : 0)` - Number of log files to keep, default is all.
 * `actions.enabled` `(bool : true)` - Setting this to false will block hooks from being executed
 * `database.connection_string` `(string : "postgres://localhost:5432/postgres?sslmode=disable")` - PostgreSQL connection string to use
 * `database.max_open_connections` `(int : 25)` - Maximum number of open connections to the database
@@ -121,7 +122,7 @@ This reference uses `.` to denote the nesting of values.
   local development, if using [virtual-host addressing](https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html).
 * `gateways.s3.region` `(string : "us-east-1")` - AWS region we're pretending to be. Should match the region configuration used in AWS SDK clients
 * `gateways.s3.fallback_url` `(string)` - If specified, requests with a non-existing repository will be forwarded to this url. This can be useful for using lakeFS side-by-side with S3, with the URL pointing at an [S3Proxy](https://github.com/gaul/s3proxy) instance.
-* `stats.enabled` `(boolean : true)` - Whether or not to periodically collect anonymous usage statistics
+* `stats.enabled` `(boolean : true)` - Whether to periodically collect anonymous usage statistics
 * `security.audit_check_interval` `(duration : 12h)` - Duration in which we check for security audit
 {: .ref-list }
 

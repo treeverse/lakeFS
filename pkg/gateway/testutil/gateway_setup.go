@@ -73,7 +73,7 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, databaseURI str
 	_, err = c.CreateRepository(ctx, repoName, storageNamespace, "main")
 	testutil.Must(t, err)
 
-	handler := gateway.NewHandler(authService.Region, c, multipartsTracker, blockAdapter, authService, []string{authService.BareDomain}, &mockCollector{}, nil, true)
+	handler := gateway.NewHandler(authService.Region, c, multipartsTracker, blockAdapter, authService, []string{authService.BareDomain}, &mockCollector{}, nil, config.DefaultAuditLogLevel, true)
 
 	return handler, &Dependencies{
 		blocks:  blockAdapter,
