@@ -45,6 +45,7 @@ var superuserCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		logger := logging.Default()
 		var authService auth.Service
 		if dbParams.KVEnabled {
 			kvStore, err := kv.Open(ctx, dbParams.Type, dbParams.ConnectionString)
@@ -53,14 +54,14 @@ var superuserCmd = &cobra.Command{
 				os.Exit(1)
 			}
 			storeMessage := kv.StoreMessage{Store: kvStore}
-			authService = auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), cfg.GetAuthCacheConfig(), nil)
+			authService = auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), cfg.GetAuthCacheConfig(), logger.WithField("service", "auth_service"))
 		} else {
-			authService = auth.NewDBAuthService(dbPool, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), cfg.GetAuthCacheConfig(), nil)
+			authService = auth.NewDBAuthService(dbPool, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), cfg.GetAuthCacheConfig(), logger.WithField("service", "auth_service"))
 		}
 
 		authMetadataManager := auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
-		metadataProvider := stats.BuildMetadataProvider(logging.Default(), cfg)
-		metadata := stats.NewMetadata(ctx, logging.Default(), cfg.GetBlockstoreType(), authMetadataManager, metadataProvider)
+		metadataProvider := stats.BuildMetadataProvider(logger, cfg)
+		metadata := stats.NewMetadata(ctx, logger, cfg.GetBlockstoreType(), authMetadataManager, metadataProvider)
 		credentials, err := auth.AddAdminUser(ctx, authService, &model.SuperuserConfiguration{
 			User: model.User{BaseUser: model.BaseUser{
 				CreatedAt: time.Now(),

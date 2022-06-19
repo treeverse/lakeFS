@@ -844,7 +844,7 @@ func (s *DBAuthService) Authorize(ctx context.Context, req *AuthorizationRequest
 }
 
 func (s *DBAuthService) ClaimTokenIDOnce(ctx context.Context, tokenID string, expiresAt int64) error {
-	return ClaimTokenIDOnce(ctx, tokenID, expiresAt, s.markTokenSingleUse)
+	return claimTokenIDOnce(ctx, tokenID, expiresAt, s.markTokenSingleUse)
 }
 
 // markTokenSingleUse returns true if token is valid for single use
