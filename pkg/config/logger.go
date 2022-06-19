@@ -10,6 +10,7 @@ const (
 	DefaultLoggingLevel        = "INFO"
 	DefaultLoggingOutput       = "-"
 	DefaultLoggingFilesKeepKey = 100
+	DefaultAuditLogLevel       = "DEBUG"
 )
 
 func setupLogger() {
