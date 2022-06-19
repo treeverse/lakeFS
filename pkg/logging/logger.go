@@ -50,6 +50,8 @@ const (
 	UserFieldKey = "user"
 	// ServiceNameFieldKey service name (string, ex: rest_api)
 	ServiceNameFieldKey = "service_name"
+	// LogAudit kind of information to audit (string, ex: API)
+	LogAudit = "log_audit"
 )
 
 var (
@@ -160,6 +162,7 @@ type Logger interface {
 	Error(args ...interface{})
 	Fatal(args ...interface{})
 	Panic(args ...interface{})
+	Log(level logrus.Level, args ...interface{})
 	Tracef(format string, args ...interface{})
 	Debugf(format string, args ...interface{})
 	Infof(format string, args ...interface{})
@@ -168,6 +171,7 @@ type Logger interface {
 	Errorf(format string, args ...interface{})
 	Fatalf(format string, args ...interface{})
 	Panicf(format string, args ...interface{})
+	Logf(level logrus.Level, format string, args ...interface{})
 	IsTracing() bool
 }
 
@@ -226,6 +230,10 @@ func (l logrusEntryWrapper) Panic(args ...interface{}) {
 	l.e.Panic(args...)
 }
 
+func (l logrusEntryWrapper) Log(level logrus.Level, args ...interface{}) {
+	l.e.Log(level, args...)
+}
+
 func (l *logrusEntryWrapper) Tracef(format string, args ...interface{}) {
 	l.e.Tracef(format, args...)
 }
@@ -256,6 +264,10 @@ func (l *logrusEntryWrapper) Fatalf(format string, args ...interface{}) {
 
 func (l *logrusEntryWrapper) Panicf(format string, args ...interface{}) {
 	l.e.Panicf(format, args...)
+}
+
+func (l logrusEntryWrapper) Logf(level logrus.Level, format string, args ...interface{}) {
+	l.e.Logf(level, format, args...)
 }
 
 func (*logrusEntryWrapper) IsTracing() bool {

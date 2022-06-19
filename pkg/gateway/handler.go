@@ -58,7 +58,7 @@ type ServerContext struct {
 	stats             stats.Collector
 }
 
-func NewHandler(region string, catalog catalog.Interface, multipartsTracker multiparts.Tracker, blockStore block.Adapter, authService auth.GatewayService, bareDomains []string, stats stats.Collector, fallbackURL *url.URL, traceRequestHeaders bool) http.Handler {
+func NewHandler(region string, catalog catalog.Interface, multipartsTracker multiparts.Tracker, blockStore block.Adapter, authService auth.GatewayService, bareDomains []string, stats stats.Collector, fallbackURL *url.URL, auditLogLevel string, traceRequestHeaders bool) http.Handler {
 	var fallbackHandler http.Handler
 	if fallbackURL != nil {
 		fallbackProxy := gohttputil.NewSingleHostReverseProxy(fallbackURL)
@@ -105,6 +105,7 @@ func NewHandler(region string, catalog catalog.Interface, multipartsTracker mult
 	loggingMiddleware := httputil.LoggingMiddleware(
 		"X-Amz-Request-Id",
 		logging.Fields{"service_name": "s3_gateway"},
+		auditLogLevel,
 		traceRequestHeaders)
 
 	h = loggingMiddleware(h)

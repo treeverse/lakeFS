@@ -79,6 +79,7 @@ func Serve(
 		httputil.LoggingMiddleware(
 			RequestIDHeaderName,
 			logging.Fields{logging.ServiceNameFieldKey: LoggerServiceName},
+			cfg.GetAuditLogLevel(),
 			cfg.GetLoggingTraceRequestHeaders()),
 		AuthMiddleware(logger, swagger, middlewareAuthenticator, authService, sessionStore, &oidcConfig),
 		MetricsMiddleware(swagger),
