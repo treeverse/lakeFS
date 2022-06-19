@@ -126,7 +126,8 @@ func checkSecurityRequirements(r *http.Request, w http.ResponseWriter,
 				}
 				user, err = userByAuth(ctx, logger, authenticator, authService, accessKey, secretKey)
 			case "cookie_auth":
-				internalAuthSession, err := sessionStore.Get(r, InternalAuthSessionName)
+				var internalAuthSession *sessions.Session
+				internalAuthSession, err = sessionStore.Get(r, InternalAuthSessionName)
 				if err != nil {
 					return nil, err
 				}
@@ -147,7 +148,8 @@ func checkSecurityRequirements(r *http.Request, w http.ResponseWriter,
 				}
 				user, err = userByToken(ctx, logger, authService, token)
 			case "oidc_auth":
-				oidcSession, err := sessionStore.Get(r, OIDCAuthSessionName)
+				var oidcSession *sessions.Session
+				oidcSession, err = sessionStore.Get(r, OIDCAuthSessionName)
 				if err != nil {
 					return nil, err
 				}
