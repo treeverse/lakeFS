@@ -7,33 +7,45 @@ The wizard will provide a quick and clear way to start interacting with lakeFS.
 It will do that by allowing the users to
 1. Initialize a new repository with a given namespace (and name) with a ‘main’ default branch.
 2. Import their data (write metadata) into the new repository’s main branch by specifying the data’s S3 bucket namespace.
-3. Get custom Spark configurations (and possibly custom Hive metastore configurations) to access lakeFS using the S3 Gateway (this is for the MVP).
+3. Get custom Spark configurations and custom Hive metastore configurations to access lakeFS using the S3 Gateway (this is for the MVP).
 4. Summarise all actions performed (or skipped) in a README file which will be at the root of the initialized repository.
 
 ---
 
 ## System Overview
 
-![RouterFS with lakeFS URI](diagrams/Wizard.png)
-[(excalidraw file)](diagrams/wizard.excalidraw)
+![RouterFS with lakeFS URI](diagrams/wizard-mvp.png)
+[(excalidraw file)](diagrams/wizard-mvp.excalidraw)
 
 ### Wizard UI Component
 
 The wizard UI component is responsible for the user’s Spark onboarding process. The process is as follows:
 1. Create a repository (named as the user wishes) and a ‘main’ branch in it.
 2. Import the user’s data to ‘main’ and display a progress bar (which will show a link to required permissions). Only available on cloud-deployed lakeFS.
-3. Generate Spark configurations: the wizard will return Spark configurations for the users to use in their Spark core-site.xml file, [databricks key-value format](https://docs.databricks.com/clusters/configure.html#spark-configuration), or [EMR JSON](https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-configure-apps.html) ([core-site](https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-configure-apps.html)).
+3. Generate Spark configurations: the wizard will return Spark configurations for the users to use in their Spark core-site.xml file, [databricks key-value format](https://docs.databricks.com/clusters/configure.html#spark-configuration), or [EMR JSON](https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-configure-apps.html) ([core-site](https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-configure-apps.html))
+   -> All three templates will be requested (each in a separate request).
    1. Asks the user to enter the lakeFS endpoint (by default it will be https://`location.host`)
-   2. Asks the user for the runtime environment of Spark: one of [Databricks, AWS EMR, spark-submit] ([Figma design](https://www.figma.com/file/haD9y599LzW6LvsYBI2xWU/Spark-use-case?node-id=31%3A200))
-4. Create a README file with all actions performed and commit it as a first commit to the ‘main’ branch of the created repository. If the Spark configuration step was performed, additional Metastore guidelines will be provided in the README.
+   2. [Figma Design](https://www.figma.com/file/haD9y599LzW6LvsYBI2xWU/Spark-use-case?node-id=31%3A200)
+4. Generates a README file with all actions performed, and will commit it as a first commit (after the import) to the ‘main’ branch of the created repository.
 
 ### Templating Service
 
 The [templating service](https://github.com/treeverse/lakeFS/pull/3373) is responsible for fetching, authenticating, and expanding the required templates and returning them to the client.  
 **Process**:  
-1. Get the S3 templates (locations should be specified in the incoming request). The files must be valid [`html/template`](https://pkg.go.dev/html/template) or [`text/template`](https://pkg.go.dev/text/template) parsable template texts.
-2. Use configured template functions to validate the user’s permissions to perform the required actions.
-3. Expand templates and return them in a JSON file (key = template’s file location).
+1. Get the template (the location should be specified in the incoming request). The file must be a valid [`html/template`](https://pkg.go.dev/html/template) or [`text/template`](https://pkg.go.dev/text/template) parsable template text.
+2. Use the configured template functions to validate the user’s permissions to perform the required actions, and to generate credentials on the fly.
+3. Expand the template with the config file and query string params, and return it with the correct `Content-Type` header (inferred from the template).
+
+### Wizard Templates
+
+The following templates will be saved within the lakeFS binary and be directed by the Wizard component to be expanded:
+* SparkEMR.conf.tt
+* SparkDatabricks.conf.tt
+* SparkXML.conf.tt
+* README.md.tt
+* MetastoreEMR.conf.tt
+* MetastoreDatabricks.conf.tt
+* MetastoreXML.conf.tt
 
 ---
 
@@ -42,29 +54,19 @@ The [templating service](https://github.com/treeverse/lakeFS/pull/3373) is respo
 ### Templating Service
 
 - **Endpoint**: `/api/v1/templates`  
-- **Method**: `GET`
-- **Parameters**:
-  - Template URLs (`template_location`): `[]string` - retrieved from query string.
-  - Any other configurations required for the templates: `string` - retrieved from query string
-- **Return value**:
-    ```json
-    {
-        "<template_location value>": {
-            "expanded": <the expanded template as string>,
-            "secrets": ["<secret1>", "<secret2>"...]  // Optional
-        },
-        ...
-    }
-    ```
-  - The `secrets` key specifies secret values that were returned in the template. Such use-case is credentials generation. 
-  Credentials are generated if the templates demand it and the requesting user has permissions to do so. For more [information](https://github.com/treeverse/lakeFS/pull/3373/files#diff-13af9ea2283c616ad842b97fa99ebe40db9373a9f04ae56382b6d1442a4484efR89) and [examples](#example-templates).
+- **Request**:
+  - Method: `GET`
+  - Parameters:
+    - Template URL (`template_location`): `string` - retrieved from query string.
+    - Any other configurations required for the templates: `string` - retrieved from query string
+- **Response**:
+  - Return value: The expanded template
+  - Headers:
+    - `Content-Type` - The template's content type.
 - **Errors**:
-  1. 403- Forbidden:
-     1. *Error code 1*: The requesting user is forbidden from accessing the configurations or functionality (like generating credentials).
-  2. 400- Bad request: 
-     1. *Error code 1*: The request is missing information necessary for the template’s expansion.
-  3. 500- Internal server error: 
-     1. *Error code 1*: The lakeFS server cannot access some of the provided template locations.
+  1. *403- Forbidden*: The requesting user is forbidden from accessing the configurations or functionality (like generating credentials).
+  2. *400- Bad request*: The request is missing information necessary for the template’s expansion.
+  3. *500- Internal server error*: The lakeFS server cannot access some provided template locations.
 
 ---
 
@@ -73,7 +75,7 @@ The [templating service](https://github.com/treeverse/lakeFS/pull/3373) is respo
 ### Example template
 
 **Databricks Spark configurations**  
-Location: s3://org-super-bucket/spark/databricksConfig.props
+Name: *databricksConfig.props.tt*
 ```properties
 spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
 {{with $creds := new_credentials}}
@@ -84,86 +86,109 @@ spark.hadoop.fs.s3a.endpoint={{ .querystring.lakefs_url }}
 spark.hadoop.fs.s3a.path.style.access=true
 ```
 
+**Local Metastore configurations**
+Name: *localMetastoreConfig.xml.tt*
+```xml
+<configuration>
+    <property>
+        <name>fs.s3a.path.style.access</name>
+        <value>true</value>
+    </property>
+    <property>
+        <name>fs.s3.impl</name>
+        <value>org.apache.hadoop.fs.s3a.S3AFileSystem</value>
+    </property>
+    <property>
+        <name>fs.s3a.endpoint</name>
+        <value>{{ .querystring.lakefs_url }}</value>
+    </property>
+    {{with $creds := new_credentials}}
+    <property>
+        <name>fs.s3a.access.key</name>
+        <value>{{$creds.Key}}</value>
+    </property>
+    <property>
+        <name>fs.s3a.secret.key</name>
+        <value>{{$creds.Secret}}</value>
+    </property>
+    {{end}}
+</configuration>
+```
+
 ### Happy flow - All steps
 
 1. The user clicks on ‘Create Repository’, then clicks on ‘Spark Quickstart’
 2. The wizard starts by showing an input textbox for the users to type the repo name. The user types ‘spark-repo’
 3. The wizard creates a repo named ‘spark-repo’ and sets a default ‘main’ branch.
 4. The wizard asks the users if they want to import existing data to lakeFS. The user specifies the location of the bucket (after they validated that the lakeFS role has the right permissions and that the bucket has the correct policy), and clicks ‘OK’.
-   1. A progress bar or counter will show the progress of the import process and will signal once it’s over.
-5. The wizard will ask the user: “How are you using Spark”, and will offer three alternatives: Databricks, AWS EMR and spark-submit. The user chooses ‘Databricks’. It also asks the user for their lakeFS endpoint (and will show a default placeholder pointing to the current URL). The user types the endpoint.
+   * An object counter will show the progress of the import process and will signal once it’s over.
+5. The wizard asks the user for their lakeFS endpoint (and will show a default placeholder pointing to the current URL).
 6. The wizard will send a GET request to the templating service with a query string of the format:  
     ```
-    ?lakefs_url=<url>&template_location=s3://org-super-bucket/spark/databricksConfig.props
+    ?lakefs_url=https://my-lakefs.io&template_location=databricksConfig.props.tt
     ```
-7. The templating service will fetch the templates from the provided locations, expand the `.querystring.lakefs_url` parameter for both templates and return a json response of the format:
-    ```json
-    {
-        "s3://org-super-bucket/spark/databricksConfig.props": {
-            "expended": [the expanded Spark template as a string],
-            "secrets": [“<secret1>”, “<secret2>”...]
-        }
-    }
+7. The templating service will fetch the templates from the provided locations, expand the `.querystring.lakefs_url` parameter for both templates and return a response of the format:
+    ```properties
+    spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
+    spark.hadoop.fs.s3a.access_key=ACCESSKEYDONTTELL
+    spark.hadoop.fs.s3a.secret_key=SECRETKEYDONTTELL
+    spark.hadoop.fs.s3a.endpoint=https://my-lakefs.io
+    spark.hadoop.fs.s3a.path.style.access=true
     ```
+   each returned template will return with a `Content-Type` header describing the way it should be presented.
 8. The wizard will present each configuration in a different snippet view for the users to copy and paste into their configuration files.
-9. The wizard will generate a README file as follows:
-    ```markdown
-    1. Created a repository "spark-repo" and branch "main".
-    2. Imported data from <S3 location>.
-    3. Generated the following configurations:
-       <Spark configurations with [“<secret1>”, “<secret2>”...] hidden>
-    4. Instructions to configure Hive Metastore with lakeFS.
-    5. Generated this README file and committed it.
+9. The wizard will send a GET request to the templating service with a query string of the format:
     ```
-    and upload and commit it to lakeFS.
+    ?lakefs_url=https://my-lakefs.io&template_location=README.md.tt
+    ```
+   It will do so to generate a README.md file.
+10. The returned README file will describe the steps taken, the configurations generated but without secrets and some commands to explain how to connect Hive Metastore to lakeFS:
+     ```markdown
+     1. Created a repository "spark-repo" and branch "main".
+     2. Imported data from <S3 location>.
+     3. Generated the following configurations:
+        <Spark configurations with hidden credentials>
+        <Metastore configurations with hidden credentials>
+     4. Instructions to configure Hive Metastore with lakeFS.
+     5. Generated this README file and committed it.
+     ```
+11. Upload and commit the README file to the `main` branch.
 
 ### Happy flow - Spark template only
 
 1. The user clicks on ‘Create Repository’, then clicks on ‘Spark Quickstart’
-2. The wizard starts by showing an input textbox for the users to enter the repo name. The user types ‘spark-repo’
+2. The wizard starts by showing an input textbox for the users to type the repo name. The user types ‘spark-repo’
 3. The wizard creates a repo named ‘spark-repo’ and sets a default ‘main’ branch.
 4. The wizard asks the users if they want to import existing data to lakeFS. The user skips this step using the skip button.
-5. The wizard asks the user: “How are you using Spark”, and offers three alternatives: Databricks, AWS EMR, and spark-submit. The user chooses ‘Databricks’. It also asks the user for their lakeFS endpoint (and will show a default placeholder pointing to the current URL). The user types the endpoint.
-6. The wizard sends a GET request to the templating service with a query string of the format:
+5. The wizard asks the user for their lakeFS endpoint (and will show a default placeholder pointing to the current URL).
+6. The wizard will send a GET request to the templating service with a query string of the format:
     ```
-    ?lakefs_url=<url>&template_location=s3://org-super-bucket/spark/databricksConfig.props
+    ?lakefs_url=https://my-lakefs.io&template_location=databricksConfig.props.tt
     ```
-7. The templating service will fetch the template from the provided location, expand the `.querystring.lakefs_url` parameter for the template and return a JSON response of the following format:
-    ```json
-    {
-      "s3://org-super-bucket/spark/databricksConfig.props": {
-        "expended": [the expanded Spark template as a string],
-        "secrets": [“<secret1>”, “<secret2>”...]
-      }
-    }
+7. The templating service will fetch the templates from the provided locations, expand the `.querystring.lakefs_url` parameter for both templates and return a response of the format:
+    ```properties
+    spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
+    spark.hadoop.fs.s3a.access_key=ACCESSKEYDONTTELL
+    spark.hadoop.fs.s3a.secret_key=SECRETKEYDONTTELL
+    spark.hadoop.fs.s3a.endpoint=https://my-lakefs.io
+    spark.hadoop.fs.s3a.path.style.access=true
     ```
-
-8. The wizard presents each configuration in a snippet view for the users to copy and paste into their configuration file.
-9. The wizard will generate a README file as follows:
-    ```markdown
-        1. Created a repository "spark-repo" and branch "main".
-        2. Generated the following configurations:
-           <Spark configurations with [“<secret1>”, “<secret2>”...] hidden>
-        3. Instructions to configure Hive Metastore with lakeFS.
-        4. Generated this README file and committed it.
+   each returned template will return with a `Content-Type` header describing the way it should be presented.
+8. The wizard will present each configuration in a different snippet view for the users to copy and paste into their configuration files.
+9. The wizard will send a GET request to the templating service with a query string of the format:
     ```
-    and upload and commit it to lakeFS.
-
-### Happy flow - Import only
-
-1. The user clicks on ‘Create Repository’, then clicks on ‘Spark Quickstart’
-2. The wizard starts by showing an input textbox for the users to enter the repo name. The user types ‘spark-repo’
-3. The wizard creates a repo named ‘spark-repo’ and sets a default ‘main’ branch.
-4. The wizard asks the users if they want to import existing data to lakeFS. The user specifies the location of the bucket (after they validated that the lakeFS role has the right permissions and that the bucket has the correct policy), and clicks ‘OK’.
-A progress bar or a counter will show the progress of the import process and will signal once it’s over.
-5. The wizard asks the user: “How are you using Spark”, and offers three alternatives: Databricks, AWS EMR, and spark-submit. The user skips this step using the skip button.
-6. The wizard will generate a README file as follows:
-   ```markdown
-   1. Created a repository "spark-repo" and branch "main".
-   2. Imported data from <S3 location>
-   3. Generated this README file and committed it.
-   ```
-   and upload and commit it to lakeFS.
+    ?lakefs_url=https://my-lakefs.io&template_location=README.md.tt
+    ```
+   It will do so to generate a README.md file.
+10. The returned README file will describe the steps taken, the configurations generated but without secrets and some commands to explain how to connect Hive Metastore to lakeFS:
+     ```markdown
+     1. Created a repository "spark-repo" and branch "main".
+     2. Generated the following configurations:
+        <Spark configurations with hidden secrets>
+     3. Instructions to configure Hive Metastore with lakeFS.
+     4. Generated this README file and committed it.
+     ```
+11. Upload and commit the README file to the `main` branch.
 
 ### Sad flow - No import permissions
 
@@ -176,19 +201,18 @@ A progress bar or a counter will show the progress of the import process and wil
 5. Continue as above 
 - The generated README will not include the import step.
 
-### Sad flow - No credentials' generation permissions
+### Sad flow - No credential generation permissions
 
 1. The user clicks on ‘Create Repository’, then clicks on ‘Spark Quickstart’
 2. The wizard starts by showing an input textbox for the users to enter the repo name. The user types ‘spark-repo’
 3. The wizard creates a repo named ‘spark-repo’ and sets a default ‘main’ branch.
 4. The wizard asks the users if they want to import existing data to lakeFS. The user skips this step using the skip button.
-5. The wizard asks the user: “How are you using Spark”, and offers three alternatives: Databricks, AWS EMR, and spark-submit. The user chooses ‘Databricks’. It also asks the user for their lakeFS endpoint (and will show a default placeholder pointing to the current URL). The user types the endpoint.
 6. The wizard sends a GET request to the templating service with a query string of the format:
     ```
-    ?lakefs_url=<url>&template_location=s3://org-super-bucket/spark/databricksConfig.props
+    ?lakefs_url=<url>&template_location=databricksConfig.props.tt
     ```
 7. The templating service will fetch the template from the provided location and will fail to generate the user’s credentials as the requesting user doesn’t have the permissions required.
-8. The templating service will return **‘403 Forbidden: error code 1’** to the wizard.
+8. The templating service will return **‘403 Forbidden’** to the wizard.
 9. The wizard will prompt a message saying that the user doesn’t have the required permissions for generating credentials.
 10. Continue with the flow as described above…
 
@@ -198,36 +222,34 @@ A progress bar or a counter will show the progress of the import process and wil
 2. The wizard starts by showing an input textbox for the users to enter the repo name. The user types ‘spark-repo’
 3. The wizard creates a repo named ‘spark-repo’ and sets a default ‘main’ branch.
 4. The wizard asks the users if they want to import existing data to lakeFS. The user skips this step using the skip button.
-5. The wizard asks the user: “How are you using Spark”, and offers three alternatives: Databricks, AWS EMR, and spark-submit. The user chooses ‘Databricks’. It also asks the user for their lakeFS endpoint (and will show a default placeholder pointing to the current URL). The user types an **empty endpoint**.
 6. The wizard sends a GET request to the templating service with a query string of the format:
     ```
-    ?template_location=s3://org-super-bucket/spark/databricksConfig.props
+    ?template_location=databricksConfig.props.tt
     ```
 7. The templating service will fail to satisfy the `lakefs_url` template property and will return **‘400 Bad Request: error code 1’** to the wizard.
 8. The wizard will prompt a message saying that some needed information were not specified and that he should make sure he typed everything along the way.
 9. Continue with the flow as described above…
 
-### Sad flow - No bucket permissions
+### Sad flow - No fetching permissions
 
 1. The user clicks on ‘Create Repository’, then clicks on ‘Spark Quickstart’
 2. The wizard starts by showing an input textbox for the users to enter the repo name. The user types ‘spark-repo’
 3. The wizard creates a repo named ‘spark-repo’ and sets a default ‘main’ branch.
 4. The wizard asks the users if they want to import existing data to lakeFS. The user skips this step using the skip button.
-5. The wizard asks the user: “How are you using Spark”, and offers three alternatives: Databricks, AWS EMR, and spark-submit. The user chooses ‘Databricks’. It also asks the user for their lakeFS endpoint (and will show a default placeholder pointing to the current URL). The user types the endpoint.
 6. The wizard sends a GET request to the templating service with a query string of the format:
     ```
-    ?lakefs_url=<url>&template_location=s3://org-super-bucket/spark/databricksConfig.props
+    ?lakefs_url=<url>&template_location=databricksConfig.props.tt
     ```
 7. The templating service tries to fetch the template from the provided location and will fail to do so as the server doesn’t have sufficient permissions.
-8. The templating service will return **‘500 Internal Server Error: error code 1’** to the wizard.
-9. The wizard will prompt a message saying that the server could not access the bucket.
+8. The templating service will return **‘500 Internal Server Error’** to the wizard.
+9. The wizard will prompt a message saying that the server could not access the requested template.
 10. Continue with the flow as described above…
 
 ---
 
 ## Monitoring
 
-### Metrics
+### Operative Metrics
 
 1. Templating service was called
     ```json
@@ -267,5 +289,42 @@ A progress bar or a counter will show the progress of the import process and wil
         "class": "templating_service",
         "name": "4xx",
         "value": "<service name>"
+    }
+    ```
+
+### BI Metrics
+
+Sent directly from the GUI Wizard
+
+1. Wizard GUI - Quickstart started
+    ```json
+    {
+      "class": "spark_wizard",
+      "name": "quickstart_start",
+      "value": 1
+    }
+    ```
+2. Wizard GUI - Import data requested
+    ```json
+    {
+      "class": "spark_wizard",
+      "name": "import_data",
+      "value": 1
+    }
+    ```
+3. Wizard GUI - Spark config generated
+    ```json
+    {
+      "class": "spark_wizard",
+      "name": "generate_spark_template",
+      "value": 1
+    }
+    ```
+4. Wizard GUI - Quickstart ended
+    ```json
+    {
+      "class": "spark_wizard",
+      "name": "quickstart_end",
+      "value": 1
     }
     ```
