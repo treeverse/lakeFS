@@ -7,10 +7,10 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/go-test/deep"
+	"github.com/sirupsen/logrus"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -82,23 +82,9 @@ func (m *MemLogger) Panic(args ...interface{}) {
 	m.logLine("PANIC", args...)
 }
 
-func (m *MemLogger) Log(level string, args ...interface{}) {
-	switch strings.ToLower(level) {
-	case "panic":
-		m.logLine("PANIC", args...)
-	case "fatal":
-		m.logLine("FATAL", args...)
-	case "error":
-		m.logLine("ERROR", args...)
-	case "warn", "warning":
-		m.logLine("WARN", args...)
-	case "info":
-		m.logLine("INFO", args...)
-	case "debug":
-		m.logLine("DEBUG", args...)
-	case "trace":
-		m.logLine("TRACE", args...)
-	}
+func (m *MemLogger) Log(level logrus.Level, args ...interface{}) {
+	m.logLine(level.String(), args...)
+
 }
 
 func (m *MemLogger) Tracef(format string, args ...interface{}) {
@@ -133,23 +119,8 @@ func (m *MemLogger) Panicf(format string, args ...interface{}) {
 	m.logLine("PANIC", fmt.Sprintf(format, args...))
 }
 
-func (m *MemLogger) Logf(level string, format string, args ...interface{}) {
-	switch strings.ToLower(level) {
-	case "panic":
-		m.logLine("PANIC", fmt.Sprintf(format, args...))
-	case "fatal":
-		m.logLine("FATAL", fmt.Sprintf(format, args...))
-	case "error":
-		m.logLine("ERROR", fmt.Sprintf(format, args...))
-	case "warn", "warning":
-		m.logLine("WARN", fmt.Sprintf(format, args...))
-	case "info":
-		m.logLine("INFO", fmt.Sprintf(format, args...))
-	case "debug":
-		m.logLine("DEBUG", fmt.Sprintf(format, args...))
-	case "trace":
-		m.logLine("TRACE", fmt.Sprintf(format, args...))
-	}
+func (m *MemLogger) Logf(level logrus.Level, format string, args ...interface{}) {
+	m.logLine(level.String(), fmt.Sprintf(format, args...))
 }
 
 func (m *MemLogger) IsTracing() bool {

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -14,7 +15,7 @@ type contextKey string
 
 const (
 	RequestIDContextKey contextKey = "request_id"
-	AuditLogEndMessage  string     = "HTTP call ended"
+	AuditLogEndMessage             = "HTTP call ended"
 )
 
 type ResponseRecordingWriter struct {
@@ -65,7 +66,7 @@ func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields,
 				logging.MethodFieldKey:    r.Method,
 				logging.HostFieldKey:      r.Host,
 				logging.RequestIDFieldKey: reqID,
-				logging.LogSource:         "MiddlewareLogger",
+				logging.LogAudit:          "API",
 			}
 			for k, v := range fields {
 				requestFields[k] = v
@@ -84,7 +85,8 @@ func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields,
 			if logLevel == "null" || logLevel == "none" {
 				logging.FromContext(r.Context()).WithFields(loggingFields).Debug(AuditLogEndMessage)
 			} else {
-				logging.FromContext(r.Context()).WithFields(loggingFields).Log(logLevel, AuditLogEndMessage)
+				level, _ := logrus.ParseLevel(logLevel)
+				logging.FromContext(r.Context()).WithFields(loggingFields).Log(level, AuditLogEndMessage)
 			}
 		})
 	}
