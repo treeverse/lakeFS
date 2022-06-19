@@ -15,7 +15,7 @@ type contextKey string
 
 const (
 	RequestIDContextKey contextKey = "request_id"
-	AuditLogEndMessage             = "HTTP call ended"
+	AuditLogEndMessage  string     = "HTTP call ended"
 )
 
 type ResponseRecordingWriter struct {
