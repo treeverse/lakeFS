@@ -9,7 +9,7 @@ has_children: false
 
 # Rollbacks
 
-## What Is a Rollback
+## What Is a Rollback?
 
 A rollback operation is used to to fix critical data errors immediately.
 

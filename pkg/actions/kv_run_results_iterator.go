@@ -3,6 +3,7 @@ package actions
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/treeverse/lakefs/pkg/kv"
 )
@@ -10,15 +11,16 @@ import (
 var ErrParamConflict = errors.New("parameters conflict")
 
 type KVRunResultIterator struct {
-	it  kv.MessageIterator
-	err error
+	it    kv.MessageIterator
+	err   error
+	entry *RunResult
 }
 
 // NewKVRunResultIterator returns a new iterator over actions run results
 // 'after' determines the runID which we should start the scan from, used for pagination
 func NewKVRunResultIterator(ctx context.Context, store kv.StoreMessage, repositoryID, branchID, commitID, after string) (*KVRunResultIterator, error) {
 	if branchID != "" && commitID != "" {
-		return nil, ErrParamConflict
+		return nil, fmt.Errorf("can't use both branchID and CommitID: %w", ErrParamConflict)
 	}
 
 	var (
@@ -29,11 +31,11 @@ func NewKVRunResultIterator(ctx context.Context, store kv.StoreMessage, reposito
 
 	switch {
 	case branchID != "":
-		prefix = ByBranchPath(repositoryID, branchID)
+		prefix = byBranchPath(repositoryID, branchID)
 	case commitID != "":
-		prefix = ByCommitPath(repositoryID, commitID)
+		prefix = byCommitPath(repositoryID, commitID)
 	default:
-		prefix = kv.FormatPath(BaseActionsPath(repositoryID), RunsPrefix)
+		prefix = kv.FormatPath(baseActionsPath(repositoryID), runsPrefix)
 		secondary = false
 	}
 	if after != "" {
@@ -62,18 +64,24 @@ func (i *KVRunResultIterator) Next() bool {
 	if i.Err() != nil {
 		return false
 	}
-	return i.it.Next()
+	if !i.it.Next() {
+		i.entry = nil
+		return false
+	}
+	e := i.it.Entry()
+	if e == nil {
+		i.err = ErrNilValue
+		return false
+	}
+	i.entry = RunResultFromProto(e.Value.(*RunResultData))
+	return true
 }
 
 func (i *KVRunResultIterator) Value() *RunResult {
 	if i.Err() != nil {
 		return nil
 	}
-	e := i.it.Entry()
-	if e == nil {
-		return nil
-	}
-	return RunResultFromProto(e.Value.(*RunResultData))
+	return i.entry
 }
 
 func (i *KVRunResultIterator) Err() error {

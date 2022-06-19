@@ -69,7 +69,7 @@ func (dbs *DBStore) GetTaskResult(ctx context.Context, repositoryID string, runI
 }
 
 func (dbs *DBStore) ListRunResults(ctx context.Context, repositoryID string, branchID, commitID string, after string) (RunResultIterator, error) {
-	return NewDBRunResultIterator(ctx, dbs.db, defaultFetchSize, repositoryID, branchID, commitID, after), nil
+	return NewDBRunResultIterator(ctx, dbs.db, defaultFetchSize, repositoryID, branchID, commitID, after)
 }
 
 func (dbs *DBStore) ListRunTaskResults(ctx context.Context, repositoryID string, runID string, after string) (TaskResultIterator, error) {

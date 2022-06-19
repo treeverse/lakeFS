@@ -133,33 +133,6 @@ var runCmd = &cobra.Command{
 		}
 		defer func() { _ = c.Close() }()
 
-		// init authentication
-		var authService auth.Service
-		if cfg.IsAuthTypeAPI() {
-			authService, err = auth.NewAPIAuthService(
-				cfg.GetAuthAPIEndpoint(),
-				cfg.GetAuthAPIToken(),
-				crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
-				cfg.GetAuthCacheConfig(), nil)
-			if err != nil {
-				logger.WithError(err).Fatal("failed to create authentication service")
-			}
-		} else {
-			authService = auth.NewDBAuthService(
-				dbPool,
-				crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
-				cfg.GetAuthCacheConfig(),
-				logger.WithField("service", "auth_service"))
-		}
-		middlewareAuthenticator := auth.ChainAuthenticator{
-			auth.NewBuiltinAuthenticator(authService),
-		}
-		ldapConfig := cfg.GetLDAPConfiguration()
-		if ldapConfig != nil {
-			middlewareAuthenticator = append(middlewareAuthenticator, newLDAPAuthenticator(ldapConfig, authService))
-		}
-		controllerAuthenticator := append(middlewareAuthenticator, auth.NewEmailAuthenticator(authService))
-
 		authMetadataManager := auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
 		blockstoreType := cfg.GetBlockstoreType()
@@ -182,6 +155,18 @@ var runCmd = &cobra.Command{
 		var multipartsTracker multiparts.Tracker
 		var idGen actions.IDGenerator
 		var actionsStore actions.Store
+		var authService auth.Service
+
+		if cfg.IsAuthTypeAPI() {
+			authService, err = auth.NewAPIAuthService(
+				cfg.GetAuthAPIEndpoint(),
+				cfg.GetAuthAPIToken(),
+				crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
+				cfg.GetAuthCacheConfig(), nil)
+			if err != nil {
+				logger.WithError(err).Fatal("failed to create authentication service")
+			}
+		}
 
 		if dbParams.KVEnabled {
 			kvStore, err := kv.Open(ctx, dbParams.Type, dbParams.ConnectionString)
@@ -194,10 +179,26 @@ var runCmd = &cobra.Command{
 			multipartsTracker = multiparts.NewTracker(storeMessage)
 			actionsStore = actions.NewActionsKVStore(kv.StoreMessage{Store: kvStore})
 			idGen = &actions.DecreasingIDGenerator{}
+
+			// init authentication
+			if !cfg.IsAuthTypeAPI() {
+				authService = auth.NewKVAuthService(
+					storeMessage,
+					crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
+					cfg.GetAuthCacheConfig(),
+					logger.WithField("service", "auth_service"))
+			}
 		} else {
 			multipartsTracker = multiparts.NewDBTracker(dbPool)
 			actionsStore = actions.NewActionsDBStore(dbPool)
 			idGen = &actions.IncreasingIDGenerator{}
+			if !cfg.IsAuthTypeAPI() {
+				authService = auth.NewDBAuthService(
+					dbPool,
+					crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
+					cfg.GetAuthCacheConfig(),
+					logger.WithField("service", "auth_service"))
+			}
 		}
 
 		actionsService := actions.NewService(
@@ -213,6 +214,15 @@ var runCmd = &cobra.Command{
 		// wire actions into entry catalog
 		defer actionsService.Stop()
 		c.SetHooksHandler(actionsService)
+
+		middlewareAuthenticator := auth.ChainAuthenticator{
+			auth.NewBuiltinAuthenticator(authService),
+		}
+		ldapConfig := cfg.GetLDAPConfiguration()
+		if ldapConfig != nil {
+			middlewareAuthenticator = append(middlewareAuthenticator, newLDAPAuthenticator(ldapConfig, authService))
+		}
+		controllerAuthenticator := append(middlewareAuthenticator, auth.NewEmailAuthenticator(authService))
 
 		auditChecker := version.NewDefaultAuditChecker(cfg.GetSecurityAuditCheckURL())
 		defer auditChecker.Close()

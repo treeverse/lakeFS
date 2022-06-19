@@ -7,8 +7,9 @@ import (
 )
 
 type KVTaskResultIterator struct {
-	it  kv.PrimaryIterator
-	err error
+	it    kv.PrimaryIterator
+	entry *TaskResult
+	err   error
 }
 
 // NewKVTaskResultIterator returns a new iterator over actions task results of a specific run
@@ -31,19 +32,26 @@ func (i *KVTaskResultIterator) Next() bool {
 	if i.Err() != nil {
 		return false
 	}
-	return i.it.Next()
+	if !i.it.Next() {
+		i.entry = nil
+		return false
+	}
+	entry := i.it.Entry()
+	if entry == nil {
+		i.err = ErrNilValue
+		return false
+	}
+
+	i.entry = taskResultFromProto(entry.Value.(*TaskResultData))
+	return true
 }
 
 func (i *KVTaskResultIterator) Value() *TaskResult {
 	if i.Err() != nil {
 		return nil
 	}
-	entry := i.it.Entry()
-	if entry == nil {
-		i.err = ErrNilValue
-		return nil
-	}
-	return taskResultFromProto(entry.Value.(*TaskResultData))
+
+	return i.entry
 }
 
 func (i *KVTaskResultIterator) Err() error {

@@ -372,6 +372,14 @@ func (s *Store) scanInternal(ctx context.Context, partitionKey, scanKey []byte, 
 
 func (s *Store) Close() {}
 
+// DropTable used internally for testing purposes
+func (s *Store) DropTable() error {
+	_, err := s.svc.DeleteTable(&dynamodb.DeleteTableInput{
+		TableName: &s.params.TableName,
+	})
+	return err
+}
+
 func (e *EntriesIterator) Next() bool {
 	if e.err != nil {
 		return false
