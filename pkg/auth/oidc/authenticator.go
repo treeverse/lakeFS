@@ -2,10 +2,13 @@ package oidc
 
 import (
 	"context"
+	"errors"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
 )
+
+var ErrTokenExtract = errors.New("failed to extract id token")
 
 type Authenticator struct {
 	oauthConfig  *oauth2.Config
@@ -27,7 +30,7 @@ func (a *Authenticator) GetIDTokenClaims(ctx context.Context, code string) (Clai
 	}
 	rawIDToken, ok := token.Extra("id_token").(string)
 	if !ok {
-		return nil, err
+		return nil, ErrTokenExtract
 	}
 	oidcVerifier := a.oidcProvider.Verifier(&oidc.Config{
 		ClientID: a.oauthConfig.ClientID,

@@ -71,6 +71,7 @@ func Serve(
 
 	sessionStore := sessions.NewCookieStore(authService.SecretStore().SharedSecret())
 	r := chi.NewRouter()
+	oidcConfig := cfg.GetAuthOIDCConfiguration()
 	apiRouter := r.With(
 		OapiRequestValidatorWithOptions(swagger, &openapi3filter.Options{
 			AuthenticationFunc: openapi3filter.NoopAuthenticationFunc,
@@ -79,7 +80,7 @@ func Serve(
 			RequestIDHeaderName,
 			logging.Fields{logging.ServiceNameFieldKey: LoggerServiceName},
 			cfg.GetLoggingTraceRequestHeaders()),
-		AuthMiddleware(logger, swagger, middlewareAuthenticator, authService, sessionStore, cfg.GetAuthOIDCConfiguration()),
+		AuthMiddleware(logger, swagger, middlewareAuthenticator, authService, sessionStore, &oidcConfig),
 		MetricsMiddleware(swagger),
 	)
 	oidcAuthenticator := authoidc.NewAuthenticator(oauthConfig, oidcProvider)
@@ -107,8 +108,8 @@ func Serve(
 	r.Mount("/_pprof/", httputil.ServePPROF("/_pprof/"))
 	r.Mount("/swagger.json", http.HandlerFunc(swaggerSpecHandler))
 	r.Mount(BaseURL, http.HandlerFunc(InvalidAPIEndpointHandler))
-	if cfg.GetAuthOIDCConfiguration() != nil {
-		r.Mount("/oidc/login", NewOIDCLoginPageHandler(sessionStore, oauthConfig, logger, cfg.GetCookieDomain()))
+	if cfg.GetAuthOIDCConfiguration().Enabled {
+		r.Mount("/oidc/login", NewOIDCLoginPageHandler(sessionStore, oauthConfig, logger))
 	}
 	r.Mount("/", NewUIHandler(gatewayDomains, snippets))
 	return r

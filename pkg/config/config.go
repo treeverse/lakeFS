@@ -514,10 +514,6 @@ func (c *Config) GetAuthAPIToken() string {
 	return c.values.Auth.API.Token
 }
 
-func (c *Config) GetCookieDomain() string {
-	return c.values.Auth.CookieDomain
-}
-
 func (c *Config) GetUISnippets() []apiparams.CodeSnippet {
 	snippets := make([]apiparams.CodeSnippet, 0, len(c.values.UI.Snippets))
 	for _, item := range c.values.UI.Snippets {
@@ -529,6 +525,6 @@ func (c *Config) GetUISnippets() []apiparams.CodeSnippet {
 	return snippets
 }
 
-func (c *Config) GetAuthOIDCConfiguration() *OIDC {
+func (c *Config) GetAuthOIDCConfiguration() OIDC {
 	return c.values.Auth.OIDC
 }

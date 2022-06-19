@@ -259,7 +259,7 @@ var runCmd = &cobra.Command{
 		oidcConfig := cfg.GetAuthOIDCConfiguration()
 		var oauthConfig *oauth2.Config
 		var oidcProvider *oidc.Provider
-		if oidcConfig != nil && oidcConfig.Enabled {
+		if oidcConfig.Enabled {
 			oidcProvider, err = oidc.NewProvider(
 				cmd.Context(),
 				oidcConfig.URL,
@@ -270,6 +270,7 @@ var runCmd = &cobra.Command{
 			oauthConfig = &oauth2.Config{
 				ClientID:     oidcConfig.ClientID,
 				ClientSecret: oidcConfig.ClientSecret,
+				RedirectURL:  oidcConfig.CallbackBaseURL + api.BaseURL + "/oidc/callback",
 				Endpoint:     oidcProvider.Endpoint(),
 				Scopes:       []string{oidc.ScopeOpenID, "profile"},
 			}

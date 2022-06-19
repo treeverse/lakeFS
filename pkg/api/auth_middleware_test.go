@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
+	"github.com/gorilla/securecookie"
+	"github.com/gorilla/sessions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
@@ -123,6 +125,61 @@ func testAuthMiddleware(t *testing.T, kvEnabled bool) {
 		authProvider, err := securityprovider.NewSecurityProviderApiKey("cookie", api.JWTCookieName, apiToken)
 		if err != nil {
 			t.Fatal("basic auth security provider", err)
+		}
+		authClient, err := api.NewClientWithResponses(apiEndpoint, api.WithRequestEditorFn(authProvider.Intercept))
+		if err != nil {
+			t.Fatal("failed to create lakefs api client:", err)
+		}
+		resp, err := authClient.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
+		if err != nil {
+			t.Fatal("ListRepositories() should return without error:", err)
+		}
+		if resp.StatusCode() != http.StatusUnauthorized {
+			t.Fatal("ListRepositories() should return unauthorized status code, got", resp.StatusCode())
+		}
+		if resp.JSON401 == nil {
+			t.Fatal("ListRepositories() should return unauthorized response, got nil")
+		}
+	})
+
+	t.Run("valid gorilla session", func(t *testing.T) {
+		ctx := context.Background()
+		apiToken := testGenerateApiToken(ctx, t, clt, cred)
+		values := map[interface{}]interface{}{api.TokenSessionKeyName: apiToken}
+		store := sessions.NewCookieStore([]byte("some secret"))
+		encoded, err := securecookie.EncodeMulti(api.InternalAuthSessionName, values, store.Codecs...)
+		if err != nil {
+			t.Fatal("Failed to encode cookie value for session: ", err)
+		}
+		authProvider, err := securityprovider.NewSecurityProviderApiKey("cookie", api.InternalAuthSessionName, encoded)
+		if err != nil {
+			t.Fatal("gorilla session security provider", err)
+		}
+		authClient, err := api.NewClientWithResponses(apiEndpoint, api.WithRequestEditorFn(authProvider.Intercept))
+		if err != nil {
+			t.Fatal("failed to create lakefs api client:", err)
+		}
+		resp, err := authClient.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
+		if err != nil {
+			t.Fatal("ListRepositories() should return without error:", err)
+		}
+		if resp.StatusCode() != http.StatusOK {
+			t.Fatalf("unexpected status code %d, expected %d", resp.StatusCode(), http.StatusOK)
+		}
+	})
+
+	t.Run("invalid gorilla cookie", func(t *testing.T) {
+		ctx := context.Background()
+		apiToken := testGenerateBadAPIToken(t, *deps.authService)
+		values := map[interface{}]interface{}{api.TokenSessionKeyName: apiToken}
+		store := sessions.NewCookieStore([]byte("some secret"))
+		encoded, err := securecookie.EncodeMulti(api.InternalAuthSessionName, values, store.Codecs...)
+		if err != nil {
+			t.Fatal("Failed to encode cookie value for session: ", err)
+		}
+		authProvider, err := securityprovider.NewSecurityProviderApiKey("cookie", api.InternalAuthSessionName, encoded)
+		if err != nil {
+			t.Fatal("gorilla session security provider", err)
 		}
 		authClient, err := api.NewClientWithResponses(apiEndpoint, api.WithRequestEditorFn(authProvider.Intercept))
 		if err != nil {

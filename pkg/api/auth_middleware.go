@@ -46,7 +46,7 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authentica
 				writeError(w, http.StatusBadRequest, err)
 				return
 			}
-			user, err := checkSecurityRequirements(r, securityRequirements, logger, authenticator, authService, sessionStore, oidcConfig)
+			user, err := checkSecurityRequirements(r, w, securityRequirements, logger, authenticator, authService, sessionStore, oidcConfig)
 			if err != nil {
 				writeError(w, http.StatusUnauthorized, err)
 				return
@@ -59,9 +59,38 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authentica
 	}
 }
 
+// Deprecated
+// TODO(johnnyaug) remove this a week after released
+func migrateFromLegacyCookie(r *http.Request, w http.ResponseWriter, logger logging.Logger, sessionStore sessions.Store) {
+	jwtCookie, _ := r.Cookie(JWTCookieName)
+	if jwtCookie == nil {
+		return
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     JWTCookieName,
+		Value:    "",
+		Domain:   jwtCookie.Domain,
+		Path:     "/",
+		HttpOnly: true,
+		Expires:  time.Unix(0, 0),
+		SameSite: http.SameSiteStrictMode,
+	})
+	internalAuthSession, err := sessionStore.Get(r, InternalAuthSessionName)
+	if err != nil {
+		logger.WithError(err).Error("Failed to get internal auth session")
+	}
+	if jwtCookie.Value != "" {
+		internalAuthSession.Values[TokenSessionKeyName] = jwtCookie.Value
+		err = sessionStore.Save(r, w, internalAuthSession)
+		if err != nil {
+			logger.WithError(err).Error("Failed to save internal auth session")
+		}
+	}
+}
+
 // checkSecurityRequirements goes over the security requirements and check the authentication. returns the user information and error if the security check was required.
 // it will return nil user and error in case of no security checks to match.
-func checkSecurityRequirements(r *http.Request,
+func checkSecurityRequirements(r *http.Request, w http.ResponseWriter,
 	securityRequirements openapi3.SecurityRequirements,
 	logger logging.Logger,
 	authenticator auth.Authenticator,
@@ -72,10 +101,7 @@ func checkSecurityRequirements(r *http.Request,
 	ctx := r.Context()
 	var user *model.User
 	var err error
-	session, err := sessionStore.Get(r, OIDCAuthSessionName)
-	if err != nil {
-		return nil, err
-	}
+
 	logger = logger.WithContext(ctx)
 	for _, securityRequirement := range securityRequirements {
 		for provider := range securityRequirement {
@@ -100,14 +126,32 @@ func checkSecurityRequirements(r *http.Request,
 				}
 				user, err = userByAuth(ctx, logger, authenticator, authService, accessKey, secretKey)
 			case "cookie_auth":
-				// validate jwt token from cookie
-				jwtCookie, _ := r.Cookie(JWTCookieName)
-				if jwtCookie == nil {
+				internalAuthSession, err := sessionStore.Get(r, InternalAuthSessionName)
+				if err != nil {
+					return nil, err
+				}
+				token := ""
+				if internalAuthSession != nil {
+					token, _ = internalAuthSession.Values[TokenSessionKeyName].(string)
+				}
+				if token == "" {
+					migrateFromLegacyCookie(r, w, logger, sessionStore)
+				}
+				internalAuthSession, err = sessionStore.Get(r, InternalAuthSessionName)
+				if err != nil {
+					return nil, err
+				}
+				token, _ = internalAuthSession.Values[TokenSessionKeyName].(string)
+				if token == "" {
 					continue
 				}
-				user, err = userByToken(ctx, logger, authService, jwtCookie.Value)
+				user, err = userByToken(ctx, logger, authService, token)
 			case "oidc_auth":
-				user, err = userFromOIDC(ctx, logger, authService, session, oidcConfig)
+				oidcSession, err := sessionStore.Get(r, OIDCAuthSessionName)
+				if err != nil {
+					return nil, err
+				}
+				user, err = userFromOIDC(ctx, logger, authService, oidcSession, oidcConfig)
 			default:
 				// unknown security requirement to check
 				logger.WithField("provider", provider).Error("Authentication middleware unknown security requirement provider")

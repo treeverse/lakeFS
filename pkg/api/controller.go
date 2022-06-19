@@ -166,16 +166,12 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 }
 
 func (c *Controller) Logout(w http.ResponseWriter, r *http.Request) {
-	http.SetCookie(w, &http.Cookie{
-		Name:     JWTCookieName,
-		Value:    "",
-		Domain:   c.Config.GetCookieDomain(),
-		Path:     "/",
-		HttpOnly: true,
-		Expires:  time.Unix(0, 0),
-		SameSite: http.SameSiteStrictMode,
-	})
-	err := doOIDCLogout(w, r, c.sessionStore)
+	err := clearSession(w, r, c.sessionStore, InternalAuthSessionName)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	err = clearSession(w, r, c.sessionStore, OIDCAuthSessionName)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
@@ -211,7 +207,7 @@ func (c *Controller) OauthCallback(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSONRequestBody) {
-	err := doOIDCLogout(w, r, c.sessionStore)
+	err := clearSession(w, r, c.sessionStore, OIDCAuthSessionName)
 	if err != nil {
 		c.Logger.WithError(err).Error("failed to perform OIDC logout")
 	}
@@ -231,16 +227,19 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSO
 		writeError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
 	}
-
-	http.SetCookie(w, &http.Cookie{
-		Name:     JWTCookieName,
-		Value:    tokenString,
-		Path:     "/",
-		Domain:   c.Config.GetCookieDomain(), // if not configured will return empty string which will resolve by setting the cookie on the current domain
-		Expires:  expires,
-		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
-	})
+	internalAuthSession, err := c.sessionStore.Get(r, InternalAuthSessionName)
+	if err != nil {
+		c.Logger.WithError(err).Error("Failed to get internal auth session")
+		writeError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+		return
+	}
+	internalAuthSession.Values[TokenSessionKeyName] = tokenString
+	err = c.sessionStore.Save(r, w, internalAuthSession)
+	if err != nil {
+		c.Logger.WithError(err).Error("Failed to save internal auth session")
+		writeError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+		return
+	}
 	response := AuthenticationToken{
 		Token: tokenString,
 	}
@@ -3141,8 +3140,7 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 	if initialized || c.Config.IsAuthTypeAPI() {
 		state = setupStateInitialized
 	}
-	oidcEnabled := c.Config.GetAuthOIDCConfiguration() != nil && c.Config.GetAuthOIDCConfiguration().Enabled
-	response := SetupState{State: swag.String(state), OidcEnabled: swag.Bool(oidcEnabled)}
+	response := SetupState{State: swag.String(state), OidcEnabled: swag.Bool(c.Config.GetAuthOIDCConfiguration().Enabled)}
 	writeResponse(w, http.StatusOK, response)
 }
 

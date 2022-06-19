@@ -82,7 +82,10 @@ require (
 	golang.org/x/time v0.0.0-20220224211638-0e9765cccd65
 )
 
-require github.com/gorilla/sessions v1.2.1
+require (
+	github.com/gorilla/securecookie v1.1.1
+	github.com/gorilla/sessions v1.2.1
+)
 
 require (
 	cloud.google.com/go/iam v0.3.0 // indirect
@@ -97,7 +100,6 @@ require (
 	github.com/denis-tingaikin/go-header v0.4.3 // indirect
 	github.com/ettle/strcase v0.1.1 // indirect
 	github.com/firefart/nonamedreturns v1.0.1 // indirect
-	github.com/gorilla/securecookie v1.1.1 // indirect
 	github.com/hashicorp/go-version v1.4.0 // indirect
 	github.com/hexops/gotextdiff v1.0.3 // indirect
 	github.com/ldez/gomoddirectives v0.2.3 // indirect
