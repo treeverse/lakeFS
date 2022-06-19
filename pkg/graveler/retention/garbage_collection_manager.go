@@ -19,9 +19,9 @@ import (
 )
 
 const (
-	configFileSuffixTemplate    = "/%s/retention/gc/rules/config.json"
-	addressesFilePrefixTemplate = "/%s/retention/gc/addresses/"
-	commitsFileSuffixTemplate   = "/%s/retention/gc/commits/run_id=%s/commits.csv"
+	configFileSuffixTemplate    = "%s/retention/gc/rules/config.json"
+	addressesFilePrefixTemplate = "%s/retention/gc/addresses/"
+	commitsFileSuffixTemplate   = "%s/retention/gc/commits/run_id=%s/commits.csv"
 )
 
 type GarbageCollectionManager struct {
