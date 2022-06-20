@@ -116,7 +116,7 @@ const DiffSizeReport = ({leftSize, rightSize, diffType}) => {
     let size;
     switch (diffType) {
         case 'changed':
-        case 'conflict':
+        case 'conflict': // conflict will compare left and right. further details: https://github.com/treeverse/lakeFS/issues/3269
             size = leftSize - rightSize;
             if (size === 0) {
                 return <div>
