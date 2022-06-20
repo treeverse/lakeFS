@@ -143,7 +143,7 @@ export const TreeEntryRow = ({entry, relativeTo = "", leaf = false, dirExpanded,
         pathSection = <Link href={onNavigate(entry)}>{pathSection}</Link>
     }
     const rowActions = []
-    if (onClickExpandDiff && entry.type !== 'conflict') {
+    if (onClickExpandDiff) {
         rowActions.push(new RowAction(<FileDiffIcon/>, diffExpanded ? "Hide changes" : "Show changes", diffExpanded, onClickExpandDiff))
     }
     if (!leaf) {
