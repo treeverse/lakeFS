@@ -229,7 +229,7 @@ func (a *Adapter) streamToS3(ctx context.Context, sdkRequest *request.Request, s
 	if err != nil {
 		log.WithError(err).
 			WithField("url", sdkRequest.HTTPRequest.URL.String()).
-			Error("error making request request")
+			Error("error making request")
 		return nil, err
 	}
 
