@@ -32,7 +32,7 @@ The wizard UI component is responsible for the user’s Spark onboarding process
 
 The [templating service](https://github.com/treeverse/lakeFS/pull/3373) is responsible for fetching, authenticating, and expanding the required templates and returning them to the client.  
 **Process**:  
-1. Get the template (the location should be specified in the incoming request). The file must be a valid [`html/template`](https://pkg.go.dev/html/template) or [`text/template`](https://pkg.go.dev/text/template) parsable template text.
+1. Get the template (the location should be specified in the incoming request). The file must be a valid [`html/template`](https://pkg.go.dev/html/template) (specified using the `.<type>.html.tt` suffix) or [`text/template`](https://pkg.go.dev/text/template) (specified using the `.<type>.tt` suffix) parsable template text.
 2. Use the configured template functions to validate the user’s permissions to perform the required actions, and to generate credentials on the fly.
 3. Expand the template with the config file and query string params, and return it with the correct `Content-Type` header (inferred from the template).
 
