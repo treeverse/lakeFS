@@ -106,6 +106,18 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
   <APPLICATION-JAR-PATH> \
   example-repo us-east-1
 ```
+
+### End of run reports 
+
+At the end of each GC job, a few files will be added under the repository's storage namespace, containing details about the run.
+
+Report            | Description               | Location 
+Run summary       | A summary of the run, including: number of deleted objects and the GC rules used for this jobs | _lakefs/logs/gc/summary/dt=YYYY-MM-DD-HH-mm-SS/summary.json 
+Expired addresses | A set of parquet files describing all the expired addresses, including: key and physical_address | _lakefs/logs/gc/expired_addresses/dt=YYYY-MM-DD-HH-mm-SS/ 
+Commits summary   | A list of all the commits participating in this GC job, including: commit ID and whether it was expired | _lakefs/logs/gc/summary/dt=YYYY-MM-DD-HH-mm-SS/commits.parquet 
+Deleted objects   | A list of all deleted objects | _lakefs/logs/gc/deleted_objects/dt=YYYY-MM-DD-HH-mm-SS/deleted.parquet 
+
+
 ## Considerations
 1. In order for an object to be hard-deleted, it must be deleted from all branches.
    You should remove stale branches to prevent them from retaining old objects.
