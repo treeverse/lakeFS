@@ -189,6 +189,11 @@
   font-weight: bold;
 }
 
+.table .leaf-entry-row .objects-diff .unchanged {
+  color: var(--color-fg-conflict);
+  font-weight: bold;
+}
+
 .table .leaf-entry-row .objects-diff .diff-size {
   font-weight: bold;
 }
