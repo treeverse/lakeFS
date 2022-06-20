@@ -31,12 +31,7 @@ func NewOIDCLoginPageHandler(sessionStore sessions.Store, oauthConfig *oauth2.Co
 			return
 		}
 
-		session, err := sessionStore.Get(r, OIDCAuthSessionName)
-		if err != nil {
-			logger.WithError(err).Error("failed to get oidc session")
-			writeError(w, http.StatusInternalServerError, "Failed to redirect to login page")
-			return
-		}
+		session, _ := sessionStore.Get(r, OIDCAuthSessionName)
 		session.Values[StateSessionKey] = state
 		if err := session.Save(r, w); err != nil {
 			logger.WithError(err).Error("failed to save oidc session")

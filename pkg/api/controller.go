@@ -183,11 +183,7 @@ func (c *Controller) Logout(w http.ResponseWriter, r *http.Request) {
 // It exchanges the code for an id token, and saves the claims from the ID token on a session.
 func (c *Controller) OauthCallback(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	session, err := c.sessionStore.Get(r, OIDCAuthSessionName)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
+	session, _ := c.sessionStore.Get(r, OIDCAuthSessionName)
 	if r.URL.Query().Get("state") != session.Values[StateSessionKey] {
 		writeError(w, http.StatusBadRequest, "Invalid state parameter.")
 		return
@@ -227,12 +223,7 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSO
 		writeError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
 	}
-	internalAuthSession, err := c.sessionStore.Get(r, InternalAuthSessionName)
-	if err != nil {
-		c.Logger.WithError(err).Error("Failed to get internal auth session")
-		writeError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
-		return
-	}
+	internalAuthSession, _ := c.sessionStore.Get(r, InternalAuthSessionName)
 	internalAuthSession.Values[TokenSessionKeyName] = tokenString
 	err = c.sessionStore.Save(r, w, internalAuthSession)
 	if err != nil {

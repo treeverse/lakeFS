@@ -33,10 +33,7 @@ const (
 )
 
 func clearSession(w http.ResponseWriter, r *http.Request, sessionStore sessions.Store, sessionName string) error {
-	session, err := sessionStore.Get(r, sessionName)
-	if err != nil {
-		return err
-	}
+	session, _ := sessionStore.Get(r, sessionName)
 	session.Options.MaxAge = -1
 	return session.Save(r, w)
 }

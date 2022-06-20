@@ -75,17 +75,16 @@ func migrateFromLegacyCookie(r *http.Request, w http.ResponseWriter, logger logg
 		Expires:  time.Unix(0, 0),
 		SameSite: http.SameSiteStrictMode,
 	})
-	internalAuthSession, err := sessionStore.Get(r, InternalAuthSessionName)
+	if jwtCookie.Value == "" {
+		return
+	}
+	internalAuthSession, _ := sessionStore.Get(r, InternalAuthSessionName)
+	internalAuthSession.Values[TokenSessionKeyName] = jwtCookie.Value
+	err := sessionStore.Save(r, w, internalAuthSession)
 	if err != nil {
-		logger.WithError(err).Error("Failed to get internal auth session")
+		logger.WithError(err).Error("Failed to save internal auth session")
 	}
-	if jwtCookie.Value != "" {
-		internalAuthSession.Values[TokenSessionKeyName] = jwtCookie.Value
-		err = sessionStore.Save(r, w, internalAuthSession)
-		if err != nil {
-			logger.WithError(err).Error("Failed to save internal auth session")
-		}
-	}
+
 }
 
 // checkSecurityRequirements goes over the security requirements and check the authentication. returns the user information and error if the security check was required.
@@ -127,10 +126,7 @@ func checkSecurityRequirements(r *http.Request, w http.ResponseWriter,
 				user, err = userByAuth(ctx, logger, authenticator, authService, accessKey, secretKey)
 			case "cookie_auth":
 				var internalAuthSession *sessions.Session
-				internalAuthSession, err = sessionStore.Get(r, InternalAuthSessionName)
-				if err != nil {
-					return nil, err
-				}
+				internalAuthSession, _ = sessionStore.Get(r, InternalAuthSessionName)
 				token := ""
 				if internalAuthSession != nil {
 					token, _ = internalAuthSession.Values[TokenSessionKeyName].(string)
@@ -199,7 +195,8 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 		return enhanceWithFriendlyName(user, friendlyName), nil
 	}
 	if !errors.Is(err, auth.ErrNotFound) {
-		return nil, err
+		logger.WithError(err).Error("Failed to get external user from database")
+		return nil, ErrAuthenticatingRequest
 	}
 	u := model.BaseUser{
 		CreatedAt:  time.Now().UTC(),
@@ -210,12 +207,14 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 	userID, err := authService.CreateUser(ctx, &u)
 	if err != nil {
 		if !errors.Is(err, db.ErrAlreadyExists) {
-			return nil, err
+			logger.WithError(err).Error("Failed to create external user in database")
+			return nil, ErrAuthenticatingRequest
 		}
 		// user already exists - get it:
 		user, err = authService.GetUser(ctx, externalID)
 		if err != nil {
-			return nil, err
+			logger.WithError(err).Error("Failed to get external user from database")
+			return nil, ErrAuthenticatingRequest
 		}
 		return enhanceWithFriendlyName(user, friendlyName), nil
 	}
@@ -226,7 +225,7 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 	for _, g := range initialGroups {
 		err = authService.AddUserToGroup(ctx, u.Username, strings.TrimSpace(g))
 		if err != nil {
-			return nil, err
+			logger.WithError(err).Error("Failed to add external user to group")
 		}
 	}
 	return enhanceWithFriendlyName(&model.User{
