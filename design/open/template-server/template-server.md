@@ -107,6 +107,7 @@ spark.hadoop.fs.lakefs.impl=io.lakefs.LakeFSFileSystem
 {{with $creds := new_credentials}}
 spark.hadoop.fs.lakefs.access_key={{$creds.ID}}
 spark.hadoop.fs.lakefs.secret_key={{$creds.Secret}}
+{{end}}
 spark.hadoop.fs.lakefs.endpoint={{"local.templates.lakefs_url" | config}}
 # Or pass something from "local" to give users a different key.  In any case 
 # requires IAM authorization to fetch.
