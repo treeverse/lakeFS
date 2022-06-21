@@ -414,7 +414,7 @@ conf = lakefs_client.Configuration(
             auth['cookie_auth'] = {
                 'type': 'api_key',
                 'in': 'cookie',
-                'key': 'access_token',
+                'key': 'internal_auth_session',
                 'value': self.get_api_key_with_prefix(
                     'cookie_auth',
                 ),
@@ -431,7 +431,7 @@ conf = lakefs_client.Configuration(
             auth['oidc_auth'] = {
                 'type': 'api_key',
                 'in': 'cookie',
-                'key': 'auth_session',
+                'key': 'oidc_auth_session',
                 'value': self.get_api_key_with_prefix(
                     'oidc_auth',
                 ),

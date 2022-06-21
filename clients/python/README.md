@@ -284,7 +284,7 @@ Class | Method | HTTP request | Description
 ## cookie_auth
 
 - **Type**: API key
-- **API key parameter name**: access_token
+- **API key parameter name**: internal_auth_session
 - **Location**: 
 
 
@@ -296,7 +296,7 @@ Class | Method | HTTP request | Description
 ## oidc_auth
 
 - **Type**: API key
-- **API key parameter name**: auth_session
+- **API key parameter name**: oidc_auth_session
 - **Location**: 
 
 

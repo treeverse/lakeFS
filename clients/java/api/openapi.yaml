@@ -5941,10 +5941,10 @@ components:
       type: http
     cookie_auth:
       in: cookie
-      name: access_token
+      name: internal_auth_session
       type: apiKey
     oidc_auth:
       in: cookie
-      name: auth_session
+      name: oidc_auth_session
       type: apiKey
 

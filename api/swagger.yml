@@ -25,11 +25,11 @@ components:
     cookie_auth:
       type: apiKey
       in: cookie
-      name: access_token
+      name: internal_auth_session
     oidc_auth:
       type: apiKey
       in: cookie
-      name: auth_session
+      name: oidc_auth_session
   parameters:
     PaginationPrefix:
       in: query

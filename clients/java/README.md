@@ -301,7 +301,7 @@ Authentication schemes defined for the API:
 ### cookie_auth
 
 - **Type**: API key
-- **API key parameter name**: access_token
+- **API key parameter name**: internal_auth_session
 - **Location**: 
 
 ### jwt_token
@@ -311,7 +311,7 @@ Authentication schemes defined for the API:
 ### oidc_auth
 
 - **Type**: API key
-- **API key parameter name**: auth_session
+- **API key parameter name**: oidc_auth_session
 - **Location**: 
 
 
