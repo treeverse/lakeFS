@@ -1,12 +1,26 @@
 # Changelog
 
+## v0.68.0 - 2022-06-21
+
+This release fixes a bug in the garbage collector.
+If you are using cloud storage that is not S3 and have configured a garbage collection policy for retention, you will need to reconfigure it.  (Note that the garbage collector itself does not yet run on such storage!)
+There are no changes if you are using S3.
+
+What's new:
+- UI: Show content diff for conflicts (#3522)
+- lakeFS configuration for audit log level (#3512)
+
+Bug fixes:
+- Fix: Garbage Collector - Eliminate double slash in URL (#3525)
+- Fix: Crash fix on `lakectl superuser` command - missing logging initialization (#3519)
+
 ## v0.67.0 - 2022-06-16
 
 What's new:
 - Garbage collection report at end of run (#3127)
 
 Bug fixes:
-- Fix: gateway remove delimter limitation for list objects v2 API (#3459)
+- Fix: gateway remove delimiter limitation for list objects v2 API (#3459)
 - Fix: UI policy view fail to update (#3469)
 
 ## v0.66.0 - 2022-05-26
