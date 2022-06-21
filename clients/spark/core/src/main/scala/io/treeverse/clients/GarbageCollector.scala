@@ -356,14 +356,17 @@ object GarbageCollector {
     println("Expired addresses:")
     expiredAddresses.show()
 
-    val storageNamespace = new ApiClient(apiURL, accessKey, secretKey).getStorageNamespace(repo)
+    var storageNamespace = new ApiClient(apiURL, accessKey, secretKey).getStorageNamespace(repo)
+    if (!storageNamespace.endsWith("/")) {
+      storageNamespace += "/"
+    }
 
     val removed =
       remove(storageNamespace, gcAddressesLocation, expiredAddresses, runID, region, hcValues)
 
     val commitsDF = getCommitsDF(runID, gcCommitsLocation, spark)
-    val reportLogsDst = s"${storageNamespace}/_lakefs/logs/gc/summary/"
-    val reportExpiredDst = s"${storageNamespace}/_lakefs/logs/gc/expired_addresses/"
+    val reportLogsDst = concatToGCLogsPrefix(storageNamespace, "summary")
+    val reportExpiredDst = concatToGCLogsPrefix(storageNamespace, "expired_addresses")
 
     val time = DateTimeFormatter.ISO_INSTANT.format(java.time.Clock.systemUTC.instant())
     writeParquetReport(commitsDF, reportLogsDst, time, "commits.parquet")
@@ -375,9 +378,14 @@ object GarbageCollector {
       .write
       .partitionBy("run_id")
       .mode(SaveMode.Overwrite)
-      .parquet(s"${storageNamespace}/_lakefs/logs/gc/deleted_objects/${time}/deleted.parquet")
+      .parquet(concatToGCLogsPrefix(storageNamespace, s"deleted_objects/$time/deleted.parquet"))
 
     spark.close()
+  }
+
+  private def concatToGCLogsPrefix(storageNameSpace: String, key: String): String = {
+    val strippedKey = key.stripPrefix("/")
+    s"${storageNameSpace}_lakefs/logs/gc/$strippedKey"
   }
 
   private def repartitionBySize(df: DataFrame, maxSize: Int, column: String): DataFrame = {
