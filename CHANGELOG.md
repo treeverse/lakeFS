@@ -2,9 +2,9 @@
 
 ## v0.68.0 - 2022-06-21
 
-This release introduces a bug fix in the garbage collector.
-If you used the garbage collection client over a cloud storage that is not S3 (which you shouldn't have done), you'll have to reconfigure it.
-If you used the garbage collection client over S3, it will work the same way.
+This release fixes a bug in the garbage collector.
+If you are using cloud storage that is not S3 and have configured a garbage collection policy for retention, you will need to reconfigure it.  (Note that the garbage collector itself does not yet run on such storage!)
+There are no changes if you are using S3.
 
 What's new:
 - UI: Show content diff for conflicts (#3522)
