@@ -7,7 +7,7 @@ What's new:
 - lakeFS configuration for audit log level (#3512)
 
 Bug fixes:
-- Fix: Garbage Collector: Eliminate double slash in URL (#3525)
+- Fix: Garbage Collector - Eliminate double slash in URL (#3525)
 - Fix: Fix initialize logger for superuser cmd auth service crash fix (#3519)
 
 ## v0.67.0 - 2022-06-16
