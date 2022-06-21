@@ -3,7 +3,7 @@
 ## v0.68.0 - 2022-06-21
 
 What's new:
-- Show content diff for conflicted files (#3522)
+- UI: Show content diff for conflicts (#3522)
 - Add a new configuration for setting audit logs level (#3512)
 
 Bug fixes:
