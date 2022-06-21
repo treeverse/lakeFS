@@ -14,6 +14,7 @@ message UserData {
     string email = 5;
     bytes encrypted_password = 6;
     string source = 7;
+    string external_id = 8;
 }
 
 // message data model for model.Group struct

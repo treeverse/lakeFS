@@ -1,10 +1,12 @@
 package api
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
+	"github.com/gorilla/sessions"
 )
 
 type LoginRequestData struct {
@@ -20,12 +22,21 @@ const (
 	DefaultLoginExpiration          = 7 * 24 * time.Hour
 	DefaultInvitePasswordExpiration = 6 * time.Hour
 	DefaultResetPasswordExpiration  = 20 * time.Minute
-
-	JWTCookieName = "access_token"
+	// Deprecated: use gorilla managed session
+	JWTCookieName           = "access_token"
+	InternalAuthSessionName = "internal_auth_session"
+	TokenSessionKeyName     = "token"
+	OIDCAuthSessionName     = "oidc_auth_session"
 
 	LoginAudience         = "login"
 	ResetPasswordAudience = "reset_password"
 )
+
+func clearSession(w http.ResponseWriter, r *http.Request, sessionStore sessions.Store, sessionName string) error {
+	session, _ := sessionStore.Get(r, sessionName)
+	session.Options.MaxAge = -1
+	return session.Save(r, w)
+}
 
 func generateJWT(claims *jwt.StandardClaims, secret []byte) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

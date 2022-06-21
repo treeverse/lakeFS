@@ -1140,6 +1140,7 @@ func (a *APIAuthService) CreateUser(ctx context.Context, user *model.BaseUser) (
 		FriendlyName: user.FriendlyName,
 		Source:       &user.Source,
 		Username:     user.Username,
+		ExternalId:   user.ExternalID,
 	})
 	if err != nil {
 		return InvalidUserID, err

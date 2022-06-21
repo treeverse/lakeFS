@@ -10,6 +10,7 @@ security:
 - jwt_token: []
 - basic_auth: []
 - cookie_auth: []
+- oidc_auth: []
 paths:
   /setup_lakefs:
     get:
@@ -82,6 +83,24 @@ paths:
                 $ref: '#/components/schemas/CurrentUser'
           description: user
       summary: get current user
+      tags:
+      - auth
+      x-accepts: application/json
+  /oidc/callback:
+    get:
+      operationId: oauthCallback
+      responses:
+        "302":
+          description: successfully got token
+        "401":
+          description: failed to exchange authorization code for token
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      security: []
       tags:
       - auth
       x-accepts: application/json
@@ -5041,6 +5060,8 @@ components:
       - location
       type: object
     Error:
+      example:
+        message: message
       properties:
         message:
           description: short message explaining the error
@@ -5141,6 +5162,7 @@ components:
       type: object
     SetupState:
       example:
+        oidc_enabled: true
         state: initialized
       properties:
         state:
@@ -5148,6 +5170,8 @@ components:
           - initialized
           - not_initialized
           type: string
+        oidc_enabled:
+          type: boolean
       type: object
     AccessKeyCredentials:
       example:
@@ -5917,6 +5941,10 @@ components:
       type: http
     cookie_auth:
       in: cookie
-      name: access_token
+      name: internal_auth_session
+      type: apiKey
+    oidc_auth:
+      in: cookie
+      name: oidc_auth_session
       type: apiKey
 

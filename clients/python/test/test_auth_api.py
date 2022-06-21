@@ -241,6 +241,12 @@ class TestAuthApi(unittest.TestCase):
         """
         pass
 
+    def test_oauth_callback(self):
+        """Test case for oauth_callback
+
+        """
+        pass
+
     def test_update_password(self):
         """Test case for update_password
 

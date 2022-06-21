@@ -82,6 +82,12 @@ configuration = lakefs_client.Configuration(
     access_token = 'YOUR_BEARER_TOKEN'
 )
 
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
+
 
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
@@ -139,6 +145,7 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**list_users**](docs/AuthApi.md#list_users) | **GET** /auth/users | list users
 *AuthApi* | [**login**](docs/AuthApi.md#login) | **POST** /auth/login | perform a login
 *AuthApi* | [**logout**](docs/AuthApi.md#logout) | **POST** /auth/logout | logs out a cookie-authenticated user
+*AuthApi* | [**oauth_callback**](docs/AuthApi.md#oauth_callback) | **GET** /oidc/callback | 
 *AuthApi* | [**update_password**](docs/AuthApi.md#update_password) | **POST** /auth/password | Update user password by reset_password token
 *AuthApi* | [**update_policy**](docs/AuthApi.md#update_policy) | **PUT** /auth/policies/{policyId} | update policy
 *BranchesApi* | [**create_branch**](docs/BranchesApi.md#create_branch) | **POST** /repositories/{repository}/branches | create branch
@@ -277,13 +284,20 @@ Class | Method | HTTP request | Description
 ## cookie_auth
 
 - **Type**: API key
-- **API key parameter name**: access_token
+- **API key parameter name**: internal_auth_session
 - **Location**: 
 
 
 ## jwt_token
 
 - **Type**: Bearer authentication (JWT)
+
+
+## oidc_auth
+
+- **Type**: API key
+- **API key parameter name**: oidc_auth_session
+- **Location**: 
 
 
 ## Author

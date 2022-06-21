@@ -8,14 +8,17 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/getkin/kin-openapi/routers"
 	"github.com/getkin/kin-openapi/routers/legacy"
 	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/sessions"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/treeverse/lakefs/pkg/api/params"
 	"github.com/treeverse/lakefs/pkg/auth"
+	authoidc "github.com/treeverse/lakefs/pkg/auth/oidc"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/cloud"
@@ -25,6 +28,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
+	"golang.org/x/oauth2"
 )
 
 const (
@@ -56,13 +60,18 @@ func Serve(
 	emailer *email.Emailer,
 	gatewayDomains []string,
 	snippets []params.CodeSnippet,
+	oidcProvider *oidc.Provider,
+	oauthConfig *oauth2.Config,
 ) http.Handler {
 	logger.Info("initialize OpenAPI server")
 	swagger, err := GetSwagger()
 	if err != nil {
 		panic(err)
 	}
+
+	sessionStore := sessions.NewCookieStore(authService.SecretStore().SharedSecret())
 	r := chi.NewRouter()
+	oidcConfig := cfg.GetAuthOIDCConfiguration()
 	apiRouter := r.With(
 		OapiRequestValidatorWithOptions(swagger, &openapi3filter.Options{
 			AuthenticationFunc: openapi3filter.NoopAuthenticationFunc,
@@ -72,10 +81,10 @@ func Serve(
 			logging.Fields{logging.ServiceNameFieldKey: LoggerServiceName},
 			cfg.GetAuditLogLevel(),
 			cfg.GetLoggingTraceRequestHeaders()),
-		AuthMiddleware(logger, swagger, middlewareAuthenticator, authService),
+		AuthMiddleware(logger, swagger, middlewareAuthenticator, authService, sessionStore, &oidcConfig),
 		MetricsMiddleware(swagger),
 	)
-
+	oidcAuthenticator := authoidc.NewAuthenticator(oauthConfig, oidcProvider)
 	controller := NewController(
 		cfg,
 		catalog,
@@ -90,6 +99,8 @@ func Serve(
 		auditChecker,
 		logger,
 		emailer,
+		oidcAuthenticator,
+		sessionStore,
 	)
 	HandlerFromMuxWithBaseURL(controller, apiRouter, BaseURL)
 
@@ -98,6 +109,9 @@ func Serve(
 	r.Mount("/_pprof/", httputil.ServePPROF("/_pprof/"))
 	r.Mount("/swagger.json", http.HandlerFunc(swaggerSpecHandler))
 	r.Mount(BaseURL, http.HandlerFunc(InvalidAPIEndpointHandler))
+	if cfg.GetAuthOIDCConfiguration().Enabled {
+		r.Mount("/oidc/login", NewOIDCLoginPageHandler(sessionStore, oauthConfig, logger))
+	}
 	r.Mount("/", NewUIHandler(gatewayDomains, snippets))
 	return r
 }

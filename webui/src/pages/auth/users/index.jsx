@@ -116,7 +116,7 @@ const UsersContainer = () => {
                         onRemove={() => setSelected(selected.filter(u => u !== user))}
                     />,
                     <Link href={{pathname: '/auth/users/:userId', params: {userId: user.id}}}>
-                        {user.id}
+                        {user.email || user.id}
                     </Link>,
                     <FormattedDate dateValue={user.creation_date}/>
                 ]}/>

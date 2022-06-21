@@ -47,7 +47,8 @@ class RefsApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/refs/{leftRef}/diff/{rightRef}',
                 'operation_id': 'diff_refs',
@@ -154,7 +155,8 @@ class RefsApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/refs/dump',
                 'operation_id': 'dump_refs',
@@ -207,7 +209,8 @@ class RefsApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/refs/{ref}/commits',
                 'operation_id': 'log_commits',
@@ -294,7 +297,8 @@ class RefsApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}',
                 'operation_id': 'merge_into_branch',
@@ -365,7 +369,8 @@ class RefsApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'jwt_token'
+                    'jwt_token',
+                    'oidc_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/refs/restore',
                 'operation_id': 'restore_refs',

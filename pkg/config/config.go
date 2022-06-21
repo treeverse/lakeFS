@@ -51,6 +51,8 @@ const (
 	DefaultAuthCacheTTL     = 20 * time.Second
 	DefaultAuthCacheJitter  = 3 * time.Second
 
+	DefaultAuthOIDCInitialGroupsClaimName = "initial_groups"
+
 	DefaultListenAddr          = "0.0.0.0:8000"
 	DefaultS3GatewayDomainName = "s3.local.lakefs.io"
 	DefaultS3GatewayRegion     = "us-east-1"
@@ -128,6 +130,8 @@ const (
 	AuthCacheTTLKey     = "auth.cache.ttl"
 	AuthCacheJitterKey  = "auth.cache.jitter"
 
+	AuthOIDCInitialGroupsClaimName = "auth.oidc.initial_groups_claim_name"
+
 	BlockstoreTypeKey                    = "blockstore.type"
 	BlockstoreLocalPathKey               = "blockstore.local.path"
 	BlockstoreDefaultNamespacePrefixKey  = "blockstore.default_namespace_prefix"
@@ -188,6 +192,8 @@ func setDefaults() {
 	viper.SetDefault(AuthCacheSizeKey, DefaultAuthCacheSize)
 	viper.SetDefault(AuthCacheTTLKey, DefaultAuthCacheTTL)
 	viper.SetDefault(AuthCacheJitterKey, DefaultAuthCacheJitter)
+
+	viper.SetDefault(AuthOIDCInitialGroupsClaimName, DefaultAuthOIDCInitialGroupsClaimName)
 
 	viper.SetDefault(BlockstoreLocalPathKey, DefaultBlockStoreLocalPath)
 	viper.SetDefault(BlockstoreS3RegionKey, DefaultBlockStoreS3Region)
@@ -514,10 +520,6 @@ func (c *Config) GetAuthAPIToken() string {
 	return c.values.Auth.API.Token
 }
 
-func (c *Config) GetCookieDomain() string {
-	return c.values.Auth.CookieDomain
-}
-
 func (c *Config) GetUISnippets() []apiparams.CodeSnippet {
 	snippets := make([]apiparams.CodeSnippet, 0, len(c.values.UI.Snippets))
 	for _, item := range c.values.UI.Snippets {
@@ -527,4 +529,8 @@ func (c *Config) GetUISnippets() []apiparams.CodeSnippet {
 		})
 	}
 	return snippets
+}
+
+func (c *Config) GetAuthOIDCConfiguration() OIDC {
+	return c.values.Auth.OIDC
 }

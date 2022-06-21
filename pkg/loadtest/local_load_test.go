@@ -174,6 +174,8 @@ func TestLocalLoad(t *testing.T) {
 				emailer,
 				nil,
 				nil,
+				nil,
+				nil,
 			)
 
 			ts := httptest.NewServer(handler)
