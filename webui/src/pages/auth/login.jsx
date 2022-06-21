@@ -10,7 +10,7 @@ import {Error} from "../../lib/components/controls"
 import {useRouter} from "../../lib/hooks/router";
 import {useAPI} from "../../lib/hooks/api";
 
-const LoginForm = () => {
+const LoginForm = ({oidcEnabled}) => {
     const router = useRouter();
     const [loginError, setLoginError] = useState(null);
     const { response, error, loading } = useAPI(() => auth.getAuthCapabilities());
@@ -51,10 +51,19 @@ const LoginForm = () => {
 
                             <Button variant="primary" type="submit">Login</Button>
                         </Form>
-                        { showResetPwd ?
-                            <Button variant="link" className="reset-pwd" onClick={()=> {router.push("/auth/resetpassword")}}>Reset password</Button>
-                            : ""
-                        }
+                        <div className={"mt-2 mb-1"}>
+                            { showResetPwd ?
+                                <Button variant="link" className={"text-secondary mt-2"}  onClick={()=> {router.push("/auth/resetpassword")}}>Reset password</Button>
+                                : ""
+                            }
+                            { oidcEnabled ?
+                                <Button variant="link" className="text-secondary mt-2" onClick={async ()=> {
+                                    await auth.logout();
+                                    window.location = "/oidc/login";
+                                }}>Sign in with SSO provider</Button>
+                                : ""
+                            }
+                        </div>
                     </Card.Body>
                 </Card>
             </Col>
@@ -74,7 +83,7 @@ const LoginPage = () => {
     }
     return (
         <Layout logged={false}>
-            <LoginForm/>
+            <LoginForm oidcEnabled={!error  && response && response.oidc_enabled }/>
         </Layout>
     );
 };

@@ -4,6 +4,17 @@ import (
 	"time"
 )
 
+type OIDC struct {
+	Enabled                bool     `mapstructure:"enabled"`
+	URL                    string   `mapstructure:"url"`
+	ClientID               string   `mapstructure:"client_id"`
+	ClientSecret           string   `mapstructure:"client_secret"`
+	CallbackBaseURL        string   `mapstructure:"callback_base_url"`
+	DefaultInitialGroups   []string `mapstructure:"default_initial_groups"`
+	InitialGroupsClaimName string   `mapstructure:"initial_groups_claim_name"`
+	FriendlyNameClaimName  string   `mapstructure:"friendly_name_claim_name"`
+}
+
 // LDAP holds configuration for authenticating on an LDAP server.
 type LDAP struct {
 	ServerEndpoint    string `mapstructure:"server_endpoint"`
@@ -79,8 +90,8 @@ type configuration struct {
 			Endpoint string
 			Token    string
 		}
-		LDAP         *LDAP
-		CookieDomain string `mapstructure:"cookie_domain"`
+		LDAP *LDAP
+		OIDC OIDC
 	}
 	Blockstore struct {
 		Type                   string `validate:"required"`

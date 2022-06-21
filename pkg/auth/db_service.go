@@ -195,8 +195,8 @@ func (s *DBAuthService) CreateUser(ctx context.Context, user *model.BaseUser) (s
 		}
 		var id int64
 		err := tx.Get(&id,
-			`INSERT INTO auth_users (display_name, created_at, friendly_name, source, email) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-			user.Username, user.CreatedAt, user.FriendlyName, user.Source, user.Email)
+			`INSERT INTO auth_users (display_name, created_at, friendly_name, source, email, external_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+			user.Username, user.CreatedAt, user.FriendlyName, user.Source, user.Email, user.ExternalID)
 		return id, err
 	})
 	if err != nil {

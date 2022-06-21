@@ -2,15 +2,22 @@ package api
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/routers"
 	"github.com/getkin/kin-openapi/routers/legacy"
+	"github.com/go-openapi/swag"
 	"github.com/golang-jwt/jwt"
+	"github.com/gorilla/sessions"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
+	"github.com/treeverse/lakefs/pkg/auth/oidc"
+	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -27,7 +34,7 @@ func extractSecurityRequirements(router routers.Router, r *http.Request) (openap
 	return *route.Operation.Security, nil
 }
 
-func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authenticator auth.Authenticator, authService auth.Service) func(next http.Handler) http.Handler {
+func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authenticator auth.Authenticator, authService auth.Service, sessionStore sessions.Store, oidcConfig *config.OIDC) func(next http.Handler) http.Handler {
 	router, err := legacy.NewRouter(swagger)
 	if err != nil {
 		panic(err)
@@ -39,7 +46,7 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authentica
 				writeError(w, http.StatusBadRequest, err)
 				return
 			}
-			user, err := checkSecurityRequirements(r, securityRequirements, logger, authenticator, authService)
+			user, err := checkSecurityRequirements(r, w, securityRequirements, logger, authenticator, authService, sessionStore, oidcConfig)
 			if err != nil {
 				writeError(w, http.StatusUnauthorized, err)
 				return
@@ -52,9 +59,45 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authentica
 	}
 }
 
+// Deprecated: migrateFromLegacyCookie takes the token from the legacy cookie and saves it on the gorilla session.
+// TODO(johnnyaug) remove this a week after released
+func migrateFromLegacyCookie(r *http.Request, w http.ResponseWriter, logger logging.Logger, sessionStore sessions.Store) string {
+	jwtCookie, _ := r.Cookie(JWTCookieName)
+	if jwtCookie == nil {
+		return ""
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     JWTCookieName,
+		Value:    "",
+		Domain:   jwtCookie.Domain,
+		Path:     "/",
+		HttpOnly: true,
+		Expires:  time.Unix(0, 0),
+		SameSite: http.SameSiteStrictMode,
+	})
+	if jwtCookie.Value == "" {
+		return ""
+	}
+	internalAuthSession, _ := sessionStore.Get(r, InternalAuthSessionName)
+	internalAuthSession.Values[TokenSessionKeyName] = jwtCookie.Value
+	err := sessionStore.Save(r, w, internalAuthSession)
+	if err != nil {
+		logger.WithError(err).Error("Failed to save internal auth session")
+		return ""
+	}
+	return jwtCookie.Value
+}
+
 // checkSecurityRequirements goes over the security requirements and check the authentication. returns the user information and error if the security check was required.
 // it will return nil user and error in case of no security checks to match.
-func checkSecurityRequirements(r *http.Request, securityRequirements openapi3.SecurityRequirements, logger logging.Logger, authenticator auth.Authenticator, authService auth.Service) (*model.User, error) {
+func checkSecurityRequirements(r *http.Request, w http.ResponseWriter,
+	securityRequirements openapi3.SecurityRequirements,
+	logger logging.Logger,
+	authenticator auth.Authenticator,
+	authService auth.Service,
+	sessionStore sessions.Store,
+	oidcConfig *config.OIDC,
+) (*model.User, error) {
 	ctx := r.Context()
 	var user *model.User
 	var err error
@@ -83,12 +126,26 @@ func checkSecurityRequirements(r *http.Request, securityRequirements openapi3.Se
 				}
 				user, err = userByAuth(ctx, logger, authenticator, authService, accessKey, secretKey)
 			case "cookie_auth":
-				// validate jwt token from cookie
-				jwtCookie, _ := r.Cookie(JWTCookieName)
-				if jwtCookie == nil {
+				var internalAuthSession *sessions.Session
+				internalAuthSession, _ = sessionStore.Get(r, InternalAuthSessionName)
+				token := ""
+				if internalAuthSession != nil {
+					token, _ = internalAuthSession.Values[TokenSessionKeyName].(string)
+				}
+				if token == "" {
+					token = migrateFromLegacyCookie(r, w, logger, sessionStore)
+				}
+				if token == "" {
 					continue
 				}
-				user, err = userByToken(ctx, logger, authService, jwtCookie.Value)
+				user, err = userByToken(ctx, logger, authService, token)
+			case "oidc_auth":
+				var oidcSession *sessions.Session
+				oidcSession, err = sessionStore.Get(r, OIDCAuthSessionName)
+				if err != nil {
+					return nil, err
+				}
+				user, err = userFromOIDC(ctx, logger, authService, oidcSession, oidcConfig)
 			default:
 				// unknown security requirement to check
 				logger.WithField("provider", provider).Error("Authentication middleware unknown security requirement provider")
@@ -103,6 +160,74 @@ func checkSecurityRequirements(r *http.Request, securityRequirements openapi3.Se
 		}
 	}
 	return nil, nil
+}
+
+func enhanceWithFriendlyName(user *model.User, friendlyName string) *model.User {
+	if friendlyName != "" {
+		user.FriendlyName = swag.String(friendlyName)
+	}
+	return user
+}
+
+// userFromOIDC returns a user from an existing OIDC session.
+// If the user doesn't exist on the lakeFS side, it is created.
+// This function does not make any calls to an external provider.
+func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.Service, authSession *sessions.Session, oidcConfig *config.OIDC) (*model.User, error) {
+	idTokenClaims, ok := authSession.Values[IDTokenClaimsSessionKey].(oidc.Claims)
+	if !ok || idTokenClaims == nil {
+		return nil, ErrAuthenticatingRequest
+	}
+	externalID, ok := idTokenClaims["sub"].(string)
+	if !ok {
+		logger.WithField("sub", idTokenClaims["sub"]).Error("Failed type assertion for sub claim")
+		return nil, ErrAuthenticatingRequest
+	}
+	friendlyName := ""
+	if oidcConfig.FriendlyNameClaimName != "" {
+		friendlyName, _ = idTokenClaims[oidcConfig.FriendlyNameClaimName].(string)
+	}
+	user, err := authService.GetUser(ctx, externalID)
+	if err == nil {
+		return enhanceWithFriendlyName(user, friendlyName), nil
+	}
+	if !errors.Is(err, auth.ErrNotFound) {
+		logger.WithError(err).Error("Failed to get external user from database")
+		return nil, ErrAuthenticatingRequest
+	}
+	u := model.BaseUser{
+		CreatedAt:  time.Now().UTC(),
+		Source:     "oidc",
+		Username:   externalID,
+		ExternalID: &externalID,
+	}
+	userID, err := authService.CreateUser(ctx, &u)
+	if err != nil {
+		if !errors.Is(err, db.ErrAlreadyExists) {
+			logger.WithError(err).Error("Failed to create external user in database")
+			return nil, ErrAuthenticatingRequest
+		}
+		// user already exists - get it:
+		user, err = authService.GetUser(ctx, externalID)
+		if err != nil {
+			logger.WithError(err).Error("Failed to get external user from database")
+			return nil, ErrAuthenticatingRequest
+		}
+		return enhanceWithFriendlyName(user, friendlyName), nil
+	}
+	initialGroups := oidcConfig.DefaultInitialGroups
+	if userInitialGroups, ok := idTokenClaims[oidcConfig.InitialGroupsClaimName].(string); ok {
+		initialGroups = strings.Split(userInitialGroups, ",")
+	}
+	for _, g := range initialGroups {
+		err = authService.AddUserToGroup(ctx, u.Username, strings.TrimSpace(g))
+		if err != nil {
+			logger.WithError(err).Error("Failed to add external user to group")
+		}
+	}
+	return enhanceWithFriendlyName(&model.User{
+		ID:       userID,
+		BaseUser: u,
+	}, friendlyName), nil
 }
 
 func userByToken(ctx context.Context, logger logging.Logger, authService auth.Service, tokenString string) (*model.User, error) {

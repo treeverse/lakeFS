@@ -22,20 +22,20 @@
   padding-top: 7px;
 }
 
+.card.login-widget {
+  width: 400px;
+}
+
+.card.login-widget .btn {
+  width: 100%;
+}
+
 .card.login-widget,.card.setup-widget, .reset-pwd-widget, .request-reset-pwd-widget {
   margin-top: 130px;
 }
 
 .card.create-invited-user-widget {
   margin-bottom: 10px;
-}
-
-.card.login-widget .reset-pwd{
-  font-size: 15px;
-  position: absolute;
-  bottom: 21px;
-  right: 19px;
-  padding-right: 0px;
 }
 
 .action-bar {

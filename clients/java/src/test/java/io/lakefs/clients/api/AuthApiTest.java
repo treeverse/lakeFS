@@ -542,6 +542,20 @@ public class AuthApiTest {
     }
     
     /**
+     * 
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void oauthCallbackTest() throws ApiException {
+                Error response = api.oauthCallback();
+        // TODO: test validations
+    }
+    
+    /**
      * Update user password by reset_password token
      *
      * 

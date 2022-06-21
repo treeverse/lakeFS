@@ -27,6 +27,11 @@ export default ({ command }) => {
             target: 'http://localhost:8000',
             changeOrigin: true,
             secure: false
+          },
+          '/oidc/login': {
+            target: 'http://localhost:8000',
+            changeOrigin: false,
+            secure: false
           }
         }
       }

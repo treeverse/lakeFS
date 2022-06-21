@@ -8,12 +8,11 @@ info:
 servers:
   - url: "/api/v1"
     description: lakeFS server endpoint
-
 security:
   - jwt_token: []
   - basic_auth: []
   - cookie_auth: []
-
+  - oidc_auth: []
 components:
   securitySchemes:
     basic_auth:
@@ -26,8 +25,11 @@ components:
     cookie_auth:
       type: apiKey
       in: cookie
-      name: access_token
-
+      name: internal_auth_session
+    oidc_auth:
+      type: apiKey
+      in: cookie
+      name: oidc_auth_session
   parameters:
     PaginationPrefix:
       in: query
@@ -587,6 +589,8 @@ components:
         state:
           type: string
           enum: [initialized, not_initialized]
+        oidc_enabled:
+          type: boolean
     AccessKeyCredentials:
       type: object
       properties:
@@ -1147,6 +1151,19 @@ paths:
               schema:
                 $ref: "#/components/schemas/CurrentUser"
 
+  /oidc/callback:
+    get:
+      tags:
+        - auth
+      operationId: oauthCallback
+      security: []
+      responses:
+        302:
+          description: successfully got token
+        401:
+          description: failed to exchange authorization code for token
+        default:
+          $ref: "#/components/responses/ServerError"
   /auth/login:
     post:
       tags:

@@ -77,8 +77,14 @@ require (
 
 require (
 	cloud.google.com/go/compute v1.5.0
+	github.com/coreos/go-oidc/v3 v3.2.0
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/time v0.0.0-20220224211638-0e9765cccd65
+)
+
+require (
+	github.com/gorilla/securecookie v1.1.1
+	github.com/gorilla/sessions v1.2.1
 )
 
 require (
@@ -114,6 +120,7 @@ require (
 	github.com/yeya24/promlinter v0.2.0 // indirect
 	gitlab.com/bosi/decorder v0.2.1 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20220218215828-6cf2b201936e // indirect
+	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
 )
 
 require (

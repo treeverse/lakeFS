@@ -98,6 +98,7 @@ type BaseUser struct {
 	Email             *string `db:"email" json:"email"`
 	EncryptedPassword []byte  `db:"encrypted_password" json:"encrypted_password"`
 	Source            string  `db:"source" json:"source"`
+	ExternalID        *string `db:"external_id" json:"external_id"`
 }
 
 type User struct {
@@ -239,6 +240,7 @@ func ProtoFromUser(u *User) *UserData {
 		Email:             swag.StringValue(u.Email),
 		EncryptedPassword: u.EncryptedPassword,
 		Source:            u.Source,
+		ExternalId:        swag.StringValue(u.ExternalID),
 	}
 }
 
