@@ -8,7 +8,7 @@ What's new:
 
 Bug fixes:
 - Fix: Garbage Collector - Eliminate double slash in URL (#3525)
-- Fix: Fix initialize logger for superuser cmd auth service crash fix (#3519)
+- Fix: Crash fix on `lakectl superuser` command - missing logging initialization (#3519)
 
 ## v0.67.0 - 2022-06-16
 
