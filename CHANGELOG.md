@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.68.0 - 2022-06-21
+
+What's new:
+- Show content diff for conflicted files (#3522)
+- Add a new configuration for setting audit logs level (#3512)
+
+Bug fixes:
+- Fix: Garbage Collector: Eliminate double slash in URL (#3525)
+- Fix: Fix initialize logger for superuser cmd auth service crash fix (#3519)
+
 ## v0.67.0 - 2022-06-16
 
 What's new:
