@@ -4,7 +4,7 @@
 
 What's new:
 - UI: Show content diff for conflicts (#3522)
-- Add a new configuration for setting audit logs level (#3512)
+- lakeFS configuration for audit log level (#3512)
 
 Bug fixes:
 - Fix: Garbage Collector: Eliminate double slash in URL (#3525)
