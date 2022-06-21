@@ -84,7 +84,6 @@ func migrateFromLegacyCookie(r *http.Request, w http.ResponseWriter, logger logg
 	if err != nil {
 		logger.WithError(err).Error("Failed to save internal auth session")
 	}
-
 }
 
 // checkSecurityRequirements goes over the security requirements and check the authentication. returns the user information and error if the security check was required.
