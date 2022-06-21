@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -270,7 +271,7 @@ var runCmd = &cobra.Command{
 			oauthConfig = &oauth2.Config{
 				ClientID:     oidcConfig.ClientID,
 				ClientSecret: oidcConfig.ClientSecret,
-				RedirectURL:  oidcConfig.CallbackBaseURL + api.BaseURL + "/oidc/callback",
+				RedirectURL:  strings.TrimSuffix(oidcConfig.CallbackBaseURL, "/") + api.BaseURL + "/oidc/callback",
 				Endpoint:     oidcProvider.Endpoint(),
 				Scopes:       []string{oidc.ScopeOpenID, "profile"},
 			}

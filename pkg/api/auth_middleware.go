@@ -59,12 +59,12 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authentica
 	}
 }
 
-// Deprecated
+// Deprecated: migrateFromLegacyCookie takes the token from the legacy cookie and saves it on the gorilla session.
 // TODO(johnnyaug) remove this a week after released
-func migrateFromLegacyCookie(r *http.Request, w http.ResponseWriter, logger logging.Logger, sessionStore sessions.Store) {
+func migrateFromLegacyCookie(r *http.Request, w http.ResponseWriter, logger logging.Logger, sessionStore sessions.Store) string {
 	jwtCookie, _ := r.Cookie(JWTCookieName)
 	if jwtCookie == nil {
-		return
+		return ""
 	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     JWTCookieName,
@@ -76,14 +76,16 @@ func migrateFromLegacyCookie(r *http.Request, w http.ResponseWriter, logger logg
 		SameSite: http.SameSiteStrictMode,
 	})
 	if jwtCookie.Value == "" {
-		return
+		return ""
 	}
 	internalAuthSession, _ := sessionStore.Get(r, InternalAuthSessionName)
 	internalAuthSession.Values[TokenSessionKeyName] = jwtCookie.Value
 	err := sessionStore.Save(r, w, internalAuthSession)
 	if err != nil {
 		logger.WithError(err).Error("Failed to save internal auth session")
+		return ""
 	}
+	return jwtCookie.Value
 }
 
 // checkSecurityRequirements goes over the security requirements and check the authentication. returns the user information and error if the security check was required.
@@ -131,13 +133,8 @@ func checkSecurityRequirements(r *http.Request, w http.ResponseWriter,
 					token, _ = internalAuthSession.Values[TokenSessionKeyName].(string)
 				}
 				if token == "" {
-					migrateFromLegacyCookie(r, w, logger, sessionStore)
+					token = migrateFromLegacyCookie(r, w, logger, sessionStore)
 				}
-				internalAuthSession, err = sessionStore.Get(r, InternalAuthSessionName)
-				if err != nil {
-					return nil, err
-				}
-				token, _ = internalAuthSession.Values[TokenSessionKeyName].(string)
 				if token == "" {
 					continue
 				}

@@ -185,7 +185,7 @@ func (c *Controller) OauthCallback(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	session, _ := c.sessionStore.Get(r, OIDCAuthSessionName)
 	if r.URL.Query().Get("state") != session.Values[StateSessionKey] {
-		writeError(w, http.StatusBadRequest, "Invalid state parameter.")
+		writeError(w, http.StatusBadRequest, "Invalid state parameter")
 		return
 	}
 	idTokenClaims, err := c.oidcAuthenticator.GetIDTokenClaims(ctx, r.URL.Query().Get("code"))

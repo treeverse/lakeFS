@@ -35,7 +35,7 @@ func NewOIDCLoginPageHandler(sessionStore sessions.Store, oauthConfig *oauth2.Co
 		session.Values[StateSessionKey] = state
 		if err := session.Save(r, w); err != nil {
 			logger.WithError(err).Error("failed to save oidc session")
-			writeError(w, http.StatusInternalServerError, "Failed to redirect to login page")
+			writeError(w, http.StatusInternalServerError, "Failed to save auth session")
 			return
 		}
 		http.Redirect(w, r, oauthConfig.AuthCodeURL(state), http.StatusTemporaryRedirect)
