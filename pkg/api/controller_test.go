@@ -100,6 +100,7 @@ var tests = map[string]func(*testing.T, bool){
 	"MergeIntoExplicitBranch":          testController_MergeIntoExplicitBranch,
 	"CreateTag":                        testController_CreateTag,
 	"Revert":                           testController_Revert,
+	"RevertConflict":                   testController_RevertConflict,
 }
 
 func TestKVEnabled(t *testing.T) {
@@ -2380,4 +2381,25 @@ func testController_Revert(t *testing.T, kvEnabled bool) {
 			t.Errorf("Revert to explicit staging should fail with error, got %v", revertResp)
 		}
 	})
+}
+
+func testController_RevertConflict(t *testing.T, kvEnabled bool) {
+	clt, deps := setupClientWithAdmin(t, kvEnabled)
+	ctx := context.Background()
+	// setup env
+	repo := testUniqueRepoName()
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+	testutil.Must(t, err)
+	testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
+	firstCommit, err := deps.catalog.Commit(ctx, repo, "main", "some message", DefaultUserID, nil, nil, nil)
+	testutil.Must(t, err)
+	testutil.MustDo(t, "overriding entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum2"}))
+	_, err = deps.catalog.Commit(ctx, repo, "main", "some other message", DefaultUserID, nil, nil, nil)
+	testutil.Must(t, err)
+
+	resp, err := clt.RevertBranchWithResponse(ctx, repo, "main", api.RevertBranchJSONRequestBody{Ref: firstCommit.Reference})
+	testutil.Must(t, err)
+	if resp.HTTPResponse.StatusCode != http.StatusConflict {
+		t.Errorf("Revert with a conflict should fail with status %d got %d", http.StatusConflict, resp.HTTPResponse.StatusCode)
+	}
 }

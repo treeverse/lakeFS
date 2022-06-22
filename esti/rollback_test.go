@@ -2,7 +2,6 @@ package esti
 
 import (
 	"fmt"
-	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -244,50 +243,4 @@ func TestRevert(t *testing.T) {
 	// assert file2 content
 	body := string(getObjResp.Body)
 	require.Equal(t, objContent2, body, fmt.Sprintf("path: %s, expected: %s, actual:%s", objPath2, objContent2, body))
-}
-
-func TestRevertConflict(t *testing.T) {
-	ctx, _, repo := setupTest(t)
-	objPath1 := "1.txt"
-
-	// upload file
-	uploadFileRandomData(ctx, t, repo, mainBranch, objPath1, false)
-	f, err := found(ctx, repo, mainBranch, objPath1)
-	require.NoError(t, err)
-	require.True(t, f, "uploaded object found")
-
-	// first commit
-	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &api.CommitParams{}, api.CommitJSONRequestBody{
-		Message: "first commit for 1.txt",
-	})
-
-	require.NoError(t, err, "failed to commit changes")
-	require.NoErrorf(t, verifyResponse(commitResp.HTTPResponse, commitResp.Body),
-		"failed to commit changes repo %s branch %s", repo, mainBranch)
-
-	commitId := commitResp.JSON201.Id
-
-	// overriding the file with another file
-	uploadFileRandomData(ctx, t, repo, mainBranch, objPath1, false)
-	f, err = found(ctx, repo, mainBranch, objPath1)
-	require.NoError(t, err)
-	require.True(t, f, "uploaded object found")
-
-	// second commit
-	commitResp, err = client.CommitWithResponse(ctx, repo, mainBranch, &api.CommitParams{}, api.CommitJSONRequestBody{
-		Message: "second commit for 1.txt",
-	})
-
-	require.NoError(t, err, "failed to commit changes")
-	require.NoErrorf(t, verifyResponse(commitResp.HTTPResponse, commitResp.Body),
-		"failed to commit changes repo %s branch %s", repo, mainBranch)
-
-	// revert first commit - should result with a conflict
-	revertResp, err := client.RevertBranchWithResponse(ctx, repo, mainBranch, api.RevertBranchJSONRequestBody{
-		Ref: commitId,
-	})
-	require.NoError(t, err, "unexpected error when attempting revert")
-	if revertResp.HTTPResponse.StatusCode != http.StatusConflict {
-		t.Fatalf("unexpected error %d for conflicting revert. Expected %d", revertResp.HTTPResponse.StatusCode, http.StatusConflict)
-	}
 }
