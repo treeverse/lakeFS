@@ -2436,7 +2436,11 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         409:
-          $ref: "#/components/responses/Conflict"
+          description: Conflict Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         default:
           $ref: "#/components/responses/ServerError"
 
