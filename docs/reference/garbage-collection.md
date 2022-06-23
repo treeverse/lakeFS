@@ -63,6 +63,8 @@ The garbage collection process proceeds in two main phases:
   the garbage collection job looks at the HEAD of the branch that many days
   ago; every commit at or since that HEAD must be retained.
 
+  ![mermaid diagram](gc-sample-commits.png)
+  <!-- mermaid diagrams not supported on Jekyll for docs.lakefs.io
   ```mermaid
   %%{init: { 'theme': 'base', 'gitGraph': {'rotateCommitLabel': true}} }%%
   gitGraph
@@ -84,6 +86,7 @@ The garbage collection process proceeds in two main phases:
   merge dev
 	  commit id: "2022-03-26"
   ```
+  -->
   
   Continuing the example, branch `main` retains for 21 days and branch `dev`
   for 7.  When running GC on 2022-03-31:
