@@ -5,6 +5,7 @@ import (
 
 	"github.com/gorilla/sessions"
 	nanoid "github.com/matoous/go-nanoid/v2"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"golang.org/x/oauth2"
 )
@@ -17,7 +18,7 @@ const (
 )
 
 // NewOIDCLoginPageHandler returns a handler to redirect the user the OIDC provider's login page.
-func NewOIDCLoginPageHandler(sessionStore sessions.Store, oauthConfig *oauth2.Config, logger logging.Logger) http.HandlerFunc {
+func NewOIDCLoginPageHandler(oidcConfig config.OIDC, sessionStore sessions.Store, oauthConfig *oauth2.Config, logger logging.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// clear internal authentication session
 		err := clearSession(w, r, sessionStore, InternalAuthSessionName)
@@ -38,6 +39,16 @@ func NewOIDCLoginPageHandler(sessionStore sessions.Store, oauthConfig *oauth2.Co
 			writeError(w, http.StatusInternalServerError, "Failed to save auth session")
 			return
 		}
-		http.Redirect(w, r, oauthConfig.AuthCodeURL(state), http.StatusTemporaryRedirect)
+		opts := make([]oauth2.AuthCodeOption, 0, len(r.URL.Query()))
+		for k, v := range r.URL.Query() {
+			if len(v) < 1 {
+				continue
+			}
+			opts = append(opts, oauth2.SetAuthURLParam(k, v[0]))
+		}
+		for k, v := range oidcConfig.AuthorizeEndpointQueryParameters {
+			opts = append(opts, oauth2.SetAuthURLParam(k, v))
+		}
+		http.Redirect(w, r, oauthConfig.AuthCodeURL(state, opts...), http.StatusTemporaryRedirect)
 	}
 }
