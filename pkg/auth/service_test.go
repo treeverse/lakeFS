@@ -76,7 +76,7 @@ func setupKVService(t *testing.T, ctx context.Context) auth.Service {
 
 func setupDBService(t testing.TB, opts ...testutil.GetDBOption) auth.Service {
 	adb, _ := testutil.GetDB(t, databaseURI, opts...)
-	return auth.NewDBAuthService(adb, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
+	return auth.NewDBAuthService(adb, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
 		Enabled: false,
 	}, logging.Default())
 }
@@ -1226,16 +1226,16 @@ func createInitialDataSet(t *testing.T, ctx context.Context, svc auth.Service, u
 func BenchmarkDBAuthService_ListEffectivePolicies(b *testing.B) {
 	// setup user with policies for benchmark
 	adb, _ := testutil.GetDB(b, databaseURI)
-	serviceWithoutCache := auth.NewDBAuthService(adb, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
+	serviceWithoutCache := auth.NewDBAuthService(adb, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
 		Enabled: false,
 	}, logging.Default())
-	serviceWithCache := auth.NewDBAuthService(adb, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
+	serviceWithCache := auth.NewDBAuthService(adb, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
 		Enabled:        true,
 		Size:           1024,
 		TTL:            20 * time.Second,
 		EvictionJitter: 3 * time.Second,
 	}, logging.Default())
-	serviceWithCacheLowTTL := auth.NewDBAuthService(adb, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
+	serviceWithCacheLowTTL := auth.NewDBAuthService(adb, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
 		Enabled:        true,
 		Size:           1024,
 		TTL:            1 * time.Millisecond,

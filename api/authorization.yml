@@ -156,6 +156,8 @@ components:
           format: byte
         external_id:
           type: string
+        invite:
+          type: boolean
       required:
         - username
 

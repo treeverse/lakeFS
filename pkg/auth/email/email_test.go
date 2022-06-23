@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/email"
+	"github.com/treeverse/lakefs/pkg/auth/email"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"golang.org/x/time/rate"
 	"gopkg.in/gomail.v2"

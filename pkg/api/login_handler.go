@@ -19,17 +19,15 @@ type LoginResponseData struct {
 }
 
 const (
-	DefaultLoginExpiration          = 7 * 24 * time.Hour
-	DefaultInvitePasswordExpiration = 6 * time.Hour
-	DefaultResetPasswordExpiration  = 20 * time.Minute
+	DefaultLoginExpiration         = 7 * 24 * time.Hour
+	DefaultResetPasswordExpiration = 20 * time.Minute
 	// Deprecated: use gorilla managed session
 	JWTCookieName           = "access_token"
 	InternalAuthSessionName = "internal_auth_session"
 	TokenSessionKeyName     = "token"
 	OIDCAuthSessionName     = "oidc_auth_session"
 
-	LoginAudience         = "login"
-	ResetPasswordAudience = "reset_password"
+	LoginAudience = "login"
 )
 
 func clearSession(w http.ResponseWriter, r *http.Request, sessionStore sessions.Store, sessionName string) error {
@@ -51,18 +49,6 @@ func GenerateJWTLogin(secret []byte, userID string, issuedAt, expiresAt time.Tim
 		Id:        uuid.NewString(),
 		Audience:  LoginAudience,
 		Subject:   userID,
-		IssuedAt:  issuedAt.Unix(),
-		ExpiresAt: expiresAt.Unix(),
-	}
-	return generateJWT(claims, secret)
-}
-
-// GenerateJWTResetPassword creates a jwt token with the field subject set the email passed.
-func GenerateJWTResetPassword(secret []byte, email string, issuedAt, expiresAt time.Time) (string, error) {
-	claims := &jwt.StandardClaims{
-		Id:        uuid.NewString(),
-		Audience:  ResetPasswordAudience,
-		Subject:   email,
 		IssuedAt:  issuedAt.Unix(),
 		ExpiresAt: expiresAt.Unix(),
 	}

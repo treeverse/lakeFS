@@ -16,6 +16,7 @@ import (
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
+	"github.com/treeverse/lakefs/pkg/auth/email"
 	"github.com/treeverse/lakefs/pkg/auth/keys"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/params"
@@ -154,13 +155,14 @@ func deleteOrNotFoundDB(tx db.Tx, stmt string, args ...interface{}) error {
 }
 
 type DBAuthService struct {
+	*InviteHandler
 	db          db.Database
 	secretStore crypt.SecretStore
 	cache       Cache
 	log         logging.Logger
 }
 
-func NewDBAuthService(db db.Database, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) *DBAuthService {
+func NewDBAuthService(db db.Database, secretStore crypt.SecretStore, emailer *email.Emailer, cacheConf params.ServiceCache, logger logging.Logger) *DBAuthService {
 	logger.Info("initialized Auth service")
 	var cache Cache
 	if cacheConf.Enabled {
@@ -168,12 +170,19 @@ func NewDBAuthService(db db.Database, secretStore crypt.SecretStore, cacheConf p
 	} else {
 		cache = &DummyCache{}
 	}
-	return &DBAuthService{
+	d := &DBAuthService{
 		db:          db,
 		secretStore: secretStore,
 		cache:       cache,
 		log:         logger,
+		InviteHandler: &InviteHandler{
+			secretStore: secretStore,
+			log:         logger,
+			emailer:     emailer,
+		},
 	}
+	d.InviteHandler.svc = d
+	return d
 }
 
 func (s *DBAuthService) SecretStore() crypt.SecretStore {

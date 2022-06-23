@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/auth/email"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
@@ -25,7 +26,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
 	dbparams "github.com/treeverse/lakefs/pkg/db/params"
-	"github.com/treeverse/lakefs/pkg/email"
 	"github.com/treeverse/lakefs/pkg/ingest/store"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -108,7 +108,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, 
 	} else {
 		actionsStore = actions.NewActionsDBStore(conn)
 		idGen = &actions.IncreasingIDGenerator{}
-		authService = auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
+		authService = auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), nil, authparams.ServiceCache{
 			Enabled: false,
 		}, logging.Default())
 	}
