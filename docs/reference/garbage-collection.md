@@ -60,8 +60,8 @@ branch in that past number of days will be retained.
 The garbage collection process proceeds in two main phases:
 
 * **Discover which commits will retain their objects.**  For every branch,
-  GC looks at the HEAD of the branch that many days ago; every commit at or
-  since that HEAD must be retained.
+  the garbage collection job looks at the HEAD of the branch that many days
+  ago; every commit at or since that HEAD must be retained.
 
   ```mermaid
   %%{init: { 'theme': 'base', 'gitGraph': {'rotateCommitLabel': true}} }%%
@@ -101,9 +101,9 @@ The garbage collection process proceeds in two main phases:
 
   In the example, all objects of commit `2022-03-12`, for instance, are
   retained.  This _includes_ objects added in previous commits.  However,
-  objects added in commit `d: 2022-03-14` and overwritten in commit `d:
-  2022-03-20` are not visible in any retained commit and will be garbage
-  collected.
+  objects added in commit `d: 2022-03-14` which were overwritten or
+  committed in commit `d: 2022-03-20` are not visible in any retained commit
+  and will be garbage collected.
   
 * **Garbage collect those objects by deleting them.**  The data of any
   deleted object will no longer be accessible.  lakeFS retains all metadata
