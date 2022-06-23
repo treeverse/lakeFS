@@ -64,29 +64,6 @@ The garbage collection process proceeds in two main phases:
   ago; every commit at or since that HEAD must be retained.
 
   ![mermaid diagram](gc-sample-commits.png)
-  <!-- mermaid diagrams not supported on Jekyll for docs.lakefs.io
-  ```mermaid
-  %%{init: { 'theme': 'base', 'gitGraph': {'rotateCommitLabel': true}} }%%
-  gitGraph
-	  commit id: "2022-02-27 🚮"
-	  commit id: "2022-03-01 🚮"
-	  commit id: "2022-03-09"
-  branch dev
-  checkout main
-	  commit id: "2022-03-12"
-  checkout dev
-	  commit id: "d: 2022-03-14 🚮"
-	  commit id: "d: 2022-03-16 🚮"
-  checkout main
-	  commit id: "2022-03-18"
-  checkout dev
-	  commit id: "d: 2022-03-20 🚮"
-	  commit id: "d: 2022-03-23"
-  checkout main
-  merge dev
-	  commit id: "2022-03-26"
-  ```
-  -->
   
   Continuing the example, branch `main` retains for 21 days and branch `dev`
   for 7.  When running GC on 2022-03-31:
