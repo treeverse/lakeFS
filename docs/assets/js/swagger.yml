@@ -25,11 +25,11 @@ components:
     cookie_auth:
       type: apiKey
       in: cookie
-      name: access_token
+      name: internal_auth_session
     oidc_auth:
       type: apiKey
       in: cookie
-      name: auth_session
+      name: oidc_auth_session
   parameters:
     PaginationPrefix:
       in: query
@@ -2435,6 +2435,12 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        409:
+          description: Conflict Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         default:
           $ref: "#/components/responses/ServerError"
 

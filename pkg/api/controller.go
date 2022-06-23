@@ -1751,7 +1751,8 @@ func handleAPIError(w http.ResponseWriter, err error) bool {
 		errors.Is(err, actions.ErrParamConflict):
 		writeError(w, http.StatusBadRequest, err)
 
-	case errors.Is(err, graveler.ErrNotUnique):
+	case errors.Is(err, graveler.ErrNotUnique),
+		errors.Is(err, graveler.ErrConflictFound):
 		writeError(w, http.StatusConflict, err)
 
 	case errors.Is(err, catalog.ErrFeatureNotSupported):
