@@ -36,16 +36,79 @@ That is, it is hard-deleted only after the retention period has ended for all re
 Example GC rules for a repository:
 ```json
 {
-  "default_retention_days": 21,
+  "default_retention_days": 14,
   "branches": [
-    {"branch_id": "main", "retention_days": 28},
+    {"branch_id": "main", "retention_days": 21},
     {"branch_id": "dev", "retention_days": 7}
   ]
 }
 ```
 
-In the above example, objects are retained for 21 days after deletion by default. However, if they are present in the branch `main`, they are retained for 28 days.
+In the above example, objects are retained for 14 days after deletion by default. However, if they are present in the branch `main`, they are retained for 21 days.
 Objects present in the `dev` branch (but not in any other branch), are retained for 7 days after they are deleted.
+
+### What gets collected
+
+Because each object in lakeFS may be accessible from multiple branches, it
+might not be obvious what objects will be considered garbage and collected.
+
+Garbage collection is configured by specifying the number of days to retain
+objects on each branch.  If a branch is configured to retain objects for a
+given number of days, any object that was accessible from the HEAD of a
+branch in that past number of days will be retained.
+
+The garbage collection process proceeds in two main phases:
+
+* **Discover which commits will retain their objects.**  For every branch,
+  the garbage collection job looks at the HEAD of the branch that many days
+  ago; every commit at or since that HEAD must be retained.
+
+  ```mermaid
+  %%{init: { 'theme': 'base', 'gitGraph': {'rotateCommitLabel': true}} }%%
+  gitGraph
+	  commit id: "2022-02-27 🚮"
+	  commit id: "2022-03-01 🚮"
+	  commit id: "2022-03-09"
+  branch dev
+  checkout main
+	  commit id: "2022-03-12"
+  checkout dev
+	  commit id: "d: 2022-03-14 🚮"
+	  commit id: "d: 2022-03-16 🚮"
+  checkout main
+	  commit id: "2022-03-18"
+  checkout dev
+	  commit id: "d: 2022-03-20 🚮"
+	  commit id: "d: 2022-03-23"
+  checkout main
+  merge dev
+	  commit id: "2022-03-26"
+  ```
+  
+  Continuing the example, branch `main` retains for 21 days and branch `dev`
+  for 7.  When running GC on 2022-03-31:
+
+  - 7 days ago, on 2022-03-24 the head of branch `dev` was `d:
+    2022-03-23`.  So that commit is retained (along with all more recent
+    commits on `dev`), but all older commits `d: *` will be collected.
+  - 21 days ago, on 2022-03-10, the head of branch `main` was
+    `2022-03-09`.  So that commit is retained (along with all more recent
+    commits on `main`), but commits `2022-02-27` and `2022-03-01` will be
+    collected.
+
+* **Discover which objects need to be garbage collected.** Hold (_only_)
+  objects accessible on some retained commits.
+
+  In the example, all objects of commit `2022-03-12`, for instance, are
+  retained.  This _includes_ objects added in previous commits.  However,
+  objects added in commit `d: 2022-03-14` which were overwritten or
+  committed in commit `d: 2022-03-20` are not visible in any retained commit
+  and will be garbage collected.
+  
+* **Garbage collect those objects by deleting them.**  The data of any
+  deleted object will no longer be accessible.  lakeFS retains all metadata
+  about the object, but attempting to read it via the lakeFS API or the S3
+  gateway will return HTTP status 410 ("Gone").
 
 ## Configuring GC rules
 
@@ -57,9 +120,9 @@ Use the `lakectl` CLI to define the GC rules:
 ```bash
 cat <<EOT >> example_repo_gc_rules.json
 {
-  "default_retention_days": 21,
+  "default_retention_days": 14,
   "branches": [
-    {"branch_id": "main", "retention_days": 28},
+    {"branch_id": "main", "retention_days": 21},
     {"branch_id": "dev", "retention_days": 7}
   ]
 }
