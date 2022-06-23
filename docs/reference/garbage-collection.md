@@ -64,6 +64,7 @@ The garbage collection process proceeds in two main phases:
   since that HEAD must be retained.
 
   ```mermaid
+  %%{init: { 'theme': 'base', 'gitGraph': {'rotateCommitLabel': true}} }%%
   gitGraph
 	  commit id: "2022-02-27 🚮"
 	  commit id: "2022-03-01 🚮"
