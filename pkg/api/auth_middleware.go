@@ -182,19 +182,6 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 		logger.WithField("sub", idTokenClaims["sub"]).Error("Failed type assertion for sub claim")
 		return nil, ErrAuthenticatingRequest
 	}
-
-	for claimName, expectedValue := range oidcConfig.ValidateIDTokenClaims {
-		actualValue, ok := idTokenClaims[claimName]
-		if !ok || actualValue != expectedValue {
-			logger.WithFields(logging.Fields{
-				"claim_name":     claimName,
-				"actual_value":   actualValue,
-				"expected_value": expectedValue,
-			}).Error("Authentication failed on validating ID token claims")
-			return nil, ErrAuthenticatingRequest
-		}
-	}
-
 	friendlyName := ""
 	if oidcConfig.FriendlyNameClaimName != "" {
 		friendlyName, _ = idTokenClaims[oidcConfig.FriendlyNameClaimName].(string)
