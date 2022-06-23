@@ -1141,13 +1141,6 @@ func (a *APIAuthService) InviteUser(ctx context.Context, email string) error {
 	return a.validateResponse(resp, http.StatusCreated)
 }
 
-func (a *APIAuthService) ResetPasswordRequest(ctx context.Context, email string) error {
-	_, err := a.apiClient.ResetPassword(ctx, "", ResetPasswordJSONRequestBody{ // TODO userID?
-		Email: email,
-	})
-	return err
-}
-
 func (a *APIAuthService) IsInviteSupported() bool {
 	return true
 }
