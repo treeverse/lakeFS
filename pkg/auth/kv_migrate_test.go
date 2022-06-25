@@ -31,7 +31,7 @@ func TestMigrate(t *testing.T) {
 	database, _ := testutil.GetDB(t, databaseURI)
 	kvStore := kvtest.MakeStoreByName(postgres.DriverName, databaseURI)(t, ctx)
 	defer kvStore.Close()
-	dbAuthService := auth.NewDBAuthService(database, crypt.NewSecretStore([]byte("someSecret")), authparams.ServiceCache{
+	dbAuthService := auth.NewDBAuthService(database, crypt.NewSecretStore([]byte("someSecret")), nil, authparams.ServiceCache{
 		Enabled: false,
 	}, logging.Default())
 
