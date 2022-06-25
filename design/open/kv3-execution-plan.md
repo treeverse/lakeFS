@@ -28,6 +28,14 @@ Unlike other entities' delete, which are standalone, deleting a repository resul
 Uses `graveler` ref-store for dumping a whole repository (branches, commits and tags) and restoring it to a bare repository. As there are no direct DB accesses, this should go seamlessly, but definitely need to be verified</br>
 Moreover, as these are quite exhaustive operations, may be used as part of performance verification
 
+## Suggested Key Schema
+Note: This is an initial suggestion that seems to support the required iterators. It tries to encapsulate the immutable parts of identifying an object (e.g. a branch can be identified by its name, but not by a commit, as it (a) changes and (b) a commit can be shared by branches. a repo and a tag has one:many relation, so a tag key contains its repo etc.) It is totally open to discussion and improvements.
+* Repository - `repo/<REPO_NAME>`
+* Branch     - `repo/<REPO_NAME>/branch<BRANCH_NAME>`
+* Commit     - `repo/<REPO_NAME>/commit/<COMMIT_ID>`
+* Tag        - `repo/<REPO_NAME>/tag/<TAG_ID>`
+* Staged Obj - `repo/<REPO_NAME>/staging_token/<STAGING_TOKEN>/key/<OBJ_KEY>`
+
 # Execution Plan
 * Agree on keys schema (see here after)
 * Supporting `KV` along side `SQL` (same as was done for previous modules)  
