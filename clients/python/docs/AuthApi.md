@@ -34,7 +34,6 @@ Method | HTTP request | Description
 [**list_user_policies**](AuthApi.md#list_user_policies) | **GET** /auth/users/{userId}/policies | list user policies
 [**list_users**](AuthApi.md#list_users) | **GET** /auth/users | list users
 [**login**](AuthApi.md#login) | **POST** /auth/login | perform a login
-[**logout**](AuthApi.md#logout) | **POST** /auth/logout | logs out a cookie-authenticated user
 [**oauth_callback**](AuthApi.md#oauth_callback) | **GET** /oidc/callback | 
 [**update_password**](AuthApi.md#update_password) | **POST** /auth/password | Update user password by reset_password token
 [**update_policy**](AuthApi.md#update_policy) | **PUT** /auth/policies/{policyId} | update policy
@@ -3037,79 +3036,6 @@ No authorization required
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | successful login |  * Set-Cookie -  <br>  |
-**401** | Unauthorized |  -  |
-**0** | Internal Server Error |  -  |
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-
-# **logout**
-> logout()
-
-logs out a cookie-authenticated user
-
-### Example
-
-* Api Key Authentication (cookie_auth):
-
-```python
-import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.error import Error
-from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
-# See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
-)
-
-# The client must configure the authentication and authorization parameters
-# in accordance with the API server security policy.
-# Examples for each auth method are provided below, use the example that
-# satisfies your auth use case.
-
-# Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-
-    # example, this endpoint has no required or optional parameters
-    try:
-        # logs out a cookie-authenticated user
-        api_instance.logout()
-    except lakefs_client.ApiException as e:
-        print("Exception when calling AuthApi->logout: %s\n" % e)
-```
-
-
-### Parameters
-This endpoint does not need any parameter.
-
-### Return type
-
-void (empty response body)
-
-### Authorization
-
-[cookie_auth](../README.md#cookie_auth)
-
-### HTTP request headers
-
- - **Content-Type**: Not defined
- - **Accept**: application/json
-
-
-### HTTP response details
-
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | successful logout |  -  |
 **401** | Unauthorized |  -  |
 **0** | Internal Server Error |  -  |
 

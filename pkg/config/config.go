@@ -52,6 +52,7 @@ const (
 	DefaultAuthCacheJitter  = 3 * time.Second
 
 	DefaultAuthOIDCInitialGroupsClaimName = "initial_groups"
+	DefaultAuthLogoutRedirectURL          = "/auth/login"
 
 	DefaultListenAddr          = "0.0.0.0:8000"
 	DefaultS3GatewayDomainName = "s3.local.lakefs.io"
@@ -131,6 +132,7 @@ const (
 	AuthCacheJitterKey  = "auth.cache.jitter"
 
 	AuthOIDCInitialGroupsClaimName = "auth.oidc.initial_groups_claim_name"
+	AuthLogoutRedirectURL          = "auth.logout_redirect_url"
 
 	BlockstoreTypeKey                    = "blockstore.type"
 	BlockstoreLocalPathKey               = "blockstore.local.path"
@@ -194,6 +196,7 @@ func setDefaults() {
 	viper.SetDefault(AuthCacheJitterKey, DefaultAuthCacheJitter)
 
 	viper.SetDefault(AuthOIDCInitialGroupsClaimName, DefaultAuthOIDCInitialGroupsClaimName)
+	viper.SetDefault(AuthLogoutRedirectURL, DefaultAuthLogoutRedirectURL)
 
 	viper.SetDefault(BlockstoreLocalPathKey, DefaultBlockStoreLocalPath)
 	viper.SetDefault(BlockstoreS3RegionKey, DefaultBlockStoreS3Region)
@@ -533,4 +536,8 @@ func (c *Config) GetUISnippets() []apiparams.CodeSnippet {
 
 func (c *Config) GetAuthOIDCConfiguration() OIDC {
 	return c.values.Auth.OIDC
+}
+
+func (c *Config) GetAuthLogoutRedirectURL() string {
+	return c.values.Auth.LogoutRedirectURL
 }
