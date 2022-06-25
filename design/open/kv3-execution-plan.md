@@ -37,15 +37,16 @@ Note: This is an initial suggestion that seems to support the required iterators
 * Staged Obj - `repo/<REPO_NAME>/staging_token/<STAGING_TOKEN>/key/<OBJ_KEY>`
 
 # Execution Plan
-* Agree on keys schema (see here after)
+* Agree on keys schema (see here after) - [#3567](https://github.com/treeverse/lakeFS/issues/3567)
 * Supporting `KV` along side `SQL` (same as was done for previous modules)  
-  * Step 1: Naive implementation with locking - `lakeFS` on KV can start with empty DB and run all graveler operations correctly, although performance may be degraded and exhaustive operations (concurrent commits and uploads, anything else?) should not be considered
-  * Step 2: Lockless Commits - as described above
-  * Step 3: Decide and implement a working solution for **Deleting a Repository**
+  * Step 1: Naive implementation with locking - `lakeFS` on KV can start with empty DB and run all graveler operations correctly, although performance may be degraded and exhaustive operations (concurrent commits and uploads, anything else?) should not be considered - [#3568](https://github.com/treeverse/lakeFS/issues/3568)
+  * Step 2: Lockless Commits - as described above - [#3569](https://github.com/treeverse/lakeFS/issues/3569)
+  * Step 3: Decide and implement a working solution for **Deleting a Repository** - [#3570](https://github.com/treeverse/lakeFS/issues/3570)
   (Steps 2 and 3 are independent)
-* Benchmarks for common operations - to be executed manually, on both `SQL` and `KV` to verify performance are satisfactory.
-* Migration of existing `SQL` data to `KV`. Most of the tables are trivial to migrate. I believe `graveler_branches` migration should also be trivial, with no specific consideration for `sealed_tokens` but that needs to be verified
+* Benchmarks for common operations - to be executed manually, on both `SQL` and `KV` to verify performance are satisfactory - [#3571](https://github.com/treeverse/lakeFS/issues/3571)
+* Migration of existing `SQL` data to `KV`. Most of the tables are trivial to migrate. I believe `graveler_branches` migration should also be trivial, with no specific consideration for `sealed_tokens` but that needs to be verified - [#3572](https://github.com/treeverse/lakeFS/issues/3572)
   * KV Migration Test is, obviously, included
-* Add `graveler` migration to `Esti` Migration Tests
-* Optional - Dump/Restore Refs tests for `SQL` and `KV`
-* Optional - `pkg/disagnostics` support of KV. Should be trivial
+* Add `graveler` migration to `Esti` Migration Tests - [#3573](https://github.com/treeverse/lakeFS/issues/3573)
+* Optional - Dump/Restore Refs tests for `SQL` and `KV` - [#3574](https://github.com/treeverse/lakeFS/issues/3574)
+* Optional - `pkg/disagnostics` support of KV. Should be trivial - [#3575](https://github.com/treeverse/lakeFS/issues/3575)
+
