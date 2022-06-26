@@ -181,17 +181,6 @@ class Auth {
         return user;
     }
 
-    async logout() {
-        const response = await fetch(`${API_ENDPOINT}/auth/logout`, {
-            headers: new Headers(defaultAPIHeaders),
-            method: 'POST',
-        });
-        if (response.status !== 200) {
-            throw new Error('unknown authentication error');
-        }
-        cache.delete('user');
-    }
-
     async getCurrentUserWithCache() {
         let user = cache.get('user')
         if (!user) {

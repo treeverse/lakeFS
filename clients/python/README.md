@@ -144,7 +144,6 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**list_user_policies**](docs/AuthApi.md#list_user_policies) | **GET** /auth/users/{userId}/policies | list user policies
 *AuthApi* | [**list_users**](docs/AuthApi.md#list_users) | **GET** /auth/users | list users
 *AuthApi* | [**login**](docs/AuthApi.md#login) | **POST** /auth/login | perform a login
-*AuthApi* | [**logout**](docs/AuthApi.md#logout) | **POST** /auth/logout | logs out a cookie-authenticated user
 *AuthApi* | [**oauth_callback**](docs/AuthApi.md#oauth_callback) | **GET** /oidc/callback | 
 *AuthApi* | [**update_password**](docs/AuthApi.md#update_password) | **POST** /auth/password | Update user password by reset_password token
 *AuthApi* | [**update_policy**](docs/AuthApi.md#update_policy) | **PUT** /auth/policies/{policyId} | update policy

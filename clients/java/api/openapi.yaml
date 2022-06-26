@@ -144,30 +144,6 @@ paths:
       - auth
       x-contentType: application/json
       x-accepts: application/json
-  /auth/logout:
-    post:
-      operationId: logout
-      responses:
-        "200":
-          description: successful logout
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Unauthorized
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Internal Server Error
-      security:
-      - cookie_auth: []
-      summary: logs out a cookie-authenticated user
-      tags:
-      - auth
-      x-accepts: application/json
   /auth/password:
     post:
       operationId: updatePassword

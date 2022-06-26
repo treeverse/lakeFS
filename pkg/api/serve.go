@@ -112,6 +112,7 @@ func Serve(
 	if cfg.GetAuthOIDCConfiguration().Enabled {
 		r.Mount("/oidc/login", NewOIDCLoginPageHandler(sessionStore, oauthConfig, logger))
 	}
+	r.Mount("/logout", NewLogoutHandler(sessionStore, logger, cfg.GetAuthLogoutRedirectURL()))
 	r.Mount("/", NewUIHandler(gatewayDomains, snippets))
 	return r
 }
