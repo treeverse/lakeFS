@@ -528,20 +528,6 @@ public class AuthApiTest {
     }
     
     /**
-     * logs out a cookie-authenticated user
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void logoutTest() throws ApiException {
-                api.logout();
-        // TODO: test validations
-    }
-    
-    /**
      * 
      *
      * 

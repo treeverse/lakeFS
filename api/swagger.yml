@@ -1193,22 +1193,6 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
-  /auth/logout:
-    post:
-      tags:
-        - auth
-      operationId: logout
-      summary: logs out a cookie-authenticated user
-      security:
-        - cookie_auth: []
-      responses:
-        200:
-          description: successful logout
-        401:
-          $ref: "#/components/responses/Unauthorized"
-        default:
-          $ref: "#/components/responses/ServerError"
-
   /auth/password:
       post:
         tags:
