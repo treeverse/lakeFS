@@ -158,6 +158,7 @@ components:
           type: string
         invite:
           type: boolean
+          description: If true, send an invitation by email. Otherwise, only create the user.
       required:
         - username
 
