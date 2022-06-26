@@ -58,7 +58,8 @@ const LoginForm = ({oidcEnabled}) => {
                             }
                             { oidcEnabled ?
                                 <Button variant="link" className="text-secondary mt-2" onClick={async ()=> {
-                                    window.location = "/logout?returnTo=oidc/login";
+                                    await fetch("/logout")
+                                    window.location = "/oidc/login";
                                 }}>Sign in with SSO provider</Button>
                                 : ""
                             }

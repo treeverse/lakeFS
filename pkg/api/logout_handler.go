@@ -7,10 +7,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-const (
-	ReturnToQueryParamName = "returnTo"
-)
-
 // NewLogoutHandler returns a handler to clear the user sessions and redirect the user to the login page.
 func NewLogoutHandler(sessionStore sessions.Store, logger logging.Logger, logoutRedirectURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -26,11 +22,6 @@ func NewLogoutHandler(sessionStore sessions.Store, logger logging.Logger, logout
 			writeError(w, http.StatusInternalServerError, err)
 			return
 		}
-
-		redirectURL := r.URL.Query().Get(ReturnToQueryParamName)
-		if redirectURL == "" {
-			redirectURL = logoutRedirectURL
-		}
-		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
+		http.Redirect(w, r, logoutRedirectURL, http.StatusTemporaryRedirect)
 	}
 }

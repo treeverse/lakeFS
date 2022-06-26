@@ -92,7 +92,7 @@ type configuration struct {
 		}
 		LDAP              *LDAP
 		OIDC              OIDC
-		LogoutRedirectURL string `mapstructure:"logout_redirect_url" validate:"logout_redirect_url"`
+		LogoutRedirectURL string `mapstructure:"logout_redirect_url"`
 	}
 	Blockstore struct {
 		Type                   string `validate:"required"`
