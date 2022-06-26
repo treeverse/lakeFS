@@ -15,6 +15,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
+	"github.com/treeverse/lakefs/pkg/auth/email"
 	authmodel "github.com/treeverse/lakefs/pkg/auth/model"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -22,7 +23,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
 	dbparams "github.com/treeverse/lakefs/pkg/db/params"
-	"github.com/treeverse/lakefs/pkg/email"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -76,7 +76,7 @@ func GetKVActionsService(t *testing.T, ctx context.Context, source actions.Sourc
 func GetDBAuthService(t *testing.T) auth.Service {
 	t.Helper()
 	conn, _ := testutil.GetDB(t, databaseURI)
-	return auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{}, logging.Default().WithField("service", "auth"))
+	return auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), nil, authparams.ServiceCache{}, logging.Default().WithField("service", "auth"))
 }
 
 func GetKVAuthService(t *testing.T, ctx context.Context) auth.Service {

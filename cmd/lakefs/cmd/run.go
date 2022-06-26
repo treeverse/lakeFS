@@ -27,12 +27,12 @@ import (
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
+	"github.com/treeverse/lakefs/pkg/auth/email"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
-	"github.com/treeverse/lakefs/pkg/email"
 	"github.com/treeverse/lakefs/pkg/gateway"
 	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
 	"github.com/treeverse/lakefs/pkg/gateway/sig"
@@ -159,7 +159,11 @@ var runCmd = &cobra.Command{
 		var idGen actions.IDGenerator
 		var actionsStore actions.Store
 		var authService auth.Service
-
+		emailParams, _ := cfg.GetEmailParams()
+		emailer, err := email.NewEmailer(emailParams)
+		if err != nil {
+			logger.WithError(err).Fatal("Emailer has not been properly configured, check the values in sender field")
+		}
 		if cfg.IsAuthTypeAPI() {
 			authService, err = auth.NewAPIAuthService(
 				cfg.GetAuthAPIEndpoint(),
@@ -199,6 +203,7 @@ var runCmd = &cobra.Command{
 				authService = auth.NewDBAuthService(
 					dbPool,
 					crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
+					emailer,
 					cfg.GetAuthCacheConfig(),
 					logger.WithField("service", "auth_service"))
 			}
@@ -252,11 +257,7 @@ var runCmd = &cobra.Command{
 		done := make(chan bool, 1)
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-		emailParams, _ := cfg.GetEmailParams()
-		emailer, err := email.NewEmailer(emailParams)
-		if err != nil {
-			logger.WithError(err).Fatal("Emailer has not been properly configured, check the values in sender field")
-		}
+
 		oidcConfig := cfg.GetAuthOIDCConfiguration()
 		var oauthConfig *oauth2.Config
 		var oidcProvider *oidc.Provider
