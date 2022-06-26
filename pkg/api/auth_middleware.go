@@ -190,6 +190,7 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 				"claim_name":     claimName,
 				"actual_value":   actualValue,
 				"expected_value": expectedValue,
+				"missing":        !ok,
 			}).Error("Authentication failed on validating ID token claims")
 			return nil, ErrAuthenticatingRequest
 		}
