@@ -24,6 +24,7 @@ import (
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/auth"
+	"github.com/treeverse/lakefs/pkg/auth/email"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/oidc"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -32,7 +33,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
-	"github.com/treeverse/lakefs/pkg/email"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/kv"
@@ -90,9 +90,10 @@ type Controller struct {
 }
 
 func (c *Controller) GetAuthCapabilities(w http.ResponseWriter, _ *http.Request) {
+	inviteSupported := c.Auth.IsInviteSupported()
 	emailSupported := c.Emailer.Params.SMTPHost != ""
 	writeResponse(w, http.StatusOK, AuthCapabilities{
-		InviteUser:     &emailSupported,
+		InviteUser:     &inviteSupported,
 		ForgotPassword: &emailSupported,
 	})
 }
@@ -846,24 +847,7 @@ func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params Li
 func (c *Controller) generateResetPasswordToken(email string, duration time.Duration) (string, error) {
 	secret := c.Auth.SecretStore().SharedSecret()
 	currentTime := time.Now()
-	return GenerateJWTResetPassword(secret, email, currentTime, currentTime.Add(duration))
-}
-
-func (c *Controller) inviteUserRequest(emailAddr string) error {
-	token, err := c.generateResetPasswordToken(emailAddr, DefaultInvitePasswordExpiration)
-	if err != nil {
-		return err
-	}
-	params := map[string]string{
-		"token": token,
-		"email": emailAddr,
-	}
-	err = c.Emailer.SendInviteUserEmail([]string{emailAddr}, params)
-	if err != nil {
-		return err
-	}
-	c.Logger.WithField("email", emailAddr).Info("invite email sent")
-	return nil
+	return auth.GenerateJWTResetPassword(secret, email, currentTime, currentTime.Add(duration))
 }
 
 func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body CreateUserJSONRequestBody) {
@@ -888,6 +872,17 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body Cre
 	}) {
 		return
 	}
+	ctx := r.Context()
+	c.LogAction(ctx, "create_user")
+	if invite {
+		err := c.Auth.InviteUser(ctx, *parsedEmail)
+		if handleAPIError(w, err) {
+			c.Logger.WithError(err).WithField("email", *parsedEmail).Warn("failed creating user")
+			return
+		}
+		writeResponse(w, http.StatusCreated, User{Id: *parsedEmail})
+		return
+	}
 	u := &model.BaseUser{
 		CreatedAt:    time.Now().UTC(),
 		Username:     id,
@@ -895,21 +890,11 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body Cre
 		Source:       "internal",
 		Email:        parsedEmail,
 	}
-	ctx := r.Context()
-	c.LogAction(ctx, "create_user")
 	_, err := c.Auth.CreateUser(ctx, u)
 
 	if handleAPIError(w, err) {
 		c.Logger.WithError(err).WithField("username", u.Username).Warn("failed creating user")
 		return
-	}
-
-	if invite {
-		err = c.inviteUserRequest(*u.Email)
-		if handleAPIError(w, err) {
-			c.Logger.WithError(err).WithField("email", *u.Email).Warn("failed sending invite email")
-			return
-		}
 	}
 	response := User{
 		Id:           u.Username,

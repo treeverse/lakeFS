@@ -67,6 +67,9 @@ type Service interface {
 
 	// users
 	CreateUser(ctx context.Context, user *model.BaseUser) (string, error)
+	InviteUser(ctx context.Context, email string) error
+
+	IsInviteSupported() bool
 	DeleteUser(ctx context.Context, username string) error
 	GetUserByID(ctx context.Context, userID string) (*model.User, error)
 	GetUser(ctx context.Context, username string) (*model.User, error)
@@ -181,6 +184,7 @@ type KVAuthService struct {
 	secretStore crypt.SecretStore
 	cache       Cache
 	log         logging.Logger
+	*InviteHandler
 }
 
 func NewKVAuthService(store kv.StoreMessage, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) *KVAuthService {
@@ -1124,6 +1128,21 @@ type APIAuthService struct {
 	apiClient   *ClientWithResponses
 	secretStore crypt.SecretStore
 	cache       Cache
+}
+
+func (a *APIAuthService) InviteUser(ctx context.Context, email string) error {
+	resp, err := a.apiClient.CreateUserWithResponse(ctx, CreateUserJSONRequestBody{
+		Email:  swag.String(email),
+		Invite: swag.Bool(true),
+	})
+	if err != nil {
+		return err
+	}
+	return a.validateResponse(resp, http.StatusCreated)
+}
+
+func (a *APIAuthService) IsInviteSupported() bool {
+	return true
 }
 
 func (a *APIAuthService) SecretStore() crypt.SecretStore {
