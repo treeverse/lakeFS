@@ -8,14 +8,14 @@ import (
 )
 
 type CredentialSetFn func() (*model.Credential, error)
-type UserSetFn func() (*model.User, error)
+type UserSetFn func() (*model.BaseUser, error)
 type UserPoliciesSetFn func() ([]*model.Policy, error)
 
 type Cache interface {
 	GetCredential(accessKeyID string, setFn CredentialSetFn) (*model.Credential, error)
-	GetUser(username string, setFn UserSetFn) (*model.User, error)
-	GetUserByID(userID string, setFn UserSetFn) (*model.User, error)
-	GetUserByEmail(email string, setFn UserSetFn) (*model.User, error)
+	GetUser(username string, setFn UserSetFn) (*model.BaseUser, error)
+	GetUserByID(userID string, setFn UserSetFn) (*model.BaseUser, error)
+	GetUserByEmail(email string, setFn UserSetFn) (*model.BaseUser, error)
 	GetUserPolicies(userID string, setFn UserPoliciesSetFn) ([]*model.Policy, error)
 }
 
@@ -42,28 +42,28 @@ func (c *LRUCache) GetCredential(accessKeyID string, setFn CredentialSetFn) (*mo
 	return v.(*model.Credential), nil
 }
 
-func (c *LRUCache) GetUser(username string, setFn UserSetFn) (*model.User, error) {
+func (c *LRUCache) GetUser(username string, setFn UserSetFn) (*model.BaseUser, error) {
 	v, err := c.userCache.GetOrSet(username, func() (interface{}, error) { return setFn() })
 	if err != nil {
 		return nil, err
 	}
-	return v.(*model.User), nil
+	return v.(*model.BaseUser), nil
 }
 
-func (c *LRUCache) GetUserByID(userID string, setFn UserSetFn) (*model.User, error) {
+func (c *LRUCache) GetUserByID(userID string, setFn UserSetFn) (*model.BaseUser, error) {
 	v, err := c.userCache.GetOrSet(userID, func() (interface{}, error) { return setFn() })
 	if err != nil {
 		return nil, err
 	}
-	return v.(*model.User), nil
+	return v.(*model.BaseUser), nil
 }
 
-func (c *LRUCache) GetUserByEmail(email string, setFn UserSetFn) (*model.User, error) {
+func (c *LRUCache) GetUserByEmail(email string, setFn UserSetFn) (*model.BaseUser, error) {
 	v, err := c.userCache.GetOrSet(email, func() (interface{}, error) { return setFn() })
 	if err != nil {
 		return nil, err
 	}
-	return v.(*model.User), nil
+	return v.(*model.BaseUser), nil
 }
 
 func (c *LRUCache) GetUserPolicies(userID string, setFn UserPoliciesSetFn) ([]*model.Policy, error) {
@@ -81,15 +81,15 @@ func (d *DummyCache) GetCredential(_ string, setFn CredentialSetFn) (*model.Cred
 	return setFn()
 }
 
-func (d *DummyCache) GetUser(_ string, setFn UserSetFn) (*model.User, error) {
+func (d *DummyCache) GetUser(_ string, setFn UserSetFn) (*model.BaseUser, error) {
 	return setFn()
 }
 
-func (d *DummyCache) GetUserByID(_ string, setFn UserSetFn) (*model.User, error) {
+func (d *DummyCache) GetUserByID(_ string, setFn UserSetFn) (*model.BaseUser, error) {
 	return setFn()
 }
 
-func (d *DummyCache) GetUserByEmail(_ string, setFn UserSetFn) (*model.User, error) {
+func (d *DummyCache) GetUserByEmail(_ string, setFn UserSetFn) (*model.BaseUser, error) {
 	return setFn()
 }
 

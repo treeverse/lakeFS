@@ -763,7 +763,8 @@ func TestDbAuthService_GetUser(t *testing.T) {
 		// Time should *not* have nanoseconds - otherwise we are comparing accuracy of golang
 		// and Postgres time storage.
 		ts := time.Date(2222, 2, 22, 22, 22, 22, 0, time.UTC)
-		if _, err := tt.authService.CreateUser(ctx, &model.BaseUser{Username: userName, CreatedAt: ts}); err != nil {
+		id, err := tt.authService.CreateUser(ctx, &model.BaseUser{Username: userName, CreatedAt: ts})
+		if err != nil {
 			t.Fatalf("CreateUser(%s): %s", userName, err)
 		}
 		user, err := tt.authService.GetUser(ctx, userName)
@@ -776,7 +777,7 @@ func TestDbAuthService_GetUser(t *testing.T) {
 		if user.CreatedAt.Sub(ts) != 0 {
 			t.Errorf("expected user CreatedAt %s, got %+v", ts, user.CreatedAt)
 		}
-		if user.ID == strconv.Itoa(-22) {
+		if id == strconv.Itoa(-22) {
 			t.Errorf("expected CreateUser ID:-22 to be dropped on server, got user %+v", user)
 		}
 	}
@@ -847,7 +848,8 @@ func TestDbAuthService_GetUserById(t *testing.T) {
 		// Time should *not* have nanoseconds - otherwise we are comparing accuracy of golang
 		// and Postgres time storage.
 		ts := time.Date(2222, 2, 22, 22, 22, 22, 0, time.UTC)
-		if _, err := tt.authService.CreateUser(ctx, &model.BaseUser{Username: userName, CreatedAt: ts}); err != nil {
+		id, err := tt.authService.CreateUser(ctx, &model.BaseUser{Username: userName, CreatedAt: ts})
+		if err != nil {
 			t.Fatalf("CreateUser(%s): %s", userName, err)
 		}
 		user, err := tt.authService.GetUser(ctx, userName)
@@ -855,9 +857,9 @@ func TestDbAuthService_GetUserById(t *testing.T) {
 			t.Fatalf("GetUser(%s): %s", userName, err)
 		}
 
-		gotUser, err := tt.authService.GetUserByID(ctx, user.ID)
+		gotUser, err := tt.authService.GetUserByID(ctx, id)
 		if err != nil {
-			t.Errorf("GetUserById(%s): %s", user.ID, err)
+			t.Errorf("GetUserById(%s): %s", id, err)
 		}
 		if diffs := deep.Equal(user, gotUser); diffs != nil {
 			t.Errorf("got different user by name and by ID: %s", diffs)

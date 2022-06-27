@@ -118,10 +118,9 @@ func TestLocalLoad(t *testing.T) {
 	}
 
 	superuser := &authmodel.SuperuserConfiguration{
-		User: authmodel.User{BaseUser: authmodel.BaseUser{
+		BaseUser: authmodel.BaseUser{
 			CreatedAt: time.Now(),
 			Username:  "admin",
-		},
 		},
 	}
 

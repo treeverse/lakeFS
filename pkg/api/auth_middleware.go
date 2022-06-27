@@ -97,9 +97,9 @@ func checkSecurityRequirements(r *http.Request, w http.ResponseWriter,
 	authService auth.Service,
 	sessionStore sessions.Store,
 	oidcConfig *config.OIDC,
-) (*model.User, error) {
+) (*model.BaseUser, error) {
 	ctx := r.Context()
-	var user *model.User
+	var user *model.BaseUser
 	var err error
 
 	logger = logger.WithContext(ctx)
@@ -162,7 +162,7 @@ func checkSecurityRequirements(r *http.Request, w http.ResponseWriter,
 	return nil, nil
 }
 
-func enhanceWithFriendlyName(user *model.User, friendlyName string) *model.User {
+func enhanceWithFriendlyName(user *model.BaseUser, friendlyName string) *model.BaseUser {
 	if friendlyName != "" {
 		user.FriendlyName = swag.String(friendlyName)
 	}
@@ -172,7 +172,7 @@ func enhanceWithFriendlyName(user *model.User, friendlyName string) *model.User 
 // userFromOIDC returns a user from an existing OIDC session.
 // If the user doesn't exist on the lakeFS side, it is created.
 // This function does not make any calls to an external provider.
-func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.Service, authSession *sessions.Session, oidcConfig *config.OIDC) (*model.User, error) {
+func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.Service, authSession *sessions.Session, oidcConfig *config.OIDC) (*model.BaseUser, error) {
 	idTokenClaims, ok := authSession.Values[IDTokenClaimsSessionKey].(oidc.Claims)
 	if !ok || idTokenClaims == nil {
 		return nil, ErrAuthenticatingRequest
@@ -214,7 +214,7 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 		Username:   externalID,
 		ExternalID: &externalID,
 	}
-	userID, err := authService.CreateUser(ctx, &u)
+	_, err = authService.CreateUser(ctx, &u)
 	if err != nil {
 		if !errors.Is(err, db.ErrAlreadyExists) {
 			logger.WithError(err).Error("Failed to create external user in database")
@@ -238,25 +238,22 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 			logger.WithError(err).Error("Failed to add external user to group")
 		}
 	}
-	return enhanceWithFriendlyName(&model.User{
-		ID:       userID,
-		BaseUser: u,
-	}, friendlyName), nil
+	return enhanceWithFriendlyName(&u, friendlyName), nil
 }
 
-func userByToken(ctx context.Context, logger logging.Logger, authService auth.Service, tokenString string) (*model.User, error) {
+func userByToken(ctx context.Context, logger logging.Logger, authService auth.Service, tokenString string) (*model.BaseUser, error) {
 	claims, err := auth.VerifyToken(authService.SecretStore().SharedSecret(), tokenString)
 	// make sure no audience is set for login token
 	if err != nil || !claims.VerifyAudience(LoginAudience, false) {
 		return nil, ErrAuthenticatingRequest
 	}
 
-	id := claims.Subject
-	userData, err := authService.GetUserByID(ctx, id)
+	username := claims.Subject
+	userData, err := authService.GetUser(ctx, username)
 	if err != nil {
 		logger.WithFields(logging.Fields{
 			"token_id": claims.Id,
-			"user_id":  id,
+			"username": username,
 			"subject":  claims.Subject,
 		}).Debug("could not find user id by credentials")
 		return nil, ErrAuthenticatingRequest
@@ -264,7 +261,7 @@ func userByToken(ctx context.Context, logger logging.Logger, authService auth.Se
 	return userData, nil
 }
 
-func userByAuth(ctx context.Context, logger logging.Logger, authenticator auth.Authenticator, authService auth.Service, accessKey string, secretKey string) (*model.User, error) {
+func userByAuth(ctx context.Context, logger logging.Logger, authenticator auth.Authenticator, authService auth.Service, accessKey string, secretKey string) (*model.BaseUser, error) {
 	// TODO(ariels): Rename keys.
 	id, err := authenticator.AuthenticateUser(ctx, accessKey, secretKey)
 	if err != nil {

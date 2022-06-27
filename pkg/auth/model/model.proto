@@ -7,14 +7,13 @@ package io.treeverse.lakefs.auth.model;
 
 // message data model for model.User struct
 message UserData {
-    bytes id = 1;
-    google.protobuf.Timestamp created_at = 2;
-    string username = 3;
-    string friendly_name = 4;
-    string email = 5;
-    bytes encrypted_password = 6;
-    string source = 7;
-    string external_id = 8;
+    google.protobuf.Timestamp created_at = 1;
+    string username = 2;
+    string friendly_name = 3;
+    string email = 4;
+    bytes encrypted_password = 5;
+    string source = 6;
+    string external_id = 7;
 }
 
 // message data model for model.Group struct

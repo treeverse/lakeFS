@@ -106,11 +106,10 @@ func (m *FakeAuthService) GetCredentials(_ context.Context, accessKey string) (*
 	return aCred, nil
 }
 
-func (m *FakeAuthService) GetUserByID(_ context.Context, _ string) (*model.User, error) {
-	return &model.User{BaseUser: model.BaseUser{
+func (m *FakeAuthService) GetUserByID(_ context.Context, _ string) (*model.BaseUser, error) {
+	return &model.BaseUser{
 		CreatedAt: time.Now(),
-		Username:  "user"},
-	}, nil
+		Username:  "user"}, nil
 }
 
 func (m *FakeAuthService) Authorize(_ context.Context, _ *auth.AuthorizationRequest) (*auth.AuthorizationResponse, error) {

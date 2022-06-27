@@ -205,7 +205,7 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSO
 	expires := loginTime.Add(DefaultLoginExpiration)
 	secret := c.Auth.SecretStore().SharedSecret()
 
-	tokenString, err := GenerateJWTLogin(secret, user.ID, loginTime, expires)
+	tokenString, err := GenerateJWTLogin(secret, user.Username, loginTime, expires)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
@@ -1864,7 +1864,7 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body CommitJ
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "create_commit")
-	user, ok := ctx.Value(UserContextKey).(*model.User)
+	user, ok := ctx.Value(UserContextKey).(*model.BaseUser)
 	if !ok {
 		writeError(w, http.StatusUnauthorized, "missing user")
 		return
@@ -2163,7 +2163,7 @@ func (c *Controller) RevertBranch(w http.ResponseWriter, r *http.Request, body R
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "revert_branch")
-	user, ok := ctx.Value(UserContextKey).(*model.User)
+	user, ok := ctx.Value(UserContextKey).(*model.BaseUser)
 	if !ok {
 		writeError(w, http.StatusUnauthorized, "user not found")
 		return
@@ -2966,7 +2966,7 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "merge_branches")
-	user, ok := ctx.Value(UserContextKey).(*model.User)
+	user, ok := ctx.Value(UserContextKey).(*model.BaseUser)
 	if !ok {
 		writeError(w, http.StatusUnauthorized, "user not found")
 		return
@@ -3157,7 +3157,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 }
 
 func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
-	u, ok := r.Context().Value(UserContextKey).(*model.User)
+	u, ok := r.Context().Value(UserContextKey).(*model.BaseUser)
 	var user User
 	if ok {
 		user.Id = u.Username
@@ -3244,7 +3244,7 @@ func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body
 
 func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	user, ok := ctx.Value(UserContextKey).(*model.User)
+	user, ok := ctx.Value(UserContextKey).(*model.BaseUser)
 	if !ok || user == nil {
 		writeError(w, http.StatusUnauthorized, ErrAuthenticatingRequest)
 		return
@@ -3460,7 +3460,7 @@ func paginationFor(hasMore bool, results interface{}, fieldName string) Paginati
 
 func (c *Controller) authorize(w http.ResponseWriter, r *http.Request, perms permissions.Node) bool {
 	ctx := r.Context()
-	user, ok := ctx.Value(UserContextKey).(*model.User)
+	user, ok := ctx.Value(UserContextKey).(*model.BaseUser)
 	if !ok || user == nil {
 		writeError(w, http.StatusUnauthorized, ErrAuthenticatingRequest)
 		return false

@@ -238,7 +238,7 @@ func PathOperationHandler(sc *ServerContext, handler operations.PathOperationHan
 func authorize(w http.ResponseWriter, req *http.Request, authService auth.GatewayService, perms permissions.Node) *operations.AuthorizedOperation {
 	ctx := req.Context()
 	o := ctx.Value(ContextKeyOperation).(*operations.Operation)
-	username := ctx.Value(ContextKeyUser).(*model.User).Username
+	username := ctx.Value(ContextKeyUser).(*model.BaseUser).Username
 	authContext := ctx.Value(ContextKeyAuthContext).(sig.SigContext)
 
 	if len(perms.Nodes) == 0 && len(perms.Permission.Action) == 0 {

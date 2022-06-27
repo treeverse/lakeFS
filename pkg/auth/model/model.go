@@ -82,7 +82,7 @@ type Paginator struct {
 
 // SuperuserConfiguration requests a particular configuration for a superuser.
 type SuperuserConfiguration struct {
-	User
+	BaseUser
 	AccessKeyID     string
 	SecretAccessKey string
 }
@@ -101,21 +101,9 @@ type BaseUser struct {
 	ExternalID        *string `db:"external_id" json:"external_id"`
 }
 
-type User struct {
-	ID string
-	BaseUser
-}
-
 type DBUser struct {
 	ID int64 `db:"id"`
 	BaseUser
-}
-
-func ConvertUser(u *DBUser) *User {
-	return &User{
-		ID:       ConvertDBID(u.ID),
-		BaseUser: u.BaseUser,
-	}
 }
 
 func ConvertDBID(id int64) string {
@@ -160,6 +148,7 @@ type BaseCredential struct {
 }
 
 type Credential struct {
+	// UserID in KV this is the username, in DB it is the user ID. TODO (niro): rename when removing DB implementation
 	UserID string
 	BaseCredential
 }
@@ -212,23 +201,19 @@ func (s *Statements) Scan(src interface{}) error {
 	return json.Unmarshal(data, s)
 }
 
-func UserFromProto(pb *UserData) *User {
-	return &User{
-		ID: string(pb.Id),
-		BaseUser: BaseUser{
-			CreatedAt:         pb.CreatedAt.AsTime(),
-			Username:          pb.Username,
-			FriendlyName:      &pb.FriendlyName,
-			Email:             &pb.Email,
-			EncryptedPassword: pb.EncryptedPassword,
-			Source:            pb.Source,
-		},
+func UserFromProto(pb *UserData) *BaseUser {
+	return &BaseUser{
+		CreatedAt:         pb.CreatedAt.AsTime(),
+		Username:          pb.Username,
+		FriendlyName:      &pb.FriendlyName,
+		Email:             &pb.Email,
+		EncryptedPassword: pb.EncryptedPassword,
+		Source:            pb.Source,
 	}
 }
 
-func ProtoFromUser(u *User) *UserData {
+func ProtoFromUser(u *BaseUser) *UserData {
 	return &UserData{
-		Id:                []byte(u.ID),
 		CreatedAt:         timestamppb.New(u.CreatedAt),
 		Username:          u.Username,
 		FriendlyName:      swag.StringValue(u.FriendlyName),
@@ -327,16 +312,16 @@ func protoFromStatements(s *Statements) []*StatementData {
 	return statements
 }
 
-func ConvertUsersList(users []*DBUser) []*User {
-	kvUsers := make([]*User, 0, len(users))
+func ConvertUsersList(users []*DBUser) []*BaseUser {
+	kvUsers := make([]*BaseUser, 0, len(users))
 	for _, u := range users {
-		kvUsers = append(kvUsers, ConvertUser(u))
+		kvUsers = append(kvUsers, &u.BaseUser)
 	}
 	return kvUsers
 }
 
-func ConvertUsersDataList(users []proto.Message) []*User {
-	kvUsers := make([]*User, 0, len(users))
+func ConvertUsersDataList(users []proto.Message) []*BaseUser {
+	kvUsers := make([]*BaseUser, 0, len(users))
 	for _, u := range users {
 		a := u.(*UserData)
 		kvUsers = append(kvUsers, UserFromProto(a))

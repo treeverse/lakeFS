@@ -256,11 +256,9 @@ func CreateInitialAdminUser(ctx context.Context, authService Service, metadataMa
 }
 
 func CreateInitialAdminUserWithKeys(ctx context.Context, authService Service, metadataManger MetadataManager, username string, accessKeyID *string, secretAccessKey *string) (*model.Credential, error) {
-	adminUser := &model.SuperuserConfiguration{User: model.User{
-		BaseUser: model.BaseUser{
-			CreatedAt: time.Now(),
-			Username:  username,
-		},
+	adminUser := &model.SuperuserConfiguration{BaseUser: model.BaseUser{
+		CreatedAt: time.Now(),
+		Username:  username,
 	}}
 	if accessKeyID != nil && secretAccessKey != nil {
 		adminUser.AccessKeyID = *accessKeyID

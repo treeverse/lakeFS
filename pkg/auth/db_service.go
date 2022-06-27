@@ -105,22 +105,22 @@ func ListPaged(ctx context.Context, db db.Querier, retType reflect.Type, params 
 	return &slice, p, nil
 }
 
-func getDBUser(tx db.Tx, username string) (*model.User, error) {
+func getDBUser(tx db.Tx, username string) (*model.DBUser, error) {
 	user := &model.DBUser{}
 	err := tx.Get(user, `SELECT * FROM auth_users WHERE display_name = $1`, username)
 	if err != nil {
 		return nil, err
 	}
-	return model.ConvertUser(user), nil
+	return user, nil
 }
 
-func getDBUserByEmail(tx db.Tx, email string) (*model.User, error) {
+func getDBUserByEmail(tx db.Tx, email string) (*model.DBUser, error) {
 	user := &model.DBUser{}
 	err := tx.Get(user, `SELECT * FROM auth_users WHERE email = $1`, email)
 	if err != nil {
 		return nil, err
 	}
-	return model.ConvertUser(user), nil
+	return user, nil
 }
 
 func getDBGroup(tx db.Tx, groupDisplayName string) (*model.DBGroup, error) {
@@ -220,31 +220,33 @@ func (s *DBAuthService) DeleteUser(ctx context.Context, username string) error {
 	return err
 }
 
-func (s *DBAuthService) GetUser(ctx context.Context, username string) (*model.User, error) {
-	return s.cache.GetUser(username, func() (*model.User, error) {
-		user, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
+func (s *DBAuthService) GetUser(ctx context.Context, username string) (*model.BaseUser, error) {
+	return s.cache.GetUser(username, func() (*model.BaseUser, error) {
+		res, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			return getDBUser(tx, username)
 		}, db.ReadOnly())
 		if err != nil {
 			return nil, err
 		}
-		return user.(*model.User), nil
+		user := res.(*model.DBUser)
+		return &user.BaseUser, nil
 	})
 }
 
-func (s *DBAuthService) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
-	user, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
+func (s *DBAuthService) GetUserByEmail(ctx context.Context, email string) (*model.BaseUser, error) {
+	res, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		return getDBUserByEmail(tx, email)
 	}, db.ReadOnly())
 	if err != nil {
 		return nil, err
 	}
-	return user.(*model.User), nil
+	user := res.(*model.DBUser)
+	return &user.BaseUser, nil
 }
 
-func (s *DBAuthService) GetUserByID(ctx context.Context, userID string) (*model.User, error) {
-	return s.cache.GetUserByID(userID, func() (*model.User, error) {
-		user, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
+func (s *DBAuthService) GetUserByID(ctx context.Context, userID string) (*model.BaseUser, error) {
+	return s.cache.GetUserByID(userID, func() (*model.BaseUser, error) {
+		res, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			user := &model.DBUser{}
 			err := tx.Get(user, `SELECT * FROM auth_users WHERE id = $1`, userID)
 			if err != nil {
@@ -256,11 +258,12 @@ func (s *DBAuthService) GetUserByID(ctx context.Context, userID string) (*model.
 			return nil, err
 		}
 
-		return model.ConvertUser(user.(*model.DBUser)), nil
+		user := res.(*model.DBUser)
+		return &user.BaseUser, nil
 	})
 }
 
-func (s *DBAuthService) ListUsers(ctx context.Context, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
+func (s *DBAuthService) ListUsers(ctx context.Context, params *model.PaginationParams) ([]*model.BaseUser, *model.Paginator, error) {
 	var user model.DBUser
 	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(user), params, "display_name",
 		psql.Select("*").
@@ -547,9 +550,9 @@ func (s *DBAuthService) ListUserGroups(ctx context.Context, username string, par
 	return result.(*res).groups, result.(*res).paginator, nil
 }
 
-func (s *DBAuthService) ListGroupUsers(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
+func (s *DBAuthService) ListGroupUsers(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.BaseUser, *model.Paginator, error) {
 	type res struct {
-		users     []*model.User
+		users     []*model.BaseUser
 		paginator *model.Paginator
 	}
 	result, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
@@ -572,9 +575,9 @@ func (s *DBAuthService) ListGroupUsers(ctx context.Context, groupDisplayName str
 			return nil, err
 		}
 		p := &model.Paginator{}
-		users := make([]*model.User, len(dbUsers))
+		users := make([]*model.BaseUser, len(dbUsers))
 		for i := range dbUsers {
-			users[i] = model.ConvertUser(dbUsers[i])
+			users[i] = &dbUsers[i].BaseUser
 		}
 		if len(users) == params.Amount+1 {
 			// we have more pages
@@ -697,14 +700,11 @@ func (s *DBAuthService) AddCredentials(ctx context.Context, username, accessKeyI
 				SecretAccessKeyEncryptedBytes: encryptedKey,
 				IssuedDate:                    now,
 			},
-			UserID: user.ID,
+			UserID: model.ConvertDBID(user.ID),
 		}
 
 		// A DB user must have an int ID
-		intID, err := userIDToInt(user.ID)
-		if err != nil {
-			return nil, fmt.Errorf("userID as int64: %w", err)
-		}
+		intID := user.ID
 		_, err = tx.Exec(`
 			INSERT INTO auth_credentials (access_key_id, secret_access_key, issued_date, user_id)
 			VALUES ($1, $2, $3, $4)`,
@@ -936,12 +936,8 @@ func exportUsers(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (UserID
 		if err != nil {
 			return nil, err
 		}
-		kvUser := &model.User{
-			ID:       model.CreateID(),
-			BaseUser: dbUser.BaseUser,
-		}
 		key := model.UserPath(dbUser.Username)
-		value, err := proto.Marshal(model.ProtoFromUser(kvUser))
+		value, err := proto.Marshal(model.ProtoFromUser(&dbUser.BaseUser))
 		if err != nil {
 			return nil, err
 		}
@@ -955,8 +951,8 @@ func exportUsers(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (UserID
 		}
 
 		userIDToDetails[dbUser.ID] = userDetails{
-			kvID: kvUser.ID,
-			name: kvUser.Username,
+			kvID: model.ConvertDBID(dbUser.ID),
+			name: dbUser.Username,
 		}
 	}
 	return userIDToDetails, nil
