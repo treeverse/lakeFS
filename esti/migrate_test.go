@@ -30,7 +30,7 @@ type multipartsState struct {
 	Repo           string                         `json:"repo"`
 	Info           s3.CreateMultipartUploadOutput `json:"info"`
 	CompletedParts []*s3.CompletedPart            `json:"completed_parts"`
-	Content        string                         `json:"state"`
+	Content        string                         `json:"content"`
 }
 
 type actionRun struct {
@@ -85,10 +85,26 @@ func saveStateInLakeFS(t *testing.T) {
 	require.NoError(t, err, "marshal state")
 
 	ctx := context.Background()
-	_ = createRepositoryByName(context.Background(), t, migrateStateRepoName)
-	resp, err := uploadContent(ctx, migrateStateRepoName, "main", migrateStateObjectPath, string(stateBytes))
+	_ = createRepositoryByName(ctx, t, migrateStateRepoName)
+
+	// file is big - so we better use multipart writing here.
+	resp, err := svc.CreateMultipartUpload(&s3.CreateMultipartUploadInput{
+		Bucket: aws.String(migrateStateRepoName),
+		Key:    aws.String("main/" + migrateStateObjectPath),
+	})
+	require.NoError(t, err, "failed to create multipart upload for state.json")
+
+	var parts [][]byte
+	for i := 0; i < len(stateBytes); i += multipartPartSize {
+		last := i + multipartPartSize
+		if last > len(stateBytes) {
+			last = len(stateBytes)
+		}
+		parts = append(parts, stateBytes[i:last])
+	}
+	completedParts := uploadMultipartParts(t, logger, resp, parts, 0)
+	_, err = uploadMultipartComplete(svc, resp, completedParts)
 	require.NoError(t, err, "writing state file")
-	require.Equal(t, http.StatusCreated, resp.StatusCode())
 }
 
 func readStateFromLakeFS(t *testing.T) {
