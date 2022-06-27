@@ -34,7 +34,7 @@ var (
 	psql        = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 	someSecret  = []byte("some secret")
 
-	userPoliciesForTesting = []*model.BasePolicy{{
+	userPoliciesForTesting = []*model.Policy{{
 		Statement: model.Statements{
 			{
 				Action:   []string{"auth:DeleteUser"},
@@ -100,7 +100,7 @@ type DBType struct {
 	authService auth.Service
 }
 
-func userWithPolicies(t testing.TB, s auth.Service, policies []*model.BasePolicy) string {
+func userWithPolicies(t testing.TB, s auth.Service, policies []*model.Policy) string {
 	ctx := context.Background()
 	userName := uuid.New().String()
 	_, err := s.CreateUser(ctx, &model.BaseUser{
@@ -248,7 +248,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 
 	cases := []struct {
 		name     string
-		policies []*model.BasePolicy
+		policies []*model.Policy
 		request  func(userName string) *auth.AuthorizationRequest
 
 		expectedAllowed bool
@@ -256,7 +256,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 	}{
 		{
 			name: "basic_allowed",
-			policies: []*model.BasePolicy{{
+			policies: []*model.Policy{{
 				Statement: model.Statements{
 					{
 						Action:   []string{"fs:WriteObject"},
@@ -282,7 +282,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 		},
 		{
 			name: "basic_disallowed",
-			policies: []*model.BasePolicy{{
+			policies: []*model.Policy{{
 				Statement: model.Statements{
 					{
 						Action:   []string{"fs:WriteObject"},
@@ -308,7 +308,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 		},
 		{
 			name: "policy_with_wildcard",
-			policies: []*model.BasePolicy{{
+			policies: []*model.Policy{{
 				Statement: model.Statements{
 					{
 						Action:   []string{"fs:WriteObject"},
@@ -334,7 +334,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 		},
 		{
 			name: "policy_with_invalid_user",
-			policies: []*model.BasePolicy{{
+			policies: []*model.Policy{{
 				Statement: model.Statements{
 					{
 						Action:   []string{"auth:CreateUser"},
@@ -360,7 +360,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 		},
 		{
 			name: "policy_with_valid_user",
-			policies: []*model.BasePolicy{{
+			policies: []*model.Policy{{
 				Statement: model.Statements{
 					{
 						Action:   []string{"auth:CreateUser"},
@@ -385,7 +385,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 		},
 		{
 			name: "policy_with_other_user",
-			policies: []*model.BasePolicy{{
+			policies: []*model.Policy{{
 				Statement: model.Statements{
 					{
 						Action:   []string{"auth:CreateUser"},
@@ -411,7 +411,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 		},
 		{
 			name: "policy_with_wildcard",
-			policies: []*model.BasePolicy{{
+			policies: []*model.Policy{{
 				Statement: model.Statements{
 					{
 						Action:   []string{"auth:CreateUser"},
@@ -437,7 +437,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 		},
 		{
 			name: "action_passing_wildcards",
-			policies: []*model.BasePolicy{{
+			policies: []*model.Policy{{
 				Statement: model.Statements{
 					{
 						Action:   []string{"auth:Create*"},
@@ -463,7 +463,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 		},
 		{
 			name: "action_other_wildcards",
-			policies: []*model.BasePolicy{{
+			policies: []*model.Policy{{
 				Statement: model.Statements{
 					{
 						Action:   []string{"auth:Create*"},
@@ -489,7 +489,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 		},
 		{
 			name: "action_denying_wildcards",
-			policies: []*model.BasePolicy{{
+			policies: []*model.Policy{{
 				Statement: model.Statements{
 					{
 						Action:   []string{"auth:DeleteUser"},
@@ -545,14 +545,14 @@ func TestDBAuthService_ListEffectivePolicies(t *testing.T) {
 
 	cases := []struct {
 		name             string
-		policies         []*model.BasePolicy
+		policies         []*model.Policy
 		paginationAmount int
 		expectedPolicies []string
 		expectedError    error
 	}{
 		{
 			name: "effective_policies_with_pagination",
-			policies: []*model.BasePolicy{
+			policies: []*model.Policy{
 				{
 					DisplayName: "a",
 				},
@@ -1204,7 +1204,7 @@ func createInitialDataSet(t *testing.T, ctx context.Context, svc auth.Service, u
 
 	numPolicies := len(policyNames)
 	for i, policyName := range policyNames {
-		if err := svc.WritePolicy(ctx, &model.BasePolicy{DisplayName: policyName, Statement: userPoliciesForTesting[0].Statement}); err != nil {
+		if err := svc.WritePolicy(ctx, &model.Policy{DisplayName: policyName, Statement: userPoliciesForTesting[0].Statement}); err != nil {
 			t.Fatalf("WritePolicy(%s): %s", policyName, err)
 		}
 		if i < numPolicies/2 {

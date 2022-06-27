@@ -27,7 +27,7 @@ func createGroups(ctx context.Context, authService Service, groups []*model.Base
 	return nil
 }
 
-func createPolicies(ctx context.Context, authService Service, policies []*model.BasePolicy) error {
+func createPolicies(ctx context.Context, authService Service, policies []*model.Policy) error {
 	for _, policy := range policies {
 		err := authService.WritePolicy(ctx, policy)
 		if err != nil {
@@ -60,7 +60,7 @@ func SetupBaseGroups(ctx context.Context, authService Service, ts time.Time) err
 		return err
 	}
 
-	err = createPolicies(ctx, authService, []*model.BasePolicy{
+	err = createPolicies(ctx, authService, []*model.Policy{
 		{
 			CreatedAt:   ts,
 			DisplayName: "FSFullAccess",

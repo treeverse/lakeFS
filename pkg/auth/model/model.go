@@ -138,7 +138,7 @@ type DBGroup struct {
 	BaseGroup
 }
 
-type BasePolicy struct {
+type Policy struct {
 	CreatedAt   time.Time  `db:"created_at"`
 	DisplayName string     `db:"display_name" json:"display_name"`
 	Statement   Statements `db:"statement"`
@@ -146,7 +146,7 @@ type BasePolicy struct {
 
 type DBPolicy struct {
 	ID int `db:"id"`
-	BasePolicy
+	Policy
 }
 
 type Statement struct {
@@ -262,20 +262,19 @@ func ProtoFromGroup(g *Group) *GroupData {
 	}
 }
 
-func PolicyFromProto(pb *PolicyData) *BasePolicy {
-	return &BasePolicy{
+func PolicyFromProto(pb *PolicyData) *Policy {
+	return &Policy{
 		CreatedAt:   pb.CreatedAt.AsTime(),
 		DisplayName: pb.DisplayName,
 		Statement:   *statementsFromProto(pb.Statements),
 	}
 }
 
-func ProtoFromPolicy(p *BasePolicy, id string) *PolicyData {
+func ProtoFromPolicy(p *Policy) *PolicyData {
 	return &PolicyData{
 		CreatedAt:   timestamppb.New(p.CreatedAt),
 		DisplayName: p.DisplayName,
 		Statements:  protoFromStatements(&p.Statement),
-		Id:          []byte(id),
 	}
 }
 
@@ -393,8 +392,8 @@ func ConvertGroupDataList(group []proto.Message) []*Group {
 	return res
 }
 
-func ConvertPolicyDataList(policies []proto.Message) []*BasePolicy {
-	res := make([]*BasePolicy, 0, len(policies))
+func ConvertPolicyDataList(policies []proto.Message) []*Policy {
+	res := make([]*Policy, 0, len(policies))
 	for _, p := range policies {
 		a := p.(*PolicyData)
 		res = append(res, PolicyFromProto(a))

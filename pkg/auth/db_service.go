@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"reflect"
-	"strconv"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
@@ -329,7 +328,7 @@ func (s *DBAuthService) DetachPolicyFromUser(ctx context.Context, policyDisplayN
 	return err
 }
 
-func (s *DBAuthService) ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+func (s *DBAuthService) ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	var policy model.DBPolicy
 	sub := psql.Select("auth_policies.*").
 		From("auth_policies").
@@ -346,14 +345,14 @@ func (s *DBAuthService) ListUserPolicies(ctx context.Context, username string, p
 		return nil, paginator, err
 	}
 	policies := slice.Interface().([]*model.DBPolicy)
-	res := make([]*model.BasePolicy, 0, len(policies))
+	res := make([]*model.Policy, 0, len(policies))
 	for _, p := range policies {
-		res = append(res, &p.BasePolicy)
+		res = append(res, &p.Policy)
 	}
 	return res, paginator, nil
 }
 
-func (s *DBAuthService) getEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+func (s *DBAuthService) getEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	// resolve all policies attached to the user and its groups
 	resolvedCte := `
 	    WITH resolved_policies_view AS (
@@ -384,18 +383,18 @@ func (s *DBAuthService) getEffectivePolicies(ctx context.Context, username strin
 		return nil, paginator, err
 	}
 	policies := slice.Interface().([]*model.DBPolicy)
-	res := make([]*model.BasePolicy, 0, len(policies))
+	res := make([]*model.Policy, 0, len(policies))
 	for _, p := range policies {
-		res = append(res, &p.BasePolicy)
+		res = append(res, &p.Policy)
 	}
 	return res, paginator, nil
 }
 
-func (s *DBAuthService) ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+func (s *DBAuthService) ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	return ListEffectivePolicies(ctx, username, params, s.getEffectivePolicies, s.cache)
 }
 
-func (s *DBAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+func (s *DBAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	var policy model.DBPolicy
 	query := psql.Select("auth_policies.*").
 		From("auth_policies").
@@ -411,9 +410,9 @@ func (s *DBAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName 
 		return nil, paginator, err
 	}
 	dbPolicies := slice.Interface().([]*model.DBPolicy)
-	policies := make([]*model.BasePolicy, len(dbPolicies))
+	policies := make([]*model.Policy, len(dbPolicies))
 	for i := range dbPolicies {
-		policies[i] = &dbPolicies[i].BasePolicy
+		policies[i] = &dbPolicies[i].Policy
 	}
 	return policies, paginator, nil
 }
@@ -593,7 +592,7 @@ func (s *DBAuthService) ListGroupUsers(ctx context.Context, groupDisplayName str
 	return result.(*res).users, result.(*res).paginator, nil
 }
 
-func (s *DBAuthService) WritePolicy(ctx context.Context, policy *model.BasePolicy) error {
+func (s *DBAuthService) WritePolicy(ctx context.Context, policy *model.Policy) error {
 	_, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		if err := ValidatePolicy(policy); err != nil {
 			return nil, err
@@ -610,14 +609,14 @@ func (s *DBAuthService) WritePolicy(ctx context.Context, policy *model.BasePolic
 	return err
 }
 
-func (s *DBAuthService) GetPolicy(ctx context.Context, policyDisplayName string) (*model.BasePolicy, error) {
+func (s *DBAuthService) GetPolicy(ctx context.Context, policyDisplayName string) (*model.Policy, error) {
 	policy, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		return getDBPolicy(tx, policyDisplayName)
 	}, db.ReadOnly())
 	if err != nil {
 		return nil, err
 	}
-	return &policy.(*model.DBPolicy).BasePolicy, nil
+	return &policy.(*model.DBPolicy).Policy, nil
 }
 
 func (s *DBAuthService) DeletePolicy(ctx context.Context, policyDisplayName string) error {
@@ -627,9 +626,9 @@ func (s *DBAuthService) DeletePolicy(ctx context.Context, policyDisplayName stri
 	return err
 }
 
-func (s *DBAuthService) ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+func (s *DBAuthService) ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	type res struct {
-		policies  []*model.BasePolicy
+		policies  []*model.Policy
 		paginator *model.Paginator
 	}
 	result, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
@@ -646,9 +645,9 @@ func (s *DBAuthService) ListPolicies(ctx context.Context, params *model.Paginati
 			return nil, err
 		}
 		p := &model.Paginator{}
-		policies := make([]*model.BasePolicy, len(dbPolicies))
+		policies := make([]*model.Policy, len(dbPolicies))
 		for i := range dbPolicies {
-			policies[i] = &dbPolicies[i].BasePolicy
+			policies[i] = &dbPolicies[i].Policy
 		}
 		if len(policies) == params.Amount+1 {
 			// we have more pages
@@ -1012,7 +1011,7 @@ func exportPolicies(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (IDT
 			return nil, err
 		}
 		key := model.PolicyPath(dbPolicy.DisplayName)
-		value, err := proto.Marshal(model.ProtoFromPolicy(&dbPolicy.BasePolicy, strconv.Itoa(dbPolicy.ID)))
+		value, err := proto.Marshal(model.ProtoFromPolicy(&dbPolicy.Policy))
 		if err != nil {
 			return nil, err
 		}

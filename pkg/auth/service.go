@@ -89,10 +89,10 @@ type Service interface {
 	ListGroupUsers(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.User, *model.Paginator, error)
 
 	// policies
-	WritePolicy(ctx context.Context, policy *model.BasePolicy) error
-	GetPolicy(ctx context.Context, policyDisplayName string) (*model.BasePolicy, error)
+	WritePolicy(ctx context.Context, policy *model.Policy) error
+	GetPolicy(ctx context.Context, policyDisplayName string) (*model.Policy, error)
 	DeletePolicy(ctx context.Context, policyDisplayName string) error
-	ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error)
+	ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
 
 	// credentials
 	CreateCredentials(ctx context.Context, username string) (*model.Credential, error)
@@ -106,13 +106,13 @@ type Service interface {
 	// policy<->user attachments
 	AttachPolicyToUser(ctx context.Context, policyDisplayName, username string) error
 	DetachPolicyFromUser(ctx context.Context, policyDisplayName, username string) error
-	ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error)
-	ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error)
+	ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
+	ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
 
 	// policy<->group attachments
 	AttachPolicyToGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error
 	DetachPolicyFromGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error
-	ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error)
+	ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
 
 	// authorize user for an action
 	Authorize(ctx context.Context, req *AuthorizationRequest) (*AuthorizationResponse, error)
@@ -408,7 +408,7 @@ func (s *KVAuthService) DetachPolicyFromUser(ctx context.Context, policyDisplayN
 	return s.DetachPolicyFromUserNoValidation(ctx, policyDisplayName, username)
 }
 
-func (s *KVAuthService) ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+func (s *KVAuthService) ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	var policy model.PolicyData
 	userPolicyKey := model.UserPolicyPath(username, "")
 
@@ -419,7 +419,7 @@ func (s *KVAuthService) ListUserPolicies(ctx context.Context, username string, p
 	return model.ConvertPolicyDataList(msgs), paginator, err
 }
 
-func (s *KVAuthService) getEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+func (s *KVAuthService) getEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	if _, err := s.GetUser(ctx, username); err != nil {
 		return nil, nil, err
 	}
@@ -427,7 +427,7 @@ func (s *KVAuthService) getEffectivePolicies(ctx context.Context, username strin
 	hasMoreUserPolicy := true
 	afterUserPolicy := ""
 	amount := maxPage
-	policiesSet := make(map[string]*model.BasePolicy)
+	policiesSet := make(map[string]*model.Policy)
 	// get policies attracted to user
 	for hasMoreUserPolicy {
 		policies, userPaginator, err := s.ListUserPolicies(ctx, username, &model.PaginationParams{
@@ -488,7 +488,7 @@ func (s *KVAuthService) getEffectivePolicies(ctx context.Context, username strin
 	}
 	sort.Strings(policiesArr)
 
-	var resPolicies []*model.BasePolicy
+	var resPolicies []*model.Policy
 	resPaginator := model.Paginator{Amount: 0, NextPageToken: ""}
 	for _, p := range policiesArr {
 		if p > params.After {
@@ -503,16 +503,16 @@ func (s *KVAuthService) getEffectivePolicies(ctx context.Context, username strin
 	return resPolicies, &resPaginator, nil
 }
 
-func (s *KVAuthService) ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+func (s *KVAuthService) ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	return ListEffectivePolicies(ctx, username, params, s.getEffectivePolicies, s.cache)
 }
 
-type effectivePoliciesGetter func(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error)
+type effectivePoliciesGetter func(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
 
-func ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams, getEffectivePolicies effectivePoliciesGetter, cache Cache) ([]*model.BasePolicy, *model.Paginator, error) {
+func ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams, getEffectivePolicies effectivePoliciesGetter, cache Cache) ([]*model.Policy, *model.Paginator, error) {
 	if params.Amount == -1 {
 		// read through the cache when requesting the full list
-		policies, err := cache.GetUserPolicies(username, func() ([]*model.BasePolicy, error) {
+		policies, err := cache.GetUserPolicies(username, func() ([]*model.Policy, error) {
 			policies, _, err := getEffectivePolicies(ctx, username, params)
 			return policies, err
 		})
@@ -525,7 +525,7 @@ func ListEffectivePolicies(ctx context.Context, username string, params *model.P
 	return getEffectivePolicies(ctx, username, params)
 }
 
-func (s *KVAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+func (s *KVAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	var policy model.PolicyData
 	groupPolicyKey := model.GroupPolicyPath(groupDisplayName, "")
 
@@ -723,7 +723,7 @@ func (s *KVAuthService) ListGroupUsers(ctx context.Context, groupDisplayName str
 	return model.ConvertUsersDataList(msgs), paginator, err
 }
 
-func ValidatePolicy(policy *model.BasePolicy) error {
+func ValidatePolicy(policy *model.Policy) error {
 	if err := model.ValidateAuthEntityID(policy.DisplayName); err != nil {
 		return err
 	}
@@ -743,14 +743,13 @@ func ValidatePolicy(policy *model.BasePolicy) error {
 	return nil
 }
 
-func (s *KVAuthService) WritePolicy(ctx context.Context, policy *model.BasePolicy) error {
+func (s *KVAuthService) WritePolicy(ctx context.Context, policy *model.Policy) error {
 	if err := ValidatePolicy(policy); err != nil {
 		return err
 	}
 	policyKey := model.PolicyPath(policy.DisplayName)
-	id := model.CreateID()
 
-	m := model.ProtoFromPolicy(policy, id)
+	m := model.ProtoFromPolicy(policy)
 	err := s.store.SetMsgIf(ctx, model.PartitionKey, policyKey, m, nil)
 	if err != nil {
 		if errors.Is(err, kv.ErrPredicateFailed) {
@@ -761,7 +760,7 @@ func (s *KVAuthService) WritePolicy(ctx context.Context, policy *model.BasePolic
 	return err
 }
 
-func (s *KVAuthService) GetPolicy(ctx context.Context, policyDisplayName string) (*model.BasePolicy, error) {
+func (s *KVAuthService) GetPolicy(ctx context.Context, policyDisplayName string) (*model.Policy, error) {
 	policyKey := model.PolicyPath(policyDisplayName)
 	p := model.PolicyData{}
 	_, err := s.store.GetMsg(ctx, model.PartitionKey, policyKey, &p)
@@ -818,7 +817,7 @@ func (s *KVAuthService) DeletePolicy(ctx context.Context, policyDisplayName stri
 	return err
 }
 
-func (s *KVAuthService) ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+func (s *KVAuthService) ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	var policy model.PolicyData
 	policyKey := model.PolicyPath("")
 
@@ -1012,7 +1011,7 @@ func interpolateUser(resource string, username string) string {
 	return strings.ReplaceAll(resource, "${user}", username)
 }
 
-func checkPermissions(node permissions.Node, username string, policies []*model.BasePolicy) CheckResult {
+func checkPermissions(node permissions.Node, username string, policies []*model.Policy) CheckResult {
 	allowed := CheckNeutral
 	switch node.Type {
 	case permissions.NodeTypeNode:
@@ -1487,7 +1486,10 @@ func (a *APIAuthService) ListGroupUsers(ctx context.Context, groupDisplayName st
 	return members, toPagination(resp.JSON200.Pagination), nil
 }
 
-func (a *APIAuthService) WritePolicy(ctx context.Context, policy *model.BasePolicy) error {
+func (a *APIAuthService) WritePolicy(ctx context.Context, policy *model.Policy) error {
+	if err := model.ValidateAuthEntityID(policy.DisplayName); err != nil {
+		return err
+	}
 	stmts := make([]Statement, len(policy.Statement))
 	for i, s := range policy.Statement {
 		stmts[i] = Statement{
@@ -1509,7 +1511,7 @@ func (a *APIAuthService) WritePolicy(ctx context.Context, policy *model.BasePoli
 	return a.validateResponse(resp, http.StatusCreated)
 }
 
-func serializePolicyToModalPolicy(p Policy) *model.BasePolicy {
+func serializePolicyToModalPolicy(p Policy) *model.Policy {
 	stmts := make(model.Statements, len(p.Statement))
 	for i, apiStatement := range p.Statement {
 		stmts[i] = model.Statement{
@@ -1522,14 +1524,14 @@ func serializePolicyToModalPolicy(p Policy) *model.BasePolicy {
 	if p.CreationDate != nil {
 		creationTime = time.Unix(*p.CreationDate, 0)
 	}
-	return &model.BasePolicy{
+	return &model.Policy{
 		CreatedAt:   creationTime,
 		DisplayName: p.Name,
 		Statement:   stmts,
 	}
 }
 
-func (a *APIAuthService) GetPolicy(ctx context.Context, policyDisplayName string) (*model.BasePolicy, error) {
+func (a *APIAuthService) GetPolicy(ctx context.Context, policyDisplayName string) (*model.Policy, error) {
 	resp, err := a.apiClient.GetPolicyWithResponse(ctx, policyDisplayName)
 	if err != nil {
 		return nil, err
@@ -1549,7 +1551,7 @@ func (a *APIAuthService) DeletePolicy(ctx context.Context, policyDisplayName str
 	return a.validateResponse(resp, http.StatusNoContent)
 }
 
-func (a *APIAuthService) ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+func (a *APIAuthService) ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	resp, err := a.apiClient.ListPoliciesWithResponse(ctx, &ListPoliciesParams{
 		Prefix: paginationPrefix(params.Prefix),
 		After:  paginationAfter(params.After),
@@ -1561,7 +1563,7 @@ func (a *APIAuthService) ListPolicies(ctx context.Context, params *model.Paginat
 	if err := a.validateResponse(resp, http.StatusOK); err != nil {
 		return nil, nil, err
 	}
-	policies := make([]*model.BasePolicy, len(resp.JSON200.Results))
+	policies := make([]*model.Policy, len(resp.JSON200.Results))
 
 	for i, r := range resp.JSON200.Results {
 		policies[i] = serializePolicyToModalPolicy(r)
@@ -1701,7 +1703,7 @@ func (a *APIAuthService) DetachPolicyFromUser(ctx context.Context, policyDisplay
 	return a.validateResponse(resp, http.StatusNoContent)
 }
 
-func (a *APIAuthService) listUserPolicies(ctx context.Context, username string, params *model.PaginationParams, effective bool) ([]*model.BasePolicy, *model.Paginator, error) {
+func (a *APIAuthService) listUserPolicies(ctx context.Context, username string, params *model.PaginationParams, effective bool) ([]*model.Policy, *model.Paginator, error) {
 	resp, err := a.apiClient.ListUserPoliciesWithResponse(ctx, username, &ListUserPoliciesParams{
 		Prefix:    paginationPrefix(params.Prefix),
 		After:     paginationAfter(params.After),
@@ -1714,7 +1716,7 @@ func (a *APIAuthService) listUserPolicies(ctx context.Context, username string, 
 	if err := a.validateResponse(resp, http.StatusOK); err != nil {
 		return nil, nil, err
 	}
-	policies := make([]*model.BasePolicy, len(resp.JSON200.Results))
+	policies := make([]*model.Policy, len(resp.JSON200.Results))
 
 	for i, r := range resp.JSON200.Results {
 		policies[i] = serializePolicyToModalPolicy(r)
@@ -1722,15 +1724,15 @@ func (a *APIAuthService) listUserPolicies(ctx context.Context, username string, 
 	return policies, toPagination(resp.JSON200.Pagination), nil
 }
 
-func (a *APIAuthService) ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+func (a *APIAuthService) ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	return a.listUserPolicies(ctx, username, params, false)
 }
 
-func (a *APIAuthService) listAllEffectivePolicies(ctx context.Context, username string) ([]*model.BasePolicy, error) {
+func (a *APIAuthService) listAllEffectivePolicies(ctx context.Context, username string) ([]*model.Policy, error) {
 	hasMore := true
 	after := ""
 	amount := maxPage
-	policies := make([]*model.BasePolicy, 0)
+	policies := make([]*model.Policy, 0)
 	for hasMore {
 		p, paginator, err := a.ListEffectivePolicies(ctx, username, &model.PaginationParams{
 			After:  after,
@@ -1746,10 +1748,10 @@ func (a *APIAuthService) listAllEffectivePolicies(ctx context.Context, username 
 	return policies, nil
 }
 
-func (a *APIAuthService) ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+func (a *APIAuthService) ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	if params.Amount == -1 {
 		// read through the cache when requesting the full list
-		policies, err := a.cache.GetUserPolicies(username, func() ([]*model.BasePolicy, error) {
+		policies, err := a.cache.GetUserPolicies(username, func() ([]*model.Policy, error) {
 			return a.listAllEffectivePolicies(ctx, username)
 		})
 		if err != nil {
@@ -1776,7 +1778,7 @@ func (a *APIAuthService) DetachPolicyFromGroup(ctx context.Context, policyDispla
 	return a.validateResponse(resp, http.StatusNoContent)
 }
 
-func (a *APIAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+func (a *APIAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	resp, err := a.apiClient.ListGroupPoliciesWithResponse(ctx, groupDisplayName, &ListGroupPoliciesParams{
 		Prefix: paginationPrefix(params.Prefix),
 		After:  paginationAfter(params.After),
@@ -1788,7 +1790,7 @@ func (a *APIAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName
 	if err := a.validateResponse(resp, http.StatusOK); err != nil {
 		return nil, nil, err
 	}
-	policies := make([]*model.BasePolicy, len(resp.JSON200.Results))
+	policies := make([]*model.Policy, len(resp.JSON200.Results))
 
 	for i, r := range resp.JSON200.Results {
 		policies[i] = serializePolicyToModalPolicy(r)

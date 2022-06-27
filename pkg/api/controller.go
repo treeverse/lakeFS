@@ -588,7 +588,7 @@ func (c *Controller) ListGroupPolicies(w http.ResponseWriter, r *http.Request, g
 	writeResponse(w, http.StatusOK, response)
 }
 
-func serializePolicy(p *model.BasePolicy) Policy {
+func serializePolicy(p *model.Policy) Policy {
 	stmts := make([]Statement, 0, len(p.Statement))
 	for _, s := range p.Statement {
 		stmts = append(stmts, Statement{
@@ -698,7 +698,7 @@ func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body C
 		}
 	}
 
-	p := &model.BasePolicy{
+	p := &model.Policy{
 		CreatedAt:   time.Now().UTC(),
 		DisplayName: body.Id,
 		Statement:   stmts,
@@ -779,7 +779,7 @@ func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, body U
 		}
 	}
 
-	p := &model.BasePolicy{
+	p := &model.Policy{
 		CreatedAt:   time.Now().UTC(),
 		DisplayName: policyID,
 		Statement:   stmts,
@@ -1098,7 +1098,7 @@ func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, us
 
 	ctx := r.Context()
 	c.LogAction(ctx, "list_user_policies")
-	var listPolicies func(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error)
+	var listPolicies func(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
 	if params.Effective != nil && *params.Effective {
 		listPolicies = c.Auth.ListEffectivePolicies
 	} else {

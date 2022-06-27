@@ -128,7 +128,7 @@ func writePolicies(t *testing.T, ctx context.Context, svc auth.Service, num int)
 
 func writePolicy(t *testing.T, ctx context.Context, svc auth.Service) string {
 	policyName := generateUniqueName("policy")
-	if err := svc.WritePolicy(ctx, &model.BasePolicy{
+	if err := svc.WritePolicy(ctx, &model.Policy{
 		DisplayName: policyName,
 		Statement: model.Statements{
 			{
