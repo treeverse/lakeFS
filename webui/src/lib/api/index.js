@@ -687,8 +687,6 @@ class Refs {
     }
 
     async merge(repoId, sourceBranch, destinationBranch, strategy="") {
-        const query = qs(strategy);
-        console.log(query)
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(sourceBranch)}/merge/${encodeURIComponent(destinationBranch)}`, {
             method: 'POST',
             body: json({strategy})

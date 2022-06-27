@@ -17,9 +17,7 @@ import {appendMoreResults} from "./changes";
 import {RefTypeBranch, RefTypeCommit} from "../../../constants";
 import Button from "react-bootstrap/Button";
 import {FormControl, FormControlLabel, FormHelperText, FormLabel, Radio, RadioGroup} from "@mui/material";
-import {formatAlertText} from "../../../lib/components/repository/errors";
 import Modal from "react-bootstrap/Modal";
-import Form from "react-bootstrap/Form";
 
 const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, onSelectCompare, onNavigate }) => {
     const [internalRefresh, setInternalRefresh] = useState(true);
@@ -208,7 +206,6 @@ const MergeButton = ({repo, onDone, source, dest, disabled = false}) => {
         }
     }
 
-    const alertText = formatAlertText(repo.id, null);
     return (
         <>
             <Modal show={mergeState.show} onHide={hide} size="lg">
@@ -231,9 +228,6 @@ const MergeButton = ({repo, onDone, source, dest, disabled = false}) => {
                             <FormControlLabel value="dest-wins" control={<Radio />} label="dest-wins" onChange={onStrategyChange}/>
                         </RadioGroup>
                     </FormControl>
-                    {(alertText) ? (<Alert variant="danger">{alertText}</Alert>) : (<span/>)}
-                    <Form className="mb-2">
-                    </Form>
                     {(mergeState.err) ? (<Error error={mergeState.err}/>) : (<></>)}
                 </Modal.Body>
                 <Modal.Footer>
