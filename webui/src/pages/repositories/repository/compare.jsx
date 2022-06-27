@@ -11,24 +11,24 @@ import Alert from "react-bootstrap/Alert";
 import Card from "react-bootstrap/Card";
 import Table from "react-bootstrap/Table";
 import {TreeEntryPaginator, TreeItem} from "../../../lib/components/repository/changes";
-import {ConfirmationButton} from "../../../lib/components/modals";
 import {useRouter} from "../../../lib/hooks/router";
 import {URINavigator} from "../../../lib/components/repository/tree";
 import {appendMoreResults} from "./changes";
 import {RefTypeBranch, RefTypeCommit} from "../../../constants";
-
+import Button from "react-bootstrap/Button";
+import {FormControl, FormControlLabel, FormHelperText, FormLabel, Radio, RadioGroup} from "@mui/material";
+import {formatAlertText} from "../../../lib/components/repository/errors";
+import Modal from "react-bootstrap/Modal";
+import Form from "react-bootstrap/Form";
 
 const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, onSelectCompare, onNavigate }) => {
     const [internalRefresh, setInternalRefresh] = useState(true);
-    const [mergeError, setMergeError] = useState(null);
-    const [merging, setMerging] = useState(false);
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({prefix: prefix, results:[], pagination:{}}); // current retrieved children of the item
 
     const refresh = () => {
         setResultsState({prefix: prefix, results:[], pagination:{}})
         setInternalRefresh(!internalRefresh)
-        setMergeError(null)
     }
 
     const delimiter = "/"
@@ -159,36 +159,99 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                     <RefreshButton onClick={refresh}/>
 
                     {(compareReference.type === RefTypeBranch && reference.type === RefTypeBranch) &&
-                    <ConfirmationButton
-                        variant="success"
-                        disabled={((compareReference.id === reference.id) || merging || emptyDiff)}
-                        msg={`Are you sure you'd like to merge '${compareReference.id}' into '${reference.id}'?`}
-                        tooltip={`merge '${compareReference.id}' into '${reference.id}'`}
-                        onConfirm={hide => {
-                            setMerging(true)
-                            hide()
-                            refs.merge(repo.id, compareReference.id, reference.id)
-                                .then(() => {
-                                    setMergeError(null)
-                                    setMerging(false)
-                                    refresh()
-                                })
-                                .catch(err => {
-                                    setMergeError(err)
-                                    setMerging(false)
-                                })
-                        }}>
-                        <GitMergeIcon/> {(merging) ? 'Merging...' : 'Merge'}
-                    </ConfirmationButton>
+                        <MergeButton
+                            repo={repo}
+                            disabled={((compareReference.id === reference.id) || emptyDiff)}
+                            source={compareReference.id}
+                            dest={reference.id}
+                            onDone={refresh}
+                        />
                     }
                 </ActionGroup>
             </ActionsBar>
 
-            {mergeError && <Error error={mergeError}/>}
             {content}
         </>
     );
 };
+
+const MergeButton = ({repo, onDone, source, dest, disabled = false}) => {
+    const initialMerge = {
+        merging: false,
+        show: false,
+        err: null,
+        strategy: "none",
+    }
+    const [mergeState, setMergeState] = useState(initialMerge);
+
+    const onStrategyChange = (event) => {
+        setMergeState({merging: mergeState.merging, err: mergeState.err, show: mergeState.show, strategy: event.target.value});
+    }
+    const hide = () => {
+        if (mergeState.merging) return;
+        setMergeState(initialMerge);
+    }
+
+    const onSubmit = async () => {
+        let strategy = mergeState.strategy;
+        if (strategy === "none") {
+            strategy = "";
+        }
+        setMergeState({merging: true, show: mergeState.show, err: mergeState.err, strategy: mergeState.strategy})
+        try {
+            await refs.merge(repo.id, source, dest, strategy);
+            setMergeState({merging: mergeState.merging, show: mergeState.show, err: null, strategy: mergeState.strategy})
+            onDone();
+            hide();
+        } catch (err) {
+            setMergeState({merging: mergeState.merging, show: mergeState.show, err: err, strategy: mergeState.strategy})
+        }
+    }
+
+    const alertText = formatAlertText(repo.id, null);
+    return (
+        <>
+            <Modal show={mergeState.show} onHide={hide} size="lg">
+                <Modal.Header closeButton>
+                    <Modal.Title>Merge branch {source} into {dest}</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <FormControl>
+                        <FormLabel id="demo-radio-buttons-group-label">Merge Strategy</FormLabel>
+                        <FormHelperText>
+                            In case of a merge conflict, this option will force the merge process
+                            to automatically favor changes from the dest branch (&rdquo;dest-wins&rdquo;) or
+                            from the source branch(&rdquo;source-wins&rdquo;). In case no selection is made,
+                            the merge process will fail in case of a conflict.
+                        </FormHelperText>
+                        <RadioGroup
+                            aria-labelledby="demo-radio-buttons-group-label" defaultValue="none" name="radio-buttons-group" row>
+                            <FormControlLabel value="none" control={<Radio />} label="none" onChange={onStrategyChange}/>
+                            <FormControlLabel value="source-wins" control={<Radio />} label="source-wins" onChange={onStrategyChange}/>
+                            <FormControlLabel value="dest-wins" control={<Radio />} label="dest-wins" onChange={onStrategyChange}/>
+                        </RadioGroup>
+                    </FormControl>
+                    {(alertText) ? (<Alert variant="danger">{alertText}</Alert>) : (<span/>)}
+                    <Form className="mb-2">
+                    </Form>
+                    {(mergeState.err) ? (<Error error={mergeState.err}/>) : (<></>)}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" disabled={mergeState.merging} onClick={hide}>
+                        Cancel
+                    </Button>
+                    <Button variant="success" disabled={mergeState.merging} onClick={onSubmit}>
+                        {(mergeState.merging) ? 'Merging...' : 'Merge'}
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+            <Button variant="success" disabled={disabled} onClick={() => setMergeState({merging: mergeState.merging,
+                err: mergeState.err, show: true, strategy: mergeState.strategy})}>
+                <GitMergeIcon/> Merge
+            </Button>
+        </>
+    );
+}
 
 
 const CompareContainer = () => {
