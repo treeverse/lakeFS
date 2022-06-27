@@ -731,7 +731,7 @@ func TestDBAuthService_ListGroups(t *testing.T) {
 			tests := setupService(t, ctx)
 			for _, tt := range tests {
 				for _, groupName := range testCase.groupNames {
-					if err := tt.authService.CreateGroup(ctx, &model.BaseGroup{DisplayName: groupName}); err != nil {
+					if err := tt.authService.CreateGroup(ctx, &model.Group{DisplayName: groupName}); err != nil {
 						t.Fatalf("CreateGroup(%s): %s", groupName, err)
 					}
 				}
@@ -1192,7 +1192,7 @@ func createInitialDataSet(t *testing.T, ctx context.Context, svc auth.Service, u
 	}
 
 	for _, groupName := range groupNames {
-		if err := svc.CreateGroup(ctx, &model.BaseGroup{DisplayName: groupName}); err != nil {
+		if err := svc.CreateGroup(ctx, &model.Group{DisplayName: groupName}); err != nil {
 			t.Fatalf("CreateGroup(%s): %s", groupName, err)
 		}
 		for _, userName := range userNames {

@@ -108,7 +108,7 @@ func createTestUserWithCreds(t *testing.T, ctx context.Context, svc auth.Service
 }
 
 func createGroupWithUsers(t *testing.T, ctx context.Context, svc auth.Service, groupName string, users []string) {
-	if err := svc.CreateGroup(ctx, &model.BaseGroup{DisplayName: groupName}); err != nil {
+	if err := svc.CreateGroup(ctx, &model.Group{DisplayName: groupName}); err != nil {
 		t.Fatalf("CreateGroup(%s): %s", groupName, err)
 	}
 	for _, userName := range users {

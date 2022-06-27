@@ -123,19 +123,14 @@ func ConvertDBID(id int64) string {
 	return strconv.FormatInt(id, base)
 }
 
-type BaseGroup struct {
+type Group struct {
 	CreatedAt   time.Time `db:"created_at"`
 	DisplayName string    `db:"display_name" json:"display_name"`
 }
 
-type Group struct {
-	ID string
-	BaseGroup
-}
-
 type DBGroup struct {
 	ID int `db:"id"`
-	BaseGroup
+	Group
 }
 
 type Policy struct {
@@ -246,17 +241,13 @@ func ProtoFromUser(u *User) *UserData {
 
 func GroupFromProto(pb *GroupData) *Group {
 	return &Group{
-		ID: string(pb.Id),
-		BaseGroup: BaseGroup{
-			CreatedAt:   pb.CreatedAt.AsTime(),
-			DisplayName: pb.DisplayName,
-		},
+		CreatedAt:   pb.CreatedAt.AsTime(),
+		DisplayName: pb.DisplayName,
 	}
 }
 
 func ProtoFromGroup(g *Group) *GroupData {
 	return &GroupData{
-		Id:          []byte(g.ID),
 		CreatedAt:   timestamppb.New(g.CreatedAt),
 		DisplayName: g.DisplayName,
 	}
@@ -371,16 +362,9 @@ func ConvertCreds(c *DBCredential) *Credential {
 func ConvertGroupList(groups []*DBGroup) []*Group {
 	res := make([]*Group, 0, len(groups))
 	for _, g := range groups {
-		res = append(res, ConvertGroup(g))
+		res = append(res, &g.Group)
 	}
 	return res
-}
-
-func ConvertGroup(g *DBGroup) *Group {
-	return &Group{
-		ID:        strconv.Itoa(g.ID),
-		BaseGroup: g.BaseGroup,
-	}
 }
 
 func ConvertGroupDataList(group []proto.Message) []*Group {

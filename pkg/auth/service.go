@@ -77,7 +77,7 @@ type Service interface {
 	ListUsers(ctx context.Context, params *model.PaginationParams) ([]*model.User, *model.Paginator, error)
 
 	// groups
-	CreateGroup(ctx context.Context, group *model.BaseGroup) error
+	CreateGroup(ctx context.Context, group *model.Group) error
 	DeleteGroup(ctx context.Context, groupDisplayName string) error
 	GetGroup(ctx context.Context, groupDisplayName string) (*model.Group, error)
 	ListGroups(ctx context.Context, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error)
@@ -536,16 +536,13 @@ func (s *KVAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName 
 	return model.ConvertPolicyDataList(msgs), paginator, err
 }
 
-func (s *KVAuthService) CreateGroup(ctx context.Context, group *model.BaseGroup) error {
+func (s *KVAuthService) CreateGroup(ctx context.Context, group *model.Group) error {
 	if err := model.ValidateAuthEntityID(group.DisplayName); err != nil {
 		return err
 	}
 
 	groupKey := model.GroupPath(group.DisplayName)
-	id := model.CreateID()
-	groupWithID := model.Group{ID: id, BaseGroup: *group}
-
-	err := s.store.SetMsgIf(ctx, model.PartitionKey, groupKey, model.ProtoFromGroup(&groupWithID), nil)
+	err := s.store.SetMsgIf(ctx, model.PartitionKey, groupKey, model.ProtoFromGroup(group), nil)
 	if err != nil {
 		if errors.Is(err, kv.ErrPredicateFailed) {
 			err = ErrAlreadyExists
@@ -1323,7 +1320,7 @@ func (a *APIAuthService) HashAndUpdatePassword(ctx context.Context, username str
 	return a.validateResponse(resp, http.StatusOK)
 }
 
-func (a *APIAuthService) CreateGroup(ctx context.Context, group *model.BaseGroup) error {
+func (a *APIAuthService) CreateGroup(ctx context.Context, group *model.Group) error {
 	resp, err := a.apiClient.CreateGroupWithResponse(ctx, CreateGroupJSONRequestBody{
 		Id: group.DisplayName,
 	})
@@ -1383,10 +1380,8 @@ func (a *APIAuthService) GetGroup(ctx context.Context, groupDisplayName string) 
 		return nil, err
 	}
 	return &model.Group{
-		BaseGroup: model.BaseGroup{
-			CreatedAt:   time.Unix(resp.JSON200.CreationDate, 0),
-			DisplayName: resp.JSON200.Name,
-		},
+		CreatedAt:   time.Unix(resp.JSON200.CreationDate, 0),
+		DisplayName: resp.JSON200.Name,
 	}, nil
 }
 
@@ -1404,15 +1399,6 @@ func (a *APIAuthService) ListGroups(ctx context.Context, params *model.Paginatio
 	}
 	groups := make([]*model.Group, len(resp.JSON200.Results))
 
-	for i, r := range resp.JSON200.Results {
-		groups[i] = &model.Group{
-			ID: strconv.Itoa(0),
-			BaseGroup: model.BaseGroup{
-				CreatedAt:   time.Unix(r.CreationDate, 0),
-				DisplayName: r.Name,
-			},
-		}
-	}
 	return groups, toPagination(resp.JSON200.Pagination), nil
 }
 
@@ -1446,15 +1432,6 @@ func (a *APIAuthService) ListUserGroups(ctx context.Context, username string, pa
 	}
 	userGroups := make([]*model.Group, len(resp.JSON200.Results))
 
-	for i, r := range resp.JSON200.Results {
-		userGroups[i] = &model.Group{
-			ID: strconv.Itoa(0),
-			BaseGroup: model.BaseGroup{
-				CreatedAt:   time.Unix(r.CreationDate, 0),
-				DisplayName: r.Name,
-			},
-		}
-	}
 	return userGroups, toPagination(resp.JSON200.Pagination), nil
 }
 

@@ -17,7 +17,7 @@ const (
 	ViewersGroup    = "Viewers"
 )
 
-func createGroups(ctx context.Context, authService Service, groups []*model.BaseGroup) error {
+func createGroups(ctx context.Context, authService Service, groups []*model.Group) error {
 	for _, group := range groups {
 		err := authService.CreateGroup(ctx, group)
 		if err != nil {
@@ -50,7 +50,7 @@ func attachPolicies(ctx context.Context, authService Service, groupID string, po
 func SetupBaseGroups(ctx context.Context, authService Service, ts time.Time) error {
 	var err error
 
-	err = createGroups(ctx, authService, []*model.BaseGroup{
+	err = createGroups(ctx, authService, []*model.Group{
 		{CreatedAt: ts, DisplayName: AdminsGroup},
 		{CreatedAt: ts, DisplayName: SuperUsersGroup},
 		{CreatedAt: ts, DisplayName: DevelopersGroup},

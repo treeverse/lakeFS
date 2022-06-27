@@ -417,7 +417,7 @@ func (s *DBAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName 
 	return policies, paginator, nil
 }
 
-func (s *DBAuthService) CreateGroup(ctx context.Context, group *model.BaseGroup) error {
+func (s *DBAuthService) CreateGroup(ctx context.Context, group *model.Group) error {
 	var id int
 	_, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		if err := model.ValidateAuthEntityID(group.DisplayName); err != nil {
@@ -437,13 +437,14 @@ func (s *DBAuthService) DeleteGroup(ctx context.Context, groupDisplayName string
 }
 
 func (s *DBAuthService) GetGroup(ctx context.Context, groupDisplayName string) (*model.Group, error) {
-	group, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
+	res, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		return getDBGroup(tx, groupDisplayName)
 	}, db.ReadOnly())
 	if err != nil {
 		return nil, err
 	}
-	return model.ConvertGroup(group.(*model.DBGroup)), nil
+	group := res.(*model.DBGroup)
+	return &group.Group, nil
 }
 
 func (s *DBAuthService) ListGroups(ctx context.Context, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error) {
@@ -526,7 +527,7 @@ func (s *DBAuthService) ListUserGroups(ctx context.Context, username string, par
 		}
 		groups := make([]*model.Group, len(dbGroups))
 		for i := range dbGroups {
-			groups[i] = model.ConvertGroup(dbGroups[i])
+			groups[i] = &dbGroups[i].Group
 		}
 		p := &model.Paginator{}
 		if len(groups) == params.Amount+1 {
@@ -975,12 +976,8 @@ func exportGroups(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (IDToN
 		if err != nil {
 			return nil, err
 		}
-		kvGroup := &model.Group{
-			ID:        model.CreateID(),
-			BaseGroup: dbGroup.BaseGroup,
-		}
 		key := model.GroupPath(dbGroup.DisplayName)
-		value, err := proto.Marshal(model.ProtoFromGroup(kvGroup))
+		value, err := proto.Marshal(model.ProtoFromGroup(&dbGroup.Group))
 		if err != nil {
 			return nil, err
 		}

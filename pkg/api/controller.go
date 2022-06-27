@@ -412,7 +412,7 @@ func (c *Controller) CreateGroup(w http.ResponseWriter, r *http.Request, body Cr
 	ctx := r.Context()
 	c.LogAction(ctx, "create_group")
 
-	g := &model.BaseGroup{
+	g := &model.Group{
 		CreatedAt:   time.Now().UTC(),
 		DisplayName: body.Id,
 	}
