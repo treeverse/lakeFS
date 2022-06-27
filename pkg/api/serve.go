@@ -110,7 +110,7 @@ func Serve(
 	r.Mount("/swagger.json", http.HandlerFunc(swaggerSpecHandler))
 	r.Mount(BaseURL, http.HandlerFunc(InvalidAPIEndpointHandler))
 	if cfg.GetAuthOIDCConfiguration().Enabled {
-		r.Mount("/oidc/login", NewOIDCLoginPageHandler(sessionStore, oauthConfig, logger))
+		r.Mount("/oidc/login", NewOIDCLoginPageHandler(oidcConfig, sessionStore, oauthConfig, logger))
 	}
 	r.Mount("/logout", NewLogoutHandler(sessionStore, logger, cfg.GetAuthLogoutRedirectURL()))
 	r.Mount("/", NewUIHandler(gatewayDomains, snippets))
