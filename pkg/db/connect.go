@@ -57,6 +57,9 @@ func ConnectDBPool(ctx context.Context, p params.Database) (*pgxpool.Pool, error
 		"max_open_conns":    p.MaxOpenConnections,
 		"max_idle_conns":    p.MaxIdleConnections,
 		"db":                config.ConnConfig.Database,
+		"user":              config.ConnConfig.User,
+		"host":              config.ConnConfig.Host,
+		"port":              config.ConnConfig.Port,
 		"conn_max_lifetime": p.ConnectionMaxLifetime,
 	})
 	log.Info("Connecting to the DB")
