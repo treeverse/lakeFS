@@ -97,9 +97,9 @@ func checkSecurityRequirements(r *http.Request, w http.ResponseWriter,
 	authService auth.Service,
 	sessionStore sessions.Store,
 	oidcConfig *config.OIDC,
-) (*model.BaseUser, error) {
+) (*model.User, error) {
 	ctx := r.Context()
-	var user *model.BaseUser
+	var user *model.User
 	var err error
 
 	logger = logger.WithContext(ctx)
@@ -162,7 +162,7 @@ func checkSecurityRequirements(r *http.Request, w http.ResponseWriter,
 	return nil, nil
 }
 
-func enhanceWithFriendlyName(user *model.BaseUser, friendlyName string) *model.BaseUser {
+func enhanceWithFriendlyName(user *model.User, friendlyName string) *model.User {
 	if friendlyName != "" {
 		user.FriendlyName = swag.String(friendlyName)
 	}
@@ -172,7 +172,7 @@ func enhanceWithFriendlyName(user *model.BaseUser, friendlyName string) *model.B
 // userFromOIDC returns a user from an existing OIDC session.
 // If the user doesn't exist on the lakeFS side, it is created.
 // This function does not make any calls to an external provider.
-func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.Service, authSession *sessions.Session, oidcConfig *config.OIDC) (*model.BaseUser, error) {
+func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.Service, authSession *sessions.Session, oidcConfig *config.OIDC) (*model.User, error) {
 	idTokenClaims, ok := authSession.Values[IDTokenClaimsSessionKey].(oidc.Claims)
 	if !ok || idTokenClaims == nil {
 		return nil, ErrAuthenticatingRequest
@@ -208,7 +208,7 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 		logger.WithError(err).Error("Failed to get external user from database")
 		return nil, ErrAuthenticatingRequest
 	}
-	u := model.BaseUser{
+	u := model.User{
 		CreatedAt:  time.Now().UTC(),
 		Source:     "oidc",
 		Username:   externalID,
@@ -241,7 +241,7 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 	return enhanceWithFriendlyName(&u, friendlyName), nil
 }
 
-func userByToken(ctx context.Context, logger logging.Logger, authService auth.Service, tokenString string) (*model.BaseUser, error) {
+func userByToken(ctx context.Context, logger logging.Logger, authService auth.Service, tokenString string) (*model.User, error) {
 	claims, err := auth.VerifyToken(authService.SecretStore().SharedSecret(), tokenString)
 	// make sure no audience is set for login token
 	if err != nil || !claims.VerifyAudience(LoginAudience, false) {
@@ -261,7 +261,7 @@ func userByToken(ctx context.Context, logger logging.Logger, authService auth.Se
 	return userData, nil
 }
 
-func userByAuth(ctx context.Context, logger logging.Logger, authenticator auth.Authenticator, authService auth.Service, accessKey string, secretKey string) (*model.BaseUser, error) {
+func userByAuth(ctx context.Context, logger logging.Logger, authenticator auth.Authenticator, authService auth.Service, accessKey string, secretKey string) (*model.User, error) {
 	// TODO(ariels): Rename keys.
 	id, err := authenticator.AuthenticateUser(ctx, accessKey, secretKey)
 	if err != nil {

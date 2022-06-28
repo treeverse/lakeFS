@@ -196,7 +196,7 @@ func (s *DBAuthService) DB() db.Database {
 	return s.db
 }
 
-func (s *DBAuthService) CreateUser(ctx context.Context, user *model.BaseUser) (string, error) {
+func (s *DBAuthService) CreateUser(ctx context.Context, user *model.User) (string, error) {
 	id, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		if err := model.ValidateAuthEntityID(user.Username); err != nil {
 			return nil, err
@@ -220,8 +220,8 @@ func (s *DBAuthService) DeleteUser(ctx context.Context, username string) error {
 	return err
 }
 
-func (s *DBAuthService) GetUser(ctx context.Context, username string) (*model.BaseUser, error) {
-	return s.cache.GetUser(username, func() (*model.BaseUser, error) {
+func (s *DBAuthService) GetUser(ctx context.Context, username string) (*model.User, error) {
+	return s.cache.GetUser(username, func() (*model.User, error) {
 		res, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			return getDBUser(tx, username)
 		}, db.ReadOnly())
@@ -229,11 +229,11 @@ func (s *DBAuthService) GetUser(ctx context.Context, username string) (*model.Ba
 			return nil, err
 		}
 		user := res.(*model.DBUser)
-		return &user.BaseUser, nil
+		return &user.User, nil
 	})
 }
 
-func (s *DBAuthService) GetUserByEmail(ctx context.Context, email string) (*model.BaseUser, error) {
+func (s *DBAuthService) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
 	res, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		return getDBUserByEmail(tx, email)
 	}, db.ReadOnly())
@@ -241,11 +241,11 @@ func (s *DBAuthService) GetUserByEmail(ctx context.Context, email string) (*mode
 		return nil, err
 	}
 	user := res.(*model.DBUser)
-	return &user.BaseUser, nil
+	return &user.User, nil
 }
 
-func (s *DBAuthService) GetUserByID(ctx context.Context, userID string) (*model.BaseUser, error) {
-	return s.cache.GetUserByID(userID, func() (*model.BaseUser, error) {
+func (s *DBAuthService) GetUserByID(ctx context.Context, userID string) (*model.User, error) {
+	return s.cache.GetUserByID(userID, func() (*model.User, error) {
 		res, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			user := &model.DBUser{}
 			err := tx.Get(user, `SELECT * FROM auth_users WHERE id = $1`, userID)
@@ -259,11 +259,11 @@ func (s *DBAuthService) GetUserByID(ctx context.Context, userID string) (*model.
 		}
 
 		user := res.(*model.DBUser)
-		return &user.BaseUser, nil
+		return &user.User, nil
 	})
 }
 
-func (s *DBAuthService) ListUsers(ctx context.Context, params *model.PaginationParams) ([]*model.BaseUser, *model.Paginator, error) {
+func (s *DBAuthService) ListUsers(ctx context.Context, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
 	var user model.DBUser
 	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(user), params, "display_name",
 		psql.Select("*").
@@ -550,9 +550,9 @@ func (s *DBAuthService) ListUserGroups(ctx context.Context, username string, par
 	return result.(*res).groups, result.(*res).paginator, nil
 }
 
-func (s *DBAuthService) ListGroupUsers(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.BaseUser, *model.Paginator, error) {
+func (s *DBAuthService) ListGroupUsers(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
 	type res struct {
-		users     []*model.BaseUser
+		users     []*model.User
 		paginator *model.Paginator
 	}
 	result, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
@@ -575,9 +575,9 @@ func (s *DBAuthService) ListGroupUsers(ctx context.Context, groupDisplayName str
 			return nil, err
 		}
 		p := &model.Paginator{}
-		users := make([]*model.BaseUser, len(dbUsers))
+		users := make([]*model.User, len(dbUsers))
 		for i := range dbUsers {
-			users[i] = &dbUsers[i].BaseUser
+			users[i] = &dbUsers[i].User
 		}
 		if len(users) == params.Amount+1 {
 			// we have more pages
@@ -937,7 +937,7 @@ func exportUsers(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (UserID
 			return nil, err
 		}
 		key := model.UserPath(dbUser.Username)
-		value, err := proto.Marshal(model.ProtoFromUser(&dbUser.BaseUser))
+		value, err := proto.Marshal(model.ProtoFromUser(&dbUser.User))
 		if err != nil {
 			return nil, err
 		}

@@ -224,7 +224,7 @@ func (la *LDAPAuthenticator) AuthenticateUser(ctx context.Context, username, pas
 		logger.WithError(err).Info("Could not get user; create them")
 	}
 
-	newUser := &model.BaseUser{
+	newUser := &model.User{
 		CreatedAt:    time.Now(),
 		Username:     dn,
 		FriendlyName: &username,

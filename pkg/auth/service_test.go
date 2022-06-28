@@ -103,7 +103,7 @@ type DBType struct {
 func userWithPolicies(t testing.TB, s auth.Service, policies []*model.Policy) string {
 	ctx := context.Background()
 	userName := uuid.New().String()
-	_, err := s.CreateUser(ctx, &model.BaseUser{
+	_, err := s.CreateUser(ctx, &model.User{
 		Username: userName,
 	})
 	if err != nil {
@@ -197,7 +197,7 @@ func TestKVAuthService_ListPaged(t *testing.T) {
 
 	const chars = "abcdefghijklmnopqrstuvwxyz"
 	for _, c := range chars {
-		user := model.BaseUser{Username: string(c)}
+		user := model.User{Username: string(c)}
 		if _, err := s.CreateUser(ctx, &user); err != nil {
 			t.Fatalf("create user: %s", err)
 		}
@@ -650,7 +650,7 @@ func TestDBAuthService_ListUsers(t *testing.T) {
 			tests := setupService(t, ctx)
 			for _, tt := range tests {
 				for _, userName := range testCase.userNames {
-					if _, err := tt.authService.CreateUser(ctx, &model.BaseUser{Username: userName}); err != nil {
+					if _, err := tt.authService.CreateUser(ctx, &model.User{Username: userName}); err != nil {
 						t.Fatalf("CreateUser(%s): %s", userName, err)
 					}
 				}
@@ -678,7 +678,7 @@ func TestDBAuthService_ListUserCredentials(t *testing.T) {
 	tests := setupService(t, ctx)
 	for _, tt := range tests {
 		ctx := context.Background()
-		if _, err := tt.authService.CreateUser(ctx, &model.BaseUser{Username: userName}); err != nil {
+		if _, err := tt.authService.CreateUser(ctx, &model.User{Username: userName}); err != nil {
 			t.Fatalf("CreateUser(%s): %s", userName, err)
 		}
 		credential, err := tt.authService.CreateCredentials(ctx, userName)
@@ -763,7 +763,7 @@ func TestDbAuthService_GetUser(t *testing.T) {
 		// Time should *not* have nanoseconds - otherwise we are comparing accuracy of golang
 		// and Postgres time storage.
 		ts := time.Date(2222, 2, 22, 22, 22, 22, 0, time.UTC)
-		id, err := tt.authService.CreateUser(ctx, &model.BaseUser{Username: userName, CreatedAt: ts})
+		id, err := tt.authService.CreateUser(ctx, &model.User{Username: userName, CreatedAt: ts})
 		if err != nil {
 			t.Fatalf("CreateUser(%s): %s", userName, err)
 		}
@@ -791,7 +791,7 @@ func TestDbAuthService_AddCredentials(t *testing.T) {
 		// Time should *not* have nanoseconds - otherwise we are comparing accuracy of golang
 		// and Postgres time storage.
 		ts := time.Date(2222, 2, 22, 22, 22, 22, 0, time.UTC)
-		if _, err := tt.authService.CreateUser(ctx, &model.BaseUser{Username: userName, CreatedAt: ts}); err != nil {
+		if _, err := tt.authService.CreateUser(ctx, &model.User{Username: userName, CreatedAt: ts}); err != nil {
 			t.Fatalf("CreateUser(%s): %s", userName, err)
 		}
 
@@ -848,7 +848,7 @@ func TestDbAuthService_GetUserById(t *testing.T) {
 		// Time should *not* have nanoseconds - otherwise we are comparing accuracy of golang
 		// and Postgres time storage.
 		ts := time.Date(2222, 2, 22, 22, 22, 22, 0, time.UTC)
-		id, err := tt.authService.CreateUser(ctx, &model.BaseUser{Username: userName, CreatedAt: ts})
+		id, err := tt.authService.CreateUser(ctx, &model.User{Username: userName, CreatedAt: ts})
 		if err != nil {
 			t.Fatalf("CreateUser(%s): %s", userName, err)
 		}
@@ -873,7 +873,7 @@ func TestDBAuthService_DeleteUser(t *testing.T) {
 	tests := setupService(t, ctx)
 
 	for _, tt := range tests {
-		if _, err := tt.authService.CreateUser(ctx, &model.BaseUser{Username: userName}); err != nil {
+		if _, err := tt.authService.CreateUser(ctx, &model.User{Username: userName}); err != nil {
 			t.Fatalf("CreateUser(%s): %s", userName, err)
 		}
 		_, err := tt.authService.GetUser(ctx, userName)
@@ -1182,7 +1182,7 @@ func TestAuthService_DeletePoliciesWithRelations(t *testing.T) {
 // Attaches M/2 of the policies to all K users and the other M-M/2 policies to all L groups
 func createInitialDataSet(t *testing.T, ctx context.Context, svc auth.Service, userNames, groupNames, policyNames []string) {
 	for _, userName := range userNames {
-		if _, err := svc.CreateUser(ctx, &model.BaseUser{Username: userName}); err != nil {
+		if _, err := svc.CreateUser(ctx, &model.User{Username: userName}); err != nil {
 			t.Fatalf("CreateUser(%s): %s", userName, err)
 		}
 		for i := 0; i < 2; i++ {

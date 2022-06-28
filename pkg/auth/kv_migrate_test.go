@@ -96,7 +96,7 @@ func generateRandomArn() string {
 }
 
 func createTestUserWithCreds(t *testing.T, ctx context.Context, svc auth.Service, userName string, numCred int) {
-	if _, err := svc.CreateUser(ctx, &model.BaseUser{Username: userName}); err != nil {
+	if _, err := svc.CreateUser(ctx, &model.User{Username: userName}); err != nil {
 		t.Fatalf("CreateUser(%s): %s", userName, err)
 	}
 	for i := 0; i < numCred; i++ {

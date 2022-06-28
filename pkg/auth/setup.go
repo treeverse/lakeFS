@@ -226,7 +226,7 @@ func AddAdminUser(ctx context.Context, authService Service, user *model.Superuse
 
 	// create admin user
 	user.Source = "internal"
-	_, err = authService.CreateUser(ctx, &user.BaseUser)
+	_, err = authService.CreateUser(ctx, &user.User)
 	if err != nil {
 		return nil, fmt.Errorf("create user - %w", err)
 	}
@@ -256,7 +256,7 @@ func CreateInitialAdminUser(ctx context.Context, authService Service, metadataMa
 }
 
 func CreateInitialAdminUserWithKeys(ctx context.Context, authService Service, metadataManger MetadataManager, username string, accessKeyID *string, secretAccessKey *string) (*model.Credential, error) {
-	adminUser := &model.SuperuserConfiguration{BaseUser: model.BaseUser{
+	adminUser := &model.SuperuserConfiguration{User: model.User{
 		CreatedAt: time.Now(),
 		Username:  username,
 	}}

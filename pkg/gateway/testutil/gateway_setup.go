@@ -106,8 +106,8 @@ func (m *FakeAuthService) GetCredentials(_ context.Context, accessKey string) (*
 	return aCred, nil
 }
 
-func (m *FakeAuthService) GetUserByID(_ context.Context, _ string) (*model.BaseUser, error) {
-	return &model.BaseUser{
+func (m *FakeAuthService) GetUserByID(_ context.Context, _ string) (*model.User, error) {
+	return &model.User{
 		CreatedAt: time.Now(),
 		Username:  "user"}, nil
 }
