@@ -1,17 +1,16 @@
 package dynamodb_test
 
 import (
-	"encoding/json"
 	"log"
 	"os"
 	"testing"
 
-	"github.com/treeverse/lakefs/pkg/kv/dynamodb"
+	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
 var (
-	dsn string
+	testParams *kvparams.DynamoDB
 )
 
 func TestMain(m *testing.M) {
@@ -20,7 +19,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Could not connect to Docker: %s", err)
 	}
 
-	testParams := &dynamodb.Params{
+	testParams = &kvparams.DynamoDB{
 		TableName:          testutil.UniqueKVTableName(),
 		ReadCapacityUnits:  100,
 		WriteCapacityUnits: 100,
@@ -30,13 +29,6 @@ func TestMain(m *testing.M) {
 		AwsAccessKeyID:     "fakeMyKeyId",
 		AwsSecretAccessKey: "fakeSecretAccessKey",
 	}
-
-	dsnBytes, err := json.Marshal(testParams)
-	if err != nil {
-		log.Fatalf("Failed to initalize tests params :%s", err)
-	}
-
-	dsn = string(dsnBytes)
 
 	code := m.Run()
 	cleanpFunc()

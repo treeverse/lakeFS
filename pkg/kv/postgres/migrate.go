@@ -11,13 +11,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jackc/pgx/v4"
-
-	"github.com/treeverse/lakefs/pkg/kv"
-
 	"github.com/hashicorp/go-multierror"
+	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/treeverse/lakefs/pkg/db/params"
+	"github.com/treeverse/lakefs/pkg/kv"
+	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -46,7 +45,10 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 		return nil
 	}
 
-	store, err := kv.Open(ctx, DriverName, dbParams.ConnectionString)
+	params := kvparams.KV{
+		Postgres: &kvparams.Postgres{ConnectionString: dbParams.ConnectionString},
+	}
+	store, err := kv.Open(ctx, DriverName, params)
 	if err != nil {
 		return fmt.Errorf("opening kv store: %w", err)
 	}
@@ -74,7 +76,7 @@ func Migrate(ctx context.Context, dbPool *pgxpool.Pool, dbParams params.Database
 			return err
 		}
 
-		tmpStore, err := kv.Open(ctx, DriverName, dbParams.ConnectionString) // Open flow recreates table
+		tmpStore, err := kv.Open(ctx, DriverName, params) // Open flow recreates table
 		if err != nil {
 			return fmt.Errorf("opening kv store: %w", err)
 		}

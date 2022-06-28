@@ -2,7 +2,6 @@ package dynamodb
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -13,13 +12,14 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/treeverse/lakefs/pkg/kv"
+	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 )
 
 type Driver struct{}
 
 type Store struct {
 	svc    *dynamodb.DynamoDB
-	params *Params
+	params *kvparams.DynamoDB
 }
 
 type EntriesIterator struct {
@@ -39,43 +39,8 @@ type DynKVItem struct {
 	ItemValue    []byte
 }
 
-// Params struct holds all the configuration parameters that can be used
-// to control the KV implementation over DynamoDB. This struct can be passed
-// as json string, using the dsn string parameter, to func Open
-type Params struct {
-	// The name of the DynamoDB table to be used as KV
-	TableName string
-
-	// Table provisioned throughput parameters, as described in
-	// https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Limits.html
-	ReadCapacityUnits  int64
-	WriteCapacityUnits int64
-
-	// Maximal number of items per page during scan operation
-	ScanLimit int64
-
-	// The endpoint URL of the DynamoDB endpoint
-	// Can be used to redirect to DynmoDB on AWS, local docker etc.
-	Endpoint string
-
-	// AWS connection details - region and credentials
-	// This will override any such details that are already exist in the system
-	// While in general, AWS region and credentials are configured in the system for AWS usage,
-	// these can be used to specify fake values, that cna be used to connect to local DynamoDB,
-	// in case there are no credentials configured in the system
-	// This is a client requirement as described in section 4 in
-	// https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html
-	AwsRegion          string
-	AwsAccessKeyID     string
-	AwsSecretAccessKey string
-}
-
 const (
-	DriverName       = "dynamodb"
-	DefaultTableName = "kvstore"
-	// TBD: Which values to use?
-	DefaultReadCapacityUnits  = 1000
-	DefaultWriteCapacityUnits = 1000
+	DriverName = "dynamodb"
 
 	PartitionKey = "PartitionKey"
 	ItemKey      = "ItemKey"
@@ -89,12 +54,9 @@ func init() {
 
 // Open - opens and returns a KV store over DynamoDB. This function creates the DB session
 // and sets up the KV table. dsn is a string with the DynamoDB endpoint
-func (d *Driver) Open(ctx context.Context, dsn string) (kv.Store, error) {
+func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, error) {
 	// TODO: Get table name from env
-	params, err := parseDsn(dsn)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %s", kv.ErrDriverConfiguration, err)
-	}
+	params := kvParams.DynamoDB
 
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
@@ -118,7 +80,7 @@ func (d *Driver) Open(ctx context.Context, dsn string) (kv.Store, error) {
 
 	// Create DynamoDB client
 	svc := dynamodb.New(sess, cfg)
-	err = setupKeyValueDatabase(ctx, svc, params)
+	err := setupKeyValueDatabase(ctx, svc, params)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", kv.ErrSetupFailed, err)
 	}
@@ -129,21 +91,8 @@ func (d *Driver) Open(ctx context.Context, dsn string) (kv.Store, error) {
 	}, nil
 }
 
-func parseDsn(dsn string) (*Params, error) {
-	params := &Params{
-		TableName:          DefaultTableName,
-		ReadCapacityUnits:  DefaultReadCapacityUnits,
-		WriteCapacityUnits: DefaultWriteCapacityUnits,
-	}
-	err := json.Unmarshal([]byte(dsn), params)
-	if err != nil {
-		return nil, err
-	}
-	return params, nil
-}
-
 // setupKeyValueDatabase setup everything required to enable kv over postgres
-func setupKeyValueDatabase(ctx context.Context, svc *dynamodb.DynamoDB, params *Params) error {
+func setupKeyValueDatabase(ctx context.Context, svc *dynamodb.DynamoDB, params *kvparams.DynamoDB) error {
 	// main kv table
 	table, err := svc.CreateTableWithContext(ctx, &dynamodb.CreateTableInput{
 		TableName: aws.String(params.TableName),

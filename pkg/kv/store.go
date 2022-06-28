@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 )
 
 const (
@@ -41,7 +43,7 @@ type Driver interface {
 	// Open opens access to the database store. Implementations give access to the same storage based on the dsn.
 	// Implementation can return the same Storage instance based on dsn or new one as long as it provides access to
 	// the same storage.
-	Open(ctx context.Context, dsn string) (Store, error)
+	Open(ctx context.Context, params kvparams.KV) (Store, error)
 }
 
 // Predicate value used to update a key base on a previous fetched value.
@@ -146,14 +148,14 @@ func UnregisterAllDrivers() {
 
 // Open lookup driver with 'name' and return Store based on 'dsn' (data source name).
 // Failed with ErrUnknownDriver in case 'name' is not registered
-func Open(ctx context.Context, name, dsn string) (Store, error) {
+func Open(ctx context.Context, name string, params kvparams.KV) (Store, error) {
 	driversMu.RLock()
 	d, ok := drivers[name]
 	driversMu.RUnlock()
 	if !ok {
 		return nil, fmt.Errorf("%w: %s", ErrUnknownDriver, name)
 	}
-	return d.Open(ctx, dsn)
+	return d.Open(ctx, params)
 }
 
 // Drivers returns a list of registered drive names

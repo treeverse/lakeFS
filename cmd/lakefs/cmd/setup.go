@@ -54,7 +54,8 @@ var setupCmd = &cobra.Command{
 		var authService auth.Service
 		authLogger := logging.Default().WithField("service", "auth_service")
 		if dbParams.KVEnabled {
-			kvStore, err := kv.Open(ctx, dbParams.Type, dbParams.ConnectionString)
+			kvparams := cfg.GetKVParams()
+			kvStore, err := kv.Open(ctx, dbParams.Type, kvparams)
 			if err != nil {
 				fmt.Printf("failed to open KV store: %s\n", err)
 				os.Exit(1)

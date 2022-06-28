@@ -14,6 +14,7 @@ import (
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
+	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 	"github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/testutil"
@@ -29,7 +30,7 @@ const (
 func TestMigrate(t *testing.T) {
 	ctx := context.Background()
 	database, _ := testutil.GetDB(t, databaseURI)
-	kvStore := kvtest.MakeStoreByName(postgres.DriverName, databaseURI)(t, ctx)
+	kvStore := kvtest.MakeStoreByName(postgres.DriverName, kvparams.KV{Postgres: &kvparams.Postgres{ConnectionString: databaseURI}})(t, ctx)
 	defer kvStore.Close()
 	dbAuthService := auth.NewDBAuthService(database, crypt.NewSecretStore([]byte("someSecret")), nil, authparams.ServiceCache{
 		Enabled: false,

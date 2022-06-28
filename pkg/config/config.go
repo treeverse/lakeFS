@@ -22,6 +22,7 @@ import (
 	blockparams "github.com/treeverse/lakefs/pkg/block/params"
 	dbparams "github.com/treeverse/lakefs/pkg/db/params"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
+	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 	"github.com/treeverse/lakefs/pkg/logging"
 	pyramidparams "github.com/treeverse/lakefs/pkg/pyramid/params"
 )
@@ -71,6 +72,11 @@ const (
 	DefaultEmailLimitEveryDuration = time.Minute
 	DefaultEmailBurst              = 10
 	DefaultLakefsEmailBaseURL      = "http://localhost:8000"
+
+	DefaultDynamoDBTableName = "kvstore"
+	// TBD: Which values to use for DynamoDB tables?
+	DefaultDynamoDBReadCapacityUnits  = 1000
+	DefaultDynamoDBWriteCapacityUnits = 1000
 )
 
 var (
@@ -177,6 +183,10 @@ const (
 	EmailLimitEveryDurationKey = "email.limit_every_duration"
 	EmailBurstKey              = "email.burst"
 	LakefsEmailBaseURLKey      = "email.lakefs_base_url"
+
+	DynamoDBTableNameKey          = "database.beta_dynamodb.table_name"
+	DynamoDBReadCapacityUnitsKey  = "database.beta_dynamodb.read_capacity_units"
+	DynamoDBWriteCapacityUnitsKey = "database.beta_dynamodb.write_capacity_units"
 )
 
 func setDefaults() {
@@ -235,6 +245,10 @@ func setDefaults() {
 	viper.SetDefault(EmailLimitEveryDurationKey, DefaultEmailLimitEveryDuration)
 	viper.SetDefault(EmailBurstKey, DefaultEmailBurst)
 	viper.SetDefault(LakefsEmailBaseURLKey, DefaultLakefsEmailBaseURL)
+
+	viper.SetDefault(DynamoDBTableNameKey, DefaultDynamoDBTableName)
+	viper.SetDefault(DynamoDBReadCapacityUnitsKey, DefaultDynamoDBReadCapacityUnits)
+	viper.SetDefault(DynamoDBWriteCapacityUnitsKey, DefaultDynamoDBWriteCapacityUnits)
 }
 
 func reverse(s string) string {
@@ -283,6 +297,24 @@ func (c *Config) GetDatabaseParams() dbparams.Database {
 		Type:                  c.values.Database.Type,
 		KVEnabled:             c.values.Database.KVEnabled,
 		DropTables:            c.values.Database.DropTables,
+	}
+}
+
+func (c *Config) GetKVParams() kvparams.KV {
+	return kvparams.KV{
+		Postgres: &kvparams.Postgres{
+			ConnectionString: c.values.Database.ConnectionString.SecureValue(),
+		},
+		DynamoDB: &kvparams.DynamoDB{
+			TableName:          c.values.Database.BetaDynamoDB.TableName,
+			ReadCapacityUnits:  c.values.Database.BetaDynamoDB.ReadCapacityUnits,
+			WriteCapacityUnits: c.values.Database.BetaDynamoDB.WriteCapacityUnits,
+			ScanLimit:          c.values.Database.BetaDynamoDB.ScanLimit,
+			Endpoint:           c.values.Database.BetaDynamoDB.Endpoint,
+			AwsRegion:          c.values.Database.BetaDynamoDB.AwsRegion,
+			AwsAccessKeyID:     c.values.Database.BetaDynamoDB.AwsAccessKeyID,
+			AwsSecretAccessKey: c.values.Database.BetaDynamoDB.AwsSecretAccessKey,
+		},
 	}
 }
 

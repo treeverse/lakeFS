@@ -17,6 +17,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
+	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 	"github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
@@ -45,7 +46,7 @@ func benchmarkMigrate(runCount int, b *testing.B) {
 	database, _ := testutil.GetDB(b, databaseURI)
 
 	createMigrateTestData(b, ctx, database, migrateBenchRepo, runCount)
-	kvStore := kvtest.MakeStoreByName(postgres.DriverName, databaseURI)(b, ctx)
+	kvStore := kvtest.MakeStoreByName(postgres.DriverName, kvparams.KV{Postgres: &kvparams.Postgres{ConnectionString: databaseURI}})(b, ctx)
 	buf, _ := os.CreateTemp("", "migrate")
 	defer os.Remove(buf.Name())
 	defer buf.Close()
@@ -76,7 +77,7 @@ func TestMigrate(t *testing.T) {
 	err := actions.Migrate(ctx, database.Pool(), &buf)
 	require.NoError(t, err)
 
-	kvStore := kvtest.MakeStoreByName(postgres.DriverName, databaseURI)(t, ctx)
+	kvStore := kvtest.MakeStoreByName(postgres.DriverName, kvparams.KV{Postgres: &kvparams.Postgres{ConnectionString: databaseURI}})(t, ctx)
 	mStore := kv.StoreMessage{Store: kvStore}
 	testutil.MustDo(t, "Import file", kv.Import(ctx, &buf, kvStore))
 	kvService := actions.NewService(ctx, actions.NewActionsKVStore(mStore), testSource, testWriter, &actions.DecreasingIDGenerator{}, &mockStatsCollector, true)
