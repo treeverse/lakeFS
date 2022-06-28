@@ -32,12 +32,12 @@ Moreover, as these are quite exhaustive operations, may be used as part of perfo
 **Note:** This is an initial suggestion that seems to support the required iterators. It tries to encapsulate the immutable parts of identifying an object (e.g. a branch can be identified by its name, but not by a commit, as it (a) changes and (b) a commit can be shared by branches. a repo and a tag has one:many relation, so a tag key contains its repo etc.) It is totally open to discussion and improvements.
 **Update:** We will use multiple partitions. One general named TBD (`graveler`) and another partition for each repository, named after that repository. The idea is to isolate the entire repository data, as either ways each operation is bounded to within a specified repository. Repositories themselves will be in the `graveler` repository, as to allow listing of all repositories. As no longer needed, the `<REPO_NAME>` can be removed from all keys under the `<REPO_NAME>` partition
 * Partition `graveler`
-  * Repository - `repo/<REPO_NAME>`
+  * Repository - `repos/<REPO_NAME>`
 
 * Partition `<REPO_NAME>`
-  * Branch     - `branch/<BRANCH_NAME>`
-  * Commit     - `commit/<COMMIT_ID>`
-  * Tag        - `tag/<TAG_ID>`
+  * Branch     - `branches/<BRANCH_NAME>`
+  * Commit     - `commits/<COMMIT_ID>`
+  * Tag        - `tags/<TAG_ID>`
   * Staged Obj - `staged/<BRANCH_NAME>/<STAGING_TOKEN>/<OBJ_KEY>`
 
 ### Key Schema Support of Required Functionalities
