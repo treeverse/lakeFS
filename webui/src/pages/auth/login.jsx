@@ -58,7 +58,7 @@ const LoginForm = ({oidcEnabled}) => {
                             }
                             { oidcEnabled ?
                                 <Button variant="link" className="text-secondary mt-2" onClick={async ()=> {
-                                    await fetch("/logout")
+                                    document.cookie = ' =; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
                                     window.location = "/oidc/login";
                                 }}>Sign in with SSO provider</Button>
                                 : ""
