@@ -6,8 +6,8 @@ Graveler uses 5 DB tables:
 * `graveler_staging_kv` - used by `pkg/graveler/staging`
 
 `graveler_repositories`, `graveler_commits` and `graveler_tags` are immutable and does not update entries, and so should be straight forward to implement over our `KV` (`graveler_commits` actually performs update for commit generation, but this is only valid for `refs-restore` which can only take place on a `bare` repo and so it is of no concern)</br>
-`graveler_branches` is currently being protected by a lock, during commit actions, and in order to support lockless commits with `KV`, the [following design](https://github.com/treeverse/lakeFS/blob/b3204edad00f88f8eb98524ad940fde96e02ab0a/design/open/metadata_kv/index.md#graveler-metadata---branches-and-staged-writes) is proposed. However, as a first step we can implement it using a naive table lock, just to get it going, or better, a `branch-key` based locking, to prevent staging during commits</br>
-`graveler_staging_kv` creates entries based on the current branch `staging_token` and is protected from creating entries during a commit under the same lock. This should also be supported lockless-ly, as referred to by the above proposal, and can also be solved with naive locking, as a first step</br>
+`graveler_branches` is currently being protected by a lock, during commit actions, and in order to support lock-free commits with `KV`, the [following design](https://github.com/treeverse/lakeFS/blob/b3204edad00f88f8eb98524ad940fde96e02ab0a/design/open/metadata_kv/index.md#graveler-metadata---branches-and-staged-writes) is proposed. However, as a first step we can implement it using a naive table lock, just to get it going, or better, a `branch-key` based locking, to prevent staging during commits</br>
+`graveler_staging_kv` creates entries based on the current branch `staging_token` and is protected from creating entries during a commit under the same lock. This should also be supported lock-free-ly, as referred to by the above proposal, and can also be solved with naive locking, as a first step</br>
 Note: All the above tables (along with the late `auth_users`) are also used by `pkg/diagnostics` for diagnostics collection (RO). 
 
 ## Iterators
@@ -29,18 +29,29 @@ Uses `graveler` ref-store for dumping a whole repository (branches, commits and 
 Moreover, as these are quite exhaustive operations, may be used as part of performance verification
 
 ## Suggested Key Schema
-Note: This is an initial suggestion that seems to support the required iterators. It tries to encapsulate the immutable parts of identifying an object (e.g. a branch can be identified by its name, but not by a commit, as it (a) changes and (b) a commit can be shared by branches. a repo and a tag has one:many relation, so a tag key contains its repo etc.) It is totally open to discussion and improvements.
-* Repository - `repo/<REPO_NAME>`
-* Branch     - `repo/<REPO_NAME>/branch<BRANCH_NAME>`
-* Commit     - `repo/<REPO_NAME>/commit/<COMMIT_ID>`
-* Tag        - `repo/<REPO_NAME>/tag/<TAG_ID>`
-* Staged Obj - `repo/<REPO_NAME>/staging_token/<STAGING_TOKEN>/key/<OBJ_KEY>`
+**Note:** This is an initial suggestion that seems to support the required iterators. It tries to encapsulate the immutable parts of identifying an object (e.g. a branch can be identified by its name, but not by a commit, as it (a) changes and (b) a commit can be shared by branches. a repo and a tag has one:many relation, so a tag key contains its repo etc.) It is totally open to discussion and improvements.
+**Update:** We will use multiple partitions. One general named TBD (`graveler`) and another partition for each repository, named after that repository. The idea is to isolate the entire repository data, as either ways each operation is bounded to within a specified repository. Repositories themselves will be in the `graveler` repository, as to allow listing of all repositories. As no longer needed, the `<REPO_NAME>` can be removed from all keys under the `<REPO_NAME>` partition
+* Partition `graveler`
+  * Repository - `repo/<REPO_NAME>`
+
+* Partition `<REPO_NAME>`
+  * Branch     - `branch/<BRANCH_NAME>`
+  * Commit     - `commit/<COMMIT_ID>`
+  * Tag        - `tag/<TAG_ID>`
+  * Staged Obj - `staged/<BRANCH_NAME>/<STAGING_TOKEN>/<OBJ_KEY>`
+
+### Key Schema Support of Required Functionalities
+**Note** Only covering non trivial functionalities
+* `commit_iterator` - this is not an iterator in the `KV` sense, but rather an iteration algorithm where a commit is scanned and are parents are queued for later scan. There is no real `KV` iteration. Instead, a `Get` is used for each commit, by its ID, which is trivially supported by the above **Commit** key
+* `commit_ordered_iterator` - scan by order of commitID, which is the natural behavior of our `KV iterator` implementation, and will be supported trivially. The option to scan only `not-first-parent` commits is TBD (still being discussed)
+* `branch_iterator`, sorted by branch name - trivial. sorted by commitID - TBD (still being discussed)
+* Repository Deletion - as suggested, maintaining all repository relevant entries under a unique partition will make it easy to delete as an entire partition. The repository key itself is outside of the partition (in a general common partition, to support listing) and will be deleted first. Once deleted, the entire partition will become unavailable, making the data state consistent either ways
 
 # Execution Plan
 * Agree on keys schema (see here after) - [#3567](https://github.com/treeverse/lakeFS/issues/3567)
 * Supporting `KV` along side `SQL` (same as was done for previous modules)  
   * Step 1: Naive implementation with locking - `lakeFS` on KV can start with empty DB and run all graveler operations correctly, although performance may be degraded and exhaustive operations (concurrent commits and uploads, anything else?) should not be considered - [#3568](https://github.com/treeverse/lakeFS/issues/3568)
-  * Step 2: Lockless Commits - as described above - [#3569](https://github.com/treeverse/lakeFS/issues/3569)
+  * Step 2: Lock-free Commits - as described above - [#3569](https://github.com/treeverse/lakeFS/issues/3569)
   * Step 3: Decide and implement a working solution for **Deleting a Repository** - [#3570](https://github.com/treeverse/lakeFS/issues/3570)
   (Steps 2 and 3 are independent)
 * Benchmarks for common operations - to be executed manually, on both `SQL` and `KV` to verify performance are satisfactory - [#3571](https://github.com/treeverse/lakeFS/issues/3571)
