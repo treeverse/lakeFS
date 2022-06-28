@@ -172,13 +172,13 @@ func (c *Controller) OauthCallback(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	session, _ := c.sessionStore.Get(r, OIDCAuthSessionName)
 	if r.URL.Query().Get("state") != session.Values[StateSessionKey] {
-		http.Redirect(w, r, "/oidc/login", http.StatusTemporaryRedirect)
+		http.Redirect(w, r, "/auth/login", http.StatusTemporaryRedirect)
 		return
 	}
 
 	idTokenClaims, err := c.oidcAuthenticator.GetIDTokenClaims(ctx, r.URL.Query().Get("code"))
 	if err != nil {
-		http.Redirect(w, r, "/oidc/login", http.StatusTemporaryRedirect)
+		http.Redirect(w, r, "/auth/login", http.StatusTemporaryRedirect)
 		return
 	}
 	session.Values[IDTokenClaimsSessionKey] = idTokenClaims
