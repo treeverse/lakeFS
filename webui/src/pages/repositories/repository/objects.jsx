@@ -101,8 +101,8 @@ const ImportButton = ({ config, repo, reference, path, onDone, onClick, variant 
             ...initialState,
             inProgress: true
         })
-        const updateStateFromImport = (inProgress, error, done, numObj) => {
-            setImportState({inProgress, error, done, isSourceValid: importState.isSourceValid, numObj})
+        const updateStateFromImport = ({inProgress, done, numObj}) => {
+            setImportState({inProgress, error: null, done, isSourceValid: importState.isSourceValid, numObj})
         }
         try {
             await runImport(updateStateFromImport,

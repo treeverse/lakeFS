@@ -6,14 +6,20 @@ const runImport = async (updateImportState, isSourceValid, prependPath, commitMs
     let importBranchResp;
     let sum = 0;
     const rangeArr = [];
-    updateImportState(true, null, false, sum);
+    const importStatusUpdate = {
+        inProgress: true,
+        done: false,
+        numObj: sum,
+    }
+    updateImportState(importStatusUpdate);
     do {
         const response = await ranges.createRange(repoId, sourceRef, after, prependPath, paginationResp.continuation_token);
         rangeArr.push(response.range);
         paginationResp = response.pagination;
         after = paginationResp.last_key;
         sum += response.range.count;
-        updateImportState(true, null, false, sum);
+        importStatusUpdate.numObj = sum
+        updateImportState(importStatusUpdate);
     } while (paginationResp.has_more);
     const metarange = await metaRanges.createMetaRange(repoId, rangeArr);
 
@@ -21,25 +27,30 @@ const runImport = async (updateImportState, isSourceValid, prependPath, commitMs
         importBranchResp = await branches.get(repoId, branch);
     } catch (error) {
         if (error instanceof NotFoundError) {
-            // Find root commit for repository
-            let hasMore = true;
-            let nextOffset = "";
-            let baseCommit = refId;
-            do {
-                let response = await commits.log(repoId, refId, nextOffset, 1000);
-                hasMore = response.pagination.has_more;
-                nextOffset = response.pagination.next_offset;
-                baseCommit = response.results.at(-1);
-            } while (hasMore)
-            await branches.create(repoId, branch, baseCommit.id);
-            importBranchResp = await branches.get(repoId, branch);
+            importBranchResp = await createBranch(repoId, refId, branch);
         } else {
             throw error;
         }
     }
-
     await commits.commit(repoId, importBranchResp.id, commitMsg, {}, metarange.id);
-    updateImportState(false, null, true, sum);
+    importStatusUpdate.done = true;
+    importStatusUpdate.inProgress = false;
+    updateImportState(importStatusUpdate);
+}
+
+const createBranch = async (repoId, refId, branch) => {
+    // Find root commit for repository
+    let hasMore = true;
+    let nextOffset = "";
+    let baseCommit = refId;
+    do {
+        let response = await commits.log(repoId, refId, nextOffset, 1000);
+        hasMore = response.pagination.has_more;
+        nextOffset = response.pagination.next_offset;
+        baseCommit = response.results.at(-1);
+    } while (hasMore)
+    await branches.create(repoId, branch, baseCommit.id);
+    return await branches.get(repoId, branch);
 }
 
 export default runImport
