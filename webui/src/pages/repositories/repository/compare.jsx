@@ -16,7 +16,12 @@ import {URINavigator} from "../../../lib/components/repository/tree";
 import {appendMoreResults} from "./changes";
 import {RefTypeBranch, RefTypeCommit} from "../../../constants";
 import Button from "react-bootstrap/Button";
-import {FormControl, FormControlLabel, FormHelperText, FormLabel, Radio, RadioGroup} from "@mui/material";
+import {
+    FormControl,
+    FormHelperText,
+    InputLabel, MenuItem,
+    Select
+} from "@mui/material";
 import Modal from "react-bootstrap/Modal";
 
 const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, onSelectCompare, onNavigate }) => {
@@ -213,21 +218,24 @@ const MergeButton = ({repo, onDone, source, dest, disabled = false}) => {
                     <Modal.Title>Merge branch {source} into {dest}</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    <FormControl>
-                        <FormLabel id="demo-radio-buttons-group-label">Merge Strategy</FormLabel>
-                        <FormHelperText>
-                            In case of a merge conflict, this option will force the merge process
-                            to automatically favor changes from the dest branch (&rdquo;dest-wins&rdquo;) or
-                            from the source branch(&rdquo;source-wins&rdquo;). In case no selection is made,
-                            the merge process will fail in case of a conflict.
-                        </FormHelperText>
-                        <RadioGroup
-                            aria-labelledby="demo-radio-buttons-group-label" defaultValue="none" name="radio-buttons-group" row>
-                            <FormControlLabel value="none" control={<Radio />} label="none" onChange={onStrategyChange}/>
-                            <FormControlLabel value="source-wins" control={<Radio />} label="source-wins" onChange={onStrategyChange}/>
-                            <FormControlLabel value="dest-wins" control={<Radio />} label="dest-wins" onChange={onStrategyChange}/>
-                        </RadioGroup>
+                    <FormControl sx={{ m: 1, minWidth: 120 }}>
+                        <InputLabel id="demo-select-small">Strategy</InputLabel>
+                        <Select
+                            labelId="demo-select-small"
+                            id="demo-simple-select-helper"
+                            value={mergeState.strategy}
+                            label="Strategy"
+                            onChange={onStrategyChange}
+                        >
+                            <MenuItem value={"none"}>Default</MenuItem>
+                            <MenuItem value={"source-wins"}>source-wins</MenuItem>
+                            <MenuItem value={"dest-wins"}>dest-wins</MenuItem>
+                        </Select>
                     </FormControl>
+                    <FormHelperText>In case of a merge conflict, this option will force the merge process
+                        to automatically favor changes from <b>{dest}</b> (&rdquo;dest-wins&rdquo;) or
+                        from <b>{source}</b> (&rdquo;source-wins&rdquo;). In case no selection is made,
+                        the merge process will fail in case of a conflict.</FormHelperText>
                     {(mergeState.err) ? (<Error error={mergeState.err}/>) : (<></>)}
                 </Modal.Body>
                 <Modal.Footer>
