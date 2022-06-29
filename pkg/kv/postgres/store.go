@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/treeverse/lakefs/pkg/kv"
+	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 )
 
 type Driver struct{}
@@ -42,9 +43,9 @@ func init() {
 	kv.Register(DriverName, &Driver{})
 }
 
-func (d *Driver) Open(ctx context.Context, name string) (kv.Store, error) {
+func (d *Driver) Open(ctx context.Context, kvparams kvparams.KV) (kv.Store, error) {
 	// TODO(barak): should we handle Open reuse the same store based on name
-	config, err := pgxpool.ParseConfig(name)
+	config, err := pgxpool.ParseConfig(kvparams.Postgres.ConnectionString)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", kv.ErrDriverConfiguration, err)
 	}

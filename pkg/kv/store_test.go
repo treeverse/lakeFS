@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/go-test/deep"
-
 	"github.com/treeverse/lakefs/pkg/kv"
+	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 )
 
 type MockDriver struct {
@@ -18,7 +18,7 @@ type MockDriver struct {
 
 type MockStore struct {
 	Driver string
-	DSN    string
+	Params kvparams.KV
 }
 
 var errNotImplemented = errors.New("not implemented")
@@ -45,13 +45,13 @@ func (m *MockStore) Scan(_ context.Context, _, _ []byte) (kv.EntriesIterator, er
 
 func (m *MockStore) Close() {}
 
-func (m *MockDriver) Open(_ context.Context, dsn string) (kv.Store, error) {
+func (m *MockDriver) Open(_ context.Context, params kvparams.KV) (kv.Store, error) {
 	if m.Err != nil {
 		return nil, m.Err
 	}
 	return &MockStore{
 		Driver: m.Name,
-		DSN:    dsn,
+		Params: params,
 	}, nil
 }
 
@@ -63,7 +63,8 @@ func TestRegister(t *testing.T) {
 		md := &MockDriver{Name: "md"}
 		kv.Register("md", md)
 		// open registered 'md'
-		s1, err := kv.Open(ctx, "md", "dsn1")
+		params := kvparams.KV{Postgres: &kvparams.Postgres{ConnectionString: "dsn1"}}
+		s1, err := kv.Open(ctx, "md", params)
 		if err != nil {
 			t.Fatal("expected store 'md'", err)
 		}
@@ -71,11 +72,12 @@ func TestRegister(t *testing.T) {
 			t.Fatal("expected mock store")
 		} else if store.Driver != "md" {
 			t.Fatal("expected store from 'md' driver")
-		} else if store.DSN != "dsn1" {
-			t.Fatalf("store open with dsn '%s', expected 'dsn1'", store.DSN)
+		} else if store.Params.Postgres.ConnectionString != params.Postgres.ConnectionString {
+			t.Fatalf("store open with dsn '%s', expected 'dsn1'", store.Params.Postgres.ConnectionString)
 		}
 		// open missing driver
-		_, err = kv.Open(ctx, "missing", "dsn2")
+		params2 := kvparams.KV{Postgres: &kvparams.Postgres{ConnectionString: "dsn2"}}
+		_, err = kv.Open(ctx, "missing", params2)
 		if !errors.Is(err, kv.ErrUnknownDriver) {
 			t.Fatalf("Open unknown driver err=%v, expected=%s", err, kv.ErrUnknownDriver)
 		}

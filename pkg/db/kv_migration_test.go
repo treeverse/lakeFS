@@ -8,6 +8,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/db/params"
 	"github.com/treeverse/lakefs/pkg/kv"
+	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
@@ -15,7 +16,7 @@ import (
 func TestKVMigration(t *testing.T) {
 	ctx := context.Background()
 	dbParams := params.Database{Driver: "pgx", ConnectionString: databaseURI, KVEnabled: true, DropTables: true}
-	kvStore, err := kv.Open(ctx, kvpg.DriverName, dbParams.ConnectionString)
+	kvStore, err := kv.Open(ctx, kvpg.DriverName, kvparams.KV{Postgres: &kvparams.Postgres{ConnectionString: dbParams.ConnectionString}})
 	defer kvStore.Close()
 	testutil.MustDo(t, "Open KV store", err)
 	tests := []struct {

@@ -13,11 +13,12 @@ import (
 	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
+	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 	_ "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
-var makeTestStore = kvtest.MakeStoreByName("mem", "")
+var makeTestStore = kvtest.MakeStoreByName("mem", kvparams.KV{})
 
 func testDBTracker(t testing.TB) multiparts.Tracker {
 	t.Helper()
@@ -307,7 +308,7 @@ func runKVMemBenchmark(b *testing.B, ctx context.Context, bmFunc RunBenchmarkFun
 
 func runKVPostgresBenchmark(b *testing.B, ctx context.Context, bmFunc RunBenchmarkFunc, concurrencyParams ...int) {
 	b.Helper()
-	store := kvtest.MakeStoreByName("postgres", databaseURI)(b, context.Background())
+	store := kvtest.MakeStoreByName("postgres", kvparams.KV{Postgres: &kvparams.Postgres{ConnectionString: databaseURI}})(b, context.Background())
 	defer store.Close()
 	tracker := multiparts.NewTracker(kv.StoreMessage{Store: store})
 	bmFunc(b, ctx, tracker, concurrencyParams...)

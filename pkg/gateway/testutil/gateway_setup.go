@@ -18,6 +18,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	_ "github.com/treeverse/lakefs/pkg/kv/mem"
+	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/testutil"
@@ -51,7 +52,7 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, databaseURI str
 	testutil.MustDo(t, "build catalog", err)
 	var multipartsTracker multiparts.Tracker
 	if kvEnabled {
-		store := kvtest.MakeStoreByName("mem", "")(t, context.Background())
+		store := kvtest.MakeStoreByName("mem", kvparams.KV{})(t, context.Background())
 		defer store.Close()
 		multipartsTracker = multiparts.NewTracker(kv.StoreMessage{Store: store})
 	} else {

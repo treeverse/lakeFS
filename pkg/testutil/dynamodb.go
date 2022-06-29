@@ -2,9 +2,7 @@ package testutil
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"testing"
 
@@ -13,6 +11,7 @@ import (
 	dc "github.com/ory/dockertest/v3/docker"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/dynamodb"
+	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 )
 
 const (
@@ -84,22 +83,17 @@ func UniqueKVTableName() string {
 
 func GetDynamoDBProd(ctx context.Context, tb testing.TB) kv.Store {
 	table := UniqueKVTableName()
-	testParams := &dynamodb.Params{
+	testParams := &kvparams.DynamoDB{
 		TableName:          table,
 		ReadCapacityUnits:  DynamoDBReadCapacity,
 		WriteCapacityUnits: DynamoDBWriteCapacity,
 		ScanLimit:          DynamoDBScanLimit,
 		AwsRegion:          "us-east-1",
 	}
-	dsnBytes, err := json.Marshal(testParams)
-	if err != nil {
-		log.Fatalf("Failed to initialize tests params :%s", err)
-	}
-	dsn := string(dsnBytes)
 
-	store, err := kv.Open(ctx, dynamodb.DriverName, dsn)
+	store, err := kv.Open(ctx, dynamodb.DriverName, kvparams.KV{DynamoDB: testParams})
 	if err != nil {
-		tb.Fatalf("failed to open kv dynamodb store %s %s", dsn, err)
+		tb.Fatalf("failed to open kv dynamodb store %s", err)
 	}
 	tb.Cleanup(func() {
 		defer store.Close()

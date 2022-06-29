@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/treeverse/lakefs/pkg/kv"
+	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 )
 
 type Driver struct{}
@@ -34,7 +35,7 @@ func init() {
 	kv.Register(DriverName, &Driver{})
 }
 
-func (d *Driver) Open(_ context.Context, _ string) (kv.Store, error) {
+func (d *Driver) Open(_ context.Context, _ kvparams.KV) (kv.Store, error) {
 	return &Store{
 		m:    make(map[string][]byte),
 		keys: []string{},
