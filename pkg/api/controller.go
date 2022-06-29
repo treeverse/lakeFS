@@ -172,19 +172,19 @@ func (c *Controller) OauthCallback(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	session, _ := c.sessionStore.Get(r, OIDCAuthSessionName)
 	if r.URL.Query().Get("state") != session.Values[StateSessionKey] {
-		writeError(w, http.StatusBadRequest, "Invalid state parameter")
+		http.Redirect(w, r, "/auth/login", http.StatusTemporaryRedirect)
 		return
 	}
+
 	idTokenClaims, err := c.oidcAuthenticator.GetIDTokenClaims(ctx, r.URL.Query().Get("code"))
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		http.Redirect(w, r, "/auth/login", http.StatusTemporaryRedirect)
 		return
 	}
 	session.Values[IDTokenClaimsSessionKey] = idTokenClaims
 	err = session.Save(r, w)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
-		return
+		c.Logger.WithError(err).Error("Failed to save OIDC session")
 	}
 	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 }
