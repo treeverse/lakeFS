@@ -60,7 +60,7 @@ const LoginForm = ({oidcEnabled}) => {
                                 <Button variant="link" className="text-secondary mt-2" onClick={async ()=> {
                                     document.cookie = 'oidc_auth_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
                                     document.cookie = 'internal_auth_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-                                    window.location = "/oidc/login";
+                                    window.location = "/oidc/login?prompt=login";
                                 }}>Sign in with SSO provider</Button>
                                 : ""
                             }
