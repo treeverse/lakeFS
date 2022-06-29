@@ -44,14 +44,6 @@ func Ping(ctx context.Context, pool *pgxpool.Pool) error {
 // ConnectDBPool connects to a database using the database params and returns a connection pool
 func ConnectDBPool(ctx context.Context, p params.Database) (*pgxpool.Pool, error) {
 	normalizeDBParams(&p)
-	log := logging.Default().WithFields(logging.Fields{
-		"driver":            p.Driver,
-		"uri":               p.ConnectionString,
-		"max_open_conns":    p.MaxOpenConnections,
-		"max_idle_conns":    p.MaxIdleConnections,
-		"conn_max_lifetime": p.ConnectionMaxLifetime,
-	})
-	log.Info("Connecting to the DB")
 	config, err := pgxpool.ParseConfig(p.ConnectionString)
 	if err != nil {
 		return nil, fmt.Errorf("parse connection string: %w", err)
@@ -59,6 +51,18 @@ func ConnectDBPool(ctx context.Context, p params.Database) (*pgxpool.Pool, error
 	config.MaxConns = p.MaxOpenConnections
 	config.MinConns = p.MaxIdleConnections
 	config.MaxConnLifetime = p.ConnectionMaxLifetime
+
+	log := logging.Default().WithFields(logging.Fields{
+		"driver":            p.Driver,
+		"max_open_conns":    p.MaxOpenConnections,
+		"max_idle_conns":    p.MaxIdleConnections,
+		"db":                config.ConnConfig.Database,
+		"user":              config.ConnConfig.User,
+		"host":              config.ConnConfig.Host,
+		"port":              config.ConnConfig.Port,
+		"conn_max_lifetime": p.ConnectionMaxLifetime,
+	})
+	log.Info("Connecting to the DB")
 
 	pool, err := tryConnectConfig(ctx, config, log)
 	if err != nil {
