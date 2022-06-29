@@ -1,6 +1,6 @@
 import {branches, commits, metaRanges, NotFoundError, ranges} from "../../../lib/api";
 
-const runImport = async (updateImportState, isSourceValid, prependPath, commitMsg, sourceRef, branch, repoId, refId) => {
+const runImport = async (updateImportState, prependPath, commitMsg, sourceRef, branch, repoId, refId) => {
     let paginationResp = {};
     let after = "";
     let importBranchResp;
