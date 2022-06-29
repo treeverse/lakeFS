@@ -74,14 +74,19 @@ Each staging token will have a designated partition, named after the token value
 * Repository Deletion - as suggested, maintaining all repository relevant entries under a unique partition will make it easy to delete as an entire partition. The repository key itself is outside of the partition (in a general common partition, to support listing) and will be deleted first. Once deleted, the entire partition will become unavailable, making the data state consistent either ways
 
 ## Update Commits, staging and lock-free
-we will follow @arielshaqed suggestion to prevent commits overriding each other by using `KV`'s `SetIf` on the branch update, making sure no racing commit is already finished and being overridden. In case a commit fails to finish due to another commit "beating" it to the finish line - a retry should be attempted. This implementation will require to support multiple staging tokens, as proposed by [lakeFS on KV design proposal](https://github.com/treeverse/lakeFS/blob/b3204edad00f88f8eb98524ad940fde96e02ab0a/design/open/metadata_kv/index.md#committer-flow). Lock-free commits will be handled out of the scope of KV3 milestone
+For the scope of KV3 commit implementation, we will prevent commits overriding each other by using `KV`'s `SetIf` on the branch update, making sure no racing commit is already finished and being overridden. In case a commit fails to finish due to another commit "beating" it to the finish line - a retry should be attempted. This implementation will require to support multiple staging tokens, as proposed by [lakeFS on KV design proposal](https://github.com/treeverse/lakeFS/blob/b3204edad00f88f8eb98524ad940fde96e02ab0a/design/open/metadata_kv/index.md#committer-flow).
+Lock-free commits, as described in [Change KV storage proposal to guarantee progress](https://github.com/treeverse/lakeFS/pull/3091), will be handled out of the scope of KV3 milestone
 
 # Execution Plan
 * Agree on keys schema (see here after) - [#3567](https://github.com/treeverse/lakeFS/issues/3567)
 * Supporting `KV` along side `SQL` (same as was done for previous modules)
-  * Step 1: Building a initial `KV graveler` and a `DB graveler`. `KV graveler` should delegate all calls to `DB gravler` (no `KV` usage at all for step) in order to allow partial `KV` support.
-  [#3568](https://github.com/treeverse/lakeFS/issues/3568) was modified to reflect that, and should result with continuation tasks for the `KV` support steps within
-  * Step 2: Basic implementation of `KV` usage within the `KV graveler` from the previous item. Tasks to be defined as part of [#3568](https://github.com/treeverse/lakeFS/issues/3568)
+  * Step 1: Building a initial `KV graveler` and a `DB graveler`. `KV graveler` should delegate all calls to `DB gravler` (no `KV` usage at all for this step) in order to allow `KV` implementation by the block - [#3568](https://github.com/treeverse/lakeFS/issues/3568)
+  * Step 2: Basic implementation of `KV` usage within the `KV graveler` from the previous item:
+    * Repository support (except for deletion) - [#3591](https://github.com/treeverse/lakeFS/issues/3591)
+    * Branch support - [#3592](https://github.com/treeverse/lakeFS/issues/3592)
+    * Tags support - [#3593](https://github.com/treeverse/lakeFS/issues/3593)
+    * Commits support (not including optimistic locking commit flow) - [#3594](https://github.com/treeverse/lakeFS/issues/3594)
+    * Staging support - [#3595](https://github.com/treeverse/lakeFS/issues/3595)
   * Step 3: Optimistic Lock Commits, as described above - a working commit algorithm that prevents commits from overriding each other, by using `KV`'s `SetIf` to set the branch's commit, and failing (and retrying) to commit if `SetIf` fails, as described above. [#3569](https://github.com/treeverse/lakeFS/issues/3569)
   * Step 4: Decide and implement a working solution for **Deleting a Repository** - [#3570](https://github.com/treeverse/lakeFS/issues/3570)
   (Steps 3 and 4 are independent)
