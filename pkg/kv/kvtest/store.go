@@ -12,6 +12,7 @@ import (
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/treeverse/lakefs/pkg/kv"
 	_ "github.com/treeverse/lakefs/pkg/kv/mem"
+	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -48,8 +49,8 @@ func sampleEntry(prefix string, n int) kv.Entry {
 	return kv.Entry{Key: []byte(k), Value: []byte(v)}
 }
 
-func TestDriver(t *testing.T, name, dsn string) {
-	ms := MakeStoreByName(name, dsn)
+func TestDriver(t *testing.T, name string, params kvparams.KV) {
+	ms := MakeStoreByName(name, params)
 	t.Run("Driver_Open", func(t *testing.T) { testDriverOpen(t, ms) })
 	t.Run("Store_SetGet", func(t *testing.T) { testStoreSetGet(t, ms) })
 	t.Run("Store_SetIf", func(t *testing.T) { testStoreSetIf(t, ms) })
@@ -354,12 +355,12 @@ func testStoreScan(t *testing.T, ms MakeStore) {
 	})
 }
 
-func MakeStoreByName(name, dsn string) MakeStore {
+func MakeStoreByName(name string, kvParams kvparams.KV) MakeStore {
 	return func(t testing.TB, ctx context.Context) kv.Store {
 		t.Helper()
-		store, err := kv.Open(ctx, name, dsn)
+		store, err := kv.Open(ctx, name, kvParams)
 		if err != nil {
-			t.Fatalf("failed to open kv '%s' (%s) store: %s", name, dsn, err)
+			t.Fatalf("failed to open kv '%s' store: %s", name, err)
 		}
 		return store
 	}
@@ -852,7 +853,7 @@ func verifyDeleteWhileIterResults(t *testing.T, ctx context.Context, store kv.St
 func GetStore(ctx context.Context, t testing.TB) kv.Store {
 	t.Helper()
 	const storeType = "mem"
-	store, err := kv.Open(ctx, storeType, "")
+	store, err := kv.Open(ctx, storeType, kvparams.KV{})
 	if err != nil {
 		t.Fatalf("failed to open kv (%s) store: %s", storeType, err)
 	}

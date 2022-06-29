@@ -12,6 +12,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
+	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 	"github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
@@ -19,7 +20,7 @@ import (
 func TestMigrate(t *testing.T) {
 	ctx := context.Background()
 	database, _ := testutil.GetDB(t, databaseURI)
-	kvStore := kvtest.MakeStoreByName(postgres.DriverName, databaseURI)(t, ctx)
+	kvStore := kvtest.MakeStoreByName(postgres.DriverName, kvparams.KV{Postgres: &kvparams.Postgres{ConnectionString: databaseURI}})(t, ctx)
 	defer kvStore.Close()
 	dbTracker := multiparts.NewDBTracker(database)
 

@@ -176,7 +176,8 @@ var runCmd = &cobra.Command{
 		}
 
 		if dbParams.KVEnabled {
-			kvStore, err := kv.Open(ctx, dbParams.Type, dbParams.ConnectionString)
+			kvParams := cfg.GetKVParams()
+			kvStore, err := kv.Open(ctx, dbParams.Type, kvParams)
 			if err != nil {
 				logger.WithError(err).Fatal("failed to open KV store")
 			}

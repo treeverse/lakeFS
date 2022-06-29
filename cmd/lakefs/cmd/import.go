@@ -125,7 +125,8 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	var idGen actions.IDGenerator
 	var actionsStore actions.Store
 	if dbParams.KVEnabled {
-		kvStore, err := kv.Open(ctx, dbParams.Type, dbParams.ConnectionString)
+		kvparams := cfg.GetKVParams()
+		kvStore, err := kv.Open(ctx, dbParams.Type, kvparams)
 		if err != nil {
 			logger.WithError(err).Fatal("failed to open KV store")
 		}
