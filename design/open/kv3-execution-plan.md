@@ -62,7 +62,9 @@ Moreover, as these are quite exhaustive operations, may be used as part of perfo
   * Branch     - `branches/<BRANCH_NAME>`
   * Commit     - `commits/<COMMIT_ID>`
   * Tag        - `tags/<TAG_ID>`
-  * Staged Obj - `staged/<BRANCH_NAME>/<STAGING_TOKEN>/<OBJ_KEY>`
+
+* Partition `<STAGING_TOKEN>`     // Note: the token contains the repo name and branch name
+  * Staged Obj - `key/<OBJ_KEY>`
 
 ### Key Schema Support of Required Functionalities
 **Note** Only covering non trivial functionalities
