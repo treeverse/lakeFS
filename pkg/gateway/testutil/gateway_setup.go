@@ -102,7 +102,7 @@ func (m *FakeAuthService) GetCredentials(_ context.Context, accessKey string) (*
 	aCred := new(model.Credential)
 	aCred.AccessKeyID = accessKey
 	aCred.SecretAccessKey = m.SecretAccessKey
-	aCred.UserID = m.UserID
+	aCred.Username = m.UserID
 	return aCred, nil
 }
 

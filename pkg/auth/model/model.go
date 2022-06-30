@@ -148,8 +148,7 @@ type BaseCredential struct {
 }
 
 type Credential struct {
-	// UserID in KV this is the username, in DB it is the user ID. TODO (niro): rename when removing DB implementation
-	UserID string
+	Username string
 	BaseCredential
 }
 
@@ -261,7 +260,7 @@ func CredentialFromProto(s crypt.SecretStore, pb *CredentialData) *Credential {
 		return nil
 	}
 	return &Credential{
-		UserID: string(pb.UserId),
+		Username: string(pb.UserId),
 		BaseCredential: BaseCredential{
 			AccessKeyID:                   pb.AccessKeyId,
 			SecretAccessKey:               secret,
@@ -276,7 +275,7 @@ func ProtoFromCredential(c *Credential) *CredentialData {
 		AccessKeyId:                   c.AccessKeyID,
 		SecretAccessKeyEncryptedBytes: c.SecretAccessKeyEncryptedBytes,
 		IssuedDate:                    timestamppb.New(c.IssuedDate),
-		UserId:                        []byte(c.UserID),
+		UserId:                        []byte(c.Username),
 	}
 }
 
@@ -330,19 +329,15 @@ func ConvertUsersDataList(users []proto.Message) []*User {
 	return kvUsers
 }
 
-func ConvertCredList(creds []*DBCredential) []*Credential {
+func ConvertCredList(creds []*DBCredential, username string) []*Credential {
 	res := make([]*Credential, 0, len(creds))
 	for _, c := range creds {
-		res = append(res, ConvertCreds(c))
+		res = append(res, &Credential{
+			Username:       username,
+			BaseCredential: c.BaseCredential,
+		})
 	}
 	return res
-}
-
-func ConvertCreds(c *DBCredential) *Credential {
-	return &Credential{
-		UserID:         ConvertDBID(c.UserID),
-		BaseCredential: c.BaseCredential,
-	}
 }
 
 func ConvertGroupList(groups []*DBGroup) []*Group {

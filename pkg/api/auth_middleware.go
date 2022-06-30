@@ -263,14 +263,14 @@ func userByToken(ctx context.Context, logger logging.Logger, authService auth.Se
 
 func userByAuth(ctx context.Context, logger logging.Logger, authenticator auth.Authenticator, authService auth.Service, accessKey string, secretKey string) (*model.User, error) {
 	// TODO(ariels): Rename keys.
-	id, err := authenticator.AuthenticateUser(ctx, accessKey, secretKey)
+	username, err := authenticator.AuthenticateUser(ctx, accessKey, secretKey)
 	if err != nil {
 		logger.WithError(err).WithField("user", accessKey).Error("authenticate")
 		return nil, ErrAuthenticatingRequest
 	}
-	user, err := authService.GetUserByID(ctx, id)
+	user, err := authService.GetUser(ctx, username)
 	if err != nil {
-		logger.WithError(err).WithFields(logging.Fields{"user_id": id}).Debug("could not find user id by credentials")
+		logger.WithError(err).WithFields(logging.Fields{"user_name": username}).Debug("could not find user id by credentials")
 		return nil, ErrAuthenticatingRequest
 	}
 	return user, nil

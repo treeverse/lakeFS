@@ -98,7 +98,7 @@ func (ba *BuiltinAuthenticator) AuthenticateUser(ctx context.Context, username, 
 	if subtle.ConstantTimeCompare([]byte(password), []byte(cred.SecretAccessKey)) != 1 {
 		return InvalidUserID, ErrInvalidSecretAccessKey
 	}
-	return cred.UserID, nil
+	return cred.Username, nil
 }
 
 func (ba *BuiltinAuthenticator) String() string {
@@ -230,7 +230,7 @@ func (la *LDAPAuthenticator) AuthenticateUser(ctx context.Context, username, pas
 		FriendlyName: &username,
 		Source:       "ldap",
 	}
-	id, err := la.AuthService.CreateUser(ctx, newUser)
+	_, err = la.AuthService.CreateUser(ctx, newUser)
 	if err != nil {
 		return InvalidUserID, fmt.Errorf("create backing user for LDAP user %s: %w", dn, err)
 	}
@@ -243,7 +243,7 @@ func (la *LDAPAuthenticator) AuthenticateUser(ctx context.Context, username, pas
 	if err != nil {
 		return InvalidUserID, fmt.Errorf("add newly created LDAP user %s to %s: %w", dn, la.DefaultUserGroup, err)
 	}
-	return id, nil
+	return newUser.Username, nil
 }
 
 func (la *LDAPAuthenticator) String() string {

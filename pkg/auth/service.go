@@ -45,7 +45,7 @@ type AuthorizationResponse struct {
 type CheckResult int
 
 const (
-	InvalidUserID = "-1"
+	InvalidUserID = ""
 	maxPage       = 1000
 	// CheckAllow Permission allowed
 	CheckAllow CheckResult = iota
@@ -831,7 +831,7 @@ func (s *KVAuthService) AddCredentials(ctx context.Context, username, accessKeyI
 			SecretAccessKeyEncryptedBytes: encryptedKey,
 			IssuedDate:                    now,
 		},
-		UserID: user.Username,
+		Username: user.Username,
 	}
 	credentialsKey := model.CredentialPath(user.Username, c.AccessKeyID)
 	err = s.store.SetMsgIf(ctx, model.PartitionKey, credentialsKey, model.ProtoFromCredential(c), nil)
@@ -1517,7 +1517,7 @@ func (a *APIAuthService) CreateCredentials(ctx context.Context, username string)
 	}
 	credentials := resp.JSON201
 	return &model.Credential{
-		UserID: strconv.Itoa(0),
+		Username: strconv.Itoa(0),
 		BaseCredential: model.BaseCredential{
 			AccessKeyID:     credentials.AccessKeyId,
 			SecretAccessKey: credentials.SecretAccessKey,
@@ -1539,7 +1539,7 @@ func (a *APIAuthService) AddCredentials(ctx context.Context, username, accessKey
 	}
 	credentials := resp.JSON201
 	return &model.Credential{
-		UserID: strconv.Itoa(0),
+		Username: strconv.Itoa(0),
 		BaseCredential: model.BaseCredential{
 			AccessKeyID:     credentials.AccessKeyId,
 			SecretAccessKey: credentials.SecretAccessKey,
@@ -1570,7 +1570,7 @@ func (a *APIAuthService) GetCredentialsForUser(ctx context.Context, username, ac
 			AccessKeyID: credentials.AccessKeyId,
 			IssuedDate:  time.Unix(credentials.CreationDate, 0),
 		},
-		UserID: strconv.Itoa(0),
+		Username: strconv.Itoa(0),
 	}, nil
 }
 
@@ -1584,6 +1584,10 @@ func (a *APIAuthService) GetCredentials(ctx context.Context, accessKeyID string)
 			return nil, err
 		}
 		credentials := resp.JSON200
+		user, err := a.GetUserByID(ctx, model.ConvertDBID(credentials.UserId))
+		if err != nil {
+			return nil, err
+		}
 		return &model.Credential{
 			BaseCredential: model.BaseCredential{
 				AccessKeyID:                   credentials.AccessKeyId,
@@ -1591,7 +1595,7 @@ func (a *APIAuthService) GetCredentials(ctx context.Context, accessKeyID string)
 				SecretAccessKeyEncryptedBytes: nil,
 				IssuedDate:                    time.Unix(credentials.CreationDate, 0),
 			},
-			UserID: model.ConvertDBID(credentials.UserId),
+			Username: user.Username,
 		}, nil
 	})
 }
@@ -1617,7 +1621,7 @@ func (a *APIAuthService) ListUserCredentials(ctx context.Context, username strin
 				AccessKeyID: r.AccessKeyId,
 				IssuedDate:  time.Unix(r.CreationDate, 0),
 			},
-			UserID: strconv.Itoa(0),
+			Username: strconv.Itoa(0),
 		}
 	}
 	return credentials, toPagination(resp.JSON200.Pagination), nil

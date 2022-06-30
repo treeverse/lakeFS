@@ -287,7 +287,7 @@ func (s *DBAuthService) ListUserCredentials(ctx context.Context, username string
 	if slice == nil {
 		return nil, paginator, err
 	}
-	return model.ConvertCredList(slice.Interface().([]*model.DBCredential)), paginator, err
+	return model.ConvertCredList(slice.Interface().([]*model.DBCredential), username), paginator, err
 }
 
 func (s *DBAuthService) AttachPolicyToUser(ctx context.Context, policyDisplayName, username string) error {
@@ -700,7 +700,7 @@ func (s *DBAuthService) AddCredentials(ctx context.Context, username, accessKeyI
 				SecretAccessKeyEncryptedBytes: encryptedKey,
 				IssuedDate:                    now,
 			},
-			UserID: model.ConvertDBID(user.ID),
+			Username: user.Username,
 		}
 
 		// A DB user must have an int ID
@@ -775,12 +775,17 @@ func (s *DBAuthService) DetachPolicyFromGroup(ctx context.Context, policyDisplay
 }
 
 func (s *DBAuthService) GetCredentialsForUser(ctx context.Context, username, accessKeyID string) (*model.Credential, error) {
+	var (
+		user *model.DBUser
+		err  error
+	)
 	credentials, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		if _, err := getDBUser(tx, username); err != nil {
+		user, err = getDBUser(tx, username)
+		if err != nil {
 			return nil, err
 		}
 		credentials := &model.DBCredential{}
-		err := tx.Get(credentials, `
+		err = tx.Get(credentials, `
 			SELECT auth_credentials.*
 			FROM auth_credentials
 			INNER JOIN auth_users ON (auth_credentials.user_id = auth_users.id)
@@ -794,7 +799,10 @@ func (s *DBAuthService) GetCredentialsForUser(ctx context.Context, username, acc
 	if err != nil {
 		return nil, err
 	}
-	return model.ConvertCreds(credentials.(*model.DBCredential)), nil
+	return &model.Credential{
+		Username:       user.Username,
+		BaseCredential: credentials.(*model.DBCredential).BaseCredential,
+	}, nil
 }
 
 func (s *DBAuthService) GetCredentials(ctx context.Context, accessKeyID string) (*model.Credential, error) {
@@ -816,7 +824,14 @@ func (s *DBAuthService) GetCredentials(ctx context.Context, accessKeyID string) 
 		if err != nil {
 			return nil, err
 		}
-		return model.ConvertCreds(credentials.(*model.DBCredential)), nil
+		user, err := s.GetUserByID(ctx, model.ConvertDBID(credentials.(*model.DBCredential).UserID))
+		if err != nil {
+			return nil, err
+		}
+		return &model.Credential{
+			Username:       user.Username,
+			BaseCredential: credentials.(*model.DBCredential).BaseCredential,
+		}, nil
 	})
 }
 
@@ -1165,7 +1180,7 @@ func exportCredentials(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, u
 			return fmt.Errorf("user ID %d: %w", dbCred.UserID, ErrExportedEntNotFound)
 		}
 		kvCred := &model.Credential{
-			UserID:         userDetails.kvID,
+			Username:       userDetails.kvID,
 			BaseCredential: dbCred.BaseCredential,
 		}
 		key := model.CredentialPath(userDetails.name, dbCred.AccessKeyID)

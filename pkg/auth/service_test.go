@@ -696,8 +696,8 @@ func TestDBAuthService_ListUserCredentials(t *testing.T) {
 		if credential.AccessKeyID != gotCredential.AccessKeyID {
 			t.Errorf("expected to receive same access key ID %s, got %s", credential.AccessKeyID, gotCredential.AccessKeyID)
 		}
-		if credential.UserID != gotCredential.UserID {
-			t.Errorf("expected to receive same user ID %s, got %s", credential.UserID, gotCredential.UserID)
+		if credential.Username != gotCredential.Username {
+			t.Errorf("expected to receive same user ID %s, got %s", credential.Username, gotCredential.Username)
 		}
 		// Issued dates are somewhat different, make sure not _too_ different.
 		timeDiff := credential.IssuedDate.Sub(gotCredential.IssuedDate)
