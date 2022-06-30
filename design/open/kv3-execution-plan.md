@@ -95,4 +95,4 @@ Lock-free commits, as described in [Change KV storage proposal to guarantee prog
   * KV Migration Test is, obviously, included
 * Add `graveler` migration to `Esti` Migration Tests - [#3573](https://github.com/treeverse/lakeFS/issues/3573)
 * Optional - Dump/Restore Refs tests for `SQL` and `KV` - [#3574](https://github.com/treeverse/lakeFS/issues/3574)
-* Optional - `pkg/disagnostics` support of KV. Should be trivial - [#3575](https://github.com/treeverse/lakeFS/issues/3575)
+* Optional - `pkg/diagnostics` support of KV. Should be trivial - [#3575](https://github.com/treeverse/lakeFS/issues/3575)
