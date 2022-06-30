@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useState} from "react";
 
 import Form from "react-bootstrap/Form";
 import Row from "react-bootstrap/Row";
@@ -6,22 +6,15 @@ import Col from "react-bootstrap/Col";
 import Card from "react-bootstrap/Card";
 import InputGroup from "react-bootstrap/InputGroup";
 import ButtonToolbar from "react-bootstrap/ButtonToolbar";
-import Button from "react-bootstrap/Button";
 import Modal from "react-bootstrap/Modal";
 
 import {RepoIcon, SearchIcon} from "@primer/octicons-react";
-import {useState} from "react";
 import moment from "moment";
 
 import Layout from "../../lib/components/layout";
-import {
-    ActionsBar,
-    Loading,
-    useDebouncedState
-} from "../../lib/components/controls";
+import {ActionsBar, Error, Loading, useDebouncedState} from "../../lib/components/controls";
 import {config, repositories} from '../../lib/api';
 import {RepositoryCreateForm} from "../../lib/components/repositoryCreateForm";
-import {Error} from "../../lib/components/controls"
 import {useAPI, useAPIWithPagination} from "../../lib/hooks/api";
 import {Paginator} from "../../lib/components/pagination";
 import Container from "react-bootstrap/Container";
@@ -31,6 +24,8 @@ import {useRouter} from "../../lib/hooks/router";
 import {Route, Switch} from "react-router-dom";
 import RepositoryPage from './repository';
 import Alert from "react-bootstrap/Alert";
+import Dropdown from "react-bootstrap/Dropdown";
+import Button from "react-bootstrap/Button";
 
 
 const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
@@ -128,6 +123,8 @@ const RepositoriesPage = () => {
     const [createError, setCreateError] = useState(null);
     const [refresh, setRefresh] = useState(false);
 
+    const enableRepoTemplates = localStorage.getItem(`enable_repo_templates`)
+
     const routerPfx = (router.query.prefix) ? router.query.prefix : "";
     const [prefix, setPrefix] = useDebouncedState(
         routerPfx,
@@ -169,12 +166,29 @@ const RepositoriesPage = () => {
                         </Form.Row>
                     </Form>
                     <ButtonToolbar className="justify-content-end mb-2">
-                        <Button variant="success" onClick={() => {
-                            setShowCreateModal(true);
-                            setCreateError(null);
-                        }}>
-                            <RepoIcon/> Create Repository
-                        </Button>
+                        {enableRepoTemplates ?
+                            <Dropdown>
+                                <Dropdown.Toggle variant="success" id="template-picker-dropdown">
+                                    <RepoIcon/> Create Repository
+                                </Dropdown.Toggle>
+                                <Dropdown.Menu>
+                                    <Dropdown.Item onClick={() => {
+                                        setShowCreateModal(true);
+                                        setCreateError(null);
+                                    }}>Blank Repository</Dropdown.Item>
+                                    <Dropdown.Item onClick={() => {
+                                        setShowCreateModal(false);
+                                        setCreateError(null);
+                                    }}>Spark Quickstart</Dropdown.Item>
+                                </Dropdown.Menu>
+                            </Dropdown> :
+                            <Button variant="success" onClick={() => {
+                                setShowCreateModal(true);
+                                setCreateError(null);
+                            }}>
+                                <RepoIcon/> Create Repository
+                            </Button>
+                        }
                     </ButtonToolbar>
                 </ActionsBar>
 
