@@ -16,18 +16,59 @@ A repository is identified by a unique name (type `RepositoryID`, a `string`) an
 Repositories are iterable, and so all repositories should exist in a common partition (`graveler`)
 As this design suggests, among other things, that each repository should be a represented in a dedicated partition and that all other repository related entities will exist under this partition, and since we would like to use the existence/inexistence of a repository entry, to identify a valid/deleted repository, respectively, the repository entry should also include a random `guid`, which, along with the repo name, will be the partition key for that repository entities. That way it will be easy to distinguish between a partition related to "aRepo" that was already deleted and a partition related to a new "aRepo" that currently exist, as their partition names differ by the `guid` (`aRepo/guid1` vs `eRepo/guid2`).
 Having that said, it is still essential to verify and agree that each data access essentially implies fetch of the repository entry, in order to (a)verify its existence and (b) get the correct `guid` in order to build the partition key
+```go
+type RepositoryToken string
+
+type Repository struct { 
+  StorageNamespace  StorageNamespace  `db:"storage_namespace" json:"storage_namespace"` 
+  CreationDate      time.Time         `db:"creation_date" json:"creation_date"`
+  DefaultBranchID   BranchID          `db:"default_branch" json:"default_branch"`
+  RepositoryToken   RepositoryToken   `json:"repository_token"`     // new field
+}
+```
 ### Branch
 A branch is identified by its unique name **within** a repository, hance the combination `<REPO_NAME>`+`<BRANCH_NAME>` uniquely identifies a branch in the system. Since all repository entities (except for the aforementioned Repository entity itself) belong to the repository partition, the Branch will be identified by its unique name within that partition.
 Other than that, a branch contains its current commit ID (type `CommitID`, a string) and its current staging token (type `StagingToken` a string). 
 In order to support the `commit flow`, proposed in [lakeFS on KV design](https://github.com/treeverse/lakeFS/blob/b3204edad00f88f8eb98524ad940fde96e02ab0a/design/open/metadata_kv/index.md#committer-flow), a branch will also have the propsed `sealed_tokens` field - an array of `StagingToken`s, as specified in the design doc
+```go
+type Branch struct {
+  CommitID      CommitID        `json:"commit_id"`
+  StagingToken  StagingToken    `json:"staging_token"`
+  SealedTokens  []StagingToken  `json:"sealed_tokens"`        // new field
+}
+```
 ### Tag
 A tag is identified by its unique ID (type `TagID`, a string) within a repository, hence will be a unique tag identifier within the repository partition. It contains a commit ID
+```go
+type TagRecord struct {
+  TagID    TagID    `json:"tag_id"`
+  CommitID CommitID `json:"commit_id"`
+}
+```
 ### Commit
 A commit is identified by a unique commit ID within a repository. It contains the following commit data: version (type `CommitVersion`, an int), committer (string) and commit message (string), metarange ID (type `MetaRangeID`, a string), creation date (type `Time`), parent commits (type `CommitParents`, an array of `CommitID`), metadata (string => string mapping) and generation (int).
 As a commit exists within a repository context, it can be identified by its unique ID (Commit ID) withing the repository partition
+```go
+type Commit struct {
+  Version      CommitVersion `db:"version" json:"version"`
+  Committer    string        `db:"committer" json:"committer"`
+  Message      string        `db:"message" json:"message"`
+  MetaRangeID  MetaRangeID   `db:"meta_range_id" json:"meta_range_id"`
+  CreationDate time.Time     `db:"creation_date" json:"creation_date"`
+  Parents      CommitParents `db:"parents" json:"parents"`
+  Metadata     Metadata      `db:"metadata" json:"metadata"`
+  Generation   int           `db:"generation" json:"generation"`
+}
+```
 ### Staged Object
 Uniquely identified by a staging token and the object path within the branch. It contains the object data (type `DBEntry`) serialized as `protobuf`, and the checksum of this data. Looks like we can simply reuse the same `DBEntry` type as it is
 In order to minimize bottlenecks in our implementation, each staging token will be represented by designated partition, where the `staging_token` acts as partition key, and the staged object paths, as keys within. Note the since `staging_token` is unique within a branch (moreover, it contains the repository name and the branch name as prefixes) it is an appropriate partition key
+```go
+type Value struct {
+  Identity []byte `db:"identity" json:"identity`
+  Data     []byte `db:"data" json:"data`
+}
+```
 
 ## Iterators
 The following iterators are implemented and used by `pkg/graveler`:
