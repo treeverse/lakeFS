@@ -80,7 +80,7 @@ Lock-free commits, as described in [Change KV storage proposal to guarantee prog
 # Execution Plan
 * Agree on keys schema (see here after) - [#3567](https://github.com/treeverse/lakeFS/issues/3567)
 * Supporting `KV` along side `SQL` (same as was done for previous modules)
-  * Step 1: Building a initial `KV graveler` and a `DB graveler`. `KV graveler` should delegate all calls to `DB gravler` (no `KV` usage at all for this step) in order to allow `KV` implementation by the block - [#3568](https://github.com/treeverse/lakeFS/issues/3568)
+  * Step 1: Building a initial `KV graveler` and a `DB graveler`. `KV graveler` should delegate all calls to `DB graveler` (no `KV` usage at all for this step) in order to allow `KV` implementation by the block - [#3568](https://github.com/treeverse/lakeFS/issues/3568)
   * Step 2: Basic implementation of `KV` usage within the `KV graveler` from the previous item:
     * Repository support (except for deletion) - [#3591](https://github.com/treeverse/lakeFS/issues/3591)
     * Branch support - [#3592](https://github.com/treeverse/lakeFS/issues/3592)
