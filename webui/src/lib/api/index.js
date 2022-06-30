@@ -675,11 +675,12 @@ class Refs {
         return response.json();
     }
 
-    async merge(repoId, sourceBranch, destinationBranch) {
+    async merge(repoId, sourceBranch, destinationBranch, strategy="") {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(sourceBranch)}/merge/${encodeURIComponent(destinationBranch)}`, {
             method: 'POST',
-            body: '{}',
+            body: json({strategy})
         });
+
         let resp;
         switch (response.status) {
             case 200:
