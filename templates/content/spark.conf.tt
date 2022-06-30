@@ -1,0 +1,7 @@
+# SAMPLE TEMPLATE: minimal Spark lakeFSFS configuration
+
+spark.hadoop.fs.lakefs.impl=io.lakefs.LakeFSFileSystem
+{{with $creds := new_credentials}}
+spark.hadoop.fs.lakefs.access_key={{$creds.Key}}
+spark.hadoop.fs.lakefs.secret_key={{$creds.Secret}}
+{{end}}
