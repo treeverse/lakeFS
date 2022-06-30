@@ -19,7 +19,7 @@ Having that said, it is still essential to verify and agree that each data acces
 ### Branch
 A branch is identified by its unique name **within** a repository, hance the combination `<REPO_NAME>`+`<BRANCH_NAME>` uniquely identifies a branch in the system. Since all repository entities (except for the aforementioned Repository entity itself) belong to the repository partition, the Branch will be identified by its unique name within that partition.
 Other than that, a branch contains its current commit ID (type `CommitID`, a string) and its current staging token (type `StagingToken` a string). 
-In order to support the `commit flow`, proposed in [lakeFS on KV design](https://github.com/treeverse/lakeFS/blob/b3204edad00f88f8eb98524ad940fde96e02ab0a/design/open/metadata_kv/index.md#committer-flow), a branch will also have the propsed `sealed_token` field - an array of `StagingToken`s, as specified in the design doc
+In order to support the `commit flow`, proposed in [lakeFS on KV design](https://github.com/treeverse/lakeFS/blob/b3204edad00f88f8eb98524ad940fde96e02ab0a/design/open/metadata_kv/index.md#committer-flow), a branch will also have the propsed `sealed_tokens` field - an array of `StagingToken`s, as specified in the design doc
 ### Tag
 A tag is identified by its unique ID (type `TagID`, a string) within a repository, hence will be a unique tag identifier within the repository partition. It contains a commit ID
 ### Commit
