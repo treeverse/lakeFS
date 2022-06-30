@@ -80,6 +80,34 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, 
 	ctx := context.Background()
 	conn, handlerDatabaseURI := testutil.GetDB(t, databaseURI, opts...)
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
+
+	collector := &nullCollector{}
+
+	// wire actions
+	var (
+		actionsStore   actions.Store
+		idGen          actions.IDGenerator
+		authService    auth.Service
+		kvStoreMessage *kv.StoreMessage
+	)
+
+	if kvEnabled {
+		kvStore := kvtest.GetStore(ctx, t)
+		kvStoreMessage = &kv.StoreMessage{Store: kvStore}
+		actionsStore = actions.NewActionsKVStore(*kvStoreMessage)
+		idGen = &actions.DecreasingIDGenerator{}
+		authService = auth.NewKVAuthService(*kvStoreMessage, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
+			Enabled: false,
+		}, logging.Default())
+		viper.Set("database.kv_enabled", true)
+	} else {
+		actionsStore = actions.NewActionsDBStore(conn)
+		idGen = &actions.IncreasingIDGenerator{}
+		authService = auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), nil, authparams.ServiceCache{
+			Enabled: false,
+		}, logging.Default())
+	}
+
 	cfg, err := config.NewConfig()
 	testutil.MustDo(t, "config", err)
 	// Do not validate invalid config (missing required fields).
@@ -89,29 +117,6 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, 
 		WalkerFactory: factory,
 	})
 	testutil.MustDo(t, "build catalog", err)
-
-	collector := &nullCollector{}
-
-	// wire actions
-	var actionsStore actions.Store
-	var idGen actions.IDGenerator
-	var authService auth.Service
-
-	if kvEnabled {
-		kvStore := kvtest.GetStore(ctx, t)
-		kvStoreMessage := kv.StoreMessage{Store: kvStore}
-		actionsStore = actions.NewActionsKVStore(kvStoreMessage)
-		idGen = &actions.DecreasingIDGenerator{}
-		authService = auth.NewKVAuthService(kvStoreMessage, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
-			Enabled: false,
-		}, logging.Default())
-	} else {
-		actionsStore = actions.NewActionsDBStore(conn)
-		idGen = &actions.IncreasingIDGenerator{}
-		authService = auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), nil, authparams.ServiceCache{
-			Enabled: false,
-		}, logging.Default())
-	}
 
 	actionsService := actions.NewService(
 		ctx,

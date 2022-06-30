@@ -91,17 +91,18 @@ func TestLocalLoad(t *testing.T) {
 		t.Skip("Skipping loadtest tests in short mode")
 	}
 
+	var storeMessage *kv.StoreMessage
+
 	// Only once
 	ctx := context.Background()
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeLocal)
-	conf, err := config.NewConfig()
-	testutil.MustDo(t, "config", err)
 	conn, _ := testutil.GetDB(t, databaseURI)
 
 	tests := []struct {
 		name           string
 		actionsService getActionsService
 		authService    auth.Service
+		kvEnabled      bool
 	}{
 		{
 			name:           "DB service test",
@@ -112,6 +113,7 @@ func TestLocalLoad(t *testing.T) {
 			name:           "KV service test",
 			actionsService: GetKVActionsService,
 			authService:    GetKVAuthService(t, ctx),
+			kvEnabled:      true,
 		},
 	}
 
@@ -130,10 +132,19 @@ func TestLocalLoad(t *testing.T) {
 				blockstoreType = "mem"
 			}
 
+			if tt.kvEnabled {
+				kvStore := kvtest.GetStore(ctx, t)
+				storeMessage = &kv.StoreMessage{Store: kvStore}
+				viper.Set("database.kv_enabled", true)
+			}
+			conf, err := config.NewConfig()
+			testutil.MustDo(t, "config", err)
+
 			blockAdapter := testutil.NewBlockAdapterByType(t, &block.NoOpTranslator{}, blockstoreType)
 			c, err := catalog.New(ctx, catalog.Config{
-				Config: conf,
-				DB:     conn,
+				Config:  conf,
+				DB:      conn,
+				KVStore: storeMessage,
 			})
 			testutil.MustDo(t, "build catalog", err)
 

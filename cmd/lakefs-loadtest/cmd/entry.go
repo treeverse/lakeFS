@@ -16,6 +16,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
@@ -62,10 +64,24 @@ var entryCmd = &cobra.Command{
 		if err != nil {
 			fmt.Printf("invalid config: %s\n", err)
 		}
+
+		var storeMessage *kv.StoreMessage
+		dbParams := conf.GetDatabaseParams()
+		if dbParams.KVEnabled {
+			kvParams := conf.GetKVParams()
+			kvStore, err := kv.Open(ctx, dbParams.Type, kvParams)
+			if err != nil {
+				logging.Default().WithError(err).Fatal("failed to open KV store")
+			}
+			defer kvStore.Close()
+			storeMessage = &kv.StoreMessage{Store: kvStore}
+		}
+
 		c, err := catalog.New(ctx, catalog.Config{
-			Config: conf,
-			DB:     database,
-			LockDB: lockDB,
+			Config:  conf,
+			DB:      database,
+			LockDB:  lockDB,
+			KVStore: storeMessage,
 		})
 		if err != nil {
 			fmt.Printf("Cannot create catalog: %s\n", err)

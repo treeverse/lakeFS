@@ -32,29 +32,24 @@ type Dependencies struct {
 
 func GetBasicHandler(t *testing.T, authService *FakeAuthService, databaseURI string, repoName string, kvEnabled bool) (http.Handler, *Dependencies) {
 	ctx := context.Background()
+	conn, _ := testutil.GetDB(t, databaseURI)
 	idTranslator := &testutil.UploadIDTranslator{
 		TransMap:   make(map[string]string),
 		ExpectedID: "",
 		T:          t,
 	}
-
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
-	conf, err := config.NewConfig()
-	testutil.MustDo(t, "config", err)
-	// Do not validate invalid config (missing required fields).
 
-	conn, _ := testutil.GetDB(t, databaseURI)
-	c, err := catalog.New(ctx, catalog.Config{
-		Config: conf,
-		DB:     conn,
-	})
-
-	testutil.MustDo(t, "build catalog", err)
-	var multipartsTracker multiparts.Tracker
+	var (
+		multipartsTracker multiparts.Tracker
+		storeMessage      *kv.StoreMessage
+	)
 	if kvEnabled {
 		store := kvtest.MakeStoreByName("mem", kvparams.KV{})(t, context.Background())
 		defer store.Close()
-		multipartsTracker = multiparts.NewTracker(kv.StoreMessage{Store: store})
+		storeMessage = &kv.StoreMessage{Store: store}
+		multipartsTracker = multiparts.NewTracker(*storeMessage)
+		viper.Set("database.kv_enabled", true)
 	} else {
 		multipartsTracker = multiparts.NewDBTracker(conn)
 	}
@@ -62,6 +57,15 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, databaseURI str
 	blockstoreType, _ := os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
 	blockAdapter := testutil.NewBlockAdapterByType(t, idTranslator, blockstoreType)
 
+	conf, err := config.NewConfig()
+	testutil.MustDo(t, "config", err)
+
+	c, err := catalog.New(ctx, catalog.Config{
+		Config:  conf,
+		DB:      conn,
+		KVStore: storeMessage,
+	})
+	testutil.MustDo(t, "build catalog", err)
 	t.Cleanup(func() {
 		_ = c.Close()
 	})
