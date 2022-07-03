@@ -3,23 +3,16 @@ import React, {useRef, useState} from "react";
 import {UploadIcon} from "@primer/octicons-react";
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
-import {
-    ActionGroup,
-    ActionsBar,
-    Error,
-    Loading,
-    RefreshButton,
-    Warnings
-} from "../../../lib/components/controls";
+import {ActionGroup, ActionsBar, Error, Loading, RefreshButton, Warnings} from "../../../lib/components/controls";
 import Button from "react-bootstrap/Button";
 import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
-import { BsCloudArrowUp } from "react-icons/bs";
+import {BsCloudArrowUp} from "react-icons/bs";
 
 import {Tree} from "../../../lib/components/repository/tree";
-import {branches, commits, config, metaRanges, NotFoundError, objects, ranges} from "../../../lib/api";
+import {config, objects} from "../../../lib/api";
 import {useAPI, useAPIWithPagination} from "../../../lib/hooks/api";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import {useRouter} from "../../../lib/hooks/router";
@@ -27,6 +20,7 @@ import {RefTypeBranch} from "../../../constants";
 import Alert from "react-bootstrap/Alert";
 import {Link} from "react-router-dom";
 import {LinearProgress} from '@mui/material';
+import runImport from "../services/importUtils";
 
 const ImportProgress = ({ numObjects}) => {
     return (
@@ -107,52 +101,19 @@ const ImportButton = ({ config, repo, reference, path, onDone, onClick, variant 
             ...initialState,
             inProgress: true
         })
-
+        const updateStateFromImport = ({inProgress, done, numObj}) => {
+            setImportState({inProgress, error: null, done, isSourceValid: importState.isSourceValid, numObj})
+        }
         try {
-            let paginationResp = {}
-            let after = ""
-            let prepend = `${destRef.current.value}`;
-            let importBranchResp
-            let sum = importState.numObj
-            const commitMsg = commitMsgRef.current.value;
-            const sourceRefVal = sourceRef.current.value;
-            const rangeArr = []
-
-            do {
-                const response = await ranges.createRange(repo.id, sourceRefVal, after, prepend, paginationResp.continuation_token)
-                rangeArr.push(response.range)
-                paginationResp = response.pagination
-                after = paginationResp.last_key
-                sum += response.range.count
-                setImportState({inProgress: true, error: null, done: false, isSourceValid: importState.isSourceValid, numObj: sum})
-            } while (paginationResp.has_more);
-            const metarange = await metaRanges.createMetaRange(repo.id, rangeArr)
-
-            try {
-                importBranchResp = await branches.get(repo.id, importBranch)
-            } catch (error) {
-                if (error instanceof NotFoundError) {
-                    // Find root commit for repository
-                    let hasMore = true;
-                    let nextOffset = "";
-                    let baseCommit = reference.id;
-                    do {
-                        let response = await commits.log(repo.id, reference.id, nextOffset, 1000);
-                        hasMore = response.pagination.has_more;
-                        nextOffset = response.pagination.next_offset;
-                        baseCommit = response.results.at(-1);
-                    } while (hasMore)
-                    await branches.create(repo.id, importBranch, baseCommit.id)
-                    importBranchResp = await branches.get(repo.id, importBranch)
-                } else {
-                    setImportState({...initialState, error})
-                    throw error
-                }
-            }
-
-            await commits.commit(repo.id, importBranchResp.id, commitMsg, {}, metarange.id)
-            setImportState({inProgress: false, error: null, done: true, numObj: sum, isSourceValid: importState.isSourceValid})
-            onDone()
+            await runImport(updateStateFromImport,
+                destRef.current.value,
+                commitMsgRef.current.value,
+                sourceRef.current.value,
+                importBranch,
+                repo.id,
+                reference.id
+            );
+            onDone();
         } catch (error) {
             setImportState({...initialState, error})
             throw error
