@@ -106,7 +106,7 @@ const ImportButton = ({ config, repo, reference, path, onDone, onClick, variant 
         }
         try {
             await runImport(updateStateFromImport,
-                `${destRef.current.value}`,
+                destRef.current.value,
                 commitMsgRef.current.value,
                 sourceRef.current.value,
                 importBranch,
