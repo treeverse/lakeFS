@@ -126,16 +126,6 @@ var runCmd = &cobra.Command{
 		registerPrometheusCollector(dbPool)
 		migrator := db.NewDatabaseMigrator(dbParams)
 
-		c, err := catalog.New(ctx, catalog.Config{
-			Config: cfg,
-			DB:     dbPool,
-			LockDB: lockdbPool,
-		})
-		if err != nil {
-			logger.WithError(err).Fatal("failed to create catalog")
-		}
-		defer func() { _ = c.Close() }()
-
 		authMetadataManager := auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
 		blockstoreType := cfg.GetBlockstoreType()
@@ -155,10 +145,13 @@ var runCmd = &cobra.Command{
 		// send metadata
 		bufferedCollector.CollectMetadata(metadata)
 
-		var multipartsTracker multiparts.Tracker
-		var idGen actions.IDGenerator
-		var actionsStore actions.Store
-		var authService auth.Service
+		var (
+			multipartsTracker multiparts.Tracker
+			idGen             actions.IDGenerator
+			actionsStore      actions.Store
+			authService       auth.Service
+			storeMessage      *kv.StoreMessage
+		)
 		emailParams, _ := cfg.GetEmailParams()
 		emailer, err := email.NewEmailer(emailParams)
 		if err != nil {
@@ -182,16 +175,16 @@ var runCmd = &cobra.Command{
 				logger.WithError(err).Fatal("failed to open KV store")
 			}
 			defer kvStore.Close()
-			storeMessage := kv.StoreMessage{Store: kvStore}
+			storeMessage = &kv.StoreMessage{Store: kvStore}
 
-			multipartsTracker = multiparts.NewTracker(storeMessage)
+			multipartsTracker = multiparts.NewTracker(*storeMessage)
 			actionsStore = actions.NewActionsKVStore(kv.StoreMessage{Store: kvStore})
 			idGen = &actions.DecreasingIDGenerator{}
 
 			// init authentication
 			if !cfg.IsAuthTypeAPI() {
 				authService = auth.NewKVAuthService(
-					storeMessage,
+					*storeMessage,
 					crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
 					cfg.GetAuthCacheConfig(),
 					logger.WithField("service", "auth_service"))
@@ -209,6 +202,17 @@ var runCmd = &cobra.Command{
 					logger.WithField("service", "auth_service"))
 			}
 		}
+
+		c, err := catalog.New(ctx, catalog.Config{
+			Config:  cfg,
+			DB:      dbPool,
+			LockDB:  lockdbPool,
+			KVStore: storeMessage,
+		})
+		if err != nil {
+			logger.WithError(err).Fatal("failed to create catalog")
+		}
+		defer func() { _ = c.Close() }()
 
 		actionsService := actions.NewService(
 			ctx,
