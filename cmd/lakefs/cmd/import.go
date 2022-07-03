@@ -138,7 +138,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 		KVStore: storeMessage,
 	})
 	if err != nil {
-		fmt.Printf("Failed to create c: %s\n", err)
+		fmt.Printf("Failed to create catalog: %s\n", err)
 		return 1
 	}
 	defer func() { _ = c.Close() }()
