@@ -4376,6 +4376,51 @@ paths:
       tags:
       - config
       x-accepts: application/json
+  /templates:
+    get:
+      description: fetch and expand template
+      operationId: expandTemplate
+      parameters:
+      - explode: true
+        in: query
+        name: template_location
+        required: true
+        schema:
+          description: URL of the template; must be relative (to a URL configured
+            on the server).
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: params
+        required: false
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+        style: form
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                format: binary
+          description: expanded template
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - templates
+      x-accepts: application/json
 components:
   parameters:
     PaginationPrefix:
