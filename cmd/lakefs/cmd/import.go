@@ -85,17 +85,6 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	}
 	logger := logging.FromContext(ctx)
 
-	catalogCfg := catalog.Config{
-		Config: cfg,
-		DB:     dbPool,
-	}
-	c, err := catalog.New(ctx, catalogCfg)
-	if err != nil {
-		fmt.Printf("Failed to create c: %s\n", err)
-		return 1
-	}
-	defer func() { _ = c.Close() }()
-
 	u := uri.Must(uri.Parse(args[0]))
 	if !u.IsRepository() {
 		fmt.Printf("Invalid 'repository': %s\n", uri.ErrInvalidRefURI)
@@ -122,8 +111,11 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	defer bufferedCollector.Close()
 	bufferedCollector.SetRuntimeCollector(blockStore.RuntimeStats)
 
-	var idGen actions.IDGenerator
-	var actionsStore actions.Store
+	var (
+		idGen        actions.IDGenerator
+		actionsStore actions.Store
+		storeMessage *kv.StoreMessage
+	)
 	if dbParams.KVEnabled {
 		kvparams := cfg.GetKVParams()
 		kvStore, err := kv.Open(ctx, dbParams.Type, kvparams)
@@ -131,13 +123,25 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 			logger.WithError(err).Fatal("failed to open KV store")
 		}
 		defer kvStore.Close()
+		storeMessage = &kv.StoreMessage{Store: kvStore}
 
-		actionsStore = actions.NewActionsKVStore(kv.StoreMessage{Store: kvStore})
+		actionsStore = actions.NewActionsKVStore(*storeMessage)
 		idGen = &actions.DecreasingIDGenerator{}
 	} else {
 		actionsStore = actions.NewActionsDBStore(dbPool)
 		idGen = &actions.IncreasingIDGenerator{}
 	}
+
+	c, err := catalog.New(ctx, catalog.Config{
+		Config:  cfg,
+		DB:      dbPool,
+		KVStore: storeMessage,
+	})
+	if err != nil {
+		fmt.Printf("Failed to create catalog: %s\n", err)
+		return 1
+	}
+	defer func() { _ = c.Close() }()
 
 	actionsService := actions.NewService(
 		ctx,

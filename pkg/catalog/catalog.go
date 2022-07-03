@@ -10,8 +10,6 @@ import (
 	"io"
 	"strings"
 
-	"github.com/treeverse/lakefs/pkg/ingest/store"
-
 	"github.com/cockroachdb/pebble"
 	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/pkg/batch"
@@ -28,6 +26,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler/sstable"
 	"github.com/treeverse/lakefs/pkg/graveler/staging"
 	"github.com/treeverse/lakefs/pkg/ident"
+	"github.com/treeverse/lakefs/pkg/ingest/store"
+	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/pyramid"
 	"github.com/treeverse/lakefs/pkg/pyramid/params"
@@ -106,6 +106,7 @@ type Config struct {
 	Config        *config.Config
 	DB            db.Database
 	LockDB        db.Database
+	KVStore       *kv.StoreMessage
 	WalkerFactory WalkerFactory
 }
 
@@ -198,17 +199,23 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	executor := batch.NewExecutor(logging.Default())
 	go executor.Run(ctx)
 
+	var gStore Store
 	refManager := ref.NewPGRefManager(executor, cfg.DB, ident.NewHexAddressProvider())
-	branchLocker := ref.NewBranchLocker(cfg.LockDB)
+	branchLocker := ref.NewBranchLocker(cfg.LockDB) // TODO (niro): Will not be needed in KV implementation
 	gcManager := retention.NewGarbageCollectionManager(cfg.DB, tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
 	stagingManager := staging.NewManager(cfg.DB)
 	settingManager := settings.NewManager(refManager, branchLocker, adapter, cfg.Config.GetCommittedBlockStoragePrefix())
 	protectedBranchesManager := branch.NewProtectionManager(settingManager)
-	store := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
+
+	if cfg.Config.GetDatabaseParams().KVEnabled { // TODO (niro): Each module should be replaced by an appropriate KV implementation
+		gStore = graveler.NewKVGraveler(cfg.KVStore, branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
+	} else {
+		gStore = graveler.NewDBGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
+	}
 
 	return &Catalog{
 		BlockAdapter:  tierFSParams.Adapter,
-		Store:         store,
+		Store:         gStore,
 		log:           logging.Default().WithField("service_name", "entry_catalog"),
 		walkerFactory: cfg.WalkerFactory,
 		managers:      []io.Closer{sstableManager, sstableMetaManager, &ctxCloser{cancelFn}},
@@ -457,11 +464,11 @@ func (c *Catalog) ListBranches(ctx context.Context, repository string, prefix st
 		if !strings.HasPrefix(branchID, prefix) {
 			break
 		}
-		branch := &Branch{
+		b := &Branch{
 			Name:      v.BranchID.String(),
 			Reference: v.CommitID.String(),
 		}
-		branches = append(branches, branch)
+		branches = append(branches, b)
 		if len(branches) >= limit+1 {
 			break
 		}
@@ -812,7 +819,7 @@ func (c *Catalog) Commit(ctx context.Context, repository, branch, message, commi
 		return nil, err
 	}
 
-	params := graveler.CommitParams{
+	p := graveler.CommitParams{
 		Committer: committer,
 		Message:   message,
 		Date:      date,
@@ -820,10 +827,10 @@ func (c *Catalog) Commit(ctx context.Context, repository, branch, message, commi
 	}
 	if sourceMetarange != nil {
 		x := graveler.MetaRangeID(*sourceMetarange)
-		params.SourceMetaRange = &x
+		p.SourceMetaRange = &x
 	}
 
-	commitID, err := c.Store.Commit(ctx, repositoryID, branchID, params)
+	commitID, err := c.Store.Commit(ctx, repositoryID, branchID, p)
 	if err != nil {
 		return nil, err
 	}
