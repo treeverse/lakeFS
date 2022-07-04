@@ -18,6 +18,7 @@ const Wizard = ({
                     transitions=transitionDefaults,
                     progressBar = false,
                     isGoBackButton = false,
+                    isSkipButton = false,
                     onComplete=(any) => any,
                     canProceed = true,
                     onNextStep = () => {},
@@ -58,6 +59,7 @@ const Wizard = ({
             {<WizardController
                 stepWizard={state.stepWizard}
                 canProceed={canProceed}
+                isSkipButton={isSkipButton}
                 isGoBackButton={isGoBackButton}
                 onComplete={onComplete}/>}
 
