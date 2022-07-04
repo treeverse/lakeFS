@@ -25,6 +25,7 @@ func WrapFuncMapWithData(funcMap template.FuncMap, data interface{}) template.Fu
 			switch len(retVals) {
 			case 1:
 				return retVals[0].Interface(), nil
+				//nolint:gomnd
 			case 2:
 				errInterface := retVals[1].Interface()
 				var err error
