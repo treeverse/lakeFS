@@ -407,8 +407,8 @@ func testPreMigrateAuth(t *testing.T) {
 		AccessKeyID:     adminCreds.AccessKeyId,
 		SecretAccessKey: adminCreds.SecretAccessKey,
 	}
-	state.Auth.AdminUser.Username = uid
-	state.Auth.AdminUser.Credentials = &authCredentials{
+	state.Auth.CustomUser.Username = uid
+	state.Auth.CustomUser.Credentials = &authCredentials{
 		AccessKeyID:     customCreds.AccessKeyId,
 		SecretAccessKey: customCreds.SecretAccessKey,
 	}
