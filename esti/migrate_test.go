@@ -487,8 +487,10 @@ func verifyUserPermissions(t *testing.T, ctx context.Context, repo, userType str
 	userClient, err := testutil.NewClientFromCreds(logger, creds.AccessKeyId, creds.SecretAccessKey, endpointUrl)
 	require.NoError(t, err, "failed to initialize client for %s by credentials", userType)
 
+	userID, _ := nanoid.New(6)
+	userName := fmt.Sprintf("user-%s", userID)
 	createUserResp, err := userClient.CreateUserWithResponse(ctx, api.CreateUserJSONRequestBody{
-		Id: "no-such-user",
+		Id: userName,
 	})
 	require.NoError(t, err, "%s failed to send CreaterUser request", userType)
 	if userPerms.canCreateUser {
