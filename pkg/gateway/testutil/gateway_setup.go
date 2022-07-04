@@ -39,6 +39,7 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, databaseURI str
 		T:          t,
 	}
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
+	viper.Set("database.kv_enabled", false)
 
 	var (
 		multipartsTracker multiparts.Tracker

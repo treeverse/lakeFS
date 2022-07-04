@@ -48,7 +48,7 @@ func TestStoreMessage(t *testing.T) {
 func testStoreMessageSetGet(t testing.TB, ctx context.Context, sm kv.StoreMessage) {
 	// set model info
 	setModel := &kvtest.TestModel{
-		Name:          "SetGetModel",
+		Name:          []byte("SetGetModel"),
 		AnotherString: "This is another string",
 		ADouble:       2.4,
 		TestTime:      timestamppb.New(time.Now().UTC()),
@@ -79,7 +79,7 @@ func testStoreMessageSetGet(t testing.TB, ctx context.Context, sm kv.StoreMessag
 func testStoreMessageSetIf(t testing.TB, ctx context.Context, sm kv.StoreMessage) {
 	// set model info
 	setModel := &kvtest.TestModel{
-		Name:          "SetIfModel",
+		Name:          []byte("SetIfModel"),
 		AnotherString: "This is another string",
 		ADouble:       2.4,
 		TestTime:      timestamppb.New(time.Now()),
@@ -150,7 +150,7 @@ func testStoreMessageSetIf(t testing.TB, ctx context.Context, sm kv.StoreMessage
 func testStoreMessageDelete(t testing.TB, ctx context.Context, sm kv.StoreMessage) {
 	// set model info
 	m1 := &kvtest.TestModel{
-		Name:          "DeleteModel",
+		Name:          []byte("DeleteModel"),
 		AnotherString: "This is another string",
 		ADouble:       2.4,
 		TestTime:      timestamppb.New(time.Now().UTC()),
@@ -167,7 +167,7 @@ func testStoreMessageDelete(t testing.TB, ctx context.Context, sm kv.StoreMessag
 	}
 
 	m2 := &kvtest.TestModel{
-		Name:          "model2",
+		Name:          []byte("model2"),
 		AnotherString: "",
 		ADouble:       0,
 		TestTime:      nil,
@@ -225,7 +225,7 @@ func testStoreMessageDelete(t testing.TB, ctx context.Context, sm kv.StoreMessag
 func testStoreMessageScan(t *testing.T, ctx context.Context, sm kv.StoreMessage) {
 	// set model info
 	m := &kvtest.TestModel{
-		Name:          "ScanModel",
+		Name:          []byte("ScanModel"),
 		AnotherString: "This is another string",
 		ADouble:       2.4,
 		TestTime:      timestamppb.New(time.Now().UTC()),
@@ -246,7 +246,7 @@ func testStoreMessageScan(t *testing.T, ctx context.Context, sm kv.StoreMessage)
 		msgNew.TestMap["special"] = int32(i)
 		key := kv.FormatPath(modelKeyPrefix, strconv.Itoa(i))
 		testData = append(testData, testItem{key, msgNew})
-		require.NoError(t, sm.SetMsg(ctx, modelPartitionKey, key, msgNew))
+		require.NoError(t, sm.SetMsg(ctx, modelPartitionKey, []byte(key), msgNew))
 	}
 
 	preModelKey := "l"
@@ -287,7 +287,7 @@ type testItem struct {
 }
 
 func testScan(t *testing.T, sm kv.StoreMessage, ctx context.Context, testData []testItem, modelKeyPrefix string, after string, skip int) {
-	itr, err := sm.Scan(ctx, testData[0].msg.ProtoReflect().Type(), modelPartitionKey, modelKeyPrefix, after)
+	itr, err := sm.Scan(ctx, testData[0].msg.ProtoReflect().Type(), modelPartitionKey, []byte(modelKeyPrefix), []byte(after))
 	testutil.MustDo(t, "get iterator", err)
 	defer itr.Close()
 	count := 0
@@ -308,7 +308,7 @@ func testScan(t *testing.T, sm kv.StoreMessage, ctx context.Context, testData []
 func testStoreMessageScanWrongFormat(t *testing.T, ctx context.Context, sm kv.StoreMessage) {
 	// set model info
 	m := &kvtest.TestModel{
-		Name:          "DeleteModel",
+		Name:          []byte("DeleteModel"),
 		AnotherString: "This is another string",
 		ADouble:       2.4,
 		TestTime:      timestamppb.New(time.Now().UTC()),
@@ -324,13 +324,13 @@ func testStoreMessageScanWrongFormat(t *testing.T, ctx context.Context, sm kv.St
 
 	// Add test models to store
 	for i := 0; i < modelNum; i++ {
-		require.NoError(t, sm.SetMsg(ctx, modelPartitionKey, kv.FormatPath(modelKeyPrefix, strconv.Itoa(i)), m))
+		require.NoError(t, sm.SetMsg(ctx, modelPartitionKey, []byte(kv.FormatPath(modelKeyPrefix, strconv.Itoa(i))), m))
 	}
 
 	badModelData := "This is a bad model data"
 	require.NoError(t, sm.Store.Set(ctx, []byte(modelPartitionKey), []byte(kv.FormatPath(modelKeyPrefix, strconv.Itoa(modelNum))), []byte(badModelData)))
 
-	itr, err := sm.Scan(ctx, m.ProtoReflect().Type(), modelPartitionKey, modelKeyPrefix, "")
+	itr, err := sm.Scan(ctx, m.ProtoReflect().Type(), modelPartitionKey, []byte(modelKeyPrefix), []byte(""))
 	testutil.MustDo(t, "get iterator", err)
 	defer itr.Close()
 

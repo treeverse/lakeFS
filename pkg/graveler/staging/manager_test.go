@@ -7,19 +7,47 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/staging"
+	"github.com/treeverse/lakefs/pkg/kv"
+	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
+	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
-func newTestStagingManager(t *testing.T) (context.Context, graveler.StagingManager) {
+func newTestStagingManager(t *testing.T, kvEnabled bool) (context.Context, graveler.StagingManager) {
 	t.Helper()
+	ctx := context.Background()
+	if kvEnabled {
+		// TODO (niro): Graveler unit tests running over postgres store until https://github.com/treeverse/lakeFS/issues/3622 is resolved
+		store, err := kv.Open(context.Background(), kvpg.DriverName, kvparams.KV{Postgres: &kvparams.Postgres{ConnectionString: databaseURI}})
+		testutil.MustDo(t, "Open KV Store", err)
+		kvStore := kv.StoreMessage{Store: store}
+		t.Cleanup(func() {
+			err = store.(*kvpg.Store).ClearTable(ctx)
+			if err != nil {
+				t.Fatalf("failed to delete KV table from postgres DB %s", err)
+			}
+			store.Close()
+		})
+		return ctx, staging.NewManager(kvStore)
+	}
 	conn, _ := testutil.GetDB(t, databaseURI)
-	return context.Background(), staging.NewManager(conn)
+	return context.Background(), staging.NewDBManager(conn)
 }
 
 func TestSetGet(t *testing.T) {
-	ctx, s := newTestStagingManager(t)
+	t.Run("TestDBSetGet", func(t *testing.T) {
+		testSetGet(t, false)
+	})
+	t.Run("TestKVSetGet", func(t *testing.T) {
+		testSetGet(t, true)
+	})
+}
+
+func testSetGet(t *testing.T, kvEnabled bool) {
+	ctx, s := newTestStagingManager(t, kvEnabled)
 	_, err := s.Get(ctx, "t1", []byte("a/b/c/"))
 	if !errors.Is(err, graveler.ErrNotFound) {
 		t.Fatalf("error different than expected. expected=%v, got=%v", graveler.ErrNotFound, err)
@@ -38,14 +66,21 @@ func TestSetGet(t *testing.T) {
 		testutil.Must(t, err)
 
 		err = s.Set(ctx, "t2", []byte("a/b/c/d"), value, false)
-		if err != graveler.ErrPreconditionFailed {
-			t.Fatalf("expected a precondition error when overwriting")
-		}
+		require.ErrorIs(t, graveler.ErrPreconditionFailed, err)
 	})
 }
 
 func TestMultiToken(t *testing.T) {
-	ctx, s := newTestStagingManager(t)
+	t.Run("TestDBMultiToken", func(t *testing.T) {
+		testMultiToken(t, false)
+	})
+	t.Run("TestKVMultiToken", func(t *testing.T) {
+		testMultiToken(t, true)
+	})
+}
+
+func testMultiToken(t *testing.T, kvEnabled bool) {
+	ctx, s := newTestStagingManager(t, kvEnabled)
 	_, err := s.Get(ctx, "t1", []byte("a/b/c/"))
 	if !errors.Is(err, graveler.ErrNotFound) {
 		t.Fatalf("error different than expected. expected=%v, got=%v", graveler.ErrNotFound, err)
@@ -73,7 +108,16 @@ func TestMultiToken(t *testing.T) {
 }
 
 func TestDrop(t *testing.T) {
-	ctx, s := newTestStagingManager(t)
+	t.Run("TestDBDrop", func(t *testing.T) {
+		testDrop(t, false)
+	})
+	t.Run("TestKVDrop", func(t *testing.T) {
+		testDrop(t, true)
+	})
+}
+
+func testDrop(t *testing.T, kvEnabled bool) {
+	ctx, s := newTestStagingManager(t, kvEnabled)
 	numOfValues := 1400
 	for i := 0; i < numOfValues; i++ {
 		err := s.Set(ctx, "t1", []byte(fmt.Sprintf("key%04d", i)), newTestValue(fmt.Sprintf("identity%d", i), fmt.Sprintf("value%d", i)), true)
@@ -107,7 +151,16 @@ func TestDrop(t *testing.T) {
 }
 
 func TestDropByPrefix(t *testing.T) {
-	ctx, s := newTestStagingManager(t)
+	t.Run("TestDBDropByPrefix", func(t *testing.T) {
+		testDropByPrefix(t, false)
+	})
+	t.Run("TestKVDropByPrefix", func(t *testing.T) {
+		testDropByPrefix(t, true)
+	})
+}
+
+func testDropByPrefix(t *testing.T, kvEnabled bool) {
+	ctx, s := newTestStagingManager(t, kvEnabled)
 	numOfValues := 2400
 	for i := 0; i < numOfValues; i++ {
 		err := s.Set(ctx, "t1", []byte(fmt.Sprintf("key%04d", i)), newTestValue(fmt.Sprintf("identity%d", i), fmt.Sprintf("value%d", i)), true)
@@ -120,7 +173,7 @@ func TestDropByPrefix(t *testing.T) {
 	v, err := s.Get(ctx, "t1", []byte("key1000"))
 	if !errors.Is(err, graveler.ErrNotFound) {
 		// key1000 starts with the deleted prefix - should have been deleted
-		t.Fatalf("after dropping staging area, expected ErrNotFound in Get. got err=%v, got value=%v", err, v)
+		t.Fatalf("after dropping staging area, expected ErrNotFound in Get. got err=%v, got value=%s", err, v)
 	}
 	_, err = s.Get(ctx, "t1", []byte("key0000"))
 	// key0000 does not start with the deleted prefix - should be returned
@@ -146,7 +199,16 @@ func TestDropByPrefix(t *testing.T) {
 }
 
 func TestDropPrefixBytes(t *testing.T) {
-	ctx, s := newTestStagingManager(t)
+	t.Run("TestDBDropPrefixBytes", func(t *testing.T) {
+		testDropPrefixBytes(t, false)
+	})
+	t.Run("TestKVDropPrefixBytes", func(t *testing.T) {
+		testDropPrefixBytes(t, true)
+	})
+}
+
+func testDropPrefixBytes(t *testing.T, kvEnabled bool) {
+	ctx, s := newTestStagingManager(t, kvEnabled)
 	tests := map[string]struct {
 		keys                    []graveler.Key
 		prefix                  graveler.Key
@@ -248,7 +310,16 @@ func TestDropPrefixBytes(t *testing.T) {
 }
 
 func TestList(t *testing.T) {
-	ctx, s := newTestStagingManager(t)
+	t.Run("TestDBList", func(t *testing.T) {
+		testList(t, false)
+	})
+	t.Run("TestKVList", func(t *testing.T) {
+		testList(t, true)
+	})
+}
+
+func testList(t *testing.T, kvEnabled bool) {
+	ctx, s := newTestStagingManager(t, kvEnabled)
 	for _, numOfValues := range []int{1, 100, 1000, 1500, 2500} {
 		token := graveler.StagingToken(fmt.Sprintf("t_%d", numOfValues))
 		for i := 0; i < numOfValues; i++ {
@@ -279,24 +350,36 @@ func TestList(t *testing.T) {
 }
 
 func TestSeek(t *testing.T) {
-	ctx, s := newTestStagingManager(t)
+	t.Run("TestDBSeek", func(t *testing.T) {
+		testSeek(t, false)
+	})
+	t.Run("TestKVSeek", func(t *testing.T) {
+		testSeek(t, true)
+	})
+}
+
+func testSeek(t *testing.T, kvEnabled bool) {
+	ctx, s := newTestStagingManager(t, kvEnabled)
 	numOfValues := 100
 	for i := 0; i < numOfValues; i++ {
 		err := s.Set(ctx, "t1", []byte(fmt.Sprintf("key%04d", i)), newTestValue("identity1", "value1"), true)
 		testutil.Must(t, err)
 	}
 	it, _ := s.List(ctx, "t1", 0)
+	defer it.Close()
 	if it.SeekGE([]byte("key0050")); !it.Next() {
 		t.Fatal("iterator seek expected to return true, got false")
 	}
+	expected := "key0050"
 	if !bytes.Equal(it.Value().Key, []byte("key0050")) {
-		t.Fatalf("got unexpected key after iterator seek. expected=key0050, got=%s", string(it.Value().Key))
+		t.Fatalf("got unexpected key after iterator seek. expected=%s, got=%s", expected, string(it.Value().Key))
 	}
 	if !it.Next() {
 		t.Fatal("iterator next expected to return true, got false")
 	}
-	if !bytes.Equal(it.Value().Key, []byte("key0051")) {
-		t.Fatalf("got unexpected key after iterator seek. expected=key0051, got=%s", string(it.Value().Key))
+	expected = "key0051"
+	if !bytes.Equal(it.Value().Key, []byte(expected)) {
+		t.Fatalf("got unexpected key after iterator seek. expected=%s, got=%s", expected, string(it.Value().Key))
 	}
 	if it.SeekGE([]byte("key1000")); it.Next() {
 		t.Fatal("iterator seek expected to return false, got true")
@@ -304,17 +387,26 @@ func TestSeek(t *testing.T) {
 	if it.SeekGE([]byte("key0060a")); !it.Next() {
 		t.Fatal("iterator seek expected to return true, got false")
 	}
-	if !bytes.Equal(it.Value().Key, []byte("key0061")) {
-		t.Fatalf("got unexpected key after iterator seek. expected=key0061, got=%s", string(it.Value().Key))
+	expected = "key0061"
+	if !bytes.Equal(it.Value().Key, []byte(expected)) {
+		t.Fatalf("got unexpected key after iterator seek. expected=%s, got=%s", expected, string(it.Value().Key))
 	}
 	if !it.Next() {
 		t.Fatal("iterator next expected to return true, got false")
 	}
-	it.Close()
 }
 
 func TestNilValue(t *testing.T) {
-	ctx, s := newTestStagingManager(t)
+	t.Run("TestDBNilValue", func(t *testing.T) {
+		testNilValue(t, false)
+	})
+	t.Run("TestKVNilValue", func(t *testing.T) {
+		testNilValue(t, true)
+	})
+}
+
+func testNilValue(t *testing.T, kvEnabled bool) {
+	ctx, s := newTestStagingManager(t, kvEnabled)
 	err := s.Set(ctx, "t1", []byte("key1"), nil, true)
 	testutil.Must(t, err)
 	err = s.Set(ctx, "t1", []byte("key2"), newTestValue("identity2", "value2"), true)
@@ -326,10 +418,13 @@ func TestNilValue(t *testing.T) {
 	}
 	it, err := s.List(ctx, "t1", 0)
 	testutil.Must(t, err)
+	defer it.Close()
 	if !it.Next() {
 		t.Fatalf("expected to get key from list")
 	}
-	if !bytes.Equal(it.Value().Key, []byte("key1")) {
+
+	expected := "key1"
+	if !bytes.Equal(it.Value().Key, []byte(expected)) {
 		t.Errorf("got unexpected key. expected=key1, got=%s", it.Value().Key)
 	}
 	if it.Value().Value != nil {
@@ -346,7 +441,16 @@ func TestNilValue(t *testing.T) {
 }
 
 func TestNilIdentity(t *testing.T) {
-	ctx, s := newTestStagingManager(t)
+	t.Run("TestDBNilIdentity", func(t *testing.T) {
+		testNilIdentity(t, false)
+	})
+	t.Run("TestKVNilIdentity", func(t *testing.T) {
+		testNilIdentity(t, true)
+	})
+}
+
+func testNilIdentity(t *testing.T, kvEnabled bool) {
+	ctx, s := newTestStagingManager(t, kvEnabled)
 	err := s.Set(ctx, "t1", []byte("key1"), newTestValue("identity1", "value1"), true)
 	testutil.Must(t, err)
 	err = s.Set(ctx, "t1", []byte("key1"), &graveler.Value{
@@ -364,7 +468,16 @@ func TestNilIdentity(t *testing.T) {
 }
 
 func TestDeleteAndTombstone(t *testing.T) {
-	ctx, s := newTestStagingManager(t)
+	t.Run("TestDBDeleteAndTombstone", func(t *testing.T) {
+		testDeleteAndTombstone(t, false)
+	})
+	t.Run("TestKVDeleteAndTombstone", func(t *testing.T) {
+		testDeleteAndTombstone(t, true)
+	})
+}
+
+func testDeleteAndTombstone(t *testing.T, kvEnabled bool) {
+	ctx, s := newTestStagingManager(t, kvEnabled)
 	_, err := s.Get(ctx, "t1", []byte("key1"))
 	if !errors.Is(err, graveler.ErrNotFound) {
 		t.Fatalf("error different than expected. expected=%v, got=%v", graveler.ErrNotFound, err)

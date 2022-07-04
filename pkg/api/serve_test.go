@@ -82,6 +82,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, 
 	ctx := context.Background()
 	conn, handlerDatabaseURI := testutil.GetDB(t, databaseURI, opts...)
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
+	viper.Set("database.kv_enabled", false)
 
 	collector := &nullCollector{}
 
@@ -119,6 +120,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, 
 	c, err := catalog.New(ctx, catalog.Config{
 		Config:        cfg,
 		DB:            conn,
+		KVStore:       kvStoreMessage,
 		WalkerFactory: factory,
 	})
 	testutil.MustDo(t, "build catalog", err)
