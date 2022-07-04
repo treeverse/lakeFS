@@ -148,7 +148,7 @@ func preMigrateTests(t *testing.T) {
 	// all pre tests execution
 	t.Run("TestPreMigrateMultipart", testPreMigrateMultipart)
 	t.Run("TestPreMigrateActions", testPreMigrateActions)
-	t.Run("TestPreMigrateAuth", TestPreMigrateAuth)
+	t.Run("TestPreMigrateAuth", testPreMigrateAuth)
 
 	saveStateInLakeFS(t)
 }
@@ -337,7 +337,7 @@ func testPostMigrateActions(t *testing.T) {
 	require.Equal(t, len(branchResp.JSON200.Results), 3)
 }
 
-func TestPreMigrateAuth(t *testing.T) {
+func testPreMigrateAuth(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 
 	// creating a viewer, developer, superuser and admin and verifying their roles and permissions
