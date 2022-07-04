@@ -57,8 +57,8 @@ The following templates will be saved within the lakeFS binary and be directed b
 - **Request**:
   - Method: `GET`
   - Parameters:
-    - Template URL (`template_location`): `string` - retrieved from query string.
-    - Any other configurations required for the templates: `string` - retrieved from query string
+    - Template URL (`template_location`): `string` - URL of the template.  Retrieved from the query string, must be relative (to a URL configured on the server).
+    - Any other configurations required for the templates: `string` - retrieved from query string.
 - **Response**:
   - Return value: The expanded template
   - Headers:
