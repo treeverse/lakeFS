@@ -84,6 +84,7 @@ const (
 	migrateStateObjectPath    = "state.json"
 	migratePrePartsCount      = 3
 	migratePostPartsCount     = 2
+	authCustomGroupName       = "user-defined-group"
 )
 
 var (
@@ -147,7 +148,7 @@ func preMigrateTests(t *testing.T) {
 	// all pre tests execution
 	t.Run("TestPreMigrateMultipart", testPreMigrateMultipart)
 	t.Run("TestPreMigrateActions", testPreMigrateActions)
-	t.Run("TestPreMigrateAuth", testPreMigrateAuth)
+	t.Run("TestPreMigrateAuth", TestPreMigrateAuth)
 
 	saveStateInLakeFS(t)
 }
@@ -336,7 +337,7 @@ func testPostMigrateActions(t *testing.T) {
 	require.Equal(t, len(branchResp.JSON200.Results), 3)
 }
 
-func testPreMigrateAuth(t *testing.T) {
+func TestPreMigrateAuth(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 
 	// creating a viewer, developer, superuser and admin and verifying their roles and permissions
@@ -354,14 +355,14 @@ func testPreMigrateAuth(t *testing.T) {
 	// the created group (and so, the user) has permissions to only list repositories, and so
 	// is expected to succeed with that but to fail reading the repository. This is done to
 	// later verify that a custom created groups and policies are migrated correctly
-	gid := "user-defined-group"
+
 	respCreateGroup, err := client.CreateGroupWithResponse(ctx, api.CreateGroupJSONRequestBody{
-		Id: gid,
+		Id: authCustomGroupName,
 	})
 	require.NoError(t, err, "Admin failed while creating group")
 	require.Equal(t, http.StatusCreated, respCreateGroup.StatusCode(), "Admin unexpectedly failed to create group")
 
-	pid := "TestPolicy"
+	pid := "ListReposPolicy"
 	respCreatePolicy, err := client.CreatePolicyWithResponse(ctx, api.CreatePolicyJSONRequestBody{
 		CreationDate: api.Int64Ptr(time.Now().Unix()),
 		Id:           pid,
@@ -376,12 +377,12 @@ func testPreMigrateAuth(t *testing.T) {
 	require.NoError(t, err, "Admin failed while creating policy")
 	require.Equal(t, http.StatusCreated, respCreatePolicy.StatusCode(), "Admin unexpectedly failed to create policy")
 
-	respAddPolicy, err := client.AttachPolicyToGroupWithResponse(ctx, gid, pid)
+	respAddPolicy, err := client.AttachPolicyToGroupWithResponse(ctx, authCustomGroupName, pid)
 	require.NoError(t, err, "Admin failed while adding policy to group")
 	require.Equal(t, http.StatusCreated, respAddPolicy.StatusCode(), "Admin unexpectedly failed to add policy to group")
 
 	uid := "test-user"
-	customCreds := createUserWithCredentialsInGroup(t, ctx, uid, gid)
+	customCreds := createUserWithCredentialsInGroup(t, ctx, uid, authCustomGroupName)
 	verifyUserPermissions(t, ctx, repo, "customUser", customCreds, customPermissions)
 
 	// Hardening relevant test data for post-migrate
@@ -415,6 +416,8 @@ func testPreMigrateAuth(t *testing.T) {
 
 func testPostMigrateAuth(t *testing.T) {
 	ctx, _, _ := setupTest(t)
+
+	// verifying all previous permissions are preserved through the migration process
 	verifyUserPermissions(t, ctx, state.Auth.Repo, "viewer", &api.CredentialsWithSecret{
 		AccessKeyId:     state.Auth.ViewerUser.Credentials.AccessKeyID,
 		SecretAccessKey: state.Auth.ViewerUser.Credentials.SecretAccessKey,
@@ -431,10 +434,33 @@ func testPostMigrateAuth(t *testing.T) {
 		AccessKeyId:     state.Auth.AdminUser.Credentials.AccessKeyID,
 		SecretAccessKey: state.Auth.AdminUser.Credentials.SecretAccessKey,
 	}, adminPermissions)
-	verifyUserPermissions(t, ctx, state.Auth.Repo, "customUser", &api.CredentialsWithSecret{
+	customUserCreds := &api.CredentialsWithSecret{
 		AccessKeyId:     state.Auth.CustomUser.Credentials.AccessKeyID,
 		SecretAccessKey: state.Auth.CustomUser.Credentials.SecretAccessKey,
-	}, customPermissions)
+	}
+	verifyUserPermissions(t, ctx, state.Auth.Repo, "customUser", customUserCreds, customPermissions)
+
+	// adding a policy to the custom created group (created on DB and migrated) and verify it is added successfully
+	pid := "ReadReposPolicy"
+	respCreatePolicy, err := client.CreatePolicyWithResponse(ctx, api.CreatePolicyJSONRequestBody{
+		CreationDate: api.Int64Ptr(time.Now().Unix()),
+		Id:           pid,
+		Statement: []api.Statement{
+			{
+				Action:   []string{"fs:ReadRepository"},
+				Effect:   "allow",
+				Resource: "*",
+			},
+		},
+	})
+	require.NoError(t, err, "Admin failed while creating policy")
+	require.Equal(t, http.StatusCreated, respCreatePolicy.StatusCode(), "Admin unexpectedly failed to create policy")
+
+	respAddPolicy, err := client.AttachPolicyToGroupWithResponse(ctx, authCustomGroupName, pid)
+	require.NoError(t, err, "Admin failed while adding policy to group")
+	require.Equal(t, http.StatusCreated, respAddPolicy.StatusCode(), "Admin unexpectedly failed to add policy to group")
+	customPermissions.canReadRepo = true
+	verifyUserPermissions(t, ctx, state.Auth.Repo, "customUser", customUserCreds, customPermissions)
 }
 
 func createUserWithCredentialsInGroup(t *testing.T, ctx context.Context, username, groupID string) *api.CredentialsWithSecret {
