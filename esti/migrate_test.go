@@ -355,7 +355,6 @@ func testPreMigrateAuth(t *testing.T) {
 	// the created group (and so, the user) has permissions to only list repositories, and so
 	// is expected to succeed with that but to fail reading the repository. This is done to
 	// later verify that a custom created groups and policies are migrated correctly
-
 	respCreateGroup, err := client.CreateGroupWithResponse(ctx, api.CreateGroupJSONRequestBody{
 		Id: authCustomGroupName,
 	})
