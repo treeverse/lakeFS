@@ -115,7 +115,7 @@ const BranchWidget = ({ repo, branch, onDelete }) => {
 };
 
 
-const CreateBranchButton = ({ repo, variant = "success", onCreate= null, children }) => {
+const CreateBranchButton = ({ repo, variant = "success", onCreate = null, children }) => {
     const [show, setShow] = useState(false);
     const [disabled, setDisabled] = useState(false);
     const [error, setError] = useState(null);
@@ -182,7 +182,6 @@ const CreateBranchButton = ({ repo, variant = "success", onCreate= null, childre
                     </Form>
 
                     {!!error && <Error error={error}/>}
-                    {/*{(mergeState.err) ? (<Error error={mergeState.err}/>) : (<></>)}*/}
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="secondary" disabled={disabled} onClick={hide}>
