@@ -93,5 +93,6 @@ Name | Type | Description  | Notes
 |-------------|-------------|------------------|
 **200** | expanded template |  -  |
 **401** | Unauthorized |  -  |
+**404** | Resource Not Found |  -  |
 **0** | Internal Server Error |  -  |
 
