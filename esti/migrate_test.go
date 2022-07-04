@@ -65,7 +65,7 @@ type authState struct {
 	DeveloperUser authUser `json:"developer_user"`
 	SuperUser     authUser `json:"super_user"`
 	AdminUser     authUser `json:"admin_user"`
-	CustomUser    authUser `json:custom_user"`
+	CustomUser    authUser `json:"custom_user"`
 }
 
 type userPermissions struct {
@@ -437,7 +437,6 @@ func testPostMigrateAuth(t *testing.T) {
 		AccessKeyId:     state.Auth.CustomUser.Credentials.AccessKeyID,
 		SecretAccessKey: state.Auth.CustomUser.Credentials.SecretAccessKey,
 	}
-	verifyUserPermissions(t, ctx, state.Auth.Repo, "customUser", customUserCreds, customPermissions)
 
 	// adding a policy to the custom created group (created on DB and migrated) and verify it is added successfully
 	pid := "ReadReposPolicy"
