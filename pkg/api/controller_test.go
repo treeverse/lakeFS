@@ -2446,6 +2446,14 @@ func testController_ExpandTemplate(t *testing.T, kvEnabled bool) {
 			t.Errorf("Expansion failed with status %d\n\t%s\n\t%+v", resp.HTTPResponse.StatusCode, string(resp.Body), resp)
 		}
 
+		contentType := resp.HTTPResponse.Header.Values("Content-Type")
+		if len(contentType) != 1 {
+			t.Errorf("Expansion returned %d content types: %v", len(contentType), contentType)
+		}
+		if contentType[0] != "application/x-conf" {
+			t.Errorf("Expansion returned content type %s not application/x-conf", contentType[0])
+		}
+
 		for _, e := range expected {
 			re := regexp.MustCompile(e.pattern)
 			if !re.Match(resp.Body) {
