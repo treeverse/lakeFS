@@ -22,7 +22,7 @@ const (
 )
 
 var (
-	ErrTemplateNotFound     = errors.New("template not found")
+	ErrNotFound             = errors.New("template not found")
 	ErrPathTraversalBlocked = errors.New("path traversal blocked")
 )
 
@@ -127,7 +127,7 @@ func (em *ExpanderMap) Get(ctx context.Context, username, name string) (Expander
 		// Fast-path through the cache
 		if e == nil {
 			// Negative cache
-			return nil, ErrTemplateNotFound
+			return nil, ErrNotFound
 		}
 		return e, nil
 	}
@@ -141,7 +141,7 @@ func (em *ExpanderMap) Get(ctx context.Context, username, name string) (Expander
 
 	tmpl, err := fs.ReadFile(em.fs, p)
 	if errors.Is(err, fs.ErrNotExist) {
-		return nil, ErrTemplateNotFound
+		return nil, ErrNotFound
 	}
 	if err != nil {
 		return nil, err

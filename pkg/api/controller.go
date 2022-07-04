@@ -3269,6 +3269,10 @@ func (c *Controller) ExpandTemplate(w http.ResponseWriter, r *http.Request, p Ex
 		writeError(w, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
 		return
 	}
+	if errors.Is(err, templater.ErrNotFound) {
+		writeError(w, http.StatusNotFound, http.StatusText(http.StatusNotFound))
+		return
+	}
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "expansion failed")
 		return
