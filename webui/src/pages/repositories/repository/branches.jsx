@@ -135,20 +135,21 @@ const CreateBranchButton = ({ repo, variant = "success", onCreate = null, childr
         setShow(true);
     };
 
-    const onSubmit = () => {
+    const onSubmit = async () => {
         setDisabled(true);
         const branchId = textRef.current.value;
         const sourceRef = selectedBranch.id;
-        branches.create(repo.id, branchId, sourceRef)
-            .catch(err => {
-                setError(err);
-            })
-            .then((response) => {
-                setError(false);
-                setDisabled(false);
-                setShow(false);
-                if (onCreate !== null) onCreate(response);
-            });
+
+        try {
+            await branches.create(repo.id, branchId, sourceRef);
+            setError(false);
+            setDisabled(false);
+            setShow(false);
+            onCreate();
+        } catch (err) {
+            setError(err);
+            setDisabled(false);
+        }
     };
 
     return (
@@ -181,7 +182,6 @@ const CreateBranchButton = ({ repo, variant = "success", onCreate = null, childr
                     </Form>
 
                     {!!error && <Error error={error}/>}
-
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="secondary" disabled={disabled} onClick={hide}>
