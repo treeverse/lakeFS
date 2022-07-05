@@ -5,7 +5,8 @@ import (
 )
 
 type OIDC struct {
-	Enabled bool `mapstructure:"enabled"`
+	Enabled        bool `mapstructure:"enabled"`
+	IsDefaultLogin bool `mapstructure:"is_default_login"`
 
 	// provider details:
 	URL          string `mapstructure:"url"`

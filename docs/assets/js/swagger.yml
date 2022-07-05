@@ -591,6 +591,8 @@ components:
           enum: [initialized, not_initialized]
         oidc_enabled:
           type: boolean
+        oidc_default_login:
+          type: boolean
     AccessKeyCredentials:
       type: object
       properties:

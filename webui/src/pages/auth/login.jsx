@@ -10,6 +10,8 @@ import {Error} from "../../lib/components/controls"
 import {useRouter} from "../../lib/hooks/router";
 import {useAPI} from "../../lib/hooks/api";
 
+const OIDC_LOGIN_URL = "/oidc/login?prompt=login";
+
 const LoginForm = ({oidcEnabled}) => {
     const router = useRouter();
     const [loginError, setLoginError] = useState(null);
@@ -60,7 +62,7 @@ const LoginForm = ({oidcEnabled}) => {
                                 <Button variant="link" className="text-secondary mt-2" onClick={async ()=> {
                                     document.cookie = 'oidc_auth_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
                                     document.cookie = 'internal_auth_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-                                    window.location = "/oidc/login?prompt=login";
+                                    window.location = OIDC_LOGIN_URL;
                                 }}>Sign in with SSO provider</Button>
                                 : ""
                             }
@@ -81,6 +83,9 @@ const LoginPage = () => {
     }
     if (!error && response && response.state !== SETUP_STATE_INITIALIZED) {
         router.push({pathname: '/setup', query: router.query})
+    }
+    if (!error && response && response.oidc_default_login) {
+        window.location = OIDC_LOGIN_URL;
     }
     return (
         <Layout logged={false}>
