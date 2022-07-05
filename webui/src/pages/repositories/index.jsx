@@ -251,18 +251,7 @@ const ModalTitleContainer = () => {
 
 const TemplatesModalTitleContainer = () => {
     return (
-        <Container fluid="true" className="justify-content-start">
-            <Row>
-                <Col>
-                    <Modal.Title>Spark Quickstart</Modal.Title>
-                </Col>
-            </Row>
-            <Row>
-                <Col>
-                    Please follow the next steps to create a Spark compatible Repository
-                </Col>
-            </Row>
-        </Container>
+        <Modal.Title>Spark Quickstart</Modal.Title>
     );
 };
 
