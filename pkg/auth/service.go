@@ -57,7 +57,7 @@ const (
 
 type GatewayService interface {
 	GetCredentials(_ context.Context, accessKey string) (*model.Credential, error)
-	GetUserByID(ctx context.Context, userID string) (*model.User, error)
+	GetUser(ctx context.Context, username string) (*model.User, error)
 	Authorize(_ context.Context, req *AuthorizationRequest) (*AuthorizationResponse, error)
 }
 

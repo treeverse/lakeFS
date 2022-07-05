@@ -29,12 +29,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-type userDetails struct {
-	name string
-	kvID string
-}
-
-type UserIDToDetails map[int64]userDetails
+type UserIDToName map[int64]string
 
 type IDToName map[int]string
 
@@ -937,13 +932,13 @@ func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
 	return nil
 }
 
-func exportUsers(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (UserIDToDetails, error) {
+func exportUsers(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (UserIDToName, error) {
 	rows, err := d.Query(ctx, "SELECT * FROM auth_users ORDER BY created_at ASC")
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	userIDToDetails := make(UserIDToDetails)
+	users := make(UserIDToName)
 	scanner := pgxscan.NewRowScanner(rows)
 	for rows.Next() {
 		dbUser := model.DBUser{}
@@ -965,12 +960,9 @@ func exportUsers(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (UserID
 			return nil, err
 		}
 
-		userIDToDetails[dbUser.ID] = userDetails{
-			kvID: model.ConvertDBID(dbUser.ID),
-			name: dbUser.Username,
-		}
+		users[dbUser.ID] = dbUser.Username
 	}
-	return userIDToDetails, nil
+	return users, nil
 }
 
 func exportGroups(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (IDToName, error) {
@@ -1035,7 +1027,7 @@ func exportPolicies(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (IDT
 	return policyIDToName, nil
 }
 
-func exportUserGroups(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, usersDetails UserIDToDetails, groupsNames IDToName) error {
+func exportUserGroups(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, users UserIDToName, groupsNames IDToName) error {
 	type relation struct {
 		UserID  int64 `db:"user_id"`
 		GroupID int   `db:"group_id"`
@@ -1052,7 +1044,7 @@ func exportUserGroups(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, us
 		if err != nil {
 			return err
 		}
-		userDetails, ok := usersDetails[ug.UserID]
+		username, ok := users[ug.UserID]
 		if !ok {
 			return fmt.Errorf("user ID %d: %w", ug.UserID, ErrExportedEntNotFound)
 		}
@@ -1060,7 +1052,6 @@ func exportUserGroups(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, us
 		if !ok {
 			return fmt.Errorf("group ID %d: %w", ug.GroupID, ErrExportedEntNotFound)
 		}
-		username := userDetails.name
 		key := model.GroupUserPath(groupName, username)
 		secIndex := kv.SecondaryIndex{PrimaryKey: []byte(model.UserPath(username))}
 		value, err := proto.Marshal(&secIndex)
@@ -1078,7 +1069,7 @@ func exportUserGroups(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, us
 	return nil
 }
 
-func exportUserPolicies(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, usersDetails UserIDToDetails, policiesNames IDToName) error {
+func exportUserPolicies(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, users UserIDToName, policiesNames IDToName) error {
 	type relation struct {
 		UserID   int64 `db:"user_id"`
 		PolicyID int   `db:"policy_id"`
@@ -1099,11 +1090,11 @@ func exportUserPolicies(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, 
 		if !ok {
 			return fmt.Errorf("policy ID %d: %w", up.PolicyID, ErrExportedEntNotFound)
 		}
-		userDetails, ok := usersDetails[up.UserID]
+		username, ok := users[up.UserID]
 		if !ok {
 			return fmt.Errorf("user ID %d: %w", up.UserID, ErrExportedEntNotFound)
 		}
-		key := model.UserPolicyPath(userDetails.name, policyName)
+		key := model.UserPolicyPath(username, policyName)
 		secIndex := kv.SecondaryIndex{PrimaryKey: []byte(model.PolicyPath(policyName))}
 		value, err := proto.Marshal(&secIndex)
 		if err != nil {
@@ -1162,7 +1153,7 @@ func exportGroupPolicies(ctx context.Context, d *pgxpool.Pool, je *json.Encoder,
 	return nil
 }
 
-func exportCredentials(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, userIDToDetails UserIDToDetails) error {
+func exportCredentials(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, userIDToDetails UserIDToName) error {
 	rows, err := d.Query(ctx, "SELECT * from auth_credentials")
 	if err != nil {
 		return err
@@ -1175,15 +1166,15 @@ func exportCredentials(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, u
 		if err != nil {
 			return err
 		}
-		userDetails, ok := userIDToDetails[dbCred.UserID]
+		username, ok := userIDToDetails[dbCred.UserID]
 		if !ok {
 			return fmt.Errorf("user ID %d: %w", dbCred.UserID, ErrExportedEntNotFound)
 		}
 		kvCred := &model.Credential{
-			Username:       userDetails.kvID,
+			Username:       username,
 			BaseCredential: dbCred.BaseCredential,
 		}
-		key := model.CredentialPath(userDetails.name, dbCred.AccessKeyID)
+		key := model.CredentialPath(username, dbCred.AccessKeyID)
 		value, err := proto.Marshal(model.ProtoFromCredential(kvCred))
 		if err != nil {
 			return err
