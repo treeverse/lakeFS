@@ -17,12 +17,11 @@ const Wizard = ({
                     hashEnabled=false,
                     transitions=transitionDefaults,
                     progressBar = false,
-                    isGoBackButton = false,
-                    isSkipButton = false,
+                    skipButton = false,
                     onComplete=(any) => any,
                     canProceed = true,
                     onNextStep = () => {},
-                    children
+                    children,
                 }) => {
 
     const [state, setState] = useState({
@@ -59,8 +58,7 @@ const Wizard = ({
             {<WizardController
                 stepWizard={state.stepWizard}
                 canProceed={canProceed}
-                isSkipButton={isSkipButton}
-                isGoBackButton={isGoBackButton}
+                skipButton={skipButton}
                 onComplete={onComplete}/>}
 
         </Container>
@@ -73,7 +71,7 @@ const WizardNav = ({totalSteps, currentStep}) => {
     );
 }
 
-const WizardController = ({stepWizard, canProceed, isSkipButton = false, onComplete}) => {
+const WizardController = ({stepWizard, canProceed, skipButton = false, onComplete}) => {
     const finalStep = () => {
         onComplete();
     }
@@ -81,7 +79,7 @@ const WizardController = ({stepWizard, canProceed, isSkipButton = false, onCompl
         <Container>
             <Row className={'justify-content-center'}>
                 {
-                    isSkipButton && stepWizard.currentStep < stepWizard.totalSteps ?
+                    skipButton && stepWizard.currentStep < stepWizard.totalSteps ?
                         <Col className={"col-1 mb-2 mt-2"}>
                             <button className='btn btn-secondary btn-block' onClick={stepWizard.nextStep}>Skip</button>
                         </Col>
@@ -91,9 +89,7 @@ const WizardController = ({stepWizard, canProceed, isSkipButton = false, onCompl
                 <Col className={"col-2 mb-2 mt-2"}>
                     {
                         stepWizard.currentStep < stepWizard.totalSteps ?
-                            <div>
-                                <button className='btn btn-primary btn-block' disabled={!canProceed} onClick={stepWizard.nextStep}>Next Step</button>
-                            </div>
+                            <button className='btn btn-primary btn-block' disabled={!canProceed} onClick={stepWizard.nextStep}>Next Step</button>
                             :
                             <button className='btn btn-success btn-block' onClick={finalStep} disabled={!canProceed}>Finish</button>
                     }
@@ -102,5 +98,4 @@ const WizardController = ({stepWizard, canProceed, isSkipButton = false, onCompl
         </Container>
     );
 }
-
 export default Wizard;
