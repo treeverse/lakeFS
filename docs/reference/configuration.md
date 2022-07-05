@@ -57,6 +57,7 @@ This reference uses `.` to denote the nesting of values.
 * `auth.ldap.default_user_group` `(string : )` - Create all LDAP users in this group.  Defaults to `Viewers`.
 * `auth.ldap.user_filter` `(string : )` - Additional filter for users.
 * `auth.oidc.enabled` `(boolean : false)` - Set to true to enable authentication with an external OIDC provider.
+* `auth.oidc.is_default_login` `(boolean : false)` - If true, the lakeFS login page will redirect to the external provider by default.
 * `auth.oidc.client_id` `(string : )` - OIDC client ID.
 * `auth.oidc.client_secret` `(string : )` - OIDC client secret.
 * `auth.oidc.url` `(string : )` - The base URL of your OIDC compatible identity provider.
