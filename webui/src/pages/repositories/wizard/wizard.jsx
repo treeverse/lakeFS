@@ -18,7 +18,7 @@ const Wizard = ({
                     transitions=transitionDefaults,
                     progressBar = false,
                     skipButton = false,
-                    onComplete=(any) => any,
+                    onComplete = () => {},
                     canProceed = true,
                     onNextStep = () => {},
                     children,
@@ -27,9 +27,10 @@ const Wizard = ({
     const [state, setState] = useState({
         stepWizard: {},
     });
+    const [refresh, setRefresh] = useState(false);
 
     const onStepChange = () => {
-        setState({...state});
+        setRefresh(!refresh);
         onNextStep();
     };
 
@@ -72,9 +73,6 @@ const WizardNav = ({totalSteps, currentStep}) => {
 }
 
 const WizardController = ({stepWizard, canProceed, skipButton = false, onComplete}) => {
-    const finalStep = () => {
-        onComplete();
-    }
     return (
         <Container>
             <Row className={'justify-content-center'}>
@@ -91,11 +89,12 @@ const WizardController = ({stepWizard, canProceed, skipButton = false, onComplet
                         stepWizard.currentStep < stepWizard.totalSteps ?
                             <button className='btn btn-primary btn-block' disabled={!canProceed} onClick={stepWizard.nextStep}>Next Step</button>
                             :
-                            <button className='btn btn-success btn-block' onClick={finalStep} disabled={!canProceed}>Finish</button>
+                            <button className='btn btn-success btn-block' onClick={onComplete} disabled={!canProceed}>Finish</button>
                     }
                 </Col>
             </Row>
         </Container>
     );
 }
+
 export default Wizard;
