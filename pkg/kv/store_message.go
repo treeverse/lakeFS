@@ -85,6 +85,14 @@ func NewPrimaryIterator(ctx context.Context, store Store, msgType protoreflect.M
 	return &PrimaryIterator{itr: NewSkipIterator(itr, []byte(after)), msgType: msgType}, nil
 }
 
+func NewPrimaryIteratorGE(ctx context.Context, store Store, msgType protoreflect.MessageType, partitionKey, prefix, after string) (*PrimaryIterator, error) {
+	itr, err := ScanPrefix(ctx, store, []byte(partitionKey), []byte(prefix), []byte(after))
+	if err != nil {
+		return nil, fmt.Errorf("create prefix iterator: %w", err)
+	}
+	return &PrimaryIterator{itr: itr, msgType: msgType}, nil
+}
+
 func (i *PrimaryIterator) Next() bool {
 	if i.Err() != nil {
 		return false

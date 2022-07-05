@@ -91,7 +91,7 @@ func (ri *DBTagIterator) maybeFetch() {
 	}
 }
 
-func (ri *DBTagIterator) SeekGE(_ context.Context, id graveler.TagID, _ graveler.RepositoryID) error {
+func (ri *DBTagIterator) SeekGE(id graveler.TagID) error {
 	if errors.Is(ri.err, ErrIteratorClosed) {
 		return nil
 	}

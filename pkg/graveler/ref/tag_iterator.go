@@ -8,10 +8,11 @@ import (
 )
 
 type KVTagIterator struct {
-	it    kv.MessageIterator
-	err   error
-	value *graveler.TagRecord
-	store kv.Store
+	it     kv.MessageIterator
+	err    error
+	value  *graveler.TagRecord
+	repoID string
+	store  kv.Store
 }
 
 func NewKVTagIterator(ctx context.Context, store kv.StoreMessage, repositoryID graveler.RepositoryID) (*KVTagIterator, error) {
@@ -22,8 +23,9 @@ func NewKVTagIterator(ctx context.Context, store kv.StoreMessage, repositoryID g
 		return nil, err
 	}
 	return &KVTagIterator{
-		it:    it,
-		store: store.Store,
+		it:     it,
+		store:  store.Store,
+		repoID: repositoryID.String(),
 	}, nil
 }
 
@@ -48,11 +50,12 @@ func (i *KVTagIterator) Next() bool {
 	return true
 }
 
-func (i *KVTagIterator) SeekGE(ctx context.Context, id graveler.TagID, repoId graveler.RepositoryID) error {
-	it, err := kv.NewPrimaryIterator(ctx, i.store, (&graveler.TagData{}).ProtoReflect().Type(),
-		graveler.TagPartition(repoId.String()),
-		graveler.TagPath(""), id.String())
-	i.it = it
+func (i *KVTagIterator) SeekGE(id graveler.TagID) error {
+	ctx := context.Background()
+	x, err := kv.NewPrimaryIteratorGE(ctx, i.store, (&graveler.TagData{}).ProtoReflect().Type(),
+		graveler.TagPartition(i.repoID),
+		graveler.TagPath(""), graveler.TagPath(id.String()))
+	i.it = x
 	return err
 }
 

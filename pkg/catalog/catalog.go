@@ -584,9 +584,9 @@ func (c *Catalog) ListTags(ctx context.Context, repository string, prefix string
 	afterTagID := graveler.TagID(after)
 	prefixTagID := graveler.TagID(prefix)
 	if afterTagID < prefixTagID {
-		it.SeekGE(ctx, prefixTagID, repositoryID)
+		it.SeekGE(prefixTagID)
 	} else {
-		it.SeekGE(ctx, afterTagID, repositoryID)
+		it.SeekGE(afterTagID)
 	}
 	var tags []*Tag
 	for it.Next() {

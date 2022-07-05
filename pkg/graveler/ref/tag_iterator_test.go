@@ -48,7 +48,7 @@ func TestDBTagIterator(t *testing.T) {
 	t.Run("listing tags using prefix", func(t *testing.T) {
 		iter, err := ref.NewDBTagIterator(ctx, db, "repo1", 3)
 		testutil.Must(t, err)
-		iter.SeekGE(ctx, "b", "repo1")
+		iter.SeekGE("b")
 		ids := make([]graveler.TagID, 0)
 		for iter.Next() {
 			b := iter.Value()
@@ -67,7 +67,7 @@ func TestDBTagIterator(t *testing.T) {
 	t.Run("listing tags SeekGE", func(t *testing.T) {
 		iter, err := ref.NewDBTagIterator(ctx, db, "repo1", 3)
 		testutil.Must(t, err)
-		iter.SeekGE(ctx, "b", "repo1")
+		iter.SeekGE("b")
 		ids := make([]graveler.TagID, 0)
 		for iter.Next() {
 			b := iter.Value()
@@ -82,7 +82,7 @@ func TestDBTagIterator(t *testing.T) {
 		}
 
 		// now let's seek
-		iter.SeekGE(ctx, "aa", "repo1")
+		iter.SeekGE("aa")
 		ids = make([]graveler.TagID, 0)
 		for iter.Next() {
 			b := iter.Value()
@@ -136,7 +136,7 @@ func TestKVTagIterator(t *testing.T) {
 	t.Run("listing tags using prefix", func(t *testing.T) {
 		iter, err := ref.NewKVTagIterator(ctx, kvstore, "repo1")
 		testutil.Must(t, err)
-		iter.SeekGE(ctx, "b", "repo1")
+		iter.SeekGE("b")
 		ids := make([]graveler.TagID, 0)
 		for iter.Next() {
 			b := iter.Value()
@@ -155,7 +155,7 @@ func TestKVTagIterator(t *testing.T) {
 	t.Run("listing tags SeekGE", func(t *testing.T) {
 		iter, err := ref.NewKVTagIterator(ctx, kvstore, "repo1")
 		testutil.Must(t, err)
-		iter.SeekGE(ctx, "b", "repo1")
+		iter.SeekGE("b")
 		ids := make([]graveler.TagID, 0)
 		for iter.Next() {
 			b := iter.Value()
@@ -170,7 +170,7 @@ func TestKVTagIterator(t *testing.T) {
 		}
 
 		// now let's seek
-		iter.SeekGE(ctx, "aa", "repo1")
+		iter.SeekGE("aa")
 		ids = make([]graveler.TagID, 0)
 		for iter.Next() {
 			b := iter.Value()

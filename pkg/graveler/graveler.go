@@ -574,7 +574,7 @@ type BranchIterator interface {
 
 type TagIterator interface {
 	Next() bool
-	SeekGE(ctx context.Context, id TagID, repoId RepositoryID) error
+	SeekGE(id TagID) error
 	Value() *TagRecord
 	Err() error
 	Close()
@@ -1222,9 +1222,9 @@ func (t *tagValueIterator) setValue() bool {
 }
 
 func (t *tagValueIterator) SeekGE(id Key) {
-	//t.err = nil
-	//t.value = nil
-	//t.src.SeekGE(TagID(id))
+	t.err = nil
+	t.value = nil
+	t.src.SeekGE(TagID(id))
 }
 
 func (t *tagValueIterator) Value() *ValueRecord {
