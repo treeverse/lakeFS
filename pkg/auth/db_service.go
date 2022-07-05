@@ -124,6 +124,15 @@ func getDBUserByEmail(tx db.Tx, email string) (*model.User, error) {
 	return model.ConvertUser(user), nil
 }
 
+func getDBUserByExternalID(tx db.Tx, externalID string) (*model.User, error) {
+	user := &model.DBUser{}
+	err := tx.Get(user, `SELECT * FROM auth_users WHERE external_id = $1`, externalID)
+	if err != nil {
+		return nil, err
+	}
+	return model.ConvertUser(user), nil
+}
+
 func getDBGroup(tx db.Tx, groupDisplayName string) (*model.DBGroup, error) {
 	group := &model.DBGroup{}
 	err := tx.Get(group, `SELECT * FROM auth_groups WHERE display_name = $1`, groupDisplayName)
@@ -222,7 +231,7 @@ func (s *DBAuthService) DeleteUser(ctx context.Context, username string) error {
 }
 
 func (s *DBAuthService) GetUser(ctx context.Context, username string) (*model.User, error) {
-	return s.cache.GetUser(username, func() (*model.User, error) {
+	return s.cache.GetUser(&userKey{username: username}, func() (*model.User, error) {
 		user, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			return getDBUser(tx, username)
 		}, db.ReadOnly())
@@ -234,17 +243,31 @@ func (s *DBAuthService) GetUser(ctx context.Context, username string) (*model.Us
 }
 
 func (s *DBAuthService) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
-	user, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		return getDBUserByEmail(tx, email)
-	}, db.ReadOnly())
-	if err != nil {
-		return nil, err
-	}
-	return user.(*model.User), nil
+	return s.cache.GetUser(&userKey{email: email}, func() (*model.User, error) {
+		user, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
+			return getDBUserByEmail(tx, email)
+		}, db.ReadOnly())
+		if err != nil {
+			return nil, err
+		}
+		return user.(*model.User), nil
+	})
+}
+
+func (s *DBAuthService) GetUserByExternalID(ctx context.Context, externalID string) (*model.User, error) {
+	return s.cache.GetUser(&userKey{externalID: externalID}, func() (*model.User, error) {
+		user, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
+			return getDBUserByExternalID(tx, externalID)
+		}, db.ReadOnly())
+		if err != nil {
+			return nil, err
+		}
+		return user.(*model.User), nil
+	})
 }
 
 func (s *DBAuthService) GetUserByID(ctx context.Context, userID string) (*model.User, error) {
-	return s.cache.GetUserByID(userID, func() (*model.User, error) {
+	return s.cache.GetUser(&userKey{id: userID}, func() (*model.User, error) {
 		user, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			user := &model.DBUser{}
 			err := tx.Get(user, `SELECT * FROM auth_users WHERE id = $1`, userID)
