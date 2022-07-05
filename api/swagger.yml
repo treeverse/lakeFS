@@ -3535,6 +3535,8 @@ paths:
             type: object
             additionalProperties:
               type: string
+            example:
+              lakefs_url: https://lakefs.example.com
       responses:
         200:
           description: expanded template

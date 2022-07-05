@@ -5,7 +5,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/config"
 
 	"context"
-	"fmt"
 	"io"
 	"io/fs"
 )
@@ -40,13 +39,5 @@ func (s *service) Expand(ctx context.Context, w io.Writer, user *model.User, tem
 			Query:    query,
 		},
 	}
-	err = e.Prepare(params)
-	if err != nil {
-		return err
-	}
-	err = e.Expand(w, params)
-	if err != nil {
-		return fmt.Errorf("writing template: %w", err)
-	}
-	return nil
+	return e.Expand(w, params)
 }

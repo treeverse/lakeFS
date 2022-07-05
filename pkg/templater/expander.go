@@ -56,14 +56,10 @@ type Params struct {
 
 // Expander is a template that may be expanded as requested by users.
 type Expander interface {
-	// Prepare checks whether the template expansion will succeed.  Call
-	// it before Expand to ensure nothing is written when expansion fails.
-	Prepare(params *Params) error
-
-	// Expand returns an error or serves the template into w.  It may
-	// write to w before returning an expansion error; call Prepare
-	// first to avoid this.  (However Expand may still fail, for
-	// instance if writing fails!)
+	// Expand serves the template into w using the parameters specified
+	// in params.  If during expansion a template function fails,
+	// returns an error without writing anything to w.  (However if
+	// expansion fails for other reasons, Expand may write to w!)
 	Expand(w io.Writer, params *Params) error
 }
 
@@ -88,14 +84,22 @@ func MakeExpander(name, tmpl string, cfg *config.Config, auth AuthService) (Expa
 	}, nil
 }
 
-func (e *expander) Prepare(params *Params) error {
-	return e.Expand(io.Discard, params)
+func (e *expander) Expand(w io.Writer, params *Params) error {
+	// Expand with no output: verify that no template functions will
+	// fail.
+	if err := e.expandTo(io.Discard, params); err != nil {
+		return fmt.Errorf("prepare: %w", err)
+	}
+	if err := e.expandTo(w, params); err != nil {
+		return fmt.Errorf("execute: %w", err)
+	}
+	return nil
 }
 
-func (e *expander) Expand(w io.Writer, params *Params) error {
+func (e *expander) expandTo(w io.Writer, params *Params) error {
 	clone, err := e.template.Clone()
 	if err != nil {
-		return fmt.Errorf("Expand: %w", err)
+		return err
 	}
 	wrappedFuncs := WrapFuncMapWithData(templateFuncs, params.Controlled)
 	clone.Funcs(wrappedFuncs)
