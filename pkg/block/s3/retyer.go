@@ -25,7 +25,7 @@ type errConnectionResetRetryer struct {
 // and whether it is safe to retry -
 // https://github.com/aws/aws-sdk-go/pull/2926#issuecomment-553637658.
 //
-// In lakeFS all operations with s3 (read, write, list) are considered idempotent,
+// In lakeFS all operations with s3 are considered idempotent,
 // and so we can treat the read connection reset error as retryable too.
 func isErrReadConnectionReset(err error) bool {
 	// The error string must match the one in
