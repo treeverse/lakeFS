@@ -4,51 +4,29 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/lib/pq"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/ident"
-	"github.com/treeverse/lakefs/pkg/kv"
 )
 
-// IteratorPrefetchSize is the amount of records to maybeFetch from PG
-const IteratorPrefetchSize = 1000
-
-// MaxBatchDelay - 3ms was chosen as a max delay time for critical path queries.
-// It trades off amount of queries per second (and thus effectiveness of the batching mechanism) with added latency.
-// Since reducing # of expensive operations is only beneficial when there are a lot of concurrent requests,
-// 	the sweet spot is probably between 1-5 milliseconds (representing 200-1000 requests/second to the data store).
-// 3ms of delay with ~300 requests/second per resource sounds like a reasonable tradeoff.
-const MaxBatchDelay = time.Millisecond * 3
-
-const BatchUpdateSQLSize = 10000
-
-type KVManager struct {
+type DBManager struct {
 	db              db.Database
-	kvStore         kv.StoreMessage
 	addressProvider ident.AddressProvider
 	batchExecutor   batch.Batcher
 }
 
-type CommitNode struct {
-	children       []graveler.CommitID
-	parentsToVisit map[graveler.CommitID]struct{}
-	generation     int
-}
-
-func NewKVPGRefManager(executor batch.Batcher, kvStore kv.StoreMessage, db db.Database, addressProvider ident.AddressProvider) *KVManager {
-	return &KVManager{
+func NewPGRefManager(executor batch.Batcher, db db.Database, addressProvider ident.AddressProvider) *DBManager {
+	return &DBManager{
 		db:              db,
-		kvStore:         kvStore,
 		addressProvider: addressProvider,
 		batchExecutor:   executor,
 	}
 }
 
-func (m *KVManager) GetRepository(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.Repository, error) {
+func (m *DBManager) GetRepository(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.Repository, error) {
 	key := fmt.Sprintf("GetRepository:%s", repositoryID)
 	repository, err := m.batchExecutor.BatchFor(key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
 		return m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
@@ -71,7 +49,7 @@ func (m *KVManager) GetRepository(ctx context.Context, repositoryID graveler.Rep
 	return repository.(*graveler.Repository), nil
 }
 
-func (m *KVManager) createBareRepository(tx db.Tx, repositoryID graveler.RepositoryID, repository graveler.Repository) error {
+func (m *DBManager) createBareRepository(tx db.Tx, repositoryID graveler.RepositoryID, repository graveler.Repository) error {
 	_, err := tx.Exec(
 		`INSERT INTO graveler_repositories (id, storage_namespace, creation_date, default_branch) VALUES ($1, $2, $3, $4)`,
 		repositoryID, repository.StorageNamespace, repository.CreationDate, repository.DefaultBranchID)
@@ -81,7 +59,7 @@ func (m *KVManager) createBareRepository(tx db.Tx, repositoryID graveler.Reposit
 	return nil
 }
 
-func (m *KVManager) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository, token graveler.StagingToken) error {
+func (m *DBManager) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository, token graveler.StagingToken) error {
 	firstCommit := graveler.NewCommit()
 	firstCommit.Message = graveler.FirstCommitMsg
 	firstCommit.Generation = 1
@@ -113,18 +91,18 @@ func (m *KVManager) CreateRepository(ctx context.Context, repositoryID graveler.
 	return err
 }
 
-func (m *KVManager) CreateBareRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository) error {
+func (m *DBManager) CreateBareRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository) error {
 	_, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		return nil, m.createBareRepository(tx, repositoryID, repository)
 	})
 	return err
 }
 
-func (m *KVManager) ListRepositories(ctx context.Context) (graveler.RepositoryIterator, error) {
+func (m *DBManager) ListRepositories(ctx context.Context) (graveler.RepositoryIterator, error) {
 	return NewRepositoryIterator(ctx, m.db, IteratorPrefetchSize), nil
 }
 
-func (m *KVManager) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID) error {
+func (m *DBManager) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID) error {
 	_, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		var err error
 		_, err = tx.Exec(`DELETE FROM graveler_branches WHERE repository_id = $1`, repositoryID)
@@ -154,15 +132,15 @@ func (m *KVManager) DeleteRepository(ctx context.Context, repositoryID graveler.
 	return err
 }
 
-func (m *KVManager) ParseRef(ref graveler.Ref) (graveler.RawRef, error) {
+func (m *DBManager) ParseRef(ref graveler.Ref) (graveler.RawRef, error) {
 	return ParseRef(ref)
 }
 
-func (m *KVManager) ResolveRawRef(ctx context.Context, repositoryID graveler.RepositoryID, raw graveler.RawRef) (*graveler.ResolvedRef, error) {
+func (m *DBManager) ResolveRawRef(ctx context.Context, repositoryID graveler.RepositoryID, raw graveler.RawRef) (*graveler.ResolvedRef, error) {
 	return ResolveRawRef(ctx, m, m.addressProvider, repositoryID, raw)
 }
 
-func (m *KVManager) GetBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) (*graveler.Branch, error) {
+func (m *DBManager) GetBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) (*graveler.Branch, error) {
 	key := fmt.Sprintf("GetBranch:%s:%s", repositoryID, branchID)
 	branch, err := m.batchExecutor.BatchFor(key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
 		return m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
@@ -187,7 +165,7 @@ func (m *KVManager) GetBranch(ctx context.Context, repositoryID graveler.Reposit
 	return branch.(*graveler.Branch), nil
 }
 
-func (m *KVManager) CreateBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, branch graveler.Branch) error {
+func (m *DBManager) CreateBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, branch graveler.Branch) error {
 	_, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		_, err := tx.Exec(`
 			INSERT INTO graveler_branches (repository_id, id, staging_token, commit_id)
@@ -201,7 +179,7 @@ func (m *KVManager) CreateBranch(ctx context.Context, repositoryID graveler.Repo
 	return err
 }
 
-func (m *KVManager) SetBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, branch graveler.Branch) error {
+func (m *DBManager) SetBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, branch graveler.Branch) error {
 	_, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		_, err := tx.Exec(`
 			INSERT INTO graveler_branches (repository_id, id, staging_token, commit_id)
@@ -214,7 +192,7 @@ func (m *KVManager) SetBranch(ctx context.Context, repositoryID graveler.Reposit
 	return err
 }
 
-func (m *KVManager) DeleteBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) error {
+func (m *DBManager) DeleteBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) error {
 	_, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		r, err := tx.Exec(
 			`DELETE FROM graveler_branches WHERE repository_id = $1 AND id = $2`,
@@ -233,7 +211,7 @@ func (m *KVManager) DeleteBranch(ctx context.Context, repositoryID graveler.Repo
 	return err
 }
 
-func (m *KVManager) ListBranches(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.BranchIterator, error) {
+func (m *DBManager) ListBranches(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.BranchIterator, error) {
 	_, err := m.GetRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, err
@@ -241,54 +219,72 @@ func (m *KVManager) ListBranches(ctx context.Context, repositoryID graveler.Repo
 	return NewBranchIterator(ctx, m.db, repositoryID, IteratorPrefetchSize), nil
 }
 
-func (m *KVManager) GetTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID) (*graveler.CommitID, error) {
-	tagKey := graveler.TagPath(tagID.String())
-	t := graveler.TagData{}
-	_, err := m.kvStore.GetMsg(ctx, graveler.TagPartition(repositoryID.String()), tagKey, &t)
-	if err != nil {
-		if errors.Is(err, kv.ErrNotFound) {
-			err = graveler.ErrTagNotFound
-		}
-		return nil, fmt.Errorf("%s: %w", tagKey, err)
+func (m *DBManager) GetTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID) (*graveler.CommitID, error) {
+	key := fmt.Sprintf("GetTag:%s:%s", repositoryID, tagID)
+	commitID, err := m.batchExecutor.BatchFor(key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
+		return m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
+			var commitID graveler.CommitID
+			err := tx.Get(&commitID, `SELECT commit_id FROM graveler_tags WHERE repository_id = $1 AND id = $2`,
+				repositoryID, tagID)
+			if err != nil {
+				return nil, err
+			}
+			return &commitID, nil
+		}, db.ReadOnly())
+	}))
+	if errors.Is(err, db.ErrNotFound) {
+		return nil, graveler.ErrTagNotFound
 	}
-	commitId := graveler.CommitID(t.CommitId)
-	return &commitId, nil
+	if err != nil {
+		return nil, err
+	}
+	return commitID.(*graveler.CommitID), nil
 }
 
-func (m *KVManager) CreateTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID, commitID graveler.CommitID) error {
-	t := &graveler.TagData{
-		Id:       tagID.String(),
-		CommitId: commitID.String(),
-	}
-	tagKey := graveler.TagPath(tagID.String())
-	err := m.kvStore.SetMsgIf(ctx, graveler.TagPartition(repositoryID.String()), tagKey, t, nil)
-	if err != nil {
-		if errors.Is(err, kv.ErrPredicateFailed) {
-			err = graveler.ErrTagAlreadyExists
+func (m *DBManager) CreateTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID, commitID graveler.CommitID) error {
+	_, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
+		res, err := tx.Exec(`INSERT INTO graveler_tags (repository_id, id, commit_id) VALUES ($1, $2, $3)
+			ON CONFLICT DO NOTHING`,
+			repositoryID, tagID, commitID)
+		if err != nil {
+			return nil, err
 		}
-		return fmt.Errorf("save tag (tagKey %s): %w", tagKey, err)
+		if res.RowsAffected() == 0 {
+			return nil, graveler.ErrTagAlreadyExists
+		}
+		return nil, nil
+	})
+	return err
+}
+
+func (m *DBManager) DeleteTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID) error {
+	_, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
+		r, err := tx.Exec(
+			`DELETE FROM graveler_tags WHERE repository_id = $1 AND id = $2`,
+			repositoryID, tagID)
+		if err != nil {
+			return nil, err
+		}
+		if r.RowsAffected() == 0 {
+			return nil, graveler.ErrNotFound
+		}
+		return nil, nil
+	})
+	if errors.Is(err, db.ErrNotFound) {
+		return graveler.ErrTagNotFound
 	}
 	return err
 }
 
-func (m *KVManager) DeleteTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID) error {
-	tagKey := graveler.TagPath(tagID.String())
-	err := m.kvStore.DeleteMsg(ctx, graveler.TagPartition(repositoryID.String()), tagKey)
-	if err != nil {
-		return fmt.Errorf("delete tag (tagKey %s): %w", tagKey, err)
-	}
-	return err
-}
-
-func (m *KVManager) ListTags(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.TagIterator, error) {
+func (m *DBManager) ListTags(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.TagIterator, error) {
 	_, err := m.GetRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, err
 	}
-	return NewKVTagIterator(ctx, m.kvStore, repositoryID)
+	return NewDBTagIterator(ctx, m.db, repositoryID, IteratorPrefetchSize)
 }
 
-func (m *KVManager) GetCommitByPrefix(ctx context.Context, repositoryID graveler.RepositoryID, prefix graveler.CommitID) (*graveler.Commit, error) {
+func (m *DBManager) GetCommitByPrefix(ctx context.Context, repositoryID graveler.RepositoryID, prefix graveler.CommitID) (*graveler.Commit, error) {
 	key := fmt.Sprintf("GetCommitByPrefix:%s:%s", repositoryID, prefix)
 
 	commit, err := m.batchExecutor.BatchFor(key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
@@ -326,7 +322,7 @@ func (m *KVManager) GetCommitByPrefix(ctx context.Context, repositoryID graveler
 	return commit.(*graveler.Commit), nil
 }
 
-func (m *KVManager) GetCommit(ctx context.Context, repositoryID graveler.RepositoryID, commitID graveler.CommitID) (*graveler.Commit, error) {
+func (m *DBManager) GetCommit(ctx context.Context, repositoryID graveler.RepositoryID, commitID graveler.CommitID) (*graveler.Commit, error) {
 	key := fmt.Sprintf("GetCommit:%s:%s", repositoryID, commitID)
 	commit, err := m.batchExecutor.BatchFor(key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
 		return m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
@@ -350,7 +346,7 @@ func (m *KVManager) GetCommit(ctx context.Context, repositoryID graveler.Reposit
 	return commit.(*graveler.Commit), nil
 }
 
-func (m *KVManager) AddCommit(ctx context.Context, repositoryID graveler.RepositoryID, commit graveler.Commit) (graveler.CommitID, error) {
+func (m *DBManager) AddCommit(ctx context.Context, repositoryID graveler.RepositoryID, commit graveler.Commit) (graveler.CommitID, error) {
 	commitID := m.addressProvider.ContentAddress(commit)
 	_, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		return nil, m.addCommit(tx, repositoryID, commitID, commit)
@@ -361,7 +357,7 @@ func (m *KVManager) AddCommit(ctx context.Context, repositoryID graveler.Reposit
 	return graveler.CommitID(commitID), err
 }
 
-func (m *KVManager) addCommit(tx db.Tx, repositoryID graveler.RepositoryID, commitID string, commit graveler.Commit) error {
+func (m *DBManager) addCommit(tx db.Tx, repositoryID graveler.RepositoryID, commitID string, commit graveler.Commit) error {
 	// convert parents to slice of strings
 	var parents []string
 	for _, parent := range commit.Parents {
@@ -381,7 +377,7 @@ func (m *KVManager) addCommit(tx db.Tx, repositoryID graveler.RepositoryID, comm
 	return err
 }
 
-func (m *KVManager) updateCommitGeneration(tx db.Tx, repositoryID graveler.RepositoryID, nodes map[graveler.CommitID]*CommitNode) error {
+func (m *DBManager) updateCommitGeneration(tx db.Tx, repositoryID graveler.RepositoryID, nodes map[graveler.CommitID]*CommitNode) error {
 	for len(nodes) != 0 {
 		command := `WITH updated(id, generation) AS (VALUES `
 		var updatingRows int
@@ -406,7 +402,7 @@ func (m *KVManager) updateCommitGeneration(tx db.Tx, repositoryID graveler.Repos
 	return nil
 }
 
-func (m *KVManager) FindMergeBase(ctx context.Context, repositoryID graveler.RepositoryID, commitIDs ...graveler.CommitID) (*graveler.Commit, error) {
+func (m *DBManager) FindMergeBase(ctx context.Context, repositoryID graveler.RepositoryID, commitIDs ...graveler.CommitID) (*graveler.Commit, error) {
 	const allowedCommitsToCompare = 2
 	if len(commitIDs) != allowedCommitsToCompare {
 		return nil, graveler.ErrInvalidMergeBase
@@ -414,7 +410,7 @@ func (m *KVManager) FindMergeBase(ctx context.Context, repositoryID graveler.Rep
 	return FindMergeBase(ctx, m, repositoryID, commitIDs[0], commitIDs[1])
 }
 
-func (m *KVManager) Log(ctx context.Context, repositoryID graveler.RepositoryID, from graveler.CommitID) (graveler.CommitIterator, error) {
+func (m *DBManager) Log(ctx context.Context, repositoryID graveler.RepositoryID, from graveler.CommitID) (graveler.CommitIterator, error) {
 	_, err := m.GetRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, err
@@ -422,7 +418,7 @@ func (m *KVManager) Log(ctx context.Context, repositoryID graveler.RepositoryID,
 	return NewCommitIterator(ctx, m.db, repositoryID, from), nil
 }
 
-func (m *KVManager) ListCommits(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.CommitIterator, error) {
+func (m *DBManager) ListCommits(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.CommitIterator, error) {
 	_, err := m.GetRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, err
@@ -430,7 +426,7 @@ func (m *KVManager) ListCommits(ctx context.Context, repositoryID graveler.Repos
 	return NewOrderedCommitIterator(ctx, m.db, repositoryID, IteratorPrefetchSize), nil
 }
 
-func (m *KVManager) FillGenerations(ctx context.Context, repositoryID graveler.RepositoryID) error {
+func (m *DBManager) FillGenerations(ctx context.Context, repositoryID graveler.RepositoryID) error {
 	// update commitNodes' generation in nodes "tree" using BFS algorithm.
 	// using a queue implementation
 	// adding a node to the queue only after all of its parents were visited in order to avoid redundant visits of nodesCommitIDs
@@ -447,7 +443,7 @@ func (m *KVManager) FillGenerations(ctx context.Context, repositoryID graveler.R
 	return err
 }
 
-func (m *KVManager) createCommitIDsMap(ctx context.Context, repositoryID graveler.RepositoryID) (map[graveler.CommitID]*CommitNode, error) {
+func (m *DBManager) createCommitIDsMap(ctx context.Context, repositoryID graveler.RepositoryID) (map[graveler.CommitID]*CommitNode, error) {
 	iter, err := m.ListCommits(ctx, repositoryID)
 	if err != nil {
 		return nil, err
@@ -470,7 +466,7 @@ func (m *KVManager) createCommitIDsMap(ctx context.Context, repositoryID gravele
 	return nodes, nil
 }
 
-func (m *KVManager) getRootNodes(nodes map[graveler.CommitID]*CommitNode) []graveler.CommitID {
+func (m *DBManager) getRootNodes(nodes map[graveler.CommitID]*CommitNode) []graveler.CommitID {
 	var rootsCommitIDs []graveler.CommitID
 	for commitID, node := range nodes {
 		if len(node.parentsToVisit) == 0 {
@@ -480,7 +476,7 @@ func (m *KVManager) getRootNodes(nodes map[graveler.CommitID]*CommitNode) []grav
 	return rootsCommitIDs
 }
 
-func (m *KVManager) mapCommitNodesToChildren(nodes map[graveler.CommitID]*CommitNode) {
+func (m *DBManager) mapCommitNodesToChildren(nodes map[graveler.CommitID]*CommitNode) {
 	for commitID, commitNode := range nodes {
 		// adding current node as a child to all parents in commitNode.parentsToVisit
 		for parentID := range commitNode.parentsToVisit {
@@ -489,7 +485,7 @@ func (m *KVManager) mapCommitNodesToChildren(nodes map[graveler.CommitID]*Commit
 	}
 }
 
-func (m *KVManager) addGenerationToNodes(nodes map[graveler.CommitID]*CommitNode, rootsCommitIDs []graveler.CommitID) {
+func (m *DBManager) addGenerationToNodes(nodes map[graveler.CommitID]*CommitNode, rootsCommitIDs []graveler.CommitID) {
 	nodesCommitIDs := rootsCommitIDs
 	for currentGeneration := 1; len(nodesCommitIDs) > 0; currentGeneration++ {
 		var nextIterationNodes []graveler.CommitID

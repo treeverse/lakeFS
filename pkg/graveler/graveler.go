@@ -2,6 +2,7 @@ package graveler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -573,7 +574,7 @@ type BranchIterator interface {
 
 type TagIterator interface {
 	Next() bool
-	SeekGE(id TagID)
+	SeekGE(ctx context.Context, id TagID, repoId RepositoryID) error
 	Value() *TagRecord
 	Err() error
 	Close()
@@ -642,6 +643,9 @@ type RefManager interface {
 
 	// GetCommit returns the Commit metadata object for the given CommitID.
 	GetCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (*Commit, error)
+
+	// GetCommitByPrefix returns the Commit metadata object for the given prefix CommitID.
+	GetCommitByPrefix(ctx context.Context, repositoryID RepositoryID, prefix CommitID) (*Commit, error)
 
 	// AddCommit stores the Commit object, returning its ID
 	AddCommit(ctx context.Context, repositoryID RepositoryID, commit Commit) (CommitID, error)
@@ -780,16 +784,20 @@ func (id TagID) String() string {
 }
 
 type KVGraveler struct {
-	db      *DBGraveler
-	kvStore *kv.StoreMessage
-	log     logging.Logger
+	db         *DBGraveler
+	RefManager RefManager
+	hooks      HooksHandler
+	kvStore    *kv.StoreMessage
+	log        logging.Logger
 }
 
 func NewKVGraveler(kvStore *kv.StoreMessage, branchLocker BranchLocker, committedManager CommittedManager, stagingManager StagingManager, refManager RefManager, gcManager GarbageCollectionManager, protectedBranchesManager ProtectedBranchesManager) *KVGraveler {
 	return &KVGraveler{
-		db:      NewDBGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager),
-		kvStore: kvStore,
-		log:     logging.Default().WithField("service_name", "graveler_graveler"),
+		db:         NewDBGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager),
+		RefManager: refManager,
+		hooks:      &HooksNoOp{},
+		kvStore:    kvStore,
+		log:        logging.Default().WithField("service_name", "graveler_graveler"),
 	}
 }
 
@@ -847,19 +855,115 @@ func (g *KVGraveler) GetBranch(ctx context.Context, repositoryID RepositoryID, b
 }
 
 func (g *KVGraveler) GetTag(ctx context.Context, repositoryID RepositoryID, tagID TagID) (*CommitID, error) {
-	return g.db.GetTag(ctx, repositoryID, tagID)
+	return g.RefManager.GetTag(ctx, repositoryID, tagID)
 }
 
 func (g *KVGraveler) CreateTag(ctx context.Context, repositoryID RepositoryID, tagID TagID, commitID CommitID) error {
-	return g.db.CreateTag(ctx, repositoryID, tagID, commitID)
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return fmt.Errorf("get repository: %w", err)
+	}
+	storageNamespace := repo.StorageNamespace
+
+	// Check that Tag doesn't exist before running hook
+	_, err = g.RefManager.GetTag(ctx, repositoryID, tagID)
+	if err == nil {
+		return ErrTagAlreadyExists
+	}
+	if !errors.Is(err, ErrTagNotFound) {
+		return err
+	}
+
+	preRunID := g.hooks.NewRunID()
+	err = g.db.hooks.PreCreateTagHook(ctx, HookRecord{
+		RunID:            preRunID,
+		StorageNamespace: storageNamespace,
+		EventType:        EventTypePreCreateTag,
+		RepositoryID:     repositoryID,
+		CommitID:         commitID,
+		SourceRef:        commitID.Ref(),
+		TagID:            tagID,
+	})
+	if err != nil {
+		return &HookAbortError{
+			EventType: EventTypePreCreateTag,
+			RunID:     preRunID,
+			Err:       err,
+		}
+	}
+
+	err = g.RefManager.CreateTag(ctx, repositoryID, tagID, commitID)
+	if err != nil {
+		return err
+	}
+
+	postRunID := g.hooks.NewRunID()
+	g.db.hooks.PostCreateTagHook(ctx, HookRecord{
+		RunID:            postRunID,
+		StorageNamespace: storageNamespace,
+		EventType:        EventTypePostCreateTag,
+		RepositoryID:     repositoryID,
+		CommitID:         commitID,
+		SourceRef:        commitID.Ref(),
+		TagID:            tagID,
+		PreRunID:         preRunID,
+	})
+
+	return nil
 }
 
 func (g *KVGraveler) DeleteTag(ctx context.Context, repositoryID RepositoryID, tagID TagID) error {
-	return g.db.DeleteTag(ctx, repositoryID, tagID)
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return fmt.Errorf("get repository: %w", err)
+	}
+	storageNamespace := repo.StorageNamespace
+
+	// Sanity check that Tag exists before running hook.
+	commitID, err := g.RefManager.GetTag(ctx, repositoryID, tagID)
+	if err != nil {
+		return err
+	}
+
+	preRunID := g.hooks.NewRunID()
+	err = g.db.hooks.PreDeleteTagHook(ctx, HookRecord{
+		RunID:            preRunID,
+		StorageNamespace: storageNamespace,
+		EventType:        EventTypePreDeleteTag,
+		RepositoryID:     repositoryID,
+		SourceRef:        commitID.Ref(),
+		CommitID:         *commitID,
+		TagID:            tagID,
+	})
+	if err != nil {
+		return &HookAbortError{
+			EventType: EventTypePreDeleteTag,
+			RunID:     preRunID,
+			Err:       err,
+		}
+	}
+
+	err = g.RefManager.DeleteTag(ctx, repositoryID, tagID)
+	if err != nil {
+		return err
+	}
+
+	postRunID := g.hooks.NewRunID()
+	g.db.hooks.PostDeleteTagHook(ctx, HookRecord{
+		RunID:            postRunID,
+		StorageNamespace: storageNamespace,
+		EventType:        EventTypePostDeleteTag,
+		RepositoryID:     repositoryID,
+		SourceRef:        commitID.Ref(),
+		CommitID:         *commitID,
+		TagID:            tagID,
+		PreRunID:         preRunID,
+	})
+	return nil
 }
 
 func (g *KVGraveler) ListTags(ctx context.Context, repositoryID RepositoryID) (TagIterator, error) {
-	return g.db.ListTags(ctx, repositoryID)
+	return g.RefManager.ListTags(ctx, repositoryID)
 }
 
 func (g *KVGraveler) Dereference(ctx context.Context, repositoryID RepositoryID, ref Ref) (*ResolvedRef, error) {
@@ -1118,9 +1222,9 @@ func (t *tagValueIterator) setValue() bool {
 }
 
 func (t *tagValueIterator) SeekGE(id Key) {
-	t.err = nil
-	t.value = nil
-	t.src.SeekGE(TagID(id))
+	//t.err = nil
+	//t.value = nil
+	//t.src.SeekGE(TagID(id))
 }
 
 func (t *tagValueIterator) Value() *ValueRecord {

@@ -64,6 +64,7 @@ type MessageEntry struct {
 type MessageIterator interface {
 	Next() bool
 	Entry() *MessageEntry
+	//SeekGE(key string, store Store,) error
 	Err() error
 	Close()
 }
@@ -110,6 +111,14 @@ func (i *PrimaryIterator) Next() bool {
 	}
 	return true
 }
+
+//func (i *PrimaryIterator) SeekGE(key string, store Store, ) error {
+//	it, err := ScanPrefix(ctx, store, []byte(partitionKey), []byte(prefix), []byte(key))
+//	if err != nil {
+//		return fmt.Errorf("seek to key %s prefix iterator: %w", key, err)
+//	}
+//	i.itr = it
+//}
 
 func (i *PrimaryIterator) Entry() *MessageEntry {
 	return i.value

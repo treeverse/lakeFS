@@ -200,7 +200,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	go executor.Run(ctx)
 
 	var gStore Store
-	refManager := ref.NewPGRefManager(executor, cfg.DB, ident.NewHexAddressProvider())
+	var refManager graveler.RefManager
 	branchLocker := ref.NewBranchLocker(cfg.LockDB) // TODO (niro): Will not be needed in KV implementation
 	gcManager := retention.NewGarbageCollectionManager(cfg.DB, tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
 	stagingManager := staging.NewManager(cfg.DB)
@@ -208,8 +208,10 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	protectedBranchesManager := branch.NewProtectionManager(settingManager)
 
 	if cfg.Config.GetDatabaseParams().KVEnabled { // TODO (niro): Each module should be replaced by an appropriate KV implementation
+		refManager = ref.NewKVPGRefManager(executor, *cfg.KVStore, cfg.DB, ident.NewHexAddressProvider())
 		gStore = graveler.NewKVGraveler(cfg.KVStore, branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
 	} else {
+		refManager = ref.NewPGRefManager(executor, cfg.DB, ident.NewHexAddressProvider())
 		gStore = graveler.NewDBGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
 	}
 
@@ -582,9 +584,9 @@ func (c *Catalog) ListTags(ctx context.Context, repository string, prefix string
 	afterTagID := graveler.TagID(after)
 	prefixTagID := graveler.TagID(prefix)
 	if afterTagID < prefixTagID {
-		it.SeekGE(prefixTagID)
+		it.SeekGE(ctx, prefixTagID, repositoryID)
 	} else {
-		it.SeekGE(afterTagID)
+		it.SeekGE(ctx, afterTagID, repositoryID)
 	}
 	var tags []*Tag
 	for it.Next() {
