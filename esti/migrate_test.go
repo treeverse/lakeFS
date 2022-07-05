@@ -55,7 +55,6 @@ type authCredentials struct {
 }
 
 type authUser struct {
-	Username    string           `json:"username"`
 	Credentials *authCredentials `json:"credentials"`
 }
 
@@ -386,27 +385,22 @@ func testPreMigrateAuth(t *testing.T) {
 
 	// Hardening relevant test data for post-migrate
 	state.Auth.Repo = repo
-	state.Auth.ViewerUser.Username = "testViewer"
 	state.Auth.ViewerUser.Credentials = &authCredentials{
 		AccessKeyID:     viewerCreds.AccessKeyId,
 		SecretAccessKey: viewerCreds.SecretAccessKey,
 	}
-	state.Auth.DeveloperUser.Username = "testdeveloper"
 	state.Auth.DeveloperUser.Credentials = &authCredentials{
 		AccessKeyID:     developerCreds.AccessKeyId,
 		SecretAccessKey: developerCreds.SecretAccessKey,
 	}
-	state.Auth.SuperUser.Username = "testSuperUser"
 	state.Auth.SuperUser.Credentials = &authCredentials{
 		AccessKeyID:     superUserCreds.AccessKeyId,
 		SecretAccessKey: superUserCreds.SecretAccessKey,
 	}
-	state.Auth.AdminUser.Username = "testAdmin"
 	state.Auth.AdminUser.Credentials = &authCredentials{
 		AccessKeyID:     adminCreds.AccessKeyId,
 		SecretAccessKey: adminCreds.SecretAccessKey,
 	}
-	state.Auth.CustomUser.Username = uid
 	state.Auth.CustomUser.Credentials = &authCredentials{
 		AccessKeyID:     customCreds.AccessKeyId,
 		SecretAccessKey: customCreds.SecretAccessKey,
