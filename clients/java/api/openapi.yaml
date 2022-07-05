@@ -4397,6 +4397,8 @@ paths:
         schema:
           additionalProperties:
             type: string
+          example:
+            lakefs_url: https://lakefs.example.com
           type: object
         style: form
       responses:
