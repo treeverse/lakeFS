@@ -16,8 +16,8 @@ const transitionDefaults = {
 const Wizard = ({
                     hashEnabled=false,
                     transitions=transitionDefaults,
-                    progressBar = false,
-                    skipButton = false,
+                    showProgressBar = false,
+                    showSkipButton = false,
                     onComplete = () => {},
                     canProceed = true,
                     onNextStep = () => {},
@@ -46,7 +46,7 @@ const Wizard = ({
                         <StepWizard
                             onStepChange={onStepChange}
                             transitions={transitions}
-                            nav={progressBar && <WizardNav />}
+                            nav={showProgressBar && <WizardNav />}
                             instance={setInstance}
                             isHashEnabled={hashEnabled}
                         >
@@ -59,7 +59,7 @@ const Wizard = ({
             {<WizardController
                 stepWizard={state.stepWizard}
                 canProceed={canProceed}
-                skipButton={skipButton}
+                skipButton={showSkipButton}
                 onComplete={onComplete}/>}
 
         </Container>
