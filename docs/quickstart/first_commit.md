@@ -12,9 +12,9 @@ redirect_from: quickstart/lakefs_cli.html
 ## Install lakectl
 
 lakeFS comes with its own native CLI client, `lakectl`. 
-Most importantly, you can use it to perform Git-like operations like committing, reverting and merging.
+You can use it to perform Git-like operations like committing, reverting, and merging.
 
-Follow the below tutorial video to get started with the CLI, or follow the instructions on this page.
+Follow the tutorial video below to get started with the CLI, or follow the instructions on this page.
 
 <iframe width="420" height="315" src="https://www.youtube.com/embed/8nO7RT411nA"></iframe>
 
@@ -22,14 +22,14 @@ Here's how to get started with the CLI:
 
   1. Download the CLI binary:
 
-     The CLI binary can be downloaded from the official [lakeFS releases](https://github.com/treeverse/lakeFS/releases) published on GitHub under "Assets". Unless you need a specific previous version of the CLI, it is recommended to download the most recently released version.
+     You can download the CLI binary from the official [lakeFS releases](https://github.com/treeverse/lakeFS/releases) published on GitHub under "Assets". Unless you need a specific previous version of the CLI, it's recommended to download the most recently released one.
 
       ![Release Assets]({{ site.baseurl }}/assets/img/lakefs-release-asset.png)
 
-     The Operating System of the computer being used determines whether you should pick the binary Asset compiled for a Windows, Linux, or Mac (Darwin). For Mac and Linux Operating Systems, the processor determines whether you should download the x64 or arm binary. 
+     The Operating System of the computer you're using determines whether you should pick the binary Asset compiled for Windows, Linux, or Mac (Darwin). For Mac and Linux Operating Systems, the processor determines whether you should download the x64 or arm binary. 
   
   
-  1. Once unzipped, inside the downloaded asset, you'll see a file named `lakectl`. It's recommended that you place this file somewhere in your PATH (this is OS dependant but for *NIX systems , `/usr/local/bin` is usually a safe bet). Once in your PATH, you'll be able to open a Terminal program and run lakectl commands!
+  1. Once unzipped, inside the downloaded asset you'll see a file named `lakectl`. It's recommended that you place this file somewhere in your PATH (this is OS dependant but for *NIX systems , `/usr/local/bin` is usually a safe bet). Once in your PATH, you'll be able to open a Terminal program and run lakectl commands!
 
   1. We recommend starting with `lakectl config` to configure the CLI to use the credentials created earlier:
 
@@ -41,9 +41,9 @@ Here's how to get started with the CLI:
      # Secret access key: ****************************************
      # Server endpoint URL: http://localhost:8000
      ```
-   **Note** The first time you run a `lakectl` command, depending on your computer's security settings, you may need to respond to a prompt to allow the program to run. 
+   **Note** The first time you run a `lakectl` command you may need to respond to a prompt to allow the program to run (depending on your computer's security settings). 
 
-  1. To verify `lakectl` is properly configured, we can list the branches in our repository:
+  1. To verify that `lakectl` is properly configured, you can list the branches in your repository:
 
      ```bash
      lakectl branch list lakefs://example-repo
@@ -57,10 +57,10 @@ Here's how to get started with the CLI:
   
 ## Perform your first commit
 
-Let's commit the file we've added in the previous section:
+Now you can commit the file you've added in the previous section:
 
 ```
-lakectl commit lakefs://example-repo/main -m 'added our first file!'
+lakectl commit lakefs://example-repo/main -m 'added my first file!'
 # output:
 # Commit for branch "main" done.
 # 
@@ -72,7 +72,7 @@ lakectl commit lakefs://example-repo/main -m 'added our first file!'
 **Note**: lakeFS versions <= v0.33.1 used '@' (instead of '/') as separator between repository and branch.
 {: .note }
 
-And finally we can view the log to see the new commit:
+And finally, you can view the log to see the new commit:
 ```
 lakectl log lakefs://example-repo/main
 # output:  
@@ -80,10 +80,10 @@ lakectl log lakefs://example-repo/main
 # Author: Example User <user@example.com>
 # Date: 2021-06-15 13:48:37 +0300 IDT
   
-      added our first file! 
+      added my first file! 
 ```
 
-Congratulations! You have completed your first commit in lakeFS.
+Congratulations! You've completed your first commit in lakeFS.
 
 ### Next steps
 
