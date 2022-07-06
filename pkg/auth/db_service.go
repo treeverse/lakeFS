@@ -118,13 +118,13 @@ func getDBUserByEmail(tx db.Tx, email string) (*model.DBUser, error) {
 	return user, nil
 }
 
-func getDBUserByExternalID(tx db.Tx, externalID string) (*model.User, error) {
+func getDBUserByExternalID(tx db.Tx, externalID string) (*model.DBUser, error) {
 	user := &model.DBUser{}
 	err := tx.Get(user, `SELECT * FROM auth_users WHERE external_id = $1`, externalID)
 	if err != nil {
 		return nil, err
 	}
-	return model.ConvertUser(user), nil
+	return user, nil
 }
 
 func getDBGroup(tx db.Tx, groupDisplayName string) (*model.DBGroup, error) {

@@ -331,12 +331,6 @@ func (s *KVAuthService) GetUserByEmail(ctx context.Context, email string) (*mode
 	})
 }
 
-func (s *KVAuthService) GetUserByID(ctx context.Context, userID string) (*model.User, error) {
-	return s.getUserByPredicate(ctx, &userKey{id: userID}, func(value *model.UserData) bool {
-		return string(value.Id) == userID
-	})
-}
-
 func (s *KVAuthService) GetUserByExternalID(ctx context.Context, externalID string) (*model.User, error) {
 	return s.getUserByPredicate(ctx, &userKey{externalID: externalID}, func(value *model.UserData) bool {
 		return value.ExternalId == externalID
