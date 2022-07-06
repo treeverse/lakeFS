@@ -26,7 +26,7 @@ Here's how to get started with the CLI:
 
       ![Release Assets]({{ site.baseurl }}/assets/img/lakefs-release-asset.png)
 
-     The Operating System of the computer you're using  determines whether you should pick the binary Asset compiled for Windows, Linux, or Mac (Darwin). For Mac and Linux Operating Systems, the processor determines whether you should download the x64 or arm binary. 
+     The Operating System of the computer you're using determines whether you should pick the binary Asset compiled for Windows, Linux, or Mac (Darwin). For Mac and Linux Operating Systems, the processor determines whether you should download the x64 or arm binary. 
   
   
   1. Once unzipped, inside the downloaded asset you'll see a file named `lakectl`. It's recommended that you place this file somewhere in your PATH (this is OS dependant but for *NIX systems , `/usr/local/bin` is usually a safe bet). Once in your PATH, you'll be able to open a Terminal program and run lakectl commands!
@@ -60,7 +60,7 @@ Here's how to get started with the CLI:
 Now you can commit the file you've added in the previous section:
 
 ```
-lakectl commit lakefs://example-repo/main -m 'added our first file!'
+lakectl commit lakefs://example-repo/main -m 'added my first file!'
 # output:
 # Commit for branch "main" done.
 # 
@@ -80,7 +80,7 @@ lakectl log lakefs://example-repo/main
 # Author: Example User <user@example.com>
 # Date: 2021-06-15 13:48:37 +0300 IDT
   
-      added your first file! 
+      added my first file! 
 ```
 
 Congratulations! You've completed your first commit in lakeFS.
