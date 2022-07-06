@@ -89,13 +89,13 @@ func GetKVAuthService(t *testing.T, ctx context.Context) auth.Service {
 func GetDBMetadataManager(t *testing.T, installationID string) auth.MetadataManager {
 	t.Helper()
 	conn, _ := testutil.GetDB(t, databaseURI)
-	return auth.NewDBMetadataManager("dev", installationID, conn)
+	return auth.NewDBMetadataManager("local_load_test", installationID, conn)
 }
 
 func GetKVMetadataManager(t *testing.T, ctx context.Context, installationID string) auth.MetadataManager {
 	t.Helper()
 	kvStore := kvtest.GetStore(ctx, t)
-	return auth.NewKVMetadataManager("dev", installationID, kvStore)
+	return auth.NewKVMetadataManager("local_load_test", installationID, kvStore)
 }
 
 func TestLocalLoad(t *testing.T) {

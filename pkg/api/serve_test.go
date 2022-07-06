@@ -102,7 +102,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, 
 		authService = auth.NewKVAuthService(*kvStoreMessage, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
 			Enabled: false,
 		}, logging.Default())
-		meta = auth.NewKVMetadataManager("dev", cfg.GetFixedInstallationID(), kvStore)
+		meta = auth.NewKVMetadataManager("serve_test", cfg.GetFixedInstallationID(), kvStore)
 		viper.Set("database.kv_enabled", true)
 	} else {
 		actionsStore = actions.NewActionsDBStore(conn)
@@ -110,7 +110,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, 
 		authService = auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), nil, authparams.ServiceCache{
 			Enabled: false,
 		}, logging.Default())
-		meta = auth.NewDBMetadataManager("dev", cfg.GetFixedInstallationID(), conn)
+		meta = auth.NewDBMetadataManager("serve_test", cfg.GetFixedInstallationID(), conn)
 	}
 
 	// Do not validate invalid config (missing required fields).
