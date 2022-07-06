@@ -200,7 +200,7 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 	if oidcConfig.FriendlyNameClaimName != "" {
 		friendlyName, _ = idTokenClaims[oidcConfig.FriendlyNameClaimName].(string)
 	}
-	user, err := authService.GetUser(ctx, externalID)
+	user, err := authService.GetUserByExternalID(ctx, externalID)
 	if err == nil {
 		return enhanceWithFriendlyName(user, friendlyName), nil
 	}
@@ -221,7 +221,7 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 			return nil, ErrAuthenticatingRequest
 		}
 		// user already exists - get it:
-		user, err = authService.GetUser(ctx, externalID)
+		user, err = authService.GetUserByExternalID(ctx, externalID)
 		if err != nil {
 			logger.WithError(err).Error("Failed to get external user from database")
 			return nil, ErrAuthenticatingRequest
