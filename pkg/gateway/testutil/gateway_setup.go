@@ -102,15 +102,14 @@ func (m *FakeAuthService) GetCredentials(_ context.Context, accessKey string) (*
 	aCred := new(model.Credential)
 	aCred.AccessKeyID = accessKey
 	aCred.SecretAccessKey = m.SecretAccessKey
-	aCred.UserID = m.UserID
+	aCred.Username = m.UserID
 	return aCred, nil
 }
 
-func (m *FakeAuthService) GetUserByID(_ context.Context, _ string) (*model.User, error) {
-	return &model.User{BaseUser: model.BaseUser{
+func (m *FakeAuthService) GetUser(_ context.Context, _ string) (*model.User, error) {
+	return &model.User{
 		CreatedAt: time.Now(),
-		Username:  "user"},
-	}, nil
+		Username:  "user"}, nil
 }
 
 func (m *FakeAuthService) Authorize(_ context.Context, _ *auth.AuthorizationRequest) (*auth.AuthorizationResponse, error) {

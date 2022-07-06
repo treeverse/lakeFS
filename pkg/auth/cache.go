@@ -9,7 +9,7 @@ import (
 
 type CredentialSetFn func() (*model.Credential, error)
 type UserSetFn func() (*model.User, error)
-type UserPoliciesSetFn func() ([]*model.BasePolicy, error)
+type UserPoliciesSetFn func() ([]*model.Policy, error)
 
 type userKey struct {
 	id         string
@@ -21,7 +21,7 @@ type userKey struct {
 type Cache interface {
 	GetCredential(accessKeyID string, setFn CredentialSetFn) (*model.Credential, error)
 	GetUser(key *userKey, setFn UserSetFn) (*model.User, error)
-	GetUserPolicies(userID string, setFn UserPoliciesSetFn) ([]*model.BasePolicy, error)
+	GetUserPolicies(userID string, setFn UserPoliciesSetFn) ([]*model.Policy, error)
 }
 
 type LRUCache struct {
@@ -55,12 +55,12 @@ func (c *LRUCache) GetUser(key *userKey, setFn UserSetFn) (*model.User, error) {
 	return v.(*model.User), nil
 }
 
-func (c *LRUCache) GetUserPolicies(userID string, setFn UserPoliciesSetFn) ([]*model.BasePolicy, error) {
+func (c *LRUCache) GetUserPolicies(userID string, setFn UserPoliciesSetFn) ([]*model.Policy, error) {
 	v, err := c.policyCache.GetOrSet(userID, func() (interface{}, error) { return setFn() })
 	if err != nil {
 		return nil, err
 	}
-	return v.([]*model.BasePolicy), nil
+	return v.([]*model.Policy), nil
 }
 
 // DummyCache dummy cache that doesn't cache
@@ -74,6 +74,6 @@ func (d *DummyCache) GetUser(_ *userKey, setFn UserSetFn) (*model.User, error) {
 	return setFn()
 }
 
-func (d *DummyCache) GetUserPolicies(_ string, setFn UserPoliciesSetFn) ([]*model.BasePolicy, error) {
+func (d *DummyCache) GetUserPolicies(_ string, setFn UserPoliciesSetFn) ([]*model.Policy, error) {
 	return setFn()
 }
