@@ -44,7 +44,7 @@ func generateInstallationID(installationID string) string {
 }
 
 func (m *KVMetadataManager) insertOrGetInstallationID(ctx context.Context, installationID string) (string, error) {
-	err := m.store.SetIf(ctx, []byte(model.PartitionKey), []byte(installationID), []byte(installationID), nil)
+	err := m.store.SetIf(ctx, []byte(model.PartitionKey), []byte(InstallationIDKeyName), []byte(installationID), nil)
 	if err != nil {
 		if errors.Is(err, kv.ErrPredicateFailed) {
 			valWithPred, err := m.store.Get(ctx, []byte(model.PartitionKey), []byte(InstallationIDKeyName))
