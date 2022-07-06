@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"reflect"
-	"strconv"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
@@ -30,12 +29,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-type userDetails struct {
-	name string
-	kvID string
-}
-
-type UserIDToDetails map[int64]userDetails
+type UserIDToName map[int64]string
 
 type IDToName map[int]string
 
@@ -106,22 +100,22 @@ func ListPaged(ctx context.Context, db db.Querier, retType reflect.Type, params 
 	return &slice, p, nil
 }
 
-func getDBUser(tx db.Tx, username string) (*model.User, error) {
+func getDBUser(tx db.Tx, username string) (*model.DBUser, error) {
 	user := &model.DBUser{}
 	err := tx.Get(user, `SELECT * FROM auth_users WHERE display_name = $1`, username)
 	if err != nil {
 		return nil, err
 	}
-	return model.ConvertUser(user), nil
+	return user, nil
 }
 
-func getDBUserByEmail(tx db.Tx, email string) (*model.User, error) {
+func getDBUserByEmail(tx db.Tx, email string) (*model.DBUser, error) {
 	user := &model.DBUser{}
 	err := tx.Get(user, `SELECT * FROM auth_users WHERE email = $1`, email)
 	if err != nil {
 		return nil, err
 	}
-	return model.ConvertUser(user), nil
+	return user, nil
 }
 
 func getDBGroup(tx db.Tx, groupDisplayName string) (*model.DBGroup, error) {
@@ -197,7 +191,7 @@ func (s *DBAuthService) DB() db.Database {
 	return s.db
 }
 
-func (s *DBAuthService) CreateUser(ctx context.Context, user *model.BaseUser) (string, error) {
+func (s *DBAuthService) CreateUser(ctx context.Context, user *model.User) (string, error) {
 	id, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		if err := model.ValidateAuthEntityID(user.Username); err != nil {
 			return nil, err
@@ -223,29 +217,31 @@ func (s *DBAuthService) DeleteUser(ctx context.Context, username string) error {
 
 func (s *DBAuthService) GetUser(ctx context.Context, username string) (*model.User, error) {
 	return s.cache.GetUser(username, func() (*model.User, error) {
-		user, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
+		res, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			return getDBUser(tx, username)
 		}, db.ReadOnly())
 		if err != nil {
 			return nil, err
 		}
-		return user.(*model.User), nil
+		user := res.(*model.DBUser)
+		return &user.User, nil
 	})
 }
 
 func (s *DBAuthService) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
-	user, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
+	res, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		return getDBUserByEmail(tx, email)
 	}, db.ReadOnly())
 	if err != nil {
 		return nil, err
 	}
-	return user.(*model.User), nil
+	user := res.(*model.DBUser)
+	return &user.User, nil
 }
 
 func (s *DBAuthService) GetUserByID(ctx context.Context, userID string) (*model.User, error) {
 	return s.cache.GetUserByID(userID, func() (*model.User, error) {
-		user, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
+		res, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			user := &model.DBUser{}
 			err := tx.Get(user, `SELECT * FROM auth_users WHERE id = $1`, userID)
 			if err != nil {
@@ -257,7 +253,8 @@ func (s *DBAuthService) GetUserByID(ctx context.Context, userID string) (*model.
 			return nil, err
 		}
 
-		return model.ConvertUser(user.(*model.DBUser)), nil
+		user := res.(*model.DBUser)
+		return &user.User, nil
 	})
 }
 
@@ -285,7 +282,7 @@ func (s *DBAuthService) ListUserCredentials(ctx context.Context, username string
 	if slice == nil {
 		return nil, paginator, err
 	}
-	return model.ConvertCredList(slice.Interface().([]*model.DBCredential)), paginator, err
+	return model.ConvertCredList(slice.Interface().([]*model.DBCredential), username), paginator, err
 }
 
 func (s *DBAuthService) AttachPolicyToUser(ctx context.Context, policyDisplayName, username string) error {
@@ -329,7 +326,7 @@ func (s *DBAuthService) DetachPolicyFromUser(ctx context.Context, policyDisplayN
 	return err
 }
 
-func (s *DBAuthService) ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+func (s *DBAuthService) ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	var policy model.DBPolicy
 	sub := psql.Select("auth_policies.*").
 		From("auth_policies").
@@ -346,14 +343,14 @@ func (s *DBAuthService) ListUserPolicies(ctx context.Context, username string, p
 		return nil, paginator, err
 	}
 	policies := slice.Interface().([]*model.DBPolicy)
-	res := make([]*model.BasePolicy, 0, len(policies))
+	res := make([]*model.Policy, 0, len(policies))
 	for _, p := range policies {
-		res = append(res, &p.BasePolicy)
+		res = append(res, &p.Policy)
 	}
 	return res, paginator, nil
 }
 
-func (s *DBAuthService) getEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+func (s *DBAuthService) getEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	// resolve all policies attached to the user and its groups
 	resolvedCte := `
 	    WITH resolved_policies_view AS (
@@ -384,18 +381,18 @@ func (s *DBAuthService) getEffectivePolicies(ctx context.Context, username strin
 		return nil, paginator, err
 	}
 	policies := slice.Interface().([]*model.DBPolicy)
-	res := make([]*model.BasePolicy, 0, len(policies))
+	res := make([]*model.Policy, 0, len(policies))
 	for _, p := range policies {
-		res = append(res, &p.BasePolicy)
+		res = append(res, &p.Policy)
 	}
 	return res, paginator, nil
 }
 
-func (s *DBAuthService) ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+func (s *DBAuthService) ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	return ListEffectivePolicies(ctx, username, params, s.getEffectivePolicies, s.cache)
 }
 
-func (s *DBAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+func (s *DBAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	var policy model.DBPolicy
 	query := psql.Select("auth_policies.*").
 		From("auth_policies").
@@ -411,14 +408,14 @@ func (s *DBAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName 
 		return nil, paginator, err
 	}
 	dbPolicies := slice.Interface().([]*model.DBPolicy)
-	policies := make([]*model.BasePolicy, len(dbPolicies))
+	policies := make([]*model.Policy, len(dbPolicies))
 	for i := range dbPolicies {
-		policies[i] = &dbPolicies[i].BasePolicy
+		policies[i] = &dbPolicies[i].Policy
 	}
 	return policies, paginator, nil
 }
 
-func (s *DBAuthService) CreateGroup(ctx context.Context, group *model.BaseGroup) error {
+func (s *DBAuthService) CreateGroup(ctx context.Context, group *model.Group) error {
 	var id int
 	_, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		if err := model.ValidateAuthEntityID(group.DisplayName); err != nil {
@@ -438,13 +435,14 @@ func (s *DBAuthService) DeleteGroup(ctx context.Context, groupDisplayName string
 }
 
 func (s *DBAuthService) GetGroup(ctx context.Context, groupDisplayName string) (*model.Group, error) {
-	group, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
+	res, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		return getDBGroup(tx, groupDisplayName)
 	}, db.ReadOnly())
 	if err != nil {
 		return nil, err
 	}
-	return model.ConvertGroup(group.(*model.DBGroup)), nil
+	group := res.(*model.DBGroup)
+	return &group.Group, nil
 }
 
 func (s *DBAuthService) ListGroups(ctx context.Context, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error) {
@@ -527,7 +525,7 @@ func (s *DBAuthService) ListUserGroups(ctx context.Context, username string, par
 		}
 		groups := make([]*model.Group, len(dbGroups))
 		for i := range dbGroups {
-			groups[i] = model.ConvertGroup(dbGroups[i])
+			groups[i] = &dbGroups[i].Group
 		}
 		p := &model.Paginator{}
 		if len(groups) == params.Amount+1 {
@@ -574,7 +572,7 @@ func (s *DBAuthService) ListGroupUsers(ctx context.Context, groupDisplayName str
 		p := &model.Paginator{}
 		users := make([]*model.User, len(dbUsers))
 		for i := range dbUsers {
-			users[i] = model.ConvertUser(dbUsers[i])
+			users[i] = &dbUsers[i].User
 		}
 		if len(users) == params.Amount+1 {
 			// we have more pages
@@ -593,7 +591,7 @@ func (s *DBAuthService) ListGroupUsers(ctx context.Context, groupDisplayName str
 	return result.(*res).users, result.(*res).paginator, nil
 }
 
-func (s *DBAuthService) WritePolicy(ctx context.Context, policy *model.BasePolicy) error {
+func (s *DBAuthService) WritePolicy(ctx context.Context, policy *model.Policy) error {
 	_, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		if err := ValidatePolicy(policy); err != nil {
 			return nil, err
@@ -610,14 +608,14 @@ func (s *DBAuthService) WritePolicy(ctx context.Context, policy *model.BasePolic
 	return err
 }
 
-func (s *DBAuthService) GetPolicy(ctx context.Context, policyDisplayName string) (*model.BasePolicy, error) {
+func (s *DBAuthService) GetPolicy(ctx context.Context, policyDisplayName string) (*model.Policy, error) {
 	policy, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		return getDBPolicy(tx, policyDisplayName)
 	}, db.ReadOnly())
 	if err != nil {
 		return nil, err
 	}
-	return &policy.(*model.DBPolicy).BasePolicy, nil
+	return &policy.(*model.DBPolicy).Policy, nil
 }
 
 func (s *DBAuthService) DeletePolicy(ctx context.Context, policyDisplayName string) error {
@@ -627,9 +625,9 @@ func (s *DBAuthService) DeletePolicy(ctx context.Context, policyDisplayName stri
 	return err
 }
 
-func (s *DBAuthService) ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+func (s *DBAuthService) ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	type res struct {
-		policies  []*model.BasePolicy
+		policies  []*model.Policy
 		paginator *model.Paginator
 	}
 	result, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
@@ -646,9 +644,9 @@ func (s *DBAuthService) ListPolicies(ctx context.Context, params *model.Paginati
 			return nil, err
 		}
 		p := &model.Paginator{}
-		policies := make([]*model.BasePolicy, len(dbPolicies))
+		policies := make([]*model.Policy, len(dbPolicies))
 		for i := range dbPolicies {
-			policies[i] = &dbPolicies[i].BasePolicy
+			policies[i] = &dbPolicies[i].Policy
 		}
 		if len(policies) == params.Amount+1 {
 			// we have more pages
@@ -697,14 +695,11 @@ func (s *DBAuthService) AddCredentials(ctx context.Context, username, accessKeyI
 				SecretAccessKeyEncryptedBytes: encryptedKey,
 				IssuedDate:                    now,
 			},
-			UserID: user.ID,
+			Username: user.Username,
 		}
 
 		// A DB user must have an int ID
-		intID, err := userIDToInt(user.ID)
-		if err != nil {
-			return nil, fmt.Errorf("userID as int64: %w", err)
-		}
+		intID := user.ID
 		_, err = tx.Exec(`
 			INSERT INTO auth_credentials (access_key_id, secret_access_key, issued_date, user_id)
 			VALUES ($1, $2, $3, $4)`,
@@ -775,12 +770,17 @@ func (s *DBAuthService) DetachPolicyFromGroup(ctx context.Context, policyDisplay
 }
 
 func (s *DBAuthService) GetCredentialsForUser(ctx context.Context, username, accessKeyID string) (*model.Credential, error) {
+	var (
+		user *model.DBUser
+		err  error
+	)
 	credentials, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		if _, err := getDBUser(tx, username); err != nil {
+		user, err = getDBUser(tx, username)
+		if err != nil {
 			return nil, err
 		}
 		credentials := &model.DBCredential{}
-		err := tx.Get(credentials, `
+		err = tx.Get(credentials, `
 			SELECT auth_credentials.*
 			FROM auth_credentials
 			INNER JOIN auth_users ON (auth_credentials.user_id = auth_users.id)
@@ -794,7 +794,10 @@ func (s *DBAuthService) GetCredentialsForUser(ctx context.Context, username, acc
 	if err != nil {
 		return nil, err
 	}
-	return model.ConvertCreds(credentials.(*model.DBCredential)), nil
+	return &model.Credential{
+		Username:       user.Username,
+		BaseCredential: credentials.(*model.DBCredential).BaseCredential,
+	}, nil
 }
 
 func (s *DBAuthService) GetCredentials(ctx context.Context, accessKeyID string) (*model.Credential, error) {
@@ -816,7 +819,14 @@ func (s *DBAuthService) GetCredentials(ctx context.Context, accessKeyID string) 
 		if err != nil {
 			return nil, err
 		}
-		return model.ConvertCreds(credentials.(*model.DBCredential)), nil
+		user, err := s.GetUserByID(ctx, model.ConvertDBID(credentials.(*model.DBCredential).UserID))
+		if err != nil {
+			return nil, err
+		}
+		return &model.Credential{
+			Username:       user.Username,
+			BaseCredential: credentials.(*model.DBCredential).BaseCredential,
+		}, nil
 	})
 }
 
@@ -922,13 +932,13 @@ func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
 	return nil
 }
 
-func exportUsers(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (UserIDToDetails, error) {
+func exportUsers(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (UserIDToName, error) {
 	rows, err := d.Query(ctx, "SELECT * FROM auth_users ORDER BY created_at ASC")
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	userIDToDetails := make(UserIDToDetails)
+	users := make(UserIDToName)
 	scanner := pgxscan.NewRowScanner(rows)
 	for rows.Next() {
 		dbUser := model.DBUser{}
@@ -936,12 +946,8 @@ func exportUsers(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (UserID
 		if err != nil {
 			return nil, err
 		}
-		kvUser := &model.User{
-			ID:       model.CreateID(),
-			BaseUser: dbUser.BaseUser,
-		}
 		key := model.UserPath(dbUser.Username)
-		value, err := proto.Marshal(model.ProtoFromUser(kvUser))
+		value, err := proto.Marshal(model.ProtoFromUser(&dbUser.User))
 		if err != nil {
 			return nil, err
 		}
@@ -954,12 +960,9 @@ func exportUsers(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (UserID
 			return nil, err
 		}
 
-		userIDToDetails[dbUser.ID] = userDetails{
-			kvID: kvUser.ID,
-			name: kvUser.Username,
-		}
+		users[dbUser.ID] = dbUser.Username
 	}
-	return userIDToDetails, nil
+	return users, nil
 }
 
 func exportGroups(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (IDToName, error) {
@@ -976,12 +979,8 @@ func exportGroups(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (IDToN
 		if err != nil {
 			return nil, err
 		}
-		kvGroup := &model.Group{
-			ID:        model.CreateID(),
-			BaseGroup: dbGroup.BaseGroup,
-		}
 		key := model.GroupPath(dbGroup.DisplayName)
-		value, err := proto.Marshal(model.ProtoFromGroup(kvGroup))
+		value, err := proto.Marshal(model.ProtoFromGroup(&dbGroup.Group))
 		if err != nil {
 			return nil, err
 		}
@@ -1012,7 +1011,7 @@ func exportPolicies(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (IDT
 			return nil, err
 		}
 		key := model.PolicyPath(dbPolicy.DisplayName)
-		value, err := proto.Marshal(model.ProtoFromPolicy(&dbPolicy.BasePolicy, strconv.Itoa(dbPolicy.ID)))
+		value, err := proto.Marshal(model.ProtoFromPolicy(&dbPolicy.Policy))
 		if err != nil {
 			return nil, err
 		}
@@ -1028,7 +1027,7 @@ func exportPolicies(ctx context.Context, d *pgxpool.Pool, je *json.Encoder) (IDT
 	return policyIDToName, nil
 }
 
-func exportUserGroups(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, usersDetails UserIDToDetails, groupsNames IDToName) error {
+func exportUserGroups(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, users UserIDToName, groupsNames IDToName) error {
 	type relation struct {
 		UserID  int64 `db:"user_id"`
 		GroupID int   `db:"group_id"`
@@ -1045,7 +1044,7 @@ func exportUserGroups(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, us
 		if err != nil {
 			return err
 		}
-		userDetails, ok := usersDetails[ug.UserID]
+		username, ok := users[ug.UserID]
 		if !ok {
 			return fmt.Errorf("user ID %d: %w", ug.UserID, ErrExportedEntNotFound)
 		}
@@ -1053,7 +1052,6 @@ func exportUserGroups(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, us
 		if !ok {
 			return fmt.Errorf("group ID %d: %w", ug.GroupID, ErrExportedEntNotFound)
 		}
-		username := userDetails.name
 		key := model.GroupUserPath(groupName, username)
 		secIndex := kv.SecondaryIndex{PrimaryKey: []byte(model.UserPath(username))}
 		value, err := proto.Marshal(&secIndex)
@@ -1071,7 +1069,7 @@ func exportUserGroups(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, us
 	return nil
 }
 
-func exportUserPolicies(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, usersDetails UserIDToDetails, policiesNames IDToName) error {
+func exportUserPolicies(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, users UserIDToName, policiesNames IDToName) error {
 	type relation struct {
 		UserID   int64 `db:"user_id"`
 		PolicyID int   `db:"policy_id"`
@@ -1092,11 +1090,11 @@ func exportUserPolicies(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, 
 		if !ok {
 			return fmt.Errorf("policy ID %d: %w", up.PolicyID, ErrExportedEntNotFound)
 		}
-		userDetails, ok := usersDetails[up.UserID]
+		username, ok := users[up.UserID]
 		if !ok {
 			return fmt.Errorf("user ID %d: %w", up.UserID, ErrExportedEntNotFound)
 		}
-		key := model.UserPolicyPath(userDetails.name, policyName)
+		key := model.UserPolicyPath(username, policyName)
 		secIndex := kv.SecondaryIndex{PrimaryKey: []byte(model.PolicyPath(policyName))}
 		value, err := proto.Marshal(&secIndex)
 		if err != nil {
@@ -1155,7 +1153,7 @@ func exportGroupPolicies(ctx context.Context, d *pgxpool.Pool, je *json.Encoder,
 	return nil
 }
 
-func exportCredentials(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, userIDToDetails UserIDToDetails) error {
+func exportCredentials(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, userIDToDetails UserIDToName) error {
 	rows, err := d.Query(ctx, "SELECT * from auth_credentials")
 	if err != nil {
 		return err
@@ -1168,15 +1166,15 @@ func exportCredentials(ctx context.Context, d *pgxpool.Pool, je *json.Encoder, u
 		if err != nil {
 			return err
 		}
-		userDetails, ok := userIDToDetails[dbCred.UserID]
+		username, ok := userIDToDetails[dbCred.UserID]
 		if !ok {
 			return fmt.Errorf("user ID %d: %w", dbCred.UserID, ErrExportedEntNotFound)
 		}
 		kvCred := &model.Credential{
-			UserID:         userDetails.kvID,
+			Username:       username,
 			BaseCredential: dbCred.BaseCredential,
 		}
-		key := model.CredentialPath(userDetails.name, dbCred.AccessKeyID)
+		key := model.CredentialPath(username, dbCred.AccessKeyID)
 		value, err := proto.Marshal(model.ProtoFromCredential(kvCred))
 		if err != nil {
 			return err

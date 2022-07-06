@@ -208,13 +208,13 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 		logger.WithError(err).Error("Failed to get external user from database")
 		return nil, ErrAuthenticatingRequest
 	}
-	u := model.BaseUser{
+	u := model.User{
 		CreatedAt:  time.Now().UTC(),
 		Source:     "oidc",
 		Username:   externalID,
 		ExternalID: &externalID,
 	}
-	userID, err := authService.CreateUser(ctx, &u)
+	_, err = authService.CreateUser(ctx, &u)
 	if err != nil {
 		if !errors.Is(err, db.ErrAlreadyExists) {
 			logger.WithError(err).Error("Failed to create external user in database")
@@ -238,10 +238,7 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 			logger.WithError(err).Error("Failed to add external user to group")
 		}
 	}
-	return enhanceWithFriendlyName(&model.User{
-		ID:       userID,
-		BaseUser: u,
-	}, friendlyName), nil
+	return enhanceWithFriendlyName(&u, friendlyName), nil
 }
 
 func userByToken(ctx context.Context, logger logging.Logger, authService auth.Service, tokenString string) (*model.User, error) {
@@ -251,12 +248,12 @@ func userByToken(ctx context.Context, logger logging.Logger, authService auth.Se
 		return nil, ErrAuthenticatingRequest
 	}
 
-	id := claims.Subject
-	userData, err := authService.GetUserByID(ctx, id)
+	username := claims.Subject
+	userData, err := authService.GetUser(ctx, username)
 	if err != nil {
 		logger.WithFields(logging.Fields{
 			"token_id": claims.Id,
-			"user_id":  id,
+			"username": username,
 			"subject":  claims.Subject,
 		}).Debug("could not find user id by credentials")
 		return nil, ErrAuthenticatingRequest
@@ -266,14 +263,14 @@ func userByToken(ctx context.Context, logger logging.Logger, authService auth.Se
 
 func userByAuth(ctx context.Context, logger logging.Logger, authenticator auth.Authenticator, authService auth.Service, accessKey string, secretKey string) (*model.User, error) {
 	// TODO(ariels): Rename keys.
-	id, err := authenticator.AuthenticateUser(ctx, accessKey, secretKey)
+	username, err := authenticator.AuthenticateUser(ctx, accessKey, secretKey)
 	if err != nil {
 		logger.WithError(err).WithField("user", accessKey).Error("authenticate")
 		return nil, ErrAuthenticatingRequest
 	}
-	user, err := authService.GetUserByID(ctx, id)
+	user, err := authService.GetUser(ctx, username)
 	if err != nil {
-		logger.WithError(err).WithFields(logging.Fields{"user_id": id}).Debug("could not find user id by credentials")
+		logger.WithError(err).WithFields(logging.Fields{"user_name": username}).Debug("could not find user id by credentials")
 		return nil, ErrAuthenticatingRequest
 	}
 	return user, nil
