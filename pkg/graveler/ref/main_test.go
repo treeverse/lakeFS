@@ -40,7 +40,7 @@ func testRefManagerWithKV(t testing.TB) (graveler.RefManager, kv.StoreMessage) {
 	kvStore := kvtest.GetStore(ctx, t)
 	storeMessage := kv.StoreMessage{Store: kvStore}
 	conn, _ := testutil.GetDB(t, databaseURI, testutil.WithGetDBApplyDDL(true))
-	return ref.NewKVPGRefManager(batch.NopExecutor(), &storeMessage, conn, ident.NewHexAddressProvider()), storeMessage
+	return ref.NewKVPGRefManager(batch.NopExecutor(), storeMessage, conn, ident.NewHexAddressProvider()), storeMessage
 }
 
 func testRefManager(t *testing.T) []DBType {

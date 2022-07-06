@@ -202,16 +202,19 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	var gStore Store
 	var refManager graveler.RefManager
 	branchLocker := ref.NewBranchLocker(cfg.LockDB) // TODO (niro): Will not be needed in KV implementation
-	gcManager := retention.NewGarbageCollectionManager(cfg.DB, tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
 	stagingManager := staging.NewManager(cfg.DB)
-	settingManager := settings.NewManager(refManager, branchLocker, adapter, cfg.Config.GetCommittedBlockStoragePrefix())
-	protectedBranchesManager := branch.NewProtectionManager(settingManager)
 
 	if cfg.Config.GetDatabaseParams().KVEnabled { // TODO (niro): Each module should be replaced by an appropriate KV implementation
-		refManager = ref.NewKVPGRefManager(executor, cfg.KVStore, cfg.DB, ident.NewHexAddressProvider())
+		refManager = ref.NewKVPGRefManager(executor, *cfg.KVStore, cfg.DB, ident.NewHexAddressProvider())
+		gcManager := retention.NewGarbageCollectionManager(cfg.DB, tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
+		settingManager := settings.NewManager(refManager, branchLocker, adapter, cfg.Config.GetCommittedBlockStoragePrefix())
+		protectedBranchesManager := branch.NewProtectionManager(settingManager)
 		gStore = graveler.NewKVGraveler(cfg.KVStore, branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
 	} else {
 		refManager = ref.NewPGRefManager(executor, cfg.DB, ident.NewHexAddressProvider())
+		gcManager := retention.NewGarbageCollectionManager(cfg.DB, tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
+		settingManager := settings.NewManager(refManager, branchLocker, adapter, cfg.Config.GetCommittedBlockStoragePrefix())
+		protectedBranchesManager := branch.NewProtectionManager(settingManager)
 		gStore = graveler.NewDBGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
 	}
 
