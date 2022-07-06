@@ -3,7 +3,7 @@ import Navbar from 'react-bootstrap/Navbar';
 import Nav from 'react-bootstrap/Nav';
 import NavDropdown from 'react-bootstrap/NavDropdown';
 import useUser from '../hooks/user'
-import {config} from "../api";
+import {auth, config} from "../api";
 import {useRouter} from "../hooks/router";
 import {Link} from "./nav";
 import {useAPI} from "../hooks/api";
@@ -20,6 +20,7 @@ const NavUserInfo = () => {
             <NavDropdown title={user.friendly_name || user.id} className="navbar-username" alignRight>
                 <NavDropdown.Item
                     onSelect={()=> {
+                        auth.clearCurrentUser();
                         window.location = '/logout';
                     }}>
                     Logout

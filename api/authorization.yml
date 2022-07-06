@@ -338,7 +338,10 @@ paths:
           name: email
           schema:
             type: string
-
+        - in: query
+          name: external_id
+          schema:
+            type: string
       responses:
         200:
           description: user list
