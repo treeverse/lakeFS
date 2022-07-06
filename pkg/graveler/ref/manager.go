@@ -28,7 +28,7 @@ const BatchUpdateSQLSize = 10000
 
 type KVManager struct {
 	db              db.Database
-	kvStore         kv.StoreMessage
+	kvStore         *kv.StoreMessage
 	addressProvider ident.AddressProvider
 	batchExecutor   batch.Batcher
 }
@@ -39,7 +39,7 @@ type CommitNode struct {
 	generation     int
 }
 
-func NewKVPGRefManager(executor batch.Batcher, kvStore kv.StoreMessage, db db.Database, addressProvider ident.AddressProvider) *KVManager {
+func NewKVPGRefManager(executor batch.Batcher, kvStore *kv.StoreMessage, db db.Database, addressProvider ident.AddressProvider) *KVManager {
 	return &KVManager{
 		db:              db,
 		kvStore:         kvStore,
@@ -251,8 +251,8 @@ func (m *KVManager) GetTag(ctx context.Context, repositoryID graveler.Repository
 		}
 		return nil, fmt.Errorf("%s: %w", tagKey, err)
 	}
-	commitId := graveler.CommitID(t.CommitId)
-	return &commitId, nil
+	commitID := graveler.CommitID(t.CommitId)
+	return &commitID, nil
 }
 
 func (m *KVManager) CreateTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID, commitID graveler.CommitID) error {

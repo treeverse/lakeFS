@@ -208,7 +208,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	protectedBranchesManager := branch.NewProtectionManager(settingManager)
 
 	if cfg.Config.GetDatabaseParams().KVEnabled { // TODO (niro): Each module should be replaced by an appropriate KV implementation
-		refManager = ref.NewKVPGRefManager(executor, *cfg.KVStore, cfg.DB, ident.NewHexAddressProvider())
+		refManager = ref.NewKVPGRefManager(executor, cfg.KVStore, cfg.DB, ident.NewHexAddressProvider())
 		gStore = graveler.NewKVGraveler(cfg.KVStore, branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
 	} else {
 		refManager = ref.NewPGRefManager(executor, cfg.DB, ident.NewHexAddressProvider())

@@ -423,15 +423,14 @@ func (m *FakeTagIterator) Next() bool {
 	return m.Index < len(m.Data)
 }
 
-func (m *FakeTagIterator) SeekGE(_ context.Context, id graveler.TagID, _ graveler.RepositoryID) error {
+func (m *FakeTagIterator) SeekGE(id graveler.TagID) {
 	m.Index = len(m.Data)
 	for i, item := range m.Data {
 		if item.TagID >= id {
 			m.Index = i - 1
-			return nil
+			return
 		}
 	}
-	return nil
 }
 
 func (m *FakeTagIterator) Value() *graveler.TagRecord {

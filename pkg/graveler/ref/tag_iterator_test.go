@@ -116,7 +116,7 @@ func TestKVTagIterator(t *testing.T) {
 	}
 
 	t.Run("listing all tags", func(t *testing.T) {
-		iter, err := ref.NewKVTagIterator(ctx, kvstore, "repo1")
+		iter, err := ref.NewKVTagIterator(ctx, &kvstore, "repo1")
 		testutil.Must(t, err)
 		ids := make([]graveler.TagID, 0)
 		for iter.Next() {
@@ -134,7 +134,7 @@ func TestKVTagIterator(t *testing.T) {
 	})
 
 	t.Run("listing tags using prefix", func(t *testing.T) {
-		iter, err := ref.NewKVTagIterator(ctx, kvstore, "repo1")
+		iter, err := ref.NewKVTagIterator(ctx, &kvstore, "repo1")
 		testutil.Must(t, err)
 		iter.SeekGE("b")
 		ids := make([]graveler.TagID, 0)
@@ -153,7 +153,7 @@ func TestKVTagIterator(t *testing.T) {
 	})
 
 	t.Run("listing tags SeekGE", func(t *testing.T) {
-		iter, err := ref.NewKVTagIterator(ctx, kvstore, "repo1")
+		iter, err := ref.NewKVTagIterator(ctx, &kvstore, "repo1")
 		testutil.Must(t, err)
 		iter.SeekGE("b")
 		ids := make([]graveler.TagID, 0)

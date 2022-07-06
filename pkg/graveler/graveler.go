@@ -574,7 +574,7 @@ type BranchIterator interface {
 
 type TagIterator interface {
 	Next() bool
-	SeekGE(id TagID) error
+	SeekGE(id TagID)
 	Value() *TagRecord
 	Err() error
 	Close()

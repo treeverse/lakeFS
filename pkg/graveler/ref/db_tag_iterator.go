@@ -91,16 +91,15 @@ func (ri *DBTagIterator) maybeFetch() {
 	}
 }
 
-func (ri *DBTagIterator) SeekGE(id graveler.TagID) error {
+func (ri *DBTagIterator) SeekGE(id graveler.TagID) {
 	if errors.Is(ri.err, ErrIteratorClosed) {
-		return nil
+		return
 	}
 	ri.offset = string(id)
 	ri.buf = ri.buf[:0]
 	ri.value = nil
 	ri.err = nil
 	ri.state = iteratorStateInit
-	return nil
 }
 
 func (ri *DBTagIterator) Value() *graveler.TagRecord {
