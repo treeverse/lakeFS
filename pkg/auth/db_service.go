@@ -237,17 +237,17 @@ func (s *DBAuthService) GetUser(ctx context.Context, username string) (*model.Us
 	})
 }
 
+// GetUserByEmail returns a user by their email.
+// It doesn't cache the result in order to avoid a stale user after password reset.
 func (s *DBAuthService) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
-	return s.cache.GetUser(&userKey{email: email}, func() (*model.User, error) {
-		res, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-			return getDBUserByEmail(tx, email)
-		}, db.ReadOnly())
-		if err != nil {
-			return nil, err
-		}
-		user := res.(*model.DBUser)
-		return &user.User, nil
-	})
+	res, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
+		return getDBUserByEmail(tx, email)
+	}, db.ReadOnly())
+	if err != nil {
+		return nil, err
+	}
+	user := res.(*model.DBUser)
+	return &user.User, nil
 }
 
 func (s *DBAuthService) GetUserByExternalID(ctx context.Context, externalID string) (*model.User, error) {
