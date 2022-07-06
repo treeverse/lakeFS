@@ -126,31 +126,13 @@ var runCmd = &cobra.Command{
 		registerPrometheusCollector(dbPool)
 		migrator := db.NewDatabaseMigrator(dbParams)
 
-		authMetadataManager := auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
-		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
-		blockstoreType := cfg.GetBlockstoreType()
-		if blockstoreType == "local" || blockstoreType == "mem" {
-			printLocalWarning(os.Stderr, blockstoreType)
-			logger.WithField("adapter_type", blockstoreType).
-				Error("Block adapter NOT SUPPORTED for production use")
-		}
-		metadata := stats.NewMetadata(ctx, logger, blockstoreType, authMetadataManager, cloudMetadataProvider)
-		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, cfg)
-		// init block store
-		blockStore, err := factory.BuildBlockAdapter(ctx, bufferedCollector, cfg)
-		if err != nil {
-			logger.WithError(err).Fatal("Failed to create block adapter")
-		}
-		bufferedCollector.SetRuntimeCollector(blockStore.RuntimeStats)
-		// send metadata
-		bufferedCollector.CollectMetadata(metadata)
-
 		var (
-			multipartsTracker multiparts.Tracker
-			idGen             actions.IDGenerator
-			actionsStore      actions.Store
-			authService       auth.Service
-			storeMessage      *kv.StoreMessage
+			multipartsTracker   multiparts.Tracker
+			idGen               actions.IDGenerator
+			actionsStore        actions.Store
+			authService         auth.Service
+			authMetadataManager auth.MetadataManager
+			storeMessage        *kv.StoreMessage
 		)
 		emailParams, _ := cfg.GetEmailParams()
 		emailer, err := email.NewEmailer(emailParams)
@@ -189,6 +171,7 @@ var runCmd = &cobra.Command{
 					cfg.GetAuthCacheConfig(),
 					logger.WithField("service", "auth_service"))
 			}
+			authMetadataManager = auth.NewKVMetadataManager(version.Version, cfg.GetFixedInstallationID(), kvStore)
 		} else {
 			multipartsTracker = multiparts.NewDBTracker(dbPool)
 			actionsStore = actions.NewActionsDBStore(dbPool)
@@ -201,7 +184,26 @@ var runCmd = &cobra.Command{
 					cfg.GetAuthCacheConfig(),
 					logger.WithField("service", "auth_service"))
 			}
+			authMetadataManager = auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
 		}
+
+		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
+		blockstoreType := cfg.GetBlockstoreType()
+		if blockstoreType == "local" || blockstoreType == "mem" {
+			printLocalWarning(os.Stderr, blockstoreType)
+			logger.WithField("adapter_type", blockstoreType).
+				Error("Block adapter NOT SUPPORTED for production use")
+		}
+		metadata := stats.NewMetadata(ctx, logger, blockstoreType, authMetadataManager, cloudMetadataProvider)
+		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, cfg)
+		// init block store
+		blockStore, err := factory.BuildBlockAdapter(ctx, bufferedCollector, cfg)
+		if err != nil {
+			logger.WithError(err).Fatal("Failed to create block adapter")
+		}
+		bufferedCollector.SetRuntimeCollector(blockStore.RuntimeStats)
+		// send metadata
+		bufferedCollector.CollectMetadata(metadata)
 
 		c, err := catalog.New(ctx, catalog.Config{
 			Config:  cfg,
@@ -371,7 +373,7 @@ var runCmd = &cobra.Command{
 }
 
 // checkRepos iterates on all repos and validates that their settings are correct.
-func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager *auth.DBMetadataManager, blockStore block.Adapter, c *catalog.Catalog) {
+func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager auth.MetadataManager, blockStore block.Adapter, c *catalog.Catalog) {
 	initialized, err := authMetadataManager.IsInitialized(ctx)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to check if lakeFS is initialized")

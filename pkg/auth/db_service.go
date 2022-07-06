@@ -953,6 +953,10 @@ func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
 		return err
 	}
 
+	if err = exportMetadata(ctx, d, je); err != nil {
+		return err
+	}
+
 	return nil
 }
 
