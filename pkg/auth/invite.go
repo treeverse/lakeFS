@@ -41,7 +41,7 @@ func (i *InviteHandler) inviteUserRequest(emailAddr string) error {
 }
 
 func (i *InviteHandler) InviteUser(ctx context.Context, email string) error {
-	u := &model.BaseUser{
+	u := &model.User{
 		CreatedAt:    time.Now().UTC(),
 		Username:     email,
 		FriendlyName: nil,

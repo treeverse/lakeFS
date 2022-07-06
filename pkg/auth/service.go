@@ -45,7 +45,7 @@ type AuthorizationResponse struct {
 type CheckResult int
 
 const (
-	InvalidUserID = "-1"
+	InvalidUserID = ""
 	maxPage       = 1000
 	// CheckAllow Permission allowed
 	CheckAllow CheckResult = iota
@@ -57,7 +57,7 @@ const (
 
 type GatewayService interface {
 	GetCredentials(_ context.Context, accessKey string) (*model.Credential, error)
-	GetUserByID(ctx context.Context, userID string) (*model.User, error)
+	GetUser(ctx context.Context, username string) (*model.User, error)
 	Authorize(_ context.Context, req *AuthorizationRequest) (*AuthorizationResponse, error)
 }
 
@@ -66,7 +66,7 @@ type Service interface {
 	Cache() Cache
 
 	// users
-	CreateUser(ctx context.Context, user *model.BaseUser) (string, error)
+	CreateUser(ctx context.Context, user *model.User) (string, error)
 	InviteUser(ctx context.Context, email string) error
 
 	IsInviteSupported() bool
@@ -77,7 +77,7 @@ type Service interface {
 	ListUsers(ctx context.Context, params *model.PaginationParams) ([]*model.User, *model.Paginator, error)
 
 	// groups
-	CreateGroup(ctx context.Context, group *model.BaseGroup) error
+	CreateGroup(ctx context.Context, group *model.Group) error
 	DeleteGroup(ctx context.Context, groupDisplayName string) error
 	GetGroup(ctx context.Context, groupDisplayName string) (*model.Group, error)
 	ListGroups(ctx context.Context, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error)
@@ -89,10 +89,10 @@ type Service interface {
 	ListGroupUsers(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.User, *model.Paginator, error)
 
 	// policies
-	WritePolicy(ctx context.Context, policy *model.BasePolicy) error
-	GetPolicy(ctx context.Context, policyDisplayName string) (*model.BasePolicy, error)
+	WritePolicy(ctx context.Context, policy *model.Policy) error
+	GetPolicy(ctx context.Context, policyDisplayName string) (*model.Policy, error)
 	DeletePolicy(ctx context.Context, policyDisplayName string) error
-	ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error)
+	ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
 
 	// credentials
 	CreateCredentials(ctx context.Context, username string) (*model.Credential, error)
@@ -106,13 +106,13 @@ type Service interface {
 	// policy<->user attachments
 	AttachPolicyToUser(ctx context.Context, policyDisplayName, username string) error
 	DetachPolicyFromUser(ctx context.Context, policyDisplayName, username string) error
-	ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error)
-	ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error)
+	ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
+	ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
 
 	// policy<->group attachments
 	AttachPolicyToGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error
 	DetachPolicyFromGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error
-	ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error)
+	ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
 
 	// authorize user for an action
 	Authorize(ctx context.Context, req *AuthorizationRequest) (*AuthorizationResponse, error)
@@ -211,22 +211,20 @@ func (s *KVAuthService) Cache() Cache {
 	return s.cache
 }
 
-func (s *KVAuthService) CreateUser(ctx context.Context, user *model.BaseUser) (string, error) {
+func (s *KVAuthService) CreateUser(ctx context.Context, user *model.User) (string, error) {
 	if err := model.ValidateAuthEntityID(user.Username); err != nil {
 		return InvalidUserID, err
 	}
 	userKey := model.UserPath(user.Username)
-	id := model.CreateID()
-	userWithID := model.User{ID: id, BaseUser: *user}
 
-	err := s.store.SetMsgIf(ctx, model.PartitionKey, userKey, model.ProtoFromUser(&userWithID), nil)
+	err := s.store.SetMsgIf(ctx, model.PartitionKey, userKey, model.ProtoFromUser(user), nil)
 	if err != nil {
 		if errors.Is(err, kv.ErrPredicateFailed) {
 			err = ErrAlreadyExists
 		}
 		return "", fmt.Errorf("save user (userKey %s): %w", userKey, err)
 	}
-	return fmt.Sprint(id), err
+	return user.Username, err
 }
 
 func (s *KVAuthService) DeleteUser(ctx context.Context, username string) error {
@@ -320,30 +318,9 @@ func (s *KVAuthService) GetUserByEmail(ctx context.Context, email string) (*mode
 	})
 }
 
+// GetUserByID TODO(niro): In KV ID == username, Remove this method when DB implementation is deleted
 func (s *KVAuthService) GetUserByID(ctx context.Context, userID string) (*model.User, error) {
-	return s.cache.GetUserByID(userID, func() (*model.User, error) {
-		m := &model.UserData{}
-		itr, err := s.store.Scan(ctx, m.ProtoReflect().Type(), model.PartitionKey, model.UserPath(""), "")
-		if err != nil {
-			return nil, fmt.Errorf("scan users: %w", err)
-		}
-		defer itr.Close()
-
-		for itr.Next() {
-			entry := itr.Entry()
-			value, ok := entry.Value.(*model.UserData)
-			if !ok {
-				return nil, fmt.Errorf("failed to cast: %w", err)
-			}
-			if string(value.Id) == userID {
-				return model.UserFromProto(value), nil
-			}
-		}
-		if err = itr.Err(); err != nil {
-			return nil, err
-		}
-		return nil, ErrNotFound
-	})
+	return s.GetUser(ctx, userID)
 }
 
 func (s *KVAuthService) ListUsers(ctx context.Context, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
@@ -408,7 +385,7 @@ func (s *KVAuthService) DetachPolicyFromUser(ctx context.Context, policyDisplayN
 	return s.DetachPolicyFromUserNoValidation(ctx, policyDisplayName, username)
 }
 
-func (s *KVAuthService) ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+func (s *KVAuthService) ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	var policy model.PolicyData
 	userPolicyKey := model.UserPolicyPath(username, "")
 
@@ -419,7 +396,7 @@ func (s *KVAuthService) ListUserPolicies(ctx context.Context, username string, p
 	return model.ConvertPolicyDataList(msgs), paginator, err
 }
 
-func (s *KVAuthService) getEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+func (s *KVAuthService) getEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	if _, err := s.GetUser(ctx, username); err != nil {
 		return nil, nil, err
 	}
@@ -427,7 +404,7 @@ func (s *KVAuthService) getEffectivePolicies(ctx context.Context, username strin
 	hasMoreUserPolicy := true
 	afterUserPolicy := ""
 	amount := maxPage
-	policiesSet := make(map[string]*model.BasePolicy)
+	policiesSet := make(map[string]*model.Policy)
 	// get policies attracted to user
 	for hasMoreUserPolicy {
 		policies, userPaginator, err := s.ListUserPolicies(ctx, username, &model.PaginationParams{
@@ -488,7 +465,7 @@ func (s *KVAuthService) getEffectivePolicies(ctx context.Context, username strin
 	}
 	sort.Strings(policiesArr)
 
-	var resPolicies []*model.BasePolicy
+	var resPolicies []*model.Policy
 	resPaginator := model.Paginator{Amount: 0, NextPageToken: ""}
 	for _, p := range policiesArr {
 		if p > params.After {
@@ -503,16 +480,16 @@ func (s *KVAuthService) getEffectivePolicies(ctx context.Context, username strin
 	return resPolicies, &resPaginator, nil
 }
 
-func (s *KVAuthService) ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+func (s *KVAuthService) ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	return ListEffectivePolicies(ctx, username, params, s.getEffectivePolicies, s.cache)
 }
 
-type effectivePoliciesGetter func(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error)
+type effectivePoliciesGetter func(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
 
-func ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams, getEffectivePolicies effectivePoliciesGetter, cache Cache) ([]*model.BasePolicy, *model.Paginator, error) {
+func ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams, getEffectivePolicies effectivePoliciesGetter, cache Cache) ([]*model.Policy, *model.Paginator, error) {
 	if params.Amount == -1 {
 		// read through the cache when requesting the full list
-		policies, err := cache.GetUserPolicies(username, func() ([]*model.BasePolicy, error) {
+		policies, err := cache.GetUserPolicies(username, func() ([]*model.Policy, error) {
 			policies, _, err := getEffectivePolicies(ctx, username, params)
 			return policies, err
 		})
@@ -525,7 +502,7 @@ func ListEffectivePolicies(ctx context.Context, username string, params *model.P
 	return getEffectivePolicies(ctx, username, params)
 }
 
-func (s *KVAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+func (s *KVAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	var policy model.PolicyData
 	groupPolicyKey := model.GroupPolicyPath(groupDisplayName, "")
 
@@ -536,16 +513,13 @@ func (s *KVAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName 
 	return model.ConvertPolicyDataList(msgs), paginator, err
 }
 
-func (s *KVAuthService) CreateGroup(ctx context.Context, group *model.BaseGroup) error {
+func (s *KVAuthService) CreateGroup(ctx context.Context, group *model.Group) error {
 	if err := model.ValidateAuthEntityID(group.DisplayName); err != nil {
 		return err
 	}
 
 	groupKey := model.GroupPath(group.DisplayName)
-	id := model.CreateID()
-	groupWithID := model.Group{ID: id, BaseGroup: *group}
-
-	err := s.store.SetMsgIf(ctx, model.PartitionKey, groupKey, model.ProtoFromGroup(&groupWithID), nil)
+	err := s.store.SetMsgIf(ctx, model.PartitionKey, groupKey, model.ProtoFromGroup(group), nil)
 	if err != nil {
 		if errors.Is(err, kv.ErrPredicateFailed) {
 			err = ErrAlreadyExists
@@ -639,7 +613,6 @@ func (s *KVAuthService) AddUserToGroup(ctx context.Context, username, groupDispl
 
 	userKey := model.UserPath(username)
 	gu := model.GroupUserPath(groupDisplayName, username)
-
 	err := s.store.SetMsgIf(ctx, model.PartitionKey, gu, &kv.SecondaryIndex{PrimaryKey: []byte(userKey)}, nil)
 	if err != nil {
 		if errors.Is(err, kv.ErrPredicateFailed) {
@@ -688,7 +661,7 @@ func (s *KVAuthService) ListUserGroups(ctx context.Context, username string, par
 		}
 		for _, group := range groups {
 			path := model.GroupUserPath(group.DisplayName, username)
-			m := model.UserData{}
+			m := kv.SecondaryIndex{}
 			_, err := s.store.GetMsg(ctx, model.PartitionKey, path, &m)
 			if err != nil && !errors.Is(err, kv.ErrNotFound) {
 				return nil, nil, err
@@ -723,7 +696,7 @@ func (s *KVAuthService) ListGroupUsers(ctx context.Context, groupDisplayName str
 	return model.ConvertUsersDataList(msgs), paginator, err
 }
 
-func ValidatePolicy(policy *model.BasePolicy) error {
+func ValidatePolicy(policy *model.Policy) error {
 	if err := model.ValidateAuthEntityID(policy.DisplayName); err != nil {
 		return err
 	}
@@ -743,14 +716,13 @@ func ValidatePolicy(policy *model.BasePolicy) error {
 	return nil
 }
 
-func (s *KVAuthService) WritePolicy(ctx context.Context, policy *model.BasePolicy) error {
+func (s *KVAuthService) WritePolicy(ctx context.Context, policy *model.Policy) error {
 	if err := ValidatePolicy(policy); err != nil {
 		return err
 	}
 	policyKey := model.PolicyPath(policy.DisplayName)
-	id := model.CreateID()
 
-	m := model.ProtoFromPolicy(policy, id)
+	m := model.ProtoFromPolicy(policy)
 	err := s.store.SetMsgIf(ctx, model.PartitionKey, policyKey, m, nil)
 	if err != nil {
 		if errors.Is(err, kv.ErrPredicateFailed) {
@@ -761,7 +733,7 @@ func (s *KVAuthService) WritePolicy(ctx context.Context, policy *model.BasePolic
 	return err
 }
 
-func (s *KVAuthService) GetPolicy(ctx context.Context, policyDisplayName string) (*model.BasePolicy, error) {
+func (s *KVAuthService) GetPolicy(ctx context.Context, policyDisplayName string) (*model.Policy, error) {
 	policyKey := model.PolicyPath(policyDisplayName)
 	p := model.PolicyData{}
 	_, err := s.store.GetMsg(ctx, model.PartitionKey, policyKey, &p)
@@ -818,7 +790,7 @@ func (s *KVAuthService) DeletePolicy(ctx context.Context, policyDisplayName stri
 	return err
 }
 
-func (s *KVAuthService) ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+func (s *KVAuthService) ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	var policy model.PolicyData
 	policyKey := model.PolicyPath("")
 
@@ -859,7 +831,7 @@ func (s *KVAuthService) AddCredentials(ctx context.Context, username, accessKeyI
 			SecretAccessKeyEncryptedBytes: encryptedKey,
 			IssuedDate:                    now,
 		},
-		UserID: user.ID,
+		Username: user.Username,
 	}
 	credentialsKey := model.CredentialPath(user.Username, c.AccessKeyID)
 	err = s.store.SetMsgIf(ctx, model.PartitionKey, credentialsKey, model.ProtoFromCredential(c), nil)
@@ -994,14 +966,14 @@ func (s *KVAuthService) HashAndUpdatePassword(ctx context.Context, username stri
 		return err
 	}
 	userKey := model.UserPath(user.Username)
-	userUpdatePassword := model.User{ID: user.ID, BaseUser: model.BaseUser{
-		CreatedAt:         user.BaseUser.CreatedAt,
-		Username:          user.BaseUser.Username,
-		FriendlyName:      user.BaseUser.FriendlyName,
-		Email:             user.BaseUser.Email,
+	userUpdatePassword := model.User{
+		CreatedAt:         user.CreatedAt,
+		Username:          user.Username,
+		FriendlyName:      user.FriendlyName,
+		Email:             user.Email,
 		EncryptedPassword: pw,
-		Source:            user.BaseUser.Source}}
-	err = s.store.SetMsg(ctx, model.PartitionKey, userKey, model.ProtoFromUser(&userUpdatePassword))
+		Source:            user.Source}
+	err = s.store.SetMsgIf(ctx, model.PartitionKey, userKey, model.ProtoFromUser(&userUpdatePassword), user)
 	if err != nil {
 		return fmt.Errorf("update user password (userKey %s): %w", userKey, err)
 	}
@@ -1012,7 +984,7 @@ func interpolateUser(resource string, username string) string {
 	return strings.ReplaceAll(resource, "${user}", username)
 }
 
-func checkPermissions(node permissions.Node, username string, policies []*model.BasePolicy) CheckResult {
+func checkPermissions(node permissions.Node, username string, policies []*model.Policy) CheckResult {
 	allowed := CheckNeutral
 	switch node.Type {
 	case permissions.NodeTypeNode:
@@ -1153,7 +1125,7 @@ func (a *APIAuthService) Cache() Cache {
 	return a.cache
 }
 
-func (a *APIAuthService) CreateUser(ctx context.Context, user *model.BaseUser) (string, error) {
+func (a *APIAuthService) CreateUser(ctx context.Context, user *model.User) (string, error) {
 	resp, err := a.apiClient.CreateUserWithResponse(ctx, CreateUserJSONRequestBody{
 		Email:        user.Email,
 		FriendlyName: user.FriendlyName,
@@ -1203,15 +1175,12 @@ func (a *APIAuthService) GetUserByID(ctx context.Context, userID string) (*model
 		}
 		u := results[0]
 		return &model.User{
-			ID: model.ConvertDBID(u.Id),
-			BaseUser: model.BaseUser{
-				CreatedAt:         time.Unix(u.CreationDate, 0),
-				Username:          u.Name,
-				FriendlyName:      u.FriendlyName,
-				Email:             u.Email,
-				EncryptedPassword: nil,
-				Source:            "",
-			},
+			CreatedAt:         time.Unix(u.CreationDate, 0),
+			Username:          u.Name,
+			FriendlyName:      u.FriendlyName,
+			Email:             u.Email,
+			EncryptedPassword: nil,
+			Source:            "",
 		}, nil
 	})
 }
@@ -1227,15 +1196,12 @@ func (a *APIAuthService) GetUser(ctx context.Context, username string) (*model.U
 		}
 		u := resp.JSON200
 		return &model.User{
-			ID: model.ConvertDBID(u.Id),
-			BaseUser: model.BaseUser{
-				CreatedAt:         time.Unix(u.CreationDate, 0),
-				Username:          u.Name,
-				FriendlyName:      u.FriendlyName,
-				Email:             u.Email,
-				EncryptedPassword: u.EncryptedPassword,
-				Source:            swag.StringValue(u.Source),
-			},
+			CreatedAt:         time.Unix(u.CreationDate, 0),
+			Username:          u.Name,
+			FriendlyName:      u.FriendlyName,
+			Email:             u.Email,
+			EncryptedPassword: u.EncryptedPassword,
+			Source:            swag.StringValue(u.Source),
 		}, nil
 	})
 }
@@ -1254,19 +1220,14 @@ func (a *APIAuthService) GetUserByEmail(ctx context.Context, email string) (*mod
 			return nil, ErrNotFound
 		}
 		u := results[0]
-		user := &model.User{
-			ID: model.ConvertDBID(u.Id),
-			BaseUser: model.BaseUser{
-				CreatedAt:         time.Unix(u.CreationDate, 0),
-				Username:          u.Name,
-				FriendlyName:      u.FriendlyName,
-				Email:             u.Email,
-				EncryptedPassword: u.EncryptedPassword,
-				Source:            swag.StringValue(u.Source),
-			},
-		}
-
-		return user, err
+		return &model.User{
+			CreatedAt:         time.Unix(u.CreationDate, 0),
+			Username:          u.Name,
+			FriendlyName:      u.FriendlyName,
+			Email:             u.Email,
+			EncryptedPassword: u.EncryptedPassword,
+			Source:            swag.StringValue(u.Source),
+		}, nil
 	})
 }
 
@@ -1297,15 +1258,12 @@ func (a *APIAuthService) ListUsers(ctx context.Context, params *model.Pagination
 	users := make([]*model.User, len(results))
 	for i, r := range results {
 		users[i] = &model.User{
-			ID: model.ConvertDBID(r.Id),
-			BaseUser: model.BaseUser{
-				CreatedAt:         time.Unix(r.CreationDate, 0),
-				Username:          r.Name,
-				FriendlyName:      r.FriendlyName,
-				Email:             r.Email,
-				EncryptedPassword: nil,
-				Source:            swag.StringValue(r.Source),
-			},
+			CreatedAt:         time.Unix(r.CreationDate, 0),
+			Username:          r.Name,
+			FriendlyName:      r.FriendlyName,
+			Email:             r.Email,
+			EncryptedPassword: nil,
+			Source:            swag.StringValue(r.Source),
 		}
 	}
 	return users, toPagination(pagination), nil
@@ -1324,7 +1282,7 @@ func (a *APIAuthService) HashAndUpdatePassword(ctx context.Context, username str
 	return a.validateResponse(resp, http.StatusOK)
 }
 
-func (a *APIAuthService) CreateGroup(ctx context.Context, group *model.BaseGroup) error {
+func (a *APIAuthService) CreateGroup(ctx context.Context, group *model.Group) error {
 	resp, err := a.apiClient.CreateGroupWithResponse(ctx, CreateGroupJSONRequestBody{
 		Id: group.DisplayName,
 	})
@@ -1384,10 +1342,8 @@ func (a *APIAuthService) GetGroup(ctx context.Context, groupDisplayName string) 
 		return nil, err
 	}
 	return &model.Group{
-		BaseGroup: model.BaseGroup{
-			CreatedAt:   time.Unix(resp.JSON200.CreationDate, 0),
-			DisplayName: resp.JSON200.Name,
-		},
+		CreatedAt:   time.Unix(resp.JSON200.CreationDate, 0),
+		DisplayName: resp.JSON200.Name,
 	}, nil
 }
 
@@ -1405,15 +1361,6 @@ func (a *APIAuthService) ListGroups(ctx context.Context, params *model.Paginatio
 	}
 	groups := make([]*model.Group, len(resp.JSON200.Results))
 
-	for i, r := range resp.JSON200.Results {
-		groups[i] = &model.Group{
-			ID: strconv.Itoa(0),
-			BaseGroup: model.BaseGroup{
-				CreatedAt:   time.Unix(r.CreationDate, 0),
-				DisplayName: r.Name,
-			},
-		}
-	}
 	return groups, toPagination(resp.JSON200.Pagination), nil
 }
 
@@ -1447,15 +1394,6 @@ func (a *APIAuthService) ListUserGroups(ctx context.Context, username string, pa
 	}
 	userGroups := make([]*model.Group, len(resp.JSON200.Results))
 
-	for i, r := range resp.JSON200.Results {
-		userGroups[i] = &model.Group{
-			ID: strconv.Itoa(0),
-			BaseGroup: model.BaseGroup{
-				CreatedAt:   time.Unix(r.CreationDate, 0),
-				DisplayName: r.Name,
-			},
-		}
-	}
 	return userGroups, toPagination(resp.JSON200.Pagination), nil
 }
 
@@ -1475,19 +1413,19 @@ func (a *APIAuthService) ListGroupUsers(ctx context.Context, groupDisplayName st
 
 	for i, r := range resp.JSON200.Results {
 		members[i] = &model.User{
-			ID: strconv.Itoa(0),
-			BaseUser: model.BaseUser{
-				CreatedAt:    time.Unix(r.CreationDate, 0),
-				Username:     r.Name,
-				FriendlyName: r.FriendlyName,
-				Email:        r.Email,
-			},
+			CreatedAt:    time.Unix(r.CreationDate, 0),
+			Username:     r.Name,
+			FriendlyName: r.FriendlyName,
+			Email:        r.Email,
 		}
 	}
 	return members, toPagination(resp.JSON200.Pagination), nil
 }
 
-func (a *APIAuthService) WritePolicy(ctx context.Context, policy *model.BasePolicy) error {
+func (a *APIAuthService) WritePolicy(ctx context.Context, policy *model.Policy) error {
+	if err := model.ValidateAuthEntityID(policy.DisplayName); err != nil {
+		return err
+	}
 	stmts := make([]Statement, len(policy.Statement))
 	for i, s := range policy.Statement {
 		stmts[i] = Statement{
@@ -1509,7 +1447,7 @@ func (a *APIAuthService) WritePolicy(ctx context.Context, policy *model.BasePoli
 	return a.validateResponse(resp, http.StatusCreated)
 }
 
-func serializePolicyToModalPolicy(p Policy) *model.BasePolicy {
+func serializePolicyToModalPolicy(p Policy) *model.Policy {
 	stmts := make(model.Statements, len(p.Statement))
 	for i, apiStatement := range p.Statement {
 		stmts[i] = model.Statement{
@@ -1522,14 +1460,14 @@ func serializePolicyToModalPolicy(p Policy) *model.BasePolicy {
 	if p.CreationDate != nil {
 		creationTime = time.Unix(*p.CreationDate, 0)
 	}
-	return &model.BasePolicy{
+	return &model.Policy{
 		CreatedAt:   creationTime,
 		DisplayName: p.Name,
 		Statement:   stmts,
 	}
 }
 
-func (a *APIAuthService) GetPolicy(ctx context.Context, policyDisplayName string) (*model.BasePolicy, error) {
+func (a *APIAuthService) GetPolicy(ctx context.Context, policyDisplayName string) (*model.Policy, error) {
 	resp, err := a.apiClient.GetPolicyWithResponse(ctx, policyDisplayName)
 	if err != nil {
 		return nil, err
@@ -1549,7 +1487,7 @@ func (a *APIAuthService) DeletePolicy(ctx context.Context, policyDisplayName str
 	return a.validateResponse(resp, http.StatusNoContent)
 }
 
-func (a *APIAuthService) ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+func (a *APIAuthService) ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	resp, err := a.apiClient.ListPoliciesWithResponse(ctx, &ListPoliciesParams{
 		Prefix: paginationPrefix(params.Prefix),
 		After:  paginationAfter(params.After),
@@ -1561,7 +1499,7 @@ func (a *APIAuthService) ListPolicies(ctx context.Context, params *model.Paginat
 	if err := a.validateResponse(resp, http.StatusOK); err != nil {
 		return nil, nil, err
 	}
-	policies := make([]*model.BasePolicy, len(resp.JSON200.Results))
+	policies := make([]*model.Policy, len(resp.JSON200.Results))
 
 	for i, r := range resp.JSON200.Results {
 		policies[i] = serializePolicyToModalPolicy(r)
@@ -1579,7 +1517,7 @@ func (a *APIAuthService) CreateCredentials(ctx context.Context, username string)
 	}
 	credentials := resp.JSON201
 	return &model.Credential{
-		UserID: strconv.Itoa(0),
+		Username: strconv.Itoa(0),
 		BaseCredential: model.BaseCredential{
 			AccessKeyID:     credentials.AccessKeyId,
 			SecretAccessKey: credentials.SecretAccessKey,
@@ -1601,7 +1539,7 @@ func (a *APIAuthService) AddCredentials(ctx context.Context, username, accessKey
 	}
 	credentials := resp.JSON201
 	return &model.Credential{
-		UserID: strconv.Itoa(0),
+		Username: strconv.Itoa(0),
 		BaseCredential: model.BaseCredential{
 			AccessKeyID:     credentials.AccessKeyId,
 			SecretAccessKey: credentials.SecretAccessKey,
@@ -1632,7 +1570,7 @@ func (a *APIAuthService) GetCredentialsForUser(ctx context.Context, username, ac
 			AccessKeyID: credentials.AccessKeyId,
 			IssuedDate:  time.Unix(credentials.CreationDate, 0),
 		},
-		UserID: strconv.Itoa(0),
+		Username: strconv.Itoa(0),
 	}, nil
 }
 
@@ -1646,6 +1584,10 @@ func (a *APIAuthService) GetCredentials(ctx context.Context, accessKeyID string)
 			return nil, err
 		}
 		credentials := resp.JSON200
+		user, err := a.GetUserByID(ctx, model.ConvertDBID(credentials.UserId))
+		if err != nil {
+			return nil, err
+		}
 		return &model.Credential{
 			BaseCredential: model.BaseCredential{
 				AccessKeyID:                   credentials.AccessKeyId,
@@ -1653,7 +1595,7 @@ func (a *APIAuthService) GetCredentials(ctx context.Context, accessKeyID string)
 				SecretAccessKeyEncryptedBytes: nil,
 				IssuedDate:                    time.Unix(credentials.CreationDate, 0),
 			},
-			UserID: model.ConvertDBID(credentials.UserId),
+			Username: user.Username,
 		}, nil
 	})
 }
@@ -1679,7 +1621,7 @@ func (a *APIAuthService) ListUserCredentials(ctx context.Context, username strin
 				AccessKeyID: r.AccessKeyId,
 				IssuedDate:  time.Unix(r.CreationDate, 0),
 			},
-			UserID: strconv.Itoa(0),
+			Username: strconv.Itoa(0),
 		}
 	}
 	return credentials, toPagination(resp.JSON200.Pagination), nil
@@ -1701,7 +1643,7 @@ func (a *APIAuthService) DetachPolicyFromUser(ctx context.Context, policyDisplay
 	return a.validateResponse(resp, http.StatusNoContent)
 }
 
-func (a *APIAuthService) listUserPolicies(ctx context.Context, username string, params *model.PaginationParams, effective bool) ([]*model.BasePolicy, *model.Paginator, error) {
+func (a *APIAuthService) listUserPolicies(ctx context.Context, username string, params *model.PaginationParams, effective bool) ([]*model.Policy, *model.Paginator, error) {
 	resp, err := a.apiClient.ListUserPoliciesWithResponse(ctx, username, &ListUserPoliciesParams{
 		Prefix:    paginationPrefix(params.Prefix),
 		After:     paginationAfter(params.After),
@@ -1714,7 +1656,7 @@ func (a *APIAuthService) listUserPolicies(ctx context.Context, username string, 
 	if err := a.validateResponse(resp, http.StatusOK); err != nil {
 		return nil, nil, err
 	}
-	policies := make([]*model.BasePolicy, len(resp.JSON200.Results))
+	policies := make([]*model.Policy, len(resp.JSON200.Results))
 
 	for i, r := range resp.JSON200.Results {
 		policies[i] = serializePolicyToModalPolicy(r)
@@ -1722,15 +1664,15 @@ func (a *APIAuthService) listUserPolicies(ctx context.Context, username string, 
 	return policies, toPagination(resp.JSON200.Pagination), nil
 }
 
-func (a *APIAuthService) ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+func (a *APIAuthService) ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	return a.listUserPolicies(ctx, username, params, false)
 }
 
-func (a *APIAuthService) listAllEffectivePolicies(ctx context.Context, username string) ([]*model.BasePolicy, error) {
+func (a *APIAuthService) listAllEffectivePolicies(ctx context.Context, username string) ([]*model.Policy, error) {
 	hasMore := true
 	after := ""
 	amount := maxPage
-	policies := make([]*model.BasePolicy, 0)
+	policies := make([]*model.Policy, 0)
 	for hasMore {
 		p, paginator, err := a.ListEffectivePolicies(ctx, username, &model.PaginationParams{
 			After:  after,
@@ -1746,10 +1688,10 @@ func (a *APIAuthService) listAllEffectivePolicies(ctx context.Context, username 
 	return policies, nil
 }
 
-func (a *APIAuthService) ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+func (a *APIAuthService) ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	if params.Amount == -1 {
 		// read through the cache when requesting the full list
-		policies, err := a.cache.GetUserPolicies(username, func() ([]*model.BasePolicy, error) {
+		policies, err := a.cache.GetUserPolicies(username, func() ([]*model.Policy, error) {
 			return a.listAllEffectivePolicies(ctx, username)
 		})
 		if err != nil {
@@ -1776,7 +1718,7 @@ func (a *APIAuthService) DetachPolicyFromGroup(ctx context.Context, policyDispla
 	return a.validateResponse(resp, http.StatusNoContent)
 }
 
-func (a *APIAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.BasePolicy, *model.Paginator, error) {
+func (a *APIAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	resp, err := a.apiClient.ListGroupPoliciesWithResponse(ctx, groupDisplayName, &ListGroupPoliciesParams{
 		Prefix: paginationPrefix(params.Prefix),
 		After:  paginationAfter(params.After),
@@ -1788,7 +1730,7 @@ func (a *APIAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName
 	if err := a.validateResponse(resp, http.StatusOK); err != nil {
 		return nil, nil, err
 	}
-	policies := make([]*model.BasePolicy, len(resp.JSON200.Results))
+	policies := make([]*model.Policy, len(resp.JSON200.Results))
 
 	for i, r := range resp.JSON200.Results {
 		policies[i] = serializePolicyToModalPolicy(r)
