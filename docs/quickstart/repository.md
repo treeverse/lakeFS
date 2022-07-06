@@ -11,7 +11,7 @@ has_children: false
 {: .no_toc }
 
 A _repository_ contains all of your objects, including the revision history.
-It can be considered the lakeFS analog of a bucket in an object store. Since it has version control qualities, it is also analogous to a repository in Git.
+You can consider it as the lakeFS analog of a bucket in an object store. Since it has version control qualities, it is also analogous to a repository in Git.
 
 ## Create the first user
 
@@ -37,16 +37,16 @@ When you first open the lakeFS UI, you will be asked to create an initial admin 
     
    ![Create Repository]({{ site.baseurl }}/assets/img/create_repo_local.png)
 
-1. Fill in a repository name.
+1. Fill in the repository name.
 
 1. Under _Storage Namespace_, enter `local://`.
  
    In this tutorial, the underlying storage for lakeFS is the local disk. Accordingly, the value for _Storage Namespace_ should simply be `local://`.
-   For a deployment that uses an object store as the underlying storage, this would be a location in the store, e.g. `s3://example-bucket/prefix`.
+   For a deployment that uses an object store as the underlying storage, this would be a location in the store - for example, `s3://example-bucket/prefix`.
    {: .note .note-info }
 
 1. Click _Create Repository_.
 
 ### Next steps
 
-You just created your first lakeFS repository! You can now [add some data](add_data.md) to it.
+You've just created your first lakeFS repository! You can now [add some data](add_data.md) to it.
