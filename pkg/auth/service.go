@@ -73,6 +73,7 @@ type Service interface {
 	DeleteUser(ctx context.Context, username string) error
 	GetUserByID(ctx context.Context, userID string) (*model.User, error)
 	GetUser(ctx context.Context, username string) (*model.User, error)
+	GetUserByExternalID(ctx context.Context, externalID string) (*model.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
 	ListUsers(ctx context.Context, params *model.PaginationParams) ([]*model.User, *model.Paginator, error)
 
@@ -277,8 +278,40 @@ func (s *KVAuthService) DeleteUser(ctx context.Context, username string) error {
 	return err
 }
 
+type UserPredicate func(u *model.UserData) bool
+
+func (s *KVAuthService) getUserByPredicate(ctx context.Context, key *userKey, predicate UserPredicate) (*model.User, error) {
+	return s.cache.GetUser(key, func() (*model.User, error) {
+		m := &model.UserData{}
+		itr, err := s.store.Scan(ctx, m.ProtoReflect().Type(), model.PartitionKey, model.UserPath(""), "")
+		if err != nil {
+			return nil, fmt.Errorf("scan users: %w", err)
+		}
+		defer itr.Close()
+		for itr.Next() {
+			entry := itr.Entry()
+			value, ok := entry.Value.(*model.UserData)
+			if !ok {
+				return nil, fmt.Errorf("failed to cast: %w", err)
+			}
+			if predicate(value) {
+				return model.UserFromProto(value), nil
+			}
+		}
+		if itr.Err() != nil {
+			return nil, itr.Err()
+		}
+		return nil, ErrNotFound
+	})
+}
+
+// GetUserByID TODO(niro): In KV ID == username, Remove this method when DB implementation is deleted
+func (s *KVAuthService) GetUserByID(ctx context.Context, userID string) (*model.User, error) {
+	return s.GetUser(ctx, userID)
+}
+
 func (s *KVAuthService) GetUser(ctx context.Context, username string) (*model.User, error) {
-	return s.cache.GetUser(username, func() (*model.User, error) {
+	return s.cache.GetUser(&userKey{username: username}, func() (*model.User, error) {
 		userKey := model.UserPath(username)
 		m := model.UserData{}
 		_, err := s.store.GetMsg(ctx, model.PartitionKey, userKey, &m)
@@ -293,34 +326,15 @@ func (s *KVAuthService) GetUser(ctx context.Context, username string) (*model.Us
 }
 
 func (s *KVAuthService) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
-	return s.cache.GetUserByEmail(email, func() (*model.User, error) {
-		m := &model.UserData{}
-		itr, err := s.store.Scan(ctx, m.ProtoReflect().Type(), model.PartitionKey, model.UserPath(""), "")
-		if err != nil {
-			return nil, fmt.Errorf("scan users: %w", err)
-		}
-		defer itr.Close()
-
-		for itr.Next() {
-			if itr.Err() != nil {
-				return nil, itr.Err()
-			}
-			entry := itr.Entry()
-			value, ok := entry.Value.(*model.UserData)
-			if !ok {
-				return nil, fmt.Errorf("failed to cast: %w", err)
-			}
-			if value.Email == email {
-				return model.UserFromProto(value), nil
-			}
-		}
-		return nil, ErrNotFound
+	return s.getUserByPredicate(ctx, &userKey{email: email}, func(value *model.UserData) bool {
+		return value.Email == email
 	})
 }
 
-// GetUserByID TODO(niro): In KV ID == username, Remove this method when DB implementation is deleted
-func (s *KVAuthService) GetUserByID(ctx context.Context, userID string) (*model.User, error) {
-	return s.GetUser(ctx, userID)
+func (s *KVAuthService) GetUserByExternalID(ctx context.Context, externalID string) (*model.User, error) {
+	return s.getUserByPredicate(ctx, &userKey{externalID: externalID}, func(value *model.UserData) bool {
+		return value.ExternalId == externalID
+	})
 }
 
 func (s *KVAuthService) ListUsers(ctx context.Context, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
@@ -1156,13 +1170,9 @@ func userIDToInt(userID string) (int64, error) {
 	return strconv.ParseInt(userID, base, bitSize)
 }
 
-func (a *APIAuthService) GetUserByID(ctx context.Context, userID string) (*model.User, error) {
-	intID, err := userIDToInt(userID)
-	if err != nil {
-		return nil, fmt.Errorf("userID as int64: %w", err)
-	}
-	return a.cache.GetUserByID(userID, func() (*model.User, error) {
-		resp, err := a.apiClient.ListUsersWithResponse(ctx, &ListUsersParams{Id: &intID})
+func (a *APIAuthService) getFirstUser(ctx context.Context, userKey *userKey, params *ListUsersParams) (*model.User, error) {
+	return a.cache.GetUser(userKey, func() (*model.User, error) {
+		resp, err := a.apiClient.ListUsersWithResponse(ctx, params)
 		if err != nil {
 			return nil, err
 		}
@@ -1179,14 +1189,22 @@ func (a *APIAuthService) GetUserByID(ctx context.Context, userID string) (*model
 			Username:          u.Name,
 			FriendlyName:      u.FriendlyName,
 			Email:             u.Email,
-			EncryptedPassword: nil,
-			Source:            "",
+			EncryptedPassword: u.EncryptedPassword,
+			Source:            swag.StringValue(u.Source),
 		}, nil
 	})
 }
 
+func (a *APIAuthService) GetUserByID(ctx context.Context, userID string) (*model.User, error) {
+	intID, err := userIDToInt(userID)
+	if err != nil {
+		return nil, fmt.Errorf("userID as int64: %w", err)
+	}
+	return a.getFirstUser(ctx, &userKey{id: userID}, &ListUsersParams{Id: &intID})
+}
+
 func (a *APIAuthService) GetUser(ctx context.Context, username string) (*model.User, error) {
-	return a.cache.GetUser(username, func() (*model.User, error) {
+	return a.cache.GetUser(&userKey{username: username}, func() (*model.User, error) {
 		resp, err := a.apiClient.GetUserWithResponse(ctx, username)
 		if err != nil {
 			return nil, err
@@ -1207,28 +1225,11 @@ func (a *APIAuthService) GetUser(ctx context.Context, username string) (*model.U
 }
 
 func (a *APIAuthService) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
-	return a.cache.GetUser(email, func() (*model.User, error) {
-		resp, err := a.apiClient.ListUsersWithResponse(ctx, &ListUsersParams{Email: &email})
-		if err != nil {
-			return nil, err
-		}
-		if err := a.validateResponse(resp, http.StatusOK); err != nil {
-			return nil, err
-		}
-		results := resp.JSON200.Results
-		if len(results) == 0 {
-			return nil, ErrNotFound
-		}
-		u := results[0]
-		return &model.User{
-			CreatedAt:         time.Unix(u.CreationDate, 0),
-			Username:          u.Name,
-			FriendlyName:      u.FriendlyName,
-			Email:             u.Email,
-			EncryptedPassword: u.EncryptedPassword,
-			Source:            swag.StringValue(u.Source),
-		}, nil
-	})
+	return a.getFirstUser(ctx, &userKey{email: email}, &ListUsersParams{Email: swag.String(email)})
+}
+
+func (a *APIAuthService) GetUserByExternalID(ctx context.Context, externalID string) (*model.User, error) {
+	return a.getFirstUser(ctx, &userKey{externalID: externalID}, &ListUsersParams{ExternalId: swag.String(externalID)})
 }
 
 func toPagination(paginator Pagination) *model.Paginator {

@@ -181,6 +181,10 @@ class Auth {
         return user;
     }
 
+    clearCurrentUser() {
+        cache.delete('user');
+    }
+
     async getCurrentUserWithCache() {
         let user = cache.get('user')
         if (!user) {
