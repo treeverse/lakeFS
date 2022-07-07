@@ -37,6 +37,7 @@ var importFilesToCheck = []string{
 }
 
 func TestImport(t *testing.T) {
+	t.Skip("Flaky test, skipping.  See https://github.com/treeverse/lakeFS/issues/3428")
 	importPath := ""
 	switch viper.GetViper().GetString("blockstore_type") {
 	case block.BlockstoreTypeS3:

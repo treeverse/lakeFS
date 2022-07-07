@@ -202,6 +202,7 @@ const RepositoriesPage = () => {
                                     }}>Blank Repository</Dropdown.Item>
                                     <Dropdown.Item onClick={() => {
                                         setShowRepositoryTemplatesModal(true);
+                                        setCreateRepoError(null);
                                     }}>Spark Quickstart</Dropdown.Item>
                                 </Dropdown.Menu>
                             </Dropdown> :

@@ -96,7 +96,7 @@ func generateRandomArn() string {
 }
 
 func createTestUserWithCreds(t *testing.T, ctx context.Context, svc auth.Service, userName string, numCred int) {
-	if _, err := svc.CreateUser(ctx, &model.BaseUser{Username: userName}); err != nil {
+	if _, err := svc.CreateUser(ctx, &model.User{Username: userName}); err != nil {
 		t.Fatalf("CreateUser(%s): %s", userName, err)
 	}
 	for i := 0; i < numCred; i++ {
@@ -108,7 +108,7 @@ func createTestUserWithCreds(t *testing.T, ctx context.Context, svc auth.Service
 }
 
 func createGroupWithUsers(t *testing.T, ctx context.Context, svc auth.Service, groupName string, users []string) {
-	if err := svc.CreateGroup(ctx, &model.BaseGroup{DisplayName: groupName}); err != nil {
+	if err := svc.CreateGroup(ctx, &model.Group{DisplayName: groupName}); err != nil {
 		t.Fatalf("CreateGroup(%s): %s", groupName, err)
 	}
 	for _, userName := range users {
@@ -128,7 +128,7 @@ func writePolicies(t *testing.T, ctx context.Context, svc auth.Service, num int)
 
 func writePolicy(t *testing.T, ctx context.Context, svc auth.Service) string {
 	policyName := generateUniqueName("policy")
-	if err := svc.WritePolicy(ctx, &model.BasePolicy{
+	if err := svc.WritePolicy(ctx, &model.Policy{
 		DisplayName: policyName,
 		Statement: model.Statements{
 			{
