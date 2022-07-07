@@ -46,6 +46,7 @@ func init() {
 		"auth_group_policies",
 		"auth_credentials",
 		"auth_expired_tokens",
+		"auth_installation_metadata",
 	}
 	kvpg.RegisterMigrate(model.PackageName, Migrate, tablesToDrop)
 }
