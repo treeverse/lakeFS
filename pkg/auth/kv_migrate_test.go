@@ -12,6 +12,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
+	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
@@ -35,8 +36,10 @@ func TestMigrate(t *testing.T) {
 	dbAuthService := auth.NewDBAuthService(database, crypt.NewSecretStore([]byte("someSecret")), nil, authparams.ServiceCache{
 		Enabled: false,
 	}, logging.Default())
+	dbMetadataMgr := auth.NewDBMetadataManager("ver_kv_migrate_test", "id-kv-migrate-test", database)
 
 	prepareTestData(t, ctx, dbAuthService)
+	vals, isInit := generateMetadata(t, ctx, dbMetadataMgr)
 
 	buf := bytes.Buffer{}
 	require.NoError(t, auth.Migrate(ctx, database.Pool(), &buf))
@@ -45,8 +48,9 @@ func TestMigrate(t *testing.T) {
 	kvAuthService := auth.NewKVAuthService(kv.StoreMessage{Store: kvStore}, crypt.NewSecretStore([]byte("someSecret")), authparams.ServiceCache{
 		Enabled: false,
 	}, logging.Default())
-
+	kvMetadataManager := auth.NewKVMetadataManager("ver_kv_migrate_test", "id-kv-migrate-test", kvStore)
 	verifyMigrationResults(t, ctx, dbAuthService, kvAuthService)
+	verifyMetadata(t, ctx, kvMetadataManager, kvStore, vals, getExcludeVals(t, ctx, database), isInit)
 }
 
 func prepareTestData(t *testing.T, ctx context.Context, svc auth.Service) {
@@ -269,4 +273,33 @@ func verifyPoliciesInclusion(t *testing.T, ctx context.Context, svc, otherSvc au
 		require.NoError(t, err)
 		require.Equal(t, policy.Statement, otherPolicy.Statement)
 	}
+}
+
+func generateMetadata(t *testing.T, ctx context.Context, mgr *auth.DBMetadataManager) (map[string]string, bool) {
+	metadata, err := mgr.Write(ctx)
+	require.NoError(t, err)
+	isInit, err := mgr.IsInitialized(ctx)
+	require.NoError(t, err)
+	return metadata, isInit
+}
+
+func verifyMetadata(t *testing.T, ctx context.Context, mgr *auth.KVMetadataManager, store kv.Store, valsToVerify, valsToExclude map[string]string, isInit bool) {
+	kvIsInit, err := mgr.IsInitialized(ctx)
+	require.NoError(t, err)
+	require.Equal(t, isInit, kvIsInit)
+	for k, v := range valsToVerify {
+		if _, ok := valsToExclude[k]; ok {
+			continue
+		}
+		kvKey := model.MetadataKeyPath(k)
+		valWithPred, err := store.Get(ctx, []byte(model.PartitionKey), []byte(kvKey))
+		require.NoError(t, err, "store.Get(%s, %s)", model.PartitionKey, kvKey)
+		require.Equal(t, v, string(valWithPred.Value))
+	}
+}
+
+func getExcludeVals(t *testing.T, ctx context.Context, db db.Database) map[string]string {
+	dbMeta, err := db.Metadata(ctx)
+	require.NoError(t, err)
+	return dbMeta
 }

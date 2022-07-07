@@ -86,6 +86,18 @@ func GetKVAuthService(t *testing.T, ctx context.Context) auth.Service {
 	return auth.NewKVAuthService(storeMessage, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{}, logging.Default().WithField("service", "auth"))
 }
 
+func GetDBMetadataManager(t *testing.T, installationID string) auth.MetadataManager {
+	t.Helper()
+	conn, _ := testutil.GetDB(t, databaseURI)
+	return auth.NewDBMetadataManager("local_load_test", installationID, conn)
+}
+
+func GetKVMetadataManager(t *testing.T, ctx context.Context, installationID string) auth.MetadataManager {
+	t.Helper()
+	kvStore := kvtest.GetStore(ctx, t)
+	return auth.NewKVMetadataManager("local_load_test", installationID, kvStore)
+}
+
 func TestLocalLoad(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping loadtest tests in short mode")
@@ -98,21 +110,27 @@ func TestLocalLoad(t *testing.T) {
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeLocal)
 	conn, _ := testutil.GetDB(t, databaseURI)
 
+	conf, err := config.NewConfig()
+	testutil.MustDo(t, "config", err)
+
 	tests := []struct {
 		name           string
 		actionsService getActionsService
 		authService    auth.Service
+		meta           auth.MetadataManager
 		kvEnabled      bool
 	}{
 		{
 			name:           "DB service test",
 			actionsService: GetDBActionsService,
 			authService:    GetDBAuthService(t),
+			meta:           GetDBMetadataManager(t, conf.GetFixedInstallationID()),
 		},
 		{
 			name:           "KV service test",
 			actionsService: GetKVActionsService,
 			authService:    GetKVAuthService(t, ctx),
+			meta:           GetKVMetadataManager(t, ctx, conf.GetFixedInstallationID()),
 			kvEnabled:      true,
 		},
 	}
@@ -136,8 +154,6 @@ func TestLocalLoad(t *testing.T) {
 				storeMessage = &kv.StoreMessage{Store: kvStore}
 				viper.Set("database.kv_enabled", true)
 			}
-			conf, err := config.NewConfig()
-			testutil.MustDo(t, "config", err)
 
 			blockAdapter := testutil.NewBlockAdapterByType(t, &block.NoOpTranslator{}, blockstoreType)
 			c, err := catalog.New(ctx, catalog.Config{
@@ -158,7 +174,6 @@ func TestLocalLoad(t *testing.T) {
 			testutil.Must(t, err)
 
 			authenticator := auth.NewBuiltinAuthenticator(tt.authService)
-			meta := auth.NewDBMetadataManager("dev", conf.GetFixedInstallationID(), conn)
 			migrator := db.NewDatabaseMigrator(dbparams.Database{ConnectionString: databaseURI})
 			t.Cleanup(func() {
 				_ = c.Close()
@@ -174,7 +189,7 @@ func TestLocalLoad(t *testing.T) {
 				authenticator,
 				tt.authService,
 				blockAdapter,
-				meta,
+				tt.meta,
 				migrator,
 				&nullCollector{},
 				nil,

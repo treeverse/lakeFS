@@ -46,6 +46,7 @@ func init() {
 		"auth_group_policies",
 		"auth_credentials",
 		"auth_expired_tokens",
+		"auth_installation_metadata",
 	}
 	kvpg.RegisterMigrate(model.PackageName, Migrate, tablesToDrop)
 }
@@ -950,6 +951,10 @@ func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
 	}
 
 	if err = exportExpiredTokens(ctx, d, je); err != nil {
+		return err
+	}
+
+	if err = exportMetadata(ctx, d, je); err != nil {
 		return err
 	}
 
