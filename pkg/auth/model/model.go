@@ -30,6 +30,7 @@ const (
 	usersCredentialsPrefix = "uCredentials" //#nosec G101 -- False positive: this is only a kv key prefix
 	credentialsPrefix      = "credentials"
 	expiredTokensPrefix    = "expiredTokens"
+	metadataPrefix         = "installation_metadata"
 )
 
 func UserPath(userName string) string {
@@ -62,6 +63,10 @@ func GroupPolicyPath(groupDisplayName string, policyDisplayName string) string {
 
 func ExpiredTokenPath(tokenID string) string {
 	return kv.FormatPath(expiredTokensPrefix, tokenID)
+}
+
+func MetadataKeyPath(key string) string {
+	return kv.FormatPath(metadataPrefix, key)
 }
 
 var (
