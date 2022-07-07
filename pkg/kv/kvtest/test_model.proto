@@ -7,7 +7,7 @@ package io.treeverse.lakefs.kvtest;
 
 message TestModel {
     bytes name = 1;
-    string another_string = 2;
+    string just_a_string = 2;
     double a_double = 3;
     google.protobuf.Timestamp test_time = 4;
     map<string, int32> test_map = 5;
