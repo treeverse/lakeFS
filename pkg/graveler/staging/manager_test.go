@@ -34,7 +34,7 @@ func newTestStagingManager(t *testing.T, kvEnabled bool) (context.Context, grave
 		return ctx, staging.NewManager(kvStore)
 	}
 	conn, _ := testutil.GetDB(t, databaseURI)
-	return context.Background(), staging.NewDBManager(conn)
+	return ctx, staging.NewDBManager(conn)
 }
 
 func TestSetGet(t *testing.T) {
