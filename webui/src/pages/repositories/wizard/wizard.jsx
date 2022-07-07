@@ -89,7 +89,7 @@ const WizardController = ({stepWizard, canProceed, skipButton = false, onComplet
                         stepWizard.currentStep < stepWizard.totalSteps ?
                             <button className='btn btn-primary btn-block' disabled={!canProceed} onClick={stepWizard.nextStep}>Next Step</button>
                             :
-                            <button className='btn btn-success btn-block' onClick={onComplete} disabled={!canProceed}>Finish</button>
+                            <button className='btn btn-success btn-block' disabled={!canProceed} onClick={onComplete} >Finish</button>
                     }
                 </Col>
             </Row>
