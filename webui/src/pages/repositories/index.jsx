@@ -26,6 +26,7 @@ import RepositoryPage from './repository';
 import Alert from "react-bootstrap/Alert";
 import Dropdown from "react-bootstrap/Dropdown";
 import Button from "react-bootstrap/Button";
+import Wizard from "./wizard/wizard";
 
 
 const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
@@ -52,6 +53,19 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
             </Modal.Header>
             <Modal.Body>
                 <RepositoryCreateForm config={response} error={showError} onSubmit={onSubmit} onCancel={onCancel}/>
+            </Modal.Body>
+        </Modal>
+    );
+};
+
+const RepositoryTemplatesModal = ({show, onCancel}) => {
+    return (
+        <Modal show={show} onHide={onCancel} size="xl">
+            <Modal.Header closeButton>
+                <TemplatesModalTitleContainer/>
+            </Modal.Header>
+            <Modal.Body>
+                <Wizard />
             </Modal.Body>
         </Modal>
     );
@@ -119,7 +133,8 @@ const RepositoryList = ({ onPaginate, prefix, after, refresh, onCreateRepo }) =>
 
 const RepositoriesPage = () => {
     const router = useRouter();
-    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showCreateRepositoryModal, setShowCreateRepositoryModal] = useState(false);
+    const [showRepositoryTemplatesModal, setShowRepositoryTemplatesModal] = useState(false);
     const [createError, setCreateError] = useState(null);
     const [refresh, setRefresh] = useState(false);
 
@@ -173,17 +188,16 @@ const RepositoriesPage = () => {
                                 </Dropdown.Toggle>
                                 <Dropdown.Menu>
                                     <Dropdown.Item onClick={() => {
-                                        setShowCreateModal(true);
+                                        setShowCreateRepositoryModal(true);
                                         setCreateError(null);
                                     }}>Blank Repository</Dropdown.Item>
                                     <Dropdown.Item onClick={() => {
-                                        setShowCreateModal(false);
-                                        setCreateError(null);
+                                        setShowRepositoryTemplatesModal(true);
                                     }}>Spark Quickstart</Dropdown.Item>
                                 </Dropdown.Menu>
                             </Dropdown> :
                             <Button variant="success" onClick={() => {
-                                setShowCreateModal(true);
+                                setShowCreateRepositoryModal(true);
                                 setCreateError(null);
                             }}>
                                 <RepoIcon/> Create Repository
@@ -201,14 +215,18 @@ const RepositoriesPage = () => {
                         if (router.query.prefix) query.prefix = router.query.prefix;
                         router.push({pathname: `/repositories`, query});
                     }}
-                    onCreateRepo={() => setShowCreateModal(true)}
+                    onCreateRepo={() => setShowCreateRepositoryModal(true)}
                     />
 
                 <CreateRepositoryModal
-                    onCancel={() => setShowCreateModal(false)}
-                    show={showCreateModal}
+                    onCancel={() => setShowCreateRepositoryModal(false)}
+                    show={showCreateRepositoryModal}
                     error={createError}
                     onSubmit={(repo) => createRepo(repo)}/>
+
+                <RepositoryTemplatesModal
+                    onCancel={() => setShowRepositoryTemplatesModal(false)}
+                    show={showRepositoryTemplatesModal} />
             </Container>
         </Layout>
     );
@@ -228,6 +246,12 @@ const ModalTitleContainer = () => {
                 </Col>
             </Row>
         </Container>
+    );
+};
+
+const TemplatesModalTitleContainer = () => {
+    return (
+        <Modal.Title>Spark Quickstart</Modal.Title>
     );
 };
 

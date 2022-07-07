@@ -8,9 +8,9 @@
     "test": "jest src"
   },
   "dependencies": {
-    "@react-icons/all-files": "^4.1.0",
     "@mui/material": "^5.6.4",
     "@primer/octicons-react": "^13.0.0",
+    "@react-icons/all-files": "^4.1.0",
     "bootstrap": "^4.6.0",
     "http-proxy-middleware": "^1.1.1",
     "moment": "^2.29.2",
@@ -21,6 +21,8 @@
     "react-dom": "^17.0.0",
     "react-icons": "^4.3.1",
     "react-router-dom": "^5.2.0",
+    "react-step-wizard": "^5.3.11",
+    "react-transition-group": "^4.4.2",
     "validator": "^13.7.0"
   },
   "devDependencies": {
