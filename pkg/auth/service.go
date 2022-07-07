@@ -177,7 +177,7 @@ func (s *KVAuthService) ListKVPaged(ctx context.Context, protoType protoreflect.
 		value := entry.Value
 		entries = append(entries, value)
 		if len(entries) == amount {
-			p.NextPageToken = entry.Key
+			p.NextPageToken = string(entry.Key)
 			break
 		}
 	}

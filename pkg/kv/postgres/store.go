@@ -255,12 +255,6 @@ func (s *Store) Close() {
 	s.Pool.Close()
 }
 
-// ClearTable used internally for testing purposes
-func (s *Store) ClearTable(ctx context.Context) error {
-	_, err := s.Pool.Exec(ctx, `TRUNCATE `+s.Params.SanitizedTableName)
-	return err
-}
-
 // Next reads the next key/value.
 func (e *EntriesIterator) Next() bool {
 	if e.err != nil {

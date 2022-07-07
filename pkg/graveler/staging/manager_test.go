@@ -19,13 +19,14 @@ import (
 func newTestStagingManager(t *testing.T, kvEnabled bool) (context.Context, graveler.StagingManager) {
 	t.Helper()
 	ctx := context.Background()
+	conn, _ := testutil.GetDB(t, databaseURI)
 	if kvEnabled {
 		// TODO (niro): Graveler unit tests running over postgres store until https://github.com/treeverse/lakeFS/issues/3622 is resolved
 		store, err := kv.Open(context.Background(), kvpg.DriverName, kvparams.KV{Postgres: &kvparams.Postgres{ConnectionString: databaseURI}})
 		testutil.MustDo(t, "Open KV Store", err)
 		kvStore := kv.StoreMessage{Store: store}
 		t.Cleanup(func() {
-			err = store.(*kvpg.Store).ClearTable(ctx)
+			_, err = conn.Pool().Exec(ctx, `TRUNCATE kv`)
 			if err != nil {
 				t.Fatalf("failed to delete KV table from postgres DB %s", err)
 			}
@@ -33,7 +34,6 @@ func newTestStagingManager(t *testing.T, kvEnabled bool) (context.Context, grave
 		})
 		return ctx, staging.NewManager(kvStore)
 	}
-	conn, _ := testutil.GetDB(t, databaseURI)
 	return ctx, staging.NewDBManager(conn)
 }
 

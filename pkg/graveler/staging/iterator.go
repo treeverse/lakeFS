@@ -18,7 +18,7 @@ type Iterator struct {
 
 // NewStagingIterator initiates the staging iterator with a batchSize
 func NewStagingIterator(ctx context.Context, store kv.StoreMessage, st graveler.StagingToken) (*Iterator, error) {
-	itr, err := kv.NewPartitionIterator(ctx, store.Store, (&graveler.StagedObject{}).ProtoReflect().Type(), string(st))
+	itr, err := kv.NewPartitionIterator(ctx, store.Store, (&graveler.StagedEntry{}).ProtoReflect().Type(), string(st))
 	if err != nil {
 		return nil, err
 	}
@@ -43,8 +43,8 @@ func (s *Iterator) Next() bool {
 		s.err = graveler.ErrInvalid
 		return false
 	}
-	key := entry.Value.(*graveler.StagedObject).Key
-	value := valueFromProto(entry.Value.(*graveler.StagedObject))
+	key := entry.Value.(*graveler.StagedEntry).Key
+	value := valueFromProto(entry.Value.(*graveler.StagedEntry))
 	s.entry = &graveler.ValueRecord{
 		Key:   key,
 		Value: value,

@@ -14,18 +14,18 @@ type Manager struct {
 	log   logging.Logger
 }
 
-func valueFromProto(pb *graveler.StagedObject) *graveler.Value {
+func valueFromProto(pb *graveler.StagedEntry) *graveler.Value {
 	return &graveler.Value{
 		Identity: pb.Identity,
 		Data:     pb.Data,
 	}
 }
 
-func protoFromValue(key []byte, m *graveler.Value) *graveler.StagedObject {
-	return &graveler.StagedObject{
+func protoFromValue(key []byte, v *graveler.Value) *graveler.StagedEntry {
+	return &graveler.StagedEntry{
 		Key:      key,
-		Identity: m.Identity,
-		Data:     m.Data,
+		Identity: v.Identity,
+		Data:     v.Data,
 	}
 }
 
@@ -37,7 +37,7 @@ func NewManager(store kv.StoreMessage) *Manager {
 }
 
 func (m *Manager) Get(ctx context.Context, st graveler.StagingToken, key graveler.Key) (*graveler.Value, error) {
-	data := &graveler.StagedObject{}
+	data := &graveler.StagedEntry{}
 	_, err := m.store.GetMsg(ctx, string(st), key, data)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
@@ -87,12 +87,12 @@ func (m *Manager) List(ctx context.Context, st graveler.StagingToken, _ int) (gr
 }
 
 func (m *Manager) Drop(ctx context.Context, st graveler.StagingToken) error {
+	// Wish we had 'drop partition'... https://github.com/treeverse/lakeFS/issues/3628
+	// Simple implementation
 	return m.DropByPrefix(ctx, st, []byte(""))
 }
 
 func (m *Manager) DropByPrefix(ctx context.Context, st graveler.StagingToken, prefix graveler.Key) error {
-	// Wish we had 'drop partition'...
-	// Simple implementation
 	itr, err := kv.ScanPrefix(ctx, m.store.Store, []byte(st), prefix, []byte(""))
 	if err != nil {
 		return err

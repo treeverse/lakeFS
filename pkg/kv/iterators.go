@@ -11,7 +11,7 @@ import (
 )
 
 type MessageEntry struct {
-	Key   string
+	Key   []byte
 	Value protoreflect.ProtoMessage
 }
 
@@ -59,7 +59,7 @@ func (i *PrimaryIterator) Next() bool {
 		return false
 	}
 	i.value = &MessageEntry{
-		Key:   string(entry.Key),
+		Key:   entry.Key,
 		Value: value,
 	}
 	return true
@@ -145,7 +145,7 @@ func (s *SecondaryIterator) Next() bool {
 		return false
 	}
 	s.value = &MessageEntry{
-		Key:   string(next.PrimaryKey),
+		Key:   next.PrimaryKey,
 		Value: value,
 	}
 	return true
@@ -203,6 +203,7 @@ func (si *SkipFirstIterator) Close() {
 	si.it.Close()
 }
 
+// PartitionIterator Used to scan through a whole partition
 type PartitionIterator struct {
 	ctx          context.Context
 	store        Store
@@ -213,9 +214,8 @@ type PartitionIterator struct {
 	err          error
 }
 
-// NewPartitionIterator initiates the staging iterator with a batchSize
 func NewPartitionIterator(ctx context.Context, store Store, msgType protoreflect.MessageType, partitionKey string) (*PartitionIterator, error) {
-	itr, err := ScanPrefix(ctx, store, []byte(partitionKey), []byte(""), []byte(""))
+	itr, err := store.Scan(ctx, []byte(partitionKey), []byte(""))
 	if err != nil {
 		return nil, err
 	}
@@ -238,7 +238,7 @@ func (p *PartitionIterator) Next() bool {
 	}
 	entry := p.itr.Entry()
 	if entry == nil {
-		p.err = ErrNotFound
+		p.err = ErrMissingValue
 		return false
 	}
 	value := p.msgType.New().Interface()
@@ -248,15 +248,17 @@ func (p *PartitionIterator) Next() bool {
 		return false
 	}
 	p.value = &MessageEntry{
-		Key:   string(entry.Key),
+		Key:   entry.Key,
 		Value: value,
 	}
 	return true
 }
 
 func (p *PartitionIterator) SeekGE(key []byte) {
-	p.itr.Close() // Close previous before creating new iterator
-	p.itr, p.err = ScanPrefix(p.ctx, p.store, []byte(p.partitionKey), []byte(""), key)
+	if p.err == nil {
+		p.itr.Close() // Close previous before creating new iterator
+		p.itr, p.err = p.store.Scan(p.ctx, []byte(p.partitionKey), key)
+	}
 }
 
 func (p *PartitionIterator) Entry() *MessageEntry {
