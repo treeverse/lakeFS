@@ -81,7 +81,9 @@ func (c *ClientCache) Get(ctx context.Context, bucket string) s3iface.S3API {
 	svc, hasClient := c.regionToS3Client.Load(region)
 	if !hasClient {
 		logging.FromContext(ctx).WithField("bucket", bucket).WithField("region", region).Debug("creating client for region")
-		svc := c.clientFactory(c.awsSession, &aws.Config{Region: swag.String(region)})
+		svc := c.clientFactory(c.awsSession, &aws.Config{
+			Region: swag.String(region),
+		})
 		c.regionToS3Client.Store(region, svc)
 		if c.collector != nil {
 			c.collector.CollectEvent("s3_block_adapter", fmt.Sprintf("created_aws_client_%s", region))

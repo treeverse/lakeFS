@@ -38,7 +38,12 @@ func (f *WRFile) Store(ctx context.Context, filename string) error {
 
 	// keep the cancel function for the Store's context,
 	// so that the long operation is cancellable during a call to Abort.
-	ctx, f.cancelStore = context.WithCancel(ctx)
+	var cancelFunc func()
+	ctx, cancelFunc = context.WithCancel(ctx)
+	f.cancelStore = func() {
+		fmt.Printf("***********************Cancelling context for filename: %s", filename)
+		cancelFunc()
+	}
 	return f.store(ctx, filename)
 }
 
