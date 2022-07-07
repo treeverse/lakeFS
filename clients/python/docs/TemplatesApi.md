@@ -4,7 +4,7 @@ All URIs are relative to *http://localhost/api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**expand_template**](TemplatesApi.md#expand_template) | **GET** /templates | 
+[**expand_template**](TemplatesApi.md#expand_template) | **GET** /templates/{template_location} | 
 
 
 # **expand_template**
@@ -65,7 +65,7 @@ configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
 with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = templates_api.TemplatesApi(api_client)
-    template_location = "template_location_example" # str | 
+    template_location = "spark.conf.tt" # str | URL of the template; must be relative (to a URL configured on the server).
     params = {
         "key": "key_example",
     } # {str: (str,)} |  (optional)
@@ -91,7 +91,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **template_location** | **str**|  |
+ **template_location** | **str**| URL of the template; must be relative (to a URL configured on the server). |
  **params** | **{str: (str,)}**|  | [optional]
 
 ### Return type

@@ -4376,20 +4376,21 @@ paths:
       tags:
       - config
       x-accepts: application/json
-  /templates:
+  /templates/{template_location}:
     get:
       description: fetch and expand template
       operationId: expandTemplate
       parameters:
-      - explode: true
-        in: query
+      - description: URL of the template; must be relative (to a URL configured on
+          the server).
+        example: spark.conf.tt
+        explode: false
+        in: path
         name: template_location
         required: true
         schema:
-          description: URL of the template; must be relative (to a URL configured
-            on the server).
           type: string
-        style: form
+        style: simple
       - explode: true
         in: query
         name: params

@@ -2412,7 +2412,7 @@ func testController_ExpandTemplate(t *testing.T, kvEnabled bool) {
 	ctx := context.Background()
 
 	t.Run("not-found", func(t *testing.T) {
-		resp, err := clt.ExpandTemplateWithResponse(ctx, &api.ExpandTemplateParams{TemplateLocation: "no/template/here"})
+		resp, err := clt.ExpandTemplateWithResponse(ctx, "no/template/here", &api.ExpandTemplateParams{})
 		testutil.Must(t, err)
 		if resp.HTTPResponse.StatusCode != http.StatusNotFound {
 			t.Errorf("Expanding a nonexistent template should fail with status %d got %d\n\t%+v", http.StatusNotFound, resp.HTTPResponse.StatusCode, resp)
@@ -2420,15 +2420,27 @@ func testController_ExpandTemplate(t *testing.T, kvEnabled bool) {
 	})
 
 	t.Run("spark.conf", func(t *testing.T) {
+		const lfsURL = "https://lakefs.example.test"
 		expected := []struct {
 			name    string
 			pattern string
 		}{
-			{"impl", `spark.hadoop.fs.lakefs.impl=io.lakefs.LakeFSFileSystem`},
-			{"access_key", `spark.hadoop.fs.lakefs.access_key=AKIA.*`},
-			{"secret_key", `spark.hadoop.fs.lakefs.secret_key=`},
+			{"impl", `spark\.hadoop\.fs\.s3a\.impl=org\.apache\.hadoop\.fs\.s3a\.S3AFileSystem`},
+			{"access_key", `spark\.hadoop\.fs\.s3a\.access_key=AKIA.*`},
+			{"secret_key", `spark\.hadoop\.fs\.s3a\.secret_key=`},
+			{"s3a_endpoint", `spark\.hadoop\.fs\.s3a\.endpoint=` + lfsURL},
 		}
-		resp, err := clt.ExpandTemplateWithResponse(ctx, &api.ExpandTemplateParams{TemplateLocation: "spark.conf.tt"})
+
+		// OpenAPI places additional query params in the wrong
+		// place.  Use a request editor to place them directly as a
+		// query string.
+		resp, err := clt.ExpandTemplateWithResponse(ctx, "spark.conf.tt", &api.ExpandTemplateParams{},
+			api.RequestEditorFn(func(_ context.Context, req *http.Request) error {
+				values := req.URL.Query()
+				values.Add("lakefs_url", lfsURL)
+				req.URL.RawQuery = values.Encode()
+				return nil
+			}))
 		testutil.Must(t, err)
 		if resp.HTTPResponse.StatusCode != http.StatusOK {
 			t.Errorf("Expanding template spark.conf.tt failed with status %d\n\t%+v", resp.HTTPResponse.StatusCode, resp)
@@ -2443,7 +2455,7 @@ func testController_ExpandTemplate(t *testing.T, kvEnabled bool) {
 	})
 
 	t.Run("fail", func(t *testing.T) {
-		resp, err := clt.ExpandTemplateWithResponse(ctx, &api.ExpandTemplateParams{TemplateLocation: "fail.tt"})
+		resp, err := clt.ExpandTemplateWithResponse(ctx, "fail.tt", &api.ExpandTemplateParams{})
 		testutil.Must(t, err)
 		if resp.HTTPResponse.StatusCode != http.StatusInternalServerError {
 			t.Errorf("Expanding template spark.conf.tt should fail with status %d got %d\n\t%+v", http.StatusInternalServerError, resp.HTTPResponse.StatusCode, resp)

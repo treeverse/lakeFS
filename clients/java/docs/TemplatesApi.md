@@ -4,7 +4,7 @@ All URIs are relative to *http://localhost/api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**expandTemplate**](TemplatesApi.md#expandTemplate) | **GET** /templates | 
+[**expandTemplate**](TemplatesApi.md#expandTemplate) | **GET** /templates/{template_location} | 
 
 
 <a name="expandTemplate"></a>
@@ -52,7 +52,7 @@ public class Example {
     //oidc_auth.setApiKeyPrefix("Token");
 
     TemplatesApi apiInstance = new TemplatesApi(defaultClient);
-    String templateLocation = "templateLocation_example"; // String | 
+    String templateLocation = "spark.conf.tt"; // String | URL of the template; must be relative (to a URL configured on the server).
     Map<String, String> params = new HashMap(); // Map<String, String> | 
     try {
       Object result = apiInstance.expandTemplate(templateLocation, params);
@@ -72,7 +72,7 @@ public class Example {
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **templateLocation** | **String**|  |
+ **templateLocation** | **String**| URL of the template; must be relative (to a URL configured on the server). |
  **params** | [**Map&lt;String, String&gt;**](String.md)|  | [optional]
 
 ### Return type

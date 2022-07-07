@@ -5,5 +5,5 @@ spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
 spark.hadoop.fs.s3a.access_key={{$creds.Key}}
 spark.hadoop.fs.s3a.secret_key={{$creds.Secret}}
 {{end}}
-spark.hadoop.fs.s3a.endpoint={{ .querystring.lakefs_url }}
+spark.hadoop.fs.s3a.endpoint={{ .Query.lakefs_url }}
 spark.hadoop.fs.s3a.path.style.access=true

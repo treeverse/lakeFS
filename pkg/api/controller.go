@@ -3244,11 +3244,11 @@ func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (c *Controller) ExpandTemplate(w http.ResponseWriter, r *http.Request, p ExpandTemplateParams) {
+func (c *Controller) ExpandTemplate(w http.ResponseWriter, r *http.Request, templateLocation string, p ExpandTemplateParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ReadObjectAction,
-			Resource: permissions.TemplateArn(p.TemplateLocation),
+			Resource: permissions.TemplateArn(templateLocation),
 		},
 	}) {
 		return
@@ -3259,10 +3259,18 @@ func (c *Controller) ExpandTemplate(w http.ResponseWriter, r *http.Request, p Ex
 		writeError(w, http.StatusInternalServerError, "request performed with no user")
 	}
 
-	err := c.Templater.Expand(r.Context(), w, u, p.TemplateLocation, p.Params.AdditionalProperties)
+	// Override bug in OpenAPI generated code: parameters do not show up
+	// in p.Params.AdditionalProperties, so force them in there.
+	if len(p.Params.AdditionalProperties) == 0 && len(r.URL.Query()) > 0 {
+		p.Params.AdditionalProperties = make(map[string]string, len(r.Header))
+		for k, v := range r.URL.Query() {
+			p.Params.AdditionalProperties[k] = v[0]
+		}
+	}
+	err := c.Templater.Expand(r.Context(), w, u, templateLocation, p.Params.AdditionalProperties)
 
 	if err != nil {
-		c.Logger.WithError(err).WithField("location", p.TemplateLocation).Error("Template expansion failed")
+		c.Logger.WithError(err).WithField("location", templateLocation).Error("Template expansion failed")
 	}
 
 	if errors.Is(err, templater.ErrNotAuthorized) {

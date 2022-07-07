@@ -56,7 +56,7 @@ public class TemplatesApi {
 
     /**
      * Build call for expandTemplate
-     * @param templateLocation  (required)
+     * @param templateLocation URL of the template; must be relative (to a URL configured on the server). (required)
      * @param params  (optional)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
@@ -74,17 +74,14 @@ public class TemplatesApi {
         Object localVarPostBody = null;
 
         // create path and map variables
-        String localVarPath = "/templates";
+        String localVarPath = "/templates/{template_location}"
+            .replaceAll("\\{" + "template_location" + "\\}", localVarApiClient.escapeString(templateLocation.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
         Map<String, String> localVarCookieParams = new HashMap<String, String>();
         Map<String, Object> localVarFormParams = new HashMap<String, Object>();
-
-        if (templateLocation != null) {
-            localVarQueryParams.addAll(localVarApiClient.parameterToPair("template_location", templateLocation));
-        }
 
         if (params != null) {
             localVarQueryParams.addAll(localVarApiClient.parameterToPair("params", params));
@@ -125,7 +122,7 @@ public class TemplatesApi {
     /**
      * 
      * fetch and expand template
-     * @param templateLocation  (required)
+     * @param templateLocation URL of the template; must be relative (to a URL configured on the server). (required)
      * @param params  (optional)
      * @return Object
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
@@ -146,7 +143,7 @@ public class TemplatesApi {
     /**
      * 
      * fetch and expand template
-     * @param templateLocation  (required)
+     * @param templateLocation URL of the template; must be relative (to a URL configured on the server). (required)
      * @param params  (optional)
      * @return ApiResponse&lt;Object&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
@@ -168,7 +165,7 @@ public class TemplatesApi {
     /**
      *  (asynchronously)
      * fetch and expand template
-     * @param templateLocation  (required)
+     * @param templateLocation URL of the template; must be relative (to a URL configured on the server). (required)
      * @param params  (optional)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call

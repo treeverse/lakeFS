@@ -45,7 +45,7 @@ class TemplatesApi(object):
                     'jwt_token',
                     'oidc_auth'
                 ],
-                'endpoint_path': '/templates',
+                'endpoint_path': '/templates/{template_location}',
                 'operation_id': 'expand_template',
                 'http_method': 'GET',
                 'servers': None,
@@ -81,7 +81,7 @@ class TemplatesApi(object):
                     'params': 'params',
                 },
                 'location_map': {
-                    'template_location': 'query',
+                    'template_location': 'path',
                     'params': 'query',
                 },
                 'collection_format_map': {
@@ -112,7 +112,7 @@ class TemplatesApi(object):
         >>> result = thread.get()
 
         Args:
-            template_location (str):
+            template_location (str): URL of the template; must be relative (to a URL configured on the server).
 
         Keyword Args:
             params ({str: (str,)}): [optional]

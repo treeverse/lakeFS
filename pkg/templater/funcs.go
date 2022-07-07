@@ -26,7 +26,6 @@ var templateFuncs = template.FuncMap{
 
 // newCredentials creates new credentials for the user and returns them.
 func newCredentials(params *ControlledParams) (*Credentials, error) {
-	fmt.Printf("[DEBUG] newCredentials %+v\n", params)
 	resp, err := params.Auth.Authorize(params.Ctx, &auth.AuthorizationRequest{
 		Username: params.User.Username,
 		RequiredPermissions: permissions.Node{
