@@ -5,12 +5,16 @@ import (
 	"errors"
 	"fmt"
 	"os"
+
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 // WRFile pyramid wrapper for os.file that triggers pyramid hooks for file actions.
 type WRFile struct {
 	*os.File
 	cancelStore context.CancelFunc
+
+	logger logging.Logger
 
 	persisted bool
 	store     func(context.Context, string) error
@@ -41,7 +45,10 @@ func (f *WRFile) Store(ctx context.Context, filename string) error {
 	var cancelFunc func()
 	ctx, cancelFunc = context.WithCancel(ctx)
 	f.cancelStore = func() {
-		fmt.Printf("***********************Cancelling context for filename: %s", filename)
+		if f.logger.IsTracing() {
+			// logging to determine possible race condition that causes https://github.com/treeverse/lakeFS/issues/3428
+			f.logger.WithField("filename", filename).Trace("Cancelling store context")
+		}
 		cancelFunc()
 	}
 	return f.store(ctx, filename)
