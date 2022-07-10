@@ -43,7 +43,7 @@ type ControlledParams struct {
 	Phase Phase
 	Auth  AuthService
 	// Headers are the HTTP response headers.  They may only be modified
-	// during PhasePrepate.
+	// during PhasePrepare.
 	Header http.Header
 	// User is the user expanding the template.
 	User *auth_model.User
