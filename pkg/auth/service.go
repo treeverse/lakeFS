@@ -150,7 +150,7 @@ func (s *KVAuthService) ListKVPaged(ctx context.Context, protoType protoreflect.
 		if secondary {
 			it, err = kv.NewSecondaryIterator(ctx, s.store.Store, protoType, model.PartitionKey, prefix, params.After)
 		} else {
-			it, err = kv.NewPrimaryIterator(ctx, s.store.Store, protoType, model.PartitionKey, prefix, params.After)
+			it, err = kv.NewPrimaryIterator(ctx, s.store.Store, protoType, model.PartitionKey, prefix, params.After, true)
 		}
 		defer it.Close()
 		if err != nil {
@@ -255,7 +255,7 @@ func (s *KVAuthService) DeleteUser(ctx context.Context, username string) error {
 
 	// delete user membership of group
 	groupKey := model.GroupPath("")
-	itr, err := kv.NewPrimaryIterator(ctx, s.store.Store, (&model.GroupData{}).ProtoReflect().Type(), model.PartitionKey, groupKey, "")
+	itr, err := kv.NewPrimaryIterator(ctx, s.store.Store, (&model.GroupData{}).ProtoReflect().Type(), model.PartitionKey, groupKey, "", true)
 	if err != nil {
 		return err
 	}
@@ -782,7 +782,7 @@ func (s *KVAuthService) DeletePolicy(ctx context.Context, policyDisplayName stri
 
 	// delete policy attachment to user
 	usersKey := model.UserPath("")
-	it, err := kv.NewPrimaryIterator(ctx, s.store.Store, (&model.UserData{}).ProtoReflect().Type(), model.PartitionKey, usersKey, "")
+	it, err := kv.NewPrimaryIterator(ctx, s.store.Store, (&model.UserData{}).ProtoReflect().Type(), model.PartitionKey, usersKey, "", true)
 	if err != nil {
 		return err
 	}
@@ -797,7 +797,7 @@ func (s *KVAuthService) DeletePolicy(ctx context.Context, policyDisplayName stri
 
 	// delete policy attachment to group
 	groupKey := model.GroupPath("")
-	it, err = kv.NewPrimaryIterator(ctx, s.store.Store, (&model.GroupData{}).ProtoReflect().Type(), model.PartitionKey, groupKey, "")
+	it, err = kv.NewPrimaryIterator(ctx, s.store.Store, (&model.GroupData{}).ProtoReflect().Type(), model.PartitionKey, groupKey, "", true)
 	if err != nil {
 		return err
 	}

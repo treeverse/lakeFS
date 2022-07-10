@@ -211,13 +211,15 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		gcManager = retention.NewGarbageCollectionManager(cfg.DB, tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
 		settingManager := settings.NewManager(refManager, branchLocker, adapter, cfg.Config.GetCommittedBlockStoragePrefix())
 		protectedBranchesManager = branch.NewProtectionManager(settingManager)
+		gStore = graveler.NewKVGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
 	} else {
 		refManager = ref.NewPGRefManager(executor, cfg.DB, ident.NewHexAddressProvider())
 		gcManager = retention.NewGarbageCollectionManager(cfg.DB, tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
 		settingManager := settings.NewManager(refManager, branchLocker, adapter, cfg.Config.GetCommittedBlockStoragePrefix())
 		protectedBranchesManager = branch.NewProtectionManager(settingManager)
+		gStore = graveler.NewDBGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
 	}
-	gStore = graveler.NewDBGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
+
 	return &Catalog{
 		BlockAdapter:  tierFSParams.Adapter,
 		Store:         gStore,

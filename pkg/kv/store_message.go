@@ -53,7 +53,7 @@ func (s *StoreMessage) DeleteMsg(ctx context.Context, partitionKey, key string) 
 }
 
 func (s *StoreMessage) Scan(ctx context.Context, msgType protoreflect.MessageType, partitionKey, prefix, after string) (*PrimaryIterator, error) {
-	return NewPrimaryIterator(ctx, s.Store, msgType, partitionKey, prefix, after)
+	return NewPrimaryIterator(ctx, s.Store, msgType, partitionKey, prefix, after, true)
 }
 
 type MessageEntry struct {
@@ -77,18 +77,13 @@ type PrimaryIterator struct {
 	err     error
 }
 
-func NewPrimaryIterator(ctx context.Context, store Store, msgType protoreflect.MessageType, partitionKey, prefix, after string) (*PrimaryIterator, error) {
+func NewPrimaryIterator(ctx context.Context, store Store, msgType protoreflect.MessageType, partitionKey, prefix, after string, skip bool) (*PrimaryIterator, error) {
 	itr, err := ScanPrefix(ctx, store, []byte(partitionKey), []byte(prefix), []byte(after))
 	if err != nil {
 		return nil, fmt.Errorf("create prefix iterator: %w", err)
 	}
-	return &PrimaryIterator{itr: NewSkipIterator(itr, []byte(after)), msgType: msgType}, nil
-}
-
-func NewPrimaryIteratorGE(ctx context.Context, store Store, msgType protoreflect.MessageType, partitionKey, prefix, after string) (*PrimaryIterator, error) {
-	itr, err := ScanPrefix(ctx, store, []byte(partitionKey), []byte(prefix), []byte(after))
-	if err != nil {
-		return nil, fmt.Errorf("create prefix iterator: %w", err)
+	if skip {
+		return &PrimaryIterator{itr: NewSkipIterator(itr, []byte(after)), msgType: msgType}, nil
 	}
 	return &PrimaryIterator{itr: itr, msgType: msgType}, nil
 }
@@ -148,7 +143,7 @@ type SecondaryIterator struct {
 }
 
 func NewSecondaryIterator(ctx context.Context, store Store, msgType protoreflect.MessageType, partitionKey, prefix, after string) (*SecondaryIterator, error) {
-	itr, err := NewPrimaryIterator(ctx, store, (&SecondaryIndex{}).ProtoReflect().Type(), partitionKey, prefix, after)
+	itr, err := NewPrimaryIterator(ctx, store, (&SecondaryIndex{}).ProtoReflect().Type(), partitionKey, prefix, after, true)
 	if err != nil {
 		return nil, fmt.Errorf("create prefix iterator: %w", err)
 	}

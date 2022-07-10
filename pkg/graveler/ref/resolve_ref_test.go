@@ -14,8 +14,8 @@ import (
 )
 
 func TestResolveRawRef(t *testing.T) {
-	tests := testRefManager(t)
-	for _, tt := range tests {
+	r := testRefManager(t)
+	for _, tt := range r {
 		ctx := context.Background()
 		testutil.Must(t, tt.refManager.CreateRepository(ctx, "repo1", graveler.Repository{
 			StorageNamespace: "s3://",
@@ -251,8 +251,8 @@ func TestResolveRawRef(t *testing.T) {
 }
 
 func TestResolveRef_SameDate(t *testing.T) {
-	tests := testRefManager(t)
-	for _, tt := range tests {
+	r := testRefManager(t)
+	for _, tt := range r {
 		ctx := context.Background()
 		testutil.Must(t, tt.refManager.CreateRepository(ctx, "repo1", graveler.Repository{
 			StorageNamespace: "s3://",
@@ -324,8 +324,8 @@ func TestResolveRef_DereferenceWithGraph(t *testing.T) {
 		           I = F^   = B^3^    = A^^3^
 		           J = F^2  = B^3^2   = A^^3^2
 	*/
-	tests := testRefManager(t)
-	for _, tt := range tests {
+	r := testRefManager(t)
+	for _, tt := range r {
 		testutil.Must(t, tt.refManager.CreateRepository(context.Background(), "repo1", graveler.Repository{
 			StorageNamespace: "s3://",
 			CreationDate:     time.Now(),

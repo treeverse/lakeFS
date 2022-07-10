@@ -19,8 +19,8 @@ import (
 )
 
 func TestManager_GetRepository(t *testing.T) {
-	tests := testRefManager(t)
-	for _, tt := range tests {
+	r := testRefManager(t)
+	for _, tt := range r {
 		t.Run("repo_doesnt_exist", func(t *testing.T) {
 			_, err := tt.refManager.GetRepository(context.Background(), "example-repo")
 			if !errors.Is(err, graveler.ErrRepositoryNotFound) {
@@ -68,9 +68,9 @@ func TestManager_GetRepository(t *testing.T) {
 }
 
 func TestManager_ListRepositories(t *testing.T) {
-	tests := testRefManager(t)
+	r := testRefManager(t)
 	repos := []graveler.RepositoryID{"a", "aa", "b", "c", "e", "d"}
-	for _, tt := range tests {
+	for _, tt := range r {
 		for _, repoId := range repos {
 			testutil.Must(t, tt.refManager.CreateRepository(context.Background(), repoId, graveler.Repository{
 				StorageNamespace: "s3://foo",
@@ -125,8 +125,8 @@ func TestManager_ListRepositories(t *testing.T) {
 }
 
 func TestManager_DeleteRepository(t *testing.T) {
-	tests := testRefManager(t)
-	for _, tt := range tests {
+	r := testRefManager(t)
+	for _, tt := range r {
 		t.Run("repo_exists", func(t *testing.T) {
 			testutil.Must(t, tt.refManager.CreateRepository(context.Background(), "example-repo", graveler.Repository{
 				StorageNamespace: "s3://foo",
@@ -160,8 +160,8 @@ func TestManager_DeleteRepository(t *testing.T) {
 }
 
 func TestManager_GetBranch(t *testing.T) {
-	tests := testRefManager(t)
-	for _, tt := range tests {
+	r := testRefManager(t)
+	for _, tt := range r {
 		t.Run("get_branch_exists", func(t *testing.T) {
 			testutil.Must(t, tt.refManager.CreateRepository(context.Background(), "repo1", graveler.Repository{
 				StorageNamespace: "s3://",
@@ -187,8 +187,8 @@ func TestManager_GetBranch(t *testing.T) {
 }
 
 func TestManager_CreateBranch(t *testing.T) {
-	tests := testRefManager(t)
-	for _, tt := range tests {
+	r := testRefManager(t)
+	for _, tt := range r {
 		ctx := context.Background()
 		testutil.Must(t, tt.refManager.CreateRepository(ctx, "repo1", graveler.Repository{
 			StorageNamespace: "s3://",
@@ -233,8 +233,8 @@ func TestManager_CreateBranch(t *testing.T) {
 }
 
 func TestManager_SetBranch(t *testing.T) {
-	tests := testRefManager(t)
-	for _, tt := range tests {
+	r := testRefManager(t)
+	for _, tt := range r {
 		testutil.Must(t, tt.refManager.CreateRepository(context.Background(), "repo1", graveler.Repository{
 			StorageNamespace: "s3://",
 			CreationDate:     time.Now(),
@@ -272,8 +272,8 @@ func TestManager_SetBranch(t *testing.T) {
 }
 
 func TestManager_DeleteBranch(t *testing.T) {
-	tests := testRefManager(t)
-	for _, tt := range tests {
+	r := testRefManager(t)
+	for _, tt := range r {
 		ctx := context.Background()
 		testutil.Must(t, tt.refManager.CreateRepository(ctx, "repo1", graveler.Repository{
 			StorageNamespace: "s3://",
@@ -295,8 +295,8 @@ func TestManager_DeleteBranch(t *testing.T) {
 }
 
 func TestManager_ListBranches(t *testing.T) {
-	tests := testRefManager(t)
-	for _, tt := range tests {
+	r := testRefManager(t)
+	for _, tt := range r {
 		testutil.Must(t, tt.refManager.CreateRepository(context.Background(), "repo1", graveler.Repository{
 			StorageNamespace: "s3://",
 			CreationDate:     time.Now(),
@@ -329,8 +329,8 @@ func TestManager_ListBranches(t *testing.T) {
 }
 
 func TestManager_GetTag(t *testing.T) {
-	tests := testRefManager(t)
-	for _, tt := range tests {
+	r := testRefManager(t)
+	for _, tt := range r {
 		t.Run("exists", func(t *testing.T) {
 			ctx := context.Background()
 			err := tt.refManager.CreateRepository(ctx, "repo1", graveler.Repository{
@@ -364,8 +364,8 @@ func TestManager_GetTag(t *testing.T) {
 }
 
 func TestManager_CreateTag(t *testing.T) {
-	tests := testRefManager(t)
-	for _, tt := range tests {
+	r := testRefManager(t)
+	for _, tt := range r {
 		ctx := context.Background()
 		testutil.Must(t, tt.refManager.CreateRepository(ctx, "repo1", graveler.Repository{
 			StorageNamespace: "s3://",
@@ -409,8 +409,8 @@ func TestManager_CreateTag(t *testing.T) {
 }
 
 func TestManager_DeleteTag(t *testing.T) {
-	tests := testRefManager(t)
-	for _, tt := range tests {
+	r := testRefManager(t)
+	for _, tt := range r {
 		ctx := context.Background()
 		testutil.Must(t, tt.refManager.CreateRepository(ctx, "repo1", graveler.Repository{
 			StorageNamespace: "s3://",
@@ -433,8 +433,8 @@ func TestManager_DeleteTag(t *testing.T) {
 }
 
 func TestManager_ListTags(t *testing.T) {
-	tests := testRefManager(t)
-	for _, tt := range tests {
+	r := testRefManager(t)
+	for _, tt := range r {
 		ctx := context.Background()
 		testutil.Must(t, tt.refManager.CreateRepository(ctx, "repo1", graveler.Repository{
 			StorageNamespace: "s3://",
@@ -469,8 +469,8 @@ func TestManager_ListTags(t *testing.T) {
 }
 
 func TestManager_AddCommit(t *testing.T) {
-	tests := testRefManager(t)
-	for _, tt := range tests {
+	r := testRefManager(t)
+	for _, tt := range r {
 		ctx := context.Background()
 		testutil.Must(t, tt.refManager.CreateRepository(ctx, "repo1", graveler.Repository{
 			StorageNamespace: "s3://",
@@ -514,8 +514,8 @@ func TestManager_AddCommit(t *testing.T) {
 }
 
 func TestManager_Log(t *testing.T) {
-	tests := testRefManager(t)
-	for _, tt := range tests {
+	r := testRefManager(t)
+	for _, tt := range r {
 		testutil.Must(t, tt.refManager.CreateRepository(context.Background(), "repo1", graveler.Repository{
 			StorageNamespace: "s3://",
 			CreationDate:     time.Now(),
@@ -587,8 +587,8 @@ func TestManager_Log(t *testing.T) {
 }
 
 func TestManager_LogGraph(t *testing.T) {
-	tests := testRefManager(t)
-	for _, tt := range tests {
+	r := testRefManager(t)
+	for _, tt := range r {
 		ctx := context.Background()
 		err := tt.refManager.CreateRepository(ctx, "repo1", graveler.Repository{
 			StorageNamespace: "s3://",
@@ -771,8 +771,8 @@ func TestManager_GetCommitByPrefix(t *testing.T) {
 }
 
 func TestManager_FillGenerations(t *testing.T) {
-	tests := testRefManager(t)
-	for _, tt := range tests {
+	r := testRefManager(t)
+	for _, tt := range r {
 		ctx := context.Background()
 		testutil.Must(t, tt.refManager.CreateRepository(ctx, "repo1", graveler.Repository{
 			StorageNamespace: "s3://",
@@ -822,8 +822,8 @@ func TestManager_FillGenerations(t *testing.T) {
 }
 
 func TestManager_ListCommits(t *testing.T) {
-	tests := testRefManager(t)
-	for _, tt := range tests {
+	r := testRefManager(t)
+	for _, tt := range r {
 		ctx := context.Background()
 		testutil.Must(t, tt.refManager.CreateRepository(ctx, "repo1", graveler.Repository{
 			StorageNamespace: "s3://",
