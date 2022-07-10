@@ -27,7 +27,7 @@ import Alert from "react-bootstrap/Alert";
 import Dropdown from "react-bootstrap/Dropdown";
 import Button from "react-bootstrap/Button";
 
-import {SparkQuickstart} from "./wizard/sparkQuickstartWizard";
+import {SparkQuickstart} from "./wizard/spark_quickstart_wizard";
 
 
 const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
@@ -151,7 +151,7 @@ const RepositoriesPage = () => {
         (prefix) => router.push({pathname: `/repositories`, query: {prefix}})
     );
 
-    const createRepo = async (repo = true, presentRepo = true) => {
+    const createRepo = async (repo, presentRepo = true) => {
         try {
             await repositories.create(repo);
             setRefresh(!refresh);
