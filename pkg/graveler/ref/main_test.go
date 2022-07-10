@@ -45,14 +45,13 @@ func testRefManagerWithKV(t testing.TB) (graveler.RefManager, kv.StoreMessage) {
 }
 
 func testRefManager(t *testing.T) []DBType {
-	dbRefManager, db := testRefManagerWithDB(t)
+	dbRefManager, _ := testRefManagerWithDB(t)
 	kvRefManager, _ := testRefManagerWithKV(t)
 
 	tests := []DBType{
 		{
 			name:       "DB manager test",
 			refManager: dbRefManager,
-			db:         db,
 		},
 		{
 			name:       "KV manager test",
