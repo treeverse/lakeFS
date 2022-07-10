@@ -1,7 +1,8 @@
 # SAMPLE TEMPLATE: minimal Spark lakeFSFS configuration
+{{contenttype "application/x-conf" -}}
 
 spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
-{{with $creds := new_credentials}}
+{{with $creds := new_credentials "spark"}}
 spark.hadoop.fs.s3a.access_key={{$creds.Key}}
 spark.hadoop.fs.s3a.secret_key={{$creds.Secret}}
 {{end}}
