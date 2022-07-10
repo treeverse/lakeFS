@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net/http"
 	"path"
 	"strings"
 	"text/template"
@@ -30,11 +31,25 @@ type AuthService interface {
 	auth.CredentialsCreator
 }
 
+type Phase string
+
+const (
+	PhasePrepare Phase = "prepare"
+	PhaseExpand  Phase = "expand"
+)
+
 type ControlledParams struct {
-	Ctx  context.Context
-	Auth AuthService
+	Ctx   context.Context
+	Phase Phase
+	Auth  AuthService
+	// Headers are the HTTP response headers.  They may only be modified
+	// during PhasePrepare.
+	Header http.Header
 	// User is the user expanding the template.
 	User *auth_model.User
+	// Store is a place for funcs to keep stuff around, mostly between
+	// phases.  Each func should use its name as its index.
+	Store map[string]interface{}
 }
 
 type UncontrolledData struct {
@@ -87,9 +102,11 @@ func MakeExpander(name, tmpl string, cfg *config.Config, auth AuthService) (Expa
 func (e *expander) Expand(w io.Writer, params *Params) error {
 	// Expand with no output: verify that no template functions will
 	// fail.
+	params.Controlled.Phase = PhasePrepare
 	if err := e.expandTo(io.Discard, params); err != nil {
 		return fmt.Errorf("prepare: %w", err)
 	}
+	params.Controlled.Phase = PhaseExpand
 	if err := e.expandTo(w, params); err != nil {
 		return fmt.Errorf("execute: %w", err)
 	}

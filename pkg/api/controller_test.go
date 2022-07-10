@@ -2415,7 +2415,7 @@ func testController_ExpandTemplate(t *testing.T, kvEnabled bool) {
 		resp, err := clt.ExpandTemplateWithResponse(ctx, "no/template/here", &api.ExpandTemplateParams{})
 		testutil.Must(t, err)
 		if resp.HTTPResponse.StatusCode != http.StatusNotFound {
-			t.Errorf("Expanding a nonexistent template should fail with status %d got %d\n\t%+v", http.StatusNotFound, resp.HTTPResponse.StatusCode, resp)
+			t.Errorf("Expanding a nonexistent template should fail with status %d got %d\n\t%s\n\t%+v", http.StatusNotFound, resp.HTTPResponse.StatusCode, string(resp.Body), resp)
 		}
 	})
 
@@ -2443,13 +2443,21 @@ func testController_ExpandTemplate(t *testing.T, kvEnabled bool) {
 			}))
 		testutil.Must(t, err)
 		if resp.HTTPResponse.StatusCode != http.StatusOK {
-			t.Errorf("Expanding template spark.conf.tt failed with status %d\n\t%+v", resp.HTTPResponse.StatusCode, resp)
+			t.Errorf("Expansion failed with status %d\n\t%s\n\t%+v", resp.HTTPResponse.StatusCode, string(resp.Body), resp)
+		}
+
+		contentType := resp.HTTPResponse.Header.Values("Content-Type")
+		if len(contentType) != 1 {
+			t.Errorf("Expansion returned %d content types: %v", len(contentType), contentType)
+		}
+		if contentType[0] != "application/x-conf" {
+			t.Errorf("Expansion returned content type %s not application/x-conf", contentType[0])
 		}
 
 		for _, e := range expected {
 			re := regexp.MustCompile(e.pattern)
 			if !re.Match(resp.Body) {
-				t.Errorf("Expanded template spark.conf.tt has no %s: /%s/\n\t%s", e.name, e.pattern, string(resp.Body))
+				t.Errorf("Expansion result has no %s: /%s/\n\t%s", e.name, e.pattern, string(resp.Body))
 			}
 		}
 	})
@@ -2458,7 +2466,7 @@ func testController_ExpandTemplate(t *testing.T, kvEnabled bool) {
 		resp, err := clt.ExpandTemplateWithResponse(ctx, "fail.tt", &api.ExpandTemplateParams{})
 		testutil.Must(t, err)
 		if resp.HTTPResponse.StatusCode != http.StatusInternalServerError {
-			t.Errorf("Expanding template spark.conf.tt should fail with status %d got %d\n\t%+v", http.StatusInternalServerError, resp.HTTPResponse.StatusCode, resp)
+			t.Errorf("Expansion should fail with status %d got %d\n\t%s\n\t%+v", http.StatusInternalServerError, resp.HTTPResponse.StatusCode, string(resp.Body), resp)
 		}
 
 		parsed := make(map[string]string, 0)
