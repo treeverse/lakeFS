@@ -1,16 +1,15 @@
 package pyramid
 
 import (
-	"github.com/treeverse/lakefs/pkg/pyramid/params"
-
 	"context"
 	"os"
 	"path"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/pyramid/params"
 )
 
 func TestPyramidWriteFile(t *testing.T) {
@@ -29,7 +28,8 @@ func TestPyramidWriteFile(t *testing.T) {
 	abortCalled := false
 	var storeCtx context.Context
 	sut := WRFile{
-		File: fh,
+		File:   fh,
+		logger: logging.Default(),
 		store: func(innerCtx context.Context, _ string) error {
 			storeCalled = true
 			storeCtx = innerCtx
@@ -76,7 +76,8 @@ func TestWriteValidate(t *testing.T) {
 	storeCalled := false
 
 	sut := WRFile{
-		File: fh,
+		File:   fh,
+		logger: logging.Default(),
 		store: func(context.Context, string) error {
 			storeCalled = true
 			return nil
@@ -109,7 +110,8 @@ func TestMultipleWriteCalls(t *testing.T) {
 	storeCalled := false
 
 	sut := WRFile{
-		File: fh,
+		File:   fh,
+		logger: logging.Default(),
 		store: func(context.Context, string) error {
 			storeCalled = true
 			return nil
@@ -143,7 +145,8 @@ func TestAbort(t *testing.T) {
 	abortCalled := false
 
 	sut := WRFile{
-		File: fh,
+		File:   fh,
+		logger: logging.Default(),
 		store: func(context.Context, string) error {
 			storeCalled = true
 			return nil
