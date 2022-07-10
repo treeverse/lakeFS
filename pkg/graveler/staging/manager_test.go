@@ -37,13 +37,44 @@ func newTestStagingManager(t *testing.T, kvEnabled bool) (context.Context, grave
 	return ctx, staging.NewDBManager(conn)
 }
 
-func TestSetGet(t *testing.T) {
-	t.Run("TestDBSetGet", func(t *testing.T) {
-		testSetGet(t, false)
-	})
-	t.Run("TestKVSetGet", func(t *testing.T) {
-		testSetGet(t, true)
-	})
+func TestStagingManager(t *testing.T) {
+	kvE := [2]bool{false, true}
+	for _, kvEnabled := range kvE {
+		dbStr := ""
+		if kvEnabled {
+			dbStr = "DB"
+		}
+		t.Run(fmt.Sprintf("Test%sSetGet", dbStr), func(t *testing.T) {
+			testSetGet(t, kvEnabled)
+		})
+		t.Run(fmt.Sprintf("Test%sMultiToken", dbStr), func(t *testing.T) {
+			testMultiToken(t, kvEnabled)
+		})
+		t.Run(fmt.Sprintf("Test%sDrop", dbStr), func(t *testing.T) {
+			testDrop(t, kvEnabled)
+		})
+		t.Run(fmt.Sprintf("Test%sDropByPrefix", dbStr), func(t *testing.T) {
+			testDropByPrefix(t, kvEnabled)
+		})
+		t.Run(fmt.Sprintf("Test%sDropPrefixBytes", dbStr), func(t *testing.T) {
+			testDropPrefixBytes(t, kvEnabled)
+		})
+		t.Run(fmt.Sprintf("Test%sList", dbStr), func(t *testing.T) {
+			testList(t, kvEnabled)
+		})
+		t.Run(fmt.Sprintf("Test%sSeek", dbStr), func(t *testing.T) {
+			testSeek(t, kvEnabled)
+		})
+		t.Run(fmt.Sprintf("Test%sNilValue", dbStr), func(t *testing.T) {
+			testNilValue(t, kvEnabled)
+		})
+		t.Run(fmt.Sprintf("Test%sNilIdentity", dbStr), func(t *testing.T) {
+			testNilIdentity(t, kvEnabled)
+		})
+		t.Run(fmt.Sprintf("Test%sDeleteAndTombstone", dbStr), func(t *testing.T) {
+			testDeleteAndTombstone(t, kvEnabled)
+		})
+	}
 }
 
 func testSetGet(t *testing.T, kvEnabled bool) {
@@ -67,15 +98,6 @@ func testSetGet(t *testing.T, kvEnabled bool) {
 
 		err = s.Set(ctx, "t2", []byte("a/b/c/d"), value, false)
 		require.ErrorIs(t, graveler.ErrPreconditionFailed, err)
-	})
-}
-
-func TestMultiToken(t *testing.T) {
-	t.Run("TestDBMultiToken", func(t *testing.T) {
-		testMultiToken(t, false)
-	})
-	t.Run("TestKVMultiToken", func(t *testing.T) {
-		testMultiToken(t, true)
 	})
 }
 
@@ -105,15 +127,6 @@ func testMultiToken(t *testing.T, kvEnabled bool) {
 		t.Errorf("got wrong value identity. expected=%s, got=%s", "identity2", string(e.Identity))
 		t.Errorf("got wrong value identity. expected=%s, got=%s", "identity2", string(e.Identity))
 	}
-}
-
-func TestDrop(t *testing.T) {
-	t.Run("TestDBDrop", func(t *testing.T) {
-		testDrop(t, false)
-	})
-	t.Run("TestKVDrop", func(t *testing.T) {
-		testDrop(t, true)
-	})
 }
 
 func testDrop(t *testing.T, kvEnabled bool) {
@@ -148,15 +161,6 @@ func testDrop(t *testing.T, kvEnabled bool) {
 	if count != numOfValues {
 		t.Errorf("got unexpected number of results. expected=%d, got=%d", numOfValues, count)
 	}
-}
-
-func TestDropByPrefix(t *testing.T) {
-	t.Run("TestDBDropByPrefix", func(t *testing.T) {
-		testDropByPrefix(t, false)
-	})
-	t.Run("TestKVDropByPrefix", func(t *testing.T) {
-		testDropByPrefix(t, true)
-	})
 }
 
 func testDropByPrefix(t *testing.T, kvEnabled bool) {
@@ -196,15 +200,6 @@ func testDropByPrefix(t *testing.T, kvEnabled bool) {
 	if count != numOfValues {
 		t.Errorf("got unexpected number of results. expected=%d, got=%d", numOfValues, count)
 	}
-}
-
-func TestDropPrefixBytes(t *testing.T) {
-	t.Run("TestDBDropPrefixBytes", func(t *testing.T) {
-		testDropPrefixBytes(t, false)
-	})
-	t.Run("TestKVDropPrefixBytes", func(t *testing.T) {
-		testDropPrefixBytes(t, true)
-	})
 }
 
 func testDropPrefixBytes(t *testing.T, kvEnabled bool) {
@@ -309,15 +304,6 @@ func testDropPrefixBytes(t *testing.T, kvEnabled bool) {
 	}
 }
 
-func TestList(t *testing.T) {
-	t.Run("TestDBList", func(t *testing.T) {
-		testList(t, false)
-	})
-	t.Run("TestKVList", func(t *testing.T) {
-		testList(t, true)
-	})
-}
-
 func testList(t *testing.T, kvEnabled bool) {
 	ctx, s := newTestStagingManager(t, kvEnabled)
 	for _, numOfValues := range []int{1, 100, 1000, 1500, 2500} {
@@ -347,15 +333,6 @@ func testList(t *testing.T, kvEnabled bool) {
 			}
 		}
 	}
-}
-
-func TestSeek(t *testing.T) {
-	t.Run("TestDBSeek", func(t *testing.T) {
-		testSeek(t, false)
-	})
-	t.Run("TestKVSeek", func(t *testing.T) {
-		testSeek(t, true)
-	})
 }
 
 func testSeek(t *testing.T, kvEnabled bool) {
@@ -396,15 +373,6 @@ func testSeek(t *testing.T, kvEnabled bool) {
 	}
 }
 
-func TestNilValue(t *testing.T) {
-	t.Run("TestDBNilValue", func(t *testing.T) {
-		testNilValue(t, false)
-	})
-	t.Run("TestKVNilValue", func(t *testing.T) {
-		testNilValue(t, true)
-	})
-}
-
 func testNilValue(t *testing.T, kvEnabled bool) {
 	ctx, s := newTestStagingManager(t, kvEnabled)
 	err := s.Set(ctx, "t1", []byte("key1"), nil, true)
@@ -440,15 +408,6 @@ func testNilValue(t *testing.T, kvEnabled bool) {
 	}
 }
 
-func TestNilIdentity(t *testing.T) {
-	t.Run("TestDBNilIdentity", func(t *testing.T) {
-		testNilIdentity(t, false)
-	})
-	t.Run("TestKVNilIdentity", func(t *testing.T) {
-		testNilIdentity(t, true)
-	})
-}
-
 func testNilIdentity(t *testing.T, kvEnabled bool) {
 	ctx, s := newTestStagingManager(t, kvEnabled)
 	err := s.Set(ctx, "t1", []byte("key1"), newTestValue("identity1", "value1"), true)
@@ -465,15 +424,6 @@ func testNilIdentity(t *testing.T, kvEnabled bool) {
 	if string(e.Identity) != "identity1" {
 		t.Errorf("got wrong identity. expected=%s, got=%s", "identity1", string(e.Identity))
 	}
-}
-
-func TestDeleteAndTombstone(t *testing.T) {
-	t.Run("TestDBDeleteAndTombstone", func(t *testing.T) {
-		testDeleteAndTombstone(t, false)
-	})
-	t.Run("TestKVDeleteAndTombstone", func(t *testing.T) {
-		testDeleteAndTombstone(t, true)
-	})
 }
 
 func testDeleteAndTombstone(t *testing.T, kvEnabled bool) {

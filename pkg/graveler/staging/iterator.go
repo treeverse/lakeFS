@@ -68,6 +68,9 @@ func (s *Iterator) Value() *graveler.ValueRecord {
 }
 
 func (s *Iterator) Err() error {
+	if s.err == nil {
+		return s.itr.Err()
+	}
 	return s.err
 }
 

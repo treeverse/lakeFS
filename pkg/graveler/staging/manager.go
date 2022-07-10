@@ -74,10 +74,13 @@ func (m *Manager) Set(ctx context.Context, st graveler.StagingToken, key gravele
 }
 
 func (m *Manager) DropKey(ctx context.Context, st graveler.StagingToken, key graveler.Key) error {
-	// Changed behavior from DB - we will not get an error on delete non-existent
-	// Correctness should maintain since if the key doesn't exist - it is still considered deleted
-	err := m.store.DeleteMsg(ctx, string(st), key)
-	return err
+	// Simulate DB behavior - fail if key doesn't exist. See: https://github.com/treeverse/lakeFS/issues/3640
+	data := &graveler.StagedEntry{}
+	_, err := m.store.GetMsg(ctx, string(st), key, data)
+	if err != nil {
+		return err
+	}
+	return m.store.DeleteMsg(ctx, string(st), key)
 }
 
 // List TODO niro: Remove batchSize parameter post KV
