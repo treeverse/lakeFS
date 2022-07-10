@@ -61,6 +61,15 @@ type GatewayService interface {
 	Authorize(_ context.Context, req *AuthorizationRequest) (*AuthorizationResponse, error)
 }
 
+type Authorizer interface {
+	// authorize user for an action
+	Authorize(ctx context.Context, req *AuthorizationRequest) (*AuthorizationResponse, error)
+}
+
+type CredentialsCreator interface {
+	CreateCredentials(ctx context.Context, username string) (*model.Credential, error)
+}
+
 type Service interface {
 	SecretStore() crypt.SecretStore
 	Cache() Cache
@@ -96,7 +105,7 @@ type Service interface {
 	ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
 
 	// credentials
-	CreateCredentials(ctx context.Context, username string) (*model.Credential, error)
+	CredentialsCreator
 	AddCredentials(ctx context.Context, username, accessKeyID, secretAccessKey string) (*model.Credential, error)
 	DeleteCredentials(ctx context.Context, username, accessKeyID string) error
 	GetCredentialsForUser(ctx context.Context, username, accessKeyID string) (*model.Credential, error)
@@ -115,8 +124,7 @@ type Service interface {
 	DetachPolicyFromGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error
 	ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
 
-	// authorize user for an action
-	Authorize(ctx context.Context, req *AuthorizationRequest) (*AuthorizationResponse, error)
+	Authorizer
 
 	ClaimTokenIDOnce(ctx context.Context, tokenID string, expiresAt int64) error
 }

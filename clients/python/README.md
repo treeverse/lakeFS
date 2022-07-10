@@ -196,6 +196,7 @@ Class | Method | HTTP request | Description
 *TagsApi* | [**delete_tag**](docs/TagsApi.md#delete_tag) | **DELETE** /repositories/{repository}/tags/{tag} | delete tag
 *TagsApi* | [**get_tag**](docs/TagsApi.md#get_tag) | **GET** /repositories/{repository}/tags/{tag} | get tag
 *TagsApi* | [**list_tags**](docs/TagsApi.md#list_tags) | **GET** /repositories/{repository}/tags | list tags
+*TemplatesApi* | [**expand_template**](docs/TemplatesApi.md#expand_template) | **GET** /templates/{template_location} | 
 
 
 ## Documentation For Models
