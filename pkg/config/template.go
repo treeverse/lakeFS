@@ -106,9 +106,9 @@ type configuration struct {
 			// in case there are no credentials configured in the system
 			// This is a client requirement as described in section 4 in
 			// https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html
-			AwsRegion          string `mapstructure:"aws_region"`
-			AwsAccessKeyID     string `mapstructure:"aws_access_key_id"`
-			AwsSecretAccessKey string `mapstructure:"aws_secret_access_key"`
+			AwsRegion          string       `mapstructure:"aws_region"`
+			AwsAccessKeyID     SecureString `mapstructure:"aws_access_key_id"`
+			AwsSecretAccessKey SecureString `mapstructure:"aws_secret_access_key"`
 		} `mapstructure:"beta_dynamodb"`
 	}
 

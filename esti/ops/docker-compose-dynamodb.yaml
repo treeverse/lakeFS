@@ -8,8 +8,6 @@ services:
     depends_on:
       - "dynamodb"
       - "postgres"
-    volumes:
-      - lakefs-app:/app:ro
     environment:
       - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=some random secret string
       - LAKEFS_DATABASE_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
@@ -20,18 +18,18 @@ services:
       - LAKEFS_LOGGING_LEVEL=DEBUG
       - LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON
       - LAKEFS_STATS_ENABLED
-      - LAKEFS_DATABASE_BETA_DYNAMODB_ENDPOINT=dynamodb:6432
+      - LAKEFS_DATABASE_BETA_DYNAMODB_ENDPOINT=http://dynamodb:8000
       - ACTIONS_VAR=this_is_actions_var
-      - LAKEFS_DATABASE_TYPE=${LAKEFS_DATABASE_TYPE}
-      - LAKEFS_DATABASE_KV_ENABLED=${LAKEFS_DATABASE_KV_ENABLED:-false}
+      - LAKEFS_DATABASE_TYPE=dynamodb
+      - LAKEFS_DATABASE_KV_ENABLED=true
       - LAKEFS_DATABASE_BETA_DYNAMODB_AWS_REGION=us-east-1
       - LAKEFS_DATABASE_BETA_DYNAMODB_AWS_ACCESS_KEY_ID=AKIAIO5FODNN7EXAMPLE
       - LAKEFS_DATABASE_BETA_DYNAMODB_AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K3MDENG/bPxRfiCYEXAMPLEKEY
-    entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
+    entrypoint: [ "/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run" ]
   dynamodb:
     image: "amazon/dynamodb-local:1.18.0"
     ports:
-      - "6432:6432"
+      - "6432:8000"
   postgres:
     image: "postgres:11"
     ports:
