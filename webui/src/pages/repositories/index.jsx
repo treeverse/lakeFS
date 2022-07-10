@@ -235,7 +235,7 @@ const RepositoriesPage = () => {
                     }}
                     show={showCreateRepositoryModal}
                     error={createRepoError}
-                    onSubmit={async (repo) => await createRepo(repo, true)}/>
+                    onSubmit={(repo) => createRepo(repo, true)}/>
 
                 <RepositoryTemplatesModal
                     onExit={() => {
@@ -243,7 +243,7 @@ const RepositoriesPage = () => {
                         setCreateRepoError(null);
                     }}
                     show={showRepositoryTemplatesModal}
-                    createRepo={async (repo) => await createRepo(repo, false)}
+                    createRepo={(repo) => createRepo(repo, false)}
                     repoCreationError={createRepoError}
                 />
             </Container>

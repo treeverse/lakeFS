@@ -12,7 +12,7 @@ import RepositoryCreateForm from "../../../lib/components/repositoryCreateForm";
 
 const RepositoryCreationStep = ({repoCreationError, createRepo, onCancel, onComplete}) => {
     const {response, error: err, loading} = useAPI(() => config.getStorageConfig());
-    const [repoName, setRepoName] = useState("");
+    const [repoName, setRepoName] = useState('');
     const [creationInProgress, setCreationInProgress] = useState(false);
 
     const onSubmit = async (repo) => {
