@@ -30,8 +30,10 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
+	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/treeverse/lakefs/pkg/version"
+	"github.com/treeverse/lakefs/templates"
 )
 
 const (
@@ -144,8 +146,10 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory, 
 	auditChecker := version.NewDefaultAuditChecker(cfg.GetSecurityAuditCheckURL())
 	emailParams, _ := cfg.GetEmailParams()
 	emailer, err := email.NewEmailer(emailParams)
+	templater := templater.NewService(templates.Content, cfg, authService)
+
 	testutil.Must(t, err)
-	handler := api.Serve(cfg, c, authenticator, authenticator, authService, c.BlockAdapter, meta, migrator, collector, nil, actionsService, auditChecker, logging.Default(), emailer, nil, nil, nil, nil)
+	handler := api.Serve(cfg, c, authenticator, authenticator, authService, c.BlockAdapter, meta, migrator, collector, nil, actionsService, auditChecker, logging.Default(), emailer, templater, nil, nil, nil, nil)
 
 	return handler, &dependencies{
 		blocks:      c.BlockAdapter,

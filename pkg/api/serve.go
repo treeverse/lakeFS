@@ -28,6 +28,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
+	"github.com/treeverse/lakefs/pkg/templater"
 	"golang.org/x/oauth2"
 )
 
@@ -58,6 +59,7 @@ func Serve(
 	auditChecker AuditChecker,
 	logger logging.Logger,
 	emailer *email.Emailer,
+	templater templater.Service,
 	gatewayDomains []string,
 	snippets []params.CodeSnippet,
 	oidcProvider *oidc.Provider,
@@ -99,6 +101,7 @@ func Serve(
 		auditChecker,
 		logger,
 		emailer,
+		templater,
 		oidcAuthenticator,
 		sessionStore,
 	)

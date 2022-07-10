@@ -41,7 +41,9 @@ import (
 	_ "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
+	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/version"
+	"github.com/treeverse/lakefs/templates"
 	"golang.org/x/oauth2"
 )
 
@@ -216,6 +218,8 @@ var runCmd = &cobra.Command{
 		}
 		defer func() { _ = c.Close() }()
 
+		templater := templater.NewService(templates.Content, cfg, authService)
+
 		actionsService := actions.NewService(
 			ctx,
 			actionsStore,
@@ -299,6 +303,7 @@ var runCmd = &cobra.Command{
 			auditChecker,
 			logger.WithField("service", "api_gateway"),
 			emailer,
+			templater,
 			cfg.GetS3GatewayDomainNames(),
 			cfg.GetUISnippets(),
 			oidcProvider,

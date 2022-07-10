@@ -39,6 +39,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/stats"
+	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/version"
 )
@@ -85,6 +86,7 @@ type Controller struct {
 	AuditChecker          AuditChecker
 	Logger                logging.Logger
 	Emailer               *email.Emailer
+	Templater             templater.Service
 	sessionStore          sessions.Store
 	oidcAuthenticator     *oidc.Authenticator
 }
@@ -3242,6 +3244,50 @@ func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body
 	w.WriteHeader(http.StatusCreated)
 }
 
+func (c *Controller) ExpandTemplate(w http.ResponseWriter, r *http.Request, templateLocation string, p ExpandTemplateParams) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.ReadObjectAction,
+			Resource: permissions.TemplateArn(templateLocation),
+		},
+	}) {
+		return
+	}
+
+	u, ok := r.Context().Value(UserContextKey).(*model.User)
+	if !ok {
+		writeError(w, http.StatusInternalServerError, "request performed with no user")
+	}
+
+	// Override bug in OpenAPI generated code: parameters do not show up
+	// in p.Params.AdditionalProperties, so force them in there.
+	if len(p.Params.AdditionalProperties) == 0 && len(r.URL.Query()) > 0 {
+		p.Params.AdditionalProperties = make(map[string]string, len(r.Header))
+		for k, v := range r.URL.Query() {
+			p.Params.AdditionalProperties[k] = v[0]
+		}
+	}
+	err := c.Templater.Expand(r.Context(), w, u, templateLocation, p.Params.AdditionalProperties)
+
+	if err != nil {
+		c.Logger.WithError(err).WithField("location", templateLocation).Error("Template expansion failed")
+	}
+
+	if errors.Is(err, templater.ErrNotAuthorized) {
+		writeError(w, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
+		return
+	}
+	if errors.Is(err, templater.ErrNotFound) {
+		writeError(w, http.StatusNotFound, http.StatusText(http.StatusNotFound))
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "expansion failed")
+		return
+	}
+	// Response already written during expansion.
+}
+
 func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user, ok := ctx.Value(UserContextKey).(*model.User)
@@ -3405,6 +3451,7 @@ func NewController(
 	auditChecker AuditChecker,
 	logger logging.Logger,
 	emailer *email.Emailer,
+	templater templater.Service,
 	oidcAuthenticator *oidc.Authenticator,
 	sessionStore sessions.Store,
 ) *Controller {
@@ -3423,6 +3470,7 @@ func NewController(
 		AuditChecker:          auditChecker,
 		Logger:                logger,
 		Emailer:               emailer,
+		Templater:             templater,
 		sessionStore:          sessionStore,
 		oidcAuthenticator:     oidcAuthenticator,
 	}
