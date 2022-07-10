@@ -64,6 +64,16 @@ func TestDBTagIterator(t *testing.T) {
 		}
 	})
 
+	t.Run("empty value SeekGE", func(t *testing.T) {
+		iter, err := ref.NewDBTagIterator(ctx, db, "repo1", 3)
+		testutil.Must(t, err)
+		iter.SeekGE("b")
+
+		if iter.Value() != nil {
+			t.Fatalf("expected nil value after seekGE")
+		}
+	})
+
 	t.Run("listing tags SeekGE", func(t *testing.T) {
 		iter, err := ref.NewDBTagIterator(ctx, db, "repo1", 3)
 		testutil.Must(t, err)
@@ -183,6 +193,16 @@ func TestKVTagIterator(t *testing.T) {
 
 		if diffs := deep.Equal(ids, []graveler.TagID{"aa", "b", "c", "d", "e", "f", "g"}); diffs != nil {
 			t.Fatalf("got wrong list of tags")
+		}
+	})
+
+	t.Run("empty value SeekGE", func(t *testing.T) {
+		iter, err := ref.NewKVTagIterator(ctx, &kvstore, "repo1")
+		testutil.Must(t, err)
+		iter.SeekGE("b")
+
+		if iter.Value() != nil {
+			t.Fatalf("expected nil value after seekGE")
 		}
 	})
 }

@@ -39,7 +39,7 @@ type CommitNode struct {
 	generation     int
 }
 
-func NewKVPGRefManager(executor batch.Batcher, kvStore kv.StoreMessage, db db.Database, addressProvider ident.AddressProvider) *KVManager {
+func NewKVRefManager(executor batch.Batcher, kvStore kv.StoreMessage, db db.Database, addressProvider ident.AddressProvider) *KVManager {
 	return &KVManager{
 		db:              db,
 		kvStore:         kvStore,
@@ -242,14 +242,14 @@ func (m *KVManager) ListBranches(ctx context.Context, repositoryID graveler.Repo
 }
 
 func (m *KVManager) GetTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID) (*graveler.CommitID, error) {
-	tagKey := graveler.TagPath(tagID.String())
+	tagKey := graveler.TagPath(tagID)
 	t := graveler.TagData{}
-	_, err := m.kvStore.GetMsg(ctx, graveler.TagPartition(repositoryID.String()), tagKey, &t)
+	_, err := m.kvStore.GetMsg(ctx, graveler.TagPartition(repositoryID), tagKey, &t)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			err = graveler.ErrTagNotFound
 		}
-		return nil, fmt.Errorf("%s: %w", tagKey, err)
+		return nil, err
 	}
 	commitID := graveler.CommitID(t.CommitId)
 	return &commitID, nil
@@ -260,24 +260,20 @@ func (m *KVManager) CreateTag(ctx context.Context, repositoryID graveler.Reposit
 		Id:       tagID.String(),
 		CommitId: commitID.String(),
 	}
-	tagKey := graveler.TagPath(tagID.String())
-	err := m.kvStore.SetMsgIf(ctx, graveler.TagPartition(repositoryID.String()), tagKey, t, nil)
+	tagKey := graveler.TagPath(tagID)
+	err := m.kvStore.SetMsgIf(ctx, graveler.TagPartition(repositoryID), tagKey, t, nil)
 	if err != nil {
 		if errors.Is(err, kv.ErrPredicateFailed) {
 			err = graveler.ErrTagAlreadyExists
 		}
-		return fmt.Errorf("save tag (tagKey %s): %w", tagKey, err)
+		return err
 	}
-	return err
+	return nil
 }
 
 func (m *KVManager) DeleteTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID) error {
-	tagKey := graveler.TagPath(tagID.String())
-	err := m.kvStore.DeleteMsg(ctx, graveler.TagPartition(repositoryID.String()), tagKey)
-	if err != nil {
-		return fmt.Errorf("delete tag (tagKey %s): %w", tagKey, err)
-	}
-	return err
+	tagKey := graveler.TagPath(tagID)
+	return m.kvStore.DeleteMsg(ctx, graveler.TagPartition(repositoryID), tagKey)
 }
 
 func (m *KVManager) ListTags(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.TagIterator, error) {

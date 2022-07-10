@@ -6,10 +6,10 @@ const (
 	tagsPrefix = "tags"
 )
 
-func TagPath(tagID string) string {
-	return kv.FormatPath(tagsPrefix, tagID)
+func TagPath(tagID TagID) string {
+	return kv.FormatPath(tagsPrefix, tagID.String())
 }
 
-func TagPartition(repoID string) string {
-	return repoID
+func TagPartition(repoID RepositoryID) string {
+	return repoID.String()
 }

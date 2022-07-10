@@ -26,6 +26,7 @@ var (
 type DBType struct {
 	name       string
 	refManager graveler.RefManager
+	db         db.Database
 }
 
 func testRefManagerWithDB(t testing.TB) (graveler.RefManager, db.Database) {
@@ -40,17 +41,18 @@ func testRefManagerWithKV(t testing.TB) (graveler.RefManager, kv.StoreMessage) {
 	kvStore := kvtest.GetStore(ctx, t)
 	storeMessage := kv.StoreMessage{Store: kvStore}
 	conn, _ := testutil.GetDB(t, databaseURI, testutil.WithGetDBApplyDDL(true))
-	return ref.NewKVPGRefManager(batch.NopExecutor(), storeMessage, conn, ident.NewHexAddressProvider()), storeMessage
+	return ref.NewKVRefManager(batch.NopExecutor(), storeMessage, conn, ident.NewHexAddressProvider()), storeMessage
 }
 
 func testRefManager(t *testing.T) []DBType {
-	dbRefManager, _ := testRefManagerWithDB(t)
+	dbRefManager, db := testRefManagerWithDB(t)
 	kvRefManager, _ := testRefManagerWithKV(t)
 
 	tests := []DBType{
 		{
 			name:       "DB manager test",
 			refManager: dbRefManager,
+			db:         db,
 		},
 		{
 			name:       "KV manager test",
