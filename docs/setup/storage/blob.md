@@ -15,7 +15,7 @@ has_children: false
 1. From the Azure portal, go to Storage Accounts and choose your account. Next, click `+ Container` in the container tab.
 1. Make sure you block public access
 
-## Authenticate with the Secret Key
+## Authenticate with a Secret Key
 {: .no_toc }
 
 If you want lakeFS to authenticate with your storage using the storage account key, go to the `Access Keys` tab and click `Show Keys`. Use the values under `Storage account name` and `Key` in the [lakeFS configuration](../../deploy/azure.html#on-azure-vm).
