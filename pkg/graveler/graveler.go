@@ -784,20 +784,20 @@ func (id TagID) String() string {
 }
 
 type KVGraveler struct {
-	db         *DBGraveler
-	hooks      HooksHandler
-	RefManager RefManager
+	db             *DBGraveler
+	hooks          HooksHandler
+	RefManager     RefManager
 	StagingManager StagingManager
-	log        logging.Logger
+	log            logging.Logger
 }
 
 func NewKVGraveler(branchLocker BranchLocker, committedManager CommittedManager, stagingManager StagingManager, refManager RefManager, gcManager GarbageCollectionManager, protectedBranchesManager ProtectedBranchesManager) *KVGraveler {
 	return &KVGraveler{
-		db:         NewDBGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager),
-		hooks:      &HooksNoOp{},
-		RefManager: refManager,
+		db:             NewDBGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager),
+		hooks:          &HooksNoOp{},
+		RefManager:     refManager,
 		StagingManager: stagingManager,
-		log:        logging.Default().WithField("service_name", "graveler_graveler"),
+		log:            logging.Default().WithField("service_name", "graveler_graveler"),
 	}
 }
 

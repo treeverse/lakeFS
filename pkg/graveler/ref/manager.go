@@ -97,7 +97,7 @@ func (m *KVManager) ListBranches(ctx context.Context, repositoryID graveler.Repo
 func (m *KVManager) GetTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID) (*graveler.CommitID, error) {
 	tagKey := graveler.TagPath(tagID)
 	t := graveler.TagData{}
-	_, err := m.kvStore.GetMsg(ctx, graveler.TagPartition(repositoryID), tagKey, &t)
+	_, err := m.kvStore.GetMsg(ctx, graveler.TagPartition(repositoryID), []byte(tagKey), &t)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			err = graveler.ErrTagNotFound
@@ -114,7 +114,7 @@ func (m *KVManager) CreateTag(ctx context.Context, repositoryID graveler.Reposit
 		CommitId: commitID.String(),
 	}
 	tagKey := graveler.TagPath(tagID)
-	err := m.kvStore.SetMsgIf(ctx, graveler.TagPartition(repositoryID), tagKey, t, nil)
+	err := m.kvStore.SetMsgIf(ctx, graveler.TagPartition(repositoryID), []byte(tagKey), t, nil)
 	if err != nil {
 		if errors.Is(err, kv.ErrPredicateFailed) {
 			err = graveler.ErrTagAlreadyExists
@@ -127,7 +127,7 @@ func (m *KVManager) CreateTag(ctx context.Context, repositoryID graveler.Reposit
 func (m *KVManager) DeleteTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID) error {
 	tagKey := graveler.TagPath(tagID)
 	// TODO (issue 3640) align with delete tag DB - return ErrNotFound when tag does not exist
-	return m.kvStore.DeleteMsg(ctx, graveler.TagPartition(repositoryID), tagKey)
+	return m.kvStore.DeleteMsg(ctx, graveler.TagPartition(repositoryID), []byte(tagKey))
 }
 
 func (m *KVManager) ListTags(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.TagIterator, error) {
