@@ -2,9 +2,10 @@ package actions_test
 
 import (
 	"context"
+	"fmt"
+	"math"
 	"strconv"
 	"testing"
-	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -23,10 +24,17 @@ const (
 )
 
 var keyMap = make(map[string]int, 0)
-var keyList = make([]string, 300)
+var keyList []string
+
+func TestRSGF(t *testing.T) {
+	for i := 0; i < 50; i++ {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			TestRunResultsIterator(t)
+		})
+	}
+}
 
 func TestRunResultsIterator(t *testing.T) {
-	t.Skip("flaky")
 	ctx := context.Background()
 	kvStore := kv.StoreMessage{Store: kvtest.GetStore(ctx, t)}
 	createTestData(t, ctx, kvStore)
@@ -119,12 +127,21 @@ func TestRunResultsIterator(t *testing.T) {
 	}
 }
 
+type TestDecreasingIDGenerator struct {
+	num int
+}
+
+func (gen *TestDecreasingIDGenerator) NewRunID() string {
+	gen.num--
+	return fmt.Sprintf("%013d", gen.num)
+}
+
 func createTestData(t *testing.T, ctx context.Context, kvStore kv.StoreMessage) {
 	ctrl := gomock.NewController(t)
 	writer := mock.NewMockOutputWriter(ctrl)
 	mockStatsCollector := NewActionStatsMockCollector()
 	testSource := mock.NewMockSource(ctrl)
-	actionService := actions.NewService(ctx, actions.NewActionsKVStore(kvStore), testSource, writer, &actions.DecreasingIDGenerator{}, &mockStatsCollector, false)
+	actionService := actions.NewService(ctx, actions.NewActionsKVStore(kvStore), testSource, writer, &TestDecreasingIDGenerator{num: math.MaxInt32}, &mockStatsCollector, false)
 	msgIdx := 0
 	run := actions.RunResultData{
 		RunId:     "",
@@ -150,7 +167,7 @@ func createTestData(t *testing.T, ctx context.Context, kvStore kv.StoreMessage) 
 	for ; msgIdx < 100; msgIdx++ {
 		runID := actionService.NewRunID()
 		keyMap[runID] = msgIdx
-		keyList[msgIdx] = runID
+		keyList = append(keyList, runID)
 		key := actions.RunPath(iteratorTestRepoID, runID)
 		run.RunId = runID
 		require.NoError(t, kvStore.SetMsg(ctx, actions.PartitionKey, key, &run))
@@ -164,13 +181,12 @@ func createTestData(t *testing.T, ctx context.Context, kvStore kv.StoreMessage) 
 		}
 	}
 
-	time.Sleep(2 * time.Second) // For 'after' test
 	s := kv.SecondaryIndex{}
 	// By branch
 	for ; msgIdx < 150; msgIdx++ {
 		runID := actionService.NewRunID()
 		keyMap[runID] = msgIdx
-		keyList[msgIdx] = runID
+		keyList = append(keyList, runID)
 		key := actions.RunPath(iteratorTestRepoID, runID)
 		run.RunId = runID
 		require.NoError(t, kvStore.SetMsg(ctx, actions.PartitionKey, key, &run))
@@ -183,7 +199,7 @@ func createTestData(t *testing.T, ctx context.Context, kvStore kv.StoreMessage) 
 	for ; msgIdx < 200; msgIdx++ {
 		runID := actionService.NewRunID()
 		keyMap[runID] = msgIdx
-		keyList[msgIdx] = runID
+		keyList = append(keyList, runID)
 		key := actions.RunPath(iteratorTestRepoID, runID)
 		run.RunId = runID
 		require.NoError(t, kvStore.SetMsg(ctx, actions.PartitionKey, key, &run))
@@ -213,12 +229,21 @@ func createTestData(t *testing.T, ctx context.Context, kvStore kv.StoreMessage) 
 	badValue := "BadValue"
 	key := "aaa"
 	require.NoError(t, kvStore.Set(ctx, []byte(actions.PartitionKey), []byte(key), []byte(badValue)))
-	msgIdx++
 	keyMap[key] = msgIdx
-	keyList[msgIdx] = key
+	keyList = append(keyList, key)
 
 	require.NoError(t, kvStore.Set(ctx, []byte(actions.PartitionKey), []byte(IndexOutOfRange), []byte(badValue)))
+	key = "zzz"
 	msgIdx++
 	keyMap[key] = msgIdx
-	keyList[msgIdx] = key
+	keyList = append(keyList, key)
+
+	// reverse the list to make it sorted in ascending order
+	reverse(keyList)
+}
+
+func reverse(s []string) {
+	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
+		s[i], s[j] = s[j], s[i]
+	}
 }
