@@ -51,7 +51,10 @@ var setupCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		var authService auth.Service
+		var (
+			authService     auth.Service
+			metadataManager auth.MetadataManager
+		)
 		authLogger := logging.Default().WithField("service", "auth_service")
 		if dbParams.KVEnabled {
 			kvparams := cfg.GetKVParams()
@@ -62,11 +65,12 @@ var setupCmd = &cobra.Command{
 			}
 			storeMessage := kv.StoreMessage{Store: kvStore}
 			authService = auth.NewKVAuthService(storeMessage, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), cfg.GetAuthCacheConfig(), authLogger)
+			metadataManager = auth.NewKVMetadataManager(version.Version, cfg.GetFixedInstallationID(), kvStore)
 		} else {
 			authService = auth.NewDBAuthService(dbPool, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()), nil, cfg.GetAuthCacheConfig(), authLogger)
+			metadataManager = auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
 		}
 
-		metadataManager := auth.NewDBMetadataManager(version.Version, cfg.GetFixedInstallationID(), dbPool)
 		cloudMetadataProvider := stats.BuildMetadataProvider(logging.Default(), cfg)
 		metadata := stats.NewMetadata(ctx, logging.Default(), cfg.GetBlockstoreType(), metadataManager, cloudMetadataProvider)
 

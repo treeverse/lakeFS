@@ -7,11 +7,13 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgconn"
-	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v4"
-	"github.com/treeverse/lakefs/pkg/db"
-	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/auth/model"
+	"github.com/treeverse/lakefs/pkg/kv"
+)
+
+const (
+	InstallationIDKeyName = "installation_id"
+	SetupTimestampKeyName = "setup_timestamp"
 )
 
 type MetadataManager interface {
@@ -20,22 +22,17 @@ type MetadataManager interface {
 	Write(context.Context) (map[string]string, error)
 }
 
-type DBMetadataManager struct {
+type KVMetadataManager struct {
 	version        string
 	installationID string
-	db             db.Database
+	store          kv.Store
 }
 
-const (
-	InstallationIDKeyName = "installation_id"
-	SetupTimestampKeyName = "setup_timestamp"
-)
-
-func NewDBMetadataManager(version string, fixedInstallationID string, database db.Database) *DBMetadataManager {
-	return &DBMetadataManager{
+func NewKVMetadataManager(version string, fixedInstallationID string, store kv.Store) *KVMetadataManager {
+	return &KVMetadataManager{
 		version:        version,
 		installationID: generateInstallationID(fixedInstallationID),
-		db:             database,
+		store:          store,
 	}
 }
 
@@ -46,45 +43,33 @@ func generateInstallationID(installationID string) string {
 	return installationID
 }
 
-func insertOrGetInstallationID(tx db.Tx, installationID string) (string, error) {
-	res, err := tx.Exec(`INSERT INTO auth_installation_metadata (key_name, key_value)
-			VALUES ($1,$2)
-			ON CONFLICT DO NOTHING`,
-		InstallationIDKeyName, installationID)
+func (m *KVMetadataManager) insertOrGetInstallationID(ctx context.Context, installationID string) (string, error) {
+	err := m.store.SetIf(ctx, []byte(model.PartitionKey), []byte(InstallationIDKeyName), []byte(installationID), nil)
 	if err != nil {
+		if errors.Is(err, kv.ErrPredicateFailed) {
+			valWithPred, err := m.store.Get(ctx, []byte(model.PartitionKey), []byte(InstallationIDKeyName))
+			if err != nil {
+				return "", err
+			}
+			return string(valWithPred.Value), nil
+		}
 		return "", err
 	}
-	affected := res.RowsAffected()
-	if affected == 1 {
-		return installationID, nil
-	}
-	return getInstallationID(tx)
+	return installationID, nil
 }
 
-func getInstallationID(tx db.Tx) (string, error) {
-	var installationID string
-	err := tx.GetPrimitive(&installationID, `SELECT key_value FROM auth_installation_metadata WHERE key_name = $1`,
-		InstallationIDKeyName)
-	return installationID, err
-}
-
-func getSetupTimestamp(tx db.Tx) (time.Time, error) {
-	var value string
-	err := tx.GetPrimitive(&value, `SELECT key_value FROM auth_installation_metadata WHERE key_name = $1`,
-		SetupTimestampKeyName)
+func (m *KVMetadataManager) getSetupTimestamp(ctx context.Context) (time.Time, error) {
+	valWithPred, err := m.store.Get(ctx, []byte(model.PartitionKey), []byte(model.MetadataKeyPath(SetupTimestampKeyName)))
 	if err != nil {
 		return time.Time{}, err
 	}
-	return time.Parse(time.RFC3339, value)
+	return time.Parse(time.RFC3339, string(valWithPred.Value))
 }
 
-func writeMetadata(tx db.Tx, items map[string]string) error {
+func (m *KVMetadataManager) writeMetadata(ctx context.Context, items map[string]string) error {
 	for key, value := range items {
-		_, err := tx.Exec(`
-			INSERT INTO auth_installation_metadata (key_name, key_value)
-			VALUES ($1, $2)
-			ON CONFLICT (key_name) DO UPDATE set key_value = $2`,
-			key, value)
+		kvKey := model.MetadataKeyPath(key)
+		err := m.store.Set(ctx, []byte(model.PartitionKey), []byte(kvKey), []byte(value))
 		if err != nil {
 			return err
 		}
@@ -92,62 +77,43 @@ func writeMetadata(tx db.Tx, items map[string]string) error {
 	return nil
 }
 
-func (d *DBMetadataManager) UpdateSetupTimestamp(ctx context.Context, ts time.Time) error {
-	_, err := d.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		return nil, writeMetadata(tx, map[string]string{
-			SetupTimestampKeyName: ts.UTC().Format(time.RFC3339),
-		})
-	}, db.WithLogger(logging.Dummy()))
-	return err
+func (m *KVMetadataManager) UpdateSetupTimestamp(ctx context.Context, ts time.Time) error {
+	return m.writeMetadata(ctx, map[string]string{
+		SetupTimestampKeyName: ts.UTC().Format(time.RFC3339),
+	})
 }
 
-func (d *DBMetadataManager) IsInitialized(ctx context.Context) (bool, error) {
-	setupTimestamp, err := d.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		return getSetupTimestamp(tx)
-	}, db.WithLogger(logging.Dummy()), db.ReadOnly())
+func (m *KVMetadataManager) IsInitialized(ctx context.Context) (bool, error) {
+	setupTimestamp, err := m.getSetupTimestamp(ctx)
 	if err != nil {
-		var pgErr *pgconn.PgError
-		if errors.Is(err, pgx.ErrNoRows) ||
-			(errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UndefinedTable) {
+		if errors.Is(err, kv.ErrNotFound) {
 			return false, nil
 		}
-
 		return false, err
 	}
-
-	return !setupTimestamp.(time.Time).IsZero(), nil
+	return !setupTimestamp.IsZero(), nil
 }
 
-func (d *DBMetadataManager) Write(ctx context.Context) (map[string]string, error) {
+func (m *KVMetadataManager) Write(ctx context.Context) (map[string]string, error) {
 	metadata := make(map[string]string)
-	metadata["lakefs_version"] = d.version
+	metadata["lakefs_version"] = m.version
 	metadata["golang_version"] = runtime.Version()
 	metadata["architecture"] = runtime.GOARCH
 	metadata["os"] = runtime.GOOS
-	dbMeta, err := d.db.Metadata(ctx)
-	if err == nil {
-		for k, v := range dbMeta {
-			metadata[k] = v
-		}
+	err := m.writeMetadata(ctx, metadata)
+	if err != nil {
+		return nil, err
 	}
-	_, err = d.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		// write metadata
-		err = writeMetadata(tx, metadata)
-		if err != nil {
-			return nil, err
-		}
-		// write installation id
-		d.installationID, err = insertOrGetInstallationID(tx, d.installationID)
-		if err == nil {
-			metadata[InstallationIDKeyName] = d.installationID
-		}
+	// write installation id
+	m.installationID, err = m.insertOrGetInstallationID(ctx, m.installationID)
+	if err == nil {
+		metadata[InstallationIDKeyName] = m.installationID
+	}
 
-		// get setup timestamp
-		setupTS, err := getSetupTimestamp(tx)
-		if err == nil {
-			metadata[SetupTimestampKeyName] = setupTS.UTC().Format(time.RFC3339)
-		}
-		return nil, nil
-	}, db.WithLogger(logging.Dummy()))
+	setupTS, err := m.getSetupTimestamp(ctx)
+	if err == nil {
+		metadata[SetupTimestampKeyName] = setupTS.UTC().Format(time.RFC3339)
+	}
+
 	return metadata, err
 }
