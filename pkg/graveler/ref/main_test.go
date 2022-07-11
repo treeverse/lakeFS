@@ -50,11 +50,11 @@ func testRefManager(t *testing.T) []DBType {
 
 	tests := []DBType{
 		{
-			name:       "DB manager test",
+			name:       "DB ref manager test",
 			refManager: dbRefManager,
 		},
 		{
-			name:       "KV manager test",
+			name:       "KV ref manager test",
 			refManager: kvRefManager,
 		},
 	}

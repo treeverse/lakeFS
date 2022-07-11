@@ -785,7 +785,6 @@ func (id TagID) String() string {
 type KVGraveler struct {
 	db         *DBGraveler
 	RefManager RefManager
-	hooks      HooksHandler
 	log        logging.Logger
 }
 
@@ -793,7 +792,6 @@ func NewKVGraveler(branchLocker BranchLocker, committedManager CommittedManager,
 	return &KVGraveler{
 		db:         NewDBGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager),
 		RefManager: refManager,
-		hooks:      &HooksNoOp{},
 		log:        logging.Default().WithField("service_name", "graveler_graveler"),
 	}
 }
@@ -862,7 +860,7 @@ func (g *KVGraveler) CreateTag(ctx context.Context, repositoryID RepositoryID, t
 	}
 	storageNamespace := repo.StorageNamespace
 
-	// Check that Tag doesn't exist before running hook
+	// Check that Tag doesn't exist before running hook - Non-Atomic operation
 	_, err = g.RefManager.GetTag(ctx, repositoryID, tagID)
 	if err == nil {
 		return ErrTagAlreadyExists
@@ -871,7 +869,7 @@ func (g *KVGraveler) CreateTag(ctx context.Context, repositoryID RepositoryID, t
 		return err
 	}
 
-	preRunID := g.hooks.NewRunID()
+	preRunID := g.db.hooks.NewRunID()
 	err = g.db.hooks.PreCreateTagHook(ctx, HookRecord{
 		RunID:            preRunID,
 		StorageNamespace: storageNamespace,
@@ -894,7 +892,7 @@ func (g *KVGraveler) CreateTag(ctx context.Context, repositoryID RepositoryID, t
 		return err
 	}
 
-	postRunID := g.hooks.NewRunID()
+	postRunID := g.db.hooks.NewRunID()
 	g.db.hooks.PostCreateTagHook(ctx, HookRecord{
 		RunID:            postRunID,
 		StorageNamespace: storageNamespace,
@@ -922,7 +920,7 @@ func (g *KVGraveler) DeleteTag(ctx context.Context, repositoryID RepositoryID, t
 		return err
 	}
 
-	preRunID := g.hooks.NewRunID()
+	preRunID := g.db.hooks.NewRunID()
 	err = g.db.hooks.PreDeleteTagHook(ctx, HookRecord{
 		RunID:            preRunID,
 		StorageNamespace: storageNamespace,
@@ -945,7 +943,7 @@ func (g *KVGraveler) DeleteTag(ctx context.Context, repositoryID RepositoryID, t
 		return err
 	}
 
-	postRunID := g.hooks.NewRunID()
+	postRunID := g.db.hooks.NewRunID()
 	g.db.hooks.PostDeleteTagHook(ctx, HookRecord{
 		RunID:            postRunID,
 		StorageNamespace: storageNamespace,

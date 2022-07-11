@@ -126,6 +126,7 @@ func (m *KVManager) CreateTag(ctx context.Context, repositoryID graveler.Reposit
 
 func (m *KVManager) DeleteTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID) error {
 	tagKey := graveler.TagPath(tagID)
+	// TODO (issue 3640) align with delete tag DB - return ErrNotFound when tag does not exist
 	return m.kvStore.DeleteMsg(ctx, graveler.TagPartition(repositoryID), tagKey)
 }
 
