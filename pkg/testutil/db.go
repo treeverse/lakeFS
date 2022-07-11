@@ -33,6 +33,7 @@ import (
 )
 
 const (
+	DBName                    = "lakefs_db"
 	DBContainerTimeoutSeconds = 60 * 30 // 30 minutes
 
 	EnvKeyUseBlockAdapter = "USE_BLOCK_ADAPTER"
@@ -72,7 +73,7 @@ func GetDBInstance(pool *dockertest.Pool) (string, func()) {
 	resource, err := pool.Run("postgres", "11", []string{
 		"POSTGRES_USER=lakefs",
 		"POSTGRES_PASSWORD=lakefs",
-		"POSTGRES_DB=lakefs_db",
+		fmt.Sprintf("POSTGRES_DB=%s", DBName),
 	})
 	if err != nil {
 		log.Fatalf("Could not start postgresql: %s", err)
@@ -113,7 +114,7 @@ func GetDBInstance(pool *dockertest.Pool) (string, func()) {
 
 func formatPostgresResourceURI(resource *dockertest.Resource) string {
 	dbParams := map[string]string{
-		"POSTGRES_DB":       "lakefs_db",
+		"POSTGRES_DB":       DBName,
 		"POSTGRES_USER":     "lakefs",
 		"POSTGRES_PASSWORD": "lakefs",
 		"POSTGRES_PORT":     resource.GetPort("5432/tcp"),

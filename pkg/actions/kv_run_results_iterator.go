@@ -44,12 +44,12 @@ func NewKVRunResultIterator(ctx context.Context, store kv.StoreMessage, reposito
 
 	var it kv.MessageIterator
 	if secondary {
-		it, err = kv.NewSecondaryIterator(ctx, store.Store, (&RunResultData{}).ProtoReflect().Type(), PartitionKey, prefix, after)
+		it, err = kv.NewSecondaryIterator(ctx, store.Store, (&RunResultData{}).ProtoReflect().Type(), PartitionKey, []byte(prefix), []byte(after))
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		it, err = kv.NewPrimaryIterator(ctx, store.Store, (&RunResultData{}).ProtoReflect().Type(), PartitionKey, prefix, after)
+		it, err = kv.NewPrimaryIterator(ctx, store.Store, (&RunResultData{}).ProtoReflect().Type(), PartitionKey, []byte(prefix), []byte(after))
 		if err != nil {
 			return nil, err
 		}
