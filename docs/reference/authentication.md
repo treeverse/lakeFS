@@ -17,24 +17,24 @@ has_children: false
 
 ### User Authentication
 
-lakeFS authenticates users from a built-in authentication database, or
-optionally from a configured LDAP server.
+lakeFS authenticates users from a built-in authentication database, or,
+optionally, from a configured LDAP server.
 
 #### Built-in database
 
-The built-in authentication database is always present and active.  Use the
-Web UI at Administration / Users to create users.  Users have an access key
-`AKIA...` and an associated secret access key.  These credentials are valid
-to log into the Web UI, or to authenticate programmatic requests to the API
+The built-in authentication database is always present and active. You can use the
+Web UI at Administration / Users to create users. Users have an access key
+`AKIA...` and an associated secret access key. These credentials are valid
+for logging into the Web UI or authenticating programmatic requests to the API
 Server or the S3 Gateway.
 
 #### LDAP server
 
-Configure lakeFS to authenticate users on an LDAP server.  Once configured,
-users can additionally log into lakeFS using their credentials LDAP.  These
+Configure lakeFS to authenticate users on an LDAP server. Once configured,
+users can additionally log into lakeFS using their credentials LDAP. These
 users may then generate an access key and a secret access key on the Web UI
-at Administration / My Credentials.  lakeFS generates an internal user once
-logged in via the LDAP server.  Adding this internal user to a group allows
+at Administration / My Credentials. lakeFS generates an internal user once
+logged in via the LDAP server. Adding this internal user to a group allows
 assigning them a different policy.
 
 Configure the LDAP server using these [fields in
@@ -42,7 +42,7 @@ Configure the LDAP server using these [fields in
 
 * `server_endpoint`: the `ldaps:` (or `ldap:`) URL of the LDAP server.
 * `bind_dn`, `bind_password`: Credentials for lakeFS to use to query the
-  LDAP server for users.  These must identify a user with Basic
+  LDAP server for users. They must identify a user with Basic
   Authentication, and are used to convert a user ID attribute to a full
   user DN.
 * `default_user_group`: A group to add users the first time they log in
@@ -65,14 +65,14 @@ LDAP users log in using the following flow:
 1. Attempt to log in as internally-defined users; fail.
 1. Search the LDAP server using the control connection for the user: out of
    all users under `user_base_dn` that satisfy `user_filter`, there must be
-   a single user whose `username_attribute` was specified by the user.  Get
+   a single user whose `username_attribute` was specified by the user. Get
    their DN.
 
-   In our example this might be `uid=joebloggs,ou=Users,dc=treeverse,dc=io`
+   In our example, this may be `uid=joebloggs,ou=Users,dc=treeverse,dc=io`
    (this entry must have `objectClass: person` because of `user_filter`).
 1. Attempt to bind the received DN on the LDAP server using the password.
-1. On success, the user is authenticated!
-1. Create a new internal user with that DN if needed.  When creating a user
+1. On success, the user is authenticated.
+1. Create a new internal user with that DN if needed. When creating a user,
    add them to the internal group named `default_user_group`.
 
 ### API Server Authentication
