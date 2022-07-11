@@ -505,6 +505,69 @@ func (x *BranchProtectionRules) GetBranchPatternToBlockedActions() map[string]*B
 	return nil
 }
 
+type StagedEntry struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Key      []byte `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Identity []byte `protobuf:"bytes,2,opt,name=identity,proto3" json:"identity,omitempty"`
+	Data     []byte `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
+}
+
+func (x *StagedEntry) Reset() {
+	*x = StagedEntry{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_graveler_proto_msgTypes[7]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *StagedEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StagedEntry) ProtoMessage() {}
+
+func (x *StagedEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_graveler_proto_msgTypes[7]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StagedEntry.ProtoReflect.Descriptor instead.
+func (*StagedEntry) Descriptor() ([]byte, []int) {
+	return file_graveler_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *StagedEntry) GetKey() []byte {
+	if x != nil {
+		return x.Key
+	}
+	return nil
+}
+
+func (x *StagedEntry) GetIdentity() []byte {
+	if x != nil {
+		return x.Identity
+	}
+	return nil
+}
+
+func (x *StagedEntry) GetData() []byte {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
 var File_graveler_proto protoreflect.FileDescriptor
 
 var file_graveler_proto_rawDesc = []byte{
@@ -601,14 +664,19 @@ var file_graveler_proto_rawDesc = []byte{
 	0x61, 0x6b, 0x65, 0x66, 0x73, 0x2e, 0x67, 0x72, 0x61, 0x76, 0x65, 0x6c, 0x65, 0x72, 0x2e, 0x42,
 	0x72, 0x61, 0x6e, 0x63, 0x68, 0x50, 0x72, 0x6f, 0x74, 0x65, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x42,
 	0x6c, 0x6f, 0x63, 0x6b, 0x65, 0x64, 0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x52, 0x05, 0x76,
-	0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x2a, 0x3e, 0x0a, 0x1d, 0x42, 0x72, 0x61, 0x6e,
-	0x63, 0x68, 0x50, 0x72, 0x6f, 0x74, 0x65, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x42, 0x6c, 0x6f, 0x63,
-	0x6b, 0x65, 0x64, 0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x11, 0x0a, 0x0d, 0x53, 0x54, 0x41,
-	0x47, 0x49, 0x4e, 0x47, 0x5f, 0x57, 0x52, 0x49, 0x54, 0x45, 0x10, 0x00, 0x12, 0x0a, 0x0a, 0x06,
-	0x43, 0x4f, 0x4d, 0x4d, 0x49, 0x54, 0x10, 0x01, 0x42, 0x26, 0x5a, 0x24, 0x67, 0x69, 0x74, 0x68,
-	0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x74, 0x72, 0x65, 0x65, 0x76, 0x65, 0x72, 0x73, 0x65,
-	0x2f, 0x6c, 0x61, 0x6b, 0x65, 0x66, 0x73, 0x2f, 0x67, 0x72, 0x61, 0x76, 0x65, 0x6c, 0x65, 0x72,
-	0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0x4f, 0x0a, 0x0b, 0x53, 0x74, 0x61, 0x67,
+	0x65, 0x64, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x0c, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x1a, 0x0a, 0x08, 0x69, 0x64, 0x65,
+	0x6e, 0x74, 0x69, 0x74, 0x79, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x08, 0x69, 0x64, 0x65,
+	0x6e, 0x74, 0x69, 0x74, 0x79, 0x12, 0x12, 0x0a, 0x04, 0x64, 0x61, 0x74, 0x61, 0x18, 0x03, 0x20,
+	0x01, 0x28, 0x0c, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61, 0x2a, 0x3e, 0x0a, 0x1d, 0x42, 0x72, 0x61,
+	0x6e, 0x63, 0x68, 0x50, 0x72, 0x6f, 0x74, 0x65, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x42, 0x6c, 0x6f,
+	0x63, 0x6b, 0x65, 0x64, 0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x11, 0x0a, 0x0d, 0x53, 0x54,
+	0x41, 0x47, 0x49, 0x4e, 0x47, 0x5f, 0x57, 0x52, 0x49, 0x54, 0x45, 0x10, 0x00, 0x12, 0x0a, 0x0a,
+	0x06, 0x43, 0x4f, 0x4d, 0x4d, 0x49, 0x54, 0x10, 0x01, 0x42, 0x26, 0x5a, 0x24, 0x67, 0x69, 0x74,
+	0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x74, 0x72, 0x65, 0x65, 0x76, 0x65, 0x72, 0x73,
+	0x65, 0x2f, 0x6c, 0x61, 0x6b, 0x65, 0x66, 0x73, 0x2f, 0x67, 0x72, 0x61, 0x76, 0x65, 0x6c, 0x65,
+	0x72, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -624,7 +692,7 @@ func file_graveler_proto_rawDescGZIP() []byte {
 }
 
 var file_graveler_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_graveler_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_graveler_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_graveler_proto_goTypes = []interface{}{
 	(BranchProtectionBlockedAction)(0),     // 0: io.treeverse.lakefs.graveler.BranchProtectionBlockedAction
 	(*BranchData)(nil),                     // 1: io.treeverse.lakefs.graveler.BranchData
@@ -634,17 +702,18 @@ var file_graveler_proto_goTypes = []interface{}{
 	(*GarbageCollectionRunMetadata)(nil),   // 5: io.treeverse.lakefs.graveler.GarbageCollectionRunMetadata
 	(*BranchProtectionBlockedActions)(nil), // 6: io.treeverse.lakefs.graveler.BranchProtectionBlockedActions
 	(*BranchProtectionRules)(nil),          // 7: io.treeverse.lakefs.graveler.BranchProtectionRules
-	nil,                                    // 8: io.treeverse.lakefs.graveler.CommitData.MetadataEntry
-	nil,                                    // 9: io.treeverse.lakefs.graveler.GarbageCollectionRules.BranchRetentionDaysEntry
-	nil,                                    // 10: io.treeverse.lakefs.graveler.BranchProtectionRules.BranchPatternToBlockedActionsEntry
-	(*timestamppb.Timestamp)(nil),          // 11: google.protobuf.Timestamp
+	(*StagedEntry)(nil),                    // 8: io.treeverse.lakefs.graveler.StagedEntry
+	nil,                                    // 9: io.treeverse.lakefs.graveler.CommitData.MetadataEntry
+	nil,                                    // 10: io.treeverse.lakefs.graveler.GarbageCollectionRules.BranchRetentionDaysEntry
+	nil,                                    // 11: io.treeverse.lakefs.graveler.BranchProtectionRules.BranchPatternToBlockedActionsEntry
+	(*timestamppb.Timestamp)(nil),          // 12: google.protobuf.Timestamp
 }
 var file_graveler_proto_depIdxs = []int32{
-	11, // 0: io.treeverse.lakefs.graveler.CommitData.creation_date:type_name -> google.protobuf.Timestamp
-	8,  // 1: io.treeverse.lakefs.graveler.CommitData.metadata:type_name -> io.treeverse.lakefs.graveler.CommitData.MetadataEntry
-	9,  // 2: io.treeverse.lakefs.graveler.GarbageCollectionRules.branch_retention_days:type_name -> io.treeverse.lakefs.graveler.GarbageCollectionRules.BranchRetentionDaysEntry
+	12, // 0: io.treeverse.lakefs.graveler.CommitData.creation_date:type_name -> google.protobuf.Timestamp
+	9,  // 1: io.treeverse.lakefs.graveler.CommitData.metadata:type_name -> io.treeverse.lakefs.graveler.CommitData.MetadataEntry
+	10, // 2: io.treeverse.lakefs.graveler.GarbageCollectionRules.branch_retention_days:type_name -> io.treeverse.lakefs.graveler.GarbageCollectionRules.BranchRetentionDaysEntry
 	0,  // 3: io.treeverse.lakefs.graveler.BranchProtectionBlockedActions.value:type_name -> io.treeverse.lakefs.graveler.BranchProtectionBlockedAction
-	10, // 4: io.treeverse.lakefs.graveler.BranchProtectionRules.branch_pattern_to_blocked_actions:type_name -> io.treeverse.lakefs.graveler.BranchProtectionRules.BranchPatternToBlockedActionsEntry
+	11, // 4: io.treeverse.lakefs.graveler.BranchProtectionRules.branch_pattern_to_blocked_actions:type_name -> io.treeverse.lakefs.graveler.BranchProtectionRules.BranchPatternToBlockedActionsEntry
 	6,  // 5: io.treeverse.lakefs.graveler.BranchProtectionRules.BranchPatternToBlockedActionsEntry.value:type_name -> io.treeverse.lakefs.graveler.BranchProtectionBlockedActions
 	6,  // [6:6] is the sub-list for method output_type
 	6,  // [6:6] is the sub-list for method input_type
@@ -743,6 +812,18 @@ func file_graveler_proto_init() {
 				return nil
 			}
 		}
+		file_graveler_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*StagedEntry); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -750,7 +831,7 @@ func file_graveler_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_graveler_proto_rawDesc,
 			NumEnums:      1,
-			NumMessages:   10,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

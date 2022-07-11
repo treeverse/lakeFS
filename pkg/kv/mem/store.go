@@ -43,17 +43,17 @@ func (d *Driver) Open(_ context.Context, _ kvparams.KV) (kv.Store, error) {
 }
 
 func combinedKey(partitionKey, key []byte) string {
-	return fmt.Sprintf("%s_%s", partitionKey, key)
+	return kv.FormatPath(string(partitionKey), string(key))
 }
 
 func keyFromCombinedKey(combinedKey string) []byte {
 	//nolint:gomnd
-	return []byte(strings.SplitN(combinedKey, "_", 2)[1])
+	return []byte(strings.SplitN(combinedKey, kv.PathDelimiter, 2)[1])
 }
 
 func partitionKeyFromCombinedKey(combinedKey string) []byte {
 	//nolint:gomnd
-	return []byte(strings.SplitN(combinedKey, "_", 2)[0])
+	return []byte(strings.SplitN(combinedKey, kv.PathDelimiter, 2)[0])
 }
 
 func (s *Store) Get(_ context.Context, partitionKey, key []byte) (*kv.ValueWithPredicate, error) {

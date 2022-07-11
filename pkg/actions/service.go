@@ -148,8 +148,8 @@ func TasksPath(repoID, runID string) string {
 	return kv.FormatPath(baseActionsPath(repoID), tasksPrefix, runID)
 }
 
-func RunPath(repoID, runID string) string {
-	return kv.FormatPath(baseActionsPath(repoID), runsPrefix, runID)
+func RunPath(repoID, runID string) []byte {
+	return []byte(kv.FormatPath(baseActionsPath(repoID), runsPrefix, runID))
 }
 
 func byBranchPath(repoID, branchID string) string {
@@ -160,12 +160,12 @@ func byCommitPath(repoID, commitID string) string {
 	return kv.FormatPath(baseActionsPath(repoID), commitPrefix, commitID)
 }
 
-func RunByBranchPath(repoID, branchID, runID string) string {
-	return kv.FormatPath(byBranchPath(repoID, branchID), runID)
+func RunByBranchPath(repoID, branchID, runID string) []byte {
+	return []byte(kv.FormatPath(byBranchPath(repoID, branchID), runID))
 }
 
-func RunByCommitPath(repoID, commitID, runID string) string {
-	return kv.FormatPath(byCommitPath(repoID, commitID), runID)
+func RunByCommitPath(repoID, commitID, runID string) []byte {
+	return []byte(kv.FormatPath(byCommitPath(repoID, commitID), runID))
 }
 
 type Service interface {

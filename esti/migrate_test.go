@@ -80,6 +80,7 @@ const (
 	migrateMultipartsFile     = "multipart_file"
 	migrateMultipartsFilepath = mainBranch + "/" + migrateMultipartsFile
 	migrateStateRepoName      = "migrate"
+	migrateStateBranch        = "main"
 	migrateStateObjectPath    = "state.json"
 	migratePrePartsCount      = 3
 	migratePostPartsCount     = 2
@@ -172,7 +173,7 @@ func saveStateInLakeFS(t *testing.T) {
 	// file is big - so we better use multipart writing here.
 	resp, err := svc.CreateMultipartUpload(&s3.CreateMultipartUploadInput{
 		Bucket: aws.String(migrateStateRepoName),
-		Key:    aws.String("main/" + migrateStateObjectPath),
+		Key:    aws.String(migrateStateBranch + "/" + migrateStateObjectPath),
 	})
 	require.NoError(t, err, "failed to create multipart upload for state.json")
 
@@ -187,6 +188,10 @@ func saveStateInLakeFS(t *testing.T) {
 	completedParts := uploadMultipartParts(t, logger, resp, parts, 0)
 	_, err = uploadMultipartComplete(svc, resp, completedParts)
 	require.NoError(t, err, "writing state file")
+	_, err = client.CommitWithResponse(ctx, migrateStateRepoName, migrateStateBranch, &api.CommitParams{}, api.CommitJSONRequestBody{
+		Message: "Save state file",
+	})
+	require.NoError(t, err, "commit state file")
 }
 
 func readStateFromLakeFS(t *testing.T) {

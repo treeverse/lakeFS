@@ -8,7 +8,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/ident"
-	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -780,16 +779,16 @@ func (id TagID) String() string {
 }
 
 type KVGraveler struct {
-	db      *DBGraveler
-	kvStore *kv.StoreMessage
-	log     logging.Logger
+	db             *DBGraveler
+	StagingManager StagingManager
+	log            logging.Logger
 }
 
-func NewKVGraveler(kvStore *kv.StoreMessage, branchLocker BranchLocker, committedManager CommittedManager, stagingManager StagingManager, refManager RefManager, gcManager GarbageCollectionManager, protectedBranchesManager ProtectedBranchesManager) *KVGraveler {
+func NewKVGraveler(branchLocker BranchLocker, committedManager CommittedManager, stagingManager StagingManager, refManager RefManager, gcManager GarbageCollectionManager, protectedBranchesManager ProtectedBranchesManager) *KVGraveler {
 	return &KVGraveler{
-		db:      NewDBGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager),
-		kvStore: kvStore,
-		log:     logging.Default().WithField("service_name", "graveler_graveler"),
+		db:             NewDBGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager),
+		StagingManager: stagingManager,
+		log:            logging.Default().WithField("service_name", "graveler_graveler"),
 	}
 }
 

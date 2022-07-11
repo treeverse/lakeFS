@@ -1,4 +1,17 @@
 # Changelog
+## v0.69.0 - 2022-07-11
+
+Note: this version contains performance and security improvements to the authentication mechanism.
+After upgrading to this version. all current browser sessions will become invalid and users will have to login again.
+
+What's new:
+- OIDC support: manage lakeFS users externally (#3452)
+- Choose merge strategy in the UI (#3581)
+- Templating capability in the lakeFS web server (#3600)
+- Visibility: show branch creation errors in the UI (#3604)
+
+Bug fixes:
+- When a revert results in a conflict, return code 409 instead of 500 (#3538)
 
 ## v0.68.0 - 2022-06-21
 

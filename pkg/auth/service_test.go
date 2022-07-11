@@ -971,7 +971,7 @@ func TestAuthService_DeleteGroupWithRelations(t *testing.T) {
 	tests := setupService(t, ctx)
 
 	for _, tt := range tests {
-		// create initial data set and verify users groups and policies are create and related as expected
+		// create initial data set and verify users groups and policies are created and related as expected
 		createInitialDataSet(t, ctx, tt.authService, userNames, groupNames, policyNames)
 		groups, _, err := tt.authService.ListGroups(ctx, &model.PaginationParams{Amount: 100})
 		require.NoError(t, err)

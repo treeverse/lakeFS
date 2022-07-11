@@ -3,104 +3,77 @@ package staging
 import (
 	"context"
 
-	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
-	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/kv"
 )
 
 type Iterator struct {
-	ctx context.Context
-	db  db.Database
-	log logging.Logger
-	st  graveler.StagingToken
-
-	// initPhase turns true when the iterator was created or `SeekGE()` was called.
-	// initPhase turns false when Next() is called.
-	// When initPhase is true, Value() should return nil.
-	initPhase   bool
-	idxInBuffer int
-	err         error
-	dbHasNext   bool
-	buffer      []*graveler.ValueRecord
-	nextFrom    graveler.Key
-	batchSize   int
+	ctx   context.Context
+	store kv.StoreMessage
+	itr   *kv.PartitionIterator
+	st    graveler.StagingToken
+	entry *graveler.ValueRecord
+	err   error
 }
 
 // NewStagingIterator initiates the staging iterator with a batchSize
-func NewStagingIterator(ctx context.Context, db db.Database, log logging.Logger, st graveler.StagingToken, batchSize int) *Iterator {
-	bs := batchSize
-	if bs <= 0 {
-		bs = graveler.ListingDefaultBatchSize
-	} else if bs > graveler.ListingMaxBatchSize {
-		bs = graveler.ListingMaxBatchSize
+func NewStagingIterator(ctx context.Context, store kv.StoreMessage, st graveler.StagingToken) (*Iterator, error) {
+	itr, err := kv.NewPartitionIterator(ctx, store.Store, (&graveler.StagedEntry{}).ProtoReflect().Type(), string(st))
+	if err != nil {
+		return nil, err
 	}
-	return &Iterator{ctx: ctx, st: st, dbHasNext: true, initPhase: true, db: db, log: log, nextFrom: make([]byte, 0), batchSize: bs}
+	return &Iterator{
+		ctx:   ctx,
+		store: store,
+		itr:   itr,
+		st:    st,
+	}, nil
 }
 
 func (s *Iterator) Next() bool {
-	if s.err != nil {
+	if s.Err() != nil {
 		return false
 	}
-	s.initPhase = false
-	s.idxInBuffer++
-	if s.idxInBuffer < len(s.buffer) {
-		return true
-	}
-	if !s.dbHasNext {
+	if !s.itr.Next() {
+		s.entry = nil
 		return false
 	}
-	return s.loadBuffer()
+	entry := s.itr.Entry()
+	if entry == nil {
+		s.err = graveler.ErrInvalid
+		return false
+	}
+	key := entry.Value.(*graveler.StagedEntry).Key
+	value := valueFromProto(entry.Value.(*graveler.StagedEntry))
+	s.entry = &graveler.ValueRecord{
+		Key:   key,
+		Value: value,
+	}
+	return true
 }
 
 func (s *Iterator) SeekGE(key graveler.Key) {
-	s.buffer = nil
-	s.err = nil
-	s.idxInBuffer = 0
-	s.nextFrom = key
-	s.dbHasNext = true
-	s.initPhase = true
+	s.itr.SeekGE(key)
 }
 
 func (s *Iterator) Value() *graveler.ValueRecord {
-	if s.err != nil || s.idxInBuffer >= len(s.buffer) {
+	if s.Err() != nil {
 		return nil
 	}
-	if s.initPhase {
-		return nil
+	// Tombstone handling
+	if s.entry != nil && s.entry.Value != nil && s.entry.Identity == nil {
+		s.entry.Value = nil
 	}
-	value := s.buffer[s.idxInBuffer]
-	if value.Value != nil && value.Identity == nil {
-		value.Value = nil
-	}
-	return value
+	return s.entry
 }
 
 func (s *Iterator) Err() error {
+	if s.err == nil {
+		return s.itr.Err()
+	}
 	return s.err
 }
 
 func (s *Iterator) Close() {
-}
-
-func (s *Iterator) loadBuffer() bool {
-	queryResult, err := s.db.Transact(s.ctx, func(tx db.Tx) (interface{}, error) {
-		var res []*graveler.ValueRecord
-		err := tx.Select(&res, "SELECT key, identity, data "+
-			"FROM graveler_staging_kv WHERE staging_token=$1 AND key >= $2 ORDER BY key LIMIT $3", s.st, s.nextFrom, s.batchSize+1)
-		return res, err
-	}, db.WithLogger(s.log), db.ReadOnly())
-	if err != nil {
-		s.err = err
-		return false
-	}
-	values := queryResult.([]*graveler.ValueRecord)
-	s.idxInBuffer = 0
-	if len(values) == s.batchSize+1 {
-		s.nextFrom = values[len(values)-1].Key
-		s.buffer = values[:len(values)-1]
-		return true
-	}
-	s.dbHasNext = false
-	s.buffer = values
-	return len(values) > 0
+	s.itr.Close()
 }

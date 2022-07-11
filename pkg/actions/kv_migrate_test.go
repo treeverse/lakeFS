@@ -104,7 +104,7 @@ func validateTestData(t *testing.T, ctx context.Context, service actions.Service
 			_, err = store.GetMsg(ctx, actions.PartitionKey, rk, &secondary)
 			require.NoError(t, err)
 			r := actions.RunResultData{}
-			_, err = store.GetMsg(ctx, actions.PartitionKey, string(secondary.PrimaryKey), &r)
+			_, err = store.GetMsg(ctx, actions.PartitionKey, secondary.PrimaryKey, &r)
 			require.NoError(t, err)
 			require.Equal(t, run, actions.RunResultFromProto(&r))
 		}
@@ -114,7 +114,7 @@ func validateTestData(t *testing.T, ctx context.Context, service actions.Service
 			_, err = store.GetMsg(ctx, actions.PartitionKey, rk, &secondary)
 			require.NoError(t, err)
 			r := actions.RunResultData{}
-			_, err = store.GetMsg(ctx, actions.PartitionKey, string(secondary.PrimaryKey), &r)
+			_, err = store.GetMsg(ctx, actions.PartitionKey, secondary.PrimaryKey, &r)
 			require.Equal(t, run, actions.RunResultFromProto(&r))
 		}
 
