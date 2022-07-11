@@ -14,7 +14,7 @@ has_children: false
 
 ## Installing the lakectl command locally
 
-`lakectl` is distributed as a single binary, with no external dependencies - and is available for MacOS, Windows and Linux.
+`lakectl` is distributed as a single binary, with no external dependencies - and is available for MacOS, Windows, and Linux.
 
 [Download lakectl](../index.md#downloads){: .btn .btn-green target="_blank"}
 
@@ -32,23 +32,24 @@ lakectl config
 # Server endpoint URL: http://localhost:8000/api/v1
 ```
 
-This will setup a `$HOME/.lakectl.yaml` file with the credentials and API endpoint you've supplied.
+This will set up a `$HOME/.lakectl.yaml` file with the credentials and API endpoint you've supplied.
 When setting up a new installation and creating initial credentials (see [Quick start](../quickstart/index.md)), the UI
 will provide a link to download a preconfigured configuration file for you.
 
 `lakectl` configuration items can each be controlled by an environment variable. The variable name will have a prefix of
 *LAKECTL_*, followed by the name of the configuration, replacing every '.' with a '_'. Example: `LAKECTL_SERVER_ENDPOINT_URL` 
 controls `server.endpoint_url`.
+
 ### lakectl
 
-A cli tool to explore manage and work with lakeFS
+A CLI tool to explore manage and work with lakeFS.
 
 #### Synopsis
 {:.no_toc}
 
-lakeFS is data lake management solution, allowing Git-like semantics over common object stores
+lakeFS is data lake management solution, allowing Git-like semantics over common object stores.
 
-lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environment
+lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environment.
 
 #### Options
 {:.no_toc}
@@ -115,7 +116,7 @@ lakectl abuse create-branches <source ref uri> [flags]
 
 ### lakectl abuse help
 
-Help about any command
+Help about any command.
 
 #### Synopsis
 {:.no_toc}
@@ -158,7 +159,7 @@ lakectl abuse random-read <source ref uri> [flags]
 
 ### lakectl abuse random-write
 
-Generate random writes to the source branch
+Generate random writes to the source branch.
 
 ```
 lakectl abuse random-write <source branch uri> [flags]
@@ -178,7 +179,7 @@ lakectl abuse random-write <source branch uri> [flags]
 
 ### lakectl actions
 
-Manage Actions commands
+Manage Actions commands.
 
 #### Options
 {:.no_toc}
@@ -191,7 +192,7 @@ Manage Actions commands
 
 ### lakectl actions help
 
-Help about any command
+Help about any command.
 
 #### Synopsis
 {:.no_toc}
@@ -214,7 +215,7 @@ lakectl actions help [command] [flags]
 
 ### lakectl actions runs
 
-Explore runs information
+Explore runs information.
 
 #### Options
 {:.no_toc}
@@ -227,12 +228,12 @@ Explore runs information
 
 ### lakectl actions runs describe
 
-Describe run results
+Describe run results.
 
 #### Synopsis
 {:.no_toc}
 
-Show information about the run and all the hooks that were executed as part of the run
+Show information about the run and all the hooks that were executed as part of the run.
 
 ```
 lakectl actions runs describe [flags]
@@ -258,7 +259,7 @@ lakectl actions runs describe lakefs://<repository> <run_id>
 
 ### lakectl actions runs help
 
-Help about any command
+Help about any command.
 
 #### Synopsis
 {:.no_toc}
@@ -281,12 +282,12 @@ lakectl actions runs help [command] [flags]
 
 ### lakectl actions runs list
 
-List runs
+List runs.
 
 #### Synopsis
 {:.no_toc}
 
-List all runs on a repository optional filter by branch or commit
+List all runs on a repository optional filter by branch or commit.
 
 ```
 lakectl actions runs list [flags]
@@ -314,12 +315,12 @@ lakectl actions runs list lakefs://<repository> [--branch <branch>] [--commit <c
 
 ### lakectl actions validate
 
-Validate action file
+Validate action file.
 
 #### Synopsis
 {:.no_toc}
 
-Tries to parse the input action file as lakeFS action file
+Tries to parse the input action file as lakeFS action file.
 
 ```
 lakectl actions validate [flags]
@@ -343,7 +344,7 @@ lakectl actions validate <path>
 
 ### lakectl annotate
 
-List entries under a given path, annotating each with the latest modifying commit
+List entries under a given path, annotating each with the latest modifying commit.
 
 ```
 lakectl annotate <path uri> [flags]
@@ -361,12 +362,12 @@ lakectl annotate <path uri> [flags]
 
 ### lakectl auth
 
-Manage authentication and authorization
+Manage authentication and authorization.
 
 #### Synopsis
 {:.no_toc}
 
-manage authentication and authorization including users, groups and policies
+manage authentication and authorization including users, groups and policies.
 
 #### Options
 {:.no_toc}
@@ -379,7 +380,7 @@ manage authentication and authorization including users, groups and policies
 
 ### lakectl auth groups
 
-Manage groups
+Manage groups.
 
 #### Options
 {:.no_toc}
@@ -392,7 +393,7 @@ Manage groups
 
 ### lakectl auth groups create
 
-Create a group
+Create a group.
 
 ```
 lakectl auth groups create [flags]
@@ -410,7 +411,7 @@ lakectl auth groups create [flags]
 
 ### lakectl auth groups delete
 
-Delete a group
+Delete a group.
 
 ```
 lakectl auth groups delete [flags]
@@ -428,7 +429,7 @@ lakectl auth groups delete [flags]
 
 ### lakectl auth groups help
 
-Help about any command
+Help about any command.
 
 #### Synopsis
 {:.no_toc}
@@ -470,7 +471,7 @@ lakectl auth groups list [flags]
 
 ### lakectl auth groups members
 
-Manage group user memberships
+Manage group user memberships.
 
 #### Options
 {:.no_toc}
@@ -483,7 +484,7 @@ Manage group user memberships
 
 ### lakectl auth groups members add
 
-Add a user to a group
+Add a user to a group.
 
 ```
 lakectl auth groups members add [flags]
@@ -502,7 +503,7 @@ lakectl auth groups members add [flags]
 
 ### lakectl auth groups members help
 
-Help about any command
+Help about any command.
 
 #### Synopsis
 {:.no_toc}
@@ -525,7 +526,7 @@ lakectl auth groups members help [command] [flags]
 
 ### lakectl auth groups members list
 
-List users in a group
+List users in a group.
 
 ```
 lakectl auth groups members list [flags]
@@ -545,7 +546,7 @@ lakectl auth groups members list [flags]
 
 ### lakectl auth groups members remove
 
-Remove a user from a group
+Remove a user from a group.
 
 ```
 lakectl auth groups members remove [flags]
@@ -564,7 +565,7 @@ lakectl auth groups members remove [flags]
 
 ### lakectl auth groups policies
 
-Manage group policies
+Manage group policies.
 
 #### Options
 {:.no_toc}
@@ -577,7 +578,7 @@ Manage group policies
 
 ### lakectl auth groups policies attach
 
-Attach a policy to a group
+Attach a policy to a group.
 
 ```
 lakectl auth groups policies attach [flags]
@@ -596,7 +597,7 @@ lakectl auth groups policies attach [flags]
 
 ### lakectl auth groups policies detach
 
-Detach a policy from a group
+Detach a policy from a group.
 
 ```
 lakectl auth groups policies detach [flags]
@@ -615,7 +616,7 @@ lakectl auth groups policies detach [flags]
 
 ### lakectl auth groups policies help
 
-Help about any command
+Help about any command.
 
 #### Synopsis
 {:.no_toc}
@@ -638,7 +639,7 @@ lakectl auth groups policies help [command] [flags]
 
 ### lakectl auth groups policies list
 
-List policies for the given group
+List policies for the given group.
 
 ```
 lakectl auth groups policies list [flags]
@@ -658,7 +659,7 @@ lakectl auth groups policies list [flags]
 
 ### lakectl auth help
 
-Help about any command
+Help about any command.
 
 #### Synopsis
 {:.no_toc}
@@ -681,7 +682,7 @@ lakectl auth help [command] [flags]
 
 ### lakectl auth policies
 
-Manage policies
+Manage policies.
 
 #### Options
 {:.no_toc}
@@ -694,7 +695,7 @@ Manage policies
 
 ### lakectl auth policies create
 
-Create a policy
+Create a policy.
 
 ```
 lakectl auth policies create [flags]
@@ -713,7 +714,7 @@ lakectl auth policies create [flags]
 
 ### lakectl auth policies delete
 
-Delete a policy
+Delete a policy.
 
 ```
 lakectl auth policies delete [flags]
@@ -731,7 +732,7 @@ lakectl auth policies delete [flags]
 
 ### lakectl auth policies help
 
-Help about any command
+Help about any command.
 
 #### Synopsis
 {:.no_toc}
@@ -754,7 +755,7 @@ lakectl auth policies help [command] [flags]
 
 ### lakectl auth policies list
 
-List policies
+List policies.
 
 ```
 lakectl auth policies list [flags]
@@ -773,7 +774,7 @@ lakectl auth policies list [flags]
 
 ### lakectl auth policies show
 
-Show a policy
+Show a policy.
 
 ```
 lakectl auth policies show [flags]
@@ -791,7 +792,7 @@ lakectl auth policies show [flags]
 
 ### lakectl auth users
 
-Manage users
+Manage users.
 
 #### Options
 {:.no_toc}
@@ -804,7 +805,7 @@ Manage users
 
 ### lakectl auth users create
 
-Create a user
+Create a user.
 
 ```
 lakectl auth users create [flags]
@@ -822,7 +823,7 @@ lakectl auth users create [flags]
 
 ### lakectl auth users credentials
 
-Manage user credentials
+Manage user credentials.
 
 #### Options
 {:.no_toc}
@@ -835,7 +836,7 @@ Manage user credentials
 
 ### lakectl auth users credentials create
 
-Create user credentials
+Create user credentials.
 
 ```
 lakectl auth users credentials create [flags]
@@ -853,7 +854,7 @@ lakectl auth users credentials create [flags]
 
 ### lakectl auth users credentials delete
 
-Delete user credentials
+Delete user credentials.
 
 ```
 lakectl auth users credentials delete [flags]
@@ -872,7 +873,7 @@ lakectl auth users credentials delete [flags]
 
 ### lakectl auth users credentials help
 
-Help about any command
+Help about any command.
 
 #### Synopsis
 {:.no_toc}
@@ -895,7 +896,7 @@ lakectl auth users credentials help [command] [flags]
 
 ### lakectl auth users credentials list
 
-List user credentials
+List user credentials.
 
 ```
 lakectl auth users credentials list [flags]
@@ -915,7 +916,7 @@ lakectl auth users credentials list [flags]
 
 ### lakectl auth users delete
 
-Delete a user
+Delete a user.
 
 ```
 lakectl auth users delete [flags]
@@ -933,7 +934,7 @@ lakectl auth users delete [flags]
 
 ### lakectl auth users groups
 
-Manage user groups
+Manage user groups.
 
 #### Options
 {:.no_toc}
@@ -946,7 +947,7 @@ Manage user groups
 
 ### lakectl auth users groups help
 
-Help about any command
+Help about any command.
 
 #### Synopsis
 {:.no_toc}
@@ -969,7 +970,7 @@ lakectl auth users groups help [command] [flags]
 
 ### lakectl auth users groups list
 
-List groups for the given user
+List groups for the given user.
 
 ```
 lakectl auth users groups list [flags]
@@ -989,7 +990,7 @@ lakectl auth users groups list [flags]
 
 ### lakectl auth users help
 
-Help about any command
+Help about any command.
 
 #### Synopsis
 {:.no_toc}
@@ -1012,7 +1013,7 @@ lakectl auth users help [command] [flags]
 
 ### lakectl auth users list
 
-List users
+List users.
 
 ```
 lakectl auth users list [flags]
@@ -1031,7 +1032,7 @@ lakectl auth users list [flags]
 
 ### lakectl auth users policies
 
-Manage user policies
+Manage user policies.
 
 #### Options
 {:.no_toc}
@@ -1044,7 +1045,7 @@ Manage user policies
 
 ### lakectl auth users policies attach
 
-Attach a policy to a user
+Attach a policy to a user.
 
 ```
 lakectl auth users policies attach [flags]
@@ -1063,7 +1064,7 @@ lakectl auth users policies attach [flags]
 
 ### lakectl auth users policies detach
 
-Detach a policy from a user
+Detach a policy from a user.
 
 ```
 lakectl auth users policies detach [flags]
@@ -1082,7 +1083,7 @@ lakectl auth users policies detach [flags]
 
 ### lakectl auth users policies help
 
-Help about any command
+Help about any command.
 
 #### Synopsis
 {:.no_toc}
@@ -1105,7 +1106,7 @@ lakectl auth users policies help [command] [flags]
 
 ### lakectl auth users policies list
 
-List policies for the given user
+List policies for the given user.
 
 ```
 lakectl auth users policies list [flags]
@@ -1126,12 +1127,12 @@ lakectl auth users policies list [flags]
 
 ### lakectl branch
 
-Create and manage branches within a repository
+Create and manage branches within a repository.
 
 #### Synopsis
 {:.no_toc}
 
-Create delete and list branches within a lakeFS repository
+Create delete and list branches within a lakeFS repository.
 
 #### Options
 {:.no_toc}
@@ -1144,7 +1145,7 @@ Create delete and list branches within a lakeFS repository
 
 ### lakectl branch create
 
-Create a new branch in a repository
+Create a new branch in a repository.
 
 ```
 lakectl branch create <branch uri> -s <source ref uri> [flags]
@@ -1169,7 +1170,7 @@ lakectl branch create lakefs://example-repo/new-branch -s lakefs://example-repo/
 
 ### lakectl branch delete
 
-Delete a branch in a repository, along with its uncommitted changes (CAREFUL)
+Delete a branch in a repository, along with its uncommitted changes (CAREFUL).
 
 ```
 lakectl branch delete <branch uri> [flags]
@@ -1194,7 +1195,7 @@ lakectl branch delete lakefs://example-repo/example-branch
 
 ### lakectl branch help
 
-Help about any command
+Help about any command.
 
 #### Synopsis
 {:.no_toc}
@@ -1217,7 +1218,7 @@ lakectl branch help [command] [flags]
 
 ### lakectl branch list
 
-List branches in a repository
+List branches in a repository.
 
 ```
 lakectl branch list <repository uri> [flags]
@@ -1243,12 +1244,12 @@ lakectl branch list lakefs://<repository>
 
 ### lakectl branch reset
 
-Reset uncommitted changes - all of them, or by path
+Reset uncommitted changes - all of them, or by path.
 
 #### Synopsis
 {:.no_toc}
 
-reset changes.  There are four different ways to reset changes:
+reset changes. There are three different ways to reset changes:
   1. reset all uncommitted changes - reset lakefs://myrepo/main 
   2. reset uncommitted changes under specific path - reset lakefs://myrepo/main --prefix path
   3. reset uncommitted changes for specific object - reset lakefs://myrepo/main --object path
@@ -1278,12 +1279,12 @@ lakectl branch reset lakefs://example-repo/example-branch
 
 ### lakectl branch revert
 
-Given a commit, record a new commit to reverse the effect of this commit
+Given a commit, record a new commit to reverse the effect of this commit.
 
 #### Synopsis
 {:.no_toc}
 
-The commits will be reverted in left-to-right order
+The commits will be reverted in left-to-right order.
 
 ```
 lakectl branch revert <branch uri> <commit ref to revert> [<more commits>...] [flags]
@@ -1312,7 +1313,7 @@ lakectl branch revert lakefs://example-repo/example-branch commitA
 
 ### lakectl branch show
 
-Show branch latest commit reference
+Show branch latest commit reference.
 
 ```
 lakectl branch show <branch uri> [flags]
@@ -1336,7 +1337,7 @@ lakectl branch show lakefs://example-repo/example-branch
 
 ### lakectl branch-protect
 
-Create and manage branch protection rules
+Create and manage branch protection rules.
 
 #### Synopsis
 {:.no_toc}
@@ -1354,12 +1355,12 @@ Define branch protection rules to prevent direct changes. Changes to protected b
 
 ### lakectl branch-protect add
 
-Add a branch protection rule
+Add a branch protection rule.
 
 #### Synopsis
 {:.no_toc}
 
-Add a branch protection rule for a given branch name pattern
+Add a branch protection rule for a given branch name pattern.
 
 ```
 lakectl branch-protect add <repo uri> <pattern> [flags]
@@ -1383,12 +1384,12 @@ lakectl branch-protect add lakefs://<repository> 'stable_*'
 
 ### lakectl branch-protect delete
 
-Delete a branch protection rule
+Delete a branch protection rule.
 
 #### Synopsis
 {:.no_toc}
 
-Delete a branch protection rule for a given branch name pattern
+Delete a branch protection rule for a given branch name pattern.
 
 ```
 lakectl branch-protect delete <repo uri> <pattern> [flags]
@@ -1412,7 +1413,7 @@ lakectl branch-protect delete lakefs://<repository> stable_*
 
 ### lakectl branch-protect help
 
-Help about any command
+Help about any command.
 
 #### Synopsis
 {:.no_toc}
@@ -1435,7 +1436,7 @@ lakectl branch-protect help [command] [flags]
 
 ### lakectl branch-protect list
 
-List all branch protection rules
+List all branch protection rules.
 
 ```
 lakectl branch-protect list <repo uri> [flags]
@@ -1508,7 +1509,7 @@ lakectl cat-sst <sst-file> [flags]
 
 ### lakectl commit
 
-Commit changes on a given branch
+Commit changes on a given branch.
 
 ```
 lakectl commit <branch uri> [flags]
@@ -1528,7 +1529,7 @@ lakectl commit <branch uri> [flags]
 
 ### lakectl completion
 
-Generate completion script
+Generate completion script.
 
 #### Synopsis
 {:.no_toc}
@@ -1629,7 +1630,7 @@ Integration with dbt commands
 
 ### lakectl dbt create-branch-schema
 
-Creates a new schema dedicated for branch and clones all dbt models to new schema
+Creates a new schema dedicated for branch and clones all dbt models to new schema.
 
 ```
 lakectl dbt create-branch-schema [flags]
@@ -1661,7 +1662,7 @@ lakectl dbt create-branch-schema --branch <branch-name>
 
 ### lakectl dbt generate-schema-macro
 
-generates the a macro allowing lakectl to run dbt on dynamic schemas
+generates the a macro allowing lakectl to run dbt on dynamic schemas.
 
 ```
 lakectl dbt generate-schema-macro [flags]
@@ -1686,7 +1687,7 @@ lakectl dbt generate-schema-macro
 
 ### lakectl dbt help
 
-Help about any command
+Help about any command.
 
 #### Synopsis
 {:.no_toc}
@@ -1709,7 +1710,7 @@ lakectl dbt help [command] [flags]
 
 ### lakectl diff
 
-Show changes between two commits, or the currently uncommitted changes
+Show changes between two commits, or the currently uncommitted changes.
 
 ```
 lakectl diff <ref uri> [ref uri] [flags]
@@ -1769,7 +1770,7 @@ lakectl docs [outfile] [flags]
 
 ### lakectl doctor
 
-Run a basic diagnosis of the LakeFS configuration
+Run a basic diagnosis of the LakeFS configuration.
 
 ```
 lakectl doctor [flags]
@@ -1786,7 +1787,7 @@ lakectl doctor [flags]
 
 ### lakectl fs
 
-View and manipulate objects
+View and manipulate objects.
 
 #### Options
 {:.no_toc}
@@ -1799,7 +1800,7 @@ View and manipulate objects
 
 ### lakectl fs cat
 
-Dump content of object to stdout
+Dump content of object to stdout.
 
 ```
 lakectl fs cat <path uri> [flags]
@@ -1809,7 +1810,7 @@ lakectl fs cat <path uri> [flags]
 {:.no_toc}
 
 ```
-  -d, --direct   read directly from backing store (faster but requires more credentials)
+  -d, --direct   read directly from backing store (faster, but requires more credentials)
   -h, --help     help for cat
 ```
 
@@ -1817,7 +1818,7 @@ lakectl fs cat <path uri> [flags]
 
 ### lakectl fs help
 
-Help about any command
+Help about any command.
 
 #### Synopsis
 {:.no_toc}
@@ -1840,7 +1841,7 @@ lakectl fs help [command] [flags]
 
 ### lakectl fs ls
 
-List entries under a given tree
+List entries under a given tree.
 
 ```
 lakectl fs ls <path uri> [flags]
@@ -1858,7 +1859,7 @@ lakectl fs ls <path uri> [flags]
 
 ### lakectl fs rm
 
-Delete object
+Delete object.
 
 ```
 lakectl fs rm <path uri> [flags]
@@ -1880,7 +1881,7 @@ lakectl fs rm <path uri> [flags]
 **note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
 {: .note .note-warning }
 
-Stage a reference to an existing object, to be managed in lakeFS
+Stage a reference to an existing object, to be managed in lakeFS.
 
 ```
 lakectl fs stage <path uri> [flags]
@@ -1903,7 +1904,7 @@ lakectl fs stage <path uri> [flags]
 
 ### lakectl fs stat
 
-View object metadata
+View object metadata.
 
 ```
 lakectl fs stat <path uri> [flags]
@@ -1920,7 +1921,7 @@ lakectl fs stat <path uri> [flags]
 
 ### lakectl fs upload
 
-Upload a local file to the specified URI
+Upload a local file to the specified URI.
 
 ```
 lakectl fs upload <path uri> [flags]
@@ -1941,7 +1942,7 @@ lakectl fs upload <path uri> [flags]
 
 ### lakectl gc
 
-Manage garbage collection configuration
+Manage garbage collection configuration.
 
 #### Options
 {:.no_toc}
@@ -1979,7 +1980,7 @@ lakectl gc get-config <repository uri>
 
 ### lakectl gc help
 
-Help about any command
+Help about any command.
 
 #### Synopsis
 {:.no_toc}
@@ -2002,7 +2003,7 @@ lakectl gc help [command] [flags]
 
 ### lakectl gc set-config
 
-Set garbage collection configuration JSON
+Set garbage collection configuration JSON.
 
 #### Synopsis
 {:.no_toc}
@@ -2046,7 +2047,7 @@ lakectl gc set-config <repository uri> -f config.json
 
 ### lakectl help
 
-Help about any command
+Help about any command.
 
 #### Synopsis
 {:.no_toc}
@@ -2069,7 +2070,7 @@ lakectl help [command] [flags]
 
 ### lakectl ingest
 
-Ingest objects from an external source into a lakeFS branch (without actually copying them)
+Ingest objects from an external source into a lakeFS branch (without actually copying them).
 
 ```
 lakectl ingest --from <object store URI> --to <lakeFS path URI> [--dry-run] [flags]
@@ -2081,7 +2082,7 @@ lakectl ingest --from <object store URI> --to <lakeFS path URI> [--dry-run] [fla
 ```
   -C, --concurrency int          max concurrent API calls to make to the lakeFS server (default 64)
       --dry-run                  only print the paths to be ingested
-      --from string              prefix to read from (e.g. "s3://bucket/sub/path/"). must not be in a storage namespace
+      --from string              prefix to read from (e.g., "s3://bucket/sub/path/"). must not be in a storage namespace
   -h, --help                     help for ingest
       --s3-endpoint-url string   URL to access S3 storage API (by default, use regular AWS S3 endpoint
       --to string                lakeFS path to load objects into (e.g. "lakefs://repo/branch/sub/path/")
@@ -2091,12 +2092,12 @@ lakectl ingest --from <object store URI> --to <lakeFS path URI> [--dry-run] [fla
 
 ### lakectl log
 
-Show log of commits
+Show log of commits.
 
 #### Synopsis
 {:.no_toc}
 
-Show log of commits for a given branch
+Show log of commits for a given branch.
 
 ```
 lakectl log <branch uri> [flags]
@@ -2118,12 +2119,12 @@ lakectl log <branch uri> [flags]
 
 ### lakectl merge
 
-Merge & commit changes from source branch into destination branch
+Merge & commit changes from source branch into destination branch.
 
 #### Synopsis
 {:.no_toc}
 
-Merge & commit changes from source branch into destination branch
+Merge & commit changes from source branch into destination branch.
 
 ```
 lakectl merge <source ref> <destination ref> [flags]
@@ -2141,7 +2142,7 @@ lakectl merge <source ref> <destination ref> [flags]
 
 ### lakectl metastore
 
-Manage metastore commands
+Manage metastore commands.
 
 #### Options
 {:.no_toc}
@@ -2154,12 +2155,12 @@ Manage metastore commands
 
 ### lakectl metastore copy
 
-Copy or merge table
+Copy or merge table.
 
 #### Synopsis
 {:.no_toc}
 
-Copy or merge table. the destination table will point to the selected branch
+Copy or merge table. the destination table will point to the selected branch.
 
 ```
 lakectl metastore copy [flags]
@@ -2188,12 +2189,12 @@ lakectl metastore copy [flags]
 
 ### lakectl metastore copy-all
 
-Copy from one metastore to another
+Copy from one metastore to another.
 
 #### Synopsis
 {:.no_toc}
 
-copy or merge requested tables between hive metastores. the destination tables will point to the selected branch
+Copy or merge requested tables between hive metastores. The destination tables will point to the selected branch.
 
 ```
 lakectl metastore copy-all [flags]
@@ -2219,12 +2220,12 @@ lakectl metastore copy-all [flags]
 
 ### lakectl metastore copy-schema
 
-Copy schema
+Copy schema.
 
 #### Synopsis
 {:.no_toc}
 
-Copy schema (without tables). the destination schema will point to the selected branch
+Copy schema (without tables). The destination schema will point to the selected branch.
 
 ```
 lakectl metastore copy-schema [flags]
@@ -2249,12 +2250,12 @@ lakectl metastore copy-schema [flags]
 
 ### lakectl metastore create-symlink
 
-Create symlink table and data
+Create symlink table and data.
 
 #### Synopsis
 {:.no_toc}
 
-create table with symlinks, and create the symlinks in s3 in order to access from external services that could only access s3 directly (e.g athena)
+Create table with symlinks, and create the symlinks in S3 to access from external services that could only access S3 directly (e.g, Athena).
 
 ```
 lakectl metastore create-symlink [flags]
@@ -2280,7 +2281,7 @@ lakectl metastore create-symlink [flags]
 
 ### lakectl metastore diff
 
-Show column and partition differences between two tables
+Show column and partition differences between two tables.
 
 ```
 lakectl metastore diff [flags]
@@ -2307,7 +2308,7 @@ lakectl metastore diff [flags]
 
 ### lakectl metastore help
 
-Help about any command
+Help about any command.
 
 #### Synopsis
 {:.no_toc}
@@ -2330,15 +2331,15 @@ lakectl metastore help [command] [flags]
 
 ### lakectl metastore import-all
 
-Import from one metastore to another
+Import from one metastore to another.
 
 #### Synopsis
 {:.no_toc}
 
 
-import requested tables between hive metastores. the destination tables will point to the selected repository and branch
+Import requested tables between Hive metastores. The destination tables will point to the selected repository and branch
 table with location s3://my-s3-bucket/path/to/table 
-will be transformed to location s3://repo-param/bucket-param/path/to/table
+will be transformed to location s3://repo-param/bucket-param/path/to/table.
 	
 
 ```
@@ -2369,7 +2370,7 @@ lakectl metastore import-all [flags]
 **note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
 {: .note .note-warning }
 
-Dumps refs (branches, commits, tags) to the underlying object store
+Dumps refs (branches, commits, tags) to the underlying object store.
 
 ```
 lakectl refs-dump <repository uri> [flags]
@@ -2389,12 +2390,12 @@ lakectl refs-dump <repository uri> [flags]
 **note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
 {: .note .note-warning }
 
-Restores refs (branches, commits, tags) from the underlying object store to a bare repository
+Restores refs (branches, commits, tags) from the underlying object store to a bare repository.
 
 #### Synopsis
 {:.no_toc}
 
-restores refs (branches, commits, tags) from the underlying object store to a bare repository.
+Restores refs (branches, commits, tags) from the underlying object store to a bare repository.
 
 This command is expected to run on a bare repository (i.e. one created with 'lakectl repo create-bare').
 Since a bare repo is expected, in case of transient failure, delete the repository and recreate it as bare and retry.
@@ -2422,7 +2423,7 @@ aws s3 cp s3://bucket/_lakefs/refs_manifest.json - | lakectl refs-restore lakefs
 
 ### lakectl repo
 
-Manage and explore repos
+Manage and explore repos.
 
 #### Options
 {:.no_toc}
@@ -2435,7 +2436,7 @@ Manage and explore repos
 
 ### lakectl repo create
 
-Create a new repository
+Create a new repository.
 
 ```
 lakectl repo create <repository uri> <storage namespace> [flags]
@@ -2463,7 +2464,7 @@ lakectl repo create lakefs://some-repo-name s3://some-bucket-name
 **note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
 {: .note .note-warning }
 
-Create a new repository with no initial branch or commit
+Create a new repository with no initial branch or commit.
 
 ```
 lakectl repo create-bare <repository uri> <storage namespace> [flags]
@@ -2488,7 +2489,7 @@ lakectl create-bare lakefs://some-repo-name s3://some-bucket-name
 
 ### lakectl repo delete
 
-Delete existing repository
+Delete existing repository.
 
 ```
 lakectl repo delete <repository uri> [flags]
@@ -2506,7 +2507,7 @@ lakectl repo delete <repository uri> [flags]
 
 ### lakectl repo help
 
-Help about any command
+Help about any command.
 
 #### Synopsis
 {:.no_toc}
@@ -2529,7 +2530,7 @@ lakectl repo help [command] [flags]
 
 ### lakectl repo list
 
-List repositories
+List repositories.
 
 ```
 lakectl repo list [flags]
@@ -2548,7 +2549,7 @@ lakectl repo list [flags]
 
 ### lakectl show
 
-See detailed information about an entity by ID (commit, user, etc)
+See detailed information about an entity by ID (commit, user, etc.).
 
 ```
 lakectl show <repository uri> [flags]
@@ -2567,12 +2568,12 @@ lakectl show <repository uri> [flags]
 
 ### lakectl tag
 
-Create and manage tags within a repository
+Create and manage tags within a repository.
 
 #### Synopsis
 {:.no_toc}
 
-Create delete and list tags within a lakeFS repository
+Create delete and list tags within a lakeFS repository.
 
 #### Options
 {:.no_toc}
@@ -2585,7 +2586,7 @@ Create delete and list tags within a lakeFS repository
 
 ### lakectl tag create
 
-Create a new tag in a repository
+Create a new tag in a repository.
 
 ```
 lakectl tag create <tag uri> <commit uri> [flags]
@@ -2610,7 +2611,7 @@ lakectl tag create lakefs://example-repo/example-tag lakefs://example-repo/2397c
 
 ### lakectl tag delete
 
-Delete a tag from a repository
+Delete a tag from a repository.
 
 ```
 lakectl tag delete <tag uri> [flags]
@@ -2627,7 +2628,7 @@ lakectl tag delete <tag uri> [flags]
 
 ### lakectl tag help
 
-Help about any command
+Help about any command.
 
 #### Synopsis
 {:.no_toc}
@@ -2650,7 +2651,7 @@ lakectl tag help [command] [flags]
 
 ### lakectl tag list
 
-List tags in a repository
+List tags in a repository.
 
 ```
 lakectl tag list <repository uri> [flags]
@@ -2676,7 +2677,7 @@ lakectl tag list lakefs://<repository>
 
 ### lakectl tag show
 
-Show tag's commit reference
+Show tag's commit reference.
 
 ```
 lakectl tag show <tag uri> [flags]
