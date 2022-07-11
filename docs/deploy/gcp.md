@@ -2,13 +2,13 @@
 layout: default
 title: On GCP
 parent: Deploy lakeFS
-description: This guide will help you deploy your production lakeFS environment on GCP
+description: This guide will help you deploy your production lakeFS environment on Google Cloud Platform (GCP).
 nav_order: 30
 ---
 
 # Deploy lakeFS on GCP
 {: .no_toc }
-Expected deployment time: 25min
+Expected deployment time: 25 min
 
 {% include toc.html %}
 
@@ -77,7 +77,7 @@ See [Kubernetes Deployment](./k8s.md).
 
 ## Load balancing
 Depending on how you chose to install lakeFS, you should have a load balancer direct requests to the lakeFS server.  
-By default, lakeFS operates on port 8000, and exposes a `/_health` endpoint which you can use for health checks.
+By default, lakeFS operates on port 8000, and exposes a `/_health` endpoint that you can use for health checks.
 
 ## Next Steps
 Your next step is to [prepare your storage](../setup/storage/index.md). If you already have a storage bucket/container, you are ready to [create your first lakeFS repository](../setup/create-repo.md).
