@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Create a Repository
-description: This section outlines how to setup your environment once lakeFS is configured and running
+description: This section outlines how to setup your environment once lakeFS is configured and running.
 parent: Setup lakeFS
 nav_order: 10
 has_children: false
@@ -12,14 +12,14 @@ redirect_from:
 # Create a Repository
 
 A _repository_ contains all of your objects, including the revision history.
-It can be considered the lakeFS analog of a bucket in an object store. Since it has version control qualities, it is also analogous to a repository in Git.
+It can be considered the lakeFS analog of a bucket in an object store. Since it has version control characteristics, it's also analogous to a repository in Git.
 
 ## Create the first user
 
 When you first open the lakeFS UI, you will be asked to create an initial admin user.
 
 1. In your browser, open the address of your lakeFS server.
-   Depending on how you deployed lakeFS, this can be a custom address pointing at your server (e.g. https://lakefs.example.com),
+   Depending on how you deployed lakeFS, this can be a custom address pointing at your server (e.g., https://lakefs.example.com),
    the address of a load balancer, or something else. You should see the following page, prompting you to set up an admin user.
 
    ![Setup]({{ site.baseurl }}/assets/img/setup.png)
@@ -54,7 +54,7 @@ When you first open the lakeFS UI, you will be asked to create an initial admin 
 
 # Next steps
 
-You just created your first lakeFS repository!
+You've just created your first lakeFS repository!
 
 * You may now want to [import data](import.md) into your repository.
 * Check out how lakeFS [easily integrates with your other tools](../integrations/index.md).
