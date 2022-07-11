@@ -134,7 +134,7 @@ The endpoint also allows to download the execution log of any executed `Hook` un
 ### Result Files
 {: .no_toc }
 
-The metadata section of lakeFS repository with each `Run` stored two types of files:
+The metadata section of lakeFS repository with each `Run` contains two types of files:
 1. `_lakefs/actions/log/<runID>/<hookRunID>.log` - Execution log of the specific `Hook` run.
 1. `_lakefs/actions/log/<runID>/run.manifest` - Manifest with all `Hooks` execution for the run with their results and additional metadata.
 
