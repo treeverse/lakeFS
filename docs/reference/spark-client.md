@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Spark Client
-description: lakeFS spark client performs operations on lakeFS committed metadata stored in the object store. 
+description: The lakeFS Spark client performs operations on lakeFS committed metadata stored in the object store. 
 parent: Reference
 has_children: false
 ---
@@ -9,12 +9,12 @@ has_children: false
 
 # lakeFS Spark Client
 
-Utilize the power of Spark to interact with the metadata on lakeFS. Possible use-cases include:
+Utilize the power of Spark to interact with the metadata on lakeFS. Possible use cases include:
 
-* Create a DataFrame for listing the objects in a specific commit or branch.
-* Compute changes between two commits.
-* Export your data for consumption outside lakeFS.
-* Bulk operations on underlying storage.
+* Creating a DataFrame for listing the objects in a specific commit or branch.
+* Computing changes between two commits.
+* Exporting your data for consumption outside lakeFS.
+* Bulk operations on the underlying storage.
 
 ## Getting Started
 
@@ -84,10 +84,10 @@ Start Spark Shell / PySpark with the `--packages` flag:
    ### Assuming role on S3 (Hadoop 3 only)
 
    The client includes support for assuming a separate role on S3 when
-   running on Hadoop 3.  It uses the same configuration used by
-   `S3AFileSystem` to assume the role on S3A.  Apache Hadoop AWS
+   running on Hadoop 3. It uses the same configuration used by
+   `S3AFileSystem` to assume the role on S3A. Apache Hadoop AWS
    documentation has details under "[Working with IAM Assumed
-   Roles][s3a-assumed-role]".  You will need to use the following Hadoop
+   Roles][s3a-assumed-role]". You will need to use the following Hadoop
    configurations:
    
    | Configuration                     | Description                                                          |
