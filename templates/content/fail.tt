@@ -1,0 +1,2 @@
+This is a template.
+{{ fail "failure message" }}

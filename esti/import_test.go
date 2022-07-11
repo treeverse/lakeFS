@@ -65,7 +65,7 @@ func TestImport(t *testing.T) {
 			Prepend:           prefixImport,
 		})
 		require.NoError(t, err, "failed to ingest range")
-		log.Info("Ingest range response body: %s", resp.Body)
+		log.Info("Ingest range response body: %s", string(resp.Body))
 		require.Equal(t, http.StatusCreated, resp.StatusCode())
 
 		require.NotNil(t, resp.JSON201)

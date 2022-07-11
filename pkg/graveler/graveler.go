@@ -787,6 +787,7 @@ type KVGraveler struct {
 	db         *DBGraveler
 	hooks      HooksHandler
 	RefManager RefManager
+	StagingManager StagingManager
 	log        logging.Logger
 }
 
@@ -795,6 +796,7 @@ func NewKVGraveler(branchLocker BranchLocker, committedManager CommittedManager,
 		db:         NewDBGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager),
 		hooks:      &HooksNoOp{},
 		RefManager: refManager,
+		StagingManager: stagingManager,
 		log:        logging.Default().WithField("service_name", "graveler_graveler"),
 	}
 }

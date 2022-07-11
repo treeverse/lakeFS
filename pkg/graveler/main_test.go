@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/ory/dockertest/v3"
-
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )

@@ -3516,3 +3516,35 @@ paths:
                 $ref: "#/components/schemas/StorageConfig"
         401:
           $ref: "#/components/responses/Unauthorized"
+  /templates:
+    get:
+      tags:
+        - templates
+      operationId: expandTemplate
+      description: fetch and expand template
+      parameters:
+        - in: query
+          name: template_location
+          required: true
+          schema:
+            type: string
+            description: URL of the template; must be relative (to a URL configured on the server).
+        - in: query
+          name: params
+          schema:
+            type: object
+            additionalProperties:
+              type: string
+      responses:
+        200:
+          description: expanded template
+          content:
+            "*/*":
+              schema:
+                format: binary
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"

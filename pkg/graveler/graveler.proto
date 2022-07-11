@@ -50,3 +50,9 @@ message BranchProtectionBlockedActions {
 message BranchProtectionRules {
   map<string, BranchProtectionBlockedActions> branch_pattern_to_blocked_actions = 1;
 }
+
+message StagedEntry {
+  bytes key = 1;
+  bytes identity = 2;
+  bytes data = 3;
+}

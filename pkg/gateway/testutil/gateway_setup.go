@@ -39,6 +39,7 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, databaseURI str
 		T:          t,
 	}
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
+	// Disable KV by default (used for determining KV state by certain packages such as catalog)
 	viper.Set("database.kv_enabled", false)
 
 	var (
@@ -103,15 +104,14 @@ func (m *FakeAuthService) GetCredentials(_ context.Context, accessKey string) (*
 	aCred := new(model.Credential)
 	aCred.AccessKeyID = accessKey
 	aCred.SecretAccessKey = m.SecretAccessKey
-	aCred.UserID = m.UserID
+	aCred.Username = m.UserID
 	return aCred, nil
 }
 
-func (m *FakeAuthService) GetUserByID(_ context.Context, _ string) (*model.User, error) {
-	return &model.User{BaseUser: model.BaseUser{
+func (m *FakeAuthService) GetUser(_ context.Context, _ string) (*model.User, error) {
+	return &model.User{
 		CreatedAt: time.Now(),
-		Username:  "user"},
-	}, nil
+		Username:  "user"}, nil
 }
 
 func (m *FakeAuthService) Authorize(_ context.Context, _ *auth.AuthorizationRequest) (*auth.AuthorizationResponse, error) {
