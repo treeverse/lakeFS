@@ -31,12 +31,17 @@ type PrimaryIterator struct {
 	err     error
 }
 
-func NewPrimaryIterator(ctx context.Context, store Store, msgType protoreflect.MessageType, partitionKey string, prefix, after []byte) (*PrimaryIterator, error) {
+// NewPrimaryIterator - skip=true: returns iterator that scan the set of keys that start with a prefix greater than the after key
+// skip=false - returns iterator that scan the set of keys that start with a prefix starting from the after key
+func NewPrimaryIterator(ctx context.Context, store Store, msgType protoreflect.MessageType, partitionKey string, prefix, after []byte, skip bool) (*PrimaryIterator, error) {
 	itr, err := ScanPrefix(ctx, store, []byte(partitionKey), prefix, after)
 	if err != nil {
 		return nil, fmt.Errorf("create prefix iterator: %w", err)
 	}
-	return &PrimaryIterator{itr: NewSkipIterator(itr, after), msgType: msgType}, nil
+	if skip {
+		return &PrimaryIterator{itr: NewSkipIterator(itr, after), msgType: msgType}, nil
+	}
+	return &PrimaryIterator{itr: itr, msgType: msgType}, nil
 }
 
 func (i *PrimaryIterator) Next() bool {
@@ -94,7 +99,7 @@ type SecondaryIterator struct {
 }
 
 func NewSecondaryIterator(ctx context.Context, store Store, msgType protoreflect.MessageType, partitionKey string, prefix, after []byte) (*SecondaryIterator, error) {
-	itr, err := NewPrimaryIterator(ctx, store, (&SecondaryIndex{}).ProtoReflect().Type(), partitionKey, prefix, after)
+	itr, err := NewPrimaryIterator(ctx, store, (&SecondaryIndex{}).ProtoReflect().Type(), partitionKey, prefix, after, true)
 	if err != nil {
 		return nil, fmt.Errorf("create prefix iterator: %w", err)
 	}

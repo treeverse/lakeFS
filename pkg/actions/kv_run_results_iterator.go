@@ -49,7 +49,7 @@ func NewKVRunResultIterator(ctx context.Context, store kv.StoreMessage, reposito
 			return nil, err
 		}
 	} else {
-		it, err = kv.NewPrimaryIterator(ctx, store.Store, (&RunResultData{}).ProtoReflect().Type(), PartitionKey, []byte(prefix), []byte(after))
+		it, err = kv.NewPrimaryIterator(ctx, store.Store, (&RunResultData{}).ProtoReflect().Type(), PartitionKey, []byte(prefix), []byte(after), true)
 		if err != nil {
 			return nil, err
 		}

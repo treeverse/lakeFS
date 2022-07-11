@@ -201,17 +201,24 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 
 	var gStore Store
 	var stagingManager graveler.StagingManager
-	refManager := ref.NewPGRefManager(executor, cfg.DB, ident.NewHexAddressProvider())
+	var refManager graveler.RefManager
+	var gcManager graveler.GarbageCollectionManager
+	var protectedBranchesManager graveler.ProtectedBranchesManager
 	branchLocker := ref.NewBranchLocker(cfg.LockDB) // TODO (niro): Will not be needed in KV implementation
-	gcManager := retention.NewGarbageCollectionManager(cfg.DB, tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
-	stagingManager = staging.NewDBManager(cfg.DB)
-	settingManager := settings.NewManager(refManager, branchLocker, adapter, cfg.Config.GetCommittedBlockStoragePrefix())
-	protectedBranchesManager := branch.NewProtectionManager(settingManager)
 
 	if cfg.Config.GetDatabaseParams().KVEnabled { // TODO (niro): Each module should be replaced by an appropriate KV implementation
+		refManager = ref.NewKVRefManager(executor, *cfg.KVStore, cfg.DB, ident.NewHexAddressProvider())
+		gcManager = retention.NewGarbageCollectionManager(cfg.DB, tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
+		settingManager := settings.NewManager(refManager, branchLocker, adapter, cfg.Config.GetCommittedBlockStoragePrefix())
+		protectedBranchesManager = branch.NewProtectionManager(settingManager)
 		stagingManager = staging.NewManager(*cfg.KVStore)
 		gStore = graveler.NewKVGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
 	} else {
+		refManager = ref.NewPGRefManager(executor, cfg.DB, ident.NewHexAddressProvider())
+		gcManager = retention.NewGarbageCollectionManager(cfg.DB, tierFSParams.Adapter, refManager, cfg.Config.GetCommittedBlockStoragePrefix())
+		settingManager := settings.NewManager(refManager, branchLocker, adapter, cfg.Config.GetCommittedBlockStoragePrefix())
+		protectedBranchesManager = branch.NewProtectionManager(settingManager)
+		stagingManager = staging.NewDBManager(cfg.DB)
 		gStore = graveler.NewDBGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
 	}
 
