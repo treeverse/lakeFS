@@ -12,8 +12,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/graveler/testutil"
-	"github.com/treeverse/lakefs/pkg/kv"
-	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	tu "github.com/treeverse/lakefs/pkg/testutil"
 )
 
@@ -147,9 +145,7 @@ func newGraveler(t *testing.T, kvEnabled bool, committedManager graveler.Committ
 	branchLocker := ref.NewBranchLocker(conn)
 
 	if kvEnabled {
-		ctx := context.Background()
-		kvStore := kvtest.GetStore(ctx, t)
-		return graveler.NewKVGraveler(&kv.StoreMessage{Store: kvStore}, branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
+		return graveler.NewKVGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
 	}
 
 	return graveler.NewDBGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)

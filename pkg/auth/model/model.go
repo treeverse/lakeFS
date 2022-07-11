@@ -33,36 +33,36 @@ const (
 	metadataPrefix         = "installation_metadata"
 )
 
-func UserPath(userName string) string {
-	return kv.FormatPath(usersPrefix, userName)
+func UserPath(userName string) []byte {
+	return []byte(kv.FormatPath(usersPrefix, userName))
 }
 
-func PolicyPath(displayName string) string {
-	return kv.FormatPath(policiesPrefix, displayName)
+func PolicyPath(displayName string) []byte {
+	return []byte(kv.FormatPath(policiesPrefix, displayName))
 }
 
-func GroupPath(displayName string) string {
-	return kv.FormatPath(groupsPrefix, displayName)
+func GroupPath(displayName string) []byte {
+	return []byte(kv.FormatPath(groupsPrefix, displayName))
 }
 
-func CredentialPath(userName string, accessKeyID string) string {
-	return kv.FormatPath(usersCredentialsPrefix, userName, credentialsPrefix, accessKeyID)
+func CredentialPath(userName string, accessKeyID string) []byte {
+	return []byte(kv.FormatPath(usersCredentialsPrefix, userName, credentialsPrefix, accessKeyID))
 }
 
-func GroupUserPath(groupDisplayName string, userName string) string {
-	return kv.FormatPath(groupsUsersPrefix, groupDisplayName, usersPrefix, userName)
+func GroupUserPath(groupDisplayName string, userName string) []byte {
+	return []byte(kv.FormatPath(groupsUsersPrefix, groupDisplayName, usersPrefix, userName))
 }
 
-func UserPolicyPath(userName string, policyDisplayName string) string {
-	return kv.FormatPath(usersPoliciesPrefix, userName, policiesPrefix, policyDisplayName)
+func UserPolicyPath(userName string, policyDisplayName string) []byte {
+	return []byte(kv.FormatPath(usersPoliciesPrefix, userName, policiesPrefix, policyDisplayName))
 }
 
-func GroupPolicyPath(groupDisplayName string, policyDisplayName string) string {
-	return kv.FormatPath(groupsPoliciesPrefix, groupDisplayName, policiesPrefix, policyDisplayName)
+func GroupPolicyPath(groupDisplayName string, policyDisplayName string) []byte {
+	return []byte(kv.FormatPath(groupsPoliciesPrefix, groupDisplayName, policiesPrefix, policyDisplayName))
 }
 
-func ExpiredTokenPath(tokenID string) string {
-	return kv.FormatPath(expiredTokensPrefix, tokenID)
+func ExpiredTokenPath(tokenID string) []byte {
+	return []byte(kv.FormatPath(expiredTokensPrefix, tokenID))
 }
 
 func MetadataKeyPath(key string) string {
