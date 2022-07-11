@@ -10,15 +10,21 @@ import {Spinner} from "react-bootstrap";
 import Alert from "react-bootstrap/Alert";
 import RepositoryCreateForm from "../../../lib/components/repositoryCreateForm";
 
+const RepositoryCreationPhase = {
+    NotStarted: 0,
+    InProgress: 1,
+    Completed: 2,
+}
+
 const RepositoryCreationStep = ({repoCreationError, createRepo, onCancel, onComplete}) => {
     const {response, error: err, loading} = useAPI(() => config.getStorageConfig());
     const [repoName, setRepoName] = useState('');
-    const [creationInProgress, setCreationInProgress] = useState(false);
+    const [repoCreationPhase, setRepoCreationPhase] = useState(RepositoryCreationPhase.NotStarted);
 
     const onSubmit = async (repo) => {
-        setCreationInProgress(true);
+        setRepoCreationPhase(RepositoryCreationPhase.InProgress);
         const success = await createRepo(repo, false);
-        setCreationInProgress(false);
+        setRepoCreationPhase(RepositoryCreationPhase.Completed);
         if (success) {
             onComplete({ 'branch': repo.default_branch, 'namespace': repo.storage_namespace },);
             setRepoName(repo.name);
@@ -28,7 +34,7 @@ const RepositoryCreationStep = ({repoCreationError, createRepo, onCancel, onComp
     let present;
     if (loading) {
         present = <Loading/>;
-    } else if (creationInProgress) {
+    } else if (repoCreationPhase === RepositoryCreationPhase.InProgress) {
         present = <Container>
             <Row className={'justify-content-left'}>
                 <Col className={"col-1 mb-2 mt-2"}>
@@ -39,7 +45,7 @@ const RepositoryCreationStep = ({repoCreationError, createRepo, onCancel, onComp
                 </Col>
             </Row>
         </Container>;
-    } else if (repoName) {
+    } else if (repoCreationPhase === RepositoryCreationPhase.Completed) {
         present = <Alert variant="info" className={"mt-3"}>Repository <span className={"font-weight-bold"}>{repoName}</span> created successfully</Alert>;
     }
     else {
