@@ -644,6 +644,7 @@ type RefManager interface {
 	GetCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (*Commit, error)
 
 	// GetCommitByPrefix returns the Commit metadata object for the given prefix CommitID.
+	// if more than 1 commit starts with the ID prefix returns error
 	GetCommitByPrefix(ctx context.Context, repositoryID RepositoryID, prefix CommitID) (*Commit, error)
 
 	// AddCommit stores the Commit object, returning its ID
@@ -784,6 +785,7 @@ func (id TagID) String() string {
 
 type KVGraveler struct {
 	db         *DBGraveler
+	hooks      HooksHandler
 	RefManager RefManager
 	log        logging.Logger
 }
@@ -791,6 +793,7 @@ type KVGraveler struct {
 func NewKVGraveler(branchLocker BranchLocker, committedManager CommittedManager, stagingManager StagingManager, refManager RefManager, gcManager GarbageCollectionManager, protectedBranchesManager ProtectedBranchesManager) *KVGraveler {
 	return &KVGraveler{
 		db:         NewDBGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager),
+		hooks:      &HooksNoOp{},
 		RefManager: refManager,
 		log:        logging.Default().WithField("service_name", "graveler_graveler"),
 	}
@@ -869,8 +872,8 @@ func (g *KVGraveler) CreateTag(ctx context.Context, repositoryID RepositoryID, t
 		return err
 	}
 
-	preRunID := g.db.hooks.NewRunID()
-	err = g.db.hooks.PreCreateTagHook(ctx, HookRecord{
+	preRunID := g.hooks.NewRunID()
+	err = g.hooks.PreCreateTagHook(ctx, HookRecord{
 		RunID:            preRunID,
 		StorageNamespace: storageNamespace,
 		EventType:        EventTypePreCreateTag,
@@ -892,8 +895,8 @@ func (g *KVGraveler) CreateTag(ctx context.Context, repositoryID RepositoryID, t
 		return err
 	}
 
-	postRunID := g.db.hooks.NewRunID()
-	g.db.hooks.PostCreateTagHook(ctx, HookRecord{
+	postRunID := g.hooks.NewRunID()
+	g.hooks.PostCreateTagHook(ctx, HookRecord{
 		RunID:            postRunID,
 		StorageNamespace: storageNamespace,
 		EventType:        EventTypePostCreateTag,
@@ -920,8 +923,8 @@ func (g *KVGraveler) DeleteTag(ctx context.Context, repositoryID RepositoryID, t
 		return err
 	}
 
-	preRunID := g.db.hooks.NewRunID()
-	err = g.db.hooks.PreDeleteTagHook(ctx, HookRecord{
+	preRunID := g.hooks.NewRunID()
+	err = g.hooks.PreDeleteTagHook(ctx, HookRecord{
 		RunID:            preRunID,
 		StorageNamespace: storageNamespace,
 		EventType:        EventTypePreDeleteTag,
@@ -943,8 +946,8 @@ func (g *KVGraveler) DeleteTag(ctx context.Context, repositoryID RepositoryID, t
 		return err
 	}
 
-	postRunID := g.db.hooks.NewRunID()
-	g.db.hooks.PostDeleteTagHook(ctx, HookRecord{
+	postRunID := g.hooks.NewRunID()
+	g.hooks.PostDeleteTagHook(ctx, HookRecord{
 		RunID:            postRunID,
 		StorageNamespace: storageNamespace,
 		EventType:        EventTypePostDeleteTag,
@@ -1139,7 +1142,11 @@ func (g *KVGraveler) Compare(ctx context.Context, repositoryID RepositoryID, lef
 }
 
 func (g *KVGraveler) SetHooksHandler(handler HooksHandler) {
-	g.db.SetHooksHandler(handler)
+	if handler == nil {
+		g.hooks = &HooksNoOp{}
+	} else {
+		g.hooks = handler
+	}
 }
 
 func (g *KVGraveler) LoadCommits(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) error {
