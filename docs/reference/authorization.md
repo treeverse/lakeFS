@@ -18,7 +18,7 @@ has_children: false
 
 Access to resources is managed very much like [AWS IAM](https://docs.aws.amazon.com/IAM/latest/UserGuide/intro-structure.html){:target="_blank"}.
 
-There are 4 basic components to the system:
+There are four basic components to the system:
 
 **Users** - Representing entities that access and use the system. A user is given one or more **Access Credentials** for authentication.
 
@@ -35,14 +35,14 @@ Controlling access is done by attaching **Policies**, either directly to **Users
 
 ### Authorization process
 
-Every action in the system, be it an API request, UI interaction, S3 Gateway call or CLI command, requires a set of actions to be allowed for one or more resources.
+Every action in the system - be it an API request, UI interaction, S3 Gateway call, or CLI command - requires a set of actions to be allowed for one or more resources.
 
 When a user makes a request to perform that action, the following process takes place:
 
-1. Authentication - The credentials passed in the request are evaluated, and the user's identity is extracted.
-1. Action permission resolution - lakeFS would then calculate the set of allowed actions and resources that this request requires.
-1. Effective policy resolution - the user's policies (either attached directly or through group memberships) are calculated
-1. Policy/Permission evaluation - lakeFS will compare the given user policies with the request actions and determine whether or not the request is allowed to continue
+1. Authentication - the credentials passed in the request are evaluated and the user's identity is extracted.
+1. Action permission resolution - lakeFS then calculates the set of allowed actions and resources that this request requires.
+1. Effective policy resolution - the user's policies (either attached directly or through group memberships) are calculated.
+1. Policy/Permission evaluation - lakeFS will compare the given user policies with the request actions and determine whether or not the request is allowed to continue.
 
 ### Policy Precedence
 
@@ -73,7 +73,7 @@ arn:lakefs:fs:::*
 
 this allows us to create fine-grained policies affecting only a specific subset of resources.
 
-See below for a full reference of ARNs and actions
+See below for a full reference of ARNs and actions.
 
 
 
@@ -140,8 +140,8 @@ For the full list of actions and their required permissions see the following ta
 | List Action Run Hooks              | `ci:ReadAction`                             |`arn:lakefs:fs:::repository/{repositoryId}`                             | GET  /repositories/{repository}/actions/runs/{run_id}/hooks                       |-                                                                    |
 | Get Action Run Hook Output         | `ci:ReadAction`                             |`arn:lakefs:fs:::repository/{repositoryId}`                             | GET  /repositories/{repository}/actions/runs/{run_id}/hooks/{hook_run_id}/output  |-                                                                    |
 
-Some APIs may require more than one action.  For instance, in order to
-create a repository (`POST /repositories`) you need permission to
+Some APIs may require more than one action.For instance, in order to
+create a repository (`POST /repositories`), you need permission to
 `fs:CreateRepository` for the _name_ of the repository and also
 `fs:AttachStorageNamespace` for the _storage namespace_ used.
 
