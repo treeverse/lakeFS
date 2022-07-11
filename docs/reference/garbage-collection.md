@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Garbage Collection
-description: Clean up unnecessary objects
+description: Clean up unnecessary objects using the garbage collection feature in lakeFS.
 parent: Reference
 nav_order: 25
 has_children: false
@@ -11,7 +11,7 @@ has_children: false
 {: .no_toc }
 
 By default, lakeFS keeps all your objects forever. This allows you to travel back in time to previous versions of your data.
-However, sometimes you may want to hard-delete your objects, namely delete them from the underlying storage. 
+However, sometimes you may want to hard-delete your objects - namely, delete them from the underlying storage. 
 Reasons for this include cost-reduction and privacy policies.
 
 Garbage collection rules in lakeFS define for how long to retain objects after they have been deleted (see more information [below](#considerations)).
@@ -30,8 +30,8 @@ At this point, lakeFS supports Garbage Collection only on S3, but we have [concr
 
 For every branch, the GC job retains deleted objects for the number of days defined for the branch.
 In the absence of a branch-specific rule, the default rule for the repository is used.
-If an object is present in more than one branch ancestry, it is retained according to the rule with the largest number of days between those branches.
-That is, it is hard-deleted only after the retention period has ended for all relevant branches.
+If an object is present in more than one branch ancestry, it's retained according to the rule with the largest number of days between those branches.
+That is, it's hard-deleted only after the retention period has ended for all relevant branches.
 
 Example GC rules for a repository:
 ```json
@@ -45,15 +45,15 @@ Example GC rules for a repository:
 ```
 
 In the above example, objects are retained for 14 days after deletion by default. However, if they are present in the branch `main`, they are retained for 21 days.
-Objects present in the `dev` branch (but not in any other branch), are retained for 7 days after they are deleted.
+Objects present in the `dev` branch (but not in any other branch) are retained for 7 days after they are deleted.
 
 ### What gets collected
 
 Because each object in lakeFS may be accessible from multiple branches, it
-might not be obvious what objects will be considered garbage and collected.
+might not be obvious which objects will be considered garbage and collected.
 
 Garbage collection is configured by specifying the number of days to retain
-objects on each branch.  If a branch is configured to retain objects for a
+objects on each branch. If a branch is configured to retain objects for a
 given number of days, any object that was accessible from the HEAD of a
 branch in that past number of days will be retained.
 
@@ -66,27 +66,27 @@ The garbage collection process proceeds in two main phases:
   ![mermaid diagram](gc-sample-commits.png)
   
   Continuing the example, branch `main` retains for 21 days and branch `dev`
-  for 7.  When running GC on 2022-03-31:
+  for 7. When running GC on 2022-03-31:
 
   - 7 days ago, on 2022-03-24 the head of branch `dev` was `d:
-    2022-03-23`.  So that commit is retained (along with all more recent
-    commits on `dev`), but all older commits `d: *` will be collected.
+    2022-03-23`. So, that commit is retained (along with all more recent
+    commits on `dev`) but all older commits `d: *` will be collected.
   - 21 days ago, on 2022-03-10, the head of branch `main` was
-    `2022-03-09`.  So that commit is retained (along with all more recent
-    commits on `main`), but commits `2022-02-27` and `2022-03-01` will be
+    `2022-03-09`. So that commit is retained (along with all more recent
+    commits on `main`) but commits `2022-02-27` and `2022-03-01` will be
     collected.
 
 * **Discover which objects need to be garbage collected.** Hold (_only_)
   objects accessible on some retained commits.
 
   In the example, all objects of commit `2022-03-12`, for instance, are
-  retained.  This _includes_ objects added in previous commits.  However,
+  retained. This _includes_ objects added in previous commits. However,
   objects added in commit `d: 2022-03-14` which were overwritten or
   committed in commit `d: 2022-03-20` are not visible in any retained commit
   and will be garbage collected.
   
-* **Garbage collect those objects by deleting them.**  The data of any
-  deleted object will no longer be accessible.  lakeFS retains all metadata
+* **Garbage collect those objects by deleting them.** The data of any
+  deleted object will no longer be accessible. lakeFS retains all metadata
   about the object, but attempting to read it via the lakeFS API or the S3
   gateway will return HTTP status 410 ("Gone").
 
@@ -127,7 +127,7 @@ lakectl gc set-config lakefs://example-repo -f example_repo_gc_rules.json
 The GC job is a Spark program that can be run using `spark-submit` (or using your preferred method of running Spark programs).
 The job will hard-delete objects that were deleted and whose retention period has ended according to the GC rules.
 
-First, you'll have to download the lakeFS Spark client Uber-jar. The Uber-Jar can be found on a public S3 location:
+First, you'll have to download the lakeFS Spark client Uber-jar. The Uber-jar can be found on a public S3 location:
 
 For Spark 2.4.7: \
 http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-247/${CLIENT_VERSION}/lakefs-spark-client-247-assembly-${CLIENT_VERSION}.jar
