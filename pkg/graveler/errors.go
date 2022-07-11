@@ -17,6 +17,8 @@ var (
 	ErrNotUnique                    = wrapError(ErrUserVisible, "not unique")
 	ErrPreconditionFailed           = errors.New("precondition failed")
 	ErrWriteToProtectedBranch       = wrapError(ErrUserVisible, "cannot write to protected branch")
+	ErrCast                         = errors.New("cannot cast value")
+	ErrNilValue                     = errors.New("nil value")
 	ErrCommitToProtectedBranch      = wrapError(ErrUserVisible, "cannot commit to protected branch")
 	ErrInvalidValue                 = fmt.Errorf("invalid value: %w", ErrInvalid)
 	ErrInvalidMergeBase             = fmt.Errorf("only 2 commits allowed in FindMergeBase: %w", ErrInvalidValue)

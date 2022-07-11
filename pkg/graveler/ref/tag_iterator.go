@@ -41,12 +41,12 @@ func (i *KVTagIterator) Next() bool {
 	}
 	e := i.it.Entry()
 	if e == nil {
-		i.err = graveler.ErrNotFound
+		i.err = graveler.ErrNilValue
 		return false
 	}
 	tag, ok := e.Value.(*graveler.TagData)
 	if !ok {
-		i.err = graveler.ErrNotFound
+		i.err = graveler.ErrCast
 		return false
 	}
 	i.value = &graveler.TagRecord{
