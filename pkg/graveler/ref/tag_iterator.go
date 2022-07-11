@@ -57,13 +57,15 @@ func (i *KVTagIterator) Next() bool {
 }
 
 func (i *KVTagIterator) SeekGE(id graveler.TagID) {
-	i.it.Close()
-	it, err := kv.NewPrimaryIterator(i.ctx, i.store, (&graveler.TagData{}).ProtoReflect().Type(),
-		graveler.TagPartition(i.repoID),
-		graveler.TagPath(""), graveler.TagPath(id), false)
-	i.it = it
-	i.value = nil
-	i.err = err
+	if i.Err() == nil {
+		i.it.Close()
+		it, err := kv.NewPrimaryIterator(i.ctx, i.store, (&graveler.TagData{}).ProtoReflect().Type(),
+			graveler.TagPartition(i.repoID),
+			graveler.TagPath(""), graveler.TagPath(id), false)
+		i.it = it
+		i.value = nil
+		i.err = err
+	}
 }
 
 func (i *KVTagIterator) Value() *graveler.TagRecord {
