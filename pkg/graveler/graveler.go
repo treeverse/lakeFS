@@ -1142,6 +1142,7 @@ func (g *KVGraveler) Compare(ctx context.Context, repositoryID RepositoryID, lef
 }
 
 func (g *KVGraveler) SetHooksHandler(handler HooksHandler) {
+	g.db.SetHooksHandler(handler)
 	if handler == nil {
 		g.hooks = &HooksNoOp{}
 	} else {
