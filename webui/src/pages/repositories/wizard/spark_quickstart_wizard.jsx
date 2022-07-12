@@ -9,6 +9,7 @@ import Col from "react-bootstrap/Col";
 import {Spinner} from "react-bootstrap";
 import Alert from "react-bootstrap/Alert";
 import RepositoryCreateForm from "../../../lib/components/repositoryCreateForm";
+import ImportDataStep from "./import_data_wizard_step";
 
 const RepositoryCreationPhase = {
     NotStarted: 0,
@@ -39,16 +40,7 @@ const RepositoryCreationStep = ({repoCreationError, createRepo, onCancel, onComp
     if (loading) {
         present = <Loading/>;
     } else if (repoCreationPhase === RepositoryCreationPhase.InProgress) {
-        present = <Container>
-            <Row className={'justify-content-left'}>
-                <Col className={"col-1 mb-2 mt-2"}>
-                    <Spinner animation="border" variant="primary" size="xl" role="status" />
-                </Col>
-                <Col className={"col-3 mb-2 mt-2"}>
-                    <span>Creating repository...</span>
-                </Col>
-            </Row>
-        </Container>;
+        present = <ProgressSpinner text={'Creating repository...'} />;
     } else if (repoCreationPhase === RepositoryCreationPhase.Completed) {
         present = <Alert variant="info" className={"mt-3"}>Repository <span className={"font-weight-bold"}>{repoName}</span> created successfully</Alert>;
     }
@@ -65,7 +57,11 @@ const RepositoryCreationStep = ({repoCreationError, createRepo, onCancel, onComp
 
 export const SparkQuickstart = ({onExit, createRepo, repoCreationError}) => {
     const [nextEnabled, setNextEnabled] = useState(false)
-    const [state, setState] = useState({});
+    const [state, setState] = useState({
+        'branch': '',
+        'namespace': '',
+        'repoId': '',
+    });
     const completedStep = (val = {}) => {
         setState({...state, ...val});
         setNextEnabled(true);
@@ -86,6 +82,26 @@ export const SparkQuickstart = ({onExit, createRepo, repoCreationError}) => {
                 createRepo={createRepo}
                 onCancel={onExit}
                 onComplete={completedStep} />
+
+            <ImportDataStep
+                repoId={state.repoId}
+                onComplete={completedStep}
+                branchName={state.branch} />
         </Wizard>
+    );
+}
+
+const ProgressSpinner = ({text, changingElement =''}) => {
+    return (
+        <Container>
+            <Row className={'justify-content-left'}>
+                <Col className={"col-1 mb-2 mt-2"}>
+                    <Spinner animation="border" variant="primary" size="xl" role="status" />
+                </Col>
+                <Col className={"col-3 mb-2 mt-2"}>
+                    <span>{text}{changingElement}</span>
+                </Col>
+            </Row>
+        </Container>
     );
 }
