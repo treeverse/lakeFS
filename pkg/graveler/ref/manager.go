@@ -78,7 +78,7 @@ func (m *KVManager) CreateRepository(ctx context.Context, repositoryID graveler.
 	firstCommit := graveler.NewCommit()
 	firstCommit.Message = graveler.FirstCommitMsg
 	firstCommit.Generation = 1
-	//commitID := m.addressProvider.ContentAddress(firstCommit)
+	// commitID := m.addressProvider.ContentAddress(firstCommit)
 
 	err := m.createBareRepository(ctx, repositoryID, repository)
 	if err != nil {
@@ -90,7 +90,7 @@ func (m *KVManager) CreateRepository(ctx context.Context, repositoryID graveler.
 		return err
 	}
 
-	err = m.CreateBranch(ctx, repositoryID, repository.DefaultBranchID, graveler.Branch{CommitID: graveler.CommitID(commitID), StagingToken: token})
+	err = m.CreateBranch(ctx, repositoryID, repository.DefaultBranchID, graveler.Branch{CommitID: commitID, StagingToken: token})
 	if err != nil {
 		return err
 	}
