@@ -1,5 +1,12 @@
 import React, {useRef, useState} from "react";
-import {ExecuteImportButton, ImportDone, ImportForm, ImportPhase, ImportProgress, runImport} from "../services/import_data";
+import {
+    ExecuteImportButton,
+    ImportDone,
+    ImportForm,
+    ImportPhase,
+    ImportProgress,
+    runImport
+} from "../services/import_data";
 import {Error} from "../../../lib/components/controls";
 
 const ImportDataStep = ({repoId, branchName, onComplete, prependPath = ''}) => {
@@ -38,7 +45,7 @@ const ImportDataStep = ({repoId, branchName, onComplete, prependPath = ''}) => {
             {
                 importPhase === ImportPhase.NotStarted &&
                 <ImportForm
-                    pathStyle={{'minWidth' : '25%'}}
+                    pathStyle={{'minWidth': '25%'}}
                     sourceRef={sourceRef}
                     updateSrcValidity={(isValid) => setIsSourceValid(isValid)}
                     repoId={repoId}
@@ -48,11 +55,11 @@ const ImportDataStep = ({repoId, branchName, onComplete, prependPath = ''}) => {
             }
             {
                 importPhase === ImportPhase.InProgress &&
-                <ImportProgress numObjects={numberOfImportedObjects} />
+                <ImportProgress numObjects={numberOfImportedObjects}/>
             }
             {
                 importPhase === ImportPhase.Completed &&
-                <ImportDone currBranch={branchName} importBranch={branchName} numObjects={numberOfImportedObjects} />
+                <ImportDone currBranch={branchName} importBranch={branchName} numObjects={numberOfImportedObjects}/>
             }
             {
                 importError && <Error error={importError}/>

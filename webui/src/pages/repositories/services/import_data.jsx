@@ -65,15 +65,18 @@ const createBranch = async (repoId, refId, branch) => {
     return await branches.get(repoId, branch);
 }
 
-const ImportProgress = ({ numObjects}) => {
+const ImportProgress = ({numObjects}) => {
     return (
         <Row>
             <Col>
                 <div className='import-text'>
-                    <p>Imported <strong><div className='import-num-objects'> {numObjects} </div></strong> objects so far...</p>
+                    <p>Imported <strong>
+                        <div className='import-num-objects'> {numObjects} </div>
+                    </strong> objects so far...
+                    </p>
                 </div>
                 <div>
-                    <LinearProgress color="success" />
+                    <LinearProgress color="success"/>
                 </div>
                 <div>
                     <small><abbr><br/>Please leave this tab open while import is in progress...</abbr></small>
@@ -83,7 +86,7 @@ const ImportProgress = ({ numObjects}) => {
     );
 }
 
-const ImportDone = ({ numObjects, importBranch, currBranch=''}) => {
+const ImportDone = ({numObjects, importBranch, currBranch = ''}) => {
     return (
         <Row>
             <Col>
@@ -91,19 +94,24 @@ const ImportDone = ({ numObjects, importBranch, currBranch=''}) => {
                     <p><strong>Success!</strong></p>
                 </div>
                 <div className='import-text'>
-                    <p><strong><div className='import-num-objects'> {numObjects} </div></strong> objects imported and committed into branch {importBranch}.</p>
+                    <p><strong>
+                        <div className='import-num-objects'> {numObjects} </div>
+                    </strong> objects imported and committed into branch {importBranch}.
+                    </p>
                 </div>
                 {
                     (currBranch && importBranch !== currBranch) &&
                     <div className='import-text'>
-                        <p> Use the&nbsp;<Link to={`compare?ref=${ currBranch }&compare=${ importBranch }`} variant = "success" >Compare tab</Link>&nbsp;to view the changes and merge them to {currBranch}.</p>
+                        <p> Use the&nbsp;<Link to={`compare?ref=${currBranch}&compare=${importBranch}`}
+                                               variant="success">Compare tab</Link>&nbsp;to view the changes and merge
+                            them to {currBranch}.</p>
                     </div>
                 }
             </Col>
         </Row>
     );
 }
-const ExecuteImportButton = ({isSourceValid, importPhase, importFunc, hideFunc=null}) => {
+const ExecuteImportButton = ({isSourceValid, importPhase, importFunc, hideFunc = null}) => {
     return (
         <>
             {
@@ -133,7 +141,17 @@ const ExecuteImportButton = ({isSourceValid, importPhase, importFunc, hideFunc=n
     );
 }
 
-const ImportForm = ({pathStyle, sourceRef, destRef, repoId, importBranch, path, commitMsgRef='', updateSrcValidity, shouldAddPath = false}) => {
+const ImportForm = ({
+                        pathStyle,
+                        sourceRef,
+                        destRef,
+                        repoId,
+                        importBranch,
+                        path,
+                        commitMsgRef = '',
+                        updateSrcValidity,
+                        shouldAddPath = false
+                    }) => {
     const storageNamespaceValidityRegexStr = config.blockstore_namespace_ValidityRegex;
     const storageNamespaceValidityRegex = RegExp(storageNamespaceValidityRegexStr);
     let isSourceValid;
@@ -143,9 +161,10 @@ const ImportForm = ({pathStyle, sourceRef, destRef, repoId, importBranch, path, 
     };
     const basePath = `lakefs://${repoId}/${importBranch}/\u00A0`;
     const sourceURIExample = config ? config.blockstore_namespace_example : "s3://my-bucket/path/";
-    return ( <>
+    return (<>
             <Alert variant="info">
-                Import doesn&apos;t copy the object. it only creates links to the objects in the lakeFS metadata layer. Don&apos;t worry, we will never change objects in the import source.
+                Import doesn&apos;t copy the object. it only creates links to the objects in the lakeFS metadata layer.
+                Don&apos;t worry, we will never change objects in the import source.
                 <a href="https://docs.lakefs.io/setup/import.html" target="_blank" rel="noreferrer"> Learn more.</a>
             </Alert>
             <form>
@@ -159,11 +178,11 @@ const ImportForm = ({pathStyle, sourceRef, destRef, repoId, importBranch, path, 
                             {"Import source must start with " + storageNamespaceValidityRegexStr}
                         </Form.Text>
                     }
-                    <Form.Text style={{ color: 'grey', justifyContent: "space-between"}}>
+                    <Form.Text style={{color: 'grey', justifyContent: "space-between"}}>
                         A URI on the object store to import from.<br/>
                     </Form.Text>
                 </Form.Group>
-                {   shouldAddPath &&
+                {shouldAddPath &&
                     <Form.Group className='form-group'>
                         <Form.Label><strong>Destination:</strong></Form.Label>
                         <Row noGutters={true}>
@@ -174,7 +193,7 @@ const ImportForm = ({pathStyle, sourceRef, destRef, repoId, importBranch, path, 
                                 <Form.Control type="text" autoFocus name="text" ref={destRef} defaultValue={path}/>
                             </Col>
                         </Row>
-                        <Form.Text style={{ color: 'grey'}} md={{offset: 2, span: 10000}}>
+                        <Form.Text style={{color: 'grey'}} md={{offset: 2, span: 10000}}>
                             Leave empty to import to the repository&apos;s root.
                         </Form.Text>
                     </Form.Group>
