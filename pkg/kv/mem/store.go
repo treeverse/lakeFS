@@ -31,10 +31,7 @@ type EntriesIterator struct {
 	store     *Store
 }
 
-const (
-	DriverName  = "mem"
-	EmptyResult = 0
-)
+const DriverName = "mem"
 
 //nolint:gochecknoinits
 func init() {
@@ -179,15 +176,18 @@ func (e *EntriesIterator) Next() bool {
 			}
 		}
 	}
-	sort.Slice(l, func(i, j int) bool { return bytes.Compare(l[i].Key, l[j].Key) < 0 })
-	if len(l) <= EmptyResult+1 { // only 1 key >= start, set start to nil, so to indicate this is the last iteration
+
+	if len(l) == 0 { // No results
 		e.start = nil
-		if len(l) == EmptyResult { // No results
-			return false
-		}
-	} else {
-		e.start = l[1].Key
+		return false
 	}
+	if len(l) == 1 { // only 1 key >= start, set start to nil, so to indicate next call to return false immediately.
+		e.start = nil
+		e.entry = l[0]
+		return true
+	}
+	sort.Slice(l, func(i, j int) bool { return bytes.Compare(l[i].Key, l[j].Key) < 0 })
+	e.start = l[1].Key
 	e.entry = l[0]
 	return true
 }
