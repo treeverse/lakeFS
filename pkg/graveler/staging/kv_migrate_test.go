@@ -16,6 +16,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
+const tombstoneMod = 7
+
 type stagingTestRecord struct {
 	stagingToken graveler.StagingToken
 	records      []graveler.ValueRecord
@@ -69,13 +71,14 @@ func createMigrateTestData(t *testing.T, ctx context.Context, mgr graveler.Stagi
 			stagingToken: graveler.StagingToken("test_token_" + strconv.Itoa(i)),
 			records:      make([]graveler.ValueRecord, 0),
 		}
-		for j := 0; j < rand.Intn(size); j++ {
+		for j := 0; j < rand.Intn(i+1); j++ { // rand.Intn(i+1) ensures at least one staging token has no records
 			key := genRandomBytes(t, rand.Intn(100)+10)
-			identity := genRandomBytes(t, rand.Intn(100)+10)
-			data := genRandomBytes(t, rand.Intn(100)+50)
 			val := &graveler.Value{
-				Identity: identity,
-				Data:     data,
+				Identity: genRandomBytes(t, rand.Intn(100)+10),
+				Data:     genRandomBytes(t, rand.Intn(100)+50),
+			}
+			if i%tombstoneMod != 0 { // Create tombstone record every tombstoneMod records
+				val = nil
 			}
 			tokenData.records = append(tokenData.records, graveler.ValueRecord{
 				Key:   key,
