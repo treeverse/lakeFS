@@ -25,7 +25,7 @@ type KVRepositoryIterator struct {
 }
 
 func NewKVRepositoryIterator(ctx context.Context, store *kv.StoreMessage) (*KVRepositoryIterator, error) {
-	it, err := kv.NewPrimaryIterator(ctx, store.Store, (&graveler.RepositoryData{}).ProtoReflect().Type(), graveler.RepoPartition(), []byte(graveler.RepoPath("")), []byte{}, true)
+	it, err := kv.NewPrimaryIterator(ctx, store.Store, (&graveler.RepositoryData{}).ProtoReflect().Type(), graveler.RepoPartition(), []byte(graveler.RepoPath("")), kv.IteratorOptionsAfter([]byte{}))
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func (ri *KVRepositoryIterator) SeekGE(id graveler.RepositoryID) {
 		return
 	}
 	ri.it.Close()
-	ri.it, ri.err = kv.NewPrimaryIterator(ri.ctx, ri.store, (&graveler.RepositoryData{}).ProtoReflect().Type(), graveler.RepoPartition(), []byte(graveler.RepoPath("")), []byte(graveler.RepoPath(id)), false)
+	ri.it, ri.err = kv.NewPrimaryIterator(ri.ctx, ri.store, (&graveler.RepositoryData{}).ProtoReflect().Type(), graveler.RepoPartition(), []byte(graveler.RepoPath("")), kv.IteratorOptionsFrom([]byte(graveler.RepoPath(id))))
 	ri.value = nil
 }
 
