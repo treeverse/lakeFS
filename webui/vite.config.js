@@ -7,9 +7,9 @@ export default ({ command }) => {
   const baseConfig = {
     plugins: [
       reactRefresh(),
-      eslintPlugin({
-        include: ['src/**/*.jsx', 'src/**/*.js']
-      })
+      // eslintPlugin({
+      //   include: ['src/**/*.jsx', 'src/**/*.js']
+      // })
     ],
     publicDir: './pub',
     build: {
@@ -24,24 +24,24 @@ export default ({ command }) => {
       server: {
         proxy: {
           '/api': {
-            target: 'http://localhost:8000',
+            target: 'http://localhost:8001',
             changeOrigin: true,
             secure: false
           },
           '/oidc/login': {
-            target: 'http://localhost:8000',
+            target: 'http://localhost:8001',
             changeOrigin: false,
             secure: false
           },
           '/logout': {
-            target: 'http://localhost:8000',
+            target: 'http://localhost:8001',
             changeOrigin: false,
             secure: false
           }
         }
       }
     };
-  } 
+  }
   // while building
   return baseConfig;
 };
