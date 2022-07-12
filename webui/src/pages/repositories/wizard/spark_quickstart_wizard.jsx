@@ -14,6 +14,7 @@ const RepositoryCreationPhase = {
     NotStarted: 0,
     InProgress: 1,
     Completed: 2,
+    Failed: 3,
 }
 
 const RepositoryCreationStep = ({repoCreationError, createRepo, onCancel, onComplete}) => {
@@ -24,13 +25,16 @@ const RepositoryCreationStep = ({repoCreationError, createRepo, onCancel, onComp
     const onSubmit = async (repo) => {
         setRepoCreationPhase(RepositoryCreationPhase.InProgress);
         const success = await createRepo(repo, false);
-        setRepoCreationPhase(RepositoryCreationPhase.Completed);
         if (success) {
+            setRepoCreationPhase(RepositoryCreationPhase.Completed);
             onComplete({ 'branch': repo.default_branch, 'namespace': repo.storage_namespace },);
             setRepoName(repo.name);
         }
+        else {
+            setRepoCreationPhase(RepositoryCreationPhase.Failed);
+        }
     }
-    const showError = (repoCreationError) ? repoCreationError : err;
+    const showError = repoCreationError ? repoCreationError : err;
     let present;
     if (loading) {
         present = <Loading/>;
