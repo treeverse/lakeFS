@@ -148,7 +148,7 @@ const ImportForm = ({
                         repoId,
                         importBranch,
                         path,
-                        commitMsgRef = '',
+                        commitMsgRef,
                         updateSrcValidity,
                         shouldAddPath = false
                     }) => {
