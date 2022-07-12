@@ -35,7 +35,6 @@ const ImportDataStep = ({repoId, branchName, onComplete, prependPath = ''}) => {
             onComplete();
         } catch (error) {
             setImportError(error)
-            throw error
         }
     }
 

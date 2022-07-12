@@ -86,7 +86,6 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
             onDone();
         } catch (error) {
             setImportError(error);
-            throw error
         }
     }
     const pathStyle = {'minWidth': '25%'};
@@ -126,11 +125,13 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
                     }
                 </Modal.Body>
                 <Modal.Footer>
+                    <Button variant="secondary" disabled={importPhase === ImportPhase.InProgress} onClick={hide}>
+                        Cancel
+                    </Button>
                     <ExecuteImportButton
                         importPhase={importPhase}
                         importFunc={doImport}
                         isSourceValid={isSourceValid}
-                        hideFunc={hide}
                     />
                 </Modal.Footer>
             </Modal>

@@ -111,15 +111,8 @@ const ImportDone = ({numObjects, importBranch, currBranch = ''}) => {
         </Row>
     );
 }
-const ExecuteImportButton = ({isSourceValid, importPhase, importFunc, hideFunc = null}) => {
+const ExecuteImportButton = ({isSourceValid, importPhase, importFunc}) => {
     return (
-        <>
-            {
-                hideFunc &&
-                <Button variant="secondary" disabled={importPhase === ImportPhase.InProgress} onClick={hideFunc}>
-                    Cancel
-                </Button>
-            }
             <Button variant="success"
                     disabled={importPhase !== ImportPhase.NotStarted || !isSourceValid}
                     onClick={() => {
@@ -137,7 +130,6 @@ const ExecuteImportButton = ({isSourceValid, importPhase, importFunc, hideFunc =
                     importPhase === ImportPhase.Completed && 'Import completed'
                 }
             </Button>
-        </>
     );
 }
 
@@ -163,7 +155,7 @@ const ImportForm = ({
     const sourceURIExample = config ? config.blockstore_namespace_example : "s3://my-bucket/path/";
     return (<>
             <Alert variant="info">
-                Import doesn&apos;t copy the object. it only creates links to the objects in the lakeFS metadata layer.
+                Import doesn&apos;t copy objects. It only creates links to the objects in the lakeFS metadata layer.
                 Don&apos;t worry, we will never change objects in the import source.
                 <a href="https://docs.lakefs.io/setup/import.html" target="_blank" rel="noreferrer"> Learn more.</a>
             </Alert>
