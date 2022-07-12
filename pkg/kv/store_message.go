@@ -51,5 +51,5 @@ func (s *StoreMessage) DeleteMsg(ctx context.Context, partitionKey string, key [
 }
 
 func (s *StoreMessage) Scan(ctx context.Context, msgType protoreflect.MessageType, partitionKey string, prefix, after []byte) (*PrimaryIterator, error) {
-	return NewPrimaryIterator(ctx, s.Store, msgType, partitionKey, prefix, after, true)
+	return NewPrimaryIterator(ctx, s.Store, msgType, partitionKey, prefix, IteratorOptionsAfter(after))
 }
