@@ -13,7 +13,11 @@ has_children: false
 ### Auditing
 Data auditing is data assessment to ensure its accuracy, security, and efficacy for specific usage. It also involves assessing data quality through its lifecycle and understanding the impact of poor quality data on the organization's performance and revenue. Ensuring data reproducibility, auditability, and governance is one of the key concerns of data engineers today.
 
-### [Branch]({{ site.baseurl }}/understand/branching-model.html#branches)
+### Branch
+
+Branches are similar in concept to Git branches.
+When creating a new branch, we are actually creating a consistent snapshot of the entire repository, which is isolated from other branches and their changes.
+
 A branch is a mutable pointer to a commit and its staging area (i.e., mutable storage where developers can create, update, and delete objects). When a user creates a commit from a branch, all the files from the staging area will be merged into the contents of the current branch, generating a new set of objects. The pointer is updated to reference the new set of objects. The new branch tip is set to the latest commit and the previous branch tip serves as the commit's parent. Learn more about the lakeFS branching model [here]({{ site.baseurl }}/understand/branching-model.html).
 
 Just like in git, a branch spans a repository.
@@ -23,7 +27,6 @@ Collection, roughly speaking, is a set of data. A set of structured data is ofte
 
 ### Commit
 A commit is a point-in-time snapshot of the branch. It's a collection of object metadata and data, including paths and the object contents and metadata. Commits have their own commit metadata. Every repository has one initial commit with no parent commits. If a commit has more than one parent, it is a merge commit. lakeFS supports only merge commits with two parents.
-
 ### Cross-collection Consistency
 In lakeFS, a repository (and thus a branch) can span multiple collections. By providing branch, commit, merge and revert operations atomically on these branches, lakeFS achieves consistency guarantees across different logical collections. That is, data versioning is consistent across collections within a repository.
 
@@ -38,16 +41,16 @@ Reproducibility in data pipelines is the ability to repeat a process. An example
 ### Data Quality Testing
 This term describes ways to test data for its accuracy, completeness, consistency, timeliness, validity, and integrity. 
 
-### [Data Versioning]({{ site.baseurl }}/data-versioning/)
+### Data Versioning
 To version data means creating a unique reference for data collection. This reference can take the form of a query, an ID, or also commonly, a DateTime identifier. Data versioning may also include saving an entire copy of the data under a new name or file path every time you want to create a version of it. More advanced versioning solutions like lakeFS optimize storage usage between versions and expose special operations to manage them.
 
 ### Git-like Operations
 lakeFS allows teams to treat their data lake as a Git repository. Git-like operations over data are infrastructure, not a feature provided by an application, with data versioning as an essential part of that infrastructure.
 
-### [Graveler]({{ site.baseurl }}/understand/versioning-internals.html#sstable-file-format-graveler-file)
+### Graveler
 Graveler is responsible for handling versioning in lakeFS by translating lakeFS addresses to the actual stored objects. See the [data model section]({{ site.baseurl }}/understand/versioning-internals.html) to learn about the data model used to store lakeFS metadata.
 
-### [Hooks]({{ site.baseurl }}/setup/hooks.html)
+### Hooks
 lakeFS hooks allow you to automate and ensure that a given set of checks and validations happens before important lifecycle events. They are similar conceptually to [Git Hooks]({{ site.baseurl }}/docs/githooks), but in contrast, they run remotely on a server. Currently, lakeFS allows executing hooks when two types of events occur: pre-commit events that run before a commit is acknowledged and pre-merge events that trigger right before a merge operation. 
 
 ### Isolated Data Snapshot
@@ -68,7 +71,7 @@ A repository is a collection of objects with common history tracking. lakeFS man
 ### Rollback
 A rollback is an atomic operation reversing the effects of a previous commit. If a developer introduces a new code version to production and discovers that it has a critical bug, they can simply roll back to the previous version. In lakeFS, a rollback is an atomic action that prevents the data consumers from receiving low-quality data until the issue is resolved. Learn more about how lakeFS supports the [rollback]({{ site.baseurl }}/use_cases/rollback.html) operation.
 
-### [Tag]({{ site.baseurl }}/understand/object-model.html#tags)
+### Tag
 A tag is an immutable pointer to a single commit. Tags have readable names. Because tags are commits, a repository can be read from any tag. Example tags:
 
 - `v2.3` to mark a release 
