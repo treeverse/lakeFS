@@ -802,7 +802,7 @@ func NewKVGraveler(branchLocker BranchLocker, committedManager CommittedManager,
 }
 
 func (g *KVGraveler) GetRepository(ctx context.Context, repositoryID RepositoryID) (*Repository, error) {
-	return g.db.GetRepository(ctx, repositoryID)
+	return g.RefManager.GetRepository(ctx, repositoryID)
 }
 
 func (g *KVGraveler) CreateRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, branchID BranchID) (*Repository, error) {

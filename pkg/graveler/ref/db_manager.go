@@ -99,7 +99,7 @@ func (m *DBManager) CreateBareRepository(ctx context.Context, repositoryID grave
 }
 
 func (m *DBManager) ListRepositories(ctx context.Context) (graveler.RepositoryIterator, error) {
-	return NewRepositoryIterator(ctx, m.db, IteratorPrefetchSize), nil
+	return NewDBRepositoryIterator(ctx, m.db, IteratorPrefetchSize), nil
 }
 
 func (m *DBManager) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID) error {

@@ -25,7 +25,7 @@ func TestRepositoryIterator(t *testing.T) {
 	}
 
 	t.Run("listing all repos", func(t *testing.T) {
-		iter := ref.NewRepositoryIterator(context.Background(), db, 3)
+		iter := ref.NewDBRepositoryIterator(context.Background(), db, 3)
 		repoIds := make([]graveler.RepositoryID, 0)
 		for iter.Next() {
 			repo := iter.Value()
@@ -42,7 +42,7 @@ func TestRepositoryIterator(t *testing.T) {
 	})
 
 	t.Run("listing repos from prefix", func(t *testing.T) {
-		iter := ref.NewRepositoryIterator(context.Background(), db, 3)
+		iter := ref.NewDBRepositoryIterator(context.Background(), db, 3)
 		iter.SeekGE("b")
 		repoIds := make([]graveler.RepositoryID, 0)
 		for iter.Next() {
@@ -60,7 +60,7 @@ func TestRepositoryIterator(t *testing.T) {
 	})
 
 	t.Run("listing repos SeekGE", func(t *testing.T) {
-		iter := ref.NewRepositoryIterator(context.Background(), db, 3)
+		iter := ref.NewDBRepositoryIterator(context.Background(), db, 3)
 		iter.SeekGE("b")
 		repoIds := make([]graveler.RepositoryID, 0)
 		for iter.Next() {
