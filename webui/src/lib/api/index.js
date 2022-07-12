@@ -896,7 +896,7 @@ class Templates {
         if (!response.ok) {
             throw new Error(await extractError(response));
         }
-        return await response.text();
+        return response.text();
     }
 }
 
