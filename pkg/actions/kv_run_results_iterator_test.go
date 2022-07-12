@@ -21,23 +21,14 @@ const (
 	testByCommit       = "testCommit1"
 	testMissingPrimary = "branchPartialPrimary"
 	IndexOutOfRange    = "zzz"
+	withHooks          = 100
 )
-
-var keyMap = make(map[string]int, 0)
-var keyList []string
-
-func TestRSGF(t *testing.T) {
-	for i := 0; i < 50; i++ {
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			TestRunResultsIterator(t)
-		})
-	}
-}
 
 func TestRunResultsIterator(t *testing.T) {
 	ctx := context.Background()
 	kvStore := kv.StoreMessage{Store: kvtest.GetStore(ctx, t)}
-	createTestData(t, ctx, kvStore)
+
+	keyMap, keyList := createTestData(t, ctx, kvStore)
 
 	tests := []struct {
 		name     string
@@ -136,7 +127,10 @@ func (gen *TestDecreasingIDGenerator) NewRunID() string {
 	return fmt.Sprintf("%013d", gen.num)
 }
 
-func createTestData(t *testing.T, ctx context.Context, kvStore kv.StoreMessage) {
+func createTestData(t *testing.T, ctx context.Context, kvStore kv.StoreMessage) (map[string]int, []string) {
+	var keyMap = make(map[string]int, 0)
+	var keyList []string
+
 	ctrl := gomock.NewController(t)
 	writer := mock.NewMockOutputWriter(ctrl)
 	mockStatsCollector := NewActionStatsMockCollector()
@@ -164,7 +158,7 @@ func createTestData(t *testing.T, ctx context.Context, kvStore kv.StoreMessage) 
 	}
 
 	// Basic runs
-	for ; msgIdx < 100; msgIdx++ {
+	for ; msgIdx < withHooks; msgIdx++ {
 		runID := actionService.NewRunID()
 		keyMap[runID] = msgIdx
 		keyList = append(keyList, runID)
@@ -240,6 +234,8 @@ func createTestData(t *testing.T, ctx context.Context, kvStore kv.StoreMessage) 
 
 	// reverse the list to make it sorted in ascending order
 	reverse(keyList)
+
+	return keyMap, keyList
 }
 
 func reverse(s []string) {
