@@ -69,8 +69,9 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.KV) (kv.Store, erro
 	if params.AwsRegion != "" {
 		cfg = cfg.WithRegion(params.AwsRegion)
 	}
+
 	if params.AwsAccessKeyID != "" {
-		cfg.WithCredentials(credentials.NewCredentials(
+		cfg = cfg.WithCredentials(credentials.NewCredentials(
 			&credentials.StaticProvider{
 				Value: credentials.Value{
 					AccessKeyID:     params.AwsAccessKeyID,
