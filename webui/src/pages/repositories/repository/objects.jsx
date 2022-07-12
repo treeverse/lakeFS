@@ -74,14 +74,9 @@ const ImportButton = ({ config, repo, reference, path, onDone, onClick, variant 
     const storageNamespaceValidityRegexStr = config.blockstore_namespace_ValidityRegex;
     const storageNamespaceValidityRegex = RegExp(storageNamespaceValidityRegexStr);
     const sourceURIExample = config ? config.blockstore_namespace_example : "s3://my-bucket/path/";
-    let importBranch = `_${reference.id}_imported`;
     let currBranch = reference.id;
-
-    if (currBranch.includes('_imported')) {
-        importBranch = reference.id
-        currBranch = currBranch.replace("_imported","")
-        currBranch = currBranch.replace("_","")
-    }
+    currBranch = currBranch.match(/^_(.*)_imported$/)?.[1] || currBranch; // trim "_imported" suffix if used as import source
+    let importBranch = `_${currBranch}_imported`;
 
     if (!reference || reference.type !== RefTypeBranch) return <></>
 
