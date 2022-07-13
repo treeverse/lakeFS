@@ -107,7 +107,7 @@ To do it, you should trigger the [GitHub Action](https://github.com/treeverse/la
    make publish-scala
    ```
    
-### Debugging
+## Debugging
 
 To debug the Exporter or the Garbage Collector using your IDE you can use a remote JVM debugger. You can follow [these](https://sparkbyexamples.com/spark/how-to-debug-spark-application-locally-or-remote/) instructions to connect one. 
 
