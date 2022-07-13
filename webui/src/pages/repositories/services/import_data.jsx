@@ -111,14 +111,14 @@ const ImportDone = ({numObjects, importBranch, currBranch = ''}) => {
 const ExecuteImportButton = ({isEnabled, importPhase, importFunc}) => {
     return (
         <Button variant="success"
-                disabled={importPhase !== ImportPhase.NotStarted || !isEnabled}
+                disabled={!isEnabled}
                 onClick={() => {
                         if (importPhase !== ImportPhase.InProgress) {
                             importFunc();
                         }
                     }}>
         {importPhase === ImportPhase.InProgress && 'Importing...'}
-        {importPhase === ImportPhase.NotStarted && 'Import'}
+        {(importPhase === ImportPhase.NotStarted || importPhase === ImportPhase.Failed) && 'Import'}
         {importPhase === ImportPhase.Completed && 'Import completed'}
     </Button>);
 }
@@ -133,14 +133,16 @@ const ImportForm = ({
                         path,
                         commitMsgRef,
                         updateSrcValidity,
-                        shouldAddPath = false
+                        shouldAddPath = false,
+                        err = null,
                     }) => {
-    const [isSourceValid, setIsSourceValid] = useState(false);
+    const [isSourceValid, setIsSourceValid] = useState(true);
     const storageNamespaceValidityRegexStr = config.blockstore_namespace_ValidityRegex;
     const storageNamespaceValidityRegex = RegExp(storageNamespaceValidityRegexStr);
-    const checkSourceURLValidity = () => {
-        setIsSourceValid(storageNamespaceValidityRegex.test(sourceRef.current.value));
-        updateSrcValidity(isSourceValid);
+    const updateSourceURLValidity = () => {
+        const isValid = storageNamespaceValidityRegex.test(sourceRef.current.value);
+        updateSrcValidity(isValid);
+        setIsSourceValid(isValid);
     };
     const basePath = `lakefs://${repoId}/${importBranch}/\u00A0`;
     const sourceURIExample = config ? config.blockstore_namespace_example : "s3://my-bucket/path/";
@@ -155,7 +157,7 @@ const ImportForm = ({
                 <Form.Label><strong>Import from:</strong></Form.Label>
                 <Form.Control type="text" name="text" style={pathStyle} sm={8} ref={sourceRef} autoFocus
                               placeholder={sourceURIExample}
-                              onChange={checkSourceURLValidity}/>
+                              onChange={updateSourceURLValidity}/>
                 {isSourceValid === false &&
                     <Form.Text className="text-danger">
                         {`Import source should match the following pattern: "${storageNamespaceValidityRegexStr}"`}
@@ -185,6 +187,8 @@ const ImportForm = ({
                 <Form.Label><strong>Commit Message:</strong></Form.Label>
                 <Form.Control sm={8} type="text" ref={commitMsgRef} name="text" autoFocus/>
             </Form.Group>
+            {err &&
+                <Alert variant={"danger"}>{err.message}</Alert>}
         </form>
     </>)
 }

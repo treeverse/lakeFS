@@ -82,6 +82,7 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
         } catch (error) {
             setImportPhase(ImportPhase.Failed);
             setImportError(error);
+            setIsImportEnabled(false);
         }
     }
     const pathStyle = {'minWidth': '25%'};
@@ -94,7 +95,7 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
                 </Modal.Header>
                 <Modal.Body>
                     {
-                        importPhase === ImportPhase.NotStarted &&
+                        (importPhase === ImportPhase.NotStarted || importPhase === ImportPhase.Failed) &&
                         <ImportForm
                             config={config}
                             pathStyle={pathStyle}
@@ -106,6 +107,7 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
                             path={path}
                             commitMsgRef={commitMsgRef}
                             shouldAddPath={true}
+                            err={importError}
                         />
                     }
                     {
@@ -117,16 +119,13 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
                         <ImportDone currBranch={currBranch} importBranch={importBranch}
                                     numObjects={numberOfImportedObjects}/>
                     }
-                    {
-                        importError && <Error error={importError}/>
-                    }
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="secondary" disabled={importPhase === ImportPhase.InProgress} onClick={hide}>
                         Cancel
                     </Button>
                     {
-                        importPhase !== ImportPhase.Failed && <ExecuteImportButton importPhase={importPhase} importFunc={doImport} isEnabled={isImportEnabled}/>
+                        <ExecuteImportButton importPhase={importPhase} importFunc={doImport} isEnabled={isImportEnabled}/>
                     }
                 </Modal.Footer>
             </Modal>

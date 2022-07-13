@@ -45,6 +45,7 @@ const ImportDataStep = ({repoId, branchName, onComplete, prependPath = ''}) => {
         } catch (error) {
             setImportError(error);
             setImportPhase(ImportPhase.Failed);
+            setIsImportEnabled(false);
         }
     }
 
@@ -52,7 +53,7 @@ const ImportDataStep = ({repoId, branchName, onComplete, prependPath = ''}) => {
         <>
             <h2 className={"wizard-step-header"}>Import Data</h2>
             {
-                importPhase === ImportPhase.NotStarted &&
+                (importPhase === ImportPhase.NotStarted || importPhase === ImportPhase.Failed) &&
                 <ImportForm
                     config={response}
                     pathStyle={{'minWidth': '25%'}}
@@ -75,7 +76,7 @@ const ImportDataStep = ({repoId, branchName, onComplete, prependPath = ''}) => {
                 showError && <Error error={showError}/>
             }
             {
-                importPhase !== ImportPhase.Failed && <ExecuteImportButton importPhase={importPhase} importFunc={doImport} isEnabled={isImportEnabled}/>
+                <ExecuteImportButton importPhase={importPhase} importFunc={doImport} isEnabled={isImportEnabled}/>
             }
 
         </>
