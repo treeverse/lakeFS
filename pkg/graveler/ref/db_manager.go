@@ -528,7 +528,7 @@ func (m *DBManager) addGenerationToNodes(nodes map[graveler.CommitID]*CommitNode
 }
 
 // rWorker writes a repository, and all repository related entities, to fd
-func rWorker(ctx context.Context, d *pgxpool.Pool, rChan <-chan *graveler.RepositoryRecord) error {
+func rWorker(rChan <-chan *graveler.RepositoryRecord) error {
 	for r := range rChan {
 		pb := graveler.ProtoFromRepo(r)
 		data, err := proto.Marshal(pb)
@@ -565,7 +565,7 @@ func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
 	var g multierror.Group
 	for i := 0; i < jobWorkers; i++ {
 		g.Go(func() error {
-			return rWorker(ctx, d, rChan)
+			return rWorker(rChan)
 		})
 	}
 
