@@ -1370,6 +1370,12 @@ func (a *APIAuthService) ListGroups(ctx context.Context, params *model.Paginatio
 	}
 	groups := make([]*model.Group, len(resp.JSON200.Results))
 
+	for i, r := range resp.JSON200.Results {
+		groups[i] = &model.Group{
+			CreatedAt:   time.Unix(r.CreationDate, 0),
+			DisplayName: r.Name,
+		}
+	}
 	return groups, toPagination(resp.JSON200.Pagination), nil
 }
 
@@ -1402,7 +1408,12 @@ func (a *APIAuthService) ListUserGroups(ctx context.Context, username string, pa
 		return nil, nil, err
 	}
 	userGroups := make([]*model.Group, len(resp.JSON200.Results))
-
+	for i, r := range resp.JSON200.Results {
+		userGroups[i] = &model.Group{
+			CreatedAt:   time.Unix(r.CreationDate, 0),
+			DisplayName: r.Name,
+		}
+	}
 	return userGroups, toPagination(resp.JSON200.Pagination), nil
 }
 
