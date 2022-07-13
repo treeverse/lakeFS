@@ -12,6 +12,7 @@ const ImportPhase = {
     NotStarted: 0,
     InProgress: 1,
     Completed: 2,
+    Failed: 3,
 }
 
 const runImport = async (updateImportState, prependPath, commitMsg, sourceRef, branch, repoId, refId) => {
@@ -165,7 +166,7 @@ const ImportForm = ({
                     <Form.Control type="text" name="text" style={pathStyle} sm={8} ref={sourceRef} autoFocus
                                   placeholder={sourceURIExample}
                                   onChange={checkSourceURLValidity}/>
-                    {isSourceValid === false &&
+                    {!isSourceValid &&
                         <Form.Text className="text-danger">
                             {"Import source must start with " + storageNamespaceValidityRegexStr}
                         </Form.Text>

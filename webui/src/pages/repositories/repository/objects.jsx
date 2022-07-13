@@ -85,6 +85,7 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
             );
             onDone();
         } catch (error) {
+            setImportPhase(ImportPhase.Failed);
             setImportError(error);
         }
     }
