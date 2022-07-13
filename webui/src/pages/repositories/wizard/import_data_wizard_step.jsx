@@ -7,15 +7,24 @@ import {
     ImportProgress,
     runImport
 } from "../services/import_data";
-import {Error} from "../../../lib/components/controls";
+import {Error, Loading} from "../../../lib/components/controls";
+import {useAPI} from "../../../lib/hooks/api";
+import {config} from "../../../lib/api";
 
 const ImportDataStep = ({repoId, branchName, onComplete, prependPath = ''}) => {
     const [importPhase, setImportPhase] = useState(ImportPhase.NotStarted);
     const [numberOfImportedObjects, setNumberOfImportedObjects] = useState(0);
-    const [isSourceValid, setIsSourceValid] = useState(false);
+    const [isImportEnabled, setIsImportEnabled] = useState(false);
     const [importError, setImportError] = useState(null);
     const sourceRef = useRef(null);
     const commitMsgRef = useRef(null);
+    const {response, error, loading} = useAPI(() => config.getStorageConfig());
+
+    if (loading) {
+        return <Loading/>
+    }
+
+    const showError = importError ? importError : error;
 
     const doImport = async () => {
         setImportPhase(ImportPhase.InProgress);
@@ -34,7 +43,8 @@ const ImportDataStep = ({repoId, branchName, onComplete, prependPath = ''}) => {
             );
             onComplete();
         } catch (error) {
-            setImportError(error)
+            setImportError(error);
+            setImportPhase(ImportPhase.Failed);
         }
     }
 
@@ -44,9 +54,10 @@ const ImportDataStep = ({repoId, branchName, onComplete, prependPath = ''}) => {
             {
                 importPhase === ImportPhase.NotStarted &&
                 <ImportForm
+                    config={response}
                     pathStyle={{'minWidth': '25%'}}
                     sourceRef={sourceRef}
-                    updateSrcValidity={(isValid) => setIsSourceValid(isValid)}
+                    updateSrcValidity={(isValid) => setIsImportEnabled(isValid)}
                     repoId={repoId}
                     importBranch={branchName}
                     commitMsgRef={commitMsgRef}
@@ -61,9 +72,12 @@ const ImportDataStep = ({repoId, branchName, onComplete, prependPath = ''}) => {
                 <ImportDone currBranch={branchName} importBranch={branchName} numObjects={numberOfImportedObjects}/>
             }
             {
-                importError && <Error error={importError}/>
+                showError && <Error error={showError}/>
             }
-            <ExecuteImportButton importPhase={importPhase} importFunc={doImport} isSourceValid={isSourceValid}/>
+            {
+                importPhase !== ImportPhase.Failed && <ExecuteImportButton importPhase={importPhase} importFunc={doImport} isEnabled={isImportEnabled}/>
+            }
+
         </>
     );
 }

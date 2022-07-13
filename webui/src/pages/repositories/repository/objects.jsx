@@ -37,7 +37,7 @@ const ImportButton = ({variant = "success", enabled = false, onClick}) => {
 const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onDone, onHide, show = false}) => {
     const [importPhase, setImportPhase] = useState(ImportPhase.NotStarted);
     const [numberOfImportedObjects, setNumberOfImportedObjects] = useState(0);
-    const [isSourceValid, setIsSourceValid] = useState(false);
+    const [isImportEnabled, setIsImportEnabled] = useState(false);
     const [importError, setImportError] = useState(null);
 
     const sourceRef = useRef(null);
@@ -57,7 +57,7 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
     const resetState = () => {
         setImportError(null);
         setImportPhase(ImportPhase.NotStarted);
-        setIsSourceValid(null);
+        setIsImportEnabled(false);
         setNumberOfImportedObjects(0);
     }
 
@@ -101,10 +101,11 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
                     {
                         importPhase === ImportPhase.NotStarted &&
                         <ImportForm
+                            config={config}
                             pathStyle={pathStyle}
                             sourceRef={sourceRef}
                             destRef={destRef}
-                            updateSrcValidity={(isValid) => setIsSourceValid(isValid)}
+                            updateSrcValidity={(isValid) => setIsImportEnabled(isValid)}
                             repoId={repoId}
                             importBranch={importBranch}
                             path={path}
@@ -129,11 +130,9 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
                     <Button variant="secondary" disabled={importPhase === ImportPhase.InProgress} onClick={hide}>
                         Cancel
                     </Button>
-                    <ExecuteImportButton
-                        importPhase={importPhase}
-                        importFunc={doImport}
-                        isSourceValid={isSourceValid}
-                    />
+                    {
+                        importPhase !== ImportPhase.Failed && <ExecuteImportButton importPhase={importPhase} importFunc={doImport} isEnabled={isImportEnabled}/>
+                    }
                 </Modal.Footer>
             </Modal>
         </>
