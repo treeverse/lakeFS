@@ -43,14 +43,9 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
     const sourceRef = useRef(null);
     const destRef = useRef(null);
     const commitMsgRef = useRef(null);
-    let importBranch = `_${referenceId}_imported`;
     let currBranch = referenceId;
-
-    if (currBranch.includes('_imported')) {
-        importBranch = referenceId
-        currBranch = currBranch.replace("_imported", "")
-        currBranch = currBranch.replace("_", "")
-    }
+    currBranch = currBranch.match(/^_(.*)_imported$/)?.[1] || currBranch; // trim "_imported" suffix if used as import source
+    let importBranch = `_${currBranch}_imported`;
 
     if (!referenceId || referenceType !== RefTypeBranch) return <></>
 

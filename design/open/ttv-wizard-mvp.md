@@ -82,7 +82,7 @@ spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
 spark.hadoop.fs.s3a.access_key={{$creds.Key}}
 spark.hadoop.fs.s3a.secret_key={{$creds.Secret}}
 {{end}}
-spark.hadoop.fs.s3a.endpoint={{ .querystring.lakefs_url }}
+spark.hadoop.fs.s3a.endpoint={{ .query.lakefs_url }}
 spark.hadoop.fs.s3a.path.style.access=true
 ```
 
@@ -100,7 +100,7 @@ Name: *localMetastoreConfig.xml.tt*
     </property>
     <property>
         <name>fs.s3a.endpoint</name>
-        <value>{{ .querystring.lakefs_url }}</value>
+        <value>{{ .query.lakefs_url }}</value>
     </property>
     {{with $creds := new_credentials}}
     <property>
@@ -127,7 +127,7 @@ Name: *localMetastoreConfig.xml.tt*
     ```
     ?lakefs_url=https://my-lakefs.io&template_location=databricksConfig.props.tt
     ```
-7. The templating service will fetch the templates from the provided locations, expand the `.querystring.lakefs_url` parameter for both templates and return a response of the format:
+7. The templating service will fetch the templates from the provided locations, expand the `.query.lakefs_url` parameter for both templates and return a response of the format:
     ```properties
     spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
     spark.hadoop.fs.s3a.access_key=ACCESSKEYDONTTELL
@@ -165,7 +165,7 @@ Name: *localMetastoreConfig.xml.tt*
     ```
     ?lakefs_url=https://my-lakefs.io&template_location=databricksConfig.props.tt
     ```
-7. The templating service will fetch the templates from the provided locations, expand the `.querystring.lakefs_url` parameter for both templates and return a response of the format:
+7. The templating service will fetch the templates from the provided locations, expand the `.query.lakefs_url` parameter for both templates and return a response of the format:
     ```properties
     spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
     spark.hadoop.fs.s3a.access_key=ACCESSKEYDONTTELL
