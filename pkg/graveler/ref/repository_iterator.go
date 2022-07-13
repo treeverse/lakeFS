@@ -32,6 +32,7 @@ func NewKVRepositoryIterator(ctx context.Context, store *kv.StoreMessage) (*KVRe
 	return &KVRepositoryIterator{
 		it:    it,
 		store: store.Store,
+		ctx:   ctx,
 	}, nil
 }
 
