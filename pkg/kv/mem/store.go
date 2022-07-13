@@ -3,9 +3,9 @@ package mem
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
 	"sort"
-	"strings"
 	"sync"
 
 	"github.com/treeverse/lakefs/pkg/kv"
@@ -14,17 +14,20 @@ import (
 
 type Driver struct{}
 
+// PartitionMap holds key-value pairs of a given partition
+type PartitionMap map[string]kv.Entry
+
 type Store struct {
-	m    map[string][]byte
-	keys []string
-	mu   sync.RWMutex
+	m map[string]PartitionMap
+
+	mu sync.RWMutex
 }
 
 type EntriesIterator struct {
 	entry     *kv.Entry
 	err       error
-	start     string
-	partition []byte
+	start     []byte
+	partition string
 	store     *Store
 }
 
@@ -37,23 +40,12 @@ func init() {
 
 func (d *Driver) Open(_ context.Context, _ kvparams.KV) (kv.Store, error) {
 	return &Store{
-		m:    make(map[string][]byte),
-		keys: []string{},
+		m: make(map[string]PartitionMap, 0),
 	}, nil
 }
 
-func combinedKey(partitionKey, key []byte) string {
-	return kv.FormatPath(string(partitionKey), string(key))
-}
-
-func keyFromCombinedKey(combinedKey string) []byte {
-	//nolint:gomnd
-	return []byte(strings.SplitN(combinedKey, kv.PathDelimiter, 2)[1])
-}
-
-func partitionKeyFromCombinedKey(combinedKey string) []byte {
-	//nolint:gomnd
-	return []byte(strings.SplitN(combinedKey, kv.PathDelimiter, 2)[0])
+func encodeKey(key []byte) string {
+	return base64.StdEncoding.EncodeToString(key)
 }
 
 func (s *Store) Get(_ context.Context, partitionKey, key []byte) (*kv.ValueWithPredicate, error) {
@@ -66,14 +58,14 @@ func (s *Store) Get(_ context.Context, partitionKey, key []byte) (*kv.ValueWithP
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	combinedKey := combinedKey(partitionKey, key)
-	value, ok := s.m[combinedKey]
+	sKey := encodeKey(key)
+	value, ok := s.m[string(partitionKey)][sKey]
 	if !ok {
-		return nil, fmt.Errorf("key=%v: %w", combinedKey, kv.ErrNotFound)
+		return nil, fmt.Errorf("partition=%s, key=%v, encoding=%s: %w", partitionKey, key, sKey, kv.ErrNotFound)
 	}
 	return &kv.ValueWithPredicate{
-		Value:     value,
-		Predicate: kv.Predicate(value),
+		Value:     value.Value,
+		Predicate: kv.Predicate(value.Value),
 	}, nil
 }
 
@@ -89,24 +81,21 @@ func (s *Store) Set(_ context.Context, partitionKey, key, value []byte) error {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	combinedKey := combinedKey(partitionKey, key)
 
-	if _, found := s.m[combinedKey]; !found {
-		s.insertNewKey(combinedKey)
-	}
-	s.m[combinedKey] = value
+	s.internalSet(partitionKey, key, value)
+
 	return nil
 }
 
-// insertNewKey insert new key into keys - insert into sorted slice
-func (s *Store) insertNewKey(combinedKey string) {
-	idx := sort.SearchStrings(s.keys, combinedKey)
-	if idx == len(s.keys) {
-		s.keys = append(s.keys, combinedKey)
-	} else {
-		s.keys = append(s.keys, "")
-		copy(s.keys[idx+1:], s.keys[idx:])
-		s.keys[idx] = combinedKey
+func (s *Store) internalSet(partitionKey, key, value []byte) {
+	sKey := encodeKey(key)
+	if _, ok := s.m[string(partitionKey)]; !ok {
+		s.m[string(partitionKey)] = make(map[string]kv.Entry)
+	}
+	s.m[string(partitionKey)][sKey] = kv.Entry{
+		PartitionKey: partitionKey,
+		Key:          key,
+		Value:        value,
 	}
 }
 
@@ -122,18 +111,19 @@ func (s *Store) SetIf(_ context.Context, partitionKey, key, value []byte, valueP
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	combinedKey := combinedKey(partitionKey, key)
 
-	curr, currOK := s.m[combinedKey]
+	sKey := encodeKey(key)
+	curr, currOK := s.m[string(partitionKey)][sKey]
 	if valuePredicate == nil {
 		if currOK {
 			return fmt.Errorf("key=%v: %w", key, kv.ErrPredicateFailed)
 		}
-		s.insertNewKey(combinedKey)
-	} else if !bytes.Equal(valuePredicate.([]byte), curr) {
-		return fmt.Errorf("%w: key=%v", kv.ErrPredicateFailed, combinedKey)
+	} else if !bytes.Equal(valuePredicate.([]byte), curr.Value) {
+		return fmt.Errorf("%w: partition=%s, key=%v, encoding=%s", kv.ErrPredicateFailed, partitionKey, key, sKey)
 	}
-	s.m[combinedKey] = value
+
+	s.internalSet(partitionKey, key, value)
+
 	return nil
 }
 
@@ -146,16 +136,12 @@ func (s *Store) Delete(_ context.Context, partitionKey, key []byte) error {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	combinedKey := combinedKey(partitionKey, key)
 
-	if _, found := s.m[combinedKey]; !found {
+	sKey := encodeKey(key)
+	if _, ok := s.m[string(partitionKey)][sKey]; !ok {
 		return nil
 	}
-	idx := sort.SearchStrings(s.keys, combinedKey)
-	if idx < len(s.keys) && s.keys[idx] == combinedKey {
-		s.keys = append(s.keys[:idx], s.keys[idx+1:]...)
-	}
-	delete(s.m, combinedKey)
+	delete(s.m[string(partitionKey)], sKey)
 	return nil
 }
 
@@ -163,55 +149,46 @@ func (s *Store) Scan(_ context.Context, partitionKey, start []byte) (kv.EntriesI
 	if len(partitionKey) == 0 {
 		return nil, kv.ErrMissingPartitionKey
 	}
-	combinedKey := combinedKey(partitionKey, start)
 
 	return &EntriesIterator{
 		store:     s,
-		start:     combinedKey,
-		partition: partitionKey,
+		start:     start,
+		partition: string(partitionKey),
 	}, nil
 }
 
 func (s *Store) Close() {}
 
 func (e *EntriesIterator) Next() bool {
-	if e.err != nil {
+	if e.err != nil || e.start == nil { // start is nil only if last iteration we reached end of keys
 		return false
 	}
-	if e.start == "" {
-		e.entry = nil
-		return false
-	}
+
 	e.store.mu.RLock()
 	defer e.store.mu.RUnlock()
-	idx := sort.SearchStrings(e.store.keys, e.start)
-	if idx == len(e.store.keys) {
-		e.start = ""
-		e.entry = nil
-		return false
-	}
-	// point to the entry we found
-	combinedKey := e.store.keys[idx]
-	value := e.store.m[combinedKey]
 
-	partition := partitionKeyFromCombinedKey(combinedKey)
-	if !bytes.Equal(partition, e.partition) {
-		e.start = ""
-		e.entry = nil
-		return false
+	l := make([]*kv.Entry, 0)
+	if _, ok := e.store.m[e.partition]; ok {
+		for _, v := range e.store.m[e.partition] {
+			if bytes.Compare(v.Key, e.start) >= 0 {
+				entry := v
+				l = append(l, &entry)
+			}
+		}
 	}
 
-	e.entry = &kv.Entry{
-		PartitionKey: partition,
-		Key:          keyFromCombinedKey(combinedKey),
-		Value:        value,
+	if len(l) == 0 { // No results
+		e.start = nil
+		return false
 	}
-	// set start to the next item - nil as end indicator
-	if idx+1 < len(e.store.keys) {
-		e.start = e.store.keys[idx+1]
-	} else {
-		e.start = ""
+	if len(l) == 1 { // only 1 key >= start, set start to nil, so to indicate next call to return false immediately.
+		e.start = nil
+		e.entry = l[0]
+		return true
 	}
+	sort.Slice(l, func(i, j int) bool { return bytes.Compare(l[i].Key, l[j].Key) < 0 })
+	e.start = l[1].Key
+	e.entry = l[0]
 	return true
 }
 
