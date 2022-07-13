@@ -36,21 +36,21 @@ const RepositoryCreationStep = ({repoCreationError, createRepo, onCancel, onComp
         }
     }
     const showError = repoCreationError ? repoCreationError : err;
-    let present;
+    let content;
     if (loading) {
-        present = <Loading/>;
+        content = <Loading/>;
     } else if (repoCreationPhase === RepositoryCreationPhase.InProgress) {
-        present = <ProgressSpinner text={'Creating repository...'} />;
+        content = <ProgressSpinner text={'Creating repository...'} />;
     } else if (repoCreationPhase === RepositoryCreationPhase.Completed) {
-        present = <Alert variant="info" className={"mt-3"}>Repository <span className={"font-weight-bold"}>{repoName}</span> created successfully</Alert>;
+        content = <Alert variant="info" className={"mt-3"}>Repository <span className={"font-weight-bold"}>{repoName}</span> created successfully</Alert>;
     }
     else {
-        present = <RepositoryCreateForm config={response} error={showError} onSubmit={onSubmit} onCancel={onCancel}/>;
+        content = <RepositoryCreateForm config={response} error={showError} onSubmit={onSubmit} onCancel={onCancel}/>;
     }
     return (
         <>
             <h2 className={"wizard-step-header"}>Create a repository</h2>
-            {present}
+            {content}
         </>
     );
 }
