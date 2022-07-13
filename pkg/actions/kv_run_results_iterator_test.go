@@ -16,12 +16,15 @@ import (
 )
 
 const (
-	iteratorTestRepoID = "iterTestRepoID"
-	testByBranch       = "testBranch"
-	testByCommit       = "testCommit1"
-	testMissingPrimary = "branchPartialPrimary"
-	IndexOutOfRange    = "zzz"
-	withHooks          = 100
+	iteratorTestRepoID        = "iterTestRepoID"
+	testByBranch              = "testBranch"
+	testByCommit              = "testCommit1"
+	testMissingPrimary        = "branchPartialPrimary"
+	IndexOutOfRange           = "zzz"
+	actionsWithHooks          = 100
+	actionsWithSecBranch      = 50
+	actionsWithSecCommit      = 50
+	actionsWithMissingPrimary = 50
 )
 
 func TestRunResultsIterator(t *testing.T) {
@@ -158,7 +161,7 @@ func createTestData(t *testing.T, ctx context.Context, kvStore kv.StoreMessage) 
 	}
 
 	// Basic runs
-	for ; msgIdx < withHooks; msgIdx++ {
+	for ; msgIdx < actionsWithHooks; msgIdx++ {
 		runID := actionService.NewRunID()
 		keyMap[runID] = msgIdx
 		keyList = append(keyList, runID)
@@ -177,7 +180,7 @@ func createTestData(t *testing.T, ctx context.Context, kvStore kv.StoreMessage) 
 
 	s := kv.SecondaryIndex{}
 	// By branch
-	for ; msgIdx < 150; msgIdx++ {
+	for ; msgIdx < actionsWithHooks+actionsWithSecBranch; msgIdx++ {
 		runID := actionService.NewRunID()
 		keyMap[runID] = msgIdx
 		keyList = append(keyList, runID)
@@ -190,7 +193,7 @@ func createTestData(t *testing.T, ctx context.Context, kvStore kv.StoreMessage) 
 	}
 
 	// By commit
-	for ; msgIdx < 200; msgIdx++ {
+	for ; msgIdx < actionsWithHooks+actionsWithSecBranch+actionsWithSecCommit; msgIdx++ {
 		runID := actionService.NewRunID()
 		keyMap[runID] = msgIdx
 		keyList = append(keyList, runID)
@@ -203,7 +206,7 @@ func createTestData(t *testing.T, ctx context.Context, kvStore kv.StoreMessage) 
 	}
 
 	// Missing Primary
-	for ; msgIdx < 250; msgIdx++ {
+	for ; msgIdx < actionsWithHooks+actionsWithSecBranch+actionsWithSecCommit+actionsWithMissingPrimary; msgIdx++ {
 		runID := actionService.NewRunID()
 
 		// Add key with bad primary

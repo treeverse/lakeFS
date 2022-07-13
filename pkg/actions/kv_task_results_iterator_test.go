@@ -25,13 +25,13 @@ func TestTaskResultsIterator(t *testing.T) {
 	}{
 		{
 			name:  "basic",
-			runID: len(keyList) - withHooks/4,
+			runID: len(keyList) - actionsWithHooks/4,
 			after: -1,
 			count: 100,
 		},
 		{
 			name:  "after key",
-			runID: len(keyList) - withHooks/3,
+			runID: len(keyList) - actionsWithHooks/3,
 			after: 19,
 			count: 80,
 		},
