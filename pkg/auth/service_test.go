@@ -1499,6 +1499,237 @@ func TestAPIAuthService_GetGroup(t *testing.T) {
 	}
 }
 
+func TestAPIAuthService_ListGroups(t *testing.T) {
+	mockClient, s := GetApiService(t)
+	const groupNamePrefix = "groupNamePrefix"
+	const creationDate = 12345678
+	amounts := []int{0, 1, 5}
+	for _, amount := range amounts {
+		t.Run(fmt.Sprintf("amount=%d", amount), func(t *testing.T) {
+			groups := make([]auth.Group, amount)
+			for i := 0; i < amount; i++ {
+				groups[i] = auth.Group{
+					CreationDate: creationDate,
+					Name:         fmt.Sprintf("%s-%d", groupNamePrefix, i),
+				}
+			}
+			groupList := auth.GroupList{
+				Pagination: auth.Pagination{},
+				Results:    groups,
+			}
+			response := &auth.ListGroupsResponse{
+				HTTPResponse: &http.Response{StatusCode: http.StatusOK},
+			}
+			response.JSON200 = &groupList
+			mockClient.EXPECT().ListGroupsWithResponse(gomock.Any(), gomock.Any()).Return(response, nil)
+			group, _, err := s.ListGroups(context.Background(), &model.PaginationParams{})
+			if err != nil {
+				t.Errorf("failed with error - %s", err)
+			}
+
+			creationTime := time.Unix(creationDate, 0)
+			for i, g := range group {
+				if g == nil {
+					t.Fatalf("got nil group")
+				}
+				expected := fmt.Sprintf("%s-%d", groupNamePrefix, i)
+				if g.DisplayName != expected {
+					t.Errorf("expected displayName:%s got:%s", g.DisplayName, expected)
+				}
+				if !g.CreatedAt.Equal(creationTime) {
+					t.Errorf("ecpected created date: %s got:%s for %s", g.CreatedAt, creationTime, expected)
+				}
+			}
+		})
+	}
+}
+
+func TestAPIAuthService_ListGUsers(t *testing.T) {
+	mockClient, s := GetApiService(t)
+	const userNamePrefix = "userNamePrefix"
+	const creationDate = 12345678
+	amounts := []int{0, 1, 5}
+	for _, amount := range amounts {
+		t.Run(fmt.Sprintf("amount=%d", amount), func(t *testing.T) {
+			users := make([]auth.User, amount)
+			for i := 0; i < amount; i++ {
+				users[i] = auth.User{
+					CreationDate: creationDate,
+					Name:         fmt.Sprintf("%s-%d", userNamePrefix, i),
+				}
+			}
+			userList := auth.UserList{
+				Pagination: auth.Pagination{},
+				Results:    users,
+			}
+			response := &auth.ListUsersResponse{
+				HTTPResponse: &http.Response{StatusCode: http.StatusOK},
+			}
+			response.JSON200 = &userList
+			mockClient.EXPECT().ListUsersWithResponse(gomock.Any(), gomock.Any()).Return(response, nil)
+			user, _, err := s.ListUsers(context.Background(), &model.PaginationParams{})
+			if err != nil {
+				t.Errorf("failed with error - %s", err)
+			}
+
+			creationTime := time.Unix(creationDate, 0)
+			for i, g := range user {
+				if g == nil {
+					t.Fatalf("got nil user")
+				}
+				expected := fmt.Sprintf("%s-%d", userNamePrefix, i)
+				if g.Username != expected {
+					t.Errorf("expected displayName:%s got:%s", g.Username, expected)
+				}
+				if !g.CreatedAt.Equal(creationTime) {
+					t.Errorf("ecpected created date: %s got:%s for %s", g.CreatedAt, creationTime, expected)
+				}
+			}
+		})
+	}
+}
+
+func TestAPIAuthService_ListGroupUsers(t *testing.T) {
+	mockClient, s := GetApiService(t)
+	const userNamePrefix = "userNamePrefix"
+	const creationDate = 12345678
+	amounts := []int{0, 1, 5}
+	for _, amount := range amounts {
+		t.Run(fmt.Sprintf("amount=%d", amount), func(t *testing.T) {
+			users := make([]auth.User, amount)
+			for i := 0; i < amount; i++ {
+				users[i] = auth.User{
+					CreationDate: creationDate,
+					Name:         fmt.Sprintf("%s-%d", userNamePrefix, i),
+				}
+			}
+			userList := auth.UserList{
+				Pagination: auth.Pagination{},
+				Results:    users,
+			}
+			response := &auth.ListGroupMembersResponse{
+				HTTPResponse: &http.Response{StatusCode: http.StatusOK},
+			}
+			response.JSON200 = &userList
+			const groupDisplayName = "groupFoo"
+			mockClient.EXPECT().ListGroupMembersWithResponse(gomock.Any(), groupDisplayName, gomock.Any()).Return(response, nil)
+			user, _, err := s.ListGroupUsers(context.Background(), groupDisplayName, &model.PaginationParams{})
+			if err != nil {
+				t.Errorf("failed with error - %s", err)
+			}
+
+			creationTime := time.Unix(creationDate, 0)
+			for i, g := range user {
+				if g == nil {
+					t.Fatalf("got nil user")
+				}
+				expected := fmt.Sprintf("%s-%d", userNamePrefix, i)
+				if g.Username != expected {
+					t.Errorf("expected displayName:%s got:%s", g.Username, expected)
+				}
+				if !g.CreatedAt.Equal(creationTime) {
+					t.Errorf("ecpected created date: %s got:%s for %s", g.CreatedAt, creationTime, expected)
+				}
+			}
+		})
+	}
+}
+
+func TestAPIAuthService_AddUserToGroup(t *testing.T) {
+	mockClient, s := GetApiService(t)
+	const username = "userFoo"
+	const groupName = "groupFoo"
+
+	mockErr := errors.New("this is a mock error")
+
+	testTable := []struct {
+		name        string
+		mockErr     error
+		statusCode  int
+		expectedErr error
+	}{
+		{
+			name:        "no error",
+			mockErr:     nil,
+			statusCode:  http.StatusCreated,
+			expectedErr: nil,
+		},
+		{
+			name:        "api error ",
+			mockErr:     mockErr,
+			statusCode:  0,
+			expectedErr: mockErr,
+		},
+		{
+			name:        "not found",
+			mockErr:     nil,
+			statusCode:  http.StatusNotFound,
+			expectedErr: auth.ErrNotFound,
+		},
+	}
+	for _, tt := range testTable {
+		t.Run(tt.name, func(t *testing.T) {
+			response := &auth.AddGroupMembershipResponse{
+				Body: nil,
+				HTTPResponse: &http.Response{
+					StatusCode: tt.statusCode,
+				},
+			}
+			mockClient.EXPECT().AddGroupMembershipWithResponse(gomock.Any(), groupName, username).Return(response, tt.mockErr)
+			err := s.AddUserToGroup(context.Background(), username, groupName)
+			if !errors.Is(err, tt.expectedErr) {
+				t.Fatalf("returned different error as api got:%s, expected:%s", err, mockErr)
+			}
+		})
+	}
+}
+
+func TestAPIAuthService_ListUserGroups(t *testing.T) {
+	mockClient, s := GetApiService(t)
+	const groupNamePrefix = "groupNamePrefix"
+	const creationDate = 12345678
+	amounts := []int{0, 1, 5}
+	for _, amount := range amounts {
+		t.Run(fmt.Sprintf("amount=%d", amount), func(t *testing.T) {
+			groups := make([]auth.Group, amount)
+			for i := 0; i < amount; i++ {
+				groups[i] = auth.Group{
+					CreationDate: creationDate,
+					Name:         fmt.Sprintf("%s-%d", groupNamePrefix, i),
+				}
+			}
+			groupList := auth.GroupList{
+				Pagination: auth.Pagination{},
+				Results:    groups,
+			}
+			response := &auth.ListUserGroupsResponse{
+				HTTPResponse: &http.Response{StatusCode: http.StatusOK},
+			}
+			response.JSON200 = &groupList
+			const username = "userFoo"
+			mockClient.EXPECT().ListUserGroupsWithResponse(gomock.Any(), username, gomock.Any()).Return(response, nil)
+			group, _, err := s.ListUserGroups(context.Background(), username, &model.PaginationParams{})
+			if err != nil {
+				t.Errorf("failed with error - %s", err)
+			}
+
+			creationTime := time.Unix(creationDate, 0)
+			for i, g := range group {
+				if g == nil {
+					t.Fatalf("got nil group")
+				}
+				expected := fmt.Sprintf("%s-%d", groupNamePrefix, i)
+				if g.DisplayName != expected {
+					t.Errorf("expected displayName:%s got:%s", g.DisplayName, expected)
+				}
+				if !g.CreatedAt.Equal(creationTime) {
+					t.Errorf("ecpected created date: %s got:%s for %s", g.CreatedAt, creationTime, expected)
+				}
+			}
+		})
+	}
+}
+
 func TestAPIAuthService_CreateGroup(t *testing.T) {
 	mockClient, s := GetApiService(t)
 	const groupName = "groupName"
