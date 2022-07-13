@@ -47,13 +47,13 @@ func (ri *KVRepositoryIterator) Next() bool {
 	}
 	e := ri.it.Entry()
 	if e == nil {
-		ri.err = graveler.ErrNotFound
+		ri.err = graveler.ErrInvalid
 		return false
 	}
 
 	repo, ok := e.Value.(*graveler.RepositoryData)
 	if repo == nil || !ok {
-		ri.err = graveler.ErrNotFound
+		ri.err = graveler.ErrReadingFromStore
 		return false
 	}
 
