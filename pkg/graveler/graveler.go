@@ -802,19 +802,38 @@ func NewKVGraveler(branchLocker BranchLocker, committedManager CommittedManager,
 }
 
 func (g *KVGraveler) GetRepository(ctx context.Context, repositoryID RepositoryID) (*Repository, error) {
-	return g.db.GetRepository(ctx, repositoryID)
+	return g.RefManager.GetRepository(ctx, repositoryID)
 }
 
 func (g *KVGraveler) CreateRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, branchID BranchID) (*Repository, error) {
-	return g.db.CreateRepository(ctx, repositoryID, storageNamespace, branchID)
+	repo := Repository{
+		StorageNamespace: storageNamespace,
+		CreationDate:     time.Now(),
+		DefaultBranchID:  branchID,
+	}
+	stagingToken := generateStagingToken(repositoryID, branchID)
+	err := g.RefManager.CreateRepository(ctx, repositoryID, repo, stagingToken)
+	if err != nil {
+		return nil, err
+	}
+	return &repo, nil
 }
 
 func (g *KVGraveler) CreateBareRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, defaultBranchID BranchID) (*Repository, error) {
-	return g.db.CreateBareRepository(ctx, repositoryID, storageNamespace, defaultBranchID)
+	repo := Repository{
+		StorageNamespace: storageNamespace,
+		CreationDate:     time.Now(),
+		DefaultBranchID:  defaultBranchID,
+	}
+	err := g.RefManager.CreateBareRepository(ctx, repositoryID, repo)
+	if err != nil {
+		return nil, err
+	}
+	return &repo, nil
 }
 
 func (g *KVGraveler) ListRepositories(ctx context.Context) (RepositoryIterator, error) {
-	return g.db.ListRepositories(ctx)
+	return g.RefManager.ListRepositories(ctx)
 }
 
 func (g *KVGraveler) WriteRange(ctx context.Context, repositoryID RepositoryID, it ValueIterator) (*RangeInfo, error) {
@@ -830,7 +849,7 @@ func (g *KVGraveler) WriteMetaRangeByIterator(ctx context.Context, repositoryID 
 }
 
 func (g *KVGraveler) DeleteRepository(ctx context.Context, repositoryID RepositoryID) error {
-	return g.db.DeleteRepository(ctx, repositoryID)
+	return g.RefManager.DeleteRepository(ctx, repositoryID)
 }
 
 func (g *KVGraveler) GetCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (*Commit, error) {
