@@ -89,12 +89,7 @@ func (m *KVManager) CreateRepository(ctx context.Context, repositoryID graveler.
 		return err
 	}
 
-	err = m.CreateBranch(ctx, repositoryID, repository.DefaultBranchID, graveler.Branch{CommitID: commitID, StagingToken: token})
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return m.CreateBranch(ctx, repositoryID, repository.DefaultBranchID, graveler.Branch{CommitID: commitID, StagingToken: token})
 }
 
 func (m *KVManager) CreateBareRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository) error {
