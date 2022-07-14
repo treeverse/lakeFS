@@ -1684,6 +1684,200 @@ func TestAPIAuthService_AddUserToGroup(t *testing.T) {
 	}
 }
 
+func TestAPIAuthService_DeleteGroup(t *testing.T) {
+	mockClient, s := GetApiService(t)
+	const username = "userFoo"
+	const groupName = "groupFoo"
+
+	mockErr := errors.New("this is a mock error")
+
+	testTable := []struct {
+		name        string
+		mockErr     error
+		statusCode  int
+		expectedErr error
+	}{
+		{
+			name:        "no error",
+			mockErr:     nil,
+			statusCode:  http.StatusNoContent,
+			expectedErr: nil,
+		},
+		{
+			name:        "api error ",
+			mockErr:     mockErr,
+			statusCode:  0,
+			expectedErr: mockErr,
+		},
+		{
+			name:        "not found",
+			mockErr:     nil,
+			statusCode:  http.StatusNotFound,
+			expectedErr: auth.ErrNotFound,
+		},
+	}
+	for _, tt := range testTable {
+		t.Run(tt.name, func(t *testing.T) {
+			response := &auth.DeleteGroupResponse{
+				Body: nil,
+				HTTPResponse: &http.Response{
+					StatusCode: tt.statusCode,
+				},
+			}
+			mockClient.EXPECT().DeleteGroupWithResponse(gomock.Any(), groupName).Return(response, tt.mockErr)
+			err := s.DeleteGroup(context.Background(), groupName)
+			if !errors.Is(err, tt.expectedErr) {
+				t.Fatalf("returned different error as api got:%s, expected:%s", err, mockErr)
+			}
+		})
+	}
+}
+
+type PolicyRequest struct {
+}
+
+func (p PolicyRequest) Matches(x interface{}) bool {
+	// TODO implement me
+	panic("implement me")
+}
+
+func (p PolicyRequest) String() string {
+	// TODO implement me
+	panic("implement me")
+}
+
+type StatementRequest struct {
+}
+
+func (s StatementRequest) Matches(x interface{}) bool {
+
+}
+
+func (s StatementRequest) String() string {
+	// TODO implement me
+	panic("implement me")
+}
+
+func TestAPIAuthService_WritePolicy(t *testing.T) {
+	mockClient, s := GetApiService(t)
+	const policyName = "foo"
+	action := []string{"allow"}
+	const effect = "effect"
+	resource := "bar"
+	policy := model.Policy{
+		DisplayName: policyName,
+		Statement: []model.Statement{{
+			Action:   action,
+			Effect:   effect,
+			Resource: resource,
+		},
+		},
+	}
+	policyRequest := auth.CreatePolicyJSONRequestBody{
+		Name: policyName,
+		Statement: []auth.Statement{{
+			Action:   action,
+			Effect:   effect,
+			Resource: resource,
+		},
+		},
+	}
+	mockErr := errors.New("this is a mock error")
+
+	testTable := []struct {
+		name        string
+		mockErr     error
+		statusCode  int
+		expectedErr error
+	}{
+		{
+			name:        "no error",
+			mockErr:     nil,
+			statusCode:  http.StatusCreated,
+			expectedErr: nil,
+		},
+		{
+			name:        "api error ",
+			mockErr:     mockErr,
+			statusCode:  0,
+			expectedErr: mockErr,
+		},
+		{
+			name:        "not found",
+			mockErr:     nil,
+			statusCode:  http.StatusNotFound,
+			expectedErr: auth.ErrNotFound,
+		},
+	}
+	for _, tt := range testTable {
+		t.Run(tt.name, func(t *testing.T) {
+			response := &auth.CreatePolicyResponse{
+				Body: nil,
+				HTTPResponse: &http.Response{
+					StatusCode: tt.statusCode,
+				},
+			}
+
+			// TODO(Guys): instead the second gomock any it should be policyRequest, we need someway to compare
+			mockClient.EXPECT().CreatePolicyWithResponse(gomock.Any(), gomock.Eq(policyRequest)).Return(response, tt.mockErr)
+			err := s.WritePolicy(context.Background(), &policy)
+			if !errors.Is(err, tt.expectedErr) {
+				t.Fatalf("returned different error as api got:%s, expected:%s", err, mockErr)
+			}
+
+			// TODO(Guys): compare result with deep or reflect or...
+		})
+	}
+}
+
+func TestAPIAuthService_RemoveUserFromGroup(t *testing.T) {
+	mockClient, s := GetApiService(t)
+	const username = "userFoo"
+	const groupName = "groupFoo"
+
+	mockErr := errors.New("this is a mock error")
+
+	testTable := []struct {
+		name        string
+		mockErr     error
+		statusCode  int
+		expectedErr error
+	}{
+		{
+			name:        "no error",
+			mockErr:     nil,
+			statusCode:  http.StatusNoContent,
+			expectedErr: nil,
+		},
+		{
+			name:        "api error ",
+			mockErr:     mockErr,
+			statusCode:  0,
+			expectedErr: mockErr,
+		},
+		{
+			name:        "not found",
+			mockErr:     nil,
+			statusCode:  http.StatusNotFound,
+			expectedErr: auth.ErrNotFound,
+		},
+	}
+	for _, tt := range testTable {
+		t.Run(tt.name, func(t *testing.T) {
+			response := &auth.DeleteGroupMembershipResponse{
+				Body: nil,
+				HTTPResponse: &http.Response{
+					StatusCode: tt.statusCode,
+				},
+			}
+			mockClient.EXPECT().DeleteGroupMembershipWithResponse(gomock.Any(), groupName, username).Return(response, tt.mockErr)
+			err := s.RemoveUserFromGroup(context.Background(), username, groupName)
+			if !errors.Is(err, tt.expectedErr) {
+				t.Fatalf("returned different error as api got:%s, expected:%s", err, mockErr)
+			}
+		})
+	}
+}
 func TestAPIAuthService_ListUserGroups(t *testing.T) {
 	mockClient, s := GetApiService(t)
 	const groupNamePrefix = "groupNamePrefix"
