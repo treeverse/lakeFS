@@ -570,20 +570,26 @@ func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
 	}
 
 	rows, err := d.Query(ctx, "SELECT * FROM graveler_repositories")
+	if err == nil {
+		defer rows.Close()
+		rowScanner := pgxscan.NewRowScanner(rows)
+		for rows.Next() {
+			r := new(graveler.RepositoryRecord)
+			err = rowScanner.Scan(r)
+			if err != nil {
+				break
+			}
+
+			rChan <- r
+		}
+	}
+	close(rChan)
+	workersErr := g.Wait().ErrorOrNil()
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
-	rowScanner := pgxscan.NewRowScanner(rows)
-	for rows.Next() {
-		r := new(graveler.RepositoryRecord)
-		err = rowScanner.Scan(r)
-		if err != nil {
-			return err
-		}
-
-		rChan <- r
+	if workersErr != nil {
+		return workersErr
 	}
-	close(rChan)
-	return g.Wait().ErrorOrNil()
+	return nil
 }
