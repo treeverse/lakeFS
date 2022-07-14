@@ -2,15 +2,39 @@ package ref
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"sync"
+	"time"
 
+	"github.com/georgysavva/scany/pgxscan"
+	"github.com/hashicorp/go-multierror"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/lib/pq"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/ident"
+	"github.com/treeverse/lakefs/pkg/kv"
+	kvpg "github.com/treeverse/lakefs/pkg/kv/postgres"
+	"github.com/treeverse/lakefs/pkg/version"
+	"google.golang.org/protobuf/proto"
 )
+
+const (
+	packageName      = "ref"
+	jobWorkers       = 10
+	migrateQueueSize = 100
+)
+
+//nolint:gochecknoinits
+func init() {
+	kvpg.RegisterMigrate(packageName, Migrate, []string{"graveler_repositories"})
+}
+
+var encoder kv.SafeEncoder
 
 type DBManager struct {
 	db              db.Database
@@ -99,7 +123,7 @@ func (m *DBManager) CreateBareRepository(ctx context.Context, repositoryID grave
 }
 
 func (m *DBManager) ListRepositories(ctx context.Context) (graveler.RepositoryIterator, error) {
-	return NewRepositoryIterator(ctx, m.db, IteratorPrefetchSize), nil
+	return NewDBRepositoryIterator(ctx, m.db, IteratorPrefetchSize), nil
 }
 
 func (m *DBManager) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID) error {
@@ -501,4 +525,71 @@ func (m *DBManager) addGenerationToNodes(nodes map[graveler.CommitID]*CommitNode
 		}
 		nodesCommitIDs = nextIterationNodes
 	}
+}
+
+// rWorker writes a repository, and all repository related entities, to fd
+func rWorker(rChan <-chan *graveler.RepositoryRecord) error {
+	for r := range rChan {
+		pb := graveler.ProtoFromRepo(r)
+		data, err := proto.Marshal(pb)
+		if err != nil {
+			return err
+		}
+		if err = encoder.Encode(kv.Entry{
+			PartitionKey: []byte(graveler.RepositoriesPartition()),
+			Key:          []byte(graveler.RepoPath(r.RepositoryID)),
+			Value:        data,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func Migrate(ctx context.Context, d *pgxpool.Pool, writer io.Writer) error {
+	encoder = kv.SafeEncoder{
+		Je: json.NewEncoder(writer),
+		Mu: sync.Mutex{},
+	}
+	// Create header
+	if err := encoder.Encode(kv.Header{
+		LakeFSVersion:   version.Version,
+		PackageName:     packageName,
+		DBSchemaVersion: kv.InitialMigrateVersion,
+		CreatedAt:       time.Now().UTC(),
+	}); err != nil {
+		return err
+	}
+
+	rChan := make(chan *graveler.RepositoryRecord, migrateQueueSize)
+	var g multierror.Group
+	for i := 0; i < jobWorkers; i++ {
+		g.Go(func() error {
+			return rWorker(rChan)
+		})
+	}
+
+	rows, err := d.Query(ctx, "SELECT * FROM graveler_repositories")
+	if err == nil {
+		defer rows.Close()
+		rowScanner := pgxscan.NewRowScanner(rows)
+		for rows.Next() {
+			r := new(graveler.RepositoryRecord)
+			err = rowScanner.Scan(r)
+			if err != nil {
+				break
+			}
+
+			rChan <- r
+		}
+	}
+	close(rChan)
+	workersErr := g.Wait().ErrorOrNil()
+	if err != nil {
+		return err
+	}
+	if workersErr != nil {
+		return workersErr
+	}
+	return nil
 }
