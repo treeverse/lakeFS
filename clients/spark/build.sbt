@@ -105,7 +105,7 @@ lazy val spark3Type =
 
 // EMR-6.5.0 beta, managed GC
 lazy val spark312Type =
-  new BuildType("312-hadoop3", scala212Version, "3.1.2", "0.10.11", "3.2.1", "hadoop3", "hadoop2-2.0.1")
+  new BuildType("312-hadoop3", scala212Version, "3.1.2", "0.10.11", "3.2.1", "hadoop3", "hadoop3-2.0.1")
 
 lazy val core2 = generateCoreProject(spark2Type)
 lazy val core3 = generateCoreProject(spark3Type)
