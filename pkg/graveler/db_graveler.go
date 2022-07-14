@@ -150,7 +150,7 @@ func (g *DBGraveler) CreateBranch(ctx context.Context, repositoryID RepositoryID
 
 	err = g.RefManager.CreateBranch(ctx, repositoryID, branchID, newBranch)
 	if err != nil {
-		return nil, fmt.Errorf("set branch '%s' to '%s': %w", branchID, newBranch, err)
+		return nil, fmt.Errorf("set branch '%s' to '%v': %w", branchID, newBranch, err)
 	}
 
 	postRunID := g.hooks.NewRunID()

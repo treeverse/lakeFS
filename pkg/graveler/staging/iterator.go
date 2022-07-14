@@ -44,7 +44,7 @@ func (s *Iterator) Next() bool {
 		return false
 	}
 	key := entry.Value.(*graveler.StagedEntry).Key
-	value := valueFromProto(entry.Value.(*graveler.StagedEntry))
+	value := graveler.StagedEntryFromProto(entry.Value.(*graveler.StagedEntry))
 	s.entry = &graveler.ValueRecord{
 		Key:   key,
 		Value: value,

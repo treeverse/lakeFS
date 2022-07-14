@@ -293,7 +293,7 @@ func (p *PartitionIterator) Next() bool {
 }
 
 func (p *PartitionIterator) SeekGE(key []byte) {
-	if p.err == nil {
+	if p.Err() == nil {
 		p.itr.Close() // Close previous before creating new iterator
 		p.itr, p.err = p.store.Scan(p.ctx, []byte(p.partitionKey), key)
 	}
