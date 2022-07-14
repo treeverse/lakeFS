@@ -15,8 +15,16 @@ func RepoPath(repoID RepositoryID) string {
 	return kv.FormatPath(reposPrefix, repoID.String())
 }
 
-func RepoPartition() string {
+// RepositoriesPartition - The common partition under which all repositories exist
+func RepositoriesPartition() string {
 	return gravelerPartition
+}
+
+// RepoPartition - The partition under which all the repository's entities (branched, commits, tags)
+// The Repository object itself is found under the common RepositoriesPartition, as it is needed to
+// generate this partition
+func RepoPartition(repoID RepositoryID, _ Repository) string {
+	return repoID.String()
 }
 
 func TagPath(tagID TagID) string {

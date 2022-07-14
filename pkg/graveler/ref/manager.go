@@ -48,7 +48,7 @@ func NewKVRefManager(executor batch.Batcher, kvStore kv.StoreMessage, db db.Data
 
 func (m *KVManager) GetRepository(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.Repository, error) {
 	repo := graveler.RepositoryData{}
-	_, err := m.kvStore.GetMsg(ctx, graveler.RepoPartition(), []byte(graveler.RepoPath(repositoryID)), &repo)
+	_, err := m.kvStore.GetMsg(ctx, graveler.RepositoriesPartition(), []byte(graveler.RepoPath(repositoryID)), &repo)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			err = graveler.ErrRepositoryNotFound
@@ -64,7 +64,7 @@ func (m *KVManager) createBareRepository(ctx context.Context, repositoryID grave
 		Repository:   &repository,
 	}
 	repo := graveler.ProtoFromRepo(repoRecord)
-	err := m.kvStore.SetMsgIf(ctx, graveler.RepoPartition(), []byte(graveler.RepoPath(repositoryID)), repo, nil)
+	err := m.kvStore.SetMsgIf(ctx, graveler.RepositoriesPartition(), []byte(graveler.RepoPath(repositoryID)), repo, nil)
 	if err != nil {
 		if errors.Is(err, kv.ErrPredicateFailed) {
 			err = graveler.ErrNotUnique
@@ -112,7 +112,7 @@ func (m *KVManager) DeleteRepository(ctx context.Context, repositoryID graveler.
 	}
 	// END TODO: delete me
 
-	return m.kvStore.DeleteMsg(ctx, graveler.RepoPartition(), []byte(graveler.RepoPath(repositoryID)))
+	return m.kvStore.DeleteMsg(ctx, graveler.RepositoriesPartition(), []byte(graveler.RepoPath(repositoryID)))
 }
 
 func (m *KVManager) ParseRef(ref graveler.Ref) (graveler.RawRef, error) {

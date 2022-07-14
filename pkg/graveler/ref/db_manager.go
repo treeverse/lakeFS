@@ -536,7 +536,7 @@ func rWorker(rChan <-chan *graveler.RepositoryRecord) error {
 			return err
 		}
 		if err = encoder.Encode(kv.Entry{
-			PartitionKey: []byte(graveler.RepoPartition()),
+			PartitionKey: []byte(graveler.RepositoriesPartition()),
 			Key:          []byte(graveler.RepoPath(r.RepositoryID)),
 			Value:        data,
 		}); err != nil {
