@@ -109,6 +109,9 @@ func (m *KVManager) DeleteRepository(ctx context.Context, repositoryID graveler.
 	// TODO: delete me
 	// temp code to align with DB manager. Delete once https://github.com/treeverse/lakeFS/issues/3640 is done
 	_, err := m.GetRepository(ctx, repositoryID)
+	if errors.Is(err, kv.ErrNotFound) {
+		return graveler.ErrRepositoryNotFound
+	}
 	if err != nil {
 		return err
 	}
