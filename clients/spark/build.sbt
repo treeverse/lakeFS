@@ -49,6 +49,7 @@ def generateCoreProject(buildType: BuildType) =
         "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
         "org.apache.hadoop" % "hadoop-aws" % buildType.hadoopVersion,
         "org.apache.hadoop" % "hadoop-common" % buildType.hadoopVersion,
+        "org.apache.hadoop" % "hadoop-azure" % buildType.hadoopVersion % "provided",
         "com.google.cloud.bigdataoss" % "gcs-connector" % buildType.gcpConnectorVersion,
         "org.scalaj" %% "scalaj-http" % "2.4.2",
         "org.json4s" %% "json4s-native" % "3.7.0-M8",
