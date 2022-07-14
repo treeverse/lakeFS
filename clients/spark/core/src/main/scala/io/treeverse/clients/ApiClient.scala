@@ -12,14 +12,15 @@ import io.lakefs.clients.api.model.{
 import java.net.URI
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.Callable
-import java.util.regex.Pattern
 
 private object ApiClient {
   val StorageTypeS3 = "s3"
   val StorageTypeAzure = "azure"
 
-  /** Translate the protocol of uri from "standard"-ish "s3" to "s3a", to
+  /** Translate uri according to two cases:
+   *  If the storage type is s3 then translate the protocol of uri from "standard"-ish "s3" to "s3a", to
    *  trigger processing by S3AFileSystem.
+   *  If the storage type is azure then translate the uri to abfs schema.
    */
   def translateURI(uri: URI, storageType: String): URI = {
     if ((storageType == StorageTypeS3) && (uri.getScheme == "s3")) {
@@ -33,16 +34,14 @@ private object ApiClient {
                     )
     } else if (storageType == StorageTypeAzure) {
 
-      /** regex to catch url of type: https://StorageAccountName.blob.core.windows.net/Container[/BlobName] and convert it to abfs url */
-      val regex = "https?://([^.]+)(\\.[^/]+)(?:/([^/]+)(.+))?"
-      val pattern = Pattern.compile(regex)
-      val matcher = pattern.matcher(uri.toString())
-      if (matcher.find()) {
-        return new URI(
-          s"abfs://${matcher.group(3)}@${matcher.group(1)}.dfs.core.windows.net${matcher.group(4)}"
-        )
-      }
-      uri
+      /** get the host and path from url of type: https://StorageAccountName.blob.core.windows.net/Container[/BlobName],
+       *  extract the storage account, container and blob path, and use them in abfs url
+       */
+      val storageAccountName = uri.getHost.split('.')(0)
+      val Array(_, container, blobPath) = uri.getPath.split("/", 3)
+      return new URI(
+        s"abfs://${container}@${storageAccountName}.dfs.core.windows.net/${blobPath}"
+      )
     } else {
       uri
     }
