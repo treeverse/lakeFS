@@ -3,15 +3,13 @@ package ref
 import (
 	"container/heap"
 	"context"
-	"errors"
 
-	"github.com/treeverse/lakefs/pkg/kv"
-
+	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
 )
 
-type KVCommitIterator struct {
-	kvStore      kv.StoreMessage
+type DBCommitIterator struct {
+	db           db.Database
 	ctx          context.Context
 	repositoryID graveler.RepositoryID
 	start        graveler.CommitID
@@ -22,69 +20,31 @@ type KVCommitIterator struct {
 	err          error
 }
 
-type commitIteratorState int
-
-const (
-	commitIteratorStateInit commitIteratorState = iota
-	commitIteratorStateQuery
-	commitIteratorStateDone
-)
-
-type commitsPriorityQueue []*graveler.CommitRecord
-
-func (c commitsPriorityQueue) Len() int {
-	return len(c)
-}
-
-func (c commitsPriorityQueue) Less(i, j int) bool {
-	if c[i].Commit.CreationDate.Equal(c[j].Commit.CreationDate) {
-		return c[i].CommitID > c[j].CommitID
-	}
-	return c[i].Commit.CreationDate.After(c[j].Commit.CreationDate)
-}
-
-func (c commitsPriorityQueue) Swap(i, j int) {
-	c[i], c[j] = c[j], c[i]
-}
-
-func (c *commitsPriorityQueue) Push(x interface{}) {
-	rec := x.(*graveler.CommitRecord)
-	*c = append(*c, rec)
-}
-
-func (c *commitsPriorityQueue) Pop() interface{} {
-	cc := *c
-	n := len(cc) - 1
-	item := cc[n]
-	*c = cc[:n]
-	return item
-}
-
-func NewKVCommitIterator(ctx context.Context, kvStore kv.StoreMessage, repositoryID graveler.RepositoryID, start graveler.CommitID) *KVCommitIterator {
-	return &KVCommitIterator{
-		kvStore:      kvStore,
+func NewDBCommitIterator(ctx context.Context, db db.Database, repositoryID graveler.RepositoryID, start graveler.CommitID) (*DBCommitIterator, error) {
+	return &DBCommitIterator{
+		db:           db,
 		ctx:          ctx,
 		repositoryID: repositoryID,
 		start:        start,
 		queue:        make(commitsPriorityQueue, 0),
 		visit:        make(map[graveler.CommitID]struct{}),
-	}
+	}, nil
 }
 
-func (ci *KVCommitIterator) getCommitRecord(commitID graveler.CommitID) (*graveler.CommitRecord, error) {
-	commitKey := graveler.CommitPath(commitID)
-	c := graveler.CommitData{}
-	_, err := ci.kvStore.GetMsg(ci.ctx, graveler.CommitPartition(ci.repositoryID), []byte(commitKey), &c)
+func (ci *DBCommitIterator) getCommitRecord(commitID graveler.CommitID) (*graveler.CommitRecord, error) {
+	var rec commitRecord
+	err := ci.db.
+		Get(ci.ctx, &rec, `SELECT id, committer, message, creation_date, parents, meta_range_id, metadata, version, generation
+			FROM graveler_commits
+			WHERE repository_id = $1 AND id = $2`,
+			ci.repositoryID, commitID)
 	if err != nil {
-		if errors.Is(err, kv.ErrNotFound) {
-			err = graveler.ErrCommitNotFound
-		}
 		return nil, err
 	}
-	return CommitDataToCommitRecord(&c), nil
+	return rec.toGravelerCommitRecord(), nil
 }
 
-func (ci *KVCommitIterator) Next() bool {
+func (ci *DBCommitIterator) Next() bool {
 	if ci.err != nil || ci.state == commitIteratorStateDone {
 		return false
 	}
@@ -130,7 +90,7 @@ func (ci *KVCommitIterator) Next() bool {
 
 // SeekGE skip under the point of 'id' commit ID based on a a new
 //   The list of commit
-func (ci *KVCommitIterator) SeekGE(id graveler.CommitID) {
+func (ci *DBCommitIterator) SeekGE(id graveler.CommitID) {
 	ci.err = nil
 	ci.queue = make(commitsPriorityQueue, 0)
 	ci.visit = make(map[graveler.CommitID]struct{})
@@ -152,12 +112,12 @@ func (ci *KVCommitIterator) SeekGE(id graveler.CommitID) {
 	ci.value = nil
 }
 
-func (ci *KVCommitIterator) Value() *graveler.CommitRecord {
+func (ci *DBCommitIterator) Value() *graveler.CommitRecord {
 	return ci.value
 }
 
-func (ci *KVCommitIterator) Err() error {
+func (ci *DBCommitIterator) Err() error {
 	return ci.err
 }
 
-func (ci *KVCommitIterator) Close() {}
+func (ci *DBCommitIterator) Close() {}

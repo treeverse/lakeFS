@@ -708,65 +708,66 @@ func TestManager_GetCommitByPrefix(t *testing.T) {
 	identityToFakeIdentity := make(map[string]string)
 
 	provider := &fakeAddressProvider{identityToFakeIdentity: identityToFakeIdentity}
-	r, _ := testRefManagerWithAddressProvider(t, provider)
-
-	ctx := context.Background()
-	err := r.CreateRepository(ctx, "repo1", graveler.Repository{
-		StorageNamespace: "s3://",
-		CreationDate:     time.Now(),
-		DefaultBranchID:  "main",
-	}, "")
-	testutil.MustDo(t, "Create repository", err)
-	for _, commitID := range commitIDs {
-		c := graveler.Commit{Committer: "user1",
-			Message:      fmt.Sprintf("id_%s", commitID),
-			MetaRangeID:  "deadbeef123",
-			CreationDate: time.Now(),
-			Parents:      graveler.CommitParents{"deadbeef1"},
-			Metadata:     graveler.Metadata{"foo": "bar"},
+	r := testRefManagerWithAddressProvider(t, provider)
+	for _, tt := range r {
+		ctx := context.Background()
+		err := tt.refManager.CreateRepository(ctx, "repo1", graveler.Repository{
+			StorageNamespace: "s3://",
+			CreationDate:     time.Now(),
+			DefaultBranchID:  "main",
+		}, "")
+		testutil.MustDo(t, "Create repository", err)
+		for _, commitID := range commitIDs {
+			c := graveler.Commit{Committer: "user1",
+				Message:      fmt.Sprintf("id_%s", commitID),
+				MetaRangeID:  "deadbeef123",
+				CreationDate: time.Now(),
+				Parents:      graveler.CommitParents{"deadbeef1"},
+				Metadata:     graveler.Metadata{"foo": "bar"},
+			}
+			identityToFakeIdentity[hex.EncodeToString(c.Identity())] = commitID
+			_, err := tt.refManager.AddCommit(ctx, "repo1", c)
+			testutil.MustDo(t, "add commit", err)
+			if err != nil {
+				t.Fatalf("unexpected error on adding commit: %v", err)
+			}
 		}
-		identityToFakeIdentity[hex.EncodeToString(c.Identity())] = commitID
-		_, err := r.AddCommit(ctx, "repo1", c)
-		testutil.MustDo(t, "add commit", err)
-		if err != nil {
-			t.Fatalf("unexpected error on adding commit: %v", err)
+		tests := []struct {
+			Prefix                string
+			ExpectedCommitMessage string
+			ExpectedErr           error
+		}{
+			{
+				Prefix:                "a",
+				ExpectedCommitMessage: "id_a1",
+			},
+			{
+				Prefix:                "c123",
+				ExpectedCommitMessage: "id_c1234",
+			},
+			{
+				Prefix:      "c1",
+				ExpectedErr: graveler.ErrCommitNotFound,
+			},
+			{
+				Prefix:      "e",
+				ExpectedErr: graveler.ErrCommitNotFound,
+			},
 		}
-	}
-	tests := []struct {
-		Prefix                string
-		ExpectedCommitMessage string
-		ExpectedErr           error
-	}{
-		{
-			Prefix:                "a",
-			ExpectedCommitMessage: "id_a1",
-		},
-		{
-			Prefix:                "c123",
-			ExpectedCommitMessage: "id_c1234",
-		},
-		{
-			Prefix:      "c1",
-			ExpectedErr: graveler.ErrCommitNotFound,
-		},
-		{
-			Prefix:      "e",
-			ExpectedErr: graveler.ErrCommitNotFound,
-		},
-	}
-	for _, tst := range tests {
-		t.Run(tst.Prefix, func(t *testing.T) {
-			c, err := r.GetCommitByPrefix(ctx, "repo1", graveler.CommitID(tst.Prefix))
-			if !errors.Is(err, tst.ExpectedErr) {
-				t.Fatalf("expected error %v, got=%v", tst.ExpectedErr, err)
-			}
-			if tst.ExpectedErr != nil {
-				return
-			}
-			if c.Message != tst.ExpectedCommitMessage {
-				t.Fatalf("got commit different than expected. expected=%s, got=%s", tst.ExpectedCommitMessage, c.Message)
-			}
-		})
+		for _, tst := range tests {
+			t.Run(tst.Prefix, func(t *testing.T) {
+				c, err := tt.refManager.GetCommitByPrefix(ctx, "repo1", graveler.CommitID(tst.Prefix))
+				if !errors.Is(err, tst.ExpectedErr) {
+					t.Fatalf("expected error %v, got=%v", tst.ExpectedErr, err)
+				}
+				if tst.ExpectedErr != nil {
+					return
+				}
+				if c.Message != tst.ExpectedCommitMessage {
+					t.Fatalf("got commit different than expected. expected=%s, got=%s", tst.ExpectedCommitMessage, c.Message)
+				}
+			})
+		}
 	}
 }
 

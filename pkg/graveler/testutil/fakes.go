@@ -8,6 +8,7 @@ import (
 
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
+	"github.com/treeverse/lakefs/pkg/kv"
 )
 
 const DefaultBranchID = graveler.BranchID("main")
@@ -204,6 +205,10 @@ type RefsFake struct {
 	CommitID            graveler.CommitID
 	Commits             map[graveler.CommitID]*graveler.Commit
 	StagingToken        graveler.StagingToken
+}
+
+func (m *RefsFake) Store() *kv.StoreMessage {
+	panic("implement me")
 }
 
 func (m *RefsFake) CreateBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, branch graveler.Branch) error {

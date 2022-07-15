@@ -2,141 +2,83 @@ package ref
 
 import (
 	"context"
-	"errors"
 
-	sq "github.com/Masterminds/squirrel"
-	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/kv"
 )
 
-type OrderedCommitIteratorOption func(oci *OrderedCommitIterator)
-
-// WithOnlyAncestryLeaves causes the iterator to return only commits which are not the first parent of any other commit.
-// Consider a commit graph where all non-first-parent edges are removed. This graph is a tree, and ancestry leaves are its leaves.
-func WithOnlyAncestryLeaves() OrderedCommitIteratorOption {
-	return func(oci *OrderedCommitIterator) {
-		oci.onlyAncestryLeaves = true
-	}
+type KVOrderedCommitIterator struct {
+	it     kv.MessageIterator
+	err    error
+	value  *graveler.CommitRecord
+	repoID graveler.RepositoryID
+	store  kv.Store
+	ctx    context.Context
 }
 
-// NewOrderedCommitIterator returns an iterator over all commits in the given repository.
-// Ordering is based on the Commit ID value.
-func NewOrderedCommitIterator(ctx context.Context, database db.Database, repositoryID graveler.RepositoryID, prefetchSize int, opts ...OrderedCommitIteratorOption) *OrderedCommitIterator {
-	res := &OrderedCommitIterator{
-		ctx:          ctx,
-		db:           database,
-		repositoryID: repositoryID,
-		prefetchSize: prefetchSize,
-		buf:          make([]*graveler.CommitRecord, 0, prefetchSize),
+func NewKVOrderedCommitIterator(ctx context.Context, store *kv.StoreMessage, repositoryID graveler.RepositoryID) (*KVOrderedCommitIterator, error) {
+	it, err := kv.NewPrimaryIterator(ctx, store.Store, (&graveler.TagData{}).ProtoReflect().Type(),
+		graveler.CommitPartition(repositoryID),
+		[]byte(graveler.CommitPath("")), []byte(""), true)
+	if err != nil {
+		return nil, err
 	}
-	for _, opt := range opts {
-		opt(res)
-	}
-	return res
+	return &KVOrderedCommitIterator{
+		it:     it,
+		store:  store.Store,
+		repoID: repositoryID,
+		ctx:    ctx,
+	}, nil
 }
 
-type OrderedCommitIterator struct {
-	ctx                context.Context
-	db                 db.Database
-	repositoryID       graveler.RepositoryID
-	prefetchSize       int
-	buf                []*graveler.CommitRecord
-	err                error
-	value              *graveler.CommitRecord
-	offset             string
-	state              iteratorState
-	onlyAncestryLeaves bool
-}
-
-func (iter *OrderedCommitIterator) Next() bool {
-	if iter.err != nil {
+func (i *KVOrderedCommitIterator) Next() bool {
+	if i.Err() != nil {
 		return false
 	}
-	iter.maybeFetch()
-
-	// stage a value and increment offset
-	if len(iter.buf) == 0 {
+	if !i.it.Next() {
+		i.value = nil
 		return false
 	}
-	iter.value = iter.buf[0]
-	iter.buf = iter.buf[1:]
-	iter.offset = string(iter.value.CommitID)
+	e := i.it.Entry()
+	if e == nil {
+		i.err = graveler.ErrReadingFromStore
+		return false
+	}
+	c, ok := e.Value.(*graveler.CommitData)
+	if !ok {
+		i.err = graveler.ErrReadingFromStore
+		return false
+	}
+	i.value = CommitDataToCommitRecord(c)
 	return true
 }
 
-func (iter *OrderedCommitIterator) maybeFetch() {
-	if iter.state == iteratorStateDone {
-		return
-	}
-	if len(iter.buf) > 0 {
-		return
-	}
-	psql := sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
-	q := psql.Select("id", "committer", "message", "creation_date", "meta_range_id", "parents", "metadata", "version", "generation").
-		From("graveler_commits").
-		Where(sq.Eq{"repository_id": iter.repositoryID})
-
-	if iter.state == iteratorStateInit {
-		iter.state = iteratorStateQuerying
-		q = q.Where(sq.GtOrEq{"id": iter.offset})
-	} else {
-		q = q.Where(sq.Gt{"id": iter.offset})
-	}
-
-	var buf []*commitRecord
-
-	if iter.onlyAncestryLeaves {
-		notExistsCondition := psql.Select("*").
-			Prefix("NOT EXISTS (").Suffix(")").
-			From("graveler_commits c2").
-			Where("c2.repository_id=graveler_commits.repository_id").
-			Where("first_parent(c2.parents, c2.version)=graveler_commits.id")
-		q = q.Where(notExistsCondition)
-	}
-	q = q.OrderBy("id ASC")
-	q = q.Limit(uint64(iter.prefetchSize))
-	query, args, err := q.ToSql()
-	if err != nil {
-		iter.err = err
-		return
-	}
-	err = iter.db.Select(iter.ctx, &buf, query, args...)
-	if err != nil {
-		iter.err = err
-		return
-	}
-	if len(buf) < iter.prefetchSize {
-		iter.state = iteratorStateDone
-	}
-	for _, c := range buf {
-		rec := c.toGravelerCommitRecord()
-		iter.buf = append(iter.buf, rec)
+func (i *KVOrderedCommitIterator) SeekGE(id graveler.CommitID) {
+	if i.Err() == nil {
+		i.it.Close()
+		it, err := kv.NewPrimaryIterator(i.ctx, i.store, (&graveler.CommitData{}).ProtoReflect().Type(),
+			graveler.CommitPartition(i.repoID),
+			[]byte(graveler.CommitPath("")), []byte(graveler.CommitPath(id)), false)
+		i.it = it
+		i.value = nil
+		i.err = err
 	}
 }
 
-func (iter *OrderedCommitIterator) SeekGE(id graveler.CommitID) {
-	if errors.Is(iter.err, ErrIteratorClosed) {
-		return
-	}
-	iter.offset = string(id)
-	iter.state = iteratorStateInit
-	iter.buf = iter.buf[:0]
-	iter.value = nil
-	iter.err = nil
-}
-
-func (iter *OrderedCommitIterator) Value() *graveler.CommitRecord {
-	if iter.err != nil {
+func (i *KVOrderedCommitIterator) Value() *graveler.CommitRecord {
+	if i.Err() != nil {
 		return nil
 	}
-	return iter.value
+	return i.value
 }
 
-func (iter *OrderedCommitIterator) Err() error {
-	return iter.err
+func (i *KVOrderedCommitIterator) Err() error {
+	if i.err == nil {
+		return i.it.Err()
+	}
+	return i.err
 }
 
-func (iter *OrderedCommitIterator) Close() {
-	iter.err = ErrIteratorClosed
-	iter.buf = nil
+func (i *KVOrderedCommitIterator) Close() {
+	i.it.Close()
 }

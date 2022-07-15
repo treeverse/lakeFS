@@ -7,11 +7,14 @@ import (
 	"strings"
 	"time"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/treeverse/lakefs/pkg/kv"
+
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/ident"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 //go:generate mockgen -source=graveler.go -destination=mock/graveler.go -package=mock
@@ -664,6 +667,8 @@ type RefManager interface {
 	// FillGenerations computes and updates the generation field for all commits in a repository.
 	// It should be used for restoring commits from a commit-dump which was performed before the field was introduced.
 	FillGenerations(ctx context.Context, repositoryID RepositoryID) error
+
+	Store() *kv.StoreMessage
 }
 
 // CommittedManager reads and applies committed snapshots
@@ -784,20 +789,26 @@ func (id TagID) String() string {
 }
 
 type KVGraveler struct {
-	db             *DBGraveler
-	hooks          HooksHandler
-	RefManager     RefManager
-	StagingManager StagingManager
-	log            logging.Logger
+	db                       *DBGraveler
+	hooks                    HooksHandler
+	CommittedManager         CommittedManager
+	RefManager               RefManager
+	StagingManager           StagingManager
+	branchLocker             BranchLocker
+	protectedBranchesManager ProtectedBranchesManager
+	log                      logging.Logger
 }
 
 func NewKVGraveler(branchLocker BranchLocker, committedManager CommittedManager, stagingManager StagingManager, refManager RefManager, gcManager GarbageCollectionManager, protectedBranchesManager ProtectedBranchesManager) *KVGraveler {
 	return &KVGraveler{
-		db:             NewDBGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager),
-		hooks:          &HooksNoOp{},
-		RefManager:     refManager,
-		StagingManager: stagingManager,
-		log:            logging.Default().WithField("service_name", "graveler_graveler"),
+		db:                       NewDBGraveler(branchLocker, committedManager, stagingManager, refManager, gcManager, protectedBranchesManager),
+		hooks:                    &HooksNoOp{},
+		CommittedManager:         committedManager,
+		RefManager:               refManager,
+		StagingManager:           stagingManager,
+		branchLocker:             branchLocker,
+		protectedBranchesManager: protectedBranchesManager,
+		log:                      logging.Default().WithField("service_name", "graveler_graveler"),
 	}
 }
 
@@ -834,7 +845,7 @@ func (g *KVGraveler) DeleteRepository(ctx context.Context, repositoryID Reposito
 }
 
 func (g *KVGraveler) GetCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (*Commit, error) {
-	return g.db.GetCommit(ctx, repositoryID, commitID)
+	return g.RefManager.GetCommit(ctx, repositoryID, commitID)
 }
 
 func generateStagingToken(repositoryID RepositoryID, branchID BranchID) StagingToken {
@@ -983,7 +994,7 @@ func (g *KVGraveler) ResolveRawRef(ctx context.Context, repositoryID RepositoryI
 }
 
 func (g *KVGraveler) Log(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (CommitIterator, error) {
-	return g.db.Log(ctx, repositoryID, commitID)
+	return g.RefManager.Log(ctx, repositoryID, commitID)
 }
 
 func (g *KVGraveler) ListBranches(ctx context.Context, repositoryID RepositoryID) (BranchIterator, error) {
@@ -1049,7 +1060,142 @@ func (g *KVGraveler) List(ctx context.Context, repositoryID RepositoryID, ref Re
 }
 
 func (g *KVGraveler) Commit(ctx context.Context, repositoryID RepositoryID, branchID BranchID, params CommitParams) (CommitID, error) {
-	return g.db.Commit(ctx, repositoryID, branchID, params)
+	var preRunID string
+	var commit Commit
+	var storageNamespace StorageNamespace
+	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
+		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repositoryID, branchID, BranchProtectionBlockedAction_COMMIT)
+		if err != nil {
+			return nil, err
+		}
+		if isProtected {
+			return nil, ErrCommitToProtectedBranch
+		}
+		repo, err := g.db.GetRepository(ctx, repositoryID)
+		if err != nil {
+			return "", fmt.Errorf("get repository: %w", err)
+		}
+		storageNamespace = repo.StorageNamespace
+
+		branch, err := g.db.GetBranch(ctx, repositoryID, branchID)
+		if err != nil {
+			return "", fmt.Errorf("get branch: %w", err)
+		}
+
+		// fill commit information - use for pre-commit and after adding the commit information used by commit
+		commit = NewCommit()
+
+		if params.Date != nil {
+			commit.CreationDate = time.Unix(*params.Date, 0)
+		}
+		commit.Committer = params.Committer
+		commit.Message = params.Message
+		commit.Metadata = params.Metadata
+		if branch.CommitID != "" {
+			commit.Parents = CommitParents{branch.CommitID}
+		}
+
+		if params.SourceMetaRange != nil {
+			empty, err := g.stagingEmpty(ctx, branch)
+			if err != nil {
+				return nil, fmt.Errorf("checking empty branch: %w", err)
+			}
+			if !empty {
+				return nil, ErrCommitMetaRangeDirtyBranch
+			}
+		}
+
+		preRunID = g.hooks.NewRunID()
+		err = g.hooks.PreCommitHook(ctx, HookRecord{
+			RunID:            preRunID,
+			EventType:        EventTypePreCommit,
+			SourceRef:        branchID.Ref(),
+			RepositoryID:     repositoryID,
+			StorageNamespace: storageNamespace,
+			BranchID:         branchID,
+			Commit:           commit,
+		})
+		if err != nil {
+			return "", &HookAbortError{
+				EventType: EventTypePreCommit,
+				RunID:     preRunID,
+				Err:       err,
+			}
+		}
+
+		var branchMetaRangeID MetaRangeID
+		var parentGeneration int
+		if branch.CommitID != "" {
+			branchCommit, err := g.RefManager.GetCommit(ctx, repositoryID, branch.CommitID)
+			if err != nil {
+				return "", fmt.Errorf("get commit: %w", err)
+			}
+			branchMetaRangeID = branchCommit.MetaRangeID
+			parentGeneration = branchCommit.Generation
+		}
+		commit.Generation = parentGeneration + 1
+		if params.SourceMetaRange != nil {
+			commit.MetaRangeID = *params.SourceMetaRange
+		} else {
+			changes, err := g.StagingManager.List(ctx, branch.StagingToken, ListingMaxBatchSize)
+			if err != nil {
+				return "", fmt.Errorf("staging list: %w", err)
+			}
+			defer changes.Close()
+
+			commit.MetaRangeID, _, err = g.CommittedManager.Commit(ctx, storageNamespace, branchMetaRangeID, changes)
+			if err != nil {
+				return "", fmt.Errorf("commit: %w", err)
+			}
+		}
+
+		// add commit
+		newCommit, err := g.RefManager.AddCommit(ctx, repositoryID, commit)
+		if err != nil {
+			return "", fmt.Errorf("add commit: %w", err)
+		}
+		err = g.RefManager.SetBranch(ctx, repositoryID, branchID, Branch{
+			CommitID:     newCommit,
+			StagingToken: newStagingToken(repositoryID, branchID),
+		})
+		if err != nil {
+			return "", fmt.Errorf("set branch commit %s: %w", newCommit, err)
+		}
+		err = g.StagingManager.Drop(ctx, branch.StagingToken)
+		if err != nil {
+			g.log.WithContext(ctx).WithFields(logging.Fields{
+				"repository_id": repositoryID,
+				"branch_id":     branchID,
+				"commit_id":     branch.CommitID,
+				"message":       params.Message,
+				"staging_token": branch.StagingToken,
+			}).Error("Failed to drop staging data")
+		}
+		return newCommit, nil
+	})
+	if err != nil {
+		return "", err
+	}
+	newCommitID := res.(CommitID)
+	postRunID := g.hooks.NewRunID()
+	err = g.hooks.PostCommitHook(ctx, HookRecord{
+		EventType:        EventTypePostCommit,
+		RunID:            postRunID,
+		RepositoryID:     repositoryID,
+		StorageNamespace: storageNamespace,
+		SourceRef:        res.(CommitID).Ref(),
+		BranchID:         branchID,
+		Commit:           commit,
+		CommitID:         newCommitID,
+		PreRunID:         preRunID,
+	})
+	if err != nil {
+		g.log.WithError(err).
+			WithField("run_id", postRunID).
+			WithField("pre_run_id", preRunID).
+			Error("Post-commit hook failed")
+	}
+	return newCommitID, nil
 }
 
 func newStagingToken(repositoryID RepositoryID, branchID BranchID) StagingToken {
@@ -1058,15 +1204,72 @@ func newStagingToken(repositoryID RepositoryID, branchID BranchID) StagingToken 
 }
 
 func (g *KVGraveler) validateCommitParent(ctx context.Context, repositoryID RepositoryID, commit Commit) (CommitID, error) {
-	return g.db.validateCommitParent(ctx, repositoryID, commit)
+	if len(commit.Parents) > 1 {
+		return "", ErrMultipleParents
+	}
+	if len(commit.Parents) == 0 {
+		return "", nil
+	}
+
+	parentCommitID := commit.Parents[0]
+	_, err := g.RefManager.GetCommit(ctx, repositoryID, parentCommitID)
+	if err != nil {
+		return "", fmt.Errorf("get parent commit %s: %w", parentCommitID, err)
+	}
+	return parentCommitID, nil
 }
 
 func (g *KVGraveler) isCommitExist(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (bool, error) {
-	return g.db.isCommitExist(ctx, repositoryID, commitID)
+	_, err := g.RefManager.GetCommit(ctx, repositoryID, commitID)
+	if err == nil {
+		// commit already exists
+		return true, nil
+	}
+	if !errors.Is(err, ErrCommitNotFound) {
+		return false, fmt.Errorf("getting commit %s: %w", commitID, err)
+	}
+	return false, nil
 }
 
 func (g *KVGraveler) AddCommitToBranchHead(ctx context.Context, repositoryID RepositoryID, branchID BranchID, commit Commit) (CommitID, error) {
-	return g.db.AddCommitToBranchHead(ctx, repositoryID, branchID, commit)
+	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
+		// parentCommitID should always match the HEAD of the branch.
+		// Empty parentCommitID matches first commit of the branch.
+		parentCommitID, err := g.validateCommitParent(ctx, repositoryID, commit)
+		if err != nil {
+			return nil, err
+		}
+
+		branch, err := g.db.GetBranch(ctx, repositoryID, branchID)
+		if err != nil {
+			return nil, err
+		}
+		if branch.CommitID != parentCommitID {
+			return nil, ErrCommitNotHeadBranch
+		}
+
+		// check if commit already exists.
+		commitID := CommitID(ident.NewHexAddressProvider().ContentAddress(commit))
+		if exists, err := g.isCommitExist(ctx, repositoryID, commitID); err != nil {
+			return nil, err
+		} else if exists {
+			return commitID, nil
+		}
+
+		commitID, err = g.addCommitNoLock(ctx, repositoryID, commit)
+		if err != nil {
+			return nil, fmt.Errorf("adding commit: %w", err)
+		}
+		_, err = g.db.updateBranchNoLock(ctx, repositoryID, branchID, Ref(commitID))
+		if err != nil {
+			return nil, err
+		}
+		return commitID, nil
+	})
+	if err != nil {
+		return "", err
+	}
+	return res.(CommitID), nil
 }
 
 func (g *KVGraveler) AddCommit(ctx context.Context, repositoryID RepositoryID, commit Commit) (CommitID, error) {
@@ -1097,7 +1300,41 @@ func (g *KVGraveler) AddCommit(ctx context.Context, repositoryID RepositoryID, c
 
 // addCommitNoLock lower API used to add commit into a repository. It will verify that the commit meta-range is accessible but will not lock any metadata update.
 func (g *KVGraveler) addCommitNoLock(ctx context.Context, repositoryID RepositoryID, commit Commit) (CommitID, error) {
-	return g.db.addCommitNoLock(ctx, repositoryID, commit)
+	repo, err := g.db.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return "", fmt.Errorf("get repository %s: %w", repositoryID, err)
+	}
+
+	// verify access to meta range
+	ok, err := g.CommittedManager.Exists(ctx, repo.StorageNamespace, commit.MetaRangeID)
+	if err != nil {
+		return "", fmt.Errorf("checking for meta range %s: %w", commit.MetaRangeID, err)
+	}
+	if !ok {
+		return "", fmt.Errorf("%w: %s", ErrMetaRangeNotFound, commit.MetaRangeID)
+	}
+
+	// add commit
+	commitID, err := g.RefManager.AddCommit(ctx, repositoryID, commit)
+	if err != nil {
+		return "", fmt.Errorf("add commit: %w", err)
+	}
+	return commitID, nil
+}
+
+func (g *KVGraveler) stagingEmpty(ctx context.Context, branch *Branch) (bool, error) {
+	stIt, err := g.StagingManager.List(ctx, branch.StagingToken, ListingDefaultBatchSize)
+	if err != nil {
+		return false, fmt.Errorf("staging list (token %s): %w", branch.StagingToken, err)
+	}
+
+	defer stIt.Close()
+
+	if stIt.Next() {
+		return false, nil
+	}
+
+	return true, nil
 }
 
 func (g *KVGraveler) Reset(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error {
