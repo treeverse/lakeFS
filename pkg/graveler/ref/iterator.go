@@ -1,6 +1,8 @@
 package ref
 
-import "errors"
+import (
+	"errors"
+)
 
 const (
 	iteratorOffsetGE = ">="
