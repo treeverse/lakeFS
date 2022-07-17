@@ -105,6 +105,7 @@ type BranchByCommitIterator struct {
 	values []*graveler.BranchRecord
 	value  *graveler.BranchRecord
 	idx    int
+	err    error
 }
 
 func (b *BranchByCommitIterator) SortByCommitID(i, j int) bool {
@@ -148,22 +149,26 @@ func (b *BranchByCommitIterator) Next() bool {
 	return true
 }
 
-func (b *BranchByCommitIterator) SeekGE(id graveler.BranchID) {
+func (b *BranchByCommitIterator) SeekGE(id graveler.CommitID) {
 	b.idx = len(b.values) // If key not found, next will return false
 	for i, e := range b.values {
-		if id.String() == e.BranchID.String() {
+		if id.String() == e.CommitID.String() {
 			b.idx = i
 		}
 	}
 }
 
 func (b *BranchByCommitIterator) Value() *graveler.BranchRecord {
+	if b.Err() != nil {
+		return nil
+	}
 	return b.value
 }
 
 func (b *BranchByCommitIterator) Err() error {
-	return nil
+	return b.err
 }
 
 func (b *BranchByCommitIterator) Close() {
+	b.err = ErrIteratorClosed
 }
