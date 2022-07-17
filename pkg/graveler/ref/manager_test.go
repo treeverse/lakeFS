@@ -299,26 +299,32 @@ func TestManager_BranchUpdate(t *testing.T) {
 	}{
 		{
 			name: "success_branch_update",
-			f: func(*graveler.Branch) error {
-				return nil
+			f: func(*graveler.Branch) (*graveler.Branch, error) {
+				newBranch := &graveler.Branch{
+					CommitID:     commitID2,
+					StagingToken: "",
+					SealedTokens: nil,
+				}
+				return newBranch, nil
 			},
 			expectedCommit: commitID2,
 		},
 		{
 			name: "failed_branch_update_due_to_branch_change",
-			f: func(*graveler.Branch) error {
-				_ = r.SetBranch(ctx, repoID, branchID, graveler.Branch{
+			f: func(*graveler.Branch) (*graveler.Branch, error) {
+				b := graveler.Branch{
 					CommitID: "Another commit during validation",
-				})
-				return nil
+				}
+				_ = r.SetBranch(ctx, repoID, branchID, b)
+				return &b, nil
 			},
 			err:            kv.ErrPredicateFailed,
 			expectedCommit: "Another commit during validation",
 		},
 		{
 			name: "failed_branch_update_on_validation",
-			f: func(*graveler.Branch) error {
-				return graveler.ErrInvalid
+			f: func(*graveler.Branch) (*graveler.Branch, error) {
+				return nil, graveler.ErrInvalid
 			},
 			err:            graveler.ErrInvalid,
 			expectedCommit: commitID1,
@@ -329,12 +335,8 @@ func TestManager_BranchUpdate(t *testing.T) {
 			testutil.Must(t, r.SetBranch(context.Background(), repoID, branchID, graveler.Branch{
 				CommitID: commitID1,
 			}))
-			newBranch := &graveler.Branch{
-				CommitID:     commitID2,
-				StagingToken: "",
-				SealedTokens: nil,
-			}
-			err := r.BranchUpdate(ctx, repoID, branchID, newBranch, tt.f)
+
+			err := r.BranchUpdate(ctx, repoID, branchID, tt.f)
 			require.ErrorIs(t, err, tt.err)
 
 			b, err := r.GetBranch(context.Background(), repoID, branchID)

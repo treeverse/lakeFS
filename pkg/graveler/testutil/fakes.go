@@ -288,7 +288,7 @@ func (m *RefsFake) SetBranch(context.Context, graveler.RepositoryID, graveler.Br
 	return nil
 }
 
-func (m *RefsFake) BranchUpdate(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID, _ *graveler.Branch, _ graveler.BranchUpdateFunc) error {
+func (m *RefsFake) BranchUpdate(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID, _ graveler.BranchUpdateFunc) error {
 	return m.UpdateErr
 }
 
@@ -297,6 +297,10 @@ func (m *RefsFake) DeleteBranch(context.Context, graveler.RepositoryID, graveler
 }
 
 func (m *RefsFake) ListBranches(context.Context, graveler.RepositoryID) (graveler.BranchIterator, error) {
+	return m.ListBranchesRes, nil
+}
+
+func (m *RefsFake) GCBranchIterator(context.Context, graveler.RepositoryID) (graveler.BranchIterator, error) {
 	return m.ListBranchesRes, nil
 }
 
@@ -708,10 +712,10 @@ func (m *FakeBranchIterator) Next() bool {
 	return m.Index < len(m.Data)
 }
 
-func (m *FakeBranchIterator) SeekGE(id graveler.BranchID) {
+func (m *FakeBranchIterator) SeekGE(id string) {
 	m.Index = len(m.Data)
 	for i, item := range m.Data {
-		if item.BranchID >= id {
+		if item.BranchID.String() >= id {
 			m.Index = i - 1
 			return
 		}

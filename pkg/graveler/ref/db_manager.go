@@ -217,7 +217,7 @@ func (m *DBManager) SetBranch(ctx context.Context, repositoryID graveler.Reposit
 }
 
 // BranchUpdate Implement refManager interface - in DB implementation simply panics
-func (m *DBManager) BranchUpdate(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, newBranch *graveler.Branch, f graveler.BranchUpdateFunc) error {
+func (m *DBManager) BranchUpdate(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID, _ graveler.BranchUpdateFunc) error {
 	panic("Unimplemented")
 }
 
@@ -246,6 +246,14 @@ func (m *DBManager) ListBranches(ctx context.Context, repositoryID graveler.Repo
 		return nil, err
 	}
 	return NewDBBranchIterator(ctx, m.db, repositoryID, IteratorPrefetchSize), nil
+}
+
+func (m *DBManager) GCBranchIterator(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.BranchIterator, error) {
+	_, err := m.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	return NewDBBranchIterator(ctx, m.db, repositoryID, IteratorPrefetchSize, WithOrderByCommitID()), nil
 }
 
 func (m *DBManager) GetTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID) (*graveler.CommitID, error) {

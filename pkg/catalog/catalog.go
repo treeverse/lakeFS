@@ -447,8 +447,6 @@ func (c *Catalog) DeleteBranch(ctx context.Context, repository string, branch st
 
 func (c *Catalog) ListBranches(ctx context.Context, repository string, prefix string, limit int, after string) ([]*Branch, bool, error) {
 	repositoryID := graveler.RepositoryID(repository)
-	afterBranch := graveler.BranchID(after)
-	prefixBranch := graveler.BranchID(prefix)
 	if err := validator.Validate([]validator.ValidateArg{
 		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
 	}); err != nil {
@@ -463,15 +461,15 @@ func (c *Catalog) ListBranches(ctx context.Context, repository string, prefix st
 		return nil, false, err
 	}
 	defer it.Close()
-	if afterBranch < prefixBranch {
-		it.SeekGE(prefixBranch)
+	if after < prefix {
+		it.SeekGE(prefix)
 	} else {
-		it.SeekGE(afterBranch)
+		it.SeekGE(after)
 	}
 	var branches []*Branch
 	for it.Next() {
 		v := it.Value()
-		if v.BranchID == afterBranch {
+		if v.BranchID.String() == after {
 			continue
 		}
 		branchID := v.BranchID.String()

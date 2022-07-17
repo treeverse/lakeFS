@@ -72,8 +72,8 @@ func NewKVRefManager(executor batch.Batcher, kvStore kv.StoreMessage, db db.Data
 	}
 }
 
-// getRepository returns RepositoryRecord
-func (m *KVManager) getRepository(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.RepositoryRecord, error) {
+// getRepositoryRec returns RepositoryRecord
+func (m *KVManager) getRepositoryRec(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.RepositoryRecord, error) {
 	repo, err := m.GetRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, err
@@ -175,22 +175,16 @@ func (m *KVManager) getBranchWithPredicate(ctx context.Context, repo *graveler.R
 }
 
 func (m *KVManager) GetBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) (*graveler.Branch, error) {
-	repo, err := m.getRepository(ctx, repositoryID)
+	repo, err := m.getRepositoryRec(ctx, repositoryID)
 	if err != nil {
 		return nil, err
 	}
 	_, branch, err := m.getBranchWithPredicate(ctx, repo, branchID)
-	if err != nil {
-		if errors.Is(err, kv.ErrNotFound) {
-			err = graveler.ErrBranchNotFound
-		}
-		return nil, err
-	}
 	return branch, err
 }
 
 func (m *KVManager) CreateBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, branch graveler.Branch) error {
-	repo, err := m.getRepository(ctx, repositoryID)
+	repo, err := m.getRepositoryRec(ctx, repositoryID)
 	if err != nil {
 		return err
 	}
@@ -202,15 +196,15 @@ func (m *KVManager) CreateBranch(ctx context.Context, repositoryID graveler.Repo
 }
 
 func (m *KVManager) SetBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, branch graveler.Branch) error {
-	repo, err := m.getRepository(ctx, repositoryID)
+	repo, err := m.getRepositoryRec(ctx, repositoryID)
 	if err != nil {
 		return err
 	}
 	return m.kvStore.SetMsg(ctx, graveler.RepoPartition(repo), []byte(graveler.BranchPath(branchID)), protoFromBranch(branchID, &branch))
 }
 
-func (m *KVManager) BranchUpdate(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, newBranch *graveler.Branch, f graveler.BranchUpdateFunc) error {
-	repo, err := m.getRepository(ctx, repositoryID)
+func (m *KVManager) BranchUpdate(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, f graveler.BranchUpdateFunc) error {
+	repo, err := m.getRepositoryRec(ctx, repositoryID)
 	if err != nil {
 		return err
 	}
@@ -218,7 +212,7 @@ func (m *KVManager) BranchUpdate(ctx context.Context, repositoryID graveler.Repo
 	if err != nil {
 		return err
 	}
-	err = f(b)
+	newBranch, err := f(b)
 	if err != nil {
 		return err
 	}
@@ -226,7 +220,7 @@ func (m *KVManager) BranchUpdate(ctx context.Context, repositoryID graveler.Repo
 }
 
 func (m *KVManager) DeleteBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) error {
-	repo, err := m.getRepository(ctx, repositoryID)
+	repo, err := m.getRepositoryRec(ctx, repositoryID)
 	if err != nil {
 		return err
 	}
@@ -243,15 +237,23 @@ func (m *KVManager) DeleteBranch(ctx context.Context, repositoryID graveler.Repo
 }
 
 func (m *KVManager) ListBranches(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.BranchIterator, error) {
-	repo, err := m.getRepository(ctx, repositoryID)
+	repo, err := m.getRepositoryRec(ctx, repositoryID)
 	if err != nil {
 		return nil, err
 	}
 	return NewBranchSimpleIterator(ctx, &m.kvStore, repo)
 }
 
+func (m *KVManager) GCBranchIterator(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.BranchIterator, error) {
+	repo, err := m.getRepositoryRec(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	return NewBranchByCommitIterator(ctx, &m.kvStore, repo)
+}
+
 func (m *KVManager) GetTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID) (*graveler.CommitID, error) {
-	repo, err := m.getRepository(ctx, repositoryID)
+	repo, err := m.getRepositoryRec(ctx, repositoryID)
 	if err != nil {
 		return nil, err
 	}
@@ -269,7 +271,7 @@ func (m *KVManager) GetTag(ctx context.Context, repositoryID graveler.Repository
 }
 
 func (m *KVManager) CreateTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID, commitID graveler.CommitID) error {
-	repo, err := m.getRepository(ctx, repositoryID)
+	repo, err := m.getRepositoryRec(ctx, repositoryID)
 	if err != nil {
 		return err
 	}
@@ -289,7 +291,7 @@ func (m *KVManager) CreateTag(ctx context.Context, repositoryID graveler.Reposit
 }
 
 func (m *KVManager) DeleteTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID) error {
-	repo, err := m.getRepository(ctx, repositoryID)
+	repo, err := m.getRepositoryRec(ctx, repositoryID)
 	if err != nil {
 		return err
 	}
@@ -299,7 +301,7 @@ func (m *KVManager) DeleteTag(ctx context.Context, repositoryID graveler.Reposit
 }
 
 func (m *KVManager) ListTags(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.TagIterator, error) {
-	repo, err := m.getRepository(ctx, repositoryID)
+	repo, err := m.getRepositoryRec(ctx, repositoryID)
 	if err != nil {
 		return nil, err
 	}

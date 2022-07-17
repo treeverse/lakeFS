@@ -13,29 +13,29 @@ import (
 type CompareFunc func(i, j int) bool
 
 type BranchSimpleIterator struct {
-	ctx   context.Context
-	store *kv.StoreMessage
-	itr   *kv.PrimaryIterator
-	repo  *graveler.RepositoryRecord
-	value *graveler.BranchRecord
-	err   error
+	ctx           context.Context
+	store         *kv.StoreMessage
+	itr           *kv.PrimaryIterator
+	repoPartition string
+	value         *graveler.BranchRecord
+	err           error
 }
 
 func NewBranchSimpleIterator(ctx context.Context, store *kv.StoreMessage, repo *graveler.RepositoryRecord) (*BranchSimpleIterator, error) {
+	repoPartition := graveler.RepoPartition(repo)
 	it, err := kv.NewPrimaryIterator(ctx, store.Store, (&graveler.BranchData{}).ProtoReflect().Type(),
-		graveler.RepoPartition(repo),
-		[]byte(graveler.BranchPath("")), kv.IteratorOptionsFrom([]byte("")))
+		repoPartition, []byte(graveler.BranchPath("")), kv.IteratorOptionsFrom([]byte("")))
 	if err != nil {
 		return nil, err
 	}
 
 	return &BranchSimpleIterator{
-		ctx:   ctx,
-		store: store,
-		itr:   it,
-		repo:  repo,
-		value: nil,
-		err:   nil,
+		ctx:           ctx,
+		store:         store,
+		itr:           it,
+		repoPartition: repoPartition,
+		value:         nil,
+		err:           nil,
 	}, nil
 }
 
@@ -65,11 +65,11 @@ func (bi *BranchSimpleIterator) Next() bool {
 	return true
 }
 
-func (bi *BranchSimpleIterator) SeekGE(id graveler.BranchID) {
+func (bi *BranchSimpleIterator) SeekGE(id string) {
 	if bi.Err() == nil {
 		bi.itr.Close() // Close previous before creating new iterator
 		bi.itr, bi.err = kv.NewPrimaryIterator(bi.ctx, bi.store.Store, (&graveler.BranchData{}).ProtoReflect().Type(),
-			graveler.RepoPartition(bi.repo), []byte(graveler.BranchPath("")), kv.IteratorOptionsFrom([]byte(graveler.BranchPath(id))))
+			bi.repoPartition, []byte(graveler.BranchPath("")), kv.IteratorOptionsFrom([]byte(graveler.BranchPath(graveler.BranchID(id)))))
 	}
 }
 
@@ -104,12 +104,12 @@ func (b *BranchByCommitIterator) SortByCommitID(i, j int) bool {
 	return b.values[i].CommitID.String() <= b.values[j].CommitID.String()
 }
 
-func NewBranchByCommitIterator(ctx context.Context, store *kv.StoreMessage, partitionKey string) (*BranchByCommitIterator, error) {
+func NewBranchByCommitIterator(ctx context.Context, store *kv.StoreMessage, repo *graveler.RepositoryRecord) (*BranchByCommitIterator, error) {
 	bi := &BranchByCommitIterator{
 		ctx:    ctx,
 		values: make([]*graveler.BranchRecord, 0),
 	}
-	itr, err := kv.NewPrimaryIterator(ctx, store.Store, (&graveler.BranchData{}).ProtoReflect().Type(), partitionKey, []byte(""), kv.IteratorOptionsFrom([]byte("")))
+	itr, err := kv.NewPrimaryIterator(ctx, store.Store, (&graveler.BranchData{}).ProtoReflect().Type(), graveler.RepoPartition(repo), []byte(""), kv.IteratorOptionsFrom([]byte("")))
 	if err != nil {
 		return nil, err
 	}
@@ -141,10 +141,10 @@ func (b *BranchByCommitIterator) Next() bool {
 	return true
 }
 
-func (b *BranchByCommitIterator) SeekGE(id graveler.CommitID) {
+func (b *BranchByCommitIterator) SeekGE(id string) {
 	b.idx = len(b.values) // If key not found, next will return false
 	for i, e := range b.values {
-		if id.String() <= e.CommitID.String() {
+		if id <= e.CommitID.String() {
 			b.idx = i
 			return
 		}
