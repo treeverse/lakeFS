@@ -961,7 +961,7 @@ func (g *KVGraveler) UpdateBranch(ctx context.Context, repositoryID RepositoryID
 	err = g.RefManager.BranchUpdate(ctx, repositoryID, branchID, &newBranch, func(b *Branch) error {
 		// validate no conflict (Check Staging Token and Sealed Tokens are empty)
 		// TODO(Guys) return error only on conflicts, currently returns error for any changes on staging
-		iter, err := g.StagingManager.List(ctx, b.StagingToken, ListingDefaultBatchSize)
+		iter, err := g.StagingManager.List(ctx, b.StagingToken, 1)
 		if err != nil {
 			return err
 		}
