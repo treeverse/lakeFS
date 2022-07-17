@@ -170,6 +170,7 @@ var runCmd = &cobra.Command{
 				authService = auth.NewKVAuthService(
 					*storeMessage,
 					crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
+					emailer,
 					cfg.GetAuthCacheConfig(),
 					logger.WithField("service", "auth_service"))
 			}

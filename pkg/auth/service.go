@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/auth/email"
+
 	sq "github.com/Masterminds/squirrel"
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/getkin/kin-openapi/openapi3filter"
@@ -196,7 +198,7 @@ type KVAuthService struct {
 	*InviteHandler
 }
 
-func NewKVAuthService(store kv.StoreMessage, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) *KVAuthService {
+func NewKVAuthService(store kv.StoreMessage, secretStore crypt.SecretStore, emailer *email.Emailer, cacheConf params.ServiceCache, logger logging.Logger) *KVAuthService {
 	logger.Info("initialized Auth service")
 	var cache Cache
 	if cacheConf.Enabled {
@@ -209,6 +211,11 @@ func NewKVAuthService(store kv.StoreMessage, secretStore crypt.SecretStore, cach
 		secretStore: secretStore,
 		cache:       cache,
 		log:         logger,
+		InviteHandler: &InviteHandler{
+			secretStore: secretStore,
+			log:         logger,
+			emailer:     emailer,
+		},
 	}
 }
 
