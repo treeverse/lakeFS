@@ -32,7 +32,11 @@ func getAllFirstParents(ctx context.Context, store *kv.StoreMessage, repositoryI
 		entry := it.Entry()
 		commit := entry.Value.(*graveler.CommitData)
 		if len(commit.Parents) > 0 {
-			firstParents[commit.Parents[0]] = true
+			if graveler.CommitVersion(commit.Version) < graveler.CommitVersionParentSwitch && len(commit.Parents) > 1 {
+				firstParents[commit.Parents[1]] = true
+			} else {
+				firstParents[commit.Parents[0]] = true
+			}
 		}
 	}
 	return firstParents, nil
